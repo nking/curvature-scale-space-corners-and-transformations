@@ -6,6 +6,7 @@ import algorithms.QuickSort;
 import algorithms.compGeometry.HoughTransform;
 import algorithms.compGeometry.NearestPointsInLists;
 import algorithms.compGeometry.PerimeterFinder;
+import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.compGeometry.clustering.KMeansPlusPlus;
 import algorithms.compGeometry.clustering.KMeansPlusPlusColor;
 import algorithms.imageProcessing.util.GroupAverageColors;
@@ -9946,66 +9947,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         return out;
     }
 
-    private TIntObjectMap<TIntSet> createAdjacencySetMap(
-        List<Set<PairInt>> contiguousSets) {
-
-        TObjectIntMap<PairInt> pointIndexMap =
-            new TObjectIntHashMap<PairInt>();
-        for (int i = 0; i < contiguousSets.size(); ++i) {
-            Set<PairInt> set = contiguousSets.get(i);
-            for (PairInt p : set) {
-                pointIndexMap.put(p, i);
-            }
-        }
-
-        TIntObjectMap<TIntSet> contigAdjacencyMap =
-            new TIntObjectHashMap<TIntSet>();
-
-        int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;
-        for (int idx1 = 0; idx1 < contiguousSets.size(); ++idx1) {
-
-            TIntSet setIdx1 = contigAdjacencyMap.get(idx1);
-            if (setIdx1 == null) {
-                setIdx1 = new TIntHashSet();
-                contigAdjacencyMap.put(idx1, setIdx1);
-            }
-
-            Set<PairInt> set = contiguousSets.get(idx1);
-            for (PairInt p : set) {
-                int x = p.getX();
-                int y = p.getY();
-                for (int j = 0; j < dxs.length; ++j) {
-                    int x2 = x + dxs[j];
-                    int y2 = y + dys[j];
-                    PairInt p2 = new PairInt(x2, y2);
-                    if (!pointIndexMap.containsKey(p2)) {
-                        continue;
-                    }
-                    int idx2 = pointIndexMap.get(p2);
-                    if (idx1 == idx2) {
-                        continue;
-                    }
-                
-                    TIntSet setIdx2 = contigAdjacencyMap.get(idx2);
-                    if (setIdx2 == null) {
-                        setIdx2 = new TIntHashSet();
-                        contigAdjacencyMap.put(idx2, setIdx2);
-                    }
-                    setIdx1.add(idx2);
-                    setIdx2.add(idx1);
-                }
-            }
-        }
-
-        for (int idx1 = 0; idx1 < contiguousSets.size(); ++idx1) {
-            TIntSet setIdx1 = contigAdjacencyMap.get(idx1);
-            setIdx1.remove(idx1);
-        }
-
-        return contigAdjacencyMap;
-    }
-
     private List<Set<PairInt>> copy(
         List<Set<PairInt>> contiguousSets) {
 
@@ -10116,15 +10057,18 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         TIntSet merged = new TIntHashSet();
         
+        //labels
+        Stack<Integer> stack = new Stack<Integer>();
         TIntSet labelSet = labelToIndexMap.keySet();
-        int nSmall = 0;
         TIntIterator iter = labelSet.iterator();
         while (iter.hasNext()) {
-            int label1 = iter.next();
+            stack.add(Integer.valueOf(iter.next()));
+        }
+        
+        int nSmall = 0;
+        while (!stack.isEmpty()) {
+            int label1 = stack.pop().intValue();
             if (merged.contains(label1)) {
-                // leaving this here while considering whether
-                // the merges require a stack, and hence this
-                // currently uneccessary clause
                 continue;
             }
   
@@ -10237,6 +10181,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     set0.remove(minLabel);
                     
                     merged.add(label1);
+                    stack.add(minLabel);
                 }
             }
         }
@@ -10364,6 +10309,178 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
 
         return labelColorMap;
+    }
+
+    /**
+     * given the SLICSuperPixels labels, and the greyscale gradient image,
+     * merge all super pixels not separated by a gradient edge.
+     * @param img
+     * @param labels
+     * @param contigSets the labeled points split into contiguous labeled
+     * points.
+     */
+    private void mergeByGradient(GreyscaleImage img, int[] labels, 
+        List<Set<PairInt>> contigSets) {
+        
+        int gradLimit = 1;
+        TIntSet gradientIndexes = new TIntHashSet();
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            if (img.getValue(i) >= gradLimit) {
+                gradientIndexes.add(i);
+            }
+        }
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        /*
+        for each super pixel
+           for each neighbor of superpixel
+               if there is not a gradient point on their adjacent edges
+                  nor adjacent to them,
+                  merge the super pixels.
+        */
+        
+        PerimeterFinder2 perFinder = new PerimeterFinder2();
+        List<Set<PairInt>> boundaries = new ArrayList<Set<PairInt>>();
+        for (Set<PairInt> set : contigSets) {
+            Set<PairInt> boundary = perFinder.extractBorder(set);
+            boundaries.add(boundary);
+        }
+        
+        int maxLabel = MiscMath.findMax(labels);
+        
+        // key = label, value = labels to merge with this one
+        TIntObjectMap<TIntSet> mergeMap = new TIntObjectHashMap<TIntSet>();
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        for (int label = 0; label < maxLabel; ++label) {
+                        
+            Set<PairInt> boundary1 = boundaries.get(label);
+            
+            // store adjacent pixels by key adjlabel, value = pixIdxs 
+            // if the adjlabel pixels doesn't contain a gradient pixel, merge them
+            TIntObjectMap<TIntSet> labelIndexesMap = new TIntObjectHashMap<TIntSet>();
+            
+            Set<PairInt> compared = new HashSet<PairInt>();
+            
+            for (PairInt p1 : boundary1) {
+                int x = p1.getX();
+                int y = p1.getY();
+                int pixIdx = img.getInternalIndex(x, y);
+                assert(labels[pixIdx] == label);
+                for (int k = 0; k < dxs.length; ++k) {
+                    int x2 = x + dxs[k];
+                    int y2 = y + dys[k];
+                    if (x2 < 0 || y2 < 0 || (x2 > (w - 1)) || (y2 > (h - 1))) {
+                        continue;
+                    }
+                    int pixIdx2 = img.getInternalIndex(x2, y2);
+                    int label2 = labels[pixIdx2];
+                    if (label == label2) {
+                        continue;
+                    }
+                    TIntSet idxs2 = labelIndexesMap.get(label2);
+                    if (idxs2 == null) {
+                        idxs2 = new TIntHashSet();
+                        labelIndexesMap.put(label2, idxs2);
+                    }
+                    idxs2.add(pixIdx2);
+                    idxs2.add(pixIdx);
+                }
+            }
+            
+            MiscellaneousCurveHelper curveHelper = new 
+                MiscellaneousCurveHelper();
+            
+            // any values in labelIndexesMap lacking gradient points
+            //   can be merged
+            TIntObjectIterator<TIntSet> labelIndexesIter = labelIndexesMap.iterator();
+            for (int j = 0; j < labelIndexesMap.size(); ++j) {
+                labelIndexesIter.advance();
+                int label2 = labelIndexesIter.key();
+                if (label == label2) {
+                    continue;
+                }
+                PairInt pComp;
+                if (label < label2) {
+                    pComp = new PairInt(label, label2);
+                } else {
+                    pComp = new PairInt(label2, label);
+                }
+                if (compared.contains(pComp)) {
+                    continue;
+                }
+                TIntSet pixIndexes = labelIndexesIter.value();
+                int nInGrad = 0;
+                TIntIterator iter = pixIndexes.iterator();
+                while (iter.hasNext()) {
+                    int pixIdx3 = iter.next();
+                    if (gradientIndexes.contains(pixIdx3)) {
+                        nInGrad++;
+                    }
+                }
+                compared.add(pComp);
+               
+                if (nInGrad == 0) {
+                   //TIntObjectMap<TIntSet> mergeMap
+                   TIntSet mLabels = mergeMap.get(label);
+                   if (mLabels == null) {
+                       mLabels = new TIntHashSet();
+                       mergeMap.put(label, mLabels);
+                   }
+                   mLabels.add(label2); 
+                }
+            }
+        }
+   
+        TIntIntMap rMap = new TIntIntHashMap();
+        
+        TIntList keys = new TIntArrayList(mergeMap.keySet());
+        keys.sort();
+        for (int i = 0; i < keys.size(); ++i) {
+            int label = keys.get(i);
+            while (rMap.containsKey(label)) {
+                label = rMap.get(label);
+            }
+            Set<PairInt> set = contigSets.get(label);
+            
+            TIntSet mergeSet = mergeMap.get(label);
+            TIntIterator iter = mergeSet.iterator();
+            while (iter.hasNext()) {
+                int label2 = iter.next();
+                while (rMap.containsKey(label2)) {
+                    label2 = rMap.get(label2);
+                }
+                if (label == label2) {
+                    continue;
+                }
+                Set<PairInt> set2 = contigSets.get(label2);
+                set.addAll(set2);
+                set2.clear();
+                rMap.put(label2, label);
+            }
+        }
+        
+        for (int i = (contigSets.size() - 1); i > -1; --i) {
+            if (contigSets.get(i).isEmpty()) {
+                contigSets.remove(i);
+            }
+        }
+        
+        assert(LabelToColorHelper.assertAllPointsFound(contigSets, w, h));
+        
+        // relabel labels
+        for (int i = 0; i < contigSets.size(); ++i) {
+            Set<PairInt> set = contigSets.get(i);
+            for (PairInt p : set) {
+                int pixIdx = img.getInternalIndex(p.getX(), p.getY());
+                labels[pixIdx] = i;
+            }    
+        }
+        
     }
 
     public static class BoundingRegions {
@@ -12993,7 +13110,7 @@ int z = 1;
         // create an adjacency map between sets in
         // contiguousSets.
         TIntObjectMap<TIntSet> contigAdjacencyMap =
-            createAdjacencySetMap(contiguousSets);
+            LabelToColorHelper.createAdjacencySetMap(contiguousSets);
 
         mergeOrAppendGreyWithOthers(
             contigAdjacencyMap, contigRGB,
@@ -13175,17 +13292,31 @@ int z = 1;
         GreyscaleImage gsImg = img.copyToGreyscale();
         ImageExt imgCp = img.copyToImageExt();
 
+        long ts = MiscDebug.getCurrentTimeFormatted();
+        
+        List<Set<PairInt>> contigSets = null;
+        
+        int sizeLimit = 7;
+        if (img.getNPixels() < 100) {
+            sizeLimit = 1;
+        }
+        
         boolean usePhaseCongruency = false;
         
         if (!usePhaseCongruency) {
             CannyEdgeFilterAdaptive canny = new CannyEdgeFilterAdaptive();
             canny.setToNotUseZhangSuen();
             canny.applyFilter(gsImg);
-            // for DEBUGGING
-            for (int i = 0; i < gsImg.getNPixels(); ++i) {
-                if (gsImg.getValue(i) > 0) {
-                    gsImg.setValue(i, 255);
+            // value >= 7 or 10 for strongest features
+            MiscDebug.writeImage(gsImg, "_gradient_0_" + ts);
+            {
+                GreyscaleImage gsImg2 = gsImg.copyImage();
+                for (int i = 0; i < gsImg2.getNPixels(); ++i) {
+                    if (gsImg2.getValue(i) > 0) {
+                        gsImg2.setValue(i, 255);
+                    }
                 }
+                MiscDebug.writeImage(gsImg2, "_gradient_1_" + ts);
             }
         } else {
             PhaseCongruencyDetector pcd = new PhaseCongruencyDetector();
@@ -13200,50 +13331,109 @@ int z = 1;
                     }
                 }
             }
+            MiscDebug.writeImage(gsImg, "_gradient_" + ts);
         }
-        MiscDebug.writeImage(gsImg, "_gradient_" + 
-            MiscDebug.getCurrentTimeFormatted());
         
-        int nClusters = 200;
-
-        // TODO: consider reducing the clrNorm from default
+        int nClusters = 100;//200;
+        int clrNorm = 7;
         SLICSuperPixels slic
-            = new SLICSuperPixels(img, nClusters);
+            = new SLICSuperPixels(img, nClusters, clrNorm);
+        slic.setGradient(gsImg);
         slic.calculate();
         int[] labels = slic.getLabels();
-    
-        {
-            NormalizedCuts normCuts = new NormalizedCuts();
-            normCuts.setColorSpaceToHSV();
-            int[] labels3 = normCuts.normalizedCut(imgCp, labels);
-
-            log.info("norm 0 cuts finished");
-
-            List<Set<PairInt>> contigSets = LabelToColorHelper
-                .extractContiguousLabelPoints(img, labels3);
-            for (int i = 0; i< contigSets.size(); ++i) {
-                for (PairInt p : contigSets.get(i)) {
-                    int pixIdx = img.getInternalIndex(p);
-                    labels3[pixIdx] = i;
-                }
+        
+        log.info("SLIC: nLabels=" + MiscMath.findMax(labels));
+        
+        contigSets = LabelToColorHelper
+            .extractContiguousLabelPoints(img, labels);
+        for (int i = 0; i < contigSets.size(); ++i) {
+            for (PairInt p : contigSets.get(i)) {
+                int pixIdx = img.getInternalIndex(p);
+                labels[pixIdx] = i;
             }
-
-            TIntList gradSP = findIntersection(gsImg, labels);
-
-            ImageIOHelper.addAlternatingColorLabelsToRegion(
-                imgCp, labels3);
-            MiscDebug.writeImage(imgCp, "_norm0_"
-                + MiscDebug.getCurrentTimeFormatted());
-
-            labels3 = desegment(imgCp, gradSP, labels, labels3);
-            ImageIOHelper.addAlternatingColorLabelsToRegion(
-                imgCp, labels3);
-            MiscDebug.writeImage(imgCp, "_norm0_2_"
-                + MiscDebug.getCurrentTimeFormatted());
-            // this is to compare to the final results
-            
-            imgCp = img.copyToImageExt();
         }
+        
+        mergeSmallSegments(img, labels, sizeLimit, ColorSpace.RGB);
+        
+        contigSets = LabelToColorHelper
+            .extractContiguousLabelPoints(img, labels);
+        for (int i = 0; i < contigSets.size(); ++i) {
+            for (PairInt p : contigSets.get(i)) {
+                int pixIdx = img.getInternalIndex(p);
+                labels[pixIdx] = i;
+            }
+        }
+        
+        log.info("merge small, RGB: nLabels=" + MiscMath.findMax(labels));
+        
+        ImageIOHelper.addAlternatingColorLabelsToRegion(
+            imgCp, labels);
+        MiscDebug.writeImage(imgCp, "_slic_" + ts);
+        
+//TODO: mergeByGradient needs improvements        
+        
+        imgCp = img.copyToImageExt();
+        mergeByGradient(gsImg, labels, contigSets);
+        ImageIOHelper.addAlternatingColorLabelsToRegion(
+            imgCp, labels);
+        MiscDebug.writeImage(imgCp, "_gradientmerge_" + ts);
+        
+        int[] labels3;
+        ImageExt img3;
+        NormalizedCuts normCuts;
+        
+        labels3 = mergeByHSV(img, contigSets, 0.04f);
+        
+        //mergeSmallSegments(img, labels3, sizeLimit, 
+        //    ColorSpace.HSV);
+        
+        LabelToColorHelper.condenseLabels(labels3);
+        
+        log.info("merge HSV: nLabels=" + MiscMath.findMax(labels3));
+        
+        img3 = img.createWithDimensions();
+        ImageIOHelper.addAlternatingColorLabelsToRegion(
+            img3, labels3);
+        MiscDebug.writeImage(img3, "_slic_hsv_" + ts);
+        
+        if (true) {
+            return labels3;
+        }
+        
+        imgCp = img.copyToImageExt();
+        normCuts = new NormalizedCuts();
+        normCuts.setColorSpaceToHSV();
+        labels3 = normCuts.normalizedCut(imgCp, labels3);
+
+        log.info("norm 0 cuts finished.  nLabels=" + MiscMath.findMax(labels3));
+
+        contigSets = LabelToColorHelper
+            .extractContiguousLabelPoints(img, labels3);
+        for (int i = 0; i< contigSets.size(); ++i) {
+            for (PairInt p : contigSets.get(i)) {
+                int pixIdx = img.getInternalIndex(p);
+                labels3[pixIdx] = i;
+            }
+        }
+
+        TIntList gradSP = findIntersection(gsImg, labels);
+
+        ImageIOHelper.addAlternatingColorLabelsToRegion(
+            imgCp, labels3);
+        MiscDebug.writeImage(imgCp, "_norm0_1" + ts);
+
+        labels3 = desegment(imgCp, gradSP, labels, labels3);
+        ImageIOHelper.addAlternatingColorLabelsToRegion(
+            imgCp, labels3);
+        MiscDebug.writeImage(imgCp, "_norm0_2_" + ts);
+        // this is to compare to the final results
+
+        if (true) {
+            return labels3;
+        }
+        
+        imgCp = img.copyToImageExt();
+
         
         // modify labels by intersection with canny edges.
         // NOTE: that when a working pattern is in place,
@@ -13251,7 +13441,7 @@ int z = 1;
         // the superpixels alg uses a gradient, so might as
         // well give it the canny edges gradient
 
-        List<Set<PairInt>> contigSets = LabelToColorHelper
+        contigSets = LabelToColorHelper
             .extractContiguousLabelPoints(img, labels);
         algorithms.compGeometry.PerimeterFinder2 finder2 
             = new algorithms.compGeometry.PerimeterFinder2();
@@ -13298,10 +13488,6 @@ int z = 1;
                 }
             }
         }
-        int sizeLimit = 7;
-        if (img.getNPixels() < 100) {
-            sizeLimit = 1;
-        }
         mergeSmallSegments(img, labels2, sizeLimit, 
             ColorSpace.RGB);
         
@@ -13314,30 +13500,32 @@ int z = 1;
             }
         }
         
-        ImageExt img3 = img.createWithDimensions();
+        img3 = img.createWithDimensions();
         ImageIOHelper.addAlternatingColorLabelsToRegion(
             img3, labels2);
-        MiscDebug.writeImage(img3, "_slic_grad_" +
-            MiscDebug.getCurrentTimeFormatted());
+        MiscDebug.writeImage(img3, "_slic_grad_" + ts);
 
         
-        int[] labels3 = mergeByHSV(img, contigSets);
+        labels3 = mergeByHSV(img, contigSets);
         
         img3 = img.createWithDimensions();
         ImageIOHelper.addAlternatingColorLabelsToRegion(
             img3, labels3);
-        MiscDebug.writeImage(img3, "_slic_grad__hsv_" +
-            MiscDebug.getCurrentTimeFormatted());
+        MiscDebug.writeImage(img3, "_slic_grad__hsv_" + ts);
 
         log.info("nLabels = " + MiscMath.findMax(labels3));
         
+        if (true) {
+            return labels3;
+        }
+            
         //NOTE: the merging to recombine the
         // results correctly int NormalizedCutsWrapper
         // needs alot of changes.
         // considering other techniques to still use
         // normalized cuts, but with a label limit
         // of about 200.
-        NormalizedCutsWrapper normCuts = new NormalizedCutsWrapper();
+        normCuts = new NormalizedCuts();
         normCuts.setColorSpaceToHSV();
         labels3 = normCuts.normalizedCut(imgCp, labels3);
 
@@ -13583,16 +13771,14 @@ int z = 1;
         // key = index of contigSets, value = list of indexes
         //       of sets that are adjacent
         TIntObjectMap<TIntSet> contigAdjacencyMap =
-            createAdjacencySetMap(contigSets);
+            LabelToColorHelper.createAdjacencySetMap(contigSets);
 
-        TIntObjectMap<Colors> indexRGBMap =
-            new TIntObjectHashMap<Colors>();
+        TIntObjectMap<Colors> indexRGBMap = new TIntObjectHashMap<Colors>();
 
         CIEChromaticity cieC = null;
         
         TIntObjectMap<Colors> indexColorMap = null;
-        if (ColorSpace.HSV.equals(clrSpace) ||
-            ColorSpace.CIELAB.equals(clrSpace)) {
+        if (ColorSpace.HSV.equals(clrSpace) || ColorSpace.CIELAB.equals(clrSpace)) {
             indexColorMap = new TIntObjectHashMap<Colors>();
             cieC = new CIEChromaticity();
         }
@@ -13767,8 +13953,7 @@ int z = 1;
             for (int j = 0; j < nGroups; ++j) {
                 Set<PairInt> set2 = finder.getXY(j);
                 for (PairInt p2 : set2) {
-                    int pixIdx = img.getInternalIndex(
-                        p2.getX(), p2.getY());
+                    int pixIdx = img.getInternalIndex(p2.getX(), p2.getY());
                     labels[pixIdx] = l0;
                 }
                 l0++;
@@ -13782,6 +13967,9 @@ int z = 1;
         int nAfter = contigSets.size();
 
         log.info("nMerged=" + (nBefore - nAfter));
+        
+        assert(LabelToColorHelper.assertAllPointsFound(contigSets, 
+            img.getWidth(), img.getHeight()));
         
         return labels;
     }

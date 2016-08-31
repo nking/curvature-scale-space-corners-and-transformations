@@ -1,14 +1,11 @@
 package algorithms.imageProcessing.segmentation;
 
 import algorithms.imageProcessing.Image;
-import algorithms.imageProcessing.ImageExt;
 import algorithms.util.PairInt;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
@@ -17,8 +14,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import junit.framework.TestCase;
-import org.junit.Test;
-import static org.junit.Assert.*;
 
 /**
  *
@@ -398,5 +393,48 @@ public class LabelToColorHelperTest extends TestCase {
         for (int i = 0; i < n; ++i) {
             assertEquals(i, labels[i]);
         }
+    }
+  
+    public void testCreateAdjacencySetMap() {
+        
+        /*
+          0 0  1  1  0  0 
+          0 0  1  1  0  0
+        */
+        
+        int w = 6;
+        int h = 2;
+        
+        Image img = new Image(w, h);
+        
+        List<Set<PairInt>> list = new ArrayList<Set<PairInt>>();
+        Set<PairInt> set0 = new HashSet<PairInt>();
+        Set<PairInt> set1 = new HashSet<PairInt>();
+        Set<PairInt> set2 = new HashSet<PairInt>();
+        list.add(set0); list.add(set1); list.add(set2);
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                int label = 0;
+                if (i == 0 || i == 1) {
+                    set0.add(new PairInt(i, j));
+                } else if (i == 2 || i == 3) {
+                    label = 1;
+                    set1.add(new PairInt(i, j));
+                } else {
+                    label = 2;
+                    set2.add(new PairInt(i, j));
+                }
+                img.setRGB(i, j, label, label, label);
+            }
+        }
+        
+        TIntObjectMap<TIntSet> labelToLabelAdjMap = 
+            LabelToColorHelper.createAdjacencySetMap(list);
+    
+        assertEquals(3, labelToLabelAdjMap.size());
+        assertTrue(labelToLabelAdjMap.get(0).contains(1));
+        assertTrue(labelToLabelAdjMap.get(1).contains(0));
+        assertTrue(labelToLabelAdjMap.get(1).contains(2));
+        assertTrue(labelToLabelAdjMap.get(2).contains(1));
     }
 }

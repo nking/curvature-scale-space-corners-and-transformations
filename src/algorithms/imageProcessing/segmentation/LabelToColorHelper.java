@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.segmentation;
 
 import algorithms.imageProcessing.DFSConnectedGroupsFinder;
+import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.misc.Misc;
@@ -247,6 +248,56 @@ public class LabelToColorHelper {
         return adjacencyMap;
     }
 
+    /**
+     * create a map with key = label, value = set of adjacent
+     * labels.
+     * @param img
+     * @param labels
+     * @return 
+     */
+    public static TIntObjectMap<TIntSet> createAdjacencyLabelMap(
+        GreyscaleImage img, int[] labels) {
+        
+        TIntObjectMap<TIntSet> adjacencyMap =
+            new TIntObjectHashMap<TIntSet>();
+
+        int h = img.getHeight();
+        int w = img.getWidth();
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        for (int idx1 = 0; idx1 < labels.length; ++idx1) {
+            
+            int l1 = labels[idx1];
+            
+            TIntSet set1 = adjacencyMap.get(l1);
+            if (set1 == null) {
+                set1 = new TIntHashSet();
+                adjacencyMap.put(l1, set1);
+            }
+                        
+            int x = img.getCol(idx1);
+            int y = img.getRow(idx1);
+            for (int j = 0; j < dxs.length; ++j) {
+                int x2 = x + dxs[j];
+                int y2 = y + dys[j];
+                if (x2 < 0 || y2 < 0 || (x2 > (w - 1) ||
+                    (y2 > (h - 1)))) {
+                    continue;
+                }
+                int idx2 = img.getInternalIndex(x2, y2);
+                int l2 = labels[idx2];
+                if (l1 == l2) {
+                    continue;
+                }
+                set1.add(l2);
+            }
+        }
+        
+        return adjacencyMap;
+    }
+    
     public static void condenseLabels(int[] labels) {
         
         int count = 0;
@@ -265,31 +316,97 @@ public class LabelToColorHelper {
         }
     }
 
-    private static boolean assertAllPointsFound(
+    public static boolean assertAllPointsFound(
         List<Set<PairInt>> listOfSets, int width, int height) {
 
         Set<PairInt> allPoints = new HashSet<PairInt>();
         for (Set<PairInt> set : listOfSets) {
             for (PairInt p : set) {
                 boolean exists = allPoints.contains(p);
-                assert(!exists);
+                if (exists) {
+                    return false;
+                }
                 allPoints.add(p);
             }
         }
-        assert(allPoints.size() == width * height);
+        if (allPoints.size() != width * height) {
+            return false;
+        }
         
         for (int i = 0; i < width; ++i) {
             for (int j = 0; j < height; ++j) {
                 PairInt p = new PairInt(i, j);
                 boolean exists = allPoints.contains(p);
-                assert(exists);
+                if (!exists) {
+                    return false;
+                }
                 boolean rmvd = allPoints.remove(p);
                 assert(rmvd);
             }
         }
-        assert(allPoints.isEmpty());
         
-        return true;
+        return allPoints.isEmpty();        
     }
     
+    /**
+     * create a map w/ key = contiguousSets index, value =
+     *   set of indexes of contiguousSets which are adjacent to key's set.
+     * Note that int[] labels usually have a value that is an index
+     * of contiguousSets.
+     * @param contiguousSets
+     * @return 
+     */
+    public static TIntObjectMap<TIntSet> createAdjacencySetMap(
+        List<Set<PairInt>> contiguousSets) {
+
+        TObjectIntMap<PairInt> pointIndexMap =
+            new TObjectIntHashMap<PairInt>();
+        for (int i = 0; i < contiguousSets.size(); ++i) {
+            for (PairInt p : contiguousSets.get(i)) {
+                pointIndexMap.put(p, i);
+            }
+        }
+
+        TIntObjectMap<TIntSet> contigAdjacencyMap =
+            new TIntObjectHashMap<TIntSet>();
+
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        for (int lIdx = 0; lIdx < contiguousSets.size(); ++lIdx) {
+
+            TIntSet setIdx1 = contigAdjacencyMap.get(lIdx);
+            if (setIdx1 == null) {
+                setIdx1 = new TIntHashSet();
+                contigAdjacencyMap.put(lIdx, setIdx1);
+            }
+
+            Set<PairInt> set = contiguousSets.get(lIdx);
+            for (PairInt p : set) {
+                int x = p.getX();
+                int y = p.getY();
+                for (int j = 0; j < dxs.length; ++j) {
+                    int x2 = x + dxs[j];
+                    int y2 = y + dys[j];
+                    PairInt p2 = new PairInt(x2, y2);
+                    if (!pointIndexMap.containsKey(p2)) {
+                        continue;
+                    }
+                    int lIdx2 = pointIndexMap.get(p2);
+                    if (lIdx == lIdx2) {
+                        continue;
+                    }
+                
+                    setIdx1.add(lIdx2);
+                }
+            }
+        }
+
+        for (int lIdx1 = 0; lIdx1 < contiguousSets.size(); ++lIdx1) {
+            TIntSet setIdx1 = contigAdjacencyMap.get(lIdx1);
+            setIdx1.remove(lIdx1);
+        }
+
+        return contigAdjacencyMap;
+    }
+
 }
