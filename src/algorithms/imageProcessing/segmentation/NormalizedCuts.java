@@ -116,8 +116,8 @@ public class NormalizedCuts {
         ltRGB = false;
         colorSpace = ColorSpace.HSV;
         // for superpixels w/ n=200  thresh=0.05, sigma=0.1
-        thresh = 1e-13;   //1e-13 and 0.001 are close for a test image
-        sigma = 0.001;//change smaller
+        thresh = 5e-6; //1e-13 and 0.001 or 5e-6 and 0.0025
+        sigma = 0.0025; //change smaller
     }
    
     public void setColorSpaceToRGB() {

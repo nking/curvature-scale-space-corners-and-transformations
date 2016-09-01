@@ -10330,6 +10330,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
         }
         
+        //TODO: still an error in here.  see andr 04 icecream
+        
         int w = img.getWidth();
         int h = img.getHeight();
         
@@ -13466,7 +13468,10 @@ int z = 1;
         ImageIOHelper.addAlternatingColorLabelsToRegion(
             imgCp, labels);
         MiscDebug.writeImage(imgCp, "_gradientmerge_" + ts);
-
+        
+        if (true) {
+            return labels;
+        }
         
         int[] labels3;
         ImageExt img3;
