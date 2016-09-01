@@ -9,9 +9,7 @@ import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.PairInt;
 import algorithms.misc.Complex;
 import algorithms.misc.Histogram;
-import algorithms.misc.HistogramHolder;
 import algorithms.misc.Misc;
-import algorithms.util.Errors;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.TIntObjectMap;
@@ -29,7 +27,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.Stack;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import thirdparty.ca.uol.aig.fftpack.Complex1D;
 import thirdparty.ca.uol.aig.fftpack.ComplexDoubleFFT;
@@ -146,7 +143,7 @@ public class ImageProcessor {
                     d0 = cieC.calcDeltaECIE2000(lab0, lab1);
                 } else {
                     // replicate previous point
-                    d0 = outX[img.getInternalIndex(i, j - 1)];
+                    d0 = outY[img.getInternalIndex(i, j - 1)];
                 }
                 outY[img.getInternalIndex(i, j)] = (float)d0;
             }                    
@@ -156,6 +153,7 @@ public class ImageProcessor {
         
         int[] out = new int[n];
         for (int i = 0; i < n; ++i) {
+            
             double d = Math.sqrt(outX[i]*outX[i] + outY[i] + outY[i]);
             
             if (Math.abs(d) < jnd) {
@@ -1515,6 +1513,17 @@ if (sum > 511) {
      * blur the r, g, b vectors of image input by sigma.
      * @param input
      * @param sigma
+     */
+    public void blur(Image input, SIGMA sigma, int minValue, int maxValue) {
+
+        float[] kernel = Gaussian1D.getKernel(sigma);
+
+        blur(input, kernel, minValue, maxValue);
+    }
+    
+    /**
+     * blur the r, g, b vectors of image input by sigma.
+     * @param input
      */
     public void blur(Image input, float[] kernel, int minValue, int maxValue) {
 
