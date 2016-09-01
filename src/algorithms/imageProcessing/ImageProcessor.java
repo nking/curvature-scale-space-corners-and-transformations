@@ -157,7 +157,8 @@ public class ImageProcessor {
         int[] out = new int[n];
         for (int i = 0; i < n; ++i) {
             double d = Math.sqrt(outX[i]*outX[i] + outY[i] + outY[i]);
-            if (d < jnd) {
+            
+            if (Math.abs(d) < jnd) {
                 continue;
             }
             out[i] = (int)Math.round(4.4 * (d + 19.22));
