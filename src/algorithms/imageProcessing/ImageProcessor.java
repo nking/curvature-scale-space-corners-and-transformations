@@ -115,13 +115,16 @@ public class ImageProcessor {
                     float[] lab2 = img.getCIELAB(i + 2, j);
                     d0 = cieC.calcDeltaECIE2000(lab0, lab1) -
                         cieC.calcDeltaECIE2000(lab1, lab2);
+                    if (d0 < 0) {d0 *= -1;}
                 } else if (i == (w - 2)) {
                     float[] lab0 = img.getCIELAB(i, j);
                     float[] lab1 = img.getCIELAB(i + 1, j);
                     d0 = cieC.calcDeltaECIE2000(lab0, lab1);
+                    if (d0 < 0) {d0 *= -1;}
                 } else {
                     // replicate previous point
                     d0 = outX[img.getInternalIndex(i - 1, j)];
+                    if (d0 < 0) {d0 *= -1;}
                 }
                 outX[img.getInternalIndex(i, j)] = (float)d0;
             }                    
@@ -137,13 +140,16 @@ public class ImageProcessor {
                     float[] lab2 = img.getCIELAB(i, j + 2);
                     d0 = cieC.calcDeltaECIE2000(lab0, lab1) -
                         cieC.calcDeltaECIE2000(lab1, lab2);
+                    if (d0 < 0) {d0 *= -1;}
                 } else if (j == (h - 2)) {
                     float[] lab0 = img.getCIELAB(i, j);
                     float[] lab1 = img.getCIELAB(i, j + 1);
                     d0 = cieC.calcDeltaECIE2000(lab0, lab1);
+                    if (d0 < 0) {d0 *= -1;}
                 } else {
                     // replicate previous point
                     d0 = outY[img.getInternalIndex(i, j - 1)];
+                    if (d0 < 0) {d0 *= -1;}
                 }
                 outY[img.getInternalIndex(i, j)] = (float)d0;
             }                    
@@ -156,10 +162,10 @@ public class ImageProcessor {
             
             double d = Math.sqrt(outX[i]*outX[i] + outY[i] + outY[i]);
             
-            if (Math.abs(d) < jnd) {
+            if (d < jnd) {
                 continue;
             }
-            out[i] = (int)Math.round(4.4 * (d + 19.22));
+            out[i] = (int)Math.round(4.69 * d);
         }
         
         return out;

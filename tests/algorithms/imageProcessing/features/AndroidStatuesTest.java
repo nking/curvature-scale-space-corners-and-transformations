@@ -86,8 +86,8 @@ public class AndroidStatuesTest extends TestCase {
         String fileName1 = "";
         SegmentationMergeThreshold mt = SegmentationMergeThreshold.DEFAULT;
 
-        //for (int i = 0; i < 37; ++i) {
-        for (int i = 1; i < 2; ++i) {
+        for (int i = 0; i < 37; ++i) {
+        //for (int i = 3; i < 4; ++i) {
 
             mt = SegmentationMergeThreshold.DEFAULT;
             switch(i) {
@@ -277,7 +277,7 @@ public class AndroidStatuesTest extends TestCase {
             img = imageProcessor.binImage(img, binFactor1);
 
             int[] labels4 = imageSegmentation
-                .objectSegmentation(img);
+                .objectSegmentation1(img);
             
             ImageExt img11 = img.createWithDimensions();
             ImageIOHelper.addAlternatingColorLabelsToRegion(
