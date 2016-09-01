@@ -88,6 +88,83 @@ public class ImageProcessor {
 
         return applyKernel(input, points, kernel);
     }
+        
+    /**
+     * gradient is the equivalent of a gaussian first derivative with sigma=0.5.
+     * the results are multiplied by factor 
+     * and all values below the
+     * JND are removed.
+     * @param img
+     * @return 
+     */
+    public int[] calculateGradientUsingDeltaE2000(ImageExt img) {
+        
+        int n = img.getNPixels();
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        float jnd = 2.3f;
+        
+        float[] outX = new float[n];                    
+        for (int i = 0; i < w; i++) {
+            for (int j = 0; j < h; j++) {
+                double d0;
+                if (i < (w - 2)) {
+                    float[] lab0 = img.getCIELAB(i, j);
+                    float[] lab1 = img.getCIELAB(i + 1, j);
+                    float[] lab2 = img.getCIELAB(i + 2, j);
+                    d0 = cieC.calcDeltaECIE2000(lab0, lab1) -
+                        cieC.calcDeltaECIE2000(lab1, lab2);
+                } else if (i == (w - 2)) {
+                    float[] lab0 = img.getCIELAB(i, j);
+                    float[] lab1 = img.getCIELAB(i + 1, j);
+                    d0 = cieC.calcDeltaECIE2000(lab0, lab1);
+                } else {
+                    // replicate previous point
+                    d0 = outX[img.getInternalIndex(i - 1, j)];
+                }
+                outX[img.getInternalIndex(i, j)] = (float)d0;
+            }                    
+        }
+        
+        float[] outY = new float[n];
+        for (int i = 0; i < w; i++) {
+            for (int j = 0; j < h; j++) {
+                double d0;
+                if (j < (h - 2)) {
+                    float[] lab0 = img.getCIELAB(i, j);
+                    float[] lab1 = img.getCIELAB(i, j + 1);
+                    float[] lab2 = img.getCIELAB(i, j + 2);
+                    d0 = cieC.calcDeltaECIE2000(lab0, lab1) -
+                        cieC.calcDeltaECIE2000(lab1, lab2);
+                } else if (j == (h - 2)) {
+                    float[] lab0 = img.getCIELAB(i, j);
+                    float[] lab1 = img.getCIELAB(i, j + 1);
+                    d0 = cieC.calcDeltaECIE2000(lab0, lab1);
+                } else {
+                    // replicate previous point
+                    d0 = outX[img.getInternalIndex(i, j - 1)];
+                }
+                outY[img.getInternalIndex(i, j)] = (float)d0;
+            }                    
+        }
+        
+        // add max 19.22 in case negative, then mult by 4.4
+        
+        int[] out = new int[n];
+        for (int i = 0; i < n; ++i) {
+            double d = Math.sqrt(outX[i]*outX[i] + outY[i] + outY[i]);
+            if (d < jnd) {
+                continue;
+            }
+            out[i] = (int)Math.round(4.4 * (d + 19.22));
+        }
+        
+        return out;
+    }
     
     /**
      * apply a sobel kernel (gaussian first derivative, binomial approx 
