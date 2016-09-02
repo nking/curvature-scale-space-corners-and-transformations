@@ -10655,9 +10655,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
     }
 
     private void growAndErode(GreyscaleImage img) {
-        
+
         Set<PairInt> points = new HashSet<PairInt>();
-        
+
         for (int i = 0; i < img.getNPixels(); ++i) {
             if (img.getValue(i) > 0) {
                 int x = img.getCol(i);
@@ -10666,7 +10666,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 points.add(p);
             }
         }
-        
+
         growByOne(points, img.getWidth(), img.getHeight());
         ImageExt img2 = img.copyToColorGreyscaleExt();
         ImageIOHelper.addCurveToImage(points, img2, 0, 255, 0, 0);
@@ -10675,10 +10675,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         img2 = img.copyToColorGreyscaleExt();
         ImageIOHelper.addCurveToImage(points, img2, 0, 255, 0, 0);
         MiscDebug.writeImage(img2, "_erode_");
-        
+
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
-        
+
         for (int i = 0; i < img.getNPixels(); ++i) {
             if (img.getValue(i) == 0) {
                 int x = img.getCol(i);
@@ -13010,9 +13010,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             set.removeAll(rmvd);
         }
     }
-    
+
     /**
-     * erode the set
+     * grow set by 1 pixel in every direction
      * @param set
      */
     public void growByOne(Set<PairInt> set, int w, int h) {
@@ -13393,7 +13393,7 @@ int z = 1;
         GreyscaleImage gsImg = img.copyToGreyscale();
         ImageExt imgCp = img.copyToImageExt();
 
-        int gradientMethod = 2;
+        int gradientMethod = 1;
 
         gsImg = createGradient(img, gradientMethod, ts);
 
@@ -13509,13 +13509,11 @@ int z = 1;
     }
 
     /**
-     * a segmentation method that uses super pixels,
-     * normalized cuts, then a restoration of
-     * canny edge boundaries that were lost,
-     * then a merging by HSV.  The result is a background
-     * and foreground which are less segmented and
-     * objects which are still oversegmented to not
-     * lose their definition.
+     * a segmentation method that uses super pixels and a few
+     * color merging methods to result in an image which is
+     * still over-segmented, but a result which is searchable
+     * for shapes.  NOTE that this is tailored for images
+     * binned to size 256 on a side.
      * @param img
      * @return
      */
@@ -13529,38 +13527,25 @@ int z = 1;
         int h = img.getHeight();
 
         //0=canny gs+LAB, 1=canny gs, 2=canny lab, 3=phase cong
-        int gradientMethod = 1;
+        int gradientMethod = 3;//1;
 
         gsImg = createGradient(img, gradientMethod, ts);
-        
+
         TIntSet gradientPixels = new TIntHashSet();
         for (int i = 0; i < gsImg.getNPixels(); ++i) {
             if (gsImg.getValue(i) > 0) {
                 gradientPixels.add(i);
             }
         }
-        
 
-        SLICSuperPixels slic;
-        int[] labels = null;
 
-        // creating labels for nclusters = 10 and 200 or so.
-        // -- extrapolate boundaries at nclusters=10
-        //    and boundaries at n=200 separately
-        // -- new labels become those in intersection of 10 and 200.
-        int[] labels00 = null;
-        int[] labels01 = null;
-        // if keep these low and high numbers factors != 2 in each dimension,
-        //     the superpixels in common should be showing segmentation
+        // extrapolate boundaries at nclusters=x1
+        //   NOTE: this method is tailored for images
+        //   binned to size near 256 on a side, so will
+        //   need to add comments and maybe a wrapper to 
+        //   make sure that is true
         float nPix = img.getNPixels();
-        int x0 = 3;//11;
-        int x1 = 11;
-        float f00 = (float)w/(float)x0;
-        f00 *= f00;
-        float f01 = (float)h/(float)x0;
-        f01 *= f01;
-        int n00 = (int)Math.round(nPix/f00);
-        int n01 = (int)Math.round(nPix/f01);
+        int x1 = 17;//11; 17
         float f10 = (float)w/(float)x1;
         f10 *= f10;
         float f11 = (float)h/(float)x1;
@@ -13569,190 +13554,65 @@ int z = 1;
         int n11 = (int)Math.round(nPix/f11);
         //==> nClusters = nPix/((w/x0)^2)
         //==> nClusters = nPix/((h/x0)^2)
-        log.info("n0=" + n00 +"," + n01 + "  n1=" + n10 + "," + n11);
-        int[] ncs = new int[]{(n00+n01)/2, (n10+n11)/2};
-        TIntSet bPixels00 = new TIntHashSet();
-        List<Set<PairInt>> cSets01;
-        List<Set<PairInt>> bSets01;
-        TIntSet intersectingSet = new TIntHashSet();
-        TIntSet intersectingSet2 = new TIntHashSet();
-        for (int nc : ncs) {
-            slic = new SLICSuperPixels(imgCp, nc);
-            slic.setGradient(gsImg);
-            slic.calculate();
-            int[] labels2 = slic.getLabels();
+        log.info("  n1=" + n10 + "," + n11);
+        int nc = (n10+n11)/2;
+        SLICSuperPixels slic = new SLICSuperPixels(imgCp, nc);
+        slic.setGradient(gsImg);
+        slic.calculate();
+        int[] labels = slic.getLabels();
 
-            ImageExt img3 = img.copyToImageExt();
-            ImageIOHelper.addAlternatingColorLabelsToRegion(img3, labels2);
-            String str = Integer.toString(nc);
-            str = (str.length() < 3) ? "0" + str : str;
-            MiscDebug.writeImage(img3, "_slic_" + ts + "_" + str);
+        ImageExt img3 = img.copyToImageExt();
+        ImageIOHelper.addAlternatingColorLabelsToRegion(img3, labels);
+        String str = Integer.toString(nc);
+        str = (str.length() < 3) ? "0" + str : str;
+        MiscDebug.writeImage(img3, "_slic_" + ts + "_" + str);
 
-            List<Set<PairInt>> contigSets = LabelToColorHelper
-                .extractContiguousLabelPoints(img, labels2);
-            PerimeterFinder2 finder2 = new PerimeterFinder2();
-            List<Set<PairInt>> borders = new ArrayList<Set<PairInt>>();
-            for (Set<PairInt> set : contigSets) {
-                borders.add(finder2.extractBorder(set));
-            }
+        List<Set<PairInt>> contigSets = LabelToColorHelper
+            .extractContiguousLabelPoints(img, labels);
+        PerimeterFinder2 finder2 = new PerimeterFinder2();
+        List<Set<PairInt>> borders = new ArrayList<Set<PairInt>>();
+        for (Set<PairInt> set : contigSets) {
+            borders.add(finder2.extractBorder(set));
+        }
 
-            if (nc == ncs[0]) {
-                labels00 = Arrays.copyOf(labels2, labels2.length);
-                for (Set<PairInt> set : borders) {
-                    for (PairInt p : set) {
-                        bPixels00.add(img.getInternalIndex(p));
-                    }
-                }
-
-            } else {
-                labels01 = labels2;
-                cSets01 = contigSets;
-                bSets01 = borders;
-                for (int ii = 0; ii < contigSets.size(); ++ii) {
-                    for (PairInt p : bSets01.get(ii)) {
-                        if (p.getX() == 0 || p.getY() == 0 ||
-                            (p.getX() == (w-1)) || (p.getY()==(h-1))) {
-                            continue;
-                        }
-                        int pixIdx = img.getInternalIndex(p);
-                        if (bPixels00.contains(pixIdx)) {
-                           intersectingSet.add(pixIdx);
-                        }
-                        if (gradientPixels.contains(pixIdx)) {
-                            intersectingSet2.add(pixIdx);
-                        }
-                    }
-                }                
-                // TODO: any points in bSets01 that are segments
-                // between points in intersectingSet should be
-                // added also.
-            }
-            imgCp = img.copyToImageExt();
-        } // end loop over ncs
-        // might need to consider whether to merge those that get
-        // added back here
-        
         imgCp = img.copyToImageExt();
-        TIntIterator iter = intersectingSet.iterator();
-        while (iter.hasNext()) {
-            int pixIdx = iter.next();
-            imgCp.setRGB(pixIdx, 255, 0, 0);
-        }
-        MiscDebug.writeImage(imgCp, "_inter_" + ts + "_");
-        
-        // TODO:  this section looks promising.  need to add ability
-        //   to extract the entire superpixel range between the
-        //   gradient points it intersects too...that completes
-        //   the edges and makes complete contours possible.
-        imgCp = img.copyToImageExt();
-        iter = intersectingSet2.iterator();
-        while (iter.hasNext()) {
-            int pixIdx = iter.next();
-            imgCp.setRGB(pixIdx, 0, 255, 0);
-        }
-        MiscDebug.writeImage(imgCp, "_inter2_" + ts + "_");
-
-        if (true) {
-            return labels01;
-        }
-
-        TIntSet gradSP = findIntersection(gsImg, labels);
-
-        NormalizedCuts normCuts = new NormalizedCuts();
-        normCuts.setColorSpaceToRGB();
-        //normCuts.setToLowThresholdHSV();
-        int[] labels2 = normCuts.normalizedCut(imgCp, labels);
-
-        {
-            ImageExt img3 = img.copyToImageExt();
-            ImageIOHelper.addAlternatingColorLabelsToRegion(
-                img3, labels2);
-            MiscDebug.writeImage(img3, "_norm_" + ts);
-
-            List<Set<PairInt>> contigSets = LabelToColorHelper
-                .extractContiguousLabelPoints(img, labels);
-            algorithms.compGeometry.PerimeterFinder2 finder2
-                = new algorithms.compGeometry.PerimeterFinder2();
-            List<Set<PairInt>> borders = new ArrayList<Set<PairInt>>();
-            for (Set<PairInt> set : contigSets) {
-                borders.add(finder2.extractBorder(set));
-            }
-            TIntList nInter = new TIntArrayList();
-            TIntList nSize = new TIntArrayList();
-            TObjectIntMap pointIndexMap = new TObjectIntHashMap();
-            for (int i = 0; i < borders.size(); ++i) {
-                Set<PairInt> set = borders.get(i);
-                for (PairInt p : set) {
-                    pointIndexMap.put(p, i);
-                }
-                nInter.add(0);
-                nSize.add(set.size());
-            }
-            for (int i = 0; i < gsImg.getNPixels(); ++i) {
-                if (gsImg.getValue(i) > 0) {
-                    PairInt p = new PairInt(gsImg.getCol(i),
-                        gsImg.getRow(i));
-                    if (pointIndexMap.containsKey(p)) {
-                        int idx = pointIndexMap.get(p);
-                        nInter.set(idx, nInter.get(idx) + 1);
-                    }
-                }
-            }
-            // examine fraction of boundaries
-            //    and then consider chaining the
-            //    large fraction sup
-            for (int i = 0; i < nSize.size(); ++i) {
-                float fraction = (float)nInter.get(i)/
-                    (float)nSize.get(i);
-                if (fraction > 0.25) {
-                    Set<PairInt> set = borders.get(i);
-                    for (PairInt p : set) {
-                        img3.setRGB(p.getX(), p.getY(), 0, 0, 0);
-                    }
-                }
-            }
-            MiscDebug.writeImage(img3, "_res_grd_" + ts);
-        }
-
-        labels2 = desegment(imgCp, gradSP, labels, labels2);
-
-        List<Set<PairInt>> contiguousSets =
-            LabelToColorHelper
-            .extractContiguousLabelPoints(imgCp, labels2);
-
-        {
-            ImageExt img3 = img.copyToImageExt();
-            ImageIOHelper.addAlternatingColorLabelsToRegion(
-                img3, labels2);
-            MiscDebug.writeImage(img3, "_deseg_" + ts);
-        }
 
         int sizeLimit = 7;
         if (img.getNPixels() < 100) {
             sizeLimit = 1;
         }
+        imgCp = img.copyToImageExt();
+        // a safe limit for HSV is 0.025 to not overrun object bounds
+        labels = mergeByColor(imgCp, contigSets, ColorSpace.HSV, 0.1f);
+        /*mergeSmallSegments(imgCp, labels, sizeLimit, ColorSpace.HSV);
+    
+        contigSets = LabelToColorHelper
+            .extractContiguousLabelPoints(img, labels);
+        
+        separateByErosion(contigSets, 1);
+        
+        for (int i = 0; i < contigSets.size(); ++i) {
+            for (PairInt p : contigSets.get(i)) {
+                int pixIdx = img.getInternalIndex(p);
+                labels[pixIdx] = i;
+            }
+        }*/
+        
+        //imgCp = img.copyToImageExt();
+        //LabelToColorHelper.applyLabels(imgCp, labels2);
+        //ImageProcessor imageProcessor = new ImageProcessor();
+        //GreyscaleImage aGsImg = imgCp.copyToGreyscale();
+        //imageProcessor.applyAdaptiveMeanThresholding(aGsImg, 1);
+        //MiscDebug.writeImage(aGsImg, "_adapt_" + ts);
 
-        List<Set<PairInt>> csa = copy(contiguousSets);
-        int[] labels3a = mergeByCIEXYTheta(imgCp, csa);
-
-        mergeSmallSegments(imgCp, labels3a,
-            sizeLimit, ColorSpace.CIELAB);
-
-        int[] labels3 = mergeByHSV(imgCp, contiguousSets);
-
-        mergeSmallSegments(imgCp, labels3,
-            sizeLimit, ColorSpace.HSV);
-
-        examineOverlappingEdges(imgCp, labels3a, labels3);
-
+        return labels;
+        
         /*
-        ImageIOHelper.addAlternatingColorLabelsToRegion(
-            imgCp, labels3);
-        MiscDebug.writeImage(imgCp, "_comb3_"
-            + MiscDebug.getCurrentTimeFormatted());
+        NormalizedCuts normCuts = new NormalizedCuts();
+        normCuts.setColorSpaceToRGB();
+        //normCuts.setToLowThresholdHSV();
+        int[] labels2 = normCuts.normalizedCut(imgCp, labels);
         */
-
-        return labels3;
     }
 
     /**
@@ -13775,7 +13635,7 @@ int z = 1;
         }
 
         int gradientMethod = 2;
-        
+
         gsImg = createGradient(img, gradientMethod, ts);
 
         // NOTE: good to use the detailed canny gradient w/ super pixels:

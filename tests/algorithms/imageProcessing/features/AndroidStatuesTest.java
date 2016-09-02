@@ -86,8 +86,8 @@ public class AndroidStatuesTest extends TestCase {
         String fileName1 = "";
         SegmentationMergeThreshold mt = SegmentationMergeThreshold.DEFAULT;
 
+        //for (int i = 5; i < 11; ++i) {
         for (int i = 0; i < 37; ++i) {
-        //for (int i = 3; i < 4; ++i) {
 
             mt = SegmentationMergeThreshold.DEFAULT;
             switch(i) {
