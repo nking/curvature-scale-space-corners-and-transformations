@@ -165,6 +165,11 @@ public class CannyEdgeFilterAdaptiveDeltaE2000 {
         if (input.getWidth() < 3 || input.getHeight() < 3) {
             throw new IllegalArgumentException("images should be >= 3x3 in size");
         }
+        
+        SIGMA sigma = SIGMA.ZEROPOINTFIVE;
+        ImageProcessor imageProcessor = new ImageProcessor();
+        imageProcessor.blur(input, sigma, 0, 255);
+        approxProcessedSigma = SIGMA.getValue(sigma);
 
         //(2) create gradient
         // uses a binomial filter for a first derivative gradient, sobel.
