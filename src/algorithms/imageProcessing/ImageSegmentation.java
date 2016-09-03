@@ -13577,26 +13577,26 @@ int z = 1;
 
         imgCp = img.copyToImageExt();
 
-        int sizeLimit = 7;
+        int sizeLimit = 5;
         if (img.getNPixels() < 100) {
             sizeLimit = 1;
         }
         imgCp = img.copyToImageExt();
         // a safe limit for HSV is 0.025 to not overrun object bounds
-        labels = mergeByColor(imgCp, contigSets, ColorSpace.HSV, 0.1f);
-        /*mergeSmallSegments(imgCp, labels, sizeLimit, ColorSpace.HSV);
+        labels = mergeByColor(imgCp, contigSets, ColorSpace.HSV, 0.095f);//0.1f);
+        mergeSmallSegments(imgCp, labels, sizeLimit, ColorSpace.HSV);
     
         contigSets = LabelToColorHelper
             .extractContiguousLabelPoints(img, labels);
         
-        separateByErosion(contigSets, 1);
+        //separateByErosion(contigSets, 1);
         
         for (int i = 0; i < contigSets.size(); ++i) {
             for (PairInt p : contigSets.get(i)) {
                 int pixIdx = img.getInternalIndex(p);
                 labels[pixIdx] = i;
             }
-        }*/
+        }
         
         //imgCp = img.copyToImageExt();
         //LabelToColorHelper.applyLabels(imgCp, labels2);
