@@ -626,8 +626,8 @@ public class Image {
                 "y1 must be larger than y0");
         }
         
-        int w = x1 - x0 + 1;
-        int h = y1 - y0 + 1;
+        int w = x1 - x0;
+        int h = y1 - y0;
        
         Image img2 = createNewImage(w, h);
         

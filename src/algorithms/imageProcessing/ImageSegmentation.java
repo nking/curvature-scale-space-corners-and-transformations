@@ -13377,138 +13377,6 @@ int z = 1;
     }
 
     /**
-     * a segmentation method that uses super pixels,
-     * normalized cuts, then a restoration of
-     * canny edge boundaries that were lost,
-     * then a merging by HSV.  The result is a background
-     * and foreground which are less segmented and
-     * objects which are still oversegmented to not
-     * lose their definition.
-     * @param img
-     * @return
-     */
-    public int[] objectSegmentation0(ImageExt img) {
-
-        long ts = MiscDebug.getCurrentTimeFormatted();
-        GreyscaleImage gsImg = img.copyToGreyscale();
-        ImageExt imgCp = img.copyToImageExt();
-
-        int gradientMethod = 1;
-
-        gsImg = createGradient(img, gradientMethod, ts);
-
-        MiscDebug.writeImage(gsImg, "_gradient_" +
-            MiscDebug.getCurrentTimeFormatted());
-
-        int nClusters = 200;
-
-        SLICSuperPixels slic
-            = new SLICSuperPixels(img, nClusters);
-        slic.calculate();
-        int[] labels = slic.getLabels();
-
-        TIntSet gradSP = findIntersection(gsImg, labels);
-
-        NormalizedCuts normCuts = new NormalizedCuts();
-        normCuts.setColorSpaceToRGB();
-        int[] labels2 = normCuts.normalizedCut(imgCp, labels);
-
-        {
-            ImageExt img3 = img.copyToImageExt();
-            ImageIOHelper.addAlternatingColorLabelsToRegion(
-                img3, labels2);
-            MiscDebug.writeImage(img3, "_norm_"
-                + MiscDebug.getCurrentTimeFormatted());
-
-            List<Set<PairInt>> contigSets = LabelToColorHelper
-                .extractContiguousLabelPoints(img, labels);
-            algorithms.compGeometry.PerimeterFinder2 finder2
-                = new algorithms.compGeometry.PerimeterFinder2();
-            List<Set<PairInt>> borders = new ArrayList<Set<PairInt>>();
-            for (Set<PairInt> set : contigSets) {
-                borders.add(finder2.extractBorder(set));
-            }
-            TIntList nInter = new TIntArrayList();
-            TIntList nSize = new TIntArrayList();
-            TObjectIntMap pointIndexMap = new TObjectIntHashMap();
-            for (int i = 0; i < borders.size(); ++i) {
-                Set<PairInt> set = borders.get(i);
-                for (PairInt p : set) {
-                    pointIndexMap.put(p, i);
-                }
-                nInter.add(0);
-                nSize.add(set.size());
-            }
-            for (int i = 0; i < gsImg.getNPixels(); ++i) {
-                if (gsImg.getValue(i) > 0) {
-                    PairInt p = new PairInt(gsImg.getCol(i),
-                        gsImg.getRow(i));
-                    if (pointIndexMap.containsKey(p)) {
-                        int idx = pointIndexMap.get(p);
-                        nInter.set(idx, nInter.get(idx) + 1);
-                    }
-                }
-            }
-            // examine fraction of boundaries
-            //    and then consider chaining the
-            //    large fraction sup
-            for (int i = 0; i < nSize.size(); ++i) {
-                float fraction = (float)nInter.get(i)/
-                    (float)nSize.get(i);
-                if (fraction > 0.25) {
-                    Set<PairInt> set = borders.get(i);
-                    for (PairInt p : set) {
-                        img3.setRGB(p.getX(), p.getY(), 0, 0, 0);
-                    }
-                }
-            }
-            MiscDebug.writeImage(img3, "_slic_grad_" +
-                MiscDebug.getCurrentTimeFormatted());
-        }
-
-        labels2 = desegment(imgCp, gradSP, labels, labels2);
-
-        List<Set<PairInt>> contiguousSets =
-            LabelToColorHelper
-            .extractContiguousLabelPoints(imgCp, labels2);
-
-        {
-            ImageExt img3 = img.copyToImageExt();
-            ImageIOHelper.addAlternatingColorLabelsToRegion(
-                img3, labels2);
-            MiscDebug.writeImage(img3, "_norm2_"
-                + MiscDebug.getCurrentTimeFormatted());
-        }
-
-        int sizeLimit = 7;
-        if (img.getNPixels() < 100) {
-            sizeLimit = 1;
-        }
-
-        List<Set<PairInt>> csa = copy(contiguousSets);
-        int[] labels3a = mergeByCIEXYTheta(imgCp, csa);
-
-        mergeSmallSegments(imgCp, labels3a,
-            sizeLimit, ColorSpace.CIELAB);
-
-        int[] labels3 = mergeByHSV(imgCp, contiguousSets);
-
-        mergeSmallSegments(imgCp, labels3,
-            sizeLimit, ColorSpace.HSV);
-
-        examineOverlappingEdges(imgCp, labels3a, labels3);
-
-        /*
-        ImageIOHelper.addAlternatingColorLabelsToRegion(
-            imgCp, labels3);
-        MiscDebug.writeImage(imgCp, "_comb3_"
-            + MiscDebug.getCurrentTimeFormatted());
-        */
-
-        return labels3;
-    }
-
-    /**
      * a segmentation method that uses super pixels and a few
      * color merging methods to result in an image which is
      * still over-segmented, but a result which is searchable
@@ -13517,7 +13385,7 @@ int z = 1;
      * @param img
      * @return
      */
-    public int[] objectSegmentation1(ImageExt img) {
+    public int[] objectSegmentation(ImageExt img) {
 
         long ts = MiscDebug.getCurrentTimeFormatted();
         GreyscaleImage gsImg = img.copyToGreyscale();
@@ -13530,13 +13398,6 @@ int z = 1;
         int gradientMethod = 3;//1;
 
         gsImg = createGradient(img, gradientMethod, ts);
-
-        TIntSet gradientPixels = new TIntHashSet();
-        for (int i = 0; i < gsImg.getNPixels(); ++i) {
-            if (gsImg.getValue(i) > 0) {
-                gradientPixels.add(i);
-            }
-        }
 
 
         // extrapolate boundaries at nclusters=x1
@@ -13560,7 +13421,7 @@ int z = 1;
         slic.setGradient(gsImg);
         slic.calculate();
         int[] labels = slic.getLabels();
-
+        
         ImageExt img3 = img.copyToImageExt();
         ImageIOHelper.addAlternatingColorLabelsToRegion(img3, labels);
         String str = Integer.toString(nc);
@@ -13613,147 +13474,6 @@ int z = 1;
         //normCuts.setToLowThresholdHSV();
         int[] labels2 = normCuts.normalizedCut(imgCp, labels);
         */
-    }
-
-    /**
-     *
-     * @param img
-     * @return
-     */
-    public int[] objectSegmentation(ImageExt img) {
-
-        GreyscaleImage gsImg = img.copyToGreyscale();
-        ImageExt imgCp = img.copyToImageExt();
-
-        long ts = MiscDebug.getCurrentTimeFormatted();
-
-        List<Set<PairInt>> contigSets = null;
-
-        int sizeLimit = 15;
-        if (img.getNPixels() < 100) {
-            sizeLimit = 1;
-        }
-
-        int gradientMethod = 2;
-
-        gsImg = createGradient(img, gradientMethod, ts);
-
-        // NOTE: good to use the detailed canny gradient w/ super pixels:
-        int nClusters = 100;//200;
-        int clrNorm = 7;
-        SLICSuperPixels slic
-            = new SLICSuperPixels(img, nClusters, clrNorm);
-        slic.setGradient(gsImg);
-        slic.calculate();
-        int[] labels = slic.getLabels();
-
-        log.info("SLIC: nLabels=" + MiscMath.findMax(labels));
-
-        contigSets = LabelToColorHelper
-            .extractContiguousLabelPoints(img, labels);
-        for (int i = 0; i < contigSets.size(); ++i) {
-            for (PairInt p : contigSets.get(i)) {
-                int pixIdx = img.getInternalIndex(p);
-                labels[pixIdx] = i;
-            }
-        }
-
-        mergeSmallSegments(img, labels, sizeLimit, ColorSpace.RGB);
-
-        contigSets = LabelToColorHelper
-            .extractContiguousLabelPoints(img, labels);
-        for (int i = 0; i < contigSets.size(); ++i) {
-            for (PairInt p : contigSets.get(i)) {
-                int pixIdx = img.getInternalIndex(p);
-                labels[pixIdx] = i;
-            }
-        }
-
-        log.info("merge small, RGB: nLabels=" + MiscMath.findMax(labels));
-
-        ImageIOHelper.addAlternatingColorLabelsToRegion(
-            imgCp, labels);
-        MiscDebug.writeImage(imgCp, "_slic_" + ts);
-
-
-        labels = mergeByHSV(img, contigSets, 0.04f);
-        LabelToColorHelper.condenseLabels(labels);
-        ImageIOHelper.addAlternatingColorLabelsToRegion(
-            imgCp, labels);
-        MiscDebug.writeImage(imgCp, "_slic_HSV_" + ts);
-
-        log.info("merge HSV: nLabels=" + MiscMath.findMax(labels));
-
-        /*
-        mergeSmallSegments(img, labels, sizeLimit, ColorSpace.HSV);
-
-        contigSets = LabelToColorHelper
-            .extractContiguousLabelPoints(img, labels);
-        for (int i = 0; i < contigSets.size(); ++i) {
-            for (PairInt p : contigSets.get(i)) {
-                int pixIdx = img.getInternalIndex(p);
-                labels[pixIdx] = i;
-            }
-        }
-
-        log.info("merge small, HSV: nLabels=" + MiscMath.findMax(labels));
-        */
-
-        // experimental merge between gradient edges
-        /*gsImg = img.copyBlueToGreyscale();
-        CannyEdgeFilterAdaptive canny = new CannyEdgeFilterAdaptive();
-        canny.setToNotUseZhangSuen();
-        canny.applyFilter(gsImg);
-        {
-            GreyscaleImage gsImg2 = gsImg.copyImage();
-            for (int i = 0; i < gsImg2.getNPixels(); ++i) {
-                if (gsImg2.getValue(i) > 0) {
-                    gsImg2.setValue(i, 255);
-                }
-            }
-            MiscDebug.writeImage(gsImg2, "_gradient_3_" + ts);
-        }*/
-
-        contigSets = LabelToColorHelper
-            .extractContiguousLabelPoints(img, labels);
-        for (int i = 0; i < contigSets.size(); ++i) {
-            for (PairInt p : contigSets.get(i)) {
-                int pixIdx = img.getInternalIndex(p);
-                labels[pixIdx] = i;
-            }
-        }
-
-
-        mergeByGradient(gsImg, labels, contigSets);
-
-        log.info("gradient: nLabels=" + MiscMath.findMax(labels));
-
-        imgCp = img.copyToImageExt();
-        ImageIOHelper.addAlternatingColorLabelsToRegion(
-            imgCp, labels);
-        MiscDebug.writeImage(imgCp, "_gradientmerge_" + ts);
-
-        if (true) {
-            return labels;
-        }
-
-        int[] labels3;
-        ImageExt img3;
-        NormalizedCuts normCuts;
-
-        imgCp = img.copyToImageExt();
-        normCuts = new NormalizedCuts();
-        normCuts.setToLowThresholdHSV();
-        labels3 = normCuts.normalizedCut(imgCp, labels);
-
-        log.info("merge HSV: nLabels=" + MiscMath.findMax(labels3));
-
-        img3 = img.createWithDimensions();
-        ImageIOHelper.addAlternatingColorLabelsToRegion(
-            img3, labels3);
-        MiscDebug.writeImage(img3, "_norm_" + ts);
-
-        return labels3;
     }
 
     private TIntSet findIntersection(GreyscaleImage gradient,
