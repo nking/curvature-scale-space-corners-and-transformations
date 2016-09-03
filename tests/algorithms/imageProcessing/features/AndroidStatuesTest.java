@@ -84,12 +84,10 @@ public class AndroidStatuesTest extends TestCase {
         int maxDimension = 256;//512;
         
         String fileName1 = "";
-        SegmentationMergeThreshold mt = SegmentationMergeThreshold.DEFAULT;
 
-        //for (int i = 5; i < 11; ++i) {
+        //for (int i = 0; i < 1; ++i) {
         for (int i = 0; i < 37; ++i) {
 
-            mt = SegmentationMergeThreshold.DEFAULT;
             switch(i) {
                 case 0: {
                     fileName1 = "android_statues_01.jpg";
@@ -113,12 +111,10 @@ public class AndroidStatuesTest extends TestCase {
                 }
                 case 5: {
                     fileName1 = "stonehenge.jpg";
-                    mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }
                 case 6: {
                     fileName1 = "cloudy_san_jose.jpg";
-                    mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }
                 case 7: {
@@ -127,7 +123,6 @@ public class AndroidStatuesTest extends TestCase {
                 }
                 case 8: {
                     fileName1 = "mt_rainier_snowy_field.jpg";
-                    mt = SegmentationMergeThreshold.EXTREMELY_LOW_CONTRAST;
                     break;
                 }
                 case 9: {
@@ -140,12 +135,10 @@ public class AndroidStatuesTest extends TestCase {
                 }
                 case 11: {
                     fileName1 = "venturi_mountain_j6_0001.png";
-                    //mt = SegmentationMergeThreshold.EXTREMELY_LOW_CONTRAST;
                     break;
                 }
                 case 12: {
                     fileName1 = "venturi_mountain_j6_0010.png";
-                    //mt = SegmentationMergeThreshold.EXTREMELY_LOW_CONTRAST;
                     break;
                 }
                 case 13: {
@@ -170,12 +163,10 @@ public class AndroidStatuesTest extends TestCase {
                 }
                 case 18: {
                     fileName1 = "stinson_beach.jpg";
-                    //mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }
                 case 19: {
                     fileName1 = "norwegian_mtn_range.jpg";
-                    //mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }
                 case 20: {
@@ -184,27 +175,22 @@ public class AndroidStatuesTest extends TestCase {
                 }
                 case 21: {
                     fileName1 = "halfdome2.jpg";
-                    mt = SegmentationMergeThreshold.EXTREMELY_LOW_CONTRAST;
                     break;
                 }
                 case 22: {
                     fileName1 = "halfdome3.jpg";
-                    mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }
                 case 23: {
                     fileName1 = "costa_rica.jpg";
-                    //mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }
                 case 24: {
                     fileName1 = "new-mexico-sunrise_w725_h490.jpg";
-                    mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }
                 case 25: {
                     fileName1 = "arizona-sunrise-1342919937GHz.jpg";
-                    mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }
                 case 26: {
@@ -225,7 +211,6 @@ public class AndroidStatuesTest extends TestCase {
                 }
                 case 30: {
                     fileName1 = "klein_matterhorn_snowy_foreground.jpg";
-                    mt = SegmentationMergeThreshold.EXTREMELY_LOW_CONTRAST;
                     break;
                 }
                 case 31: {
@@ -234,27 +219,22 @@ public class AndroidStatuesTest extends TestCase {
                 }
                 case 32: {
                     fileName1 = "arches_sun_01.jpg";
-                    mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }
                 case 33: {
                     fileName1 = "stlouis_arch.jpg";
-                    mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }
                 case 34: {
                     fileName1 = "contrail.jpg";
-                    mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }
                 case 35: {
                     fileName1 = "checkerboard_01.jpg";
-                    //mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }
                 default: {
                     fileName1 = "checkerboard_02.jpg";
-                    //mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }
             }
@@ -271,19 +251,22 @@ public class AndroidStatuesTest extends TestCase {
             int w1 = img.getWidth();
             int h1 = img.getHeight();
 
-            int binFactor1 = (int) Math.ceil(Math.max((float) w1 / maxDimension,
+            int binFactor1 = (int) Math.ceil(Math.max(
+                (float) w1 / maxDimension,
                 (float) h1 / maxDimension));
 
             img = imageProcessor.binImage(img, binFactor1);
 
             int[] labels4 = imageSegmentation
-                .objectSegmentation1(img);
+                .objectSegmentation(img);
             
             ImageExt img11 = img.createWithDimensions();
             ImageIOHelper.addAlternatingColorLabelsToRegion(
                 img11, labels4);
-            
             MiscDebug.writeImage(img11, "_final_" + fileName1Root);
+            //LabelToColorHelper.applyLabels(img, labels4);
+            //MiscDebug.writeImage(img, "_final_" + fileName1Root);
+            
         }
     }
 
