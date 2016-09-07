@@ -1,15 +1,11 @@
 package algorithms.imageProcessing;
 
 import algorithms.compGeometry.HoughTransform;
-import algorithms.misc.Histogram;
-import algorithms.misc.HistogramHolder;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
-import algorithms.util.Errors;
 import java.util.logging.Logger;
 import java.util.HashSet;
 import algorithms.util.PairInt;
-import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 

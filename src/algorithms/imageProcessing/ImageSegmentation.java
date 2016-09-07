@@ -19,7 +19,6 @@ import algorithms.imageProcessing.features.PhaseCongruencyDetector;
 import algorithms.imageProcessing.segmentation.ColorSpace;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.imageProcessing.segmentation.NormalizedCuts;
-import algorithms.imageProcessing.segmentation.NormalizedCutsWrapper;
 import algorithms.imageProcessing.segmentation.SLICSuperPixels;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.MiscStats;
