@@ -11,6 +11,8 @@ import algorithms.search.NearestNeighbor2D;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -89,6 +91,231 @@ public class PerimeterFinder2 {
         
         boundary.clear();
         boundary.addAll(b);
+    }
+    
+    /**
+     * note, this intersection method assumes the boundaries are
+     * both clockwise ordered points and that ob1 and ob2 are
+     * adjacent and do not overlap, and that simple
+     * cut and append or inserts are needed.  only the 
+     * outer merged boundary is preserved.
+     * 
+     * @param ob1
+     * @param ob2
+     * @return 
+     */
+    public PairIntArray mergeAdjacentOrderedBorders(PairIntArray ob1,
+        PairIntArray ob2) {
+        
+        if (ob1.getN() == 0 && ob2.getN() > 0) {
+            return ob2.copy();
+        } else if (ob2.getN() == 0 && ob1.getN() > 0) {
+            return ob1.copy();
+        } else if (ob1.getN() == 0 && ob2.getN() == 0) {
+            return new PairIntArray();
+        }
+        
+        PairIntArray a1 = ob1.copy();
+        PairIntArray a2 = ob2.copy();
+        rotateToMinXYAt0(a1);
+        rotateToMinXYAt0(a2);
+        
+        if ((a2.getX(0) < a1.getX(0)) || (a2.getX(0) == a1.getX(0) && 
+            a2.getY(0) < a1.getY(0))) {
+            PairIntArray swap = a1;
+            a1 = a2;
+            a2 = swap;
+        }
+        
+        PairIntArray output = new PairIntArray();
+        
+        int n1 = a1.getN();
+        int n2 = a2.getN();
+        
+        TObjectIntMap<PairInt> pointIndexMap2 = new TObjectIntHashMap<PairInt>();
+        for (int i = 0; i < n2; ++i) {
+            PairInt p = new PairInt(a2.getX(i), a2.getY(i));
+            pointIndexMap2.put(p, i);
+        }
+        
+        // -- start w/ the leftmost lowermost of the 2 arrays and call that array1:
+        //    until find point adjacent to array 2, continue to
+        //       add points from array1 to output,
+        //    then when find adacent point, mark it as the start of the
+        //       intersecting region and break
+        //    iterate from end of array1 to smaller indexes looking for the end 
+        //       of the intersecting region.
+        //    then, add points from array2 in between the 2 marks to output.
+        //    then add the points from array1 after the 2 marks to output.
+    
+        int startIdx1 = -1;
+        int startIdx2 = -1;
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        for (int i = 0; i < n1; ++i) {
+            final int x = a1.getX(i);
+            final int y = a1.getY(i);
+            // if found a startIdx2, keep the smallest index of adjacent
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                PairInt p2 = new PairInt(x2, y2);
+                if (pointIndexMap2.containsKey(p2)) {
+                    int idx2 = pointIndexMap2.get(p2);
+                    if (startIdx2 == -1) {
+                        startIdx2 = idx2;
+                    } else {
+                        if (idx2 < startIdx2) {
+                            startIdx2 = idx2;
+                        }
+                    }
+                }
+            }
+            output.add(x, y);
+            if (startIdx2 > -1) {
+                startIdx1 = i;
+                break;
+            }
+        }
+        
+        if (startIdx1 == -1) {
+            return output;
+        }
+        
+        int stopIdx1 = -1;
+        int stopIdx2 = -1;
+        
+        // search from end for stopIdx1
+        for (int i = (n1 - 1); i > startIdx1; --i) {
+            int x = a1.getX(i);
+            int y = a1.getY(i);
+            // if stopIdx2 > -1, keep the smallest
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                PairInt p2 = new PairInt(x2, y2);
+                if (pointIndexMap2.containsKey(p2)) {
+                    int idx2 = pointIndexMap2.get(p2);
+                    if (stopIdx2 == -1) {
+                        stopIdx2 = idx2;
+                    } else {
+                        if (idx2 < stopIdx2) {
+                            stopIdx2 = idx2;
+                        }
+                    }
+                }
+            }
+            if (stopIdx2 > -1) {
+                stopIdx1 = i;
+                break;
+            }
+        }
+        
+        if (stopIdx1 == -1) {
+            // exception would be extreme case of single pixel wide
+            //   boundaries... this may change, but for now, expecting
+            //   that it would not exist.  exanple: @@@@ ####
+            throw new IllegalStateException("Error in algorithm.  " +
+                " did not find last adjacent point");
+        }
+        
+        int end = (startIdx2 > stopIdx2) ? n2 - 1: stopIdx2;
+        for (int i = startIdx2; i <= end; ++i) {
+            output.add(a2.getX(i), a2.getY(i));
+        }
+        
+        if (startIdx2 > stopIdx2) {
+            for (int i = 0; i <= stopIdx2; ++i) {
+                output.add(a2.getX(i), a2.getY(i));
+            }
+        }
+        
+        for (int i = stopIdx1; i < n1; ++i) {
+            output.add(a1.getX(i), a1.getY(i));
+        }
+       
+        /*
+              startIdx1=7; stopIdx1=8  n1=11
+              startIdx2=3; stopIdx2=1  n2=10
+                 5  6
+              @  @  @ @ 3
+            @       @ # # # #
+          @       @9  #     #6
+          1 @   @10  0# # # #
+            0 @         9 8
+        
+        
+              startIdx1=7; stopIdx1=0  n1=11
+              startIdx2=3; stopIdx2=0  n2=8
+                      7
+              @  @  @ @
+            @       @ #3
+        2 @       @ # #
+            @   @ #  #
+              @ # # #
+              0   7
+        
+        
+              startIdx1=7 ; stopIdx1=10  n1=10
+              startIdx2=4 ; stopIdx2=1   n2=8
+                      7      
+              @  @  @ @
+            @       @ #4 
+        2 @       @ # #
+            @   @ #2 #
+              @   # #7
+                  #
+        
+              startIdx1=4; stopIdx1=7  n1=11
+              startIdx2=0; stopIdx2=4  n2=7
+                 1  2  
+              0  #  # #3
+              # 6# 5# #4
+              @  @  @ @7
+            @    5  @ 
+          @       @9  
+          1 @   @10  
+            0 @
+        */
+        
+        return output;
+    }
+    
+    /**
+     * find the minx, min y point and if it's not at index 0, rotate the
+     * array to place it there.
+     * @param a 
+     */
+    protected void rotateToMinXYAt0(PairIntArray a) {
+        
+        if (a.getN() < 2) {
+            return;
+        }
+        
+        int minIdx = -1;
+        int minX = Integer.MAX_VALUE;
+        int minY = Integer.MAX_VALUE;
+        for (int i = 0; i < a.getN(); ++i) {
+            int x = a.getX(i);
+            if (x < minX) {
+                minX = x;
+                minY = a.getY(i);
+                minIdx = i;                
+            } else if (x == minX) {
+                int y = a.getY(i);
+                if (y < minY) {
+                    minX = x;
+                    minY = y;
+                    minIdx = i;
+                }
+            }
+        }
+        if (minIdx > 0) {
+            a.rotateLeft(minIdx);
+            assert(a.getX(0) == minX);
+            assert(a.getY(0) == minY);
+        }
     }
     
     /**
@@ -233,6 +460,14 @@ public class PerimeterFinder2 {
 
                     ns2 = findNeighbors(x3, y3, remaining,
                         neighborsX, neighborsY);
+                    
+                    while (ns2 == 0 && !junctionNodes.isEmpty()) {
+                        index = junctionNodes.pollLast();
+                        x3 = output.getX(index.intValue());
+                        y3 = output.getY(index.intValue());
+                        ns2 = findNeighbors(x3, y3, remaining,
+                             neighborsX, neighborsY);
+                    }
                 
                     if (ns2 == 1) {
                         output.add(neighborsX[0], neighborsY[0]);
@@ -677,252 +912,47 @@ public class PerimeterFinder2 {
                 x, y, nXY, neighborsX, neighborsY,
                 contiguousShapePoints);
             assert(nXY != 0);
-            if (nXY == 1) {
-                return 0;
-            }
         }
-        
-        // determine whether this is a convex or concave
-        // section of the boundary curve.
-        
-        double xCen = x;
-        double yCen = y;
-        for (int i = 0; i < nXY; ++i) {
-            xCen += neighborsX[i];
-            yCen += neighborsY[i];
+        if (nXY == 1) {
+            return 0;
         }
-        xCen /= ((double)nXY + 1);
-        yCen /= ((double)nXY + 1);
-        
+       
         /*
-        convex:
-           centroid of the subset of boundary points
-           are inside the shape bounds.
-           
-        concave:
-           centroid of the subset of boundary points 
-           are outside the shape bounds.
+             P1      PmedAxis
+
+                P2
         */
         
-        int xc = (int)Math.round(xCen);
-        int yc = (int)Math.round(yCen);
-          
-        Set<PairInt> medAxisCenClosest = nn.findClosest(xc, yc);
-        assert(!medAxisCenClosest.isEmpty());
-        PairInt medAxisCen = medAxisCenClosest.iterator().next();
-        
-        PairInt medAxis0 = nn.findClosest(x, y).iterator().next();
-        double d0 = distSq(x, y, medAxisCen.getX(), medAxisCen.getY());
-        double d0Cen = distSq(xCen, yCen, medAxisCen.getX(), medAxisCen.getY());
-          
-        boolean isOutside = (d0Cen > d0);
-        
-        /*
+        Set<PairInt> medAxisClosest = nn.findClosest(x, y);
+        assert(!medAxisClosest.isEmpty());
+        PairInt medAxisP = medAxisClosest.iterator().next();
+       
         System.out.println(
-            String.format(
-            "**med axis pt=%s (%d,%d) d0=%.4f --> (%.3f,%.3f) d0cen=%.4f",
-            medAxisCen.toString(), x, y, (float) d0,
-            xCen, yCen, (float) d0Cen));
-        */
-        
-        if (!isOutside) {
-            for (int i = 0; i < nXY; ++i) {
-                int x2 = neighborsX[i];
-                int y2 = neighborsY[i];
-
-                double d2 = distSq(x2, y2, 
-                    medAxisCen.getX(), medAxisCen.getY());
-
-                double d2Cen = distSq(xCen, yCen, 
-                    medAxisCen.getX(), medAxisCen.getY());
-
-                /*
-                System.out.println(
-                String.format(
-                "  med Axis pt=%s (%d,%d) d2=%.4f --> d2cen=%.4f",
-                medAxisCen.toString(), x2, y2, (float) d2,
-                (float) d2Cen));
-                */
-                
-                if (d2Cen > d2) {
-                    isOutside = true;
-                }
-            }
-        }
-    
-        if (isOutside) {
-            return calculateMinAnglesForConcave(x, y, 
-                nXY, neighborsX, neighborsY, medAxis0,
-                contiguousShapePoints);
-        } else {
-            return calculateMinAnglesForConvex(x, y, 
-                nXY, neighborsX, neighborsY, medAxis0);
-        }
-    }
-    
-    /**
-     * calculate the minimum angle where the vertex is
-     * the nearest medial axis point and the ends
-     * of the segments are (x,y) and each point in 
-     * neighborsX, neighborsY for a concave section 
-     * of the curve.
-     * @param x
-     * @param y
-     * @param nXY
-     * @param neighborsX
-     * @param neighborsY
-     * @param nn
-     * @param medAxis0 closest medial axis point to (x, y)
-     * @return index of neighborsX, neighborsY that
-     * has the smallest angle subtended by the medial axis
-     */
-    private int calculateMinAnglesForConcave(int x, int y,
-        int nXY, int[] neighborsX, int[] neighborsY, 
-        PairInt medAxis0, Set<PairInt> contiguousShapePoints) {
-        
-        double maxAngle = Double.MIN_VALUE;
-        int minIdx = -1;
-        
-        double angle0 = AngleUtil.polarAngleCW(
-            x - medAxis0.getX(), y - medAxis0.getY());
-        
-        for (int i = 0; i < nXY; ++i) {
-            int x2 = neighborsX[i];
-            int y2 = neighborsY[i];
-        
-            double angle = AngleUtil.polarAngleCW(
-                x2 - medAxis0.getX(), y2 - medAxis0.getY());
-            
-            /*
-            System.out.println(
-                String.format("concave: (%d,%d) a=%.4f --> (%d,%d) a=%.4f",
-                    x, y, (float) angle0, 
-                    x2,y2, (float) angle));
-            */
-            
-            if ((maxAngle == Double.MIN_VALUE && angle >= angle0) ||
-                (angle > angle0) && (angle > maxAngle)) {
-                maxAngle = angle;
-                minIdx = i;
-            }
-        }
-        
-        if (minIdx != -1) {
-            return minIdx;
-        }
-        
-        // if region is so thin that medial axis
-        // points do not represent the local center
-        // of the shape, might end up here when the
-        // nearest medial axis point is CCW from 
-        // (x,y) and neighborsX,neigbhorsY, etc.
-        // - one possible way to better determine
-        //   "outward" for the curve for this case
-        //   is to use the centroid of the adjacent
-        //   non-shape points and convex angle rules
-        //   to determine best next idx
-        Set<PairInt> spaceNeighbors = findNonShapeNeighbors(
-            x, y, contiguousShapePoints);
-
-        MiscellaneousCurveHelper curveHelper = new
-            MiscellaneousCurveHelper();
-
-        double[] xyCen = curveHelper.calculateXYCentroids(
-            spaceNeighbors);
-
-        PairInt xyCenP = new PairInt(
-            (int)Math.round(xyCen[0]),
-            (int)Math.round(xyCen[1]));
-
-        // convex angles, w/ CCW rules for 
-        // shape being on other side of xyCenP
-        // so concave rules again.
+            String.format("x,y=(%d,%d) medAxis=(%d,%d)", x, y, 
+                medAxisP.getX(), medAxisP.getY()));
                 
         double minAngle = Double.MAX_VALUE;
-        minIdx = -1;
-        angle0 = AngleUtil.polarAngleCCW(
-            x - medAxis0.getX(), y - medAxis0.getY());
+        int minIdx = -1;
+
         for (int i = 0; i < nXY; ++i) {
             int x2 = neighborsX[i];
             int y2 = neighborsY[i];
-            double angle = AngleUtil.polarAngleCCW(
-                x2 - medAxis0.getX(), y2 - medAxis0.getY());
-            /*
+
+            double angle = LinesAndAngles.calcClockwiseAngle(
+                x, y, x2, y2, medAxisP.getX(), medAxisP.getY());
+
             System.out.println(
-            String.format(
-            "convex: (%d,%d) a=%.4f --> (%d,%d) a=%.4f",
-                    x, y, (float) angle0,
-                    x2,y2, (float) angle));
-            */
-            // for convex section:
-            if ((minAngle == Double.MAX_VALUE && angle >= angle0) ||
-                ((angle > angle0) && (angle < minAngle))) {
+                String.format("    (%d,%d) a=%.4f", x2, y2, (float) angle));
+
+            if (angle < minAngle) {
                 minAngle = angle;
                 minIdx = i;
             }
         }
         
-if (minIdx == -1) {
-int z = 1;         
-}
-        
         return minIdx;
     }
     
-    /**
-     * calculate the minimum angle where the vertex is
-     * the nearest medial axis point and the ends
-     * of the segments are (x,y) and each point in 
-     * neighborsX, neighborsY for a convex section
-     * of the boundary.
-     * @param x
-     * @param y
-     * @param nXY
-     * @param neighborsX
-     * @param neighborsY
-     * @param nn
-     * @param medAxis0 closest medial axis point to (x, y)
-     * @return index of neighborsX, neighborsY that
-     * has the smallest angle subtended by the medial axis
-     */
-    private int calculateMinAnglesForConvex(int x, int y,
-        int nXY, int[] neighborsX, int[] neighborsY, 
-        PairInt medAxis0) {
-        
-        double minAngle = Double.MAX_VALUE;
-        int minIdx = -1;
-        
-        double angle0 = AngleUtil.polarAngleCW(
-            x - medAxis0.getX(), y - medAxis0.getY());
-        
-        for (int i = 0; i < nXY; ++i) {
-            int x2 = neighborsX[i];
-            int y2 = neighborsY[i];
-        
-            double angle = AngleUtil.polarAngleCW(
-                x2 - medAxis0.getX(), y2 - medAxis0.getY());
-     
-            /*
-            System.out.println(
-            String.format(
-            "convex: (%d,%d) a=%.4f --> (%d,%d) a=%.4f",
-                    x, y, (float) angle0, 
-                    x2,y2, (float) angle));
-            */
-            
-            // for convex section:
-            if ((minAngle == Double.MAX_VALUE && angle >= angle0) ||
-                (angle > angle0) && (angle < minAngle)) {
-                minAngle = angle;
-                minIdx = i;
-            }
-        }
-        
-    //    assert(minIdx != -1);
-        
-        return minIdx;
-    }
-
     private double distSq(double x1, double y1, double x2, double y2) {
         double diffX = x1 - x2;
         double diffY = y1 - y2;

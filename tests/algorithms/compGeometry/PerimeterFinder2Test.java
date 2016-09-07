@@ -1,19 +1,12 @@
 package algorithms.compGeometry;
 
-import algorithms.imageProcessing.DoubleLinkedCircularList;
-import algorithms.imageProcessing.HeapNode;
 import algorithms.misc.Misc;
-import algorithms.mst.PrimsMST;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -99,6 +92,19 @@ public class PerimeterFinder2Test extends TestCase {
         
         System.out.println("results=" + results.toString());
         
+        expected = new PairIntArray();
+        expected.add(0, 3); expected.add(0, 4); expected.add(0, 5); 
+        expected.add(0, 6); expected.add(0, 7); expected.add(0, 8);
+        expected.add(0, 9); expected.add(1, 9); expected.add(2, 9);
+        expected.add(3, 8); expected.add(4, 8); expected.add(5, 8); 
+        expected.add(6, 9); expected.add(7, 9); expected.add(8, 9);
+        expected.add(9, 8); expected.add(9, 7); 
+        expected.add(9, 6); expected.add(9, 5); 
+        expected.add(9, 4); expected.add(9, 3); expected.add(9, 2);
+        expected.add(9, 1); expected.add(9, 0); 
+        expected.add(8, 6); expected.add(7, 7); expected.add(7, 8); 
+        expected.add(3, 7); expected.add(2, 6); expected.add(1, 6);
+
         assertEquals(expected.getN(), results.getN());
         
         for (int i = 0; i < expected.getN(); ++i) {
@@ -447,4 +453,79 @@ public class PerimeterFinder2Test extends TestCase {
         
         return map;
     }
+    
+    public void testMergeAdjacentOrderedBorders() {
+        
+        /*
+        6  *  *  *
+        5  *  .  *
+        4  *  .  *
+        3  *  .  * 
+        2  *  .  * 
+        1  *  *  *
+        0  1  2  3  4  5  6
+        */
+        PairIntArray a1 = new PairIntArray();
+        for (int i = 1; i <= 6; ++i) {
+            a1.add(1, i);
+        }
+        a1.add(2, 6);
+        for (int i = 6; i >= 1; --i) {
+            a1.add(3, i);
+        }
+        a1.add(2, 1);
+        
+        /*
+        
+        3           *  *  *
+        2           *  .  *
+        1           *  *  *
+        0  1  2  3  4  5  6
+        */
+        PairIntArray a2 = new PairIntArray();
+        for (int i = 1; i <= 3; ++i) {
+            a2.add(4, i);
+        }
+        a2.add(5, 3);
+        for (int i = 3; i >= 1; --i) {
+            a2.add(6, i);
+        }
+        a2.add(5, 1);
+       
+        /*
+        6  *  *  *
+        5  *  .  *
+        4  *  .  *9
+        3  *  .  *  *2 *  *
+        2  *  .  .  .  .  *
+        1 0*  *12*  *8 *  *
+        0  1  2  3  4  5  6
+        */
+        PairIntArray expected = new PairIntArray();
+        for (int i = 1; i <= 6; ++i) {
+            expected.add(1, i);
+        }
+        expected.add(2, 6);
+        for (int i = 6; i >= 4; --i) {
+            expected.add(3, i);
+        }
+        for (int i = 4; i <= 6; ++i) {
+            expected.add(i, 3);
+        }
+        expected.add(6, 2);
+        for (int i = 6; i >= 2; --i) {
+            expected.add(i, 1);
+        }
+        
+        PerimeterFinder2 finder = new PerimeterFinder2();
+        PairIntArray r = finder.mergeAdjacentOrderedBorders(a1, a2);
+        
+        assertEquals(expected.getN(), r.getN());
+        
+        for (int i = 0; i < r.getN(); ++i) {
+            assertEquals(expected.getX(i), r.getX(i));
+            assertEquals(expected.getY(i), r.getY(i));
+        }
+    }
+   
 }
