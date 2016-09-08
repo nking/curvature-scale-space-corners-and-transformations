@@ -47,14 +47,14 @@ public class ShapeFinder {
         TIntIntMap adjacencyMap) {
         
         /*
-        (1) O(N_cells) + O(N_cells_in_bin * log_2(N_cells_in_bin)):
+        step (1) O(N_cells) + O(N_cells_in_bin * log_2(N_cells_in_bin)):
            the bin dimensions will be max of template dimensions.
            actually, should probably be the diagonal for max dist
            between any two points but that could be done more
            accurately.
            - 2D bins, that is x and y.
            - sort the cells by x centroid and ties by y centroid
-        (2) 
+        step (2) search pattern, 3 are presented.
             The bigger picture is a sliding window of the 2D bin 
             where the core of the search and aggregation is done
             within the 2D bin, but the aggregation can continue 
@@ -103,6 +103,13 @@ public class ShapeFinder {
                    already searched groups across path solutions 
                    and reuse those result.
                    Dijkstra's runtime for a single path search is O(E lg V).
+                   **NOTE that this pattern of a dijkstra's search for each
+                   feasible start could be done over the whole image's cells
+                   instead of a bin's cells and could presumably be done
+                   over a smaller number of starts than all cells by sorting
+                   the start list by the partial match cost (score) 
+                   and reuse of the aggregated cell partial results.
+                   then there are 4 search patterns to implement here.
         */
         
         throw new UnsupportedOperationException("not yet implemented");
