@@ -1,8 +1,17 @@
 package algorithms.imageProcessing.matching;
 
+import algorithms.QuickSort;
 import algorithms.util.PairIntArray;
 import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import java.util.List;
+import algorithms.imageProcessing.matching.PartialShapeMatcher.Result;
+import algorithms.util.VeryLongBitString;
+import gnu.trove.iterator.TObjectIntIterator;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * uses PartialShapeMatcher and search patterns to
@@ -42,9 +51,9 @@ public class ShapeFinder {
      * @param adjacencyMap
      * @return 
      */
-    public PartialShapeMatcher.Result findMatchingCells(
+    public Result findMatchingCells(
         List<PairIntArray> orderedBoundaries,
-        TIntIntMap adjacencyMap) {
+        TIntIntMap adjacencyMap, PairIntArray template) {
         
         /*
         step (1) O(N_cells) + O(N_cells_in_bin * log_2(N_cells_in_bin)):
@@ -109,9 +118,203 @@ public class ShapeFinder {
                    over a smaller number of starts than all cells by sorting
                    the start list by the partial match cost (score) 
                    and reuse of the aggregated cell partial results.
-                   then there are 4 search patterns to implement here.
+                  
+               there are then 4 search patterns to implement here.
         */
+        
+        if (true) {
+            return wideDijkstraSearch(orderedBoundaries, adjacencyMap,
+                template);
+        }
         
         throw new UnsupportedOperationException("not yet implemented");
     }
+    
+    private Result wideDijkstraSearch(List<PairIntArray> orderedBoundaries, 
+        TIntIntMap adjacencyMap, PairIntArray template) {
+    
+        List<Result> outputSortedResults = new ArrayList<Result>();
+        List<Integer> outputSortedIndexes = new ArrayList<Integer>();
+     
+        matchAndOrderByIncrCost(orderedBoundaries, template, 
+            outputSortedResults, outputSortedIndexes);
+       
+        int[] dimensionsT = calcDimensions(template);
+        
+        int areaT = (int)Math.round(Math.sqrt(dimensionsT[0] * dimensionsT[0] +
+            dimensionsT[1] * dimensionsT[1]));
+        
+        Map<VeryLongBitString, PairIntArray> aggregatedBoundaries =
+            new HashMap<VeryLongBitString, PairIntArray>();
+        
+        Map<VeryLongBitString, Result> aggregatedResultMap =
+            new HashMap<VeryLongBitString, Result>();
+        
+        for (int i = 0; i < outputSortedIndexes.size(); ++i) {
+            
+            Integer index = outputSortedIndexes.get(i);
+            
+            /* Dijkstra's search:
+            source is index, no dest, but search only extends to
+                 cells within distance to 2 or so times template
+                 dimensions from index centroid.  that is done
+                 when the heap is populated.
+            
+            VeryLongBitString[] aggregatedKeys
+            double[] costsFromS
+            int[] prev
+            while (!heap.isEmpty()) {
+                u = heap.pop
+                for (int v : adjacentToU) {
+                    // calc cost from current aggregated u + v bounds
+                    // after check for existing.
+                    altCost = costsFromS[u] + cost[u->v]
+                    if (altCost < costsFromS[v]) {
+                        costsFromS[v] = altCost
+                        heap.decreaseKey(v, altCost);
+                        prev[v] = u
+                        VeryLongBitString vKey = aKey.copy() + 
+                            set bit for v
+                        store vKey in AggregAtedKeys
+                        store results in aggregatedBoundaries and 
+                            aggregatedResultMap
+            */
+        }
+        
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+    
+    private void matchAndOrderByIncrCost(List<PairIntArray> orderedBoundaries, 
+        PairIntArray template, List<Result> outputSortedResults,
+        List<Integer> outputSortedIndexes) {
+
+        TObjectIntMap<Result> cellMatchResults = matchIndividually(
+            orderedBoundaries, template);
+        
+        int n = cellMatchResults.size();
+        TObjectIntIterator<Result> iter = cellMatchResults.iterator();
+        
+        double maxChord = Double.MIN_VALUE;
+        for (int i = 0; i < n; ++i) {
+            iter.advance();
+            Result r = iter.key();
+            double d = r.getChordDiffSum();
+            if (d > maxChord) {
+                maxChord = d;
+            }
+        }
+        
+        int nT1 = template.getN();
+        
+        float[] costs = new float[n];
+        int[] indexes = new int[n];
+        Result[] results = new Result[n];
+        
+        iter = cellMatchResults.iterator();
+        for (int i = 0; i < n; ++i) {
+            iter.advance();            
+            Result r = iter.key();
+            
+            // calculating salukwdze dist to use same reference, nT1
+            int nI = r.getNumberOfMatches();
+            float f = 1.f - ((float)nI/(float)nT1);            
+            double d = r.getChordDiffSum()/maxChord;
+            float s = (float)Math.sqrt(f * f + d * d);
+            
+            costs[i] = s;
+            indexes[i] = i;
+            results[i] = r;
+        }
+        
+        QuickSort.sortBy1stArg(costs, indexes);
+        
+        for (int i = 0; i < n; ++i) {
+            int index = indexes[i];
+            Result r = results[index];
+            
+            outputSortedResults.add(r);
+        
+            int listIndex = cellMatchResults.get(r);
+            outputSortedIndexes.add(Integer.valueOf(listIndex));
+        }
+        
+    }
+    
+    private TObjectIntMap<PartialShapeMatcher.Result> matchIndividually(
+        List<PairIntArray> orderedBoundaries, PairIntArray template) {
+    
+        // key=result, value=index of orderedBoundaries item
+        TObjectIntMap<PartialShapeMatcher.Result> output = 
+            new TObjectIntHashMap<PartialShapeMatcher.Result>();
+        
+        int[] dimensionsT = calcDimensions(template);
+        
+        int areaT = (int)Math.round(Math.sqrt(dimensionsT[0] * dimensionsT[0] +
+            dimensionsT[1] * dimensionsT[1]));
+        
+        for (int i = 0; i < orderedBoundaries.size(); ++i) {
+            
+            PairIntArray p = orderedBoundaries.get(i);
+            
+            int[] dimensions = calcDimensions(template);
+        
+            int area = (int)Math.round(Math.sqrt(dimensions[0] * dimensions[0] +
+                dimensions[1] * dimensions[1]));
+            
+            if (area > (3 * areaT)) {
+                // NOTE: this assumes the segmentation of the object from
+                // a large background or foreground is complete separation.
+                // If that isn't true, then a search pattern which is
+                // more like a skyline partial matching pattern must be
+                // used instead.
+                // TODO: need a way to recognize that or at least mention
+                // it in the documentation. the skyline search pattern will
+                // be implemented soon.
+                continue;
+            }
+            
+            if (area < (areaT/10)) {
+                //TODO: may need to revise this limit
+                continue;
+            }
+            
+            PartialShapeMatcher matcher = new PartialShapeMatcher();
+            Result r = matcher.match(p, template);
+            if (r == null) {
+                continue;
+            }
+            
+            output.put(r, i);
+        }
+        
+        return output;
+    }
+
+    private int[] calcDimensions(PairIntArray a) {
+        
+        int minX = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE;
+        int minY = Integer.MAX_VALUE;
+        int maxY = Integer.MIN_VALUE;
+        
+        for (int i = 0; i < a.getN(); ++i) {
+            int x = a.getX(i);
+            int y = a.getY(i);
+            if (x < minX) {
+                minX = x;
+            }
+            if (x > maxX) {
+                maxX = x;
+            }
+            if (y < minY) {
+                minY = y;
+            }
+            if (y > maxY) {
+                maxY = y;
+            }
+        }
+        
+        return new int[]{minX, maxX, minY, maxY};
+    }
+    
 }
