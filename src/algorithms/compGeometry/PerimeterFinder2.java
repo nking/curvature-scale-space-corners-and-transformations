@@ -213,11 +213,13 @@ public class PerimeterFinder2 {
         }
         
         if (stopIdx1 == -1) {
+            stopIdx1 = startIdx1;
+            stopIdx2 = startIdx2;
             // exception would be extreme case of single pixel wide
             //   boundaries... this may change, but for now, expecting
             //   that it would not exist.  exanple: @@@@ ####
-            throw new IllegalStateException("Error in algorithm.  " +
-                " did not find last adjacent point");
+            //   throw new IllegalStateException("Error in algorithm.  " +
+            //       " did not find last adjacent point");
         }
         
         int end = (startIdx2 > stopIdx2) ? n2 - 1: stopIdx2;
@@ -343,6 +345,10 @@ public class PerimeterFinder2 {
         thinTheBoundary(boundary, rmPts);
         
         Set<PairInt> cPts = new HashSet<PairInt>(contiguousPoints);
+        // NOTE: if this is small cavity, removing these points
+        // may remove important shape points.
+        // a more exact method should test for whether each point is
+        // within boundary and if not, remove it.
         cPts.removeAll(rmPts);
         
         // O(N*log_2(N))
@@ -350,7 +356,7 @@ public class PerimeterFinder2 {
         medAxis.fastFindMedialAxis();
         
         Set<PairInt> medAxisPts = medAxis.getMedialAxisPoints();
-        
+       
         return extractOrderedBorder(boundary, medAxisPts, cPts);
     }
 
