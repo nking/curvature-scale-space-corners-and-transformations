@@ -104,7 +104,7 @@ public class RegionAdjacencyGraphColorTest extends TestCase {
         int h = img.getHeight();
         
         RegionAdjacencyGraphColor rag = new RegionAdjacencyGraphColor(img, labels);
-        rag.populateEdgesWithColorSimilarity(ColorSpace.HSV);
+        rag.populateEdgesWithColorSimilarity(ColorSpace.HSV, 22);
         
         System.out.println("created region agency graph and similarity matrix");
         System.out.flush();
