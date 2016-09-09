@@ -13451,13 +13451,6 @@ int z = 1;
         
         //separateByErosion(contigSets, 1);
         
-        for (int i = 0; i < contigSets.size(); ++i) {
-            for (PairInt p : contigSets.get(i)) {
-                int pixIdx = img.getInternalIndex(p);
-                labels[pixIdx] = i;
-            }
-        }
-        
         //imgCp = img.copyToImageExt();
         //LabelToColorHelper.applyLabels(imgCp, labels2);
         //ImageProcessor imageProcessor = new ImageProcessor();

@@ -72,6 +72,10 @@ public class LabelToColorHelper {
         }
     }
     
+    /**
+     extract contiguous points from the labeled regions and relabel
+    labels to coincide with the returned list indexes
+    */
     public static List<Set<PairInt>> 
         extractContiguousLabelPoints(Image img, int[] labels) {
         
@@ -92,37 +96,17 @@ public class LabelToColorHelper {
                 out.add(group);
             }
         }
-    
+
+        for (int i = 0; i < out.size(); ++i) {
+            for (PairInt p : out.get(i)) {
+                int pixIdx = img.getInternalIndex(p);
+                labels[pixIdx] = i;
+            }
+        }
+        
         assert(assertAllPointsFound(out, img.getWidth(), img.getHeight()));
         
         return out;
-    }
-        
-    /**
-     * separate each labeled group to only contain 
-     * contiguous members, that is relabel to further
-     * segment by connectedness.
-     * @param img
-     * @param labels 
-     */
-    public static void applyContiguousSegmentation(Image img, 
-        int[] labels) {
-
-        assert(labels.length == img.getNPixels());
-                
-        List<Set<PairInt>> list = 
-            extractContiguousLabelPoints(img, labels);
-        
-        int count = 0;
-        
-        for (int i = 0; i < list.size(); ++i) {
-            Set<PairInt> set = list.get(i);
-            for (PairInt p : set) {
-                int pixIdx = img.getInternalIndex(p);
-                labels[pixIdx] = count;
-            }
-            count++;
-        }        
     }
     
     /**

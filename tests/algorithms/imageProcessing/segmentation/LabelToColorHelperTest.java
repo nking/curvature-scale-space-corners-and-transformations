@@ -140,7 +140,8 @@ public class LabelToColorHelperTest extends TestCase {
             }
         }
         
-        LabelToColorHelper.applyContiguousSegmentation(img, labels);
+        List<Set<PairInt>> list = 
+            LabelToColorHelper.extractContiguousLabelPoints(img, labels);
         
         // spot checks for now...
         assertTrue(img.getR(0, 0) == img.getR(4, 0));
