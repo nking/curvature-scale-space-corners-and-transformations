@@ -36,6 +36,8 @@ import java.util.Map;
  */
 public class ShapeFinder {
     
+    private final float areaFactor = 2.f;
+    
     /**
      * NOT READY FOR USE.
      * uses PartialShapeMatcher and search patterns to
@@ -171,8 +173,16 @@ public class ShapeFinder {
         VeryLongBitString minBitString = null;
          
         for (int i = 0; i < outputSortedIndexes.size(); ++i) {
+        //for (int i = 11; i < 12; ++i) {
             
             Integer index = outputSortedIndexes.get(i);
+            if (index.intValue() != 54) {
+                continue;
+            }
+            //184,160  debugging
+            PairInt pCen = orderedBoundaryCentroids.get(index);
+            System.out.println("pCen=" + pCen + " idx=" + index + " i=" + i);
+           
             
             // the in-out variables store reusable calculations and
             // also the resulting cost of this best search result
@@ -307,7 +317,7 @@ public class ShapeFinder {
             int area = (int)Math.round(Math.sqrt(dimensions[0] * dimensions[0] +
                 dimensions[1] * dimensions[1]));
             
-            if (area > (3 * areaT)) {
+            if (area > (areaFactor * areaT)) {
                 // NOTE: this assumes the segmentation of the object from
                 // a large background or foreground is complete separation.
                 // If that isn't true, then a search pattern which is
@@ -319,7 +329,7 @@ public class ShapeFinder {
                 continue;
             }
             
-            if (area < (areaT/10)) {
+            if (area < (areaT/areaFactor)) {
                 //TODO: may need to revise this limit
                 continue;
             }
@@ -360,7 +370,7 @@ public class ShapeFinder {
             }
         }
         
-        return new int[]{minX, maxX, minY, maxY};
+        return new int[]{maxX - minX + 1, maxY - minY + 1};
     }
 
     private List<PairInt> calculateCentroids(List<PairIntArray> orderedBoundaries) {
@@ -450,11 +460,23 @@ public class ShapeFinder {
                 VeryLongBitString uBS = new VeryLongBitString(n);
                 uBS.setBit(i);
                 aggregatedKeys[i] = uBS;
+                
+                System.out.println("index=" + i
+                    + " cen=" + orderedBoundaryCentroids.get(i)
+                );
+                
                 continue;
             }
             
             PairInt xy = orderedBoundaryCentroids.get(i);
             if (distance(indexXY, xy) > maxDist) {
+                continue;
+            }
+            
+            int[] dimensions = calcDimensions(orderedBoundaries.get(i));
+            int area = (int)Math.round(Math.sqrt(dimensions[0] * dimensions[0] +
+            dimensions[1] * dimensions[1]));
+            if (area > areaFactor*areaT) {
                 continue;
             }
             
@@ -467,8 +489,15 @@ public class ShapeFinder {
             // key, special treatment skipping use of keyFactor when key = max value
             node.setKey(Long.MAX_VALUE);
             nodes[i] = node;
-            heap.insert(node);            
+            heap.insert(node);
+            
+            System.out.println("i=" + i
+                + " cen=" + orderedBoundaryCentroids.get(i)
+            );
         }
+    
+        System.out.println("heap.n=" + heap.getNumberOfNodes()
+           + " heap.min=" + heap.peekMin().getData());
         
         PerimeterFinder2 pFinder2 = new PerimeterFinder2();
                 
@@ -483,8 +512,6 @@ public class ShapeFinder {
         
         int minCostIdx = -1;
         double minCost = Double.MAX_VALUE;
-
-        System.out.println("index=" + index + " heap.n=" + heap.getNumberOfNodes());
         
         while (!heap.isEmpty()) {
             
@@ -503,6 +530,10 @@ public class ShapeFinder {
                 continue;
             }
             
+            System.out.println("uIDx=" + uIdx + " heap.n=" 
+                + heap.getNumberOfNodes() + " nNeighbors=" +
+                neighborIdxs.size());
+            
             VeryLongBitString uBS = aggregatedKeys[uIdx];
             
             TIntIterator iter = neighborIdxs.iterator();
@@ -510,7 +541,8 @@ public class ShapeFinder {
                 
                 final int vIdx = iter.next();
                 
-                if ((uIdx == vIdx) || nodes[vIdx] == null) {
+                if ((uIdx == vIdx) || nodes[vIdx] == null
+                    || uBS.isSet(vIdx)) {
                     continue;
                 }
                 
@@ -519,7 +551,7 @@ public class ShapeFinder {
         
                 VeryLongBitString uPlusBBS = uBS.copy();
                 uPlusBBS.setBit(vIdx);
-                
+            
                 PairIntArray uvBounds = aggregatedBoundaries.get(uPlusBBS);
                 if (uvBounds == null) {
                    PairIntArray uBounds = aggregatedBoundaries.get(uBS);
@@ -533,7 +565,7 @@ public class ShapeFinder {
                    PairIntArray vBounds = orderedBoundaries.get(vIdx);
                    
                    uvBounds = pFinder2.mergeAdjacentOrderedBorders(uBounds, 
-                       vBounds);
+                       vBounds);                   
                 }
                  
                 Result uvResult = aggregatedResultMap.get(uPlusBBS);
@@ -542,6 +574,7 @@ public class ShapeFinder {
                     if (uvBounds.getN() < 6) {
                         continue;
                     }
+                                        
                     PartialShapeMatcher matcher = new PartialShapeMatcher();
                     uvResult = matcher.match(uvBounds, template);
                     if (uvResult == null) {
@@ -559,8 +592,14 @@ public class ShapeFinder {
                     float s = (float)Math.sqrt(f * f + d * d);
                     altCost = Double.valueOf(s);
                 }
-                                
+                            
                 double vCost = costsFromSrc[vIdx];
+               
+                System.out.println("uIdx=" + uIdx + " vIdx=" + vIdx + 
+                    " uCen=" + orderedBoundaryCentroids.get(uIdx) +
+                    " vCen=" + orderedBoundaryCentroids.get(vIdx) +
+                    " altCost=" + altCost + " vCost=" + vCost
+                );
                 
                 if (altCost.doubleValue() < vCost) {
                     
