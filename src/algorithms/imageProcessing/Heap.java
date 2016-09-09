@@ -88,6 +88,10 @@ public class Heap {
     public boolean isEmpty() {
         return (minimumNode == null);
     }
+    
+    public HeapNode peekMin() {
+        return minimumNode;
+    }
 
     /**
      * extract minimum from the heap.
