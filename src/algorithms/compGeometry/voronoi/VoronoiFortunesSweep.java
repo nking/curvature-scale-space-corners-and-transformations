@@ -1,6 +1,9 @@
 package algorithms.compGeometry.voronoi;
 
 import algorithms.util.PairFloat;
+import algorithms.util.PairInt;
+import algorithms.util.PolygonAndPointPlotter;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -399,6 +402,68 @@ public class VoronoiFortunesSweep {
         }
 
         return true;
+    }
+
+    public void plot(int fileNumber) {
+        
+        try {
+            
+            PolygonAndPointPlotter plotter =
+                new PolygonAndPointPlotter(xmin - 1, xmax + 1,
+                    ymin - 1, ymax + 1);
+        
+            LinkedList<GraphEdge> edges = getAllEdges();
+            int n = 2*edges.size();
+            float[] xPolygon = new float[n];
+            float[] yPolygon = new float[n];
+
+            int count = 0;                
+        
+            for (GraphEdge edge : edges) {
+                int x1 = Math.round(edge.x1);
+                int y1 = Math.round(edge.y1);
+                int x2 = Math.round(edge.x2);
+                int y2 = Math.round(edge.y2);
+
+                PairInt p1 = new PairInt(x1, y1);
+                PairInt p2 = new PairInt(x2, y2);
+                if (p1.equals(p2)) {
+                    continue;
+                }
+
+                float xp = p1.getX();
+                float yp = p1.getY();
+                xPolygon[count] = xp;
+                yPolygon[count] = yp;
+                count++;
+                
+                xp = p2.getX();
+                yp = p2.getY();
+                xPolygon[count] = xp;
+                yPolygon[count] = yp;
+                count++;
+            }
+            
+            xPolygon = Arrays.copyOf(xPolygon, count);
+            yPolygon = Arrays.copyOf(yPolygon, count);
+            
+            n = sites.length;
+            float[] x = new float[n];
+            float[] y = new float[n];
+            for (int i = 0; i < n; ++i) {
+                Site site = sites[i];
+                x[i] = site.coord.getX();
+                y[i] = site.coord.getY();
+            }
+            
+            plotter.addPlotWithLines(x, y, xPolygon, yPolygon,
+                "edges");
+            
+            plotter.writeFile(fileNumber);
+            
+        } catch(IOException e) {
+            System.err.println(e.getMessage());
+        }
     }
 
     private class SiteComp implements Comparator<Site> {
