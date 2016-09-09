@@ -101,12 +101,8 @@ public class DoubleLinkedCircularList {
     	if (node == null) {
     		return;
     	}
-        node.getRight().setLeft(node.getLeft());
-        node.getLeft().setRight(node.getRight());
-        
         HeapNode right = node.getRight();
         HeapNode left = node.getLeft();
-        
         right.setLeft(left);
         left.setRight(right);
         

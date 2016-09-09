@@ -489,10 +489,10 @@ public class ShapeFinder {
         while (!heap.isEmpty()) {
             
             //TODO: fix error below here.
-            //   NPE's with extractMin only occur when heap is corrupted
+            //   getting NPE's with extractMin... should only occur when heap is corrupted
             //   (for example, modifying node left or right links outside
             //   of heap.  doesn't look like the error should occur
-            //   at first glnce).
+            //   at first glance).
             
             final HeapNode u = heap.extractMin();
             
@@ -510,7 +510,7 @@ public class ShapeFinder {
                 
                 final int vIdx = iter.next();
                 
-                if (nodes[vIdx] == null) {
+                if ((uIdx == vIdx) || nodes[vIdx] == null) {
                     continue;
                 }
                 
