@@ -170,14 +170,15 @@ public class MedialAxis {
         int minDist = 0;
         int offset = 2;
         
-        VoronoiFortunesSweep voronoi = 
-            new VoronoiFortunesSweep();
+        VoronoiFortunesSweep voronoi = new VoronoiFortunesSweep();
         
         voronoi.generateVoronoi(x, y, 
             xmin - offset, xmax + offset, 
             ymin - offset, ymax + offset, 
             minDist);
         
+        //voronoi.plot(1234);
+                
         LinkedList<GraphEdge> edges = voronoi.getAllEdges();
         
         List<GraphEdge> output = new ArrayList<GraphEdge>();
@@ -196,7 +197,7 @@ public class MedialAxis {
             }
         
             if (removedPoints.contains(p1) ||
-                removedPoints.contains(p1) ||
+                removedPoints.contains(p2) ||
                 boundary.contains(p1) ||
                 boundary.contains(p2)) {
                 continue;
@@ -204,6 +205,47 @@ public class MedialAxis {
             
             if (points.contains(p1) && points.contains(p2)) {
                 output.add(edge);
+            }
+        }
+        
+        if (output.isEmpty() && boundary.size() > 3 &&
+            boundary.size() < 12) {
+            
+            // small space, and the thinning stage before
+            // using this class may have removed interior
+            // points so the points.contains(p) fails.
+            // this does the more expensive point in polygon
+            // test too.
+            // TODO: find a fast correction for the line thinning
+            // subsequent removal of points from shape points.
+            
+            x = Arrays.copyOf(x, x.length + 1);
+            y = Arrays.copyOf(y, y.length + 1);
+            x[x.length - 1] = x[0];
+            y[y.length - 1] = y[0];
+            
+            PointInPolygon pip = new PointInPolygon();
+            for (GraphEdge edge : edges) {
+                int x1 = Math.round(edge.x1);
+                int y1 = Math.round(edge.y1);
+                int x2 = Math.round(edge.x2);
+                int y2 = Math.round(edge.y2);
+
+                PairInt p1 = new PairInt(x1, y1);
+                PairInt p2 = new PairInt(x2, y2);
+                if (p1.equals(p2)) {
+                    continue;
+                }
+                
+                // if p1 is in points or is interior to boundary
+                // and same for p2, can keep it
+                if ((points.contains(p1) ||
+                    pip.isInSimpleCurve(x1, y1, x, y, x.length)) && 
+                    (points.contains(p2) ||
+                    pip.isInSimpleCurve(x2, y2, x, y, x.length))) {
+                    
+                    output.add(edge);
+                }
             }
         }
         
