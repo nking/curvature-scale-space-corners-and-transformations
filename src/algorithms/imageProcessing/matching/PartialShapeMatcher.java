@@ -2150,7 +2150,7 @@ public class PartialShapeMatcher {
                     qIdx += q.getN();
                 }
                 int offsetA = qIdx - pIdx;
-                log.info(debugTag
+                log.fine(debugTag
                     + ": added pair with implied offset=" +
                     offsetA + " i=" + pIdx);
             }

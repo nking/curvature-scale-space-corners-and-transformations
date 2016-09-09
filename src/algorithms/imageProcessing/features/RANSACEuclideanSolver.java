@@ -85,7 +85,7 @@ public class RANSACEuclideanSolver {
             
         SecureRandom sr = Misc.getSecureRandom();
         long seed = System.currentTimeMillis();
-        log.info("SEED=" + seed + " nPoints=" + nPoints);
+        log.fine("SEED=" + seed + " nPoints=" + nPoints);
         sr.setSeed(seed);
 
         int tolerance = 5;
@@ -165,10 +165,10 @@ public class RANSACEuclideanSolver {
         }
 
         if (bestFit == null || bestFit.getInlierIndexes().isEmpty()) {
-            log.info("no solution.  nIter=" + nIter);
+            log.fine("no solution.  nIter=" + nIter);
             return null;
         } else {
-            log.info("bestFit before consensus = " + bestFit.getTransformationParameters().toString());
+            log.fine("bestFit before consensus = " + bestFit.getTransformationParameters().toString());
         }
 
         // store inliers in outputLeftXY and outputRightXY and redo the
@@ -190,16 +190,16 @@ public class RANSACEuclideanSolver {
         TransformationParameters params = tc.calulateEuclideanWithoutFilter(
             inliersLeftXY, inliersRightXY, 0, 0);
         
-        log.info("consensusParams=" + params.toString());
+        log.fine("consensusParams=" + params.toString());
 
         EuclideanTransformationFit consensusFit = evaluator.evaluate(matchedLeftXY,
             matchedRightXY, params, tolerance);
         
         if (consensusFit == null || consensusFit.getInlierIndexes().isEmpty()) {
-            log.info("no consensus possible for given points");
+            log.fine("no consensus possible for given points");
             return null;
         } else {
-            log.info("consensus nEval=" + consensusFit.getInlierIndexes().size());
+            log.fine("consensus nEval=" + consensusFit.getInlierIndexes().size());
         }
         
         // inlierIndexes are w.r.t matchedLeftXY
@@ -213,9 +213,9 @@ public class RANSACEuclideanSolver {
             outputRightXY.add(matchedRightXY.getX(idx), matchedRightXY.getY(idx));
         }
         
-        log.info("nIter=" + nIter);
+        log.fine("nIter=" + nIter);
 
-        log.info("final fit: " + consensusFit.toString());
+        log.fine("final fit: " + consensusFit.toString());
 
         return consensusFit;
     }
