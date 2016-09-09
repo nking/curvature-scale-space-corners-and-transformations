@@ -1,15 +1,23 @@
 package algorithms.imageProcessing.matching;
 
 import algorithms.QuickSort;
+import algorithms.compGeometry.PerimeterFinder2;
+import algorithms.imageProcessing.Heap;
+import algorithms.imageProcessing.HeapNode;
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.util.PairIntArray;
-import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
+import gnu.trove.set.TIntSet;
 import java.util.List;
 import algorithms.imageProcessing.matching.PartialShapeMatcher.Result;
+import algorithms.util.PairInt;
 import algorithms.util.VeryLongBitString;
+import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TObjectIntIterator;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -53,7 +61,7 @@ public class ShapeFinder {
      */
     public Result findMatchingCells(
         List<PairIntArray> orderedBoundaries,
-        TIntIntMap adjacencyMap, PairIntArray template) {
+        TIntObjectMap<TIntSet> adjacencyMap, PairIntArray template) {
         
         /*
         step (1) O(N_cells) + O(N_cells_in_bin * log_2(N_cells_in_bin)):
@@ -131,18 +139,12 @@ public class ShapeFinder {
     }
     
     private Result wideDijkstraSearch(List<PairIntArray> orderedBoundaries, 
-        TIntIntMap adjacencyMap, PairIntArray template) {
-    
-        List<Result> outputSortedResults = new ArrayList<Result>();
-        List<Integer> outputSortedIndexes = new ArrayList<Integer>();
-     
-        matchAndOrderByIncrCost(orderedBoundaries, template, 
-            outputSortedResults, outputSortedIndexes);
-       
-        int[] dimensionsT = calcDimensions(template);
+        TIntObjectMap<TIntSet> adjacencyMap, PairIntArray template) {
         
-        int areaT = (int)Math.round(Math.sqrt(dimensionsT[0] * dimensionsT[0] +
-            dimensionsT[1] * dimensionsT[1]));
+        int n = orderedBoundaries.size();
+        
+        List<Result> outputSortedResults = new ArrayList<Result>(n);
+        List<Integer> outputSortedIndexes = new ArrayList<Integer>(n);
         
         Map<VeryLongBitString, PairIntArray> aggregatedBoundaries =
             new HashMap<VeryLongBitString, PairIntArray>();
@@ -150,43 +152,75 @@ public class ShapeFinder {
         Map<VeryLongBitString, Result> aggregatedResultMap =
             new HashMap<VeryLongBitString, Result>();
         
+        // this can be derived from values in aggregatedResultMap,
+        // but is currently kept to make debugging easier
+        Map<VeryLongBitString, Double> aggregatedCostMap =
+            new HashMap<VeryLongBitString, Double>();
+        
+        double[] maxDiffChordSum = new double[1];
+        
+        matchAndOrderByIncrCost(orderedBoundaries, template, 
+            outputSortedResults, outputSortedIndexes, 
+            aggregatedBoundaries, aggregatedResultMap, aggregatedCostMap,
+            maxDiffChordSum);
+        
+        List<PairInt> orderedBoundaryCentroids = calculateCentroids(
+            orderedBoundaries);
+        
+        double minCost = Double.MAX_VALUE;
+        VeryLongBitString minBitString = null;
+         
         for (int i = 0; i < outputSortedIndexes.size(); ++i) {
             
             Integer index = outputSortedIndexes.get(i);
             
-            /* Dijkstra's search:
-            source is index, no dest, but search only extends to
-                 cells within distance to 2 or so times template
-                 dimensions from index centroid.  that is done
-                 when the heap is populated.
+            // the in-out variables store reusable calculations and
+            // also the resulting cost of this best search result
+            VeryLongBitString bitString = minCostAggregation(
+                orderedBoundaries, adjacencyMap, template, index,
+                orderedBoundaryCentroids, maxDiffChordSum,
+                aggregatedBoundaries, 
+                aggregatedResultMap, aggregatedCostMap);
             
-            VeryLongBitString[] aggregatedKeys
-            double[] costsFromS
-            int[] prev
-            while (!heap.isEmpty()) {
-                u = heap.pop
-                for (int v : adjacentToU) {
-                    // calc cost from current aggregated u + v bounds
-                    // after check for existing.
-                    altCost = costsFromS[u] + cost[u->v]
-                    if (altCost < costsFromS[v]) {
-                        costsFromS[v] = altCost
-                        heap.decreaseKey(v, altCost);
-                        prev[v] = u
-                        VeryLongBitString vKey = aKey.copy() + 
-                            set bit for v
-                        store vKey in AggregAtedKeys
-                        store results in aggregatedBoundaries and 
-                            aggregatedResultMap
-            */
+            if (bitString == null) {
+                continue;
+            }
+            
+            double cost = aggregatedCostMap.get(bitString).doubleValue();
+            if (cost < minCost) {
+                minCost = cost;
+                minBitString = bitString;
+            }
         }
         
-        throw new UnsupportedOperationException("not yet implemented");
+        if (minBitString == null) {
+            return null;
+        }
+        
+        Result r = aggregatedResultMap.get(minBitString);
+        r.setData(aggregatedBoundaries.get(minBitString));
+        
+        return r;
     }
     
+    /**
+     * 
+     * @param orderedBoundaries
+     * @param template
+     * @param outputSortedResults - output variable
+     * @param outputSortedIndexes - output variable
+     * @param aggregatedBoundaries - output variable
+     * @param aggregatedResultMap - output variable
+     * @param aggregatedCostMap  - output variable
+     * @param maxDiffChordSum - output variable
+     */
     private void matchAndOrderByIncrCost(List<PairIntArray> orderedBoundaries, 
         PairIntArray template, List<Result> outputSortedResults,
-        List<Integer> outputSortedIndexes) {
+        List<Integer> outputSortedIndexes,
+        Map<VeryLongBitString, PairIntArray> aggregatedBoundaries,
+        Map<VeryLongBitString, Result> aggregatedResultMap,
+        Map<VeryLongBitString, Double> aggregatedCostMap,
+        double[] maxDiffChordSum) {
 
         TObjectIntMap<Result> cellMatchResults = matchIndividually(
             orderedBoundaries, template);
@@ -203,6 +237,7 @@ public class ShapeFinder {
                 maxChord = d;
             }
         }
+        maxDiffChordSum[0] = maxChord;
         
         int nT1 = template.getN();
         
@@ -224,6 +259,14 @@ public class ShapeFinder {
             costs[i] = s;
             indexes[i] = i;
             results[i] = r;
+            
+            VeryLongBitString keyBS = new VeryLongBitString(n);
+            keyBS.setBit(i);
+            
+            PairIntArray put = aggregatedBoundaries.put(keyBS, orderedBoundaries.get(i));
+            assert(put == null);
+            aggregatedResultMap.put(keyBS, r);
+            aggregatedCostMap.put(keyBS, Double.valueOf(s));
         }
         
         QuickSort.sortBy1stArg(costs, indexes);
@@ -240,12 +283,11 @@ public class ShapeFinder {
         
     }
     
-    private TObjectIntMap<PartialShapeMatcher.Result> matchIndividually(
+    private TObjectIntMap<Result> matchIndividually(
         List<PairIntArray> orderedBoundaries, PairIntArray template) {
     
         // key=result, value=index of orderedBoundaries item
-        TObjectIntMap<PartialShapeMatcher.Result> output = 
-            new TObjectIntHashMap<PartialShapeMatcher.Result>();
+        TObjectIntMap<Result> output = new TObjectIntHashMap<Result>();
         
         int[] dimensionsT = calcDimensions(template);
         
@@ -255,6 +297,10 @@ public class ShapeFinder {
         for (int i = 0; i < orderedBoundaries.size(); ++i) {
             
             PairIntArray p = orderedBoundaries.get(i);
+            
+            if (p.getN() < 6) {
+                continue;
+            }
             
             int[] dimensions = calcDimensions(template);
         
@@ -316,5 +362,244 @@ public class ShapeFinder {
         
         return new int[]{minX, maxX, minY, maxY};
     }
-    
+
+    private List<PairInt> calculateCentroids(List<PairIntArray> orderedBoundaries) {
+
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+     
+        List<PairInt> centroids = new ArrayList<PairInt>();
+        
+        for (int i = 0; i < orderedBoundaries.size(); ++i) {
+            
+            double[] xyCen = curveHelper.calculateXYCentroids(
+                orderedBoundaries.get(i));
+            
+            PairInt xy = new PairInt((int)Math.round(xyCen[0]),
+                (int)Math.round(xyCen[1]));
+            
+            centroids.add(xy);
+        }
+        
+        return centroids;
+    }
+
+    /**
+     * a Dijkstra's search to find min-cost aggregation of segmented
+     * cells within a limited distance of adjacency.
+     * 
+     * @param orderedBoundaries
+     * @param adjacencyMap
+     * @param template
+     * @param index
+     * @param orderedBoundaryCentroids 
+     * @param maxDiffChordSum
+     * @param aggregatedBoundaries - in out variable
+     * @param aggregatedResultMap - in out variable
+     * @param aggregatedCostMap - in out variable
+     * @return 
+     */
+    private VeryLongBitString minCostAggregation(
+        List<PairIntArray> orderedBoundaries, TIntObjectMap<TIntSet> adjacencyMap, 
+        PairIntArray template, int index, 
+        List<PairInt> orderedBoundaryCentroids,
+        double[] maxDiffChordSum,
+        Map<VeryLongBitString, PairIntArray> aggregatedBoundaries, 
+        Map<VeryLongBitString, Result> aggregatedResultMap, 
+        Map<VeryLongBitString, Double> aggregatedCostMap) {
+        
+        int[] dimensionsT = calcDimensions(template);
+        
+        int areaT = (int)Math.round(Math.sqrt(dimensionsT[0] * dimensionsT[0] +
+            dimensionsT[1] * dimensionsT[1]));
+         
+        int n = orderedBoundaries.size();
+        
+        // keyFactor to convert the cost to a long
+        //max possible cost = sqrt(n*n + 1);
+        // has to fit within a long
+        double keyFactor = (double)Long.MAX_VALUE/Math.sqrt(n*n + 1);
+        
+        HeapNode[] nodes = new HeapNode[n];
+        VeryLongBitString[] aggregatedKeys = new VeryLongBitString[n];
+        double[] costsFromSrc = new double[n];
+        Arrays.fill(costsFromSrc, Double.MAX_VALUE);
+        int[] prev = new int[n];
+        Arrays.fill(prev, -1);
+        
+        PairInt indexXY = orderedBoundaryCentroids.get(index);
+        
+        Heap heap = new Heap();
+        
+        float factor = 2.f;
+        float maxDist = factor * (float)Math.max(dimensionsT[0], dimensionsT[1]);
+        
+        // insert items within distance of index centroid +- 2 or so times
+        // the dimensionsT
+        for (int i = 0; i < n; ++i) {
+            if (orderedBoundaries.get(i).getN() < 6) {
+                continue;
+            }
+            if (i == index) {
+                HeapNode node = new HeapNode();
+                node.setData(Integer.valueOf(i));
+                node.setKey(0);
+                nodes[i] = node;
+                costsFromSrc[index] = 0;
+                heap.insert(node);
+              
+                VeryLongBitString uBS = new VeryLongBitString(n);
+                uBS.setBit(i);
+                aggregatedKeys[i] = uBS;
+                continue;
+            }
+            
+            PairInt xy = orderedBoundaryCentroids.get(i);
+            if (distance(indexXY, xy) > maxDist) {
+                continue;
+            }
+            
+            VeryLongBitString uBS = new VeryLongBitString(n);
+            uBS.setBit(i);
+            aggregatedKeys[i] = uBS;
+            
+            HeapNode node = new HeapNode();
+            node.setData(Integer.valueOf(i));
+            // key, special treatment skipping use of keyFactor when key = max value
+            node.setKey(Long.MAX_VALUE);
+            nodes[i] = node;
+            heap.insert(node);            
+        }
+        
+        PerimeterFinder2 pFinder2 = new PerimeterFinder2();
+                
+        int nT1 = template.getN();
+        
+        /* Dijkstra's search:
+        source is index, no dest, but search only extends to
+            cells within distance to 2 or so times template
+            dimensions from index centroid.  that is done
+            when the heap is populated.
+        */
+        
+        int minCostIdx = -1;
+        double minCost = Double.MAX_VALUE;
+
+        System.out.println("index=" + index + " heap.n=" + heap.getNumberOfNodes());
+        
+        while (!heap.isEmpty()) {
+            
+            //TODO: fix error below here.
+            //   NPE's with extractMin only occur when heap is corrupted
+            //   (for example, modifying node left or right links outside
+            //   of heap.  doesn't look like the error should occur
+            //   at first glnce).
+            
+            final HeapNode u = heap.extractMin();
+            
+            final int uIdx = ((Integer)u.getData()).intValue();
+            
+            TIntSet neighborIdxs = adjacencyMap.get(uIdx);
+            if (neighborIdxs == null || neighborIdxs.isEmpty()) {
+                continue;
+            }
+            
+            VeryLongBitString uBS = aggregatedKeys[uIdx];
+            
+            TIntIterator iter = neighborIdxs.iterator();
+            while (iter.hasNext()) {
+                
+                final int vIdx = iter.next();
+                
+                if (nodes[vIdx] == null) {
+                    continue;
+                }
+                
+                // calc cost from current aggregated u + v bounds
+                // after check for existing.
+        
+                VeryLongBitString uPlusBBS = uBS.copy();
+                uPlusBBS.setBit(vIdx);
+                
+                PairIntArray uvBounds = aggregatedBoundaries.get(uPlusBBS);
+                if (uvBounds == null) {
+                   PairIntArray uBounds = aggregatedBoundaries.get(uBS);
+                   if (uBounds == null) {
+                       // this can happen when u is a single cell and did not
+                       // pass the size limit filters by itself
+                       uBounds = orderedBoundaries.get(uIdx);
+                       aggregatedBoundaries.put(uBS, uBounds);
+                   }
+                   assert(uBounds != null);
+                   PairIntArray vBounds = orderedBoundaries.get(vIdx);
+                   
+                   uvBounds = pFinder2.mergeAdjacentOrderedBorders(uBounds, 
+                       vBounds);
+                }
+                 
+                Result uvResult = aggregatedResultMap.get(uPlusBBS);
+                Double altCost = aggregatedCostMap.get(uPlusBBS);
+                if (uvResult == null) {
+                    if (uvBounds.getN() < 6) {
+                        continue;
+                    }
+                    PartialShapeMatcher matcher = new PartialShapeMatcher();
+                    uvResult = matcher.match(uvBounds, template);
+                    if (uvResult == null) {
+                        continue;
+                    }
+                
+                    // NOTE: this may need to be revised.  using the max diff chord
+                    // sum from only the single segmented cell matches as
+                    // the normalization for the Salukwdze distance.
+                    // May need to re-examine the bounds values and adjust the
+                    // normalizations.
+                    int nI = uvResult.getNumberOfMatches();
+                    float f = 1.f - ((float)nI/(float)nT1);            
+                    double d = uvResult.getChordDiffSum()/maxDiffChordSum[0];
+                    float s = (float)Math.sqrt(f * f + d * d);
+                    altCost = Double.valueOf(s);
+                }
+                                
+                double vCost = costsFromSrc[vIdx];
+                
+                if (altCost.doubleValue() < vCost) {
+                    
+                    aggregatedKeys[vIdx] = uPlusBBS;
+                    
+                    aggregatedCostMap.put(uPlusBBS, altCost);
+                    aggregatedResultMap.put(uPlusBBS, uvResult);
+                    aggregatedBoundaries.put(uPlusBBS, uvBounds);
+                    
+                    long vKey = (long)(altCost.doubleValue() * keyFactor);
+                    assert(vKey < nodes[vIdx].getKey());
+   
+                    heap.decreaseKey(nodes[vIdx], vKey);
+              
+                    prev[vIdx] = uIdx;
+                    costsFromSrc[vIdx] = altCost.doubleValue();
+                
+                    if (altCost.doubleValue() < minCost) {
+                        minCost = altCost.doubleValue();
+                        minCostIdx = vIdx;
+                    }
+                }
+            }
+        }
+        
+        if (minCostIdx == -1) {
+            return null;
+        }
+        
+        return aggregatedKeys[minCostIdx];
+    }
+        
+    private double distance(PairInt xy1, PairInt xy2) {
+        
+        int diffX = xy1.getX() - xy2.getX();
+        int diffY = xy1.getY() - xy2.getY();
+        double dist = Math.sqrt(diffX * diffX + diffY * diffY);
+        
+        return dist;
+    }
+
 }

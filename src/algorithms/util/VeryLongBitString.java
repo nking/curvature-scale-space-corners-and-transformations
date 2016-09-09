@@ -156,7 +156,7 @@ public final class VeryLongBitString {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < bitstring.length; i++) {
+        for (int i = (bitstring.length - 1); i > -1 ; i--) {
             sb.append(Long.toBinaryString(bitstring[i]));
         }
         return sb.toString();

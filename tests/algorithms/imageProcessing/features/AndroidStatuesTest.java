@@ -22,6 +22,8 @@ import algorithms.imageProcessing.PixelColors;
 import algorithms.imageProcessing.matching.PartialShapeMatcher;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.SegmentationMergeThreshold;
+import algorithms.imageProcessing.matching.PartialShapeMatcher.Result;
+import algorithms.imageProcessing.matching.ShapeFinder;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.imageProcessing.segmentation.NormalizedCuts;
 import algorithms.imageProcessing.segmentation.SLICSuperPixels;
@@ -79,7 +81,7 @@ public class AndroidStatuesTest extends TestCase {
     public AndroidStatuesTest() {
     }
 
-     public void test0() throws Exception {
+     public void est0() throws Exception {
 
         int maxDimension = 256;//512;
         
@@ -268,6 +270,116 @@ public class AndroidStatuesTest extends TestCase {
             //MiscDebug.writeImage(img, "_final_" + fileName1Root);
             
         }
+    }
+     
+    public void testShapeMatcher() throws Exception {
+
+        int maxDimension0 = 512;
+        
+        int maxDimension = 256;//512;
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        ImageSegmentation imageSegmentation = new
+            ImageSegmentation();
+        CIEChromaticity cieC = new CIEChromaticity();
+        PerimeterFinder2 perF2 = new PerimeterFinder2();
+
+        String fileNameMask0 = "android_statues_03_sz2_mask.png";
+        String filePathMask0 = ResourceFinder
+            .findFileInTestResources(fileNameMask0);
+        ImageExt imgMask0 = ImageIOHelper.readImageExt(filePathMask0);
+
+        String fileName0 = "android_statues_03.jpg";
+        int idx = fileName0.lastIndexOf(".");
+        String fileName0Root = fileName0.substring(0, idx);
+        String filePath0 = ResourceFinder
+            .findFileInTestResources(fileName0);
+        ImageExt img0 = ImageIOHelper.readImageExt(filePath0);
+        int w0 = img0.getWidth();
+        int h0 = img0.getHeight();
+        int binFactor0 = (int) Math.ceil(Math.max(
+            (float) w0 / maxDimension0, (float) h0 / maxDimension0));
+        img0 = imageProcessor.binImage(img0, binFactor0);
+
+        assert(img0.getNPixels() == imgMask0.getNPixels());
+
+        Set<PairInt> shape0 = new HashSet<PairInt>();
+        // multiply img0 by imgMask0 to leave only the pixels
+        // of the model shape in the image.
+        for (int i = 0; i < img0.getNPixels(); ++i) {
+            if (imgMask0.getR(i) == 0) {
+                img0.setRGB(i, 0, 0, 0);
+            } else {
+                shape0.add(new PairInt(img0.getCol(i),
+                   img0.getRow(i)));
+            }
+        }
+
+        PairIntArray template = perF2.extractOrderedBorder(shape0);
+        
+        String fileName1 = "android_statues_02.jpg";
+          
+        idx = fileName1.lastIndexOf(".");
+        String fileName1Root = fileName1.substring(0, idx);
+
+        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+        ImageExt img = ImageIOHelper.readImageExt(filePath1);
+
+        int w1 = img.getWidth();
+        int h1 = img.getHeight();
+
+        int binFactor1 = (int) Math.ceil(Math.max(
+            (float) w1 / maxDimension,
+            (float) h1 / maxDimension));
+
+        img = imageProcessor.binImage(img, binFactor1);
+
+        int[] labels4 = imageSegmentation.objectSegmentation(img);
+
+        ImageExt img11 = img.createWithDimensions();
+        ImageIOHelper.addAlternatingColorLabelsToRegion(
+            img11, labels4);
+        MiscDebug.writeImage(img11, "_final_" + fileName1Root);
+        //LabelToColorHelper.applyLabels(img, labels4);
+        //MiscDebug.writeImage(img, "_final_" + fileName1Root);
+
+        List<Set<PairInt>> listOfSets = LabelToColorHelper.extractContiguousLabelPoints(
+            img, labels4);
+                
+        TIntObjectMap<TIntSet> adjMap = 
+            LabelToColorHelper.createAdjacencyLabelMap(img, labels4);
+        
+        List<PairIntArray> orderedBoundaries = new ArrayList<PairIntArray>();
+        for (int i = 0; i < listOfSets.size(); ++i) {
+            orderedBoundaries.add(perF2.extractOrderedBorder(
+                listOfSets.get(i)));
+        }
+
+        ShapeFinder sf = new ShapeFinder();
+
+        Result result = sf.findMatchingCells(orderedBoundaries, adjMap, template);
+        PairIntArray p = (PairIntArray)result.getData();
+        
+        CorrespondencePlotter plotter = new CorrespondencePlotter(p, 
+            template);
+
+        for (int ii = 0; ii < result.getNumberOfMatches(); ++ii) {
+            int idx1 = result.getIdx1(ii);
+            int idx2 = result.getIdx2(ii);
+            int x1 = p.getX(idx1);
+            int y1 = p.getY(idx1);
+            int x2 = template.getX(idx2);
+            int y2 = template.getY(idx2);
+            //System.out.println(String.format(
+            //"(%d, %d) <=> (%d, %d)", x1, y1, x2, y2));
+
+            if ((ii % 4) == 0) {
+                plotter.drawLineInAlternatingColors(x1, y1, x2, y2,
+                    0);
+            }
+        }
+        String filePath = plotter.writeImage("_"
+            + "_andr_02_corres");
     }
 
     public void estShapeMatcher() throws Exception {

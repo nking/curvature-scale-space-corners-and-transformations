@@ -8,8 +8,8 @@ public class HeapNode {
     private HeapNode left = null;
 
     /* fields needed for a Fibonacci Heap Node */
-    private HeapNode parent;
-    private DoubleLinkedCircularList children;
+    private HeapNode parent = null;
+    private DoubleLinkedCircularList children = null;
     
     /* field to carry data  */
     private Object data = null;

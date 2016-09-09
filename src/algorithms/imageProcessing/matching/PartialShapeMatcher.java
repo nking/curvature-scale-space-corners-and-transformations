@@ -134,7 +134,7 @@ public class PartialShapeMatcher {
 
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
-    private boolean debug = true;
+    private boolean debug = false;
 
     public void setToArticulatedMatch() {
         srchForArticulatedParts = true;
@@ -1523,6 +1523,7 @@ public class PartialShapeMatcher {
         private final int n2;
         private final int origOffset;
         private final int origN1;
+        private Object data = null;
         public Result(int n1, int n2, int offset) {
             this.n1 = n1;
             this.n2 = n2;
@@ -1571,6 +1572,10 @@ public class PartialShapeMatcher {
             double d = chordDiffSum/maxChordSum;
             return d;
         }
+        
+        public double getChordDiffSum() {
+            return chordDiffSum;
+        }
 
         /**
          * The Salukwdze distance is the metric used as a
@@ -1602,6 +1607,14 @@ public class PartialShapeMatcher {
         public int getOriginalN1() {
             return origN1;
         }
+        
+        public Object getData() {
+            return data;
+        }
+        
+        public void setData(Object data) {
+            this.data = data;
+        }
 
         /**
          * reverse the mappings from list 1 to list 2
@@ -1615,6 +1628,7 @@ public class PartialShapeMatcher {
             t.idx2s.addAll(idx1s);
             t.distSum = distSum;
             t.chordDiffSum = chordDiffSum;
+            t.data = data;
 
             return t;
         }
