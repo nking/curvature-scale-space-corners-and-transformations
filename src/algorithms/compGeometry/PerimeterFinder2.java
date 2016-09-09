@@ -1,10 +1,8 @@
 package algorithms.compGeometry;
 
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.PostLineThinnerCorrections;
 import algorithms.imageProcessing.SpurRemover;
 import algorithms.imageProcessing.ZhangSuenLineThinner;
-import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.search.NearestNeighbor2D;
@@ -86,8 +84,8 @@ public class PerimeterFinder2 {
         removedPoints.addAll(boundary);
         removedPoints.removeAll(b);
         
-        System.out.println("line thinning removed " +
-            removedPoints.size() + " from the boundary");
+        //System.out.println("line thinning removed " +
+        //    removedPoints.size() + " from the boundary");
         
         boundary.clear();
         boundary.addAll(b);
@@ -933,10 +931,12 @@ public class PerimeterFinder2 {
         assert(!medAxisClosest.isEmpty());
         PairInt medAxisP = medAxisClosest.iterator().next();
        
+        /*
         System.out.println(
             String.format("x,y=(%d,%d) medAxis=(%d,%d)", x, y, 
                 medAxisP.getX(), medAxisP.getY()));
-                
+        */
+        
         double minAngle = Double.MAX_VALUE;
         int minIdx = -1;
 
@@ -947,9 +947,11 @@ public class PerimeterFinder2 {
             double angle = LinesAndAngles.calcClockwiseAngle(
                 x, y, x2, y2, medAxisP.getX(), medAxisP.getY());
 
+            /*
             System.out.println(
                 String.format("    (%d,%d) a=%.4f", x2, y2, (float) angle));
-
+            */
+            
             if (angle < minAngle) {
                 minAngle = angle;
                 minIdx = i;
