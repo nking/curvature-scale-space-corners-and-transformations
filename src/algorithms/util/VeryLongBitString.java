@@ -278,4 +278,35 @@ public final class VeryLongBitString {
         return sumBytes;
     }
 
+    /**
+     * perform a bitwise 'or' on this bitstring and otherBS.
+     * @param otherBS
+     * @return 
+     */
+    public VeryLongBitString or(VeryLongBitString otherBS) {
+                
+        VeryLongBitString out;
+        
+        if (nBits == otherBS.nBits || (nBits > otherBS.nBits)) {
+            
+            out = copy();
+            
+            for (int i = 0; i < otherBS.bitstring.length; ++i) {
+                long bs = otherBS.bitstring[i];
+                out.bitstring[i] |= bs;
+            }
+            
+        } else { //if (nBits < otherBS.nBits) {
+            
+            out = otherBS.copy();
+            
+            for (int i = 0; i < bitstring.length; ++i) {
+                long bs = bitstring[i];
+                out.bitstring[i] |= bs;
+            }
+        }
+        
+        return out;
+    }
+
 }

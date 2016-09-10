@@ -3,6 +3,7 @@ package algorithms.util;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -380,5 +381,24 @@ public class VeryLongBitStringTest extends TestCase {
         for (int i = 0; i < a.length; ++i) {
             assertEquals(a[i], s[i]);
         }
+    }
+    
+    public void testOr() {
+        
+        //0 1 1 0   
+        VeryLongBitString bs6 = new VeryLongBitString(4);
+        bs6.setBit(1);
+        bs6.setBit(2);
+        
+        //1 0 1 0
+        VeryLongBitString bs10 = new VeryLongBitString(4);
+        bs10.setBit(1);
+        bs10.setBit(3);
+        
+        VeryLongBitString bs14 = bs6.or(bs10);
+        
+        int[] setBits = bs14.getSetBits();
+        
+        assertTrue(Arrays.equals(new int[]{1, 2, 3}, setBits));
     }
 }
