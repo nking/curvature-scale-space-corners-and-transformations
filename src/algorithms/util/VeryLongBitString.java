@@ -1,5 +1,6 @@
 package algorithms.util;
 
+import algorithms.misc.MiscMath;
 import java.util.Arrays;
 
 /**
@@ -160,6 +161,36 @@ public final class VeryLongBitString {
             sb.append(Long.toBinaryString(bitstring[i]));
         }
         return sb.toString();
+    }
+    
+    /**
+     * get a list of the bit numbers that are set.
+     * @return 
+     */
+    public int[] getSetBits() {
+        
+        int n = 0;
+        for (int i = 0; i < bitstring.length; ++i) {
+            n += Long.bitCount(bitstring[i]);
+        }
+        
+        int[] setBits = new int[n];
+        for (int i = 0; i < bitstring.length; ++i) {
+            long b = bitstring[i];
+            int count = 0;
+            n = 0;
+            while (b > 0) {
+                long idx = (b & 1L);
+                if (idx == 1) {
+                    setBits[n] = count;
+                    n++;
+                }
+                b >>= 1L;
+                count++;
+            }
+        }
+        
+        return setBits;
     }
 
     @Override
