@@ -16,10 +16,12 @@ import algorithms.util.PairInt;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TObjectIntIterator;
+import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Stack;
 
 /**
  * uses PartialShapeMatcher and search patterns to
@@ -183,10 +185,10 @@ public class ShapeFinder {
             PairInt pCen = orderedBoundaryCentroids.get(index);
             System.out.println("pCen=" + pCen + " idx=" + index + " i=" + i);
            
-            
+
             // the in-out variables store reusable calculations and
             // also the resulting cost of this best search result
-            VeryLongBitString bitString = minCostAggregation(
+            VeryLongBitString bitString = minCostAggregationDijkstra(
                 orderedBoundaries, adjacencyMap, template, index,
                 orderedBoundaryCentroids, maxDiffChordSum,
                 aggregatedBoundaries, 
@@ -408,7 +410,7 @@ public class ShapeFinder {
      * @param aggregatedCostMap - in out variable
      * @return 
      */
-    private VeryLongBitString minCostAggregation(
+    private VeryLongBitString minCostAggregationDijkstra(
         List<PairIntArray> orderedBoundaries, TIntObjectMap<TIntSet> adjacencyMap, 
         PairIntArray template, int index, 
         List<PairInt> orderedBoundaryCentroids,
@@ -417,6 +419,11 @@ public class ShapeFinder {
         Map<VeryLongBitString, Result> aggregatedResultMap, 
         Map<VeryLongBitString, Double> aggregatedCostMap) {
         
+        //TODO: this needs another dimension to store more than the greedy
+        //  best as previous.
+        //  need to edit the sparse maps for floyd warshal results,
+        //  and use pattern j > i for [i][j] storage.
+        
         int[] dimensionsT = calcDimensions(template);
         
         int areaT = (int)Math.round(Math.sqrt(dimensionsT[0] * dimensionsT[0] +
@@ -424,10 +431,17 @@ public class ShapeFinder {
          
         int n = orderedBoundaries.size();
         
-        // keyFactor to convert the cost to a long
+        /*
+        // keyFactor to convert the cost to a long for a cost based key
         //max possible cost = sqrt(n*n + 1);
         // has to fit within a long
         double keyFactor = (double)Long.MAX_VALUE/Math.sqrt(n*n + 1);
+        */
+        // instead, making the heap key distance based.
+        // will use a max distance of 3 * areaFactor * diagonal of template
+        double keyFactor = (double)Long.MAX_VALUE/
+            (3 * areaFactor * Math.sqrt(dimensionsT[0] * dimensionsT[0] +
+            dimensionsT[1] * dimensionsT[1]));
         
         HeapNode[] nodes = new HeapNode[n];
         VeryLongBitString[] aggregatedKeys = new VeryLongBitString[n];
@@ -435,6 +449,8 @@ public class ShapeFinder {
         Arrays.fill(costsFromSrc, Double.MAX_VALUE);
         int[] prev = new int[n];
         Arrays.fill(prev, -1);
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
         PairInt indexXY = orderedBoundaryCentroids.get(index);
         
@@ -469,14 +485,16 @@ public class ShapeFinder {
             }
             
             PairInt xy = orderedBoundaryCentroids.get(i);
-            if (distance(indexXY, xy) > maxDist) {
+            double dist = distance(indexXY, xy);
+            if (dist > maxDist) {
                 continue;
             }
             
             int[] dimensions = calcDimensions(orderedBoundaries.get(i));
             int area = (int)Math.round(Math.sqrt(dimensions[0] * dimensions[0] +
             dimensions[1] * dimensions[1]));
-            if (area > areaFactor*areaT) {
+            if (area > areaFactor*areaT || (dimensions[0] > dimensionsT[0]) ||
+                (dimensions[1] > dimensionsT[1])) {
                 continue;
             }
             
@@ -486,13 +504,14 @@ public class ShapeFinder {
             
             HeapNode node = new HeapNode();
             node.setData(Integer.valueOf(i));
-            // key, special treatment skipping use of keyFactor when key = max value
-            node.setKey(Long.MAX_VALUE);
+            node.setKey((long)Math.round(dist*keyFactor));
             nodes[i] = node;
             heap.insert(node);
             
             System.out.println("i=" + i
                 + " cen=" + orderedBoundaryCentroids.get(i)
+                + " dimensions=" + Arrays.toString(dimensions) 
+                + " dimensionsT=" + Arrays.toString(dimensionsT)
             );
         }
     
@@ -515,12 +534,6 @@ public class ShapeFinder {
         
         while (!heap.isEmpty()) {
             
-            //TODO: fix error below here.
-            //   getting NPE's with extractMin... should only occur when heap is corrupted
-            //   (for example, modifying node left or right links outside
-            //   of heap.  doesn't look like the error should occur
-            //   at first glance).
-            
             final HeapNode u = heap.extractMin();
             
             final int uIdx = ((Integer)u.getData()).intValue();
@@ -541,8 +554,7 @@ public class ShapeFinder {
                 
                 final int vIdx = iter.next();
                 
-                if ((uIdx == vIdx) || nodes[vIdx] == null
-                    || uBS.isSet(vIdx)) {
+                if ((uIdx == vIdx) || nodes[vIdx] == null || uBS.isSet(vIdx)) {
                     continue;
                 }
                 
@@ -551,7 +563,7 @@ public class ShapeFinder {
         
                 VeryLongBitString uPlusBBS = uBS.copy();
                 uPlusBBS.setBit(vIdx);
-            
+                
                 PairIntArray uvBounds = aggregatedBoundaries.get(uPlusBBS);
                 if (uvBounds == null) {
                    PairIntArray uBounds = aggregatedBoundaries.get(uBS);
@@ -567,7 +579,15 @@ public class ShapeFinder {
                    uvBounds = pFinder2.mergeAdjacentOrderedBorders(uBounds, 
                        vBounds);                   
                 }
-                 
+                
+                int[] dimensions = calcDimensions(uvBounds);
+                int area = (int) Math.round(Math.sqrt(dimensions[0] * dimensions[0]
+                    + dimensions[1] * dimensions[1]));
+                if ((dimensions[0] > areaFactor * dimensionsT[0]) ||
+                    (dimensions[1] > areaFactor * dimensionsT[1])) {
+                    continue;
+                }
+                
                 Result uvResult = aggregatedResultMap.get(uPlusBBS);
                 Double altCost = aggregatedCostMap.get(uPlusBBS);
                 if (uvResult == null) {
@@ -595,12 +615,6 @@ public class ShapeFinder {
                             
                 double vCost = costsFromSrc[vIdx];
                
-                System.out.println("uIdx=" + uIdx + " vIdx=" + vIdx + 
-                    " uCen=" + orderedBoundaryCentroids.get(uIdx) +
-                    " vCen=" + orderedBoundaryCentroids.get(vIdx) +
-                    " altCost=" + altCost + " vCost=" + vCost
-                );
-                
                 if (altCost.doubleValue() < vCost) {
                     
                     aggregatedKeys[vIdx] = uPlusBBS;
@@ -609,17 +623,34 @@ public class ShapeFinder {
                     aggregatedResultMap.put(uPlusBBS, uvResult);
                     aggregatedBoundaries.put(uPlusBBS, uvBounds);
                     
-                    long vKey = (long)(altCost.doubleValue() * keyFactor);
+                    /*
+                    double[] xyCen = curveHelper.calculateXYCentroids(uvBounds);
+                    PairInt xy = new PairInt((int)Math.round(xyCen[0]),
+                        (int)Math.round(xyCen[1]));
+                    double dist = distance(indexXY, xy);
+            
+                    // if do decide to adjust key, will need to check for
+                    // leq or geq to determine if need to remove and re-insert
+                    // or decreaseKey
+                    long vKey = Math.round(dist * keyFactor);
                     assert(vKey < nodes[vIdx].getKey());
-   
                     heap.decreaseKey(nodes[vIdx], vKey);
-              
+                    */
+                    
                     prev[vIdx] = uIdx;
                     costsFromSrc[vIdx] = altCost.doubleValue();
                 
                     if (altCost.doubleValue() < minCost) {
                         minCost = altCost.doubleValue();
                         minCostIdx = vIdx;
+                    }
+                    
+                    if (vCost < Double.MAX_VALUE) {
+                        System.out.println("uIdx=" + uIdx + " vIdx=" + vIdx + 
+                            " uCen=" + orderedBoundaryCentroids.get(uIdx) +
+                            " vCen=" + orderedBoundaryCentroids.get(vIdx) +
+                            " altCost=" + altCost + " vCost=" + vCost
+                        );
                     }
                 }
             }
@@ -629,9 +660,12 @@ public class ShapeFinder {
             return null;
         }
         
+        System.out.println("minCostIdx=" + minCostIdx + 
+            " minCost=" + minCost);
+        
         return aggregatedKeys[minCostIdx];
     }
-        
+    
     private double distance(PairInt xy1, PairInt xy2) {
         
         int diffX = xy1.getX() - xy2.getX();
