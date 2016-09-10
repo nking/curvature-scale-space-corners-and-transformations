@@ -401,4 +401,57 @@ public class VeryLongBitStringTest extends TestCase {
         
         assertTrue(Arrays.equals(new int[]{1, 2, 3}, setBits));
     }
+    
+    public void testAnd() {
+        
+        // 86                    74                  66
+        // 0 1 0 1 0 1 1 0   &   0 1 0 0 1 0 1 0  =  0 1 0 0 0 0 1 0
+        
+            
+        VeryLongBitString bs1 = new VeryLongBitString(8);
+        bs1.setBit(1); bs1.setBit(2); bs1.setBit(4); bs1.setBit(6);
+        
+        VeryLongBitString bs2 = new VeryLongBitString(8);
+        bs2.setBit(1); bs2.setBit(3); bs2.setBit(6);
+        
+        VeryLongBitString bs3 = new VeryLongBitString(8);
+        bs3.setBit(1); bs3.setBit(6);
+        
+        VeryLongBitString r = bs1.and(bs2);
+        assertEquals(bs3, r);
+        
+        r = bs2.and(bs1);
+        assertEquals(bs3, r);
+    }
+    
+    public void testDifference() {
+        // 86                    74                  66
+        // 0 1 0 1 0 1 1 0   &   0 1 0 0 1 0 1 0  =  0 1 0 0 0 0 1 0
+        
+        // 86                   66                   20
+        // 0 1 0 1 0 1 1 0   &  ~0 1 0 0 0 0 1 0  =  0 0 0 1 0 1 0 0
+        
+        // 74                   66                   8
+        // 0 1 0 0 1 0 1 0   &  ~0 1 0 0 0 0 1 0  =  0 0 0 0 1 0 0 0
+        
+        VeryLongBitString bs1 = new VeryLongBitString(8);
+        bs1.setBit(1); bs1.setBit(2); bs1.setBit(4); bs1.setBit(6);
+        
+        VeryLongBitString bs2 = new VeryLongBitString(8);
+        bs2.setBit(1); bs2.setBit(3); bs2.setBit(6);
+        
+        // 20
+        VeryLongBitString bs3 = new VeryLongBitString(8);
+        bs3.setBit(2); bs3.setBit(4);
+        
+        // 8
+        VeryLongBitString bs4 = new VeryLongBitString(8);
+        bs4.setBit(3); 
+        
+        VeryLongBitString r = bs1.difference(bs2);
+        assertEquals(bs3, r);
+        
+        r = bs2.difference(bs1);
+        assertEquals(bs4, r);
+    }
 }

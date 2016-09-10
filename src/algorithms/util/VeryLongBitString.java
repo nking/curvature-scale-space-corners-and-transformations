@@ -279,7 +279,40 @@ public final class VeryLongBitString {
     }
 
     /**
-     * perform a bitwise 'or' on this bitstring and otherBS.
+     * perform a bitwise 'AND' on this bitstring and otherBS to find
+     * the bits that they have in common with each other.
+     * @param otherBS
+     * @return 
+     */
+    public VeryLongBitString and(VeryLongBitString otherBS) {
+                
+        VeryLongBitString out;
+        
+        if (nBits == otherBS.nBits || (nBits > otherBS.nBits)) {
+            
+            out = copy();
+            
+            for (int i = 0; i < otherBS.bitstring.length; ++i) {
+                long bs = otherBS.bitstring[i];
+                out.bitstring[i] &= bs;
+            }
+            
+        } else { //if (nBits < otherBS.nBits) {
+            
+            out = otherBS.copy();
+            
+            for (int i = 0; i < bitstring.length; ++i) {
+                long bs = bitstring[i];
+                out.bitstring[i] &= bs;
+            }
+        }
+        
+        return out;
+    }
+
+    /**
+     * perform a bitwise 'or' on this bitstring and otherBS to make
+     * a union operation.
      * @param otherBS
      * @return 
      */
@@ -303,6 +336,41 @@ public final class VeryLongBitString {
             for (int i = 0; i < bitstring.length; ++i) {
                 long bs = bitstring[i];
                 out.bitstring[i] |= bs;
+            }
+        }
+        
+        return out;
+    }
+
+    /**
+     * find the bits in this.copy() which are not in otherBS by performing
+     * perform a bitwise 'AND' on this bitstring and otherBS to find
+     * the intersection bits then clear those bits in the copy of this instance.
+     * @param otherBS
+     * @return 
+     */
+    public VeryLongBitString difference(VeryLongBitString otherBS) {
+                
+        VeryLongBitString out = copy();
+        
+        if (nBits == otherBS.nBits || (nBits > otherBS.nBits)) {
+                        
+            for (int i = 0; i < otherBS.bitstring.length; ++i) {
+                long bs = otherBS.bitstring[i];
+                long intersection = out.bitstring[i] & bs;
+                // clear the intersection bits 
+                out.bitstring[i] &= ~intersection;
+            }
+            
+        } else { //if (nBits < otherBS.nBits) {
+            
+            out = otherBS.copy();
+            
+            for (int i = 0; i < bitstring.length; ++i) {
+                long bs = bitstring[i];
+                long intersection = out.bitstring[i] & bs;
+                // clear the intersection bits 
+                out.bitstring[i] &= ~intersection;
             }
         }
         
