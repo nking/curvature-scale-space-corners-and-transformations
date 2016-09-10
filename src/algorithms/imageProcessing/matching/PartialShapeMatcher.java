@@ -2020,7 +2020,7 @@ public class PartialShapeMatcher {
         // points on shape boundary, need to compare
         // for same scale.
         if (params.getScale() < 0.9 || params.getScale() > 1.1) {
-            log.warning(debugTag +
+            log.fine("WARNING: " + debugTag +
                 " euclidean transformation scale: "  + params);
         }
         left = outLeft;
