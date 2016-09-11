@@ -175,10 +175,10 @@ public final class VeryLongBitString {
         }
         
         int[] setBits = new int[n];
+        n = 0;
         for (int i = 0; i < bitstring.length; ++i) {
             long b = bitstring[i];
             int count = 0;
-            n = 0;
             while (b > 0) {
                 long idx = (b & 1L);
                 if (idx == 1) {
@@ -189,6 +189,8 @@ public final class VeryLongBitString {
                 count++;
             }
         }
+        
+        setBits = Arrays.copyOf(setBits, n);
         
         return setBits;
     }
@@ -280,7 +282,7 @@ public final class VeryLongBitString {
 
     /**
      * perform a bitwise 'AND' on this bitstring and otherBS to find
-     * the bits that they have in common with each other.
+     * the the intersection of bits in both bitstrings.
      * @param otherBS
      * @return 
      */
