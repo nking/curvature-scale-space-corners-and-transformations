@@ -378,6 +378,10 @@ public class PartialShapeMatcher {
                 mergedMinDiffs = merge(md, mergedMinDiffs, mmd);
             }
         }
+        
+        if (mergedMinDiffs == null) {
+            return null;
+        }
 
         MergedMinDiffs2 mergedMinDiffs2 =
             new MergedMinDiffs2(mergedMinDiffs, n1, n2);
