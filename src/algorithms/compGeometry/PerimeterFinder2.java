@@ -179,13 +179,18 @@ public class PerimeterFinder2 {
         }
         
         //O(8*N)
-        Set<PairInt> boundary = extractOuterBorder(contiguousPoints);
+        //Set<PairInt> boundary = extractOuterBorder(contiguousPoints);
+        Set<PairInt> embedded = findEmbeddedGaps(contiguousPoints);
+        Set<PairInt> set2 = new HashSet<PairInt>(contiguousPoints);
+        set2.addAll(embedded);        
+        Set<PairInt> boundary = extractBorder(set2);
+                
         Set<PairInt> rmPts = new HashSet<PairInt>();
         
         //TODO: methods used for this could be improved
         thinTheBoundary(boundary, rmPts);
         
-        Set<PairInt> cPts = new HashSet<PairInt>(contiguousPoints);
+        Set<PairInt> cPts = new HashSet<PairInt>(set2);
         // NOTE: if this is small cavity, removing these points
         // may remove important shape points.
         // a more exact method should test for whether each point is
