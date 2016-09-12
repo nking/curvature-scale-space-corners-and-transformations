@@ -175,23 +175,22 @@ public final class VeryLongBitString {
         }
         
         int[] setBits = new int[n];
-        n = 0;
+        int n2 = 0;
         for (int i = 0; i < bitstring.length; ++i) {
             long b = bitstring[i];
-            int count = 0;
-            while (b > 0) {
-                long idx = (b & 1L);
-                if (idx == 1) {
-                    setBits[n] = count;
-                    n++;
+            int count = 64 * i;
+            while (b != 0) {
+                if ((b & 1L) == 1L) {
+                    setBits[n2] = count;
+                    n2++;
                 }
-                b >>= 1L;
+                b >>>= 1L;
                 count++;
             }
         }
         
-        setBits = Arrays.copyOf(setBits, n);
-        
+        assert(n == n2);
+                
         return setBits;
     }
 

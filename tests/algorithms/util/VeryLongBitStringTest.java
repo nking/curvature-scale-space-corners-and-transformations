@@ -381,6 +381,22 @@ public class VeryLongBitStringTest extends TestCase {
         for (int i = 0; i < a.length; ++i) {
             assertEquals(a[i], s[i]);
         }
+        
+        // -------
+        bitstring = new VeryLongBitString(128);
+        
+        a = new int[]{0, 2, 3, 10, 15, 65, 88, 99, 121, 127};
+        for (int i = 0; i < a.length; ++i) {
+            bitstring.setBit(a[i]);
+        }
+        
+        s = bitstring.getSetBits();
+        
+        assertEquals(a.length, s.length);
+        
+        for (int i = 0; i < a.length; ++i) {
+            assertEquals(a[i], s[i]);
+        }
     }
     
     public void testOr() {
