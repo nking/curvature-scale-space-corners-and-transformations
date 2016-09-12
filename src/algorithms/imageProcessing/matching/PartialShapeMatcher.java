@@ -125,7 +125,7 @@ public class PartialShapeMatcher {
     // this helps to remove points far from
     // euclidean transformations using RANSAC.
     // it should probably always be true.
-    private boolean performEuclidTrans = true;
+    private final boolean performEuclidTrans = true;
 
     private float pixTolerance = 20;
 
@@ -1514,6 +1514,10 @@ public class PartialShapeMatcher {
         // the end and sort results by Salukwdze dist, then
         // choose the top item as the best to return.
 
+        { //DEBUG, recalc the saluk score to see if top has changed
+            //TODO:   
+        }
+     
         return results.get(0);
     }
 
@@ -1583,20 +1587,20 @@ public class PartialShapeMatcher {
 
         /**
          * The Salukwdze distance is the metric used as a
-         * cost in comparisons.
-         * (note that other portions of the code use
-         * the square of that distance.  also note that
+         * cost in comparisons and this returns the square of
+         * that (sqrt operation not performed).
+         * (note that
          * the maximum chord sum that was used to determine
          * a best solution is not stored, because the
          * Result correspondence lists grow afterwards depending
-         * upon options.
+         * upon options)
          * @param maxChordSum
          * @return
          */
-        public float calculateSalukwdzeDistance(double maxChordSum) {
+        public float calculateSalukwdzeDistanceSquared(double maxChordSum) {
             float f = 1.f - getFractionOfWhole();
             double d = getNormalizedChordDiff(maxChordSum);
-            float s = (float)Math.sqrt(f * f + d * d);
+            float s = (float)(f * f + d * d);
             return s;
         }
 
@@ -1863,7 +1867,11 @@ public class PartialShapeMatcher {
         if (results.isEmpty()) {
             return null;
         }
-
+        
+        { //DEBUG, recalc the saluk score to see if top has changed
+            //TODO:   
+        }
+     
         return results;
     }
 
@@ -2378,17 +2386,14 @@ public class PartialShapeMatcher {
          */
         public ResultComparator(List<Result> list) {
             double max = Float.MIN_VALUE;
-            double max2 = Float.MIN_VALUE;
             for (Result r : list) {
                 if (r.distSum > max) {
                     max = r.distSum;
                 }
-                if (r.chordDiffSum > max2) {
-                    max2 = r.chordDiffSum;
-                }
             }
             maxDist = (float)max;
-            maxChord = (float)max2;
+            
+            maxChord = (float)findMaxChordDiffSum(list);
         }
 
         @Override
@@ -2403,7 +2408,7 @@ public class PartialShapeMatcher {
             // salukwdze distance squared
             float s1 = f1*f1 + d1*d1;
             float s2 = f2*f2 + d2*d2;
-
+            
             if (s1 < s2) {
                 return -1;
             } else if (s1 > s2) {
@@ -2669,5 +2674,17 @@ public class PartialShapeMatcher {
         }
 
         return set;
+    }
+    
+    private double findMaxChordDiffSum(List<Result> results) {
+
+        double max2 = Float.MIN_VALUE;
+        for (Result r : results) {
+            if (r.chordDiffSum > max2) {
+                max2 = r.chordDiffSum;
+            }
+        }
+        
+        return max2;
     }
 }

@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -236,23 +237,6 @@ public class ShapeFinder {
             return null;
         }
         
-        {
-            // ERROR: aggregated boundaries are correct
-            // for the min bit string,
-            // but it doesn't appear to match
-            // the bits set in minBitString
-            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-            int[] minidxs = minBitString.getSetBits();
-            for (int idx : minidxs) {
-                PairIntArray pts = orderedBoundaries.get(idx);
-                System.out.println("CEN=" + 
-                    Arrays.toString
-                    (curveHelper.calculateXYCentroids(pts))
-                    + " n=" + pts.getN()
-                );
-            }
-        }
-        
         Result r = aggregatedResultMap.get(minBitString);
         r.setData(aggregatedBoundaries.get(minBitString));
         
@@ -307,11 +291,11 @@ public class ShapeFinder {
             
             Result r = iter.key();
             
-            // calculating salukwdze dist to use same reference, nT1
+            // calculating salukwdze dist^2 to use same reference, nT1
             int nI = r.getNumberOfMatches();
             float f = 1.f - ((float)nI/(float)nT1);            
             double d = r.getChordDiffSum()/maxChord;
-            float s = (float)Math.sqrt(f * f + d * d);
+            float s = (float)(f * f + d * d);
             
             costs[i] = s;
             indexes[i] = i;
@@ -801,13 +785,45 @@ System.out.println("mergeAdjacentOrderedBorders: idx2=" + idx2);
             return null;
         }
         
-        VeryLongBitString bs = indexesMap.get(minCostIdx);
+        
+        {
+            // expected:
+            VeryLongBitString tBS = new VeryLongBitString(nB);
+            tBS.setBit(18); tBS.setBit(30); tBS.setBit(33); tBS.setBit(53);
+            tBS.setBit(54); tBS.setBit(64); tBS.setBit(93); tBS.setBit(97);
+            tBS.setBit(124);
+            Double cost = aggregatedCostMap.get(tBS);
+            if (cost == null) {
+                PairIntArray b =  mergeAdjacentOrderedBorders(tBS,
+                    orderedBoundaries, pointsList);
+                cost = calcAndStoreMatchCost(b, template, tBS, 
+                    maxDiffChordSum[0], aggregatedBoundaries, 
+                    aggregatedResultMap, aggregatedCostMap);
+            }
+            System.out.println("expected true answer cost=" + cost);
+            PairInt tIdxs = null;
+            //for (Entry<PairInt, VeryLongBitString> entry : in)
+            
+            //found
+            int[] minidxs = indexesMap.get(minCostIdx).getSetBits();
+            for (int idx : minidxs) {
+                PairIntArray pts = orderedBoundaries.get(idx);
+                System.out.println("CEN=" + 
+                    Arrays.toString
+                    (curveHelper.calculateXYCentroids(pts))
+                    + " n=" + pts.getN()
+                );
+            }
+        }
+        
+        
+        VeryLongBitString minBitString = indexesMap.get(minCostIdx);
         
         System.out.println("minCostIdx=" + minCostIdx + 
             " minCost=" + minCost + " bs=" +
-            Arrays.toString(bs.getSetBits()));
+            Arrays.toString(minBitString.getSetBits()));
         
-        return bs;
+        return minBitString;
     }
     
     private double distance(PairInt xy1, PairInt xy2) {
@@ -842,13 +858,13 @@ System.out.println("mergeAdjacentOrderedBorders: idx2=" + idx2);
         int nT1 = template.getN();
         // NOTE: this may need to be revised.  using the max diff chord
         // sum from only the single segmented cell matches as
-        // the normalization for the Salukwdze distance.
+        // the normalization for the Salukwdze distance^2.
         // May need to re-examine the bounds values and adjust the
         // normalizations.
         int nI = result12.getNumberOfMatches();
         float f = 1.f - ((float) nI / (float) nT1);
         double d = result12.getChordDiffSum() / maxDiffChordSum;
-        float s = (float) Math.sqrt(f * f + d * d);
+        float s = (float)(f * f + d * d);
         Double cost12 = Double.valueOf(s);
 
         aggregatedCostMap.put(bs, cost12);
