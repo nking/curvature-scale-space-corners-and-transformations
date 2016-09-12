@@ -336,12 +336,13 @@ public class AndroidStatuesTest extends TestCase {
 
         int[] labels4 = imageSegmentation.objectSegmentation(img);
 
-        ImageExt img11 = img.createWithDimensions();
-        ImageIOHelper.addAlternatingColorLabelsToRegion(
-            img11, labels4);
+        //ImageExt img11 = img.createWithDimensions();
+        //ImageIOHelper.addAlternatingColorLabelsToRegion(
+        //    img11, labels4);
+        //MiscDebug.writeImage(img11, "_final_" + fileName1Root);
+        ImageExt img11 = img.copyToImageExt();
+        LabelToColorHelper.applyLabels(img11, labels4);
         MiscDebug.writeImage(img11, "_final_" + fileName1Root);
-        //LabelToColorHelper.applyLabels(img, labels4);
-        //MiscDebug.writeImage(img, "_final_" + fileName1Root);
 
         List<Set<PairInt>> listOfSets = LabelToColorHelper.extractContiguousLabelPoints(
             img, labels4);
@@ -357,7 +358,8 @@ public class AndroidStatuesTest extends TestCase {
 
         ShapeFinder sf = new ShapeFinder();
 
-        Result result = sf.findMatchingCells(orderedBoundaries, adjMap, template);
+        Result result = sf.findMatchingCells(orderedBoundaries, 
+            listOfSets, adjMap, template);
         PairIntArray p = (PairIntArray)result.getData();
         
         CorrespondencePlotter plotter = new CorrespondencePlotter(p, 
