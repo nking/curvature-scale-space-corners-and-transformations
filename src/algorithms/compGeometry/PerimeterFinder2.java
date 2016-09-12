@@ -1,9 +1,13 @@
 package algorithms.compGeometry;
 
+import algorithms.imageProcessing.DFSContiguousGapFinder;
+import algorithms.imageProcessing.DFSContiguousValueFinder;
+import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.PostLineThinnerCorrections;
 import algorithms.imageProcessing.SpurRemover;
 import algorithms.imageProcessing.ZhangSuenLineThinner;
 import algorithms.misc.Misc;
+import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.search.NearestNeighbor2D;
 import algorithms.util.PairInt;
@@ -60,6 +64,64 @@ public class PerimeterFinder2 {
         return border;
     }
     
+    /**
+     * finds any gaps embedded in the contiguous points.
+     * @param contiguousPoints
+     * @return 
+     */
+    public Set<PairInt> findEmbeddedGaps(Set<PairInt> contiguousPoints) {
+        
+        DFSContiguousGapFinder finder = new DFSContiguousGapFinder(
+            contiguousPoints);
+        finder.setMinimumNumberInCluster(1);
+        
+        int minX = finder.getMinX();
+        int maxX = finder.getMaxX();
+        int minY = finder.getMinY();
+        int maxY = finder.getMaxY();
+        
+        finder.findGaps();
+        
+        int nGroups = finder.getNumberOfGapGroups();
+        
+        Set<PairInt> embedded = new HashSet<PairInt>();
+                
+        for (int i = 0; i < nGroups; ++i) {
+            Set<PairInt> set = finder.getXY(i);
+            boolean foundEdgePoint = false;
+            for (PairInt p : set) {
+                int x = p.getX();
+                int y = p.getY();
+                if (x == minX || x == maxX || y == minY || y == maxY) {
+                    foundEdgePoint = true;
+                    break;
+                }
+            }
+            if (!foundEdgePoint) {
+                embedded.addAll(set);
+            }
+        }
+        
+        return embedded;
+    }
+    
+    /**
+     * finds the outer boundary points of the contiguous points.
+     * any embedded holes in the contiguousPoints are not included
+     * in the result boundary.
+     * @param contiguousPoints
+     * @return 
+     */
+    public Set<PairInt> extractOuterBorder(Set<PairInt> contiguousPoints) {
+        
+        Set<PairInt> embedded = findEmbeddedGaps(contiguousPoints);
+        
+        Set<PairInt> set2 = new HashSet<PairInt>(contiguousPoints);
+        set2.addAll(embedded);        
+        
+        return extractBorder(set2);
+    }
+    
     public void thinTheBoundary(Set<PairInt> boundary,
         Set<PairInt> removedPoints) {
         
@@ -92,233 +154,6 @@ public class PerimeterFinder2 {
     }
     
     /**
-     * note, this intersection method assumes the boundaries are
-     * both clockwise ordered points and that ob1 and ob2 are
-     * adjacent and do not overlap, and that simple
-     * cut and append or inserts are needed.  only the 
-     * outer merged boundary is preserved.
-     * 
-     * @param ob1
-     * @param ob2
-     * @return 
-     */
-    public PairIntArray mergeAdjacentOrderedBorders(PairIntArray ob1,
-        PairIntArray ob2) {
-        
-        if (ob1.getN() == 0 && ob2.getN() > 0) {
-            return ob2.copy();
-        } else if (ob2.getN() == 0 && ob1.getN() > 0) {
-            return ob1.copy();
-        } else if (ob1.getN() == 0 && ob2.getN() == 0) {
-            return new PairIntArray();
-        }
-        
-        PairIntArray a1 = ob1.copy();
-        PairIntArray a2 = ob2.copy();
-        rotateToMinXYAt0(a1);
-        rotateToMinXYAt0(a2);
-        
-        if ((a2.getX(0) < a1.getX(0)) || (a2.getX(0) == a1.getX(0) && 
-            a2.getY(0) < a1.getY(0))) {
-            PairIntArray swap = a1;
-            a1 = a2;
-            a2 = swap;
-        }
-        
-        PairIntArray output = new PairIntArray();
-        
-        int n1 = a1.getN();
-        int n2 = a2.getN();
-        
-        TObjectIntMap<PairInt> pointIndexMap2 = new TObjectIntHashMap<PairInt>();
-        for (int i = 0; i < n2; ++i) {
-            PairInt p = new PairInt(a2.getX(i), a2.getY(i));
-            pointIndexMap2.put(p, i);
-        }
-        
-        // -- start w/ the leftmost lowermost of the 2 arrays and call that array1:
-        //    until find point adjacent to array 2, continue to
-        //       add points from array1 to output,
-        //    then when find adacent point, mark it as the start of the
-        //       intersecting region and break
-        //    iterate from end of array1 to smaller indexes looking for the end 
-        //       of the intersecting region.
-        //    then, add points from array2 in between the 2 marks to output.
-        //    then add the points from array1 after the 2 marks to output.
-    
-        int startIdx1 = -1;
-        int startIdx2 = -1;
-        
-        int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;
-        for (int i = 0; i < n1; ++i) {
-            final int x = a1.getX(i);
-            final int y = a1.getY(i);
-            // if found a startIdx2, keep the smallest index of adjacent
-            for (int k = 0; k < dxs.length; ++k) {
-                int x2 = x + dxs[k];
-                int y2 = y + dys[k];
-                PairInt p2 = new PairInt(x2, y2);
-                if (pointIndexMap2.containsKey(p2)) {
-                    int idx2 = pointIndexMap2.get(p2);
-                    if (startIdx2 == -1) {
-                        startIdx2 = idx2;
-                    } else {
-                        if (idx2 < startIdx2) {
-                            startIdx2 = idx2;
-                        }
-                    }
-                }
-            }
-            output.add(x, y);
-            if (startIdx2 > -1) {
-                startIdx1 = i;
-                break;
-            }
-        }
-        
-        if (startIdx1 == -1) {
-            return output;
-        }
-        
-        int stopIdx1 = -1;
-        int stopIdx2 = -1;
-        
-        // search from end for stopIdx1
-        for (int i = (n1 - 1); i > startIdx1; --i) {
-            int x = a1.getX(i);
-            int y = a1.getY(i);
-            // if stopIdx2 > -1, keep the smallest
-            for (int k = 0; k < dxs.length; ++k) {
-                int x2 = x + dxs[k];
-                int y2 = y + dys[k];
-                PairInt p2 = new PairInt(x2, y2);
-                if (pointIndexMap2.containsKey(p2)) {
-                    int idx2 = pointIndexMap2.get(p2);
-                    if (stopIdx2 == -1) {
-                        stopIdx2 = idx2;
-                    } else {
-                        if (idx2 < stopIdx2) {
-                            stopIdx2 = idx2;
-                        }
-                    }
-                }
-            }
-            if (stopIdx2 > -1) {
-                stopIdx1 = i;
-                break;
-            }
-        }
-        
-        if (stopIdx1 == -1) {
-            stopIdx1 = startIdx1;
-            stopIdx2 = startIdx2;
-            // exception would be extreme case of single pixel wide
-            //   boundaries... this may change, but for now, expecting
-            //   that it would not exist.  exanple: @@@@ ####
-            //   throw new IllegalStateException("Error in algorithm.  " +
-            //       " did not find last adjacent point");
-        }
-        
-        int end = (startIdx2 > stopIdx2) ? n2 - 1: stopIdx2;
-        for (int i = startIdx2; i <= end; ++i) {
-            output.add(a2.getX(i), a2.getY(i));
-        }
-        
-        if (startIdx2 > stopIdx2) {
-            for (int i = 0; i <= stopIdx2; ++i) {
-                output.add(a2.getX(i), a2.getY(i));
-            }
-        }
-        
-        for (int i = stopIdx1; i < n1; ++i) {
-            output.add(a1.getX(i), a1.getY(i));
-        }
-       
-        /*
-              startIdx1=7; stopIdx1=8  n1=11
-              startIdx2=3; stopIdx2=1  n2=10
-                 5  6
-              @  @  @ @ 3
-            @       @ # # # #
-          @       @9  #     #6
-          1 @   @10  0# # # #
-            0 @         9 8
-        
-        
-              startIdx1=7; stopIdx1=0  n1=11
-              startIdx2=3; stopIdx2=0  n2=8
-                      7
-              @  @  @ @
-            @       @ #3
-        2 @       @ # #
-            @   @ #  #
-              @ # # #
-              0   7
-        
-        
-              startIdx1=7 ; stopIdx1=10  n1=10
-              startIdx2=4 ; stopIdx2=1   n2=8
-                      7      
-              @  @  @ @
-            @       @ #4 
-        2 @       @ # #
-            @   @ #2 #
-              @   # #7
-                  #
-        
-              startIdx1=4; stopIdx1=7  n1=11
-              startIdx2=0; stopIdx2=4  n2=7
-                 1  2  
-              0  #  # #3
-              # 6# 5# #4
-              @  @  @ @7
-            @    5  @ 
-          @       @9  
-          1 @   @10  
-            0 @
-        */
-        
-        return output;
-    }
-    
-    /**
-     * find the minx, min y point and if it's not at index 0, rotate the
-     * array to place it there.
-     * @param a 
-     */
-    protected void rotateToMinXYAt0(PairIntArray a) {
-        
-        if (a.getN() < 2) {
-            return;
-        }
-        
-        int minIdx = -1;
-        int minX = Integer.MAX_VALUE;
-        int minY = Integer.MAX_VALUE;
-        for (int i = 0; i < a.getN(); ++i) {
-            int x = a.getX(i);
-            if (x < minX) {
-                minX = x;
-                minY = a.getY(i);
-                minIdx = i;                
-            } else if (x == minX) {
-                int y = a.getY(i);
-                if (y < minY) {
-                    minX = x;
-                    minY = y;
-                    minIdx = i;
-                }
-            }
-        }
-        if (minIdx > 0) {
-            a.rotateLeft(minIdx);
-            assert(a.getX(0) == minX);
-            assert(a.getY(0) == minY);
-        }
-    }
-    
-    /**
      * NOT READY FOR USE...needs alot more testing.
      * 
      * given a contiguous set of points, extract the border and 
@@ -335,8 +170,16 @@ public class PerimeterFinder2 {
     public PairIntArray extractOrderedBorder(Set<PairInt> 
         contiguousPoints) {
         
+        if (contiguousPoints.size() < 4) {
+            PairIntArray output = new PairIntArray(contiguousPoints.size());
+            for (PairInt p : contiguousPoints) {
+                output.add(p.getX(), p.getY());
+            }
+            return output;
+        }
+        
         //O(8*N)
-        Set<PairInt> boundary = extractBorder(contiguousPoints);
+        Set<PairInt> boundary = extractOuterBorder(contiguousPoints);
         Set<PairInt> rmPts = new HashSet<PairInt>();
         
         //TODO: methods used for this could be improved
@@ -356,6 +199,7 @@ public class PerimeterFinder2 {
         Set<PairInt> medAxisPts = medAxis.getMedialAxisPoints();
        
         return extractOrderedBorder(boundary, medAxisPts, cPts);
+        //return extractOrderedBorder00(boundary, medAxisPts);
     }
 
     /**
@@ -424,8 +268,7 @@ public class PerimeterFinder2 {
         // keeping a separate list of junctionNodes
         // that are added to output while backtracking in order
         // to revise them later if needed.
-        LinkedHashSet<Integer> jassocInserted = 
-            new LinkedHashSet<Integer>();
+        LinkedHashSet<Integer> jassocInserted = new LinkedHashSet<Integer>();
         
         boolean err = false;
         while (!remaining.isEmpty()) {
@@ -487,9 +330,15 @@ public class PerimeterFinder2 {
                                 minMaxY[1], minMaxY[3]);
                         }
      
+                        int prevX = -1;
+                        int prevY = -1;
+                        if (output.getN() > 1) {
+                            prevX = output.getX(output.getN() - 2);
+                            prevY = output.getY(output.getN() - 2);
+                        }
                         int minAngleIdx = calculateMinAngles( 
                             x3, y3, ns2, neighborsX, neighborsY, nn,
-                            contiguousShapePoints);
+                            contiguousShapePoints, prevX, prevY);
  
                         {//DEBUG
                             if (minAngleIdx == -1) {
@@ -514,9 +363,24 @@ public class PerimeterFinder2 {
                                     }
                                     plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],
                                         xminmxyminmiac[2], xminmxyminmiac[3],
-                                        xp, yp, xPolygon, yPolygon, "shape");
+                                        xp, yp, xPolygon, yPolygon, "shape 1");
                                     plotter.writeFile2();
 
+                                    
+                                    n = borderPoints.size();
+                                    xp = new int[n];
+                                    yp = new int[n];
+                                    count = 0;
+                                    for (PairInt p : borderPoints) {
+                                        xp[count] = p.getX();
+                                        yp[count] = p.getY();
+                                        count++;
+                                    }
+                                    plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],
+                                        xminmxyminmiac[2], xminmxyminmiac[3],
+                                        xp, yp, xPolygon, yPolygon, "border 1");
+                                    plotter.writeFile2();
+                                    
                                     n = medialAxisPoints.size();
                                     xp = new int[n];
                                     yp = new int[n];
@@ -570,10 +434,17 @@ public class PerimeterFinder2 {
                     nn = new NearestNeighbor2D(medialAxisPoints, 
                         minMaxY[1], minMaxY[3]);
                 }
+                
+                int prevX = -1;
+                int prevY = -1;
+                if (output.getN() > 1) {
+                    prevX = output.getX(output.getN() - 2);
+                    prevY = output.getY(output.getN() - 2);
+                }
           
                 int minAngleIdx = calculateMinAngles(
                     x, y, ns, neighborsX, neighborsY, nn,
-                    contiguousShapePoints);
+                    contiguousShapePoints, prevX, prevY);
                 
                 {//DEBUG
                     if (minAngleIdx == -1) {
@@ -598,9 +469,23 @@ public class PerimeterFinder2 {
                             }
                             plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],
                                 xminmxyminmiac[2], xminmxyminmiac[3],
-                                xp, yp, xPolygon, yPolygon, "shape");
+                                xp, yp, xPolygon, yPolygon, "shape 2");
                             plotter.writeFile2();
 
+                            n = borderPoints.size();
+                            xp = new int[n];
+                            yp = new int[n];
+                            count = 0;
+                            for (PairInt p : borderPoints) {
+                                xp[count] = p.getX();
+                                yp[count] = p.getY();
+                                count++;
+                            }
+                            plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],
+                                xminmxyminmiac[2], xminmxyminmiac[3],
+                                xp, yp, xPolygon, yPolygon, "border 2");
+                            plotter.writeFile2();
+                                    
                             n = medialAxisPoints.size();
                             xp = new int[n];
                             yp = new int[n];
@@ -771,7 +656,7 @@ public class PerimeterFinder2 {
                 }
                 plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],
                     xminmxyminmiac[2], xminmxyminmiac[3],
-                    xp, yp, xPolygon, yPolygon, "shape");
+                    xp, yp, xPolygon, yPolygon, "shape 3");
                 plotter.writeFile2();
 
                 n = medialAxisPoints.size();
@@ -807,8 +692,7 @@ public class PerimeterFinder2 {
             } catch (Throwable t) {
 
             }
-        }
-        
+        } 
         
         return output;
     }
@@ -888,8 +772,8 @@ public class PerimeterFinder2 {
      */
     private int calculateMinAngles(int x, int y,
         int nXY, int[] neighborsX, int[] neighborsY, 
-        NearestNeighbor2D nn,
-        Set<PairInt> contiguousShapePoints) {
+        NearestNeighbor2D nn, Set<PairInt> contiguousShapePoints,
+        int prevX, int prevY) {
 
         /*
         to determine the next best point among more than
@@ -939,22 +823,58 @@ public class PerimeterFinder2 {
         
         double minAngle = Double.MAX_VALUE;
         int minIdx = -1;
+        
+        /*
+        System.out.println(
+            String.format("    (%d,%d) (%d,%d) (%d,%d) nXY=%d", 
+                prevX, prevY, x, y, medAxisP.getX(), medAxisP.getY(), nXY));
+        */
+        
+        // if (x,y) == medAxisP or (x2,y2) == medAxisP
+        // angle is NAN
 
-        for (int i = 0; i < nXY; ++i) {
-            int x2 = neighborsX[i];
-            int y2 = neighborsY[i];
+        if (!(medAxisP.getX() == x && medAxisP.getY() == y)) {
+            for (int i = 0; i < nXY; ++i) {
+                int x2 = neighborsX[i];
+                int y2 = neighborsY[i];
 
-            double angle = LinesAndAngles.calcClockwiseAngle(
-                x, y, x2, y2, medAxisP.getX(), medAxisP.getY());
+                double angle = LinesAndAngles.calcClockwiseAngle(
+                    x, y, x2, y2, medAxisP.getX(), medAxisP.getY());
 
-            /*
-            System.out.println(
-                String.format("    (%d,%d) a=%.4f", x2, y2, (float) angle));
-            */
-            
-            if (angle < minAngle) {
-                minAngle = angle;
-                minIdx = i;
+                /*
+                System.out.println(
+                    String.format("    (%d,%d) a=%.4f", x2, y2, (float) angle));
+                */
+                
+                if (angle < minAngle) {
+                    minAngle = angle;
+                    minIdx = i;
+                }
+            }
+        } else {
+            // since the medial axis is same as (x,y), try using
+            // the previous point in output as (x,y) and
+            // current (x,y) for the medAxisP
+            if (prevX == -1) {
+                return -1;
+            }
+            for (int i = 0; i < nXY; ++i) {
+                int x2 = neighborsX[i];
+                int y2 = neighborsY[i];
+
+                double angle = LinesAndAngles.calcClockwiseAngle(
+                    prevX, prevY, x2, y2, x, y);
+
+                /*
+                System.out.println(
+                    String.format("    *(%d,%d) a=%.4f", 
+                        x2, y2, (float) angle));
+                */
+                
+                if (angle < minAngle) {
+                    minAngle = angle;
+                    minIdx = i;
+                }
             }
         }
         
@@ -1085,5 +1005,431 @@ public class PerimeterFinder2 {
         } catch (Throwable t) {
 
         }
+    }
+
+    private void debugPrint(PairIntArray ob1, PairIntArray ob2, 
+        PairIntArray output) {
+        
+        int[] minMaxXY1 = MiscMath.findMinMaxXY(ob1);
+        int[] minMaxXY2 = MiscMath.findMinMaxXY(ob2);
+        int[] minMaxXY = MiscMath.findMinMaxXY(output);
+        
+        int maxX = Math.max(minMaxXY1[1], minMaxXY2[1]);
+        maxX = Math.max(maxX, minMaxXY[1]);
+        
+        int maxY = Math.max(minMaxXY1[3], minMaxXY2[3]);
+        maxY = Math.max(maxY, minMaxXY[3]);
+        
+        algorithms.imageProcessing.Image img 
+            = new algorithms.imageProcessing.Image(maxX + 10, maxY + 10);
+        
+        long ts = algorithms.misc.MiscDebug.getCurrentTimeFormatted();
+        
+        algorithms.imageProcessing.ImageIOHelper.
+             addCurveToImage(ob1, img, 
+             2, 0, 255, 0);
+        algorithms.imageProcessing.ImageIOHelper.
+             addCurveToImage(ob2, img, 
+             1, 0, 0, 255);
+        algorithms.imageProcessing.ImageIOHelper.
+             addCurveToImage(output, img, 
+             0, 255, 0, 0);
+        algorithms.misc.MiscDebug.writeImage(img, "_m_" + ts);
+        System.out.println("wrote " + ts);
+    }
+    
+    /**
+     * NOT READY FOR USE...needs alot more testing.
+     * 
+     * given the border of a contiguous set of points and
+     * given the medial axis points of that same set of
+     * points (that is, the medial axis of the shape filling 
+     * points within the border), return a clockwise set of 
+     * ordered border points.
+     * Note the borders having extended single pixel width
+     * regions will have gaps in the returned ordered points.
+     * 
+     * @param borderPoints
+     * @param medialAxisPoints
+     * @return 
+     */
+    public PairIntArray extractOrderedBorder00(Set<PairInt> 
+        borderPoints, Set<PairInt> medialAxisPoints) {
+        
+        /*
+        -- note points which only have 1 neighbor.  these
+           are the single pixel wide spurs that result in
+           gaps in the output ordered point segment
+           -- the spur starts where the number of neighbors
+              is 3 or more.
+              that's where the curve continues after reaching
+              the end of the spur.
+              --> can keep track of these points and junctions
+              with a linked list having key=index.
+        
+        starting w/ smallest x, smallest y,
+        using DFS traversal through points and extracting points
+        as they are added to the ordered points.
+        - when there is more than one adjacent choice for next
+          step, have to use the medial axis to determine
+          the best choice:        
+        */
+
+        // constructed only if needed
+        NearestNeighbor2D nn = null;   
+        
+        PairIntArray output = new PairIntArray(borderPoints.size());
+        
+        Set<PairInt> remaining = new HashSet<PairInt>(borderPoints);
+        
+        PairInt pt1 = findMinXY(borderPoints);
+
+        output.add(pt1.getX(), pt1.getY());        
+        remaining.remove(pt1);
+        
+        int[] neighborsX = new int[8];
+        int[] neighborsY = new int[8];
+        double[] angle = new double[8];
+        
+        // when still have points in remaining, and
+        // have no neighbors in remaining for a point,
+        // use this to backtrack to previous junction.
+        LinkedList<Integer> junctionNodes = new LinkedList<Integer>();
+        
+        // because the juntionNodes may be inserted correctly, 
+        // especially at the end of a complex perimeter
+        // with remaining points not yet added,
+        // keeping a separate list of junctionNodes
+        // that are added to output while backtracking in order
+        // to revise them later if needed.
+        LinkedHashSet<Integer> jassocInserted = new LinkedHashSet<Integer>();
+        
+        boolean err = false;
+        while (!remaining.isEmpty()) {
+            err = false;
+            int prevIdx = output.getN() - 1;
+            int x = output.getX(prevIdx);
+            int y = output.getY(prevIdx);
+            
+            // if there more than one adjacent neighbor
+            // in remaining set, use the medial axis
+            // and angles to determine next point
+        
+            int ns = findNeighbors(x, y, 
+                remaining, neighborsX, neighborsY);
+            
+            if (ns == 1) {
+                output.add(neighborsX[0], neighborsY[0]);
+            } else if (ns == 0) {
+                int ns2 = 0;
+                while (ns2 == 0) {                    
+                    // TODO: revisit this for complex shapes
+                    Integer index = junctionNodes.pollLast();
+                    if (index == null) {
+                        //throw new IllegalStateException(
+                        Logger.getLogger(this.getClass().getName()).warning(
+                            "Error in algorithm:"
+                            + " no adjacent points for (" + x + " " + y
+                            + ") but remaining is not empty and "
+                            + " junction list is empty");
+                        err = true;
+                        break;
+                    }
+                    int x3 = output.getX(index.intValue());
+                    int y3 = output.getY(index.intValue());
+
+                    ns2 = findNeighbors(x3, y3, remaining,
+                        neighborsX, neighborsY);
+                    
+                    while (ns2 == 0 && !junctionNodes.isEmpty()) {
+                        index = junctionNodes.pollLast();
+                        x3 = output.getX(index.intValue());
+                        y3 = output.getY(index.intValue());
+                        ns2 = findNeighbors(x3, y3, remaining,
+                             neighborsX, neighborsY);
+                    }
+                
+                    if (ns2 == 1) {
+                        output.add(neighborsX[0], neighborsY[0]);
+                    } else if (ns2 > 1) {
+                        // find smallest angle subtended
+                        // and add that point to output,
+                        // then add output.size to junctionNodes
+                        
+                        if (nn == null) {
+                            int[] minMaxY = MiscMath.findMinMaxXY(
+                                borderPoints);
+                            nn = new NearestNeighbor2D(medialAxisPoints,
+                                minMaxY[1], minMaxY[3]);
+                        }
+     
+                        int prevX = -1;
+                        int prevY = -1;
+                        if (output.getN() > 1) {
+                            prevX = output.getX(output.getN() - 2);
+                            prevY = output.getY(output.getN() - 2);
+                        }
+                        int minAngleIdx = calculateMinAngles00(
+                            x3, y3, ns2, neighborsX, neighborsY, nn,
+                            prevX, prevY);
+                
+                        junctionNodes.add(Integer.valueOf(output.getN()));
+                        
+                        output.add(neighborsX[minAngleIdx], 
+                            neighborsY[minAngleIdx]);                        
+                    }
+                    jassocInserted.add(output.getN() - 1);
+                }
+            } else if (ns > 1) {
+                // find smallest angle subtended
+                // and add that point to output,
+                // then add output.size to junctionNodes
+                
+                if (nn == null) {
+                    int[] minMaxY = MiscMath.findMinMaxXY(borderPoints);
+                    nn = new NearestNeighbor2D(medialAxisPoints, 
+                        minMaxY[1], minMaxY[3]);
+                }
+          
+                int prevX = -1;
+                int prevY = -1;
+                if (output.getN() > 1) {
+                    prevX = output.getX(output.getN() - 2);
+                    prevY = output.getY(output.getN() - 2);
+                }
+                int minAngleIdx = calculateMinAngles00(
+                    x, y, ns, neighborsX, neighborsY, nn,
+                    prevX, prevY);
+                
+                junctionNodes.add(Integer.valueOf(output.getN()));
+     
+                output.add(neighborsX[minAngleIdx], neighborsY[minAngleIdx]);                
+            }
+            
+            if (err) {
+                System.err.println("not adding back: " +
+                    remaining.toString());
+                remaining.clear();
+            } else {           
+                boolean rmvd = remaining.remove(
+                    new PairInt(output.getX(output.getN() - 1),
+                    output.getY(output.getN() - 1)));
+                assert(rmvd);
+            }
+        }
+        
+        if (!jassocInserted.isEmpty()) {
+            /*System.out.println("re-check these:");
+            for (Integer index : jassocInserted) {
+                int idx = index.intValue();
+                System.out.println("x=" + output.getX(idx) +
+                    "," + output.getY(idx));
+            }*/
+            List<Integer> list = new ArrayList<Integer>(jassocInserted);
+            Collections.sort(list);
+            int[] xAdd = new int[list.size()];
+            int[] yAdd = new int[list.size()];
+            for (int i = (list.size() - 1); i > -1; --i) {
+                int rmIdx = list.get(i).intValue();
+                xAdd[i] = output.getX(rmIdx);
+                yAdd[i] = output.getY(rmIdx);
+                output.removeRange(rmIdx, rmIdx);
+            }
+            // find best place to insert them starting from end
+            for (int i = (list.size() - 1); i > -1; --i) {
+                int xp = xAdd[i];
+                int yp = yAdd[i];
+                double minDist = Double.MAX_VALUE;
+                int minDistIdx = -1;
+                for (int j = (output.getN() - 1); j > -1; --j) {
+                    int x2 = output.getX(j);
+                    int y2 = output.getY(j);
+                    double d = Math.sqrt(distSq(xp, yp, x2, y2));
+                    if (d < minDist) {
+                        minDist = d;
+                        minDistIdx = j;
+                    } else if (d >= minDist && (minDist < 2)) {
+                        break;
+                    }
+                }
+                // default insert is minDistIdx + 1 unless
+                // the existing distance is 1, then instead, use minDistIdx
+                if (minDistIdx == (output.getN() - 1)) {
+                    output.add(xp, yp);
+                } else {
+                    if (((minDistIdx - 1) > -1) 
+                        && ((minDistIdx + 1) < output.getN())) {
+                        
+                        double dPrev0 = Math.sqrt(distSq(
+                        output.getX(minDistIdx - 1), 
+                        output.getY(minDistIdx - 1),
+                        xp, yp));
+                                                
+                        double dNext0 = Math.sqrt(distSq(
+                        output.getX(minDistIdx + 1), 
+                        output.getY(minDistIdx + 1),
+                        output.getX(minDistIdx), 
+                        output.getY(minDistIdx)));
+                        
+                        double d0 = dPrev0 + minDist + dNext0;
+                        
+                        double dPrev1 = Math.sqrt(distSq(
+                        output.getX(minDistIdx - 1), 
+                        output.getY(minDistIdx - 1),
+                        output.getX(minDistIdx), 
+                        output.getY(minDistIdx)));
+                        
+                        double dNext1 = Math.sqrt(distSq(
+                        output.getX(minDistIdx + 1), 
+                        output.getY(minDistIdx + 1), xp, yp));
+                        
+                        double d1 = dPrev1 + minDist + dNext1;
+                       
+                        if ((d1 < d0) && (dPrev1 == minDist)) {
+                            minDistIdx++;
+                        }
+                    }
+                    output.insert(minDistIdx, xp, yp);
+                }
+            }
+            /*
+            // if any adjacent have dist > 2, see if swapping would
+            // reduce that
+            for (int i = 0; i < (output.getN() - 1); ++i) {
+                int x = output.getX(i);
+                int y = output.getY(i);
+                int nextX = output.getX(i + 1);
+                int nextY = output.getY(i + 1);
+                double d1 = Math.sqrt(distSq(nextX, nextY, x, y));
+                if (d1 >= 2 && (i > 0)) {
+                    double dpn = Math.sqrt(distSq(nextX, nextY, 
+                        output.getX(i - 1), output.getY(i - 1)));
+                    if (dpn <= 2) {
+                        
+                    }
+                }
+            }
+            */
+        }
+    
+        return output;
+    }
+    
+    /**
+     * calculate the minimum angle where the vertex is
+     * the nearest medial axis point and the ends
+     * of the segments are (x,y) and each point in 
+     * neighborsX, neighborsY.
+     * @param x
+     * @param y
+     * @param nXY
+     * @param neighborsX
+     * @param neighborsY
+     * @param nn
+     * @param medAxis0 closest medial axis point to (x, y)
+     * @return index of neighborsX, neighborsY that
+     * has the smallest angle subtended by the medial axis
+     */
+    private int calculateMinAngles00(int x, int y,
+        int nXY, int[] neighborsX, int[] neighborsY, 
+        NearestNeighbor2D nn, int prevX, int prevY) {
+
+        /*
+        to determine the next best point among more than
+        one choice, need to determine if the points are
+        a corner for example where the diagonal and
+        horizontal or vertical are both present,
+        OR whether this is 2 borders adjacent to one 
+        another due to the region being very narrow
+        for example.  This later case requires alot more
+        logic than initially present here to avoid making
+        crossing perimeter paths.
+        
+        May need to revisit this:
+           For the narrow width regions that are 2 adjacent
+        boundaries, the number of remaining neighbors on the
+        first pass through the region appears to be > 2,
+        and for that case, cannot use the medial axis, but
+        can use the number of non-shape neighbors in common.
+        */
+
+        if (nXY == 1) {
+            return 0;
+        }
+       
+        /*
+             P1      PmedAxis
+
+                P2
+        */
+        
+        Set<PairInt> medAxisClosest = nn.findClosest(x, y);
+        assert(!medAxisClosest.isEmpty());
+        PairInt medAxisP = medAxisClosest.iterator().next();
+       
+        /*
+        System.out.println(
+            String.format("x,y=(%d,%d) medAxis=(%d,%d)", x, y, 
+                medAxisP.getX(), medAxisP.getY()));
+        */
+        
+        double minAngle = Double.MAX_VALUE;
+        int minIdx = -1;
+
+        /*
+        System.out.println(
+            String.format("    (%d,%d) (%d,%d) (%d,%d) nXY=%d", 
+                prevX, prevY, x, y, medAxisP.getX(), medAxisP.getY(), nXY));
+        */
+        
+        // if (x,y) == medAxisP or (x2,y2) == medAxisP
+        // angle is NAN
+
+        if (!(medAxisP.getX() == x && medAxisP.getY() == y)) {
+            for (int i = 0; i < nXY; ++i) {
+                int x2 = neighborsX[i];
+                int y2 = neighborsY[i];
+
+                double angle = LinesAndAngles.calcClockwiseAngle(
+                    x, y, x2, y2, medAxisP.getX(), medAxisP.getY());
+
+                /*
+                System.out.println(
+                    String.format("    (%d,%d) a=%.4f", x2, y2, (float) angle));
+                */
+                
+                if (angle < minAngle) {
+                    minAngle = angle;
+                    minIdx = i;
+                }
+            }
+        } else {
+            // since the medial axis is same as (x,y), try using
+            // the previous point in output as (x,y) and
+            // current (x,y) for the medAxisP
+            if (prevX == -1) {
+                return -1;
+            }
+            for (int i = 0; i < nXY; ++i) {
+                int x2 = neighborsX[i];
+                int y2 = neighborsY[i];
+
+                double angle = LinesAndAngles.calcClockwiseAngle(
+                    prevX, prevY, x2, y2, x, y);
+
+                /*
+                System.out.println(
+                    String.format("    *(%d,%d) a=%.4f", 
+                        x2, y2, (float) angle));
+                */
+                
+                if (angle < minAngle) {
+                    minAngle = angle;
+                    minIdx = i;
+                }
+            }
+        }
+        
+        return minIdx;
     }
 }
