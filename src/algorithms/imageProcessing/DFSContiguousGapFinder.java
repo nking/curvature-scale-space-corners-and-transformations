@@ -92,9 +92,7 @@ public class DFSContiguousGapFinder {
             dxs = Misc.dx8;
             dys = Misc.dy8;
         }
-    
-        //Set<PairInt> visited = new HashSet<PairInt>();
-        
+            
         for (int i = minX; i <= maxX; ++i) {
             for (int j = minY; j <= maxY; ++j) {
                 PairInt p = new PairInt(i, j);
@@ -104,7 +102,7 @@ public class DFSContiguousGapFinder {
                 for (int k = 0; k < dxs.length; ++k) {
                     int x2 = i + dxs[k];
                     int y2 = j + dys[k];
-                    if (x2 < minX || y2 < minX || x2 > maxX ||
+                    if (x2 < minX || y2 < minY || x2 > maxX ||
                         y2 > maxY) {
                         continue;
                     }
@@ -115,7 +113,6 @@ public class DFSContiguousGapFinder {
                 }
             }
         }
-        
     }
     
     protected void processPair(PairInt u, PairInt v) {
