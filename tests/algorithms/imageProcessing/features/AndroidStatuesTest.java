@@ -273,8 +273,6 @@ public class AndroidStatuesTest extends TestCase {
     }
      
     public void testShapeMatcher() throws Exception {
-
-        int maxDimension0 = 512;
         
         int maxDimension = 256;//512;
         
@@ -282,44 +280,34 @@ public class AndroidStatuesTest extends TestCase {
         ImageSegmentation imageSegmentation = new
             ImageSegmentation();
         CIEChromaticity cieC = new CIEChromaticity();
-        PerimeterFinder2 perF2 = new PerimeterFinder2();
 
+        // size of template object must be near target size
         String fileNameMask0 = "android_statues_03_sz2_mask.png";
         String filePathMask0 = ResourceFinder
             .findFileInTestResources(fileNameMask0);
         ImageExt imgMask0 = ImageIOHelper.readImageExt(filePathMask0);
-
-        String fileName0 = "android_statues_03.jpg";
-        int idx = fileName0.lastIndexOf(".");
-        String fileName0Root = fileName0.substring(0, idx);
-        String filePath0 = ResourceFinder
-            .findFileInTestResources(fileName0);
-        ImageExt img0 = ImageIOHelper.readImageExt(filePath0);
-        int w0 = img0.getWidth();
-        int h0 = img0.getHeight();
-        int binFactor0 = (int) Math.ceil(Math.max(
-            (float) w0 / maxDimension0, (float) h0 / maxDimension0));
-        img0 = imageProcessor.binImage(img0, binFactor0);
-
-        assert(img0.getNPixels() == imgMask0.getNPixels());
-
+        imgMask0 = imageProcessor.binImage(imgMask0, 2);
+      
+        
         Set<PairInt> shape0 = new HashSet<PairInt>();
         // multiply img0 by imgMask0 to leave only the pixels
         // of the model shape in the image.
-        for (int i = 0; i < img0.getNPixels(); ++i) {
-            if (imgMask0.getR(i) == 0) {
-                img0.setRGB(i, 0, 0, 0);
-            } else {
-                shape0.add(new PairInt(img0.getCol(i),
-                   img0.getRow(i)));
+        for (int i = 0; i < imgMask0.getNPixels(); ++i) {
+            if (imgMask0.getR(i) > 0) {
+                shape0.add(new PairInt(imgMask0.getCol(i),
+                   imgMask0.getRow(i)));
             }
         }
 
-        PairIntArray template = perF2.extractOrderedBorder(shape0);
+        PairIntArray template =
+            imageProcessor.extractSmoothedOrderedBoundary(
+                shape0, SIGMA.ONE);
+        
+        //PairIntArray template = perF2.extractOrderedBorder(shape0);
         
         String fileName1 = "android_statues_02.jpg";
           
-        idx = fileName1.lastIndexOf(".");
+        int idx = fileName1.lastIndexOf(".");
         String fileName1Root = fileName1.substring(0, idx);
 
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
@@ -352,36 +340,44 @@ public class AndroidStatuesTest extends TestCase {
         
         List<PairIntArray> orderedBoundaries = new ArrayList<PairIntArray>();
         for (int i = 0; i < listOfSets.size(); ++i) {
-            orderedBoundaries.add(perF2.extractOrderedBorder(
-                listOfSets.get(i)));
+            PairIntArray p = imageProcessor.extractSmoothedOrderedBoundary(
+                listOfSets.get(i), SIGMA.ONE);
+            orderedBoundaries.add(p);
+            //orderedBoundaries.add(perF2.extractOrderedBorder(
+            //    listOfSets.get(i)));
         }
 
         ShapeFinder sf = new ShapeFinder();
 
-        Result result = sf.findMatchingCells(orderedBoundaries, 
+        Result[] results = sf.findMatchingCells(orderedBoundaries, 
             listOfSets, adjMap, template);
-        PairIntArray p = (PairIntArray)result.getData();
         
-        CorrespondencePlotter plotter = new CorrespondencePlotter(p, 
-            template);
+        for (int i0 = 0; i0 < results.length; ++i0) {
+            
+            Result result = results[i0];
+            
+            PairIntArray p = (PairIntArray)result.getData();
 
-        for (int ii = 0; ii < result.getNumberOfMatches(); ++ii) {
-            int idx1 = result.getIdx1(ii);
-            int idx2 = result.getIdx2(ii);
-            int x1 = p.getX(idx1);
-            int y1 = p.getY(idx1);
-            int x2 = template.getX(idx2);
-            int y2 = template.getY(idx2);
-            //System.out.println(String.format(
-            //"(%d, %d) <=> (%d, %d)", x1, y1, x2, y2));
+            CorrespondencePlotter plotter = new CorrespondencePlotter(p, 
+                template);
 
-            if ((ii % 4) == 0) {
-                plotter.drawLineInAlternatingColors(x1, y1, x2, y2,
-                    0);
+            for (int ii = 0; ii < result.getNumberOfMatches(); ++ii) {
+                int idx1 = result.getIdx1(ii);
+                int idx2 = result.getIdx2(ii);
+                int x1 = p.getX(idx1);
+                int y1 = p.getY(idx1);
+                int x2 = template.getX(idx2);
+                int y2 = template.getY(idx2);
+                //System.out.println(String.format(
+                //"(%d, %d) <=> (%d, %d)", x1, y1, x2, y2));
+
+                if ((ii % 4) == 0) {
+                    plotter.drawLineInAlternatingColors(x1, y1, x2, y2,
+                        0);
+                }
             }
+            String filePath = plotter.writeImage("__andr_02_corres_" + i0);
         }
-        String filePath = plotter.writeImage("_"
-            + "_andr_02_corres");
     }
 
     public void estShapeMatcher() throws Exception {

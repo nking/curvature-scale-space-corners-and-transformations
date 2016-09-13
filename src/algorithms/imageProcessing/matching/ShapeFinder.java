@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.matching;
 
+import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
@@ -46,11 +47,18 @@ public class ShapeFinder {
     private double maxDiffChordSum = Float.MAX_VALUE;
     
     private double maxDistTransformSum = Float.MAX_VALUE;
+    
+    //TODO: if use projection in cost, need to restrict it to close to scale=1
+    //  with current settings...
+    private boolean useEuclideanInCost = false;
 
     private final float areaFactor = 2.f;
 
     // partial shape matcher sampling distance
-    private final int dp = 2;
+    private final int dp = 1;
+    private final boolean useSameNSampl = false;
+    
+    private final int nTop = 100;
 
     //DEBUG
     static TIntSet expectedIndexes = null;
@@ -91,7 +99,7 @@ public class ShapeFinder {
      * @param adjacencyMap
      * @return
      */
-    public Result findMatchingCells(
+    public Result[] findMatchingCells(
         List<PairIntArray> orderedBoundaries,
         List<Set<PairInt>> pointsList,
         TIntObjectMap<TIntSet> adjacencyMap, PairIntArray template) {
@@ -171,7 +179,7 @@ public class ShapeFinder {
         throw new UnsupportedOperationException("not yet implemented");
     }
 
-    private Result wideFWSearch(List<PairIntArray> orderedBoundaries,
+    private Result[] wideFWSearch(List<PairIntArray> orderedBoundaries,
         List<Set<PairInt>> pointsList,
         TIntObjectMap<TIntSet> adjacencyMap, PairIntArray template) {
 
@@ -263,8 +271,45 @@ public class ShapeFinder {
 
         Result r = aggregatedResultMap.get(minBitString);
         r.setData(aggregatedBoundaries.get(minBitString));
+        
+        // could use FixedSizeSortedVector to make this faster for only nTop objects
+        int nc = aggregatedCostMap.size();
+        float[] costs = new float[nc];
+        VeryLongBitString[] keys = new VeryLongBitString[nc];
+        int count = 0;
+        for (Entry<VeryLongBitString, Double> entry : aggregatedCostMap.entrySet()) {
+            keys[count] = entry.getKey();
+            costs[count] = entry.getValue().floatValue();
+            count++;
+        }
+        QuickSort.sortBy1stArg(costs, keys);
+        
+        int nt = (nc >= nTop) ? nTop : nc;
+        Result[] results = new Result[nt + 1];
+        for (int i = 0; i < nt; ++i) {
+            VeryLongBitString key = keys[i];
+            r = aggregatedResultMap.get(key);
+            PairIntArray b = aggregatedBoundaries.get(key);
+            r.setData(b);
+            assert(b != null);
+            results[i + 1] = r;
+        }
+        VeryLongBitString tBS = new VeryLongBitString(orderedBoundaries.size());
+        tBS.setBit(18); tBS.setBit(30); tBS.setBit(33); tBS.setBit(53);
+        tBS.setBit(54); tBS.setBit(64); tBS.setBit(93); tBS.setBit(97);
+        tBS.setBit(124);
+        Double cost = aggregatedCostMap.get(tBS);
+        if (cost == null) {
+            PairIntArray b =  mergeAdjacentOrderedBorders(tBS,
+                orderedBoundaries, pointsList);
+            cost = calcAndStoreMatchCost(b, template, tBS,
+                aggregatedBoundaries,
+                aggregatedResultMap, aggregatedCostMap);
+        }
+        results[0] = aggregatedResultMap.get(tBS);
+        results[0].setData(aggregatedBoundaries.get(tBS));
 
-        return r;
+        return results;
     }
 
     /**
@@ -302,14 +347,19 @@ public class ShapeFinder {
             if (d > maxChord) {
                 maxChord = d;
             }
-            d = calcTransformationDistanceSum(r, orderedBoundaries.get(idx),
-                template);
-            if (d > maxDist) {
-                maxDist = d;
+            if (useEuclideanInCost) {
+                d = calcTransformationDistanceSum(r, orderedBoundaries.get(idx),
+                    template);
+                if (d > maxDist) {
+                    maxDist = d;
+                }
             }
         }
         maxDiffChordSum = maxChord;
-        maxDistTransformSum = maxDist;
+        
+        if (useEuclideanInCost) {
+            maxDistTransformSum = maxDist;
+        }
 
         int nB = orderedBoundaries.size();
         
@@ -326,17 +376,20 @@ public class ShapeFinder {
             Result r = iter.key();
             int idx = iter.value();
             
-            double dist = calcTransformationDistanceSum(r, 
-                orderedBoundaries.get(idx),
-                template)/maxDistTransformSum;
-
             // calculating salukwdze dist^2 to use same reference, nT1
             int nI = r.getNumberOfMatches();
             float f = 1.f - ((float)nI/(float)nT1);
             double d = r.getChordDiffSum()/maxChord;
-            float s = (float)(f * f + d * d + dist * dist);
+            double s = f * f + d * d;
 
-            costs[i] = s;
+            if (useEuclideanInCost) {
+                double dist = calcTransformationDistanceSum(r,
+                    orderedBoundaries.get(idx),
+                    template) / maxDistTransformSum;
+                s += (dist * dist);
+            }
+            
+            costs[i] = (float)s;
             indexes[i] = i;
             results[i] = r;
 
@@ -407,6 +460,9 @@ public class ShapeFinder {
 
             PartialShapeMatcher matcher = new PartialShapeMatcher();
             matcher.overrideSamplingDistance(dp);
+            if (useSameNSampl) {
+                matcher.setToUseSameNumberOfPoints();
+            }
             Result r = matcher.match(p, template);
             if (r == null) {
                 continue;
@@ -716,8 +772,8 @@ public class ShapeFinder {
                                     boundary = mergeAdjacentOrderedBorders(bs0,
                                         orderedBoundaries, pointsList);
                                 }
-                                Double s = calcAndStoreMatchCost(boundary, template, bs0,
-                                    aggregatedBoundaries,
+                                Double s = calcAndStoreMatchCost(boundary, template, 
+                                    bs0, aggregatedBoundaries,
                                     aggregatedResultMap, aggregatedCostMap);
                                 if (s == null) {
                                     tIJ = false;
@@ -757,6 +813,9 @@ public class ShapeFinder {
                             if (bIKKJ.getN() > 6) {
                                 PartialShapeMatcher matcher = new PartialShapeMatcher();
                                 matcher.overrideSamplingDistance(dp);
+                                if (useSameNSampl) {
+                                    matcher.setToUseSameNumberOfPoints();
+                                }
                                 r = matcher.match(bIKKJ, template);
                             }
 
@@ -764,15 +823,20 @@ public class ShapeFinder {
                                 tIK = false;
                                 tKJ = false;
                             } else {
-                                
-                                double dist = calcTransformationDistanceSum(r, 
-                                    bIKKJ, template)/maxDistTransformSum;
-                                
+                                 
                                 int nI = r.getNumberOfMatches();
                                 float f = 1.f - ((float)nI/(float)nT1);
                                 double d = r.getChordDiffSum()/maxDiffChordSum;
-                                s1 = Double.valueOf(f * f + d * d + dist * dist);
+                                double c = f * f + d * d;
 
+                                if (useEuclideanInCost) {
+                                    double dist = calcTransformationDistanceSum(r,
+                                        bIKKJ, template)/maxDistTransformSum;
+                                    c += (dist * dist);
+                                }
+                                
+                                s1 = Double.valueOf(c);
+                                
                                 aggregatedBoundaries.put(bs1, bIKKJ);
                                 aggregatedCostMap.put(bs1, s1);
                                 aggregatedResultMap.put(bs1, r);
@@ -883,7 +947,6 @@ if ((distMap.containsKey(keyIJ) && (distMap.get(keyIJ) > s1))
             }
         }
 
-
         VeryLongBitString minBitString = indexesMap.get(minCostIdx);
 
         System.out.println("minCostIdx=" + minCostIdx +
@@ -916,15 +979,15 @@ if ((distMap.containsKey(keyIJ) && (distMap.get(keyIJ) > s1))
 
         PartialShapeMatcher matcher = new PartialShapeMatcher();
         matcher.overrideSamplingDistance(dp);
+        if (useSameNSampl) {
+            matcher.setToUseSameNumberOfPoints();
+        }
         Result result12 = matcher.match(boundary, template);
         if (result12 == null) {
             return null;
         }
         aggregatedResultMap.put(bs, result12);
 
-        double dist = calcTransformationDistanceSum(result12, 
-            boundary, template)/maxDistTransformSum;
-                       
         int nT1 = template.getN();
         // NOTE: this may need to be revised.  using the max diff chord
         // sum from only the single segmented cell matches as
@@ -934,7 +997,14 @@ if ((distMap.containsKey(keyIJ) && (distMap.get(keyIJ) > s1))
         int nI = result12.getNumberOfMatches();
         float f = 1.f - ((float) nI / (float) nT1);
         double d = result12.getChordDiffSum() / maxDiffChordSum;
-        double s = (f * f + d * d + dist * dist);
+        double s = (f * f + d * d);
+        
+        if (useEuclideanInCost) {
+            double dist = calcTransformationDistanceSum(result12,
+                boundary, template) / maxDistTransformSum;
+            s += (dist * dist);
+        }
+        
         Double cost12 = Double.valueOf(s);
 
         aggregatedCostMap.put(bs, cost12);

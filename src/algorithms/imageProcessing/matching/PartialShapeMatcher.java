@@ -1690,8 +1690,8 @@ public class PartialShapeMatcher {
             return data;
         }
         
-        public void setData(Object data) {
-            this.data = data;
+        public void setData(Object theData) {
+            this.data = theData;
         }
         
         public void setTransformationParameters(TransformationParameters

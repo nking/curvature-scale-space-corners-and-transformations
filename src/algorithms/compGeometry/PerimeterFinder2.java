@@ -527,6 +527,10 @@ public class PerimeterFinder2 {
                     }
                 }
 
+                if (minAngleIdx == -1) {
+                    return output;
+                }
+                
                 junctionNodes.add(Integer.valueOf(output.getN()));
      
                 output.add(neighborsX[minAngleIdx], neighborsY[minAngleIdx]);                
