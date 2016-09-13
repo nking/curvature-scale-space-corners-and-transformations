@@ -1,6 +1,6 @@
 package algorithms.compGeometry;
 
-import algorithms.imageProcessing.DFSContiguousGapFinder;
+import algorithms.imageProcessing.ContiguousGapFinder;
 import algorithms.imageProcessing.DFSContiguousValueFinder;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.PostLineThinnerCorrections;
@@ -71,7 +71,7 @@ public class PerimeterFinder2 {
      */
     public Set<PairInt> findEmbeddedGaps(Set<PairInt> contiguousPoints) {
         
-        DFSContiguousGapFinder finder = new DFSContiguousGapFinder(
+        ContiguousGapFinder finder = new ContiguousGapFinder(
             contiguousPoints);
         finder.setMinimumNumberInCluster(1);
         

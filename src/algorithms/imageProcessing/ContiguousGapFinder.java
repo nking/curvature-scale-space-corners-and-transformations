@@ -15,7 +15,7 @@ import java.util.logging.Logger;
  * 
  * @author nichole
  */
-public class DFSContiguousGapFinder {
+public class ContiguousGapFinder {
     
    /**
      * an array to hold each group as an item.  each item contains a key which is an index
@@ -48,7 +48,7 @@ public class DFSContiguousGapFinder {
      */
     protected boolean use4Neighbors = true;
     
-    public DFSContiguousGapFinder(final Set<PairInt> thePoints) {
+    public ContiguousGapFinder(final Set<PairInt> thePoints) {
         
         this.points = thePoints;
         

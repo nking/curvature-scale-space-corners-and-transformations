@@ -5,6 +5,7 @@ import algorithms.QuickSort;
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.imageProcessing.features.RANSACEuclideanSolver;
 import algorithms.imageProcessing.transform.EuclideanTransformationFit;
+import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
 import algorithms.imageProcessing.util.MatrixUtil;
@@ -218,7 +219,7 @@ public class PartialShapeMatcher {
         
         if (rSub == null) {
             return null;
-        }
+        } 
         
         // -- put results back into frame of p and q --
           
@@ -235,6 +236,30 @@ public class PartialShapeMatcher {
             r.idx2s.add(dp * idx2);
         }
         r.chordDiffSum = rSub.chordDiffSum;
+        
+        if (rSub.getTransformationParameters() != null) {
+       
+            /*
+            transX = xt0 -
+                (xc*scale + (((x0-xc)*scale*math.cos(theta))
+                + ((y0-yc)*scale*math.sin(theta)))
+
+            transY = yt0 -
+                (yc*scale + ((-(x0-xc)*scale*math.sin(theta))
+                + ((y0-yc)*scale*math.cos(theta)))            
+            */
+            
+            // translation increases by scale factor change, dp
+            // rotation shouldn't change
+            // scale changes by factor dp
+            
+            TransformationParameters params = rSub.getTransformationParameters().copy();
+            params.setScale(dp * params.getScale());
+            params.setTranslationX(dp * params.getTranslationX());
+            params.setTranslationY(dp * params.getTranslationY());
+            r.setTransformationParameters(params);
+            
+        }
         
         return r;
     }
@@ -287,6 +312,50 @@ public class PartialShapeMatcher {
             r.idx2s.add(qDp * idx2);
         }
         r.chordDiffSum = rSub.chordDiffSum;
+        
+        if (rSub.getTransformationParameters() != null) {
+            
+            /*
+            two different scale factors need to be applied to the
+                parameters, pDp and qDp.
+            
+            transX = xt0 -
+                (xc*scale + (((x0-xc)*scale*math.cos(theta))
+                + ((y0-yc)*scale*math.sin(theta)))
+
+            transY = yt0 -
+                (yc*scale + ((-(x0-xc)*scale*math.sin(theta))
+                + ((y0-yc)*scale*math.cos(theta)))            
+            
+            if use 0,0 for origin, the equations simplify to:
+                transX = xt0 - (x0*scale)
+                transY = yt0 - (y0*scale)
+            
+            transforming x0,y0 by qDp and xt0,yt0 by pDp:                 
+                new transX = (xt0 * pDp) - (x0 * qDp * scale)
+                new transY = (yt0 * pDp) - (y0 * qDp * scale)
+            
+            looks like need to recalc transformation
+            */
+            
+            PairIntArray left = new PairIntArray(r.idx1s.size());
+            PairIntArray right = new PairIntArray(r.idx2s.size());
+            assert(r.idx1s.size() == r.idx2s.size());
+            for (int i = 0; i < r.idx1s.size(); ++i) {
+                int idx = r.idx1s.get(i);
+                left.add(p.getX(idx), p.getY(idx));
+                idx = r.idx2s.get(i);
+                right.add(q.getX(idx), q.getY(idx));
+            }
+            
+            MatchedPointsTransformationCalculator tc = 
+                new MatchedPointsTransformationCalculator();
+            
+            TransformationParameters params = tc.calulateEuclideanWithoutFilter(
+                left, right, 0, 0);
+            
+            r.setTransformationParameters(params);            
+        }
 
         return r;
     }
@@ -1525,6 +1594,7 @@ public class PartialShapeMatcher {
         private double distSum = 0;
         private double chordDiffSum = 0;
         private boolean chordsNeedUpdates = true;
+        private TransformationParameters params = null;
         private TIntList idx1s = new TIntArrayList();
         private TIntList idx2s = new TIntArrayList();
         private final int n1;
@@ -1623,6 +1693,15 @@ public class PartialShapeMatcher {
         public void setData(Object data) {
             this.data = data;
         }
+        
+        public void setTransformationParameters(TransformationParameters
+            euclidParams) {
+            this.params = euclidParams;
+        }
+        
+        public TransformationParameters getTransformationParameters() {
+            return params;
+        }
 
         /**
          * reverse the mappings from list 1 to list 2
@@ -1637,6 +1716,14 @@ public class PartialShapeMatcher {
             t.distSum = distSum;
             t.chordDiffSum = chordDiffSum;
             t.data = data;
+            
+            if (params != null) {
+                MatchedPointsTransformationCalculator tc =
+                    new MatchedPointsTransformationCalculator();
+                TransformationParameters params2 = 
+                    tc.swapReferenceFrames(params);
+                t.setTransformationParameters(params2);
+            }
 
             return t;
         }
@@ -1648,8 +1735,10 @@ public class PartialShapeMatcher {
             sb.append(String.format(
                 "offset=%d nMatched=%d frac=%.4f distSum=%.4f dChordSum=%.4f",
                 origOffset, idx1s.size(), getFractionOfWhole(),
-                (float)distSum,
-                (float)chordDiffSum));
+                (float)distSum, (float)chordDiffSum));
+            if (params != null) {
+                sb.append("\nparams=").append(params.toString());
+            }
             sb.append("\n");
 
             for (int i = 0; i < idx1s.size(); ++i) {
@@ -2132,7 +2221,8 @@ public class PartialShapeMatcher {
         TObjectIntMap<PairInt> qPoints = Misc.createPointIndexMap(q);
 
         Result result = new Result(p.getN(), q.getN(), origOffset);
-
+        result.setTransformationParameters(params);
+        
         TObjectFloatIterator<PairInt> iter = idxMap.iterator();
         for (int i = 0; i < idxMap.size(); ++i) {
             iter.advance();
