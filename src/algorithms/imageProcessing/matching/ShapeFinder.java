@@ -314,7 +314,7 @@ public class ShapeFinder {
             r.setData(b);
             assert(b != null);
             results[i + 1] = r;
-            System.out.println("bs[" + (i+1) + "] " + Arrays.toString(key.getSetBits()));
+            System.out.println(i + " " + Arrays.toString(key.getSetBits()));
         }
         Double cost = aggregatedCostMap.get(tBS);
         if (cost == null) {
@@ -324,7 +324,7 @@ public class ShapeFinder {
                 aggregatedBoundaries,
                 aggregatedResultMap, aggregatedCostMap);
         }
-        System.out.println("bs[0] " + Arrays.toString(tBS.getSetBits()));
+        System.out.println("expected=" + Arrays.toString(tBS.getSetBits()));
         results[0] = aggregatedResultMap.get(tBS);
         results[0].setData(aggregatedBoundaries.get(tBS));
 

@@ -380,7 +380,11 @@ public class AndroidStatuesTest extends TestCase {
                         0);
                 }
             }
-            String filePath = plotter.writeImage("__andr_02_corres_" + i0);
+            String str = Integer.toString(i0);
+            while (str.length() < 3) {
+                str = "0" + str;
+            }
+            String filePath = plotter.writeImage("__andr_02_corres_" + str);
         }
     }
 
