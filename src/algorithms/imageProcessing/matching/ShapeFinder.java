@@ -13,8 +13,10 @@ import java.util.List;
 import algorithms.imageProcessing.matching.PartialShapeMatcher.Result;
 import algorithms.imageProcessing.transform.EuclideanEvaluator;
 import algorithms.imageProcessing.transform.EuclideanTransformationFit;
+import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.util.PairInt;
 import algorithms.util.VeryLongBitString;
+import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TObjectIntIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
@@ -51,30 +53,21 @@ public class ShapeFinder {
     //TODO: if use projection in cost, need to restrict it to close to scale=1
     //  with current settings...
     private boolean useEuclideanInCost = false;
+    private float[] euclideanScaleRange = new float[]{0.9f, 1.1f};
 
     private final float areaFactor = 2.f;
 
     // partial shape matcher sampling distance
     private final int dp = 1;
-    private final boolean useSameNSampl = false;
+    private final boolean useSameNSampl = true;
     
     private final int nTop = 100;
 
     //DEBUG
-    static TIntSet expectedIndexes = null;
-    static {
-        expectedIndexes = new TIntHashSet();
-        expectedIndexes.add(18);
-        expectedIndexes.add(30);
-        expectedIndexes.add(33);
-        expectedIndexes.add(53);
-        expectedIndexes.add(54);
-        expectedIndexes.add(64);
-        expectedIndexes.add(93);
-        expectedIndexes.add(97);
-        expectedIndexes.add(124);
-    }
-
+    TIntSet expectedIndexes = new TIntHashSet();
+    VeryLongBitString tBS = null;
+    int tBSIdx = -1;
+    
     /**
      * NOT READY FOR USE.
      * uses PartialShapeMatcher and search patterns to
@@ -233,18 +226,46 @@ public class ShapeFinder {
         double minCost = Double.MAX_VALUE;
         VeryLongBitString minBitString = null;
 
+        {//DEBU specific to a test
+        tBS = new VeryLongBitString(orderedBoundaries.size());
+        PairInt[] cens = new PairInt[10];
+        cens[0] = new PairInt(184,86);
+        cens[1] = new PairInt(187,79);
+        cens[2] = new PairInt(184,60);
+        cens[3] = new PairInt(173,83);
+        cens[4] = new PairInt(173,76);
+        cens[5] = new PairInt(184,61);//
+        cens[6] = new PairInt(173,52);
+        cens[7] = new PairInt(178,40);
+        cens[8] = new PairInt(189,44);
+        cens[9] = new PairInt(184,35);
+        for (int i = 0; i < orderedBoundaries.size(); ++i) {
+            PairInt pCen = orderedBoundaryCentroids.get(i);
+            //System.out.println("pCen=" + pCen + " idx=" + i);
+            for (int j = 0; j < cens.length; ++j) {
+               int dx = Math.abs(pCen.getX() - cens[j].getX());
+               int dy = Math.abs(pCen.getY() - cens[j].getY());
+               if (dx < 3 && dy < 3) {
+                   tBS.setBit(i);
+                   expectedIndexes.add(i);
+                   if (j == 4) {
+                       tBSIdx = i;
+                   }
+                   break;
+               }
+            }
+        }
+        }
+        
         for (int i = 0; i < outputSortedIndexes.size(); ++i) {
-        //for (int i = 11; i < 12; ++i) {
 
             Integer index = outputSortedIndexes.get(i);
 
-            if (index.intValue() != 54) {
+            if (index.intValue() != tBSIdx) {
                 continue;
             }
-            //184,160  debugging
             PairInt pCen = orderedBoundaryCentroids.get(index);
             System.out.println("pCen=" + pCen + " idx=" + index + " i=" + i);
-
 
             // the in-out variables store reusable calculations and
             // also the resulting cost of this best search result
@@ -293,11 +314,8 @@ public class ShapeFinder {
             r.setData(b);
             assert(b != null);
             results[i + 1] = r;
+            System.out.println("bs[" + (i+1) + "] " + Arrays.toString(key.getSetBits()));
         }
-        VeryLongBitString tBS = new VeryLongBitString(orderedBoundaries.size());
-        tBS.setBit(18); tBS.setBit(30); tBS.setBit(33); tBS.setBit(53);
-        tBS.setBit(54); tBS.setBit(64); tBS.setBit(93); tBS.setBit(97);
-        tBS.setBit(124);
         Double cost = aggregatedCostMap.get(tBS);
         if (cost == null) {
             PairIntArray b =  mergeAdjacentOrderedBorders(tBS,
@@ -306,6 +324,7 @@ public class ShapeFinder {
                 aggregatedBoundaries,
                 aggregatedResultMap, aggregatedCostMap);
         }
+        System.out.println("bs[0] " + Arrays.toString(tBS.getSetBits()));
         results[0] = aggregatedResultMap.get(tBS);
         results[0].setData(aggregatedBoundaries.get(tBS));
 
@@ -349,7 +368,7 @@ public class ShapeFinder {
             }
             if (useEuclideanInCost) {
                 d = calcTransformationDistanceSum(r, orderedBoundaries.get(idx),
-                    template);
+                    template, false);
                 if (d > maxDist) {
                     maxDist = d;
                 }
@@ -385,7 +404,7 @@ public class ShapeFinder {
             if (useEuclideanInCost) {
                 double dist = calcTransformationDistanceSum(r,
                     orderedBoundaries.get(idx),
-                    template) / maxDistTransformSum;
+                    template, true) / maxDistTransformSum;
                 s += (dist * dist);
             }
             
@@ -767,8 +786,6 @@ public class ShapeFinder {
                                 PairIntArray boundary = orderedBoundaries.get(
                                     keyIJ.getX());
                                 if (keyIJ.getX() != keyIJ.getY()) {
-                                    PerimeterFinder2 perFinder2 = new
-                                       PerimeterFinder2();
                                     boundary = mergeAdjacentOrderedBorders(bs0,
                                         orderedBoundaries, pointsList);
                                 }
@@ -831,7 +848,7 @@ public class ShapeFinder {
 
                                 if (useEuclideanInCost) {
                                     double dist = calcTransformationDistanceSum(r,
-                                        bIKKJ, template)/maxDistTransformSum;
+                                        bIKKJ, template, true)/maxDistTransformSum;
                                     c += (dist * dist);
                                 }
                                 
@@ -915,10 +932,6 @@ if ((distMap.containsKey(keyIJ) && (distMap.get(keyIJ) > s1))
 
         {
             // expected:
-            VeryLongBitString tBS = new VeryLongBitString(nB);
-            tBS.setBit(18); tBS.setBit(30); tBS.setBit(33); tBS.setBit(53);
-            tBS.setBit(54); tBS.setBit(64); tBS.setBit(93); tBS.setBit(97);
-            tBS.setBit(124);
             Double cost = aggregatedCostMap.get(tBS);
             if (cost == null) {
                 PairIntArray b =  mergeAdjacentOrderedBorders(tBS,
@@ -927,7 +940,8 @@ if ((distMap.containsKey(keyIJ) && (distMap.get(keyIJ) > s1))
                     aggregatedBoundaries,
                     aggregatedResultMap, aggregatedCostMap);
             }
-            System.out.println("expected true answer cost=" + cost);
+            System.out.println("expected true answer cost=" + cost +
+                " " + Arrays.toString(tBS.getSetBits()));
             for (Entry<PairInt, VeryLongBitString> entry : indexesMap.entrySet()) {
                 if (entry.getValue().equals(tBS)) {
                     System.out.println("Expected found in distMap is " +
@@ -1001,7 +1015,7 @@ if ((distMap.containsKey(keyIJ) && (distMap.get(keyIJ) > s1))
         
         if (useEuclideanInCost) {
             double dist = calcTransformationDistanceSum(result12,
-                boundary, template) / maxDistTransformSum;
+                boundary, template, true) / maxDistTransformSum;
             s += (dist * dist);
         }
         
@@ -1023,15 +1037,26 @@ if ((distMap.containsKey(keyIJ) && (distMap.get(keyIJ) > s1))
         }
 
         System.out.println("allPoints.size=" + allPoints.size()
-         + " setBits=" + Arrays.toString(setBits));
+        + " setBits=" + Arrays.toString(setBits));
 
         PerimeterFinder2 f2 = new PerimeterFinder2();
 
         return f2.extractOrderedBorder(allPoints);
     }
 
+    /**
+     * uses the euclidean transformation on the correspondence list
+     * in r.  if useLimits is set, and if the calculated transformation
+     * parameters' scale is out of range, then maxDistTransformSum is returned,
+     * else, the summed differences are returned.
+     * @param r
+     * @param p
+     * @param q
+     * @param useLimits
+     * @return 
+     */
     private double calcTransformationDistanceSum(Result r, PairIntArray p,
-        PairIntArray q) {
+        PairIntArray q, boolean useLimits) {
         
         if (r.getTransformationParameters() == null) {
             return Double.MAX_VALUE;
@@ -1051,6 +1076,14 @@ if ((distMap.containsKey(keyIJ) && (distMap.get(keyIJ) > s1))
         EuclideanEvaluator evaluator = new EuclideanEvaluator();
         EuclideanTransformationFit fit = evaluator.evaluate(left,
             right, r.getTransformationParameters(), tolerance);
+        
+        if (useLimits) {
+            TransformationParameters params = fit.getTransformationParameters();
+            float scale = params.getScale();
+            if (scale < euclideanScaleRange[0] || scale > euclideanScaleRange[1]) {
+                return maxDistTransformSum;
+            }
+        }
         
         List<Double> distances = fit.getErrors();
         

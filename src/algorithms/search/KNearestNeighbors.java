@@ -36,7 +36,7 @@ import java.util.logging.Logger;
  * @author nichole
  */
 public class KNearestNeighbors {
-
+    
     private VoronoiFortunesSweep voronoi = null;
     
     private Map<PairFloat, Set<Integer>> siteIndexesMap = null;
@@ -119,7 +119,7 @@ public class KNearestNeighbors {
         int minDist = 0;
 
         voronoi = new VoronoiFortunesSweep();
-
+    
         // O(N * log_2(N)) to build
         voronoi.generateVoronoi(x, y, xmin, xmax, ymin, ymax,
             minDist);
@@ -130,20 +130,21 @@ public class KNearestNeighbors {
         
         siteIndexesMap = new HashMap<PairFloat, Set<Integer>>();
     
+        assert (!edges.isEmpty());
         for (GraphEdge edge : edges) {
             int s1 = edge.site1;
             int s2 = edge.site2;
-            
+
             PairFloat p1 = sites[s1].getCoord();
             PairFloat p2 = sites[s2].getCoord();
-                       
+
             Set<Integer> indexes = siteIndexesMap.get(p1);
             if (indexes == null) {
                 indexes = new HashSet<Integer>();
                 siteIndexesMap.put(p1, indexes);
             }
             indexes.add(Integer.valueOf(s2));
-            
+
             indexes = siteIndexesMap.get(p2);
             if (indexes == null) {
                 indexes = new HashSet<Integer>();
@@ -151,7 +152,7 @@ public class KNearestNeighbors {
             }
             indexes.add(Integer.valueOf(s1));
         }
-        
+
         assert(sites.length == x.length);
 
         // points closer than minDist are not present,

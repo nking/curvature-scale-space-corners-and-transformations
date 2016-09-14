@@ -369,8 +369,6 @@ public class PerimeterFinder2 {
                                     plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],
                                         xminmxyminmiac[2], xminmxyminmiac[3],
                                         xp, yp, xPolygon, yPolygon, "shape 1");
-                                    plotter.writeFile2();
-
                                     
                                     n = borderPoints.size();
                                     xp = new int[n];
@@ -384,7 +382,6 @@ public class PerimeterFinder2 {
                                     plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],
                                         xminmxyminmiac[2], xminmxyminmiac[3],
                                         xp, yp, xPolygon, yPolygon, "border 1");
-                                    plotter.writeFile2();
                                     
                                     n = medialAxisPoints.size();
                                     xp = new int[n];
@@ -475,7 +472,6 @@ public class PerimeterFinder2 {
                             plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],
                                 xminmxyminmiac[2], xminmxyminmiac[3],
                                 xp, yp, xPolygon, yPolygon, "shape 2");
-                            plotter.writeFile2();
 
                             n = borderPoints.size();
                             xp = new int[n];
@@ -489,7 +485,6 @@ public class PerimeterFinder2 {
                             plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],
                                 xminmxyminmiac[2], xminmxyminmiac[3],
                                 xp, yp, xPolygon, yPolygon, "border 2");
-                            plotter.writeFile2();
                                     
                             n = medialAxisPoints.size();
                             xp = new int[n];
@@ -666,7 +661,6 @@ public class PerimeterFinder2 {
                 plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],
                     xminmxyminmiac[2], xminmxyminmiac[3],
                     xp, yp, xPolygon, yPolygon, "shape 3");
-                plotter.writeFile2();
 
                 n = medialAxisPoints.size();
                 xp = new int[n];

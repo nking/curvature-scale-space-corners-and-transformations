@@ -13429,25 +13429,23 @@ int z = 1;
 
         List<Set<PairInt>> contigSets = LabelToColorHelper
             .extractContiguousLabelPoints(img, labels);
-        PerimeterFinder2 finder2 = new PerimeterFinder2();
-        List<Set<PairInt>> borders = new ArrayList<Set<PairInt>>();
-        for (Set<PairInt> set : contigSets) {
-            borders.add(finder2.extractBorder(set));
-        }
+        //PerimeterFinder2 finder2 = new PerimeterFinder2();
+        //List<Set<PairInt>> borders = new ArrayList<Set<PairInt>>();
+        //for (Set<PairInt> set : contigSets) {
+        //    borders.add(finder2.extractBorder(set));
+        //}
 
-        imgCp = img.copyToImageExt();
-
-        int sizeLimit = 5;
+        int sizeLimit = 31;
         if (img.getNPixels() < 100) {
-            sizeLimit = 1;
+            sizeLimit = 5;
         }
         imgCp = img.copyToImageExt();
         // a safe limit for HSV is 0.025 to not overrun object bounds
         labels = mergeByColor(imgCp, contigSets, ColorSpace.HSV, 0.095f);//0.1f);
         mergeSmallSegments(imgCp, labels, sizeLimit, ColorSpace.HSV);
     
-        contigSets = LabelToColorHelper
-            .extractContiguousLabelPoints(img, labels);
+        //contigSets = LabelToColorHelper
+        //    .extractContiguousLabelPoints(img, labels);
         
         //separateByErosion(contigSets, 1);
         

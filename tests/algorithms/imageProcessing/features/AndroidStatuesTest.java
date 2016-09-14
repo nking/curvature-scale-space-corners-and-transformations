@@ -324,13 +324,13 @@ public class AndroidStatuesTest extends TestCase {
 
         int[] labels4 = imageSegmentation.objectSegmentation(img);
 
-        //ImageExt img11 = img.createWithDimensions();
-        //ImageIOHelper.addAlternatingColorLabelsToRegion(
-        //    img11, labels4);
-        //MiscDebug.writeImage(img11, "_final_" + fileName1Root);
-        ImageExt img11 = img.copyToImageExt();
-        LabelToColorHelper.applyLabels(img11, labels4);
+        ImageExt img11 = img.createWithDimensions();
+        ImageIOHelper.addAlternatingColorLabelsToRegion(
+            img11, labels4);
         MiscDebug.writeImage(img11, "_final_" + fileName1Root);
+        //ImageExt img11 = img.copyToImageExt();
+        //LabelToColorHelper.applyLabels(img11, labels4);
+        //MiscDebug.writeImage(img11, "_final_" + fileName1Root);
 
         List<Set<PairInt>> listOfSets = LabelToColorHelper.extractContiguousLabelPoints(
             img, labels4);
@@ -342,6 +342,10 @@ public class AndroidStatuesTest extends TestCase {
         for (int i = 0; i < listOfSets.size(); ++i) {
             PairIntArray p = imageProcessor.extractSmoothedOrderedBoundary(
                 listOfSets.get(i), SIGMA.ONE);
+            if (p == null || p.getN() < 20) {
+                System.out.println("consider a small cluster merging."
+                    + " set.size=" + listOfSets.get(i).size());
+            }
             orderedBoundaries.add(p);
             //orderedBoundaries.add(perF2.extractOrderedBorder(
             //    listOfSets.get(i)));
