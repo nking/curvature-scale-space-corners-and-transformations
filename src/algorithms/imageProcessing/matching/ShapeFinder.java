@@ -178,21 +178,32 @@ public class ShapeFinder {
 
         /*
         NOTE: if this method is to be used, it needs some improvements.
-        -- possibly needs improvements to the evaluation.
-        -- current test shows that it might need additional information used
-           to filter the adjacency map given to this class.
            -- the main goal is to match the shape independent of color
               changes and texture so it could match the outline of
               the gingerbread man in different lighting and poses.
               also to have at some point, ability to match mountain
               silhouettes such as half dome, for example.
-
-              the android statues 02 test might need additional information
-              that distinguishes the gbman from falsely matched regions.
-              considering if can identify foreground or background regions
-              in the segmentation to filter out of the adjacency maps,
-              for example, (or, conversely, could consider a separate match
-              for those to find the inverse profile too...)
+        
+           it looks like 2 things are needed:
+             - improvement of the input
+               and that can be improved segmentation or use of 
+               descriptors speficic to the data set (the later
+               modifies the adjacency map).
+               looking at really quick shift or quick shift for another
+               segmentation.  current approach of super pixels and
+               and then color region merging is still overly segmented
+               and full of aggregate combinations which produce some false
+               matches to shape that are better than the true match
+               which has some projection effects.
+               possibly need to continue the edited descriptors I made that are
+               half area, avoiding the "background" which might be
+               different, as it is in the android statues tests.
+               need a decent descriptor for sillhouettes that does the same
+               but is greyscale...
+             - improvement of the search once the true answer is robustly
+               found in the detailed local search using floyd warshall.
+               looking at tabu or scatter search.
+        
         */
 
         int n = orderedBoundaries.size();
@@ -226,7 +237,7 @@ public class ShapeFinder {
         double minCost = Double.MAX_VALUE;
         VeryLongBitString minBitString = null;
 
-        {//DEBU specific to a test
+        {//DEBUG specific to a test
         tBS = new VeryLongBitString(orderedBoundaries.size());
         PairInt[] cens = new PairInt[10];
         cens[0] = new PairInt(184,86);
