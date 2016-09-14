@@ -945,9 +945,11 @@ public class VoronoiFortunesSweep {
         
         float diffX = x2 - x1;
         float diffY = y2 - y1;
-        if (diffX == 0.f && diffY == 0.f) {
-            return;
-        }
+        //this, unfortunately, removes possible edges for
+        // points composed of only a straight line
+        //if (diffX == 0.f && diffY == 0.f) {
+        //    return;
+        //}
         if (Math.sqrt((diffX * diffX) + (diffY * diffY)) 
             < minDistanceBetweenSites) {
             return;
