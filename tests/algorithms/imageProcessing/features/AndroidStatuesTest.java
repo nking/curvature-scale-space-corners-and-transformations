@@ -42,6 +42,7 @@ import algorithms.util.PairIntPair;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.QuadInt;
 import algorithms.util.ResourceFinder;
+import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TIntList;
@@ -403,9 +404,13 @@ public class AndroidStatuesTest extends TestCase {
         for (int i0 = 0; i0 < results.length; ++i0) {
             
             Result result = results[i0];
-            
+                        
+            img11 = img.copyToImageExt();
+        
             PairIntArray p = (PairIntArray)result.getData();
 
+            ImageIOHelper.addCurveToImage(p, img11, 1, 0, 255, 0);
+            
             CorrespondencePlotter plotter = new CorrespondencePlotter(p, 
                 template);
 
@@ -416,8 +421,15 @@ public class AndroidStatuesTest extends TestCase {
                 int y1 = p.getY(idx1);
                 int x2 = template.getX(idx2);
                 int y2 = template.getY(idx2);
+                
+                ImageIOHelper.addPointToImage(x1, y1, img11, 
+                    0, 255, 0, 0);
+                if (x1 >= 35 && x1 <= 55 && y1 >= 35 && y1 <= 55) {
+                    System.out.println(String.format(
+                        "**%d  (%d, %d) <=> (%d, %d)", i0, x1, y1, x2, y2));
+                }
                 //System.out.println(String.format(
-                //"(%d, %d) <=> (%d, %d)", x1, y1, x2, y2));
+                //"%d  (%d, %d) <=> (%d, %d)", i0, x1, y1, x2, y2));
 
                 if ((ii % 4) == 0) {
                     plotter.drawLineInAlternatingColors(x1, y1, x2, y2,
@@ -429,6 +441,8 @@ public class AndroidStatuesTest extends TestCase {
                 str = "0" + str;
             }
             String filePath = plotter.writeImage("__andr_02_corres_" + str);
+        
+            MiscDebug.writeImage(img11, "_match_" + fileName1Root + "_" + i0); 
         }
     }
 
