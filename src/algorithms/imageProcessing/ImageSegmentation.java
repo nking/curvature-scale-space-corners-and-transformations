@@ -13878,7 +13878,7 @@ int z = 1;
 
         int nAfter = contigSets.size();
 
-        log.info("nMerged=" + (nBefore - nAfter));
+        log.fine("nMerged=" + (nBefore - nAfter));
 
         assert(LabelToColorHelper.assertAllPointsFound(contigSets,
             img.getWidth(), img.getHeight()));

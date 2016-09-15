@@ -203,7 +203,7 @@ public class SLICSuperPixels {
             
             double l2Norm = adjustClusterCenters();
             
-            log.info("l2Norm=" + l2Norm + " nIter=" + nIter);
+            log.fine("l2Norm=" + l2Norm + " nIter=" + nIter);
             
             if (l2Norm < threshold) {
                 break;

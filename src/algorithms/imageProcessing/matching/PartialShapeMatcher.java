@@ -187,7 +187,7 @@ public class PartialShapeMatcher {
     */
     public Result match(PairIntArray p, PairIntArray q) {
 
-        log.info("p.n=" + p.getN() + " q.n=" + q.getN());
+        log.fine("p.n=" + p.getN() + " q.n=" + q.getN());
 
         if (p.getN() < 2 || q.getN() < 2) {
             throw new IllegalArgumentException("p and q must "
@@ -213,7 +213,7 @@ public class PartialShapeMatcher {
             qSub.add(q.getX(i), q.getY(i));
         }
         
-        log.info("pSub.n=" + pSub.getN() + " qSub.n=" + qSub.getN());
+        log.fine("pSub.n=" + pSub.getN() + " qSub.n=" + qSub.getN());
         
         Result rSub = match0(pSub, qSub);
         
@@ -266,7 +266,7 @@ public class PartialShapeMatcher {
 
     private Result matchSameNumber(PairIntArray p, PairIntArray q) {
 
-        log.info("p.n=" + p.getN() + " q.n=" + q.getN());
+        log.fine("p.n=" + p.getN() + " q.n=" + q.getN());
 
         if (p.getN() < 2 || q.getN() < 2) {
             throw new IllegalArgumentException("p and q must "
@@ -289,7 +289,7 @@ public class PartialShapeMatcher {
             qSub.add(q.getX(i), q.getY(i));
         }
         
-        log.info("pSub.n=" + pSub.getN() + " qSub.n=" + qSub.getN());
+        log.fine("pSub.n=" + pSub.getN() + " qSub.n=" + qSub.getN());
         
         Result rSub = match0(pSub, qSub);
         
