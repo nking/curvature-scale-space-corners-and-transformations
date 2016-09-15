@@ -191,6 +191,14 @@ public class Image {
      * @return 
      */
     public int getInternalIndex(int col, int row) {
+        if ((col < 0) || (col > (width - 1))) {
+            throw new IllegalArgumentException(
+                "col is out of bounds: col=" + col + " w=" + width);
+        }
+        if ((row < 0) || (row > (height - 1))) {
+            throw new IllegalArgumentException(
+                "row is out of bounds: row=" + row + " h=" + height);
+        }
         return (row * width) + col;
     }
     
@@ -213,15 +221,6 @@ public class Image {
      * @param bPix 
      */
     public void setRGB(int col, int row, int rPix, int gPix, int bPix) {
-        
-        if ((col < 0) || (col > (width - 1))) {
-            throw new IllegalArgumentException(
-                "col " + col + " is out of bounds");
-        }
-        if ((row < 0) || (row > (height - 1))) {
-            throw new IllegalArgumentException(
-                "row " + row + " is out of bounds");
-        }
         
         int idx = getInternalIndex(col, row);
        
@@ -381,16 +380,7 @@ public class Image {
      * @return 
      */
     public int getR(int col, int row) {
-        
-        if ((col < 0) || (col > (width - 1))) {
-            throw new IllegalArgumentException(
-                "col is out of bounds");
-        }
-        if ((row < 0) || (row > (height - 1))) {
-            throw new IllegalArgumentException(
-                "row is out of bounds");
-        }
-        
+                
         int idx = getInternalIndex(col, row);
        
         if ((idx < 0) || (idx > (nPixels - 1))) {
@@ -418,15 +408,6 @@ public class Image {
      */
     public int getB(int col, int row) {
         
-        if ((col < 0) || (col > (width - 1))) {
-            throw new IllegalArgumentException(
-                "col is out of bounds");
-        }
-        if ((row < 0) || (row > (height - 1))) {
-            throw new IllegalArgumentException(
-                "row is out of bounds");
-        }
-        
         int idx = getInternalIndex(col, row);
        
         if ((idx < 0) || (idx > (nPixels - 1))) {
@@ -452,15 +433,6 @@ public class Image {
      * @return 
      */
     public int getG(int col, int row) {
-        
-        if ((col < 0) || (col > (width - 1))) {
-            throw new IllegalArgumentException(
-                "col is out of bounds");
-        }
-        if ((row < 0) || (row > (height - 1))) {
-            throw new IllegalArgumentException(
-                "row is out of bounds");
-        }
         
         int idx = getInternalIndex(col, row);
        

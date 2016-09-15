@@ -15,6 +15,7 @@ import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArrayWithColor;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -940,7 +941,7 @@ public class MiscellaneousCurveHelper {
         return new double[]{xc, yc};
     }
 
-    public PairInt calculateXYCentroids2(Set<PairInt> points) {
+    public PairInt calculateXYCentroids2(Collection<PairInt> points) {
         
         double[] xyCen = calculateXYCentroids(points);
         
@@ -949,7 +950,7 @@ public class MiscellaneousCurveHelper {
         return p;
     }
     
-    public double[] calculateXYCentroids(Set<PairInt> points) {
+    public double[] calculateXYCentroids(Collection<PairInt> points) {
 
         double xc = 0;
         double yc = 0;

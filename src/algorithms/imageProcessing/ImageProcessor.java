@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -6085,8 +6086,32 @@ if (sum > 511) {
         return new int[]{rSum, gSum, bSum};
     }
     
+    public int[] getAverageRGB(Image img, Collection<PairInt> pArr) {
+    
+        if (pArr.isEmpty()) {
+            return null;
+        }
+        
+        int rSum = 0;
+        int gSum = 0;
+        int bSum = 0;
+        for (PairInt p : pArr) {
+            int x = p.getX();
+            int y = p.getY();
+            rSum += img.getR(x, y);
+            gSum += img.getG(x, y);
+            bSum += img.getB(x, y);
+        }
+        rSum /= pArr.size();
+        gSum /= pArr.size();
+        bSum /= pArr.size();
+        
+        return new int[]{rSum, gSum, bSum};
+    }
+    
     /**
-     * NOTE: needs testing...
+     * NOTE: needs testing...invoker should trim for image bounds
+     * where needed.
      * @param points
      * @param sigma
      */
@@ -6146,10 +6171,10 @@ if (sum > 511) {
      * @return 
      */
     public PairIntArray extractSmoothedOrderedBoundary(
-        Set<PairInt> contiguousPoints) {
+        Set<PairInt> contiguousPoints, int imgWidth, int imgHeight) {
         
         return extractSmoothedOrderedBoundary(contiguousPoints, 
-            SIGMA.TWO);
+            SIGMA.TWO, imgWidth, imgHeight);
     }
     
     /**
@@ -6158,9 +6183,19 @@ if (sum > 511) {
      * @return 
      */
     public PairIntArray extractSmoothedOrderedBoundary(
-        Set<PairInt> contiguousPoints, SIGMA sigma) {
+        Set<PairInt> contiguousPoints, SIGMA sigma, int imgWidth, int imgHeight) {
                 
         blur(contiguousPoints, sigma);
+        
+        // trim any points extending beyond image bounds
+        Set<PairInt> rm = new HashSet<PairInt>();
+        for (PairInt p : contiguousPoints) {
+            if ((p.getX() > (imgWidth - 1)) || (p.getY() > (imgHeight - 1)) ||
+                (p.getX() < 0) || (p.getY() < 0)) {
+                rm.add(p);
+            }
+        }
+        contiguousPoints.removeAll(rm);
         
         PerimeterFinder2 finder = new PerimeterFinder2();
         PairIntArray ordered = finder.extractOrderedBorder(

@@ -275,41 +275,30 @@ public class AndroidStatuesTest extends TestCase {
     public void testShapeMatcher() throws Exception {
         
         int maxDimension = 256;//512;
+        SIGMA sigma = SIGMA.ONE;
         
         ImageProcessor imageProcessor = new ImageProcessor();
-        ImageSegmentation imageSegmentation = new
-            ImageSegmentation();
-        CIEChromaticity cieC = new CIEChromaticity();
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
 
         // size of template object must be near target size
-        String fileNameMask0 = "android_statues_03_sz2_mask.png";
-        String filePathMask0 = ResourceFinder
-            .findFileInTestResources(fileNameMask0);
-        ImageExt imgMask0 = ImageIOHelper.readImageExt(filePathMask0);
-        imgMask0 = imageProcessor.binImage(imgMask0, 2);
-      
+        ImageExt img0 = maskAndBin("android_statues_03_sz1", 1);
         
         Set<PairInt> shape0 = new HashSet<PairInt>();
-        // multiply img0 by imgMask0 to leave only the pixels
-        // of the model shape in the image.
-        for (int i = 0; i < imgMask0.getNPixels(); ++i) {
-            if (imgMask0.getR(i) > 0) {
-                shape0.add(new PairInt(imgMask0.getCol(i),
-                   imgMask0.getRow(i)));
+        for (int i = 0; i < img0.getNPixels(); ++i) {
+            if (img0.getR(i) > 0) {
+                shape0.add(new PairInt(img0.getCol(i), img0.getRow(i)));
             }
         }
 
         PairIntArray template =
-            imageProcessor.extractSmoothedOrderedBoundary(
-                shape0, SIGMA.ONE);
+            imageProcessor.extractSmoothedOrderedBoundary(shape0, 
+                sigma, img0.getWidth(), img0.getHeight());
         
         //PairIntArray template = perF2.extractOrderedBorder(shape0);
         
         String fileName1 = "android_statues_02.jpg";
           
-        int idx = fileName1.lastIndexOf(".");
-        String fileName1Root = fileName1.substring(0, idx);
-
+        String fileName1Root = fileName1.substring(0, fileName1.lastIndexOf("."));
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         ImageExt img = ImageIOHelper.readImageExt(filePath1);
 
@@ -334,27 +323,82 @@ public class AndroidStatuesTest extends TestCase {
 
         List<Set<PairInt>> listOfSets = LabelToColorHelper.extractContiguousLabelPoints(
             img, labels4);
-                
-        TIntObjectMap<TIntSet> adjMap = 
-            LabelToColorHelper.createAdjacencyLabelMap(img, labels4);
+        
+        //TIntObjectMap<TIntSet> adjMap = 
+        //    LabelToColorHelper.createAdjacencyLabelMap(img, labels4, false);
+        
+        /*
+        The shape matcher, if given input which is overly segmented like this,
+        needs additional filters applied to the input to reduce the
+        sets and associations.
+        Ideally, would have perfect segmentation, then the shape
+        matcher would only need to use PartialShapeMatcher on every cell
+        near template size only once to find true match.
+        
+        For this dataset, will apply a generous color filter to try to
+        remove some of the segments which could not be the gingerbread man.
+        This is not always the right approach for a dataset.
+        
+        Still considering whether ORB descriptors could be used here
+        to either add a cost to some perimeter points or help filter out
+        some of the sets and remove their associations from the adjacency map.
+        The later would be a clean pattern that would allow the 
+        ShapeMatcher to restrict its logic to shapes.
+        (though, adding weights or rather costs to the adjacency map
+        is still a possibility and a way for any additional weighted
+        information to be included without ShapeMatcher needing to know that
+        it is texture or color based, etc.)
+        */
+
+        int[] filteredLabels = new int[img.getNPixels()];
+        Arrays.fill(filteredLabels, -1);
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        // get color information for the template:
+        GroupAverageColors templateColors = new GroupAverageColors(img0, shape0);
+      
+        List<Set<PairInt>> listOfSets2 = new ArrayList<Set<PairInt>>();
         
         List<PairIntArray> orderedBoundaries = new ArrayList<PairIntArray>();
         for (int i = 0; i < listOfSets.size(); ++i) {
+            
             PairIntArray p = imageProcessor.extractSmoothedOrderedBoundary(
-                listOfSets.get(i), SIGMA.ONE);
+                listOfSets.get(i), sigma, w, h);
             if (p == null || p.getN() < 20) {
                 System.out.println("consider a small cluster merging."
                     + " set.size=" + listOfSets.get(i).size());
             }
-            orderedBoundaries.add(p);
-            //orderedBoundaries.add(perF2.extractOrderedBorder(
-            //    listOfSets.get(i)));
+            
+            GroupAverageColors setColors = new GroupAverageColors(img, listOfSets.get(i));
+            
+            DeltaESim deltaESimilarity = new DeltaESim(templateColors, setColors);
+            
+            if (deltaESimilarity.deltaE < 7) {
+                //for (PairInt pt : listOfSets.get(i)) {
+                //    int pixIdx = img.getInternalIndex(pt);
+                for (int j = 0; j < p.getN(); ++j) {
+                    int pixIdx = img.getInternalIndex(p.getX(j), p.getY(j));
+                    filteredLabels[pixIdx] = orderedBoundaries.size();
+                }
+                orderedBoundaries.add(p);
+                listOfSets2.add(listOfSets.get(i));
+            }
         }
 
+        img11 = img.createWithDimensions();
+        ImageIOHelper.addAlternatingColorLabelsToRegion(
+            img11, filteredLabels);
+        MiscDebug.writeImage(img11, "_filtered_" + fileName1Root);
+        
+        TIntObjectMap<TIntSet> adjMap = 
+            LabelToColorHelper.createAdjacencyLabelMap(img, filteredLabels, true);
+        
         ShapeFinder sf = new ShapeFinder();
 
         Result[] results = sf.findMatchingCells(orderedBoundaries, 
-            listOfSets, adjMap, template);
+            listOfSets2, adjMap, template);
         
         for (int i0 = 0; i0 < results.length; ++i0) {
             
@@ -679,7 +723,7 @@ public class AndroidStatuesTest extends TestCase {
 
         PairIntArray ordered =
             imageProcessor.extractSmoothedOrderedBoundary(
-            blob, sigma);
+            blob, sigma, img.getWidth(), img.getHeight());
 
         return ordered;
     }
@@ -854,6 +898,33 @@ public class AndroidStatuesTest extends TestCase {
             maxLabel++;
         }
         return labels3;
+    }
+
+    private ImageExt maskAndBin(String fileNamePrefix, int binFactor) throws IOException, Exception {
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        String fileNameMask0 = fileNamePrefix + "_mask.png";
+        String filePathMask0 = ResourceFinder
+            .findFileInTestResources(fileNameMask0);
+        ImageExt imgMask0 = ImageIOHelper.readImageExt(filePathMask0);
+        
+        String fileName0 = fileNamePrefix + ".jpg";
+        String filePath0 = ResourceFinder
+            .findFileInTestResources(fileName0);
+        ImageExt img0 = ImageIOHelper.readImageExt(filePath0);
+        
+        assertEquals(imgMask0.getNPixels(), img0.getNPixels());
+        
+        for (int i = 0; i < imgMask0.getNPixels(); ++i) {
+            if (imgMask0.getR(i) == 0) {
+                img0.setRGB(i, 0, 0, 0);
+            }
+        }
+        
+        img0 = imageProcessor.binImage(img0, binFactor);
+      
+        return img0;
     }
 
     private class DeltaESim implements Comparable<DeltaESim> {

@@ -366,7 +366,7 @@ public class LabelToColorHelperTest extends TestCase {
         
         TIntObjectMap<TIntSet> adjLabelMap = 
             LabelToColorHelper.createAdjacencyLabelMap(img, 
-                labels);
+                labels, true);
         
         assertEquals(3, adjLabelMap.size());
         assertEquals(1, adjLabelMap.get(0).size());

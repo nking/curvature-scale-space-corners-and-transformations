@@ -14,7 +14,9 @@ import algorithms.imageProcessing.matching.PartialShapeMatcher.Result;
 import algorithms.imageProcessing.transform.EuclideanEvaluator;
 import algorithms.imageProcessing.transform.EuclideanTransformationFit;
 import algorithms.imageProcessing.transform.TransformationParameters;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
+import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TObjectIntIterator;
@@ -98,6 +100,10 @@ public class ShapeFinder {
         TIntObjectMap<TIntSet> adjacencyMap, PairIntArray template) {
 
         /*
+        some notes that will be updated when return to the search
+        task.  higher priority before that is improvement of input so that true match
+        is top result consistently.
+        
         step (1) O(N_cells) + O(N_cells_in_bin * log_2(N_cells_in_bin)):
            the bin dimensions will be max of template dimensions.
            actually, should probably be the diagonal for max dist
@@ -203,7 +209,6 @@ public class ShapeFinder {
              - improvement of the search once the true answer is robustly
                found in the detailed local search using floyd warshall.
                looking at tabu or scatter search.
-        
         */
 
         int n = orderedBoundaries.size();
@@ -238,36 +243,67 @@ public class ShapeFinder {
         VeryLongBitString minBitString = null;
 
         {//DEBUG specific to a test
+        Set<PairInt> allPoints = new HashSet<PairInt>();
+        expectedIndexes.clear();
         tBS = new VeryLongBitString(orderedBoundaries.size());
-        PairInt[] cens = new PairInt[10];
+        PairInt[] cens = new PairInt[8];
         cens[0] = new PairInt(184,86);
         cens[1] = new PairInt(187,79);
         cens[2] = new PairInt(184,60);
-        cens[3] = new PairInt(173,83);
-        cens[4] = new PairInt(173,76);
-        cens[5] = new PairInt(184,61);//
-        cens[6] = new PairInt(173,52);
-        cens[7] = new PairInt(178,40);
-        cens[8] = new PairInt(189,44);
-        cens[9] = new PairInt(184,35);
+        cens[3] = new PairInt(177,41);
+        cens[4] = new PairInt(174,76);
+        cens[5] = new PairInt(173,52);
+        cens[6] = new PairInt(189,45);
+        cens[7] = new PairInt(184,35);
         for (int i = 0; i < orderedBoundaries.size(); ++i) {
             PairInt pCen = orderedBoundaryCentroids.get(i);
-            //System.out.println("pCen=" + pCen + " idx=" + i);
+            System.out.println("pCen=" + pCen + " idx=" + i);
             for (int j = 0; j < cens.length; ++j) {
                int dx = Math.abs(pCen.getX() - cens[j].getX());
                int dy = Math.abs(pCen.getY() - cens[j].getY());
-               if (dx < 3 && dy < 3) {
+               if ((dx < 3 && dy < 3) /*|| 
+                   (pCen.getX() > 170 && 190 < pCen.getX() &&
+                   pCen.getY() > 30 && 90 < pCen.getY())*/) {
                    tBS.setBit(i);
                    expectedIndexes.add(i);
-                   if (j == 4) {
+                   if (j == 5) {
                        tBSIdx = i;
                    }
+                   allPoints.addAll(pointsList.get(i));
+                   System.out.println("*pCen=" + pCen + " idx=" + i + " "
+                      + " adj=" + adjacencyMap.get(i));
                    break;
                }
             }
         }
+        System.out.println("found " + expectedIndexes.size() + " of " 
+            + cens.length + " expected.  tBS=" + Arrays.toString(tBS.getSetBits()));
+            /*
+            try {
+               PairIntArray b =  mergeAdjacentOrderedBorders(tBS,
+                   orderedBoundaries, pointsList);
+               int[] xPolygon = null;
+               int[] yPolygon = null;
+               PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+               int[] xminmxyminmiac = MiscMath.findMinMaxXY(allPoints);
+               int[] xp, yp;
+               int n2 = allPoints.size();
+               xp = new int[n2];
+               yp = new int[n2];
+               int i = 0;
+               for (PairInt p : allPoints) {
+                   xp[i] = p.getX();
+                   yp[i] = p.getY();
+                   i++;
+               }
+               plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],
+                   xminmxyminmiac[2], xminmxyminmiac[3],
+                   xp, yp, xPolygon, yPolygon, "shape tbs");
+               plotter.writeFile2();
+           } catch (Throwable t) { }        
+           */
         }
-        
+                
         for (int i = 0; i < outputSortedIndexes.size(); ++i) {
 
             Integer index = outputSortedIndexes.get(i);

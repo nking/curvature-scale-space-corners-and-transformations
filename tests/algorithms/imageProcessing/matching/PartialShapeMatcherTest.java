@@ -635,7 +635,7 @@ public class PartialShapeMatcherTest extends TestCase {
 
         PairIntArray ordered =
             imageProcessor.extractSmoothedOrderedBoundary(
-            blob, sigma);
+            blob, sigma, img.getWidth(), img.getHeight());
 
         return ordered;
     }

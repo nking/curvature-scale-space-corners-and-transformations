@@ -87,8 +87,7 @@ public class LabelToColorHelper {
         for (int i = 0; i < lMap.size(); ++i) {
             iter.advance();
             Set<PairInt> set = iter.value();
-            DFSConnectedGroupsFinder finder = 
-                new DFSConnectedGroupsFinder();
+            DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
             finder.setMinimumNumberInCluster(1);
             finder.findConnectedPointGroups(set);
             for (int j = 0; j < finder.getNumberOfGroups(); ++j) {
@@ -101,6 +100,8 @@ public class LabelToColorHelper {
             for (PairInt p : out.get(i)) {
                 int pixIdx = img.getInternalIndex(p);
                 labels[pixIdx] = i;
+                assert(img.getCol(pixIdx) < img.getWidth());
+                assert(img.getRow(pixIdx) < img.getHeight());
             }
         }
         
@@ -147,6 +148,8 @@ public class LabelToColorHelper {
     public static TIntObjectMap<Set<PairInt>> extractLabelPoints(
         Image img, int[] labels) {
         
+        assert(labels.length == img.getNPixels());
+        
         TIntObjectMap<Set<PairInt>> out 
             = new TIntObjectHashMap<Set<PairInt>>();
         
@@ -187,10 +190,11 @@ public class LabelToColorHelper {
      * labels.
      * @param img
      * @param labels
+     * @param excludeNegativeLabels
      * @return 
      */
     public static TIntObjectMap<TIntSet> createAdjacencyLabelMap(
-        Image img, int[] labels) {
+        Image img, int[] labels, boolean excludeNegativeLabels) {
         
         TIntObjectMap<TIntSet> adjacencyMap =
             new TIntObjectHashMap<TIntSet>();
@@ -204,6 +208,10 @@ public class LabelToColorHelper {
         for (int idx1 = 0; idx1 < labels.length; ++idx1) {
             
             int l1 = labels[idx1];
+            
+            if (excludeNegativeLabels && (l1 < 0)) {
+                continue;
+            }
             
             TIntSet set1 = adjacencyMap.get(l1);
             if (set1 == null) {
@@ -223,6 +231,9 @@ public class LabelToColorHelper {
                 int idx2 = img.getInternalIndex(x2, y2);
                 int l2 = labels[idx2];
                 if (l1 == l2) {
+                    continue;
+                }
+                if (excludeNegativeLabels && (l2 < 0)) {
                     continue;
                 }
                 set1.add(l2);

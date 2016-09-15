@@ -1,20 +1,15 @@
 package algorithms.compGeometry;
 
 import algorithms.imageProcessing.ContiguousGapFinder;
-import algorithms.imageProcessing.DFSContiguousValueFinder;
-import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.PostLineThinnerCorrections;
 import algorithms.imageProcessing.SpurRemover;
 import algorithms.imageProcessing.ZhangSuenLineThinner;
 import algorithms.misc.Misc;
-import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.search.NearestNeighbor2D;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
-import gnu.trove.map.TObjectIntMap;
-import gnu.trove.map.hash.TObjectIntHashMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -79,7 +74,7 @@ public class PerimeterFinder2 {
         int maxX = finder.getMaxX();
         int minY = finder.getMinY();
         int maxY = finder.getMaxY();
-        
+                
         finder.findGaps();
         
         int nGroups = finder.getNumberOfGapGroups();

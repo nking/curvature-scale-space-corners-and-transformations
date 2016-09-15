@@ -10045,7 +10045,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         // key = label, value = adjacent label indexes
         TIntObjectMap<TIntSet> adjacencyMap =
             LabelToColorHelper.createAdjacencyLabelMap(
-                img, labels);
+                img, labels, false);
 
         //key = label, value = average color in clrSpace
         TIntObjectMap<Colors> labelColorMap =
