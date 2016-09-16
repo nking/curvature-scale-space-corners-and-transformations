@@ -7,9 +7,12 @@ import algorithms.imageProcessing.features.*;
 import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceContour;
 import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceImagePoint;
 import algorithms.util.PairFloatArray;
+import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 
 /**
@@ -280,6 +283,60 @@ public class Transformer {
         }
           
         return te;
+    }
+    
+    public Set<PairInt> applyTransformation2(TransformationParameters params,
+        Set<PairInt> points) {
+        
+        if (points == null) {
+            throw new IllegalArgumentException("points cannot be null");
+        }
+        
+        double rotInRadians = params.getRotationInRadians();
+        double scale = params.getScale();        
+        double translationX = params.getTranslationX();
+        double translationY = params.getTranslationY();
+        double centroidX = params.getOriginX();
+        double centroidY = params.getOriginY();
+        
+        double cos = Math.cos(rotInRadians);
+        double sin = Math.sin(rotInRadians);
+                
+        /*
+        scale, rotate, then translate.
+        
+        xr_0 = xc*scale + (((x0-xc)*scale*math.cos(theta)) + ((y0-yc)*scale*math.sin(theta)))
+
+        xt_0 = xr_0 + transX = x1
+
+        yr_0 = yc*scale + (-((x0-xc)*scale*math.sin(theta)) + ((y0-yc)*scale*math.cos(theta)))
+
+        yt_0 = yr_0 + transY = y1
+        */
+        
+        Set<PairInt> output = new HashSet<PairInt>();
+
+        for (PairInt p : points) {
+
+            double x = p.getX();
+            double y = p.getY();
+
+            double xr = centroidX * scale + ((x - centroidX) * scale * cos) 
+                + ((y - centroidY) * scale * sin);
+
+            double yr = centroidY * scale + (-(x - centroidX) * scale * sin) 
+                + ((y - centroidY) * scale * cos);
+
+            double xt = xr + translationX;
+            double yt = yr + translationY;
+
+            int xte = (int)Math.round(xt);
+            int yte = (int)Math.round(yt);
+            
+            output.add(new PairInt(xte, yte));
+        }
+        
+        return output;
     }
     
     /**
