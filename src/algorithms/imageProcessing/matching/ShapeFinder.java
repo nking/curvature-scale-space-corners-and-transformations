@@ -13,6 +13,9 @@ import algorithms.imageProcessing.matching.PartialShapeMatcher.Result;
 import algorithms.imageProcessing.transform.EuclideanEvaluator;
 import algorithms.imageProcessing.transform.EuclideanTransformationFit;
 import algorithms.imageProcessing.transform.TransformationParameters;
+import algorithms.imageProcessing.transform.Transformer;
+import algorithms.misc.MiscMath;
+import algorithms.search.NearestNeighbor2D;
 import algorithms.util.PairInt;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TObjectIntIterator;
@@ -60,6 +63,7 @@ public class ShapeFinder {
     // partial shape matcher sampling distance
     private final int dp = 1;
     private final boolean useSameNSampl = true;
+    private final int innerTolerance = 3;
     
     private final Map<VeryLongBitString, PairIntArray> aggregatedBoundaries =
         new HashMap<VeryLongBitString, PairIntArray>();
@@ -98,6 +102,9 @@ public class ShapeFinder {
         this.template = template;
         this.templateInner = templateInner;
         this.pointsInner = pointsInner;
+        
+        assert(pointsInner.size() == orderedBoundaries.size());
+        assert(pointsList.size() == orderedBoundaries.size());
     }
     
     /**
@@ -236,7 +243,7 @@ public class ShapeFinder {
 
         List<Result> outputSortedResults = new ArrayList<Result>(n);
         List<Integer> outputSortedIndexes = new ArrayList<Integer>(n);
-       
+
         // maxDiffChordSum is calculated in here
         matchAndOrderByIncrCost(outputSortedResults, outputSortedIndexes);
 
@@ -310,7 +317,7 @@ public class ShapeFinder {
            } catch (Throwable t) { }        
            */
         }
-                
+        
         for (int i = 0; i < outputSortedIndexes.size(); ++i) {
 
             Integer index = outputSortedIndexes.get(i);
@@ -450,7 +457,10 @@ public class ShapeFinder {
     }
 
     /**
-     * has the side effect of maxDiffChordSum of maxDistTransformSum
+     * evaluate the outer partial shape match results and add
+     * the other terms to the cost, then sort the results into
+     * the output variables.
+     * has the side effect populating instance variables
      * 
      * @param outputSortedResults - output variable
      * @param outputSortedIndexes - output variable
@@ -470,18 +480,25 @@ public class ShapeFinder {
             iter.advance();
             Result r = iter.key();
             int idx = iter.value();
+            
             double d = r.getChordDiffSum();
             if (d > maxChord) {
                 maxChord = d;
             }
             if (useEuclideanInCost) {
-                d = calcTransformationDistanceSum(r, orderedBoundaries.get(idx),
-                    template, false);
+                d = calcTransformationDistanceSum(r, template, 
+                    orderedBoundaries.get(idx), false);
                 if (d > maxDist) {
                     maxDist = d;
                 }
             }
+            
+            //double oneMinusFScore = 1.f - calculateF1ScoreForInner(r, new int[]{idx});
+            
+            // TODO: assert other changes first
+            //d += oneMinusFScore;
         }
+        
         maxDiffChordSum = maxChord;
         
         if (useEuclideanInCost) {
@@ -510,9 +527,8 @@ public class ShapeFinder {
             double s = f * f + d * d;
 
             if (useEuclideanInCost) {
-                double dist = calcTransformationDistanceSum(r,
-                    orderedBoundaries.get(idx),
-                    template, true) / maxDistTransformSum;
+                double dist = calcTransformationDistanceSum(r, template,
+                    orderedBoundaries.get(idx), true) / maxDistTransformSum;
                 s += (dist * dist);
             }
             
@@ -588,7 +604,7 @@ public class ShapeFinder {
             if (useSameNSampl) {
                 matcher.setToUseSameNumberOfPoints();
             }
-            Result r = matcher.match(p, template);
+            Result r = matcher.match(template, p);
             if (r == null) {
                 continue;
             }
@@ -917,7 +933,7 @@ public class ShapeFinder {
                                 if (useSameNSampl) {
                                     matcher.setToUseSameNumberOfPoints();
                                 }
-                                r = matcher.match(bIKKJ, template);
+                                r = matcher.match(template, bIKKJ);
                             }
 
                             if (r == null) {
@@ -932,7 +948,7 @@ public class ShapeFinder {
 
                                 if (useEuclideanInCost) {
                                     double dist = calcTransformationDistanceSum(r,
-                                        bIKKJ, template, true)/maxDistTransformSum;
+                                        template, bIKKJ, true)/maxDistTransformSum;
                                     c += (dist * dist);
                                 }
                                 
@@ -1074,7 +1090,7 @@ if ((distMap.containsKey(keyIJ) && (distMap.get(keyIJ) > s1))
         if (useSameNSampl) {
             matcher.setToUseSameNumberOfPoints();
         }
-        Result result12 = matcher.match(boundary, template);
+        Result result12 = matcher.match(template, boundary);
         if (result12 == null) {
             return null;
         }
@@ -1093,7 +1109,7 @@ if ((distMap.containsKey(keyIJ) && (distMap.get(keyIJ) > s1))
         
         if (useEuclideanInCost) {
             double dist = calcTransformationDistanceSum(result12,
-                boundary, template, true) / maxDistTransformSum;
+                template, boundary, true) / maxDistTransformSum;
             s += (dist * dist);
         }
         
@@ -1170,5 +1186,44 @@ if ((distMap.containsKey(keyIJ) && (distMap.get(keyIJ) > s1))
         }
         
         return sum;
+    }
+    
+    int debugCachedUsed = 0;
+
+    /**
+     * calculate the metric for matching the inner points of the template to
+     * the inner points of the aggregated segmented cells.
+     * @param r
+     * @param indexes
+     * @return 
+     */
+    private float calculateF1ScoreForInner(Result r, int[] indexes) {
+        
+        Set<PairInt> aggInner = new HashSet<PairInt>();
+        for (int idx : indexes) {
+            aggInner.addAll(pointsInner.get(idx));
+        }
+        
+        // since the rotation needs the precision of at least float rather than
+        // integer for these transformations, it's likely that cached results
+        // may not be used again.  will count them meanwhile.
+        float rotationInRadians = r.getTransformationParameters()
+            .getRotationInRadians();
+        
+        Set<PairInt> trTemplateInner = rotatedTemplateInner.get(rotationInRadians);
+        if (trTemplateInner != null) {
+            debugCachedUsed++;
+        } else {
+            Transformer transformer = new Transformer();
+            trTemplateInner = transformer.applyTransformation2(
+                r.getTransformationParameters(), templateInner);
+        }
+        
+        EuclideanEvaluator eval = new EuclideanEvaluator();
+        
+        float f1Score = eval.calculateF1Score(trTemplateInner, aggInner, 
+            this.innerTolerance);
+        
+        return f1Score;
     }
 }

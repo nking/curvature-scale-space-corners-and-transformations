@@ -386,6 +386,7 @@ public class AndroidStatuesTest extends TestCase {
         List<Set<PairInt>> listOfPointSets2 = new ArrayList<Set<PairInt>>();
         List<PairIntArray> orderedBoundaries = new ArrayList<PairIntArray>();
         Set<PairInt> allSetPoints = new HashSet<PairInt>();
+        
         for (int i = 0; i < listOfPointSets.size(); ++i) {
             
             Set<PairInt> set = listOfPointSets.get(i);
@@ -415,7 +416,9 @@ public class AndroidStatuesTest extends TestCase {
                 allSetPoints.addAll(set);
             }
         }
-                
+        
+        assertEquals(orderedBoundaries.size(), listOfPointSets2.size());
+        
         GreyscaleImage gsImg = img.copyToGreyscale();
         imageProcessor.blur(gsImg, SIGMA.ZEROPOINTFIVE, 0, 255);
         imageProcessor.applyAdaptiveMeanThresholding(gsImg, 1);
@@ -438,7 +441,10 @@ public class AndroidStatuesTest extends TestCase {
                     set2.add(p);
                 }
             }
+            listOfAdaptiveMeans.add(set2);
         }
+        
+        assertEquals(orderedBoundaries.size(), listOfAdaptiveMeans.size());
         
         img11 = img.createWithDimensions();
         ImageIOHelper.addAlternatingColorLabelsToRegion(
@@ -473,12 +479,16 @@ public class AndroidStatuesTest extends TestCase {
                 template);
 
             for (int ii = 0; ii < result.getNumberOfMatches(); ++ii) {
+                // result.idx1 are template indexes
+                
                 int idx1 = result.getIdx1(ii);
                 int idx2 = result.getIdx2(ii);
-                int x1 = p.getX(idx1);
-                int y1 = p.getY(idx1);
-                int x2 = template.getX(idx2);
-                int y2 = template.getY(idx2);
+                
+                int x1 = template.getX(idx1);
+                int y1 = template.getY(idx1);
+                
+                int x2 = p.getX(idx2);
+                int y2 = p.getY(idx2);
                 
                 ImageIOHelper.addPointToImage(x1, y1, img11, 
                     0, 255, 0, 0);
