@@ -1601,7 +1601,7 @@ public class PartialShapeMatcher {
         private final int n2;
         private final int origOffset;
         private final int origN1;
-        private Object data = null;
+        private Object[] data = null;
         public Result(int n1, int n2, int offset) {
             this.n1 = n1;
             this.n2 = n2;
@@ -1686,11 +1686,11 @@ public class PartialShapeMatcher {
             return origN1;
         }
         
-        public Object getData() {
+        public Object[] getData() {
             return data;
         }
         
-        public void setData(Object theData) {
+        public void setData(Object[] theData) {
             this.data = theData;
         }
         
@@ -2207,7 +2207,7 @@ public class PartialShapeMatcher {
                 pixTol);
         }
 
-        log.info(debugTag + "transformation nearest matches=" +
+        log.fine(debugTag + "transformation nearest matches=" +
             idxMap.size());
 
         /*

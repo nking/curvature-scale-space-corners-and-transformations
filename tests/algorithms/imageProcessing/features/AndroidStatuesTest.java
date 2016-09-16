@@ -7,6 +7,7 @@ import algorithms.compGeometry.clustering.KMeansPlusPlus;
 import algorithms.compGeometry.clustering.KMeansPlusPlusColor;
 import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.CannyEdgeFilterAdaptive;
+import algorithms.imageProcessing.ColorHistogram;
 import algorithms.imageProcessing.DFSContiguousIntValueFinder;
 import algorithms.imageProcessing.DFSContiguousValueFinder;
 import algorithms.imageProcessing.GreyscaleImage;
@@ -24,6 +25,7 @@ import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.SegmentationMergeThreshold;
 import algorithms.imageProcessing.matching.PartialShapeMatcher.Result;
 import algorithms.imageProcessing.matching.ShapeFinder;
+import algorithms.imageProcessing.segmentation.ColorSpace;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.imageProcessing.segmentation.NormalizedCuts;
 import algorithms.imageProcessing.segmentation.SLICSuperPixels;
@@ -294,8 +296,12 @@ public class AndroidStatuesTest extends TestCase {
         PairIntArray template =
             imageProcessor.extractSmoothedOrderedBoundary(shape0, 
                 sigma, img0.getWidth(), img0.getHeight());
-        
-        //PairIntArray template = perF2.extractOrderedBorder(shape0);
+        /*
+        ColorHistogram templateClrHist = new ColorHistogram();
+        int[][] templateCH_RGB = templateClrHist.histogramRGB(img0, shape0);
+        int[][] templateCH_HSV = templateClrHist.histogramHSV(img0, shape0);
+        int[][] templateCH_CIELAB = templateClrHist.histogramCIELAB(img0, shape0);
+        */
         
         String fileName1 = "android_statues_02.jpg";
           
@@ -315,8 +321,7 @@ public class AndroidStatuesTest extends TestCase {
         int[] labels4 = imageSegmentation.objectSegmentation(img);
 
         ImageExt img11 = img.createWithDimensions();
-        ImageIOHelper.addAlternatingColorLabelsToRegion(
-            img11, labels4);
+        ImageIOHelper.addAlternatingColorLabelsToRegion(img11, labels4);
         MiscDebug.writeImage(img11, "_final_" + fileName1Root);
         //ImageExt img11 = img.copyToImageExt();
         //LabelToColorHelper.applyLabels(img11, labels4);
@@ -379,12 +384,39 @@ public class AndroidStatuesTest extends TestCase {
             if (deltaESimilarity.deltaE < 7) {
                 //for (PairInt pt : listOfSets.get(i)) {
                 //    int pixIdx = img.getInternalIndex(pt);
+                int idx = orderedBoundaries.size();
                 for (int j = 0; j < p.getN(); ++j) {
                     int pixIdx = img.getInternalIndex(p.getX(j), p.getY(j));
-                    filteredLabels[pixIdx] = orderedBoundaries.size();
+                    filteredLabels[pixIdx] = idx;
                 }
                 orderedBoundaries.add(p);
                 listOfSets2.add(listOfSets.get(i));
+                
+                /*
+                // the intersection only removes 3 out of 88 in this test if 
+                // use conservative limit, but it might be useful for merging
+                Set<PairInt> set = listOfSets.get(i);
+                img11 = img.copyToImageExt();
+                ImageIOHelper.addCurveToImage(p, img11, 1, 0, 255, 0);
+                String str = Integer.toString(idx);
+                while (str.length() < 4) {
+                    str = "0" + str;
+                }
+                MiscDebug.writeImage(img11, "_seg_" + fileName1Root 
+                    + "_" + str);
+            
+                ColorHistogram clrHist = new ColorHistogram();
+                int[][] ch_RGB = clrHist.histogramRGB(img, set);
+                int[][] ch_HSV = clrHist.histogramHSV(img, set);
+                int[][] ch_CIELAB = clrHist.histogramCIELAB(img, set);
+
+                // identical match is 1.0 and less similar is smaller value
+                System.out.println("color histogram intersection, i=" + str
+                    + " rgb=" + clrHist.intersection(ch_RGB, templateCH_RGB)
+                    + " hsv=" + clrHist.intersection(ch_HSV, templateCH_HSV)
+                    + " cielab=" + clrHist.intersection(ch_CIELAB, templateCH_CIELAB)
+                );
+                */
             }
         }
 
@@ -396,18 +428,23 @@ public class AndroidStatuesTest extends TestCase {
         TIntObjectMap<TIntSet> adjMap = 
             LabelToColorHelper.createAdjacencyLabelMap(img, filteredLabels, true);
         
+        imageProcessor.filterAdjacencyMap(img, listOfSets2, adjMap, 0.4f);
+        
         ShapeFinder sf = new ShapeFinder();
-
+        
         Result[] results = sf.findMatchingCells(orderedBoundaries, 
             listOfSets2, adjMap, template);
         
         for (int i0 = 0; i0 < results.length; ++i0) {
             
             Result result = results[i0];
-                        
+               
             img11 = img.copyToImageExt();
         
-            PairIntArray p = (PairIntArray)result.getData();
+            // object array with index 0 being the bit string
+            // and index 1 being the combined boundary
+            Object[] data = result.getData();
+            PairIntArray p = (PairIntArray)data[1];
 
             ImageIOHelper.addCurveToImage(p, img11, 1, 0, 255, 0);
             
@@ -424,10 +461,7 @@ public class AndroidStatuesTest extends TestCase {
                 
                 ImageIOHelper.addPointToImage(x1, y1, img11, 
                     0, 255, 0, 0);
-                if (x1 >= 35 && x1 <= 55 && y1 >= 35 && y1 <= 55) {
-                    System.out.println(String.format(
-                        "**%d  (%d, %d) <=> (%d, %d)", i0, x1, y1, x2, y2));
-                }
+                
                 //System.out.println(String.format(
                 //"%d  (%d, %d) <=> (%d, %d)", i0, x1, y1, x2, y2));
 
@@ -442,8 +476,30 @@ public class AndroidStatuesTest extends TestCase {
             }
             String filePath = plotter.writeImage("__andr_02_corres_" + str);
         
-            MiscDebug.writeImage(img11, "_match_" + fileName1Root + "_" + i0); 
+            MiscDebug.writeImage(img11, "_match_" + fileName1Root + "_" + str); 
+        
+            /*
+            data = result.getData();
+            int[] idxs = ((VeryLongBitString)data[0]).getSetBits();
+            Set<PairInt> set = new HashSet<PairInt>();
+            for (int idx : idxs) {
+                set.addAll(listOfSets.get(idx));
+            }
+            
+            ColorHistogram clrHist = new ColorHistogram();
+            int[][] ch_RGB = templateClrHist.histogramRGB(img, set);
+            int[][] ch_HSV = templateClrHist.histogramHSV(img, set);
+            int[][] ch_CIELAB = templateClrHist.histogramCIELAB(img, set);
+        
+            // identical match is 1.0 and less similar is smaller value
+            System.out.println("color histogram intersection, i=" + str
+                + " rgb=" + clrHist.intersection(ch_RGB, templateCH_RGB)
+                + " hsv=" + clrHist.intersection(ch_HSV, templateCH_HSV)
+                + " cielab=" + clrHist.intersection(ch_CIELAB, templateCH_CIELAB)
+            );
+            */
         }
+        
     }
 
     public void estShapeMatcher() throws Exception {

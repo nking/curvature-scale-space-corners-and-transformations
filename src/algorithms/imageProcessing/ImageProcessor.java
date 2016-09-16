@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.compGeometry.PerimeterFinder2;
+import algorithms.imageProcessing.segmentation.ColorSpace;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.MiscMath;
@@ -10,6 +11,7 @@ import algorithms.util.PairInt;
 import algorithms.misc.Complex;
 import algorithms.misc.Histogram;
 import algorithms.misc.Misc;
+import algorithms.imageProcessing.util.GroupAverageColors;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.TIntObjectMap;
@@ -6202,6 +6204,97 @@ if (sum > 511) {
             contiguousPoints);
     
         return ordered;
+    }
+    
+    /**
+     * remove links from the adjacency map in the colorspace for pairs with
+     * smaller histogram similarity than threshold.
+     * current impl is using hsv color histograms.
+     * @param img
+     * @param listOfSets
+     * @param adjMap
+     * @param clrSpace
+     * @param threshold 
+     */
+    public void filterAdjacencyMap(ImageExt img, List<Set<PairInt>> listOfSets,
+        TIntObjectMap<TIntSet> adjMap, float threshold) {
+        
+        int n = listOfSets.size();
+        
+        ColorHistogram clrHist = new ColorHistogram();
+        
+        int[][][] hsvH = new int[n][][];
+        //int[][][] cielabH = new int[n][][];
+        
+        List<PairInt> centroids = new ArrayList<PairInt>();
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        for (int i = 0; i < n; ++i) {
+            Set<PairInt> set = listOfSets.get(i);
+            hsvH[i] = clrHist.histogramHSV(img, set);
+            //cielabH[i] = clrHist.histogramCIELAB(img, set);
+            centroids.add(curveHelper.calculateXYCentroids2(set));
+        }
+        
+        Set<PairInt> rm = new HashSet<PairInt>();
+        
+        Set<PairInt> visited = new HashSet<PairInt>();
+        
+        TIntObjectIterator<TIntSet> iter = adjMap.iterator();
+        for (int i = 0; i < adjMap.size(); ++i) {
+            
+            iter.advance();
+            
+            TIntSet set = iter.value();
+            int idx1 = iter.key();
+                        
+            TIntIterator iter2 = set.iterator();
+            while (iter2.hasNext()) {
+                int idx2 = iter2.next();
+                PairInt p = null;
+                if (idx1 < idx2) {
+                    p = new PairInt(idx1, idx2);
+                } else {
+                    p = new PairInt(idx2, idx1);
+                }
+                if (rm.contains(p) || visited.contains(p)) {
+                    continue;
+                }
+                visited.add(p);
+                
+                int[][] hsv1 = hsvH[p.getX()];
+                int[][] hsv2 = hsvH[p.getY()];
+                
+                //int[][] cie1 = cielabH[p.getX()];
+                //int[][] cie2 = cielabH[p.getY()];
+                
+                float hsvInter = clrHist.intersection(hsv1, hsv2);
+                
+                //float cieInter = clrHist.intersection(cie1, cie2);
+                
+                System.out.println(
+                    "cen1=" + centroids.get(idx1)
+                    + " cen2=" + centroids.get(idx2)
+                    + " hsvInter=" + hsvInter
+                    //+ " cieInter=" + cieInter
+                );
+                
+                if (hsvInter < threshold) {
+                    rm.add(p);
+                }
+            }
+        }
+
+        for (PairInt r : rm) {
+            TIntSet set1 = adjMap.get(r.getX());
+            set1.remove(r.getY());
+
+            set1 = adjMap.get(r.getY());
+            set1.remove(r.getX());
+        }
+        
+        System.out.println("color histogram filter removed " + rm.size());
     }
     
 }

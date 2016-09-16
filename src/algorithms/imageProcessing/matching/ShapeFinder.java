@@ -22,7 +22,9 @@ import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TObjectIntIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TObjectDoubleMap;
+import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TObjectDoubleHashMap;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
@@ -242,6 +244,7 @@ public class ShapeFinder {
         double minCost = Double.MAX_VALUE;
         VeryLongBitString minBitString = null;
 
+        TIntIntMap debugIndexSizeMap = new TIntIntHashMap();
         {//DEBUG specific to a test
         Set<PairInt> allPoints = new HashSet<PairInt>();
         expectedIndexes.clear();
@@ -255,6 +258,7 @@ public class ShapeFinder {
         cens[5] = new PairInt(173,52);
         cens[6] = new PairInt(189,45);
         cens[7] = new PairInt(184,35);
+        
         for (int i = 0; i < orderedBoundaries.size(); ++i) {
             PairInt pCen = orderedBoundaryCentroids.get(i);
             System.out.println("pCen=" + pCen + " idx=" + i);
@@ -338,7 +342,56 @@ public class ShapeFinder {
         }
 
         Result r = aggregatedResultMap.get(minBitString);
-        r.setData(aggregatedBoundaries.get(minBitString));
+        Object[] data = new Object[2];
+        data[0] = minBitString;
+        data[1] = aggregatedBoundaries.get(minBitString);
+        r.setData(data);
+        
+        // because of the blur performed on the boundaries, sometimes, there
+        // are slightly different indexes that can result in the same boundaries.
+        // so, find and remove redundant entries.
+        {   int rmvd = aggregatedCostMap.size();
+            Set<VeryLongBitString> key2Set = aggregatedCostMap.keySet();
+            VeryLongBitString[] key2 = key2Set.toArray(new 
+                VeryLongBitString[aggregatedCostMap.size()]);
+            for (int i = 0; i < key2.length; ++i) {
+                VeryLongBitString bs1 = key2[i];
+                if (!key2Set.contains(bs1)) {
+                    continue;
+                }
+                PairIntArray p1 = aggregatedBoundaries.get(bs1);
+                Set<PairInt> set1 = new HashSet<PairInt>();
+                for (int j = 0; j < p1.getN(); ++j) {
+                    set1.add(new PairInt(p1.getX(j), p1.getY(j)));
+                }
+                Set<VeryLongBitString> rm = new HashSet<VeryLongBitString>();
+                for (VeryLongBitString bs2 : key2Set) {
+                    if (bs1.equals(bs2)) {
+                        continue;
+                    }
+                    PairIntArray p2 = aggregatedBoundaries.get(bs2);
+                    Set<PairInt> set2 = new HashSet<PairInt>();
+                    for (int j = 0; j < p2.getN(); ++j) {
+                        set2.add(new PairInt(p2.getX(j), p2.getY(j)));
+                    }
+                    Set<PairInt> s1Minus2 = new HashSet<PairInt>(set1);
+                    s1Minus2.removeAll(set2);
+                    Set<PairInt> s2Minus1 = new HashSet<PairInt>(set2);
+                    s2Minus1.removeAll(set1);
+                    if (s1Minus2.size() == 0 && s2Minus1.size() == 0) {
+                        rm.add(bs2);
+                    }
+                }
+                for (VeryLongBitString bs : rm) {
+                    key2Set.remove(bs);
+                    aggregatedCostMap.remove(bs);
+                    aggregatedResultMap.remove(bs);
+                    aggregatedBoundaries.remove(bs);
+                }
+            }
+            rmvd -= aggregatedCostMap.size();
+            System.out.println("removed " + rmvd + " redundant results"); 
+        }
         
         // could use FixedSizeSortedVector to make this faster for only nTop objects
         int nc = aggregatedCostMap.size();
@@ -358,10 +411,28 @@ public class ShapeFinder {
             VeryLongBitString key = keys[i];
             r = aggregatedResultMap.get(key);
             PairIntArray b = aggregatedBoundaries.get(key);
-            r.setData(b);
+            data = new Object[2];
+            data[0] = key;
+            data[1] = b;
+            r.setData(data);
             assert(b != null);
             results[i + 1] = r;
-            System.out.println(i + " " + Arrays.toString(key.getSetBits()));
+            int[] idxs = key.getSetBits();
+            StringBuilder sb = new StringBuilder(", sizes=");
+            for (int idx : idxs) {
+                int sz;
+                if (debugIndexSizeMap.containsKey(idx)) {
+                    sz = debugIndexSizeMap.get(idx);
+                } else {
+                    sz = pointsList.get(idx).size();
+                    debugIndexSizeMap.put(idx, sz);
+                }
+                sb.append(sz).append(" ");
+            }
+            String costStr = String.format("cost=%.4f",
+                aggregatedCostMap.get(key).floatValue());
+            System.out.println(i + " " + costStr + " " + Arrays.toString(idxs) 
+                + sb.toString());
         }
         Double cost = aggregatedCostMap.get(tBS);
         if (cost == null) {
@@ -373,7 +444,10 @@ public class ShapeFinder {
         }
         System.out.println("expected=" + Arrays.toString(tBS.getSetBits()));
         results[0] = aggregatedResultMap.get(tBS);
-        results[0].setData(aggregatedBoundaries.get(tBS));
+        data = new Object[2];
+        data[0] = tBS;
+        data[1] = aggregatedBoundaries.get(tBS);
+        results[0].setData(data);
 
         return results;
     }
