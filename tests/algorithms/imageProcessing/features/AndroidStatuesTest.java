@@ -279,12 +279,13 @@ public class AndroidStatuesTest extends TestCase {
         
         int maxDimension = 256;//512;
         SIGMA sigma = SIGMA.ONE;
-        
+                
         ImageProcessor imageProcessor = new ImageProcessor();
         ImageSegmentation imageSegmentation = new ImageSegmentation();
 
+        String fileNameRoot0 = "android_statues_03_sz1";
         // size of template object must be near target size
-        ImageExt img0 = maskAndBin("android_statues_03_sz1", 1);
+        ImageExt img0 = maskAndBin(fileNameRoot0, 1);
         
         Set<PairInt> shape0 = new HashSet<PairInt>();
         for (int i = 0; i < img0.getNPixels(); ++i) {
@@ -296,12 +297,27 @@ public class AndroidStatuesTest extends TestCase {
         PairIntArray template =
             imageProcessor.extractSmoothedOrderedBoundary(shape0, 
                 sigma, img0.getWidth(), img0.getHeight());
-        /*
-        ColorHistogram templateClrHist = new ColorHistogram();
-        int[][] templateCH_RGB = templateClrHist.histogramRGB(img0, shape0);
-        int[][] templateCH_HSV = templateClrHist.histogramHSV(img0, shape0);
-        int[][] templateCH_CIELAB = templateClrHist.histogramCIELAB(img0, shape0);
-        */
+        
+        GreyscaleImage gsImg0 = ImageIOHelper.readImageExt(
+            ResourceFinder.findFileInTestResources(fileNameRoot0 + ".jpg")).copyToGreyscale();
+        imageProcessor.blur(gsImg0, SIGMA.ZEROPOINTFIVE, 0, 255);
+        imageProcessor.applyAdaptiveMeanThresholding(gsImg0, 1);
+        for (int i = 0; i < gsImg0.getNPixels(); ++i) {
+            PairInt p = new PairInt(gsImg0.getCol(i), gsImg0.getRow(i));
+            if (shape0.contains(p) && (gsImg0.getValue(p) == 0)) {
+                gsImg0.setValue(i, 255);
+            } else {
+                gsImg0.setValue(i, 0);
+            }
+        }
+        MiscDebug.writeImage(gsImg0, "_adaptive_means_" + fileNameRoot0);
+        
+        Set<PairInt> templateAdaptiveMeans = new HashSet<PairInt>();
+        for (PairInt p : shape0) {
+            if (gsImg0.getValue(p) > 0) {
+                templateAdaptiveMeans.add(p);
+            }
+        }
         
         String fileName1 = "android_statues_02.jpg";
           
@@ -327,7 +343,7 @@ public class AndroidStatuesTest extends TestCase {
         //LabelToColorHelper.applyLabels(img11, labels4);
         //MiscDebug.writeImage(img11, "_final_" + fileName1Root);
 
-        List<Set<PairInt>> listOfSets = LabelToColorHelper.extractContiguousLabelPoints(
+        List<Set<PairInt>> listOfPointSets = LabelToColorHelper.extractContiguousLabelPoints(
             img, labels4);
         
         //TIntObjectMap<TIntSet> adjMap = 
@@ -355,6 +371,8 @@ public class AndroidStatuesTest extends TestCase {
         information to be included without ShapeMatcher needing to know that
         it is texture or color based, etc.)
         */
+        
+        PerimeterFinder2 perF2 = new PerimeterFinder2();
 
         int[] filteredLabels = new int[img.getNPixels()];
         Arrays.fill(filteredLabels, -1);
@@ -365,19 +383,21 @@ public class AndroidStatuesTest extends TestCase {
         // get color information for the template:
         GroupAverageColors templateColors = new GroupAverageColors(img0, shape0);
       
-        List<Set<PairInt>> listOfSets2 = new ArrayList<Set<PairInt>>();
-        
+        List<Set<PairInt>> listOfPointSets2 = new ArrayList<Set<PairInt>>();
         List<PairIntArray> orderedBoundaries = new ArrayList<PairIntArray>();
-        for (int i = 0; i < listOfSets.size(); ++i) {
+        Set<PairInt> allSetPoints = new HashSet<PairInt>();
+        for (int i = 0; i < listOfPointSets.size(); ++i) {
+            
+            Set<PairInt> set = listOfPointSets.get(i);
             
             PairIntArray p = imageProcessor.extractSmoothedOrderedBoundary(
-                listOfSets.get(i), sigma, w, h);
+                set, sigma, w, h);
             if (p == null || p.getN() < 20) {
                 System.out.println("consider a small cluster merging."
-                    + " set.size=" + listOfSets.get(i).size());
+                    + " set.size=" + set.size());
             }
             
-            GroupAverageColors setColors = new GroupAverageColors(img, listOfSets.get(i));
+            GroupAverageColors setColors = new GroupAverageColors(img, set);
             
             DeltaESim deltaESimilarity = new DeltaESim(templateColors, setColors);
             
@@ -390,36 +410,36 @@ public class AndroidStatuesTest extends TestCase {
                     filteredLabels[pixIdx] = idx;
                 }
                 orderedBoundaries.add(p);
-                listOfSets2.add(listOfSets.get(i));
+                listOfPointSets2.add(set); 
                 
-                /*
-                // the intersection only removes 3 out of 88 in this test if 
-                // use conservative limit, but it might be useful for merging
-                Set<PairInt> set = listOfSets.get(i);
-                img11 = img.copyToImageExt();
-                ImageIOHelper.addCurveToImage(p, img11, 1, 0, 255, 0);
-                String str = Integer.toString(idx);
-                while (str.length() < 4) {
-                    str = "0" + str;
-                }
-                MiscDebug.writeImage(img11, "_seg_" + fileName1Root 
-                    + "_" + str);
-            
-                ColorHistogram clrHist = new ColorHistogram();
-                int[][] ch_RGB = clrHist.histogramRGB(img, set);
-                int[][] ch_HSV = clrHist.histogramHSV(img, set);
-                int[][] ch_CIELAB = clrHist.histogramCIELAB(img, set);
-
-                // identical match is 1.0 and less similar is smaller value
-                System.out.println("color histogram intersection, i=" + str
-                    + " rgb=" + clrHist.intersection(ch_RGB, templateCH_RGB)
-                    + " hsv=" + clrHist.intersection(ch_HSV, templateCH_HSV)
-                    + " cielab=" + clrHist.intersection(ch_CIELAB, templateCH_CIELAB)
-                );
-                */
+                allSetPoints.addAll(set);
             }
         }
-
+                
+        GreyscaleImage gsImg = img.copyToGreyscale();
+        imageProcessor.blur(gsImg, SIGMA.ZEROPOINTFIVE, 0, 255);
+        imageProcessor.applyAdaptiveMeanThresholding(gsImg, 1);
+        for (int i = 0; i < gsImg.getNPixels(); ++i) {
+            PairInt p = new PairInt(gsImg.getCol(i), gsImg.getRow(i));
+            if (allSetPoints.contains(p) && (gsImg.getValue(p) == 0)) {
+                gsImg.setValue(i, 255);
+            } else {
+                gsImg.setValue(i, 0);
+            }
+        }
+        
+        MiscDebug.writeImage(gsImg, "_adaptive_means_" + fileName1Root);
+       
+        List<Set<PairInt>> listOfAdaptiveMeans = new ArrayList<Set<PairInt>>();
+        for (Set<PairInt> set : listOfPointSets2) {
+            Set<PairInt> set2 = new HashSet<PairInt>();
+            for (PairInt p : set) {
+                if (gsImg.getValue(p) > 0) {
+                    set2.add(p);
+                }
+            }
+        }
+        
         img11 = img.createWithDimensions();
         ImageIOHelper.addAlternatingColorLabelsToRegion(
             img11, filteredLabels);
@@ -428,12 +448,13 @@ public class AndroidStatuesTest extends TestCase {
         TIntObjectMap<TIntSet> adjMap = 
             LabelToColorHelper.createAdjacencyLabelMap(img, filteredLabels, true);
         
-        imageProcessor.filterAdjacencyMap(img, listOfSets2, adjMap, 0.4f);
+        imageProcessor.filterAdjacencyMap(img, listOfPointSets2, adjMap, 0.4f);
         
-        ShapeFinder sf = new ShapeFinder();
+        ShapeFinder sf = new ShapeFinder(orderedBoundaries, 
+            listOfPointSets2, adjMap, template, 
+            templateAdaptiveMeans, listOfAdaptiveMeans);
         
-        Result[] results = sf.findMatchingCells(orderedBoundaries, 
-            listOfSets2, adjMap, template);
+        Result[] results = sf.findMatchingCells();
         
         for (int i0 = 0; i0 < results.length; ++i0) {
             

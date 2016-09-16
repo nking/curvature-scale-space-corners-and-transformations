@@ -1,6 +1,5 @@
 package algorithms.imageProcessing.matching;
 
-import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
@@ -14,11 +13,8 @@ import algorithms.imageProcessing.matching.PartialShapeMatcher.Result;
 import algorithms.imageProcessing.transform.EuclideanEvaluator;
 import algorithms.imageProcessing.transform.EuclideanTransformationFit;
 import algorithms.imageProcessing.transform.TransformationParameters;
-import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
-import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.VeryLongBitString;
-import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TObjectIntIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
@@ -65,12 +61,44 @@ public class ShapeFinder {
     private final int dp = 1;
     private final boolean useSameNSampl = true;
     
+    private final Map<VeryLongBitString, PairIntArray> aggregatedBoundaries =
+        new HashMap<VeryLongBitString, PairIntArray>();
+    private final Map<VeryLongBitString, Result> aggregatedResultMap =
+        new HashMap<VeryLongBitString, Result>();
+    private final Map<VeryLongBitString, Double> aggregatedCostMap =
+        new HashMap<VeryLongBitString, Double>();
+    private final Map<Float, Set<PairInt>> rotatedTemplateInner = new
+            HashMap<Float, Set<PairInt>>();
+    
+    private final List<PairIntArray> orderedBoundaries;
+    private final List<Set<PairInt>> pointsList;
+    private final TIntObjectMap<TIntSet> adjacencyMap; 
+    private final PairIntArray template;
+    private final Set<PairInt> templateInner; 
+    private final List<Set<PairInt>> pointsInner;
+        
     private final int nTop = 100;
 
     //DEBUG
     TIntSet expectedIndexes = new TIntHashSet();
     VeryLongBitString tBS = null;
     int tBSIdx = -1;
+    
+    /**
+     * NOT READY FOR USE.
+     */
+    public ShapeFinder(List<PairIntArray> orderedBoundaries,
+        List<Set<PairInt>> pointsList, TIntObjectMap<TIntSet> adjacencyMap, 
+        PairIntArray template, Set<PairInt> templateInner,
+        List<Set<PairInt>> pointsInner) {
+        
+        this.orderedBoundaries = orderedBoundaries;
+        this.pointsList = pointsList;
+        this.adjacencyMap = adjacencyMap;
+        this.template = template;
+        this.templateInner = templateInner;
+        this.pointsInner = pointsInner;
+    }
     
     /**
      * NOT READY FOR USE.
@@ -91,15 +119,9 @@ public class ShapeFinder {
      * patterns is kept in the end, so that will be
      * filled in here after implementation and testing.
      *
-     * @param orderedBoundaries
-     * @param pointsList
-     * @param adjacencyMap
      * @return
      */
-    public Result[] findMatchingCells(
-        List<PairIntArray> orderedBoundaries,
-        List<Set<PairInt>> pointsList,
-        TIntObjectMap<TIntSet> adjacencyMap, PairIntArray template) {
+    public Result[] findMatchingCells() {
 
         /*
         some notes that will be updated when return to the search
@@ -173,16 +195,13 @@ public class ShapeFinder {
         */
 
         if (true) {
-            return wideFWSearch(orderedBoundaries, pointsList, adjacencyMap,
-                template);
+            return wideFWSearch();
         }
 
         throw new UnsupportedOperationException("not yet implemented");
     }
 
-    private Result[] wideFWSearch(List<PairIntArray> orderedBoundaries,
-        List<Set<PairInt>> pointsList,
-        TIntObjectMap<TIntSet> adjacencyMap, PairIntArray template) {
+    private Result[] wideFWSearch() {
 
         /*
         NOTE: if this method is to be used, it needs some improvements.
@@ -217,29 +236,14 @@ public class ShapeFinder {
 
         List<Result> outputSortedResults = new ArrayList<Result>(n);
         List<Integer> outputSortedIndexes = new ArrayList<Integer>(n);
-
-        Map<VeryLongBitString, PairIntArray> aggregatedBoundaries =
-            new HashMap<VeryLongBitString, PairIntArray>();
-
-        Map<VeryLongBitString, Result> aggregatedResultMap =
-            new HashMap<VeryLongBitString, Result>();
-
-        // this can be derived from values in aggregatedResultMap,
-        // but is currently kept to make debugging easier
-        Map<VeryLongBitString, Double> aggregatedCostMap =
-            new HashMap<VeryLongBitString, Double>();
-        
+       
         // maxDiffChordSum is calculated in here
-        matchAndOrderByIncrCost(orderedBoundaries, template,
-            outputSortedResults, outputSortedIndexes,
-            aggregatedBoundaries, aggregatedResultMap,
-            aggregatedCostMap);
+        matchAndOrderByIncrCost(outputSortedResults, outputSortedIndexes);
 
         assert(aggregatedBoundaries.size() == aggregatedResultMap.size());
         assert(aggregatedCostMap.size() == aggregatedResultMap.size());
 
-        List<PairInt> orderedBoundaryCentroids = calculateCentroids(
-            orderedBoundaries);
+        List<PairInt> orderedBoundaryCentroids = calculateCentroids();
 
         double minCost = Double.MAX_VALUE;
         VeryLongBitString minBitString = null;
@@ -284,8 +288,7 @@ public class ShapeFinder {
             + cens.length + " expected.  tBS=" + Arrays.toString(tBS.getSetBits()));
             /*
             try {
-               PairIntArray b =  mergeAdjacentOrderedBorders(tBS,
-                   orderedBoundaries, pointsList);
+               PairIntArray b =  mergeAdjacentOrderedBorders(tBS);
                int[] xPolygon = null;
                int[] yPolygon = null;
                PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
@@ -320,11 +323,8 @@ public class ShapeFinder {
 
             // the in-out variables store reusable calculations and
             // also the resulting cost of this best search result
-            VeryLongBitString bitString = minCostAggregationFW(
-                orderedBoundaries, pointsList, adjacencyMap, template, index,
-                orderedBoundaryCentroids,
-                aggregatedBoundaries,
-                aggregatedResultMap, aggregatedCostMap);
+            VeryLongBitString bitString = minCostAggregationFW(index,
+                orderedBoundaryCentroids);
 
             if (bitString == null) {
                 continue;
@@ -436,11 +436,8 @@ public class ShapeFinder {
         }
         Double cost = aggregatedCostMap.get(tBS);
         if (cost == null) {
-            PairIntArray b =  mergeAdjacentOrderedBorders(tBS,
-                orderedBoundaries, pointsList);
-            cost = calcAndStoreMatchCost(b, template, tBS,
-                aggregatedBoundaries,
-                aggregatedResultMap, aggregatedCostMap);
+            PairIntArray b =  mergeAdjacentOrderedBorders(tBS);
+            cost = calcAndStoreMatchCost(b, tBS);
         }
         System.out.println("expected=" + Arrays.toString(tBS.getSetBits()));
         results[0] = aggregatedResultMap.get(tBS);
@@ -455,24 +452,14 @@ public class ShapeFinder {
     /**
      * has the side effect of maxDiffChordSum of maxDistTransformSum
      * 
-     * @param orderedBoundaries
-     * @param template
      * @param outputSortedResults - output variable
      * @param outputSortedIndexes - output variable
-     * @param aggregatedBoundaries - output variable
-     * @param aggregatedResultMap - output variable
-     * @param aggregatedCostMap  - output variable
      */
-    private void matchAndOrderByIncrCost(List<PairIntArray> orderedBoundaries,
-        PairIntArray template, List<Result> outputSortedResults,
-        List<Integer> outputSortedIndexes,
-        Map<VeryLongBitString, PairIntArray> aggregatedBoundaries,
-        Map<VeryLongBitString, Result> aggregatedResultMap,
-        Map<VeryLongBitString, Double> aggregatedCostMap) {
+    private void matchAndOrderByIncrCost(List<Result> outputSortedResults,
+        List<Integer> outputSortedIndexes) {
 
         // key=result, value=index of orderedBoundaries item
-        TObjectIntMap<Result> cellMatchResults = matchIndividually(
-            orderedBoundaries, template);
+        TObjectIntMap<Result> cellMatchResults = matchIndividually();
 
         int n = cellMatchResults.size();
         TObjectIntIterator<Result> iter = cellMatchResults.iterator();
@@ -554,11 +541,9 @@ public class ShapeFinder {
             int listIndex = cellMatchResults.get(r);
             outputSortedIndexes.add(Integer.valueOf(listIndex));
         }
-
     }
 
-    private TObjectIntMap<Result> matchIndividually(
-        List<PairIntArray> orderedBoundaries, PairIntArray template) {
+    private TObjectIntMap<Result> matchIndividually() {
 
         // key=result, value=index of orderedBoundaries item
         TObjectIntMap<Result> output = new TObjectIntHashMap<Result>();
@@ -641,7 +626,7 @@ public class ShapeFinder {
         return new int[]{maxX - minX + 1, maxY - minY + 1};
     }
 
-    private List<PairInt> calculateCentroids(List<PairIntArray> orderedBoundaries) {
+    private List<PairInt> calculateCentroids() {
 
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 
@@ -665,26 +650,12 @@ public class ShapeFinder {
      * a Floyd Warshall search to find min-cost aggregation of segmented
      * cells within a limited distance of adjacency.
      *
-     * @param orderedBoundaries
-     * @param adjacencyMap
-     * @param template
      * @param index
      * @param orderedBoundaryCentroids
-     * @param maxDiffChordSum
-     * @param aggregatedBoundaries - in out variable
-     * @param aggregatedResultMap - in out variable
-     * @param aggregatedCostMap - in out variable
      * @return
      */
-    private VeryLongBitString minCostAggregationFW(
-        List<PairIntArray> orderedBoundaries,
-        List<Set<PairInt>> pointsList,
-        TIntObjectMap<TIntSet> adjacencyMap,
-        PairIntArray template, int index,
-        List<PairInt> orderedBoundaryCentroids,
-        Map<VeryLongBitString, PairIntArray> aggregatedBoundaries,
-        Map<VeryLongBitString, Result> aggregatedResultMap,
-        Map<VeryLongBitString, Double> aggregatedCostMap) {
+    private VeryLongBitString minCostAggregationFW(int index,
+        List<PairInt> orderedBoundaryCentroids) {
 
         int[] dimensionsT = calcDimensions(template);
 
@@ -794,13 +765,10 @@ public class ShapeFinder {
                 if (cost12 == null) {
 
                     if (boundary12 == null) {
-                        boundary12 = mergeAdjacentOrderedBorders(bs2,
-                            orderedBoundaries, pointsList);
+                        boundary12 = mergeAdjacentOrderedBorders(bs2);
                     }
 
-                    cost12 = calcAndStoreMatchCost(boundary12, template, bs2,
-                        aggregatedBoundaries, aggregatedResultMap, 
-                        aggregatedCostMap);
+                    cost12 = calcAndStoreMatchCost(boundary12, bs2);
                 }
 
                 if (cost12 != null) {
@@ -904,15 +872,11 @@ public class ShapeFinder {
                             }
                             bs0.setBit(keyIJ.getY());
                             if (!aggregatedCostMap.containsKey(bs0)) {
-                                PairIntArray boundary = orderedBoundaries.get(
-                                    keyIJ.getX());
+                                PairIntArray boundary = orderedBoundaries.get(keyIJ.getX());
                                 if (keyIJ.getX() != keyIJ.getY()) {
-                                    boundary = mergeAdjacentOrderedBorders(bs0,
-                                        orderedBoundaries, pointsList);
+                                    boundary = mergeAdjacentOrderedBorders(bs0);
                                 }
-                                Double s = calcAndStoreMatchCost(boundary, template, 
-                                    bs0, aggregatedBoundaries,
-                                    aggregatedResultMap, aggregatedCostMap);
+                                Double s = calcAndStoreMatchCost(boundary, bs0);
                                 if (s == null) {
                                     tIJ = false;
                                 }
@@ -945,8 +909,7 @@ public class ShapeFinder {
                         PairIntArray bIKKJ = aggregatedBoundaries.get(bs1);
                         s1 = aggregatedCostMap.get(bs1);
                         if (s1 == null) {
-                            bIKKJ = mergeAdjacentOrderedBorders(bs1,
-                                orderedBoundaries, pointsList);
+                            bIKKJ = mergeAdjacentOrderedBorders(bs1);
                             Result r = null;
                             if (bIKKJ.getN() > 6) {
                                 PartialShapeMatcher matcher = new PartialShapeMatcher();
@@ -1055,11 +1018,8 @@ if ((distMap.containsKey(keyIJ) && (distMap.get(keyIJ) > s1))
             // expected:
             Double cost = aggregatedCostMap.get(tBS);
             if (cost == null) {
-                PairIntArray b =  mergeAdjacentOrderedBorders(tBS,
-                    orderedBoundaries, pointsList);
-                cost = calcAndStoreMatchCost(b, template, tBS,
-                    aggregatedBoundaries,
-                    aggregatedResultMap, aggregatedCostMap);
+                PairIntArray b =  mergeAdjacentOrderedBorders(tBS);
+                cost = calcAndStoreMatchCost(b, tBS);
             }
             System.out.println("expected true answer cost=" + cost +
                 " " + Arrays.toString(tBS.getSetBits()));
@@ -1100,11 +1060,8 @@ if ((distMap.containsKey(keyIJ) && (distMap.get(keyIJ) > s1))
         return dist;
     }
 
-    private Double calcAndStoreMatchCost(PairIntArray boundary,
-        PairIntArray template, VeryLongBitString bs,
-        Map<VeryLongBitString, PairIntArray> aggregatedBoundaries,
-        Map<VeryLongBitString, Result> aggregatedResultMap,
-        Map<VeryLongBitString, Double> aggregatedCostMap) {
+    private Double calcAndStoreMatchCost(PairIntArray boundary, 
+        VeryLongBitString bs) {
 
         aggregatedBoundaries.put(bs, boundary);
 
@@ -1147,8 +1104,7 @@ if ((distMap.containsKey(keyIJ) && (distMap.get(keyIJ) > s1))
         return cost12;
     }
 
-    private PairIntArray mergeAdjacentOrderedBorders(VeryLongBitString bs,
-        List<PairIntArray> orderedBorders, List<Set<PairInt>> pointsList) {
+    private PairIntArray mergeAdjacentOrderedBorders(VeryLongBitString bs) {
 
         int[] setBits = bs.getSetBits();
         Set<PairInt> allPoints = new HashSet<PairInt>();

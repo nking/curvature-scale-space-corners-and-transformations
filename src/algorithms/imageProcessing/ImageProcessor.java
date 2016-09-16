@@ -1420,7 +1420,7 @@ if (sum > 511) {
         applyKernel1D(input, kernel, false);
     }
     
-    protected void blur(int[][] input, float[] kernel) {
+    protected void applyKernelTwo1Ds(int[][] input, float[] kernel) {
 
         applyKernel1D(input, kernel, true);
 
@@ -4883,6 +4883,22 @@ if (sum > 511) {
 
         return img;
     }
+    
+    public Set<PairInt> extract2ndDerivPoints(GreyscaleImage img,
+        Set<PairInt> filterToPoints, int nApprox) {
+        
+        Set<PairInt> set = extract2ndDerivPoints(img, nApprox, true);
+        
+        Set<PairInt> output = new HashSet<PairInt>();
+        
+        for (PairInt p : filterToPoints) {
+            if (set.contains(p)) {
+                output.add(p);
+            }
+        }
+        
+        return output;
+    }
 
     public Set<PairInt> extract2ndDerivPoints(GreyscaleImage img) {
 
@@ -6119,6 +6135,20 @@ if (sum > 511) {
      */
     public void blur(Set<PairInt> points, SIGMA sigma) {
         
+        // gaussian smoothing by sigma
+        float[] kernel = Gaussian1D.getKernel(sigma);
+        
+        applyKernel(points, kernel);
+    }
+    
+    /**
+     * NOTE: needs testing...invoker should trim for image bounds
+     * where needed.
+     * @param points
+     * @param sigma
+     */
+    public void applyKernel(Set<PairInt> points, float[] kernel) {
+        
         int[] minMaxXY = MiscMath.findMinMaxXY(points);
         
         int xLL = minMaxXY[0] - 10;
@@ -6147,10 +6177,7 @@ if (sum > 511) {
             img[x][y] = 126;
         }
         
-        // gaussian smoothing by sigma
-        float[] kernel = Gaussian1D.getKernel(sigma);
-        
-        blur(img, kernel);
+        applyKernelTwo1Ds(img, kernel);
         
         points.clear();
         
