@@ -14061,7 +14061,7 @@ int z = 1;
         }
         
         System.out.println("removing " + remove.size() + " more segmented cells");
-              
+        
         if (!remove.isEmpty()) {
             TIntList sorted = new TIntArrayList();
             for (Integer index : remove) {

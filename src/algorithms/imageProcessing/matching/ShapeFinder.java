@@ -66,6 +66,7 @@ public class ShapeFinder {
     private float[] euclideanScaleRange = new float[]{0.9f, 1.1f};
 
     private final float areaFactor = 2.f;
+    private final TIntSet outOfSizeRange = new TIntHashSet();
 
     // partial shape matcher sampling distance
     private final int dp = 1;
@@ -370,10 +371,15 @@ public class ShapeFinder {
         data[0] = minBitString;
         data[1] = aggregatedBoundaries.get(minBitString);
         r.setData(data);
+       
+        int[] dimensionsT = calcDimensions(template);
+        int areaT = (int)Math.round(Math.sqrt(dimensionsT[0] * dimensionsT[0] +
+            dimensionsT[1] * dimensionsT[1]));
         
         // because of the blur performed on the boundaries, sometimes, there
         // are slightly different indexes that can result in the same boundaries.
         // so, find and remove redundant entries.
+        // TODO: may be able to remove this
         {   int rmvd = aggregatedCostMap.size();
             Set<VeryLongBitString> key2Set = aggregatedCostMap.keySet();
             VeryLongBitString[] key2 = key2Set.toArray(new 
@@ -428,6 +434,10 @@ public class ShapeFinder {
                 continue;
             }
             int[] bits = key.getSetBits();
+            if (bits.length == 1 && outOfSizeRange.contains(bits[0])) {
+                continue;
+            }
+            
             fillCache1(bits);
             float intersection = ch.intersection(cache1, templateHSVHist);
             //System.out.println("-> intersection=" + intersection + " bits=" + 
@@ -612,7 +622,7 @@ public class ShapeFinder {
                 continue;
             }
 
-            int[] dimensions = calcDimensions(template);
+            int[] dimensions = calcDimensions(p);
 
             int area = (int)Math.round(Math.sqrt(dimensions[0] * dimensions[0] +
                 dimensions[1] * dimensions[1]));
@@ -626,11 +636,13 @@ public class ShapeFinder {
                 // TODO: need a way to recognize that or at least mention
                 // it in the documentation. the skyline search pattern will
                 // be implemented soon.
+                outOfSizeRange.add(i);
                 continue;
             }
 
             if (area < (areaT/areaFactor)) {
                 //TODO: may need to revise this limit
+                outOfSizeRange.add(i);
                 continue;
             }
 
@@ -754,7 +766,7 @@ public class ShapeFinder {
 
             int[] dimensions = calcDimensions(orderedBoundaries.get(i));
             int area = (int)Math.round(Math.sqrt(dimensions[0] * dimensions[0] +
-            dimensions[1] * dimensions[1]));
+                dimensions[1] * dimensions[1]));
             if (area > areaFactor*areaT || (dimensions[0] > dimensionsT[0]) ||
                 (dimensions[1] > dimensionsT[1])) {
                 continue;
