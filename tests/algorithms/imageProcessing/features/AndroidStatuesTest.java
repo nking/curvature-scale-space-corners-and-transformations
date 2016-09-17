@@ -298,6 +298,10 @@ public class AndroidStatuesTest extends TestCase {
             imageProcessor.extractSmoothedOrderedBoundary(shape0, 
                 sigma, img0.getWidth(), img0.getHeight());
         
+        ColorHistogram clrHist = new ColorHistogram();
+        
+        int[][] template_ch_HSV = clrHist.histogramHSV(img0, shape0);
+        
         String fileName1 = "android_statues_02.jpg";
           
         String fileName1Root = fileName1.substring(0, fileName1.lastIndexOf("."));
@@ -390,6 +394,12 @@ public class AndroidStatuesTest extends TestCase {
         
         assertEquals(orderedBoundaries.size(), listOfPointSets2.size());
         
+        int n2 = listOfPointSets2.size();
+        int[][][] ch_HSV = new int[n2][][];
+        for (int i = 0; i < n2; ++i) {
+            ch_HSV[i] = clrHist.histogramHSV(img, listOfPointSets2.get(i));
+        }
+        
         img11 = img.createWithDimensions();
         ImageIOHelper.addAlternatingColorLabelsToRegion(
             img11, filteredLabels);
@@ -401,7 +411,8 @@ public class AndroidStatuesTest extends TestCase {
         imageProcessor.filterAdjacencyMap(img, listOfPointSets2, adjMap, 0.4f);
         
         ShapeFinder sf = new ShapeFinder(orderedBoundaries, 
-            listOfPointSets2, adjMap, template);
+            listOfPointSets2, adjMap, template,
+            template_ch_HSV, ch_HSV);
         
         Result[] results = sf.findMatchingCells();
         

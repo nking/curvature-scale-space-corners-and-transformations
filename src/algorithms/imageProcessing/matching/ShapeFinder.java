@@ -79,6 +79,8 @@ public class ShapeFinder {
     private final List<Set<PairInt>> pointsList;
     private final TIntObjectMap<TIntSet> adjacencyMap; 
     private final PairIntArray template;
+    private final int[][] templateHSVHist;
+    private final int[][][] imgHSVHist;
         
     private final int nTop = 100;
 
@@ -92,12 +94,14 @@ public class ShapeFinder {
      */
     public ShapeFinder(List<PairIntArray> orderedBoundaries,
         List<Set<PairInt>> pointsList, TIntObjectMap<TIntSet> adjacencyMap, 
-        PairIntArray template) {
+        PairIntArray template, int[][] templateHSVHist, int[][][] imgHSVHist) {
         
         this.orderedBoundaries = orderedBoundaries;
         this.pointsList = pointsList;
         this.adjacencyMap = adjacencyMap;
         this.template = template;
+        this.templateHSVHist = templateHSVHist;
+        this.imgHSVHist = imgHSVHist;
         
         assert(pointsList.size() == orderedBoundaries.size());
     }
