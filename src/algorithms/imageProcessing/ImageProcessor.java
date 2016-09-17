@@ -14,6 +14,7 @@ import algorithms.misc.Misc;
 import algorithms.imageProcessing.util.GroupAverageColors;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.list.TIntList;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
@@ -6240,7 +6241,6 @@ if (sum > 511) {
      * @param img
      * @param listOfSets
      * @param adjMap
-     * @param clrSpace
      * @param threshold 
      */
     public void filterAdjacencyMap(ImageExt img, List<Set<PairInt>> listOfSets,
@@ -6321,7 +6321,7 @@ if (sum > 511) {
             set1.remove(r.getX());
         }
         
-        System.out.println("color histogram filter removed " + rm.size());
+        System.out.println("adjacecny map filter removed " + rm.size());
     }
     
 }

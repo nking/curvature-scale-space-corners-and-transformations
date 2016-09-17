@@ -21,6 +21,8 @@ import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.search.NearestNeighbor2D;
 import algorithms.util.PairInt;
+import algorithms.util.PolygonAndPointPlotter;
+import algorithms.util.TwoDIntArray;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TObjectIntIterator;
 import gnu.trove.list.TIntList;
@@ -82,7 +84,7 @@ public class ShapeFinder {
     private final TIntObjectMap<TIntSet> adjacencyMap; 
     private final PairIntArray template;
     private final int[][] templateHSVHist;
-    private final int[][][] imgHSVHist;
+    private final List<TwoDIntArray> imgHSVHist;
     
     private final ColorHistogram ch = new ColorHistogram();
     private final int[][] cache1;
@@ -103,7 +105,8 @@ public class ShapeFinder {
      */
     public ShapeFinder(List<PairIntArray> orderedBoundaries,
         List<Set<PairInt>> pointsList, TIntObjectMap<TIntSet> adjacencyMap, 
-        PairIntArray template, int[][] templateHSVHist, int[][][] imgHSVHist) {
+        PairIntArray template, int[][] templateHSVHist, 
+        List<TwoDIntArray> imgHSVHist) {
         
         this.orderedBoundaries = orderedBoundaries;
         this.pointsList = pointsList;
@@ -294,7 +297,7 @@ public class ShapeFinder {
                    pCen.getY() > 30 && 90 < pCen.getY())*/) {
                    tBS.setBit(i);
                    expectedIndexes.add(i);
-                   if (j == 5) {
+                   if (expectedIndexes.size() == 4) {
                        tBSIdx = i;
                    }
                    allPoints.addAll(pointsList.get(i));
@@ -306,7 +309,7 @@ public class ShapeFinder {
         }
         System.out.println("found " + expectedIndexes.size() + " of " 
             + cens.length + " expected.  tBS=" + Arrays.toString(tBS.getSetBits()));
-            /*
+           /* 
             try {
                PairIntArray b =  mergeAdjacentOrderedBorders(tBS);
                int[] xPolygon = null;
@@ -328,6 +331,7 @@ public class ShapeFinder {
                    xp, yp, xPolygon, yPolygon, "shape tbs");
                plotter.writeFile2();
            } catch (Throwable t) { }        
+           int z = 1;
            */
         }
         
@@ -1303,7 +1307,7 @@ public class ShapeFinder {
     private void fillCache1(int[] indexes) {
         clear(cache1);
         for (int idx : indexes) {
-            ch.add2To1(cache1, imgHSVHist[idx]);
+            ch.add2To1(cache1, imgHSVHist.get(idx).a);
         }
     }
     

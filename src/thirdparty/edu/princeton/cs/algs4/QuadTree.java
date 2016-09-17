@@ -1,5 +1,8 @@
 package thirdparty.edu.princeton.cs.algs4;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * a QuadTree implementation from Sedgewick and Wayne
  * from 
@@ -48,22 +51,33 @@ public class QuadTree<T extends Comparable<T>, Value>  {
     *  Range search.
     ***************************************************************************/
 
-    public void query2D(Interval2D<T> rect) {
-        query2D(root, rect);
+    public List<Value> query2D(Interval2D<T> rect) {
+        
+        List<Value> output = new ArrayList<Value>();
+        
+        query2D(root, rect, output);
+    
+        return output;
     }
 
-    private void query2D(Node<T> h, Interval2D<T> rect) {
+    private void query2D(Node<T> h, Interval2D<T> rect, List<Value> output) {
+        
         if (h == null) return;
+        
         T xmin = rect.intervalX.min();
         T ymin = rect.intervalY.min();
         T xmax = rect.intervalX.max();
         T ymax = rect.intervalY.max();
-        if (rect.contains(h.x, h.y))
-            System.out.println("    (" + h.x + ", " + h.y + ") " + h.value);
-        if ( less(xmin, h.x) &&  less(ymin, h.y)) query2D(h.SW, rect);
-        if ( less(xmin, h.x) && !less(ymax, h.y)) query2D(h.NW, rect);
-        if (!less(xmax, h.x) &&  less(ymin, h.y)) query2D(h.SE, rect);
-        if (!less(xmax, h.x) && !less(ymax, h.y)) query2D(h.NE, rect);
+        
+        if (rect.contains(h.x, h.y)) {
+            //System.out.println("    (" + h.x + ", " + h.y + ") " + h.value);
+            output.add(h.value);
+        }
+        
+        if ( less(xmin, h.x) &&  less(ymin, h.y)) query2D(h.SW, rect, output);
+        if ( less(xmin, h.x) && !less(ymax, h.y)) query2D(h.NW, rect, output);
+        if (!less(xmax, h.x) &&  less(ymin, h.y)) query2D(h.SE, rect, output);
+        if (!less(xmax, h.x) && !less(ymax, h.y)) query2D(h.NE, rect, output);
     }
 
 

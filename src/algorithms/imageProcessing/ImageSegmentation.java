@@ -39,6 +39,7 @@ import algorithms.util.PairIntArrayWithColor;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.QuadInt;
 import algorithms.util.ResourceFinder;
+import algorithms.util.TwoDIntArray;
 import com.climbwithyourfeet.clustering.DTClusterFinder;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
@@ -78,6 +79,9 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import thirdparty.edu.princeton.cs.algs4.Interval;
+import thirdparty.edu.princeton.cs.algs4.Interval2D;
+import thirdparty.edu.princeton.cs.algs4.QuadTree;
 import thirdparty.ods.Integerizer;
 import thirdparty.ods.XFastTrie;
 import thirdparty.ods.XFastTrieNode;
@@ -10704,6 +10708,42 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
     }
 
+    private int[] calcStdDev(List<GroupAverageColors> listOfColors, 
+        List<Integer> indexes) {
+        
+        float avgR = 0;
+        float avgG = 0;
+        float avgB = 0;
+        for (Integer index : indexes) {
+            GroupAverageColors clrs = listOfColors.get(index.intValue());
+            avgR += clrs.getR();
+            avgG += clrs.getG();
+            avgB += clrs.getB();
+        }
+        float length = (float)indexes.size();
+        avgR /= length;
+        avgG /= length;
+        avgB /= length;
+        
+        float stdvR = 0;
+        float stdvG = 0;
+        float stdvB = 0;
+        for (Integer index : indexes) {
+            GroupAverageColors clrs = listOfColors.get(index.intValue());
+            float diffR = clrs.getR() - avgR;
+            float diffG = clrs.getG() - avgG;
+            float diffB = clrs.getB() - avgB;
+            stdvR += (diffR * diffR);
+            stdvG += (diffG * diffG);
+            stdvB += (diffB * diffB);
+        }
+        int stdDevR = (int)Math.round(Math.sqrt(stdvR/(length - 1.0f)));
+        int stdDevG = (int)Math.round(Math.sqrt(stdvG/(length - 1.0f)));
+        int stdDevB = (int)Math.round(Math.sqrt(stdvB/(length - 1.0f)));
+        
+        return new int[]{stdDevR, stdDevG, stdDevB};
+    }
+
     public static class BoundingRegions {
         private final List<PairIntArray> perimeterList;
         private final BlobMedialAxes bma;
@@ -13902,5 +13942,146 @@ int z = 1;
         }
         clusterSets.clear();
         clusterSets.addAll(out);
+    }
+    
+    public void filterUsingColorHistogramDifference(ImageExt img,
+        int[] labels, ImageExt templateImg, Set<PairInt> templatePoints,
+        List<Set<PairInt>> outputListOfPointSets,
+        List<TwoDIntArray> outputListOfCHs
+        ) {
+        
+        float deltaELimit = 7.f;
+        float chLimit1 = 0.2f;
+            
+        assert(labels.length == img.getNPixels());
+        
+        int[] labels2 = Arrays.copyOf(labels, labels.length);
+        
+        List<Set<PairInt>> listOfPointSets = LabelToColorHelper
+            .extractContiguousLabelPoints(img, labels2);
+         
+        // get color information for the template:
+        GroupAverageColors templateColors = new GroupAverageColors(
+            templateImg, templatePoints);
+        
+        List<GroupAverageColors> listOfColors = new ArrayList<GroupAverageColors>();
+        Set<PairInt> allSetPoints = new HashSet<PairInt>();
+        QuadTree<Integer, Integer> qt = new QuadTree<Integer, Integer>();
+        
+        ColorHistogram clrHist = new ColorHistogram();
+        
+        int[][] templateCH = clrHist.histogramHSV(templateImg, templatePoints);
+        
+        // filter sets to remove large differences in deltaE
+        for (int i = 0; i < listOfPointSets.size(); ++i) {
+            Set<PairInt> set = listOfPointSets.get(i);
+            GroupAverageColors setColors = new GroupAverageColors(img, set);
+            DeltaESim deltaESimilarity = new DeltaESim(templateColors, setColors);
+            if (deltaESimilarity.getDeltaE() < deltaELimit) {
+                int idx = outputListOfPointSets.size();
+                outputListOfPointSets.add(set);                
+                allSetPoints.addAll(set);
+                listOfColors.add(setColors);
+                
+                qt.insert(setColors.getXCen(), setColors.getYCen(), 
+                    Integer.valueOf(idx));
+
+                TwoDIntArray a = new TwoDIntArray();
+                a.a = clrHist.histogramHSV(img, set);
+                outputListOfCHs.add(a);
+            }
+        }
+        
+        // make a grid of 2D bins across the image of size 
+        // 1 or 1/2 or 1/3 template size for each dimension.
+        // for each bin
+        //   -- gather all centers within bin into one point set,
+        //   -- make a color histogram and if intersection is very small,
+        //      -- check to make sure that the individual cells have
+        //         similar color (can safely remove them as a group them)
+                                
+        int[] minMaxXY = MiscMath.findMinMaxXY(templatePoints);
+        int xLen = minMaxXY[1] - minMaxXY[0];
+        int yLen = minMaxXY[3] - minMaxXY[2];
+        int maxDim = Math.max(xLen, yLen);
+        
+        int nX = 2 * ((int)Math.floor(img.getWidth()/maxDim) + 1);
+        int nY = 2 * ((int)Math.floor(img.getHeight()/maxDim) + 1);
+        
+        Set<Integer> remove = new HashSet<Integer>();
+        
+        for (int j = 0; j < nY; ++j) {
+            int startY = (maxDim/2) * j;
+            if (startY > (img.getHeight() - 1)) {
+                continue;
+            }
+            int stopY = startY + maxDim;
+            if (stopY > img.getHeight()) {
+                stopY = img.getHeight() - 1;
+            }
+            Interval<Integer> intY = new Interval<Integer>(startY, stopY);
+            for (int i = 0; i < nX; ++i) {
+                int startX = (maxDim/2) * i;
+                if (startX > (img.getWidth() - 1)) {
+                    continue;
+                }
+                int stopX = startX + maxDim;
+                if (stopX > img.getWidth()) {
+                    stopX = img.getWidth() - 1;
+                }
+                Interval<Integer> intX = new Interval<Integer>(startX, stopX);
+                Interval2D<Integer> rect = new Interval2D<Integer>(intX, intY);
+  //TODO: need tests for this query              
+                List<Integer> indexes = qt.query2D(rect);
+                if (indexes.isEmpty()) {
+                    continue;
+                }
+                int[][] ch0 = outputListOfCHs.get(indexes.get(0).intValue()).a;
+                int[][] ch = Arrays.copyOf(ch0, ch0.length);
+                for (int k = 1; k < indexes.size(); ++k) {
+                    clrHist.add2To1(ch, 
+                        outputListOfCHs.get(indexes.get(k).intValue()).a);
+                }
+                float intersection = clrHist.intersection(templateCH, ch);
+                
+                System.out.println(String.format(
+                    "bin (%d:%d, %d:%d)  intersection=%.4f", startX, stopX, 
+                    startY, stopY, intersection));
+                
+                if (intersection < chLimit1) {
+                    // calc avg and std dev rgb and cieX,cieY
+                    int[] avgStdv = calcStdDev(listOfColors, indexes);
+                    System.out.println("stdv=" + Arrays.toString(avgStdv));
+                    if (avgStdv[1] < (0.2*255)) {
+                        // remove these
+                        remove.addAll(indexes);
+                    }
+                }
+            }
+        }
+        
+        System.out.println("removing " + remove.size() + " more segmented cells");
+              
+        if (!remove.isEmpty()) {
+            TIntList sorted = new TIntArrayList();
+            for (Integer index : remove) {
+                sorted.add(index.intValue());
+            }
+            sorted.sort();
+            for (int i = (sorted.size() - 1); i > -1; --i) {
+                int idx = sorted.get(i);
+                outputListOfPointSets.remove(idx);
+                outputListOfCHs.remove(idx);
+            }
+        }
+        
+        Arrays.fill(labels, -1);
+        for (int i = 0; i < outputListOfPointSets.size(); ++i) {
+            Set<PairInt> set = outputListOfPointSets.get(i);
+            for (PairInt p : set) {
+                int pixIdx = img.getInternalIndex(p);
+                labels[pixIdx] = i;
+            }
+        }
     }
 }

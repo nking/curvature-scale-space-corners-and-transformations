@@ -44,6 +44,7 @@ import algorithms.util.PairIntPair;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.QuadInt;
 import algorithms.util.ResourceFinder;
+import algorithms.util.TwoDIntArray;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
@@ -279,14 +280,14 @@ public class AndroidStatuesTest extends TestCase {
         
         int maxDimension = 256;//512;
         SIGMA sigma = SIGMA.ONE;
-                
+        
         ImageProcessor imageProcessor = new ImageProcessor();
         ImageSegmentation imageSegmentation = new ImageSegmentation();
 
         String fileNameRoot0 = "android_statues_03_sz1";
         // size of template object must be near target size
         ImageExt img0 = maskAndBin(fileNameRoot0, 1);
-        
+
         Set<PairInt> shape0 = new HashSet<PairInt>();
         for (int i = 0; i < img0.getNPixels(); ++i) {
             if (img0.getR(i) > 0) {
@@ -299,7 +300,7 @@ public class AndroidStatuesTest extends TestCase {
                 sigma, img0.getWidth(), img0.getHeight());
         
         ColorHistogram clrHist = new ColorHistogram();
-        
+
         int[][] template_ch_HSV = clrHist.histogramHSV(img0, shape0);
         
         String fileName1 = "android_statues_02.jpg";
@@ -319,100 +320,66 @@ public class AndroidStatuesTest extends TestCase {
 
         int[] labels4 = imageSegmentation.objectSegmentation(img);
 
+        List<Set<PairInt>> listOfPointSets2 = new ArrayList<Set<PairInt>>();
+        
+        List<TwoDIntArray> listOfCH = new ArrayList<TwoDIntArray>();
+        
+        imageSegmentation.filterUsingColorHistogramDifference(img,
+            labels4, img0, shape0, listOfPointSets2, listOfCH);
+
         ImageExt img11 = img.createWithDimensions();
         ImageIOHelper.addAlternatingColorLabelsToRegion(img11, labels4);
-        MiscDebug.writeImage(img11, "_final_" + fileName1Root);
+        MiscDebug.writeImage(img11, "_filtered_" + fileName1Root);
         //ImageExt img11 = img.copyToImageExt();
         //LabelToColorHelper.applyLabels(img11, labels4);
         //MiscDebug.writeImage(img11, "_final_" + fileName1Root);
-
-        List<Set<PairInt>> listOfPointSets = LabelToColorHelper.extractContiguousLabelPoints(
-            img, labels4);
         
-        //TIntObjectMap<TIntSet> adjMap = 
-        //    LabelToColorHelper.createAdjacencyLabelMap(img, labels4, false);
+        List<PairIntArray> orderedBoundaries = new ArrayList<PairIntArray>();
         
-        /*
-        The shape matcher, if given input which is overly segmented like this,
-        needs additional filters applied to the input to reduce the
-        sets and associations.
-        Ideally, would have perfect segmentation, then the shape
-        matcher would only need to use PartialShapeMatcher on every cell
-        near template size only once to find true match.
-        
-        For this dataset, will apply a generous color filter to try to
-        remove some of the segments which could not be the gingerbread man.
-        This is not always the right approach for a dataset.
-        
-        Still considering whether ORB descriptors should be used here.
-        */
-        
-        PerimeterFinder2 perF2 = new PerimeterFinder2();
-
         int[] filteredLabels = new int[img.getNPixels()];
         Arrays.fill(filteredLabels, -1);
         
+        TIntList rmList = new TIntArrayList();
+                
         int w = img.getWidth();
-        int h = img.getHeight();
+        int h = img.getHeight();        
         
-        // get color information for the template:
-        GroupAverageColors templateColors = new GroupAverageColors(img0, shape0);
-      
-        List<Set<PairInt>> listOfPointSets2 = new ArrayList<Set<PairInt>>();
-        List<PairIntArray> orderedBoundaries = new ArrayList<PairIntArray>();
-        Set<PairInt> allSetPoints = new HashSet<PairInt>();
-        
-        for (int i = 0; i < listOfPointSets.size(); ++i) {
-            
-            Set<PairInt> set = listOfPointSets.get(i);
-            
+        for (int i = 0; i < listOfPointSets2.size(); ++i) {
+            Set<PairInt> set = listOfPointSets2.get(i);
             PairIntArray p = imageProcessor.extractSmoothedOrderedBoundary(
                 set, sigma, w, h);
             if (p == null || p.getN() < 20) {
                 System.out.println("consider a small cluster merging."
                     + " set.size=" + set.size());
+                rmList.add(i);
+                continue;
             }
-            
-            GroupAverageColors setColors = new GroupAverageColors(img, set);
-            
-            DeltaESim deltaESimilarity = new DeltaESim(templateColors, setColors);
-            
-            if (deltaESimilarity.deltaE < 7) {
-                //for (PairInt pt : listOfSets.get(i)) {
-                //    int pixIdx = img.getInternalIndex(pt);
-                int idx = orderedBoundaries.size();
-                for (int j = 0; j < p.getN(); ++j) {
-                    int pixIdx = img.getInternalIndex(p.getX(j), p.getY(j));
-                    filteredLabels[pixIdx] = idx;
-                }
-                orderedBoundaries.add(p);
-                listOfPointSets2.add(set); 
+            int idx = orderedBoundaries.size();
+            orderedBoundaries.add(p);
+            for (PairInt pt : set) {
+                int pixIdx = img.getInternalIndex(pt);
+                filteredLabels[pixIdx] = idx;
+            }
+        }
+        
+        for (int i = (rmList.size() - 1); i > -1; --i) {
+            int idx = rmList.get(i);
+            listOfPointSets2.remove(idx);
+            listOfCH.remove(idx);
+        }
                 
-                allSetPoints.addAll(set);
-            }
-        }
-        
-        assertEquals(orderedBoundaries.size(), listOfPointSets2.size());
-        
-        int n2 = listOfPointSets2.size();
-        int[][][] ch_HSV = new int[n2][][];
-        for (int i = 0; i < n2; ++i) {
-            ch_HSV[i] = clrHist.histogramHSV(img, listOfPointSets2.get(i));
-        }
-        
-        img11 = img.createWithDimensions();
-        ImageIOHelper.addAlternatingColorLabelsToRegion(
-            img11, filteredLabels);
-        MiscDebug.writeImage(img11, "_filtered_" + fileName1Root);
+        assert(orderedBoundaries.size() == listOfPointSets2.size());
         
         TIntObjectMap<TIntSet> adjMap = 
             LabelToColorHelper.createAdjacencyLabelMap(img, filteredLabels, true);
         
         imageProcessor.filterAdjacencyMap(img, listOfPointSets2, adjMap, 0.4f);
+                
+        assertEquals(orderedBoundaries.size(), listOfPointSets2.size());
         
         ShapeFinder sf = new ShapeFinder(orderedBoundaries, 
             listOfPointSets2, adjMap, template,
-            template_ch_HSV, ch_HSV);
+            template_ch_HSV, listOfCH);
         
         Result[] results = sf.findMatchingCells();
         
@@ -462,27 +429,6 @@ public class AndroidStatuesTest extends TestCase {
             String filePath = plotter.writeImage("__andr_02_corres_" + str);
         
             MiscDebug.writeImage(img11, "_match_" + fileName1Root + "_" + str); 
-        
-            /*
-            data = result.getData();
-            int[] idxs = ((VeryLongBitString)data[0]).getSetBits();
-            Set<PairInt> set = new HashSet<PairInt>();
-            for (int idx : idxs) {
-                set.addAll(listOfSets.get(idx));
-            }
-            
-            ColorHistogram clrHist = new ColorHistogram();
-            int[][] ch_RGB = templateClrHist.histogramRGB(img, set);
-            int[][] ch_HSV = templateClrHist.histogramHSV(img, set);
-            int[][] ch_CIELAB = templateClrHist.histogramCIELAB(img, set);
-        
-            // identical match is 1.0 and less similar is smaller value
-            System.out.println("color histogram intersection, i=" + str
-                + " rgb=" + clrHist.intersection(ch_RGB, templateCH_RGB)
-                + " hsv=" + clrHist.intersection(ch_HSV, templateCH_HSV)
-                + " cielab=" + clrHist.intersection(ch_CIELAB, templateCH_CIELAB)
-            );
-            */
         }
         
     }
@@ -980,38 +926,6 @@ public class AndroidStatuesTest extends TestCase {
         img0 = imageProcessor.binImage(img0, binFactor);
       
         return img0;
-    }
-
-    private class DeltaESim implements Comparable<DeltaESim> {
-
-        private int x1;
-        private int y1;
-        private int x2;
-        private int y2;
-        private double deltaE;
-
-        public DeltaESim(GroupAverageColors avg1,
-            GroupAverageColors avg2) {
-            this.x1 = avg1.getXCen();
-            this.y1 = avg1.getYCen();
-            this.x2 = avg2.getXCen();
-            this.y2 = avg2.getYCen();
-            CIEChromaticity cieC = new CIEChromaticity();
-            this.deltaE =
-                Math.abs(cieC.calcDeltaECIE2000(
-                avg1.getCIEL(), avg1.getCIEA(), avg1.getCIEB(),
-                avg2.getCIEL(), avg2.getCIEA(), avg2.getCIEB()));
-        }
-
-        @Override
-        public int compareTo(DeltaESim other) {
-            if (deltaE < other.deltaE) {
-                return -1;
-            } else if (deltaE > other.deltaE) {
-                return 1;
-            }
-            return 0;
-        }
     }
 
     public void estMatching() throws Exception {
