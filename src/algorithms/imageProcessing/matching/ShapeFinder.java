@@ -2,6 +2,8 @@ package algorithms.imageProcessing.matching;
 
 import algorithms.QuickSort;
 import algorithms.compGeometry.PerimeterFinder2;
+import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.util.PairIntArray;
 import gnu.trove.map.TObjectIntMap;
@@ -14,6 +16,7 @@ import algorithms.imageProcessing.transform.EuclideanEvaluator;
 import algorithms.imageProcessing.transform.EuclideanTransformationFit;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
+import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.search.NearestNeighbor2D;
 import algorithms.util.PairInt;
@@ -71,15 +74,11 @@ public class ShapeFinder {
         new HashMap<VeryLongBitString, Result>();
     private final Map<VeryLongBitString, Double> aggregatedCostMap =
         new HashMap<VeryLongBitString, Double>();
-    private final Map<Float, Set<PairInt>> rotatedTemplateInner = new
-            HashMap<Float, Set<PairInt>>();
     
     private final List<PairIntArray> orderedBoundaries;
     private final List<Set<PairInt>> pointsList;
     private final TIntObjectMap<TIntSet> adjacencyMap; 
     private final PairIntArray template;
-    private final Set<PairInt> templateInner; 
-    private final List<Set<PairInt>> pointsInner;
         
     private final int nTop = 100;
 
@@ -93,17 +92,13 @@ public class ShapeFinder {
      */
     public ShapeFinder(List<PairIntArray> orderedBoundaries,
         List<Set<PairInt>> pointsList, TIntObjectMap<TIntSet> adjacencyMap, 
-        PairIntArray template, Set<PairInt> templateInner,
-        List<Set<PairInt>> pointsInner) {
+        PairIntArray template) {
         
         this.orderedBoundaries = orderedBoundaries;
         this.pointsList = pointsList;
         this.adjacencyMap = adjacencyMap;
         this.template = template;
-        this.templateInner = templateInner;
-        this.pointsInner = pointsInner;
         
-        assert(pointsInner.size() == orderedBoundaries.size());
         assert(pointsList.size() == orderedBoundaries.size());
     }
     
@@ -452,7 +447,7 @@ public class ShapeFinder {
         data[0] = tBS;
         data[1] = aggregatedBoundaries.get(tBS);
         results[0].setData(data);
-
+        
         return results;
     }
 
@@ -492,11 +487,6 @@ public class ShapeFinder {
                     maxDist = d;
                 }
             }
-            
-            //double oneMinusFScore = 1.f - calculateF1ScoreForInner(r, new int[]{idx});
-            
-            // TODO: assert other changes first
-            //d += oneMinusFScore;
         }
         
         maxDiffChordSum = maxChord;
@@ -1186,44 +1176,5 @@ if ((distMap.containsKey(keyIJ) && (distMap.get(keyIJ) > s1))
         }
         
         return sum;
-    }
-    
-    int debugCachedUsed = 0;
-
-    /**
-     * calculate the metric for matching the inner points of the template to
-     * the inner points of the aggregated segmented cells.
-     * @param r
-     * @param indexes
-     * @return 
-     */
-    private float calculateF1ScoreForInner(Result r, int[] indexes) {
-        
-        Set<PairInt> aggInner = new HashSet<PairInt>();
-        for (int idx : indexes) {
-            aggInner.addAll(pointsInner.get(idx));
-        }
-        
-        // since the rotation needs the precision of at least float rather than
-        // integer for these transformations, it's likely that cached results
-        // may not be used again.  will count them meanwhile.
-        float rotationInRadians = r.getTransformationParameters()
-            .getRotationInRadians();
-        
-        Set<PairInt> trTemplateInner = rotatedTemplateInner.get(rotationInRadians);
-        if (trTemplateInner != null) {
-            debugCachedUsed++;
-        } else {
-            Transformer transformer = new Transformer();
-            trTemplateInner = transformer.applyTransformation2(
-                r.getTransformationParameters(), templateInner);
-        }
-        
-        EuclideanEvaluator eval = new EuclideanEvaluator();
-        
-        float f1Score = eval.calculateF1Score(trTemplateInner, aggInner, 
-            this.innerTolerance);
-        
-        return f1Score;
     }
 }

@@ -298,27 +298,6 @@ public class AndroidStatuesTest extends TestCase {
             imageProcessor.extractSmoothedOrderedBoundary(shape0, 
                 sigma, img0.getWidth(), img0.getHeight());
         
-        GreyscaleImage gsImg0 = ImageIOHelper.readImageExt(
-            ResourceFinder.findFileInTestResources(fileNameRoot0 + ".jpg")).copyToGreyscale();
-        imageProcessor.blur(gsImg0, SIGMA.ZEROPOINTFIVE, 0, 255);
-        imageProcessor.applyAdaptiveMeanThresholding(gsImg0, 1);
-        for (int i = 0; i < gsImg0.getNPixels(); ++i) {
-            PairInt p = new PairInt(gsImg0.getCol(i), gsImg0.getRow(i));
-            if (shape0.contains(p) && (gsImg0.getValue(p) == 0)) {
-                gsImg0.setValue(i, 255);
-            } else {
-                gsImg0.setValue(i, 0);
-            }
-        }
-        MiscDebug.writeImage(gsImg0, "_adaptive_means_" + fileNameRoot0);
-        
-        Set<PairInt> templateAdaptiveMeans = new HashSet<PairInt>();
-        for (PairInt p : shape0) {
-            if (gsImg0.getValue(p) > 0) {
-                templateAdaptiveMeans.add(p);
-            }
-        }
-        
         String fileName1 = "android_statues_02.jpg";
           
         String fileName1Root = fileName1.substring(0, fileName1.lastIndexOf("."));
@@ -361,15 +340,7 @@ public class AndroidStatuesTest extends TestCase {
         remove some of the segments which could not be the gingerbread man.
         This is not always the right approach for a dataset.
         
-        Still considering whether ORB descriptors could be used here
-        to either add a cost to some perimeter points or help filter out
-        some of the sets and remove their associations from the adjacency map.
-        The later would be a clean pattern that would allow the 
-        ShapeMatcher to restrict its logic to shapes.
-        (though, adding weights or rather costs to the adjacency map
-        is still a possibility and a way for any additional weighted
-        information to be included without ShapeMatcher needing to know that
-        it is texture or color based, etc.)
+        Still considering whether ORB descriptors should be used here.
         */
         
         PerimeterFinder2 perF2 = new PerimeterFinder2();
@@ -419,33 +390,6 @@ public class AndroidStatuesTest extends TestCase {
         
         assertEquals(orderedBoundaries.size(), listOfPointSets2.size());
         
-        GreyscaleImage gsImg = img.copyToGreyscale();
-        imageProcessor.blur(gsImg, SIGMA.ZEROPOINTFIVE, 0, 255);
-        imageProcessor.applyAdaptiveMeanThresholding(gsImg, 1);
-        for (int i = 0; i < gsImg.getNPixels(); ++i) {
-            PairInt p = new PairInt(gsImg.getCol(i), gsImg.getRow(i));
-            if (allSetPoints.contains(p) && (gsImg.getValue(p) == 0)) {
-                gsImg.setValue(i, 255);
-            } else {
-                gsImg.setValue(i, 0);
-            }
-        }
-        
-        MiscDebug.writeImage(gsImg, "_adaptive_means_" + fileName1Root);
-       
-        List<Set<PairInt>> listOfAdaptiveMeans = new ArrayList<Set<PairInt>>();
-        for (Set<PairInt> set : listOfPointSets2) {
-            Set<PairInt> set2 = new HashSet<PairInt>();
-            for (PairInt p : set) {
-                if (gsImg.getValue(p) > 0) {
-                    set2.add(p);
-                }
-            }
-            listOfAdaptiveMeans.add(set2);
-        }
-        
-        assertEquals(orderedBoundaries.size(), listOfAdaptiveMeans.size());
-        
         img11 = img.createWithDimensions();
         ImageIOHelper.addAlternatingColorLabelsToRegion(
             img11, filteredLabels);
@@ -457,8 +401,7 @@ public class AndroidStatuesTest extends TestCase {
         imageProcessor.filterAdjacencyMap(img, listOfPointSets2, adjMap, 0.4f);
         
         ShapeFinder sf = new ShapeFinder(orderedBoundaries, 
-            listOfPointSets2, adjMap, template, 
-            templateAdaptiveMeans, listOfAdaptiveMeans);
+            listOfPointSets2, adjMap, template);
         
         Result[] results = sf.findMatchingCells();
         
