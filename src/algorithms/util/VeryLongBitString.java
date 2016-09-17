@@ -1,6 +1,5 @@
 package algorithms.util;
 
-import algorithms.misc.MiscMath;
 import java.util.Arrays;
 
 /**
@@ -25,6 +24,8 @@ public final class VeryLongBitString {
     protected static final long nMaxBits = Integer.MAX_VALUE * itemBitLength;
     
     protected final long capacityBits;
+    
+    private long nSetBits = 0;
    
     public VeryLongBitString(long nBits) {
         
@@ -41,7 +42,8 @@ public final class VeryLongBitString {
         this.nBits = nBits;
     }
     
-    protected VeryLongBitString(long[] bitstrings, long nBits) {
+    protected VeryLongBitString(long[] bitstrings, long nBits, long 
+        nSetBits) {
         
         if (nBits > nMaxBits) {
             throw new IllegalArgumentException("cannot hold more than " + nMaxBits + " bits");
@@ -52,6 +54,8 @@ public final class VeryLongBitString {
         capacityBits = bitstring.length * itemBitLength;
         
         this.nBits = nBits;
+        
+        this.nSetBits = nSetBits;
     }
     
     public long getCapacity() {
@@ -64,8 +68,14 @@ public final class VeryLongBitString {
         
         int bitIdx = getBitIdx(nthBit, idx);
         
-        bitstring[idx] |= (1L << bitIdx);
-        
+        // test bit
+        if ((bitstring[idx] & (1L << bitIdx)) == 0) {
+            
+            // set bit
+            bitstring[idx] |= (1L << bitIdx);
+            
+            nSetBits++;
+        }
     }
     
     public void clearBit(long nthBit) {
@@ -74,7 +84,14 @@ public final class VeryLongBitString {
         
         int bitIdx = getBitIdx(nthBit, idx);
         
-        bitstring[idx] &= ~(1L << bitIdx);
+        // test bit
+        if ((bitstring[idx] & (1L << bitIdx)) != 0) {
+        
+            // clear bit
+            bitstring[idx] &= ~(1L << bitIdx);
+            
+            nSetBits--;
+        }
     }
     
     public void toggleBit(long nthBit) {
@@ -83,7 +100,27 @@ public final class VeryLongBitString {
         
         int bitIdx = getBitIdx(nthBit, idx);
         
-        bitstring[idx] ^= (1L << bitIdx);
+        // replace toggle so can keep track of nSetBits
+        //bitstring[idx] ^= (1L << bitIdx);
+        
+        if ((bitstring[idx] & (1L << bitIdx)) == 0) {
+            
+            // set bit
+            bitstring[idx] |= (1L << bitIdx);
+            
+            nSetBits++;
+            
+        } else {
+            
+            // clear bit
+            bitstring[idx] &= ~(1L << bitIdx);
+            
+            nSetBits--;
+        }
+    }
+    
+    public long getNSetBits() {
+        return nSetBits;
     }
     
     public boolean isSet(long nthBit) {
@@ -133,12 +170,16 @@ public final class VeryLongBitString {
     }
     
     public void clearAllBits() {
+        
         Arrays.fill(bitstring, 0);
+        
+        nSetBits = 0;
     }
     
     public VeryLongBitString copy() {
         
-        VeryLongBitString c = new VeryLongBitString(this.bitstring, this.nBits);
+        VeryLongBitString c = new VeryLongBitString(bitstring, 
+            nBits, nSetBits);
         
         return c;
     }
@@ -148,6 +189,8 @@ public final class VeryLongBitString {
             throw new IllegalArgumentException("nBits must be the same in both to use this method");
         }
         System.arraycopy(other.bitstring, 0, bitstring, 0, other.bitstring.length);
+        
+        this.nSetBits = other.nSetBits;
     }
     
     /**
@@ -163,6 +206,13 @@ public final class VeryLongBitString {
         return sb.toString();
     }
     
+    protected void recountNSetBits() {
+        nSetBits = 0;
+        for (int i = 0; i < bitstring.length; ++i) {
+            nSetBits += Long.bitCount(bitstring[i]);
+        }
+    }
+    
     /**
      * get a list of the bit numbers that are set.
      * @return 
@@ -173,6 +223,7 @@ public final class VeryLongBitString {
         for (int i = 0; i < bitstring.length; ++i) {
             n += Long.bitCount(bitstring[i]);
         }
+        assert(n == nSetBits);
         
         int[] setBits = new int[n];
         int n2 = 0;
@@ -204,6 +255,10 @@ public final class VeryLongBitString {
         VeryLongBitString other = (VeryLongBitString)obj;
         
         if (nBits != other.nBits) {
+            return false;
+        }
+        
+        if (nSetBits != other.nSetBits) {
             return false;
         }
         
@@ -308,6 +363,8 @@ public final class VeryLongBitString {
             }
         }
         
+        out.recountNSetBits();
+        
         return out;
     }
 
@@ -339,6 +396,8 @@ public final class VeryLongBitString {
                 out.bitstring[i] |= bs;
             }
         }
+        
+        out.recountNSetBits();
         
         return out;
     }
@@ -374,6 +433,8 @@ public final class VeryLongBitString {
                 out.bitstring[i] &= ~intersection;
             }
         }
+        
+        out.recountNSetBits();
         
         return out;
     }

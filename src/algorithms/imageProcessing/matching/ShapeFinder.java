@@ -2,6 +2,7 @@ package algorithms.imageProcessing.matching;
 
 import algorithms.QuickSort;
 import algorithms.compGeometry.PerimeterFinder2;
+import algorithms.imageProcessing.ColorHistogram;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
@@ -48,6 +49,9 @@ import java.util.Set;
  * in the future to use weights in the adjacency map,
  * but for now it's a binary relationship map.
  *
+ * Also note that the class uses internal cache which requires single
+ * threaded use of this class.
+ * 
  * @author nichole
  */
 public class ShapeFinder {
@@ -56,8 +60,6 @@ public class ShapeFinder {
     
     private double maxDistTransformSum = Float.MAX_VALUE;
     
-    //TODO: if use projection in cost, need to restrict it to close to scale=1
-    //  with current settings...
     private boolean useEuclideanInCost = false;
     private float[] euclideanScaleRange = new float[]{0.9f, 1.1f};
 
@@ -81,6 +83,13 @@ public class ShapeFinder {
     private final PairIntArray template;
     private final int[][] templateHSVHist;
     private final int[][][] imgHSVHist;
+    
+    private final ColorHistogram ch = new ColorHistogram();
+    private final int[][] cache1;
+    private final float chHSVLimit1 = 0.1f;
+    private final float chHSVLimit2 = 0.25f;
+    private final float chHSVLimit3 = 0.35f;
+    private final Set<VeryLongBitString> skipSet = new HashSet<VeryLongBitString>();
         
     private final int nTop = 100;
 
@@ -102,6 +111,11 @@ public class ShapeFinder {
         this.template = template;
         this.templateHSVHist = templateHSVHist;
         this.imgHSVHist = imgHSVHist;
+        
+        cache1 = new int[templateHSVHist.length][templateHSVHist[0].length];
+        for (int i = 0; i < cache1.length; ++i) {
+            cache1[i] = new int[templateHSVHist[0].length];
+        }
         
         assert(pointsList.size() == orderedBoundaries.size());
     }
@@ -405,13 +419,32 @@ public class ShapeFinder {
         VeryLongBitString[] keys = new VeryLongBitString[nc];
         int count = 0;
         for (Entry<VeryLongBitString, Double> entry : aggregatedCostMap.entrySet()) {
-            keys[count] = entry.getKey();
+            VeryLongBitString key = entry.getKey();
+            if (containsASkipItem(key)) {
+                continue;
+            }
+            int[] bits = key.getSetBits();
+            fillCache1(bits);
+            float intersection = ch.intersection(cache1, templateHSVHist);
+            //System.out.println("-> intersection=" + intersection + " bits=" + 
+            //    Arrays.toString(bits));
+            if (intersection < chHSVLimit3) {
+                skipSet.add(key);
+                continue;
+            }
+            assert(aggregatedResultMap.containsKey(key));
+            keys[count] = key;
             costs[count] = entry.getValue().floatValue();
             count++;
         }
+        costs = Arrays.copyOf(costs, count);
+        keys = Arrays.copyOf(keys, count);
+        
         QuickSort.sortBy1stArg(costs, keys);
         
-        int nt = (nc >= nTop) ? nTop : nc;
+        int nt = (count >= nTop) ? nTop : count;
+        
+        System.out.println("returning " + nt + " results");
         Result[] results = new Result[nt + 1];
         for (int i = 0; i < nt; ++i) {
             VeryLongBitString key = keys[i];
@@ -424,6 +457,10 @@ public class ShapeFinder {
             assert(b != null);
             results[i + 1] = r;
             int[] idxs = key.getSetBits();
+            
+            fillCache1(idxs);
+            float intersection = ch.intersection(cache1, templateHSVHist);
+            
             StringBuilder sb = new StringBuilder(", sizes=");
             for (int idx : idxs) {
                 int sz;
@@ -438,7 +475,7 @@ public class ShapeFinder {
             String costStr = String.format("cost=%.4f",
                 aggregatedCostMap.get(key).floatValue());
             System.out.println(i + " " + costStr + " " + Arrays.toString(idxs) 
-                + sb.toString());
+                + sb.toString() + " intersection=" + intersection);
         }
         Double cost = aggregatedCostMap.get(tBS);
         if (cost == null) {
@@ -693,7 +730,7 @@ public class ShapeFinder {
 
         float factor = 2.f;
         float maxDist = factor * (float)Math.max(dimensionsT[0], dimensionsT[1]);
-
+        
         // ------- initialize the local maps and store partial results in
         //            output vars too
 
@@ -764,7 +801,23 @@ public class ShapeFinder {
 
                 VeryLongBitString bs2 = bs1.copy();
                 bs2.setBit(idx2);
-
+                
+                if (containsASkipItem(bs2)) {
+                    continue;
+                }
+                
+                int[] bs2Bits = bs2.getSetBits();
+                
+                // ---- filter out very different color histogram groups ---
+                fillCache1(bs2Bits);
+                float intersection = ch.intersection(cache1, templateHSVHist);
+                if (intersection < chHSVLimit1) {
+                    // skip this in future
+                    skipSet.add(bs2);
+                    continue;
+                }
+                // --------
+                
                 PairInt key2;
                 key2 = new PairInt(idx1, idx2);
                 indexesMap.put(key2, bs2);
@@ -794,6 +847,9 @@ public class ShapeFinder {
                 }
             }
         }
+        // these skipSet items that could be filtered before input is
+        // given to this class instance
+        System.out.println("0 skipSet.size=" + skipSet.size());
         // ---- end initializing local maps
 
         PairInt minCostIdx = null;
@@ -895,27 +951,79 @@ public class ShapeFinder {
                                 s0 = aggregatedCostMap.get(bs0);
                             }
                         }
+                        if (tIJ) {
+                            if (containsASkipItem(bs0)) {
+                                tIJ = false;
+                            }
+                        }
+                        if (tIJ) {
+                            // ---- filter out very different color histogram groups ---
+                            int[] bs0Bits = bs0.getSetBits();
+                            fillCache1(bs0Bits);
+                            float intersection = ch.intersection(cache1, templateHSVHist);
+                            if (intersection < chHSVLimit2) {
+                                // skip this in future
+                                skipSet.add(bs0);
+                                tIJ = false;
+                            }
+                            // --------
+                        }
                     }
-
+                    
+                    VeryLongBitString bsIK = indexesMap.get(keyIK);
+                    VeryLongBitString bsKJ = indexesMap.get(keyKJ);
                     if (tIK && tKJ) {
                         //s1 = costIK + costKJ;
-                        VeryLongBitString bsIK = indexesMap.get(keyIK);
-                        VeryLongBitString bsKJ = indexesMap.get(keyKJ);
-
                         if (bsIK == null) {
                             bsIK = new VeryLongBitString(nB);
                             bsIK.setBit(keyIK.getX());
                             bsIK.setBit(keyIK.getY());
-                            //indexesMap.put(keyIK, bsIK);
                         }
                         if (bsKJ == null) {
                             bsKJ = new VeryLongBitString(nB);
                             bsKJ.setBit(keyKJ.getX());
                             bsKJ.setBit(keyKJ.getY());
-                            //indexesMap.put(keyKJ, bsKJ);
                         }
-
+                        if (containsASkipItem(bsIK)) {
+                            tIK = false;
+                        }
+                    }
+                    if (tIK && tKJ) {
+                        if (containsASkipItem(bsKJ)) {
+                            tKJ = false;
+                        }
+                    }
+                    if (tIK && tKJ) {
+                        // ---- filter out very different color histogram groups ---
+                        int[] bsIKBits = bsIK.getSetBits();
+                        fillCache1(bsIKBits);
+                        float intersection = ch.intersection(cache1, templateHSVHist);
+                        if (intersection < chHSVLimit2) {
+                            // skip this in future
+                            skipSet.add(bsIK);
+                            tIK = false;
+                        }
+                    }
+                    if (tIK && tKJ) {
+                        int[] bsKJBits = bsKJ.getSetBits();
+                        fillCache1(bsKJBits);
+                        float intersection = ch.intersection(cache1, templateHSVHist);
+                        if (intersection < chHSVLimit2) {
+                            // skip this in future
+                            skipSet.add(bsKJ);
+                            tKJ = false;
+                        }
+                        // --------
+                    }
+                    
+                    if (tIK && tKJ) {
                         bs1 = bsIK.or(bsKJ);
+                        if (containsASkipItem(bs1)) {
+                            tIK = false;
+                            tKJ = false;
+                        }
+                    }
+                    if (tIK && tKJ) {   
                         PairIntArray bIKKJ = aggregatedBoundaries.get(bs1);
                         s1 = aggregatedCostMap.get(bs1);
                         if (s1 == null) {
@@ -958,12 +1066,12 @@ public class ShapeFinder {
                     if (tIJ && s0 != null && s1 != null &&
                         ((s0.doubleValue() <= s1.doubleValue()) || (!tIK || !tKJ))) {
                         assert(tIJ);
-                        
-if ((distMap.containsKey(keyIJ) && (distMap.get(keyIJ) > s0))
-|| !distMap.containsKey(keyIJ)) {
-                        distMap.put(keyIJ, s0);
-                        indexesMap.put(keyIJ, bs0);
-}
+
+                        if ((distMap.containsKey(keyIJ) && (distMap.get(keyIJ) > s0))
+                            || !distMap.containsKey(keyIJ)) {
+                            distMap.put(keyIJ, s0);
+                            indexesMap.put(keyIJ, bs0);
+                        }
 
 
                         //DEBUG
@@ -985,11 +1093,12 @@ if ((distMap.containsKey(keyIJ) && (distMap.get(keyIJ) > s0))
                         assert(tKJ);
                         assert(bs1 != null);
                         
-if ((distMap.containsKey(keyIJ) && (distMap.get(keyIJ) > s1))
-|| !distMap.containsKey(keyIJ)) {
-                        distMap.put(keyIJ, s1);
-                        indexesMap.put(keyIJ, bs1);
-}
+                        if ((distMap.containsKey(keyIJ) && (distMap.get(keyIJ) > s1))
+                            || !distMap.containsKey(keyIJ)) {
+                            distMap.put(keyIJ, s1);
+                            indexesMap.put(keyIJ, bs1);
+                        }
+                        
                         //DEBUG
                         if (expectedIndexes.contains(i) ||
                             expectedIndexes.contains(j)
@@ -1009,13 +1118,13 @@ if ((distMap.containsKey(keyIJ) && (distMap.get(keyIJ) > s1))
                         continue;
                     }
 
- if (indexesMap.containsKey(keyIJ)) {
-                    assert(indexesMap.get(keyIJ) != null);
-                    if (distMap.get(keyIJ) < minCost) {
-                        minCost = distMap.get(keyIJ);
-                        minCostIdx = keyIJ;
+                    if (indexesMap.containsKey(keyIJ)) {
+                        assert (indexesMap.get(keyIJ) != null);
+                        if (distMap.get(keyIJ) < minCost) {
+                            minCost = distMap.get(keyIJ);
+                            minCostIdx = keyIJ;
+                        }
                     }
-}
                 }
             }
         }
@@ -1024,15 +1133,20 @@ if ((distMap.containsKey(keyIJ) && (distMap.get(keyIJ) > s1))
             return null;
         }
 
-        {
+        {//DEBUG
+            System.out.println("skipSet.size=" + skipSet.size());
             // expected:
             Double cost = aggregatedCostMap.get(tBS);
             if (cost == null) {
                 PairIntArray b =  mergeAdjacentOrderedBorders(tBS);
                 cost = calcAndStoreMatchCost(b, tBS);
             }
+            fillCache1(tBS.getSetBits());
+            float intersection = ch.intersection(cache1, templateHSVHist);
+            
             System.out.println("expected true answer cost=" + cost +
-                " " + Arrays.toString(tBS.getSetBits()));
+                " " + Arrays.toString(tBS.getSetBits()) + " intersection=" +
+                intersection);
             for (Entry<PairInt, VeryLongBitString> entry : indexesMap.entrySet()) {
                 if (entry.getValue().equals(tBS)) {
                     System.out.println("Expected found in distMap is " +
@@ -1054,9 +1168,13 @@ if ((distMap.containsKey(keyIJ) && (distMap.get(keyIJ) > s1))
 
         VeryLongBitString minBitString = indexesMap.get(minCostIdx);
 
+        fillCache1(minBitString.getSetBits());
+        float intersection = ch.intersection(cache1, templateHSVHist);
+            
         System.out.println("minCostIdx=" + minCostIdx +
             " minCost=" + minCost + " bs=" +
-            Arrays.toString(minBitString.getSetBits()));
+            Arrays.toString(minBitString.getSetBits()) + " intersection=" 
+            + intersection);
 
         return minBitString;
     }
@@ -1180,5 +1298,48 @@ if ((distMap.containsKey(keyIJ) && (distMap.get(keyIJ) > s1))
         }
         
         return sum;
+    }
+    
+    private void fillCache1(int[] indexes) {
+        clear(cache1);
+        for (int idx : indexes) {
+            ch.add2To1(cache1, imgHSVHist[idx]);
+        }
+    }
+    
+    private void clear(int[][] cache) {
+        for (int i = 0; i < cache.length; ++i) {
+            Arrays.fill(cache[i], 0);
+        }
+    }
+    
+    /**
+     * checks whether skipSet contains bs or whether bs is composed
+     * of any member in skipSet.
+     * 
+     * @param bs
+     * @return 
+     */
+    private boolean containsASkipItem(VeryLongBitString bs) {
+        
+        if (skipSet.contains(bs)) {
+            return true;
+        }
+        
+        // TODO: this could probably be improved, but for now, expecting
+        // that the number of items in skipSet is small.
+        // if that's not the case, then more filtering could be done to the
+        // input to this instance.
+        
+        for (VeryLongBitString skip : skipSet) {
+            
+            VeryLongBitString intersection = bs.and(skip);
+            
+            if (intersection.getNSetBits() == skip.getNSetBits()) {
+                return true;
+            }
+        }
+        
+        return false;
     }
 }
