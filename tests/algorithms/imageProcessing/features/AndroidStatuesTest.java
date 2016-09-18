@@ -317,14 +317,16 @@ public class AndroidStatuesTest extends TestCase {
             (float) h1 / maxDimension));
 
         img = imageProcessor.binImage(img, binFactor1);
+        
+        ImageExt imgCp = img.copyToImageExt();
 
-        int[] labels4 = imageSegmentation.objectSegmentation(img);
+        int[] labels4 = imageSegmentation.objectSegmentation(imgCp);
 
         List<Set<PairInt>> listOfPointSets2 = new ArrayList<Set<PairInt>>();
         
         List<TwoDIntArray> listOfCH = new ArrayList<TwoDIntArray>();
         
-        imageSegmentation.filterUsingColorHistogramDifference(img,
+        imageSegmentation.filterUsingColorHistogramDifference(imgCp,
             labels4, img0, shape0, listOfPointSets2, listOfCH);
 
         ImageExt img11 = img.createWithDimensions();
@@ -371,9 +373,9 @@ public class AndroidStatuesTest extends TestCase {
         assert(orderedBoundaries.size() == listOfPointSets2.size());
         
         TIntObjectMap<TIntSet> adjMap = 
-            LabelToColorHelper.createAdjacencyLabelMap(img, filteredLabels, true);
+            LabelToColorHelper.createAdjacencyLabelMap(imgCp, filteredLabels, true);
         
-        imageProcessor.filterAdjacencyMap(img, listOfPointSets2, adjMap, 0.4f);
+        imageProcessor.filterAdjacencyMap(imgCp, listOfPointSets2, adjMap, 0.4f);
                 
         assertEquals(orderedBoundaries.size(), listOfPointSets2.size());
         
@@ -382,6 +384,8 @@ public class AndroidStatuesTest extends TestCase {
             template_ch_HSV, listOfCH);
         
         Result[] results = sf.findMatchingCells();
+        
+        assert(results != null);
         
         for (int i0 = 0; i0 < results.length; ++i0) {
             
@@ -411,7 +415,7 @@ public class AndroidStatuesTest extends TestCase {
                 int x2 = p.getX(idx2);
                 int y2 = p.getY(idx2);
                 
-                ImageIOHelper.addPointToImage(x1, y1, img11, 
+                ImageIOHelper.addPointToImage(x2, y2, img11, 
                     0, 255, 0, 0);
                 
                 //System.out.println(String.format(
@@ -621,8 +625,7 @@ public class AndroidStatuesTest extends TestCase {
             
             int nClusters = 200;//100;
             //int clrNorm = 5;
-            SLICSuperPixels slic
-                = new SLICSuperPixels(img, nClusters);
+            SLICSuperPixels slic = new SLICSuperPixels(img, nClusters);
             slic.calculate();
             int[] labels = slic.getLabels();
             ImageIOHelper.addAlternatingColorLabelsToRegion(

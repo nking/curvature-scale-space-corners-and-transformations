@@ -39,6 +39,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import thirdparty.edu.princeton.cs.algs4.Interval;
+import thirdparty.edu.princeton.cs.algs4.Interval2D;
+import thirdparty.edu.princeton.cs.algs4.QuadTree;
 
 /**
  * uses PartialShapeMatcher and search patterns to
@@ -80,12 +83,20 @@ public class ShapeFinder {
     private final Map<VeryLongBitString, Double> aggregatedCostMap =
         new HashMap<VeryLongBitString, Double>();
     
+    private int[] minMaxXY = null;
+    
+    private final int[] dimensionsT;
+    private int areaT;
+    private final int nB;
+    
     private final List<PairIntArray> orderedBoundaries;
     private final List<Set<PairInt>> pointsList;
     private final TIntObjectMap<TIntSet> adjacencyMap; 
     private final PairIntArray template;
     private final int[][] templateHSVHist;
     private final List<TwoDIntArray> imgHSVHist;
+    
+    private QuadTree<Integer, Integer> centroidQT = null;
     
     private final ColorHistogram ch = new ColorHistogram();
     private final int[][] cache1;
@@ -122,6 +133,11 @@ public class ShapeFinder {
         }
         
         assert(pointsList.size() == orderedBoundaries.size());
+        
+        this.dimensionsT = calcDimensions(template);
+        this.areaT = (int)Math.round(Math.sqrt(dimensionsT[0] * dimensionsT[0] +
+            dimensionsT[1] * dimensionsT[1]));
+        this.nB = orderedBoundaries.size();
     }
     
     /**
@@ -217,154 +233,195 @@ public class ShapeFinder {
 
                there are then 4 search patterns to implement here.
         */
+        
+        // ----- init state ----
+        List<PairInt> orderedBoundaryCentroids = calculateCentroids();
+        assert(orderedBoundaryCentroids.size() == nB);
+        
+        centroidQT = new QuadTree<Integer, Integer>();
+        for (int i = 0; i < nB; ++i) {
+            PairInt pCen = orderedBoundaryCentroids.get(i);
+            centroidQT.insert(pCen.getX(), pCen.getY(), Integer.valueOf(i));
+        }
+        
+        this.minMaxXY = calculateMinMaxXY();
+        
+        assert(minMaxXY[0] >= 0);
+        assert(minMaxXY[1] >= 0);
+        assert(minMaxXY[2] >= 0);
+        assert(minMaxXY[3] >= 0);
 
+        matchIndividually();
+        
+        // ----------
+        
+        { // DEBUG
+            //DEBUG specific to a test
+            Set<PairInt> allPoints = new HashSet<PairInt>();
+            expectedIndexes.clear();
+            tBS = new VeryLongBitString(orderedBoundaries.size());
+            PairInt[] cens = new PairInt[8];
+            cens[0] = new PairInt(184,86);
+            cens[1] = new PairInt(187,79);
+            cens[2] = new PairInt(184,60);
+            cens[3] = new PairInt(177,41);
+            cens[4] = new PairInt(174,76);
+            cens[5] = new PairInt(173,52);
+            cens[6] = new PairInt(189,45);
+            cens[7] = new PairInt(184,35);
+
+            for (int i = 0; i < orderedBoundaries.size(); ++i) {
+                PairInt pCen = orderedBoundaryCentroids.get(i);
+                System.out.println("pCen=" + pCen + " idx=" + i);
+                for (int j = 0; j < cens.length; ++j) {
+                   int dx = Math.abs(pCen.getX() - cens[j].getX());
+                   int dy = Math.abs(pCen.getY() - cens[j].getY());
+                   if ((dx < 3 && dy < 3) /*|| 
+                       (pCen.getX() > 170 && 190 < pCen.getX() &&
+                       pCen.getY() > 30 && 90 < pCen.getY())*/) {
+                       tBS.setBit(i);
+                       expectedIndexes.add(i);
+                       if (expectedIndexes.size() == 4) {
+                           tBSIdx = i;
+                       }
+                       allPoints.addAll(pointsList.get(i));
+                       System.out.println("*pCen=" + pCen + " idx=" + i + " "
+                          + " adj=" + adjacencyMap.get(i));
+                       break;
+                   }
+                }
+            }
+            System.out.println("found " + expectedIndexes.size() + " of " 
+                + cens.length + " expected.  tBS=" + Arrays.toString(tBS.getSetBits()));
+               /* 
+                try {
+                   PairIntArray b =  mergeAdjacentOrderedBorders(tBS);
+                   int[] xPolygon = null;
+                   int[] yPolygon = null;
+                   PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+                   int[] xminmxyminmiac = MiscMath.findMinMaxXY(allPoints);
+                   int[] xp, yp;
+                   int n2 = allPoints.size();
+                   xp = new int[n2];
+                   yp = new int[n2];
+                   int i = 0;
+                   for (PairInt p : allPoints) {
+                       xp[i] = p.getX();
+                       yp[i] = p.getY();
+                       i++;
+                   }
+                   plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],
+                       xminmxyminmiac[2], xminmxyminmiac[3],
+                       xp, yp, xPolygon, yPolygon, "shape tbs");
+                   plotter.writeFile2();
+               } catch (Throwable t) { }        
+               int z = 1;
+               */
+        }// end DEBUG
+        
+        
         if (true) {
-            return wideFWSearch();
+            return wideFWSearch(orderedBoundaryCentroids);
         }
 
         throw new UnsupportedOperationException("not yet implemented");
     }
 
-    private Result[] wideFWSearch() {
-
-        /*
-        NOTE: if this method is to be used, it needs some improvements.
-           -- the main goal is to match the shape independent of color
-              changes and texture so it could match the outline of
-              the gingerbread man in different lighting and poses.
-              also to have at some point, ability to match mountain
-              silhouettes such as half dome, for example.
+    private Result[] wideFWSearch(List<PairInt> orderedBoundaryCentroids) {    
         
-           it looks like 2 things are needed:
-             - improvement of the input
-               and that can be improved segmentation or use of 
-               descriptors speficic to the data set (the later
-               modifies the adjacency map).
-               looking at really quick shift or quick shift for another
-               segmentation.  current approach of super pixels and
-               and then color region merging is still overly segmented
-               and full of aggregate combinations which produce some false
-               matches to shape that are better than the true match
-               which has some projection effects.
-               possibly need to continue the edited descriptors I made that are
-               half area, avoiding the "background" which might be
-               different, as it is in the android statues tests.
-               need a decent descriptor for sillhouettes that does the same
-               but is greyscale...
-             - improvement of the search once the true answer is robustly
-               found in the detailed local search using floyd warshall.
-               looking at tabu or scatter search.
-        */
-
-        int n = orderedBoundaries.size();
-
-        List<Result> outputSortedResults = new ArrayList<Result>(n);
-        List<Integer> outputSortedIndexes = new ArrayList<Integer>(n);
-
-        // maxDiffChordSum is calculated in here
-        matchAndOrderByIncrCost(outputSortedResults, outputSortedIndexes);
-
-        assert(aggregatedBoundaries.size() == aggregatedResultMap.size());
-        assert(aggregatedCostMap.size() == aggregatedResultMap.size());
-
-        List<PairInt> orderedBoundaryCentroids = calculateCentroids();
-
+        //TODO: looks like need to retain the best of each bin
+        //      and further compare those to one another.
+        //      -- might need to consider a fast inner pattern comparison.
+        //TODO: consider if another pattern of color evaluation would
+        //      be quicker than the color histograms.  they're fast because
+        //      the sizes are only 32 bins and comparisons are the same. 
+        //      but might be able to
+        //      use average colors in quadrants...oriented averages,
+        //      but with small number of steps to combine color averages.
+        //      (might require standard deviations).  a step towards descriptors
+        //      in terms of using spatial location with respect to same quadrant
+        //      in template object, but fewer comparisons...
+        //TODO: once the search over the entire image is robust, will make 
+        //      another method attempting a faster search pattern than the
+        //      nBins * O(N^3) Floyd Warshall (excluding partial shape matching
+        //      and color histograms in the complexty summary just now).
+        
+        int maxDim = Math.max(dimensionsT[0], dimensionsT[1]);
+        
+        int w = minMaxXY[1] + 1;
+        int h = minMaxXY[3] + 1;
+        
+        int nPPB = 1;
+        
+        int nX = nPPB * ((int)Math.floor(w/maxDim) + 1);
+        int nY = nPPB * ((int)Math.floor(h/maxDim) + 1);
+        
         double minCost = Double.MAX_VALUE;
         VeryLongBitString minBitString = null;
-
-        TIntIntMap debugIndexSizeMap = new TIntIntHashMap();
-        {//DEBUG specific to a test
-        Set<PairInt> allPoints = new HashSet<PairInt>();
-        expectedIndexes.clear();
-        tBS = new VeryLongBitString(orderedBoundaries.size());
-        PairInt[] cens = new PairInt[8];
-        cens[0] = new PairInt(184,86);
-        cens[1] = new PairInt(187,79);
-        cens[2] = new PairInt(184,60);
-        cens[3] = new PairInt(177,41);
-        cens[4] = new PairInt(174,76);
-        cens[5] = new PairInt(173,52);
-        cens[6] = new PairInt(189,45);
-        cens[7] = new PairInt(184,35);
-        
-        for (int i = 0; i < orderedBoundaries.size(); ++i) {
-            PairInt pCen = orderedBoundaryCentroids.get(i);
-            System.out.println("pCen=" + pCen + " idx=" + i);
-            for (int j = 0; j < cens.length; ++j) {
-               int dx = Math.abs(pCen.getX() - cens[j].getX());
-               int dy = Math.abs(pCen.getY() - cens[j].getY());
-               if ((dx < 3 && dy < 3) /*|| 
-                   (pCen.getX() > 170 && 190 < pCen.getX() &&
-                   pCen.getY() > 30 && 90 < pCen.getY())*/) {
-                   tBS.setBit(i);
-                   expectedIndexes.add(i);
-                   if (expectedIndexes.size() == 4) {
-                       tBSIdx = i;
-                   }
-                   allPoints.addAll(pointsList.get(i));
-                   System.out.println("*pCen=" + pCen + " idx=" + i + " "
-                      + " adj=" + adjacencyMap.get(i));
-                   break;
-               }
-            }
-        }
-        System.out.println("found " + expectedIndexes.size() + " of " 
-            + cens.length + " expected.  tBS=" + Arrays.toString(tBS.getSetBits()));
-           /* 
-            try {
-               PairIntArray b =  mergeAdjacentOrderedBorders(tBS);
-               int[] xPolygon = null;
-               int[] yPolygon = null;
-               PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
-               int[] xminmxyminmiac = MiscMath.findMinMaxXY(allPoints);
-               int[] xp, yp;
-               int n2 = allPoints.size();
-               xp = new int[n2];
-               yp = new int[n2];
-               int i = 0;
-               for (PairInt p : allPoints) {
-                   xp[i] = p.getX();
-                   yp[i] = p.getY();
-                   i++;
-               }
-               plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],
-                   xminmxyminmiac[2], xminmxyminmiac[3],
-                   xp, yp, xPolygon, yPolygon, "shape tbs");
-               plotter.writeFile2();
-           } catch (Throwable t) { }        
-           int z = 1;
-           */
-        }
-        
-        for (int i = 0; i < outputSortedIndexes.size(); ++i) {
-
-            Integer index = outputSortedIndexes.get(i);
-
-            if (index.intValue() != tBSIdx) {
+              
+        for (int j = 0; j < nY; ++j) {
+            int startY = (maxDim/nPPB) * j;
+            if (startY > (h - 1)) {
                 continue;
             }
-            PairInt pCen = orderedBoundaryCentroids.get(index);
-            System.out.println("pCen=" + pCen + " idx=" + index + " i=" + i);
-
-            // the in-out variables store reusable calculations and
-            // also the resulting cost of this best search result
-            VeryLongBitString bitString = minCostAggregationFW(index,
-                orderedBoundaryCentroids);
-
-            if (bitString == null) {
-                continue;
+            int stopY = startY + maxDim;
+            if (stopY >= h) {
+                stopY = h - 1;
             }
+            Interval<Integer> intY = new Interval<Integer>(startY, stopY);
+            for (int i = 0; i < nX; ++i) {
+                int startX = (maxDim/nPPB) * i;
+                if (startX > (w - 1)) {
+                    continue;
+                }
+                int stopX = startX + maxDim;
+                if (stopX >= w) {
+                    stopX = w - 1;
+                }
+                Interval<Integer> intX = new Interval<Integer>(startX, stopX);
+                Interval2D<Integer> rect = new Interval2D<Integer>(intX, intY);
+               
+                List<Integer> indexes = centroidQT.query2D(rect);
+                
+                System.out.println(String.format(
+                    "shape finder bin (%d:%d, %d:%d)  nSegments=", startX, stopX, 
+                    startY, stopY, indexes.size()));
+                
+                if (indexes.isEmpty()) {
+                    // no segmented cells in this bin
+                    continue;
+                }
+                
+                // chose the smallest x, smallest y in bin
+                int index = findSmallestXYCentroid(indexes, orderedBoundaryCentroids);
+           
+                if (index < 0) {
+                    continue;
+                }
+                
+                PairInt pCen = orderedBoundaryCentroids.get(index);
+                System.out.println("pCen=" + pCen + " i=" + index);
 
-            double cost = aggregatedCostMap.get(bitString).doubleValue();
-            if (cost < minCost) {
-                minCost = cost;
-                minBitString = bitString;
+                VeryLongBitString bitString = minCostAggregationFW(index,
+                    orderedBoundaryCentroids);
+
+                if (bitString == null) {
+                    continue;
+                }
+
+                double cost = aggregatedCostMap.get(bitString).doubleValue();
+                if (cost < minCost) {
+                    minCost = cost;
+                    minBitString = bitString;
+                }
             }
         }
 
         if (minBitString == null) {
             return null;
         }
+        
+        // ---- choosing nTop results from below to return as results -------
 
         Result r = aggregatedResultMap.get(minBitString);
         Object[] data = new Object[2];
@@ -372,10 +429,6 @@ public class ShapeFinder {
         data[1] = aggregatedBoundaries.get(minBitString);
         r.setData(data);
        
-        int[] dimensionsT = calcDimensions(template);
-        int areaT = (int)Math.round(Math.sqrt(dimensionsT[0] * dimensionsT[0] +
-            dimensionsT[1] * dimensionsT[1]));
-        
         // because of the blur performed on the boundaries, sometimes, there
         // are slightly different indexes that can result in the same boundaries.
         // so, find and remove redundant entries.
@@ -477,13 +530,7 @@ public class ShapeFinder {
             
             StringBuilder sb = new StringBuilder(", sizes=");
             for (int idx : idxs) {
-                int sz;
-                if (debugIndexSizeMap.containsKey(idx)) {
-                    sz = debugIndexSizeMap.get(idx);
-                } else {
-                    sz = pointsList.get(idx).size();
-                    debugIndexSizeMap.put(idx, sz);
-                }
+                int sz = pointsList.get(idx).size();
                 sb.append(sz).append(" ");
             }
             String costStr = String.format("cost=%.4f",
@@ -504,117 +551,14 @@ public class ShapeFinder {
         results[0].setData(data);
         
         return results;
-    }
+    }    
 
-    /**
-     * evaluate the outer partial shape match results and add
-     * the other terms to the cost, then sort the results into
-     * the output variables.
-     * has the side effect populating instance variables
-     * 
-     * @param outputSortedResults - output variable
-     * @param outputSortedIndexes - output variable
-     */
-    private void matchAndOrderByIncrCost(List<Result> outputSortedResults,
-        List<Integer> outputSortedIndexes) {
+    private void matchIndividually() {
 
-        // key=result, value=index of orderedBoundaries item
-        TObjectIntMap<Result> cellMatchResults = matchIndividually();
-
-        int n = cellMatchResults.size();
-        TObjectIntIterator<Result> iter = cellMatchResults.iterator();
-        
         double maxChord = Double.MIN_VALUE;
         double maxDist = Double.MIN_VALUE;
-        for (int i = 0; i < n; ++i) {
-            iter.advance();
-            Result r = iter.key();
-            int idx = iter.value();
-            
-            double d = r.getChordDiffSum();
-            if (d > maxChord) {
-                maxChord = d;
-            }
-            if (useEuclideanInCost) {
-                d = calcTransformationDistanceSum(r, template, 
-                    orderedBoundaries.get(idx), false);
-                if (d > maxDist) {
-                    maxDist = d;
-                }
-            }
-        }
         
-        maxDiffChordSum = maxChord;
-        
-        if (useEuclideanInCost) {
-            maxDistTransformSum = maxDist;
-        }
-
-        int nB = orderedBoundaries.size();
-        
-        int nT1 = template.getN();
-
-        float[] costs = new float[n];
-        int[] indexes = new int[n];
-        Result[] results = new Result[n];
-
-        iter = cellMatchResults.iterator();
-        for (int i = 0; i < n; ++i) {
-            iter.advance();
-
-            Result r = iter.key();
-            int idx = iter.value();
-            
-            // calculating salukwdze dist^2 to use same reference, nT1
-            int nI = r.getNumberOfMatches();
-            float f = 1.f - ((float)nI/(float)nT1);
-            double d = r.getChordDiffSum()/maxChord;
-            double s = f * f + d * d;
-
-            if (useEuclideanInCost) {
-                double dist = calcTransformationDistanceSum(r, template,
-                    orderedBoundaries.get(idx), true) / maxDistTransformSum;
-                s += (dist * dist);
-            }
-            
-            costs[i] = (float)s;
-            indexes[i] = i;
-            results[i] = r;
-
-            VeryLongBitString bs = new VeryLongBitString(nB);
-            bs.setBit(idx);
-
-            PairIntArray put = aggregatedBoundaries.put(bs, 
-                orderedBoundaries.get(idx));
-            assert(put == null);
-            aggregatedResultMap.put(bs, r);
-            aggregatedCostMap.put(bs, Double.valueOf(s));
-        }
-
-        QuickSort.sortBy1stArg(costs, indexes);
-
-        for (int i = 0; i < n; ++i) {
-            int index = indexes[i];
-            Result r = results[index];
-
-            outputSortedResults.add(r);
-
-            int listIndex = cellMatchResults.get(r);
-            outputSortedIndexes.add(Integer.valueOf(listIndex));
-        }
-    }
-
-    private TObjectIntMap<Result> matchIndividually() {
-
-        // key=result, value=index of orderedBoundaries item
-        TObjectIntMap<Result> output = new TObjectIntHashMap<Result>();
-
-        int[] dimensionsT = calcDimensions(template);
-
-        int areaT = (int)Math.round(Math.sqrt(dimensionsT[0] * dimensionsT[0] +
-            dimensionsT[1] * dimensionsT[1]));
-
-        for (int i = 0; i < orderedBoundaries.size(); ++i) {
+        for (int i = 0; i < nB; ++i) {
 
             PairIntArray p = orderedBoundaries.get(i);
 
@@ -655,11 +599,25 @@ public class ShapeFinder {
             if (r == null) {
                 continue;
             }
-
-            output.put(r, i);
+            
+            double d = r.getChordDiffSum();
+            if (d > maxChord) {
+                maxChord = d;
+            }
+            if (useEuclideanInCost) {
+                d = calcTransformationDistanceSum(r, template, 
+                    orderedBoundaries.get(i), false);
+                if (d > maxDist) {
+                    maxDist = d;
+                }
+            }
         }
-
-        return output;
+        
+        maxDiffChordSum = maxChord;
+        
+        if (useEuclideanInCost) {
+            maxDistTransformSum = maxDist;
+        }
     }
 
     private int[] calcDimensions(PairIntArray a) {
@@ -695,7 +653,7 @@ public class ShapeFinder {
 
         List<PairInt> centroids = new ArrayList<PairInt>();
 
-        for (int i = 0; i < orderedBoundaries.size(); ++i) {
+        for (int i = 0; i < nB; ++i) {
 
             double[] xyCen = curveHelper.calculateXYCentroids(
                 orderedBoundaries.get(i));
@@ -708,6 +666,38 @@ public class ShapeFinder {
 
         return centroids;
     }
+    
+    private int[] calculateMinMaxXY() {
+
+        int minX = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE;
+        int minY = Integer.MAX_VALUE;
+        int maxY = Integer.MIN_VALUE;
+                    
+        for (int i = 0; i < nB; ++i) {
+            
+            PairIntArray a = orderedBoundaries.get(i);
+            
+            for (int j = 0; j < a.getN(); ++j) {
+                int x = a.getX(j);
+                int y = a.getY(j);
+                if (x < minX) {
+                    minX = x;
+                }
+                if (y < minY) {
+                    minY = y;
+                }
+                if (x > maxX) {
+                    maxX = x;
+                }
+                if (y > maxY) {
+                    maxY = y;
+                }
+            }
+        }
+
+        return new int[]{minX, maxX, minY, maxY};
+    }
 
     /**
      * a Floyd Warshall search to find min-cost aggregation of segmented
@@ -717,16 +707,10 @@ public class ShapeFinder {
      * @param orderedBoundaryCentroids
      * @return
      */
-    private VeryLongBitString minCostAggregationFW(int index,
-        List<PairInt> orderedBoundaryCentroids) {
+    private VeryLongBitString minCostAggregationFW(int index, List<PairInt> centroids) {
 
-        int[] dimensionsT = calcDimensions(template);
-
-        int areaT = (int)Math.round(Math.sqrt(dimensionsT[0] * dimensionsT[0] +
-            dimensionsT[1] * dimensionsT[1]));
-
-        int n = orderedBoundaries.size();
-
+        assert(centroids.size() == orderedBoundaries.size());
+        
         // NOTE: in the global image wide method, this will
         // be replaced with int[][] dist and int[][] prev.
         // This method for a specific index is asserting the logic in detail first.
@@ -734,13 +718,11 @@ public class ShapeFinder {
         Map<PairInt, VeryLongBitString> indexesMap = new HashMap<PairInt,
             VeryLongBitString>();
 
-        int nB = orderedBoundaries.size();
-
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 
         TIntList indexes = new TIntArrayList();
 
-        PairInt indexXY = orderedBoundaryCentroids.get(index);
+        PairInt indexXY = centroids.get(index);
 
         int nT1 = template.getN();
 
@@ -752,13 +734,13 @@ public class ShapeFinder {
 
         // insert items within distance of index centroid and areaFactor times
         // the dimensionsT
-        for (int i = 0; i < n; ++i) {
+        for (int i = 0; i < nB; ++i) {
 
             if (orderedBoundaries.get(i).getN() < 6) {
                 continue;
             }
 
-            PairInt xy = orderedBoundaryCentroids.get(i);
+            PairInt xy = centroids.get(i);
             double dist = distance(indexXY, xy);
             if (dist > maxDist) {
                 continue;
@@ -779,13 +761,6 @@ public class ShapeFinder {
 
         for (int i = 0; i < indexes.size(); ++i) {
 
-            //TODO: when convert to global method,
-            // consider re-using the aggregate map information
-            // IF it is present for key and IF all members
-            // of the bitstring for the key are present in indexes
-            // (the check for presence should help limit the result to adjacent
-            // within a size constraint).
-
             int idx1 = indexes.get(i);
 
             if (!adjacencyMap.containsKey(idx1)) {
@@ -796,8 +771,6 @@ public class ShapeFinder {
             bs1.setBit(idx1);
 
             Double cost1 = aggregatedCostMap.get(bs1);
-
-            PairIntArray boundary1 = orderedBoundaries.get(idx1);
 
             for (int j = 0; j < indexes.size(); ++j) {
 
@@ -1089,21 +1062,22 @@ public class ShapeFinder {
                             indexesMap.put(keyIJ, bs0);
                         }
 
-
                         //DEBUG
-                        if (expectedIndexes.contains(i) ||
-                            expectedIndexes.contains(j)) {
-                            if (keyIJ.getX() <= keyIJ.getY()) {
-                                System.out.println("contains an expected: " +
-                                    " keyIJ=" + keyIJ.getX() + "," 
-                                    + keyIJ.getY() + " cost=" + s0);
-                            } else {
-                                System.out.println("contains an expected: " +
-                                    " keyIJ=" + keyIJ.getY() + "," 
-                                    + keyIJ.getX() + " *cost=" + s0);
+                        {
+                            if (expectedIndexes.contains(i) ||
+                                expectedIndexes.contains(j)) {
+                                if (keyIJ.getX() <= keyIJ.getY()) {
+                                    System.out.println("contains an expected: " +
+                                        " keyIJ=" + keyIJ.getX() + "," 
+                                        + keyIJ.getY() + " cost=" + s0);
+                                } else {
+                                    System.out.println("contains an expected: " +
+                                        " keyIJ=" + keyIJ.getY() + "," 
+                                        + keyIJ.getX() + " *cost=" + s0);
+                                }
                             }
                         }
-
+                        
                     } else if (tIK && tKJ && (s1 != null)) {
                         assert(tIK);
                         assert(tKJ);
@@ -1115,18 +1089,20 @@ public class ShapeFinder {
                             indexesMap.put(keyIJ, bs1);
                         }
                         
-                        //DEBUG
-                        if (expectedIndexes.contains(i) ||
-                            expectedIndexes.contains(j)
-                            || expectedIndexes.contains(j)) {
-                            if (keyIJ.getX() <= keyIJ.getY()) {
-                                System.out.println("contains an expected: " +
-                                    " keyIJ=" + keyIJ.getX() + "," 
-                                    + keyIJ.getY() + " ik+kh, keyIJ cost=" + s1);
-                            } else {
-                                System.out.println("contains an expected: " +
-                                    " keyIJ=" + keyIJ.getY() + "," 
-                                    + keyIJ.getX() + " *ik+kh, keyIJcost=" + s1);
+                        
+                        {//DEBUG
+                            if (expectedIndexes.contains(i) ||
+                                expectedIndexes.contains(j)
+                                || expectedIndexes.contains(j)) {
+                                if (keyIJ.getX() <= keyIJ.getY()) {
+                                    System.out.println("contains an expected: " +
+                                        " keyIJ=" + keyIJ.getX() + "," 
+                                        + keyIJ.getY() + " ik+kh, keyIJ cost=" + s1);
+                                } else {
+                                    System.out.println("contains an expected: " +
+                                        " keyIJ=" + keyIJ.getY() + "," 
+                                        + keyIJ.getX() + " *ik+kh, keyIJcost=" + s1);
+                                }
                             }
                         }
 
@@ -1149,6 +1125,8 @@ public class ShapeFinder {
             return null;
         }
 
+        VeryLongBitString minBitString = indexesMap.get(minCostIdx);
+        
         {//DEBUG
             System.out.println("skipSet.size=" + skipSet.size());
             // expected:
@@ -1180,18 +1158,16 @@ public class ShapeFinder {
                     + " n=" + pts.getN()
                 );
             }
-        }
-
-        VeryLongBitString minBitString = indexesMap.get(minCostIdx);
-
-        fillCache1(minBitString.getSetBits());
-        float intersection = ch.intersection(cache1, templateHSVHist);
             
-        System.out.println("minCostIdx=" + minCostIdx +
-            " minCost=" + minCost + " bs=" +
-            Arrays.toString(minBitString.getSetBits()) + " intersection=" 
-            + intersection);
+            fillCache1(minBitString.getSetBits());
+            intersection = ch.intersection(cache1, templateHSVHist);
 
+            System.out.println("minCostIdx=" + minCostIdx
+                + " minCost=" + minCost + " bs="
+                + Arrays.toString(minBitString.getSetBits()) + " intersection="
+                + intersection);
+        }
+        
         return minBitString;
     }
 
@@ -1357,5 +1333,30 @@ public class ShapeFinder {
         }
         
         return false;
+    }
+
+    private int findSmallestXYCentroid(List<Integer> indexes,
+        List<PairInt> centroids) {
+        
+        int minX = Integer.MAX_VALUE;
+        int minY = Integer.MAX_VALUE;
+        int minIdx = -1;
+        
+        for (Integer index : indexes) {
+            PairInt pCen = centroids.get(index.intValue());
+            int x = pCen.getX();
+            int y = pCen.getY();
+            if (x < minX) {
+                minX = x;
+                minY = y;
+                minIdx = index.intValue();
+            } else if ((x == minX) && (y < minY)) {
+                minX = x;
+                minY = y;
+                minIdx = index.intValue();
+            }
+        }
+        
+        return minIdx;
     }
 }

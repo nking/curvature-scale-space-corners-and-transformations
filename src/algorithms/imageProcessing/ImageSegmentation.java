@@ -13951,6 +13951,7 @@ int z = 1;
         ) {
         
         float deltaELimit = 7.f;
+        //NOTE: can increase this to 0.25 for one test
         float chLimit1 = 0.2f;
             
         assert(labels.length == img.getNPixels());
@@ -14016,7 +14017,7 @@ int z = 1;
                 continue;
             }
             int stopY = startY + maxDim;
-            if (stopY > img.getHeight()) {
+            if (stopY >= img.getHeight()) {
                 stopY = img.getHeight() - 1;
             }
             Interval<Integer> intY = new Interval<Integer>(startY, stopY);
@@ -14026,7 +14027,7 @@ int z = 1;
                     continue;
                 }
                 int stopX = startX + maxDim;
-                if (stopX > img.getWidth()) {
+                if (stopX >= img.getWidth()) {
                     stopX = img.getWidth() - 1;
                 }
                 Interval<Integer> intX = new Interval<Integer>(startX, stopX);
