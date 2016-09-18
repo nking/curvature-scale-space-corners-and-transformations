@@ -329,6 +329,18 @@ public class ShapeFinder {
         //         shape match,
         //         instead the entire aggregated shape is being used in further
         //         evalutations such as the color histograms.
+        //         this change then implies that using half descriptors 
+        //         (meaning, only the half of the descriptor facing inward of
+        //         shape) of keypoints would be up for consideration again.
+        //         - such descriptors probably need to be color in the global search
+        //           stage (as a replacement or supplement to color histograms)
+        //           and would only include the keypoints matched by correspondence
+        //           (w/ additional logic to keep the comparison to intersection
+        //           of shapes...excluding the occlusion and additions of non-object
+        //           to the aggregated shape)
+        //         - such descriptors, if used at the stage of euclidean evaluation
+        //           in partial shape matching, would need to be few in number 
+        //           to keep the partial shape matching fast...)
         //TODO: consider if another pattern of color evaluation would
         //      be quicker than the color histograms.  they're fast because
         //      the sizes are only 32 bins and comparisons are the same. 
