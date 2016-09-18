@@ -320,6 +320,15 @@ public class ShapeFinder {
         //TODO: looks like need to retain the best of each bin
         //      and further compare those to one another.
         //      -- might need to consider a fast inner pattern comparison.
+        //      -- might need to consider a quick way to trim the aggregated
+        //         shapes by the found correspondence because that correspondence
+        //         step of partial shape matching excludes occluded sections and
+        //         external non-object inclusions.
+        //         currently, that information of the subset of the aggregated
+        //         shape that does match is not being used after the partial 
+        //         shape match,
+        //         instead the entire aggregated shape is being used in further
+        //         evalutations such as the color histograms.
         //TODO: consider if another pattern of color evaluation would
         //      be quicker than the color histograms.  they're fast because
         //      the sizes are only 32 bins and comparisons are the same. 
@@ -332,7 +341,7 @@ public class ShapeFinder {
         //TODO: once the search over the entire image is robust, will make 
         //      another method attempting a faster search pattern than the
         //      nBins * O(N^3) Floyd Warshall (excluding partial shape matching
-        //      and color histograms in the complexty summary just now).
+        //      and color histograms in the complexity summary just now).
         //TODO: consider making an alternative method for the outer search
         //      pattern, that is, the global search pattern of bins across the 
         //      image.  could instead use a kmeans alteration of the bin centers
@@ -354,7 +363,7 @@ public class ShapeFinder {
         
         double minCost = Double.MAX_VALUE;
         VeryLongBitString minBitString = null;
-              
+         
         for (int j = 0; j < nY; ++j) {
             int startY = (maxDim/nPPB) * j;
             if (startY > (h - 1)) {
@@ -711,9 +720,6 @@ public class ShapeFinder {
 
         assert(centroids.size() == orderedBoundaries.size());
         
-        // NOTE: in the global image wide method, this will
-        // be replaced with int[][] dist and int[][] prev.
-        // This method for a specific index is asserting the logic in detail first.
         TObjectDoubleMap<PairInt> distMap = new TObjectDoubleHashMap<PairInt>();
         Map<PairInt, VeryLongBitString> indexesMap = new HashMap<PairInt,
             VeryLongBitString>();
