@@ -3,33 +3,21 @@ package algorithms.imageProcessing.matching;
 import algorithms.QuickSort;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.ColorHistogram;
-import algorithms.imageProcessing.Image;
-import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.util.PairIntArray;
-import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.TIntSet;
 import java.util.List;
 import algorithms.imageProcessing.matching.PartialShapeMatcher.Result;
 import algorithms.imageProcessing.transform.EuclideanEvaluator;
 import algorithms.imageProcessing.transform.EuclideanTransformationFit;
 import algorithms.imageProcessing.transform.TransformationParameters;
-import algorithms.imageProcessing.transform.Transformer;
-import algorithms.misc.MiscDebug;
-import algorithms.misc.MiscMath;
-import algorithms.search.NearestNeighbor2D;
 import algorithms.util.PairInt;
-import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.TwoDIntArray;
 import algorithms.util.VeryLongBitString;
-import gnu.trove.iterator.TObjectIntIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TObjectDoubleMap;
-import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TObjectDoubleHashMap;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
@@ -345,6 +333,12 @@ public class ShapeFinder {
         //      another method attempting a faster search pattern than the
         //      nBins * O(N^3) Floyd Warshall (excluding partial shape matching
         //      and color histograms in the complexty summary just now).
+        //TODO: consider making an alternative method for the outer search
+        //      pattern, that is, the global search pattern of bins across the 
+        //      image.  could instead use a kmeans alteration of the bin centers
+        //      and sizes similarly as super-pixels does, and then only search 
+        //      the top m of those ... 
+        //      the means is the intersection of color histograms...
         
         int maxDim = Math.max(dimensionsT[0], dimensionsT[1]);
         
@@ -355,6 +349,8 @@ public class ShapeFinder {
         
         int nX = nPPB * ((int)Math.floor(w/maxDim) + 1);
         int nY = nPPB * ((int)Math.floor(h/maxDim) + 1);
+        
+        int binCount = 0;
         
         double minCost = Double.MAX_VALUE;
         VeryLongBitString minBitString = null;
@@ -399,6 +395,8 @@ public class ShapeFinder {
                     continue;
                 }
                 
+                binCount++;
+                
                 PairInt pCen = orderedBoundaryCentroids.get(index);
                 System.out.println("pCen=" + pCen + " i=" + index);
 
@@ -416,6 +414,8 @@ public class ShapeFinder {
                 }
             }
         }
+        
+        System.out.println("binCount=" + binCount);
 
         if (minBitString == null) {
             return null;
