@@ -475,11 +475,12 @@ public class PhaseCongruencyDetector2 {
 
                 orientation[row][col] = Math.round((v % Math.PI) * 180. / Math.PI);
                 if (orientation[row][col] < 0) {
-                    orientation[row][col] += 180;
+                    orientation[row][col] += 360;
                 }
                 
                 double oddV = Math.sqrt(e1 * e1 + e2 * e2);
                 
+                //TODO: does this need correction to 0:2PI?
                 phaseAngle[row][col] = Math.atan2(EnergyV[0][row][col], oddV);
             }
         }

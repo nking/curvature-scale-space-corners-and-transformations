@@ -95,7 +95,7 @@ public class StatsInSlidingWindow {
 
             //O(k) + (N)*lg2(k)
             float maximum;
-            // 0 1 2 3 4 5   xw=4
+            
             for (int i = (xWindow - 1); i < w; ++i) {
 
                 //O(1)

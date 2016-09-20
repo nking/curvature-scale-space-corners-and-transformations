@@ -140,6 +140,22 @@ public class MiscMath {
         return max;
     }
     
+    public static float findMax(float[][] img) {
+        
+        float max = Float.MIN_VALUE;
+        
+        for (int i = 0; i < img.length; ++i) {
+            for (int j = 0; j < img[i].length; ++j) {
+                float v = img[i][j];
+                if (v > max) {
+                    max = v;
+                }
+            }
+        }
+        
+        return max;
+    }
+
     public static int findMax(int[] a, int nIndexes) {
         int max = Integer.MIN_VALUE;
         for (int i = 0; i < nIndexes; i++) {
@@ -149,6 +165,22 @@ public class MiscMath {
             }
         }
         return max;
+    }
+
+    public static float findMin(float[][] img) {
+        
+        float min = Float.MAX_VALUE;
+        
+        for (int i = 0; i < img.length; ++i) {
+            for (int j = 0; j < img[i].length; ++j) {
+                float v = img[i][j];
+                if (v < min) {
+                    min = v;
+                }
+            }
+        }
+        
+        return min;
     }
 
     public static float findMin(float[] a) {
@@ -1312,35 +1344,12 @@ public class MiscMath {
      * @param y
      * @return theta in radians
      */
-    public static double calculatePolarTheta(float x, float y) {
-        
-        if (x == 0) {
-            if (y < 0) {
-                return 1.5 * Math.PI;
-            }
-            return Math.PI/2.;
-        }
-                
+    public static double calculatePolarTheta(double x, double y) {
+       
         double theta = Math.atan2(y, x);
         
-        if (x > 0) {
-            // if y > 0, no change needed
-            if (y == 0) {
-                theta = 0;
-            } else if (y < 0) {
-                theta = 2*Math.PI + theta;
-            }
-        } else {
-            // x < 0
-            if (y == 0) {
-                theta = Math.PI;
-            } else {
-                theta = Math.PI + theta;
-            }
-        }
-        
-        if (theta > (2*Math.PI)) {
-            theta -= 2*Math.PI;
+        if (Double.isFinite(theta) && (theta < 0)) {
+            theta += 2. * Math.PI;
         }
         
         return theta;

@@ -1199,20 +1199,6 @@ public class MiscellaneousCurveHelper {
         return store;
     }
 
-    private double calcTheta(PairIntArray curve, int idx0, int idx1) {
-
-        int x10 = curve.getX(idx1) - curve.getX(idx0);
-        int y10 = curve.getY(idx1) - curve.getY(idx0);
-        double theta;
-        if (x10 == 0) {
-            theta = (y10 < 0) ? 1.5 * Math.PI : 0.5 * Math.PI;
-        } else {
-            theta = Math.atan2((double) y10, (double) x10);
-        }
-
-        return theta;
-    }
-
     public PairInt[] findClosestPair(Set<PairInt> set0, Set<PairInt> set1) {
 
         if (set0 == null) {

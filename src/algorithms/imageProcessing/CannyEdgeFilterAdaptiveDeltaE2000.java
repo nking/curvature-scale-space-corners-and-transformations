@@ -215,7 +215,9 @@ public class CannyEdgeFilterAdaptiveDeltaE2000 {
         if (restoreJunctions) {
             int minResolution = (int)Math.ceil(2.35 * approxProcessedSigma);
             int minResolvableAngle = (int)Math.ceil(Math.atan2(1, minResolution) * 180./Math.PI);
-
+            if (minResolvableAngle < 0) {
+                minResolvableAngle *= -1;
+            }
             MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
             curveHelper.additionalThinning45DegreeEdges2(
                 filterProducts.getTheta(), filterProducts.getGradientXY(),

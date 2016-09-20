@@ -8734,7 +8734,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
                 double orientation = Math.atan2(convolvedY, convolvedX);
                 if (orientation < 0) {
-                    orientation += Math.PI;
+                    orientation += 2. * Math.PI;
                 }
                 orientation *= (180. / Math.PI);
 

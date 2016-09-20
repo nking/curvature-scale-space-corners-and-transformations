@@ -627,31 +627,24 @@ public class MiscMathTest extends TestCase {
         theta = MiscMath.calculatePolarTheta(x, y);
         assertTrue(Math.abs(expectedTheta - theta) < eps);
 
-        x = 0;
+        x = -1;
         y = -1;
+        expectedTheta =  225. * (Math.PI/180.);
+        theta = MiscMath.calculatePolarTheta(x, y);
+        assertTrue(Math.abs(expectedTheta - theta) < eps);
+
+        x = 0;
+        y = -1; 
         expectedTheta =  270. * (Math.PI/180.);
         theta = MiscMath.calculatePolarTheta(x, y);
         assertTrue(Math.abs(expectedTheta - theta) < eps);
 
-        double[] d = new double[] {
-            30. * (Math.PI/180.),
-            60. * (Math.PI/180.),
-            120. * (Math.PI/180.),
-            150. * (Math.PI/180.),
-            210. * (Math.PI/180.),
-            240. * (Math.PI/180.),
-            300. * (Math.PI/180.),
-            330. * (Math.PI/180.)
-        };
-
-        for (int i = 3; i < d.length; i++) {
-            x = (float)Math.cos(d[i]);
-            y = (float)Math.sin(d[i]);
-            expectedTheta = d[i];
-            theta = MiscMath.calculatePolarTheta(x, y);
-            assertTrue(Math.abs(expectedTheta - theta) < eps);
-        }
-
+        x = 1;
+        y = -1;
+        expectedTheta =  (270. + 45.) * (Math.PI/180.);
+        theta = MiscMath.calculatePolarTheta(x, y);
+        assertTrue(Math.abs(expectedTheta - theta) < eps);
+        
     }
 
     /*
@@ -823,4 +816,25 @@ public class MiscMathTest extends TestCase {
        
     }
     
+    public void testFindMax_2d() {
+        
+        float[][] a = new float[3][3];
+        a[0] = new float[]{1, 2, 3};
+        a[1] = new float[]{10, 200, 3};
+        a[2] = new float[]{100, 34, 3};
+        
+        float max = MiscMath.findMax(a);
+        assertTrue(Math.abs(200 - max) < 0.01);
+    }
+    
+    public void testFindMin_2d() {
+        
+        float[][] a = new float[3][3];
+        a[0] = new float[]{1, 2, 3};
+        a[1] = new float[]{10, 200, 1};
+        a[2] = new float[]{100, 34, 3};
+        
+        float min = MiscMath.findMin(a);
+        assertTrue(Math.abs(1 - min) < 0.01);
+    }
 }

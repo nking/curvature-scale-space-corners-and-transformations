@@ -587,6 +587,23 @@ public class MultiArrayMergeSortTest extends TestCase {
         assertTrue(Arrays.equals(expectedB, b));
     }
     
+    public void testSortByDecr_float_int() {
+        
+        //public static void sortByDecr(float[] a1, int[] a2)
+        
+        float[] a = new float[]{1, 2, 3, 4, 5, 6};
+    	int[] b = new int[]{0, 1, 2, 3, 4, 5};
+
+    	MultiArrayMergeSort.sortByDecr(a, b);
+    	assertTrue(a.length == b.length);
+
+    	float[] expectedA = new float[]{6, 5, 4, 3, 2, 1};
+        int[] expectedB = new int[]{5, 4, 3, 2, 1, 0};
+        
+        assertTrue(Arrays.equals(expectedA, a));
+        assertTrue(Arrays.equals(expectedB, b));
+    }
+    
     /**
      * Test suite
      * @return static Test

@@ -619,7 +619,7 @@ public class PhaseCongruencyDetector {
             for (int col = 0; col < nCols; ++col) {
                 orientation[row][col] = Math.atan2(-sumH2[row][col], sumH1[row][col]);
                 if (orientation[row][col] < 0) {
-                    orientation[row][col] += Math.PI;
+                    orientation[row][col] += 2. * Math.PI;
                 }
                 // orientation values now range 0 - pi
                 // Quantize to 0 - 180 degrees (for NONMAXSUP)
@@ -630,6 +630,9 @@ public class PhaseCongruencyDetector {
                 h1Sq *= h1Sq;
                 double h2Sq = sumH2[row][col];
                 h2Sq *= h2Sq;
+                
+                //TODO: does this not need to be corrected to
+                // if (<0) += 2.*PI ?
                 ft[row][col] = Math.atan2(sumF[row][col], Math.sqrt(h1Sq + h2Sq));
                 
                 //overall energy

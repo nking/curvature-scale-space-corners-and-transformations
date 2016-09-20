@@ -858,10 +858,7 @@ if (sum > 511) {
 
                 double gY = convolvedY.getValue(i, j);
 
-                double radians = Math.atan2(gY, gX);
-                if (radians < 0) {
-                    radians += Math.PI;
-                }
+                double radians = MiscMath.calculatePolarTheta(gX, gY);
                 
                 int theta = (int)(radians * 180./Math.PI);
                 if (theta == 180) {

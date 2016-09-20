@@ -666,6 +666,21 @@ public class MultiArrayMergeSort {
               
     }
     
+    public static void sortByDecr(float[] a1, int[] a2) {
+        if (a1 == null) {
+            throw new IllegalArgumentException("a1 cannot be null");
+        }
+        if (a2 == null) {
+            throw new IllegalArgumentException("a2 cannot be null");
+        }
+        if (a1.length != a2.length) {
+            throw new IllegalArgumentException(
+            "number of items in a1 must be the same as in a2");
+        }
+        
+        sortByDecr(a1, a2, 0, a1.length - 1);
+    }
+
     /**
      * sort by decreasing value a1 and apply same changes to a2.
      * Ties are further sorted by increasing values of a2.
@@ -705,6 +720,20 @@ public class MultiArrayMergeSort {
     }
     
     public static void sortByDecr(Double[] a1, Float[] a2, int idxLo, int idxHi) {
+
+        if (idxLo < idxHi) {
+
+            int indexMid = (idxLo + idxHi) >> 1;
+            
+            sortByDecr(a1, a2, idxLo, indexMid);
+            
+            sortByDecr(a1, a2, indexMid + 1, idxHi);
+            
+            mergeByDecr(a1, a2, idxLo, indexMid, idxHi);
+        }
+    }
+    
+    public static void sortByDecr(float[] a1, int[] a2, int idxLo, int idxHi) {
 
         if (idxLo < idxHi) {
 
@@ -784,6 +813,38 @@ public class MultiArrayMergeSort {
         for (int k = idxLo; k <= idxHi; k++) {
             Double l = a1Left[leftPos];
             Double r = a1Right[rightPos];
+            if (l > r) {
+                a2[k] = a2Left[leftPos];
+                a1[k] = a1Left[leftPos];
+                leftPos++;
+            } else {
+                a2[k] = a2Right[rightPos];
+                a1[k] = a1Right[rightPos];
+                rightPos++;
+            }
+        }
+    }
+    
+    private static void mergeByDecr(float[] a1, int[] a2, int idxLo, 
+        int idxMid, int idxHi) {
+
+        float[] a1Left = Arrays.copyOfRange(a1, idxLo, idxMid + 2);
+        int[] a2Left = Arrays.copyOfRange(a2, idxLo, idxMid + 2);
+        
+        float[] a1Right = Arrays.copyOfRange(a1, idxMid + 1, idxHi + 2);
+        int[] a2Right = Arrays.copyOfRange(a2, idxMid + 1, idxHi + 2);
+        
+        a1Left[a1Left.length - 1] = Integer.MIN_VALUE;
+        a2Left[a2Left.length - 1] = Integer.MIN_VALUE;
+        a1Right[a1Right.length - 1] = Integer.MIN_VALUE;
+        a2Right[a2Right.length - 1] = Integer.MIN_VALUE;
+        
+        int leftPos = 0;
+        int rightPos = 0;
+
+        for (int k = idxLo; k <= idxHi; k++) {
+            double l = a1Left[leftPos];
+            double r = a1Right[rightPos];
             if (l > r) {
                 a2[k] = a2Left[leftPos];
                 a1[k] = a1Left[leftPos];
