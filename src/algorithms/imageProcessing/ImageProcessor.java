@@ -1427,6 +1427,13 @@ if (sum > 511) {
 
         applyKernel1D(input, kernel, false);
     }
+    
+    public void applyKernelTwo1Ds(float[][] input, float[] kernel) {
+
+        applyKernel1D(input, kernel, true);
+
+        applyKernel1D(input, kernel, false);
+    }
 
     /**
      * apply a sigma=0.5 first derivative of Gaussian ([0.5, 0, -0.5], a.k.a. Sobel)
@@ -1779,6 +1786,31 @@ if (sum > 511) {
                 double conv = kernel1DHelper.convolvePointWithKernel(
                     input, i, j, kernel, calcForX);
                 int g = (int)Math.round(conv);
+                output[i][j] = g;
+            }
+        }
+
+        for (int i = 0; i < w; i++) {
+            System.arraycopy(output[i], 0, input[i], 0, h);
+        }
+    }
+    
+    public void applyKernel1D(float[][] input, float[] kernel,
+        boolean calcForX) {
+
+        Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
+
+        int w = input.length;
+        int h = input[0].length;
+        
+        float[][] output = new float[w][];
+
+        for (int i = 0; i < w; i++) {
+            output[i] = new float[h];
+            for (int j = 0; j < h; j++) {
+                double conv = kernel1DHelper.convolvePointWithKernel(
+                    input, i, j, kernel, calcForX);
+                float g = (float)conv;
                 output[i][j] = g;
             }
         }

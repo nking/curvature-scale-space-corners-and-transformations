@@ -452,6 +452,68 @@ public class Kernel1DHelper {
     }
     
     /**
+     * convolve point[xyIdx] with the kernel g along a column if calcX is true,
+     * else along a row if calcX is false.
+     * @param img
+     * @param col
+     * @param row
+     * @param g
+     * @param calcX convolve along column if true, else row
+     * @return 
+     */
+    public double convolvePointWithKernel(final float[][] img, int col, 
+        int row, float[] g, final boolean calcX) {
+
+        int h = g.length >> 1;
+
+        double sum = 0;
+
+        int len = calcX ? img.length : img[0].length;
+                
+        for (int gIdx = 0; gIdx < g.length; gIdx++) {
+
+            float gg = g[gIdx];
+
+            if (gg == 0) {
+                continue;
+            }
+            
+            int idx = gIdx - h;
+
+            int cIdx = calcX ? (col + idx) : (row + idx);
+
+            if (cIdx < 0) {
+                // replicate
+                cIdx = -1*cIdx - 1;
+                if (cIdx > (len - 1)) {
+                    cIdx = len - 1;
+                }
+            } else if (cIdx >= (len)) {
+                //TODO: revisit this for range of kernel sizes vs edge sizes
+                int diff = cIdx - len;
+                cIdx = len - diff - 1;
+                if (cIdx < 0) {
+                    cIdx = 0;
+                }
+            }
+            
+            float point;
+            
+            if (calcX) {
+                // keep row constant
+                point = img[cIdx][row];
+            } else {
+                // keep col constant
+                point = img[col][cIdx];
+            }
+
+            sum += (point * gg);
+        }
+
+        return sum;
+    }
+    
+    /**
      * convolve point[xyIdx] with the kernel g along a column if calcX is true.
      * @param img
      * @param col
