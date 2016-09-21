@@ -82,10 +82,10 @@ public class ORB {
     private final int nKeypoints;
     
     /**
-     * Keypoint coordinates as ``(row, col)``.
+     * Keypoint coordinates as ``(row, col, ...)``.
      * (N, 2) array
      */
-    private int[] keypoints = null;
+    private TIntList keypoints = null;
    
     /**
      * Corresponding scales.
@@ -859,6 +859,95 @@ public class ORB {
         maxWindow.calculateMaximum(img, out, size, size);
         
         return out;
+    }
+
+    /**
+        Compute the orientation of corners.
+        The orientation of corners is computed using the first order central moment
+        i.e. the center of mass approach. The corner orientation is the angle of
+        the vector from the corner coordinate to the intensity centroid in the
+        local neighborhood around the corner calculated using first order central
+        moment.
+        from https://github.com/scikit-image/scikit-image/blob/master/skimage/feature/corner_cy.pyx
+        
+        References
+        ----------
+        .. [1] Ethan Rublee, Vincent Rabaud, Kurt Konolige and Gary Bradski
+              "ORB : An efficient alternative to SIFT and SURF"
+              http://www.vision.cs.chubu.ac.jp/CV-R/pdf/Rublee_iccv2011.pdf
+        .. [2] Paul L. Rosin, "Measuring Corner Properties"
+              http://users.cs.cf.ac.uk/Paul.Rosin/corner2.pdf
+     * @param octaveImage
+           Input grayscale image.            
+     * @param corners
+     *     Corner coordinates as ``(row, col, ...)``.
+     * @localParam OFAST_MASK
+     *     Mask defining the local neighborhood of the corner used for the
+           calculation of the central moment.
+     * @return 
+     *    orientations : (N, 1) array
+               Orientations of corners in the range [-pi, pi].
+     */
+    protected double[] cornerOrientations(float[][] octaveImage, 
+        TIntList corners) {
+        
+        //same as mask, same 0's and 1's:
+        //cdef unsigned char[:, ::1] cmask = np.ascontiguousarray(mask != 0, dtype=np.uint8)
+        
+        int i, r, c, r0, c0;
+        int mRows = OFAST_MASK.length;
+        int mCols = OFAST_MASK[0].length;
+        int mRows2 = (mRows - 1) / 2;
+        int mCols2 = (mCols - 1) / 2;
+        
+        //cdef double[:, :] cimage = np.pad(image, (mrows2, mcols2), mode='constant',
+        //    constant_values=0)
+        int nRows2 = octaveImage.length + (2 * mRows2);
+        int nCols2 = octaveImage[0].length + (2 * mCols2);
+        double[][] cImage = new double[nRows2][nCols2];
+        for (i = 0; i < nRows2; ++i) {
+            cImage[i] = new double[nCols2];
+            if ((i >= mCols2) && (i < (cImage[i].length - mCols2))) {
+                float[] src = octaveImage[i - mCols2];
+                double[] dest = cImage[i];
+                for (int ii = 0; ii < src.length; ++ii) {
+                    dest[ii + mCols2] = src[ii];
+                }
+            }
+        }
+        
+        // number of corner coord pairs
+        int nCorners = corners.size()/2;
+        
+        double[] orientations = new double[nCorners];
+        
+        double curr_pixel;
+        double m01, m10, m01_tmp;
+          
+        for (i = 0; i < corners.size(); i += 2) {
+            r0 = corners.get(i);
+            c0 = corners.get(i + 1);
+
+            m01 = 0;
+            m10 = 0;
+
+            for (r = 0; r < mRows; ++r) {
+                m01_tmp = 0;
+                for (c = 0; c < mCols; ++c) {
+                    if (OFAST_MASK[r][c] > 0) {
+                        curr_pixel = cImage[r0 + r][c0 + c];
+                        m10 += curr_pixel * (c - mCols2);
+                        m01_tmp += curr_pixel;
+                    }
+                }
+                m01 += m01_tmp * (r - mRows2);
+            }
+
+            //arc tangent of y/x, in the interval [-pi,+pi] radians
+            orientations[i/2] = Math.atan2(m01, m10);
+        }
+        
+        return orientations;
     }
 
 }

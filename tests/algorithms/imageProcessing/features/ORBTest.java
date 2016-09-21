@@ -2,7 +2,10 @@ package algorithms.imageProcessing.features;
 
 import algorithms.util.PairInt;
 import gnu.trove.list.TIntList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import junit.framework.TestCase;
 
@@ -273,6 +276,27 @@ public class ORBTest extends TestCase {
             int y = coords.get(i + 1);
             PairInt p = new PairInt(x, y);
             assertTrue(expected.remove(p));
-        }         
+        }     
+        
+        double[] orientation = orb.cornerOrientations(img, coords);
+        
+        assertEquals(coords.size()/2, orientation.length);
+        Map<PairInt, Integer> expectedOrientations = new HashMap<PairInt, Integer>();
+        expectedOrientations.put(new PairInt(3, 3), Integer.valueOf(45));
+        expectedOrientations.put(new PairInt(3, 8), Integer.valueOf(135));
+        expectedOrientations.put(new PairInt(8, 3), Integer.valueOf(-45));
+        expectedOrientations.put(new PairInt(8, 8), Integer.valueOf(-135));
+        
+        //System.out.println(Arrays.toString(orientation));
+        
+        for (int i = 0; i < coords.size(); i += 2) {
+            int x = coords.get(i);
+            int y = coords.get(i + 1);
+            PairInt p = new PairInt(x, y);
+            Integer expAng = expectedOrientations.get(p);
+            double ang = orientation[i/2] * 180./Math.PI;
+            //System.out.println("found=" + ang + " expected=" + expAng);
+            assertTrue(Math.abs(expAng.intValue() - ang) < 0.001);
+        }
     }
 }
