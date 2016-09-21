@@ -61,6 +61,16 @@ public class Gaussian1D {
         if (Math.abs(sigma - 0.4247f) < 0.01) {
             //0.42466090014400953f
             return getBinomialKernelSigmaZeroPointFourTwoSeven();
+        } else if (Math.abs(sigma - SIGMA.getValue(SIGMA.ZEROPOINTFIVE)) < 0.01) {
+            return getBinomialKernelSigmaZeroPointFive();
+        } else if (Math.abs(sigma - SIGMA.getValue(SIGMA.ZEROPOINTSEVENONE)) < 0.01) {
+            return getBinomialKernelSigmaZeroPointSevenOne();
+        } else if (Math.abs(sigma - SIGMA.getValue(SIGMA.ONE)) < 0.01) {
+            return getBinomialKernelSigmaOne();
+        } else if (Math.abs(sigma - SIGMA.getValue(SIGMA.ONESQRT2)) < 0.01) {
+            return getBinomialKernelSigmaOneSQRT2();
+        } else if (Math.abs(sigma - SIGMA.getValue(SIGMA.ONEPOINTFIVE)) < 0.01) {
+            return getBinomialKernelSigmaOnePointFive();
         }
         
         return getKernel(sigma, 0);

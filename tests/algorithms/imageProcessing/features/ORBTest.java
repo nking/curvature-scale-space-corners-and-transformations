@@ -1,6 +1,8 @@
 package algorithms.imageProcessing.features;
 
+import algorithms.imageProcessing.features.ORB.TwoDFloatArray;
 import algorithms.util.PairInt;
+import algorithms.util.TwoDIntArray;
 import gnu.trove.list.TIntList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -298,5 +300,119 @@ public class ORBTest extends TestCase {
             //System.out.println("found=" + ang + " expected=" + expAng);
             assertTrue(Math.abs(expAng.intValue() - ang) < 0.001);
         }
+    }
+    
+    public void testTensor() {
+        
+        /*
+        >>> from skimage.feature import structure_tensor
+        >>> square = np.zeros((5, 5))
+        >>> square[2, 2] = 1
+        >>> Axx, Axy, Ayy = structure_tensor(square, sigma=0.1)
+        >>> Axx
+        array([[ 0.,  0.,  0.,  0.,  0.],
+               [ 0.,  1.,  0.,  1.,  0.],
+               [ 0.,  4.,  0.,  4.,  0.],
+               [ 0.,  1.,  0.,  1.,  0.],
+               [ 0.,  0.,  0.,  0.,  0.]])
+        */
+        
+        ORB orb = new ORB(100);
+        
+        int sz = 5;
+        
+        float[][] img = new float[sz][];
+        for (int i = 0; i < img.length; ++i) {
+            img[i] = new float[sz];
+        }
+        img[2][2] = 1.f;
+        
+        TwoDFloatArray[] tensorComponents = orb.structureTensor(img, 0.1f);
+        
+        float[][] axx = tensorComponents[0].a;
+        //for (int i = 0; i < axx.length; ++i) {
+        //    System.out.println("axx[" + i + "]=" + Arrays.toString(axx[i]));
+        //}
+        
+        assertTrue(Math.abs(axx[0][0]) < 0.01);
+        assertTrue(Math.abs(axx[1][0]) < 0.01);
+        assertTrue(Math.abs(axx[2][0]) < 0.01);
+        assertTrue(Math.abs(axx[3][0]) < 0.01);
+        assertTrue(Math.abs(axx[4][0]) < 0.01);
+        
+        assertTrue(Math.abs(axx[0][1]) < 0.01);
+        assertTrue(Math.abs(axx[4][1]) < 0.01);
+        
+        assertTrue(Math.abs(axx[0][2]) < 0.01);
+        assertTrue(Math.abs(axx[1][2]) < 0.01);
+        assertTrue(Math.abs(axx[2][2]) < 0.01);
+        assertTrue(Math.abs(axx[3][2]) < 0.01);
+        assertTrue(Math.abs(axx[4][2]) < 0.01);
+        
+        assertTrue(Math.abs(axx[0][3]) < 0.01);
+        assertTrue(Math.abs(axx[4][3]) < 0.01);
+        
+        assertTrue(Math.abs(axx[0][4]) < 0.01);
+        assertTrue(Math.abs(axx[1][4]) < 0.01);
+        assertTrue(Math.abs(axx[2][4]) < 0.01);
+        assertTrue(Math.abs(axx[3][4]) < 0.01);
+        assertTrue(Math.abs(axx[4][4]) < 0.01);
+        
+        /*
+        array([[ 0.,  0.,  0.,  0.,  0.],
+               [ 0.,  1.,  0.,  1.,  0.],
+               [ 0.,  4.,  0.,  4.,  0.],
+               [ 0.,  1.,  0.,  1.,  0.],
+               [ 0.,  0.,  0.,  0.,  0.]])
+        */
+        
+        int factor = 16;
+        //System.out.println(Math.round(axx[1][1])/factor);
+        //System.out.println(Math.round(axx[2][1])/factor);
+        //System.out.println(Math.round(axx[3][1])/factor);
+        assertTrue((Math.round(axx[1][1])/factor - 1.) < 0.01);
+        assertTrue((Math.round(axx[2][1])/factor - 4.) < 0.01);
+        assertTrue((Math.round(axx[3][1])/factor - 1.) < 0.01);
+    }
+    
+    public void estCornerHarris() {
+        
+        ORB orb = new ORB(100);
+        
+        int sz = 10;
+        
+        float[][] img = new float[sz][];
+        for (int i = 0; i < img.length; ++i) {
+            img[i] = new float[sz];
+        }
+        for (int i = 2; i < 8; ++i) {
+            for (int j = 2; j < 8; ++j) {
+                img[i][j] = 1.f;
+            }
+        }
+        
+        float[][] hc = orb.cornerHarris(img);
+        
+        /*
+         >>> from skimage.feature import corner_harris, corner_peaks
+        >>> square = np.zeros([10, 10])
+        >>> square[2:8, 2:8] = 1
+        >>> square.astype(int)
+        array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+               [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+               [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+               [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+               [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+               [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+               [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+               [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+               [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+               [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
+        >>> corner_peaks(corner_harris(square), min_distance=1)
+        array([[2, 2],
+               [2, 7],
+               [7, 2],
+               [7, 7]])
+        */
     }
 }

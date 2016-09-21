@@ -46,8 +46,8 @@ public class ImageProcessor {
     /**
      * <pre>
      * [1, 0, -1]
-     * this is the n=2 binomial filter for a Gaussian first derivative,
-       that is sigma = sqrt(2)/2 = 0.707
+     * this is the n=2 binomial filter for 
+     * a Gaussian first derivative w/ sigma=0.5,
        </pre>
      * @param input
      */
@@ -79,6 +79,26 @@ public class ImageProcessor {
         float normY = kernel.getNormalizationFactor();
 
         applyKernels(input, kernelX, kernelY, normX, normY);
+    }
+    
+    public void applySobelX(float[][] input) {
+
+        IKernel kernel = new SobelX();
+        Kernel kernelX = kernel.getKernel();
+
+        float normX = kernel.getNormalizationFactor();
+
+        applyKernel(input, kernelX, normX);
+    }
+    
+    public void applySobelY(float[][] input) {
+
+        IKernel kernel = new SobelY();
+        Kernel kernelY = kernel.getKernel();
+
+        float normY = kernel.getNormalizationFactor();
+
+        applyKernel(input, kernelY, normY);
     }
     
     public Map<PairInt, Integer> applySobelKernel(GreyscaleImage input, 
@@ -578,6 +598,81 @@ if (sum > 511) {
         }
 
         input.resetTo(output);
+    }
+    
+    /**
+     * apply kernel to input. NOTE, that because the image is composed of
+     * vectors that should have values between 0 and 255, inclusive, if the
+     * kernel application results in a value outside of that range, the value
+     * is reset to 0 or 255.
+     * @param input
+     * @param kernel
+     * @param normFactor
+     */
+    protected void applyKernel(float[][] input, Kernel kernel, float normFactor) {
+
+        int h = (kernel.getWidth() - 1) >> 1;
+
+        int width = input.length;
+        int height = input[0].length;
+        
+        float[][] output = new float[width][];
+        for (int i = 0; i < width; ++i) {
+            output[i] = new float[height];
+        }
+        
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+
+                double value = 0;
+
+                // apply the kernel to pixels centered in (i, j)
+
+                for (int col = 0; col < kernel.getWidth(); col++) {
+
+                    int x = col - h;
+
+                    int imgX = i + x;
+
+                    // edge corrections.  use replication
+                    if (imgX < 0) {
+                        imgX = -1 * imgX - 1;
+                    } else if (imgX >= width) {
+                        int diff = imgX - width;
+                        imgX = width - diff - 1;
+                    }
+
+                    for (int row = 0; row < kernel.getHeight(); row++) {
+
+                        int y = row - h;
+
+                        int imgY = j + y;
+
+                        // edge corrections.  use replication
+                        if (imgY < 0) {
+                            imgY = -1 * imgY - 1;
+                        } else if (imgY >= height) {
+                            int diff = imgY - height;
+                            imgY = height - diff - 1;
+                        }
+
+                        float v = input[imgX][imgY];
+
+                        int k = kernel.getValue(col, row);
+
+                        value += k * v;
+                    }
+                }
+
+                value *= normFactor;
+
+                output[i][j] = (float)value;
+            }
+        }
+        
+        for (int i = 0; i < width; ++i) {
+            System.arraycopy(output[i], 0, input[i], 0, height);
+        }
     }
     
     /**

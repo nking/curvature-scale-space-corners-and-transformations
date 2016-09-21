@@ -4,9 +4,12 @@ import algorithms.MultiArrayMergeSort;
 import algorithms.Rotate;
 import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.Gaussian1D;
+import algorithms.imageProcessing.Gaussian1DFirstDeriv;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.SIGMA;
+import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.MiscMath;
 import algorithms.misc.StatsInSlidingWindow;
 import gnu.trove.list.TIntList;
@@ -262,7 +265,20 @@ public class ORB {
         //debugPrint("shifted imageMax=", imageMax);        
     }
 
-    private class TwoDFloatArray {
+    private float[][] multiply(float[][] a, float[][] b) {
+        
+        float[][] c = copy(a);
+        
+        for (int i = 0; i < c.length; ++i) {
+            for (int j = 0; j < c[0].length; ++j) {
+                c[i][j] *= b[i][j];
+            }
+        }
+        
+        return c;
+    }
+
+    protected static class TwoDFloatArray {
         float[][] a;
         public TwoDFloatArray(float[][] b) {
             a = b;
@@ -381,8 +397,8 @@ public class ORB {
         int nCols = img[0].length;
         
         // downscale is > 1
-        int outRows = (int)Math.ceil((float)nRows / (float)downscale);
-        int outCols = (int)Math.ceil((float)nCols / (float)downscale);
+        int outRows = (int)Math.ceil((float)nRows / downscale);
+        int outCols = (int)Math.ceil((float)nCols / downscale);
         
         ImageProcessor imageProcessor = new ImageProcessor();
         
@@ -950,4 +966,62 @@ public class ORB {
         return orientations;
     }
 
+    /**
+     Compute structure tensor using sum of squared differences.
+     The structure tensor A is defined as::
+         A = [Axx Axy]
+             [Axy Ayy]
+     which is approximated by the weighted sum of squared differences in a local
+     window around each pixel in the image.
+    
+     https://github.com/scikit-image/scikit-image/blob/master/skimage/feature/corner.py
+    
+     * @param image
+     * @param sigma
+     * @return [Axx, Axy, Ayy]
+     * Axx : ndarray
+          Element of the structure tensor for each pixel in the input image.
+       Axy : ndarray
+          Element of the structure tensor for each pixel in the input image.
+       Ayy : ndarray
+          Element of the structure tensor for each pixel in the input image.
+     */
+    protected TwoDFloatArray[] structureTensor(float[][] image, float sigma) {
+   
+        // --- create Sobel derivatives ----
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        // switch X and Y sobel operations to match scipy
+        
+        float[][] gX = copy(image);
+        imageProcessor.applySobelY(gX);
+        
+        float[][] gY = copy(image);
+        imageProcessor.applySobelX(gY);
+        
+        //debugPrint("gX", gX);
+        //debugPrint("gY", gY);
+       
+        // --- create structure tensors ----
+        float[] kernel = Gaussian1D.getKernel(sigma);
+        float[][] axx = multiply(gX, gX);
+        imageProcessor.applyKernelTwo1Ds(axx, kernel);
+        
+        float[][] axy = multiply(gX, gY);
+        imageProcessor.applyKernelTwo1Ds(axy, kernel);
+        
+        float[][] ayy = multiply(gY, gY);
+        imageProcessor.applyKernelTwo1Ds(ayy, kernel);
+
+        //TODO: might need to apply a normalization factor
+        // to these for downstream use
+        
+        TwoDFloatArray[] tensorComponents = new TwoDFloatArray[3];
+        tensorComponents[0] = new TwoDFloatArray(axx);
+        tensorComponents[1] = new TwoDFloatArray(axy);
+        tensorComponents[2] = new TwoDFloatArray(ayy);
+        
+        return tensorComponents;
+    }
+  
 }
