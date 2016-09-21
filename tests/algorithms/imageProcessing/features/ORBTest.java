@@ -278,7 +278,8 @@ public class ORBTest extends TestCase {
             int y = coords.get(i + 1);
             PairInt p = new PairInt(x, y);
             assertTrue(expected.remove(p));
-        }     
+        } 
+        assertTrue(expected.isEmpty());
         
         double[] orientation = orb.cornerOrientations(img, coords);
         
@@ -375,7 +376,7 @@ public class ORBTest extends TestCase {
         assertTrue((Math.round(axx[3][1])/factor - 1.) < 0.01);
     }
     
-    public void estCornerHarris() {
+    public void testCornerHarris() {
         
         ORB orb = new ORB(100);
         
@@ -393,11 +394,13 @@ public class ORBTest extends TestCase {
         
         float[][] hc = orb.cornerHarris(img);
         
+        orb.debugPrint("hc=", hc);
+        
         /*
          >>> from skimage.feature import corner_harris, corner_peaks
-        >>> square = np.zeros([10, 10])
-        >>> square[2:8, 2:8] = 1
-        >>> square.astype(int)
+        >>> square3 = np.zeros([10, 10])
+        >>> square3[2:8, 2:8] = 1
+        >>> square3.astype(int)
         array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
@@ -408,11 +411,30 @@ public class ORBTest extends TestCase {
                [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
-        >>> corner_peaks(corner_harris(square), min_distance=1)
+        >>> corner_peaks(corner_harris(square3), min_distance=1)
         array([[2, 2],
                [2, 7],
                [7, 2],
                [7, 7]])
+        
         */
+        
+        TIntList coords = orb.cornerPeaks(hc, 1);
+        
+        //System.out.println("coords=" + coords);
+        
+        Set<PairInt> expected = new HashSet<PairInt>();
+        expected.add(new PairInt(2, 2));
+        expected.add(new PairInt(2, 7));
+        expected.add(new PairInt(7, 2));
+        expected.add(new PairInt(7, 7));
+        
+        for (int i = 0; i < coords.size(); i += 2) {
+            int x = coords.get(i);
+            int y = coords.get(i + 1);
+            PairInt p = new PairInt(x, y);
+            assertTrue(expected.remove(p));
+        } 
+        assertTrue(expected.isEmpty());
     }
 }

@@ -216,6 +216,7 @@ public class ORB {
     }
 
     private void debugPrint(String label, float[][] a) {
+    protected void debugPrint(String label, float[][] a) {
         
         StringBuilder sb = new StringBuilder(label);
         sb.append("\n");
@@ -272,6 +273,32 @@ public class ORB {
         for (int i = 0; i < c.length; ++i) {
             for (int j = 0; j < c[0].length; ++j) {
                 c[i][j] *= b[i][j];
+            }
+        }
+        
+        return c;
+    }
+    
+    private float[][] add(float[][] a, float[][] b) {
+        
+        float[][] c = copy(a);
+        
+        for (int i = 0; i < c.length; ++i) {
+            for (int j = 0; j < c[0].length; ++j) {
+                c[i][j] += b[i][j];
+            }
+        }
+        
+        return c;
+    }
+    
+    private float[][] subtract(float[][] a, float[][] b) {
+        
+        float[][] c = copy(a);
+        
+        for (int i = 0; i < c.length; ++i) {
+            for (int j = 0; j < c[0].length; ++j) {
+                c[i][j] -= b[i][j];
             }
         }
         
@@ -457,8 +484,13 @@ public class ORB {
             return null;
         }
         
-        coords = maskCoordinates(coords, nRows, nCols, 16);
+        keypoints = maskCoordinates(coords, nRows, nCols, 16);
+          
+        orientations = cornerOrientations(octaveImage, keypoints);
+
+        float[][] harrisResponse = cornerHarris(octaveImage);
         
+        //paused here
         
         throw new UnsupportedOperationException("not yet implemented");
     }
@@ -967,6 +999,54 @@ public class ORB {
     }
 
     /**
+      Compute Harris corner measure response image.
+        This corner detector uses information from the auto-correlation matrix A::
+            A = [(imx**2)   (imx*imy)] = [Axx Axy]
+                [(imx*imy)   (imy**2)]   [Axy Ayy]
+        Where imx and imy are first derivatives, averaged with a gaussian filter.
+        The corner measure is then defined as::
+            det(A) - k * trace(A)**2
+      
+      from https://github.com/scikit-image/scikit-image/blob/master/skimage/feature/corner.py
+     
+     * @param image
+     * @return 
+     */    
+    protected float[][] cornerHarris(float[][] image) {
+        
+        // method = 'k'.  k is Sensitivity factor to separate corners from edges, 
+        // Small values of k result in detection of sharp corners.
+        float k = this.harrisK;
+        
+        // Standard deviation used for the Gaussian kernel, which is used as
+        // weighting function for the auto-correlation matrix.
+        float sigma = 1;
+        
+        TwoDFloatArray[] tensorComponents = structureTensor(image, sigma);
+        
+        float[][] axxyy = multiply(tensorComponents[0].a, 
+            tensorComponents[2].a);
+        
+        float[][] axyxy = multiply(tensorComponents[1].a, 
+            tensorComponents[1].a);
+        
+        float[][] detA = subtract(axxyy, axyxy);
+        
+        float[][] traceA = add(tensorComponents[0].a, 
+            tensorComponents[2].a);
+        
+        //response = detA - k * traceA ** 2
+        float[][] response = copy(detA);
+        for (int i = 0; i < detA.length; ++i) {
+            for (int j = 0; j < detA[i].length; ++j) {
+                float v = k * (traceA[i][j] * traceA[i][j]);
+                response[i][j] -= v;
+            }
+        }
+        
+        return response;
+    }
+
      Compute structure tensor using sum of squared differences.
      The structure tensor A is defined as::
          A = [Axx Axy]
