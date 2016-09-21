@@ -106,7 +106,7 @@ public class ORB {
         Corresponding Harris corner responses
         (N, ) array
     */
-    private double[] responses = null;
+    //private double[] responses = null;
     
     /**
      * (Q, `descriptor_size`) array of dtype bool
@@ -123,7 +123,7 @@ public class ORB {
         initMasks();
         
         this.nKeypoints = 200;
-      
+        
     }
     
     private void initMasks() {
@@ -170,11 +170,14 @@ public class ORB {
                         
             float[][] octaveImage = pyramid.get(octave).a;
             
+            Resp r = detectOctave(octaveImage);
+            
             throw new UnsupportedOperationException("not yet implemented");
             
         }
     }
-   
+    
+    
     private List<TwoDFloatArray> buildPyramid(ImageExt image) {
         
         /*
@@ -215,7 +218,25 @@ public class ORB {
         return out;
     }
 
-    private void debugPrint(String label, float[][] a) {
+    private float[] flatten(float[][] a) {
+        
+        int nRows = a.length;
+        int nCols = a[0].length;
+        
+        int n = nRows * nCols;
+        
+        float[] b = new float[n];
+        int count = 0;
+        for (int i = 0; i < nRows; ++i) {
+            for (int j = 0; j < nCols; ++j) {
+                b[count] = a[i][j];
+                count++;
+            }
+        }
+        
+        return b;
+    }
+
     protected void debugPrint(String label, float[][] a) {
         
         StringBuilder sb = new StringBuilder(label);
@@ -467,11 +488,13 @@ public class ORB {
         return b;
     }
     
-    private class R1 {
-        //keypoints, orientations, responses
+    private class Resp {
+        double[] orientations;
+        TIntList keypoints;
+        float[][] responses;
     }
      
-    private R1 detectOctave(float[][] octaveImage) {
+    private Resp detectOctave(float[][] octaveImage) {
         
         float[][] fastResponse = cornerFast(octaveImage, fastN, fastThreshold);
     
@@ -484,18 +507,31 @@ public class ORB {
             return null;
         }
         
-        keypoints = maskCoordinates(coords, nRows, nCols, 16);
+        TIntList keypoints2 = maskCoordinates(coords, nRows, nCols, 16);
           
-        orientations = cornerOrientations(octaveImage, keypoints);
+        double[] orientations2 = cornerOrientations(octaveImage, keypoints2);
 
         float[][] harrisResponse = cornerHarris(octaveImage);
         
-        //paused here
+        float[][] responses = new float[harrisResponse.length][];
+        for (int i = 0; i < responses.length; ++i) {
+            responses[i] = new float[harrisResponse[i].length];
+        }
         
-        throw new UnsupportedOperationException("not yet implemented");
+        for (int i = 0; i < keypoints2.size(); i += 2) {
+            int x = keypoints2.get(i);
+            int y = keypoints2.get(i + 1);
+            responses[x][y] = harrisResponse[x][y];
+        }
+        
+        Resp r2 = new Resp();
+        r2.keypoints = keypoints2;
+        r2.orientations = orientations2;
+        r2.responses = responses;
+        
+        return r2;
     }
     
-   
     /**
      Extract FAST corners for a given image.
      
@@ -890,7 +926,7 @@ public class ORB {
         }
         
     }
-   
+    
     private float[][] maximumFilter(float[][] img, int size) {
         
         int nRows = img.length;
@@ -1047,6 +1083,7 @@ public class ORB {
         return response;
     }
 
+    /**
      Compute structure tensor using sum of squared differences.
      The structure tensor A is defined as::
          A = [Axx Axy]
