@@ -1,18 +1,18 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.MultiArrayMergeSort;
-import algorithms.Rotate;
 import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.Gaussian1D;
-import algorithms.imageProcessing.Gaussian1DFirstDeriv;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.SIGMA;
-import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.MiscMath;
 import algorithms.misc.StatsInSlidingWindow;
+import gnu.trove.list.TDoubleList;
+import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TDoubleArrayList;
+import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
@@ -84,23 +84,26 @@ public class ORB {
     private float harrisK = 0.04f;
     private final int nKeypoints;
     
+    private int[][] POS0 = null;
+    private int[][] POS1 = null;
+    
     /**
      * Keypoint coordinates as ``(row, col, ...)``.
      * (N, 2) array
      */
-    private TIntList keypoints = null;
+    //private TIntList keypoints = null;
    
     /**
      * Corresponding scales.
      * (N, ) array
      */
-    private float[] scales = null;
+    //private float[] scales = null;
     
     /**
      * Corresponding orientations in radians.
      * (N, ) array
      */
-    private double[] orientations = null;
+    //private double[] orientations = null;
       
     /**
         Corresponding Harris corner responses
@@ -116,7 +119,7 @@ public class ORB {
         the outcome of the intensity comparison for i-th keypoint on j-th
         decision pixel-pair. It is ``Q == np.sum(mask)``.
      */
-    private boolean[][] descriptors = null;
+    //private boolean[][] descriptors = null;
 
     public ORB(int nKeypoints) {
         
@@ -124,6 +127,14 @@ public class ORB {
         
         this.nKeypoints = 200;
         
+        /*
+        
+        self.keypoints = None
+        self.scales = None
+        self.responses = None
+        self.orientations = None
+        self.descriptors = None
+        */
     }
     
     private void initMasks() {
@@ -165,6 +176,20 @@ public class ORB {
     public void detectAndExtract(ImageExt image) {
     
         List<TwoDFloatArray> pyramid = buildPyramid(image);
+
+        List<TIntList> keypointsList = new ArrayList<TIntList>();
+        List<TDoubleList> orientationsList = new ArrayList<TDoubleList>();
+        List<TFloatList> harrisResponses = new ArrayList<TFloatList>();
+        
+        List<TFloatList> scalesList = new ArrayList<TFloatList>();
+        
+        //`True`` or ``False`` representing
+        //the outcome of the intensity comparison for i-th keypoint on j-th
+        //decision pixel-pair. It is ``Q == np.sum(mask)``.
+        // NOTE: this output format may need to be changed
+        List<Descriptors> descriptorsList = new ArrayList<Descriptors>();
+
+        int nKeypointsTotal = 0;
         
         for (int octave = 0; octave < pyramid.size(); ++octave) {
                         
@@ -172,11 +197,74 @@ public class ORB {
             
             Resp r = detectOctave(octaveImage);
             
-            throw new UnsupportedOperationException("not yet implemented");
+            if (r == null) {
+                keypointsList.add(new TIntArrayList());
+                orientationsList.add(new TDoubleArrayList());
+                harrisResponses.add(new TFloatArrayList());
+                scalesList.add(new TFloatArrayList());
+                descriptorsList.add(new Descriptors());
+                continue;
+            } else if (r.keypoints.isEmpty()) {
+                keypointsList.add(r.keypoints);
+                orientationsList.add(r.orientations);
+                harrisResponses.add(new TFloatArrayList());
+                
+                // empty scales and descriptors:
+                scalesList.add(new TFloatArrayList());
+                descriptorsList.add(new Descriptors());
+                continue;
+            }
             
+            // result contains descriptors and mask.  
+            // also, modified by mask are the keypoints and orientations
+            Descriptors desc = extractOctave(octaveImage, r.keypoints,
+                r.orientations, r.responses);
+                    
+            // masked keypoints * self.downscale ** octave
+            //    multiplies the keypoints by a scalar
+            //    to put the coordinates into the reference frame of image
+            float scale = (float)Math.pow(this.downscale, octave);
+            for (int i = 0; i < keypointsList.size(); ++i) {
+                int v = Math.round(scale * r.keypoints.get(i));
+                r.keypoints.set(i, v);
+            }
+            
+            keypointsList.add(r.keypoints);
+            orientationsList.add(r.orientations);
+            harrisResponses.add(r.responses);
+            descriptorsList.add(desc);
+            
+            // scales is same size as keypoints
+            TFloatList scales = new TFloatArrayList(r.keypoints.size());
+            for (int i = 0; i < r.keypoints.size(); ++i) {
+                scales.add(scale);
+            }
+            scalesList.add(scales);
+
+            nKeypointsTotal += r.keypoints.size();
         }
+        
+        if (nKeypointsTotal < this.nKeypoints) {
+            /*
+            self.keypoints = keypoints
+            self.scales = scales
+            self.orientations = orientations
+            self.responses = responses
+            self.descriptors = descriptors
+            */
+        } else {
+            /*
+            # Choose best n_keypoints according to Harris corner response
+            best_indices = responses.argsort()[::-1][:self.n_keypoints]
+            self.keypoints = keypoints[best_indices]
+            self.scales = scales[best_indices]
+            self.orientations = orientations[best_indices]
+            self.responses = responses[best_indices]
+            self.descriptors = descriptors[best_indices]
+            */
+        }
+        throw new UnsupportedOperationException("not yet implemented");
     }
-    
     
     private List<TwoDFloatArray> buildPyramid(ImageExt image) {
         
@@ -489,9 +577,20 @@ public class ORB {
     }
     
     private class Resp {
-        double[] orientations;
+        TDoubleList orientations;
         TIntList keypoints;
-        float[][] responses;
+        TFloatList responses;
+    }
+    
+    private class Descriptors {
+        
+        //mask of length orientations.size() containing a 1 or 0
+        // indicating if pixels are within the image (``True``) or in the
+        // border region of the image (``False``).
+        TIntList mask;
+        
+        //holds values 1 or 0.  size is [orientations.size][POS0.length]
+        int[][] descriptors;
     }
      
     private Resp detectOctave(float[][] octaveImage) {
@@ -508,26 +607,28 @@ public class ORB {
         }
         
         TIntList keypoints2 = maskCoordinates(coords, nRows, nCols, 16);
-          
+    
+        // size is keyPoints2.size/2
         double[] orientations2 = cornerOrientations(octaveImage, keypoints2);
-
+        assert(orientations2.length == keypoints2.size()/2);
+        
+        // size is same a octaveImage
         float[][] harrisResponse = cornerHarris(octaveImage);
-        
-        float[][] responses = new float[harrisResponse.length][];
-        for (int i = 0; i < responses.length; ++i) {
-            responses[i] = new float[harrisResponse[i].length];
-        }
-        
+
+        TFloatList responses = new TFloatArrayList(orientations2.length);
         for (int i = 0; i < keypoints2.size(); i += 2) {
             int x = keypoints2.get(i);
             int y = keypoints2.get(i + 1);
-            responses[x][y] = harrisResponse[x][y];
+            responses.add(harrisResponse[x][y]);
         }
         
         Resp r2 = new Resp();
         r2.keypoints = keypoints2;
-        r2.orientations = orientations2;
         r2.responses = responses;
+        r2.orientations = new TDoubleArrayList();
+        for (int i = 0; i < orientations2.length; ++i) {
+            r2.orientations.add(orientations2[i]);
+        }
         
         return r2;
     }
@@ -669,9 +770,6 @@ public class ORB {
     private TIntList maskCoordinates(TIntList orderedPeaks, 
         int nRows, int nCols, int maskRadius) {
        
-        // looks like this nulls the region around each peak above zero,
-        // with priority given to order in peakRowCols.
-        
         TIntSet peaks = new TIntHashSet();
         
         /* making single pixel index out of coordinates:
@@ -720,6 +818,65 @@ public class ORB {
         }
         
         return peakRowCols2;
+    }
+    
+    /**
+     * 
+     * @param input
+     * @param nRows
+     * @param nCols
+     * @param border
+     * @return mask of length input.size/2 containing a 1 or 0
+     *     indicating if pixels are within the image (``True``) or in the
+           border region of the image (``False``).
+     */
+    private TIntList maskCoordinatesIfBorder(TIntList input, 
+        int nRows, int nCols, int border) {
+       
+        TIntSet set = new TIntHashSet();
+        
+        /* making single pixel index out of coordinates:
+        (row * width) + col
+        pixIdxs[count] = (j * nRows) + i;
+        */
+        for (int i = 0; i < input.size(); i += 2) {
+            int ii = input.get(i);
+            int jj = input.get(i + 1);
+            int pixIdx = (jj * nRows) + ii;
+            set.add(pixIdx);
+        }
+        
+        for (int i = 0; i < input.size(); i += 2) {
+            int ii = input.get(i);
+            int jj = input.get(i + 1);
+            int pixIdx = (jj * nRows) + ii;
+            if (!set.contains(pixIdx)) {
+                continue;
+            }
+            if ((ii < border) || (jj < border) || (ii > (nRows - border - 1)) ||
+                (jj > (nCols - border - 1))) {
+                set.remove(pixIdx);
+            }
+        }
+        
+        /*
+        Mask indicating if pixels are within the image (``True``) or in the
+            border region of the image (``False``).
+        */
+
+        TIntList mask = new TIntArrayList(input.size()/2);
+        for (int i = 0; i < input.size(); i += 2) {
+            int ii = input.get(i);
+            int jj = input.get(i + 1);
+            int pixIdx = (jj * nRows) + ii;
+            if (set.contains(pixIdx)) {
+                mask.add(1);
+            } else {
+                mask.add(0);
+            }
+        }
+        
+        return mask;
     }
     
     /**
@@ -1045,9 +1202,12 @@ public class ORB {
       
       from https://github.com/scikit-image/scikit-image/blob/master/skimage/feature/corner.py
      
-     * @param image
-     * @return 
-     */    
+    @param image
+    @return the harris corner response image of same size as image, 
+    *   and composed of
+    *   response = detA - k * traceA ** 2 built from the 2nd derivatives of
+    *   image intensity.
+    */    
     protected float[][] cornerHarris(float[][] image) {
         
         // method = 'k'.  k is Sensitivity factor to separate corners from edges, 
@@ -1140,5 +1300,123 @@ public class ORB {
         
         return tensorComponents;
     }
-  
+    
+    /**
+     * filter the keypoints, orientations, and responses to remove those close 
+     * to the border and then create descriptors for the remaining.
+     * 
+     * @param octaveImage
+     * @param keypoints
+     * @param orientations
+     * @return the encapsulated descriptors and mask
+     */
+    protected Descriptors extractOctave(float[][] octaveImage,
+        TIntList keypoints, TDoubleList orientations, TFloatList responses) {
+        
+        assert(orientations.size() == keypoints.size()/2);
+        
+        int nRows = octaveImage.length;
+        int nCols = octaveImage[0].length;
+        
+        //mask of length orientations.size() containing a 1 or 0
+        // indicating if pixels are within the image (``True``) or in the
+        // border region of the image (``False``).
+        TIntList mask = maskCoordinatesIfBorder(keypoints, nRows, nCols, 16);
+        
+        /*
+        i    0    1    2
+        idx2 0,1  2,3  4,5
+        
+        looping backwards to keep indexes correct
+        */
+        for (int i = (mask.size() - 1); i > -1; --i) {
+            if (mask.get(i) == 0) {
+                int idx2 = 2*i;
+                keypoints.remove(idx2 + 1);
+                keypoints.remove(idx2);
+                orientations.remove(idx2 + 1);
+                orientations.remove(idx2);
+                responses.remove(idx2 + 1);
+                responses.remove(idx2);
+            }
+        }
+       
+        //holds values 1 or 0.  size is [orientations.size][POS0.length]
+        int[][] descriptors = orbLoop(octaveImage, keypoints, orientations);
+        
+        Descriptors desc = new Descriptors();
+        desc.descriptors = descriptors;
+        desc.mask = mask;
+        
+        return desc;        
+    }
+    
+    /**
+     * create descriptors for the given keypoints
+     * 
+     * @param octaveImage
+     * @param keypoints
+     * @param orientations
+     * @return 
+     *   holds values 1 or 0.  size is [orientations.size][POS0.length]
+     */
+    protected int[][] orbLoop(float[][] octaveImage, TIntList keypoints,
+        TDoubleList orientations) {
+        
+        assert(orientations.size() == keypoints.size()/2);
+        
+        if (POS0 == null) {
+            POS0 = ORBDescriptorPositions.POS0;
+        }
+        if (POS1 == null) {
+            POS1 = ORBDescriptorPositions.POS1;
+        }
+        
+        int nRows = octaveImage.length;
+        int nCols = octaveImage[0].length;
+        
+        int nKP = orientations.size();
+        
+        // holds values 1 or 0.  size is [orientations.size][POS0.length]
+        int[][] descriptors = new int[nKP][POS0.length];
+        for (int i = 0; i < descriptors.length; ++i) {
+            descriptors[i] = new int[POS0.length];
+        }
+        
+        double pr0, pc0, pr1, pc1;
+        int spr0, spc0, spr1, spc1;
+        
+        for (int i = 0; i < descriptors.length; ++i) {
+            double angle = orientations.get(i);
+            double sinA = Math.sin(angle);
+            double cosA = Math.cos(angle);
+            
+            int idx = 2*i;
+            int kr = keypoints.get(idx);
+            int kc = keypoints.get(idx + 1);
+
+            for (int j = 0; j < descriptors[i].length; ++j) {
+                pr0 = POS0[j][0];
+                pc0 = POS0[j][1];
+                pr1 = POS1[j][0];
+                pc1 = POS1[j][1];
+
+                spr0 = (int)Math.round(sinA * pr0 + cosA * pc0);
+                spc0 = (int)Math.round(cosA * pr0 - sinA * pc0);
+                spr1 = (int)Math.round(sinA * pr1 + cosA * pc1);
+                spc1 = (int)Math.round(cosA * pr1 - sinA * pc1);
+
+                int x0 = kr + spr0;
+                int y0 = kc + spc0;
+                int x1 = kr + spr1;
+                int y1 = kc + spc1;
+                if (octaveImage[x0][y0] < octaveImage[x1][y1]) {
+                    descriptors[i][j] = 1;
+                }
+            }
+        }
+        
+        return descriptors;
+    }
+    
 }

@@ -2,8 +2,13 @@ package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.features.ORB.TwoDFloatArray;
 import algorithms.util.PairInt;
+import algorithms.util.ResourceFinder;
 import algorithms.util.TwoDIntArray;
 import gnu.trove.list.TIntList;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -301,6 +306,39 @@ public class ORBTest extends TestCase {
             //System.out.println("found=" + ang + " expected=" + expAng);
             assertTrue(Math.abs(expAng.intValue() - ang) < 0.001);
         }
+        
+        /*
+        repeating a few steps:
+        cp = corner_peaks(cf, min_distance=1)
+        >>> print cp
+        [[3 3]
+         [3 8]
+         [8 3]
+         [8 8]]
+        mask = skimage.feature.orb._mask_border_keypoints(cf.shape, cp, distance=3);
+        
+        >>> print mask
+        [ True  True  True  True]
+        >>> print cp[mask]
+        [[3 3]
+         [3 8]
+         [8 3]
+         [8 8]]
+        cp = cp[mask]
+        orientations = skimage.feature.orb.corner_orientations(square, cp, OFAST_MASK)
+        
+        print orientations
+        [ 0.78539816  2.35619449 -0.78539816 -2.35619449]
+        
+        harris_response = corner_harris(square, method='k', k=0.04);
+        >>> print harris_response.shape
+        (12, 12)
+        
+        responses = harris_response[cp[:, 0], cp[:, 1]]
+        >>> print responses
+        [ 21.4776577  21.4776577  21.4776577  21.4776577]
+        
+        */
     }
     
     public void testTensor() {
@@ -437,4 +475,5 @@ public class ORBTest extends TestCase {
         } 
         assertTrue(expected.isEmpty());
     }
+    
 }
