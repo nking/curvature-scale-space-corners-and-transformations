@@ -70,6 +70,15 @@ public class GreyscaleImage {
      */
     public GreyscaleImage (int theWidth, int theHeight) {
         
+        if (theWidth > 46340 || theWidth < 0) {
+            throw new IllegalArgumentException("theWidth must be between 0 "
+            + " and 46340");
+        }
+        if (theHeight > 46340 || theHeight < 0) {
+            throw new IllegalArgumentException("theHeight must be between 0 "
+            + " and 46340");
+        }
+        
         String arch = System.getProperty("sun.arch.data.model");
         
         is64Bit = ((arch != null) && arch.equals("64")) ? true : false;
@@ -120,6 +129,15 @@ public class GreyscaleImage {
      * @param theType image type
      */
     public GreyscaleImage (int theWidth, int theHeight, Type theType) {
+        
+        if (theWidth > 46340 || theWidth < 0) {
+            throw new IllegalArgumentException("theWidth must be between 0 "
+            + " and 46340");
+        }
+        if (theHeight > 46340 || theHeight < 0) {
+            throw new IllegalArgumentException("theHeight must be between 0 "
+            + " and 46340");
+        }
         
         if (theType == null) {
             String arch = System.getProperty("sun.arch.data.model");        

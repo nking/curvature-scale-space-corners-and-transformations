@@ -5,6 +5,8 @@ import java.awt.image.BufferedImage;
 
 /**
  * space conserving image data holder.
+ * NOTE, because of internal pixel indexing, the size of
+ * this image is limited to 46340 pixels in width and height.
  * 
  * @author nichole
  */
@@ -58,10 +60,22 @@ public class Image {
     protected final int len;
             
     /**
+     * NOTE, because of internal pixel indexing, the size of
+     * this image is limited to 46340 pixels in width and height.
+     * 
      * @param theWidth
      * @param theHeight
      */
     public Image (int theWidth, int theHeight) {
+        
+        if (theWidth > 46340 || theWidth < 0) {
+            throw new IllegalArgumentException("theWidth must be between 0 "
+            + " and 46340");
+        }
+        if (theHeight > 46340 || theHeight < 0) {
+            throw new IllegalArgumentException("theHeight must be between 0 "
+            + " and 46340");
+        }
         
         String arch = System.getProperty("sun.arch.data.model");
         
@@ -116,7 +130,16 @@ public class Image {
      * @param theHeight
      */
     Image (int theWidth, int theHeight, boolean use32Bit) {
-                
+           
+        if (theWidth > 46340 || theWidth < 0) {
+            throw new IllegalArgumentException("theWidth must be between 0 "
+            + " and 46340");
+        }
+        if (theHeight > 46340 || theHeight < 0) {
+            throw new IllegalArgumentException("theHeight must be between 0 "
+            + " and 46340");
+        }
+        
         is64Bit = !use32Bit;
         
         nPixels = theWidth * theHeight;
