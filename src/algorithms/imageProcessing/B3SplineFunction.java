@@ -12,7 +12,9 @@ public class B3SplineFunction {
      * An interpolation function for B-Spline, 3rd order.
      * The implementation follows pseudocode in
      * http://www.multiresolution.com/svbook.pdf
-     *
+     * "Handbook of Astronomical Data Analysis" by 
+     * Jean-Luc Starck and Fionn Murtagh
+     * 
      * The runtime complexity is O(N_pixels) and internally uses 2 1-D operations.
      *
      * Handling boundaries:
@@ -395,7 +397,9 @@ public class B3SplineFunction {
      * An interpolation function for B-Spline, 3rd order.
      * The implementation follows pseudocode in
      * http://www.multiresolution.com/svbook.pdf
-     *
+     * "Handbook of Astronomical Data Analysis" by 
+     * Jean-Luc Starck and Fionn Murtagh
+     * 
      * The runtime complexity is O(N_pixels) and internally uses 2 1-D operations.
      *
      * Handling boundaries:
