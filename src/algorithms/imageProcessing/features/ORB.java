@@ -107,6 +107,10 @@ public class ORB {
        -- considering adding alternative pyramid building methods
           such as Laplacian pyramids or
           half-octave or quarter-octave pyramids (Lowe 2004; Triggs 2004)
+       -- considering a wrapper class to create a subset image,
+          use this class then transform the coordinates to original reference
+          frame as a faset, but imperfect way to compensate for highly textured
+          regions which produce alot of keypoints.
     */
      
     // these two could be made static across all instances
