@@ -98,6 +98,16 @@ NOT READY FOR USE.  NOT YET TESTED.
  </pre>
  */
 public class ORB {
+    
+    /*
+    TODO:
+       -- considering an optional method to filter by localizability
+       -- considering an optional method for removing staircase corners by
+          use of hough line transforms
+       -- consdiering adding alternative pyramid building methods
+          such as Laplacian pyramids or
+          half-octave or quarter-octave pyramids (Lowe 2004; Triggs 2004).
+    */
      
     // these two could be made static across all instances
     private int[][] OFAST_MASK = null;
