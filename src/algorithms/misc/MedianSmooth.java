@@ -5,7 +5,7 @@ import algorithms.util.PairIntArray;
 import java.util.Arrays;
 
 /**
- * class to calculate a running median of the k previous points of curveY.
+ * class to calculate a running median using a window of size k
  *
  * @author nichole
  */
@@ -15,7 +15,7 @@ public class MedianSmooth {
      * calculate a running median of a window of size xWindow, yWindow.
      * runtime complexity is
      *     n_rows * ((xWindow * yWindow) + ((n_cols)*lg2(xWindow * yWindow)))
-     * so is roughly O(n_pixels * lg2(window area)) where n_pixels = n_rows * n_cols
+     * so is roughly O(n_pixels * lg_2(window area)) where n_pixels = n_rows * n_cols
      *
      * NOTE: should only be used by a single thread.
      * 

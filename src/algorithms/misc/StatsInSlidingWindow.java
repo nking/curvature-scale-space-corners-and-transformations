@@ -55,10 +55,16 @@ public class StatsInSlidingWindow {
             "input[0].length must be equal to output[0].length");
         }
         
+        // tailored for maximum stats
+        int xLen2 = input.length + xWindow;
         int yLen2 = input[0].length + yWindow;
-        float[][] input2 = new float[input.length][];
+        float[][] input2 = new float[xLen2][];
         for (int i = 0; i < input2.length; ++i) {
-            input2[i] = Arrays.copyOf(input[i], yLen2); 
+            if (i < input.length) {
+                input2[i] = Arrays.copyOf(input[i], yLen2);
+            } else {
+                input2[i] = new float[yLen2];
+            }
         }
 
         int nW = xWindow * yWindow;
@@ -72,12 +78,13 @@ public class StatsInSlidingWindow {
         int h = input2[0].length;
         int w = input2.length;
         int w0 = input.length;
+        int h0 = input[0].length;
         
         for (int row = 0; row <= (h - yWindow); ++row) {
 
             int jIdx = row;
             
-            if (jIdx >= w0) {
+            if (jIdx >= h0) {
                 break;
             }
             
@@ -97,11 +104,15 @@ public class StatsInSlidingWindow {
             float maximum;
             
             for (int i = (xWindow - 1); i < w; ++i) {
-
+                
+                int iIdx = i - xWindow + 1;
+             
+                if (iIdx >= w0) {
+                    break;
+                }
+                
                 //O(1)
                 maximum = sVec.getMaximum();
-
-                int iIdx = i - xWindow + 1;
                 
                 output[iIdx][jIdx] = maximum;
 
@@ -125,32 +136,7 @@ public class StatsInSlidingWindow {
                         assert(sVec.n == sVec.a.length);
                     }       
                 }
-            }
-                        
-            int start = (w - xh - 1);
-            int deltaI = xHEven ? (xh - 1) : xh;
-            int endI = start + xWindow - 1;
-            int endJ = row + yWindow - 1;
-            if (endJ > (h - 1)) {
-                endJ = h - 1;
-            }
-            if (endI > (w - 1)) {
-                endI = w - 1;
-            }
-            int j = row;
-            for (int i = start; i < w; ++i) {
-
-                // remove : O(log_2(k))
-                sVec.remove(input2[i - deltaI][j]);
-                
-                // replicate last item
-                sVec.insertIntoOpenSlot(input2[endI][endJ]);
-                
-                //O(1)
-                maximum = sVec.getMaximum();
-                
-                output[i][j] = maximum;
-            }
+            }                        
         }
         
     }
