@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.MultiArrayMergeSort;
+import algorithms.QuickSort;
 import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.Gaussian1D;
 import algorithms.imageProcessing.GreyscaleImage;
@@ -8,12 +9,15 @@ import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.misc.MiscMath;
 import algorithms.misc.StatsInSlidingWindow;
+import algorithms.util.PairInt;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
@@ -70,10 +74,23 @@ replaced with existing in this project, in this implementation below.
  
  Oriented FAST and rotated BRIEF feature detector and binary descriptor
     extractor.
+   
+ NOT READY FOR USE.  NOT YET TESTED.
+ <pre>
+ Example Use:
+    int nKeyPoints = 200;
+    ORB orb = new ORB(nKeyPoints);
+    orb.detectAndExtract(image);
+    List Descriptors descList = orb.getDescriptors();
+       or
+    Descriptors desc = orb.getAllDescriptors();
+    
+    int[][] matches = ORB.matchDescriptors(desc1.descriptors, desc2.descriptors);
+ </pre>
  */
 public class ORB {
-    
-    // these could be made static across all instances
+     
+    // these two could be made static across all instances
     private int[][] OFAST_MASK = null;
     private int[] OFAST_UMAX = null;
     
@@ -87,54 +104,28 @@ public class ORB {
     private int[][] POS0 = null;
     private int[][] POS1 = null;
     
-    /**
-     * Keypoint coordinates as ``(row, col, ...)``.
-     * (N, 2) array
-     */
-    //private TIntList keypoints = null;
-   
-    /**
-     * Corresponding scales.
-     * (N, ) array
-     */
-    //private float[] scales = null;
+    // ---- NOTE, have chosen to keep the results (which are available publicly via getters)
+    //      in Lists in which each list index is a scale in the pyramidal decimation 
+    //      to allow the user to recover scale information if wanted.
+    //      To use the way that scipy does, all results as single lists of variables 
+    //      are available via getAll... getters.
     
-    /**
-     * Corresponding orientations in radians.
-     * (N, ) array
-     */
-    //private double[] orientations = null;
-      
-    /**
-        Corresponding Harris corner responses
-        (N, ) array
-    */
-    //private double[] responses = null;
+    private List<TIntList> keypointsList = null;
+    private List<TDoubleList> orientationsList = null;
+    private List<TFloatList> harrisResponses = null;
+    private List<TFloatList> scalesList = null;
+        
+    //`True`` or ``False`` representing
+    //the outcome of the intensity comparison for i-th keypoint on j-th
+    //decision pixel-pair. It is ``Q == np.sum(mask)``.
+    // NOTE: this output format may need to be changed
+    private List<Descriptors> descriptorsList = null;
     
-    /**
-     * (Q, `descriptor_size`) array of dtype bool
-        2D array of binary descriptors of size `descriptor_size` for Q
-        keypoints after filtering out border keypoints with value at an
-        index ``(i, j)`` either being ``True`` or ``False`` representing
-        the outcome of the intensity comparison for i-th keypoint on j-th
-        decision pixel-pair. It is ``Q == np.sum(mask)``.
-     */
-    //private boolean[][] descriptors = null;
-
     public ORB(int nKeypoints) {
         
         initMasks();
         
         this.nKeypoints = 200;
-        
-        /*
-        
-        self.keypoints = None
-        self.scales = None
-        self.responses = None
-        self.orientations = None
-        self.descriptors = None
-        */
     }
     
     private void initMasks() {
@@ -154,20 +145,10 @@ public class ORB {
             }
         }
     }
-   
-    
-    /*
-    coding for the example use from skimage.feature.ORB:
-       descriptor_extractor = ORB(n_keypoints=200)
-       descriptor_extractor.detect_and_extract(img1A)
-       keypoints1 = descriptor_extractor.keypoints
-       descriptors1 = descriptor_extractor.descriptors
-    
-    from skimage.feature.match_descriptors:
-       matches12 = match_descriptors(descriptors1, descriptors2, cross_check=True)
-    */
-    
+      
     /**
+     * NOT READY FOR USE.  NOT YET TESTED.
+     * 
      * Detect oriented FAST keypoints and extract rBRIEF descriptors.
         Note that this is faster than first calling `detect` and then
         `extract`.
@@ -177,17 +158,11 @@ public class ORB {
     
         List<TwoDFloatArray> pyramid = buildPyramid(image);
 
-        List<TIntList> keypointsList = new ArrayList<TIntList>();
-        List<TDoubleList> orientationsList = new ArrayList<TDoubleList>();
-        List<TFloatList> harrisResponses = new ArrayList<TFloatList>();
-        
-        List<TFloatList> scalesList = new ArrayList<TFloatList>();
-        
-        //`True`` or ``False`` representing
-        //the outcome of the intensity comparison for i-th keypoint on j-th
-        //decision pixel-pair. It is ``Q == np.sum(mask)``.
-        // NOTE: this output format may need to be changed
-        List<Descriptors> descriptorsList = new ArrayList<Descriptors>();
+        keypointsList = new ArrayList<TIntList>();
+        orientationsList = new ArrayList<TDoubleList>();
+        harrisResponses = new ArrayList<TFloatList>();        
+        scalesList = new ArrayList<TFloatList>();
+        descriptorsList = new ArrayList<Descriptors>();
 
         int nKeypointsTotal = 0;
         
@@ -244,26 +219,104 @@ public class ORB {
             nKeypointsTotal += r.keypoints.size();
         }
         
-        if (nKeypointsTotal < this.nKeypoints) {
-            /*
-            self.keypoints = keypoints
-            self.scales = scales
-            self.orientations = orientations
-            self.responses = responses
-            self.descriptors = descriptors
-            */
-        } else {
-            /*
-            # Choose best n_keypoints according to Harris corner response
-            best_indices = responses.argsort()[::-1][:self.n_keypoints]
-            self.keypoints = keypoints[best_indices]
-            self.scales = scales[best_indices]
-            self.orientations = orientations[best_indices]
-            self.responses = responses[best_indices]
-            self.descriptors = descriptors[best_indices]
-            */
+        if (nKeypointsTotal > this.nKeypoints) {
+            
+            // prune the lists to nKeypoints by the harris corner response as a score
+            
+            // once thru to count first
+            int n = 0;
+            for (int idx1 = 0; idx1 < harrisResponses.size(); ++idx1) {
+                TFloatList hResp = harrisResponses.get(idx1);
+                n += hResp.size();
+            }
+            
+            float[] scores = new float[n];
+            PairInt[] indexes = new PairInt[n];
+            // outer list index = idx1, inner list index = idx2
+            int count = 0;
+            for (int idx1 = 0; idx1 < harrisResponses.size(); ++idx1) {
+                TFloatList hResp = harrisResponses.get(idx1);
+                for (int idx2 = 0; idx2 < hResp.size(); ++idx2) {
+                    indexes[count] = new PairInt(idx1, idx2);
+                    scores[count] = hResp.get(idx2);
+                    count++;
+                }
+            }
+            
+            QuickSort.sortBy1stArg(scores, indexes);
+            
+            TIntObjectMap<TIntList> keep = new TIntObjectHashMap<TIntList>();
+            
+            // visit largest scores to smallest
+            count = 0;
+            int idx = n-1;
+            while (count < nKeypoints) {
+                
+                PairInt m = indexes[idx];
+                
+                TIntList list = keep.get(m.getX());
+                if (list == null) {
+                    list = new TIntArrayList();
+                    keep.put(m.getX(), list);
+                }
+                list.add(m.getY());
+                
+                idx--;
+                count++;
+            }
+            
+            List<TIntList> keypointsList2 = new ArrayList<TIntList>();
+            List<TDoubleList> orientationsList2 = new ArrayList<TDoubleList>();
+            List<TFloatList> harrisResponses2 = new ArrayList<TFloatList>();        
+            List<TFloatList> scalesList2 = new ArrayList<TFloatList>();
+            List<Descriptors> descriptorsList2 = new ArrayList<Descriptors>();
+            
+            for (int idx1 = 0; idx1 < keypointsList.size(); ++idx1) {
+                TIntList keepList = keep.get(idx1);
+                if (keepList == null) {
+                    continue;
+                }
+                int n2 = keepList.size();
+                TIntList kp = new TIntArrayList(n2 * 2);
+                TDoubleList or = new TDoubleArrayList(n2);
+                TFloatList hr = new TFloatArrayList(n2);
+                TFloatList s = new TFloatArrayList(n2);
+                TIntList m = new TIntArrayList(n2);
+                //holds values 1 or 0.  size is [orientations.size][POS0.length]
+                int[][] d = new int[n2][POS0.length];
+                int dCount = 0;
+                for (int i = 0; i < keepList.size(); ++i) {
+                    int idx2 = keepList.get(i);
+                    
+                    kp.add(this.keypointsList.get(idx1).get(2*idx2));
+                    kp.add(this.keypointsList.get(idx1).get(2*idx2 + 1));
+                    
+                    or.add(this.orientationsList.get(idx1).get(idx2));
+                    hr.add(this.harrisResponses.get(idx1).get(idx2));
+                    s.add(this.scalesList.get(idx1).get(idx2));
+                    m.add(this.descriptorsList.get(idx1).mask.get(idx2));
+                    
+                    int[] d0 = this.descriptorsList.get(idx1).descriptors[idx2];
+                    d[dCount] = Arrays.copyOf(d0, d0.length);
+                    dCount++;
+                }
+                
+                keypointsList2.add(kp);
+                orientationsList2.add(or);
+                harrisResponses2.add(hr);
+                scalesList2.add(s);
+                Descriptors desc = new Descriptors();
+                desc.mask = m;
+                desc.descriptors = d;
+                descriptorsList2.add(desc);
+            }
+            
+            keypointsList = keypointsList2;
+            orientationsList = orientationsList2;
+            harrisResponses = harrisResponses2;
+            scalesList = scalesList2;
+            descriptorsList = descriptorsList2;
         }
-        throw new UnsupportedOperationException("not yet implemented");
     }
     
     private List<TwoDFloatArray> buildPyramid(ImageExt image) {
@@ -582,7 +635,7 @@ public class ORB {
         TFloatList responses;
     }
     
-    private class Descriptors {
+    public static class Descriptors {
         
         //mask of length orientations.size() containing a 1 or 0
         // indicating if pixels are within the image (``True``) or in the
@@ -1419,4 +1472,305 @@ public class ORB {
         return descriptors;
     }
     
+    /**
+     * get a list of each octave's descriptors.  NOTE that the list
+     * is not copied so do not modify.
+     * The coordinates of the descriptors can be found in keyPointsList, but
+     * with twice the spacing because that stores row and col in same list.
+     * @return 
+     */
+    public List<Descriptors> getDescriptorsList() {
+        return descriptorsList;
+    }
+        
+    /**
+     * get a list of each octave's descriptors as a combined descriptor.
+     * The coordinates of the descriptors can be found in getAllKeypoints, but
+     * with twice the spacing because that stores row and col in same list.
+     * @return 
+     */
+    public Descriptors getAllDescriptors() {
+        
+        int n = 0;
+        for (Descriptors dl : descriptorsList) {
+            n += dl.descriptors.length;
+        }
+        
+        int[][] combinedD = new int[n][POS0.length];
+        for (int i = 0; i < n; ++i) {
+            combinedD[i] = new int[POS0.length];
+        }
+        
+        TIntList combinedM = new TIntArrayList(n);
+        
+        int count = 0;
+        for (int i = 0; i < descriptorsList.size(); ++i) {
+            
+            Descriptors dl = descriptorsList.get(i);
+            combinedM.addAll(dl.mask);
+            int[][] d = dl.descriptors;
+            
+            for (int j = 0; j < d.length; ++j) {
+                System.arraycopy(d[j], 0, combinedD[count], 0, d[j].length);
+                count++;
+            }            
+        }
+        
+        Descriptors combined = new Descriptors();
+        combined.descriptors = combinedD;
+        combined.mask = combinedM;
+        
+        return combined;
+    }
+    
+    /**
+     * get a list of each octave's keypoints as a combined list.
+     * The list contains coordinates which have already been scaled to the
+     * full image reference frame and are present in format [row0, col0,
+     * row1, col1, ...].  The corresponding points in the other lists are
+     * at index/2.
+     * @return 
+     */
+    public TIntList getAllKeyPoints() {
+        
+        int n = 0;
+        for (TIntList ks : keypointsList) {
+            n += ks.size();
+        }
+        
+        TIntList combined = new TIntArrayList(n);
+        
+        int count = 0;
+        for (int i = 0; i < keypointsList.size(); ++i) {
+            
+            TIntList ks = keypointsList.get(i);
+            
+            combined.addAll(ks);            
+        }
+        
+        return combined;
+    }
+    
+    /**
+     * get a list of each octave's orientations as a combined list.
+     * The corresponding coordinates can be obtained with getAllKeyPoints();
+     * @return 
+     */
+    public TDoubleList getAllOrientations() {
+        
+        int n = 0;
+        for (TDoubleList ks : orientationsList) {
+            n += ks.size();
+        }
+        
+        TDoubleList combined = new TDoubleArrayList(n);
+        
+        int count = 0;
+        for (int i = 0; i < orientationsList.size(); ++i) {
+            
+            TDoubleList ks = orientationsList.get(i);
+            
+            combined.addAll(ks);            
+        }
+        
+        return combined;
+    }
+    
+    /**
+     * get a list of each octave's scales as a combined list.
+     * The corresponding coordinates can be obtained with getAllKeyPoints();
+     * @return 
+     */
+    public TFloatList getAllScales() {
+        
+        int n = 0;
+        for (TFloatList ks : scalesList) {
+            n += ks.size();
+        }
+        
+        TFloatList combined = new TFloatArrayList(n);
+        
+        int count = 0;
+        for (int i = 0; i < scalesList.size(); ++i) {
+            
+            TFloatList ks = scalesList.get(i);
+            
+            combined.addAll(ks);            
+        }
+        
+        return combined;
+    }
+    
+    /**
+     * get a list of each octave's harris responses as a combined list.
+     * The corresponding coordinates can be obtained with getAllKeyPoints();
+     * @return 
+     */
+    public TFloatList getAllHarrisResponses() {
+        
+        int n = 0;
+        for (TFloatList ks : harrisResponses) {
+            n += ks.size();
+        }
+        
+        TFloatList combined = new TFloatArrayList(n);
+        
+        int count = 0;
+        for (int i = 0; i < harrisResponses.size(); ++i) {
+            
+            TFloatList ks = harrisResponses.get(i);
+            
+            combined.addAll(ks);            
+        }
+        
+        return combined;
+    }
+    
+    /**
+     * get a list of each octave's keypoints in the reference frame
+     * of the original full image size.  NOTE that the list
+     * is not copied so do not modify.
+     * The format of a keypoint list is [row0, col0, row1, col1, ...] using
+     * row-major, C-style notation, that is first dimension is row, second
+     * is col w.r.t. image they're extracted from (other classes in this project
+     * use col-major notation).
+     * @return 
+     */
+    public List<TIntList> getKeyPointList() {
+        return keypointsList;
+    }
+    
+    /**
+     * get a list of each octave's orientations.  NOTE that the list
+     * is not copied so do not modify.
+     * The coordinates of the descriptors can be found in keyPointsList, but
+     * with twice the spacing because that stores row and col in same list.
+     * @return 
+     */
+    public List<TDoubleList> getOrientationsList() {
+        return orientationsList;
+    }
+    
+    /**
+     * get a list of each octave's scales.  NOTE that the list
+     * is not copied so do not modify.
+     * The coordinates of the descriptors can be found in keyPointsList, but
+     * with twice the spacing because that stores row and col in same list.
+     * @return 
+     */
+    public List<TFloatList> getScalesList() {
+        return scalesList;
+    }
+    
+    /**
+     * get a list of each octave's harris responses.  NOTE that the list
+     * is not copied so do not modify.
+     * The coordinates of the descriptors can be found in keyPointsList, but
+     * with twice the spacing because that stores row and col in same list.
+     * @return 
+     */
+    public List<TFloatList> getHarrisResponseList() {
+        return harrisResponses;
+    }
+    
+    /**
+     * greedy euclidean SSD matching of d1 to d2, with unique mappings for
+     * all indexes.
+     * 
+     * @param d1
+     * @param d2
+     * @return matches - two dimensional int array of indexes in d1 and
+     * d2 which are matched.
+     */
+    public static int[][] matchDescriptors(int[][] d1, int[][] d2) {
+        
+        // 2nd dimension is the descriptor length, same as POS0.length
+        assert(d1[0].length == d2[0].length);
+        
+        int n1 = d1.length;
+        int n2 = d2.length;
+        
+        //[n1][n2]
+        float[][] cost = calcDescriptorCostMatrix(d1, d2);
+    
+        // greedy or optimal match can be performed here.
+        
+        // NOTE: some matching problems might benefit from using the spatial
+        //   information at the same time.  for those, will consider adding 
+        //   an evaluation term for these descriptors to a specialization of
+        //   PartialShapeMatcher.java
+        
+        // for the greedy match, separating the index information from the cost
+        // and then sorting by cost
+        int nTot = d1.length * d2.length;
+        
+        PairInt[] indexes = new PairInt[nTot];
+        float[] costs = new float[nTot];
+        int count = 0;
+        for (int i = 0; i < n1; ++i) {
+            for (int j = 0; j < n2; ++j) {
+                indexes[count] = new PairInt(i, j);
+                costs[count] = cost[i][j];
+                count++;
+            }
+        }
+        assert(count == nTot);
+        
+        QuickSort.sortBy1stArg(costs, indexes);
+        
+        TIntSet set1 = new TIntHashSet();
+        TIntSet set2 = new TIntHashSet();
+        
+        List<PairInt> matches = new ArrayList<PairInt>();
+        
+        // visit lowest costs (== differences) first
+        for (int i = 0; i < nTot; ++i) {
+            PairInt index12 = indexes[i];
+            int idx1 = index12.getX();
+            int idx2 = index12.getY();
+            if (set1.contains(idx1) || set2.contains(idx2)) {
+                continue;
+            }
+            matches.add(index12);
+            set1.add(idx1);
+            set2.add(idx2);
+        }
+        
+        int[][] results = new int[matches.size()][2];
+        for (int i = 0; i < matches.size(); ++i) {
+            results[i][0] = matches.get(i).getX();
+            results[i][1] = matches.get(i).getY();
+        }
+        
+        return results;
+    }
+   
+    /**
+     * calculate a cost matrix composed of the SSD of each descriptor in d1 to d2.
+     * 
+     * @param d1 two dimensional array with first being keypoint indexes and
+     * second dimension being descriptor.
+     * @param d2  two dimensional array with first being keypoint indexes and
+     * second dimension being descriptor.
+     * @return matches two dimensional int array of indexes in d1 and
+     * d2 which are matched.
+     */
+    public static float[][] calcDescriptorCostMatrix(int[][] d1, int[][] d2) {
+        
+        // 2nd dimension is the descriptor length, same as POS0.length
+        assert(d1[0].length == d2[0].length);
+        
+        int n1 = d1.length;
+        int n2 = d2.length;
+        
+        float[][] cost = new float[n1][n2];
+        for (int i = 0; i < n1; ++i) {
+            cost[i] = new float[n2];
+            for (int j = 0; j < n2; ++j) {
+                cost[i][j] = MiscMath.calculateSSD(d1[i], d2[j], Integer.MIN_VALUE);
+            }
+        }
+        
+        return cost;
+    }
 }
