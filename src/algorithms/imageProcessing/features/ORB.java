@@ -81,8 +81,7 @@ to allow the user to recover scale information if wanted.
 To use the way that scipy does, all results as single lists of variables
 are available via getAll*getters.
 
-
-NOT READY FOR USE.  NOT YET TESTED.
+Still testing the class, there may be bugs present.
  <pre>
  Example Use:
     int nKeyPoints = 200;
@@ -112,8 +111,6 @@ public class ORB {
     private int[][] OFAST_MASK = null;
     private int[] OFAST_UMAX = null;
 
-    private float downscale = 1.2f;
-    private int nScales = 8;
     private int fastN = 9;
     private float fastThreshold = 0.08f;
     private float harrisK = 0.04f;
@@ -134,6 +131,10 @@ public class ORB {
     // NOTE: this output format may need to be changed
     private List<Descriptors> descriptorsList = null;
 
+    /**
+     * Still testing the class, there may be bugs present.
+     * @param nKeypoints 
+     */
     public ORB(int nKeypoints) {
 
         initMasks();
@@ -167,7 +168,7 @@ public class ORB {
     }
 
     /**
-     * NOT READY FOR USE.  NOT YET TESTED.
+     * NOTE: still testing, there may be bugs.
      *
      * Detect oriented FAST keypoints and extract rBRIEF descriptors.
         Note that this is faster than first calling `detect` and then

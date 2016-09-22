@@ -565,7 +565,7 @@ public class ORBTest extends TestCase {
         //NOTE: can see there may still be errors in the code
         // or need to allow relaxation of border distance
         
-        String fileName = "android_statues_04.jpg";   
+        String fileName = "android_statues_01.jpg";   
         String filePath = ResourceFinder.findFileInTestResources(fileName);
         Image img0 = ImageIOHelper.readImageAsGrayScale(filePath);
         //ImageExt img = ImageIOHelper.readImageExt(filePath);
