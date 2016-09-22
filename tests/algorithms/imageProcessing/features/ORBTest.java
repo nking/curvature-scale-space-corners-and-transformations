@@ -520,4 +520,43 @@ public class ORBTest extends TestCase {
         MiscDebug.writeImage(img0, "orb_keypoints");
         
     }
+    
+    public void testKeypoints_2() throws Exception {
+        
+        //NOTE: can see there may still be errors in the code
+        // or need to allow relaxation of border distance
+        
+        String fileName = "checkerboard_01.jpg";   
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
+        Image img0 = ImageIOHelper.readImageAsGrayScale(filePath);
+        //ImageExt img = ImageIOHelper.readImageExt(filePath);
+        ImageExt img = img0.copyToImageExt();
+        
+        //NOTE: the ridges are picked up well with reduced threshold
+        
+        ORB orb = new ORB(500);
+        //orb.overrideFastN(12);
+        //orb.overrideFastThreshold(0.01f);
+        
+        orb.detectAndExtract(img);
+        
+        TIntList keypoints0 = orb.getAllKeyPoints0();
+        TIntList keypoints1 = orb.getAllKeyPoints1();
+        TFloatList scales = orb.getAllScales();
+        TFloatList responses = orb.getAllHarrisResponses();
+        TDoubleList orientations = orb.getAllOrientations();
+        //System.out.println("keypoints0=" + keypoints0.toString());
+        //System.out.println("keypoints1=" + keypoints1.toString());
+        //System.out.println("scales=" + scales.toString());
+        //System.out.println("responses=" + responses.toString());
+        //System.out.println("orientations=" + orientations.toString());
+        
+        for (int i = 0; i < keypoints0.size(); ++i) {
+            int y = keypoints0.get(i);
+            int x = keypoints1.get(i);
+            ImageIOHelper.addPointToImage(x, y, img0, 2, 255, 0, 0);
+        }
+        MiscDebug.writeImage(img0, "orb_keypoints_2");
+        
+    }
 }
