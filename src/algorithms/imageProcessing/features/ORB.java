@@ -108,8 +108,8 @@ public class ORB {
           such as Laplacian pyramids or
           half-octave or quarter-octave pyramids (Lowe 2004; Triggs 2004)
        -- considering a wrapper class to create a subset image,
-          use this class then transform the coordinates to original reference
-          frame as a faset, but imperfect way to compensate for highly textured
+          use this class, then transform the coordinates to original reference
+          frame as a fast, but imperfect way to compensate for highly textured
           regions which produce alot of keypoints.
     */
      
@@ -582,13 +582,15 @@ public class ORB {
         int nRows = fastResponse.length;
         int nCols = fastResponse[0].length;
         
+        /*
         for (int i = 0; i < nRows; ++i) {
             for (int j = 0; j < nCols; ++j) {
                 if (fastResponse[i][j] > 0) {
-                    System.out.println("["+i+"]["+j+"]=" + fastResponse[i][j]);
+                    System.out.println("fastResponse row-major: ["+i+"]["+j+"]=" + fastResponse[i][j]);
                 }
             }
         }
+        */
         
         TIntList keypoints0 = new TIntArrayList();
         TIntList keypoints1 = new TIntArrayList();
@@ -600,7 +602,7 @@ public class ORB {
         }
         System.out.println("nRows=" + nRows + " nCols=" + nCols + " fastN=" + fastN
             + " fastThreshold=" + fastThreshold
-            + "\nkeypoints=" + keypoints0);
+            + "\nkeypoints=" + keypoints1);
         
         maskCoordinates(keypoints0, keypoints1, nRows, nCols, 16);
             
@@ -925,7 +927,7 @@ public class ORB {
         int nRows = img.length;
         int nCols = img[0].length;
         
-        // these have been sorted by decreasing intensity        
+        // these results have been sorted by decreasing intensity        
         peakLocalMax(img, minDistance, thresholdRel,
             outputKeypoints0, outputKeypoints1);
         
@@ -962,7 +964,7 @@ public class ORB {
     protected void peakLocalMax(float[][] img, int minDistance,
         float thresholdRel,
         TIntList outputKeypoints0, TIntList outputKeypoints1) {
-         
+        
         int excludeBorder = minDistance;
         int numPeaks = Integer.MAX_VALUE; 
         //int numPeaksPerLabel = Integer.MAX_VALUE;
@@ -984,7 +986,7 @@ public class ORB {
         assert(nRows == imageMax.length);
         assert(nCols == imageMax[0].length);
         //mask = image == image_max
-                
+                        
         //debugPrint("before shift imageMax=", imageMax);
         
         // a fudge to match results of scipy which must store same windows at

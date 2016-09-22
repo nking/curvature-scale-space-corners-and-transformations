@@ -493,7 +493,8 @@ public class ORBTest extends TestCase {
      */
     public void test_keypoints_orb_desired_no_of_keypoints() throws Exception {
         
-        String fileName = "susan-in_plus.png";          
+        String fileName = "susan-in_plus.png";   
+        //String fileName = "android_statues_02.jpg";
         String filePath = ResourceFinder.findFileInTestResources(fileName);
         Image img0 = ImageIOHelper.readImageAsGrayScale(filePath);
         //ImageExt img = ImageIOHelper.readImageExt(filePath);
