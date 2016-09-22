@@ -5,6 +5,7 @@ import algorithms.QuickSort;
 import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.Gaussian1D;
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.ImageDisplayer;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MedianTransform;
@@ -23,9 +24,12 @@ import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * An implementation of "ORB: an efficient alternative to SIFT or SURF"
@@ -199,7 +203,7 @@ public class ORB {
         
         float prevScl = 1;
         
-        for (int octave = 0; octave < pyramid.size(); ++octave) {
+        for (int octave = 0; octave < 1/*pyramid.size()*/; ++octave) {
             
             System.out.println("octave=" + octave);
             
@@ -996,6 +1000,23 @@ public class ORB {
         // beginning of the sliding window
         applyShift(imageMax, minDistance, nRows, nCols);
         
+        /*{//DEBUG
+            float min = MiscMath.findMin(img);
+            float max = MiscMath.findMax(img);
+            System.out.println("min=" + min + " max=" + max);
+            float factor = 255.f;
+            GreyscaleImage gsImg = new GreyscaleImage(nRows, nCols);
+            for (int i = 0; i < nRows; ++i) {
+                for (int j = 0; j < nCols; ++j) {
+                    int v = Math.round(factor * img[i][j]);
+                    if (v > 255) {
+                        v = 255;
+                    }
+                    gsImg.setValue(i, j, v);
+                }
+            }
+        }*/
+        
         //TODO: should be able to simplify the mask here
 
         // 1's where same, else 0's
@@ -1011,7 +1032,7 @@ public class ORB {
         
         //debugPrint("0 mask=", mask);
         
-        /*
+        
         // exclude border
         for (int i = 0; i < nRows; ++i) {
             if ((i < excludeBorder) || (i > (nRows - 1 - excludeBorder))){
@@ -1021,7 +1042,7 @@ public class ORB {
                 Arrays.fill(mask[i], nCols - excludeBorder, nCols, 0);
             }
         }
-        */
+        
         
         // find top peak candidates above a threshold.
         // TODO: should this use mask so excluding borders?
@@ -1040,6 +1061,29 @@ public class ORB {
             }
         }
         
+        /*
+        {//DEBUG
+            try{
+            int min = MiscMath.findMin(mask);
+            int max = MiscMath.findMax(mask);
+            System.out.println("min=" + min + " max=" + max);
+            float factor = 255.f;
+            GreyscaleImage gsImg = new GreyscaleImage(nRows, nCols);
+            for (int i = 0; i < nRows; ++i) {
+                for (int j = 0; j < nCols; ++j) {
+                    int v = Math.round(factor * mask[i][j]);
+                    if (v > 255) {
+                        v = 255;
+                    }
+                    gsImg.setValue(i, j, v);
+                }
+            }
+            ImageDisplayer.displayImage("mask", gsImg);
+            int z = 1;
+            } catch(Exception e) {}
+        }
+        */
+        
         //debugPrint("mask &= image > " + thresholdAbs, mask);
         
         // Select highest intensities (num_peaks)
@@ -1054,6 +1098,7 @@ public class ORB {
             for (int i = 0; i < mask.length; ++i) {
                 for (int j = 0; j < mask[i].length; ++j) {
                     if (mask[i][j] > 0.f) {
+                        System.out.println(img[i][j] + " -- " + imageMax[i][j]);
                         values[count] = img[i][j];
                         //(row * width) + col
                         pixIdxs[count] = (j * nRows) + i;

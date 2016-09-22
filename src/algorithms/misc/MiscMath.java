@@ -155,6 +155,22 @@ public class MiscMath {
         
         return max;
     }
+    
+    public static int findMax(int[][] img) {
+        
+        int max = Integer.MIN_VALUE;
+        
+        for (int i = 0; i < img.length; ++i) {
+            for (int j = 0; j < img[i].length; ++j) {
+                int v = img[i][j];
+                if (v > max) {
+                    max = v;
+                }
+            }
+        }
+        
+        return max;
+    }
 
     public static int findMax(int[] a, int nIndexes) {
         int max = Integer.MIN_VALUE;
@@ -174,6 +190,22 @@ public class MiscMath {
         for (int i = 0; i < img.length; ++i) {
             for (int j = 0; j < img[i].length; ++j) {
                 float v = img[i][j];
+                if (v < min) {
+                    min = v;
+                }
+            }
+        }
+        
+        return min;
+    }
+    
+    public static int findMin(int[][] img) {
+        
+        int min = Integer.MAX_VALUE;
+        
+        for (int i = 0; i < img.length; ++i) {
+            for (int j = 0; j < img[i].length; ++j) {
+                int v = img[i][j];
                 if (v < min) {
                     min = v;
                 }
