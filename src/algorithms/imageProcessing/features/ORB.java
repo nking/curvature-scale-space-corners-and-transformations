@@ -105,6 +105,8 @@ public class ORB {
           use this class, then transform the coordinates to original reference
           frame as a fast, but imperfect way to compensate for highly textured
           regions which produce alot of keypoints.
+       -- consider adding a setting to exclude calculation of 
+          descriptors, but keep keypoints.
     */
 
     // these two could be made static across all instances
