@@ -485,27 +485,19 @@ public class ORBTest extends TestCase {
         assertTrue(expected.isEmpty());
     }
     
-    /**
-     * test is test_keypoints_orb_desired_no_of_keypoints()
-     * from
-     * https://github.com/scikit-image/scikit-image/blob/401c1fd9c7db4b50ae9c4e0a9f4fd7ef1262ea3c/skimage/feature/tests/test_orb.py
-     * see copyright in ORB.java class documentation.
-     */
-    public void test_keypoints_orb_desired_no_of_keypoints() throws Exception {
+    public void testKeypoints_1() throws Exception {
         
         String fileName = "susan-in_plus.png";   
-        //String fileName = "android_statues_02.jpg";
         String filePath = ResourceFinder.findFileInTestResources(fileName);
         Image img0 = ImageIOHelper.readImageAsGrayScale(filePath);
         //ImageExt img = ImageIOHelper.readImageExt(filePath);
         ImageExt img = img0.copyToImageExt();
         
-        //ImageDisplayer.displayImage("coins", img);
-        //MiscDebug.writeImage(img, "check");
+        //NOTE: the ridges are picked up well with reduced threshold
         
         ORB orb = new ORB(500);
         //orb.overrideFastN(12);
-        //orb.overrideFastThreshold(0.01f);
+        orb.overrideFastThreshold(0.01f);
         
         orb.detectAndExtract(img);
         
@@ -514,11 +506,11 @@ public class ORBTest extends TestCase {
         TFloatList scales = orb.getAllScales();
         TFloatList responses = orb.getAllHarrisResponses();
         TDoubleList orientations = orb.getAllOrientations();
-        System.out.println("keypoints0=" + keypoints0.toString());
-        System.out.println("keypoints1=" + keypoints1.toString());
-        System.out.println("scales=" + scales.toString());
-        System.out.println("responses=" + responses.toString());
-        System.out.println("orientations=" + orientations.toString());
+        //System.out.println("keypoints0=" + keypoints0.toString());
+        //System.out.println("keypoints1=" + keypoints1.toString());
+        //System.out.println("scales=" + scales.toString());
+        //System.out.println("responses=" + responses.toString());
+        //System.out.println("orientations=" + orientations.toString());
         
         for (int i = 0; i < keypoints0.size(); ++i) {
             int y = keypoints0.get(i);

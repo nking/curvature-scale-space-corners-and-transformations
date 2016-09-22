@@ -204,6 +204,23 @@ public class ORB {
             System.out.println("octave=" + octave);
             
             float[][] octaveImage = pyramid.get(octave).a;
+              
+            // masked keypoints * self.downscale ** octave
+            //    multiplies the keypoints by a scalar
+            //    to put the coordinates into the reference frame of image
+            //float scale = (float)Math.pow(this.downscale, octave);
+            float scale = prevScl;
+            {
+                if (octave > 0) {
+                    float x0 = (float)pyramid.get(octave - 1).a.length/
+                        (float)pyramid.get(octave).a.length;
+                    float y0 = (float)pyramid.get(octave - 1).a[0].length/
+                        (float)pyramid.get(octave).a[0].length;
+                    scale = prevScl * (x0 + y0)/2.f;
+                    System.out.println("scl=" + scale + " prevScl=" + prevScl);
+                    prevScl = scale;
+                }
+            }
             
             Resp r = detectOctave(octaveImage);
             
@@ -227,27 +244,12 @@ public class ORB {
                 continue;
             }
             
+            System.out.println("  octave " + octave + " nKeypoints=" + r.keypoints0.size());
+            
             // result contains descriptors and mask.  
             // also, modified by mask are the keypoints and orientations
             Descriptors desc = extractOctave(octaveImage, r.keypoints0,
                 r.keypoints1, r.orientations, r.responses);
-                    
-            // masked keypoints * self.downscale ** octave
-            //    multiplies the keypoints by a scalar
-            //    to put the coordinates into the reference frame of image
-            //float scale = (float)Math.pow(this.downscale, octave);
-            float scale = prevScl;
-            {
-                if (octave > 0) {
-                    float x0 = (float)pyramid.get(octave - 1).a.length/
-                        (float)pyramid.get(octave).a.length;
-                    float y0 = (float)pyramid.get(octave - 1).a[0].length/
-                        (float)pyramid.get(octave).a[0].length;
-                    System.out.println("scl=" + x0 + " " + y0);
-                    scale = prevScl * (x0 + y0)/2.f;
-                    prevScl = scale;
-                }
-            }
             
             for (int i = 0; i < r.keypoints0.size(); ++i) {
                 int v = Math.round(scale * r.keypoints0.get(i));
@@ -600,9 +602,9 @@ public class ORB {
         if (keypoints0.isEmpty()) {
             return null;
         }
-        System.out.println("nRows=" + nRows + " nCols=" + nCols + " fastN=" + fastN
-            + " fastThreshold=" + fastThreshold
-            + "\nkeypoints=" + keypoints1);
+        //System.out.println("nRows=" + nRows + " nCols=" + nCols + " fastN=" + fastN
+        //    + " fastThreshold=" + fastThreshold
+        //    + "\nkeypoints=" + keypoints1);
         
         maskCoordinates(keypoints0, keypoints1, nRows, nCols, 16);
             
@@ -931,10 +933,10 @@ public class ORB {
         peakLocalMax(img, minDistance, thresholdRel,
             outputKeypoints0, outputKeypoints1);
         
-        System.out.println("keypoints in cornerPeaks=" 
-            + "rows=" + outputKeypoints0.toString()
-            + "cols=" + outputKeypoints1.toString()
-            + "\nsize=" + outputKeypoints0.size());
+        //System.out.println("keypoints in cornerPeaks=" 
+        //    + "rows=" + outputKeypoints0.toString()
+        //    + "cols=" + outputKeypoints1.toString()
+        //    + "\nsize=" + outputKeypoints0.size());
         
         maskCoordinates(outputKeypoints0, outputKeypoints1, nRows, nCols, 
             minDistance);        
