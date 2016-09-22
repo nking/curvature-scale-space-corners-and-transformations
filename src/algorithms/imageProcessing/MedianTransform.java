@@ -126,6 +126,61 @@ public class MedianTransform {
         // empty full size image
         outputCoeff.remove(0);
     }
+    /**
+     * pyramidal median transform (faster than multiscalePyramidalMedianTransform
+     * but reconstruction from coefficients is not exact, so prefer
+     * multiscalePyramidalMedianTransform(...) if exact is needed);
+     * following pseudocode in http://www.multiresolution.com/svbook.pdf
+     * 
+     * @param input
+     * @param outputTransformed
+     * @param decimationLimit a size for width and height at which
+     * to stop the decimation when the image is smaller than the
+     * size.  The method does not continue to make decimated
+     * images beyond this size limit. 
+     */
+    public void multiscalePyramidalMedianTransform2(
+        GreyscaleImage input,
+        List<GreyscaleImage> outputTransformed, int decimationLimit) {
+
+        int imgDimen = Math.min(input.getWidth(), input.getHeight());
+
+        GreyscaleImage img0 = input.copyImage();
+
+        int nr = (int)(Math.log(imgDimen)/Math.log(2));
+        int s = 1;
+        int winL = 2*s + 1;
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+
+        MedianSmooth med = new MedianSmooth();
+        
+        outputTransformed.add(img0.copyToSignedImage());
+        
+        for (int j = 0; j < (nr - 1); ++j) {
+                       
+            GreyscaleImage cJ = outputTransformed.get(j);
+            
+            if ((cJ.getWidth() < winL) || (cJ.getHeight() < winL)) {
+                return;
+            }
+            if ((cJ.getWidth() <= decimationLimit) && 
+                (cJ.getHeight() <= decimationLimit)) {
+                return;
+            }
+            
+            GreyscaleImage cJPlus1Ast = med.calculate(cJ, winL, winL);   
+            
+            // decimation:
+            GreyscaleImage cJPlus1 = imageProcessor.binImage(cJPlus1Ast, 2);
+            
+            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1Ast);
+            
+            outputTransformed.add(cJPlus1);
+                        
+            assert(cJ.getWidth() == wJPlus1.getWidth());
+        }
+    }
     
     /**
      * pyramidal median transform for decimation of input image.
@@ -220,8 +275,8 @@ public class MedianTransform {
                 return;
             }
             
-            if ((cJ.getWidth() < dimensionLimit) && 
-                (cJ.getHeight() < dimensionLimit)) {
+            if ((cJ.getWidth() <= dimensionLimit) && 
+                (cJ.getHeight() <= dimensionLimit)) {
                 return;
             }
             

@@ -12,6 +12,7 @@ import algorithms.misc.Complex;
 import algorithms.misc.Histogram;
 import algorithms.misc.Misc;
 import algorithms.imageProcessing.util.GroupAverageColors;
+import algorithms.misc.MiscDebug;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TIntList;
@@ -1525,6 +1526,7 @@ if (sum > 511) {
         applyKernel1D(input, kernel, true);
 
         applyKernel1D(input, kernel, false);
+        
     }
 
     /**

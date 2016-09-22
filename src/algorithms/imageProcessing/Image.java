@@ -728,6 +728,46 @@ public class Image {
         return out;
     }
     
+    public GreyscaleImage copyToGreyscale2() {
+        
+        GreyscaleImage.Type type = is64Bit ? GreyscaleImage.Type.Bits64 :
+            GreyscaleImage.Type.Bits32;
+        
+        GreyscaleImage out = new GreyscaleImage(width, height, type);
+        
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                
+                // presumably, this is already combined?
+                // or does it need separation into rgb and then averaged?
+                
+                int rgb = getRGB(i, j);
+                                
+                int r = (rgb >> 16) & 0xFF;
+                int g = (rgb >> 8) & 0xFF;
+                int b = rgb & 0xFF;  
+                
+                // from wikipedia, srgb conversion
+                double yLinear = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                /*if (yLinear > 0.0031308) {
+                    yLinear = 1.033 * Math.pow(yLinear, 1./2.4) - 0.055f;
+                } else {
+                    yLinear *= 12.92;
+                }*/
+                int v = (int)Math.round(yLinear);
+                    
+                //int v = Math.round((r + g + b)/3.f);
+                
+                assert(v <= 255);
+                assert(v >= 0);
+                
+                out.setValue(i, j, v);
+            }
+        }
+        
+        return out;
+    }
+    
     /**
      * using the color tables of awt and BufferedImage, convert this image
      * to greyscale.

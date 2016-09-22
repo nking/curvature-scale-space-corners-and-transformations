@@ -20,6 +20,16 @@ public class ImageDisplayer {
     
     public static DisposableJFrame displayImage(final String title, final Image img) 
         throws IOException {
+        return displayImage(title, img, BufferedImage.TYPE_INT_RGB);
+    }
+    
+    public static DisposableJFrame displayImageGrey(final String title, final Image img) 
+        throws IOException {
+        return displayImage(title, img, BufferedImage.TYPE_BYTE_GRAY);
+    }
+    
+    public static DisposableJFrame displayImage(final String title, final Image img,
+        int imageType) throws IOException {
         
         if (img == null) {
             return null;
@@ -28,8 +38,7 @@ public class ImageDisplayer {
         int w = img.getWidth();
         int h = img.getHeight();
         
-        final BufferedImage image = new BufferedImage(w, h, 
-            BufferedImage.TYPE_INT_RGB);
+        final BufferedImage image = new BufferedImage(w, h, imageType);
         
         for (int i = 0; i < w; i++) {
             for (int j = 0; j < h; j++) {

@@ -384,12 +384,20 @@ public class ImageIOHelper {
             }
             
             BufferedImage img = ImageIO.read(file);
-                        
+            //if (img.getType() == BufferedImage.TYPE_BYTE_GRAY) {
+            //    System.out.println("img type=TYPE_BYTE_GRAY");
+            //}
+
+            //ImageDisplayer.displayDisposableImage("buffered", img);
+
             ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);  
             ColorConvertOp op = new ColorConvertOp(cs, null);
             try {
                 BufferedImage image2 = op.filter(img, null);
                 img = image2;
+ 
+                //ImageDisplayer.displayDisposableImage("buffered2", img);
+ 
             } catch (NullPointerException e) {
                 // if type is custom, the source color space destination is not defined.
             }       
@@ -401,7 +409,7 @@ public class ImageIOHelper {
                 for (int j = 0; j < h; j++) {
                     
                     int rgb = img.getRGB(i, j);
-                                        
+                    
                     int r = (rgb >> 16) & 0xFF;
                     int g = (rgb >> 8) & 0xFF;
                     int b = rgb & 0xFF;         
@@ -409,7 +417,9 @@ public class ImageIOHelper {
                     image.setRGB(i, j, r, g, b);
                 }
             }
-            
+       
+            //ImageDisplayer.displayImageGrey("image", image);
+       
             return image;
             
         } catch (IOException e) {
@@ -580,6 +590,51 @@ public class ImageIOHelper {
                 int value = data.getValue(i, j);
                 
                 raster.setSample(i, j, 0, value);
+            }
+        }
+        
+        ImageIO.write(outputImage, "PNG", new File(filePath));
+    }
+    
+    public static void writeOutputGreyscaleImage(String filePath, Image data) 
+        throws IOException {
+                
+        if (data == null) {
+            return;
+        }
+        if (filePath == null) {
+            throw new IllegalArgumentException("filePath cannot be null");
+        }
+        
+        int w = data.getWidth();
+        
+        int h = data.getHeight();
+        
+        BufferedImage outputImage = new BufferedImage(w, h, 
+            BufferedImage.TYPE_BYTE_GRAY);
+        
+        WritableRaster raster = outputImage.getRaster();
+        
+        for (int i = 0; i < w; i++) {
+            
+            for (int j = 0; j < h; j++) {
+                
+                int rgb = data.getRGB(i, j);
+                
+                int r = (rgb >> 16) & 0xFF;
+                int g = (rgb >> 8) & 0xFF;
+                int b = rgb & 0xFF;  
+                
+                // from wikipedia, srgb conversion
+                double yLinear = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                /*if (yLinear > 0.0031308) {
+                    yLinear = 1.033 * Math.pow(yLinear, 1./2.4) - 0.055f;
+                } else {
+                    yLinear *= 12.92;
+                }*/
+                int v = (int)Math.round(yLinear);
+                
+                raster.setSample(i, j, 0, v);
             }
         }
         

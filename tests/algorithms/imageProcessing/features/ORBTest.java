@@ -1,15 +1,17 @@
 package algorithms.imageProcessing.features;
 
+import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageDisplayer;
+import algorithms.imageProcessing.ImageExt;
+import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.features.ORB.TwoDFloatArray;
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
-import algorithms.util.TwoDIntArray;
+import gnu.trove.list.TDoubleList;
+import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.Arrays;
+import gnu.trove.list.array.TIntArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -25,7 +27,7 @@ public class ORBTest extends TestCase {
     public ORBTest() {
     }
     
-    public void testPeakLocalMax() {
+    public void estPeakLocalMax() {
         
         /*
         using a test embedded in scipy code.
@@ -95,7 +97,9 @@ public class ORBTest extends TestCase {
             }
         }
         
-        TIntList peakRowCols = orb.peakLocalMax(img, 1, 0.1f);
+        TIntList outputKeypoints0 = new TIntArrayList();
+        TIntList outputKeypoints1 = new TIntArrayList();
+        orb.peakLocalMax(img, 1, 0.1f, outputKeypoints0, outputKeypoints1);
         
         //System.out.println("peakRowCols=" + peakRowCols.toString());
         
@@ -113,15 +117,15 @@ public class ORBTest extends TestCase {
         expected.add(new PairInt(3, 2));
         expected.add(new PairInt(3, 3));
         
-        for (int i = 0; i < peakRowCols.size(); i += 2) {
-            int x = peakRowCols.get(i);
-            int y = peakRowCols.get(i + 1);
+        for (int i = 0; i < outputKeypoints0.size(); ++i) {
+            int x = outputKeypoints0.get(i);
+            int y = outputKeypoints1.get(i);
             PairInt p = new PairInt(x, y);
             assertTrue(expected.remove(p));
         }
     }
     
-    public void testCornerPeaks() {
+    public void estCornerPeaks() {
         
         ORB orb = new ORB(10);
         
@@ -260,8 +264,10 @@ public class ORBTest extends TestCase {
          [False False False False False False False False False False False False]]
         */    
         
+        TIntList keypoints0 = new TIntArrayList();
+        TIntList keypoints1 = new TIntArrayList();
         
-        TIntList coords = orb.cornerPeaks(cf, 1);
+        orb.cornerPeaks(cf, 1, keypoints0, keypoints1);
         
         Set<PairInt> expected = new HashSet<PairInt>();
         expected.add(new PairInt(3, 3));
@@ -278,17 +284,17 @@ public class ORBTest extends TestCase {
         
         */
         
-        for (int i = 0; i < coords.size(); i += 2) {
-            int x = coords.get(i);
-            int y = coords.get(i + 1);
+        for (int i = 0; i < keypoints0.size(); ++i) {
+            int x = keypoints0.get(i);
+            int y = keypoints1.get(i);
             PairInt p = new PairInt(x, y);
             assertTrue(expected.remove(p));
         } 
         assertTrue(expected.isEmpty());
         
-        double[] orientation = orb.cornerOrientations(img, coords);
+        double[] orientation = orb.cornerOrientations(img, keypoints0, keypoints1);
         
-        assertEquals(coords.size()/2, orientation.length);
+        assertEquals(keypoints0.size(), orientation.length);
         Map<PairInt, Integer> expectedOrientations = new HashMap<PairInt, Integer>();
         expectedOrientations.put(new PairInt(3, 3), Integer.valueOf(45));
         expectedOrientations.put(new PairInt(3, 8), Integer.valueOf(135));
@@ -297,12 +303,12 @@ public class ORBTest extends TestCase {
         
         //System.out.println(Arrays.toString(orientation));
         
-        for (int i = 0; i < coords.size(); i += 2) {
-            int x = coords.get(i);
-            int y = coords.get(i + 1);
+        for (int i = 0; i < keypoints0.size(); ++i) {
+            int x = keypoints0.get(i);
+            int y = keypoints1.get(i);
             PairInt p = new PairInt(x, y);
             Integer expAng = expectedOrientations.get(p);
-            double ang = orientation[i/2] * 180./Math.PI;
+            double ang = orientation[i] * 180./Math.PI;
             //System.out.println("found=" + ang + " expected=" + expAng);
             assertTrue(Math.abs(expAng.intValue() - ang) < 0.001);
         }
@@ -341,7 +347,7 @@ public class ORBTest extends TestCase {
         */
     }
     
-    public void testTensor() {
+    public void estTensor() {
         
         /*
         >>> from skimage.feature import structure_tensor
@@ -414,7 +420,7 @@ public class ORBTest extends TestCase {
         assertTrue((Math.round(axx[3][1])/factor - 1.) < 0.01);
     }
     
-    public void testCornerHarris() {
+    public void estCornerHarris() {
         
         ORB orb = new ORB(100);
         
@@ -457,7 +463,10 @@ public class ORBTest extends TestCase {
         
         */
         
-        TIntList coords = orb.cornerPeaks(hc, 1);
+        TIntList keypoints0 = new TIntArrayList();
+        TIntList keypoints1 = new TIntArrayList();
+        
+        orb.cornerPeaks(hc, 1, keypoints0, keypoints1);
         
         //System.out.println("coords=" + coords);
         
@@ -467,13 +476,55 @@ public class ORBTest extends TestCase {
         expected.add(new PairInt(7, 2));
         expected.add(new PairInt(7, 7));
         
-        for (int i = 0; i < coords.size(); i += 2) {
-            int x = coords.get(i);
-            int y = coords.get(i + 1);
+        for (int i = 0; i < keypoints0.size(); ++i) {
+            int x = keypoints0.get(i);
+            int y = keypoints1.get(i);
             PairInt p = new PairInt(x, y);
             assertTrue(expected.remove(p));
         } 
         assertTrue(expected.isEmpty());
     }
     
+    /**
+     * test is test_keypoints_orb_desired_no_of_keypoints()
+     * from
+     * https://github.com/scikit-image/scikit-image/blob/401c1fd9c7db4b50ae9c4e0a9f4fd7ef1262ea3c/skimage/feature/tests/test_orb.py
+     * see copyright in ORB.java class documentation.
+     */
+    public void test_keypoints_orb_desired_no_of_keypoints() throws Exception {
+        
+        String fileName = "house.gif";          
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
+        Image img0 = ImageIOHelper.readImageAsGrayScale(filePath);
+        //ImageExt img = ImageIOHelper.readImageExt(filePath);
+        ImageExt img = img0.copyToImageExt();
+        
+        //ImageDisplayer.displayImage("coins", img);
+        //MiscDebug.writeImage(img, "check");
+        
+        ORB orb = new ORB(10);
+        //orb.overrideFastN(12);
+        //orb.overrideFastThreshold(0.20f);
+        
+        orb.detectAndExtract(img);
+        
+        TIntList keypoints0 = orb.getAllKeyPoints0();
+        TIntList keypoints1 = orb.getAllKeyPoints1();
+        TFloatList scales = orb.getAllScales();
+        TFloatList responses = orb.getAllHarrisResponses();
+        TDoubleList orientations = orb.getAllOrientations();
+        System.out.println("keypoints0=" + keypoints0.toString());
+        System.out.println("keypoints1=" + keypoints1.toString());
+        System.out.println("scales=" + scales.toString());
+        System.out.println("responses=" + responses.toString());
+        System.out.println("orientations=" + orientations.toString());
+        
+        for (int i = 0; i < keypoints0.size(); ++i) {
+            int y = keypoints0.get(i);
+            int x = keypoints1.get(i);
+            ImageIOHelper.addPointToImage(x, y, img0, 2, 255, 0, 0);
+        }
+        MiscDebug.writeImage(img0, "orb_keypoints");
+        
+    }
 }

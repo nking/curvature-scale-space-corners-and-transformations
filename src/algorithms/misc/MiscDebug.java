@@ -980,7 +980,24 @@ public class MiscDebug {
             log.severe("ERROR: " + e.getMessage());
         }
     }
-    
+        
+    public static void writeGreyscaleImage(Image img, String fileNameSuffix) {
+        
+        try {
+            
+            String dirPath = ResourceFinder.findDirectory("bin");
+            
+            String filePath = dirPath + "/img" + fileNameSuffix 
+                + ".png";
+            
+            ImageIOHelper.writeOutputGreyscaleImage(filePath, img);
+                        
+        } catch (Exception e) {
+             e.printStackTrace();
+            log.severe("ERROR: " + e.getMessage());
+        }
+    }
+        
     public static void writeImage(Image img, String fileNameSuffix) {
         
         try {
