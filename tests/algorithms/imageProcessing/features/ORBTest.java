@@ -493,7 +493,7 @@ public class ORBTest extends TestCase {
      */
     public void test_keypoints_orb_desired_no_of_keypoints() throws Exception {
         
-        String fileName = "house.gif";          
+        String fileName = "susan-in_plus.png";          
         String filePath = ResourceFinder.findFileInTestResources(fileName);
         Image img0 = ImageIOHelper.readImageAsGrayScale(filePath);
         //ImageExt img = ImageIOHelper.readImageExt(filePath);
@@ -502,9 +502,9 @@ public class ORBTest extends TestCase {
         //ImageDisplayer.displayImage("coins", img);
         //MiscDebug.writeImage(img, "check");
         
-        ORB orb = new ORB(10);
+        ORB orb = new ORB(250);
         //orb.overrideFastN(12);
-        //orb.overrideFastThreshold(0.20f);
+        //orb.overrideFastThreshold(0.01f);
         
         orb.detectAndExtract(img);
         

@@ -1,7 +1,6 @@
 package algorithms.imageProcessing;
 
 import algorithms.misc.MedianSmooth;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -76,7 +75,8 @@ public class MedianTransform {
      * but reconstruction from coefficients is not exact, so prefer
      * multiscalePyramidalMedianTransform(...) if exact is needed);
      * following pseudocode in http://www.multiresolution.com/svbook.pdf
-     * 
+     * "Handbook of Astronomical Data Analysis" by
+     * Jean-Luc Starck and Fionn Murtagh
      * @param input
      * @param outputTransformed
      * @param outputCoeff 
@@ -131,7 +131,8 @@ public class MedianTransform {
      * but reconstruction from coefficients is not exact, so prefer
      * multiscalePyramidalMedianTransform(...) if exact is needed);
      * following pseudocode in http://www.multiresolution.com/svbook.pdf
-     * 
+     * "Handbook of Astronomical Data Analysis" by
+     * Jean-Luc Starck and Fionn Murtagh
      * @param input
      * @param outputTransformed
      * @param decimationLimit a size for width and height at which
@@ -185,6 +186,8 @@ public class MedianTransform {
     /**
      * pyramidal median transform for decimation of input image.
      * The algorithm follows pseudocode in http://www.multiresolution.com/svbook.pdf
+     * "Handbook of Astronomical Data Analysis" by
+     * Jean-Luc Starck and Fionn Murtagh
      * This method does not return the coefficients.
      * @param input
      * @param outputTransformed
@@ -242,6 +245,8 @@ public class MedianTransform {
     /**
      * pyramidal median transform for decimation of input image.
      * The algorithm follows pseudocode in http://www.multiresolution.com/svbook.pdf
+     * "Handbook of Astronomical Data Analysis" by
+     * Jean-Luc Starck and Fionn Murtagh
      * This method does not return the coefficients.
      * @param input
      * @param outputTransformed
@@ -308,11 +313,13 @@ public class MedianTransform {
     /**
      * pyramidal median transform for exact reconstruction.
      * following pseudocode in http://www.multiresolution.com/svbook.pdf
+     * "Handbook of Astronomical Data Analysis" by
+     * Jean-Luc Starck and Fionn Murtagh
      * 
      * This method has a runtime complexity of 
      * n_iter * (O(N_pixels * 1.6) + 5*O(N_pixels))
      * where nIter = lg2(imageDimension) - 1 and N_pixels is decreasing
-     * in size by a factor of 4 for each iteration.
+     * in size by a factor of 2 for each iteration.
      * @param input
      * @param outputTransformed
      * @param outputCoeff 
@@ -366,8 +373,69 @@ public class MedianTransform {
     }
 
     /**
+     * pyramidal median transform for exact reconstruction.
+     * following pseudocode in http://www.multiresolution.com/svbook.pdf
+     * "Handbook of Astronomical Data Analysis" by
+     * Jean-Luc Starck and Fionn Murtagh
+     * 
+     * This method has a runtime complexity of 
+     * n_iter * (O(N_pixels * 1.6) + 5*O(N_pixels))
+     * where nIter = lg2(imageDimension) - 1 and N_pixels is decreasing
+     * in size by a factor of 2 for each iteration.
+     * @param input
+     * @param outputTransformed
+     * @param decimationLimit 
+     */
+    public void multiscalePyramidalMedianTransform(GreyscaleImage input,
+        List<GreyscaleImage> outputTransformed, int decimationLimit) {
+
+        int imgDimen = Math.min(input.getWidth(), input.getHeight());
+
+        GreyscaleImage img0 = input.copyImage();
+
+        int nr = (int)(Math.log(imgDimen)/Math.log(2));
+        int s = 1;
+        int winL = 2*s + 1;
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+
+        MedianSmooth med = new MedianSmooth();
+        
+        outputTransformed.add(img0.copyToSignedImage());
+        
+        for (int j = 0; j < (nr - 1); ++j) {
+                        
+            GreyscaleImage cJ = outputTransformed.get(j);
+            
+            if ((cJ.getWidth() < winL) || (cJ.getHeight() < winL)) {
+                break;
+            }
+            if ((cJ.getWidth() <= decimationLimit) && 
+                (cJ.getHeight() <= decimationLimit)) {
+                return;
+            }
+            // median filter and decimation:
+            GreyscaleImage cJPlus1 = imageProcessor.binImage(
+                med.calculate(cJ, winL, winL), 2);
+            
+            //interpolation of cJPlus1 to size cJ
+            GreyscaleImage cJPlus1Ast = imageProcessor.expandBy2UsingBilinearInterp(
+                cJPlus1, cJ.getWidth(), cJ.getHeight());
+            
+            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1Ast);
+            
+            outputTransformed.add(cJPlus1);
+                        
+            assert(cJ.getWidth() == wJPlus1.getWidth());
+        }
+        
+    }
+
+    /**
      * reconstruct image from products of pyramidal median transform.
      * following pseudocode in http://www.multiresolution.com/svbook.pdf
+     * "Handbook of Astronomical Data Analysis" by
+     * Jean-Luc Starck and Fionn Murtagh
      * 
      * @param c0
      * @param mmCoeff

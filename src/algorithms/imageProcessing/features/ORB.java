@@ -104,9 +104,10 @@ public class ORB {
        -- considering an optional method to filter by localizability
        -- considering an optional method for removing staircase corners by
           use of hough line transforms
-       -- consdiering adding alternative pyramid building methods
+       -- considering adding alternative pyramid building methods
           such as Laplacian pyramids or
-          half-octave or quarter-octave pyramids (Lowe 2004; Triggs 2004).
+          half-octave or quarter-octave pyramids (Lowe 2004; Triggs 2004)
+          or the atrous in this project followed by down sampling
     */
      
     // these two could be made static across all instances
