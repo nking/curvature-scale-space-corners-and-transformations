@@ -128,6 +128,13 @@ public class ORB {
         this.nKeypoints = 200;
     }
     
+    protected void overrideFastN(int nFast) {
+        this.fastN = nFast;
+    }
+    protected void overrideFastThreshold(float threshold) {
+        this.fastThreshold = threshold;
+    }
+    
     private void initMasks() {
         
         OFAST_MASK = new int[31][31];
@@ -172,7 +179,9 @@ public class ORB {
         int nKeypointsTotal = 0;
         
         for (int octave = 0; octave < pyramid.size(); ++octave) {
-                        
+                
+            System.out.println("octave=" + octave);
+            
             float[][] octaveImage = pyramid.get(octave).a;
             
             Resp r = detectOctave(octaveImage);
@@ -204,7 +213,7 @@ public class ORB {
             //    multiplies the keypoints by a scalar
             //    to put the coordinates into the reference frame of image
             float scale = (float)Math.pow(this.downscale, octave);
-            for (int i = 0; i < keypointsList.size(); ++i) {
+            for (int i = 0; i < r.keypoints.size(); ++i) {
                 int v = Math.round(scale * r.keypoints.get(i));
                 r.keypoints.set(i, v);
             }
@@ -539,6 +548,10 @@ public class ORB {
             float[][] layerImg = pyramidReduce(prevLayerImg, downscale, 
                 sigma, order);
             
+            if (layerImg == null) {
+                break;
+            }
+            
             prevNRows = nRows;
             prevNCols = nCols;
             prevLayerImg = layerImg;
@@ -582,6 +595,15 @@ public class ORB {
         int outRows = (int)Math.ceil((float)nRows / downscale);
         int outCols = (int)Math.ceil((float)nCols / downscale);
         
+        //System.out.println("nRows=" + nRows + " nCols=" + nCols);
+        //System.out.println("outRows=" + outRows + " outCols=" + outCols);
+        
+        int totalSize = outRows * outCols;
+        
+        if (totalSize == 0) {
+            return null;
+        }
+        
         ImageProcessor imageProcessor = new ImageProcessor();
         
         float[][] smoothed = copy(img);
@@ -590,24 +612,21 @@ public class ORB {
         
         imageProcessor.applyKernelTwo1Ds(smoothed, kernel);
         
-        int totalSize = outRows * outCols;
+        //System.out.println("smoothed nRows=" + smoothed.length 
+        //    + " smoothed nCols=" + smoothed[0].length);
         
         float[][] out = new float[outRows][outCols];
         for (int i = 0; i < outRows; ++i) {
             out[i] = new float[outCols];
         }
         
-        if (totalSize == 0) {
-            return out;
-        }
-        
         // unravel input smoothed into row-major, C-style ordered array
         // then reshape into 2-d out size array
         int count = 0;
         float[][] b = new float[outRows][outCols];
-        for (int i = 0; i < nRows; ++i) {
+        for (int i = 0; i < outRows; ++i) {
             b[i] = new float[outCols];
-            for (int j = 0; j < nCols; ++j) {
+            for (int j = 0; j < outCols; ++j) {
                 b[i][j] = smoothed[i][j];
                 count++;
                 if (count == totalSize) {
@@ -960,8 +979,8 @@ public class ORB {
         // these have been sorted by decreasing intensity        
         TIntList peakRowCols = peakLocalMax(img, minDistance, thresholdRel);
         
-        System.out.println("peakRowCols in cornerPeaks=" + peakRowCols.toString()
-            + "\nsize=" + peakRowCols.size());
+        //System.out.println("peakRowCols in cornerPeaks=" + peakRowCols.toString()
+        //    + "\nsize=" + peakRowCols.size());
         
         TIntList peakRowCols2 = maskCoordinates(peakRowCols, nRows, nCols, 
             minDistance);
@@ -1197,23 +1216,23 @@ public class ORB {
         //cdef unsigned char[:, ::1] cmask = np.ascontiguousarray(mask != 0, dtype=np.uint8)
         
         int i, r, c, r0, c0;
-        int mRows = OFAST_MASK.length;
-        int mCols = OFAST_MASK[0].length;
-        int mRows2 = (mRows - 1) / 2;
-        int mCols2 = (mCols - 1) / 2;
+        int nMaskRows = OFAST_MASK.length;
+        int nMaskCols = OFAST_MASK[0].length;
+        int nMaskRows2 = (nMaskRows - 1) / 2;
+        int nMaskCols2 = (nMaskCols - 1) / 2;
         
         //cdef double[:, :] cimage = np.pad(image, (mrows2, mcols2), mode='constant',
         //    constant_values=0)
-        int nRows2 = octaveImage.length + (2 * mRows2);
-        int nCols2 = octaveImage[0].length + (2 * mCols2);
+        int nRows2 = octaveImage.length + (2 * nMaskRows2);
+        int nCols2 = octaveImage[0].length + (2 * nMaskCols2);
         double[][] cImage = new double[nRows2][nCols2];
         for (i = 0; i < nRows2; ++i) {
             cImage[i] = new double[nCols2];
-            if ((i >= mCols2) && (i < (cImage[i].length - mCols2))) {
-                float[] src = octaveImage[i - mCols2];
+            if ((i >= nMaskRows2) && (i < (nRows2 - nMaskRows2 - 1))) {
+                float[] src = octaveImage[i - nMaskRows2];
                 double[] dest = cImage[i];
                 for (int ii = 0; ii < src.length; ++ii) {
-                    dest[ii + mCols2] = src[ii];
+                    dest[ii + nMaskCols2] = src[ii];
                 }
             }
         }
@@ -1233,16 +1252,16 @@ public class ORB {
             m01 = 0;
             m10 = 0;
 
-            for (r = 0; r < mRows; ++r) {
+            for (r = 0; r < nMaskRows; ++r) {
                 m01_tmp = 0;
-                for (c = 0; c < mCols; ++c) {
+                for (c = 0; c < nMaskCols; ++c) {
                     if (OFAST_MASK[r][c] > 0) {
                         curr_pixel = cImage[r0 + r][c0 + c];
-                        m10 += curr_pixel * (c - mCols2);
+                        m10 += curr_pixel * (c - nMaskCols2);
                         m01_tmp += curr_pixel;
                     }
                 }
-                m01 += m01_tmp * (r - mRows2);
+                m01 += m01_tmp * (r - nMaskRows2);
             }
 
             //arc tangent of y/x, in the interval [-pi,+pi] radians
@@ -1477,6 +1496,14 @@ public class ORB {
                 int y0 = kc + spc0;
                 int x1 = kr + spr1;
                 int y1 = kc + spc1;
+                if (x0 < 0 || y0 < 0 || x1 < 0 || y1 < 0 ||
+                    (x0 > (octaveImage.length - 1)) ||
+                    (x1 > (octaveImage.length - 1)) ||
+                    (y0 > (octaveImage[0].length - 1)) ||
+                    (y1 > (octaveImage[0].length - 1))
+                    ) {
+                    continue;
+                }
                 if (octaveImage[x0][y0] < octaveImage[x1][y1]) {
                     descriptors[i][j] = 1;
                 }
@@ -1783,4 +1810,5 @@ public class ORB {
         
         return cost;
     }
+    
 }
