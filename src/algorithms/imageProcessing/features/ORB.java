@@ -68,14 +68,20 @@ IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -- end scipy, skimage copyright ---  
 
-in some places, similar functions in the above referenced code have been
-replaced with existing in this project, in this implementation below.
+Note, in some places, scipy functions have been
+replaced with existing functions in this project in this implementation below.
 
- 
  Oriented FAST and rotated BRIEF feature detector and binary descriptor
     extractor.
    
- NOT READY FOR USE.  NOT YET TESTED.
+NOTE, have chosen to keep the results (which are available publicly via getters)
+in Lists in which each list index is a scale in the pyramidal decimation 
+to allow the user to recover scale information if wanted.
+To use the way that scipy does, all results as single lists of variables 
+are available via getAll*getters.
+
+   
+NOT READY FOR USE.  NOT YET TESTED.
  <pre>
  Example Use:
     int nKeyPoints = 200;
@@ -103,13 +109,7 @@ public class ORB {
     
     private int[][] POS0 = null;
     private int[][] POS1 = null;
-    
-    // ---- NOTE, have chosen to keep the results (which are available publicly via getters)
-    //      in Lists in which each list index is a scale in the pyramidal decimation 
-    //      to allow the user to recover scale information if wanted.
-    //      To use the way that scipy does, all results as single lists of variables 
-    //      are available via getAll... getters.
-    
+     
     private List<TIntList> keypointsList = null;
     private List<TDoubleList> orientationsList = null;
     private List<TFloatList> harrisResponses = null;
@@ -152,6 +152,11 @@ public class ORB {
      * Detect oriented FAST keypoints and extract rBRIEF descriptors.
         Note that this is faster than first calling `detect` and then
         `extract`.
+      
+      code is adapted from
+      https://github.com/scikit-image/scikit-image/blob/401c1fd9c7db4b50ae9c4e0a9f4fd7ef1262ea3c/skimage/feature/orb.py
+      with some functions replaced by code in this project. 
+      
      * @param image 
      */
     public void detectAndExtract(ImageExt image) {
@@ -319,6 +324,11 @@ public class ORB {
         }
     }
     
+    /**
+     * https://github.com/scikit-image/scikit-image/blob/master/skimage/feature/orb.py
+     * @param image
+     * @return 
+     */
     private List<TwoDFloatArray> buildPyramid(ImageExt image) {
         
         /*
@@ -357,25 +367,6 @@ public class ORB {
         }
         
         return out;
-    }
-
-    private float[] flatten(float[][] a) {
-        
-        int nRows = a.length;
-        int nCols = a[0].length;
-        
-        int n = nRows * nCols;
-        
-        float[] b = new float[n];
-        int count = 0;
-        for (int i = 0; i < nRows; ++i) {
-            for (int j = 0; j < nCols; ++j) {
-                b[count] = a[i][j];
-                count++;
-            }
-        }
-        
-        return b;
     }
 
     protected void debugPrint(String label, float[][] a) {
@@ -495,6 +486,8 @@ public class ORB {
      image. The total number of images is `max_layer + 1`. In case all layers
      are computed, the last image is either a one-pixel image or the image where
      the reduction does not change its shape.
+     
+     https://github.com/scikit-image/scikit-image/blob/master/skimage/transform/pyramids.py
      
      @param gsImgF 
      */
@@ -646,6 +639,13 @@ public class ORB {
         int[][] descriptors;
     }
      
+    /**
+     * adapted from 
+     * https://github.com/scikit-image/scikit-image/blob/master/skimage/feature/orb.py
+     * 
+     * @param octaveImage
+     * @return 
+     */
     private Resp detectOctave(float[][] octaveImage) {
         
         float[][] fastResponse = cornerFast(octaveImage, fastN, fastThreshold);
@@ -970,6 +970,7 @@ public class ORB {
     }
 
     /**
+     * adapted from
      https://github.com/scikit-image/scikit-image/blob/92a38515ac7222aab5e606f9de46caf5f503a7bd/skimage/feature/peak.py
 
      Find peaks in an image as coordinate list or boolean mask.
@@ -1137,6 +1138,12 @@ public class ORB {
         
     }
     
+    /**
+     * @author nichole
+     * @param img
+     * @param size
+     * @return 
+     */
     private float[][] maximumFilter(float[][] img, int size) {
         
         int nRows = img.length;
@@ -1162,6 +1169,7 @@ public class ORB {
         the vector from the corner coordinate to the intensity centroid in the
         local neighborhood around the corner calculated using first order central
         moment.
+        adapted from
         from https://github.com/scikit-image/scikit-image/blob/master/skimage/feature/corner_cy.pyx
         
         References
@@ -1253,6 +1261,7 @@ public class ORB {
         The corner measure is then defined as::
             det(A) - k * trace(A)**2
       
+      adapted from
       from https://github.com/scikit-image/scikit-image/blob/master/skimage/feature/corner.py
      
     @param image
@@ -1304,8 +1313,10 @@ public class ORB {
      which is approximated by the weighted sum of squared differences in a local
      window around each pixel in the image.
     
+     adapted from
      https://github.com/scikit-image/scikit-image/blob/master/skimage/feature/corner.py
-    
+     and replaced with existing local project functions.
+     
      * @param image
      * @param sigma
      * @return [Axx, Axy, Ayy]
@@ -1405,7 +1416,10 @@ public class ORB {
     }
     
     /**
-     * create descriptors for the given keypoints
+     * create descriptors for the given keypoints.
+     * 
+     * adapted from
+     * https://github.com/scikit-image/scikit-image/blob/master/skimage/feature/orb_cy.pyx
      * 
      * @param octaveImage
      * @param keypoints
@@ -1540,7 +1554,6 @@ public class ORB {
         
         TIntList combined = new TIntArrayList(n);
         
-        int count = 0;
         for (int i = 0; i < keypointsList.size(); ++i) {
             
             TIntList ks = keypointsList.get(i);
@@ -1565,7 +1578,6 @@ public class ORB {
         
         TDoubleList combined = new TDoubleArrayList(n);
         
-        int count = 0;
         for (int i = 0; i < orientationsList.size(); ++i) {
             
             TDoubleList ks = orientationsList.get(i);
@@ -1590,7 +1602,6 @@ public class ORB {
         
         TFloatList combined = new TFloatArrayList(n);
         
-        int count = 0;
         for (int i = 0; i < scalesList.size(); ++i) {
             
             TFloatList ks = scalesList.get(i);
@@ -1615,7 +1626,6 @@ public class ORB {
         
         TFloatList combined = new TFloatArrayList(n);
         
-        int count = 0;
         for (int i = 0; i < harrisResponses.size(); ++i) {
             
             TFloatList ks = harrisResponses.get(i);
