@@ -502,7 +502,7 @@ public class ORBTest extends TestCase {
         //ImageDisplayer.displayImage("coins", img);
         //MiscDebug.writeImage(img, "check");
         
-        ORB orb = new ORB(250);
+        ORB orb = new ORB(500);
         //orb.overrideFastN(12);
         //orb.overrideFastThreshold(0.01f);
         

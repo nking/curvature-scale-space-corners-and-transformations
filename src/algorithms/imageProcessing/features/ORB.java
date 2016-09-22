@@ -107,7 +107,6 @@ public class ORB {
        -- considering adding alternative pyramid building methods
           such as Laplacian pyramids or
           half-octave or quarter-octave pyramids (Lowe 2004; Triggs 2004)
-          or the atrous in this project followed by down sampling
     */
      
     // these two could be made static across all instances
