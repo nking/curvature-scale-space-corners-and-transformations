@@ -5,6 +5,8 @@ import algorithms.QuickSort;
 import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.Gaussian1D;
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageDisplayer;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MedianTransform;
@@ -87,6 +89,11 @@ Still testing the class, there may be bugs present.
     int nKeyPoints = 200;
     ORB orb = new ORB(nKeyPoints);
     orb.detectAndExtract(image);
+    
+    // to get the list of keypoint coordinates in row-major, but separated:
+    List TIntLis keypoints0 = orb.getAllKeyPoints0(); // rows being first dimension
+    List TIntLis keypoints1 = orb.getAllKeyPoints1(); // cols being second dimension
+    
     List Descriptors descList = orb.getDescriptors();
        or
     Descriptors desc = orb.getAllDescriptors();
@@ -105,21 +112,18 @@ public class ORB {
           use this class, then transform the coordinates to original reference
           frame as a fast, but imperfect way to compensate for highly textured
           regions which produce alot of keypoints.
-       -- consider adding a setting to exclude calculation of 
-          descriptors, but keep keypoints.
     */
 
-    // these two could be made static across all instances
+    // these could be made static across all instances, but needs guards for synchronous initialization
     private int[][] OFAST_MASK = null;
     private int[] OFAST_UMAX = null;
+    private int[][] POS0 = null;
+    private int[][] POS1 = null;
 
     private int fastN = 9;
     private float fastThreshold = 0.08f;
-    private float harrisK = 0.04f;
+    private final float harrisK = 0.04f;
     private final int nKeypoints;
-
-    private int[][] POS0 = null;
-    private int[][] POS1 = null;
 
     private List<TIntList> keypoints0List = null;
     private List<TIntList> keypoints1List = null;
@@ -132,6 +136,8 @@ public class ORB {
     //decision pixel-pair. It is ``Q == np.sum(mask)``.
     // NOTE: this output format may need to be changed
     private List<Descriptors> descriptorsList = null;
+    
+    private boolean doCreateDescriptors = true;
 
     /**
      * Still testing the class, there may be bugs present.
@@ -149,6 +155,13 @@ public class ORB {
     }
     protected void overrideFastThreshold(float threshold) {
         this.fastThreshold = threshold;
+    }
+    
+    /**
+     * set option to not create descriptors.
+     */
+    protected void overrideToNotCreateDescriptors() {
+        doCreateDescriptors = false;
     }
 
     private void initMasks() {
@@ -170,19 +183,19 @@ public class ORB {
     }
 
     /**
-     * NOTE: still testing, there may be bugs.
-     *
-     * Detect oriented FAST keypoints and extract rBRIEF descriptors.
-        Note that this is faster than first calling `detect` and then
-        `extract`.
+      NOTE: still testing, there may be bugs.
+
+      Detect oriented FAST keypoints and extract rBRIEF descriptors.
+      Note that this is faster than first calling `detect` and then
+      `extract`.
 
       code is adapted from
       https://github.com/scikit-image/scikit-image/blob/401c1fd9c7db4b50ae9c4e0a9f4fd7ef1262ea3c/skimage/feature/orb.py
       with some functions replaced by code in this project.
 
-     * @param image
+      @param image
      */
-    public void detectAndExtract(ImageExt image) {
+    public void detectAndExtract(Image image) {
 
         List<TwoDFloatArray> pyramid = buildPyramid(image);
 
@@ -207,9 +220,8 @@ public class ORB {
                 continue;
             }
 
-            // masked keypoints * self.downscale ** octave
-            //    multiplies the keypoints by a scalar
-            //    to put the coordinates into the reference frame of image
+            //multiply the keypoints by a scalar
+            //   to put the coordinates into the reference frame of image
             //float scale = (float)Math.pow(this.downscale, octave);
             float scale = prevScl;
             {
@@ -246,7 +258,8 @@ public class ORB {
                 continue;
             }
 
-            System.out.println("  octave " + octave + " nKeypoints=" + r.keypoints0.size());
+            System.out.println("  octave " + octave + " nKeypoints=" 
+                + r.keypoints0.size());
 
             // result contains descriptors and mask.
             // also, modified by mask are the keypoints and orientations
@@ -266,7 +279,6 @@ public class ORB {
             harrisResponses.add(r.responses);
             descriptorsList.add(desc);
 
-            // scales is same size as keypoints
             TFloatList scales = new TFloatArrayList(r.keypoints0.size());
             for (int i = 0; i < r.keypoints0.size(); ++i) {
                 scales.add(scale);
@@ -387,7 +399,7 @@ public class ORB {
      * @param image
      * @return
      */
-    private List<TwoDFloatArray> buildPyramid(ImageExt image) {
+    private List<TwoDFloatArray> buildPyramid(Image image) {
 
         int decimationLimit = 8;
 
@@ -871,6 +883,8 @@ public class ORB {
             set.add(pixIdx);
         }
 
+        int nBefore = set.size();
+        
         for (int i = 0; i < coords0.size(); ++i) {
             int ii = coords0.get(i);
             int jj = coords1.get(i);
@@ -883,6 +897,9 @@ public class ORB {
                 set.remove(pixIdx);
             }
         }
+        
+        System.out.println("nBefore border rm=" + nBefore + 
+            " nAfter=" + set.size());
 
         /*
         Mask indicating if pixels are within the image (``True``) or in the
@@ -1300,6 +1317,43 @@ public class ORB {
 
         float[][] axyxy = multiply(tensorComponents[1].a,
             tensorComponents[1].a);
+        
+        {   //while have the 2nd derivatives, can also extract them.
+            // but, need the orientation to filter by localizability, that is,
+            // remove those on straight edges, for example.
+            // so need slight refactoring of variables and scope
+            TIntList kp0 = new TIntArrayList();
+            TIntList kp1 = new TIntArrayList();
+            // square of 2nd deriv:
+            float[][] secondDeriv = add(tensorComponents[0].a, tensorComponents[2].a);
+            peakLocalMax(secondDeriv, 1, 0.1f, kp0, kp1);
+            
+            int nRows = image.length;
+            int nCols = image[0].length;
+            try{
+            float min = MiscMath.findMin(secondDeriv);
+            float max = MiscMath.findMax(secondDeriv);
+            System.out.println("min=" + min + " max=" + max);
+            float factor = 255.f;
+            Image gsImg = new Image(nRows, nCols);
+            for (int i = 0; i < nRows; ++i) {
+                for (int j = 0; j < nCols; ++j) {
+                    int v = Math.round(factor * image[i][j]);
+                    if (v > 255) {
+                        v = 255;
+                    }
+                    gsImg.setRGB(i, j, v, v, v);
+                }
+            }
+            for (int i = 0; i < kp0.size(); ++i) {
+                int x = kp0.get(i);
+                int y = kp1.get(i);
+                gsImg.setRGB(x, y, 255, 0, 0);
+            }
+            ImageDisplayer.displayImage("2nd deriv", gsImg);
+            int z = 1;
+            } catch(Exception e) {}
+        }
 
         float[][] detA = subtract(axxyy, axyxy);
 
@@ -1427,8 +1481,14 @@ public class ORB {
         }
 
         //holds values 1 or 0.  size is [orientations.size][POS0.length]
-        int[][] descriptors = orbLoop(octaveImage, keypoints0,
-            keypoints1, orientations);
+        int[][] descriptors = null;
+        
+        if (doCreateDescriptors) {
+            descriptors = orbLoop(octaveImage, keypoints0, keypoints1, 
+                orientations);
+        } else {
+            descriptors = new int[0][];
+        }
 
         Descriptors desc = new Descriptors();
         desc.descriptors = descriptors;

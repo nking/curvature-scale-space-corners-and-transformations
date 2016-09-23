@@ -598,4 +598,29 @@ public class ORBTest extends TestCase {
         MiscDebug.writeImage(img0, "orb_keypoints_3");
         
     }
+    public void testKeypoints_4() throws Exception {
+        
+        String fileName = "blox.gif";
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
+        Image img0 = ImageIOHelper.readImageAsGrayScale(filePath);
+        //ImageExt img = ImageIOHelper.readImageExt(filePath);
+        ImageExt img = img0.copyToImageExt();
+        
+        //NOTE: the ridges are picked up well with reduced threshold
+        
+        ORB orb = new ORB(500);
+        //orb.overrideFastThreshold(0.06f);
+        orb.detectAndExtract(img);
+        orb.overrideToNotCreateDescriptors();
+        
+        TIntList keypoints0 = orb.getAllKeyPoints0();
+        TIntList keypoints1 = orb.getAllKeyPoints1();
+        
+        for (int i = 0; i < keypoints0.size(); ++i) {
+            int y = keypoints0.get(i);
+            int x = keypoints1.get(i);
+            ImageIOHelper.addPointToImage(x, y, img0, 2, 255, 0, 0);
+        }
+        MiscDebug.writeImage(img0, "orb_keypoints_4");        
+    }
 }
