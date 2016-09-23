@@ -436,7 +436,20 @@ public class ORBTest extends TestCase {
             }
         }
         
-        float[][] hc = orb.cornerHarris(img);
+        TwoDFloatArray[] tensorComponents = orb.structureTensor(img, 1);
+
+        float[][] axxyy = orb.multiply(tensorComponents[0].a,
+            tensorComponents[2].a);
+
+        float[][] axyxy = orb.multiply(tensorComponents[1].a,
+            tensorComponents[1].a);
+
+        float[][] detA = orb.subtract(axxyy, axyxy);
+
+        float[][] traceA = orb.add(tensorComponents[0].a,
+            tensorComponents[2].a);
+        
+        float[][] hc = orb.cornerHarris(img, detA, traceA);
         
         orb.debugPrint("hc=", hc);
         
@@ -487,7 +500,7 @@ public class ORBTest extends TestCase {
     
     public void testKeypoints_1() throws Exception {
         
-        String fileName = "susan-in_plus.png";   
+        String fileName = "susan-in_plus.png";  
         String filePath = ResourceFinder.findFileInTestResources(fileName);
         Image img0 = ImageIOHelper.readImageAsGrayScale(filePath);
         //ImageExt img = ImageIOHelper.readImageExt(filePath);
@@ -498,6 +511,7 @@ public class ORBTest extends TestCase {
         ORB orb = new ORB(500);
         //orb.overrideFastN(12);
         orb.overrideFastThreshold(0.01f);
+        orb.overrideToNotCreateDescriptors();
         
         orb.detectAndExtract(img);
         
@@ -531,9 +545,6 @@ public class ORBTest extends TestCase {
         Image img0 = ImageIOHelper.readImageAsGrayScale(filePath);
         //ImageExt img = ImageIOHelper.readImageExt(filePath);
         ImageExt img = img0.copyToImageExt();
-        
-        //NOTE: the ridges are picked up well with reduced threshold
-        
         ORB orb = new ORB(500);
         //orb.overrideFastN(12);
         //orb.overrideFastThreshold(0.01f);
@@ -570,12 +581,11 @@ public class ORBTest extends TestCase {
         Image img0 = ImageIOHelper.readImageAsGrayScale(filePath);
         //ImageExt img = ImageIOHelper.readImageExt(filePath);
         ImageExt img = img0.copyToImageExt();
-        
-        //NOTE: the ridges are picked up well with reduced threshold
-        
         ORB orb = new ORB(500);
         //orb.overrideFastN(12);
         //orb.overrideFastThreshold(0.01f);
+        orb.overrideToNotCreateDescriptors();
+        orb.overrideToAlsoCreate2ndDerivKeypoints();
         
         orb.detectAndExtract(img);
         

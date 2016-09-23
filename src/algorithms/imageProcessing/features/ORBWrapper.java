@@ -16,7 +16,7 @@ public class ORBWrapper {
     public static void extractKeypointsFromSubImage(Image img,
         int xLL, int yLL, int xUR, int yUR, int nKeypoints,
         TIntList outputKeypoints0, TIntList outputKeypoints1,
-        float fastThreshold) {
+        float fastThreshold, boolean create2ndDerivPointsAlso) {
          
         int buffer = 25;
         
@@ -43,6 +43,9 @@ public class ORBWrapper {
         ORB orb = new ORB(nKeypoints);
         orb.overrideFastThreshold(fastThreshold);
         orb.overrideToNotCreateDescriptors();
+        if (create2ndDerivPointsAlso) {
+            orb.overrideToAlsoCreate2ndDerivKeypoints();
+        }
         
         orb.detectAndExtract(subImage);
         

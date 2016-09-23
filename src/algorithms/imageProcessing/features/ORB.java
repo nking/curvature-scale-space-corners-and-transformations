@@ -89,11 +89,11 @@ Still testing the class, there may be bugs present.
     int nKeyPoints = 200;
     ORB orb = new ORB(nKeyPoints);
     orb.detectAndExtract(image);
-    
+
     // to get the list of keypoint coordinates in row-major, but separated:
     List TIntLis keypoints0 = orb.getAllKeyPoints0(); // rows being first dimension
     List TIntLis keypoints1 = orb.getAllKeyPoints1(); // cols being second dimension
-    
+
     List Descriptors descList = orb.getDescriptors();
        or
     Descriptors desc = orb.getAllDescriptors();
@@ -136,12 +136,14 @@ public class ORB {
     //decision pixel-pair. It is ``Q == np.sum(mask)``.
     // NOTE: this output format may need to be changed
     private List<Descriptors> descriptorsList = null;
-    
+
     private boolean doCreateDescriptors = true;
+
+    private boolean doCreate2ndDerivKeypoints = false;
 
     /**
      * Still testing the class, there may be bugs present.
-     * @param nKeypoints 
+     * @param nKeypoints
      */
     public ORB(int nKeypoints) {
 
@@ -153,15 +155,18 @@ public class ORB {
     protected void overrideFastN(int nFast) {
         this.fastN = nFast;
     }
-    protected void overrideFastThreshold(float threshold) {
+    public void overrideFastThreshold(float threshold) {
         this.fastThreshold = threshold;
     }
-    
+
     /**
      * set option to not create descriptors.
      */
-    protected void overrideToNotCreateDescriptors() {
+    public void overrideToNotCreateDescriptors() {
         doCreateDescriptors = false;
+    }
+    public void overrideToAlsoCreate2ndDerivKeypoints() {
+        doCreate2ndDerivKeypoints = true;
     }
 
     private void initMasks() {
@@ -258,7 +263,7 @@ public class ORB {
                 continue;
             }
 
-            System.out.println("  octave " + octave + " nKeypoints=" 
+            System.out.println("  octave " + octave + " nKeypoints="
                 + r.keypoints0.size());
 
             // result contains descriptors and mask.
@@ -507,7 +512,7 @@ public class ORB {
         //debugPrint("shifted imageMax=", imageMax);
     }
 
-    private float[][] multiply(float[][] a, float[][] b) {
+    protected float[][] multiply(float[][] a, float[][] b) {
 
         float[][] c = copy(a);
 
@@ -520,7 +525,7 @@ public class ORB {
         return c;
     }
 
-    private float[][] add(float[][] a, float[][] b) {
+    protected float[][] add(float[][] a, float[][] b) {
 
         float[][] c = copy(a);
 
@@ -533,7 +538,7 @@ public class ORB {
         return c;
     }
 
-    private float[][] subtract(float[][] a, float[][] b) {
+    protected float[][] subtract(float[][] a, float[][] b) {
 
         float[][] c = copy(a);
 
@@ -622,14 +627,94 @@ public class ORB {
 
         maskCoordinates(keypoints0, keypoints1, nRows, nCols, 16);
 
+        
+        // Standard deviation used for the Gaussian kernel, which is used as
+        // weighting function for the auto-correlation matrix.
+        float sigma = 1;
+
+        TwoDFloatArray[] tensorComponents = structureTensor(octaveImage, sigma);
+
+        float[][] axxyy = multiply(tensorComponents[0].a,
+            tensorComponents[2].a);
+
+        float[][] axyxy = multiply(tensorComponents[1].a,
+            tensorComponents[1].a);
+
+        float[][] detA = subtract(axxyy, axyxy);
+
+        float[][] traceA = add(tensorComponents[0].a,
+            tensorComponents[2].a);
+
+        if (doCreate2ndDerivKeypoints) {
+            
+            float hLimit = 0.09f;//0.05f;
+
+            TIntList kp0 = new TIntArrayList();
+            TIntList kp1 = new TIntArrayList();
+
+            // square of 2nd deriv:
+            float[][] secondDeriv = add(tensorComponents[0].a, tensorComponents[2].a);
+            peakLocalMax(secondDeriv, 1, 0.1f, kp0, kp1);
+
+            //float min = MiscMath.findMin(secondDeriv);
+            //float max = MiscMath.findMax(secondDeriv);
+            //System.out.println("min=" + min + " max=" + max);
+            //System.out.println("nRows=" + nRows + " nCols=" + nCols);
+            for (int i = 0; i < kp0.size(); ++i) {
+                int x = kp0.get(i);
+                int y = kp1.get(i);
+                // harmonic mean, Brown, Szeliski, and Winder (2005),
+                float hMean = (detA[x][y]/traceA[x][y]);
+                if (hMean > hLimit) {
+                    //System.out.println(String.format("(%d,%d) detA/tr=%.4f",
+                    //    x, y, hMean));
+                    keypoints0.add(x);
+                    keypoints1.add(y);
+                }
+            }
+
+            /*
+            try {
+
+                float factor = 255.f;
+                Image gsImg = new Image(nRows, nCols);
+                for (int i = 0; i < nRows; ++i) {
+                    for (int j = 0; j < nCols; ++j) {
+                        int v = Math.round(factor * octaveImage[i][j]);
+                        if (v > 255) {
+                            v = 255;
+                        }
+                        gsImg.setRGB(i, j, v, v, v);
+                    }
+                }
+                System.out.println("nRows=" + nRows + " nCols=" + nCols);
+                for (int i = 0; i < kp0.size(); ++i) {
+                    int x = kp0.get(i);
+                    int y = kp1.get(i);
+                    // harmonic mean, Brown, Szeliski, and Winder (2005),
+                    float hMean = (detA[x][y]/traceA[x][y]);
+                    if (hMean > hLimit) {
+                        System.out.println(String.format("(%d,%d) detA/tr=%.4f",
+                            x, y, hMean));
+                        gsImg.setRGB(x, y, 255, 0, 0);
+                    }
+                }
+                ImageDisplayer.displayImage("2nd deriv", gsImg);
+                int z = 1;
+            } catch(Exception e) {}
+            */
+        }
+        
+        
         // size is keyPoints2.size/2
         double[] orientations2 = cornerOrientations(octaveImage,
             keypoints0, keypoints1);
         assert(orientations2.length == keypoints0.size());
         assert(orientations2.length == keypoints1.size());
 
+
         // size is same a octaveImage
-        float[][] harrisResponse = cornerHarris(octaveImage);
+        float[][] harrisResponse = cornerHarris(octaveImage, detA, traceA);
 
         TFloatList responses = new TFloatArrayList(orientations2.length);
         for (int i = 0; i < keypoints0.size(); ++i) {
@@ -884,7 +969,7 @@ public class ORB {
         }
 
         int nBefore = set.size();
-        
+
         for (int i = 0; i < coords0.size(); ++i) {
             int ii = coords0.get(i);
             int jj = coords1.get(i);
@@ -897,8 +982,8 @@ public class ORB {
                 set.remove(pixIdx);
             }
         }
-        
-        System.out.println("nBefore border rm=" + nBefore + 
+
+        System.out.println("nBefore border rm=" + nBefore +
             " nAfter=" + set.size());
 
         /*
@@ -1300,65 +1385,12 @@ public class ORB {
     *   response = detA - k * traceA ** 2 built from the 2nd derivatives of
     *   image intensity.
     */
-    protected float[][] cornerHarris(float[][] image) {
+    protected float[][] cornerHarris(float[][] image, float[][] detA,
+        float[][] traceA) {
 
         // method = 'k'.  k is Sensitivity factor to separate corners from edges,
         // Small values of k result in detection of sharp corners.
         float k = this.harrisK;
-
-        // Standard deviation used for the Gaussian kernel, which is used as
-        // weighting function for the auto-correlation matrix.
-        float sigma = 1;
-
-        TwoDFloatArray[] tensorComponents = structureTensor(image, sigma);
-
-        float[][] axxyy = multiply(tensorComponents[0].a,
-            tensorComponents[2].a);
-
-        float[][] axyxy = multiply(tensorComponents[1].a,
-            tensorComponents[1].a);
-        
-        {   //while have the 2nd derivatives, can also extract them.
-            // but, need the orientation to filter by localizability, that is,
-            // remove those on straight edges, for example.
-            // so need slight refactoring of variables and scope
-            TIntList kp0 = new TIntArrayList();
-            TIntList kp1 = new TIntArrayList();
-            // square of 2nd deriv:
-            float[][] secondDeriv = add(tensorComponents[0].a, tensorComponents[2].a);
-            peakLocalMax(secondDeriv, 1, 0.1f, kp0, kp1);
-            
-            int nRows = image.length;
-            int nCols = image[0].length;
-            try{
-            float min = MiscMath.findMin(secondDeriv);
-            float max = MiscMath.findMax(secondDeriv);
-            System.out.println("min=" + min + " max=" + max);
-            float factor = 255.f;
-            Image gsImg = new Image(nRows, nCols);
-            for (int i = 0; i < nRows; ++i) {
-                for (int j = 0; j < nCols; ++j) {
-                    int v = Math.round(factor * image[i][j]);
-                    if (v > 255) {
-                        v = 255;
-                    }
-                    gsImg.setRGB(i, j, v, v, v);
-                }
-            }
-            for (int i = 0; i < kp0.size(); ++i) {
-                int x = kp0.get(i);
-                int y = kp1.get(i);
-                gsImg.setRGB(x, y, 255, 0, 0);
-            }
-            ImageDisplayer.displayImage("2nd deriv", gsImg);
-            int z = 1;
-            } catch(Exception e) {}
-        }
-
-        float[][] detA = subtract(axxyy, axyxy);
-
-        float[][] traceA = add(tensorComponents[0].a,
-            tensorComponents[2].a);
 
         //response = detA - k * traceA ** 2
         float[][] response = copy(detA);
@@ -1482,9 +1514,9 @@ public class ORB {
 
         //holds values 1 or 0.  size is [orientations.size][POS0.length]
         int[][] descriptors = null;
-        
+
         if (doCreateDescriptors) {
-            descriptors = orbLoop(octaveImage, keypoints0, keypoints1, 
+            descriptors = orbLoop(octaveImage, keypoints0, keypoints1,
                 orientations);
         } else {
             descriptors = new int[0][];

@@ -88,7 +88,7 @@ public class AndroidStatuesTest extends TestCase {
      public void est0() throws Exception {
 
         int maxDimension = 256;//512;
-        
+
         String fileName1 = "";
 
         //for (int i = 0; i < 1; ++i) {
@@ -265,22 +265,22 @@ public class AndroidStatuesTest extends TestCase {
 
             int[] labels4 = imageSegmentation
                 .objectSegmentation(img);
-            
+
             ImageExt img11 = img.createWithDimensions();
             ImageIOHelper.addAlternatingColorLabelsToRegion(
                 img11, labels4);
             MiscDebug.writeImage(img11, "_final_" + fileName1Root);
             //LabelToColorHelper.applyLabels(img, labels4);
             //MiscDebug.writeImage(img, "_final_" + fileName1Root);
-            
+
         }
     }
-     
+
     public void testShapeMatcher() throws Exception {
-        
+
         int maxDimension = 256;//512;
         SIGMA sigma = SIGMA.ONE;
-        
+
         ImageProcessor imageProcessor = new ImageProcessor();
         ImageSegmentation imageSegmentation = new ImageSegmentation();
 
@@ -296,15 +296,20 @@ public class AndroidStatuesTest extends TestCase {
         }
 
         PairIntArray template =
-            imageProcessor.extractSmoothedOrderedBoundary(shape0, 
+            imageProcessor.extractSmoothedOrderedBoundary(shape0,
                 sigma, img0.getWidth(), img0.getHeight());
-        
+
+        TIntList templateKP0 = new TIntArrayList();
+        TIntList templateKP1 = new TIntArrayList();
+        extractTemplateKeypoints(fileNameRoot0, shape0, template,
+            templateKP0, templateKP1);
+
         ColorHistogram clrHist = new ColorHistogram();
 
         int[][] template_ch_HSV = clrHist.histogramHSV(img0, shape0);
-        
+
         String fileName1 = "android_statues_02.jpg";
-          
+
         String fileName1Root = fileName1.substring(0, fileName1.lastIndexOf("."));
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         ImageExt img = ImageIOHelper.readImageExt(filePath1);
@@ -317,15 +322,15 @@ public class AndroidStatuesTest extends TestCase {
             (float) h1 / maxDimension));
 
         img = imageProcessor.binImage(img, binFactor1);
-        
+
         ImageExt imgCp = img.copyToImageExt();
 
         int[] labels4 = imageSegmentation.objectSegmentation(imgCp);
 
         List<Set<PairInt>> listOfPointSets2 = new ArrayList<Set<PairInt>>();
-        
+
         List<TwoDIntArray> listOfCH = new ArrayList<TwoDIntArray>();
-        
+
         imageSegmentation.filterUsingColorHistogramDifference(imgCp,
             labels4, img0, shape0, listOfPointSets2, listOfCH);
 
@@ -335,17 +340,17 @@ public class AndroidStatuesTest extends TestCase {
         //ImageExt img11 = img.copyToImageExt();
         //LabelToColorHelper.applyLabels(img11, labels4);
         //MiscDebug.writeImage(img11, "_final_" + fileName1Root);
-        
+
         List<PairIntArray> orderedBoundaries = new ArrayList<PairIntArray>();
-        
+
         int[] filteredLabels = new int[img.getNPixels()];
         Arrays.fill(filteredLabels, -1);
-        
+
         TIntList rmList = new TIntArrayList();
-                
+
         int w = img.getWidth();
-        int h = img.getHeight();        
-        
+        int h = img.getHeight();
+
         for (int i = 0; i < listOfPointSets2.size(); ++i) {
             Set<PairInt> set = listOfPointSets2.get(i);
             PairIntArray p = imageProcessor.extractSmoothedOrderedBoundary(
@@ -363,61 +368,66 @@ public class AndroidStatuesTest extends TestCase {
                 filteredLabels[pixIdx] = idx;
             }
         }
-        
+
         for (int i = (rmList.size() - 1); i > -1; --i) {
             int idx = rmList.get(i);
             listOfPointSets2.remove(idx);
             listOfCH.remove(idx);
         }
-                
+
         assert(orderedBoundaries.size() == listOfPointSets2.size());
-        
-        TIntObjectMap<TIntSet> adjMap = 
+
+        TIntObjectMap<TIntSet> adjMap =
             LabelToColorHelper.createAdjacencyLabelMap(imgCp, filteredLabels, true);
-        
+
         imageProcessor.filterAdjacencyMap(imgCp, listOfPointSets2, adjMap, 0.4f);
-                
+
         assertEquals(orderedBoundaries.size(), listOfPointSets2.size());
-        
-        ShapeFinder sf = new ShapeFinder(orderedBoundaries, 
+
+        TIntList keypoints0 = new TIntArrayList();
+        TIntList keypoints1 = new TIntArrayList();
+
+        extractKeypoints(img, listOfPointSets2, keypoints0, keypoints1);
+
+        ShapeFinder sf = new ShapeFinder(orderedBoundaries,
             listOfPointSets2, adjMap, template,
             template_ch_HSV, listOfCH);
-        
+
         Result[] results = sf.findMatchingCells();
-        
+
         assert(results != null);
-        
+
         for (int i0 = 0; i0 < results.length; ++i0) {
-            
+
             Result result = results[i0];
-               
+
             img11 = img.copyToImageExt();
-        
+
             // object array with index 0 being the bit string
             // and index 1 being the combined boundary
             Object[] data = result.getData();
             PairIntArray p = (PairIntArray)data[1];
 
             ImageIOHelper.addCurveToImage(p, img11, 1, 0, 255, 0);
-            
-            CorrespondencePlotter plotter = new CorrespondencePlotter(p, 
+
+            CorrespondencePlotter plotter = new CorrespondencePlotter(p,
                 template);
 
             for (int ii = 0; ii < result.getNumberOfMatches(); ++ii) {
                 // result.idx1 are template indexes
-                
+
                 int idx1 = result.getIdx1(ii);
                 int idx2 = result.getIdx2(ii);
-                
+
                 int x1 = template.getX(idx1);
                 int y1 = template.getY(idx1);
-                
+
                 int x2 = p.getX(idx2);
                 int y2 = p.getY(idx2);
-                
-                ImageIOHelper.addPointToImage(x2, y2, img11, 
+
+                ImageIOHelper.addPointToImage(x2, y2, img11,
                     0, 255, 0, 0);
-                
+
                 //System.out.println(String.format(
                 //"%d  (%d, %d) <=> (%d, %d)", i0, x1, y1, x2, y2));
 
@@ -431,10 +441,10 @@ public class AndroidStatuesTest extends TestCase {
                 str = "0" + str;
             }
             String filePath = plotter.writeImage("__andr_02_corres_" + str);
-        
-            MiscDebug.writeImage(img11, "_match_" + fileName1Root + "_" + str); 
+
+            MiscDebug.writeImage(img11, "_match_" + fileName1Root + "_" + str);
         }
-        
+
     }
 
     public void estShapeMatcher() throws Exception {
@@ -518,15 +528,15 @@ public class AndroidStatuesTest extends TestCase {
             String filePathMask1 = ResourceFinder.findFileInTestResources(fileNameMask1);
             ImageExt imgMask1 = ImageIOHelper.readImageExt(filePathMask1);
 
-            
+
             int[] labels4 = imageSegmentation.objectSegmentation(img1);
-            
+
             ImageExt img11 = img1.createWithDimensions();
             ImageIOHelper.addAlternatingColorLabelsToRegion(
                 img11, labels4);
             MiscDebug.writeImage(img11, "_comb_" + fileNameRoot1);
 
-            
+
             //sortByDecrSize(contigSets);
             //System.out.println("contigSets.size=" + contigSets.size());
 
@@ -538,39 +548,39 @@ public class AndroidStatuesTest extends TestCase {
             //    ideally, want a segmentation algorithm
             //    that merges super pixels without losing
             //    the boundaries of the objects of interest
-            
+
             /*
             //for (int j = 0; j < contigSets.size(); ++j) {
             for (int j = 1; j < 2; ++j) {
-                
+
                 Set<PairInt> set1 = contigSets.get(j);
                 System.out.println("set j=" + j + ".size=" + set1.size());
                 if (set1.size() < 12) {
                     break;
                 }
-                
+
                 //TODO: error in perimeterfinder2
                 // for j=30
-                
+
                 //160,78
                 if (set1.contains(new PairInt(120, 80))) {
                     //102
                     System.out.println("gbm j=" + j);
                 }
-                
+
                 PairIntArray q1 =
                     imageProcessor.extractSmoothedOrderedBoundary(
                     set1, SIGMA.ZEROPOINTFIVE);
-                
+
                 plot(q1, 101+j);
-                
+
                 int dp = 2;
                 PartialShapeMatcher matcher
                     = new PartialShapeMatcher();
                 matcher.setToDebug();
                 matcher.overrideSamplingDistance(dp);
-                
-                PartialShapeMatcher.Result result 
+
+                PartialShapeMatcher.Result result
                     = matcher.match(p, q1);
 
                 if (result != null) {
@@ -622,7 +632,7 @@ public class AndroidStatuesTest extends TestCase {
             img = imageProcessor.binImage(img, binFactor1);
 
             ImageExt imgCp = img.copyToImageExt();
-            
+
             int nClusters = 200;//100;
             //int clrNorm = 5;
             SLICSuperPixels slic = new SLICSuperPixels(img, nClusters);
@@ -640,7 +650,7 @@ public class AndroidStatuesTest extends TestCase {
             ImageIOHelper.addAlternatingColorLabelsToRegion(
                 imgCp, labels);
             MiscDebug.writeImage(imgCp, "_norm_cuts_" + fileName1Root);
-            
+
 
             //img = ImageIOHelper.readImageExt(filePath1);
             //img = imageProcessor.binImage(img, binFactor1);
@@ -750,14 +760,14 @@ public class AndroidStatuesTest extends TestCase {
         clusterSets.addAll(out);
     }
 
-    private void printGradients(ImageExt img, 
+    private void printGradients(ImageExt img,
         String fileNameRoot) {
-    
+
         GreyscaleImage gsImg = img.copyToGreyscale();
         GreyscaleImage gsImg1 = gsImg.copyImage();
         GreyscaleImage gsImg2 = gsImg.copyImage();
-        
-        CannyEdgeFilterAdaptive canny = 
+
+        CannyEdgeFilterAdaptive canny =
             new CannyEdgeFilterAdaptive();
         canny.setToNotUseZhangSuen();
         canny.applyFilter(gsImg);
@@ -766,41 +776,41 @@ public class AndroidStatuesTest extends TestCase {
                 gsImg.setValue(i, 255);
             }
         }
-        MiscDebug.writeImage(gsImg, 
+        MiscDebug.writeImage(gsImg,
             "_canny_" + fileNameRoot);
-        
+
         ImageProcessor imageProcessor = new ImageProcessor();
-        imageProcessor.applyFirstDerivGaussian(gsImg1, 
+        imageProcessor.applyFirstDerivGaussian(gsImg1,
             SIGMA.ONE, 0, 255);
         for (int i = 0; i < gsImg1.getNPixels(); ++i) {
             if (gsImg1.getValue(i) > 0) {
                 gsImg1.setValue(i, 255);
             }
         }
-        MiscDebug.writeImage(gsImg1, 
+        MiscDebug.writeImage(gsImg1,
             "_firstderiv_" + fileNameRoot);
-        
+
         PhaseCongruencyDetector pcd = new PhaseCongruencyDetector();
-        PhaseCongruencyDetector.PhaseCongruencyProducts 
+        PhaseCongruencyDetector.PhaseCongruencyProducts
             product = pcd.phaseCongMono(gsImg2);
-        MiscDebug.writeImage(product.getThinned(), 
+        MiscDebug.writeImage(product.getThinned(),
             "_pcd_" + fileNameRoot);
     }
 
-    private TIntList addIntersection(GreyscaleImage gradient, 
+    private TIntList addIntersection(GreyscaleImage gradient,
         int[] labels) {
-        
+
         assert(gradient.getNPixels() == labels.length);
-        
+
         int maxLabel = MiscMath.findMax(labels) + 1;
-        
+
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
         int w = gradient.getWidth();
         int h = gradient.getHeight();
-        
+
         TIntList change = new TIntArrayList();
-        
+
         for (int i = 0; i < gradient.getNPixels(); ++i) {
             if (gradient.getValue(i) < 1) {
                 continue;
@@ -828,26 +838,26 @@ public class AndroidStatuesTest extends TestCase {
                 // gradient is on edge of superpixels
                 change.add(i);
                 System.out.println(
-                    "x=" + x  + " y=" + y 
+                    "x=" + x  + " y=" + y
                     + "  pixIdx=" + i);
             }
         }
         return change;
     }
 
-    private int[] desegment(ImageExt img, 
+    private int[] desegment(ImageExt img,
         TIntList gradSP, int[] labels, int[] labels2) {
 
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
         int w = img.getWidth();
         int h = img.getHeight();
-        
+
         TIntSet restore = new TIntHashSet();
-        
+
         for (int i = 0; i < gradSP.size(); ++i) {
             int pixIdx = gradSP.get(i);
-            
+
             int l0 = labels2[pixIdx];
             int l1 = -1;
             int x = img.getCol(pixIdx);
@@ -875,18 +885,18 @@ public class AndroidStatuesTest extends TestCase {
             }
         }
         MiscDebug.writeImage(img, "restore");
-        
+
         if (restore.isEmpty()) {
             return labels2;
         }
-        
+
         TIntObjectMap<Set<PairInt>> label1PointMap =
-            LabelToColorHelper.extractLabelPoints(img, 
+            LabelToColorHelper.extractLabelPoints(img,
                 labels);
-        
-        int[] labels3 = Arrays.copyOf(labels2, 
+
+        int[] labels3 = Arrays.copyOf(labels2,
             labels2.length);
-        
+
         int maxLabel = MiscMath.findMax(labels2);
         maxLabel++;
         TIntIterator iter = restore.iterator();
@@ -905,29 +915,29 @@ public class AndroidStatuesTest extends TestCase {
     }
 
     private ImageExt maskAndBin(String fileNamePrefix, int binFactor) throws IOException, Exception {
-        
+
         ImageProcessor imageProcessor = new ImageProcessor();
-        
+
         String fileNameMask0 = fileNamePrefix + "_mask.png";
         String filePathMask0 = ResourceFinder
             .findFileInTestResources(fileNameMask0);
         ImageExt imgMask0 = ImageIOHelper.readImageExt(filePathMask0);
-        
+
         String fileName0 = fileNamePrefix + ".jpg";
         String filePath0 = ResourceFinder
             .findFileInTestResources(fileName0);
         ImageExt img0 = ImageIOHelper.readImageExt(filePath0);
-        
+
         assertEquals(imgMask0.getNPixels(), img0.getNPixels());
-        
+
         for (int i = 0; i < imgMask0.getNPixels(); ++i) {
             if (imgMask0.getR(i) == 0) {
                 img0.setRGB(i, 0, 0, 0);
             }
         }
-        
+
         img0 = imageProcessor.binImage(img0, binFactor);
-      
+
         return img0;
     }
 
@@ -1398,6 +1408,100 @@ public class AndroidStatuesTest extends TestCase {
             x, y, x, y, "");
 
         plot.writeFile(fn);
+    }
+
+    private void extractTemplateKeypoints(String fileNameRoot0,
+        Set<PairInt> shape0, PairIntArray template,
+        TIntList templateKP0, TIntList templateKP1) throws IOException, Exception {
+
+        String fileName0 = fileNameRoot0 + ".jpg";
+        String filePath0 = ResourceFinder
+            .findFileInTestResources(fileName0);
+        ImageExt img0 = ImageIOHelper.readImageExt(filePath0);
+
+        int[] minMaxXY = MiscMath.findMinMaxXY(template);
+
+        int w = img0.getWidth();
+        int h = img0.getHeight();
+
+        int xLL = minMaxXY[0] - 5;
+        if (xLL < 0) {
+            xLL = 0;
+        }
+        int yLL = minMaxXY[2] - 5;
+        if (yLL < 0) {
+            yLL = 0;
+        }
+        int xUR = minMaxXY[1] + 5;
+        if (xUR > (w - 1)) {
+            xUR = w - 1;
+        }
+        int yUR = minMaxXY[3] + 5;
+        if (yUR > (h - 1)) {
+            yUR = h - 1;
+        }
+
+        ORBWrapper.extractKeypointsFromSubImage(
+            img0, xLL, yLL, xUR, yUR,
+            200, templateKP0, templateKP1, 0.01f, true);
+
+        for (int i = 0; i < templateKP0.size(); ++i) {
+            int x = templateKP1.get(i);
+            int y = templateKP0.get(i);
+            PairInt p = new PairInt(x, y);
+            if (shape0.contains(p)) {
+                ImageIOHelper.addPointToImage(x, y, img0, 1, 255, 0, 0);
+            }
+        }
+
+        MiscDebug.writeImage(img0, "_template_orb");
+    }
+
+    private void extractKeypoints(ImageExt img, List<Set<PairInt>> listOfPointSets,
+        TIntList keypoints0, TIntList keypoints1) throws IOException, Exception {
+
+        // bins of size template size across image
+
+        int w = img.getWidth();
+        int h = img.getHeight();
+
+        ORB orb = new ORB(1000);
+        orb.overrideFastThreshold(0.01f);
+        orb.overrideToNotCreateDescriptors();
+        orb.overrideToAlsoCreate2ndDerivKeypoints();
+        orb.detectAndExtract(img);
+        
+        keypoints0.addAll(orb.getAllKeyPoints0());
+        keypoints1.addAll(orb.getAllKeyPoints1());
+
+        ImageExt img0 = img.copyToImageExt();
+        
+        Set<PairInt> points = new HashSet<PairInt>();
+        for (Set<PairInt> set : listOfPointSets) {
+            points.addAll(set);
+        }
+
+        Set<PairInt> exists = new HashSet<PairInt>();
+        TIntList kp0 = new TIntArrayList();
+        TIntList kp1 = new TIntArrayList();
+        for (int i = 0; i < keypoints0.size(); ++i) {
+            int x = keypoints1.get(i);
+            int y = keypoints0.get(i);
+            PairInt p = new PairInt(x, y);
+            if (exists.contains(p) || !points.contains(p)) {
+                continue;
+            }
+            exists.add(p);
+            kp0.add(y);
+            kp1.add(x);
+            ImageIOHelper.addPointToImage(x, y, img0, 1, 255, 0, 0);
+        }
+        MiscDebug.writeImage(img0, "_srch_orb");
+
+        keypoints0.clear();
+        keypoints1.clear();
+        keypoints0.addAll(kp0);
+        keypoints1.addAll(kp1);
     }
 
 }

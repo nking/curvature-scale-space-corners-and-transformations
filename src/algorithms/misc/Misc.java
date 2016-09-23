@@ -4,6 +4,7 @@ import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.QuadInt;
 import algorithms.util.ResourceFinder;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
@@ -17,6 +18,7 @@ import java.io.ObjectOutputStream;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.Security;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -531,5 +533,53 @@ public class Misc {
         }
         
         return sr;
+    }
+    
+    /**
+     * partition the space width x height into bins of size xLen, yLen
+     * and return the results at a list of QuadInts holding 
+     * a=minX, b=maxX, c=minY, d=maxY.
+     * @param width
+     * @param height
+     * @param xLen
+     * @param yLen
+     * @return 
+     */
+    public static List<QuadInt> partitionSpace(int width, int height, 
+        int xLen, int yLen) {
+        
+        List<QuadInt> output = new ArrayList<QuadInt>();
+        
+        int nXs = (int)Math.ceil((float)width/(float)xLen);
+        int nYs = (int)Math.ceil((float)height/(float)yLen);
+        
+        for (int i = 0; i < nXs; ++i) {
+            int startX = xLen * i;
+            if (startX > (width - 1)) {
+                break;
+            }
+            int stopX = startX + xLen;
+            if (stopX > (width - 1)) {
+                stopX = width - 1;
+                // NOTE: if stopX - startX is small, consider merging it with previous
+                // bin in terms of X
+            }
+            for (int j = 0; j < nYs; ++j) {
+                int startY = yLen * i;
+                if (startY > (height - 1)) {
+                    break;
+                }
+                int stopY = startY + yLen;
+                if (stopY > (height - 1)) {
+                    stopY = height - 1;
+                    // NOTE: if stopY - startY is small, consider merging it with previous
+                    // bin
+                }
+                QuadInt q = new QuadInt(startX, stopX, startY, stopY);
+                output.add(q);
+            }
+        }
+        
+        return output;
     }
 }
