@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.MultiArrayMergeSort;
+import algorithms.compGeometry.MedialAxis;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.compGeometry.RotatedOffsets;
 import algorithms.compGeometry.clustering.KMeansPlusPlus;
@@ -48,7 +49,9 @@ import algorithms.util.TwoDIntArray;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
@@ -299,10 +302,14 @@ public class AndroidStatuesTest extends TestCase {
             imageProcessor.extractSmoothedOrderedBoundary(shape0,
                 sigma, img0.getWidth(), img0.getHeight());
 
+        Set<PairInt> templateMedialAxis = createMedialAxis(shape0,
+            Misc.convert(template));
+
         TIntList templateKP0 = new TIntArrayList();
         TIntList templateKP1 = new TIntArrayList();
+        TDoubleList templateOrientations = new TDoubleArrayList();
         extractTemplateKeypoints(fileNameRoot0, shape0, template,
-            templateKP0, templateKP1);
+            templateKP0, templateKP1, templateOrientations);
 
         ColorHistogram clrHist = new ColorHistogram();
 
@@ -313,6 +320,8 @@ public class AndroidStatuesTest extends TestCase {
         String fileName1Root = fileName1.substring(0, fileName1.lastIndexOf("."));
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         ImageExt img = ImageIOHelper.readImageExt(filePath1);
+
+        long ts = MiscDebug.getCurrentTimeFormatted();
 
         int w1 = img.getWidth();
         int h1 = img.getHeight();
@@ -325,7 +334,10 @@ public class AndroidStatuesTest extends TestCase {
 
         ImageExt imgCp = img.copyToImageExt();
 
-        int[] labels4 = imageSegmentation.objectSegmentation(imgCp);
+        GreyscaleImage gradient = imageSegmentation.createGradient(
+            imgCp, 3, ts);
+
+        int[] labels4 = imageSegmentation.objectSegmentation(imgCp, gradient);
 
         List<Set<PairInt>> listOfPointSets2 = new ArrayList<Set<PairInt>>();
 
@@ -342,6 +354,7 @@ public class AndroidStatuesTest extends TestCase {
         //MiscDebug.writeImage(img11, "_final_" + fileName1Root);
 
         List<PairIntArray> orderedBoundaries = new ArrayList<PairIntArray>();
+        List<Set<PairInt>> medialAxisList = new ArrayList<Set<PairInt>>();
 
         int[] filteredLabels = new int[img.getNPixels()];
         Arrays.fill(filteredLabels, -1);
@@ -352,9 +365,13 @@ public class AndroidStatuesTest extends TestCase {
         int h = img.getHeight();
 
         for (int i = 0; i < listOfPointSets2.size(); ++i) {
+
             Set<PairInt> set = listOfPointSets2.get(i);
+
+            Set<PairInt> medialAxis = new HashSet<PairInt>();
+
             PairIntArray p = imageProcessor.extractSmoothedOrderedBoundary(
-                set, sigma, w, h);
+                set, sigma, w, h, medialAxis);
             if (p == null || p.getN() < 20) {
                 System.out.println("consider a small cluster merging."
                     + " set.size=" + set.size());
@@ -367,6 +384,8 @@ public class AndroidStatuesTest extends TestCase {
                 int pixIdx = img.getInternalIndex(pt);
                 filteredLabels[pixIdx] = idx;
             }
+
+            medialAxisList.add(medialAxis);
         }
 
         for (int i = (rmList.size() - 1); i > -1; --i) {
@@ -387,46 +406,49 @@ public class AndroidStatuesTest extends TestCase {
         TIntList keypoints0 = new TIntArrayList();
         TIntList keypoints1 = new TIntArrayList();
 
-        extractKeypoints(img, listOfPointSets2, keypoints0, keypoints1);
+        TDoubleList orientations = extractKeypoints(img, listOfPointSets2, 
+            keypoints0, keypoints1);
 
-        if (true) { 
+        if (true) {
+
             // try reduced descriptor matching w/ orb keypoints
-            
+
             /*
             rewrite this section to compare half descriptors of HSV
                 oriented inward towards the shape points.
             
+            for descriptor matching, method needs:
+                - images
+                - keypoints
+                - orientation for all keypoints
+                - medial axis for all segmented cells
+                - shared instance of RotationOffsets
+                - instance of IntensityClrFeatures for each image
+
             need to refactor a few things:
-               -- the above segmentation needs to separate the gradient
-                  to outside of the method so it can be re-used here
-                  with the intensity features.
-               -- the medial axes need to be saved also for re-use here.
-                  they're currently created in PerimeterFinder2
-               -- the ORBs need to be saved also or at least the
-                  keypoint orientations.
-               -- various existing method related to features need to
-                  be altered or specialized (see below).
+                -- various methods related to features need to
+                   be altered or specialized (see below).
             then the orientation of each keypoint can be fetched.
-               then the medial axis used to further disambiguate
-               the orientation so that it points inward towards the shape 
-               points (for example, might need to be changed by 180 degrees).
-               then, the color descriptors can be made for that
-               orientation and keypoint using 
-                   IntensityDescriptor desc2_l = 
-                       features2.extractIntensityLOfCIELAB(redImg2,
-                       greenImg2, blueImg2, x2, y2, rot2);
-                   except that will use HSV instead.
-               then, both inward facing descriptors are compared with
-                   FeatureComparisonStat stat_deltaE = 
-                   IntensityClrFeatures.calculateHalfStats(
-                       desc1_l, desc1_a, desc1_b, x1, y1, useTop1,
-                       desc2_l, desc2_a, desc2_b, x2, y2, useTop2);
-                   except using HSV.
+                then the medial axis used to further disambiguate
+                the orientation so that it points inward towards the shape
+                points (for example, might need to be changed by 180 degrees).
+                then, the color descriptors can be made for that
+                orientation and keypoint using
+                    IntensityDescriptor desc2_l =
+                        features2.extractIntensityLOfCIELAB(redImg2,
+                        greenImg2, blueImg2, x2, y2, rot2);
+                    except that will use HSV instead.
+                then, both inward facing descriptors are compared with
+                    FeatureComparisonStat stat_deltaE =
+                    IntensityClrFeatures.calculateHalfStats(
+                        desc1_l, desc1_a, desc1_b, x1, y1, useTop1,
+                        desc2_l, desc2_a, desc2_b, x2, y2, useTop2);
+                    except using HSV.
             */
-            
+
             return;
         }
-        
+
         ShapeFinder sf = new ShapeFinder(orderedBoundaries,
             listOfPointSets2, adjMap, template,
             template_ch_HSV, listOfCH);
@@ -1450,7 +1472,8 @@ public class AndroidStatuesTest extends TestCase {
 
     private void extractTemplateKeypoints(String fileNameRoot0,
         Set<PairInt> shape0, PairIntArray template,
-        TIntList templateKP0, TIntList templateKP1) throws IOException, Exception {
+        TIntList templateKP0, TIntList templateKP1,
+        TDoubleList templateOrientations) throws IOException, Exception {
 
         String fileName0 = fileNameRoot0 + ".jpg";
         String filePath0 = ResourceFinder
@@ -1481,8 +1504,8 @@ public class AndroidStatuesTest extends TestCase {
 
         ORBWrapper.extractKeypointsFromSubImage(
             img0, xLL, yLL, xUR, yUR,
-            200, templateKP0, templateKP1, 0.01f, true);
-
+            200, templateKP0, templateKP1, templateOrientations, 0.01f, true);
+        
         for (int i = 0; i < templateKP0.size(); ++i) {
             int x = templateKP1.get(i);
             int y = templateKP0.get(i);
@@ -1495,7 +1518,8 @@ public class AndroidStatuesTest extends TestCase {
         MiscDebug.writeImage(img0, "_template_orb");
     }
 
-    private void extractKeypoints(ImageExt img, List<Set<PairInt>> listOfPointSets,
+    private TDoubleList extractKeypoints(ImageExt img, 
+        List<Set<PairInt>> listOfPointSets,
         TIntList keypoints0, TIntList keypoints1) throws IOException, Exception {
 
         // bins of size template size across image
@@ -1508,12 +1532,14 @@ public class AndroidStatuesTest extends TestCase {
         orb.overrideToNotCreateDescriptors();
         orb.overrideToAlsoCreate2ndDerivKeypoints();
         orb.detectAndExtract(img);
-        
+
         keypoints0.addAll(orb.getAllKeyPoints0());
         keypoints1.addAll(orb.getAllKeyPoints1());
+        
+        TDoubleList or = orb.getAllOrientations();
 
         ImageExt img0 = img.copyToImageExt();
-        
+
         Set<PairInt> points = new HashSet<PairInt>();
         for (Set<PairInt> set : listOfPointSets) {
             points.addAll(set);
@@ -1522,6 +1548,7 @@ public class AndroidStatuesTest extends TestCase {
         Set<PairInt> exists = new HashSet<PairInt>();
         TIntList kp0 = new TIntArrayList();
         TIntList kp1 = new TIntArrayList();
+        TDoubleList orientations = new TDoubleArrayList();
         for (int i = 0; i < keypoints0.size(); ++i) {
             int x = keypoints1.get(i);
             int y = keypoints0.get(i);
@@ -1532,6 +1559,7 @@ public class AndroidStatuesTest extends TestCase {
             exists.add(p);
             kp0.add(y);
             kp1.add(x);
+            orientations.add(or.get(i));
             ImageIOHelper.addPointToImage(x, y, img0, 1, 255, 0, 0);
         }
         MiscDebug.writeImage(img0, "_srch_orb");
@@ -1540,6 +1568,19 @@ public class AndroidStatuesTest extends TestCase {
         keypoints1.clear();
         keypoints0.addAll(kp0);
         keypoints1.addAll(kp1);
+        
+        return orientations;
+    }
+
+    private Set<PairInt> createMedialAxis(Set<PairInt> points, 
+        Set<PairInt> perimeter) {
+
+        MedialAxis medAxis = new MedialAxis(points, perimeter);
+        medAxis.fastFindMedialAxis();
+
+        Set<PairInt> medAxisPts = medAxis.getMedialAxisPoints();
+
+        return medAxisPts;
     }
 
 }
