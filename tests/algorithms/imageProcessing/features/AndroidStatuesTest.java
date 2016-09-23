@@ -389,6 +389,44 @@ public class AndroidStatuesTest extends TestCase {
 
         extractKeypoints(img, listOfPointSets2, keypoints0, keypoints1);
 
+        if (true) { 
+            // try reduced descriptor matching w/ orb keypoints
+            
+            /*
+            rewrite this section to compare half descriptors of HSV
+                oriented inward towards the shape points.
+            
+            need to refactor a few things:
+               -- the above segmentation needs to separate the gradient
+                  to outside of the method so it can be re-used here
+                  with the intensity features.
+               -- the medial axes need to be saved also for re-use here.
+                  they're currently created in PerimeterFinder2
+               -- the ORBs need to be saved also or at least the
+                  keypoint orientations.
+               -- various existing method related to features need to
+                  be altered or specialized (see below).
+            then the orientation of each keypoint can be fetched.
+               then the medial axis used to further disambiguate
+               the orientation so that it points inward towards the shape 
+               points (for example, might need to be changed by 180 degrees).
+               then, the color descriptors can be made for that
+               orientation and keypoint using 
+                   IntensityDescriptor desc2_l = 
+                       features2.extractIntensityLOfCIELAB(redImg2,
+                       greenImg2, blueImg2, x2, y2, rot2);
+                   except that will use HSV instead.
+               then, both inward facing descriptors are compared with
+                   FeatureComparisonStat stat_deltaE = 
+                   IntensityClrFeatures.calculateHalfStats(
+                       desc1_l, desc1_a, desc1_b, x1, y1, useTop1,
+                       desc2_l, desc2_a, desc2_b, x2, y2, useTop2);
+                   except using HSV.
+            */
+            
+            return;
+        }
+        
         ShapeFinder sf = new ShapeFinder(orderedBoundaries,
             listOfPointSets2, adjMap, template,
             template_ch_HSV, listOfCH);
