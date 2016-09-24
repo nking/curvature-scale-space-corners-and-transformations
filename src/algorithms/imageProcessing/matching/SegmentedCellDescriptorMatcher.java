@@ -5,7 +5,6 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.features.IntensityClrFeatures2;
 import algorithms.util.PairInt;
-import algorithms.util.TwoDIntArray;
 import java.util.List;
 import java.util.Set;
 
@@ -97,7 +96,7 @@ public class SegmentedCellDescriptorMatcher {
     group location.
     
     The current goal is to find image 1 points as a single set of shape points
-    so this class data for image 1 may change... noting reuirements
+    so this class data for image 1 may change... noting requirements
     and what exists before making that decision...
     
     use case 1 (possibly the main and only use case):
@@ -135,7 +134,7 @@ public class SegmentedCellDescriptorMatcher {
        pausing here to consider global search pattern and how to store best
           results in evaluable steps.
     
-       (1) matching individual point matching:
+       (1) using individual point matching:
           comparisons are each point in one image compared to each in other
              image.
           if iterate over sets, each point might be in 2 sets,
@@ -152,6 +151,9 @@ public class SegmentedCellDescriptorMatcher {
               orientation directions essentially.
           ransac helps to determine best consistent points within the implied
              geometry of a correspondence list.
+          ** note that this approach should be less sensitive to scale differences
+             as long as both objects (template and the true search match) are
+             larger than the area of a descriptor at least...
              
        (2) OR ordered and aggregated (matches group points to another group's points:
           if use the keypoints on the boundaries only:
@@ -164,7 +166,7 @@ public class SegmentedCellDescriptorMatcher {
                combinations over segmented cells to find the best match.
                (did that with ShapeFinder, but using all boundary points and also
                 using small (fast) color histograms).
-               used floyd warshall pattern to be complete.  that search runtime
+               used floyd warshall pattern to be semi-complete.  that search runtime
                  is V^3 where V is the number of segmented cells in image 2.
                note that the same global search pattern but using a local 
                partial shape matcher style search but with hsv oriented 
@@ -194,8 +196,17 @@ public class SegmentedCellDescriptorMatcher {
                 matcher tailored for keypoint descriptors rather than chords).  
                 need to look at partial
                 shape matching runtime, but think that was roughly m * n.
-    
-    
+                note that the modified partial matcher has two different strict
+                models - one in which the spacing between points is the same
+                and the other being one in which the number of points in the
+                shapes is the same.  so modifying the partial shape matcher
+                to work with unevenly sampled keypoints does not look like it
+                will be a faster solution after all...interpolation makes more
+                points or exclusion reduces the points in a manner that is not
+                clearly exlcuding the worst matchable points...then consider that
+                the number of comparisons per point is not the single property of
+                the chord difference, it's the descriptor size number of comparisons
+                (which is 16 at smallest...).
     */
     
 }
