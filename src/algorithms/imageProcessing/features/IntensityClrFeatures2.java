@@ -1,9 +1,11 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.compGeometry.RotatedOffsets;
+import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.misc.Misc;
 import algorithms.util.PairInt;
+import java.awt.Color;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -71,7 +73,63 @@ public class IntensityClrFeatures2 {
     public IntensityDescriptor[] extractIntensityHSV(
         final int xCenter, final int yCenter, final int rotation) {
     
-        throw new UnsupportedOperationException("not yet implemented");
+        checkBounds(img, xCenter, yCenter);
+        
+        PairInt p = new PairInt(xCenter, yCenter);
+        
+        Integer rotationKey = Integer.valueOf(rotation);
+        
+        Map<Integer, IntensityDescriptor> descriptorsH = intensityHBlocks.get(p);
+        Map<Integer, IntensityDescriptor> descriptorsS = intensitySBlocks.get(p);
+        Map<Integer, IntensityDescriptor> descriptorsV = intensityVBlocks.get(p);
+        
+        IntensityDescriptor descriptorH = null;
+        
+        if (descriptorsH != null) {
+            
+            descriptorH = descriptorsH.get(rotationKey);
+            
+            if (descriptorH != null) {
+                // if H is present, then so are S and V
+                IntensityDescriptor descriptorS = descriptorsS.get(rotationKey);
+                IntensityDescriptor descriptorV = descriptorsV.get(rotationKey);
+                
+                return new IntensityDescriptor[]{descriptorH, descriptorS,
+                    descriptorV};
+            }
+        } else {
+            descriptorsH = new HashMap<Integer, IntensityDescriptor>();
+            intensityHBlocks.put(p, descriptorsH);
+            descriptorsS = new HashMap<Integer, IntensityDescriptor>();
+            intensitySBlocks.put(p, descriptorsS);
+            descriptorsV = new HashMap<Integer, IntensityDescriptor>();
+            intensityVBlocks.put(p, descriptorsV);
+        }
+        
+        IntensityDescriptor[] descriptors 
+            = extractHSVIntensitiesForCells(xCenter, yCenter, rotation);
+       
+        if (descriptors == null) {
+            return null;
+        }
+       
+        descriptorH = descriptors[0];
+        IntensityDescriptor descriptorS = descriptors[1];
+        IntensityDescriptor descriptorV = descriptors[2];
+        
+        if (useNormalizedIntensities && (descriptorH != null)) {
+            descriptorH.applyNormalization();
+            descriptorS.applyNormalization();
+            descriptorV.applyNormalization();
+        }
+        
+        if (descriptorH != null) {
+            descriptorsH.put(rotationKey, descriptorH);
+            descriptorsS.put(rotationKey, descriptorS);
+            descriptorsV.put(rotationKey, descriptorV);
+        }
+        
+        return descriptors;        
     }
     
     /**
@@ -219,4 +277,134 @@ public class IntensityClrFeatures2 {
         
         return stat;
     }
+    
+    protected void checkBounds(Image img, int x, int y) {
+        if (!isWithinXBounds(img, x)) {
+            throw new IllegalArgumentException("x is out of bounds of image");
+        }
+        if (!isWithinYBounds(img, y)) {
+            throw new IllegalArgumentException("y is out of bounds of image");
+        }
+    }
+    
+    protected boolean isWithinXBounds(Image img, int x) {
+        if (x < 0) {
+            return false;
+        }
+        if (x > (img.getWidth() - 1)) {
+            return false;
+        }
+        return true;
+    }
+    
+    protected boolean isWithinYBounds(Image img, int y) {
+        if (y < 0) {
+            return false;
+        }
+        if (y > (img.getHeight() - 1)) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * extract the H, S, V, intensities from the image in 2X2 cells surrounding
+     * (xCenter, yCenter) for 16 cells.
+     * @param xCenter
+     * @param yCenter
+     * @param rotation in degrees
+     * @param oInt represents whether to calculate O1, O2, or O3
+     * @return
+     */
+    private IntensityDescriptor[] extractHSVIntensitiesForCells(int xCenter, 
+        int yCenter, int rotation) {
+        
+        float sentinel = GsIntensityDescriptor.sentinel;
+        
+        float toIntFactor = 255.f;
+        
+        int cellDim = 2;        
+        int nCellsAcross = 6;
+        int nColsHalf = nCellsAcross / 2;
+        int range0 = cellDim * nColsHalf;
+        
+        int[] xOffsets = rotatedOffsets.getXOffsets(rotation);
+        int[] yOffsets = rotatedOffsets.getYOffsets(rotation);
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+
+        float[] outputH = new float[nCellsAcross * nCellsAcross];
+        float[] outputS = new float[nCellsAcross * nCellsAcross];
+        float[] outputV = new float[nCellsAcross * nCellsAcross];
+
+        int n2 = cellDim * cellDim;
+        
+        //index of center pixel in array of descriptor:
+        int centralPixelIndex = (nCellsAcross*nColsHalf) + nColsHalf;
+        
+        int count = 0;
+        int idx = 0;
+        for (int dx = -range0; dx < range0; dx += cellDim) {
+            for (int dy = -range0; dy < range0; dy += cellDim) {
+                boolean withinBounds = true;
+                int cCount = 0;
+                // ---- sum within the cell ----
+                double rV = 0;
+                double gV = 0;
+                double bV = 0;
+                for (int i = 0; i < n2; ++i) {
+                    int xOff = xOffsets[idx];
+                    int yOff = yOffsets[idx];
+                    idx++;
+                    int x = xOff + xCenter;
+                    int y = yOff + yCenter;
+                    if ((x < 0) || (x > (w - 1)) || (y < 0) || (y > (h - 1))) {
+                        withinBounds = false;
+                        break;
+                    }
+                    rV += img.getR(x, y);
+                    gV += img.getG(x, y);
+                    bV += img.getB(x, y);
+                    cCount++;
+                }
+                if (!withinBounds || (cCount == 0)) {
+                    if (count == centralPixelIndex) {
+                        return null;
+                    }
+                    outputH[count] = sentinel;
+                    outputS[count] = sentinel;
+                    outputV[count] = sentinel;
+                    count++;
+                    continue;
+                }
+                rV /= (float) cCount;
+                gV /= (float) cCount;
+                bV /= (float) cCount;
+                
+                float[] hsb = new float[3];
+                Color.RGBtoHSB((int)Math.round(rV), 
+                    (int)Math.round(gV), (int)Math.round(bV), hsb);
+                
+                int hV = Math.round(toIntFactor * hsb[0]);
+                int sV = Math.round(toIntFactor * hsb[1]);
+                int vV = Math.round(toIntFactor * hsb[2]);
+                
+                outputH[count] = hV;
+                outputS[count] = sV;
+                outputV[count] = vV;
+                count++;
+            }
+        }
+
+        IntensityDescriptor descH = new GsIntensityDescriptor(outputH, 
+            centralPixelIndex, nCellsAcross);
+        IntensityDescriptor descS = new GsIntensityDescriptor(outputS, 
+            centralPixelIndex, nCellsAcross);
+        IntensityDescriptor descV = new GsIntensityDescriptor(outputV, 
+            centralPixelIndex, nCellsAcross);
+        
+        return new IntensityDescriptor[]{descH, descS, descV};
+    }
+    
 }
