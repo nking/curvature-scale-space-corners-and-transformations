@@ -6631,8 +6631,7 @@ if (sum > 511) {
                         rotatePairsBy90(tmpC);
                         rotatePairsBy90(tmpD);
                     }
-                    // for each point, if it is present in C, but not in D,
-                    //  it remains in image
+                    
                     for (int x = 1; x < (img.getWidth() - 1); ++x) {
                         for (int y = 1; y < (img.getHeight() - 1); ++y) {
                             int v = img.getValue(x, y);
@@ -6649,7 +6648,7 @@ if (sum > 511) {
                             }
                         }
                     }
-                    MiscDebug.writeImage(out, "_thin_");
+                    //MiscDebug.writeImage(out, "_thin_");
                 }
                 
                 img.resetTo(out);

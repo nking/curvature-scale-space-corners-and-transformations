@@ -1,5 +1,7 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.transform.TransformationParameters;
+import algorithms.imageProcessing.transform.Transformer;
 import algorithms.util.PairInt;
 import java.util.HashSet;
 import java.util.Set;
@@ -124,6 +126,13 @@ public class ZhangSuenLineThinnerTest extends TestCase {
                 }
             }
         }
+        
+        TransformationParameters params = new TransformationParameters();
+        params.setRotationInDegrees(270);
+        params.setTranslationX(img.getHeight());
+        Transformer transformer = new Transformer();
+        img = transformer.applyTransformation(img, params, 
+            img.getHeight(), img.getWidth());
  
         ImageProcessor imageProcessor = new ImageProcessor();
         
