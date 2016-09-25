@@ -87,16 +87,19 @@ Still testing the class, there may be bugs present.
  Example Use:
     int nKeyPoints = 200;
     ORB orb = new ORB(nKeyPoints);
+    orb.overrideToAlsoCreate2ndDerivKeypoints();
     orb.detectAndExtract(image);
 
     // to get the list of keypoint coordinates in row-major, but separated:
     List TIntLis keypoints0 = orb.getAllKeyPoints0(); // rows being first dimension
     List TIntLis keypoints1 = orb.getAllKeyPoints1(); // cols being second dimension
 
+    // to get the descriptors:
     List Descriptors descList = orb.getDescriptors();
        or
     Descriptors desc = orb.getAllDescriptors();
 
+    // to use brute force, greedy best matching to make a correspondence list:
     int[][] matches = ORB.matchDescriptors(desc1.descriptors, desc2.descriptors);
  </pre>
  */
@@ -633,6 +636,7 @@ public class ORB {
         // weighting function for the auto-correlation matrix.
         float sigma = 1;
 
+        //[Axx, Axy, Ayy], that is Sobel x squared, x*y, y squared
         TwoDFloatArray[] tensorComponents = structureTensor(octaveImage, sigma);
 
         float[][] axxyy = multiply(tensorComponents[0].a,
@@ -655,6 +659,8 @@ public class ORB {
 
             // square of 2nd deriv:
             float[][] secondDeriv = add(tensorComponents[0].a, tensorComponents[2].a);
+            //secondDeriv = add(secondDeriv, tensorComponents[1].a);
+            
             peakLocalMax(secondDeriv, 1, 0.1f, kp0, kp1);
 
             //float min = MiscMath.findMin(secondDeriv);
