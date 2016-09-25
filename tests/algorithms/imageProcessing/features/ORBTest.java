@@ -27,7 +27,7 @@ public class ORBTest extends TestCase {
     public ORBTest() {
     }
     
-    public void estPeakLocalMax() {
+    public void testPeakLocalMax() {
         
         /*
         using a test embedded in scipy code.
@@ -125,7 +125,7 @@ public class ORBTest extends TestCase {
         }
     }
     
-    public void estCornerPeaks() {
+    public void testCornerPeaks() {
         
         ORB orb = new ORB(10);
         
@@ -347,7 +347,7 @@ public class ORBTest extends TestCase {
         */
     }
     
-    public void estTensor() {
+    public void testTensor() {
         
         /*
         >>> from skimage.feature import structure_tensor
@@ -420,7 +420,7 @@ public class ORBTest extends TestCase {
         assertTrue((Math.round(axx[3][1])/factor - 1.) < 0.01);
     }
     
-    public void estCornerHarris() {
+    public void testCornerHarris() {
         
         ORB orb = new ORB(100);
         
@@ -545,6 +545,7 @@ public class ORBTest extends TestCase {
         Image img0 = ImageIOHelper.readImageAsGrayScale(filePath);
         //ImageExt img = ImageIOHelper.readImageExt(filePath);
         ImageExt img = img0.copyToImageExt();
+                
         ORB orb = new ORB(500);
         //orb.overrideFastN(12);
         //orb.overrideFastThreshold(0.01f);
@@ -581,6 +582,7 @@ public class ORBTest extends TestCase {
         Image img0 = ImageIOHelper.readImageAsGrayScale(filePath);
         //ImageExt img = ImageIOHelper.readImageExt(filePath);
         ImageExt img = img0.copyToImageExt();
+                
         ORB orb = new ORB(500);
         //orb.overrideFastN(12);
         //orb.overrideFastThreshold(0.01f);
@@ -608,6 +610,7 @@ public class ORBTest extends TestCase {
         MiscDebug.writeImage(img0, "orb_keypoints_3");
         
     }
+    
     public void testKeypoints_4() throws Exception {
         
         String fileName = "blox.gif";

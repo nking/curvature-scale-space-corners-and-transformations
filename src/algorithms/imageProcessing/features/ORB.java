@@ -6,7 +6,6 @@ import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.Gaussian1D;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
-import algorithms.imageProcessing.ImageDisplayer;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MedianTransform;
@@ -375,9 +374,11 @@ public class ORB {
                     s.add(this.scalesList.get(idx1).get(idx2));
                     m.add(this.descriptorsList.get(idx1).mask.get(idx2));
 
-                    int[] d0 = this.descriptorsList.get(idx1).descriptors[idx2];
-                    d[dCount] = Arrays.copyOf(d0, d0.length);
-                    dCount++;
+                    if (doCreateDescriptors) {
+                        int[] d0 = this.descriptorsList.get(idx1).descriptors[idx2];
+                        d[dCount] = Arrays.copyOf(d0, d0.length);
+                        dCount++;
+                    }
                 }
 
                 keypoints0List2.add(kp0);
@@ -1478,6 +1479,13 @@ public class ORB {
     protected Descriptors extractOctave(float[][] octaveImage,
         TIntList keypoints0, TIntList keypoints1,
         TDoubleList orientations, TFloatList responses) {
+        
+        if (POS0 == null) {
+            POS0 = ORBDescriptorPositions.POS0;
+        }
+        if (POS1 == null) {
+            POS1 = ORBDescriptorPositions.POS1;
+        }
 
         assert(orientations.size() == keypoints0.size());
         assert(orientations.size() == keypoints1.size());
