@@ -88,5 +88,62 @@ public class ZhangSuenLineThinnerTest extends TestCase {
             System.out.println(sb.toString());
         }
     }
+    
+    public void testApplyLineThinner2() throws Exception {
+
+        // adapted from code at http://rosettacode.org/wiki/Zhang-Suen_thinning_algorithm#Java
+        
+        String[] image = new String[18];
+        image[0]  = "                                                          "; //0
+        image[1]  = " #################                   #############        "; //1
+        image[2]  = " ##################               ################        "; //2
+        image[3]  = " ###################            ##################        "; //3
+        image[4]  = " ########     #######          ###################        "; //4
+        image[5]  = "   ######     #######         #######       ######        "; //5
+        image[6]  = "   ######     #######        #######                      "; //6
+        image[7]  = "   #################         #######                      "; //7
+        image[8]  = "   ################          #######                      "; //8
+        image[9]  = "   #################         #######                      "; //9
+        image[10] = "   ######     #######        #######                      "; //10
+        image[11] = "   ######     #######        #######                      "; //11
+        image[12] = "   ######     #######         #######       ######        "; //12
+        image[13] = " ########     #######          ###################        "; //13
+        image[14] = " ########     ####### ######    ################## ###### "; //14
+        image[15] = " ########     ####### ######      ################ ###### "; //15
+        image[16] = " ########     ####### ######         ############# ###### "; //16
+        image[17] = "                                                          ";//17
+        //012345678901234567890123456789012345678901234567890123456789
+        //          1         2         3         4         5
+        
+        GreyscaleImage img = new GreyscaleImage(image.length, image[0].length());
+        for (int i = 0; i < image.length; ++i) {
+            String line = image[i];
+            for (int j = 0; j < line.length(); ++j) {
+                if (line.charAt(j) != ' ') {
+                    img.setValue(i, j, 255);
+                }
+            }
+        }
+ 
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        imageProcessor.applyThinning(img);
+        
+        for (int r = 0; r < img.getHeight(); r++) {
+            
+            StringBuffer sb = new StringBuffer();
+            
+            for (int c = 0; c < img.getWidth(); c++) {
+                int v = img.getValue(c, r);                
+                if (v != 0) {
+                    sb.append("#");
+                } else {
+                    sb.append(" ");
+                }
+            }
+            
+            System.out.println(sb.toString());
+        }
+    }
    
 }

@@ -1110,7 +1110,7 @@ if (sum > 511) {
             return 0;
         }
 
-        double theta = Math.atan2(gradientY, gradientX)*180./Math.PI;
+        double theta = Math.atan(gradientY/gradientX)*180./Math.PI;
 
         int angle = (int)theta;
 
@@ -6329,33 +6329,73 @@ if (sum > 511) {
     public PairIntArray extractSmoothedOrderedBoundary(
         Set<PairInt> contiguousPoints, int imgWidth, int imgHeight) {
         
-        return extractSmoothedOrderedBoundary(contiguousPoints, 
-            SIGMA.TWO, imgWidth, imgHeight);
+        return extractSmoothedOrderedBoundary(contiguousPoints, SIGMA.TWO, 
+            imgWidth, imgHeight);
     }
     
     /**
-     * NOTE: modifies input by the blur step.
-     * @param contiguousPoints
-     * @return 
+     * blur the points by sigma and trim any extending beyond image bounds.
+     * @param points
+     * @param sigma
+     * @param imgWidth
+     * @param imgHeight 
      */
-    public PairIntArray extractSmoothedOrderedBoundary(
-        Set<PairInt> contiguousPoints, SIGMA sigma, int imgWidth, int imgHeight) {
-                
-        blur(contiguousPoints, sigma);
+    public void blurAndTrim(Set<PairInt> points, SIGMA sigma, int imgWidth, 
+        int imgHeight) {
+        
+        blur(points, sigma);
         
         // trim any points extending beyond image bounds
         Set<PairInt> rm = new HashSet<PairInt>();
-        for (PairInt p : contiguousPoints) {
+        for (PairInt p : points) {
             if ((p.getX() > (imgWidth - 1)) || (p.getY() > (imgHeight - 1)) ||
                 (p.getX() < 0) || (p.getY() < 0)) {
                 rm.add(p);
             }
         }
-        contiguousPoints.removeAll(rm);
+        
+        points.removeAll(rm);
+    }
+    
+    /**
+     * NOTE: modifies input by the blur step.
+     * @param contiguousPoints
+     * @param sigma
+     * @param imgWidth
+     * @param imgHeight
+     * @return 
+     */
+    public PairIntArray extractSmoothedOrderedBoundary(
+        Set<PairInt> contiguousPoints, SIGMA sigma, int imgWidth, int imgHeight) {
+                
+        blurAndTrim(contiguousPoints, sigma, imgWidth, imgHeight);
         
         PerimeterFinder2 finder = new PerimeterFinder2();
         PairIntArray ordered = finder.extractOrderedBorder(
             contiguousPoints);
+    
+        return ordered;
+    }
+    
+    /**
+     * NOTE: modifies input by the blur step.
+     * @param contiguousPoints
+     * @param sigma
+     * @param imgWidth
+     * @param imgHeight
+     * @param outputMedialAxis - this variable is filled with medial axis points
+     * if not null
+     * @return 
+     */
+    public PairIntArray extractSmoothedOrderedBoundary(
+        Set<PairInt> contiguousPoints, SIGMA sigma, int imgWidth, 
+        int imgHeight, Set<PairInt> outputMedialAxis) {
+                
+        blurAndTrim(contiguousPoints, sigma, imgWidth, imgHeight);
+        
+        PerimeterFinder2 finder = new PerimeterFinder2();
+        PairIntArray ordered = finder.extractOrderedBorder(
+            contiguousPoints, outputMedialAxis);
     
         return ordered;
     }
@@ -6448,6 +6488,227 @@ if (sum > 511) {
         }
         
         System.out.println("adjacecny map filter removed " + rm.size());
+    }
+    
+    /**
+     * apply a dilate operator of size 3 x 3 to any pixel in image with value
+     * greater than 0.
+     * Note that if the img is not binary, the result may not be ideal because
+     * no attempt has been made to account for existing pixel value when 
+     * overwritten during dilation of adjacent pixel.
+     * 
+     * @param img 
+     * @return  
+     */
+    public GreyscaleImage dilate(GreyscaleImage img) {
+        return dilateOrErode(img, true);
+    }
+    
+    /**
+     * apply an erosion operator of size 3 x 3 to any pixel in image with value
+     * 0.
+     * 
+     * @param img 
+     * @return  
+     */
+    public GreyscaleImage erode(GreyscaleImage img) {
+       return dilateOrErode(img, false);
+    }
+    
+    /**
+     * 
+     * @param img 
+     * @return  
+     */
+    private GreyscaleImage dilateOrErode(GreyscaleImage img, boolean dilate) {
+       
+        int w = img.getWidth();
+        int h = img.getHeight();
+        int n = img.getNPixels();
+        
+        GreyscaleImage out = img.copyImage();
+        
+        for (int pixIdx = 0; pixIdx < n; ++pixIdx) {
+            int v = img.getValue(pixIdx);
+            if (dilate && v < 1) {
+                continue;
+            } else if (!dilate && v != 0) {
+                continue;
+            }
+            int x = img.getCol(pixIdx);
+            int y = img.getRow(pixIdx);
+            for (int i = -1; i <= 1; ++i) {
+                int x2 = x + i;
+                if (x2 < 0 || x2 > (w - 1)) {
+                    continue;
+                }
+                for (int j = -1; j <= 1; ++j) {
+                    if (i == 0 && j == 0) {
+                        continue;
+                    }
+                    int y2 = y + j;
+                    if (y2 < 0 || y2 > (h - 1)) {
+                        continue;
+                    }
+                    out.setValue(x2, y2, v);
+                }
+            }
+        }
+        
+        return out;
+    }
+    
+    /**
+     * apply erode then dilate
+     * 
+     * @param img
+     * @return 
+     */
+    public GreyscaleImage opening(GreyscaleImage img) {
+        GreyscaleImage erode = erode(img);
+        return dilate(erode);
+    }
+    
+    /**
+     * apply dilate then erode
+     * 
+     * @param img
+     * @return 
+     */
+    public GreyscaleImage closing(GreyscaleImage img) {
+        GreyscaleImage dilate = dilate(img);
+        return erode(dilate);
+    }
+    
+    /**
+     * apply 8 hit or miss filters iteratively until convergence to thin the
+     * image.  the operation is performed on all pixels with value > 0.
+     * @param img
+     */
+    public void applyThinning(GreyscaleImage img) {
+
+        //from https://en.wikipedia.org/wiki/Hit-or-miss_transform
+        // and thinning
+        GreyscaleImage out = img.copyImage();
+
+        // x,y pairs are sequential in these
+        int[] c1 = new int[]{0, 0, -1, -1, 0, -1, 1, -1};
+        int[] d1 = new int[]{-1, 1, 0, 1, 1, 1};
+        int[] c2 = new int[]{-1, 0, 0, 0, -1, -1, 0, -1};
+        int[] d2 = new int[]{0, 1, 1, 1, 1, 0};
+
+        /*
+        
+            - - -        - -
+              +        + + -
+            + + +      + +
+        
+        */
+        PairInt[][] neighborCoordOffsets
+            = AbstractLineThinner.createCoordinatePointsForEightNeighbors(
+            0, 0);
+
+        int nEdited = 0;
+        int nIter = 0;
+        do {
+            nEdited = 0;
+
+            // test c1, d1 and it rotated by 90 3 times
+            // test c2, d2 and it rotated by 90 3 times
+            // need to alternate direction of approach
+            for (int t = 0; t < 2; ++t) {
+                int[] tmpC;
+                int[] tmpD;
+                if (t == 0) {
+                    tmpC = Arrays.copyOf(c1, c1.length);
+                    tmpD = Arrays.copyOf(d1, d1.length);
+                } else {
+                    tmpC = Arrays.copyOf(c2, c2.length);
+                    tmpD = Arrays.copyOf(d2, d2.length);
+                }
+                for (int r = 0; r < 4; ++r) {
+                    if (r > 0) {
+                        rotatePairsBy90(tmpC);
+                        rotatePairsBy90(tmpD);
+                    }
+                    // for each point, if it is present in C, but not in D,
+                    //  it remains in image
+                    for (int x = 1; x < (img.getWidth() - 1); ++x) {
+                        for (int y = 1; y < (img.getHeight() - 1); ++y) {
+                            int v = img.getValue(x, y);
+                            if (v == 0) {
+                                continue;
+                            }
+                            if (allArePresent(img, x, y, tmpC)
+                                && allAreNotPresent(img, x, y, tmpD)) {
+                                if (!ImageSegmentation.doesDisconnect(out,
+                                    neighborCoordOffsets, x, y)) {
+                                    out.setValue(x, y, 0);
+                                    nEdited++;
+                                }
+                            }
+                        }
+                    }
+                    MiscDebug.writeImage(out, "_thin_");
+                }
+                
+                img.resetTo(out);
+            }
+            nIter++;
+        } while (nEdited > 0);
+        img.resetTo(out);
+    }
+    
+    private void rotatePairsBy90(int[] xy) {
+         
+        /*
+        int cos90 = 0;
+        int sin90 = 1;
+        scale = 1
+        xc = yc = 0
+        rotX = - (xc*scale + (((x0-xc)*scale*math.cos(theta))
+                 + ((y0-yc)*scale*math.sin(theta)))
+               = - (0 + (y0-0))
+               = -y0
+
+        rotY = - (yc*scale + ((-(x0-xc)*scale*math.sin(theta))
+                 + ((y0-yc)*scale*math.cos(theta)))
+               = - (0 + ((-(x0-0)))
+               = +x0
+        */
+        
+        for (int i = 0; i < xy.length; i += 2) {
+            int x = xy[i];
+            int y = xy[i + 1];
+            xy[i] = -y;
+            xy[i + 1] = x;
+        }
+    }
+    
+    private boolean allArePresent(GreyscaleImage img, int x, int y, int[] xy) {
+        
+        for (int k = 0; k < xy.length; k += 2) {
+            int tx = x + xy[k];
+            int ty = y + xy[k + 1];
+            if (img.getValue(tx, ty) == 0) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    private boolean allAreNotPresent(GreyscaleImage img, int x, int y, int[] xy) {
+        
+        for (int k = 0; k < xy.length; k += 2) {
+            int tx = x + xy[k];
+            int ty = y + xy[k + 1];
+            if (img.getValue(tx, ty) != 0) {
+                return false;
+            }
+        }
+        
+        return true;
     }
     
 }
