@@ -114,7 +114,7 @@ public class SLICSuperPixels {
     /**
      * an optional method to set the gradient, else is
      * calculated internal to the class and discarded.
-     * @param gradient 
+     * @param gradientImg
      */
     public void setGradient(GreyscaleImage gradientImg) {
        

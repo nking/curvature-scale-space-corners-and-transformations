@@ -4,6 +4,7 @@ import algorithms.MultiArrayMergeSort;
 import algorithms.compGeometry.MedialAxis;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.compGeometry.RotatedOffsets;
+import algorithms.compGeometry.clustering.KMeansHSV;
 import algorithms.compGeometry.clustering.KMeansPlusPlus;
 import algorithms.compGeometry.clustering.KMeansPlusPlusColor;
 import algorithms.imageProcessing.CIEChromaticity;
@@ -14,6 +15,7 @@ import algorithms.imageProcessing.DFSContiguousValueFinder;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.GroupPixelColors;
 import algorithms.imageProcessing.GroupPixelRGB;
+import algorithms.imageProcessing.GroupPixelRGB0;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
@@ -319,6 +321,8 @@ public class AndroidStatuesTest extends TestCase {
         int[][] template_ch_HSV = clrHist.histogramHSV(imgs0[1], shape0);
 
         String fileName1 = "android_statues_02.jpg";
+        //fileName1 = "android_statues_01.jpg";
+        //fileName1 = "android_statues_04.jpg";
 
         String fileName1Root = fileName1.substring(0, fileName1.lastIndexOf("."));
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
@@ -346,9 +350,56 @@ public class AndroidStatuesTest extends TestCase {
 
         List<TwoDIntArray> listOfCH = new ArrayList<TwoDIntArray>();
 
-        imageSegmentation.filterUsingColorHistogramDifference(imgCp,
-            labels4, imgs0[1], shape0, listOfPointSets2, listOfCH);
-
+        List<PairInt> outputListOfSeeds = new ArrayList<PairInt>();
+        List<GroupPixelRGB0> outputSeedColors = new ArrayList<GroupPixelRGB0>();
+        
+        imageSegmentation.filterUsingColorHistogramDifference(
+            imgCp, labels4, imgs0[1], shape0, 
+            listOfPointSets2, listOfCH,
+            outputListOfSeeds, outputSeedColors);
+        
+        /* TODO: looking at partial shape matching instead of color within
+        a kmeans algorithm...
+        
+        KMeansHSV hmeansHSV = new KMeansHSV(outputListOfSeeds, 
+            outputSeedColors, imgCp);
+        TIntList hmLabels = hmeansHSV.computeMeans(listOfPointSets2);
+        
+        //group together the unitSets with same label
+        List<Set<PairInt>> listOfPointSets3 = new ArrayList<Set<PairInt>>();
+        List<TwoDIntArray> listOfCH2 = new ArrayList<TwoDIntArray>();
+        for (int i = 0; i < hmLabels.size(); ++i) {
+            listOfPointSets3.add(new HashSet<PairInt>());
+            TwoDIntArray a = new TwoDIntArray();
+            a.a = Arrays.copyOf(listOfCH.get(0).a, listOfCH.get(0).a.length);
+            listOfCH2.add(a);
+        }
+        for (int i = 0; i < hmLabels.size(); ++i) {
+            int seedIdx = hmLabels.get(i);
+            Set<PairInt> set = listOfPointSets2.get(i);
+            listOfPointSets3.get(seedIdx).addAll(set);
+            int[][] ch = listOfCH.get(i).a;
+            int[][] ch0 = listOfCH2.get(seedIdx).a;
+            clrHist.add2To1(ch, ch0);
+        }
+        for (int i = (listOfPointSets3.size() - 1); i > -1; --i) {
+            Set<PairInt> set = listOfPointSets3.get(i);
+            if (set.isEmpty()) {
+                listOfPointSets3.remove(i);
+                listOfCH2.remove(i);
+            }
+        }
+        listOfPointSets2 = listOfPointSets3;
+        listOfCH = listOfCH2;
+        Arrays.fill(labels4, -1);
+        for (int i = 0; i < listOfPointSets3.size(); ++i) {
+            for (PairInt p : listOfPointSets3.get(i)) {
+                int pixIdx = img.getInternalIndex(p);
+                labels4[pixIdx] = i;
+            }
+        }
+        */
+      
         ImageExt img11 = img.createWithDimensions();
         ImageIOHelper.addAlternatingColorLabelsToRegion(img11, labels4);
         MiscDebug.writeImage(img11, "_filtered_" + fileName1Root);
@@ -419,7 +470,7 @@ public class AndroidStatuesTest extends TestCase {
             srchKP[i][0] = keypoints1.get(i);
         }
 
-        if (true) {
+        if (false) {
 
             SegmentedCellDescriptorMatcher matcher = 
                 new SegmentedCellDescriptorMatcher(imgs0[0], img,
@@ -430,7 +481,9 @@ public class AndroidStatuesTest extends TestCase {
                 templateMedialAxis, medialAxisList,
                 RotatedOffsets.getInstance());
             
-            matcher.matchPointsSingly();
+            //matcher.matchPointsSingly();
+            
+            matcher.matchPointsInGroups();
             
             // try reduced descriptor matching w/ orb keypoints
 
@@ -1554,7 +1607,7 @@ public class AndroidStatuesTest extends TestCase {
         int h = img.getHeight();
 
         ORB orb = new ORB(1000);
-        orb.overrideFastThreshold(0.01f);
+        //orb.overrideFastThreshold(0.01f);
         orb.overrideToNotCreateDescriptors();
         orb.overrideToAlsoCreate2ndDerivKeypoints();
         orb.detectAndExtract(img);

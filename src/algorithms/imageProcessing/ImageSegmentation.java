@@ -13946,16 +13946,36 @@ int z = 1;
         clusterSets.addAll(out);
     }
     
+    /**
+     * filters the groups of labeled points to remove those which have color
+     * histograms with small intersections with the template color histogram.
+     * runs a few more iterations of the reduction to leave roughly 16 segmented
+     * cells and then returns the centroids of the contiguous aggregation of
+     * those as outputListOfSeeds.  The outputListOfSeeds is meant to be
+     * used for a subsequent kmeans clustering.
+     * 
+     * @param img
+     * @param labels
+     * @param templateImg
+     * @param templatePoints
+     * @param outputListOfPointSets
+     * @param outputListOfCHs
+     * @param outputListOfSeeds 
+     * @param outputSeedColors 
+     */
     public void filterUsingColorHistogramDifference(ImageExt img,
         int[] labels, ImageExt templateImg, Set<PairInt> templatePoints,
         List<Set<PairInt>> outputListOfPointSets,
-        List<TwoDIntArray> outputListOfCHs
-        ) {
+        List<TwoDIntArray> outputListOfCHs, 
+        List<PairInt> outputListOfSeeds, 
+        List<GroupPixelRGB0> outputSeedColors) {
+        
+        //TODO: reduce the redundancy with other method
+        // filterUsingColorHistogramDifference
+        // or remove it if not used
         
         float deltaELimit = 8.5f;
-        //NOTE: can increase this to 0.25 for one test
-        float chLimit1 = 0.2f;
-            
+        
         assert(labels.length == img.getNPixels());
         
         int[] labels2 = Arrays.copyOf(labels, labels.length);
@@ -13994,7 +14014,7 @@ int z = 1;
                 outputListOfCHs.add(a);
             }
         }
-        
+       
         // make a grid of 2D bins across the image of size 
         // 1 or 1/2 or 1/3 template size for each dimension.
         // for each bin
@@ -14002,7 +14022,7 @@ int z = 1;
         //   -- make a color histogram and if intersection is very small,
         //      -- check to make sure that the individual cells have
         //         similar color (can safely remove them as a group them)
-                                
+        
         int[] minMaxXY = MiscMath.findMinMaxXY(templatePoints);
         int xLen = minMaxXY[1] - minMaxXY[0];
         int yLen = minMaxXY[3] - minMaxXY[2];
@@ -14011,71 +14031,127 @@ int z = 1;
         int nX = 2 * ((int)Math.floor(img.getWidth()/maxDim) + 1);
         int nY = 2 * ((int)Math.floor(img.getHeight()/maxDim) + 1);
         
-        Set<Integer> remove = new HashSet<Integer>();
+        System.out.println("number of segmented cells=" 
+            + outputListOfPointSets.size());
         
-        for (int j = 0; j < nY; ++j) {
-            int startY = (maxDim/2) * j;
-            if (startY > (img.getHeight() - 1)) {
-                continue;
-            }
-            int stopY = startY + maxDim;
-            if (stopY >= img.getHeight()) {
-                stopY = img.getHeight() - 1;
-            }
-            Interval<Integer> intY = new Interval<Integer>(startY, stopY);
-            for (int i = 0; i < nX; ++i) {
-                int startX = (maxDim/2) * i;
-                if (startX > (img.getWidth() - 1)) {
+        TIntSet remove = new TIntHashSet();
+        TIntSet removeForSeeds = new TIntHashSet();
+        Set<PairInt> skipYX = new HashSet<PairInt>();
+        
+        int nIter = 0;
+        float[] chLimit1s = new float[]{0.2f, 0.35f, 0.45f, 0.5f, 0.55f, 0.6f};
+        
+        // iterate until about 16 cells are left
+        while (nIter < 6) {
+            
+            //NOTE: can increase this to 0.25 for one test
+            float chLimit1 = chLimit1s[nIter];
+            nIter++;
+    
+            for (int j = 0; j < nY; ++j) {
+                int startY = (maxDim/2) * j;
+                if (startY > (img.getHeight() - 1)) {
                     continue;
                 }
-                int stopX = startX + maxDim;
-                if (stopX >= img.getWidth()) {
-                    stopX = img.getWidth() - 1;
+                int stopY = startY + maxDim;
+                if (stopY >= img.getHeight()) {
+                    stopY = img.getHeight() - 1;
                 }
-                Interval<Integer> intX = new Interval<Integer>(startX, stopX);
-                Interval2D<Integer> rect = new Interval2D<Integer>(intX, intY);
-  //TODO: need tests for this query              
-                List<Integer> indexes = qt.query2D(rect);
-                if (indexes.isEmpty()) {
-                    continue;
-                }
-                int[][] ch0 = outputListOfCHs.get(indexes.get(0).intValue()).a;
-                int[][] ch = Arrays.copyOf(ch0, ch0.length);
-                for (int k = 1; k < indexes.size(); ++k) {
-                    clrHist.add2To1(ch, 
-                        outputListOfCHs.get(indexes.get(k).intValue()).a);
-                }
-                float intersection = clrHist.intersection(templateCH, ch);
-                
-                System.out.println(String.format(
-                    "bin (%d:%d, %d:%d)  intersection=%.4f", startX, stopX, 
-                    startY, stopY, intersection));
-                
-                if (intersection < chLimit1) {
-                    // calc avg and std dev rgb and cieX,cieY
-                    int[] avgStdv = calcStdDev(listOfColors, indexes);
-                    System.out.println("stdv=" + Arrays.toString(avgStdv));
-                    if (avgStdv[1] < (0.2*255)) {
-                        // remove these
-                        remove.addAll(indexes);
+                Interval<Integer> intY = new Interval<Integer>(startY, stopY);
+                for (int i = 0; i < nX; ++i) {
+                    int startX = (maxDim/2) * i;
+                    if (startX > (img.getWidth() - 1)) {
+                        continue;
+                    }
+                    int stopX = startX + maxDim;
+                    if (stopX >= img.getWidth()) {
+                        stopX = img.getWidth() - 1;
+                    }
+
+                    if (skipYX.contains(new PairInt(j, i))) {
+                        continue;
+                    }
+
+                    Interval<Integer> intX = new Interval<Integer>(startX, stopX);
+                    Interval2D<Integer> rect = new Interval2D<Integer>(intX, intY);
+                 
+                    List<Integer> indexes = qt.query2D(rect);
+                    if (indexes.isEmpty()) {
+                        continue;
+                    }
+                    int[][] ch0 = outputListOfCHs.get(indexes.get(0).intValue()).a;
+                    int[][] ch = Arrays.copyOf(ch0, ch0.length);
+                    for (int k = 1; k < indexes.size(); ++k) {
+                        clrHist.add2To1(ch, 
+                            outputListOfCHs.get(indexes.get(k).intValue()).a);
+                    }
+                    float intersection = clrHist.intersection(templateCH, ch);
+
+                    System.out.println(String.format(
+                        "bin (%d:%d, %d:%d)  intersection=%.4f", startX, stopX, 
+                        startY, stopY, intersection));
+
+                    if (intersection < chLimit1) {
+                        // calc avg and std dev rgb and cieX,cieY
+                        int[] avgStdv = calcStdDev(listOfColors, indexes);
+                        System.out.println("stdv=" + Arrays.toString(avgStdv));
+                        if (avgStdv[1] < (0.2*255)) {
+                            // remove these
+                            if (nIter == 1) {
+                                remove.addAll(indexes);
+                            }
+                            removeForSeeds.addAll(indexes);
+                            skipYX.add(new PairInt(j, i));
+                        }
                     }
                 }
             }
+            
+            //TODO: this could be revised
+            int ns = outputListOfPointSets.size() - removeForSeeds.size();
+            if (ns < 2*16) {
+                break;
+            }
         }
         
+        // copy outputListOfPointSets for separate seeds calc
+        List<Set<PairInt>> tmpSeedSets = new ArrayList<Set<PairInt>>();
+        for (Set<PairInt> set : outputListOfPointSets) {
+            tmpSeedSets.add(new HashSet<PairInt>(set));
+        }
+            
         System.out.println("removing " + remove.size() + " more segmented cells");
         
-        if (!remove.isEmpty()) {
-            TIntList sorted = new TIntArrayList();
-            for (Integer index : remove) {
-                sorted.add(index.intValue());
-            }
+        if (!remove.isEmpty() || !removeForSeeds.isEmpty()) {
+            
+            TIntList sorted = new TIntArrayList(remove);
             sorted.sort();
             for (int i = (sorted.size() - 1); i > -1; --i) {
                 int idx = sorted.get(i);
                 outputListOfPointSets.remove(idx);
                 outputListOfCHs.remove(idx);
             }
+            
+            sorted = new TIntArrayList(removeForSeeds);
+            sorted.sort();
+            for (int i = (sorted.size() - 1); i > -1; --i) {
+                int idx = sorted.get(i);
+                tmpSeedSets.remove(idx);
+            }
+        }
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        for (int i = 0; i < tmpSeedSets.size(); ++i) {
+            
+            Set<PairInt> set = tmpSeedSets.get(i);
+            
+            double[] xyCen = curveHelper.calculateXYCentroids(set);
+            outputListOfSeeds.add(new PairInt(
+                (int)Math.round(xyCen[0]), (int)Math.round(xyCen[0])));
+            
+            GroupPixelRGB0 clrs = new GroupPixelRGB0();
+            clrs.calculateColors(set, img, 0, 0);
+            outputSeedColors.add(clrs);            
         }
         
         Arrays.fill(labels, -1);
@@ -14087,4 +14163,5 @@ int z = 1;
             }
         }
     }
+    
 }

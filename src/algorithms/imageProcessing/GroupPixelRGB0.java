@@ -14,12 +14,14 @@ public class GroupPixelRGB0 {
     protected float avgRed;
     protected float avgGreen;
     protected float avgBlue;
-    
+    protected int nPoints;
 
     public GroupPixelRGB0() {
     }
 
-    protected void calculateColors(final Set<PairInt> points, ImageExt colorImage, int xOffset, int yOffset) {
+    public void calculateColors(final Set<PairInt> points, ImageExt colorImage, 
+        int xOffset, int yOffset) {
+        
         float n = points.size();
         float sumRed = 0;
         float sumGreen = 0;
@@ -37,6 +39,7 @@ public class GroupPixelRGB0 {
         avgRed = sumRed / n;
         avgGreen = sumGreen / n;
         avgBlue = sumBlue / n;
+        nPoints = points.size();
     }
     
     protected void calculateColors(final TIntSet pointIndexes, 
@@ -90,7 +93,7 @@ public class GroupPixelRGB0 {
     @Override
     public String toString() {
         
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder("n=").append(nPoints);
         sb.append(" avgRed=").append(avgRed).append("\n")
         .append(" avgGreen=").append(avgGreen).append("\n")
         .append(" avgBlue=").append(avgBlue).append("\n")

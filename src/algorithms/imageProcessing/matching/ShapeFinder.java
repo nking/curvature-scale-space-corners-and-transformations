@@ -375,6 +375,8 @@ public class ShapeFinder {
         
         double minCost = Double.MAX_VALUE;
         VeryLongBitString minBitString = null;
+        
+        long tShapeSum = 0;
          
         for (int j = 0; j < nY; ++j) {
             int startY = (maxDim/nPPB) * j;
@@ -387,6 +389,9 @@ public class ShapeFinder {
             }
             Interval<Integer> intY = new Interval<Integer>(startY, stopY);
             for (int i = 0; i < nX; ++i) {
+                
+                long t0 = System.currentTimeMillis();
+                
                 int startX = (maxDim/nPPB) * i;
                 if (startX > (w - 1)) {
                     continue;
@@ -433,14 +438,24 @@ public class ShapeFinder {
                     minCost = cost;
                     minBitString = bitString;
                 }
+               
+                long t1 = System.currentTimeMillis();
+                long t1Sec = (t1 - t0) / 1000;
+                System.out.println(t1Sec + " sec to match " + template.getN()
+                    + " points to " + aggregatedBoundaries.get(bitString).getN());
+                tShapeSum += t1Sec;
             }
         }
+        
+        System.out.println("time spent in shape matching=" + tShapeSum);
         
         System.out.println("binCount=" + binCount);
 
         if (minBitString == null) {
             return null;
         }
+
+        long t0 = System.currentTimeMillis();
         
         // ---- choosing nTop results from below to return as results -------
 
@@ -570,6 +585,10 @@ public class ShapeFinder {
         data[0] = tBS;
         data[1] = aggregatedBoundaries.get(tBS);
         results[0].setData(data);
+       
+        long t1 = System.currentTimeMillis();
+        long t1Sec = (t1 - t0)/1000;
+        System.out.println("post shape mtching filter time = " + t1Sec);
         
         return results;
     }    
