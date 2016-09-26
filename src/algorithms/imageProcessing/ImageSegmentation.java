@@ -10530,7 +10530,18 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         return false;
     }
 
-    private GreyscaleImage createGradient(ImageExt img,
+    /**
+     * 
+     * @param img
+     * @param gradientMethod 
+     * 0=CannyEdgeFilterAdaptiveDeltaE2000 + CannyEdgeFilterAdaptive,
+     * 1=CannyEdgeFilterAdaptive, 
+     * 2=CannyEdgeFilterAdaptiveDeltaE2000,
+     * 3=PhaseCongruencyDetector
+     * @param ts timestamp used in debugging image name
+     * @return 
+     */
+    public GreyscaleImage createGradient(ImageExt img,
         int gradientMethod, long ts) {
 
         ImageExt imgCp = img.copyToImageExt();
@@ -13420,24 +13431,39 @@ int z = 1;
      * color merging methods to result in an image which is
      * still over-segmented, but a result which is searchable
      * for shapes.  NOTE that this is tailored for images
-     * binned to size 256 on a side.
+     * binned to near size 256 on a side.
      * @param img
      * @return
      */
     public int[] objectSegmentation(ImageExt img) {
 
         long ts = MiscDebug.getCurrentTimeFormatted();
-        GreyscaleImage gsImg = img.copyToGreyscale();
-        ImageExt imgCp = img.copyToImageExt();
-
-        int w = img.getWidth();
-        int h = img.getHeight();
 
         //0=canny gs+LAB, 1=canny gs, 2=canny lab, 3=phase cong
         int gradientMethod = 3;//1;
 
-        gsImg = createGradient(img, gradientMethod, ts);
+        GreyscaleImage gsImg = createGradient(img, gradientMethod, ts);
 
+        return objectSegmentation(img, gsImg);
+    }
+    
+    /**
+     * a segmentation method that uses super pixels and a few
+     * color merging methods to result in an image which is
+     * still over-segmented, but a result which is searchable
+     * for shapes.  NOTE that this is tailored for images
+     * binned to near size 256 on a side.
+     * @param img
+     * @param gradient
+     * @return
+     */
+    public int[] objectSegmentation(ImageExt img, final GreyscaleImage gradient) {
+
+        long ts = MiscDebug.getCurrentTimeFormatted();
+        ImageExt imgCp = img.copyToImageExt();
+
+        int w = img.getWidth();
+        int h = img.getHeight();
 
         // extrapolate boundaries at nclusters=x1
         //   NOTE: this method is tailored for images
@@ -13457,7 +13483,7 @@ int z = 1;
         log.info("  n1=" + n10 + "," + n11);
         int nc = (n10+n11)/2;
         SLICSuperPixels slic = new SLICSuperPixels(imgCp, nc);
-        slic.setGradient(gsImg);
+        slic.setGradient(gradient);
         slic.calculate();
         int[] labels = slic.getLabels();
         
@@ -13469,11 +13495,6 @@ int z = 1;
 
         List<Set<PairInt>> contigSets = LabelToColorHelper
             .extractContiguousLabelPoints(img, labels);
-        //PerimeterFinder2 finder2 = new PerimeterFinder2();
-        //List<Set<PairInt>> borders = new ArrayList<Set<PairInt>>();
-        //for (Set<PairInt> set : contigSets) {
-        //    borders.add(finder2.extractBorder(set));
-        //}
 
         int sizeLimit = 31;
         if (img.getNPixels() < 100) {
@@ -13484,26 +13505,7 @@ int z = 1;
         labels = mergeByColor(imgCp, contigSets, ColorSpace.HSV, 0.095f);//0.1f);
         mergeSmallSegments(imgCp, labels, sizeLimit, ColorSpace.HSV);
     
-        //contigSets = LabelToColorHelper
-        //    .extractContiguousLabelPoints(img, labels);
-        
-        //separateByErosion(contigSets, 1);
-        
-        //imgCp = img.copyToImageExt();
-        //LabelToColorHelper.applyLabels(imgCp, labels2);
-        //ImageProcessor imageProcessor = new ImageProcessor();
-        //GreyscaleImage aGsImg = imgCp.copyToGreyscale();
-        //imageProcessor.applyAdaptiveMeanThresholding(aGsImg, 1);
-        //MiscDebug.writeImage(aGsImg, "_adapt_" + ts);
-
         return labels;
-        
-        /*
-        NormalizedCuts normCuts = new NormalizedCuts();
-        normCuts.setColorSpaceToRGB();
-        //normCuts.setToLowThresholdHSV();
-        int[] labels2 = normCuts.normalizedCut(imgCp, labels);
-        */
     }
 
     private TIntSet findIntersection(GreyscaleImage gradient,
@@ -13950,7 +13952,7 @@ int z = 1;
         List<TwoDIntArray> outputListOfCHs
         ) {
         
-        float deltaELimit = 7.f;
+        float deltaELimit = 8.5f;
         //NOTE: can increase this to 0.25 for one test
         float chLimit1 = 0.2f;
             

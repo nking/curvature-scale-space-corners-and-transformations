@@ -9,6 +9,7 @@ import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MedianTransform;
+import algorithms.imageProcessing.SIGMA;
 import algorithms.misc.MiscMath;
 import algorithms.misc.StatsInSlidingWindow;
 import algorithms.util.PairInt;
@@ -629,7 +630,7 @@ public class ORB {
         //    + " fastThreshold=" + fastThreshold
         //    + "\nkeypoints=" + keypoints1);
 
-        maskCoordinates(keypoints0, keypoints1, nRows, nCols, 16);
+        maskCoordinates(keypoints0, keypoints1, nRows, nCols, 8);//16);
 
         
         // Standard deviation used for the Gaussian kernel, which is used as
@@ -650,6 +651,7 @@ public class ORB {
         float[][] traceA = add(tensorComponents[0].a,
             tensorComponents[2].a);
 
+       
         if (doCreate2ndDerivKeypoints) {
             
             float hLimit = 0.09f;//0.05f;
@@ -679,39 +681,49 @@ public class ORB {
                     keypoints1.add(y);
                 }
             }
-
             /*
             try {
 
                 float factor = 255.f;
-                Image gsImg = new Image(nRows, nCols);
+                GreyscaleImage gsImg = new GreyscaleImage(nRows, nCols);
                 for (int i = 0; i < nRows; ++i) {
                     for (int j = 0; j < nCols; ++j) {
                         int v = Math.round(factor * octaveImage[i][j]);
                         if (v > 255) {
                             v = 255;
                         }
-                        gsImg.setRGB(i, j, v, v, v);
+                        gsImg.setValue(i, j, v);
                     }
                 }
                 System.out.println("nRows=" + nRows + " nCols=" + nCols);
-                for (int i = 0; i < kp0.size(); ++i) {
-                    int x = kp0.get(i);
-                    int y = kp1.get(i);
-                    // harmonic mean, Brown, Szeliski, and Winder (2005),
-                    float hMean = (detA[x][y]/traceA[x][y]);
-                    if (hMean > hLimit) {
-                        System.out.println(String.format("(%d,%d) detA/tr=%.4f",
-                            x, y, hMean));
-                        gsImg.setRGB(x, y, 255, 0, 0);
-                    }
-                }
-                ImageDisplayer.displayImage("2nd deriv", gsImg);
+                algorithms.imageProcessing.ImageDisplayer.displayImage("adap mean", gsImg);
                 int z = 1;
             } catch(Exception e) {}
             */
         }
         
+        // size is same a octaveImage
+        float[][] harrisResponse = cornerHarris(octaveImage, detA, traceA);
+
+        TIntList kp0 = new TIntArrayList();
+        TIntList kp1 = new TIntArrayList();
+        TFloatList responses = new TFloatArrayList(keypoints0.size());
+        for (int i = 0; i < keypoints0.size(); ++i) {
+            int x = keypoints0.get(i);
+            int y = keypoints1.get(i);
+            float v = harrisResponse[x][y];
+            //if (v > 0) {
+                responses.add(v);
+                kp0.add(x);
+                kp1.add(y);
+            //}
+        }
+        if (kp0.size() < keypoints0.size()) {
+            keypoints0.clear();
+            keypoints1.clear();
+            keypoints0.addAll(kp0);
+            keypoints1.addAll(kp1);
+        }
         
         // size is keyPoints2.size/2
         double[] orientations2 = cornerOrientations(octaveImage,
@@ -719,17 +731,7 @@ public class ORB {
         assert(orientations2.length == keypoints0.size());
         assert(orientations2.length == keypoints1.size());
 
-
-        // size is same a octaveImage
-        float[][] harrisResponse = cornerHarris(octaveImage, detA, traceA);
-
-        TFloatList responses = new TFloatArrayList(orientations2.length);
-        for (int i = 0; i < keypoints0.size(); ++i) {
-            int x = keypoints0.get(i);
-            int y = keypoints1.get(i);
-            responses.add(harrisResponse[x][y]);
-        }
-
+        
         Resp r2 = new Resp();
         r2.keypoints0 = keypoints0;
         r2.keypoints1 = keypoints1;
@@ -1398,7 +1400,7 @@ public class ORB {
         // method = 'k'.  k is Sensitivity factor to separate corners from edges,
         // Small values of k result in detection of sharp corners.
         float k = this.harrisK;
-
+  
         //response = detA - k * traceA ** 2
         float[][] response = copy(detA);
         for (int i = 0; i < detA.length; ++i) {
@@ -1407,7 +1409,7 @@ public class ORB {
                 response[i][j] -= v;
             }
         }
-
+        
         return response;
     }
 
@@ -1504,7 +1506,7 @@ public class ORB {
         // indicating if pixels are within the image (``True``) or in the
         // border region of the image (``False``).
         TIntList mask = maskCoordinatesIfBorder(keypoints0, keypoints1,
-            nRows, nCols, 16);
+            nRows, nCols, 5);//16);
 
         assert(orientations.size() == keypoints0.size());
         assert(orientations.size() == keypoints1.size());

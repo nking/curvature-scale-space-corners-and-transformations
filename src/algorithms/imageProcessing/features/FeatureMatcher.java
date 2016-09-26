@@ -1707,7 +1707,7 @@ public class FeatureMatcher {
         if (desc2_b == null) {
             return null;
         }
-            
+           
         IntensityDescriptor desc1_l = features1.extractIntensityLOfCIELAB(redImg1, 
             greenImg1, blueImg1, x1, y1, rot1);
         if (desc1_l == null) {

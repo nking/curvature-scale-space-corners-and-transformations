@@ -4,6 +4,8 @@ import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageDisplayer;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.features.ORB.TwoDFloatArray;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
@@ -531,7 +533,7 @@ public class ORBTest extends TestCase {
             int x = keypoints1.get(i);
             ImageIOHelper.addPointToImage(x, y, img0, 2, 255, 0, 0);
         }
-        MiscDebug.writeImage(img0, "orb_keypoints");
+        MiscDebug.writeImage(img0, "orb_keypoints_01");
         
     }
     
@@ -542,6 +544,9 @@ public class ORBTest extends TestCase {
         Image img0 = ImageIOHelper.readImageAsGrayScale(filePath);
         //ImageExt img = ImageIOHelper.readImageExt(filePath);
         ImageExt img = img0.copyToImageExt();
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        imageProcessor.blur(img, SIGMA.getValue(SIGMA.ONE), 0, 255);
         
         //NOTE: the ridges are picked up well with reduced threshold
         
@@ -555,21 +560,13 @@ public class ORBTest extends TestCase {
         
         TIntList keypoints0 = orb.getAllKeyPoints0();
         TIntList keypoints1 = orb.getAllKeyPoints1();
-        TFloatList scales = orb.getAllScales();
-        TFloatList responses = orb.getAllHarrisResponses();
-        TDoubleList orientations = orb.getAllOrientations();
-        //System.out.println("keypoints0=" + keypoints0.toString());
-        //System.out.println("keypoints1=" + keypoints1.toString());
-        //System.out.println("scales=" + scales.toString());
-        //System.out.println("responses=" + responses.toString());
-        //System.out.println("orientations=" + orientations.toString());
         
         for (int i = 0; i < keypoints0.size(); ++i) {
             int y = keypoints0.get(i);
             int x = keypoints1.get(i);
             ImageIOHelper.addPointToImage(x, y, img0, 2, 255, 0, 0);
         }
-        MiscDebug.writeImage(img0, "orb_keypoints_2");
+        MiscDebug.writeImage(img0, "orb_keypoints_02");
         
     }
     
@@ -593,21 +590,13 @@ public class ORBTest extends TestCase {
         
         TIntList keypoints0 = orb.getAllKeyPoints0();
         TIntList keypoints1 = orb.getAllKeyPoints1();
-        TFloatList scales = orb.getAllScales();
-        TFloatList responses = orb.getAllHarrisResponses();
-        TDoubleList orientations = orb.getAllOrientations();
-        //System.out.println("keypoints0=" + keypoints0.toString());
-        //System.out.println("keypoints1=" + keypoints1.toString());
-        //System.out.println("scales=" + scales.toString());
-        //System.out.println("responses=" + responses.toString());
-        //System.out.println("orientations=" + orientations.toString());
         
         for (int i = 0; i < keypoints0.size(); ++i) {
             int y = keypoints0.get(i);
             int x = keypoints1.get(i);
             ImageIOHelper.addPointToImage(x, y, img0, 2, 255, 0, 0);
         }
-        MiscDebug.writeImage(img0, "orb_keypoints_3");
+        MiscDebug.writeImage(img0, "orb_keypoints_03");
         
     }
     
@@ -622,9 +611,10 @@ public class ORBTest extends TestCase {
         //NOTE: the ridges are picked up well with reduced threshold
         
         ORB orb = new ORB(500);
-        //orb.overrideFastThreshold(0.06f);
+        //orb.overrideFastThreshold(0.01f);
         orb.detectAndExtract(img);
         orb.overrideToNotCreateDescriptors();
+        orb.overrideToAlsoCreate2ndDerivKeypoints();
         
         TIntList keypoints0 = orb.getAllKeyPoints0();
         TIntList keypoints1 = orb.getAllKeyPoints1();
@@ -634,7 +624,7 @@ public class ORBTest extends TestCase {
             int x = keypoints1.get(i);
             ImageIOHelper.addPointToImage(x, y, img0, 2, 255, 0, 0);
         }
-        MiscDebug.writeImage(img0, "orb_keypoints_4");        
+        MiscDebug.writeImage(img0, "orb_keypoints_04");        
     }
     
     public void testKeypoints_5() throws Exception {
@@ -657,21 +647,13 @@ public class ORBTest extends TestCase {
         
         TIntList keypoints0 = orb.getAllKeyPoints0();
         TIntList keypoints1 = orb.getAllKeyPoints1();
-        TFloatList scales = orb.getAllScales();
-        TFloatList responses = orb.getAllHarrisResponses();
-        TDoubleList orientations = orb.getAllOrientations();
-        //System.out.println("keypoints0=" + keypoints0.toString());
-        //System.out.println("keypoints1=" + keypoints1.toString());
-        //System.out.println("scales=" + scales.toString());
-        //System.out.println("responses=" + responses.toString());
-        //System.out.println("orientations=" + orientations.toString());
         
         for (int i = 0; i < keypoints0.size(); ++i) {
             int y = keypoints0.get(i);
             int x = keypoints1.get(i);
             ImageIOHelper.addPointToImage(x, y, img0, 2, 255, 0, 0);
         }
-        MiscDebug.writeImage(img0, "orb_keypoints_5");
+        MiscDebug.writeImage(img0, "orb_keypoints_05");
         
     }
     
@@ -695,21 +677,13 @@ public class ORBTest extends TestCase {
         
         TIntList keypoints0 = orb.getAllKeyPoints0();
         TIntList keypoints1 = orb.getAllKeyPoints1();
-        TFloatList scales = orb.getAllScales();
-        TFloatList responses = orb.getAllHarrisResponses();
-        TDoubleList orientations = orb.getAllOrientations();
-        //System.out.println("keypoints0=" + keypoints0.toString());
-        //System.out.println("keypoints1=" + keypoints1.toString());
-        //System.out.println("scales=" + scales.toString());
-        //System.out.println("responses=" + responses.toString());
-        //System.out.println("orientations=" + orientations.toString());
         
         for (int i = 0; i < keypoints0.size(); ++i) {
             int y = keypoints0.get(i);
             int x = keypoints1.get(i);
             ImageIOHelper.addPointToImage(x, y, img0, 2, 255, 0, 0);
         }
-        MiscDebug.writeImage(img0, "orb_keypoints_6");
+        MiscDebug.writeImage(img0, "orb_keypoints_06");
         
     }
     
@@ -747,7 +721,7 @@ public class ORBTest extends TestCase {
             int x = keypoints1.get(i);
             ImageIOHelper.addPointToImage(x, y, img0, 2, 255, 0, 0);
         }
-        MiscDebug.writeImage(img0, "orb_keypoints_7");
+        MiscDebug.writeImage(img0, "orb_keypoints_07");
         
     }
      
@@ -778,7 +752,144 @@ public class ORBTest extends TestCase {
             int x = keypoints1.get(i);
             ImageIOHelper.addPointToImage(x, y, img0, 2, 255, 0, 0);
         }
-        MiscDebug.writeImage(img0, "orb_keypoints_8");
+        MiscDebug.writeImage(img0, "orb_keypoints_08");
         
     }
+     
+    public void testKeypoints_9() throws Exception {
+        
+        //NOTE: can see there may still be errors in the code
+        // or need to allow relaxation of border distance
+        
+        String fileName = "android_statues_02.jpg";   
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
+        Image img0 = ImageIOHelper.readImageAsGrayScale(filePath);
+        //ImageExt img = ImageIOHelper.readImageExt(filePath);
+        ImageExt img = img0.copyToImageExt();
+                
+        ORB orb = new ORB(2000);
+        //orb.overrideFastN(12);
+        orb.overrideFastThreshold(0.01f);
+        orb.overrideToNotCreateDescriptors();
+        
+        orb.detectAndExtract(img);
+        
+        TIntList keypoints0 = orb.getAllKeyPoints0();
+        TIntList keypoints1 = orb.getAllKeyPoints1();
+        TFloatList scales = orb.getAllScales();
+        TFloatList responses = orb.getAllHarrisResponses();
+        TDoubleList orientations = orb.getAllOrientations();
+        //System.out.println("keypoints0=" + keypoints0.toString());
+        //System.out.println("keypoints1=" + keypoints1.toString());
+        //System.out.println("scales=" + scales.toString());
+        //System.out.println("responses=" + responses.toString());
+        //System.out.println("orientations=" + orientations.toString());
+        
+        for (int i = 0; i < keypoints0.size(); ++i) {
+            int y = keypoints0.get(i);
+            int x = keypoints1.get(i);
+            ImageIOHelper.addPointToImage(x, y, img0, 2, 255, 0, 0);
+        }
+        MiscDebug.writeImage(img0, "orb_keypoints_09");
+        
+    }
+    
+    public void testKeypoints_10() throws Exception {
+        
+        //NOTE: can see there may still be errors in the code
+        // or need to allow relaxation of border distance
+        
+        String fileName = "android_statues_02.jpg";   
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
+        Image img0 = ImageIOHelper.readImageAsGrayScale(filePath);
+        //ImageExt img = ImageIOHelper.readImageExt(filePath);
+        ImageExt img = img0.copyToImageExt();
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        imageProcessor.blur(img, SIGMA.getValue(SIGMA.TWO), 0, 255);
+                
+        ORB orb = new ORB(2000);
+        //orb.overrideFastN(12);
+        orb.overrideToNotCreateDescriptors();
+        orb.overrideToAlsoCreate2ndDerivKeypoints();
+        
+        orb.detectAndExtract(img);
+        
+        TIntList keypoints0 = orb.getAllKeyPoints0();
+        TIntList keypoints1 = orb.getAllKeyPoints1();
+        
+        for (int i = 0; i < keypoints0.size(); ++i) {
+            int y = keypoints0.get(i);
+            int x = keypoints1.get(i);
+            ImageIOHelper.addPointToImage(x, y, img0, 2, 255, 0, 0);
+        }
+        MiscDebug.writeImage(img0, "orb_keypoints_10");
+        
+    }
+   
+    public void testKeypoints_11() throws Exception {
+        
+        //NOTE: can see there may still be errors in the code
+        // or need to allow relaxation of border distance
+        
+        String fileName = "lab.gif";   
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
+        Image img0 = ImageIOHelper.readImageAsGrayScale(filePath);
+        //ImageExt img = ImageIOHelper.readImageExt(filePath);
+        ImageExt img = img0.copyToImageExt();
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        imageProcessor.blur(img, SIGMA.getValue(SIGMA.TWO), 0, 255);
+                
+        ORB orb = new ORB(2000);
+        //orb.overrideFastN(12);
+        orb.overrideToNotCreateDescriptors();
+        
+        orb.detectAndExtract(img);
+        
+        TIntList keypoints0 = orb.getAllKeyPoints0();
+        TIntList keypoints1 = orb.getAllKeyPoints1();
+        
+        for (int i = 0; i < keypoints0.size(); ++i) {
+            int y = keypoints0.get(i);
+            int x = keypoints1.get(i);
+            ImageIOHelper.addPointToImage(x, y, img0, 2, 255, 0, 0);
+        }
+        MiscDebug.writeImage(img0, "orb_keypoints_11");
+        
+    }
+   
+    public void testKeypoints_12() throws Exception {
+        
+        //NOTE: can see there may still be errors in the code
+        // or need to allow relaxation of border distance
+        
+        String fileName = "lab.gif";   
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
+        Image img0 = ImageIOHelper.readImageAsGrayScale(filePath);
+        //ImageExt img = ImageIOHelper.readImageExt(filePath);
+        ImageExt img = img0.copyToImageExt();
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        imageProcessor.blur(img, SIGMA.getValue(SIGMA.TWO), 0, 255);
+                
+        ORB orb = new ORB(2000);
+        //orb.overrideFastN(12);
+        orb.overrideToNotCreateDescriptors();
+        orb.overrideToAlsoCreate2ndDerivKeypoints();
+        
+        orb.detectAndExtract(img);
+        
+        TIntList keypoints0 = orb.getAllKeyPoints0();
+        TIntList keypoints1 = orb.getAllKeyPoints1();
+        
+        for (int i = 0; i < keypoints0.size(); ++i) {
+            int y = keypoints0.get(i);
+            int x = keypoints1.get(i);
+            ImageIOHelper.addPointToImage(x, y, img0, 2, 255, 0, 0);
+        }
+        MiscDebug.writeImage(img0, "orb_keypoints_12");
+        
+    }
+   
 }

@@ -164,6 +164,30 @@ public class PerimeterFinder2 {
      */
     public PairIntArray extractOrderedBorder(Set<PairInt> 
         contiguousPoints) {
+       
+        Set<PairInt> outputMedialAxisPoints = null;
+        
+        return extractOrderedBorder(contiguousPoints, outputMedialAxisPoints);
+    }
+    
+    /**
+     * NOT READY FOR USE...needs alot more testing.
+     * 
+     * given a contiguous set of points, extract the border and 
+     * order the points.  NOTE: it is up to the invoker to 
+     * give the method a point set which is contiguous.
+     * The contiguous points
+     * fill out the shape for which the border is found and they're
+     * used to calculate medial axes and calculate the intersection
+     * of adjacent non-shape neighbors.
+     * 
+     * @param contiguousPoints
+     * @param outputMedialAxisPoints - if not null, the medial axis
+     * points are added to this variable
+     * @return 
+     */
+    public PairIntArray extractOrderedBorder(Set<PairInt> 
+        contiguousPoints, Set<PairInt> outputMedialAxisPoints) {
         
         if (contiguousPoints.size() < 4) {
             PairIntArray output = new PairIntArray(contiguousPoints.size());
@@ -179,7 +203,7 @@ public class PerimeterFinder2 {
         Set<PairInt> set2 = new HashSet<PairInt>(contiguousPoints);
         set2.addAll(embedded);        
         Set<PairInt> boundary = extractBorder(set2);
-                
+        
         Set<PairInt> rmPts = new HashSet<PairInt>();
         
         //TODO: methods used for this could be improved
@@ -198,6 +222,10 @@ public class PerimeterFinder2 {
         
         Set<PairInt> medAxisPts = medAxis.getMedialAxisPoints();
        
+        if (outputMedialAxisPoints != null) {
+            outputMedialAxisPoints.addAll(medAxisPts);
+        }
+        
         return extractOrderedBorder(boundary, medAxisPts, cPts);
         //return extractOrderedBorder00(boundary, medAxisPts);
     }

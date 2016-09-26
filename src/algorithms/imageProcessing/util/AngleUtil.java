@@ -177,10 +177,6 @@ public class AngleUtil {
                    90
         */
 
-        /*
-        logic below is for rot0 and rot1 between 0 and 360 so temporarily
-        reduce angles to those ranges then add back the corrections.
-        */
         double twoPi = 360;
 
         if (rotDegrees0 > rotDegrees1) {

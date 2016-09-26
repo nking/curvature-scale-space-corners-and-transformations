@@ -25,6 +25,7 @@ import algorithms.imageProcessing.matching.PartialShapeMatcher;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.SegmentationMergeThreshold;
 import algorithms.imageProcessing.matching.PartialShapeMatcher.Result;
+import algorithms.imageProcessing.matching.SegmentedCellDescriptorMatcher;
 import algorithms.imageProcessing.matching.ShapeFinder;
 import algorithms.imageProcessing.segmentation.ColorSpace;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
@@ -287,20 +288,15 @@ public class AndroidStatuesTest extends TestCase {
         ImageProcessor imageProcessor = new ImageProcessor();
         ImageSegmentation imageSegmentation = new ImageSegmentation();
 
-        String fileNameRoot0 = "android_statues_03_sz1";
-        // size of template object must be near target size
-        ImageExt img0 = maskAndBin(fileNameRoot0, 1);
-
         Set<PairInt> shape0 = new HashSet<PairInt>();
-        for (int i = 0; i < img0.getNPixels(); ++i) {
-            if (img0.getR(i) > 0) {
-                shape0.add(new PairInt(img0.getCol(i), img0.getRow(i)));
-            }
-        }
+        
+        String fileNameRoot0 = "android_statues_03_sz1";
+        // 1st image is color image, 2nd is masked color image
+        ImageExt[] imgs0 = maskAndBin(fileNameRoot0, 1, shape0);
 
         PairIntArray template =
             imageProcessor.extractSmoothedOrderedBoundary(shape0,
-                sigma, img0.getWidth(), img0.getHeight());
+                sigma, imgs0[0].getWidth(), imgs0[0].getHeight());
 
         Set<PairInt> templateMedialAxis = createMedialAxis(shape0,
             Misc.convert(template));
@@ -310,10 +306,17 @@ public class AndroidStatuesTest extends TestCase {
         TDoubleList templateOrientations = new TDoubleArrayList();
         extractTemplateKeypoints(fileNameRoot0, shape0, template,
             templateKP0, templateKP1, templateOrientations);
+        
+        int[][] templateKP = new int[templateKP0.size()][];
+        for (int i = 0; i < templateKP.length; ++i) {
+            templateKP[i] = new int[2];
+            templateKP[i][1] = templateKP0.get(i);
+            templateKP[i][0] = templateKP1.get(i);
+        }
 
         ColorHistogram clrHist = new ColorHistogram();
 
-        int[][] template_ch_HSV = clrHist.histogramHSV(img0, shape0);
+        int[][] template_ch_HSV = clrHist.histogramHSV(imgs0[1], shape0);
 
         String fileName1 = "android_statues_02.jpg";
 
@@ -344,7 +347,7 @@ public class AndroidStatuesTest extends TestCase {
         List<TwoDIntArray> listOfCH = new ArrayList<TwoDIntArray>();
 
         imageSegmentation.filterUsingColorHistogramDifference(imgCp,
-            labels4, img0, shape0, listOfPointSets2, listOfCH);
+            labels4, imgs0[1], shape0, listOfPointSets2, listOfCH);
 
         ImageExt img11 = img.createWithDimensions();
         ImageIOHelper.addAlternatingColorLabelsToRegion(img11, labels4);
@@ -408,9 +411,27 @@ public class AndroidStatuesTest extends TestCase {
 
         TDoubleList orientations = extractKeypoints(img, listOfPointSets2, 
             keypoints0, keypoints1);
+        
+        int[][] srchKP = new int[keypoints0.size()][];
+        for (int i = 0; i < srchKP.length; ++i) {
+            srchKP[i] = new int[2];
+            srchKP[i][1] = keypoints0.get(i);
+            srchKP[i][0] = keypoints1.get(i);
+        }
 
         if (true) {
 
+            SegmentedCellDescriptorMatcher matcher = 
+                new SegmentedCellDescriptorMatcher(imgs0[0], img,
+                templateKP, srchKP,
+                templateOrientations, orientations,
+                shape0, listOfPointSets2,
+                template, orderedBoundaries,
+                templateMedialAxis, medialAxisList,
+                RotatedOffsets.getInstance());
+            
+            matcher.matchPointsSingly();
+            
             // try reduced descriptor matching w/ orb keypoints
 
             /*
@@ -422,6 +443,7 @@ public class AndroidStatuesTest extends TestCase {
                 - keypoints
                 - orientation for all keypoints
                 - medial axis for all segmented cells
+                - the segmented cells (and possibly the ordered perimeters)
                 - shared instance of RotationOffsets
                 - instance of IntensityClrFeatures for each image
 
@@ -974,7 +996,8 @@ public class AndroidStatuesTest extends TestCase {
         return labels3;
     }
 
-    private ImageExt maskAndBin(String fileNamePrefix, int binFactor) throws IOException, Exception {
+    private ImageExt[] maskAndBin(String fileNamePrefix, int binFactor,
+        Set<PairInt> outputShape) throws IOException, Exception {
 
         ImageProcessor imageProcessor = new ImageProcessor();
 
@@ -987,18 +1010,21 @@ public class AndroidStatuesTest extends TestCase {
         String filePath0 = ResourceFinder
             .findFileInTestResources(fileName0);
         ImageExt img0 = ImageIOHelper.readImageExt(filePath0);
+        ImageExt img0Masked = img0.copyToImageExt();
 
         assertEquals(imgMask0.getNPixels(), img0.getNPixels());
 
         for (int i = 0; i < imgMask0.getNPixels(); ++i) {
             if (imgMask0.getR(i) == 0) {
-                img0.setRGB(i, 0, 0, 0);
+                img0Masked.setRGB(i, 0, 0, 0);
+            } else {
+                outputShape.add(new PairInt(imgMask0.getCol(i), imgMask0.getRow(i)));
             }
         }
 
         img0 = imageProcessor.binImage(img0, binFactor);
 
-        return img0;
+        return new ImageExt[]{img0, img0Masked};
     }
 
     public void estMatching() throws Exception {

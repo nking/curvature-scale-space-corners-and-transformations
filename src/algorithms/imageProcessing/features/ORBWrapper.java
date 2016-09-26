@@ -2,6 +2,7 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.Image;
+import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TIntList;
 
 /**
@@ -16,6 +17,7 @@ public class ORBWrapper {
     public static void extractKeypointsFromSubImage(Image img,
         int xLL, int yLL, int xUR, int yUR, int nKeypoints,
         TIntList outputKeypoints0, TIntList outputKeypoints1,
+        TDoubleList outputOrientations,
         float fastThreshold, boolean create2ndDerivPointsAlso) {
          
         int buffer = 25;
@@ -51,6 +53,7 @@ public class ORBWrapper {
         
         TIntList kp0 = orb.getAllKeyPoints0();
         TIntList kp1 = orb.getAllKeyPoints1();
+        TDoubleList or = orb.getAllOrientations();
         
         for (int i = 0; i < kp0.size(); ++i) {
             int r = kp0.get(i);
@@ -61,6 +64,7 @@ public class ORBWrapper {
             if (x >= xLL && x <= xUR && y >= yLL && y <= yUR) {
                 outputKeypoints0.add(y);
                 outputKeypoints1.add(x);
+                outputOrientations.add(or.get(i));
             }
         }
     }
