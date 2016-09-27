@@ -662,6 +662,7 @@ public class PerimeterFinder2 {
     
         
         {//DEBUG
+            if (false)
             try {
 
                 int[] xPolygon = null;
