@@ -49,6 +49,21 @@ import thirdparty.edu.princeton.cs.algs4.QuadTree;
  */
 public class ShapeFinder {
     
+    /*
+    TODO: 
+       will add a method to include the orb keypoints and oriented half 
+          descriptors.
+       the global 2D bins for starting searches will be present for this new
+         method.
+       the descriptors will be used before partial shape matching
+          to evaluate whether adding the cell reduces the cost of the
+          path to the cell.
+       will also change the floyd warshall aggregation/search to a dijkstra's
+          search.
+          -- both the descriptors and partial shape matching 
+          might be necessary to determine the best aggregation at each step.
+    */
+    
     private double maxDiffChordSum = Float.MAX_VALUE;
     
     private double maxDistTransformSum = Float.MAX_VALUE;
@@ -580,11 +595,15 @@ public class ShapeFinder {
             cost = calcAndStoreMatchCost(b, tBS);
         }
         System.out.println("expected=" + Arrays.toString(tBS.getSetBits()));
-        results[0] = aggregatedResultMap.get(tBS);
-        data = new Object[2];
-        data[0] = tBS;
-        data[1] = aggregatedBoundaries.get(tBS);
-        results[0].setData(data);
+        if (tBS.getSetBits().length > 0) {
+            results[0] = aggregatedResultMap.get(tBS);
+            data = new Object[2];
+            data[0] = tBS;
+            data[1] = aggregatedBoundaries.get(tBS);
+            results[0].setData(data);
+        } else {
+            results[0] = results[1];
+        }
        
         long t1 = System.currentTimeMillis();
         long t1Sec = (t1 - t0)/1000;

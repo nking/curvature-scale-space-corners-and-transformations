@@ -130,6 +130,13 @@ public class SegmentedCellDescriptorMatcher {
     }
     
     public EpipolarTransformationFit matchPointsInGroups() {
+        
+        /*
+        ways to solve using the point location as grouping information without
+        making assumptions about projection.
+           -- still thinking about this ... 
+        */
+        
         throw new UnsupportedOperationException("not yet implemented");
     }
 

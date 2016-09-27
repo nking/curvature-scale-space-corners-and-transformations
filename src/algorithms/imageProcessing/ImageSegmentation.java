@@ -13476,8 +13476,8 @@ int z = 1;
         f10 *= f10;
         float f11 = (float)h/(float)x1;
         f11 *= f11;
-        int n10 = (int)Math.round(nPix/f10);
-        int n11 = (int)Math.round(nPix/f11);
+        int n10 = Math.round(nPix/f10);
+        int n11 = Math.round(nPix/f11);
         //==> nClusters = nPix/((w/x0)^2)
         //==> nClusters = nPix/((h/x0)^2)
         log.info("  n1=" + n10 + "," + n11);
@@ -13974,7 +13974,7 @@ int z = 1;
         // filterUsingColorHistogramDifference
         // or remove it if not used
         
-        float deltaELimit = 8.5f;
+        float deltaELimit = 9.5f;//8.5f;
         
         assert(labels.length == img.getNPixels());
         
@@ -14032,7 +14032,8 @@ int z = 1;
         int nY = 2 * ((int)Math.floor(img.getHeight()/maxDim) + 1);
         
         System.out.println("number of segmented cells=" 
-            + outputListOfPointSets.size());
+            + outputListOfPointSets.size() + " number removed=" +
+            (listOfPointSets.size() - outputListOfPointSets.size()));
         
         TIntSet remove = new TIntHashSet();
         TIntSet removeForSeeds = new TIntHashSet();
@@ -14095,7 +14096,8 @@ int z = 1;
                         // calc avg and std dev rgb and cieX,cieY
                         int[] avgStdv = calcStdDev(listOfColors, indexes);
                         System.out.println("stdv=" + Arrays.toString(avgStdv));
-                        if (avgStdv[1] < (0.2*255)) {
+                        if (avgStdv[1] < (0.06*255)) {
+                            //System.out.println("   removing" );
                             // remove these
                             if (nIter == 1) {
                                 remove.addAll(indexes);
@@ -14147,7 +14149,7 @@ int z = 1;
             
             double[] xyCen = curveHelper.calculateXYCentroids(set);
             outputListOfSeeds.add(new PairInt(
-                (int)Math.round(xyCen[0]), (int)Math.round(xyCen[0])));
+                (int)Math.round(xyCen[0]), (int)Math.round(xyCen[1])));
             
             GroupPixelRGB0 clrs = new GroupPixelRGB0();
             clrs.calculateColors(set, img, 0, 0);
