@@ -25,7 +25,10 @@ import java.util.logging.Logger;
  * 
  * Useful reading:
  * http://en.wikipedia.org/wiki/K-means_clustering
- * 
+ * and
+ * "SLIC Superpixels Compared to State-of-the-Art Superpixel Methods"
+   by Achanta, Appu Shaji,Smith,  Lucchi, Fua, and Su ̈sstrunk,
+   
  * @author nichole
  */
 public class KMeansHSV {
@@ -37,8 +40,6 @@ public class KMeansHSV {
      */
     protected final int nSeeds;
     
-    // After final iteration, standard deviations are stored in seedVariances 
-    // instead of variances
     protected final static int nMaxIter = 100;
     protected int nIter = 0;
     protected final ImageExt img;
@@ -108,19 +109,22 @@ public class KMeansHSV {
         }
         
         boolean hasConverged = false;
-                
+            
+        //TODO: have changed maxError to exit at nIter=0
+        //   while testing...
         float normXY = img.getNPixels()/nSeeds;
-        double maxError = 0.01 * Math.sqrt(this.nSeeds * (3. + normXY));
+        double maxError //= 0.01 * Math.sqrt(this.nSeeds * (3. + normXY));
+            = 1.42 * Math.sqrt(this.nSeeds * (3. + normXY));
         
         TIntList unitLabels = null;
         
         while (!hasConverged && (nIter < nMaxIter)) {
             
-            unitLabels = binPoints(unitSets, unitClrs, unitCentroids);
+            unitLabels = binUnitSets(unitSets, unitClrs, unitCentroids);
             
             double l2Norm = calculateMeanOfSeedPoints(unitSets, unitClrs, 
                 unitCentroids, unitLabels);
-           
+
             System.out.println("nIter=" + nIter + " l2Norm=" 
                 + l2Norm + " maxError=" + maxError);
             
@@ -129,7 +133,7 @@ public class KMeansHSV {
             } else if (l2Norm < maxError) {
                 break;
             }
-    
+            
             nIter++;
         }
         
@@ -214,7 +218,7 @@ public class KMeansHSV {
         return Math.sqrt(l2Norm);
     }
     
-    protected TIntList binPoints(List<Set<PairInt>> unitSets,
+    protected TIntList binUnitSets(List<Set<PairInt>> unitSets,
         List<GroupPixelRGB0> unitColors, List<TrioInt> unitCentroids) {
         
         TIntList unitLabels = new TIntArrayList();
@@ -254,7 +258,7 @@ public class KMeansHSV {
         
         // TODO: need normalization for 
         // diffX * diffX + diffY * diffY.
-        // slic super pixels uses the super pixel area sXs.
+        // slic super pixels uses the super pixel area s X s.
         // will use average as area/k
         float norm = img.getNPixels()/nSeeds;
         
