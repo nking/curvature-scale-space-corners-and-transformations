@@ -1,7 +1,6 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.Image;
-import algorithms.imageProcessing.ImageDisplayer;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;

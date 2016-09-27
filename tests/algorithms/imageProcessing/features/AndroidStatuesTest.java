@@ -462,14 +462,22 @@ public class AndroidStatuesTest extends TestCase {
                 descriptors.descriptors, 
                 templateKeypoints, keypointsCombined);
             
+            
+            CorrespondencePlotter plotter = new CorrespondencePlotter(
+                imgs0[1], img);            
             for (int ii = 0; ii < orbMatches.length; ++ii) {
                 int idx1 = orbMatches[ii][0];
                 int idx2 = orbMatches[ii][1];
                 PairInt p1 = templateKeypoints.get(idx1);
                 PairInt p2 = keypointsCombined.get(idx2);
                 System.out.println("orb matched: " + p1 + " " + p2);
+                if (p2.getX() > 165)
+                plotter.drawLineInAlternatingColors(p1.getX(), p1.getY(), 
+                    p2.getX(), p2.getY(), 0);
             }
+            plotter.writeImage("_orb_corres_");
             System.out.println(orbMatches.length + " matches");
+            
             
             SegmentedCellDescriptorMatcher matcher = 
                 new SegmentedCellDescriptorMatcher(imgs0[0], img,
