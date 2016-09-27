@@ -37,7 +37,7 @@ public class GroupPixelColors extends GroupPixelRGB {
     }
     
     @Override
-    protected void calculateColors(final Set<PairInt> points, ImageExt 
+    public void calculateColors(final Set<PairInt> points, ImageExt 
         colorImage, int xOffset, int yOffset) {
         
         super.calculateColors(points, colorImage, xOffset, yOffset);

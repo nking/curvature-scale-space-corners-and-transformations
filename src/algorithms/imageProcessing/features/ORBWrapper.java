@@ -2,8 +2,11 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.features.ORB.Descriptors;
+import algorithms.util.PairInt;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TIntList;
+import java.util.List;
 
 /**
  * a class to perform various tasks related to using ORB.java,
@@ -16,8 +19,9 @@ public class ORBWrapper {
     
     public static void extractKeypointsFromSubImage(Image img,
         int xLL, int yLL, int xUR, int yUR, int nKeypoints,
-        TIntList outputKeypoints0, TIntList outputKeypoints1,
+        List<PairInt> outputKeypoints,
         TDoubleList outputOrientations,
+        Descriptors outputDescriptors,
         float fastThreshold, boolean create2ndDerivPointsAlso) {
          
         int buffer = 25;
@@ -44,34 +48,53 @@ public class ORBWrapper {
         
         ORB orb = new ORB(nKeypoints);
         orb.overrideFastThreshold(fastThreshold);
-        orb.overrideToNotCreateDescriptors();
+        //orb.overrideToNotCreateDescriptors();
         if (create2ndDerivPointsAlso) {
             orb.overrideToAlsoCreate2ndDerivKeypoints();
         }
         
         orb.detectAndExtract(subImage);
-        
-        TIntList kp0 = orb.getAllKeyPoints0();
-        TIntList kp1 = orb.getAllKeyPoints1();
+
+        List<PairInt> kp = orb.getAllKeyPoints();
         TDoubleList or = orb.getAllOrientations();
+        Descriptors desc = orb.getAllDescriptors();
         
-        for (int i = 0; i < kp0.size(); ++i) {
-            int r = kp0.get(i);
-            int c = kp1.get(i);
+        int nd = desc.descriptors.length;
+        int z = 1;
+        
+        for (int i = 0; i < kp.size(); ++i) {
+            PairInt p = kp.get(i);
+            int r = p.getY();
+            int c = p.getX();
             
             int x = c + startX;
             int y = r + startY;
             if (x >= xLL && x <= xUR && y >= yLL && y <= yUR) {
-                outputKeypoints0.add(y);
-                outputKeypoints1.add(x);
+                outputKeypoints.add(new PairInt(x, y));
                 outputOrientations.add(or.get(i));
             }
         }
+        
+        int[][] outD = new int[outputKeypoints.size()][];
+        int count = 0;
+        for (int i = 0; i < kp.size(); ++i) {
+            PairInt p = kp.get(i);
+            int r = p.getY();
+            int c = p.getX();
+            
+            int x = c + startX;
+            int y = r + startY;
+            if (x >= xLL && x <= xUR && y >= yLL && y <= yUR) {
+                outD[count] = desc.descriptors[i];
+                count++;
+            }
+        }
+        outputDescriptors.descriptors = outD;
     }
     
     public static void extractKeypointsFromSubImage(Image img,
         int xLL, int yLL, int xUR, int yUR, int nKeypoints,
-        TIntList outputKeypoints0, TIntList outputKeypoints1) {
+        List<PairInt> outputKeypoints) {
         
         int buffer = 25;
         
@@ -109,8 +132,7 @@ public class ORBWrapper {
             int x = c + startX;
             int y = r + startY;
             if (x >= xLL && x <= xUR && y >= yLL && y <= yUR) {
-                outputKeypoints0.add(y);
-                outputKeypoints1.add(x);
+                outputKeypoints.add(new PairInt(x, y));
             }
         }
     }

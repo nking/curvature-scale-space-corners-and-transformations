@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.matching;
 
 import algorithms.compGeometry.RotatedOffsets;
+import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
@@ -12,8 +13,13 @@ import algorithms.imageProcessing.features.RANSACEpipolarWithFeaturesSolver;
 import algorithms.imageProcessing.features.RANSACSolver;
 import algorithms.imageProcessing.transform.EpipolarFeatureTransformationFit;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
+import algorithms.imageProcessing.transform.EuclideanTransformationFit;
+import algorithms.imageProcessing.transform.ITransformationFit;
+import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
+import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.MiscStats;
+import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.search.NearestNeighbor2D;
@@ -22,6 +28,8 @@ import algorithms.util.PairIntArray;
 import gnu.trove.TIntCollection;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.list.TDoubleList;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntIntHashMap;
@@ -29,7 +37,9 @@ import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -70,12 +80,19 @@ public class SegmentedCellDescriptorMatcher {
     private final TIntObjectMap<TIntSet> index2Map 
         = new TIntObjectHashMap<TIntSet>();
     
-    private final PairIntArray boundaries1;
+    // key = index of segmentedCell2,  value = set of keypoint2 indexes
+    private final TIntObjectMap<TIntSet> segmented2Keypoint2Map 
+        = new TIntObjectHashMap<TIntSet>();
+            
+    private final NearestNeighbor2D medialAxisNN1;
     
-    private final List<PairIntArray> boundaries2;
+    private final int nKeypointsInSegment1;
     
     private final static double twoPi = 2. * Math.PI;
 
+    Set<PairInt> boundary1; 
+    List<Set<PairInt>> boundary2;
+    
     /**
      * note, RotatedOffsets caches the results of expensive transcendental
      * operations and is used in a shared manner, that is,
@@ -102,7 +119,7 @@ public class SegmentedCellDescriptorMatcher {
         final TDoubleList orientations1, final TDoubleList orientations2,
         final Set<PairInt> segmentedCells1,
         final List<Set<PairInt>> segmentedCells2,
-        final PairIntArray boundaries1, List<PairIntArray> boundaries2,
+        PairIntArray boundaries1, List<PairIntArray> boundaries2,
         final Set<PairInt> medialAxis1, final List<Set<PairInt>> medialAxis2,
         final RotatedOffsets rotatedOffsets) {
 
@@ -117,8 +134,6 @@ public class SegmentedCellDescriptorMatcher {
         this.orientations2 = orientations2;
         this.segmentedCells1 = segmentedCells1;
         this.segmentedCells2 = segmentedCells2;
-        this.boundaries1 = boundaries1;
-        this.boundaries2 = boundaries2;
         this.medialAxis1 = medialAxis1;
         this.medialAxis2 = medialAxis2;
 
@@ -127,9 +142,31 @@ public class SegmentedCellDescriptorMatcher {
         this.features1 = new IntensityClrFeatures2(img1, 5, rotatedOffsets);
         this.features2 = new IntensityClrFeatures2(img2, 5, rotatedOffsets);
         
+        populateMaps();
+        
+        int[] minMaxXY1 = MiscMath.findMinMaxXY(segmentedCells1);
+        medialAxisNN1 = new NearestNeighbor2D(this.medialAxis1, minMaxXY1[1] + 20, 
+            minMaxXY1[3] + 20);
+        
+        // count the number of keypoints1 in segmentedCell1 for stats
+        int n1 = 0;
+        for (int i = 0; i < keypoints1.length; ++i) {
+            int x = keypoints1[i][0];
+            int y = keypoints1[i][1];
+            PairInt p1 = new PairInt(x, y);
+            if (segmentedCells1.contains(p1)) {
+                n1++;
+            }
+        }
+        this.nKeypointsInSegment1 = n1;
+        
+        segmentedCells1.addAll(Misc.convert(boundaries1));
+        for (int i = 0; i < boundaries2.size(); ++i) {
+            segmentedCells2.get(i).addAll(Misc.convert(boundaries2.get(i)));
+        }
     }
     
-    public EpipolarTransformationFit matchPointsInGroups() {
+    public ITransformationFit matchPointsInGroups() {
         
         /*
         ways to solve using the point location as grouping information without
@@ -140,7 +177,17 @@ public class SegmentedCellDescriptorMatcher {
         throw new UnsupportedOperationException("not yet implemented");
     }
 
-    public EpipolarTransformationFit matchPointsSingly() {
+    public ITransformationFit matchPointsSingly() {
+        
+        TIntCollection kp2 = new TIntArrayList(keypoints2.length);
+        for (int i2 = 0; i2 < keypoints2.length; ++i2) {
+            kp2.add(i2);
+        }
+        
+        return matchPointsSingly(kp2);
+    }
+    
+    protected ITransformationFit matchPointsSingly(TIntCollection kp2) {
 
         // key = template point coordinates,  value = statistic of match
         List<FeatureComparisonStat> stats = new ArrayList<FeatureComparisonStat>();
@@ -150,13 +197,6 @@ public class SegmentedCellDescriptorMatcher {
 
         //NOTE: may need to note when a keypoint is not a boundary point
         //      to dither in rotation when comparing descriptors
-
-        // populate maps
-        populateMaps(srchPointMap, index2NNMap, index2Map);
-
-        int[] minMaxXY1 = MiscMath.findMinMaxXY(segmentedCells1);
-        NearestNeighbor2D medialAxisNN1 = new NearestNeighbor2D(medialAxis1, 
-            minMaxXY1[1] + 20, minMaxXY1[3] + 20);
 
         for (int i1 = 0; i1 < n1; ++i1) {
             int x = keypoints1[i1][0];
@@ -168,19 +208,29 @@ public class SegmentedCellDescriptorMatcher {
             }
             
             double d = orientations1.get(i1);
-            int rotationInward1 = calculateOrientationInward(x, y, d, 
+            int rotationInward1[] = calculateOrientationInward(x, y, d, 
                 medialAxisNN1);
             
-            IntensityDescriptor[] hsvDesc = features1.extractIntensityHSV(x, y, 
-                rotationInward1);
+            IntensityDescriptor[] hsvDesc1_1 = features1.extractIntensityHSV(x, y, 
+                rotationInward1[0]);
+            IntensityDescriptor[] hsvDesc1_2 = features1.extractIntensityHSV(x, y, 
+                rotationInward1[1]);
             
             FeatureComparisonStat best = null;
             int bestIdx2 = -1;
             FeatureComparisonStat best2nd = null;
             int bestIdx2_2nd = -1;
-        
+            
+            for (int ii = 0; ii < 2; ++ii) {
+                IntensityDescriptor[] hsvDesc = hsvDesc1_1;
+                if (ii == 1) {
+                    hsvDesc = hsvDesc1_2;
+                }
+                
             // find best among list2
-            for (int i2 = 0; i2 < n2; ++i2) {
+            TIntIterator iter2 = kp2.iterator();
+            while (iter2.hasNext()) {
+                int i2 = iter2.next();
                 int x2 = keypoints2[i2][0];
                 int y2 = keypoints2[i2][1];
                 PairInt p2 = new PairInt(x2, y2);
@@ -211,7 +261,7 @@ public class SegmentedCellDescriptorMatcher {
                         > compStat.getImg2PointIntensityErr())) {
                         continue;
                     }
-                    
+                                    
                     if ((best2nd != null) && (compStat.getSumIntensitySqDiff() 
                         >= best2nd.getSumIntensitySqDiff())) {
                         continue;
@@ -245,10 +295,11 @@ public class SegmentedCellDescriptorMatcher {
                     }
                 }
             } // end loop over keypoints2 
-            
+            } 
             if (best == null) {
                 continue;
             }
+
             if (best2nd == null) {
                 stats.add(best);
             } else {
@@ -260,19 +311,19 @@ public class SegmentedCellDescriptorMatcher {
                 }
             }
         } // end loop over keypoints1
-
+        
         System.out.println("before filter stats.n=" + stats.size());
         
         MiscStats.filterForDegeneracy(stats);
         
         System.out.println("after filter stats.n=" + stats.size());
         
-        debugPrint(stats);
-        
-        if (stats.size() < 7) {
+        if (stats.size() < 2) {
             return null;
         }
-
+        
+        debugPrint(stats);
+        
         PairIntArray left = new PairIntArray(stats.size());
         PairIntArray right = new PairIntArray(stats.size());
 
@@ -281,6 +332,34 @@ public class SegmentedCellDescriptorMatcher {
             PairInt p2 = stat.getImg2Point();
             left.add(p1.getX(), p1.getY());
             right.add(p2.getX(), p2.getY());
+            System.out.println("top=" + stat + 
+                " ssd/err=" + 
+                stat.getSumIntensitySqDiff()/stat.getImg2PointIntensityErr());
+        }
+        
+        if (stats.size() < 7) {
+            MatchedPointsTransformationCalculator tc =
+                new MatchedPointsTransformationCalculator();
+            float[] weights = new float[stats.size()];
+            Arrays.fill(weights, 1.f/(float)stats.size());
+            TransformationParameters params = tc.calulateEuclidean(left, 
+                right, weights, 0, 0, new float[4]);
+            if (params == null) {
+                return null;
+            }
+            
+            //TODO: edit a method in tc to return the indexes that were used.
+            
+            List<Integer> theInlierIndexes = new ArrayList<Integer>();
+            List<Double> theErrors = new ArrayList<Double>();
+            for (int i = 0; i < stats.size(); ++i) {
+                theInlierIndexes.add(Integer.valueOf(-1));
+                theErrors.add(Double.valueOf(-1));
+            }
+            EuclideanTransformationFit fit = new EuclideanTransformationFit(
+                params, theInlierIndexes, theErrors, Double.POSITIVE_INFINITY);
+
+            return fit;
         }
 
         PairIntArray outputLeftXY = new PairIntArray();
@@ -294,18 +373,38 @@ public class SegmentedCellDescriptorMatcher {
 
         return fit;
     }
+    
+    public ITransformationFit matchPoints(int[] segmentedCell2Indexes,
+        int[] n1N2) {
+        
+        TIntCollection kp2 = new TIntHashSet();
+        for (int idx2 : segmentedCell2Indexes) {
+            TIntSet kpSet = segmented2Keypoint2Map.get(idx2);
+            if (kpSet != null) {
+                kp2.addAll(kpSet);
+            }
+        }
+        
+        n1N2[0] = this.nKeypointsInSegment1;
+        n1N2[1] = kp2.size();
+        
+        if (n1N2[1] == 0) {
+            return null;
+        }
+        
+        ITransformationFit fit = matchPointsSingly(kp2);
+        
+        return fit;
+    }
 
     /**
      * runtime complexity is O(keypoints2.length * segmentedCells2.size()).
      *
-     * @param srchPointMap
-     * @param index2NNMap
-     * @param index2Map
      */
-    private void populateMaps(Map<PairInt, TIntIntMap> srchPointMap,
-        TIntObjectMap<NearestNeighbor2D> index2NNMap,
-        TIntObjectMap<TIntSet> index2Map) {
+    private void populateMaps() {
 
+        // variables numbered 1 are those of the template
+        
         int n2 = keypoints2.length;
 
         for (int i2 = 0; i2 < n2; ++i2) {
@@ -346,14 +445,22 @@ public class SegmentedCellDescriptorMatcher {
                         index2NNMap.put(l2, nn);
                     }
 
-                    int rotationInward = calculateOrientationInward(x, y, d, nn);
+                    int rotationInward[] = calculateOrientationInward(x, y, d, nn);
 
                     TIntIntMap rMap = srchPointMap.get(p);
                     if (rMap == null) {
                         rMap = new TIntIntHashMap();
                         srchPointMap.put(p, rMap);
                     }
-                    rMap.put(l2, rotationInward);
+                    rMap.put(l2, rotationInward[0]);
+                    rMap.put(l2, rotationInward[1]);
+                    
+                    TIntSet setK = segmented2Keypoint2Map.get(l2);
+                    if (setK == null) {
+                        setK = new TIntHashSet();
+                        segmented2Keypoint2Map.put(l2, setK);
+                    }
+                    setK.add(i2);
                 }
             }
             
@@ -364,7 +471,7 @@ public class SegmentedCellDescriptorMatcher {
         }
     }
 
-    protected int calculateOrientationInward(int x, int y, double d,
+    protected int[] calculateOrientationInward(int x, int y, double d,
         NearestNeighbor2D medialAxisNN) {
 
         float d0 = (float)(d * 180./Math.PI);
@@ -421,7 +528,9 @@ public class SegmentedCellDescriptorMatcher {
         }
         assert(closestDiffAngle >= 0 && closestDiffAngle < 360.);
         
-        return (int)closestDiffAngle;
+        int closestD = (int)closestDiffAngle;
+        int otherD = (closestD == (int)d0) ? (int)d180 : (int)d0;
+        return new int[]{closestD, otherD};
     }
 
     private void debugPrint() {
@@ -471,4 +580,5 @@ public class SegmentedCellDescriptorMatcher {
         MiscDebug.writeImage(img1Cp, "_img1_matched_");
         MiscDebug.writeImage(img2Cp, "_img2_matched_");
     }
+    
 }

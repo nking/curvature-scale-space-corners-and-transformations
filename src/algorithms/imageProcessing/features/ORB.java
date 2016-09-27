@@ -25,7 +25,9 @@ import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * An implementation of "ORB: an efficient alternative to SIFT or SURF"
@@ -92,8 +94,8 @@ Still testing the class, there may be bugs present.
     orb.detectAndExtract(image);
 
     // to get the list of keypoint coordinates in row-major, but separated:
-    List TIntLis keypoints0 = orb.getAllKeyPoints0(); // rows being first dimension
-    List TIntLis keypoints1 = orb.getAllKeyPoints1(); // cols being second dimension
+    List TIntList keypoints0 = orb.getAllKeyPoints0(); // rows being first dimension
+    List TIntList keypoints1 = orb.getAllKeyPoints1(); // cols being second dimension
 
     // to get the descriptors:
     List Descriptors descList = orb.getDescriptors();
@@ -1640,22 +1642,35 @@ public class ORB {
      */
     public Descriptors getAllDescriptors() {
 
+        return combineDescriptors(descriptorsList);
+    }
+    
+    /**
+     * get a list of each octave's descriptors as a combined descriptor.
+     * The coordinates of the descriptors can be found in getAllKeypoints, but
+     * with twice the spacing because that stores row and col in same list.
+     * @return
+     */
+    public static Descriptors combineDescriptors(List<Descriptors> list) {
+
         int n = 0;
-        for (Descriptors dl : descriptorsList) {
+        for (Descriptors dl : list) {
             n += dl.descriptors.length;
         }
+        
+        int nPos0 = ORBDescriptorPositions.POS0.length;
 
-        int[][] combinedD = new int[n][POS0.length];
+        int[][] combinedD = new int[n][nPos0];
         for (int i = 0; i < n; ++i) {
-            combinedD[i] = new int[POS0.length];
+            combinedD[i] = new int[nPos0];
         }
 
         TIntList combinedM = new TIntArrayList(n);
 
         int count = 0;
-        for (int i = 0; i < descriptorsList.size(); ++i) {
+        for (int i = 0; i < list.size(); ++i) {
 
-            Descriptors dl = descriptorsList.get(i);
+            Descriptors dl = list.get(i);
             combinedM.addAll(dl.mask);
             int[][] d = dl.descriptors;
 
@@ -1692,6 +1707,39 @@ public class ORB {
             TIntList ks = keypoints0List.get(i);
 
             combined.addAll(ks);
+        }
+
+        return combined;
+    }
+
+    /**
+     * get a list of each octave's keypoint rows as a combined list.
+     * The list contains coordinates which have already been scaled to the
+     * full image reference frame.
+     * @return
+     */
+    public List<PairInt> getAllKeyPoints() {
+
+        int n = 0;
+        for (TIntList ks : keypoints0List) {
+            n += ks.size();
+        }
+
+        List<PairInt> combined = new ArrayList<PairInt>(n);
+        int count = 0;
+        
+        for (int i = 0; i < keypoints0List.size(); ++i) {
+
+            TIntList kp0 = keypoints0List.get(i);
+            TIntList kp1 = keypoints1List.get(i);
+
+            for (int j = 0; j < kp0.size(); ++j) {
+                int x = kp0.get(j);
+                int y = kp1.get(j);
+                PairInt p = new PairInt(x, y);
+                combined.add(p);
+                count++;
+            }
         }
 
         return combined;
@@ -1856,7 +1904,8 @@ public class ORB {
      * @return matches - two dimensional int array of indexes in d1 and
      * d2 which are matched.
      */
-    public static int[][] matchDescriptors(int[][] d1, int[][] d2) {
+    public static int[][] matchDescriptors(int[][] d1, int[][] d2,
+        List<PairInt> keypoints1, List<PairInt> keypoints2) {
 
         // 2nd dimension is the descriptor length, same as POS0.length
         assert(d1[0].length == d2[0].length);
@@ -1877,7 +1926,7 @@ public class ORB {
         // for the greedy match, separating the index information from the cost
         // and then sorting by cost
         int nTot = d1.length * d2.length;
-
+        
         PairInt[] indexes = new PairInt[nTot];
         float[] costs = new float[nTot];
         int count = 0;
@@ -1892,22 +1941,24 @@ public class ORB {
 
         QuickSort.sortBy1stArg(costs, indexes);
 
-        TIntSet set1 = new TIntHashSet();
-        TIntSet set2 = new TIntHashSet();
+        Set<PairInt> set1 = new HashSet<PairInt>();
+        Set<PairInt> set2 = new HashSet<PairInt>();
 
         List<PairInt> matches = new ArrayList<PairInt>();
-
+            
         // visit lowest costs (== differences) first
         for (int i = 0; i < nTot; ++i) {
             PairInt index12 = indexes[i];
             int idx1 = index12.getX();
             int idx2 = index12.getY();
-            if (set1.contains(idx1) || set2.contains(idx2)) {
+            PairInt p1 = keypoints1.get(idx1);
+            PairInt p2 = keypoints2.get(idx2);
+            if (set1.contains(p1) || set2.contains(p2)) {
                 continue;
             }
             matches.add(index12);
-            set1.add(idx1);
-            set2.add(idx2);
+            set1.add(p1);
+            set2.add(p2);
         }
 
         int[][] results = new int[matches.size()][2];

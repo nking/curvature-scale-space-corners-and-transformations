@@ -12,6 +12,8 @@ import algorithms.imageProcessing.matching.PartialShapeMatcher.Result;
 import algorithms.imageProcessing.transform.EuclideanEvaluator;
 import algorithms.imageProcessing.transform.EuclideanTransformationFit;
 import algorithms.imageProcessing.transform.TransformationParameters;
+import algorithms.imageProcessing.transform.EpipolarTransformationFit;
+import algorithms.imageProcessing.transform.ITransformationFit;
 import algorithms.util.PairInt;
 import algorithms.util.TwoDIntArray;
 import algorithms.util.VeryLongBitString;
@@ -56,7 +58,7 @@ public class ShapeFinder {
        the global 2D bins for starting searches will be present for this new
          method.
        the descriptors will be used before partial shape matching
-          to evaluate whether adding the cell reduces the cost of the
+          to evaluate whether aggregating the cell reduces the cost of the
           path to the cell.
        will also change the floyd warshall aggregation/search to a dijkstra's
           search.
@@ -85,6 +87,8 @@ public class ShapeFinder {
         new HashMap<VeryLongBitString, Result>();
     private final Map<VeryLongBitString, Double> aggregatedCostMap =
         new HashMap<VeryLongBitString, Double>();
+    private final Map<VeryLongBitString, Float> aggregatedDescrCostMap =
+        new HashMap<VeryLongBitString, Float>();
     
     private int[] minMaxXY = null;
     
@@ -108,6 +112,8 @@ public class ShapeFinder {
     private final float chHSVLimit3 = 0.35f;
     private final Set<VeryLongBitString> skipSet = new HashSet<VeryLongBitString>();
         
+    private final SegmentedCellDescriptorMatcher scdMatcher;
+    
     private final int nTop = 100;
 
     //DEBUG
@@ -141,6 +147,43 @@ public class ShapeFinder {
         this.areaT = (int)Math.round(Math.sqrt(dimensionsT[0] * dimensionsT[0] +
             dimensionsT[1] * dimensionsT[1]));
         this.nB = orderedBoundaries.size();
+        
+        this.scdMatcher = null;
+    }
+    
+    /**
+     * NOT READY FOR USE.
+     * 
+     * for convenience, have imported the entire class
+     * SegmentedCellDescriptorMatcher for now.  will refactor when have
+     * found a robust working solution.
+     */
+    public ShapeFinder(List<PairIntArray> orderedBoundaries,
+        List<Set<PairInt>> pointsList, TIntObjectMap<TIntSet> adjacencyMap, 
+        PairIntArray template, int[][] templateHSVHist, 
+        List<TwoDIntArray> imgHSVHist,
+        SegmentedCellDescriptorMatcher segmentedCellDescriptorMatcher) {
+       
+        this.orderedBoundaries = orderedBoundaries;
+        this.pointsList = pointsList;
+        this.adjacencyMap = adjacencyMap;
+        this.template = template;
+        this.templateHSVHist = templateHSVHist;
+        this.imgHSVHist = imgHSVHist;
+        
+        cache1 = new int[templateHSVHist.length][templateHSVHist[0].length];
+        for (int i = 0; i < cache1.length; ++i) {
+            cache1[i] = new int[templateHSVHist[0].length];
+        }
+        
+        assert(pointsList.size() == orderedBoundaries.size());
+        
+        this.dimensionsT = calcDimensions(template);
+        this.areaT = (int)Math.round(Math.sqrt(dimensionsT[0] * dimensionsT[0] +
+            dimensionsT[1] * dimensionsT[1]));
+        this.nB = orderedBoundaries.size();
+        
+        this.scdMatcher = segmentedCellDescriptorMatcher;
     }
     
     /**
@@ -332,30 +375,6 @@ public class ShapeFinder {
 
     private Result[] wideFWSearch(List<PairInt> orderedBoundaryCentroids) {    
         
-        //TODO: looks like need to retain the best of each bin
-        //      and further compare those to one another.
-        //      -- might need to consider a fast inner pattern comparison.
-        //      -- might need to consider a quick way to trim the aggregated
-        //         shapes by the found correspondence because that correspondence
-        //         step of partial shape matching excludes occluded sections and
-        //         external non-object inclusions.
-        //         currently, that information of the subset of the aggregated
-        //         shape that does match is not being used after the partial 
-        //         shape match,
-        //         instead the entire aggregated shape is being used in further
-        //         evalutations such as the color histograms.
-        //         this change then implies that using half descriptors 
-        //         (meaning, only the half of the descriptor facing inward of
-        //         shape) of keypoints would be up for consideration again.
-        //         - such descriptors probably need to be color in the global search
-        //           stage (as a replacement or supplement to color histograms)
-        //           and would only include the keypoints matched by correspondence
-        //           (w/ additional logic to keep the comparison to intersection
-        //           of shapes...excluding the occlusion and additions of non-object
-        //           to the aggregated shape)
-        //         - such descriptors, if used at the stage of euclidean evaluation
-        //           in partial shape matching, would need to be few in number 
-        //           to keep the partial shape matching fast...)
         //TODO: consider if another pattern of color evaluation would
         //      be quicker than the color histograms.  they're fast because
         //      the sizes are only 32 bins and comparisons are the same. 
@@ -512,7 +531,7 @@ public class ShapeFinder {
                     s1Minus2.removeAll(set2);
                     Set<PairInt> s2Minus1 = new HashSet<PairInt>(set2);
                     s2Minus1.removeAll(set1);
-                    if (s1Minus2.size() == 0 && s2Minus1.size() == 0) {
+                    if (s1Minus2.isEmpty() && s2Minus1.isEmpty()) {
                         rm.add(bs2);
                     }
                 }
@@ -521,6 +540,7 @@ public class ShapeFinder {
                     aggregatedCostMap.remove(bs);
                     aggregatedResultMap.remove(bs);
                     aggregatedBoundaries.remove(bs);
+                    aggregatedDescrCostMap.remove(bs);
                 }
             }
             rmvd -= aggregatedCostMap.size();
@@ -553,6 +573,16 @@ public class ShapeFinder {
             assert(aggregatedResultMap.containsKey(key));
             keys[count] = key;
             costs[count] = entry.getValue().floatValue();
+            if (scdMatcher != null) {
+                float descrCost;
+                if (!aggregatedDescrCostMap.containsKey(key)) {
+                    descrCost = calculateDescriptorCost(key);
+                    aggregatedDescrCostMap.put(key, Float.valueOf(descrCost));
+                } else {
+                    descrCost = aggregatedDescrCostMap.get(key).floatValue();
+                }
+                costs[count] += descrCost;
+            }
             count++;
         }
         costs = Arrays.copyOf(costs, count);
@@ -613,7 +643,7 @@ public class ShapeFinder {
     }    
 
     private void matchIndividually() {
-
+        
         double maxChord = Double.MIN_VALUE;
         double maxDist = Double.MIN_VALUE;
         
@@ -813,8 +843,8 @@ public class ShapeFinder {
             indexes.add(i);
         }
 
-        System.out.println("indexes=" + indexes);
-
+        System.out.println("index=" + index + " indexes=" + indexes);
+      
         for (int i = 0; i < indexes.size(); ++i) {
 
             int idx1 = indexes.get(i);
@@ -838,9 +868,22 @@ public class ShapeFinder {
                 }
 
                 if (idx1 == idx2) {
+                    
+                    if (scdMatcher != null) {
+                        float descrCost;
+                        if (!aggregatedDescrCostMap.containsKey(bs1)) {
+                            descrCost = calculateDescriptorCost(bs1);                        
+                            aggregatedDescrCostMap.put(bs1, Float.valueOf(descrCost));
+                        } else {
+                            descrCost = aggregatedDescrCostMap.get(bs1).floatValue();
+                        }
+                        cost1 += descrCost;
+                    }
+                    
                     PairInt key = new PairInt(idx1, idx1);
                     distMap.put(key, cost1);
                     indexesMap.put(key, bs1);
+                    
                     continue;
                 }
 
@@ -867,9 +910,28 @@ public class ShapeFinder {
                 key2 = new PairInt(idx1, idx2);
                 indexesMap.put(key2, bs2);
 
+                if (scdMatcher != null) {
+                    float descrCost;
+                    if (!aggregatedDescrCostMap.containsKey(bs2)) {
+                        descrCost = calculateDescriptorCost(bs2);                        
+                        aggregatedDescrCostMap.put(bs2, Float.valueOf(descrCost));
+                    } else {
+                        descrCost = aggregatedDescrCostMap.get(bs2).floatValue();
+                    }
+                    int nBits = bs2.getSetBits().length;
+if (index == 67 && bs2.difference(tBS).getSetBits().length == 0) {
+    System.out.println("descrCost=" + descrCost 
+    + " bs2=" + Arrays.toString(bs2.getSetBits()));
+}
+                    if (/*(nBits > 2) &&*/ descrCost == 1.f) {
+                        //skipSet.add(bs2);
+                        continue;
+                    }
+                }
+
                 PairIntArray boundary12 = aggregatedBoundaries.get(bs2);
                 Double cost12 = aggregatedCostMap.get(bs2);
-
+                
                 if (cost12 == null) {
 
                     if (boundary12 == null) {
@@ -880,7 +942,13 @@ public class ShapeFinder {
                 }
 
                 if (cost12 != null) {
-
+                    
+                    if (scdMatcher != null && 
+                        aggregatedDescrCostMap.containsKey(bs2)) {
+                        float descrCost = aggregatedDescrCostMap.get(bs2);
+                        cost12 += descrCost;
+                    }
+                    
                     distMap.put(key2, cost12);
 
                     //DEBUG
@@ -947,6 +1015,7 @@ public class ShapeFinder {
                         if (tIJ) {
                             assert(distMap.containsKey(keyIJ));
                             assert(indexesMap.containsKey(keyIJ));
+                                                        
                             if (distMap.get(keyIJ) < minCost) {
                                 minCost = distMap.get(keyIJ);
                                 minCostIdx = keyIJ;
@@ -994,6 +1063,26 @@ public class ShapeFinder {
                             }
                             if (tIJ) {
                                 s0 = aggregatedCostMap.get(bs0);
+                                
+                                if (scdMatcher != null) {
+                                    float descrCost;
+                                    if (!aggregatedDescrCostMap.containsKey(bs0)) {
+                                        descrCost = calculateDescriptorCost(bs0);
+                                        aggregatedDescrCostMap.put(bs0, Float.valueOf(descrCost));
+                                    } else {
+                                        descrCost = aggregatedDescrCostMap.get(bs0).floatValue();
+                                    }
+                                    int nBits = bs0.getSetBits().length;
+                                    if (/*(nBits > 2) &&*/ (descrCost == 1.f)) {
+                                        tIJ = false;
+                                    } else {
+                                        s0 += descrCost;
+                                    }
+if (index == 67 && bs0.difference(tBS).getSetBits().length == 0) {
+    System.out.println("descrCost=" + descrCost 
+    + " bs0=" + Arrays.toString(bs0.getSetBits()));
+}
+                                }
                             }
                         }
                         if (tIJ) {
@@ -1011,7 +1100,17 @@ public class ShapeFinder {
                                 skipSet.add(bs0);
                                 tIJ = false;
                             }
+                        }
+                        if (tIJ) {
                             // --------
+                            if (scdMatcher != null) {
+                                float descrCost = aggregatedDescrCostMap
+                                    .get(bs0).floatValue();
+                                if (/*(bs0.getNSetBits() > 2) &&*/ descrCost == 1.f) {
+                                    //skipSet.add(bs0);
+                                    tIJ = false;
+                                }
+                            }
                         }
                     }
                     
@@ -1066,6 +1165,25 @@ public class ShapeFinder {
                         if (containsASkipItem(bs1)) {
                             tIK = false;
                             tKJ = false;
+                        } else {
+                            if (scdMatcher != null) {
+                                float descrCost;
+                                if (!aggregatedDescrCostMap.containsKey(bs1)) {
+                                    descrCost = calculateDescriptorCost(bs1);
+                                    aggregatedDescrCostMap.put(bs1, Float.valueOf(descrCost));
+                                } else {
+                                    descrCost = aggregatedDescrCostMap.get(bs1).floatValue();
+                                }
+                                int nBits = bs1.getSetBits().length;
+if (index == 67 && bs1.difference(tBS).getSetBits().length == 0) {
+    System.out.println("descrCost=" + descrCost 
+    + " bs1=" + Arrays.toString(bs1.getSetBits()));
+}
+                                if (/*(nBits > 2) &&*/ descrCost == 1.f) {
+                                    tIK = false;
+                                    tKJ = false;
+                                }
+                            }
                         }
                     }
                     if (tIK && tKJ) {   
@@ -1104,14 +1222,23 @@ public class ShapeFinder {
                                 aggregatedBoundaries.put(bs1, bIKKJ);
                                 aggregatedCostMap.put(bs1, s1);
                                 aggregatedResultMap.put(bs1, r);
+                                
+                                if (scdMatcher != null) {
+                                    float descrCost = aggregatedDescrCostMap
+                                        .get(bs1).floatValue();
+                                    s1 += descrCost;
+                                }
                             }
                         }
                     }
-
+if (index == 67) {
+    System.out.println("  i="+i+" j="+j+" k="+k +
+        "  tIJ=" + tIJ + " tIK=" + tIK + " tKJ=" + tKJ);
+}
                     if (tIJ && s0 != null && s1 != null &&
                         ((s0.doubleValue() <= s1.doubleValue()) || (!tIK || !tKJ))) {
                         assert(tIJ);
-
+                        
                         if ((distMap.containsKey(keyIJ) && (distMap.get(keyIJ) > s0))
                             || !distMap.containsKey(keyIJ)) {
                             distMap.put(keyIJ, s0);
@@ -1138,7 +1265,7 @@ public class ShapeFinder {
                         assert(tIK);
                         assert(tKJ);
                         assert(bs1 != null);
-                        
+                                                
                         if ((distMap.containsKey(keyIJ) && (distMap.get(keyIJ) > s1))
                             || !distMap.containsKey(keyIJ)) {
                             distMap.put(keyIJ, s1);
@@ -1165,7 +1292,7 @@ public class ShapeFinder {
                     } else {
                         continue;
                     }
-
+                    
                     if (indexesMap.containsKey(keyIJ)) {
                         assert (indexesMap.get(keyIJ) != null);
                         if (distMap.get(keyIJ) < minCost) {
@@ -1327,11 +1454,12 @@ public class ShapeFinder {
         int tolerance = 5;
         
         EuclideanEvaluator evaluator = new EuclideanEvaluator();
-        EuclideanTransformationFit fit = evaluator.evaluate(left,
+        ITransformationFit fit = evaluator.evaluate(left,
             right, r.getTransformationParameters(), tolerance);
         
-        if (useLimits) {
-            TransformationParameters params = fit.getTransformationParameters();
+        if (useLimits && fit instanceof EuclideanTransformationFit) {
+            TransformationParameters params = 
+                ((EuclideanTransformationFit)fit).getTransformationParameters();
             float scale = params.getScale();
             if (scale < euclideanScaleRange[0] || scale > euclideanScaleRange[1]) {
                 return maxDistTransformSum;
@@ -1414,5 +1542,37 @@ public class ShapeFinder {
         }
         
         return minIdx;
+    }
+
+    private float calculateDescriptorCost(VeryLongBitString bs1) {
+        return calculateDescriptorCost(bs1.getSetBits());
+    }
+    
+    /**
+     * calculate 1.f - f1Score.
+     * This is 1 for no matches at all, and is 0 for all matching.
+     * 
+     * @param indexes
+     * @return 
+     */
+    private float calculateDescriptorCost(int[] indexes) {
+        
+        int[] n1N2 = new int[2];
+        
+        ITransformationFit fit = scdMatcher.matchPoints(indexes, n1N2);
+        
+        if (fit == null) {
+            return 1;
+        }
+        
+        // n1 is number of keypoints within template shape or border
+        int n1 = n1N2[0];
+        int n2 = n1N2[1];
+        
+        // for now, will not use details of the fit, excepting total numbers
+        
+        float score = fit.getNMatches()/(float)n1;
+        
+        return 1.f - score;
     }
 }
