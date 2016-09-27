@@ -227,6 +227,10 @@ public class SegmentedCellDescriptorMatcher {
                     hsvDesc = hsvDesc1_2;
                 }
                 
+                if (hsvDesc == null) {
+                    continue;
+                }
+                
             // find best among list2
             TIntIterator iter2 = kp2.iterator();
             while (iter2.hasNext()) {
@@ -251,6 +255,10 @@ public class SegmentedCellDescriptorMatcher {
                     IntensityDescriptor[] hsvDesc2 
                         = features2.extractIntensityHSV(x2, y2, 
                         rotationInward2);
+                    
+                    if (hsvDesc2 == null) {
+                        continue;
+                    }
                     
                     FeatureComparisonStat compStat = 
                         IntensityClrFeatures2.calculateHalfStats(

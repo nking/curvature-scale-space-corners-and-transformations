@@ -13969,11 +13969,7 @@ int z = 1;
         List<TwoDIntArray> outputListOfCHs, 
         List<PairInt> outputListOfSeeds, 
         List<GroupPixelRGB0> outputSeedColors) {
-        
-        //TODO: reduce the redundancy with other method
-        // filterUsingColorHistogramDifference
-        // or remove it if not used
-        
+          
         float deltaELimit = 9.5f;//8.5f;
         
         assert(labels.length == img.getNPixels());

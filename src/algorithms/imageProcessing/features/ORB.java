@@ -1726,7 +1726,6 @@ public class ORB {
         }
 
         List<PairInt> combined = new ArrayList<PairInt>(n);
-        int count = 0;
         
         for (int i = 0; i < keypoints0List.size(); ++i) {
 
@@ -1734,11 +1733,10 @@ public class ORB {
             TIntList kp1 = keypoints1List.get(i);
 
             for (int j = 0; j < kp0.size(); ++j) {
-                int x = kp0.get(j);
-                int y = kp1.get(j);
+                int y = kp0.get(j);
+                int x = kp1.get(j);
                 PairInt p = new PairInt(x, y);
                 combined.add(p);
-                count++;
             }
         }
 

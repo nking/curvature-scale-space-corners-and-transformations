@@ -297,6 +297,10 @@ public class AndroidStatuesTest extends TestCase {
         // 1st image is color image, 2nd is masked color image
         ImageExt[] imgs0 = maskAndBin(fileNameRoot0, 1, shape0);
 
+//NOTE: theres possibly a problem with color histogram or
+//color comparison using the blurred segmented 
+//cells
+        
         PairIntArray template =
             imageProcessor.extractSmoothedOrderedBoundary(shape0,
                 sigma, imgs0[0].getWidth(), imgs0[0].getHeight());
@@ -361,14 +365,15 @@ public class AndroidStatuesTest extends TestCase {
             imgCp, labels4, imgs0[1], shape0, 
             listOfPointSets2, listOfCH,
             outputListOfSeeds, outputSeedColors);
-                
-      
+
         ImageExt img11 = img.createWithDimensions();
-        ImageIOHelper.addAlternatingColorLabelsToRegion(img11, labels4);
+        //ImageIOHelper.addAlternatingColorLabelsToRegion(img11, labels4);
+        ImageIOHelper.addAlternatingColorPointSetsToImage(listOfPointSets2, 
+            0, 0, 1, img11);
         for (int i = 0; i < outputListOfSeeds.size(); ++i) {
             PairInt p = outputListOfSeeds.get(i);
             ImageIOHelper.addPointToImage(p.getX(), p.getY(), 
-                img11, 3, 255, 0, 0);
+                img11, 2, 255, 0, 0);
         }
         MiscDebug.writeImage(img11, "_filtered_" + fileName1Root);
         //ImageExt img11 = img.copyToImageExt();
@@ -431,14 +436,21 @@ public class AndroidStatuesTest extends TestCase {
         TDoubleList orientations = extractKeypoints(img, listOfPointSets2, 
             keypointsCombined, descriptors);
         
+        img11 = img.createWithDimensions();
+        ImageIOHelper.addAlternatingColorPointSetsToImage(listOfPointSets2, 
+            0, 0, 1, img11);
+        
         int[][] srchKP = new int[keypointsCombined.size()][];
         for (int i = 0; i < srchKP.length; ++i) {
             srchKP[i] = new int[2];
             PairInt p = keypointsCombined.get(i);
             srchKP[i][1] = p.getY();
             srchKP[i][0] = p.getX();
+            ImageIOHelper.addPointToImage(p.getX(), p.getY(), img11, 
+                1, 255, 0, 0);
         }
-
+        MiscDebug.writeImage(img11, "_filtered_2_" + fileName1Root);
+        
         if (true) {
             
             // -- shows that the large descriptors, change in background,
@@ -457,6 +469,7 @@ public class AndroidStatuesTest extends TestCase {
                 PairInt p2 = keypointsCombined.get(idx2);
                 System.out.println("orb matched: " + p1 + " " + p2);
             }
+            System.out.println(orbMatches.length + " matches");
             
             SegmentedCellDescriptorMatcher matcher = 
                 new SegmentedCellDescriptorMatcher(imgs0[0], img,
@@ -467,9 +480,9 @@ public class AndroidStatuesTest extends TestCase {
                 templateMedialAxis, medialAxisList,
                 RotatedOffsets.getInstance());
             
-            //matcher.matchPointsSingly();
+            matcher.matchPointsSingly();
             
-            matcher.matchPointsInGroups();
+            //matcher.matchPointsInGroups();
             
             // try reduced descriptor matching w/ orb keypoints
 
@@ -1593,8 +1606,7 @@ public class AndroidStatuesTest extends TestCase {
 
     private TDoubleList extractKeypoints(ImageExt img, 
         List<Set<PairInt>> listOfPointSets,
-        List<PairInt> keypoints,
-        Descriptors descriptors) throws IOException, Exception {
+        List<PairInt> keypoints, Descriptors descriptors) throws IOException, Exception {
 
         // bins of size template size across image
 
