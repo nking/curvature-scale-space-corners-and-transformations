@@ -310,10 +310,18 @@ public class AndroidStatuesTest extends TestCase {
 
         List<PairInt> templateKeypoints = new ArrayList<PairInt>();
         TDoubleList templateOrientations = new TDoubleArrayList();
+        /*
         Descriptors templateDescriptors = new Descriptors();
         extractTemplateKeypoints(fileNameRoot0, shape0, template,
             templateKeypoints, templateOrientations, 
             templateDescriptors);
+        */
+        Descriptors templateDescriptorsH = new Descriptors();
+        Descriptors templateDescriptorsS = new Descriptors();
+        Descriptors templateDescriptorsV = new Descriptors();
+        extractTemplateKeypoints(fileNameRoot0, shape0, template,
+            templateKeypoints, templateOrientations, 
+            templateDescriptorsH, templateDescriptorsS, templateDescriptorsV);
         
         int[][] templateKP = new int[templateKeypoints.size()][];
         for (int i = 0; i < templateKP.length; ++i) {
@@ -392,11 +400,8 @@ public class AndroidStatuesTest extends TestCase {
         int h = img.getHeight();
 
         for (int i = 0; i < listOfPointSets2.size(); ++i) {
-
             Set<PairInt> set = listOfPointSets2.get(i);
-
             Set<PairInt> medialAxis = new HashSet<PairInt>();
-
             PairIntArray p = imageProcessor.extractSmoothedOrderedBoundary(
                 set, sigma, w, h, medialAxis);
             if (p == null || p.getN() < 20) {
@@ -411,7 +416,6 @@ public class AndroidStatuesTest extends TestCase {
                 int pixIdx = img.getInternalIndex(pt);
                 filteredLabels[pixIdx] = idx;
             }
-
             medialAxisList.add(medialAxis);
         }
 
@@ -430,11 +434,19 @@ public class AndroidStatuesTest extends TestCase {
 
         assertEquals(orderedBoundaries.size(), listOfPointSets2.size());
 
-        Descriptors descriptors = new Descriptors();
         List<PairInt> keypointsCombined = new ArrayList<PairInt>();
-
+        
+        /*
+        Descriptors descriptors = new Descriptors();
         TDoubleList orientations = extractKeypoints(img, listOfPointSets2, 
             keypointsCombined, descriptors);
+        */
+        Descriptors descriptorsH = new Descriptors();
+        Descriptors descriptorsS = new Descriptors();
+        Descriptors descriptorsV = new Descriptors();
+        TDoubleList orientations = extractKeypoints(img, listOfPointSets2, 
+            keypointsCombined, descriptorsH, descriptorsS, descriptorsV);
+        
         
         img11 = img.createWithDimensions();
         ImageIOHelper.addAlternatingColorPointSetsToImage(listOfPointSets2, 
@@ -458,8 +470,10 @@ public class AndroidStatuesTest extends TestCase {
             //    the template gingerbread man to the euclair
             //    when points are matched singly
             int[][] orbMatches = ORB.matchDescriptors(
-                templateDescriptors.descriptors, 
-                descriptors.descriptors, 
+                new Descriptors[]{templateDescriptorsH,
+                    templateDescriptorsS, templateDescriptorsV}, 
+                new Descriptors[]{descriptorsH,
+                    descriptorsS, descriptorsV},
                 templateKeypoints, keypointsCombined);
             
             
@@ -1612,6 +1626,56 @@ public class AndroidStatuesTest extends TestCase {
         MiscDebug.writeImage(img0, "_template_orb");
     }
 
+    private void extractTemplateKeypoints(String fileNameRoot0,
+        Set<PairInt> shape0, PairIntArray template,
+        List<PairInt> templateKP, TDoubleList templateOrientations,
+        Descriptors templateDescriptorsH, Descriptors templateDescriptorsS,
+        Descriptors templateDescriptorsV) throws IOException, Exception {
+
+        String fileName0 = fileNameRoot0 + ".jpg";
+        String filePath0 = ResourceFinder
+            .findFileInTestResources(fileName0);
+        ImageExt img0 = ImageIOHelper.readImageExt(filePath0);
+
+        int[] minMaxXY = MiscMath.findMinMaxXY(template);
+
+        int w = img0.getWidth();
+        int h = img0.getHeight();
+
+        int xLL = minMaxXY[0] - 5;
+        if (xLL < 0) {
+            xLL = 0;
+        }
+        int yLL = minMaxXY[2] - 5;
+        if (yLL < 0) {
+            yLL = 0;
+        }
+        int xUR = minMaxXY[1] + 5;
+        if (xUR > (w - 1)) {
+            xUR = w - 1;
+        }
+        int yUR = minMaxXY[3] + 5;
+        if (yUR > (h - 1)) {
+            yUR = h - 1;
+        }
+
+        ORBWrapper.extractKeypointsFromSubImage(
+            img0, xLL, yLL, xUR, yUR,
+            200, templateKP, templateOrientations, 
+            templateDescriptorsH, 
+            templateDescriptorsS,
+            templateDescriptorsV, 0.01f, true);
+        
+        for (int i = 0; i < templateKP.size(); ++i) {
+            PairInt p = templateKP.get(i);
+            if (shape0.contains(p)) {
+                ImageIOHelper.addPointToImage(p.getX(), p.getY(), img0, 1, 255, 0, 0);
+            }
+        }
+
+        MiscDebug.writeImage(img0, "_template_orb");
+    }
+
     private TDoubleList extractKeypoints(ImageExt img, 
         List<Set<PairInt>> listOfPointSets,
         List<PairInt> keypoints, Descriptors descriptors) throws IOException, Exception {
@@ -1623,7 +1687,7 @@ public class AndroidStatuesTest extends TestCase {
 
         ORB orb = new ORB(1000);
         //orb.overrideFastThreshold(0.01f);
-        //orb.overrideToNotCreateDescriptors();
+        orb.overrideToCreateHSVDescriptors();
         orb.overrideToAlsoCreate2ndDerivKeypoints();
         orb.detectAndExtract(img);
 
@@ -1667,6 +1731,75 @@ public class AndroidStatuesTest extends TestCase {
             count++;
         }
         descriptors.descriptors = outD;
+        
+        MiscDebug.writeImage(img0, "_srch_orb");
+
+        return orientations;
+    }
+
+    private TDoubleList extractKeypoints(ImageExt img, 
+        List<Set<PairInt>> listOfPointSets,
+        List<PairInt> keypoints, Descriptors descriptorsH,
+        Descriptors descriptorsS, Descriptors descriptorsV) 
+        throws IOException, Exception {
+
+        // bins of size template size across image
+
+        int w = img.getWidth();
+        int h = img.getHeight();
+
+        ORB orb = new ORB(1000);
+        //orb.overrideFastThreshold(0.01f);
+        orb.overrideToCreateHSVDescriptors();
+        orb.overrideToAlsoCreate2ndDerivKeypoints();
+        orb.detectAndExtract(img);
+
+        List<PairInt> kp = orb.getAllKeyPoints();
+        
+        Descriptors[] dHSV = orb.getAllDescriptorsHSV();
+        
+        TDoubleList or = orb.getAllOrientations();
+
+        ImageExt img0 = img.copyToImageExt();
+
+        Set<PairInt> points = new HashSet<PairInt>();
+        for (Set<PairInt> set : listOfPointSets) {
+            points.addAll(set);
+        }
+
+        Set<PairInt> exists = new HashSet<PairInt>();
+        TDoubleList orientations = new TDoubleArrayList();
+        for (int i = 0; i < kp.size(); ++i) {
+            PairInt p = kp.get(i);
+            if (exists.contains(p) || !points.contains(p)) {
+                continue;
+            }
+            exists.add(p);
+            keypoints.add(p);
+            orientations.add(or.get(i));
+            ImageIOHelper.addPointToImage(p.getX(), p.getY(), img0, 1, 255, 0, 0);
+        }
+        
+        exists.clear();
+        
+        int[][] outH = new int[keypoints.size()][];
+        int[][] outS = new int[keypoints.size()][];
+        int[][] outV = new int[keypoints.size()][];
+        int count = 0;
+        for (int i = 0; i < kp.size(); ++i) {
+            PairInt p = kp.get(i);
+            if (exists.contains(p) || !points.contains(p)) {
+                continue;
+            }
+            exists.add(p);
+            outH[count] = dHSV[0].descriptors[i];
+            outS[count] = dHSV[1].descriptors[i];
+            outV[count] = dHSV[2].descriptors[i];
+            count++;
+        }
+        descriptorsH.descriptors = outH;
+        descriptorsS.descriptors = outS;
+        descriptorsV.descriptors = outV;
         
         MiscDebug.writeImage(img0, "_srch_orb");
 
