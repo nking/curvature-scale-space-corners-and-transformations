@@ -135,7 +135,6 @@ public class ORB {
     //`True`` or ``False`` representing
     //the outcome of the intensity comparison for i-th keypoint on j-th
     //decision pixel-pair. It is ``Q == np.sum(mask)``.
-    // NOTE: this output format may need to be changed
     private List<Descriptors> descriptorsList = null;
     
     private List<Descriptors> descriptorsListH = null;
@@ -898,8 +897,9 @@ public class ORB {
     }
 
     public static class Descriptors {
-        //NOTE: do not pack 4 descriptors into one because of the
-        //      hsv descriptor addition
+        //NOTE: consider packing 4 descriptors into one or
+        // doing as Image.java does with sensing 64 bit and 32 bit to make
+        // long or int bit vectors
         int[] descriptors;
     }
 
@@ -2263,7 +2263,7 @@ public class ORB {
         int n2 = d2.length;
 
         //[n1][n2]
-        float[][] cost = calcDescriptorCostMatrix(d1, d2);
+        int[][] cost = calcDescriptorCostMatrix(d1, d2);
 
         int[][] matches = greedyMatch(keypoints1, keypoints2, cost);
         // greedy or optimal match can be performed here.
@@ -2299,7 +2299,7 @@ public class ORB {
         assert(n2 == keypoints2.size());
 
         //[n1][n2]
-        float[][] cost = calcDescriptorCostMatrix(d1, d2);
+        int[][] cost = calcDescriptorCostMatrix(d1, d2);
 
         int[][] matches = greedyMatch(keypoints1, keypoints2, cost);
         // greedy or optimal match can be performed here.
@@ -2313,7 +2313,7 @@ public class ORB {
     }
     
     private static int[][] greedyMatch(List<PairInt> keypoints1, 
-        List<PairInt> keypoints2, float[][] cost) {
+        List<PairInt> keypoints2, int[][] cost) {
         
         int n1 = keypoints1.size();
         int n2 = keypoints2.size();
@@ -2323,7 +2323,7 @@ public class ORB {
         int nTot = n1 * n2;
         
         PairInt[] indexes = new PairInt[nTot];
-        float[] costs = new float[nTot];
+        int[] costs = new int[nTot];
         int count = 0;
         for (int i = 0; i < n1; ++i) {
             for (int j = 0; j < n2; ++j) {
@@ -2373,17 +2373,18 @@ public class ORB {
      * @return matches two dimensional int array of indexes in d1 and
      * d2 which are matched.
      */
-    public static float[][] calcDescriptorCostMatrix(int[] d1, int[] d2) {
+    public static int[][] calcDescriptorCostMatrix(int[] d1, int[] d2) {
 
         int n1 = d1.length;
         int n2 = d2.length;
 
-        float[][] cost = new float[n1][n2];
+        int[][] cost = new int[n1][n2];
         for (int i = 0; i < n1; ++i) {
-            cost[i] = new float[n2];
+            cost[i] = new int[n2];
             for (int j = 0; j < n2; ++j) {
-                //computed as the sum of the XOR operator between them
-                cost[i][j] = d1[i] ^ d2[j];
+                // xor gives number of different bits
+                int xor = d1[i] ^ d2[j];
+                cost[i][j] = Integer.bitCount(xor);
             }
         }
 
@@ -2400,7 +2401,7 @@ public class ORB {
      * @return matches two dimensional int array of indexes in d1 and
      * d2 which are matched.
      */
-    public static float[][] calcDescriptorCostMatrix(
+    public static int[][] calcDescriptorCostMatrix(
         Descriptors[] desc1, Descriptors[] desc2) {
 
         //TODO: need to add use of auto-correlation too
@@ -2415,9 +2416,9 @@ public class ORB {
         // d1 contains multiple descriptors for same points, such as
         // descriptors for H, S, and V
         
-        float[][] cost = new float[n1][n2];
+        int[][] cost = new int[n1][n2];
         for (int i = 0; i < n1; ++i) {
-            cost[i] = new float[n2];
+            cost[i] = new int[n2];
         }
         
         for (int k = 0; k < nd; ++k) {
@@ -2427,15 +2428,10 @@ public class ORB {
             assert(d2.length == n2);
             for (int i = 0; i < n1; ++i) {
                 for (int j = 0; j < n2; ++j) {
-                    cost[i][j] += (d1[i] ^ d2[j]);
+                    // xor gives number of different bits
+                    int xor = d1[i] ^ d2[j];
+                    cost[i][j] += Integer.bitCount(xor);
                 }
-            }
-        }
-        
-        float n = nd;
-        for (int i = 0; i < n1; ++i) {
-            for (int j = 0; j < n2; ++j) {
-                cost[i][j] /= n;
             }
         }
         
