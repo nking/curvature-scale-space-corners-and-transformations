@@ -2350,8 +2350,8 @@ public class ORB {
         
         /*
         score matrix is points1 matched to each set's points in pointsList2.
-        score is sum of each match (3*256 - cost) where cost is the sum
-        of number of different bits in descriptor xor.
+        score is sum of each matched (3*256 - cost) where cost is the sum
+        of number of different bits in the descriptor xor.
         */
         int[] scores = new int[ns2];
         int[] scoresIndexes = new int[ns2];
@@ -2408,10 +2408,10 @@ public class ORB {
             //  then this ransac step could be placed less ideally at 
             //  after line 2440 or after line 2450.
             
-            // sort by cost and select unique idx1 and idx2
-            // pairings and then calculate score as 256*3 - cost, and sum those
-            // -> put score in scores[j]
-            // --> put correspondence map w/ index=j, value=PairInt[] of kpIdx1, kpIdx2
+            // sort by cost and select unique idx1 and idx2 pairings and then
+            // calculate score as 256*3 - cost, and sum those
+            // -> put score in scores[lIdx2]
+            // --> put correspondence map w/ index=lIdx2, value=PairInt[] of kpIdx1, kpIdx2
             
             QuickSort.sortBy1stArg(costs, kpIdxs);
             
