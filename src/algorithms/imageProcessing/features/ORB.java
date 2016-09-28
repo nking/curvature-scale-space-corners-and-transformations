@@ -2430,7 +2430,8 @@ public class ORB {
                 for (int j = 0; j < n2; ++j) {
                     // xor gives number of different bits
                     int xor = d1[i] ^ d2[j];
-                    cost[i][j] += Integer.bitCount(xor);
+                    int nbits = Integer.bitCount(xor);
+                    cost[i][j] += (nbits * nbits);
                 }
             }
         }
