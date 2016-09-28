@@ -2309,8 +2309,8 @@ public class ORB {
     /**
      * matching descriptors as groups of descriptors within segmented cells.
      * 
-     * @param d1
-     * @param d2
+     * @param desc1
+     * @param desc2
      * @param keypoints2
      * @param keypoints1
      * @param points1
@@ -2349,8 +2349,8 @@ public class ORB {
         }
         
         /*
-        score matrix is points 1 matched to each set's points in pointsList2.
-        score is sum of each match * (3*256 - cost) where cost is the sum
+        score matrix is points1 matched to each set's points in pointsList2.
+        score is sum of each match (3*256 - cost) where cost is the sum
         of number of different bits in descriptor xor.
         */
         int[] scores = new int[ns2];
@@ -2400,6 +2400,13 @@ public class ORB {
                 }
                 assert(count == n);
             }
+            
+            //TODO: need ransac with epipolar or euclidean evaluator here
+            //  to remove outliers and inconsistent geometries.
+            //  need to look at my ransac impl to see if it reqires unique
+            //  points in correspondence list.  if it does,
+            //  then this ransac step could be placed less ideally at 
+            //  after line 2440 or after line 2450.
             
             // sort by cost and select unique idx1 and idx2
             // pairings and then calculate score as 256*3 - cost, and sum those
