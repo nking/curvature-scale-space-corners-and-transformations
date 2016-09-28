@@ -12,13 +12,16 @@ import algorithms.imageProcessing.MedianTransform;
 import algorithms.misc.MiscMath;
 import algorithms.misc.StatsInSlidingWindow;
 import algorithms.util.PairInt;
+import gnu.trove.iterator.TIntIterator;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
@@ -721,15 +724,6 @@ public class ORB {
         TIntSet octavesUsedSet = new TIntHashSet(octavesUsed);
         
         int listIdx = 0;
-        
-        for (int octave = 0; octave < pyramidSize; ++octave) {
-            if (!octavesUsedSet.contains(octave)) {continue;}            
-            TIntList kp0 = this.keypoints0List.get(listIdx);
-            System.out.println("nKP[" + listIdx + "]=" + kp0.size());
-            listIdx++;
-        }
-
-        listIdx = 0;
         
         for (int octave = 0; octave < pyramidSize; ++octave) {
 
@@ -2312,6 +2306,166 @@ public class ORB {
         return matches;
     }
     
+    /**
+     * matching descriptors as groups of descriptors within segmented cells.
+     * 
+     * @param d1
+     * @param d2
+     * @param keypoints2
+     * @param keypoints1
+     * @param points1
+     * @param pointsList2
+     * @return matches - two dimensional int array of indexes in d1 and
+     * d2 which are matched.
+     */
+    public static int[][] matchDescriptors(Descriptors[] desc1, Descriptors[] desc2,
+        List<PairInt> keypoints1, List<PairInt> keypoints2,
+        Set<PairInt> points1, List<Set<PairInt>> pointsList2) {
+
+        assert(desc1.length == desc2.length);
+        
+        int nd1 = desc1[0].descriptors.length;
+        int nd2 = desc2[0].descriptors.length;
+        
+        assert(nd1 == keypoints1.size());
+        assert(nd2 == keypoints2.size());
+        
+        int ns2 = pointsList2.size();
+        
+        // key = pointsList2 index, value = keypoints2 index
+        TIntObjectMap<TIntSet> index2keypointsIndexMap = new TIntObjectHashMap<TIntSet>();
+        for (int i = 0; i < keypoints2.size(); ++i) {
+            PairInt p = keypoints2.get(i);
+            for (int j = 0; j < pointsList2.size(); ++j) {
+                if (pointsList2.get(j).contains(p)) {
+                    TIntSet set = index2keypointsIndexMap.get(j);
+                    if (set == null) {
+                        set = new TIntHashSet();
+                        index2keypointsIndexMap.put(j, set);
+                    }
+                    set.add(i);
+                }
+            }
+        }
+        
+        /*
+        score matrix is points 1 matched to each set's points in pointsList2.
+        score is sum of each match * (3*256 - cost) where cost is the sum
+        of number of different bits in descriptor xor.
+        */
+        int[] scores = new int[ns2];
+        int[] scoresIndexes = new int[ns2];
+        
+        TIntObjectMap<List<PairInt>> p2IndexCorresMap = 
+            new TIntObjectHashMap<List<PairInt>>();
+        
+        for (int lIdx2 = 0; lIdx2 < pointsList2.size(); ++lIdx2) {
+            
+            TIntSet kpIndexes2 = index2keypointsIndexMap.get(lIdx2);
+            
+            if (kpIndexes2 == null || kpIndexes2.isEmpty()) {
+                continue;
+            }
+
+            TIntList kpIdxs2 = new TIntArrayList(kpIndexes2);
+            
+            // compare kpIndexes2 to all keypoints1,
+            // and store idx1, idx2, cost.
+            // sort by cost and select unique idx1 and idx2
+            // pairings and then calculate score as 256*3 - cost, and sum those
+            // -> put score in scores[lIdx]
+            // --> put correspondence map w/ index=lIdx, value=PairInt[] of kpIdx1, kpIdx2
+            
+            int n = nd1 * kpIndexes2.size();
+            
+            int[] costs = new int[n];
+            PairInt[] kpIdxs = new PairInt[n];
+
+            for (int k = 0; k < desc1.length; ++k) {
+                int[] d1 = desc1[k].descriptors;
+                int[] d2 = desc2[k].descriptors;
+                int count = 0;
+                for (int i = 0; i < keypoints1.size(); ++i) {
+                    for (int j : kpIdxs2.toArray()) {                    
+                        // xor gives number of different bits
+                        int xor = d1[i] ^ d2[j];
+                        int nbits = Integer.bitCount(xor);
+                        //cost[i][j] += nbits;
+                        costs[count] += nbits;
+                        if (k == 0) {
+                            kpIdxs[count] = new PairInt(i, j);
+                        }
+                        count++;
+                    }
+                }
+                assert(count == n);
+            }
+            
+            // sort by cost and select unique idx1 and idx2
+            // pairings and then calculate score as 256*3 - cost, and sum those
+            // -> put score in scores[j]
+            // --> put correspondence map w/ index=j, value=PairInt[] of kpIdx1, kpIdx2
+            
+            QuickSort.sortBy1stArg(costs, kpIdxs);
+            
+            Set<PairInt> set1 = new HashSet<PairInt>();
+            Set<PairInt> set2 = new HashSet<PairInt>();
+
+            List<PairInt> matches = new ArrayList<PairInt>();
+
+            int scoreSum = 0;
+            
+            // visit lowest costs (== differences) first
+            for (int i = 0; i < costs.length; ++i) {
+                PairInt index12 = kpIdxs[i];
+                int idx1 = index12.getX();
+                int idx2 = index12.getY();
+                PairInt p1 = keypoints1.get(idx1);
+                PairInt p2 = keypoints2.get(idx2);
+                if (set1.contains(p1) || set2.contains(p2)) {
+                    continue;
+                }
+                matches.add(index12);
+                set1.add(p1);
+                set2.add(p2);
+                
+                scoreSum += (3 * 256 - costs[i]);
+            }
+            
+            scores[lIdx2] = scoreSum;
+            
+            scoresIndexes[lIdx2] = lIdx2;
+            
+            p2IndexCorresMap.put(lIdx2, matches);
+        }
+        
+        MultiArrayMergeSort.sortByDecr(scores, scoresIndexes);
+        
+        // log the results 
+        for (int i = 0; i < scores.length; ++i) {
+            int score = scores[i];
+            int lIdx2 = scoresIndexes[i];
+            List<PairInt> corres = p2IndexCorresMap.get(lIdx2);
+            StringBuilder sb = new StringBuilder("score=").append(score);
+            for (PairInt p : corres) {
+                PairInt p1 = keypoints1.get(p.getX());
+                PairInt p2 = keypoints2.get(p.getY());
+                sb.append("\n  ").append(p1).append(" ").append(p2);
+            }
+            System.out.println(sb.toString());
+        }
+        
+        //NOTE: note here is where one could use the adjacency of segmented cells
+        //      to further choose among the matchings by highest scores...
+        
+        
+        // return the unique mappings in greedy manner for this version
+        
+        
+        throw new UnsupportedOperationException("not yet implemented");
+        
+    }
+    
     private static int[][] greedyMatch(List<PairInt> keypoints1, 
         List<PairInt> keypoints2, int[][] cost) {
         
@@ -2431,7 +2585,8 @@ public class ORB {
                     // xor gives number of different bits
                     int xor = d1[i] ^ d2[j];
                     int nbits = Integer.bitCount(xor);
-                    cost[i][j] += (nbits * nbits);
+                    //cost[i][j] += (nbits * nbits);
+                    cost[i][j] += nbits;
                 }
             }
         }
