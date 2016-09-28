@@ -16,6 +16,7 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.GroupPixelColors;
 import algorithms.imageProcessing.GroupPixelRGB;
 import algorithms.imageProcessing.GroupPixelRGB0;
+import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
@@ -286,7 +287,7 @@ public class AndroidStatuesTest extends TestCase {
     public void testShapeMatcher() throws Exception {
 
         int maxDimension = 256;//512;
-        SIGMA sigma = SIGMA.ONE;
+        SIGMA sigma = SIGMA.ZEROPOINTFIVE;//SIGMA.ONE;
 
         ImageProcessor imageProcessor = new ImageProcessor();
         ImageSegmentation imageSegmentation = new ImageSegmentation();
@@ -323,14 +324,22 @@ public class AndroidStatuesTest extends TestCase {
             templateKeypoints, templateOrientations, 
             templateDescriptorsH, templateDescriptorsS, templateDescriptorsV);
         
+        //Image imgTempCP = imgs0[0].copyImage();
         int[][] templateKP = new int[templateKeypoints.size()][];
         for (int i = 0; i < templateKP.length; ++i) {
             templateKP[i] = new int[2];
             PairInt p = templateKeypoints.get(i);
             templateKP[i][1] = p.getY();
             templateKP[i][0] = p.getX();
+            //ImageIOHelper.addPointToImage(p.getX(), p.getY(), imgTempCP, 1, 255, 0, 0);
+            //double angle = templateOrientations.get(i);
+            //int dx = (int)Math.round(3. * Math.cos(angle));
+            //int dy = (int)Math.round(3. * Math.sin(angle));
+            //ImageIOHelper.drawLineInImage(p.getX(), p.getY(), 
+            //    p.getX() + dx, p.getY() + dy, imgTempCP, 0, 255, 255, 0);
         }
-
+        //MiscDebug.writeImage(imgTempCP, "_filtered_1_" + fileNameRoot0);               
+        
         ColorHistogram clrHist = new ColorHistogram();
 
         int[][] template_ch_HSV = clrHist.histogramHSV(imgs0[1], shape0);
@@ -458,10 +467,14 @@ public class AndroidStatuesTest extends TestCase {
             PairInt p = keypointsCombined.get(i);
             srchKP[i][1] = p.getY();
             srchKP[i][0] = p.getX();
-            ImageIOHelper.addPointToImage(p.getX(), p.getY(), img11, 
-                1, 255, 0, 0);
+            //ImageIOHelper.addPointToImage(p.getX(), p.getY(), img11, 1, 255, 0, 0);
+            //double angle = orientations.get(i);
+            //int dx = (int)Math.round(3. * Math.cos(angle));
+            //int dy = (int)Math.round(3. * Math.sin(angle));
+            //ImageIOHelper.drawLineInImage(p.getX(), p.getY(), 
+            //    p.getX() + dx, p.getY() + dy, img11, 0, 255, 255, 0);
         }
-        MiscDebug.writeImage(img11, "_filtered_2_" + fileName1Root);
+        //MiscDebug.writeImage(img11, "_filtered_2_" + fileName1Root);
         
         if (true) {
             
@@ -475,7 +488,6 @@ public class AndroidStatuesTest extends TestCase {
                 new Descriptors[]{descriptorsH,
                     descriptorsS, descriptorsV},
                 templateKeypoints, keypointsCombined);
-            
             
             CorrespondencePlotter plotter = new CorrespondencePlotter(
                 imgs0[1], img);            
@@ -502,7 +514,7 @@ public class AndroidStatuesTest extends TestCase {
                 templateMedialAxis, medialAxisList,
                 RotatedOffsets.getInstance());
             
-            matcher.matchPointsSingly();
+            //matcher.matchPointsSingly();
             
             //matcher.matchPointsInGroups();
             
@@ -1611,10 +1623,13 @@ public class AndroidStatuesTest extends TestCase {
             yUR = h - 1;
         }
 
+        ORB.DescriptorDithers descrOffsets = ORB.DescriptorDithers.FORTY_FIVE;
+        
         ORBWrapper.extractKeypointsFromSubImage(
             img0, xLL, yLL, xUR, yUR,
             200, templateKP, templateOrientations, 
-            templateDescriptors, 0.01f, true);
+            templateDescriptors, 0.01f, true,
+            descrOffsets);
         
         for (int i = 0; i < templateKP.size(); ++i) {
             PairInt p = templateKP.get(i);
@@ -1719,7 +1734,7 @@ public class AndroidStatuesTest extends TestCase {
         
         exists.clear();
         
-        int[][] outD = new int[keypoints.size()][];
+        int[] outD = new int[keypoints.size()];
         int count = 0;
         for (int i = 0; i < kp.size(); ++i) {
             PairInt p = kp.get(i);
@@ -1752,6 +1767,7 @@ public class AndroidStatuesTest extends TestCase {
         //orb.overrideFastThreshold(0.01f);
         orb.overrideToCreateHSVDescriptors();
         orb.overrideToAlsoCreate2ndDerivKeypoints();
+        orb.overrideToCreateOffsetsToDescriptors(ORB.DescriptorDithers.FORTY_FIVE);
         orb.detectAndExtract(img);
 
         List<PairInt> kp = orb.getAllKeyPoints();
@@ -1782,9 +1798,9 @@ public class AndroidStatuesTest extends TestCase {
         
         exists.clear();
         
-        int[][] outH = new int[keypoints.size()][];
-        int[][] outS = new int[keypoints.size()][];
-        int[][] outV = new int[keypoints.size()][];
+        int[] outH = new int[keypoints.size()];
+        int[] outS = new int[keypoints.size()];
+        int[] outV = new int[keypoints.size()];
         int count = 0;
         for (int i = 0; i < kp.size(); ++i) {
             PairInt p = kp.get(i);

@@ -22,7 +22,8 @@ public class ORBWrapper {
         List<PairInt> outputKeypoints,
         TDoubleList outputOrientations,
         Descriptors outputDescriptors,
-        float fastThreshold, boolean create2ndDerivPointsAlso) {
+        float fastThreshold, boolean create2ndDerivPointsAlso,
+        ORB.DescriptorDithers descrDither) {
          
         int buffer = 25;
         
@@ -51,6 +52,9 @@ public class ORBWrapper {
         if (create2ndDerivPointsAlso) {
             orb.overrideToAlsoCreate2ndDerivKeypoints();
         }
+        if (!descrDither.equals(ORB.DescriptorDithers.NONE)) {
+            orb.overrideToCreateOffsetsToDescriptors(descrDither);
+        }
         
         orb.detectAndExtract(subImage);
 
@@ -74,7 +78,7 @@ public class ORBWrapper {
             }
         }
         
-        int[][] outD = new int[outputKeypoints.size()][];
+        int[] outD = new int[outputKeypoints.size()];
         int count = 0;
         for (int i = 0; i < kp.size(); ++i) {
             PairInt p = kp.get(i);
@@ -154,9 +158,9 @@ public class ORBWrapper {
             }
         }
         
-        int[][] outH = new int[outputKeypoints.size()][];
-        int[][] outS = new int[outputKeypoints.size()][];
-        int[][] outV = new int[outputKeypoints.size()][];
+        int[] outH = new int[outputKeypoints.size()];
+        int[] outS = new int[outputKeypoints.size()];
+        int[] outV = new int[outputKeypoints.size()];
         int count = 0;
         for (int i = 0; i < kp.size(); ++i) {
             PairInt p = kp.get(i);
