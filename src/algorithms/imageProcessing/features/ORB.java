@@ -141,6 +141,8 @@ public class ORB {
     private List<Descriptors> descriptorsListH = null;
     private List<Descriptors> descriptorsListS = null;
     private List<Descriptors> descriptorsListV = null;
+    
+    private static double twoPI = 2. * Math.PI;
 
     protected enum DescriptorChoice {
         NONE, GREYSCALE, HSV
@@ -615,8 +617,6 @@ public class ORB {
         harrisResponses = new ArrayList<TFloatList>();
         scalesList = new ArrayList<TFloatList>();
         
-        int nKeypointsTotal = 0;
-
         float prevScl = 1;
         
         TIntList octavesUsed = new TIntArrayList();
@@ -681,8 +681,6 @@ public class ORB {
                 scales.add(scale);
             }
             scalesList.add(scales);
-
-            nKeypointsTotal += r.keypoints0.size();
         }
 
         return octavesUsed;        
@@ -1487,6 +1485,17 @@ public class ORB {
         adapted from
         from https://github.com/scikit-image/scikit-image/blob/master/skimage/feature/corner_cy.pyx
 
+        <pre>
+            +90               
+        135  |  +45     
+             |          
+       180-------- 0  
+             |        
+       -135  |   -45  
+            -90     
+        </pre>
+ 
+ 
         References
         ----------
         .. [1] Ethan Rublee, Vincent Rabaud, Kurt Konolige and Gary Bradski
@@ -1562,6 +1571,7 @@ public class ORB {
 
             //arc tangent of y/x, in the interval [-pi,+pi] radians
             orientations[i] = Math.atan2(m01, m10);
+            
         }
 
         return orientations;
@@ -2122,7 +2132,7 @@ public class ORB {
     }
 
     /**
-     * greedy SSD matching of d1 to d2, with unique mappings for
+     * greedy matching of d1 to d2 by min cost, with unique mappings for
      * all indexes.
      *
      * @param d1
@@ -2154,7 +2164,7 @@ public class ORB {
     }
 
     /**
-     * greedy SSD matching of d1 to d2, with unique mappings for
+     * greedy matching of d1 to d2 by min difference, with unique mappings for
      * all indexes.
      *
      * @param d1
@@ -2244,7 +2254,7 @@ public class ORB {
     }
     
     /**
-     * calculate a cost matrix composed of the SSD of each descriptor in d1 to d2.
+     * calculate a cost matrix composed of the sum of XOR of each descriptor in d1 to d2.
      *
      * @param d1 two dimensional array with first being keypoint indexes and
      * second dimension being descriptor.
@@ -2265,7 +2275,8 @@ public class ORB {
         for (int i = 0; i < n1; ++i) {
             cost[i] = new float[n2];
             for (int j = 0; j < n2; ++j) {
-                cost[i][j] = MiscMath.calculateSSD(d1[i], d2[j], Integer.MIN_VALUE);
+                //computed as the sum of the XOR operator between them
+                cost[i][j] = MiscMath.calculateSumXOR(d1[i], d2[j]);
             }
         }
 
@@ -2273,7 +2284,7 @@ public class ORB {
     }
 
     /**
-     * calculate a cost matrix composed of the SSD of each descriptor in d1 to d2.
+     * calculate a cost matrix composed of the sum of XOR of each descriptor in d1 to d2.
      *
      * @param desc1 two dimensional array with first being keypoint indexes and
      * second dimension being descriptor.
@@ -2312,7 +2323,7 @@ public class ORB {
             assert(d2.length == n2);
             for (int i = 0; i < n1; ++i) {
                 for (int j = 0; j < n2; ++j) {
-                    cost[i][j] += MiscMath.calculateSSD(d1[i], d2[j], Integer.MIN_VALUE);
+                    cost[i][j] += MiscMath.calculateSumXOR(d1[i], d2[j]);
                 }
             }
         }

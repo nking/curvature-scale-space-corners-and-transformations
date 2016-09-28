@@ -1525,6 +1525,18 @@ public class MiscMath {
         return r2Offsets;
     }
     
+    public static int calculateSumXOR(int[] d1, int[] d2) {
+        
+        assert(d1.length == d2.length);
+        
+        int sum = 0;
+        
+        for (int i = 0; i < d1.length; ++i) {
+            sum += (d1[i] ^ d2[i]);
+        }
+                
+        return sum;
+    }
     
     public static float calculateSSD(int[] a, int[] b, int sentinel) {
         
@@ -2383,4 +2395,5 @@ System.out.println("value 0 is rescaled to value=" + (-minV*scale)
             }
         }
     }
+
 }
