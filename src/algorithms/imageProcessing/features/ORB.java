@@ -167,6 +167,8 @@ public class ORB {
     private DescriptorDithers descrDithers = DescriptorDithers.NONE;
     
     private boolean doCreate2ndDerivKeypoints = false;
+    
+    private boolean createInflectionPoints = false;
 
     /**
      * Still testing the class, there may be bugs present.
@@ -213,6 +215,10 @@ public class ORB {
             return;
         }
         descrDithers = dithers;
+    }
+    
+    public void overrideToCreateInflectionPoints() {
+        createInflectionPoints = true;
     }
 
     private void initMasks() {
@@ -967,7 +973,7 @@ public class ORB {
        
         if (doCreate2ndDerivKeypoints) {
             
-            /* considering adding inflection points as zero crossings in curvature:
+            /* considering adding inflection points as zero crossings in curvture:
                dot is the degree of derivative...see ScaleSpaceCurvature
                       X_dot(t,o~) * Y_dot_dot(t,o~) - Y_dot(t,o~) * X_dot_dot(t,o~) 
             k(t,o~) = -------------------------------------------------------------
@@ -1796,13 +1802,19 @@ public class ORB {
 
         //TODO: might need to apply a normalization factor
         // to these for downstream use
+        
+        if (!createInflectionPoints) {
 
-        TwoDFloatArray[] tensorComponents = new TwoDFloatArray[3];
-        tensorComponents[0] = new TwoDFloatArray(axx);
-        tensorComponents[1] = new TwoDFloatArray(axy);
-        tensorComponents[2] = new TwoDFloatArray(ayy);
+            TwoDFloatArray[] tensorComponents = new TwoDFloatArray[3];
+            tensorComponents[0] = new TwoDFloatArray(axx);
+            tensorComponents[1] = new TwoDFloatArray(axy);
+            tensorComponents[2] = new TwoDFloatArray(ayy);
 
-        return tensorComponents;
+            return tensorComponents;
+        }
+        
+        // for curvature, need d/dy(dy) and d/dx(dx)
+        throw new UnsupportedOperationException("not yet implemented");
     }
 
     /**
