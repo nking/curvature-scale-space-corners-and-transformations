@@ -55,6 +55,7 @@ public class ORBWrapper {
         if (!descrDither.equals(ORB.DescriptorDithers.NONE)) {
             orb.overrideToCreateOffsetsToDescriptors(descrDither);
         }
+        orb.overrideToCreateCurvaturePoints();
         
         orb.detectAndExtract(subImage);
 
@@ -133,6 +134,8 @@ public class ORBWrapper {
         }
         orb.overrideToCreateHSVDescriptors();
         
+        orb.overrideToCreateCurvaturePoints();
+        
         orb.detectAndExtract(subImage);
 
         List<PairInt> kp = orb.getAllKeyPoints();
@@ -210,6 +213,8 @@ public class ORBWrapper {
         ORB orb = new ORB(nKeypoints);
         orb.overrideToNotCreateDescriptors();
         orb.detectAndExtract(subImage);
+        
+        orb.overrideToCreateCurvaturePoints();
         
         TIntList kp0 = orb.getAllKeyPoints0();
         TIntList kp1 = orb.getAllKeyPoints1();

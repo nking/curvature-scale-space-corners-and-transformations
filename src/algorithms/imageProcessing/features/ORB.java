@@ -168,7 +168,7 @@ public class ORB {
     
     private boolean doCreate2ndDerivKeypoints = false;
     
-    private boolean createInflectionPoints = false;
+    private boolean doCreateCurvatureKeyPoints = false;
 
     /**
      * Still testing the class, there may be bugs present.
@@ -217,8 +217,8 @@ public class ORB {
         descrDithers = dithers;
     }
     
-    public void overrideToCreateInflectionPoints() {
-        createInflectionPoints = true;
+    public void overrideToCreateCurvaturePoints() {
+        doCreateCurvatureKeyPoints = true;
     }
 
     private void initMasks() {
@@ -969,17 +969,16 @@ public class ORB {
 
         float[][] traceA = add(tensorComponents[0].a,
             tensorComponents[2].a);
-
        
         if (doCreate2ndDerivKeypoints) {
             
-            /* considering adding inflection points as zero crossings in curvture:
+            /* considering adding curvature points as local maxima in curvature:
                dot is the degree of derivative...see ScaleSpaceCurvature
                       X_dot(t,o~) * Y_dot_dot(t,o~) - Y_dot(t,o~) * X_dot_dot(t,o~) 
             k(t,o~) = -------------------------------------------------------------
                                    (X_dot^2(t,o~) + Y_dot^2(t,o~))^1.5
             */
-            
+
             float hLimit = 0.09f;//0.05f;
 
             TIntList kp0 = new TIntArrayList();
@@ -1009,12 +1008,12 @@ public class ORB {
             }
             /*
             try {
-
-                float factor = 255.f;
+                float max = MiscMath.findMax(secondDeriv);
+                float factor = 255.f/max;
                 GreyscaleImage gsImg = new GreyscaleImage(nRows, nCols);
                 for (int i = 0; i < nRows; ++i) {
                     for (int j = 0; j < nCols; ++j) {
-                        int v = Math.round(factor * octaveImage[i][j]);
+                        int v = Math.round(factor * secondDeriv[i][j]);
                         if (v > 255) {
                             v = 255;
                         }
@@ -1024,8 +1023,80 @@ public class ORB {
                 System.out.println("nRows=" + nRows + " nCols=" + nCols);
                 algorithms.imageProcessing.ImageDisplayer.displayImage("adap mean", gsImg);
                 int z = 1;
-            } catch(Exception e) {}
+            } catch(Exception e) {}            
             */
+            
+            // tensorComponents:
+            // [axx, axy, ayy, dx, d/dx(dx), dy, d/dy(dy)]
+            if (doCreateCurvatureKeyPoints) {
+                // usually, only create these points for points on an edge.
+                // wanting the min and max of curvature,
+                // and then those maxima that are 2 or 3 times stronger than 
+                // one of the adjacent minima.
+                // with a single edge, the peak curvature should be larger than
+                // 2 times that of the preceding or proceeding minima.
+                
+                //NOTE: consider filtering by a threshold of second derivative
+                // to reduce the regions to edges
+                float max2ndDeriv = MiscMath.findMax(secondDeriv);
+                float f = max2ndDeriv/10;
+                
+                float[][] dx = tensorComponents[3].a;
+                float[][] dx2 = tensorComponents[4].a;
+                float[][] dy = tensorComponents[5].a;
+                float[][] dy2 = tensorComponents[6].a;
+                float[][] curvature = copy(dx);
+                for (int i = 0; i < nRows; ++i) {
+                    for (int j = 0; j < nCols; ++j) {
+                        if (secondDeriv[i][j] < f) {
+                            continue;
+                        }
+                        float dx2dx2 = dx2[i][j] * dx2[i][j];
+                        float dy2dy2 = dy2[i][j] * dy2[i][j];
+                        if (dx2dx2 == 0 && dy2dy2 == 0) {
+                            curvature[i][j] = Float.MAX_VALUE;
+                            continue;
+                        }
+                        //(dx * dy(dy) - dy * dx(dx)) / (dx(dx)*dx(dx) + dy(dy)*dy(dy))
+                        curvature[i][j] = (dx[i][j] * dy2[i][j] - dy[i][j] * dx2[i][j])
+                            / (dx2dx2 + dy2dy2);
+                    }
+                }
+                TIntList kp20 = new TIntArrayList();
+                TIntList kp21 = new TIntArrayList();
+
+                peakLocalMax(curvature, 1, 0.01f, kp20, kp21);
+                
+                keypoints0.addAll(kp20);
+                keypoints1.addAll(kp21);
+                
+                /*
+                try {
+                    float factor = 255.f;
+                    Image img2 = new Image(nRows, nCols);
+                    for (int i = 0; i < nRows; ++i) {
+                        for (int j = 0; j < nCols; ++j) {
+                            int v = Math.round(factor * octaveImage[i][j]);
+                            if (v > 255) {
+                                v = 255;
+                            }
+                            img2.setRGB(i, j, v, v, v);
+                        }
+                    }
+                    for (int i = 0; i < kp20.size(); ++i) {
+                        int y = kp21.get(i);
+                        int x = kp20.get(i);
+                        img2.setRGB(x, y, 255, 0, 0);
+                    }
+                    System.out.println("nRows=" + nRows + " nCols=" + nCols);
+                    algorithms.imageProcessing.ImageDisplayer.displayImage("curvature", img2);
+                    int z = 1;
+                } catch(Exception e) {
+                    System.out.println(e.getMessage());
+                }
+                */
+            }
+
         }
         
         // size is same a octaveImage
@@ -1803,7 +1874,7 @@ public class ORB {
         //TODO: might need to apply a normalization factor
         // to these for downstream use
         
-        if (!createInflectionPoints) {
+        if (!doCreateCurvatureKeyPoints) {
 
             TwoDFloatArray[] tensorComponents = new TwoDFloatArray[3];
             tensorComponents[0] = new TwoDFloatArray(axx);
@@ -1814,7 +1885,26 @@ public class ORB {
         }
         
         // for curvature, need d/dy(dy) and d/dx(dx)
-        throw new UnsupportedOperationException("not yet implemented");
+        
+        float[][] gX2 = copy(gX);
+        float[][] gY2 = copy(gY);
+        
+        //TODO: revisit this in detail:
+        // row major, so need to use y operations for x and vice versa
+        imageProcessor.applyKernel1D(gX2, kernel, false);
+        imageProcessor.applyKernel1D(gY2, kernel, true);
+        
+        TwoDFloatArray[] tensorComponents = new TwoDFloatArray[7];
+        tensorComponents[0] = new TwoDFloatArray(axx);
+        tensorComponents[1] = new TwoDFloatArray(axy);
+        tensorComponents[2] = new TwoDFloatArray(ayy);
+        
+        tensorComponents[3] = new TwoDFloatArray(gX);
+        tensorComponents[4] = new TwoDFloatArray(gX2);
+        tensorComponents[5] = new TwoDFloatArray(gY);
+        tensorComponents[6] = new TwoDFloatArray(gY2);
+
+        return tensorComponents;
     }
 
     /**

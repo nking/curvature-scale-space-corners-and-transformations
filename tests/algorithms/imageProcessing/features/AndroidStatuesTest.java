@@ -350,6 +350,7 @@ public class AndroidStatuesTest extends TestCase {
         
         ColorHistogram clrHist = new ColorHistogram();
 
+        // using the template image which is masked (bakcground is zero)
         int[][] template_ch_HSV = clrHist.histogramHSV(imgs0[1], shape0);
 
         String fileName1 = "android_statues_02.jpg";
@@ -502,14 +503,14 @@ public class AndroidStatuesTest extends TestCase {
             //    lighting, and change in pose result in a better match of
             //    the template gingerbread man to the euclair
             //    when points are matched singly
-            /*int[][] orbMatches = ORB.matchDescriptors(
+            int[][] orbMatches = ORB.matchDescriptors(
                 new Descriptors[]{templateDescriptorsH,
                     templateDescriptorsS, templateDescriptorsV}, 
                 new Descriptors[]{descriptorsH,
                     descriptorsS, descriptorsV},
                 templateKeypoints, keypointsCombined);
-            */
             
+            /*
             int[][] orbMatches = ORB.matchDescriptors(
                 new Descriptors[]{templateDescriptorsH,
                     templateDescriptorsS, templateDescriptorsV}, 
@@ -517,7 +518,7 @@ public class AndroidStatuesTest extends TestCase {
                     descriptorsS, descriptorsV},
                 templateKeypoints, keypointsCombined,
                 shape0, listOfPointSets2);
-            
+            */
             img11 = img.copyToImageExt();
             CorrespondencePlotter plotter = new CorrespondencePlotter(
                 imgs0[1], img.copyImage());            
@@ -531,7 +532,7 @@ public class AndroidStatuesTest extends TestCase {
                     1, 255, 0, 0);
                 
                 System.out.println("orb matched: " + p1 + " " + p2);
-                if (p2.getX() > 165)
+                if (p2.getX() > 160)
                 plotter.drawLineInAlternatingColors(p1.getX(), p1.getY(), 
                     p2.getX(), p2.getY(), 0);
             }
@@ -540,7 +541,8 @@ public class AndroidStatuesTest extends TestCase {
             System.out.println(orbMatches.length + " matches");
             MiscDebug.writeImage(img11, "_orb_corres_2_");
             
-            SegmentedCellDescriptorMatcher matcher = 
+            // using template image which is not masked
+            /*SegmentedCellDescriptorMatcher matcher = 
                 new SegmentedCellDescriptorMatcher(imgs0[0], img,
                 templateKP, srchKP,
                 templateOrientations, orientations,
@@ -549,8 +551,8 @@ public class AndroidStatuesTest extends TestCase {
                 templateMedialAxis, medialAxisList,
                 RotatedOffsets.getInstance());
             
-            //matcher.matchPointsSingly();
-            
+            matcher.matchPointsSingly();
+            */
             //matcher.matchPointsInGroups();
             
             // try reduced descriptor matching w/ orb keypoints
@@ -1658,7 +1660,9 @@ public class AndroidStatuesTest extends TestCase {
             yUR = h - 1;
         }
 
-        ORB.DescriptorDithers descrOffsets = ORB.DescriptorDithers.FORTY_FIVE;
+        ORB.DescriptorDithers descrOffsets 
+            = ORB.DescriptorDithers.NONE;
+        //    = ORB.DescriptorDithers.FORTY_FIVE;
         
         ORBWrapper.extractKeypointsFromSubImage(
             img0, xLL, yLL, xUR, yUR,
@@ -1836,7 +1840,8 @@ public class AndroidStatuesTest extends TestCase {
         //orb.overrideFastThreshold(0.01f);
         orb.overrideToCreateHSVDescriptors();
         orb.overrideToAlsoCreate2ndDerivKeypoints();
-        orb.overrideToCreateOffsetsToDescriptors(ORB.DescriptorDithers.FORTY_FIVE);
+        orb.overrideToCreateCurvaturePoints();
+        //orb.overrideToCreateOffsetsToDescriptors(ORB.DescriptorDithers.FORTY_FIVE);
         orb.detectAndExtract(img);
 
         List<PairInt> kp = orb.getAllKeyPoints();
