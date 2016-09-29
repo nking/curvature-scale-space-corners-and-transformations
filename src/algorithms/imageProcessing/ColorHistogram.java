@@ -147,7 +147,7 @@ public class ColorHistogram {
         }
                 
         // the values need to be normalized by the total number of points
-        // in the histogram, so calculat that first
+        // in the histogram, so calculate that first
         int[] n0 = new int[hist0.length];
         int[] n1 = new int[hist0.length];
         for (int i = 0; i < hist0.length; ++i) {

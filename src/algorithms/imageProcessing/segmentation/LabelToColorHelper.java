@@ -76,13 +76,57 @@ public class LabelToColorHelper {
      extract contiguous points from the labeled regions and relabel
     labels to coincide with the returned list indexes
     */
-    public static List<Set<PairInt>> 
-        extractContiguousLabelPoints(Image img, int[] labels) {
+    public static List<Set<PairInt>> extractContiguousLabelPoints(Image img, 
+        int[] labels) {
+                
+        TIntObjectMap<Set<PairInt>> lMap = extractLabelPoints(img, labels);
+              
+        List<Set<PairInt>> out = extractContiguousLabelPoints(img, lMap);
+        
+        for (int i = 0; i < out.size(); ++i) {
+            for (PairInt p : out.get(i)) {
+                int pixIdx = img.getInternalIndex(p);
+                labels[pixIdx] = i;
+                assert(img.getCol(pixIdx) < img.getWidth());
+                assert(img.getRow(pixIdx) < img.getHeight());
+            }
+        }
+       
+        return out;
+    }
+    
+    /**
+     extract contiguous points from the labeled regions and relabel
+    labels to coincide with the returned list indexes
+    * @param labels 2D array in format [row][col]
+    */
+    public static List<Set<PairInt>> extractContiguousLabelPoints(Image img, 
+        int[][] labels) {
+                
+        TIntObjectMap<Set<PairInt>> lMap = extractRowMajorLabelPoints(img, labels);
+              
+        List<Set<PairInt>> out = extractContiguousLabelPoints(img, lMap);
+        
+        for (int i = 0; i < out.size(); ++i) {
+            for (PairInt p : out.get(i)) {
+                labels[p.getX()][p.getY()] = i;
+                assert(p.getX() < img.getWidth());
+                assert(p.getY() < img.getHeight());
+            }
+        }
+       
+        return out;
+    }
+    
+    /**
+     extract contiguous points from the labeled regions and relabel
+    labels to coincide with the returned list indexes
+    */
+    private static List<Set<PairInt>> extractContiguousLabelPoints(Image img, 
+        TIntObjectMap<Set<PairInt>> lMap) {
         
         List<Set<PairInt>> out = new ArrayList<Set<PairInt>>();
-        
-        TIntObjectMap<Set<PairInt>> lMap = extractLabelPoints(img, labels);
-      
+              
         TIntObjectIterator<Set<PairInt>> iter = lMap.iterator();
         for (int i = 0; i < lMap.size(); ++i) {
             iter.advance();
@@ -95,16 +139,7 @@ public class LabelToColorHelper {
                 out.add(group);
             }
         }
-
-        for (int i = 0; i < out.size(); ++i) {
-            for (PairInt p : out.get(i)) {
-                int pixIdx = img.getInternalIndex(p);
-                labels[pixIdx] = i;
-                assert(img.getCol(pixIdx) < img.getWidth());
-                assert(img.getRow(pixIdx) < img.getHeight());
-            }
-        }
-        
+ 
         assert(assertAllPointsFound(out, img.getWidth(), img.getHeight()));
         
         return out;
@@ -161,6 +196,35 @@ public class LabelToColorHelper {
                 out.put(label, set);
             }
             set.add(new PairInt(img.getCol(i), img.getRow(i)));
+        }
+        
+        return out;
+    }
+    
+    /**
+     * create map with key = label, value = all points w/ label
+     * @param img
+     * @param labels two dimensional array of labels in format [row][col]
+     * @return 
+     */
+    public static TIntObjectMap<Set<PairInt>> extractRowMajorLabelPoints(
+        Image img, int[][] labels) {
+        
+        assert(labels.length*labels[0].length == img.getNPixels());
+        
+        TIntObjectMap<Set<PairInt>> out 
+            = new TIntObjectHashMap<Set<PairInt>>();
+        
+        for (int j = 0; j < labels.length; ++j) {
+            for (int i = 0; i < labels[j].length; ++i) {
+                int label = labels[j][i];
+                Set<PairInt> set = out.get(label);
+                if (set == null) {
+                    set = new HashSet<PairInt>();
+                    out.put(label, set);
+                }
+                set.add(new PairInt(img.getCol(i), img.getRow(i)));
+            }
         }
         
         return out;

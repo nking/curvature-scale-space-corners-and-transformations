@@ -190,6 +190,12 @@ public class RegionAdjacencyGraph {
         return regionList;
     }
     
+    /**
+     * expecting labels[row][col], row major format
+     * @param img
+     * @param labels
+     * @return 
+     */
     private Map<Integer, Set<PairInt>> createRegionsMap(ImageExt img, int[][] labels) {
         
         Map<Integer, Set<PairInt>> map = new HashMap<Integer, Set<PairInt>>();

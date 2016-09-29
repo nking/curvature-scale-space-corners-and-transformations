@@ -5,6 +5,7 @@ import algorithms.graphs.RAGCSubGraph;
 import algorithms.graphs.RegionAdjacencyGraphColor;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.misc.MiscMath;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
@@ -88,12 +89,16 @@ public class NormalizedCuts {
     private int numCuts = 3;//5;
 
     private ColorSpace colorSpace = ColorSpace.RGB;
-    private boolean ltRGB = false;
+    
+    private ColorOption colorOption = ColorOption.RGB;
+    
+    private enum ColorOption {
+        RGB, HSV, LOW_THRESHOLD_RGB, LOW_THRESHOLD_HSV, HSV_COLOR_HISTOGRAMS,
+        CIELAB
+    }
+    
     private double thresh = 0.06;
     double sigma = 22;
-    
-    // TODO: change these to an enumberation
-    private boolean ltHSV = false;
 
     public void setThreshold(double thresh) {
         this.thresh = thresh;
@@ -101,19 +106,23 @@ public class NormalizedCuts {
     public void setSigma(double sigma) {
         this.sigma = sigma;
     }
-    
     public void setToLowThresholdRGB() {
-        ltRGB = true;
-        ltHSV = false;
+        colorOption = ColorOption.LOW_THRESHOLD_RGB;
         colorSpace = ColorSpace.RGB;
         // for superpixels w/ n=200
         thresh = 1.e-16;
         sigma = 1.7320508;
     }
     
+    public void setToColorHistogramsOfHSV() {
+        colorOption = ColorOption.HSV_COLOR_HISTOGRAMS;
+        colorSpace = ColorSpace.HSV;
+        thresh = 0.5;
+        sigma = 1.732;
+    }
+    
     public void setToLowThresholdHSV() {
-        ltHSV = true;
-        ltRGB = false;
+        colorOption = ColorOption.LOW_THRESHOLD_HSV;
         colorSpace = ColorSpace.HSV;
         // for superpixels w/ n=200  thresh=0.05, sigma=0.1
         thresh = 5e-6; //1e-13 and 0.001 or 5e-6 and 0.0025
@@ -121,8 +130,7 @@ public class NormalizedCuts {
     }
    
     public void setColorSpaceToRGB() {
-        ltRGB = false;
-        ltHSV = false;
+        colorOption = ColorOption.RGB;
         colorSpace = ColorSpace.RGB;
         // for superpixels w/ n=200 thresh=0.06 sigma=22
         thresh = 0.06;
@@ -130,8 +138,7 @@ public class NormalizedCuts {
     }
     
     public void setColorSpaceToHSV() {
-        ltRGB = false;
-        ltHSV = false;
+        colorOption = ColorOption.HSV;
         colorSpace = ColorSpace.HSV;
         // for superpixels w/ n=200  thresh=0.05, sigma=0.1
         thresh = 0.05;
@@ -139,8 +146,7 @@ public class NormalizedCuts {
     }
     
     public void setColorSpaceToCIELAB() {
-        ltRGB = false;
-        ltHSV = false;
+        colorOption = ColorOption.CIELAB;
         colorSpace = ColorSpace.CIELAB;
         // for superpixels w/ n=200 thresh=1e-12  sigma=6
         thresh = 1e-12;//-12
@@ -155,11 +161,18 @@ public class NormalizedCuts {
      * see ImageSegmentation.calcSuperPixelsAndNormalizedCutsLabels()
      * 
      * @param img
-     * @param labels of contiguous pixels
+     * @param labels of contiguous pixels.  note that label value range is 
+     * compressed from minimum value to minimum value plus number of values
+     * internally, but given array is not modified.
      * @return 
      */
     public int[] normalizedCut(ImageExt img, int[] labels) {
        
+        // compress labels
+        int[] labels2 = Arrays.copyOf(labels, labels.length);
+        LabelToColorHelper.condenseLabels(labels2);
+        labels = labels2;
+        
         //TODO: note, as authors mention, the edge weights with values > 0.01
         // are significant and the remaining are zeroes of different precision
         
@@ -170,10 +183,12 @@ public class NormalizedCuts {
 
         log.info("rag.nNodes=" + rag.getNumberOfRegions() + " at start");
          
-        if (ltHSV) {
+        if (colorOption.equals(ColorOption.LOW_THRESHOLD_HSV)) {
             rag.populateEdgesWithLowThreshHSVSimilarity(sigma);
-        } else if (ltRGB) {
+        } else if (colorOption.equals(ColorOption.LOW_THRESHOLD_RGB)) {
             rag.populateEdgesWithLowThreshRGBSimilarity(sigma);
+        } else if (colorOption.equals(ColorOption.HSV_COLOR_HISTOGRAMS)) {
+            rag.populateEdgesWithHSVColorHistogramSimilarity(sigma);
         } else {
             rag.populateEdgesWithColorSimilarity(colorSpace,
                 sigma);

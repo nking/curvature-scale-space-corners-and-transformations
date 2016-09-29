@@ -1,10 +1,13 @@
 package algorithms.graphs;
 
 import algorithms.imageProcessing.CIEChromaticity;
+import algorithms.imageProcessing.ColorHistogram;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.segmentation.ColorSpace;
+import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.util.PairInt;
+import gnu.trove.map.TIntObjectMap;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -69,7 +72,7 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
         /*
         may make some improvements:
         (if the statement in the normalized cuts paper regarding bit significance
-       is followed, I should be able to factor the doubles to integers.
+        is followed, I should be able to factor the doubles to integers.
         in that case, can use compression as I do in Image.java and
         find a linear algebra eigen solver which will use the get and set methods
         of my image class to keep the data small.
@@ -147,6 +150,172 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
         // calculate the average colors for each node
         float[][] nodeColors = calculateNodeAverageColors();
         
+        // calculate pairwise differences for adjacent nodes (similarity or distance edgeS)
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        Set<PairInt> added = new HashSet<PairInt>();
+        
+        for (Entry<Integer, Set<Integer>> entry : adjacencyMap.entrySet()) {
+            Integer index1 = entry.getKey();
+            int idx1 = index1.intValue();
+            for (Integer index2 : entry.getValue()) {
+                int idx2 = index2.intValue();
+                assert(idx1 != idx2);
+                PairInt p;
+                if (idx1 < idx2) {
+                    p = new PairInt(idx1, idx2);
+                } else {
+                    p = new PairInt(idx2, idx1);
+                }
+                if (added.contains(p)) {
+                    continue;
+                }
+                added.add(p);
+                
+                // using max diff as the difference, so that normalized cuts
+                // is less likely to merge (or more likely to see as not the same)
+                double diff = Double.MIN_VALUE;
+                for (int m = 0; m < 3; ++m) {
+                    float d = nodeColors[m][idx1] - nodeColors[m][idx2];
+                    if (d < 0) {
+                        d *= -1;
+                    }
+                    if (d > diff) {
+                        diff = d;
+                    }
+                }
+  
+                // set both [i][j] and [j][i] to make matrix symmetric
+                diffOrSim.set(idx1, idx2, diff);
+                diffOrSim.set(idx2, idx1, diff);
+            }
+        }
+
+        added = new HashSet<PairInt>();
+        
+        for (Entry<Integer, Set<Integer>> entry : adjacencyMap.entrySet()) {
+            Integer index1 = entry.getKey();
+            int idx1 = index1.intValue();
+            for (Integer index2 : entry.getValue()) {
+                int idx2 = index2.intValue();
+                assert(idx1 != idx2);
+                PairInt p;
+                if (idx1 < idx2) {
+                    p = new PairInt(idx1, idx2);
+                } else {
+                    p = new PairInt(idx2, idx1);
+                }
+                if (added.contains(p)) {
+                    continue;
+                }
+                added.add(p);
+                
+                // set both [i][j] and [j][i] to make symmetric matrix
+                double d = diffOrSim.get(idx1, idx2);
+                assert(d == diffOrSim.get(idx2, idx1));
+                double similarity = Math.exp(-1*d*d/sigma);
+  System.out.println("similarity=" + similarity);      
+                diffOrSim.set(idx1, idx2, similarity);
+                diffOrSim.set(idx2, idx1, similarity);
+            }
+        }        
+    }
+    
+    public void populateEdgesWithHSVColorHistogramSimilarity(
+        double sigma) {
+        
+        if (diffOrSim != null) {
+            throw new IllegalStateException("this method is expected to be invoked only once");
+        }
+        
+        this.colorSpace = ColorSpace.HSV;
+        
+        int nNodes = regions.size();
+        int nCols = img.getWidth();
+        int nRows = img.getHeight();
+
+        diffOrSim = new FlexCompRowMatrix(nNodes, nNodes);
+                
+        int[][][] nodeCH = calculateNodeHSVHistograms();
+        
+        ColorHistogram clrHist = new ColorHistogram();
+        
+        Set<PairInt> added = new HashSet<PairInt>();
+        
+        for (Entry<Integer, Set<Integer>> entry : adjacencyMap.entrySet()) {
+            Integer index1 = entry.getKey();
+            int idx1 = index1.intValue();
+            for (Integer index2 : entry.getValue()) {
+                int idx2 = index2.intValue();
+                assert(idx1 != idx2);
+                PairInt p;
+                if (idx1 < idx2) {
+                    p = new PairInt(idx1, idx2);
+                } else {
+                    p = new PairInt(idx2, idx1);
+                }
+                if (added.contains(p)) {
+                    continue;
+                }
+                added.add(p);
+                
+                float diff = clrHist.intersection(nodeCH[idx1], nodeCH[idx2]);
+                
+                // set both [i][j] and [j][i] to make matrix symmetric
+                diffOrSim.set(idx1, idx2, diff);
+                diffOrSim.set(idx2, idx1, diff);
+            }
+        }
+
+        added = new HashSet<PairInt>();
+        
+        for (Entry<Integer, Set<Integer>> entry : adjacencyMap.entrySet()) {
+            Integer index1 = entry.getKey();
+            int idx1 = index1.intValue();
+            for (Integer index2 : entry.getValue()) {
+                int idx2 = index2.intValue();
+                assert(idx1 != idx2);
+                PairInt p;
+                if (idx1 < idx2) {
+                    p = new PairInt(idx1, idx2);
+                } else {
+                    p = new PairInt(idx2, idx1);
+                }
+                if (added.contains(p)) {
+                    continue;
+                }
+                added.add(p);
+                
+                // set both [i][j] and [j][i] to make symmetric matrix
+                double d = diffOrSim.get(idx1, idx2);
+                assert(d == diffOrSim.get(idx2, idx1));
+                double similarity = Math.exp(-1*d*d/sigma);
+  System.out.println("ch similarity=" + similarity);      
+                diffOrSim.set(idx1, idx2, similarity);
+                diffOrSim.set(idx2, idx1, similarity);
+            }
+        }        
+    }
+    
+    public void populateEdgesWithLowThreshHSVHistogramSimilarity(
+        double sigma) {
+        
+        if (diffOrSim != null) {
+            throw new IllegalStateException("this method is expected to be invoked only once");
+        }
+        
+        this.colorSpace = ColorSpace.HSV;
+        
+        int nNodes = regions.size();
+        int nCols = img.getWidth();
+        int nRows = img.getHeight();
+
+        diffOrSim = new FlexCompRowMatrix(nNodes, nNodes);
+                
+        // calculate the average colors for each node
+        float[][] nodeColors = calculateNodeAverageColors();
+    
         // calculate pairwise differences for adjacent nodes (similarity or distance edgeS)
         
         CIEChromaticity cieC = new CIEChromaticity();
@@ -354,6 +523,39 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
             }
         }
         
+        return nodeColors;
+    }
+        
+    /**
+     * 
+     * @return [nNodes][h,s,v][16]
+     */
+    private int[][][] calculateNodeHSVHistograms() {
+        
+        int nNodes = regions.size();
+        int nCols = img.getWidth();
+        int nRows = img.getHeight();
+
+        diffOrSim = new FlexCompRowMatrix(nNodes, nNodes);
+          
+        // NOTE: this is made in region adjacency graph and
+        // could be saved from earlier step
+        TIntObjectMap<Set<PairInt>> labelMap = LabelToColorHelper
+            .extractRowMajorLabelPoints(img, labels);
+        
+        int nl = labelMap.size();
+        
+        assert(nl == nNodes);
+        
+        ColorHistogram clrHist = new ColorHistogram();
+        
+        // calculate the average colors for each node
+        int[][][] nodeColors = new int[nNodes][][];
+        for (int i = 0; i < nNodes; ++i) {
+            Set<PairInt> points = labelMap.get(i);
+            nodeColors[i] = clrHist.histogramHSV(img, points);
+        }
+                
         return nodeColors;
     }
         
