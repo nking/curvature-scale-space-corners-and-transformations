@@ -967,6 +967,13 @@ public class ORB {
        
         if (doCreate2ndDerivKeypoints) {
             
+            /* considering adding inflection points as zero crossings in curvature:
+               dot is the degree of derivative...see ScaleSpaceCurvature
+                      X_dot(t,o~) * Y_dot_dot(t,o~) - Y_dot(t,o~) * X_dot_dot(t,o~) 
+            k(t,o~) = -------------------------------------------------------------
+                                   (X_dot^2(t,o~) + Y_dot^2(t,o~))^1.5
+            */
+            
             float hLimit = 0.09f;//0.05f;
 
             TIntList kp0 = new TIntArrayList();

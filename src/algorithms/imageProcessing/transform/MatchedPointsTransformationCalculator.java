@@ -3,6 +3,10 @@ package algorithms.imageProcessing.transform;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -401,13 +405,10 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
 
         return params;
     }
-
+    
     /**
      * coordinate transformations from pair 1 to pair 2 are calculated from
-     * the widest pairings of the given matched points.  Two solutions are
-     * returned for the invoker to evaluate, the first is from using the average
-     * solution from pairs of points after removing outliers, the second
-     * is from only the highest weighted pairing.
+     * the widest pairings of the given matched points.
      *
      * positive Y is up
        positive X is right
@@ -435,6 +436,43 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         PairIntArray matchedXY1, PairIntArray matchedXY2, float[] weights,
         final double centroidX1, final double centroidY1,
         float[] outputScaleRotTransXYStDev) {
+     
+        TIntList inlierIndexes = null;
+        
+        return calulateEuclidean(matchedXY1, matchedXY2, weights,
+            centroidX1, centroidY1, outputScaleRotTransXYStDev, inlierIndexes);
+    }
+
+    /**
+     * coordinate transformations from pair 1 to pair 2 are calculated from
+     * the widest pairings of the given matched points.
+     *
+     * positive Y is up
+       positive X is right
+       positive theta starts from Y=0, X>=0 and proceeds CW
+                270
+                 |
+                 |
+          180--------- 0   +X
+                 |
+                 |
+                 90
+                 -Y
+     * </pre>
+     * @param matchedXY1
+     * @param matchedXY2
+     * @param weights
+     * @param centroidX1
+     * @param centroidY1
+     * @param outputScaleRotTransXYStDev output standard deviation of
+     * the scale, rotation, and translations in X and Y. If null, calculations
+     * are not performed for standard deviation from mean.
+     * @return
+     */
+    public TransformationParameters calulateEuclidean(
+        PairIntArray matchedXY1, PairIntArray matchedXY2, float[] weights,
+        final double centroidX1, final double centroidY1,
+        float[] outputScaleRotTransXYStDev, TIntList outputInlierIndexes) {
         
         if (matchedXY1 == null) {
             throw new IllegalArgumentException("matchedXY1 cannot be null");
@@ -485,13 +523,15 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
             
         //choosing pairs of points by pairing for maximum distance.
         
-        Set<PairInt> pairIndexes = new HashSet<PairInt>();
+        Set<PairInt> pairIndexesSet = new HashSet<PairInt>();
         
         if (matchedXY1.getN() < 100) {
-            useBipartiteMatching(matchedXY1, pairIndexes);
+            useBipartiteMatching(matchedXY1, pairIndexesSet);
         } else {
-            useGreedyMatching(matchedXY1, pairIndexes);
+            useGreedyMatching(matchedXY1, pairIndexesSet);
         }
+        
+        List<PairInt> pairIndexes = new ArrayList<PairInt>(pairIndexesSet);
         
         AngleUtil angleUtil = new AngleUtil();
 
@@ -629,6 +669,7 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
                     transXs.remove(idx);
                     transYs.remove(idx);
                     pairWeights2.remove(idx);
+                    pairIndexes.remove(idx);
                 }
                 // rebalance the remaining weights
                 float ws = 0;
@@ -669,6 +710,7 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
                 transXs.remove(idx);
                 transYs.remove(idx);
                 pairWeights2.remove(idx);
+                pairIndexes.remove(idx);
             }
             // rebalance the remaining weights
             float ws = 0;
@@ -742,6 +784,22 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         // this is the number of data points as the number of pairs
         params.setNumberOfPointsUsed(scales.size());
      
+        if (outputInlierIndexes != null) {
+            //remaining pairIndexes refer to the input matched correspondence.
+            // x is with respect to matchedXY1
+            // y is with respect to matchedXY2
+            // and they're parallel lists, so they're the same.
+            TIntSet idxs = new TIntHashSet();
+            for (PairInt pIdxs : pairIndexes) {
+                idxs.add(pIdxs.getX());
+                idxs.add(pIdxs.getY());
+            }
+           
+            outputInlierIndexes.clear();
+            outputInlierIndexes.addAll(idxs);
+            outputInlierIndexes.sort();
+        }
+        
         if (debug) {
             log.info("params: " + params.toString());
         }

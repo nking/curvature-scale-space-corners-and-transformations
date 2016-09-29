@@ -293,7 +293,7 @@ public class AndroidStatuesTest extends TestCase {
         ImageSegmentation imageSegmentation = new ImageSegmentation();
 
         Set<PairInt> shape0 = new HashSet<PairInt>();
-        
+
         String fileNameRoot0 = "android_statues_03_sz1";
         // 1st image is color image, 2nd is masked color image
         ImageExt[] imgs0 = maskAndBin(fileNameRoot0, 1, shape0);
@@ -301,14 +301,20 @@ public class AndroidStatuesTest extends TestCase {
 //NOTE: theres possibly a problem with color histogram or
 //color comparison using the blurred segmented 
 //cells
+       
+        int nShape0_0 = shape0.size();
         
         PairIntArray template =
             imageProcessor.extractSmoothedOrderedBoundary(shape0,
                 sigma, imgs0[0].getWidth(), imgs0[0].getHeight());
 
+        int nShape0_1 = shape0.size();
+        
         Set<PairInt> templateMedialAxis = createMedialAxis(shape0,
             Misc.convert(template));
 
+        int nShape0_2 = shape0.size();
+        
         List<PairInt> templateKeypoints = new ArrayList<PairInt>();
         TDoubleList templateOrientations = new TDoubleArrayList();
         /*
@@ -317,6 +323,8 @@ public class AndroidStatuesTest extends TestCase {
             templateKeypoints, templateOrientations, 
             templateDescriptors);
         */
+        System.out.println("shape0 nPts=" + nShape0_0 + "," + nShape0_1 + "," +
+            nShape0_2);
         Descriptors templateDescriptorsH = new Descriptors();
         Descriptors templateDescriptorsS = new Descriptors();
         Descriptors templateDescriptorsV = new Descriptors();
@@ -434,6 +442,18 @@ public class AndroidStatuesTest extends TestCase {
             listOfCH.remove(idx);
         }
 
+        /*if (true) {// try normalized cuts with color histograms
+            NormalizedCuts normCuts = new NormalizedCuts();
+            normCuts.setToColorHistogramsOfHSV();
+            int[] labels10 = normCuts.normalizedCut(imgCp, filteredLabels);
+            
+            img11 = img.createWithDimensions();
+            ImageIOHelper.addAlternatingColorLabelsToRegion(img11, labels10);
+            
+            MiscDebug.writeImage(img11, "_nc_ch_hsv_" + fileName1Root);
+            return;
+        }*/
+        
         assert(orderedBoundaries.size() == listOfPointSets2.size());
 
         TIntObjectMap<TIntSet> adjMap =
@@ -482,28 +502,43 @@ public class AndroidStatuesTest extends TestCase {
             //    lighting, and change in pose result in a better match of
             //    the template gingerbread man to the euclair
             //    when points are matched singly
-            int[][] orbMatches = ORB.matchDescriptors(
+            /*int[][] orbMatches = ORB.matchDescriptors(
                 new Descriptors[]{templateDescriptorsH,
                     templateDescriptorsS, templateDescriptorsV}, 
                 new Descriptors[]{descriptorsH,
                     descriptorsS, descriptorsV},
                 templateKeypoints, keypointsCombined);
+            */
             
+            int[][] orbMatches = ORB.matchDescriptors(
+                new Descriptors[]{templateDescriptorsH,
+                    templateDescriptorsS, templateDescriptorsV}, 
+                new Descriptors[]{descriptorsH,
+                    descriptorsS, descriptorsV},
+                templateKeypoints, keypointsCombined,
+                shape0, listOfPointSets2);
+            
+            img11 = img.copyToImageExt();
             CorrespondencePlotter plotter = new CorrespondencePlotter(
-                imgs0[1], img);            
+                imgs0[1], img.copyImage());            
             for (int ii = 0; ii < orbMatches.length; ++ii) {
                 int idx1 = orbMatches[ii][0];
                 int idx2 = orbMatches[ii][1];
                 PairInt p1 = templateKeypoints.get(idx1);
                 PairInt p2 = keypointsCombined.get(idx2);
+                
+                ImageIOHelper.addPointToImage(p2.getX(), p2.getY(), img11,
+                    1, 255, 0, 0);
+                
                 System.out.println("orb matched: " + p1 + " " + p2);
                 if (p2.getX() > 165)
                 plotter.drawLineInAlternatingColors(p1.getX(), p1.getY(), 
                     p2.getX(), p2.getY(), 0);
             }
+            
             plotter.writeImage("_orb_corres_");
             System.out.println(orbMatches.length + " matches");
-            
+            MiscDebug.writeImage(img11, "_orb_corres_2_");
             
             SegmentedCellDescriptorMatcher matcher = 
                 new SegmentedCellDescriptorMatcher(imgs0[0], img,
@@ -1681,11 +1716,45 @@ public class AndroidStatuesTest extends TestCase {
             templateDescriptorsS,
             templateDescriptorsV, 0.01f, true);
         
+        TIntList rm = new TIntArrayList();
         for (int i = 0; i < templateKP.size(); ++i) {
             PairInt p = templateKP.get(i);
             if (shape0.contains(p)) {
                 ImageIOHelper.addPointToImage(p.getX(), p.getY(), img0, 1, 255, 0, 0);
+            } else {
+                rm.add(i);
+                System.out.println("removing " + p);
             }
+        }
+        
+        if (!rm.isEmpty()) {
+            for (int i = (rm.size() - 1); i > -1; --i) {
+                int rmIdx = rm.get(i);
+                templateKP.remove(rmIdx);
+                templateOrientations.removeAt(rmIdx);
+                
+                // move up operations.  everything with index > i moves up by 1
+                for (int j = (i + 1); j < templateDescriptorsH.descriptors.length;
+                    ++j) {
+                    templateDescriptorsH.descriptors[j - 1] =
+                        templateDescriptorsH.descriptors[j];
+                    templateDescriptorsS.descriptors[j - 1] =
+                        templateDescriptorsS.descriptors[j];
+                    templateDescriptorsV.descriptors[j - 1] =
+                        templateDescriptorsV.descriptors[j];
+                }
+            }
+            
+            int count = templateDescriptorsH.descriptors.length - rm.size();
+            
+            templateDescriptorsH.descriptors = 
+                Arrays.copyOf(templateDescriptorsH.descriptors, count);
+            
+            templateDescriptorsS.descriptors = 
+                Arrays.copyOf(templateDescriptorsS.descriptors, count);
+            
+            templateDescriptorsV.descriptors = 
+                Arrays.copyOf(templateDescriptorsV.descriptors, count);
         }
 
         MiscDebug.writeImage(img0, "_template_orb");

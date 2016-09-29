@@ -370,7 +370,15 @@ public class EpipolarTransformer {
             normalizedXY1.getXy(), normalizedXY2.getXy());
 
         SimpleMatrix aMatrix = new SimpleMatrix(m);
-        SimpleSVD<SimpleMatrix> svd = aMatrix.svd();
+        SimpleSVD<SimpleMatrix> svd = null;
+        
+        try {
+            svd = aMatrix.svd();
+        } catch (Throwable t) {
+            System.err.println(t.getMessage());
+            return null;
+        }
+        
         SimpleMatrix nullSpace = svd.nullSpace();
 
         double[][] ff1 = new double[3][3];
