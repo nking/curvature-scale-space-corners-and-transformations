@@ -114,6 +114,11 @@ public class NormalizedCuts {
         sigma = 1.7320508;
     }
     
+    /**
+     * NOTE: pre-processing to filter out largest discrepant
+     * color histograms (smallest intersection values)
+     * may improve results.
+     */
     public void setToColorHistogramsOfHSV() {
         colorOption = ColorOption.HSV_COLOR_HISTOGRAMS;
         colorSpace = ColorSpace.HSV;
