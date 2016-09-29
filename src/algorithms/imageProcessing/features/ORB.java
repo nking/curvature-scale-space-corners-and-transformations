@@ -9,9 +9,15 @@ import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MedianTransform;
+import algorithms.imageProcessing.transform.ITransformationFit;
+import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
+import algorithms.imageProcessing.transform.TransformationParameters;
+import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.misc.StatsInSlidingWindow;
 import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
+import algorithms.util.QuadInt;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
@@ -21,15 +27,19 @@ import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -2322,8 +2332,11 @@ public class ORB {
         List<PairInt> keypoints1, List<PairInt> keypoints2,
         Set<PairInt> points1, List<Set<PairInt>> pointsList2) {
 
-        assert(desc1.length == desc2.length);
+        //TODO: pausing on improving this until have less overly segmented
+        //    labeling or better keypoints for objects with alot of curvature.
         
+        assert(desc1.length == desc2.length);
+int sumKP = 0;        
         int nd1 = desc1[0].descriptors.length;
         int nd2 = desc2[0].descriptors.length;
         
@@ -2358,7 +2371,7 @@ public class ORB {
         
         TIntObjectMap<List<PairInt>> p2IndexCorresMap = 
             new TIntObjectHashMap<List<PairInt>>();
-        
+                
         for (int lIdx2 = 0; lIdx2 < pointsList2.size(); ++lIdx2) {
             
             TIntSet kpIndexes2 = index2keypointsIndexMap.get(lIdx2);
@@ -2386,13 +2399,15 @@ public class ORB {
                 int[] d2 = desc2[k].descriptors;
                 int count = 0;
                 for (int i = 0; i < keypoints1.size(); ++i) {
-                    for (int j : kpIdxs2.toArray()) {                    
+                    for (int j : kpIdxs2.toArray()) { 
+                        assert(j < keypoints2.size());
                         // xor gives number of different bits
                         int xor = d1[i] ^ d2[j];
                         int nbits = Integer.bitCount(xor);
                         //cost[i][j] += nbits;
                         costs[count] += nbits;
                         if (k == 0) {
+                            assert(i < keypoints1.size());
                             kpIdxs[count] = new PairInt(i, j);
                         }
                         count++;
@@ -2412,9 +2427,44 @@ public class ORB {
             // calculate score as 256*3 - cost, and sum those
             // -> put score in scores[lIdx2]
             // --> put correspondence map w/ index=lIdx2, value=PairInt[] of kpIdx1, kpIdx2
-            
+                        
             QuickSort.sortBy1stArg(costs, kpIdxs);
+                        
+            int count = removeIdenticalPairs(costs, kpIdxs);
+            costs = Arrays.copyOf(costs, count);
+            kpIdxs = Arrays.copyOf(kpIdxs, count);
+                        
+            count = filterByRadius(costs, kpIdxs, keypoints2);
+            costs = Arrays.copyOf(costs, count);
+            kpIdxs = Arrays.copyOf(kpIdxs, count);
             
+            count = filterToTopUniqueKeypoints2(costs, kpIdxs, keypoints2, 2);
+            costs = Arrays.copyOf(costs, count);
+            kpIdxs = Arrays.copyOf(kpIdxs, count);
+            
+            count = filterToTopUniqueKeypoints1(costs, kpIdxs, keypoints1, 1);
+            costs = Arrays.copyOf(costs, count);
+            kpIdxs = Arrays.copyOf(kpIdxs, count);
+    sumKP += count;        
+            assertIndexRange(kpIdxs, keypoints1.size(), keypoints2.size());
+            
+            StringBuilder sb = new StringBuilder("lIdx2 sorted=").append(lIdx2).append("\n");
+            for (int i = 0; i <  kpIdxs.length; ++i) {
+                int idx1 = kpIdxs[i].getX();
+                int idx2 = kpIdxs[i].getY();
+                int x1 = keypoints1.get(idx1).getX();
+                int y1 = keypoints1.get(idx1).getY();
+                int x2 = keypoints2.get(idx2).getX();
+                int y2 = keypoints2.get(idx2).getY();
+                sb.append(String.format("     (%d,%d) (%d,%d)\n",
+                    x1, y1, x2, y2));
+            }
+            System.out.println(sb.toString());
+            
+            String str = exploreRANSACFilter(kpIdxs, keypoints1, keypoints2);
+            System.out.println("lIdx2=" + lIdx2 + " transformation filtered:\n" 
+               + str);
+                        
             Set<PairInt> set1 = new HashSet<PairInt>();
             Set<PairInt> set2 = new HashSet<PairInt>();
 
@@ -2462,13 +2512,10 @@ public class ORB {
             System.out.println(sb.toString());
         }
         
-        //NOTE: note here is where one could use the adjacency of segmented cells
-        //      to further choose among the matchings by highest scores...
-        
-        
         // return the unique mappings in greedy manner for this version
         
-        
+    System.out.println("nSortedPairs=" + sumKP);
+    
         throw new UnsupportedOperationException("not yet implemented");
         
     }
@@ -2599,6 +2646,318 @@ public class ORB {
         }
         
         return cost;
+    }
+    
+    private static String exploreRANSACFilter(PairInt[] kpIdxs, 
+        List<PairInt> keypoints1, List<PairInt> keypoints2) {
+        
+        int n = kpIdxs.length;
+        
+        // ---- too few points, return empty string ----
+        if (n < 2) {
+            return "";
+        }
+        
+        PairIntArray left = new PairIntArray(n);
+        PairIntArray right = new PairIntArray(n);
+        populateCorrespondence(left, right, kpIdxs, keypoints1, keypoints2);
+        
+        // ---- too few points for ransac, return euclid trans w/ outlier removal ----
+        if (n < 7) {
+            
+            MatchedPointsTransformationCalculator tc =
+                new MatchedPointsTransformationCalculator();
+            
+            float[] weights = new float[n];
+            Arrays.fill(weights, 1.f/(float)n);
+            
+            TIntList inlierIndexes = new TIntArrayList();
+            
+            TransformationParameters params = tc.calulateEuclidean(left, 
+                right, weights, 0, 0, new float[4], inlierIndexes);
+            
+            if (params == null) {
+                return "- no feasible euclidean trans --";
+            }
+            
+            StringBuilder sb = new StringBuilder();
+            for (int i : inlierIndexes.toArray()) {
+                int x1 = left.getX(i);
+                int y1 = left.getY(i);
+                int x2 = right.getX(i);
+                int y2 = right.getY(i);
+                sb.append(String.format("   euclidean: %d (%d,%d) (%d,%d)\n",
+                    i, x1, y1, x2, y2));
+            }
+            
+            return sb.toString();
+        }
+        
+        // index to lookup order
+        TObjectIntMap<QuadInt> indexesMap = new TObjectIntHashMap<QuadInt>();
+        for (int i = 0; i < left.getN(); ++i) {
+            QuadInt q = new QuadInt(left.getX(i), left.getY(i),
+                right.getX(i), right.getY(i));
+            indexesMap.put(q, i);
+        }
+        
+        // ------ euclidean solution ----
+        PairIntArray outLeft = new PairIntArray(n);
+        PairIntArray outRight = new PairIntArray(n);
+        
+        RANSACEuclideanSolver solver = new RANSACEuclideanSolver();
+        ITransformationFit fit = solver.calculateEuclideanTransformation(
+            left, right, outLeft, outRight);
+        
+        StringBuilder sb = new StringBuilder();
+        
+        if (fit != null) {
+            int[] indexes = new int[outLeft.getN()];
+            QuadInt[] qi = new QuadInt[outLeft.getN()];
+            for (int i = 0; i < outLeft.getN(); ++i) {
+                int x1 = outLeft.getX(i);
+                int y1 = outLeft.getY(i);
+                int x2 = outRight.getX(i);
+                int y2 = outRight.getY(i);
+                QuadInt q = new QuadInt(x1, y1, x2, y2);
+                int idx = indexesMap.get(q);
+                indexes[i] = idx;
+                qi[i] = q;
+            }
+            QuickSort.sortBy1stArg(indexes, qi);
+            for (QuadInt q : qi) {
+                sb.append(String.format("   ransac euclidean: (%d,%d) (%d,%d)\n", 
+                    q.getA(), q.getB(), q.getC(), q.getD()));
+            }
+        }
+        
+        // ---- epipolar solution ---------
+        outLeft = new PairIntArray(n);
+        outRight = new PairIntArray(n);
+        
+        RANSACSolver solver2 = new RANSACSolver();
+        ITransformationFit fit2 = solver2.calculateEpipolarProjection(
+            left, right, outLeft, outRight);
+        
+        if (fit2 != null) {
+            int[] indexes = new int[outLeft.getN()];
+            QuadInt[] qi = new QuadInt[outLeft.getN()];
+            for (int i = 0; i < outLeft.getN(); ++i) {
+                int x1 = outLeft.getX(i);
+                int y1 = outLeft.getY(i);
+                int x2 = outRight.getX(i);
+                int y2 = outRight.getY(i);
+                QuadInt q = new QuadInt(x1, y1, x2, y2);
+                int idx = indexesMap.get(q);
+                indexes[i] = idx;
+                qi[i] = q;
+            }
+            QuickSort.sortBy1stArg(indexes, qi);
+            for (QuadInt q : qi) {
+                sb.append(String.format("   ransac epipolar: (%d,%d) (%d,%d)\n", 
+                    q.getA(), q.getB(), q.getC(), q.getD()));
+            }
+        }
+        
+        return sb.toString();
+    }
+
+    private static void populateCorrespondence(PairIntArray left, 
+        PairIntArray right, PairInt[] kpIdxs, 
+        List<PairInt> keypoints1, List<PairInt> keypoints2) {
+        
+        for (PairInt p : kpIdxs) {
+            PairInt p1 = keypoints1.get(p.getX());
+            PairInt p2 = keypoints2.get(p.getY());
+            left.add(p1.getX(), p1.getY());
+            right.add(p2.getX(), p2.getY());
+        }
+    }
+    
+    private static int removeIdenticalPairs(int[] costs, PairInt[] kpIdxs) {
+        
+        assert(costs.length == kpIdxs.length);
+        
+        int[] costsCp = new int[costs.length];
+        PairInt[] kpIdxsCp = new PairInt[kpIdxs.length];
+        
+        Set<PairInt> set = new HashSet<PairInt>();
+        int count = 0;
+        for (int i = 0; i < kpIdxs.length; ++i) {
+            PairInt p = kpIdxs[i];
+            if (set.contains(p)) {
+                continue;
+            }
+            set.add(p);
+            costsCp[count] = costs[i];
+            kpIdxsCp[count] = p;
+            count++;
+        }
+        if (count < costs.length) {
+            System.arraycopy(costsCp, 0, costs, 0, count);
+            System.arraycopy(kpIdxsCp, 0, kpIdxs, 0, count);
+        }
+        
+        return count;
+    }
+    
+    // fixed radius of 1 for now
+    private static int filterByRadius(int[] costs, PairInt[] kpIdxs,
+        List<PairInt> keypoints2) {
+        
+        assert(costs.length == kpIdxs.length);
+        
+        Set<PairInt> points2 = new HashSet<PairInt>();
+        for (int i = 0; i < kpIdxs.length; ++i) {
+            points2.add(keypoints2.get(kpIdxs[i].getY()));
+        }
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        Set<PairInt> rm = new HashSet<PairInt>();
+        
+        for (int i = 0; i < kpIdxs.length; ++i) {
+            PairInt p2 = keypoints2.get(kpIdxs[i].getY());
+            if (rm.contains(p2)) {
+                continue;
+            }
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = p2.getX() + dxs[k];
+                int y2 = p2.getY() + dys[k];
+                PairInt p22 = new PairInt(x2, y2);
+                if (points2.contains(p22)) {
+                    rm.add(p22);
+                }
+            }
+        }
+        
+        if (rm.isEmpty()) {
+            return kpIdxs.length;
+        }
+        
+        int n = kpIdxs.length - rm.size();
+        
+        int[] costsCp = new int[n];
+        PairInt[] kpIdxsCp = new PairInt[n];
+        
+        int count = 0;
+        for (int i = 0; i < kpIdxs.length; ++i) {
+            PairInt p2 = keypoints2.get(kpIdxs[i].getY());
+            if (rm.contains(p2)) {
+                continue;
+            }
+            costsCp[count] = costs[i];
+            kpIdxsCp[count] = kpIdxs[i];
+            count++;
+        }
+        if (count < costs.length) {
+            System.arraycopy(costsCp, 0, costs, 0, count);
+            System.arraycopy(kpIdxsCp, 0, kpIdxs, 0, count);
+        }
+        
+        return count;
+    }
+
+    private static int filterToTopUniqueKeypoints2(int[] costs, 
+        PairInt[] kpIdxs, List<PairInt> keypoints2, int topK) {
+        
+        int count = 0;
+        
+        Map<PairInt, TIntSet> k2IndexMap = new HashMap<PairInt, TIntSet>();
+        for (int i = 0; i < kpIdxs.length; ++i) {
+            PairInt p2 = keypoints2.get(kpIdxs[i].getY());
+            TIntSet set = k2IndexMap.get(p2);
+            if (set != null && set.size() == topK) {
+                continue;
+            }
+            if (set == null) {
+                set = new TIntHashSet();
+                k2IndexMap.put(p2, set);
+            }
+            set.add(i);
+            count++;
+        }
+        
+        if (count == kpIdxs.length) {
+            return count;
+        }
+        
+        int[] costsCp = new int[count];
+        PairInt[] kpIdxsCp = new PairInt[count];
+        
+        count = 0;
+        for (int i = 0; i < kpIdxs.length; ++i) {
+            PairInt p2 = keypoints2.get(kpIdxs[i].getY());
+            TIntSet set = k2IndexMap.get(p2);
+            if (!set.contains(i)) {
+                continue;
+            }
+            costsCp[count] = costs[i];
+            kpIdxsCp[count] = kpIdxs[i];
+            count++;
+        }
+        if (count < costs.length) {
+            System.arraycopy(costsCp, 0, costs, 0, count);
+            System.arraycopy(kpIdxsCp, 0, kpIdxs, 0, count);
+        }
+        
+        return count;
+    }
+    
+    private static int filterToTopUniqueKeypoints1(int[] costs, 
+        PairInt[] kpIdxs, List<PairInt> keypoints1, int topK) {
+        
+        int count = 0;
+        
+        Map<PairInt, TIntSet> k1IndexMap = new HashMap<PairInt, TIntSet>();
+        for (int i = 0; i < kpIdxs.length; ++i) {
+            PairInt p1 = keypoints1.get(kpIdxs[i].getX());
+            TIntSet set = k1IndexMap.get(p1);
+            if (set != null && set.size() == topK) {
+                continue;
+            }
+            if (set == null) {
+                set = new TIntHashSet();
+                k1IndexMap.put(p1, set);
+            }
+            set.add(i);
+            count++;
+        }
+        
+        if (count == kpIdxs.length) {
+            return count;
+        }
+        
+        int[] costsCp = new int[count];
+        PairInt[] kpIdxsCp = new PairInt[count];
+        
+        count = 0;
+        for (int i = 0; i < kpIdxs.length; ++i) {
+            PairInt p1 = keypoints1.get(kpIdxs[i].getX());
+            TIntSet set = k1IndexMap.get(p1);
+            if (!set.contains(i)) {
+                continue;
+            }
+            costsCp[count] = costs[i];
+            kpIdxsCp[count] = kpIdxs[i];
+            count++;
+        }
+        if (count < costs.length) {
+            System.arraycopy(costsCp, 0, costs, 0, count);
+            System.arraycopy(kpIdxsCp, 0, kpIdxs, 0, count);
+        }
+        
+        return count;
+    }
+    
+    private static void assertIndexRange(PairInt[] kpIdxs, int k1Size, int k2Size) {
+        
+        for (PairInt p12 : kpIdxs) {
+            assert(p12.getX() < k1Size);
+            assert(p12.getY() < k2Size);
+        }
+        
     }
 
 }
