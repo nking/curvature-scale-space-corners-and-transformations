@@ -6736,7 +6736,7 @@ if (sum > 511) {
         R5 ripple = [1 -4 6 -4 1]  
               3rd deriv gaussian, ...Gabor
              
-     WARNING: should mask out the borders by about 3 pixels until further
+     WARNING: should mask out the borders by about 5 pixels until further
      notice. 
      TODO: correct this and internal methods for borders.
      
@@ -6817,27 +6817,12 @@ if (sum > 511) {
         int r = 2;
         
         for (int i = 0; i < labels.length; ++i) {
-            float[] filter1 = kernelL5;
-            if (i == 1) {
-                filter1 = kernelE5;
-            } else if (i == 2) {
-                filter1 = kernelS5;
-            } else if (i == 3) {
-                filter1 = kernelR5;
-            }
+            float[] filter1 = kernels[i];
             for (int j = i; j < labels.length; ++j) {
                 if (i == 0 && j == 0) {
                     continue;
                 }
-                float[] filter2 = kernelL5;
-                if (j == 2) {
-                    filter2 = kernelE5;
-                } else if (j == 2) {
-                    filter2 = kernelS5;
-                } else if (j == 3) {
-                    filter2 = kernelR5;
-                }
-            
+                float[] filter2 = kernels[j];
                 GreyscaleImage img2 = img.copyToFullRangeIntImage();
                 applyKernel1D(img2, filter1, true);
                 applyKernel1D(img2, filter2, false);
@@ -6849,21 +6834,28 @@ if (sum > 511) {
                     img2 = divide(img2, img3);
                 }
             
+                //TODO: still reading.  this might need to be
+                // "reduced to zero sum and unit standard deviation"
+                // so subracting mean and dividing by factor sqrt(2)/mean
+                //...
+                
                 applyAbsoluteValue(img2);
                 
-                GreyscaleImage imgM = img2.copyImage();
+                //GreyscaleImage imgM = img2.copyImage();
             
                 //--- sum over 5x5 region then subtract mean ---
                 
-                applyCenteredMean(imgM, 2);
+                //applyCenteredMean(imgM, 2);
+                
+                //img2 = subtractImages(img2, imgM);
                         
-                /*{
+                {
                     GreyscaleImage img3 = img2.copyToFullRangeIntImage();
                     MiscMath.rescale(img3, 0, 255);
                     MiscDebug.writeImage(img3, "_" + labels[i] + labels[j]);
                     applyAdaptiveMeanThresholding(img3, 2);
                     MiscDebug.writeImage(img3, "_" + labels[i] + labels[j] + "_adap_means_");
-                }*/
+                }
             
                 // summed area table to make a table to extract windowed
                 // sums from in 4 steps
@@ -6875,20 +6867,19 @@ if (sum > 511) {
                         int nPix = 25;
                         int s1 = imgS.getValue(x+r, y+r) - imgS.getValue(x-r, y+r)
                             - imgS.getValue(x+r, y-r) + imgS.getValue(x-r, y-r);
-                        int m = imgM.getValue(x, y);
-                        int v = (s1/nPix) - m;
+                        int v = (s1/nPix);
                         img2.setValue(x, y, v);
                     }
                 }
                 
                 // handling borders separately
                 if (w > (2*r-1) && h > (2*r-1)) {
+                    // --- x < r region ------------
                     for (int x = 0; x < r; ++x) {
                         for (int y = 0; y < r; ++y) {
                             int nPix = (x + r + 1)*(y + r + 1);
                             int s1 = imgS.getValue(x + r, y + r);
-                            int m = imgM.getValue(x, y);
-                            int v = (s1/nPix) - m;
+                            int v = (s1/nPix);
                             img2.setValue(x, y, v);
                         }
                         for (int y = r; y < h; ++y) {
@@ -6901,25 +6892,76 @@ if (sum > 511) {
                                 nPix = (x + r + 1)*(2*r + 1);
                                 s1 = imgS.getValue(x+r, y+r) - imgS.getValue(x+r, y-r);
                             }
-                            int m = imgM.getValue(x, y);
-                            int v = (s1/nPix) - m;
+                            int v = (s1/nPix);
+                            img2.setValue(x, y, v);
+                        }
+                    }
+                    // --- x >= (w-r) region ------------
+                    for (int x = (w-r); x < w; ++x) {
+                        int xw = w - x - 1;
+                        for (int y = 0; y < r; ++y) {
+                            int nPix = (x + xw + 1)*(r + y + 1);
+                            int s1 = imgS.getValue(w-1, y+r) 
+                                - imgS.getValue(x-r, y+r);
+                            int v = (s1/nPix);
+                            img2.setValue(x, y, v);
+                        }
+                        for (int y = r; y < h; ++y) {
+                            int nPix, s1;
+                            int yh = h - y - 1;
+                            if (yh < r) {
+                                nPix = (r + xw + 1)*(r + yh + 1);
+                                s1 = imgS.getValue(w-1, h-1) 
+                                    - imgS.getValue(x-r, h-1)
+                                    - imgS.getValue(w-1, y-r) 
+                                    + imgS.getValue(x-r, y-r);
+                            } else {
+                                nPix = (r + xw + 1)*(r*2 + 1);
+                                s1 = imgS.getValue(w-1, y+r) 
+                                    - imgS.getValue(x-r, y+r)
+                                    - imgS.getValue(w-1, y-r) 
+                                    + imgS.getValue(x-r, y-r);
+                            }
+                            int v = (s1/nPix);
+                            img2.setValue(x, y, v);
+                        }
+                    }
+                    // ---- remaining y < r region and y >= h-r----
+                    for (int x = r; x < (w - r); ++x) {
+                        for (int y = 0; y < r; ++y) {
+                            int nPix, s1;
+                            int yh = h - y - 1;
+                            nPix = (2*r + 1) * (r + yh + 1);
+                            s1 = imgS.getValue(x + r, y + r)
+                                - imgS.getValue(x - r, y + r);
+                            int v = (s1/nPix);
+                            img2.setValue(x, y, v);
+                        }
+                        for (int y = (h - r); y < h; ++y) {
+                            int nPix, s1;
+                            int yh = h - y - 1;
+                            nPix = (2*r + 1)*(r + yh + 1);
+                            s1 = imgS.getValue(x + r, h-1) 
+                                - imgS.getValue(x - r, h-1)
+                                - imgS.getValue(x + r, y-r) 
+                                + imgS.getValue(x-r, y-r);
+                            int v = (s1/nPix);
                             img2.setValue(x, y, v);
                         }
                     }
                 }
-                //TODO: need the other 3 border regions 
-                // TODO: need border corrections for methods upstream of this too.
                 
                 String label = labels[i] + labels[j];
 
                 transformed.put(label, img2);
                 
-                /*{//DEBUG
-                    MiscMath.rescale(img2, 0, 255);
-                    MiscDebug.writeImage(img2, "_" + labels[i] + labels[j] + "_feature_");
-                    applyAdaptiveMeanThresholding(img2, 2);
-                    MiscDebug.writeImage(img2, "_" + labels[i] + labels[j] + "_feature_adap_means_");
-                }*/
+                {//DEBUG
+                    GreyscaleImage img3 = img2.copyImage();
+                    MiscMath.rescale(img3, 0, 255);
+                    MiscDebug.writeImage(img3, "_" + labels[i] + labels[j] + "_feature_");
+                    applyAdaptiveMeanThresholding(img3, 2);
+                    MiscDebug.writeImage(img3, "_" + labels[i] + labels[j] + "_feature_adap_means_");
+                }
             }
         }
         
