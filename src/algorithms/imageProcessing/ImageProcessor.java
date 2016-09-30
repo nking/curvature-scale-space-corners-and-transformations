@@ -4513,7 +4513,7 @@ if (sum > 511) {
 
         imgM = null;
 
-        System.gc();
+        //System.gc();
     }
 
     /**
@@ -4797,7 +4797,7 @@ if (sum > 511) {
     /**
      * create an image of the mean of the surrounding dimension x dimension
      * pixels for each pixel centered on each pixel.  For the starting
-     * and ending (dimension/2) pixels, the average uses a descreasing
+     * and ending (dimension/2) pixels, the average uses a decreasing
      * number of pixels.
      * <pre>
      * for example, image:
@@ -6709,5 +6709,206 @@ if (sum > 511) {
         
         return true;
     }
+ 
+    public void createTextureFilters(GreyscaleImage img) {
+        /*
+        NOTE: bright clumps in R5 R5 looks most useful for finding vegetation.
+        can apply adaptive means to the feature image to find the cluster
+        centers.  
+        
+        adapted from a cs lecture on texture filters from uw
+        (https://courses.cs.washington.edu/courses/cse455/09wi/Lects/lect12.pdf
+        which possibly uses:
+        "Statistical Texture Analysis" by Srinivasan and Shobha 2008)
+        
+        Both contain content from "Textured Image Segmentation" by Laws, 1980.
+        
+        filters:
+            L5 level = [1 4 6 4 1]     
+                 gaussian, binomial for sigma=1 
+                 B3 spline function, used in ATrous wavelet
+            E5 edge  = [-1 -2 0 2 1]   
+                 1st deriv of gaussian, binomial for sigma=1
+            S5 spot =   [-1 0 2 0 -1]  
+                 -1 times 2nd deriv binomial for sigma=sqrt(2)/2; a.k.a. LOG
+            R5 ripple = [1 -4 6 -4 1]  
+                  3rd deriv gaussian, a.k.a. Gabor
+            W5 waves = [-1, 2, 0, -2, -1]
+
+        - the 2D masks are created by multiplying the 1D masks to make a 5x5 matrix
+              E5 X L5 = -1 -4 -6 -4 -1
+                        -2 -8 -12 -8 -1
+                         0  0  0  0   0
+                         2  8  12  8  1
+                         1  4  6   4  1
+        - there are 9 feature vectors one could make.  can see that some compose
+          tensors, and different keypoint algorithms.
+        
+        there are 9 feature vectors one could make.
+          created by subtracting the mean neighborhood intensity from pixel
+             filter the neighborhood with the 16 5 x 5 masks
+             then energy at each pixel is summing abs value of filter output
+                across neighbor region and storing result for the center pixel.
+          The 9 features made from those 16 combinations of 4 filters are:
+              L5E5/E5L5
+              L5R5/R5L5
+              E5S5/S5E5
+              S5S5
+              R5R5
+              L5S5/S5L5
+              E5E5     
+              E5R5/R5E5
+              S5R5/R5S5
+        */
+                
+        float[] kernelL5 = Gaussian1D.getBinomialKernelSigmaOne();
+        float[] kernelE5 = Gaussian1DFirstDeriv.getBinomialKernelSigmaOne();
+        float[] kernelS5 = Gaussian1DSecondDeriv.getBinomialKernelSigmaZeroPointSevenOne();
+        float[] kernelR5 = new float[]{1, -4, 6, -4, 1};
+        float[][] kernels = new float[4][];
+        kernels[0] = kernelL5;
+        kernels[1] = kernelE5;
+        kernels[2] = kernelS5;
+        kernels[3] = kernelR5;
+        String[] labels = new String[]{"L5L5", "E5E5", "S5S5", "R5R5"};
+        
+        for (int i = 0; i < labels.length; ++i) {
+            float[] filter1 = kernelL5;
+            if (i == 1) {
+                filter1 = kernelE5;
+            } else if (i == 2) {
+                filter1 = kernelS5;
+            } else if (i == 3) {
+                filter1 = kernelR5;
+            }
+            for (int j = i; j < labels.length; ++j) {
+                if (i == 0 && j == 0) {
+                    continue;
+                }
+                float[] filter2 = kernelL5;
+                if (j == 2) {
+                    filter2 = kernelE5;
+                } else if (j == 2) {
+                    filter2 = kernelS5;
+                } else if (j == 3) {
+                    filter2 = kernelR5;
+                }
+            
+                GreyscaleImage img2 = img.copyToFullRangeIntImage();
+                applyKernel1D(img2, filter1, true);
+                applyKernel1D(img2, filter2, false);
+                
+                if (i != j) {
+                    GreyscaleImage img3 = img.copyToFullRangeIntImage();
+                    applyKernel1D(img3, filter2, true);
+                    applyKernel1D(img3, filter1, false);
+                    img2 = divide(img2, img3);
+                }
+            
+                GreyscaleImage imgM = img2.copyImage();
+            
+                //--- sum over 5x5 region then subtract mean of it ---
+            
+                applyCenteredMean(imgM, 2);
+            
+                applyAbsoluteValue(imgM);
+            
+                {
+                    GreyscaleImage img3 = img2.copyToFullRangeIntImage();
+                    MiscMath.rescale(img3, 0, 255);
+                    MiscDebug.writeImage(img3, "_" + labels[i] + labels[j]);
+                    applyAdaptiveMeanThresholding(img3, 2);
+                    MiscDebug.writeImage(img3, "_" + labels[i] + labels[j] + "_adap_means_");
+                }
+            
+                // summed area table to make a table can extract windowed
+                // sums from in 4 steps
+                GreyscaleImage imgS = createAbsoluteSummedAreaTable(img2);
+
+                int w = img2.getWidth();
+                int h = img2.getHeight();
+
+                int r = 2;
+
+                // extract the summed area of 5x5 window centered on x,y
+                for (int x = r; x < (w-r); ++x) {
+                    for (int y = r; y < (h-r); ++y) {
+                        int nPix = 25;
+                        int s1 = imgS.getValue(x+r, y+r) - imgS.getValue(x-r, y+r)
+                            - imgS.getValue(x+r, y-r) + imgS.getValue(x-r, y-r);
+
+                        int m = imgM.getValue(x, y);
+                        int v = (s1/nPix) - m;
+                        img2.setValue(x, y, v);
+                    }
+                }
+
+                MiscMath.rescale(img2, 0, 255);
+                MiscDebug.writeImage(img2, "_" + labels[i] + labels[j] + "_feature_");
+                applyAdaptiveMeanThresholding(img2, 2);
+                MiscDebug.writeImage(img2, "_" + labels[i] + labels[j] + "_feature_adap_means_");
+            }
+        }
+    }
     
+    public void applyAbsoluteValue(GreyscaleImage img) {
+        int w = img.getWidth();
+        int h = img.getHeight();
+        for (int x = 0; x < w; ++x) {
+            for (int y = 0; y < h; ++y) {
+                int v = img.getValue(x, y);
+                img.setValue(x, y, Math.abs(v));
+            }
+        }
+    }
+    
+    public GreyscaleImage createAbsoluteSummedAreaTable(GreyscaleImage img) {
+
+        int w = img.getWidth();
+        int h = img.getHeight();
+
+        GreyscaleImage out = img.copyToFullRangeIntImage();
+        applyAbsoluteValue(out);
+        
+        for (int x = 0; x < w; ++x) {
+            for (int y = 0; y < h; ++y) {
+                if (x > 0 && y > 0) {
+                    int v = out.getValue(x - 1, y) + out.getValue(x, y - 1) 
+                        - out.getValue(x - 1, y - 1);
+                    out.setValue(x, y, out.getValue(x, y) + v);
+                } else if (x > 0) {
+                    int v = out.getValue(x - 1, y);
+                    out.setValue(x, y, out.getValue(x, y) + v);
+                } else if (y > 0) {
+                    int v = out.getValue(x, y - 1);
+                    out.setValue(x, y, out.getValue(x, y) + v);
+                }
+            }
+        }
+
+        return out;
+    }
+    
+    public GreyscaleImage divide(GreyscaleImage img1, GreyscaleImage img2) {
+        
+        if (img1.getNPixels() != img2.getNPixels() || img1.getWidth() != 
+            img2.getWidth() || img1.getHeight() != img2.getHeight()) {
+            throw new IllegalArgumentException("img1 and img2 must be same size");
+        }
+        
+        int n = img1.getNPixels();
+        
+        GreyscaleImage out = img1.copyToFullRangeIntImage();
+
+        for (int i = 0; i < n; ++i) {
+            int v = out.getValue(i);
+            int v2 = img2.getValue(i);
+            if (v2 > 0) {
+                v /= v2;                
+            }
+            out.setValue(i, v);
+        }
+        
+        return out;
+    }
 }

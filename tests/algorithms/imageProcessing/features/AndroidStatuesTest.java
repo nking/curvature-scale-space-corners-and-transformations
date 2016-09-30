@@ -374,9 +374,10 @@ public class AndroidStatuesTest extends TestCase {
         img = imageProcessor.binImage(img, binFactor1);
 
         ImageExt imgCp = img.copyToImageExt();
+        
+        imageProcessor.createTextureFilters(imgCp.copyToGreyscale2());
 
-        GreyscaleImage gradient = imageSegmentation.createGradient(
-            imgCp, 3, ts);
+        GreyscaleImage gradient = imageSegmentation.createGradient(imgCp, 3, ts);
 
         int[] labels4 = imageSegmentation.objectSegmentation(imgCp, gradient);
 
@@ -488,14 +489,14 @@ public class AndroidStatuesTest extends TestCase {
             PairInt p = keypointsCombined.get(i);
             srchKP[i][1] = p.getY();
             srchKP[i][0] = p.getX();
-            //ImageIOHelper.addPointToImage(p.getX(), p.getY(), img11, 1, 255, 0, 0);
+            ImageIOHelper.addPointToImage(p.getX(), p.getY(), img11, 1, 255, 0, 0);
             //double angle = orientations.get(i);
             //int dx = (int)Math.round(3. * Math.cos(angle));
             //int dy = (int)Math.round(3. * Math.sin(angle));
             //ImageIOHelper.drawLineInImage(p.getX(), p.getY(), 
             //    p.getX() + dx, p.getY() + dy, img11, 0, 255, 255, 0);
         }
-        //MiscDebug.writeImage(img11, "_filtered_2_" + fileName1Root);
+        MiscDebug.writeImage(img11, "_filtered_2_" + fileName1Root);
         
         if (true) {
             
@@ -509,6 +510,7 @@ public class AndroidStatuesTest extends TestCase {
                 new Descriptors[]{descriptorsH,
                     descriptorsS, descriptorsV},
                 templateKeypoints, keypointsCombined);
+            
             
             /*
             int[][] orbMatches = ORB.matchDescriptors(
@@ -1663,6 +1665,7 @@ public class AndroidStatuesTest extends TestCase {
         ORB.DescriptorDithers descrOffsets 
             = ORB.DescriptorDithers.NONE;
         //    = ORB.DescriptorDithers.FORTY_FIVE;
+        //    = ORB.DescriptorDithers.FIFTEEN;
         
         ORBWrapper.extractKeypointsFromSubImage(
             img0, xLL, yLL, xUR, yUR,
@@ -1836,12 +1839,12 @@ public class AndroidStatuesTest extends TestCase {
         int w = img.getWidth();
         int h = img.getHeight();
 
-        ORB orb = new ORB(1000);
+        ORB orb = new ORB(2000);//10000
         //orb.overrideFastThreshold(0.01f);
         orb.overrideToCreateHSVDescriptors();
         orb.overrideToAlsoCreate2ndDerivKeypoints();
         orb.overrideToCreateCurvaturePoints();
-        //orb.overrideToCreateOffsetsToDescriptors(ORB.DescriptorDithers.FORTY_FIVE);
+        //orb.overrideToCreateOffsetsToDescriptors(ORB.DescriptorDithers.FIFTEEN);
         orb.detectAndExtract(img);
 
         List<PairInt> kp = orb.getAllKeyPoints();
