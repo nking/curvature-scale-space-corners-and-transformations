@@ -6710,7 +6710,33 @@ if (sum > 511) {
         return true;
     }
  
-    public void createTextureFilters(GreyscaleImage img) {
+    /**
+     * create texture transforms from 
+     * "Textured Image Segmentation" by Laws, 1980.
+     * 
+     * The transforms are combinations of filters based on
+     *  L5 level = [1 4 6 4 1]     
+             gaussian, binomial for sigma=1 
+             B3 spline function, used in ATrous wavelet
+        E5 edge  = [-1 -2 0 2 1]   
+             1st deriv of gaussian, binomial for sigma=1
+        S5 spot =   [-1 0 2 0 -1]  
+             -1 times 2nd deriv binomial for sigma=sqrt(2)/2,... LOG
+        R5 ripple = [1 -4 6 -4 1]  
+              3rd deriv gaussian, ...Gabor
+     
+     * NOTE: bright clumps in R5 R5 looks most useful for finding vegetation.
+        can apply adaptive means to the feature image to find the cluster
+        centers.  
+    
+     * @param img 
+     * @return textureTransforms 
+       GreyscaleImage[]{
+       L5E5/E5L5, L5S5/S5L5, L5R5/R5L5, E5E5.
+       E5S5/S5E5, E5R5/R5E5, S5S5, S5R5/R5S5,
+       R5R5}
+     */
+    public Map<String, GreyscaleImage> createTextureTransforms(GreyscaleImage img) {
         /*
         NOTE: bright clumps in R5 R5 looks most useful for finding vegetation.
         can apply adaptive means to the feature image to find the cluster
@@ -6750,15 +6776,9 @@ if (sum > 511) {
              then energy at each pixel is summing abs value of filter output
                 across neighbor region and storing result for the center pixel.
           The 9 features made from those 16 combinations of 4 filters are:
-              L5E5/E5L5
-              L5R5/R5L5
-              E5S5/S5E5
-              S5S5
+              L5E5/E5L5, L5S5/S5L5, L5R5/R5L5, E5E5.
+              E5S5/S5E5, E5R5/R5E5, S5S5, S5R5/R5S5,
               R5R5
-              L5S5/S5L5
-              E5E5     
-              E5R5/R5E5
-              S5R5/R5S5
         */
                 
         float[] kernelL5 = Gaussian1D.getBinomialKernelSigmaOne();
@@ -6770,7 +6790,10 @@ if (sum > 511) {
         kernels[1] = kernelE5;
         kernels[2] = kernelS5;
         kernels[3] = kernelR5;
-        String[] labels = new String[]{"L5L5", "E5E5", "S5S5", "R5R5"};
+        String[] labels = new String[]{"L5", "E5", "S5", "R5"};
+        
+        Map<String, GreyscaleImage> transformed = new
+            HashMap<String, GreyscaleImage>();
         
         for (int i = 0; i < labels.length; ++i) {
             float[] filter1 = kernelL5;
@@ -6807,19 +6830,19 @@ if (sum > 511) {
             
                 GreyscaleImage imgM = img2.copyImage();
             
-                //--- sum over 5x5 region then subtract mean of it ---
+                //--- sum over 5x5 region then subtract mean ---
             
                 applyCenteredMean(imgM, 2);
             
                 applyAbsoluteValue(imgM);
             
-                {
+                /*{
                     GreyscaleImage img3 = img2.copyToFullRangeIntImage();
                     MiscMath.rescale(img3, 0, 255);
                     MiscDebug.writeImage(img3, "_" + labels[i] + labels[j]);
                     applyAdaptiveMeanThresholding(img3, 2);
                     MiscDebug.writeImage(img3, "_" + labels[i] + labels[j] + "_adap_means_");
-                }
+                }*/
             
                 // summed area table to make a table can extract windowed
                 // sums from in 4 steps
@@ -6836,19 +6859,27 @@ if (sum > 511) {
                         int nPix = 25;
                         int s1 = imgS.getValue(x+r, y+r) - imgS.getValue(x-r, y+r)
                             - imgS.getValue(x+r, y-r) + imgS.getValue(x-r, y-r);
-
+                        // TODO: make corrections for the border points
                         int m = imgM.getValue(x, y);
                         int v = (s1/nPix) - m;
                         img2.setValue(x, y, v);
                     }
                 }
+                
+                String label = labels[i] + labels[j];
 
-                MiscMath.rescale(img2, 0, 255);
-                MiscDebug.writeImage(img2, "_" + labels[i] + labels[j] + "_feature_");
-                applyAdaptiveMeanThresholding(img2, 2);
-                MiscDebug.writeImage(img2, "_" + labels[i] + labels[j] + "_feature_adap_means_");
+                transformed.put(label, img2);
+                
+                /*{//DEBUG
+                    MiscMath.rescale(img2, 0, 255);
+                    MiscDebug.writeImage(img2, "_" + labels[i] + labels[j] + "_feature_");
+                    applyAdaptiveMeanThresholding(img2, 2);
+                    MiscDebug.writeImage(img2, "_" + labels[i] + labels[j] + "_feature_adap_means_");
+                }*/
             }
         }
+        
+        return transformed;
     }
     
     public void applyAbsoluteValue(GreyscaleImage img) {

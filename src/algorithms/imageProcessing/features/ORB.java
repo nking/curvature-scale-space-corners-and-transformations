@@ -162,7 +162,7 @@ public class ORB {
     private DescriptorChoice descrChoice = DescriptorChoice.GREYSCALE;
     
     public static enum DescriptorDithers {
-        NONE, FORTY_FIVE, NINETY, ONE_HUNDRED_EIGHTY;
+        NONE, FIFTEEN, TWENTY, FORTY_FIVE, NINETY, ONE_HUNDRED_EIGHTY;
     }
     private DescriptorDithers descrDithers = DescriptorDithers.NONE;
     
@@ -757,7 +757,28 @@ public class ORB {
             int nExpected = kp0.size();
             
             double[] rotations = null;
-            if (descrDithers.equals(DescriptorDithers.FORTY_FIVE)) {
+            if (descrDithers.equals(DescriptorDithers.FIFTEEN)) {
+                rotations = new double[]{
+                    Math.PI/12., Math.PI/6., 3.*Math.PI/12.,
+                    4.*Math.PI/12., 5.*Math.PI/12., 6.*Math.PI/12.,
+                    7.*Math.PI/12., 8.*Math.PI/12., 9.*Math.PI/12.,
+                    10.*Math.PI/12., 11.*Math.PI/12., Math.PI,
+                    13.*Math.PI/12., 14.*Math.PI/12., 15.*Math.PI/12.,
+                    16.*Math.PI/12., 17.*Math.PI/12., 18.*Math.PI/12.,
+                    19.*Math.PI/12., 20.*Math.PI/12., 21.*Math.PI/12.,
+                    22.*Math.PI/12., 23.*Math.PI/12.};
+                nExpected *= 24;
+            } else if (descrDithers.equals(DescriptorDithers.TWENTY)) {
+                rotations = new double[]{
+                    Math.PI/9., 2.*Math.PI/9., 3.*Math.PI/9.,
+                    4.*Math.PI/9., 5.*Math.PI/9., 6.*Math.PI/9.,
+                    7.*Math.PI/9., 8.*Math.PI/9., Math.PI,
+                    10.*Math.PI/9., 11.*Math.PI/9., 12.*Math.PI/9.,
+                    13.*Math.PI/9., 14.*Math.PI/9., 15.*Math.PI/9.,
+                    16.*Math.PI/9., 17.*Math.PI/9.
+                };
+                nExpected *= 18;
+            } else if (descrDithers.equals(DescriptorDithers.FORTY_FIVE)) {
                 rotations = new double[]{Math.PI/4., Math.PI/2.,
                     3.*Math.PI/4., Math.PI, 5.*Math.PI/4.,
                     6.*Math.PI/4., 7.*Math.PI/4.};
@@ -2524,14 +2545,7 @@ int sumKP = 0;
                 }
                 assert(count == n);
             }
-            
-            //TODO: need ransac with epipolar or euclidean evaluator here
-            //  to remove outliers and inconsistent geometries.
-            //  need to look at my ransac impl to see if it reqires unique
-            //  points in correspondence list.  if it does,
-            //  then this ransac step could be placed less ideally at 
-            //  after line 2440 or after line 2450.
-            
+             
             // sort by cost and select unique idx1 and idx2 pairings and then
             // calculate score as 256*3 - cost, and sum those
             // -> put score in scores[lIdx2]
@@ -2547,7 +2561,7 @@ int sumKP = 0;
             costs = Arrays.copyOf(costs, count);
             kpIdxs = Arrays.copyOf(kpIdxs, count);
             
-            count = filterToTopUniqueKeypoints2(costs, kpIdxs, keypoints2, 2);
+            count = filterToTopUniqueKeypoints2(costs, kpIdxs, keypoints2, 1);
             costs = Arrays.copyOf(costs, count);
             kpIdxs = Arrays.copyOf(kpIdxs, count);
             
@@ -2623,7 +2637,8 @@ int sumKP = 0;
         
         // return the unique mappings in greedy manner for this version
         
-    System.out.println("nSortedPairs=" + sumKP);
+    System.out.println("nSortedPairs=" + sumKP + " nkp1=" +
+        keypoints1.size() + " nkp2=" + keypoints2.size());
     
         throw new UnsupportedOperationException("not yet implemented");
         
@@ -2772,7 +2787,7 @@ int sumKP = 0;
         populateCorrespondence(left, right, kpIdxs, keypoints1, keypoints2);
         
         // ---- too few points for ransac, return euclid trans w/ outlier removal ----
-        if (n < 7) {
+        if (n < 7 || n >= 1790) {
             
             MatchedPointsTransformationCalculator tc =
                 new MatchedPointsTransformationCalculator();

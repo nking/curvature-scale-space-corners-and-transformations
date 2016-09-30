@@ -2230,6 +2230,38 @@ public class MiscMath {
     }
     
     /**
+     * rescale a to values between vi and vf, inclusive
+     * @param a
+     * @param vi
+     * @param vf
+     */
+    public static void rescale(GreyscaleImage a, int vi, int vf) {
+        
+        int minV = Integer.MAX_VALUE;
+        int maxV = Integer.MIN_VALUE;
+        
+        for (int i = 0; i < a.getNPixels(); ++i) {
+            int v = a.getValue(i);
+            if (v < minV) {
+                minV = v;
+            }
+            if (v > maxV) {
+                maxV = v;
+            }
+        }
+        int range = maxV - minV;
+        
+        double scale = ((double)(vf - vi))/range;
+         
+        for (int i = 0; i < a.getNPixels(); ++i) {
+            
+            double v = (a.getValue(i) - minV) * scale;
+            
+            a.setValue(i, (int)Math.round(v));
+        } 
+    }
+    
+    /**
      * rescale a to values between vi and vf, inclusive.  the input array a is
      * not modified.
      * @param a
