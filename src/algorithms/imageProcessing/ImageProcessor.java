@@ -4820,6 +4820,9 @@ if (sum > 511) {
             throw new IllegalArgumentException("dimension is larger than image"
                 + " dimensions.  method not yet handling that.");
         }
+        
+        //TODO: change this to use a summed area table in more standard
+        // way to simplify the logic
 
         /*
         becomes efficient when halfDimension > 1
@@ -4973,12 +4976,20 @@ if (sum > 511) {
         }
 
         // divide each value by dimension * dimension
-        float dsq = dimension * dimension;
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
+                float ax = dimension;
+                float ay = dimension;
+                if (i >= (w - halfDimension)) {
+                    ax = w - i;
+                }
+                if (j >= (h - halfDimension)) {
+                    ay = h - i;
+                }
+                float area = ax * ay;
                 int pixIdx = img.getIndex(i, j);
                 int v = imgValues[pixIdx];
-                v = Math.round((float)v/dsq);
+                v = Math.round((float)v/area);
                 imgValues[pixIdx] = v;
             }
         }
@@ -6724,8 +6735,12 @@ if (sum > 511) {
              -1 times 2nd deriv binomial for sigma=sqrt(2)/2,... LOG
         R5 ripple = [1 -4 6 -4 1]  
               3rd deriv gaussian, ...Gabor
+             
+     WARNING: should mask out the borders by about 3 pixels until further
+     notice. 
+     TODO: correct this and internal methods for borders.
      
-     * NOTE: bright clumps in R5 R5 looks most useful for finding vegetation.
+     NOTE: bright clumps in R5 R5 looks most useful for finding vegetation.
         can apply adaptive means to the feature image to find the cluster
         centers.  
     
@@ -6737,6 +6752,7 @@ if (sum > 511) {
        R5R5}
      */
     public Map<String, GreyscaleImage> createTextureTransforms(GreyscaleImage img) {
+        
         /*
         NOTE: bright clumps in R5 R5 looks most useful for finding vegetation.
         can apply adaptive means to the feature image to find the cluster
@@ -6794,6 +6810,11 @@ if (sum > 511) {
         
         Map<String, GreyscaleImage> transformed = new
             HashMap<String, GreyscaleImage>();
+
+        int w = img.getWidth();
+        int h = img.getHeight();
+
+        int r = 2;
         
         for (int i = 0; i < labels.length; ++i) {
             float[] filter1 = kernelL5;
@@ -6828,14 +6849,14 @@ if (sum > 511) {
                     img2 = divide(img2, img3);
                 }
             
+                applyAbsoluteValue(img2);
+                
                 GreyscaleImage imgM = img2.copyImage();
             
                 //--- sum over 5x5 region then subtract mean ---
-            
+                
                 applyCenteredMean(imgM, 2);
-            
-                applyAbsoluteValue(imgM);
-            
+                        
                 /*{
                     GreyscaleImage img3 = img2.copyToFullRangeIntImage();
                     MiscMath.rescale(img3, 0, 255);
@@ -6844,14 +6865,9 @@ if (sum > 511) {
                     MiscDebug.writeImage(img3, "_" + labels[i] + labels[j] + "_adap_means_");
                 }*/
             
-                // summed area table to make a table can extract windowed
+                // summed area table to make a table to extract windowed
                 // sums from in 4 steps
                 GreyscaleImage imgS = createAbsoluteSummedAreaTable(img2);
-
-                int w = img2.getWidth();
-                int h = img2.getHeight();
-
-                int r = 2;
 
                 // extract the summed area of 5x5 window centered on x,y
                 for (int x = r; x < (w-r); ++x) {
@@ -6859,12 +6875,40 @@ if (sum > 511) {
                         int nPix = 25;
                         int s1 = imgS.getValue(x+r, y+r) - imgS.getValue(x-r, y+r)
                             - imgS.getValue(x+r, y-r) + imgS.getValue(x-r, y-r);
-                        // TODO: make corrections for the border points
                         int m = imgM.getValue(x, y);
                         int v = (s1/nPix) - m;
                         img2.setValue(x, y, v);
                     }
                 }
+                
+                // handling borders separately
+                if (w > (2*r-1) && h > (2*r-1)) {
+                    for (int x = 0; x < r; ++x) {
+                        for (int y = 0; y < r; ++y) {
+                            int nPix = (x + r + 1)*(y + r + 1);
+                            int s1 = imgS.getValue(x + r, y + r);
+                            int m = imgM.getValue(x, y);
+                            int v = (s1/nPix) - m;
+                            img2.setValue(x, y, v);
+                        }
+                        for (int y = r; y < h; ++y) {
+                            int nPix, s1;
+                            int yh = h - y - 1;
+                            if (yh < r) {
+                                s1 = imgS.getValue(x+r, h - 1) - imgS.getValue(x+r, y-r);
+                                nPix = (x + r + 1)*(r + yh + 1);
+                            } else {
+                                nPix = (x + r + 1)*(2*r + 1);
+                                s1 = imgS.getValue(x+r, y+r) - imgS.getValue(x+r, y-r);
+                            }
+                            int m = imgM.getValue(x, y);
+                            int v = (s1/nPix) - m;
+                            img2.setValue(x, y, v);
+                        }
+                    }
+                }
+                //TODO: need the other 3 border regions 
+                // TODO: need border corrections for methods upstream of this too.
                 
                 String label = labels[i] + labels[j];
 
