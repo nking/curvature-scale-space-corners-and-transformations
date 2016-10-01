@@ -1076,7 +1076,7 @@ if (sum > 511) {
             throw new IllegalArgumentException("image heights must be the same");
         }
 
-        GreyscaleImage output = image.createSignedWithDimensions();
+        GreyscaleImage output = image.createFullRangeIntWithDimensions();
 
         for (int i = 0; i < image.getWidth(); i++) {
             for (int j = 0; j < image.getHeight(); j++) {
@@ -6841,13 +6841,24 @@ if (sum > 511) {
                 
                 applyAbsoluteValue(img2);
                 
-                //GreyscaleImage imgM = img2.copyImage();
-            
-                //--- sum over 5x5 region then subtract mean ---
+                // summed area table to make a table to extract windowed
+                // sums from in 4 steps
+                //GreyscaleImage imgS = createAbsoluteSummedAreaTable(img2);
+
+                //GreyscaleImage imgM = applyMeanOfWindowFromSummedAreaTable(
+                //    imgS, 5);
                 
-                //applyCenteredMean(imgM, 2);
+                GreyscaleImage imgM = img2.copyToFullRangeIntImage();
+                applyCenteredMean(imgM, 2);
                 
-                //img2 = subtractImages(img2, imgM);
+                img2 = subtractImages(img2, imgM);
+                
+                // square img2 to result in variance
+                for (int ii = 0; ii < img2.getNPixels(); ++ii) {
+                    int v = img2.getValue(ii);
+                    v *= v;
+                    img2.setValue(ii, v);
+                }
                         
                 {
                     GreyscaleImage img3 = img2.copyToFullRangeIntImage();
@@ -6855,100 +6866,6 @@ if (sum > 511) {
                     MiscDebug.writeImage(img3, "_" + labels[i] + labels[j]);
                     applyAdaptiveMeanThresholding(img3, 2);
                     MiscDebug.writeImage(img3, "_" + labels[i] + labels[j] + "_adap_means_");
-                }
-            
-                // summed area table to make a table to extract windowed
-                // sums from in 4 steps
-                GreyscaleImage imgS = createAbsoluteSummedAreaTable(img2);
-
-                // extract the summed area of 5x5 window centered on x,y
-                for (int x = r; x < (w-r); ++x) {
-                    for (int y = r; y < (h-r); ++y) {
-                        int nPix = 25;
-                        int s1 = imgS.getValue(x+r, y+r) - imgS.getValue(x-r, y+r)
-                            - imgS.getValue(x+r, y-r) + imgS.getValue(x-r, y-r);
-                        int v = (s1/nPix);
-                        img2.setValue(x, y, v);
-                    }
-                }
-                
-                // handling borders separately
-                if (w > (2*r-1) && h > (2*r-1)) {
-                    // --- x < r region ------------
-                    for (int x = 0; x < r; ++x) {
-                        for (int y = 0; y < r; ++y) {
-                            int nPix = (x + r + 1)*(y + r + 1);
-                            int s1 = imgS.getValue(x + r, y + r);
-                            int v = (s1/nPix);
-                            img2.setValue(x, y, v);
-                        }
-                        for (int y = r; y < h; ++y) {
-                            int nPix, s1;
-                            int yh = h - y - 1;
-                            if (yh < r) {
-                                s1 = imgS.getValue(x+r, h - 1) - imgS.getValue(x+r, y-r);
-                                nPix = (x + r + 1)*(r + yh + 1);
-                            } else {
-                                nPix = (x + r + 1)*(2*r + 1);
-                                s1 = imgS.getValue(x+r, y+r) - imgS.getValue(x+r, y-r);
-                            }
-                            int v = (s1/nPix);
-                            img2.setValue(x, y, v);
-                        }
-                    }
-                    // --- x >= (w-r) region ------------
-                    for (int x = (w-r); x < w; ++x) {
-                        int xw = w - x - 1;
-                        for (int y = 0; y < r; ++y) {
-                            int nPix = (x + xw + 1)*(r + y + 1);
-                            int s1 = imgS.getValue(w-1, y+r) 
-                                - imgS.getValue(x-r, y+r);
-                            int v = (s1/nPix);
-                            img2.setValue(x, y, v);
-                        }
-                        for (int y = r; y < h; ++y) {
-                            int nPix, s1;
-                            int yh = h - y - 1;
-                            if (yh < r) {
-                                nPix = (r + xw + 1)*(r + yh + 1);
-                                s1 = imgS.getValue(w-1, h-1) 
-                                    - imgS.getValue(x-r, h-1)
-                                    - imgS.getValue(w-1, y-r) 
-                                    + imgS.getValue(x-r, y-r);
-                            } else {
-                                nPix = (r + xw + 1)*(r*2 + 1);
-                                s1 = imgS.getValue(w-1, y+r) 
-                                    - imgS.getValue(x-r, y+r)
-                                    - imgS.getValue(w-1, y-r) 
-                                    + imgS.getValue(x-r, y-r);
-                            }
-                            int v = (s1/nPix);
-                            img2.setValue(x, y, v);
-                        }
-                    }
-                    // ---- remaining y < r region and y >= h-r----
-                    for (int x = r; x < (w - r); ++x) {
-                        for (int y = 0; y < r; ++y) {
-                            int nPix, s1;
-                            int yh = h - y - 1;
-                            nPix = (2*r + 1) * (r + yh + 1);
-                            s1 = imgS.getValue(x + r, y + r)
-                                - imgS.getValue(x - r, y + r);
-                            int v = (s1/nPix);
-                            img2.setValue(x, y, v);
-                        }
-                        for (int y = (h - r); y < h; ++y) {
-                            int nPix, s1;
-                            int yh = h - y - 1;
-                            nPix = (2*r + 1)*(r + yh + 1);
-                            s1 = imgS.getValue(x + r, h-1) 
-                                - imgS.getValue(x - r, h-1)
-                                - imgS.getValue(x + r, y-r) 
-                                + imgS.getValue(x-r, y-r);
-                            int v = (s1/nPix);
-                            img2.setValue(x, y, v);
-                        }
-                    }
                 }
                 
                 String label = labels[i] + labels[j];
@@ -6977,6 +6894,162 @@ if (sum > 511) {
                 img.setValue(x, y, Math.abs(v));
             }
         }
+    }
+    
+    /**
+     * NOT READY FOR USE - NEEDS TESTING
+     * @param imgS
+     * @param d
+     * @return 
+     */
+    public GreyscaleImage applyMeanOfWindowFromSummedAreaTable(
+        GreyscaleImage imgS, int d) {
+        
+        int w = imgS.getWidth();
+        int h = imgS.getHeight();
+        
+        GreyscaleImage img2 = imgS.createFullRangeIntWithDimensions();
+        
+        int[] sumAndN = new int[2];
+        
+        // extract the summed area of each dxd window centered on x,y
+        // and divide by number of pixels
+        for (int x = 0; x < w; ++x) {
+            for (int y = 0; y < h; ++y) {
+                extractWindowFromSummedAreaTable(imgS, x, y, d, sumAndN);
+                int v = sumAndN[0]/sumAndN[1];
+                img2.setValue(x, y, v);
+            }
+        }
+
+        return img2;
+    }
+    
+    /**
+     * extract the sum of a window centered at (x,y) of x dimension d and y
+     * dimension d and return that value and the number of pixels in the
+     * aperture in the output variable, output.
+     * @param imgS
+     * @param x coordinate for x center of window
+     * @param y coordinate for y center of window
+     * @param d diameter of window in x and y
+     * @param output one dimensional array of size 2 in which the
+     * sum of the window will be returned and the number of pixels in the 
+     * window.  int[]{sum, nPixels}
+     */
+    public void extractWindowFromSummedAreaTable(GreyscaleImage imgS, 
+        int x, int y, int d, int output[]) {
+        
+        if (output == null || output.length != 2) {
+            throw new IllegalArgumentException(
+                "output must be initialized to size 2");
+        }
+        
+        int w = imgS.getWidth();
+        int h = imgS.getHeight();
+        
+        if (x < 0 || y < 0 || (x > (w - 1)) || (y > (h - 1))) {
+            throw new IllegalArgumentException("x or y is out of bounds of "
+                + "image. x=" + x + " y=" + y + " w=" + w + " h=" + h);
+        }
+        
+        int r = (d << 1);
+        
+        // extract the summed area of dxd window centered on x,y
+        if (x >= r && x < (w-r) && (y >= r) && (y < (h-r))) {
+            int nPix = d * d;
+            int s1 = imgS.getValue(x+r, y+r) - imgS.getValue(x-r, y+r)
+                - imgS.getValue(x+r, y-r) + imgS.getValue(x-r, y-r);
+            output[0] = s1;
+            output[1] = nPix;
+            return;
+        }
+                
+        // handling borders separately
+        if (w > (2*r-1) && h > (2*r-1)) {
+            // --- x < r region ------------
+            if ((x >= 0) && (x < r)) {
+                if ((y >= 0) && (y < r)) {
+                    int nPix = (x + r + 1)*(y + r + 1);
+                    int s1 = imgS.getValue(x + r, y + r);
+                    output[0] = s1;
+                    output[1] = nPix;
+                    return;
+                }
+                if ((y >= r) && (y < h)) {
+                    int nPix, s1;
+                    int yh = h - y - 1;
+                    if (yh < r) {
+                        s1 = imgS.getValue(x+r, h - 1) - imgS.getValue(x+r, y-r);
+                        nPix = (x + r + 1)*(r + yh + 1);
+                    } else {
+                        nPix = (x + r + 1)*(2*r + 1);
+                        s1 = imgS.getValue(x+r, y+r) - imgS.getValue(x+r, y-r);
+                    }
+                    output[0] = s1;
+                    output[1] = nPix;
+                    return;
+                }
+            }
+            // --- x >= (w-r) region ------------
+            if ((x >= (w-r)) && (x < w)) {
+                int xw = w - x - 1;
+                if ((y >= 0) && (y < r)) {
+                    int nPix = (x + xw + 1)*(r + y + 1);
+                    int s1 = imgS.getValue(w-1, y+r) 
+                        - imgS.getValue(x-r, y+r);
+                    output[0] = s1;
+                    output[1] = nPix;
+                    return;
+                }
+                if ((y >= r) && (y < h)) {
+                    int nPix, s1;
+                    int yh = h - y - 1;
+                    if (yh < r) {
+                        nPix = (r + xw + 1)*(r + yh + 1);
+                        s1 = imgS.getValue(w-1, h-1) 
+                            - imgS.getValue(x-r, h-1)
+                            - imgS.getValue(w-1, y-r) 
+                            + imgS.getValue(x-r, y-r);
+                    } else {
+                        nPix = (r + xw + 1)*(r*2 + 1);
+                        s1 = imgS.getValue(w-1, y+r) 
+                            - imgS.getValue(x-r, y+r)
+                            - imgS.getValue(w-1, y-r) 
+                            + imgS.getValue(x-r, y-r);
+                    }
+                    output[0] = s1;
+                    output[1] = nPix;
+                    return;
+                }
+            }
+            // ---- remaining y < r region and y >= h-r----
+            if ((x >= r) && (x < (w - r))) {
+                if ((y >= 0) && (y < r)) {
+                    int nPix, s1;
+                    int yh = h - y - 1;
+                    nPix = (2*r + 1) * (r + yh + 1);
+                    s1 = imgS.getValue(x + r, y + r)
+                        - imgS.getValue(x - r, y + r);
+                    output[0] = s1;
+                    output[1] = nPix;
+                    return;
+                }
+                if ((y >= (h - r)) && (y < h)) {
+                    int nPix, s1;
+                    int yh = h - y - 1;
+                    nPix = (2*r + 1)*(r + yh + 1);
+                    s1 = imgS.getValue(x + r, h-1) 
+                        - imgS.getValue(x - r, h-1)
+                        - imgS.getValue(x + r, y-r) 
+                        + imgS.getValue(x-r, y-r);
+                    output[0] = s1;
+                    output[1] = nPix;
+                    return;
+                }
+            }
+        }
+        throw new IllegalStateException("error in algorithm.");
     }
     
     public GreyscaleImage createAbsoluteSummedAreaTable(GreyscaleImage img) {
