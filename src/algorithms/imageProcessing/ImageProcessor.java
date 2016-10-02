@@ -4975,21 +4975,12 @@ if (sum > 511) {
             }
         }
 
-        // divide each value by dimension * dimension
+        float dsq = dimension * dimension;
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
-                float ax = dimension;
-                float ay = dimension;
-                if (i >= (w - halfDimension)) {
-                    ax = w - i;
-                }
-                if (j >= (h - halfDimension)) {
-                    ay = h - i;
-                }
-                float area = ax * ay;
                 int pixIdx = img.getIndex(i, j);
                 int v = imgValues[pixIdx];
-                v = Math.round((float)v/area);
+                v = Math.round((float)v/dsq);
                 imgValues[pixIdx] = v;
             }
         }
@@ -6720,6 +6711,13 @@ if (sum > 511) {
         
         return true;
     }
+    
+    // TODO: create curvature zero points segmented image:
+    // create curvature image
+    //   make all values > 0, 255
+    //  make all values == 0, 1
+    //  make all values < 0, 0
+    //  use line thinner to see bounds quickly
  
     /**
      * create texture transforms from 
@@ -6745,13 +6743,23 @@ if (sum > 511) {
         centers.  
     
      * @param img 
+       @param state 0=do not process derivatives further,
+       1=subtract mean, 2=subtract mean and square to make variance,
+       3=make zero mean, unit standard derivative, but multiplied by
+       255 to put into integer range for result.
      * @return textureTransforms 
        GreyscaleImage[]{
        L5E5/E5L5, L5S5/S5L5, L5R5/R5L5, E5E5.
        E5S5/S5E5, E5R5/R5E5, S5S5, S5R5/R5S5,
        R5R5}
      */
-    public Map<String, GreyscaleImage> createTextureTransforms(GreyscaleImage img) {
+    public Map<String, GreyscaleImage> createTextureTransforms(
+        GreyscaleImage img, int state) {
+        
+        if (state < 0 || state > 3) {
+            throw new IllegalArgumentException("state must be between"
+                + "0 and 3, inclusive");
+        }
         
         /*
         NOTE: bright clumps in R5 R5 looks most useful for finding vegetation.
@@ -6796,7 +6804,7 @@ if (sum > 511) {
               E5S5/S5E5, E5R5/R5E5, S5S5, S5R5/R5S5,
               R5R5
         */
-                
+        
         float[] kernelL5 = Gaussian1D.getBinomialKernelSigmaOne();
         float[] kernelE5 = Gaussian1DFirstDeriv.getBinomialKernelSigmaOne();
         float[] kernelS5 = Gaussian1DSecondDeriv.getBinomialKernelSigmaZeroPointSevenOne();
@@ -6833,52 +6841,53 @@ if (sum > 511) {
                     applyKernel1D(img3, filter1, false);
                     img2 = divide(img2, img3);
                 }
-            
-                //TODO: still reading.  this might need to be
-                // "reduced to zero sum and unit standard deviation"
-                // so subracting mean and dividing by factor sqrt(2)/mean
-                //...
                 
-                applyAbsoluteValue(img2);
-                
-                // summed area table to make a table to extract windowed
-                // sums from in 4 steps
-                //GreyscaleImage imgS = createAbsoluteSummedAreaTable(img2);
+                GreyscaleImage imgM = null;
 
-                //GreyscaleImage imgM = applyMeanOfWindowFromSummedAreaTable(
-                //    imgS, 5);
+                /*
+                0=do not process derivatives further,
+                1=subtract mean, 
+                2=subtract mean and square to make variance,
+                3=make zero mean, unit standard derivative, 
+                  but multiplied by 255 to put into integer range for result.
+                */
                 
-                GreyscaleImage imgM = img2.copyToFullRangeIntImage();
-                applyCenteredMean(imgM, 2);
-                
-                img2 = subtractImages(img2, imgM);
-                
-                // square img2 to result in variance
-                for (int ii = 0; ii < img2.getNPixels(); ++ii) {
-                    int v = img2.getValue(ii);
-                    v *= v;
-                    img2.setValue(ii, v);
+                if (state > 0) {
+                    imgM = img2.copyToFullRangeIntImage();
+                    applyCenteredMean(imgM, 2);
+                    img2 = subtractImages(img2, imgM);
                 }
-                        
-                {
-                    GreyscaleImage img3 = img2.copyToFullRangeIntImage();
-                    MiscMath.rescale(img3, 0, 255);
-                    MiscDebug.writeImage(img3, "_" + labels[i] + labels[j]);
-                    applyAdaptiveMeanThresholding(img3, 2);
-                    MiscDebug.writeImage(img3, "_" + labels[i] + labels[j] + "_adap_means_");
+                
+                if (state == 3) {
+                    // make unit standard deviation image, but mult by 255
+                    // for storage in integer.
+                    // NOTE: considering change of output to float array for
+                    // comparison to databases
+                    for (int ii = 0; ii < img2.getNPixels(); ++ii) {
+                        double m = imgM.getValue(ii);
+                        double v = 255.*img2.getValue(ii)/(Math.sqrt(2)/m);
+                        img2.setValue(ii, (int)Math.round(v));
+                    }
+                } else if (state == 2) {
+                    // square img2 to result in variance
+                    for (int ii = 0; ii < img2.getNPixels(); ++ii) {
+                        int v = img2.getValue(ii);
+                        v *= v;
+                        img2.setValue(ii, v);
+                    }
                 }
                 
                 String label = labels[i] + labels[j];
 
                 transformed.put(label, img2);
                 
-                {//DEBUG
+                /*{
                     GreyscaleImage img3 = img2.copyImage();
                     MiscMath.rescale(img3, 0, 255);
                     MiscDebug.writeImage(img3, "_" + labels[i] + labels[j] + "_feature_");
                     applyAdaptiveMeanThresholding(img3, 2);
                     MiscDebug.writeImage(img3, "_" + labels[i] + labels[j] + "_feature_adap_means_");
-                }
+                }*/
             }
         }
         
@@ -6929,6 +6938,7 @@ if (sum > 511) {
      * extract the sum of a window centered at (x,y) of x dimension d and y
      * dimension d and return that value and the number of pixels in the
      * aperture in the output variable, output.
+     * NOTE GreyscaleImage, x, and y are in column major format
      * @param imgS
      * @param x coordinate for x center of window
      * @param y coordinate for y center of window
@@ -6945,6 +6955,11 @@ if (sum > 511) {
                 "output must be initialized to size 2");
         }
         
+        if (d < 0) {
+            throw new IllegalArgumentException(
+                "d must be a non-negative number");
+        }
+        
         int w = imgS.getWidth();
         int h = imgS.getHeight();
         
@@ -6953,103 +6968,105 @@ if (sum > 511) {
                 + "image. x=" + x + " y=" + y + " w=" + w + " h=" + h);
         }
         
-        int r = (d << 1);
+        final int r = (d >> 1);
         
         // extract the summed area of dxd window centered on x,y
-        if (x >= r && x < (w-r) && (y >= r) && (y < (h-r))) {
-            int nPix = d * d;
-            int s1 = imgS.getValue(x+r, y+r) - imgS.getValue(x-r, y+r)
-                - imgS.getValue(x+r, y-r) + imgS.getValue(x-r, y-r);
+        if (r > 0) {
+            if (x > r && x < (w-r) && (y > r) && (y < (h-r))) {
+                int nPix = d * d;
+                int s1 = imgS.getValue(x+r, y+r) - imgS.getValue(x-r, y+r)
+                    - imgS.getValue(x+r, y-r) + imgS.getValue(x-r, y-r);
+                output[0] = s1;
+                output[1] = nPix;
+                return;
+            }
+        }
+                
+        // handling borders separately
+        
+        int startX = x - r - 1;
+        int stopX = x + r;
+        int startY = y - r - 1;
+        int stopY = y + r;
+        
+        if (stopX > (w - 1)) {
+            stopX = w - 1;
+        }
+        if (stopY > (h - 1)) {
+            stopY = h - 1;
+        }
+        
+        //System.out.println("x=" + x + " y=" + y + " r=" + r
+        //    + " startX=" + startX +
+        //    " stopX=" + stopX + " startY=" + startY + " stopY=" + stopY);
+       
+        // when r == 0, bounds need another edit or immediate return
+        /*
+         2            2           2           2           2       *
+         1            1 *         1           1    *      1
+         0 *          0           0    *      0           0
+           0  1  2      0  1  2     0  1  2     0  1  2     0  1  2
+        */
+        if (r == 0) {
+            if (stopX == 0) {
+                if (stopY == 0) {
+                    output[1] = 1;
+                    output[0] = imgS.getValue(stopX, stopY);
+                    return;
+                }
+                startY = stopY - 1;
+                if (startY == 0) {
+                    output[1] = 1;
+                    output[0] = imgS.getValue(stopX, stopY) 
+                        - imgS.getValue(stopX, startY);
+                    return;
+                }
+            } else {
+                // stopX > 0
+                startX = stopX - 1;
+                if (stopY == 0) {
+                    output[1] = 1;
+                    output[0] = imgS.getValue(stopX, stopY) 
+                        - imgS.getValue(startX, stopY);
+                    return;
+                }
+                startY = stopY - 1;
+            }
+            //System.out.println(" --> startX=" + startX +
+            //    " stopX=" + stopX + " startY=" + startY + " stopY=" + stopY);            
+        }
+        
+        if (startX >= 0 && startY >= 0) {
+            int nPix = (r == 0) ? 1 : (stopX - startX) * (stopY - startY);
+            int s1 = imgS.getValue(stopX, stopY) - imgS.getValue(startX, stopY)
+                - imgS.getValue(stopX, startY) + imgS.getValue(startX, startY);
+            output[0] = s1;
+            output[1] = nPix;
+            return;
+        } else if (startX >= 0) {
+            // startY is < 0
+            int nPix = (r == 0) ? 1 : (stopX - startX) * (stopY + 1);
+            int s1 = imgS.getValue(stopX, stopY) - imgS.getValue(startX, stopY);
+            output[0] = s1;
+            output[1] = nPix;
+            return;
+        } else if (startY >= 0) {
+            // startX < 0
+            int nPix = (r == 0) ? 1 : (stopX + 1) * (stopY - startY);
+            int s1 = imgS.getValue(stopX, stopY)
+                - imgS.getValue(stopX, startY);
+            output[0] = s1;
+            output[1] = nPix;
+            return;
+        } else {
+            // startX < 0 && startY < 0
+            int nPix = (r == 0) ? 1 : (stopX + 1) * (stopY + 1);
+            int s1 = imgS.getValue(stopX, stopY);
             output[0] = s1;
             output[1] = nPix;
             return;
         }
-                
-        // handling borders separately
-        if (w > (2*r-1) && h > (2*r-1)) {
-            // --- x < r region ------------
-            if ((x >= 0) && (x < r)) {
-                if ((y >= 0) && (y < r)) {
-                    int nPix = (x + r + 1)*(y + r + 1);
-                    int s1 = imgS.getValue(x + r, y + r);
-                    output[0] = s1;
-                    output[1] = nPix;
-                    return;
-                }
-                if ((y >= r) && (y < h)) {
-                    int nPix, s1;
-                    int yh = h - y - 1;
-                    if (yh < r) {
-                        s1 = imgS.getValue(x+r, h - 1) - imgS.getValue(x+r, y-r);
-                        nPix = (x + r + 1)*(r + yh + 1);
-                    } else {
-                        nPix = (x + r + 1)*(2*r + 1);
-                        s1 = imgS.getValue(x+r, y+r) - imgS.getValue(x+r, y-r);
-                    }
-                    output[0] = s1;
-                    output[1] = nPix;
-                    return;
-                }
-            }
-            // --- x >= (w-r) region ------------
-            if ((x >= (w-r)) && (x < w)) {
-                int xw = w - x - 1;
-                if ((y >= 0) && (y < r)) {
-                    int nPix = (x + xw + 1)*(r + y + 1);
-                    int s1 = imgS.getValue(w-1, y+r) 
-                        - imgS.getValue(x-r, y+r);
-                    output[0] = s1;
-                    output[1] = nPix;
-                    return;
-                }
-                if ((y >= r) && (y < h)) {
-                    int nPix, s1;
-                    int yh = h - y - 1;
-                    if (yh < r) {
-                        nPix = (r + xw + 1)*(r + yh + 1);
-                        s1 = imgS.getValue(w-1, h-1) 
-                            - imgS.getValue(x-r, h-1)
-                            - imgS.getValue(w-1, y-r) 
-                            + imgS.getValue(x-r, y-r);
-                    } else {
-                        nPix = (r + xw + 1)*(r*2 + 1);
-                        s1 = imgS.getValue(w-1, y+r) 
-                            - imgS.getValue(x-r, y+r)
-                            - imgS.getValue(w-1, y-r) 
-                            + imgS.getValue(x-r, y-r);
-                    }
-                    output[0] = s1;
-                    output[1] = nPix;
-                    return;
-                }
-            }
-            // ---- remaining y < r region and y >= h-r----
-            if ((x >= r) && (x < (w - r))) {
-                if ((y >= 0) && (y < r)) {
-                    int nPix, s1;
-                    int yh = h - y - 1;
-                    nPix = (2*r + 1) * (r + yh + 1);
-                    s1 = imgS.getValue(x + r, y + r)
-                        - imgS.getValue(x - r, y + r);
-                    output[0] = s1;
-                    output[1] = nPix;
-                    return;
-                }
-                if ((y >= (h - r)) && (y < h)) {
-                    int nPix, s1;
-                    int yh = h - y - 1;
-                    nPix = (2*r + 1)*(r + yh + 1);
-                    s1 = imgS.getValue(x + r, h-1) 
-                        - imgS.getValue(x - r, h-1)
-                        - imgS.getValue(x + r, y-r) 
-                        + imgS.getValue(x-r, y-r);
-                    output[0] = s1;
-                    output[1] = nPix;
-                    return;
-                }
-            }
-        }
-        throw new IllegalStateException("error in algorithm.");
+               
     }
     
     public GreyscaleImage createAbsoluteSummedAreaTable(GreyscaleImage img) {

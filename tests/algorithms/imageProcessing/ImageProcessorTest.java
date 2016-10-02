@@ -23,6 +23,8 @@ import thirdparty.ca.uol.aig.fftpack.ComplexDoubleFFT;
  */
 public class ImageProcessorTest extends TestCase {
 
+    boolean displayImages = false;
+    
     public ImageProcessorTest(String testName) {
         super(testName);
     }
@@ -67,10 +69,12 @@ public class ImageProcessorTest extends TestCase {
                         
         ImageProcessor ImageProcessor = new ImageProcessor();
         
+        if (displayImages)
         ImageDisplayer.displayImage("", img);
         
         ImageProcessor.applySobelKernel(img);
         
+        if (displayImages)
         ImageDisplayer.displayImage("sobel", img);
                 
     }
@@ -84,11 +88,13 @@ public class ImageProcessorTest extends TestCase {
         ImageProcessor ImageProcessor = new ImageProcessor();
         
         Image imgX = ImageIOHelper.readImage(filePath);
+        if (displayImages)
         ImageDisplayer.displayImage("", imgX);
         SobelX s0 = new SobelX();
         Kernel kernelX = s0.getKernel();
         float norm0 = s0.getNormalizationFactor();
         ImageProcessor.applyKernel(imgX, kernelX, norm0);
+        if (displayImages)
         ImageDisplayer.displayImage("Sobel X", imgX);
         
         Image imgY = ImageIOHelper.readImage(filePath);
@@ -96,11 +102,13 @@ public class ImageProcessorTest extends TestCase {
         Kernel kernelY = s1.getKernel();
         norm0 = s1.getNormalizationFactor();
         ImageProcessor.applyKernel(imgY, kernelY, norm0);
+        if (displayImages)
         ImageDisplayer.displayImage("Sobel Y", imgY);
         
         Image img = ImageIOHelper.readImage(filePath);
         ImageProcessor.applySobelKernel(img);
-                
+           
+        if (displayImages)
         ImageDisplayer.displayImage("Sobel", img);
         
     }
@@ -610,18 +618,21 @@ public class ImageProcessorTest extends TestCase {
         GreyscaleImage checkerboard = getCheckboard(8);
         int result;
         
+        if (displayImages)
         ImageDisplayer.displayImage("checkerboard", checkerboard);
         
         result = imageProcessor.FFT2D(checkerboard, 1);
         
         assertTrue(result == 1);
         
+        if (displayImages)
         ImageDisplayer.displayImage("FFT of checkerboard", checkerboard);
         
         result = imageProcessor.FFT2D(checkerboard, -1);
         
         assertTrue(result == 1);
         
+        if (displayImages)
         ImageDisplayer.displayImage("FFT^-1 of FFT checkerboard", checkerboard);
         
         GreyscaleImage expected = getCheckboard(8);
@@ -1093,6 +1104,7 @@ public class ImageProcessorTest extends TestCase {
         
         GreyscaleImage out = med.calculate(img.copyToGreyscale(), 10, 10);
         
+        if (displayImages)
         ImageDisplayer.displayImage("median filtered", out);                
     }
     
@@ -1167,4 +1179,303 @@ public class ImageProcessorTest extends TestCase {
         }
     }
     
+    /*
+       @param state 0=do not process derivatives further,
+       1=subtract mean, 2=subtract mean and square to make variance,
+       3=make zero mean, unit standard derivative, but multiplied by
+       255 to put into integer range for result.
+     * @return textureTransforms 
+       GreyscaleImage[]{
+       L5E5/E5L5, L5S5/S5L5, L5R5/R5L5, E5E5.
+       E5S5/S5E5, E5R5/R5E5, S5S5, S5R5/R5S5,
+       R5R5}
+    public Map<String, GreyscaleImage> createTextureTransforms(
+        GreyscaleImage img, int state) {
+    */
+    public void testCreateTextureTransforms() {
+        
+    }
+   
+    public void testSummedAreaTable() {
+        
+        /*
+        column major notation is used
+        
+        2  5  2  7   10  8 18   10 18  36
+        1  3  1  2    5  6 11    5 11  22
+        0  2  5  9    2  5  9    2  7  16
+           0  1  2
+         */
+        GreyscaleImage img = new GreyscaleImage(3, 3);
+        img.setValue(0, 0, 2); img.setValue(0, 1, 3); img.setValue(0, 2, 5);
+        img.setValue(1, 0, 5); img.setValue(1, 1, 1); img.setValue(1, 2, 2);
+        img.setValue(2, 0, 9); img.setValue(2, 1, 2); img.setValue(2, 2, 7);
+       
+        ImageProcessor imageProcessor = new ImageProcessor();
+        GreyscaleImage sImg = imageProcessor.createAbsoluteSummedAreaTable(img);
+        
+        int[][] expected = new int[3][];
+        expected[0] = new int[]{2, 5, 10};
+        expected[1] = new int[]{7, 11, 18};
+        expected[2] = new int[]{16, 22, 36};
+        
+        for (int i = 0; i < img.getWidth(); ++i) {
+            for (int j = 0; j < img.getHeight(); ++j) {
+                assertEquals(expected[i][j], sImg.getValue(i, j));
+            }
+        }
+        
+        /*
+        img              sImg
+        values           values
+        2  5  2  7     10 18  36
+        1  3  1  2      5 11  22
+        0  2  5  9      2  7  16
+           0  1  2
+         
+        extract areas from table.                
+        */
+        int expectedSum;
+        int[] output = new int[2];
+        
+        
+        expectedSum = 36;
+        imageProcessor.extractWindowFromSummedAreaTable(sImg, 
+            0, 0, 5, output);
+        assertEquals(output[0], expectedSum);
+        assertEquals(output[1], 9);
+        
+        expectedSum = 11;
+        imageProcessor.extractWindowFromSummedAreaTable(sImg, 
+            0, 0, 3, output);
+        assertEquals(output[0], expectedSum);
+        assertEquals(output[1], 4);
+        
+        expectedSum = 2;
+        imageProcessor.extractWindowFromSummedAreaTable(sImg, 
+            0, 0, 1, output);
+        assertEquals(output[0], expectedSum);
+        assertEquals(output[1], 1);
+        
+        
+        /*
+        img              sImg
+        values           values
+        2  5  2  7     10 18  36
+        1  3  1  2      5 11  22
+        0  2  5  9      2  7  16
+           0  1  2
+        */
+        
+        expectedSum = 36;
+        imageProcessor.extractWindowFromSummedAreaTable(sImg, 
+            0, 1, 5, output);
+        assertEquals(expectedSum, output[0]);
+        assertEquals(9, output[1]);
+        
+        expectedSum = 18;
+        imageProcessor.extractWindowFromSummedAreaTable(sImg, 
+            0, 1, 3, output);
+        assertEquals(expectedSum, output[0]);
+        assertEquals(6, output[1]);
+        
+        expectedSum = 3;
+        imageProcessor.extractWindowFromSummedAreaTable(sImg, 
+            0, 1, 1, output);
+        assertEquals(expectedSum, output[0]);
+        assertEquals(1, output[1]);
+        
+        
+       /*
+        img              sImg
+        values           values
+        2  5  2  7     10 18  36
+        1  3  1  2      5 11  22
+        0  2  5  9      2  7  16
+           0  1  2
+        */
+        expectedSum = 36;
+        imageProcessor.extractWindowFromSummedAreaTable(sImg, 
+            0, 2, 5, output);
+        assertEquals(expectedSum, output[0]);
+        assertEquals(9, output[1]);
+        
+        expectedSum = 18 - 7;
+        imageProcessor.extractWindowFromSummedAreaTable(sImg, 
+            0, 2, 3, output);
+        assertEquals(expectedSum, output[0]);
+        assertEquals(4, output[1]);
+        
+        expectedSum = 5;
+        imageProcessor.extractWindowFromSummedAreaTable(sImg, 
+            0, 2, 1, output);
+        assertEquals(expectedSum, output[0]);
+        assertEquals(1, output[1]);
+        
+        /*
+        img              sImg
+        values           values
+        2  5  2  7     10 18  36
+        1  3  1  2      5 11  22
+        0  2  5  9      2  7  16
+           0  1  2
+        */
+        expectedSum = 36;
+        imageProcessor.extractWindowFromSummedAreaTable(sImg, 
+            1, 0, 5, output);
+        assertEquals(output[0], expectedSum);
+        assertEquals(output[1], 9);
+        
+        expectedSum = 22;
+        imageProcessor.extractWindowFromSummedAreaTable(sImg, 
+            1, 0, 3, output);
+        assertEquals(output[0], expectedSum);
+        assertEquals(output[1], 6);
+        
+        expectedSum = 5;
+        imageProcessor.extractWindowFromSummedAreaTable(sImg, 
+            1, 0, 1, output);
+        assertEquals(output[0], expectedSum);
+        assertEquals(output[1], 1);
+        
+        /*
+        img              sImg
+        values           values
+        2  5  2  7     10 18  36
+        1  3  1  2      5 11  22
+        0  2  5  9      2  7  16
+           0  1  2
+        */
+        expectedSum = 36;
+        imageProcessor.extractWindowFromSummedAreaTable(sImg, 
+            1, 1, 5, output);
+        assertEquals(output[0], expectedSum);
+        assertEquals(output[1], 9);
+        
+        expectedSum = 36;
+        imageProcessor.extractWindowFromSummedAreaTable(sImg, 
+            1, 1, 3, output);
+        assertEquals(output[0], expectedSum);
+        assertEquals(output[1], 9);
+        
+        expectedSum = 1;
+        imageProcessor.extractWindowFromSummedAreaTable(sImg, 
+            1, 1, 1, output);
+        assertEquals(output[0], expectedSum);
+        assertEquals(output[1], 1);
+        
+        //0,0  0,1  0,2  1,0  1,1  1,2
+        
+        /*
+        img              sImg
+        values           values
+        2  5  2  7     10 18  36
+        1  3  1  2      5 11  22
+        0  2  5  9      2  7  16
+           0  1  2
+        */
+        expectedSum = 36;
+        imageProcessor.extractWindowFromSummedAreaTable(sImg, 
+            1, 2, 5, output);
+        assertEquals(output[0], expectedSum);
+        assertEquals(output[1], 9);
+        
+        expectedSum = 20;
+        imageProcessor.extractWindowFromSummedAreaTable(sImg, 
+            1, 2, 3, output);
+        assertEquals(output[0], expectedSum);
+        assertEquals(output[1], 6);
+        
+        expectedSum = 2;
+        imageProcessor.extractWindowFromSummedAreaTable(sImg, 
+            1, 2, 1, output);
+        assertEquals(output[0], expectedSum);
+        assertEquals(output[1], 1);
+        
+        
+        /*
+        img              sImg
+        values           values
+        2  5  2  7     10 18  36
+        1  3  1  2      5 11  22
+        0  2  5  9      2  7  16
+           0  1  2
+        */
+        expectedSum = 36;
+        imageProcessor.extractWindowFromSummedAreaTable(sImg, 
+            2, 0, 5, output);
+        assertEquals(output[0], expectedSum);
+        assertEquals(output[1], 9);
+        
+        expectedSum = 17;
+        imageProcessor.extractWindowFromSummedAreaTable(sImg, 
+            2, 0, 3, output);
+        assertEquals(expectedSum, output[0]);
+        assertEquals(4, output[1]);
+        
+        expectedSum = 9;
+        imageProcessor.extractWindowFromSummedAreaTable(sImg, 
+            2, 0, 1, output);
+        assertEquals(expectedSum, output[0]);
+        assertEquals(1, output[1]);
+        
+        /*
+        img              sImg
+        values           values
+        2  5  2  7     10 18  36
+        1  3  1  2      5 11  22
+        0  2  5  9      2  7  16
+           0  1  2
+        */
+        expectedSum = 36;
+        imageProcessor.extractWindowFromSummedAreaTable(sImg, 
+            2, 1, 5, output);
+        assertEquals(output[0], expectedSum);
+        assertEquals(output[1], 9);
+        
+        expectedSum = 26;
+        imageProcessor.extractWindowFromSummedAreaTable(sImg, 
+            2, 1, 3, output);
+        assertEquals(output[0], expectedSum);
+        assertEquals(output[1], 6);
+        
+        expectedSum = 2;
+        imageProcessor.extractWindowFromSummedAreaTable(sImg, 
+            2, 1, 1, output);
+        assertEquals(expectedSum, output[0]);
+        assertEquals(1, output[1]);
+        
+        /*
+        img              sImg
+        values           values
+        2  5  2  7     10 18  36
+        1  3  1  2      5 11  22
+        0  2  5  9      2  7  16
+           0  1  2
+        */
+        expectedSum = 36;
+        imageProcessor.extractWindowFromSummedAreaTable(sImg, 
+            2, 2, 5, output);
+        assertEquals(output[0], expectedSum);
+        assertEquals(output[1], 9);
+        
+        expectedSum = 12;
+        imageProcessor.extractWindowFromSummedAreaTable(sImg, 
+            2, 2, 3, output);
+        assertEquals(expectedSum, output[0]);
+        assertEquals(4, output[1]);
+        
+        expectedSum = 7;
+        imageProcessor.extractWindowFromSummedAreaTable(sImg, 
+            2, 2, 1, output);
+        assertEquals(output[0], expectedSum);
+        assertEquals(output[1], 1);
+        
+        /*
+        public GreyscaleImage applyMeanOfWindowFromSummedAreaTable(
+            GreyscaleImage imgS, int d) {
+        public void extractWindowFromSummedAreaTable(GreyscaleImage imgS, 
+            int x, int y, int d, int output[])
+        */
+    }
 }

@@ -375,8 +375,6 @@ public class AndroidStatuesTest extends TestCase {
 
         ImageExt imgCp = img.copyToImageExt();
         
-        imageProcessor.createTextureTransforms(imgCp.copyToGreyscale2());
-
         GreyscaleImage gradient = imageSegmentation.createGradient(imgCp, 3, ts);
 
         int[] labels4 = imageSegmentation.objectSegmentation(imgCp, gradient);
