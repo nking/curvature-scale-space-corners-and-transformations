@@ -1471,11 +1471,35 @@ public class ImageProcessorTest extends TestCase {
         assertEquals(output[0], expectedSum);
         assertEquals(output[1], 1);
         
-        /*
-        public GreyscaleImage applyMeanOfWindowFromSummedAreaTable(
-            GreyscaleImage imgS, int d) {
-        public void extractWindowFromSummedAreaTable(GreyscaleImage imgS, 
-            int x, int y, int d, int output[])
-        */
+        // --- assert the mean of window size 5 ----
+        GreyscaleImage mImg = imageProcessor.
+            applyMeanOfWindowFromSummedAreaTable(sImg, 5);
+        for (int i = 0; i < mImg.getNPixels(); ++i) {
+            assertEquals(36/9, mImg.getValue(i));
+        }
+        
+        // --- assert the mean of window size 3 ----
+        mImg = imageProcessor.applyMeanOfWindowFromSummedAreaTable(sImg, 3);
+        assertEquals(11/4, mImg.getValue(0, 0));
+        assertEquals(18/6, mImg.getValue(0, 1));
+        assertEquals(11/4, mImg.getValue(0, 2));
+        assertEquals(22/6, mImg.getValue(1, 0));
+        assertEquals(36/9, mImg.getValue(1, 1));
+        assertEquals(20/6, mImg.getValue(1, 2));
+        assertEquals(17/4, mImg.getValue(2, 0));
+        assertEquals(26/6, mImg.getValue(2, 1));
+        assertEquals(12/4, mImg.getValue(2, 2));
+        
+        // --- assert the mean of window size 1 ----
+        mImg = imageProcessor.applyMeanOfWindowFromSummedAreaTable(sImg, 1);
+        assertEquals(img.getValue(0, 0), mImg.getValue(0, 0));
+        assertEquals(img.getValue(0, 1), mImg.getValue(0, 1));
+        assertEquals(img.getValue(0, 2), mImg.getValue(0, 2));
+        assertEquals(img.getValue(1, 0), mImg.getValue(1, 0));
+        assertEquals(img.getValue(1, 1), mImg.getValue(1, 1));
+        assertEquals(img.getValue(1, 2), mImg.getValue(1, 2));
+        assertEquals(img.getValue(2, 0), mImg.getValue(2, 0));
+        assertEquals(img.getValue(2, 1), mImg.getValue(2, 1));
+        assertEquals(img.getValue(2, 2), mImg.getValue(2, 2));
     }
 }
