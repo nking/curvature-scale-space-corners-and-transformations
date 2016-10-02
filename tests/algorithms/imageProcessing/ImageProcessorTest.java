@@ -1,21 +1,17 @@
 package algorithms.imageProcessing;
 
-import algorithms.imageProcessing.GreyscaleImage.Type;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
-import algorithms.misc.Complex;
 import algorithms.misc.MedianSmooth;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import junit.framework.TestCase;
-import static org.junit.Assert.*;
-import thirdparty.ca.uol.aig.fftpack.ComplexDoubleFFT;
 
 /**
  *
@@ -1178,23 +1174,6 @@ public class ImageProcessorTest extends TestCase {
             }
         }
     }
-    
-    /*
-       @param state 0=do not process derivatives further,
-       1=subtract mean, 2=subtract mean and square to make variance,
-       3=make zero mean, unit standard derivative, but multiplied by
-       255 to put into integer range for result.
-     * @return textureTransforms 
-       GreyscaleImage[]{
-       L5E5/E5L5, L5S5/S5L5, L5R5/R5L5, E5E5.
-       E5S5/S5E5, E5R5/R5E5, S5S5, S5R5/R5S5,
-       R5R5}
-    public Map<String, GreyscaleImage> createTextureTransforms(
-        GreyscaleImage img, int state) {
-    */
-    public void testCreateTextureTransforms() {
-        
-    }
    
     public void testSummedAreaTable() {
         
@@ -1501,5 +1480,35 @@ public class ImageProcessorTest extends TestCase {
         assertEquals(img.getValue(2, 0), mImg.getValue(2, 0));
         assertEquals(img.getValue(2, 1), mImg.getValue(2, 1));
         assertEquals(img.getValue(2, 2), mImg.getValue(2, 2));
+    }
+    
+    public void testCreateTextureTransforms() throws Exception {
+        
+        String filePath = ResourceFinder.findFileInTestResources(
+            "susan-in_plus.png");
+        
+        Image img = ImageIOHelper.readImage(filePath);
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        Map<String, GreyscaleImage> tMap = imageProcessor.createTextureTransforms(
+            img.copyToGreyscale(), 2);
+        
+        for (Entry<String, GreyscaleImage> entry : tMap.entrySet()) {
+            String label = entry.getKey();
+            GreyscaleImage img3 = entry.getValue();
+            MiscMath.rescale(img3, 0, 255);
+            //if (displayImages)
+                ImageDisplayer.displayImage(label, img3);
+            imageProcessor.applyAdaptiveMeanThresholding(img3, 1);
+            //if (displayImages)
+                ImageDisplayer.displayImage(label, img3);
+        }
+        
+        /*
+        L5E5/E5L5, L5S5/S5L5, L5R5/R5L5, E5E5,
+            E5S5/S5E5, E5R5/R5E5, S5S5, S5R5/R5S5,
+            R5R5
+        */
     }
 }

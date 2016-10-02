@@ -330,21 +330,21 @@ public class Gaussian1DFirstDeriv {
         // 1    1   -1  -1, n=2, sigma=sqrt(2)/2 = 0.707
         // edit to:
         float a = 1.f/200.f;
-        return new float[]{0, 9*a, 83*a, 0, -83*a, -9*a, 0};
+        return new float[]{9*a, 83*a, 0, -83*a, -9*a};
     }
    
     protected static float[] getBinomialKernelSigmaOne() {
         // 1       3     2        -2    -3     -1  norm=1/12 = 0.08333333333333333
         // editing to:
         float a = 1.f/16.f;
-        return new float[]{0, 2*a, 4*a, 0, -4*a, -2*a, 0};
+        return new float[]{2*a, 4*a, 0, -4*a, -2*a};
     }
  
     protected static float[] getKernelSigmaOneSQRT2() {
-        return new float[]{0, 0.0013614271f, 0.010333488f, 
+        return new float[]{0.0013614271f, 0.010333488f, 
             0.04459885f, 0.103776865f, 0.10984783f, 
             -0.0f, -0.10984783f, -0.103776865f, -0.04459885f, -0.010333488f, 
-            -0.0013614271f, 0};
+            -0.0013614271f};
     }
     
     protected static float[] getBinomialKernelSigmaOneSQRT2() {
@@ -356,8 +356,8 @@ public class Gaussian1DFirstDeriv {
         edit to:
         */
         float a = 1.f/256.f;
-        return new float[]{0, a*3, a*12, a*27, a*28,
-            0, -28*a, -27*a, -12*a, -3*a, 0};
+        return new float[]{a*3, a*12, a*27, a*28,
+            0, -28*a, -27*a, -12*a, -3*a};
     }
     
     protected static float[] getBinomialKernelSigmaOnePointFive() {
@@ -404,12 +404,12 @@ public class Gaussian1DFirstDeriv {
     }
    
     protected static float[] getKernelSigmaTwoSQRT2() {
-        return new float[]{0, 0, 
+        return new float[]{ 
             0.0010043882f, 0.002583372f, 0.005772264f, 0.011149713f, 
             0.018478211f, 0.025944216f, 0.030137392f, 0.027461957f, 
             0.01656272f, -0.0f, -0.01656272f, -0.027461957f, -0.030137392f, 
             -0.025944216f, -0.018478211f, -0.011149713f, -0.005772264f, 
-            -0.002583372f, -0.0010043882f, 0, 0};
+            -0.002583372f, -0.0010043882f};
     }
     
     protected static float[] getBinomialKernelSigmaTwoSQRT2() {
@@ -431,11 +431,11 @@ public class Gaussian1DFirstDeriv {
     }
    
     protected static float[] getKernelSigmaThree() {
-        return new float[]{0, 0, 0, 0.0014772827f, 0.0033765885f, 0.006798267f, 
+        return new float[]{0.0014772827f, 0.0033765885f, 0.006798267f, 
             0.011997993f, 0.018421693f, 0.024297789f, 0.026885636f, 
             0.023662815f, 0.013977156f, -0.0f, -0.013977156f, -0.023662815f, 
             -0.026885636f, -0.024297789f, -0.018421693f, -0.011997993f, 
-            -0.006798267f, -0.0033765885f, -0.0014772827f, 0, 0, 0};
+            -0.006798267f, -0.0033765885f, -0.0014772827f};
     }
     
     protected static float[] getBinomialKernelSigmaThree() {
@@ -459,13 +459,13 @@ public class Gaussian1DFirstDeriv {
     }
     
     protected static float[] getKernelSigmaFour() {
-        return new float[]{0, 0, 0, 0, 0.0015629561f, 
+        return new float[]{0.0015629561f, 
             0.002738797f, 0.0044633886f, 0.006748871f, 0.009436582f, 
             0.0121422745f, 0.014269461f, 0.015123171f, 0.014115817f, 
             0.011002041f, 0.0060416893f, -0.0f, -0.0060416893f, -0.011002041f, 
             -0.014115817f, -0.015123171f, -0.014269461f, -0.0121422745f, 
             -0.009436582f, -0.006748871f, -0.0044633886f, -0.002738797f, 
-            -0.0015629561f, 0, 0, 0, 0};
+            -0.0015629561f};
     }
     
     /**

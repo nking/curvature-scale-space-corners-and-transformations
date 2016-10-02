@@ -74,6 +74,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
@@ -374,6 +375,9 @@ public class AndroidStatuesTest extends TestCase {
         img = imageProcessor.binImage(img, binFactor1);
 
         ImageExt imgCp = img.copyToImageExt();
+        
+        Map<String, GreyscaleImage> derivMap = 
+            imageProcessor.createTextureTransforms(imgCp.copyToGreyscale(), 2);
         
         GreyscaleImage gradient = imageSegmentation.createGradient(imgCp, 3, ts);
 

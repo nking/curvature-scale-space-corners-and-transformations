@@ -4488,10 +4488,7 @@ if (sum > 511) {
 
         GreyscaleImage imgM = img.copyImage();
 
-        /*
-        7 x 7 averaging
-        */
-        applyCenteredMean(imgM, halfDimension);
+        applyCenteredMean2(imgM, halfDimension);
 
         int c = 7;
 
@@ -4792,6 +4789,35 @@ if (sum > 511) {
                 img.setValue(i, j, v);
             }
         }
+    }
+    
+    /**
+     * create an image of the mean of the surrounding dimension x dimension
+     * pixels for each pixel centered on each pixel.  For the starting
+     * and ending (dimension/2) pixels, the average uses a decreasing
+     * number of pixels.
+     * <pre>
+     * for example, image:
+     * [10] [12] [12]
+     * [10] [12] [12]
+     *
+     * for halfDimension = 1 becomes:
+     * [11] [11] [12]
+     * [11] [11] [12]
+     * </pre>
+     * runtime complexity is O(N_pixels)
+     * @param img
+     * @param halfDimension the pixel center + and - this value in x and y
+     * are averaged
+     */
+    public void applyCenteredMean2(GreyscaleImage img, int halfDimension) {
+
+        GreyscaleImage imgS = createAbsoluteSummedAreaTable(img);
+        
+        imgS = applyMeanOfWindowFromSummedAreaTable(imgS, 
+            2*halfDimension + 1);
+        
+        img.resetTo(imgS);
     }
 
     /**
@@ -6733,10 +6759,6 @@ if (sum > 511) {
              -1 times 2nd deriv binomial for sigma=sqrt(2)/2,... LOG
         R5 ripple = [1 -4 6 -4 1]  
               3rd deriv gaussian, ...Gabor
-             
-     WARNING: should mask out the borders by about 5 pixels until further
-     notice. 
-     TODO: correct this and internal methods for borders.
      
      NOTE: bright clumps in R5 R5 looks most useful for finding vegetation.
         can apply adaptive means to the feature image to find the cluster
@@ -6800,94 +6822,93 @@ if (sum > 511) {
              then energy at each pixel is summing abs value of filter output
                 across neighbor region and storing result for the center pixel.
           The 9 features made from those 16 combinations of 4 filters are:
-              L5E5/E5L5, L5S5/S5L5, L5R5/R5L5, E5E5.
+              L5L5, L5E5/E5L5, L5S5/S5L5, L5R5/R5L5, E5E5.
               E5S5/S5E5, E5R5/R5E5, S5S5, S5R5/R5S5,
               R5R5
         */
         
-        float[] kernelL5 = Gaussian1D.getBinomialKernelSigmaOne();
-        float[] kernelE5 = Gaussian1DFirstDeriv.getBinomialKernelSigmaOne();
-        float[] kernelS5 = Gaussian1DSecondDeriv.getBinomialKernelSigmaZeroPointSevenOne();
-        float[] kernelR5 = new float[]{1, -4, 6, -4, 1};
+        float[] kernelL5 = new float[]{ 1,  4, 6, 4, 1};
+        float[] kernelE5 = new float[]{-1, -2, 0, 2, 1};
+        float[] kernelS5 = new float[]{-1,  0, 2, 0, -1};
+        float[] kernelR5 = new float[]{ 1, -4, 6, -4, 1};
         float[][] kernels = new float[4][];
         kernels[0] = kernelL5;
         kernels[1] = kernelE5;
         kernels[2] = kernelS5;
         kernels[3] = kernelR5;
         String[] labels = new String[]{"L5", "E5", "S5", "R5"};
-        
+                
         Map<String, GreyscaleImage> transformed = new
             HashMap<String, GreyscaleImage>();
 
-        int w = img.getWidth();
-        int h = img.getHeight();
-
-        int r = 2;
-        
-        for (int i = 0; i < labels.length; ++i) {
-            float[] filter1 = kernels[i];
-            for (int j = i; j < labels.length; ++j) {
-                if (i == 0 && j == 0) {
-                    continue;
-                }
-                float[] filter2 = kernels[j];
-                GreyscaleImage img2 = img.copyToFullRangeIntImage();
-                applyKernel1D(img2, filter1, true);
-                applyKernel1D(img2, filter2, false);
-                
-                if (i != j) {
-                    GreyscaleImage img3 = img.copyToFullRangeIntImage();
-                    applyKernel1D(img3, filter2, true);
-                    applyKernel1D(img3, filter1, false);
-                    img2 = divide(img2, img3);
-                }
-                
-                GreyscaleImage imgM = null;
-
-                /*
-                0=do not process derivatives further,
-                1=subtract mean, 
-                2=subtract mean and square to make variance,
-                3=make zero mean, unit standard derivative, 
-                  but multiplied by 255 to put into integer range for result.
-                */
-                
-                if (state > 0) {
-                    imgM = img2.copyToFullRangeIntImage();
-                    applyCenteredMean(imgM, 2);
-                    img2 = subtractImages(img2, imgM);
-                }
-                
-                if (state == 3) {
-                    // make unit standard deviation image, but mult by 255
-                    // for storage in integer.
-                    // NOTE: considering change of output to float array for
-                    // comparison to databases
-                    for (int ii = 0; ii < img2.getNPixels(); ++ii) {
-                        double m = imgM.getValue(ii);
-                        double v = 255.*img2.getValue(ii)/(Math.sqrt(2)/m);
-                        img2.setValue(ii, (int)Math.round(v));
+        for (int dir = 0; dir < 2; ++dir) {
+            for (int l0 = 0; l0 < labels.length; ++l0) {
+                for (int l1 = l0; l1 < labels.length; ++l1) {
+                    int i = (dir == 0) ? l0 : l1;
+                    int j = (dir == 0) ? l1 : l0;
+                    float[] filter1 = kernels[i];
+                    if ((dir == 1) && (i == j)) {
+                        continue;
                     }
-                } else if (state == 2) {
-                    // square img2 to result in variance
-                    for (int ii = 0; ii < img2.getNPixels(); ++ii) {
-                        int v = img2.getValue(ii);
-                        v *= v;
-                        img2.setValue(ii, v);
-                    }
-                }
-                
-                String label = labels[i] + labels[j];
+                    float[] filter2 = kernels[j];
+                    GreyscaleImage img2 = img.copyToFullRangeIntImage();
+                    applyKernel1D(img2, filter1, true);
+                    applyKernel1D(img2, filter2, false);
 
-                transformed.put(label, img2);
-                
-                /*{
-                    GreyscaleImage img3 = img2.copyImage();
-                    MiscMath.rescale(img3, 0, 255);
-                    MiscDebug.writeImage(img3, "_" + labels[i] + labels[j] + "_feature_");
-                    applyAdaptiveMeanThresholding(img3, 2);
-                    MiscDebug.writeImage(img3, "_" + labels[i] + labels[j] + "_feature_adap_means_");
-                }*/
+                    if (i != j) {
+                        GreyscaleImage img3 = img.copyToFullRangeIntImage();
+                        applyKernel1D(img3, filter2, true);
+                        applyKernel1D(img3, filter1, false);
+                        img2 = divide(img2, img3);
+                    }
+
+                    GreyscaleImage imgM = null;
+
+                    /*
+                    0=do not process derivatives further,
+                    1=subtract mean, 
+                    2=subtract mean and square to make variance,
+                    3=make zero mean, unit standard derivative, 
+                      but multiplied by 255 to put into integer range for result.
+                    */
+
+                    if (state > 0) {
+                        imgM = img2.copyToFullRangeIntImage();
+                        applyCenteredMean2(imgM, 2);
+                        img2 = subtractImages(img2, imgM);
+                    }
+
+                    if (state == 3) {
+                        // make unit standard deviation image, but mult by 255
+                        // for storage in integer.
+                        // NOTE: considering change of output to float array for
+                        // comparison to databases
+                        for (int ii = 0; ii < img2.getNPixels(); ++ii) {
+                            double m = imgM.getValue(ii);
+                            double v = 255.*img2.getValue(ii)/(Math.sqrt(2)/m);
+                            img2.setValue(ii, (int)Math.round(v));
+                        }
+                    } else if (state == 2) {
+                        // square img2 to result in variance
+                        for (int ii = 0; ii < img2.getNPixels(); ++ii) {
+                            int v = img2.getValue(ii);
+                            v *= v;
+                            img2.setValue(ii, v);
+                        }
+                    }
+
+                    String label = labels[i] + labels[j];
+
+                    transformed.put(label, img2);
+
+                    /*{
+                        GreyscaleImage img3 = img2.copyImage();
+                        MiscMath.rescale(img3, 0, 255);
+                        MiscDebug.writeImage(img3, "_" + labels[i] + labels[j] + "_feature_");
+                        applyAdaptiveMeanThresholding(img3, 2);
+                        MiscDebug.writeImage(img3, "_" + labels[i] + labels[j] + "_feature_adap_means_");
+                    }*/
+                }
             }
         }
         
