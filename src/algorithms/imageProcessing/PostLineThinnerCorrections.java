@@ -3276,7 +3276,7 @@ public class PostLineThinnerCorrections {
             Integer.toString(nCorrections));
     }
     
-    private void correctForZigZag000_04(Set<PairInt> points, 
+    public void correctForZigZag000_04(Set<PairInt> points, 
         int imageWidth, int imageHeight) {
         
         /*
@@ -3372,7 +3372,7 @@ public class PostLineThinnerCorrections {
             Integer.toString(nCorrections));
     }
 
-    private void correctForZigZag000_05(Set<PairInt> points, 
+    public void correctForZigZag000_05(Set<PairInt> points, 
         int imageWidth, int imageHeight) {
         
         /* diagonal lines on both sides of a narrow cavity are sometimes

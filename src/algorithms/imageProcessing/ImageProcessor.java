@@ -13,6 +13,7 @@ import algorithms.misc.Histogram;
 import algorithms.misc.Misc;
 import algorithms.imageProcessing.util.GroupAverageColors;
 import algorithms.misc.MiscDebug;
+import algorithms.util.TwoDFloatArray;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TIntList;
@@ -1558,6 +1559,61 @@ if (sum > 511) {
         float[] kernel = Gaussian1D.getKernel(sigma);
 
         blur(input, kernel);
+    }
+    
+    /**
+     * in order to make a smoother "blur" operation, the full gaussian
+     * profile down to 0.001 * HWZI is created and convolved with image input
+     * at a smaller sigma, recursively, until the resulting sigma equals 
+     * the sigma given to the method.
+     * gaussian profiles add in quadrature, 
+     * sigma_tot^2 = sigma_1^2 + sigma_2^2.
+     * 
+     * @param input
+     * @param sigma should be a quadrature factor of sqrt(2)/2, that is 
+     *     sqrt(2)/2, 1, sqrt(1.5), sqrt(2.0), sqrt(2.5), sqrt(3.0), 
+     *     sqrt(3.5), sqrt(4.0), sqrt(4.5)...
+     *     in other words, the square of sigma should be 0.5 or a positive non zero 
+     *     integer or a positive non zero integer plus 0.5.
+     */
+    public void recursiveBlur(float[][] input, SIGMA sigma) {
+        
+        float sigmaF = SIGMA.getValue(sigma);
+        float sigmaFSQ = sigmaF * sigmaF;
+        int sigmaISQ = (int)Math.floor(sigmaF);
+        float remainder = sigmaFSQ - sigmaISQ;
+        if (!(
+            ((sigmaISQ >= 0) && (Math.abs(remainder - 0.5f) < 0.01)) 
+            || ((sigmaISQ > 0) && (remainder < 0.01))
+            )) {
+            throw new IllegalArgumentException("sigma has to be a value that"
+                + "is the result of recursive combinations of sqrt(2)/2");
+        }
+        
+        float sigma0Sq = (float)Math.sqrt(2.)/2.f;
+        sigma0Sq *= sigma0Sq;
+        
+        float currentSigmaSq = sigma0Sq;
+        
+        float finalSigmaSq = SIGMA.getValue(sigma);
+        finalSigmaSq *= finalSigmaSq;
+        
+        //float[] kernel = Gaussian1D.getKernel((float)Math.sqrt(2.)/2.f, 0);
+        //for sigma=sqrt(2)/2 kernel
+        //   =[6.962646E-5, 0.010333488, 0.20755373, 0.5641896, 
+        //     0.20755373, 0.010333488, 6.962646E-5]
+        // which is essentially 1, 20, 56, 20, 1
+        final float[] kernel = new float[]{0.010333488f, 0.20755373f, 0.5641896f, 
+             0.20755373f, 0.010333488f};
+        
+        do {
+            applyKernel1D(input, kernel, true);
+            applyKernel1D(input, kernel, false);
+            
+            currentSigmaSq = currentSigmaSq + sigma0Sq;
+            
+        } while ((finalSigmaSq > currentSigmaSq) && Math.abs(finalSigmaSq - currentSigmaSq) > 0.01);
+        
     }
 
     public void blur(GreyscaleImage input, SIGMA sigma) {
@@ -4805,7 +4861,8 @@ if (sum > 511) {
      * [11] [11] [12]
      * [11] [11] [12]
      * </pre>
-     * runtime complexity is O(N_pixels)
+     * runtime complexity is O(N_pixels) and never more than
+     * 4 times O(N_pixels).
      * @param img
      * @param halfDimension the pixel center + and - this value in x and y
      * are averaged
@@ -4834,7 +4891,9 @@ if (sum > 511) {
      * [11] [11] [12]
      * [11] [11] [12]
      * </pre>
-     * runtime complexity is O(N_pixels)
+     * runtime complexity is O(N_pixels), but is also dependent upon 
+     * halfDimension.  Prefer to use applyCenteredMean2 which is always
+     * less than 4 times O(N) in runtime complexity.
      * @param img
      * @param halfDimension the pixel center + and - this value in x and y
      * are averaged
@@ -4847,9 +4906,6 @@ if (sum > 511) {
                 + " dimensions.  method not yet handling that.");
         }
         
-        //TODO: change this to use a summed area table in more standard
-        // way to simplify the logic
-
         /*
         becomes efficient when halfDimension > 1
 
@@ -5690,6 +5746,31 @@ if (sum > 511) {
         }
         
         return output;
+    }
+
+    /**
+     * create a two-dimensional float array of the img multiplied by
+     * factor, but returned in row-major format [row][col].
+     * @param img
+     * @param factor
+     * @return 
+     */
+    public float[][] multiply(GreyscaleImage img, float factor) {
+     
+        int nRows = img.getHeight();
+        int nCols = img.getWidth();
+        float[][] out = new float[nRows][nCols];
+        for (int j = 0; j < nRows; ++j) {
+            out[j] = new float[nCols];
+        }
+
+        for (int j = 0; j < nRows; ++j) {
+            for (int i = 0; i < nCols; ++i) {
+                out[j][i] = (float)img.getValue(i, j) * factor;
+            }
+        }
+
+        return out;
     }
     
     public static class Colors {
@@ -6609,6 +6690,57 @@ if (sum > 511) {
     }
     
     /**
+     * apply morphological thinning
+     * @param img
+     */
+    public void applyThinning2(GreyscaleImage img) {
+
+        int n0 = img.getWidth();
+        int n1 = img.getHeight();
+        
+        int[][] morphInput = new int[n0][];
+        for (int i = 0; i < n0; ++i) {
+            morphInput[i] = new int[n1];
+        }
+        for (int i = 0; i < n0; ++i) {
+            for (int j = 0; j < n1; ++j) {
+                if (img.getValue(i, j) > 0) {                    
+                    morphInput[i][j] = 1;
+                } else {
+                    morphInput[i][j] = 0;
+                }
+            }
+        }        
+        
+        MorphologicalFilter mFilter = new MorphologicalFilter();
+        int[][] skel = mFilter.bwMorphThin(morphInput, Integer.MAX_VALUE);
+
+        Set<PairInt> points = new HashSet<PairInt>();
+        
+        for (int i = 0; i < n0; ++i) {
+            for (int j = 0; j < n1; ++j) {
+                int m = skel[i][j];
+                int v = img.getValue(i, j) * m;
+                img.setValue(i, j, v);
+                if (v > 0) {
+                    points.add(new PairInt(i, j));
+                }
+            }
+        }
+        
+        PostLineThinnerCorrections pLTC = new PostLineThinnerCorrections();
+        pLTC._correctForArtifacts(points, n0, n1);
+        for (int i = 0; i < n0; ++i) {
+            for (int j = 0; j < n1; ++j) {
+                PairInt p = new PairInt(i, j);
+                if (!points.contains(p)) {
+                    img.setValue(i, j, 0);
+                }
+            }
+        }
+    }
+    
+    /**
      * apply 8 hit or miss filters iteratively until convergence to thin the
      * image.  the operation is performed on all pixels with value > 0.
      * @param img
@@ -6683,7 +6815,22 @@ if (sum > 511) {
             }
             nIter++;
         } while (nEdited > 0);
+                
         img.resetTo(out);
+        
+        Set<PairInt> points = readNonZeroPixels(img);
+        
+        PostLineThinnerCorrections pLTC = new PostLineThinnerCorrections();
+        pLTC._correctForArtifacts(points, img.getWidth(), 
+            img.getHeight());
+        for (int i = 0; i < img.getWidth(); ++i) {
+            for (int j = 0; j < img.getHeight(); ++j) {
+                PairInt p = new PairInt(i, j);
+                if (!points.contains(p)) {
+                    img.setValue(i, j, 0);
+                }
+            }
+        }
     }
     
     private void rotatePairsBy90(int[] xy) {
@@ -6738,12 +6885,318 @@ if (sum > 511) {
         return true;
     }
     
-    // TODO: create curvature zero points segmented image:
-    // create curvature image
-    //   make all values > 0, 255
-    //  make all values == 0, 1
-    //  make all values < 0, 0
-    //  use line thinner to see bounds quickly
+    /**
+     * create a two dimensional row-major format array of curvature of the
+     * image img.  Note that img is expected to have all values >= 0.
+     * Also note that sigma should be equal to or greater than
+     * sqrt(2)/2.
+     * @param img
+     * @param sigma
+     * @return 
+     */
+    public float[][] createCurvatureImage(GreyscaleImage img, float sigma) {
+        
+        /* curvature:
+               dot is the degree of derivative...see ScaleSpaceCurvature
+                      X_dot(t,o~) * Y_dot_dot(t,o~) - Y_dot(t,o~) * X_dot_dot(t,o~) 
+            k(t,o~) = -------------------------------------------------------------
+                                   (X_dot^2(t,o~) + Y_dot^2(t,o~))^1.5
+        */
+        
+        float max = img.max();
+        
+        if (max <= 0) {
+            throw new IllegalArgumentException("img values must be"
+                + " >= 0 and maximum must be > 0");
+        }
+        
+        // -- switch to row-major ----
+        float[][] image = multiply(img, 1.f/max);
+        
+        assert(image.length == img.getHeight());
+        assert(image[0].length == img.getWidth());
+        
+        return createCurvatureImage(image, sigma);
+    }
+    
+    /**
+     * create a two dimensional row-major format array of curvature of the
+     * image img.  Note that img is expected to have all values >= 0.
+     * Also note that sigma should be equal to or greater than
+     * sqrt(2)/2.
+     * @param image row-major formatted image
+     * @param sigma
+     * @return 
+     */
+    public float[][] createCurvatureImage(float[][] image, float sigma) {
+        
+        /* curvature:
+               dot is the degree of derivative...see ScaleSpaceCurvature
+                      X_dot(t,o~) * Y_dot_dot(t,o~) - Y_dot(t,o~) * X_dot_dot(t,o~) 
+            k(t,o~) = -------------------------------------------------------------
+                                   (X_dot^2(t,o~) + Y_dot^2(t,o~))^1.5
+        */
+        
+        // --- create Sobel derivatives (gaussian 1st deriv sqrt(2)/2 = 0.707)----
+        
+        // switch X and Y sobel operations for row major
+
+        float[][] gX = copy(image);
+        applySobelY(gX);
+
+        float[][] gY = copy(image);
+        applySobelX(gY);
+
+        float[] kernel = Gaussian1D.getKernel(sigma);
+       
+        // for curvature, need d/dy(dy) and d/dx(dx)
+        
+        float[][] gX2 = copy(gX);
+        float[][] gY2 = copy(gY);
+        
+        // row major, so need to use y operations for x and vice versa
+        applyKernel1D(gX2, kernel, false);
+        applyKernel1D(gY2, kernel, true);
+        
+        int nRows = gX.length;
+        int nCols = gX[0].length;
+        
+        float[][] curvature = copy(gX);
+        for (int i = 0; i < nRows; ++i) {
+            for (int j = 0; j < nCols; ++j) {
+                
+                float gX2gX2 = gX2[i][j] * gX2[i][j];
+                float gY2gY2 = gY2[i][j] * gY2[i][j];
+                if (gX2gX2 == 0 && gY2gY2 == 0) {
+                    curvature[i][j] = Float.MAX_VALUE;
+                    continue;
+                }
+                //(dx * dy(dy) - dy * dx(dx)) / (dx(dx)*dx(dx) + dy(dy)*dy(dy))
+                curvature[i][j] = (gX[i][j] * gY2[i][j] - gY[i][j] * gX2[i][j])
+                    / (gX2gX2 + gY2gY2);
+            }
+        }
+        
+        return curvature;
+    }
+    
+    
+    /**
+     * create an image segmented by curvature zero-crossings.
+     * calculates the curvature in O(N_pixels) but using transcendental
+     * operations, and then sets the output to 255 where curvature is
+     * greater than 0 and sets output to 0 where curvature is less than 0.
+     * the "zeroHandling" parameter determines how curvature exact values
+     * of 0 are handled.
+     * for zeroHandling = 0, curvature equal to zero sets output to 1;
+     * for zeroHandling = 1, curvature equal to zero sets output to 0;
+     * for zeroHandling = 2, curvature equal to zero sets output to 255.
+     * 
+     * This method is used in MedialAxis1.java.
+     * 
+     * @param image image in row-major format.
+     * @param sigma (note, the internal first derivative, first step is
+     * sigma=sqrt(2)/2 so this given sigma should be that or larger.
+     * @param zeroHandling allowed values are 0, 1, or 2.
+     * 0 = set curvature exact zero values to value 1,
+     * 1 = set curvature exact zero values to value 0,
+     * 2 = set curvature exact zero values to value 255.
+     * @return 
+     */
+    public GreyscaleImage createZeroCrossingsCurvature(float[][] image,
+        float sigma, int zeroHandling) {
+                
+        if ((zeroHandling < 0) || (zeroHandling > 2)) {
+            throw new IllegalArgumentException("zeroHandling must be "
+                + "between 0 and 2, inclusive.");
+        }
+        
+        // -- switch to row-major until output ----
+        float[][] curvature = createCurvatureImage(image, sigma);
+        
+        return createZeroCrossingsCurvatureImage(curvature, zeroHandling);
+    }
+    
+    /**
+     * create an image segmented by curvature zero-crossings.
+     * calculates the curvature in O(N_pixels) but using transcendental
+     * operations, and then sets the output to 255 where curvature is
+     * greater than 0 and sets output to 0 where curvature is less than 0.
+     * the "zeroHandling" parameter determines how curvature exact values
+     * of 0 are handled.
+     * for zeroHandling = 0, curvature equal to zero sets output to 1;
+     * for zeroHandling = 1, curvature equal to zero sets output to 0;
+     * for zeroHandling = 2, curvature equal to zero sets output to 255.
+     * 
+     * This method is used in MedialAxis1.java.
+     * 
+     * @param img
+     * @param sigma (note, the internal first derivative, first step is
+     * sigma=sqrt(2)/2 so this given sigma should be that or larger.
+     * @param zeroHandling allowed values are 0, 1, or 2.
+     * 0 = set curvature exact zero values to value 1,
+     * 1 = set curvature exact zero values to value 0,
+     * 2 = set curvature exact zero values to value 255.
+     * @return 
+     */
+    public GreyscaleImage createZeroCrossingsCurvature(GreyscaleImage img,
+        float sigma, int zeroHandling) {
+                
+        if ((zeroHandling < 0) || (zeroHandling > 2)) {
+            throw new IllegalArgumentException("zeroHandling must be "
+                + "between 0 and 2, inclusive.");
+        }
+        
+        // -- switch to row-major until output ----
+        float[][] curvature = createCurvatureImage(img, sigma);
+        
+        return createZeroCrossingsCurvatureImage(curvature, zeroHandling);
+    }
+    
+    /**
+     * create an image segmented by curvature zero-crossings.
+     * calculates the curvature in O(N_pixels) but using transcendental
+     * operations, and then sets the output to 255 where curvature is
+     * greater than 0 and sets output to 0 where curvature is less than 0.
+     * the "zeroHandling" parameter determines how curvature exact values
+     * of 0 are handled.
+     * for zeroHandling = 0, curvature equal to zero sets output to 1;
+     * for zeroHandling = 1, curvature equal to zero sets output to 0;
+     * for zeroHandling = 2, curvature equal to zero sets output to 255.
+     * 
+     * This method is used in MedialAxis1.java.
+     * 
+     * @param curvature
+     * @param zeroHandling allowed values are 0, 1, or 2.
+     * 0 = set curvature exact zero values to value 1,
+     * 1 = set curvature exact zero values to value 0,
+     * 2 = set curvature exact zero values to value 255.
+     * @return 
+     */
+    private GreyscaleImage createZeroCrossingsCurvatureImage(float[][] curvature,
+        int zeroHandling) {
+                
+        if ((zeroHandling < 0) || (zeroHandling > 2)) {
+            throw new IllegalArgumentException("zeroHandling must be "
+                + "between 0 and 2, inclusive.");
+        }
+        
+        int nRows = curvature.length;
+        int nCols = curvature[0].length;
+        
+        GreyscaleImage out = new GreyscaleImage(nCols, nRows);
+        
+        for (int i = 0; i < nRows; ++i) {
+            for (int j = 0; j < nCols; ++j) {
+                float v = curvature[i][j];
+                if (v > 0) {
+                    out.setValue(j, i, 255);
+                } else if (v == 0) {
+                    switch(zeroHandling) {
+                        case 0:
+                            out.setValue(j, i, 1);
+                            break;
+                        case 1:
+                            out.setValue(j, i, 0);
+                            break;
+                        default:
+                            out.setValue(j, i, 255);
+                            break;
+                    }
+                } else {
+                    out.setValue(j, i, 0);
+                }
+            }
+        }
+        
+        return out;
+    }
+    
+    /**
+     Compute structure tensor using sum of squared differences.
+     The structure tensor A is defined as::
+         A = [Axx Axy]
+             [Axy Ayy]
+     which is approximated by the weighted sum of squared differences in a local
+     window around each pixel in the image.
+
+     adapted from
+     https://github.com/scikit-image/scikit-image/blob/master/skimage/feature/corner.py
+     and replaced with existing local project functions.
+      
+     * @param image for best results, values should be normalized to between
+     * 0. and 1.0, inclusive
+     * @param sigma (note, the internal first derivative, first step is
+     * sigma=sqrt(2)/2 so this given sigma should be that or larger.
+     * @param createCurvatureComponents if true, also returns arrays
+     * for the dx, d/dx(dx), dy, d/dy(dy) after the other tensor components.
+     * @return [Axx, Axy, Ayy]
+     * Axx : ndarray
+          Element of the structure tensor for each pixel in the input image.
+       Axy : ndarray
+          Element of the structure tensor for each pixel in the input image.
+       Ayy : ndarray
+          Element of the structure tensor for each pixel in the input image.
+     */
+    public TwoDFloatArray[] structureTensor(float[][] image, float sigma,
+        boolean createCurvatureComponents) {
+
+        // --- create Sobel derivatives (gaussian 1st deriv sqrt(2)/2 = 0.707)----
+        
+        // switch X and Y sobel operations to match scipy
+
+        float[][] gX = copy(image);
+        applySobelY(gX);
+
+        float[][] gY = copy(image);
+        applySobelX(gY);
+
+        // --- create structure tensors ----
+        float[] kernel = Gaussian1D.getKernel(sigma);
+        float[][] axx = multiply(gX, gX);
+        applyKernelTwo1Ds(axx, kernel);
+
+        float[][] axy = multiply(gX, gY);
+        applyKernelTwo1Ds(axy, kernel);
+
+        float[][] ayy = multiply(gY, gY);
+        applyKernelTwo1Ds(ayy, kernel);
+
+        //TODO: might need to apply a normalization factor
+        // to these for downstream use
+        
+        if (!createCurvatureComponents) {
+
+            TwoDFloatArray[] tensorComponents = new TwoDFloatArray[3];
+            tensorComponents[0] = new TwoDFloatArray(axx);
+            tensorComponents[1] = new TwoDFloatArray(axy);
+            tensorComponents[2] = new TwoDFloatArray(ayy);
+
+            return tensorComponents;
+        }
+        
+        // for curvature, need d/dy(dy) and d/dx(dx)
+        
+        float[][] gX2 = copy(gX);
+        float[][] gY2 = copy(gY);
+        
+        //TODO: revisit this in detail:
+        // row major, so need to use y operations for x and vice versa
+        applyKernel1D(gX2, kernel, false);
+        applyKernel1D(gY2, kernel, true);
+        
+        TwoDFloatArray[] tensorComponents = new TwoDFloatArray[7];
+        tensorComponents[0] = new TwoDFloatArray(axx);
+        tensorComponents[1] = new TwoDFloatArray(axy);
+        tensorComponents[2] = new TwoDFloatArray(ayy);
+        
+        tensorComponents[3] = new TwoDFloatArray(gX);
+        tensorComponents[4] = new TwoDFloatArray(gX2);
+        tensorComponents[5] = new TwoDFloatArray(gY);
+        tensorComponents[6] = new TwoDFloatArray(gY2);
+
+        return tensorComponents;
+    }
  
     /**
      * create texture transforms from 
@@ -6760,7 +7213,7 @@ if (sum > 511) {
         R5 ripple = [1 -4 6 -4 1]  
               3rd deriv gaussian, ...Gabor
      
-     NOTE: bright clumps in R5 R5 looks most useful for finding vegetation.
+     NOTE: bright clumps in R5 R5 look useful for finding vegetation.
         can apply adaptive means to the feature image to find the cluster
         centers.  
     
@@ -6913,6 +7366,46 @@ if (sum > 511) {
         }
         
         return transformed;
+    }
+    
+    /**
+     * get centers of high spatial and intensity variability using the
+     * gaussian third derivative and adaptive means.
+     *
+     * @param img 
+       
+     * @return points of high density spatial variability and intensity.
+     */
+    public Set<PairInt> findHighDensityHighVariabilityPoints(
+        GreyscaleImage img) {
+        
+        float[] kernelR5 = new float[]{ 1, -4, 6, -4, 1};
+        
+        GreyscaleImage img2 = img.copyToFullRangeIntImage();
+        applyKernel1D(img2, kernelR5, true);
+        applyKernel1D(img2, kernelR5, false);
+                    
+        GreyscaleImage imgM = img2.copyToFullRangeIntImage();
+        applyCenteredMean2(imgM, 2);
+        img2 = subtractImages(img2, imgM);
+                    
+        for (int ii = 0; ii < img2.getNPixels(); ++ii) {
+            int v = img2.getValue(ii);
+            v *= v;
+            img2.setValue(ii, v);
+        }
+        
+        applyAdaptiveMeanThresholding(img, 1);
+        
+        Set<PairInt> points = new HashSet<PairInt>();
+        for (int ii = 0; ii < img2.getNPixels(); ++ii) {
+            int v = img2.getValue(ii);
+            if (v == 0) {
+                points.add(new PairInt(img2.getCol(ii), img2.getRow(ii)));
+            }
+        }            
+        
+        return points;
     }
     
     public void applyAbsoluteValue(GreyscaleImage img) {
@@ -7138,5 +7631,57 @@ if (sum > 511) {
         }
         
         return out;
+    }
+    
+    public float[][] copy(float[][] a) {
+
+        int n1 = a.length;
+        int n2 = a[0].length;
+
+        float[][] out = new float[n1][n2];
+        for (int i = 0; i < n1; ++i) {
+            out[i] = Arrays.copyOf(a[i], a[i].length);
+        }
+
+        return out;
+    }
+
+    public float[][] multiply(float[][] a, float[][] b) {
+
+        float[][] c = copy(a);
+
+        for (int i = 0; i < c.length; ++i) {
+            for (int j = 0; j < c[0].length; ++j) {
+                c[i][j] *= b[i][j];
+            }
+        }
+
+        return c;
+    }
+
+    public float[][] add(float[][] a, float[][] b) {
+
+        float[][] c = copy(a);
+
+        for (int i = 0; i < c.length; ++i) {
+            for (int j = 0; j < c[0].length; ++j) {
+                c[i][j] += b[i][j];
+            }
+        }
+
+        return c;
+    }
+
+    public float[][] subtract(float[][] a, float[][] b) {
+
+        float[][] c = copy(a);
+
+        for (int i = 0; i < c.length; ++i) {
+            for (int j = 0; j < c[0].length; ++j) {
+                c[i][j] -= b[i][j];
+            }
+        }
+
+        return c;
     }
 }

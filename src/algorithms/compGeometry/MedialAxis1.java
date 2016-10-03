@@ -26,32 +26,16 @@ import java.util.Stack;
 import java.util.logging.Logger;
 
 /**
- NOTE: the MedialAxis should be preferred to this one.
- This needs improvements.
- * 
-   A class to create a 2D medial axis given shape points
-   and the boundary.
-       from https://en.wikipedia.org/wiki/Medial_axis
-       "the medial axis of a subset S which is bounded 
-        by planar curve C is the locus of the centers 
-        of circles that are tangent to curve C in two 
-        or more points."
-
-   This class is an implementation of 
-   "Efficient and Robust Computation of an Approximated Medial Axis"
-   by Yang, Brock, and Moll
-   
- * which requires
- * "Efficient Computation of A Simplified Medial Axis"
- * by Foskey, Lin, and Manocha
- * and 
- * "A Framework for Using the Workspace Medial Axis in 
- * PRM Planners"
- * by Holleman and Kavraki
- * 
+  Offers 3 experimental versions of medial axis derived from properties
+  of curvature zero crossings.
+  
+  see results in doc/medial_axis.pdf after page 5.
+ 
  * @author nichole
  */
 public class MedialAxis1 {
+    
+    //TODO: change to use methods in ImageProcessorTest.testCreateZeroCrossingsCurvature
     
     private Logger log = Logger.getLogger(this.getClass().getName());
     

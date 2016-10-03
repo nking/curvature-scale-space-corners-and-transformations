@@ -25,6 +25,8 @@ public class MedialAxis1Test extends TestCase {
     
     public void test0() throws IOException {
         
+        //TODO: rewrite this test when change impl
+            
         MedialAxis1 medAxis1 = null;
         Set<PairInt> mAPs = null;
         List<MedialAxis1.MedialAxisPoint> list = null;

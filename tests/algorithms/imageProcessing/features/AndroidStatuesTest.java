@@ -17,6 +17,7 @@ import algorithms.imageProcessing.GroupPixelColors;
 import algorithms.imageProcessing.GroupPixelRGB;
 import algorithms.imageProcessing.GroupPixelRGB0;
 import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageDisplayer;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
@@ -375,6 +376,17 @@ public class AndroidStatuesTest extends TestCase {
         img = imageProcessor.binImage(img, binFactor1);
 
         ImageExt imgCp = img.copyToImageExt();
+       
+        {
+            Map<String, GreyscaleImage> tMap = imageProcessor.createTextureTransforms(
+                img.copyToGreyscale(), 2);
+            String lStr = "E5E5";
+            GreyscaleImage rImg = tMap.get(lStr);
+            MiscDebug.writeImage(rImg, "_" + lStr + "_");
+            MiscMath.rescale(rImg, 0, 255);
+            imageProcessor.applyAdaptiveMeanThresholding(rImg, 1);
+            MiscDebug.writeImage(rImg, "_" + lStr + "_adapt_means_");
+        }
         
         Map<String, GreyscaleImage> derivMap = 
             imageProcessor.createTextureTransforms(imgCp.copyToGreyscale(), 2);

@@ -6,7 +6,10 @@ package algorithms.imageProcessing;
  */
 public enum SIGMA {
     
-    //for result where convolution is mult by 1, sigma=0.42466090014400953
+    // NOTE: these enumerations are in order of value
+    
+    //for result where convolution is mult by 1, 
+    // sigma=0.42466090014400953
     // which is close to 0.5
     /*ZEROPOINTFOURTWOSEVEN,*/ 
     ZEROPOINTFIVE, ZEROPOINTSEVENONE,

@@ -650,6 +650,34 @@ public class GreyscaleImage {
         return t;
     }
     
+    public int max() {
+        
+        Integer maxV = Integer.MIN_VALUE;
+        
+        for (int i = 0; i < nPixels; ++i) {
+            int v = getValue(i);
+            if (v > maxV) {
+                maxV = v;
+            }
+        }
+        
+        return maxV;
+    }
+    
+    public int min() {
+        
+        Integer minV = Integer.MAX_VALUE;
+        
+        for (int i = 0; i < nPixels; ++i) {
+            int v = getValue(i);
+            if (v < minV) {
+                minV = v;
+            }
+        }
+        
+        return minV;
+    }
+    
     public GreyscaleImage copyImage() {
        
         GreyscaleImage img2 = createWithDimensions();

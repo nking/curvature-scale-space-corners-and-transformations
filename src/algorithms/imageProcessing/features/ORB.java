@@ -18,6 +18,7 @@ import algorithms.misc.StatsInSlidingWindow;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.QuadInt;
+import algorithms.util.TwoDFloatArray;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
@@ -508,6 +509,8 @@ public class ORB {
 
         int decimationLimit = 8;
 
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
         List<GreyscaleImage> output = new ArrayList<GreyscaleImage>();
 
         MedianTransform mt = new MedianTransform();
@@ -515,7 +518,7 @@ public class ORB {
 
         List<TwoDFloatArray> output2 = new ArrayList<TwoDFloatArray>();
         for (int i = 0; i < output.size(); ++i) {
-            float[][] gsImgF = prepareGrayscaleInput2D(output.get(i));
+            float[][] gsImgF = imageProcessor.multiply(output.get(i), 1.f/255.f);
             TwoDFloatArray f = new TwoDFloatArray(gsImgF);
             output2.add(f);
         }
@@ -532,34 +535,11 @@ public class ORB {
     private float[][] prepareGrayscaleInput2D(ImageExt image) {
 
         GreyscaleImage img = image.copyToGreyscale2();
-
-        return prepareGrayscaleInput2D(img);
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        return imageProcessor.multiply(img, 1.f/255.f);
     }
-
-    /**
-     * from the greyscale image create a
-     * two dimensional float array, scaled to
-     * range [0.0, 1.0] and placed in format img[row][col].
-     * @param image
-     */
-    private float[][] prepareGrayscaleInput2D(GreyscaleImage img) {
-
-        int nRows = img.getHeight();
-        int nCols = img.getWidth();
-        float[][] out = new float[nRows][nCols];
-        for (int j = 0; j < nRows; ++j) {
-            out[j] = new float[nCols];
-        }
-
-        for (int j = 0; j < nRows; ++j) {
-            for (int i = 0; i < nCols; ++i) {
-                out[j][i] = ((float)img.getValue(i, j))/255.f;
-            }
-        }
-
-        return out;
-    }
-
+    
     protected void debugPrint(String label, float[][] a) {
 
         StringBuilder sb = new StringBuilder(label);
@@ -898,13 +878,6 @@ public class ORB {
             n += kp0.size();
         }
         return n;
-    }
-
-    protected static class TwoDFloatArray {
-        float[][] a;
-        public TwoDFloatArray(float[][] b) {
-            a = b;
-        }
     }
 
     private float[][] copy(float[][] a) {
@@ -1867,7 +1840,7 @@ public class ORB {
      */
     protected TwoDFloatArray[] structureTensor(float[][] image, float sigma) {
 
-        // --- create Sobel derivatives ----
+        // --- create Sobel derivatives (gaussian 1st deriv sqrt(2)/2 = 0.707)----
         ImageProcessor imageProcessor = new ImageProcessor();
 
         // switch X and Y sobel operations to match scipy

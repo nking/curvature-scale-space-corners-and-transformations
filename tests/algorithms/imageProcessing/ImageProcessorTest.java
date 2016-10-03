@@ -1498,10 +1498,10 @@ public class ImageProcessorTest extends TestCase {
             String label = entry.getKey();
             GreyscaleImage img3 = entry.getValue();
             MiscMath.rescale(img3, 0, 255);
-            //if (displayImages)
+            if (displayImages)
                 ImageDisplayer.displayImage(label, img3);
             imageProcessor.applyAdaptiveMeanThresholding(img3, 1);
-            //if (displayImages)
+            if (displayImages)
                 ImageDisplayer.displayImage(label, img3);
         }
         
@@ -1510,5 +1510,86 @@ public class ImageProcessorTest extends TestCase {
             E5S5/S5E5, E5R5/R5E5, S5S5, S5R5/R5S5,
             R5R5
         */
+    }
+    
+    public void testRecursiveBlur() throws Exception {
+        
+        String filePath = ResourceFinder.findFileInTestResources(
+            "closed_curve.png");
+        
+        GreyscaleImage img = ImageIOHelper.readImageAsBinary(filePath);
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        imageProcessor.applyThinning2(img);
+        
+        if (displayImages)
+            ImageDisplayer.displayImage("_thinned_", img);
+        
+        float[][] image = new float[img.getWidth()][];
+        for (int i = 0; i < img.getWidth(); ++i) {
+            image[i] = new float[img.getHeight()];
+            for (int j = 0; j < img.getHeight(); ++j) {
+                image[i][j] = img.getValue(i, j);
+            }
+        }
+        
+        imageProcessor.recursiveBlur(image, SIGMA.ZEROPOINTSEVENONE);
+        
+        GreyscaleImage out = img.createWithDimensions();
+        int w = out.getWidth();
+        int h = out.getHeight();
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                int v = Math.round(image[i][j]);
+                if (v < 0) {
+                    v = 0;
+                } else if (v > 255) {
+                    v = 255;
+                }
+                out.setValue(i, j, v);
+            }
+        }
+        
+        if (displayImages)
+            ImageDisplayer.displayImage("_recursive_blur_", out);
+        
+    }
+    
+    public void testCreateZeroCrossingsCurvature() throws Exception {
+        
+        String filePath = ResourceFinder.findFileInTestResources(
+            "closed_curve.png");
+        
+        GreyscaleImage img = ImageIOHelper.readImageAsBinary(filePath);
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+                
+        float[][] image = new float[h][];
+        for (int i = 0; i < h; ++i) {
+            image[i] = new float[w];
+            for (int j = 0; j < w; ++j) {
+                // make it a binary image to see effects of curvature
+                if (img.getValue(j, i) > 0) {
+                    image[i][j] = 255;
+                }
+            }
+        }
+                
+        GreyscaleImage out = imageProcessor
+            .createZeroCrossingsCurvature(image, 
+            SIGMA.getValue(SIGMA.ONE), 2);
+        
+        if (displayImages)
+            ImageDisplayer.displayImage("_zero_crossings_", out);
+        
+        imageProcessor.applyThinning(out);
+        
+        if (displayImages)
+            ImageDisplayer.displayImage("_zero_crossings_adap_mean_",
+                out);            
     }
 }
