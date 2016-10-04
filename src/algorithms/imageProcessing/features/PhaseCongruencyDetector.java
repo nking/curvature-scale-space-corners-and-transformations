@@ -87,7 +87,7 @@ import java.util.Set;
  
   The Software is provided "as is", without warranty of any kind.
  
- * useful also in looking at the python phasepack port by Alistair Muldal
+ * useful also was the python phasepack port by Alistair Muldal
  *  http://pydoc.net/Python/phasepack/1.4/phasepack.phasecongmono/
  * which has the following copyright:
  * # MIT License:
@@ -533,6 +533,9 @@ public class PhaseCongruencyDetector {
                 if (noiseMethod == -1) {
                     //Use median to estimate noise statistics
                     //tau = median(sumAn(:))/sqrt(log(4));
+                    //TODO: could improve this below O(N*lg2(N)) with histograms
+                    //      and assumptions of bin sizes...when have an
+                    //      implementation of Multi-Level-Buckets, revisit this
                     double median = MiscMath.findMedian(sumAn);
                     tau = median/sqml4;
                 } else if (noiseMethod == -2) {

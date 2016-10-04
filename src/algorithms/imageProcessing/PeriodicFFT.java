@@ -150,7 +150,9 @@ public class PeriodicFFT {
             double v = s[row][nCols - 1] - img.getValue(0, row) + img.getValue(nCols - 1, row);
             s[row][nCols - 1] = v;
         }
-                
+    
+        double twoPiDivNRows = 2. * Math.PI/(double)nRows;
+        double twoPiDivNCols = 2. * Math.PI/(double)nCols;
         /*
         Generate grid upon which to compute the filter for the boundary image in
         the frequency domain.  Note that cos() is cyclic hence the grid values can
@@ -163,7 +165,7 @@ public class PeriodicFFT {
         double[][] cy = new double[nRows][];
         for (int row = 0; row < nRows; ++row) {
             cy[row] = new double[nCols];
-            double v = (2. * Math.PI * row)/(double)nRows;
+            double v = twoPiDivNRows * row;
             Arrays.fill(cy[row], v);
         }
         double[][] cx = new double[nRows][];
@@ -171,7 +173,7 @@ public class PeriodicFFT {
             cx[row] = new double[nCols];
         }
         for (int col = 0; col < nCols; ++col) {
-            double v = (2. * Math.PI * col)/(double)nCols;
+            double v = twoPiDivNCols * col;
             for (int row = 0; row < nRows; ++row) {
                 cx[row][col] = v;
             }

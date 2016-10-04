@@ -1,5 +1,7 @@
 package algorithms.imageProcessing;
 
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -188,9 +190,9 @@ public class MorphologicalFilter {
         }
         
         //nq-1:-1:0 ->  [8, 7, 6, 5, 4, 3, 2, 1, 0]
-        List<Integer> range = new ArrayList<Integer>();
+        TIntList range = new TIntArrayList();
         for (int i = (int)Math.round(nq) - 1; i >= 0; --i) {
-            range.add(Integer.valueOf(i));
+            range.add(i);
         }
         // 256, 128, 64, 32, 16, 8, 4, 2, 1
         for (int i = 0; i < range.size(); ++i) {
@@ -209,7 +211,7 @@ public class MorphologicalFilter {
         for (int i = 0; i < n; ++i) {
             w[i] = new int[n];
             for (int j = 0; j < n; ++j) {
-                w[i][j] = range.get(count).intValue();
+                w[i][j] = range.get(count);
                 count++;
             }
         }
