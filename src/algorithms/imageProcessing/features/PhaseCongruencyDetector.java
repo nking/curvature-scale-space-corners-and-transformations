@@ -158,6 +158,13 @@ public class PhaseCongruencyDetector {
         this.determineCorners = true;
     }
     
+    //TODO: consider adding a method to make a temporary image, increased to dimensions
+    //      of a power of 2 if not already.
+    //      need to add runtime complexity for fft and non-fft methods
+    //      to look at what range of pixel number increase worsens the runtime.
+    //      if incr size, need to handle trimming the results before further operations
+    //      such as edges or corners
+    
     /**
      * <pre>
      * use the phase congruency method of transformations to create
@@ -347,7 +354,18 @@ public class PhaseCongruencyDetector {
         
         int nCols = img.getWidth();
         int nRows = img.getHeight();
-                
+        
+        /**
+         * TODO: consider refactoring to downsample images for scale changes,
+         * then upsampling the results at the stage of adding them into the
+         * two dimensional sum array.
+         * Need to keep the same sigma/f_0 for logGabor while doing so.
+         * 
+         * a recipe for downsampling the logGabor in frequency domain is in Sec 2.6 of
+         * "Self-Invertible 2D Log-Gabor Wavelets" by Fischer, Sroubek,
+         * and Perrinet, 2007.
+         */
+        
         //Periodic Fourier transform of image, using default normalization
         // perfft2 results use notation a[row][col]
         PeriodicFFT perfft2 = new PeriodicFFT();
@@ -606,7 +624,7 @@ public class PhaseCongruencyDetector {
         */
         
         // uses notation a[row][col]
-        // fit is phase angle
+        // ft is phase angle
         double[][] orientation = new double[nRows][];
         double[][] ft = new double[nRows][];
         double[][] energy = new double[nRows][];
@@ -628,12 +646,12 @@ public class PhaseCongruencyDetector {
                 // Quantize to 0 - 180 degrees (for NONMAXSUP)
                 orientation[row][col] = (int)(orientation[row][col]*180./Math.PI);
                 
-                //Feature type - a phase angle -pi/2 to pi/2.
                 double h1Sq = sumH1[row][col];
                 h1Sq *= h1Sq;
                 double h2Sq = sumH2[row][col];
                 h2Sq *= h2Sq;
                 
+                //Feature type - a phase angle -pi/2 to pi/2.
                 //TODO: does this not need to be corrected to
                 // if (<0) += 2.*PI ?
                 ft[row][col] = Math.atan2(sumF[row][col], Math.sqrt(h1Sq + h2Sq));
