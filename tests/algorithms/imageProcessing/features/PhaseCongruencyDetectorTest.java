@@ -1,6 +1,5 @@
 package algorithms.imageProcessing.features;
 
-import algorithms.imageProcessing.CannyEdgeFilterLite;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
@@ -8,15 +7,12 @@ import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.MedianTransform;
-import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.SegmentationMergeThreshold;
 import algorithms.misc.MiscDebug;
-import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -126,7 +122,7 @@ public class PhaseCongruencyDetectorTest extends TestCase {
         }
     }
     
-    public void test1() throws Exception {
+    public void est1() throws Exception {
 
         String[] fileNames = new String[]{
             //"blox.gif", 
@@ -275,7 +271,7 @@ public class PhaseCongruencyDetectorTest extends TestCase {
         }
     }
        
-    public void est4() throws Exception {
+    public void test4() throws Exception {
 
         String[] fileNames = new String[]{
             //"seattle.jpg", 

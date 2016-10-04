@@ -9563,7 +9563,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         log.fine("color histogram nMerged=" + nMerged);
     }
 
-    private int[][][] calculateColorHistograms(ImageExt input,
+    public int[][][] calculateColorHistograms(ImageExt input,
         List<Set<PairInt>> clusterPoints, int clrSpace) {
 
         //0 == cie lab,  1 = hsv, 2 = rgb
@@ -10600,7 +10600,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             gsImg = img.copyToGreyscale();
             CannyEdgeFilterAdaptive canny2 = new CannyEdgeFilterAdaptive();
             canny2.setToNotUseZhangSuen();
-            canny2.setOtsuScaleFactor(0.3f);
+            //canny2.setOtsuScaleFactor(0.3f);
             canny2.setToUseSingleThresholdIn2LayerFilter();
             canny2.applyFilter(gsImg);
             {

@@ -17,10 +17,12 @@ import algorithms.util.TwoDFloatArray;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
+import java.awt.Color;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -954,6 +956,11 @@ if (sum > 511) {
                 double gX = convolvedX.getValue(i, j);
 
                 double gY = convolvedY.getValue(i, j);
+                
+                if (gY < 0) {
+                    gX *= -1;
+                    gY *= -1;
+                }
 
                 double radians = MiscMath.calculatePolarTheta(gX, gY);
                 
@@ -7068,8 +7075,8 @@ if (sum > 511) {
      * 
      * @param curvature
      * @param zeroHandling allowed values are 0, 1, or 2.
-     * 0 = set curvature exact zero values to value 1,
-     * 1 = set curvature exact zero values to value 0,
+     * 0 = set curvature exact zero values to value 0,
+     * 1 = set curvature exact zero values to value 1,
      * 2 = set curvature exact zero values to value 255.
      * @return 
      */
@@ -7094,10 +7101,10 @@ if (sum > 511) {
                 } else if (v == 0) {
                     switch(zeroHandling) {
                         case 0:
-                            out.setValue(j, i, 1);
+                            out.setValue(j, i, 0);
                             break;
                         case 1:
-                            out.setValue(j, i, 0);
+                            out.setValue(j, i, 1);
                             break;
                         default:
                             out.setValue(j, i, 255);

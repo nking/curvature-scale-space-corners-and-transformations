@@ -330,7 +330,7 @@ public class CannyEdgeFilterLite {
         
                 Integer v = gradientValues.get(p);
                 
-                if (v < tLow) {
+                if (v == null || v < tLow) {
                     continue;
                 } else if (v > tHigh) {
                     output.put(p, v);

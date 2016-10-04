@@ -75,7 +75,7 @@ public class PolarFilterGrid {
         
         double[] u1Range = new double[nCols];
         double div;
-        if ((nCols & 2) == 1) {
+        if ((nCols & 1) == 0) {
             //u1range = [-(cols-1)/2:(cols-1)/2]/(cols-1);
             //if nCols=3, this becomes [-1, 0, 1] --> [-0.5, 0, 0.5]
             u1Range[0] = -(nCols-1)/2.;
@@ -94,7 +94,7 @@ public class PolarFilterGrid {
         }
         
         double[] u2Range = new double[nRows];
-        if ((nRows & 2) == 1) {
+        if ((nRows & 1) == 0) {
             u2Range[0] = -(nRows-1)/2.;
             div = nRows - 1;            
         } else {
