@@ -112,12 +112,14 @@ public class IntegralHistograms {
     public void extractWindowFromSummedAreaTable(int[][] integralHistograms, 
         int width, int height, int x, int y, int d, int output[], int[] outputN) {
         
-        if (output == null || outputN == null || output.length != 1
-            || output.length != integralHistograms[0].length) {
+        if (outputN == null || outputN.length != 1) {
+            throw new IllegalArgumentException(
+                "outputN must be initialized and of size=1");
+        }
+        if (output == null || output.length != integralHistograms[0].length) {
             throw new IllegalArgumentException(
                 "output must be initialized to size nBins which should be equal "
-                    + "to size integralHistograms[0].length and outputN must"
-                    + " be initialized and of size=2");
+                    + "to size integralHistograms[0].length");
         }
         
         if (d < 0) {
@@ -236,19 +238,19 @@ public class IntegralHistograms {
     }
     
 
-    private void add(int[] addTo, int[] addFrom) {
+    protected void add(int[] addTo, int[] addFrom) {
         for (int i = 0; i < addTo.length; ++i) {
             addTo[i] += addFrom[i];
         }
     }
     
-    private void subtract(int[] subtractFrom, int[] subtract) {
+    protected void subtract(int[] subtractFrom, int[] subtract) {
         for (int i = 0; i < subtractFrom.length; ++i) {
             subtractFrom[i] -= subtract[i];
         }
     }
     
-    private int getPixIdx(int col, int row, int width) {
+    protected int getPixIdx(int col, int row, int width) {
         return (row * width) + col;
     }
 }

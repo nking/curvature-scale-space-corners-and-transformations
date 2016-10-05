@@ -103,17 +103,23 @@ public class IntegralHistogramsTest extends TestCase {
         0,1 = 3  1,1 = 4  2,1 = 5
         0,2 = 6  1,2 = 7  2,2 = 8
         */
-        /*
+       
         int expectedSum;
-        int[] output = new int[2];
+        int[] outputN = new int[1];
+        int[] output = new int[16];
+        int w = img.getWidth();
+        int h = img.getHeight();
+        int[] expectedWindow = new int[16];
         
+        // window=5
+        // sum is all of expected
+        sumTable.extractWindowFromSummedAreaTable(sHists, 
+            w, h, 0, 0, 5, output, outputN);
+        sumTable.add(expectedWindow, sHists[8]);
+        assertTrue(Arrays.equals(expectedWindow, output));
+        assertEquals(9, outputN[0]);
         
-        expectedSum = 36;
-        sumTable.extractWindowFromSummedAreaTable(sImg, 
-            0, 0, 5, output);
-        assertEquals(output[0], expectedSum);
-        assertEquals(output[1], 9);
-        
+        /*
         expectedSum = 11;
         sumTable.extractWindowFromSummedAreaTable(sImg, 
             0, 0, 3, output);
