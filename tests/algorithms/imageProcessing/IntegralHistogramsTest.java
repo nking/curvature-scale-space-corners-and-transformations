@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import java.util.Arrays;
 import junit.framework.TestCase;
 
 /**
@@ -66,7 +67,7 @@ public class IntegralHistogramsTest extends TestCase {
                                 0, 0, 0, 0,
                                 0, 0, 0, 0,
                                 0, 0, 0, 0};
-        expected[5] = new int[]{5, 1, 1, 0,
+        expected[5] = new int[]{4, 1, 1, 0,
                                 0, 0, 0, 0,
                                 0, 0, 0, 0,
                                 0, 0, 0, 0};
@@ -74,20 +75,20 @@ public class IntegralHistogramsTest extends TestCase {
                                 0, 0, 0, 0,
                                 0, 1, 0, 0,
                                 0, 0, 0, 0};
-        expected[7] = new int[]{3, 1, 0, 0,
+        expected[7] = new int[]{4, 1, 0, 0,
                                 0, 0, 0, 0,
                                 0, 1, 0, 0,
                                 0, 0, 0, 0};
-        expected[8] = new int[]{5, 1, 1, 0,
+        expected[8] = new int[]{6, 1, 1, 0,
                                 0, 0, 0, 0,
                                 0, 1, 0, 0,
                                 0, 0, 0, 0};
-        
+       
         for (int i = 0; i < img.getWidth(); ++i) {
             for (int j = 0; j < img.getHeight(); ++j) {
                 int pixIdx = img.getInternalIndex(i, j);
-                int[] e0 = expected[pixIdx];
-                
+                assertTrue(Arrays.equals(expected[pixIdx], 
+                    sHists[pixIdx]));
             }
         }
         

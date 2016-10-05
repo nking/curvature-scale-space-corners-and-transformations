@@ -244,7 +244,7 @@ public class IntegralHistograms {
     
     private void subtract(int[] subtractFrom, int[] subtract) {
         for (int i = 0; i < subtractFrom.length; ++i) {
-            subtractFrom[i] += subtract[i];
+            subtractFrom[i] -= subtract[i];
         }
     }
     
