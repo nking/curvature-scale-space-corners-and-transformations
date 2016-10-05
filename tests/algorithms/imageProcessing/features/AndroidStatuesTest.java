@@ -512,6 +512,8 @@ public class AndroidStatuesTest extends TestCase {
         }
         MiscDebug.writeImage(img11, "_filtered_2_" + fileName1Root);
         
+        //TIntList indexes = imageProcessor.textureEdgesAndCellAreSimilar(img, 
+        //    listOfPointSets2);
         if (true) {
             
             // -- shows that the large descriptors, change in background,

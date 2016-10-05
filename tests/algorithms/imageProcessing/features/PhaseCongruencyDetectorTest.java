@@ -298,14 +298,16 @@ public class PhaseCongruencyDetectorTest extends TestCase {
         
             ImageExt img = ImageIOHelper.readImageExt(filePath);            
             
-            GreyscaleImage combined = imageSegmentation.createColorEdges_2(img);
+            //GreyscaleImage combined = imageSegmentation.createColorEdges_2(img);
             
-            MiscDebug.writeImage(combined, "_MAX_SOBEL_EDGES_");
+            //MiscDebug.writeImage(combined, "_MAX_SOBEL_EDGES_");
             
-            GreyscaleImage combinedCopy = combined.copyImage();
+            //GreyscaleImage combinedCopy = combined.copyImage();
             ImageProcessor imageProcessor = new ImageProcessor();
-            imageProcessor.applyAdaptiveMeanThresholding(combinedCopy);
-            MiscDebug.writeImage(combinedCopy, "_MAX_SOBEL_EDGES__AMT_");
+            //imageProcessor.applyAdaptiveMeanThresholding(combinedCopy);
+            //MiscDebug.writeImage(combinedCopy, "_MAX_SOBEL_EDGES__AMT_");
+            
+            GreyscaleImage img2 = img.copyToGreyscale2();
             
             float cutOff = 0.5f;//0.3f;//0.5f;
             int nScale = 5;
@@ -322,16 +324,16 @@ public class PhaseCongruencyDetectorTest extends TestCase {
             PhaseCongruencyDetector phaseCDetector = new PhaseCongruencyDetector();
             phaseCDetector.setToCreateCorners();                
             PhaseCongruencyDetector.PhaseCongruencyProducts products =
-                phaseCDetector.phaseCongMono(combined, nScale, minWavelength, mult, 
+                phaseCDetector.phaseCongMono(img2, nScale, minWavelength, mult, 
                 sigmaOnf, k, increaseKIfNeeded,
                 cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
 
             assertNotNull(products);
             int[][] thinned = products.getThinned();
                 
-            GreyscaleImage pcImg = combined.createWithDimensions();
-            GreyscaleImage out2 = combined.createWithDimensions();
-            GreyscaleImage out = combined.createWithDimensions();
+            GreyscaleImage pcImg = img2.createWithDimensions();
+            GreyscaleImage out2 = img2.createWithDimensions();
+            GreyscaleImage out = img2.createWithDimensions();
             for (int i = 0; i < out.getWidth(); ++i) {
                 for (int j = 0; j < out.getHeight(); ++j) {
                     int vPC = (int)Math.round(255. * products.getPhaseCongruency()[j][i]);

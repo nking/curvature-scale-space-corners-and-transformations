@@ -2345,7 +2345,7 @@ public class MiscMath {
 
     /**
      * find the median in the double array of values.  
-     * runtime complexity is N*O(lg2(N)).
+     * runtime complexity is O(N*lg2(N)).
      * @param a
      * @return 
      */

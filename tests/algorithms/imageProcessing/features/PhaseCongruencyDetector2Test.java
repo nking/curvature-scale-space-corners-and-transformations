@@ -36,8 +36,8 @@ public class PhaseCongruencyDetector2Test extends TestCase {
         String[] fileNames = new String[]{
            // "blox.gif", "lab.gif", "house.gif", "seattle.jpg", 
            //"merton_college_I_001.jpg",
-            "lena.jpg",
-           // "susan-in_plus.png", "lena.jpg",
+           //"lena.jpg",
+            "susan-in_plus.png", 
            // "campus_010.jpg", 
             //"android_statues_01.jpg", 
             //"android_statues_02.jpg", "android_statues_03.jpg", "android_statues_04.jpg"
@@ -70,9 +70,11 @@ public class PhaseCongruencyDetector2Test extends TestCase {
         
             GreyscaleImage img = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();
         
+            GreyscaleImage img2 = imageProcessor.increaseToPowerOf2(img);
+            
             PhaseCongruencyDetector2 phaseCDetector = new PhaseCongruencyDetector2();
             PhaseCongruencyDetector2.PhaseCongruencyProducts products =
-                phaseCDetector.phaseCong(img, nScale, nOrient, minWavelength, mult, 
+                phaseCDetector.phaseCong(img2, nScale, nOrient, minWavelength, mult, 
                 sigmaOnf, k, increaseKIfNeeded,
                 cutOff, g, noiseMethod, tLow, tHigh, doStoreConvolution);
 

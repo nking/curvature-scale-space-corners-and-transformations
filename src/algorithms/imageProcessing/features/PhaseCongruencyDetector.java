@@ -358,7 +358,7 @@ public class PhaseCongruencyDetector {
         /**
          * TODO: consider refactoring to downsample images for scale changes,
          * then upsampling the results at the stage of adding them into the
-         * two dimensional sum array.
+         * two dimensional sum arrays.
          * Need to keep the same sigma/f_0 for logGabor while doing so.
          * 
          * a recipe for downsampling the logGabor in frequency domain is in Sec 2.6 of
