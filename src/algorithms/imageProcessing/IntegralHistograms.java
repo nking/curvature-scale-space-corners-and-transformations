@@ -109,7 +109,7 @@ public class IntegralHistograms {
      * size extends beyond the borders of the "image", this number will be
      * smaller than d * d.
      */
-    public void extractWindowFromSummedAreaTable(int[][] integralHistograms, 
+    public void extractWindowFromIntegralHistograms(int[][] integralHistograms, 
         int width, int height, int x, int y, int d, int output[], int[] outputN) {
         
         if (outputN == null || outputN.length != 1) {
