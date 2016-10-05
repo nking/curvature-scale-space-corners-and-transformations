@@ -112,26 +112,27 @@ public class IntegralHistogramsTest extends TestCase {
         int[] expectedWindow = new int[16];
         
         // window=5
-        // sum is all of expected
         sumTable.extractWindowFromSummedAreaTable(sHists, 
             w, h, 0, 0, 5, output, outputN);
         sumTable.add(expectedWindow, sHists[8]);
         assertTrue(Arrays.equals(expectedWindow, output));
         assertEquals(9, outputN[0]);
         
-        /*
-        expectedSum = 11;
-        sumTable.extractWindowFromSummedAreaTable(sImg, 
-            0, 0, 3, output);
-        assertEquals(output[0], expectedSum);
-        assertEquals(output[1], 4);
+        // window=3
+        sumTable.extractWindowFromSummedAreaTable(sHists, 
+            w, h, 0, 0, 3, output, outputN);
+        Arrays.fill(expectedWindow, 0);
+        sumTable.add(expectedWindow, sHists[4]);
+        assertTrue(Arrays.equals(expectedWindow, output));
+        assertEquals(4, outputN[0]);
         
-        expectedSum = 2;
-        sumTable.extractWindowFromSummedAreaTable(sImg, 
-            0, 0, 1, output);
-        assertEquals(output[0], expectedSum);
-        assertEquals(output[1], 1);
-        */
+        // window=1
+        sumTable.extractWindowFromSummedAreaTable(sHists, 
+            w, h, 0, 0, 1, output, outputN);
+        Arrays.fill(expectedWindow, 0);
+        sumTable.add(expectedWindow, sHists[0]);
+        assertTrue(Arrays.equals(expectedWindow, output));
+        assertEquals(1, outputN[0]);
         
         /*
         img              sImg
