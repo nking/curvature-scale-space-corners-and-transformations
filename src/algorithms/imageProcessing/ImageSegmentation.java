@@ -10538,6 +10538,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
      * 1=CannyEdgeFilterAdaptive, 
      * 2=CannyEdgeFilterAdaptiveDeltaE2000,
      * 3=PhaseCongruencyDetector
+     * 4= the phase angle image of the phase congruency detector
      * @param ts timestamp used in debugging image name
      * @return 
      */
@@ -10648,24 +10649,59 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 = pcd.phaseCongMono(gsImg, nScale, minWavelength, mult,
                 sigmaOnf, k, increaseKIfNeeded,
                 cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
-            double[][] pc = pr.getPhaseCongruency();
-            GreyscaleImage gsImg2 = gsImg.createWithDimensions();
-            for (int i = 0; i < pr.getThinned().length; ++i) {
-                for (int j = 0; j < pr.getThinned()[i].length; ++j) {
-                    if (pr.getThinned()[i][j] > 0) {
-                        int v = (int)Math.round(pc[i][j]);
-                        gsImg.setValue(j, i, v);
-                        gsImg2.setValue(j, i, 255);
-                    } else {
-                        gsImg.setValue(j, i, 0);
-                        gsImg2.setValue(j, i, 0);
+            if (gradientMethod == 3) {
+                double[][] pc = pr.getPhaseCongruency();
+                GreyscaleImage gsImg2 = gsImg.createWithDimensions();
+                for (int i = 0; i < pr.getThinned().length; ++i) {
+                    for (int j = 0; j < pr.getThinned()[i].length; ++j) {
+                        if (pr.getThinned()[i][j] > 0) {
+                            int v = (int)Math.round(pc[i][j]);
+                            gsImg.setValue(j, i, v);
+                            gsImg2.setValue(j, i, 255);
+                        } else {
+                            gsImg.setValue(j, i, 0);
+                            gsImg2.setValue(j, i, 0);
+                        }
                     }
                 }
+                MiscDebug.writeImage(gsImg2, "_gradient_2_" + ts);
+            } else if (gradientMethod == 4) {
+                int[][] pa = MiscMath.rescale(pr.getPhaseAngle(), 0, 255);
+                for (int i = 0; i < pa.length; ++i) {
+                    for (int j = 0; j < pa[i].length; ++j) {
+                        int v = pa[i][j];
+                        gsImg.setValue(j, i, v);
+                    }
+                }
+                MiscDebug.writeImage(gsImg, "_phase_angle_" + ts);
             }
-            MiscDebug.writeImage(gsImg2, "_gradient_2_" + ts);
         }
 
         return gsImg;
+    }
+    
+    private PhaseCongruencyDetector.PhaseCongruencyProducts
+        createPhaseCongruency(GreyscaleImage img) {
+    
+        float cutOff = 0.5f;//0.3f;//0.5f;
+        int nScale = 5;
+        int minWavelength = 3;//nScale;//3;
+        float mult = 2.1f;
+        float sigmaOnf = 0.55f;
+        int k = 2;
+        float g = 10;
+        float deviationGain = 1.5f;
+        int noiseMethod = -1;
+        double tLow = 0.05;
+        double tHigh = 0.1;
+        boolean increaseKIfNeeded = false;
+        PhaseCongruencyDetector pcd = new PhaseCongruencyDetector();
+        PhaseCongruencyDetector.PhaseCongruencyProducts pr
+            = pcd.phaseCongMono(img, nScale, minWavelength, mult,
+            sigmaOnf, k, increaseKIfNeeded,
+            cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
+        
+        return pr;
     }
 
     private void growAndErode(GreyscaleImage img) {
@@ -13505,6 +13541,99 @@ int z = 1;
         labels = mergeByColor(imgCp, contigSets, ColorSpace.HSV, 0.095f);//0.1f);
         mergeSmallSegments(imgCp, labels, sizeLimit, ColorSpace.HSV);
     
+        return labels;
+    }
+
+    /**
+     * a segmentation method that uses monogenic phase congruency
+     * to create a phase angle image, then uses SLIC super pixels
+     * to make an oversegmented image, then creates a color phase
+     * angle image as input to normalized cuts.
+     * NOTE that this is tailored for images
+     * binned to near size 256 on a side.
+     * NOT READY FR USE.
+     * @param img
+     * @return
+     */
+    public int[] objectSegmentation2(ImageExt img) {
+
+        PhaseCongruencyDetector.PhaseCongruencyProducts pr =
+            createPhaseCongruency(img.copyToGreyscale2());
+        
+        long ts = MiscDebug.getCurrentTimeFormatted();
+        ImageExt imgCp = img.copyToImageExt();
+        ImageExt imgCp2 = img.createWithDimensions();
+
+        int w = img.getWidth();
+        int h = img.getHeight();
+
+        //TODO: in regions with same phase angle,
+        //alter the image by replacing its contiguous pixels
+        //with their average.
+        
+        // substituting phase angle for gradient
+        double[][] phaseAngle = pr.getPhaseAngle();
+        int[][] phaseAngleInt = MiscMath.rescale(phaseAngle, 0, 255);
+        GreyscaleImage gradient = new GreyscaleImage(w, h);
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                int v = phaseAngleInt[j][i];
+                gradient.setValue(i, j, v);
+                float vF = (float)v/255.f;
+                int r = Math.round(img.getR(i, j) * vF);
+                int g = Math.round(img.getG(i, j) * vF);
+                int b = Math.round(img.getB(i, j) * vF);
+                imgCp2.setRGB(i, j, r, g, b);
+            }
+        }
+
+        // extrapolate boundaries at nclusters=x1
+        //   NOTE: this method is tailored for images
+        //   binned to size near 256 on a side, so will
+        //   need to add comments and maybe a wrapper to 
+        //   make sure that is true
+        float nPix = img.getNPixels();
+        int x1 = 15;//17;//11; 17
+        float f10 = (float)w/(float)x1;
+        f10 *= f10;
+        float f11 = (float)h/(float)x1;
+        f11 *= f11;
+        int n10 = Math.round(nPix/f10);
+        int n11 = Math.round(nPix/f11);
+        //==> nClusters = nPix/((w/x0)^2)
+        //==> nClusters = nPix/((h/x0)^2)
+        log.info("  n1=" + n10 + "," + n11);
+        int nc = (n10+n11)/2;
+        SLICSuperPixels slic = new SLICSuperPixels(imgCp2, nc);
+        slic.setGradient(gradient);
+        slic.calculate();
+        int[] labels = slic.getLabels();
+
+        List<Set<PairInt>> contigSets0 = LabelToColorHelper
+            .extractContiguousLabelPoints(img, labels);
+        
+        ImageExt img3 = img.copyToImageExt();
+        ImageIOHelper.addAlternatingColorLabelsToRegion(img3, labels);
+        String str = Integer.toString(nc);
+        str = (str.length() < 3) ? "0" + str : str;
+        MiscDebug.writeImage(img3, "_slic_" + ts + "_" + str);
+
+        MiscDebug.writeImage(imgCp2, "_rgb_pq_" + ts + "_" + str);
+       
+        NormalizedCuts normCuts = new NormalizedCuts();
+        labels = normCuts.normalizedCut(imgCp2, labels);
+        
+        img3 = img.copyToImageExt();
+        ImageIOHelper.addAlternatingColorLabelsToRegion(img3, labels);
+        MiscDebug.writeImage(img3, "_norm_" + ts + "_" + str);
+        
+        List<Set<PairInt>> contigSets = LabelToColorHelper
+            .extractContiguousLabelPoints(img, labels);
+
+        img3 = img.copyToImageExt();
+        ImageIOHelper.addAlternatingColorLabelsToRegion(img3, labels);
+        MiscDebug.writeImage(img3, "_norm_2_" + ts + "_" + str);
+        
         return labels;
     }
 

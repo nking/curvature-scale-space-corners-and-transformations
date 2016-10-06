@@ -95,7 +95,7 @@ public class AndroidStatuesTest extends TestCase {
     public AndroidStatuesTest() {
     }
 
-     public void est0() throws Exception {
+     public void test0() throws Exception {
 
         int maxDimension = 256;//512;
 
@@ -274,7 +274,7 @@ public class AndroidStatuesTest extends TestCase {
             img = imageProcessor.binImage(img, binFactor1);
 
             int[] labels4 = imageSegmentation
-                .objectSegmentation(img);
+                .objectSegmentation2(img);
 
             ImageExt img11 = img.createWithDimensions();
             ImageIOHelper.addAlternatingColorLabelsToRegion(
@@ -286,7 +286,7 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void testShapeMatcher() throws Exception {
+    public void estShapeMatcher() throws Exception {
 
         int maxDimension = 256;//512;
         SIGMA sigma = SIGMA.ZEROPOINTFIVE;//SIGMA.ONE;
@@ -375,6 +375,8 @@ public class AndroidStatuesTest extends TestCase {
 
         img = imageProcessor.binImage(img, binFactor1);
 
+        //imageProcessor.exploreLogGaborTextures(img.copyToGreyscale2());
+        
         ImageExt imgCp = img.copyToImageExt();
        
         {
@@ -391,7 +393,7 @@ public class AndroidStatuesTest extends TestCase {
         Map<String, GreyscaleImage> derivMap = 
             imageProcessor.createTextureTransforms(imgCp.copyToGreyscale(), 2);
         
-        GreyscaleImage gradient = imageSegmentation.createGradient(imgCp, 3, ts);
+        GreyscaleImage gradient = imageSegmentation.createGradient(imgCp, 4, ts);
 
         int[] labels4 = imageSegmentation.objectSegmentation(imgCp, gradient);
 
@@ -514,6 +516,7 @@ public class AndroidStatuesTest extends TestCase {
         
         //TIntList indexes = imageProcessor.textureEdgesAndCellAreSimilar(img, 
         //    listOfPointSets2);
+        
         if (true) {
             
             // -- shows that the large descriptors, change in background,
@@ -679,7 +682,7 @@ public class AndroidStatuesTest extends TestCase {
 
     }
 
-    public void estShapeMatcher() throws Exception {
+    public void estShapeMatcher2() throws Exception {
 
         int maxDimension = 512;
         //int clrNorm = 5;

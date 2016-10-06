@@ -2193,7 +2193,7 @@ public class MiscMath {
     }
 
     /**
-     * rscale a to values between vi and vf, inclusive
+     * rescale a to values between vi and vf, inclusive
      * @param a
      * @param vi
      * @param vf
@@ -2227,6 +2227,46 @@ public class MiscMath {
         }
         
         return scaled;
+    }
+    
+    /**
+     * rescale a to values between vi and vf, inclusive
+     * @param a
+     * @param vi
+     * @param vf
+     * @return 
+     */
+    public static int[][] rescale(double[][] a, int vi, int vf) {
+        
+        double minV = Double.MAX_VALUE;
+        double maxV = Double.MIN_VALUE;
+        
+        int[][] out = new int[a.length][];
+        
+        for (int i = 0; i < a.length; ++i) {
+            out[i] = new int[a[i].length];
+            for (int j = 0; j < a[i].length; ++j) {
+                double v = a[i][j];
+                if (v < minV) {
+                    minV = v;
+                }
+                if (v > maxV) {
+                    maxV = v;
+                }
+            }
+        }
+        double range = maxV - minV;
+        
+        double scale = ((double)(vf - vi))/range;
+         
+        for (int i = 0; i < a.length; ++i) {
+            for (int j = 0; j < a[i].length; ++j) {            
+                double v = (a[i][j] - minV) * scale;
+                out[i][j] = (int)Math.round(v);
+            }
+        }
+        
+        return out;
     }
     
     /**
