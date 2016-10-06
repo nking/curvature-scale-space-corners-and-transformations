@@ -10791,6 +10791,51 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         return new int[]{stdDevR, stdDevG, stdDevB};
     }
 
+    /**
+     * phase angle image normalized to values between 0 and 255 is used to
+     * modify img.
+     * 
+     * @param img
+     * @param phaseAngleInt
+     * @return 
+     */
+    private ImageExt modifyWithPhaseAngle(ImageExt img, int[][] phaseAngleInt) {
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        GreyscaleImage paImg = new GreyscaleImage(w, h);
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                int v = phaseAngleInt[j][i];
+                paImg.setValue(i, j, v);
+            }
+        }
+                        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        List<Set<PairInt>> contigSets = imageProcessor.
+            findConnectedSameValueGroups(paImg);
+        
+        ImageExt img2 = img.copyToImageExt();
+        for (int i = 0; i < contigSets.size(); ++i) {
+            Set<PairInt> set = contigSets.get(i);
+            if (set.size() < 2) {
+                continue;
+            }
+            GroupPixelRGB0 avgClrs = new GroupPixelRGB0();
+            avgClrs.calculateColors(set, img, 0, 0);
+            int r = Math.round(avgClrs.getAvgRed());
+            int g = Math.round(avgClrs.getAvgGreen());
+            int b = Math.round(avgClrs.getAvgBlue());
+            for (PairInt p : set) {
+                img2.setRGB(p.getX(), p.getY(), r, g, b);
+            }
+        }
+        
+        return img2;
+    }
+
     public static class BoundingRegions {
         private final List<PairIntArray> perimeterList;
         private final BlobMedialAxes bma;
@@ -13562,28 +13607,25 @@ int z = 1;
         
         long ts = MiscDebug.getCurrentTimeFormatted();
         ImageExt imgCp = img.copyToImageExt();
-        ImageExt imgCp2 = img.createWithDimensions();
 
         int w = img.getWidth();
         int h = img.getHeight();
 
+        double[][] phaseAngle = pr.getPhaseAngle();
+        int[][] phaseAngleInt = MiscMath.rescale(phaseAngle, 0, 255);
+        
         //TODO: in regions with same phase angle,
         //alter the image by replacing its contiguous pixels
         //with their average.
+        ImageExt imgCp2 = modifyWithPhaseAngle(img, phaseAngleInt);
         
         // substituting phase angle for gradient
-        double[][] phaseAngle = pr.getPhaseAngle();
-        int[][] phaseAngleInt = MiscMath.rescale(phaseAngle, 0, 255);
+        
         GreyscaleImage gradient = new GreyscaleImage(w, h);
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
                 int v = phaseAngleInt[j][i];
                 gradient.setValue(i, j, v);
-                float vF = (float)v/255.f;
-                int r = Math.round(img.getR(i, j) * vF);
-                int g = Math.round(img.getG(i, j) * vF);
-                int b = Math.round(img.getB(i, j) * vF);
-                imgCp2.setRGB(i, j, r, g, b);
             }
         }
 
@@ -13593,7 +13635,7 @@ int z = 1;
         //   need to add comments and maybe a wrapper to 
         //   make sure that is true
         float nPix = img.getNPixels();
-        int x1 = 15;//17;//11; 17
+        int x1 = 10;//17;//11; 17
         float f10 = (float)w/(float)x1;
         f10 *= f10;
         float f11 = (float)h/(float)x1;
@@ -13608,6 +13650,11 @@ int z = 1;
         slic.setGradient(gradient);
         slic.calculate();
         int[] labels = slic.getLabels();
+        
+        // NOTE: at this point, the phase angle as gradient,
+        // and the phase angle modified image produce
+        // better SLIC segmentation than the same step in
+        // objectSegmentation.
 
         List<Set<PairInt>> contigSets0 = LabelToColorHelper
             .extractContiguousLabelPoints(img, labels);
@@ -13619,7 +13666,12 @@ int z = 1;
         MiscDebug.writeImage(img3, "_slic_" + ts + "_" + str);
 
         MiscDebug.writeImage(imgCp2, "_rgb_pq_" + ts + "_" + str);
-       
+
+        //NOTE: imgCp2 needs to include more information to keep
+        //  boundaries more cleanly.
+        //  the phase angle modification was helpful, but
+        //  more is needed
+        
         NormalizedCuts normCuts = new NormalizedCuts();
         labels = normCuts.normalizedCut(imgCp2, labels);
         

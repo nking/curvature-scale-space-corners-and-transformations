@@ -41,7 +41,11 @@ public class DFSConnectedGroupsFinder extends AbstractDFSConnectedGroupsFinder {
     }
     
     public void findConnectedPointGroups(Set<PairInt> points) {
-                
+        
+        //TODO: make an adjacency map at this point and replace
+        // the loop over neighbor offsets with loop over adjacent points
+        // to speed up the algorithm.        
+        
         findClustersIterative(points);
         
         prune();        

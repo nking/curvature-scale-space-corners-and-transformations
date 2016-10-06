@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.compGeometry.PerimeterFinder2;
+import algorithms.imageProcessing.features.PhaseCongruencyDetector;
 import algorithms.imageProcessing.segmentation.ColorSpace;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.MatrixUtil;
@@ -7379,96 +7380,402 @@ if (sum > 511) {
         return transformed;
     }
     
-    public TIntList textureEdgesAndCellAreSimilar(ImageExt img,
-        List<Set<PairInt>> segmentedCells) {
+    public void exploreLogGaborTextures(GreyscaleImage img) {
         
-        ColorSpace clrSpace = ColorSpace.HSV;
+        //following PhaseCongruencyDetector for the largest scale logGabor
+        //transform
         
-        GreyscaleImage gsImg = img.copyToGreyscale2();
+        int nScale = 1;        
+        int minWavelength = 3;        
+        float mult = 2.1f;
+        float sigmaOnf = 0.55f;
+        int k = 5;//2;
+        float cutOff = 0.5f; 
+        float g = 10;
+        float deviationGain = 1.5f;
+        int noiseMethod = -1;
+        double tLow = 0.0001;//0.1;
+        double tHigh = 0.1;//0.3;
+        boolean increaseKIfNeeded = true;
+        double epsilon = 1E-4;
         
-        Set<PairInt> r5r5Points = findHighDensityHighVariabilityPoints(gsImg);
+        int nCols = img.getWidth();
+        int nRows = img.getHeight();
         
-        ImageSegmentation imageSegmentation = new ImageSegmentation();
-        gsImg = imageSegmentation.createGradient(img, 1, System.currentTimeMillis());
+        PeriodicFFT perfft2 = new PeriodicFFT();
+        //IM = perfft2(im);                   % 
+        //S, P, s, p where S = FFT of smooth, P = FFT of periodic, s=spatial smooth, p = spatial p
+        Complex[][][] perfResults = perfft2.perfft2(img, false);
+        Complex[][] capIm = perfResults[1];
+          
+        /*
+        sumAn  = zeros(rows,cols);          % Matrix for accumulating filter response
+                                            % amplitude values.
+        sumf   = zeros(rows,cols);          % ft is phase angle                   
+        sumh1  = zeros(rows,cols);                                      
+        sumh2  = zeros(rows,cols);
+        */
+        double[][] sumAn = new double[nRows][];
+        double[][] sumF = new double[sumAn.length][];
+        double[][] sumH1 = new double[sumAn.length][];
+        double[][] sumH2 = new double[sumAn.length][];
+        for (int row = 0; row < nRows; ++row) {
+            sumAn[row] = new double[nCols];
+            sumF[row] = new double[nCols];
+            sumH1[row] = new double[nCols];
+            sumH2[row] = new double[nCols];
+        }
         
-        TIntList output = new TIntArrayList();
+        /*
+        Generate grid data for constructing filters in the frequency domain    
+        [radius, u1, u2] = filtergrid(rows, cols);
+        */
+        // results use notation a[row][col]
+        FilterGrid fg = new FilterGrid();
+        FilterGrid.FilterGridProducts fgProducts = fg.filtergrid(nRows, nCols);     
+        fgProducts.getRadius()[0][0] = 1;
         
-        float limit = 0.15f;
+        /*
+        % Construct the monogenic filters in the frequency domain.  The two
+         % filters would normally be constructed as follows
+         %    H1 = i*u1./radius; 
+         %    H2 = i*u2./radius;
+         H = (1i*u1 - u2)./radius;
+        */
+        // results use notation a[row][col]
+        double[][] u1 = fgProducts.getU1();
+        double[][] u2 = fgProducts.getU2();
+        double[][] radius = fgProducts.getRadius();
+        Complex[][] capH = new Complex[nRows][];
+        for (int row = 0; row < nRows; ++row) {
+            capH[row] = new Complex[nCols];
+            for (int col = 0; col < nCols; ++col) {
+                double re = -u2[row][col]/radius[row][col];
+                double im = u1[row][col]/radius[row][col];
+                capH[row][col] = new Complex(re, im);
+            }
+        }
+             
+        LowPassFilter lpFilter = new LowPassFilter();
+        double[][] lp = lpFilter.lowpassfilter(nRows, nCols, 0.45f, 15);
+             
+        ImageProcessor imageProcessor = new ImageProcessor();
         
-        float[] hsv = new float[3];
+        double[][] maxAN = null;
         
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        double tau = noiseMethod;
+        // keeping taus in case need to increase noise estimate
+        double sqml4 = Math.sqrt(Math.log(4));
+        double logGaborDenom = 2. * Math.pow(Math.log(sigmaOnf), 2);
         
-        for (int i = 0; i < segmentedCells.size(); ++i) {
-            Set<PairInt> eSet = new HashSet<PairInt>();
-            Set<PairInt> rSet = new HashSet<PairInt>();
-            for (PairInt p : segmentedCells.get(i)) {
-                if (gsImg.getValue(p) > 0) {
-                    eSet.add(p);
-                }
-                if (r5r5Points.contains(p)) {
-                    rSet.add(p);
+        double[][] width = new double[nRows][];
+        double[][] weight = new double[nRows][];
+        for (int row = 0; row < nRows; ++row) {
+            width[row] = new double[nCols];
+            weight[row] = new double[nCols];
+        }
+        
+        for (int s = 0; s < nScale; ++s) {
+                        
+            // Centre frequency of filter.
+            double wavelength = minWavelength * Math.pow(mult, s);
+            
+            double fo = 1.0/wavelength;
+                        
+            // use notation a[row][col]
+            double[][] logGabor = new double[nRows][];
+            for (int row = 0; row < nRows; ++row) {
+                logGabor[row] = new double[nCols];
+                for (int col = 0; col < nCols; ++col) {
+                    double v = Math.log(radius[row][col]/fo);
+                    v *= v;
+                    v = Math.exp(-v/logGaborDenom);
+                    //logGabor = logGabor.*lp;
+                    logGabor[row][col] = lp[row][col] * v;
                 }
             }
-            GroupPixelRGB0 edgeClr = new GroupPixelRGB0();
-            edgeClr.calculateColors(eSet, img, 0, 0);
-            GroupPixelRGB0 rClr = new GroupPixelRGB0();
-            rClr.calculateColors(rSet, img, 0, 0);
-            GroupPixelRGB0 cellClr = new GroupPixelRGB0();
-            cellClr.calculateColors(segmentedCells.get(i), img, 0, 0);
+            logGabor[0][0] = 0;
             
-            Color.RGBtoHSB(Math.round(edgeClr.getAvgRed()), 
-                Math.round(edgeClr.getAvgGreen()), 
-                Math.round(edgeClr.getAvgBlue()), hsv);
-            float[] edgeHSV = Arrays.copyOf(hsv, 3);
-            
-            Color.RGBtoHSB(Math.round(rClr.getAvgRed()), 
-                Math.round(rClr.getAvgGreen()), 
-                Math.round(rClr.getAvgBlue()), hsv);
-            float[] r5r5HSV = Arrays.copyOf(hsv, 3);
-            
-            Color.RGBtoHSB(Math.round(cellClr.getAvgRed()), 
-                Math.round(cellClr.getAvgGreen()), 
-                Math.round(cellClr.getAvgBlue()), hsv);
-            float[] cellHSV = Arrays.copyOf(hsv, 3);
-            
-            float sumer = 0;
-            float sumcr = 0;
-            float sumec = 0;
-            boolean allUnderLimit = true;
-            for (int j = 0; j < 3; ++j) {
-                float der = Math.abs(edgeHSV[j] - r5r5HSV[j]);
-                float dcr = Math.abs(cellHSV[j] - r5r5HSV[j]);
-                float dec = Math.abs(edgeHSV[j] - cellHSV[j]);
-                if (der > limit || dcr > limit || dec > limit) {
-                    allUnderLimit = false;
-                    break;
+            // uses notation a[row][col]
+            //Bandpassed image in the frequency domain
+            Complex[][] capIMF = new Complex[nRows][];
+            for (int row = 0; row < nRows; ++row) {
+                capIMF[row] = new Complex[nCols];
+                for (int col = 0; col < nCols; ++col) {
+                   capIMF[row][col] = capIm[row][col].times(logGabor[row][col]);
                 }
-                sumer += (der * der);
-                sumcr += (dcr * dcr);
-                sumec += (dec * dec);
             }
-            if (allUnderLimit) {                
-                sumer = (float)Math.sqrt(sumer);
-                sumcr = (float)Math.sqrt(sumcr);
-                sumec = (float)Math.sqrt(sumec);
-                
-                if (sumer > 0.1 || sumcr > 0.1 || sumec > 0.1) {
-                    continue;
+           
+            // uses notation a[row][col]
+            //  Bandpassed image in spatial domain.
+            //  f = real(ifft2(IMF));
+            // the functions used in other code are not normalized on fft, 
+            // but are by inverse fft so need a combined division here by nomr=nRows*nCols
+            Complex[][] fComplex = imageProcessor.create2DFFT(capIMF, false, false);    
+
+            double norm = nRows * nCols;
+        
+            //h = ifft2(IMF.*H);
+            Complex[][] capIMFH = new Complex[nRows][];
+            for (int row = 0; row < nRows; ++row) {
+                capIMFH[row] = new Complex[nCols];
+                for (int col = 0; col < nCols; ++col) {
+                    capIMFH[row][col] = capIMF[row][col].times(capH[row][col]);
+                }
+            }
+            // result needs to be divided by norm=nRows*nCols
+            Complex[][] h = imageProcessor.create2DFFT(capIMFH, false, false);
+ 
+            /*
+            h1 = real(h); 
+            h2 = imag(h);                                  
+            An = sqrt(f.^2 + h1.^2 + h2.^2); % Amplitude of this scale component.
+            sumAn = sumAn + An;              % Sum of component amplitudes over scale.
+            sumf  = sumf  + f;
+            sumh1 = sumh1 + h1;
+            sumh2 = sumh2 + h2;
+            */
+            // uses notation a[row][col]
+            double[][] aN = new double[nRows][];
+            for (int row = 0; row < nRows; ++row) {
+                aN[row] = new double[nCols];
+                for (int col = 0; col < nCols; ++col) {
+                    // results of inverse transforms need normalization
+                    double f0 = fComplex[row][col].re()/norm;
+                    double h1 = h[row][col].re()/norm;
+                    double h2 = h[row][col].im()/norm;
+                    aN[row][col] = Math.sqrt(f0*f0 + h1*h1 + h2*h2);
+                    sumAn[row][col] += aN[row][col];
+                    sumF[row][col] += f0;
+                    sumH1[row][col] += h1;
+                    sumH2[row][col] += h2;
+                }
+            }
+         
+            /*
+            At the smallest scale estimate noise characteristics from the
+            distribution of the filter amplitude responses stored in sumAn. 
+            tau is the Rayleigh parameter that is used to describe the
+            distribution.
+            */
+            if (s == 0) {
+                if (noiseMethod == -1) {
+                    //Use median to estimate noise statistics
+                    //tau = median(sumAn(:))/sqrt(log(4));
+                    //TODO: could improve this below O(N*lg2(N)) with histograms
+                    //      and assumptions of bin sizes...when have an
+                    //      implementation of Multi-Level-Buckets, revisit this
+                    double median = MiscMath.findMedian(sumAn);
+                    tau = median/sqml4;
+                }
+                maxAN = aN;
+            } else {
+                // Record maximum amplitude of components across scales.  This is needed
+                // to determine the frequency spread weighting.
+                //maxAN = max(maxAN, An); 
+                // uses notation a[row][col]
+                for (int row = 0; row < nRows; ++row) {
+                    for (int col = 0; col < nCols; ++col) {
+                        maxAN[row][col] = Math.max(maxAN[row][col], aN[row][col]);
+                    }
+                }
+            }
+            
+            /*
+            Form weighting that penalizes frequency distributions that are
+            particularly narrow.  Calculate fractional 'width' of the frequencies
+            present by taking the sum of the filter response amplitudes and dividing
+            by the maximum component amplitude at each point on the image.  If
+            there is only one non-zero component width takes on a value of 0, if
+            all components are equal width is 1.
+            width = (sumAn./(maxAn + epsilon) - 1) / (nscale-1);    
+
+            Now calculate the sigmoidal weighting function.
+            weight = 1.0 ./ (1 + exp( (cutOff - width)*g)); 
+            */
+            // uses notation a[row][col]
+
+            double dn = (double)nScale - 1.;
+
+            if (dn > 0)
+            for (int row = 0; row < nRows; ++row) {
+                for (int col = 0; col < nCols; ++col) {
+                    double a = sumAn[row][col]/(maxAN[row][col] + epsilon);
+                    width[row][col] = (a - 1.)/dn;
+                    double v = Math.exp(g*(cutOff - width[row][col]));
+                    weight[row][col] = 1./(1. + v);
+                }
+            }
+        } // end for each scale
+       
+        // uses notation a[row][col]
+        // ft is phase angle
+        double[][] orientation = new double[nRows][];
+        double[][] ft = new double[nRows][];
+        double[][] energy = new double[nRows][];
+        double[][] pc = new double[nRows][];
+        for (int row = 0; row < nRows; ++row) {
+            orientation[row] = new double[nCols];
+            ft[row] = new double[nCols];
+            energy[row] = new double[nCols];
+            pc[row] = new double[nCols];
+        }
+        
+        for (int row = 0; row < nRows; ++row) {
+            for (int col = 0; col < nCols; ++col) {
+                double gY = -sumH2[row][col];
+                double gX = sumH1[row][col];
+                if (gY < 0) {
+                    gX *= -1;
+                    gY *= -1;
+                }
+                orientation[row][col] = Math.atan2(gY, gX);
+                if (orientation[row][col] == Math.PI) {
+                    orientation[row][col] = 0;
                 }
                 
-                output.add(i);
+                // orientation values now range 0 to pi
+                // Quantize to 0 - 180 degrees (for NONMAXSUP)
+                orientation[row][col] = (int)(orientation[row][col]*180./Math.PI);
                 
-                //double[] xyCen = curveHelper.calculateXYCentroids(
-                //    segmentedCells.get(i));
-                //System.out.println(String.format(
-                //    " xy=(%d, %d)   edges:r5r5=%.3f cells:r5r5=%.3f edges:cells=%.3f", 
-                //    (int)Math.round(xyCen[0]),(int)Math.round(xyCen[1]),
-                //    sumer, sumcr, sumec));
+                double h1Sq = sumH1[row][col];
+                h1Sq *= h1Sq;
+                double h2Sq = sumH2[row][col];
+                h2Sq *= h2Sq;
+                
+                //Feature type - a phase angle -pi/2 to pi/2.
+                //TODO: does this not need to be corrected to
+                // if (<0) += 2.*PI ?
+                ft[row][col] = Math.atan2(sumF[row][col], Math.sqrt(h1Sq + h2Sq));
+                
+                //overall energy
+                double v0 = sumF[row][col];
+                v0 *= v0;
+                energy[row][col] = Math.sqrt(v0 + h1Sq + h2Sq);
             }
         }
         
-        return output;
+        /*
+        % Compute phase congruency.  The original measure, 
+        % PC = energy/sumAn 
+        % is proportional to the weighted cos(phasedeviation).  This is not very
+        % localised so this was modified to
+        % PC = cos(phasedeviation) - |sin(phasedeviation)| 
+        % (Note this was actually calculated via dot and cross products.)  This measure
+        % approximates 
+        % PC = 1 - phasedeviation.
+        
+        % However, rather than use dot and cross products it is simpler and more
+        % efficient to simply use acos(energy/sumAn) to obtain the weighted phase
+        % deviation directly.  Note, in the expression below the noise threshold is
+        % not subtracted from energy immediately as this would interfere with the
+        % phase deviation computation.  Instead it is applied as a weighting as a
+        % fraction by which energy exceeds the noise threshold.  This weighting is
+        % applied in addition to the weighting for frequency spread.  Note also the
+        % phase deviation gain factor which acts to sharpen up the edge response. A
+        % value of 1.5 seems to work well.  Sensible values are from 1 to about 2.
+
+        PC = weight.*max(1 - deviationGain*acos(energy./(sumAn + epsilon)),0) ...
+              .* max(energy-T,0)./(energy+epsilon);
+        */
+        
+        double threshold;
+        if (noiseMethod >= 0) { 
+            //fixed noise threshold
+            threshold = noiseMethod;
+        } else {
+            //Estimate the effect of noise on the sum of the filter responses as
+            //the sum of estimated individual responses (this is a simplistic
+            //overestimate). As the estimated noise response at succesive scales
+            //is scaled inversely proportional to bandwidth we have a simple
+            //geometric sum.
+            //totalTau = tau * (1 - (1/mult)^nscale)/(1-(1/mult));
+            double totalTau = tau * (1. - Math.pow((1./mult), nScale))/(1. - (1./mult));
+
+            // Calculate mean and std dev from tau using fixed relationship
+            // between these parameters and tau. See
+            // http://mathworld.wolfram.com/RayleighDistribution.html
+            double EstNoiseEnergyMean = totalTau * Math.sqrt(Math.PI/2.);
+            double EstNoiseEnergySigma = totalTau * Math.sqrt((4. - Math.PI)/2.);
+
+            threshold = Math.max(EstNoiseEnergyMean 
+                + ((float)k) * EstNoiseEnergySigma, epsilon);
+        } 
+        double[][] energyTimesOrientation = new double[nRows][];
+        for (int row = 0; row < nRows; ++row) {
+            energyTimesOrientation[row] = new double[nCols];
+            for (int col = 0; col < nCols; ++col) {
+                
+                double eDiv = Math.acos(energy[row][col]/(sumAn[row][col] + epsilon));
+                
+                pc[row][col] = weight[row][col] 
+                    * Math.max(1. - deviationGain * eDiv, 0)
+                    * Math.max(energy[row][col] - threshold, 0)
+                    / (energy[row][col] + epsilon);
+                
+                energyTimesOrientation[row][col] = 
+                    //energy[row][col] * 
+                    (orientation[row][col] + 1);
+            }
+        }
+        
+        // plot ft which is phase angle
+        //                  energy
+        //                  weight or width
+        //   and the phase encoded PC?
+        
+        int[][] ftInt = MiscMath.rescale(ft, 0, 255);
+        int[][] eInt = MiscMath.rescale(energy, 0, 255);
+        int[][] w0Int = MiscMath.rescale(weight, 0, 255);
+        int[][] w1Int = MiscMath.rescale(width, 0, 255);
+        int[][] eoInt = MiscMath.rescale(energyTimesOrientation, 0, 255);
+        for (int i = 0; i < ftInt.length; ++i) {
+            for (int j = 0; j < ftInt[0].length; ++j) {
+                eoInt[i][j] *= eInt[i][j];
+                eoInt[i][j] /= 255;
+            }
+        }
+        GreyscaleImage ftImg = new GreyscaleImage(ftInt[0].length, ft.length);
+        GreyscaleImage eImg = new GreyscaleImage(ftInt[0].length, ft.length);
+        GreyscaleImage w0Img = new GreyscaleImage(ftInt[0].length, ft.length);
+        GreyscaleImage w1Img = new GreyscaleImage(ftInt[0].length, ft.length);
+        GreyscaleImage orImg = new GreyscaleImage(ftInt[0].length, ft.length);
+        for (int i = 0; i < ftInt.length; ++i) {
+            for (int j = 0; j < ftInt[0].length; ++j) {
+                ftImg.setValue(j, i, ftInt[i][j]);
+                eImg.setValue(j, i, eInt[i][j]);
+                w0Img.setValue(j, i, w0Int[i][j]);
+                w1Img.setValue(j, i, w1Int[i][j]);
+                orImg.setValue(j, i, eoInt[i][j]);
+            }
+        }
+        try {
+        MiscDebug.writeImage(ftImg, "phase angle");
+        
+        ImageDisplayer.displayImage("energy", eImg);
+        
+        ImageDisplayer.displayImage("weight", w0Img);
+        
+        ImageDisplayer.displayImage("width", w1Img);
+        
+        ImageDisplayer.displayImage("orientation times energy", orImg);
+        
+        GreyscaleImage imgME2 = eImg.copyToFullRangeIntImage();
+        applyCenteredMean2(imgME2, 2);
+        eImg = subtractImages(eImg, imgME2);
+        // make unit standard deviation image, but mult by 255
+        // for storage in integer.
+        // NOTE: considering change of output to float array for
+        // comparison to databases
+        for (int ii = 0; ii < eImg.getNPixels(); ++ii) {
+            double m = imgME2.getValue(ii);
+            double v = 255.*eImg.getValue(ii)/(Math.sqrt(2)/m);
+            eImg.setValue(ii, (int)Math.round(v));
+        }
+        ImageDisplayer.displayImage("energy deviation", w0Img);
+             
+        int z = 1;
+        } catch(Exception e) {}
     }
     
     /**
@@ -7643,4 +7950,65 @@ if (sum > 511) {
         
         return img2;
     }
+    
+    public List<Set<PairInt>> findConnectedSameValueGroups(GreyscaleImage 
+        img) {
+        
+        TIntObjectMap<Set<PairInt>> valuePointMap 
+            = new TIntObjectHashMap<Set<PairInt>>();
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        // O(N)
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                int v = img.getValue(i, j);
+                PairInt p = new PairInt(i, j);
+                Set<PairInt> set = valuePointMap.get(v);
+                if (set == null) {
+                    set = new HashSet<PairInt>();
+                    valuePointMap.put(v, set);
+                }
+                set.add(p);
+            }
+        }
+        
+        // TODO: consider replacing with a small tolerance around 
+        //    index values, that is a clustering step by small amount in
+        //    intensity along with search for contiguous
+        
+        List<Set<PairInt>> contigSets = new ArrayList<Set<PairInt>>();
+
+        // DFS search is O(N*lg2(N)).  these are partitioned into 
+        // indiv sets of DFS but unique sets so the overall runtime should
+        // be similar, espec if improve the finder to create adjacency
+        // maps instead of loop over all possible neighbor offsets.        
+        TIntObjectIterator<Set<PairInt>> iter = valuePointMap.iterator();
+        for (int i = 0; i < valuePointMap.size(); ++i) {
+            
+            iter.advance();
+            
+            // find the contiguous among set.
+            Set<PairInt> set = iter.value();
+            
+            DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
+            finder.setToUse8Neighbors();
+            finder.setMinimumNumberInCluster(1);
+            finder.findConnectedPointGroups(set);
+            int ns = finder.getNumberOfGroups();
+            for (int j = 0; j < ns; ++j) {
+                contigSets.add(finder.getXY(j));
+            }
+        }
+        
+        return contigSets;
+    }
+    
+    // TODO: implement the methods in 
+    // http://www.merl.com/publications/docs/TR2008-030.pdf
+    // for an O(n) filter.
+    // "Constant Time O(1) Bilateral Filtering" by Porikli
+    //public void applyBiLateralFilter(Image img) {
+    //}
+    
 }
