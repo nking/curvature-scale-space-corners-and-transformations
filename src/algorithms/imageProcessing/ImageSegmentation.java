@@ -13590,13 +13590,14 @@ int z = 1;
     }
 
     /**
+     * NOT READY FOR USE.
      * a segmentation method that uses monogenic phase congruency
      * to create a phase angle image, then uses SLIC super pixels
      * to make an oversegmented image, then creates a color phase
      * angle image as input to normalized cuts.
      * NOTE that this is tailored for images
      * binned to near size 256 on a side.
-     * NOT READY FR USE.
+     * 
      * @param img
      * @return
      */
@@ -13614,9 +13615,6 @@ int z = 1;
         double[][] phaseAngle = pr.getPhaseAngle();
         int[][] phaseAngleInt = MiscMath.rescale(phaseAngle, 0, 255);
         
-        //TODO: in regions with same phase angle,
-        //alter the image by replacing its contiguous pixels
-        //with their average.
         ImageExt imgCp2 = modifyWithPhaseAngle(img, phaseAngleInt);
         
         // substituting phase angle for gradient
@@ -13673,6 +13671,10 @@ int z = 1;
         //  more is needed
         
         NormalizedCuts normCuts = new NormalizedCuts();
+        normCuts.setColorSpaceToHSV();
+        //thresh = 0.05;
+        //sigma = 0.1;
+        normCuts.setThreshold(0.065);
         labels = normCuts.normalizedCut(imgCp2, labels);
         
         img3 = img.copyToImageExt();
@@ -13687,6 +13689,28 @@ int z = 1;
         MiscDebug.writeImage(img3, "_norm_2_" + ts + "_" + str);
         
         return labels;
+        
+        /*
+        ImageExt img3 = img.copyToImageExt();
+        ImageIOHelper.addAlternatingColorLabelsToRegion(img3, labels);
+        String str = Integer.toString(nc);
+        str = (str.length() < 3) ? "0" + str : str;
+        MiscDebug.writeImage(img3, "_slic_" + ts + "_" + str);
+
+        List<Set<PairInt>> contigSets = LabelToColorHelper
+            .extractContiguousLabelPoints(img, labels);
+
+        int sizeLimit = 31;
+        if (img.getNPixels() < 100) {
+            sizeLimit = 5;
+        }
+        imgCp = img.copyToImageExt();
+        // a safe limit for HSV is 0.025 to not overrun object bounds
+        labels = mergeByColor(imgCp, contigSets, ColorSpace.HSV, 0.095f);//0.1f);
+        mergeSmallSegments(imgCp, labels, sizeLimit, ColorSpace.HSV);
+    
+        return labels;
+        */
     }
 
     private TIntSet findIntersection(GreyscaleImage gradient,
