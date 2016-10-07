@@ -22,6 +22,7 @@ import algorithms.util.PointPairInt;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
 import algorithms.util.ScatterPointPlotterPNG;
+import gnu.trove.list.TIntList;
 import java.awt.Color;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -1662,6 +1663,70 @@ System.out.println("value 0 is rescaled to value=" + ((int)(-minV*scale))
         }
         
         return output;
+    }
+
+    /**
+     * 
+     * @param a
+     * @param plot0 indexes from dimension 0
+     * in array a[dimension0][dimension1]
+     * @param plot1 indexes from dimension 1
+     * in array a[dimension0][dimension1]
+     * @param lbl
+     * @return
+     * @throws IOException
+     */
+    public static String plot(double[][] a, TIntList plot0, 
+        TIntList plot1, String lbl) throws IOException {
+        
+        double min = MiscMath.findMin(a);
+        double max = MiscMath.findMax(a);
+        
+        int n1 = a[0].length;
+        int n0 = a.length;
+        
+        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+        //    0, n0, 0, n1);
+        
+        float[] x = new float[n1];
+        for (int ii = 0; ii < n1; ++ii) {
+            x[ii] = ii;
+        }
+        float[] y = new float[n1];
+        float[] xPolygon = null;
+        float[] yPolygon = null;
+
+        for (int i = 0; i < plot0.size(); ++i) {
+            int index = plot0.get(i);
+            for (int ii = 0; ii < n1; ++ii) {
+                y[ii] = (float) a[index][ii];
+            }
+            float minY = MiscMath.findMin(y);
+            float maxY = MiscMath.findMax(y);
+            plotter.addPlot(-1, n1 + 1, minY, maxY, x, y, xPolygon,
+                yPolygon, lbl + " index0=" + index);
+        }
+        
+        x = new float[n0];
+        for (int ii = 0; ii < n0; ++ii) {
+            x[ii] = ii;
+        }
+        y = new float[n0];
+        xPolygon = null;
+        yPolygon = null;
+
+        for (int i = 0; i < plot1.size(); ++i) {
+            int index = plot1.get(i);
+            for (int ii = 0; ii < n0; ++ii) {
+                y[ii] = (float) a[ii][index];
+            }
+            float minY = MiscMath.findMin(y);
+            float maxY = MiscMath.findMax(y);
+            plotter.addPlot(-1, n0 + 1, minY, maxY, x, y, xPolygon,
+                yPolygon, lbl + " index1=" + index);
+        }
+        
+        return plotter.writeFile(lbl);
     }
     
 }

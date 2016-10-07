@@ -42,7 +42,7 @@ import javax.imageio.ImageIO;
  */
 public class ImageIOHelper {
     
-    public static Image readImage(String filePath) throws Exception {
+    public static Image readImage(String filePath) throws IOException {
      
         if (filePath == null) {
             throw new IllegalStateException("filePath cannot be null");
@@ -73,7 +73,8 @@ public class ImageIOHelper {
         return null;
     }
     
-    public static GreyscaleImage readImageAsGreyscaleFullRange(String filePath) throws Exception {
+    public static GreyscaleImage readImageAsGreyscaleFullRange(String filePath) 
+        throws IOException {
      
         if (filePath == null) {
             throw new IllegalStateException("filePath cannot be null");
@@ -123,7 +124,7 @@ public class ImageIOHelper {
         return null;
     }
     
-    public static ImageExt readImageExt(String filePath) throws Exception {
+    public static ImageExt readImageExt(String filePath) throws IOException {
      
         if (filePath == null) {
             throw new IllegalStateException("filePath cannot be null");
@@ -155,7 +156,7 @@ public class ImageIOHelper {
     }
     
     private static void convertImage(BufferedImage fromImage, Image toImage) 
-        throws Exception {
+        throws IOException {
      
         if (fromImage == null) {
             return;
@@ -209,7 +210,7 @@ public class ImageIOHelper {
      * @throws Exception 
      */
     public static GreyscaleImage readImageAsGrayScaleG(String filePath) 
-        throws Exception {
+        throws IOException {
      
         if (filePath == null) {
             throw new IllegalStateException("filePath cannot be null");
@@ -263,7 +264,7 @@ public class ImageIOHelper {
      * @throws Exception 
      */
     public static GreyscaleImage readImageAsGrayScaleR(String filePath) 
-        throws Exception {
+        throws IOException {
      
         if (filePath == null) {
             throw new IllegalStateException("filePath cannot be null");
@@ -317,7 +318,7 @@ public class ImageIOHelper {
      * @throws Exception 
      */
     public static GreyscaleImage readImageAsGrayScaleB(String filePath) 
-        throws Exception {
+        throws IOException {
      
         if (filePath == null) {
             throw new IllegalStateException("filePath cannot be null");
@@ -371,7 +372,7 @@ public class ImageIOHelper {
      * @throws Exception 
      */
     public static Image readImageAsGrayScale(String filePath) 
-        throws Exception {
+        throws IOException {
      
         if (filePath == null) {
             throw new IllegalStateException("filePath cannot be null");
@@ -437,7 +438,7 @@ public class ImageIOHelper {
      * @throws Exception 
      */
     public static GreyscaleImage readImageAsBinary(String filePath) 
-        throws Exception {
+        throws IOException {
      
         if (filePath == null) {
             throw new IllegalStateException("filePath cannot be null");
@@ -481,7 +482,8 @@ public class ImageIOHelper {
      * @return
      * @throws Exception 
      */
-    public static GreyscaleImage readImageAsGrayScaleAvgRGB(String filePath) throws Exception {
+    public static GreyscaleImage readImageAsGrayScaleAvgRGB(String filePath)
+        throws IOException {
      
         if (filePath == null) {
             throw new IllegalStateException("filePath cannot be null");

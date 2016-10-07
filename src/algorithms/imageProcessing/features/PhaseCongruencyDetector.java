@@ -154,8 +154,15 @@ public class PhaseCongruencyDetector {
     
     private boolean doPlot = true;
     
+    private int kLargeNoise = 2;
+    private boolean extractNoise = false;
+    
     public void setToCreateCorners() {
         this.determineCorners = true;
+    }
+    
+    public void setToExtractNoise() {
+        this.extractNoise = true;
     }
     
     //TODO: consider adding a method to make a temporary image, increased to dimensions
@@ -171,7 +178,7 @@ public class PhaseCongruencyDetector {
      * edge maps, orientation, phase angle and a suggested threshold.
      * The default values are:
         int nScale = 5;        
-        int minWavelength = 3;        
+        int minWavelength = 3;     
         float mult = 2.1f;
         float sigmaOnf = 0.55f;
         int k = 5;
@@ -349,7 +356,12 @@ public class PhaseCongruencyDetector {
               
         if (increaseKIfNeeded && (noiseMethod >= 0)) {
             throw new IllegalArgumentException(
-                "if noiseMethod > -1, there is no dependency on k");
+                "if noiseMethod >= 0, there is no dependency on k");
+        }
+        if (extractNoise && (noiseMethod >= 0)) {
+            throw new IllegalArgumentException(
+                "if noiseMethod >= 0, there is no dependency on k "
+                    + "so cannot extract noise");
         }
         
         int nCols = img.getWidth();
@@ -409,7 +421,7 @@ public class PhaseCongruencyDetector {
         fgProducts.getRadius()[0][0] = 1;
         
         /*
-        % Construct the monogenic filters in the frequency domain.  The two
+         % Construct the monogenic filters in the frequency domain.  The two
          % filters would normally be constructed as follows
          %    H1 = i*u1./radius; 
          %    H2 = i*u2./radius;
@@ -494,7 +506,7 @@ public class PhaseCongruencyDetector {
                    capIMF[row][col] = capIm[row][col].times(logGabor[row][col]);
                 }
             }
-           
+            
             // uses notation a[row][col]
             //  Bandpassed image in spatial domain.
             //  f = real(ifft2(IMF));
@@ -590,12 +602,14 @@ public class PhaseCongruencyDetector {
 
             double dn = (double)nScale - 1.;
 
-            for (int row = 0; row < nRows; ++row) {
-                for (int col = 0; col < nCols; ++col) {
-                    double a = sumAn[row][col]/(maxAN[row][col] + epsilon);
-                    width[row][col] = (a - 1.)/dn;
-                    double v = Math.exp(g*(cutOff - width[row][col]));
-                    weight[row][col] = 1./(1. + v);
+            if (dn > 0) {
+                for (int row = 0; row < nRows; ++row) {
+                    for (int col = 0; col < nCols; ++col) {
+                        double a = sumAn[row][col]/(maxAN[row][col] + epsilon);
+                        width[row][col] = (a - 1.)/dn;
+                        double v = Math.exp(g*(cutOff - width[row][col]));
+                        weight[row][col] = 1./(1. + v);
+                    }
                 }
             }
         } // end for each scale
@@ -629,11 +643,15 @@ public class PhaseCongruencyDetector {
         double[][] ft = new double[nRows][];
         double[][] energy = new double[nRows][];
         double[][] pc = new double[nRows][];
+        double[][] pcLgNz = extractNoise ? new double[nRows][] : null;
         for (int row = 0; row < nRows; ++row) {
             orientation[row] = new double[nCols];
             ft[row] = new double[nCols];
             energy[row] = new double[nCols];
             pc[row] = new double[nCols];
+            if (extractNoise) {
+                pcLgNz[row] = new double[nCols];
+            }
         }
         
         for (int row = 0; row < nRows; ++row) {
@@ -692,6 +710,7 @@ public class PhaseCongruencyDetector {
         */
         
         double threshold;
+        double thresholdLargeNoise = 0;
         if (noiseMethod >= 0) { 
             //fixed noise threshold
             threshold = noiseMethod;
@@ -712,19 +731,38 @@ public class PhaseCongruencyDetector {
 
             threshold = Math.max(EstNoiseEnergyMean 
                 + ((float)k) * EstNoiseEnergySigma, epsilon);
-        } 
+            
+            if (extractNoise) {
+                thresholdLargeNoise = Math.max(EstNoiseEnergyMean 
+                    + ((float)kLargeNoise) * EstNoiseEnergySigma, epsilon);
+            }
+        }
+        
         for (int row = 0; row < nRows; ++row) {
             for (int col = 0; col < nCols; ++col) {
                 
                 double eDiv = Math.acos(energy[row][col]/(sumAn[row][col] + epsilon));
                 
-                pc[row][col] = weight[row][col] 
-                    * Math.max(1. - deviationGain * eDiv, 0)
-                    * Math.max(energy[row][col] - threshold, 0)
+                double a = weight[row][col] 
+                    * Math.max(1. - deviationGain * eDiv, 0) 
                     / (energy[row][col] + epsilon);
+                
+                double eMax = Math.max(energy[row][col] - threshold, 0);
+                
+                pc[row][col] = a * eMax;
+                
+                if (extractNoise) {
+                    double eMaxL = Math.max(energy[row][col] - thresholdLargeNoise, 0);
+                    pcLgNz[row][col] = a * eMaxL;
+                }
             }
         }
-                
+        
+        if (extractNoise) {
+            System.out.println("thresh=" + threshold + 
+                " threshLgNz=" + thresholdLargeNoise);
+        }
+        
         PhaseCongruencyProducts products = new PhaseCongruencyProducts(pc, 
             orientation, ft, threshold);      
         
@@ -766,15 +804,28 @@ public class PhaseCongruencyDetector {
                     double EstNoiseEnergySigma = totalTau * Math.sqrt((4. - Math.PI)/2.);
                     threshold = Math.max(EstNoiseEnergyMean 
                         + ((float)k) * EstNoiseEnergySigma, epsilon);
+                    if (extractNoise) {
+                        thresholdLargeNoise = Math.max(EstNoiseEnergyMean 
+                            + ((float)kLargeNoise) * EstNoiseEnergySigma, epsilon);
+                    }
+                }
+                
+                if (extractNoise) {
+                    System.out.println("thresh=" + threshold + 
+                        " threshLgNz=" + thresholdLargeNoise);
                 }
                 
                 for (int row = 0; row < nRows; ++row) {
                     for (int col = 0; col < nCols; ++col) {
                         double eDiv = Math.acos(energy[row][col] / (sumAn[row][col] + epsilon));
-                        pc[row][col] = weight[row][col]
-                            * Math.max(1. - deviationGain * eDiv, 0)
-                            * Math.max(energy[row][col] - threshold, 0)
-                            / (energy[row][col] + epsilon);
+                        double a = weight[row][col]
+                            * Math.max(1. - deviationGain * eDiv, 0)/
+                            (energy[row][col] + epsilon);
+                        pc[row][col] = a * Math.max(energy[row][col] - threshold, 0);
+                        if (extractNoise) {
+                           pcLgNz[row][col] = a * Math.max(energy[row][col] 
+                               - thresholdLargeNoise, 0);
+                        }
                     }
                 }
 
@@ -792,6 +843,15 @@ public class PhaseCongruencyDetector {
         
         products.setParameters(nScale, minWavelength, mult, sigmaOnf, k, cutOff,
             g, deviationGain, noiseMethod, tLow, tHigh, increaseKIfNeeded);
+        
+        if (extractNoise) {
+            for (int row = 0; row < nRows; ++row) {
+                for (int col = 0; col < nCols; ++col) {
+                    pcLgNz[row][col] -= pc[row][col];
+                }
+            }
+            products.setNoiseyPixels(pcLgNz);
+        }
         
         int[][] thinned = createEdges(products.getPhaseCongruency(), thinnedPC, 
             products.getPhaseAngle(), tLow, tHigh);
@@ -1255,6 +1315,15 @@ public class PhaseCongruencyDetector {
         private Set<PairInt> corners = null;
         
         /**
+         * noisey pixels are found by subtracting the resulting pc image
+         * made with the user given k from a default k which allows 
+         * more noise into the image.  The resulting "noisey" pixels
+         * may be useful for designing texture filters to remove
+         * such pixels from better keypoints.
+         */
+        private double[][] noiseyPixels = null;
+        
+        /**
          * a map with key being a hough line set of points and value being
          * the theta and radius for the hough line.  Note that the coordinates
          * in the key are using the same notation as the thinnedImage, that is,
@@ -1287,6 +1356,21 @@ public class PhaseCongruencyDetector {
          */
         public int[][] getThinned() {
             return thinned;
+        }
+        
+        /**
+         * noisey pixels are found by subtracting the resulting pc image
+         * made with the user given k from a default k which allows 
+         * more noise into the image.  The resulting "noisey" pixels
+         * may be useful for designing texture filters to remove
+         * such pixels from better keypoints.
+         */
+        public double[][] getNoiseyPixels(){
+            return noiseyPixels;
+        }
+        
+        public void setNoiseyPixels(double[][] pixels){
+            noiseyPixels = pixels;
         }
 
         /**

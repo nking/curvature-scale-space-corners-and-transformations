@@ -68,7 +68,8 @@ public class SummedAreaTable {
         for (int x = 0; x < w; ++x) {
             for (int y = 0; y < h; ++y) {
                 extractWindowFromSummedAreaTable(imgS, x, y, d, sumAndN);
-                int v = sumAndN[0]/sumAndN[1];
+                int nPix = sumAndN[1];
+                int v = sumAndN[0]/nPix;
                 img2.setValue(x, y, v);
             }
         }

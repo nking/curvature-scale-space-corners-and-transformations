@@ -1,8 +1,8 @@
 package algorithms.imageProcessing;
 
+import algorithms.MultiArrayMergeSort;
 import algorithms.compGeometry.PerimeterFinder2;
-import algorithms.imageProcessing.features.PhaseCongruencyDetector;
-import algorithms.imageProcessing.segmentation.ColorSpace;
+import algorithms.imageProcessing.features.ORB;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.MiscMath;
@@ -12,8 +12,8 @@ import algorithms.util.PairInt;
 import algorithms.misc.Complex;
 import algorithms.misc.Histogram;
 import algorithms.misc.Misc;
-import algorithms.imageProcessing.util.GroupAverageColors;
 import algorithms.misc.MiscDebug;
+import algorithms.misc.StatsInSlidingWindow;
 import algorithms.util.TwoDFloatArray;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
@@ -23,7 +23,6 @@ import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
-import java.awt.Color;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -6953,22 +6952,13 @@ if (sum > 511) {
         
         // switch X and Y sobel operations for row major
 
-        float[][] gX = copy(image);
-        applySobelY(gX);
-
-        float[][] gY = copy(image);
-        applySobelX(gY);
-
-        float[] kernel = Gaussian1D.getKernel(sigma);
-       
-        // for curvature, need d/dy(dy) and d/dx(dx)
+        TwoDFloatArray[] components =
+            createCurvatureComponents(image, sigma);
         
-        float[][] gX2 = copy(gX);
-        float[][] gY2 = copy(gY);
-        
-        // row major, so need to use y operations for x and vice versa
-        applyKernel1D(gX2, kernel, false);
-        applyKernel1D(gY2, kernel, true);
+        float[][] gX = components[0].a;
+        float[][] gY = components[1].a;
+        float[][] gX2 = components[2].a;
+        float[][] gY2 = components[3].a;
         
         int nRows = gX.length;
         int nCols = gX[0].length;
@@ -7380,402 +7370,247 @@ if (sum > 511) {
         return transformed;
     }
     
-    public void exploreLogGaborTextures(GreyscaleImage img) {
+    public void exploreTextures(GreyscaleImage img) throws IOException {
         
-        //following PhaseCongruencyDetector for the largest scale logGabor
-        //transform
+        /*
+        textures in frequency space:
+        need to simplify the number of points contributing to the
+        frequency domain pattern,
+        so will calculate the curvature key points as sparse representation.
+        */
+     
+        // axis 0 coordinates
+        TIntList keypoints0 = new TIntArrayList();
         
-        int nScale = 1;        
-        int minWavelength = 3;        
-        float mult = 2.1f;
-        float sigmaOnf = 0.55f;
-        int k = 5;//2;
-        float cutOff = 0.5f; 
-        float g = 10;
-        float deviationGain = 1.5f;
-        int noiseMethod = -1;
-        double tLow = 0.0001;//0.1;
-        double tHigh = 0.1;//0.3;
-        boolean increaseKIfNeeded = true;
-        double epsilon = 1E-4;
+        // axis 1 coordinates
+        TIntList keypoints1 = new TIntArrayList();
         
-        int nCols = img.getWidth();
+        float max = img.max();
+        
+        if (max <= 0) {
+            throw new IllegalArgumentException("img values must be"
+                + " >= 0 and maximum must be > 0");
+        }
+        
+        // -- switch to row-major ----
+        float[][] image = multiply(img, 1.f/max);
+        
+        float sigma = SIGMA.getValue(SIGMA.ZEROPOINTSEVENONE);
+        
+        //createCurvatureKeyPoints(image, sigma, keypoints0, keypoints1);
+        createR5R5KeyPoints(image, sigma, keypoints0, keypoints1);
+        
         int nRows = img.getHeight();
+        int nCols = img.getWidth();
         
-        PeriodicFFT perfft2 = new PeriodicFFT();
-        //IM = perfft2(im);                   % 
-        //S, P, s, p where S = FFT of smooth, P = FFT of periodic, s=spatial smooth, p = spatial p
-        Complex[][][] perfResults = perfft2.perfft2(img, false);
-        Complex[][] capIm = perfResults[1];
-          
-        /*
-        sumAn  = zeros(rows,cols);          % Matrix for accumulating filter response
-                                            % amplitude values.
-        sumf   = zeros(rows,cols);          % ft is phase angle                   
-        sumh1  = zeros(rows,cols);                                      
-        sumh2  = zeros(rows,cols);
-        */
-        double[][] sumAn = new double[nRows][];
-        double[][] sumF = new double[sumAn.length][];
-        double[][] sumH1 = new double[sumAn.length][];
-        double[][] sumH2 = new double[sumAn.length][];
-        for (int row = 0; row < nRows; ++row) {
-            sumAn[row] = new double[nCols];
-            sumF[row] = new double[nCols];
-            sumH1[row] = new double[nCols];
-            sumH2[row] = new double[nCols];
+        GreyscaleImage kpImg = new GreyscaleImage(nCols, nRows);
+        for (int i = 0; i < keypoints0.size(); ++i) {
+            int x = keypoints1.get(i);
+            int y = keypoints0.get(i);
+            kpImg.setValue(x, y, 255);
+        }
+        MiscDebug.writeImage(kpImg, "_keypoints_1_");
+        
+        Complex1D[] ccOut = create2DFFT2WithSwapMajor(kpImg, true);
+
+        assert(nRows == ccOut[0].x.length);
+        assert(nCols == ccOut.length);
+        
+        double[][] kpFreqR = new double[nCols][];
+        double[][] kpFreqI = new double[nCols][];
+        for (int i0 = 0; i0 < ccOut.length; ++i0) {
+            kpFreqR[i0] = new double[nRows];
+            kpFreqI[i0] = new double[nRows];
+            for (int i1 = 0; i1 < nRows; ++i1) {
+                kpFreqR[i0][i1] = ccOut[i0].x[i1];
+                kpFreqI[i0][i1] = ccOut[i0].y[i1];
+            }
         }
         
         /*
-        Generate grid data for constructing filters in the frequency domain    
-        [radius, u1, u2] = filtergrid(rows, cols);
-        */
-        // results use notation a[row][col]
-        FilterGrid fg = new FilterGrid();
-        FilterGrid.FilterGridProducts fgProducts = fg.filtergrid(nRows, nCols);     
-        fgProducts.getRadius()[0][0] = 1;
+        TIntList plotRows = new TIntArrayList();
+        TIntList plotCols = new TIntArrayList();
         
-        /*
-        % Construct the monogenic filters in the frequency domain.  The two
-         % filters would normally be constructed as follows
-         %    H1 = i*u1./radius; 
-         %    H2 = i*u2./radius;
-         H = (1i*u1 - u2)./radius;
+        String lbl = "keypoints_freq";
+        
+        MiscDebug.plot(kpFreqR, plotRows, plotCols, lbl);
         */
-        // results use notation a[row][col]
-        double[][] u1 = fgProducts.getU1();
-        double[][] u2 = fgProducts.getU2();
-        double[][] radius = fgProducts.getRadius();
-        Complex[][] capH = new Complex[nRows][];
-        for (int row = 0; row < nRows; ++row) {
-            capH[row] = new Complex[nCols];
-            for (int col = 0; col < nCols; ++col) {
-                double re = -u2[row][col]/radius[row][col];
-                double im = u1[row][col]/radius[row][col];
-                capH[row][col] = new Complex(re, im);
+        
+        // ---- edit image to keep only characteristic section ---
+        /*File file = ResourceFinder.findFileInTmpData(
+            "tmp_freq.png");
+        
+        GreyscaleImage img2 = ImageIOHelper.readImage(
+            file.getAbsolutePath()).copyToGreyscale();
+        
+        Complex1D[] ccOut2 = create2DFFT2WithSwapMajor(img2, true);
+
+        double[][] kpFreqR2 = new double[nCols][];
+        double[][] kpFreqI2 = new double[nCols][];
+        for (int i0 = 0; i0 < ccOut2.length; ++i0) {
+            kpFreqR2[i0] = new double[nRows];
+            kpFreqI2[i0] = new double[nRows];
+            for (int i1 = 0; i1 < nRows; ++i1) {
+                kpFreqR2[i0][i1] = ccOut2[i0].x[i1];
+                kpFreqI2[i0][i1] = ccOut2[i0].y[i1];
             }
         }
-             
-        LowPassFilter lpFilter = new LowPassFilter();
-        double[][] lp = lpFilter.lowpassfilter(nRows, nCols, 0.45f, 15);
-             
-        ImageProcessor imageProcessor = new ImageProcessor();
+        */
+    }
+    
+    public void createCurvatureKeyPoints(float[][] image, float sigma,
+        TIntList outputKeypoints0, TIntList outputKeypoints1) {
         
-        double[][] maxAN = null;
+        TwoDFloatArray[] components =
+            createCurvatureComponents(image, sigma);
         
-        double tau = noiseMethod;
-        // keeping taus in case need to increase noise estimate
-        double sqml4 = Math.sqrt(Math.log(4));
-        double logGaborDenom = 2. * Math.pow(Math.log(sigmaOnf), 2);
+        // 2nd deriv squared
+        float[][] secondDeriv = add(
+            multiply(copy(components[0].a), copy(components[0].a)),
+            multiply(copy(components[1].a), copy(components[1].a)));
         
-        double[][] width = new double[nRows][];
-        double[][] weight = new double[nRows][];
-        for (int row = 0; row < nRows; ++row) {
-            width[row] = new double[nCols];
-            weight[row] = new double[nCols];
+        //NOTE: consider filtering by a threshold of second derivative
+                // to reduce the regions to edges
+        float max2ndDeriv = MiscMath.findMax(secondDeriv);
+        float f = max2ndDeriv / 10;
+
+        float[][] dx = components[0].a;
+        float[][] dx2 = components[1].a;
+        float[][] dy = components[2].a;
+        float[][] dy2 = components[3].a;
+        float[][] curvature = copy(dx);
+        
+        int nRows = curvature.length;
+        int nCols = curvature[0].length;
+        
+        for (int i = 0; i < nRows; ++i) {
+            for (int j = 0; j < nCols; ++j) {
+                if (secondDeriv[i][j] < f) {
+                    continue;
+                }
+                float dx2dx2 = dx2[i][j] * dx2[i][j];
+                float dy2dy2 = dy2[i][j] * dy2[i][j];
+                if (dx2dx2 == 0 && dy2dy2 == 0) {
+                    curvature[i][j] = Float.MAX_VALUE;
+                    continue;
+                }
+                //(dx * dy(dy) - dy * dx(dx)) / (dx(dx)*dx(dx) + dy(dy)*dy(dy))
+                curvature[i][j] = (dx[i][j] * dy2[i][j] - dy[i][j] * dx2[i][j])
+                    / (dx2dx2 + dy2dy2);
+            }
+        }
+
+        peakLocalMax(curvature, 1, 0.01f, outputKeypoints0, 
+            outputKeypoints1);
+    }
+    
+    public void createR5R5KeyPoints(float[][] image, float sigma,
+        TIntList outputKeypoints0, TIntList outputKeypoints1) {
+        
+        //3rd deriv gaussian, a.k.a. Gabor
+        float[] kernelR5 = new float[]{ 1, -4, 6, -4, 1};
+
+        float[][] image2 = copy(image);
+        
+        // row major, so need to use y operations for x and vice versa
+        applyKernel1D(image2, kernelR5, false);
+        applyKernel1D(image2, kernelR5, true);
+                
+        // put float back into integer scale, 0 to 255
+        MiscMath.applyRescale(image2, 0, 255);
+        
+        int nCols = image2.length;
+        int nRows = image2[0].length;
+        
+        GreyscaleImage imageM = new GreyscaleImage(nCols, nRows);
+        for (int i = 0; i < nCols; ++i) {
+            for (int j = 0; j < nRows; ++j) {
+                imageM.setValue(i, j, Math.round(image2[i][j]));
+            }
         }
         
-        for (int s = 0; s < nScale; ++s) {
-                        
-            // Centre frequency of filter.
-            double wavelength = minWavelength * Math.pow(mult, s);
-            
-            double fo = 1.0/wavelength;
-                        
-            // use notation a[row][col]
-            double[][] logGabor = new double[nRows][];
-            for (int row = 0; row < nRows; ++row) {
-                logGabor[row] = new double[nCols];
-                for (int col = 0; col < nCols; ++col) {
-                    double v = Math.log(radius[row][col]/fo);
-                    v *= v;
-                    v = Math.exp(-v/logGaborDenom);
-                    //logGabor = logGabor.*lp;
-                    logGabor[row][col] = lp[row][col] * v;
-                }
-            }
-            logGabor[0][0] = 0;
-            
-            // uses notation a[row][col]
-            //Bandpassed image in the frequency domain
-            Complex[][] capIMF = new Complex[nRows][];
-            for (int row = 0; row < nRows; ++row) {
-                capIMF[row] = new Complex[nCols];
-                for (int col = 0; col < nCols; ++col) {
-                   capIMF[row][col] = capIm[row][col].times(logGabor[row][col]);
-                }
-            }
-           
-            // uses notation a[row][col]
-            //  Bandpassed image in spatial domain.
-            //  f = real(ifft2(IMF));
-            // the functions used in other code are not normalized on fft, 
-            // but are by inverse fft so need a combined division here by nomr=nRows*nCols
-            Complex[][] fComplex = imageProcessor.create2DFFT(capIMF, false, false);    
-
-            double norm = nRows * nCols;
-        
-            //h = ifft2(IMF.*H);
-            Complex[][] capIMFH = new Complex[nRows][];
-            for (int row = 0; row < nRows; ++row) {
-                capIMFH[row] = new Complex[nCols];
-                for (int col = 0; col < nCols; ++col) {
-                    capIMFH[row][col] = capIMF[row][col].times(capH[row][col]);
-                }
-            }
-            // result needs to be divided by norm=nRows*nCols
-            Complex[][] h = imageProcessor.create2DFFT(capIMFH, false, false);
- 
-            /*
-            h1 = real(h); 
-            h2 = imag(h);                                  
-            An = sqrt(f.^2 + h1.^2 + h2.^2); % Amplitude of this scale component.
-            sumAn = sumAn + An;              % Sum of component amplitudes over scale.
-            sumf  = sumf  + f;
-            sumh1 = sumh1 + h1;
-            sumh2 = sumh2 + h2;
-            */
-            // uses notation a[row][col]
-            double[][] aN = new double[nRows][];
-            for (int row = 0; row < nRows; ++row) {
-                aN[row] = new double[nCols];
-                for (int col = 0; col < nCols; ++col) {
-                    // results of inverse transforms need normalization
-                    double f0 = fComplex[row][col].re()/norm;
-                    double h1 = h[row][col].re()/norm;
-                    double h2 = h[row][col].im()/norm;
-                    aN[row][col] = Math.sqrt(f0*f0 + h1*h1 + h2*h2);
-                    sumAn[row][col] += aN[row][col];
-                    sumF[row][col] += f0;
-                    sumH1[row][col] += h1;
-                    sumH2[row][col] += h2;
-                }
-            }
-         
-            /*
-            At the smallest scale estimate noise characteristics from the
-            distribution of the filter amplitude responses stored in sumAn. 
-            tau is the Rayleigh parameter that is used to describe the
-            distribution.
-            */
-            if (s == 0) {
-                if (noiseMethod == -1) {
-                    //Use median to estimate noise statistics
-                    //tau = median(sumAn(:))/sqrt(log(4));
-                    //TODO: could improve this below O(N*lg2(N)) with histograms
-                    //      and assumptions of bin sizes...when have an
-                    //      implementation of Multi-Level-Buckets, revisit this
-                    double median = MiscMath.findMedian(sumAn);
-                    tau = median/sqml4;
-                }
-                maxAN = aN;
-            } else {
-                // Record maximum amplitude of components across scales.  This is needed
-                // to determine the frequency spread weighting.
-                //maxAN = max(maxAN, An); 
-                // uses notation a[row][col]
-                for (int row = 0; row < nRows; ++row) {
-                    for (int col = 0; col < nCols; ++col) {
-                        maxAN[row][col] = Math.max(maxAN[row][col], aN[row][col]);
-                    }
-                }
-            }
-            
-            /*
-            Form weighting that penalizes frequency distributions that are
-            particularly narrow.  Calculate fractional 'width' of the frequencies
-            present by taking the sum of the filter response amplitudes and dividing
-            by the maximum component amplitude at each point on the image.  If
-            there is only one non-zero component width takes on a value of 0, if
-            all components are equal width is 1.
-            width = (sumAn./(maxAn + epsilon) - 1) / (nscale-1);    
-
-            Now calculate the sigmoidal weighting function.
-            weight = 1.0 ./ (1 + exp( (cutOff - width)*g)); 
-            */
-            // uses notation a[row][col]
-
-            double dn = (double)nScale - 1.;
-
-            if (dn > 0)
-            for (int row = 0; row < nRows; ++row) {
-                for (int col = 0; col < nCols; ++col) {
-                    double a = sumAn[row][col]/(maxAN[row][col] + epsilon);
-                    width[row][col] = (a - 1.)/dn;
-                    double v = Math.exp(g*(cutOff - width[row][col]));
-                    weight[row][col] = 1./(1. + v);
-                }
-            }
-        } // end for each scale
+        applyCenteredMean2(imageM, 2);
        
-        // uses notation a[row][col]
-        // ft is phase angle
-        double[][] orientation = new double[nRows][];
-        double[][] ft = new double[nRows][];
-        double[][] energy = new double[nRows][];
-        double[][] pc = new double[nRows][];
-        for (int row = 0; row < nRows; ++row) {
-            orientation[row] = new double[nCols];
-            ft[row] = new double[nCols];
-            energy[row] = new double[nCols];
-            pc[row] = new double[nCols];
+        // subtract mean
+        for (int i = 0; i < nCols; ++i) {
+            for (int j = 0; j < nRows; ++j) {
+                image2[i][j] -= imageM.getValue(i, j);
+            }
+        }
+                   
+        // NOTE: square image2 to result in variance if preferred.
+        for (int i = 0; i < image2.length; ++i) {
+            for (int j = 0; j < image2[i].length; ++j) {
+                float v = image2[i][j];
+                //v *= v;
+                image2[i][j] = v;
+            }
         }
         
-        for (int row = 0; row < nRows; ++row) {
-            for (int col = 0; col < nCols; ++col) {
-                double gY = -sumH2[row][col];
-                double gX = sumH1[row][col];
-                if (gY < 0) {
-                    gX *= -1;
-                    gY *= -1;
+        // use adaptive means to extract centers
+        GreyscaleImage img2 = imageM.createFullRangeIntWithDimensions();
+        for (int i = 0; i < image2.length; ++i) {
+            for (int j = 0; j < image2[i].length; ++j) {
+                float v = image2[i][j];
+                img2.setValue(i, j, Math.round(v));
+            }
+        }
+        
+        applyAdaptiveMeanThresholding(img2, 1);
+        
+        for (int i = 3; i < img2.getWidth(); ++i) {
+            for (int j = 3; j < img2.getHeight(); ++j) {
+                if (img2.getValue(i, j) == 0) {
+                    outputKeypoints0.add(i);
+                    outputKeypoints1.add(j);
                 }
-                orientation[row][col] = Math.atan2(gY, gX);
-                if (orientation[row][col] == Math.PI) {
-                    orientation[row][col] = 0;
-                }
-                
-                // orientation values now range 0 to pi
-                // Quantize to 0 - 180 degrees (for NONMAXSUP)
-                orientation[row][col] = (int)(orientation[row][col]*180./Math.PI);
-                
-                double h1Sq = sumH1[row][col];
-                h1Sq *= h1Sq;
-                double h2Sq = sumH2[row][col];
-                h2Sq *= h2Sq;
-                
-                //Feature type - a phase angle -pi/2 to pi/2.
-                //TODO: does this not need to be corrected to
-                // if (<0) += 2.*PI ?
-                ft[row][col] = Math.atan2(sumF[row][col], Math.sqrt(h1Sq + h2Sq));
-                
-                //overall energy
-                double v0 = sumF[row][col];
-                v0 *= v0;
-                energy[row][col] = Math.sqrt(v0 + h1Sq + h2Sq);
             }
         }
-        
-        /*
-        % Compute phase congruency.  The original measure, 
-        % PC = energy/sumAn 
-        % is proportional to the weighted cos(phasedeviation).  This is not very
-        % localised so this was modified to
-        % PC = cos(phasedeviation) - |sin(phasedeviation)| 
-        % (Note this was actually calculated via dot and cross products.)  This measure
-        % approximates 
-        % PC = 1 - phasedeviation.
-        
-        % However, rather than use dot and cross products it is simpler and more
-        % efficient to simply use acos(energy/sumAn) to obtain the weighted phase
-        % deviation directly.  Note, in the expression below the noise threshold is
-        % not subtracted from energy immediately as this would interfere with the
-        % phase deviation computation.  Instead it is applied as a weighting as a
-        % fraction by which energy exceeds the noise threshold.  This weighting is
-        % applied in addition to the weighting for frequency spread.  Note also the
-        % phase deviation gain factor which acts to sharpen up the edge response. A
-        % value of 1.5 seems to work well.  Sensible values are from 1 to about 2.
 
-        PC = weight.*max(1 - deviationGain*acos(energy./(sumAn + epsilon)),0) ...
-              .* max(energy-T,0)./(energy+epsilon);
-        */
-        
-        double threshold;
-        if (noiseMethod >= 0) { 
-            //fixed noise threshold
-            threshold = noiseMethod;
-        } else {
-            //Estimate the effect of noise on the sum of the filter responses as
-            //the sum of estimated individual responses (this is a simplistic
-            //overestimate). As the estimated noise response at succesive scales
-            //is scaled inversely proportional to bandwidth we have a simple
-            //geometric sum.
-            //totalTau = tau * (1 - (1/mult)^nscale)/(1-(1/mult));
-            double totalTau = tau * (1. - Math.pow((1./mult), nScale))/(1. - (1./mult));
+        // or, extract many points all over the image:
+        //peakLocalMax(image2, 1, 0.01f, outputKeypoints0, 
+        //    outputKeypoints1);
+    }
+    
+    /**
+     * return first derivatives from sigma=sqrt(2)/2 and
+     * then second derivatives with sigma convolved from the
+     * first derivatives.
+     * @param image
+     * @param sigma
+     * @return [d/dx, d/dy, d/dx(dx), d/dy(dy)]
+     */
+    protected TwoDFloatArray[] createCurvatureComponents(
+        float[][] image, float sigma) {
 
-            // Calculate mean and std dev from tau using fixed relationship
-            // between these parameters and tau. See
-            // http://mathworld.wolfram.com/RayleighDistribution.html
-            double EstNoiseEnergyMean = totalTau * Math.sqrt(Math.PI/2.);
-            double EstNoiseEnergySigma = totalTau * Math.sqrt((4. - Math.PI)/2.);
+        // --- create Sobel derivatives (gaussian 1st deriv sqrt(2)/2 = 0.707)----
+        
+        // switch X and Y sobel operations for row major
 
-            threshold = Math.max(EstNoiseEnergyMean 
-                + ((float)k) * EstNoiseEnergySigma, epsilon);
-        } 
-        double[][] energyTimesOrientation = new double[nRows][];
-        for (int row = 0; row < nRows; ++row) {
-            energyTimesOrientation[row] = new double[nCols];
-            for (int col = 0; col < nCols; ++col) {
-                
-                double eDiv = Math.acos(energy[row][col]/(sumAn[row][col] + epsilon));
-                
-                pc[row][col] = weight[row][col] 
-                    * Math.max(1. - deviationGain * eDiv, 0)
-                    * Math.max(energy[row][col] - threshold, 0)
-                    / (energy[row][col] + epsilon);
-                
-                energyTimesOrientation[row][col] = 
-                    //energy[row][col] * 
-                    (orientation[row][col] + 1);
-            }
-        }
+        float[][] gX = copy(image);
+        applySobelY(gX);
+
+        float[][] gY = copy(image);
+        applySobelX(gY);
+
+        float[] kernel = Gaussian1D.getKernel(sigma);
+       
+        // for curvature, need d/dy(dy) and d/dx(dx)
         
-        // plot ft which is phase angle
-        //                  energy
-        //                  weight or width
-        //   and the phase encoded PC?
+        float[][] gX2 = copy(gX);
+        float[][] gY2 = copy(gY);
         
-        int[][] ftInt = MiscMath.rescale(ft, 0, 255);
-        int[][] eInt = MiscMath.rescale(energy, 0, 255);
-        int[][] w0Int = MiscMath.rescale(weight, 0, 255);
-        int[][] w1Int = MiscMath.rescale(width, 0, 255);
-        int[][] eoInt = MiscMath.rescale(energyTimesOrientation, 0, 255);
-        for (int i = 0; i < ftInt.length; ++i) {
-            for (int j = 0; j < ftInt[0].length; ++j) {
-                eoInt[i][j] *= eInt[i][j];
-                eoInt[i][j] /= 255;
-            }
-        }
-        GreyscaleImage ftImg = new GreyscaleImage(ftInt[0].length, ft.length);
-        GreyscaleImage eImg = new GreyscaleImage(ftInt[0].length, ft.length);
-        GreyscaleImage w0Img = new GreyscaleImage(ftInt[0].length, ft.length);
-        GreyscaleImage w1Img = new GreyscaleImage(ftInt[0].length, ft.length);
-        GreyscaleImage orImg = new GreyscaleImage(ftInt[0].length, ft.length);
-        for (int i = 0; i < ftInt.length; ++i) {
-            for (int j = 0; j < ftInt[0].length; ++j) {
-                ftImg.setValue(j, i, ftInt[i][j]);
-                eImg.setValue(j, i, eInt[i][j]);
-                w0Img.setValue(j, i, w0Int[i][j]);
-                w1Img.setValue(j, i, w1Int[i][j]);
-                orImg.setValue(j, i, eoInt[i][j]);
-            }
-        }
-        try {
-        MiscDebug.writeImage(ftImg, "phase angle");
+        // row major, so need to use y operations for x and vice versa
+        applyKernel1D(gX2, kernel, false);
+        applyKernel1D(gY2, kernel, true);
         
-        ImageDisplayer.displayImage("energy", eImg);
+        TwoDFloatArray[] components = new TwoDFloatArray[4];
+        components[0] = new TwoDFloatArray(gX);
+        components[1] = new TwoDFloatArray(gY);
+        components[2] = new TwoDFloatArray(gX2);
+        components[3] = new TwoDFloatArray(gY2);
         
-        ImageDisplayer.displayImage("weight", w0Img);
-        
-        ImageDisplayer.displayImage("width", w1Img);
-        
-        ImageDisplayer.displayImage("orientation times energy", orImg);
-        
-        GreyscaleImage imgME2 = eImg.copyToFullRangeIntImage();
-        applyCenteredMean2(imgME2, 2);
-        eImg = subtractImages(eImg, imgME2);
-        // make unit standard deviation image, but mult by 255
-        // for storage in integer.
-        // NOTE: considering change of output to float array for
-        // comparison to databases
-        for (int ii = 0; ii < eImg.getNPixels(); ++ii) {
-            double m = imgME2.getValue(ii);
-            double v = 255.*eImg.getValue(ii)/(Math.sqrt(2)/m);
-            eImg.setValue(ii, (int)Math.round(v));
-        }
-        ImageDisplayer.displayImage("energy deviation", w0Img);
-             
-        int z = 1;
-        } catch(Exception e) {}
+        return components;
     }
     
     /**
@@ -8004,6 +7839,290 @@ if (sum > 511) {
         return contigSets;
     }
     
+    /**
+     Find peaks in an image as coordinate list 
+     Peaks are the local maxima in a region of `2 * min_distance + 1`
+     (i.e. peaks are separated by at least `min_distance`).
+     If peaks are flat (i.e. multiple adjacent pixels have identical
+     intensities), the coordinates of all such pixels are returned.
+     If both `threshold_abs` and `threshold_rel` are provided, the maximum
+     of the two is chosen as the minimum intensity threshold of peaks.
+
+      adapted from
+     https://github.com/scikit-image/scikit-image/blob/92a38515ac7222aab5e606f9de46caf5f503a7bd/skimage/feature/peak.py
+
+     The implementation below is adapted from the scipy implementation which has
+     * the following copyright:
+
+     https://github.com/scikit-image/scikit-image/blob/master/LICENSE.txt
+
+    -- begin scipy, skimage copyright ---
+    Unless otherwise specified by LICENSE.txt files in individual
+    directories, all code is
+
+    Copyright (C) 2011, the scikit-image team
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are
+    met:
+
+     1. Redistributions of source code must retain the above copyright
+        notice, this list of conditions and the following disclaimer.
+     2. Redistributions in binary form must reproduce the above copyright
+        notice, this list of conditions and the following disclaimer in
+        the documentation and/or other materials provided with the
+        distribution.
+     3. Neither the name of skimage nor the names of its contributors may be
+        used to endorse or promote products derived from this software without
+        specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+    IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+    WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT,
+    INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+    (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+    SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+    HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+    STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+    IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
+    -- end scipy, skimage copyright ---
+
+    Note, in some places, scipy functions have been
+    replaced with existing functions in this project in this implementation below.
+
+
+     * @param img
+     * @param minDistance
+        Minimum number of pixels separating peaks in a region of `2 *
+        min_distance + 1` (i.e. peaks are separated by at least
+        `min_distance`).
+        To find the maximum number of peaks, use `min_distance=1`.
+      @param outputKeypoints0 the output row coordinates of keypoints
+     * @param outputKeypoints1 the output col coordinates of keypoints
+     */
+    public void peakLocalMax(float[][] img, int minDistance,
+        float thresholdRel,
+        TIntList outputKeypoints0, TIntList outputKeypoints1) {
+
+        int excludeBorder = minDistance;
+        int numPeaks = Integer.MAX_VALUE;
+        //int numPeaksPerLabel = Integer.MAX_VALUE;
+
+        /*
+        The peak local maximum function returns the coordinates of local peaks
+        (maxima) in an image. A maximum filter is used for finding local maxima.
+        This operation dilates the original image. After comparison of the dilated
+        and original image, this function returns the coordinates or a mask of the
+        peaks where the dilated image equals the original image.
+        */
+
+        int nRows = img.length;
+        int nCols = img[0].length;
+
+        //# Non maximum filter
+        int size = 2 * minDistance + 1;
+        float[][] imageMax = maximumFilter(img, size);
+        assert(nRows == imageMax.length);
+        assert(nCols == imageMax[0].length);
+        //mask = image == image_max
+
+        //debugPrint("before shift imageMax=", imageMax);
+
+        // a fudge to match results of scipy which must store same windows at
+        // locations shifted by minDistance or so in x and y from the
+        // beginning of the sliding window
+        applyShift(imageMax, minDistance, nRows, nCols);
+
+        /*{//DEBUG
+            float min = MiscMath.findMin(img);
+            float max = MiscMath.findMax(img);
+            System.out.println("min=" + min + " max=" + max);
+            float factor = 255.f;
+            GreyscaleImage gsImg = new GreyscaleImage(nRows, nCols);
+            for (int i = 0; i < nRows; ++i) {
+                for (int j = 0; j < nCols; ++j) {
+                    int v = Math.round(factor * img[i][j]);
+                    if (v > 255) {
+                        v = 255;
+                    }
+                    gsImg.setValue(i, j, v);
+                }
+            }
+        }*/
+
+        //TODO: should be able to simplify the mask here
+
+        // 1's where same, else 0's
+        int[][] mask = new int[nRows][nCols];
+        for (int i = 0; i < nRows; ++i) {
+            mask[i] = new int[nCols];
+            for (int j = 0; j < nCols; ++j) {
+                if (img[i][j] == imageMax[i][j]) {
+                    mask[i][j] = 1;
+                }
+            }
+        }
+
+        //debugPrint("0 mask=", mask);
+
+
+        // exclude border
+        for (int i = 0; i < nRows; ++i) {
+            if ((i < excludeBorder) || (i > (nRows - 1 - excludeBorder))){
+                Arrays.fill(mask[i], 0);
+            } else {
+                Arrays.fill(mask[i], 0, excludeBorder, 0);
+                Arrays.fill(mask[i], nCols - excludeBorder, nCols, 0);
+            }
+        }
+
+
+        // find top peak candidates above a threshold.
+        // TODO: should this use mask so excluding borders?
+        float thresholdAbs = MiscMath.findMin(img);
+        float thresholdMax = thresholdRel * MiscMath.findMax(img);
+        thresholdAbs = Math.max(thresholdAbs, thresholdMax);
+
+        // mask &= image > 0.1
+        for (int i = 0; i < nRows; ++i) {
+            for (int j = 0; j < nCols; ++j) {
+                if (imageMax[i][j] > thresholdAbs) {
+                    mask[i][j] &= 1;
+                } else {
+                    mask[i][j] = 0;
+                }
+            }
+        }
+
+        /*
+        {//DEBUG
+            try{
+            int min = MiscMath.findMin(mask);
+            int max = MiscMath.findMax(mask);
+            System.out.println("min=" + min + " max=" + max);
+            float factor = 255.f;
+            GreyscaleImage gsImg = new GreyscaleImage(nRows, nCols);
+            for (int i = 0; i < nRows; ++i) {
+                for (int j = 0; j < nCols; ++j) {
+                    int v = Math.round(factor * mask[i][j]);
+                    if (v > 255) {
+                        v = 255;
+                    }
+                    gsImg.setValue(i, j, v);
+                }
+            }
+            ImageDisplayer.displayImage("mask", gsImg);
+            int z = 1;
+            } catch(Exception e) {}
+        }
+        */
+
+        //debugPrint("mask &= image > " + thresholdAbs, mask);
+
+        // Select highest intensities (num_peaks)
+        // expected output is [row index, col index, ...]
+
+        //TODO: should num_peaks be this.nKeypoints?  re-read paper...
+        if (numPeaks == Integer.MAX_VALUE) {
+            // find non-zero pixels in mask
+            float[] values = new float[nRows * nCols];
+            int[] pixIdxs = new int[values.length];
+            int count = 0;
+            for (int i = 0; i < mask.length; ++i) {
+                for (int j = 0; j < mask[i].length; ++j) {
+                    if (mask[i][j] > 0.f) {
+                        values[count] = img[i][j];
+                        //(row * width) + col
+                        pixIdxs[count] = (j * nRows) + i;
+                        count++;
+                    }
+                }
+            }
+            values = Arrays.copyOf(values, count);
+            pixIdxs = Arrays.copyOf(pixIdxs, count);
+            MultiArrayMergeSort.sortByDecr(values, pixIdxs);
+            for (int i = 0; i < values.length; ++i) {
+                int pixIdx = pixIdxs[i];
+                int jj = pixIdx/nRows;
+                int ii = pixIdx - (jj * nRows);
+                outputKeypoints0.add(ii);
+                outputKeypoints1.add(jj);
+            }
+        } else {
+            //need to sort to keep top numPeaks
+            FixedSizeSortedVector<ORB.Pix> vec = new
+                FixedSizeSortedVector<ORB.Pix>(numPeaks, ORB.Pix.class);
+            for (int i = 0; i < mask.length; ++i) {
+                for (int j = 0; j < mask[i].length; ++j) {
+                    if (mask[i][j] > 0.f) {
+                        ORB.Pix pix = new ORB.Pix(i, j, Float.valueOf(img[i][j]));
+                        vec.add(pix);
+                    }
+                }
+            }
+            for (int i = 0; i < vec.getNumberOfItems(); ++i) {
+                ORB.Pix pix = vec.getArray()[i];
+                outputKeypoints0.add(pix.i);
+                outputKeypoints1.add(pix.j);
+            }
+        }
+    }
+
+    private void applyShift(float[][] imageMax, int minDistance, int nRows,
+        int nCols) {
+
+        for (int i = 0; i < nRows; ++i) {
+            System.arraycopy(imageMax[i], 0, imageMax[i], minDistance,
+                nCols - minDistance);
+            for (int j = 0; j < minDistance; ++j) {
+                imageMax[i][j] = 0;
+            }
+            for (int j = (nCols - minDistance); j < nCols; ++j) {
+                imageMax[i][j] = 0;
+            }
+        }
+        //debugPrint("shift 0 imageMax=", imageMax);
+        for (int j = 0; j < nCols; ++j) {
+            for (int i = (nRows - minDistance); i >= minDistance; --i) {
+                imageMax[i][j] = imageMax[i - minDistance][j];
+            }
+            for (int i = 0; i < minDistance; ++i) {
+                imageMax[i][j] = 0;
+            }
+            for (int i = (nRows - minDistance); i < nRows; ++i) {
+                imageMax[i][j] = 0;
+            }
+        }
+        //debugPrint("shifted imageMax=", imageMax);
+    }
+    
+    /**
+     * @author nichole
+     * @param img
+     * @param size
+     * @return
+     */
+    public float[][] maximumFilter(float[][] img, int size) {
+
+        int nRows = img.length;
+        int nCols = img[0].length;
+
+        // return_value = out
+        float[][] out = new float[nRows][nCols];
+        for (int i = 0; i < nRows; ++i) {
+            out[i] = new float[nCols];
+        }
+
+        // have adapted median window algorithm for this:
+        StatsInSlidingWindow maxWindow = new StatsInSlidingWindow();
+        maxWindow.calculateMaximum(img, out, size, size);
+
+        return out;
+    }
+
     // TODO: implement the methods in 
     // http://www.merl.com/publications/docs/TR2008-030.pdf
     // for an O(n) filter.

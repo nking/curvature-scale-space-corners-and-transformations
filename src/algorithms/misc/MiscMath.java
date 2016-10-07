@@ -199,6 +199,38 @@ public class MiscMath {
         return min;
     }
     
+    public static double findMin(double[][] img) {
+        
+        double min = Double.MAX_VALUE;
+        
+        for (int i = 0; i < img.length; ++i) {
+            for (int j = 0; j < img[i].length; ++j) {
+                double v = img[i][j];
+                if (v < min) {
+                    min = v;
+                }
+            }
+        }
+        
+        return min;
+    }
+    
+    public static double findMax(double[][] img) {
+        
+        double max = Double.MIN_VALUE;
+        
+        for (int i = 0; i < img.length; ++i) {
+            for (int j = 0; j < img[i].length; ++j) {
+                double v = img[i][j];
+                if (v > max) {
+                    max = v;
+                }
+            }
+        }
+        
+        return max;
+    }
+    
     public static int findMin(int[][] img) {
         
         int min = Integer.MAX_VALUE;
@@ -2468,4 +2500,33 @@ System.out.println("value 0 is rescaled to value=" + (-minV*scale)
         }
     }
 
+    public static void applyRescale(float[][] a, float minScaled, float maxScaled) {
+        
+        float minV = Float.MAX_VALUE;
+        float maxV = Float.MIN_VALUE;
+        
+        for (int i = 0; i < a.length; ++i) {
+            for (int j = 0; j < a[i].length; ++j) {
+                float v = a[i][j];
+                if (v < minV) {
+                    minV = v;
+                }
+                if (v > maxV) {
+                    maxV = v;
+                }
+            }
+        }
+        float range = maxV - minV;
+        
+        float scale = (maxScaled - minScaled)/range;
+        
+System.out.println("value 0 is rescaled to value=" + (-minV*scale)
++ " minV=" + minV + " scale=" + scale);
+        
+        for (int i = 0; i < a.length; ++i) {
+            for (int j = 0; j < a[i].length; ++j) {
+                a[i][j] = (a[i][j] - minV) * scale;
+            }
+        }
+    }
 }

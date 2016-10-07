@@ -562,34 +562,6 @@ public class ORB {
         System.out.println(sb.toString());
     }
 
-    private void applyShift(float[][] imageMax, int minDistance, int nRows,
-        int nCols) {
-
-        for (int i = 0; i < nRows; ++i) {
-            System.arraycopy(imageMax[i], 0, imageMax[i], minDistance,
-                nCols - minDistance);
-            for (int j = 0; j < minDistance; ++j) {
-                imageMax[i][j] = 0;
-            }
-            for (int j = (nCols - minDistance); j < nCols; ++j) {
-                imageMax[i][j] = 0;
-            }
-        }
-        //debugPrint("shift 0 imageMax=", imageMax);
-        for (int j = 0; j < nCols; ++j) {
-            for (int i = (nRows - minDistance); i >= minDistance; --i) {
-                imageMax[i][j] = imageMax[i - minDistance][j];
-            }
-            for (int i = 0; i < minDistance; ++i) {
-                imageMax[i][j] = 0;
-            }
-            for (int i = (nRows - minDistance); i < nRows; ++i) {
-                imageMax[i][j] = 0;
-            }
-        }
-        //debugPrint("shifted imageMax=", imageMax);
-    }
-
     protected float[][] multiply(float[][] a, float[][] b) {
 
         float[][] c = copy(a);
@@ -982,7 +954,8 @@ public class ORB {
             float[][] secondDeriv = add(tensorComponents[0].a, tensorComponents[2].a);
             //secondDeriv = add(secondDeriv, tensorComponents[1].a);
             
-            peakLocalMax(secondDeriv, 1, 0.1f, kp0, kp1);
+            ImageProcessor imageProcessor = new ImageProcessor();
+            imageProcessor.peakLocalMax(secondDeriv, 1, 0.1f, kp0, kp1);
 
             //float min = MiscMath.findMin(secondDeriv);
             //float max = MiscMath.findMax(secondDeriv);
@@ -1059,7 +1032,7 @@ public class ORB {
                 TIntList kp20 = new TIntArrayList();
                 TIntList kp21 = new TIntArrayList();
 
-                peakLocalMax(curvature, 1, 0.01f, kp20, kp21);
+                imageProcessor.peakLocalMax(curvature, 1, 0.01f, kp20, kp21);
                 
                 keypoints0.addAll(kp20);
                 keypoints1.addAll(kp21);
@@ -1433,8 +1406,9 @@ public class ORB {
         int nRows = img.length;
         int nCols = img[0].length;
 
+        ImageProcessor imageProcessor = new ImageProcessor();
         // these results have been sorted by decreasing intensity
-        peakLocalMax(img, minDistance, thresholdRel,
+        imageProcessor.peakLocalMax(img, minDistance, thresholdRel,
             outputKeypoints0, outputKeypoints1);
 
         //System.out.println("keypoints in cornerPeaks="
@@ -1446,196 +1420,7 @@ public class ORB {
             minDistance);
     }
 
-    /**
-     * adapted from
-     https://github.com/scikit-image/scikit-image/blob/92a38515ac7222aab5e606f9de46caf5f503a7bd/skimage/feature/peak.py
-
-     Find peaks in an image as coordinate list or boolean mask.
-     Peaks are the local maxima in a region of `2 * min_distance + 1`
-     (i.e. peaks are separated by at least `min_distance`).
-     If peaks are flat (i.e. multiple adjacent pixels have identical
-     intensities), the coordinates of all such pixels are returned.
-     If both `threshold_abs` and `threshold_rel` are provided, the maximum
-     of the two is chosen as the minimum intensity threshold of peaks.
-
-     * @param img
-     * @param minDistance
-        Minimum number of pixels separating peaks in a region of `2 *
-        min_distance + 1` (i.e. peaks are separated by at least
-        `min_distance`).
-        To find the maximum number of peaks, use `min_distance=1`.
-      @param outputKeypoints0 the output row coordinates of keypoints
-     * @param outputKeypoints1 the output col coordinates of keypoints
-     */
-    protected void peakLocalMax(float[][] img, int minDistance,
-        float thresholdRel,
-        TIntList outputKeypoints0, TIntList outputKeypoints1) {
-
-        int excludeBorder = minDistance;
-        int numPeaks = Integer.MAX_VALUE;
-        //int numPeaksPerLabel = Integer.MAX_VALUE;
-
-        /*
-        The peak local maximum function returns the coordinates of local peaks
-        (maxima) in an image. A maximum filter is used for finding local maxima.
-        This operation dilates the original image. After comparison of the dilated
-        and original image, this function returns the coordinates or a mask of the
-        peaks where the dilated image equals the original image.
-        */
-
-        int nRows = img.length;
-        int nCols = img[0].length;
-
-        //# Non maximum filter
-        int size = 2 * minDistance + 1;
-        float[][] imageMax = maximumFilter(img, size);
-        assert(nRows == imageMax.length);
-        assert(nCols == imageMax[0].length);
-        //mask = image == image_max
-
-        //debugPrint("before shift imageMax=", imageMax);
-
-        // a fudge to match results of scipy which must store same windows at
-        // locations shifted by minDistance or so in x and y from the
-        // beginning of the sliding window
-        applyShift(imageMax, minDistance, nRows, nCols);
-
-        /*{//DEBUG
-            float min = MiscMath.findMin(img);
-            float max = MiscMath.findMax(img);
-            System.out.println("min=" + min + " max=" + max);
-            float factor = 255.f;
-            GreyscaleImage gsImg = new GreyscaleImage(nRows, nCols);
-            for (int i = 0; i < nRows; ++i) {
-                for (int j = 0; j < nCols; ++j) {
-                    int v = Math.round(factor * img[i][j]);
-                    if (v > 255) {
-                        v = 255;
-                    }
-                    gsImg.setValue(i, j, v);
-                }
-            }
-        }*/
-
-        //TODO: should be able to simplify the mask here
-
-        // 1's where same, else 0's
-        int[][] mask = new int[nRows][nCols];
-        for (int i = 0; i < nRows; ++i) {
-            mask[i] = new int[nCols];
-            for (int j = 0; j < nCols; ++j) {
-                if (img[i][j] == imageMax[i][j]) {
-                    mask[i][j] = 1;
-                }
-            }
-        }
-
-        //debugPrint("0 mask=", mask);
-
-
-        // exclude border
-        for (int i = 0; i < nRows; ++i) {
-            if ((i < excludeBorder) || (i > (nRows - 1 - excludeBorder))){
-                Arrays.fill(mask[i], 0);
-            } else {
-                Arrays.fill(mask[i], 0, excludeBorder, 0);
-                Arrays.fill(mask[i], nCols - excludeBorder, nCols, 0);
-            }
-        }
-
-
-        // find top peak candidates above a threshold.
-        // TODO: should this use mask so excluding borders?
-        float thresholdAbs = MiscMath.findMin(img);
-        float thresholdMax = thresholdRel * MiscMath.findMax(img);
-        thresholdAbs = Math.max(thresholdAbs, thresholdMax);
-
-        // mask &= image > 0.1
-        for (int i = 0; i < nRows; ++i) {
-            for (int j = 0; j < nCols; ++j) {
-                if (imageMax[i][j] > thresholdAbs) {
-                    mask[i][j] &= 1;
-                } else {
-                    mask[i][j] = 0;
-                }
-            }
-        }
-
-        /*
-        {//DEBUG
-            try{
-            int min = MiscMath.findMin(mask);
-            int max = MiscMath.findMax(mask);
-            System.out.println("min=" + min + " max=" + max);
-            float factor = 255.f;
-            GreyscaleImage gsImg = new GreyscaleImage(nRows, nCols);
-            for (int i = 0; i < nRows; ++i) {
-                for (int j = 0; j < nCols; ++j) {
-                    int v = Math.round(factor * mask[i][j]);
-                    if (v > 255) {
-                        v = 255;
-                    }
-                    gsImg.setValue(i, j, v);
-                }
-            }
-            ImageDisplayer.displayImage("mask", gsImg);
-            int z = 1;
-            } catch(Exception e) {}
-        }
-        */
-
-        //debugPrint("mask &= image > " + thresholdAbs, mask);
-
-        // Select highest intensities (num_peaks)
-        // expected output is [row index, col index, ...]
-
-        //TODO: should num_peaks be this.nKeypoints?  re-read paper...
-        if (numPeaks == Integer.MAX_VALUE) {
-            // find non-zero pixels in mask
-            float[] values = new float[nRows * nCols];
-            int[] pixIdxs = new int[values.length];
-            int count = 0;
-            for (int i = 0; i < mask.length; ++i) {
-                for (int j = 0; j < mask[i].length; ++j) {
-                    if (mask[i][j] > 0.f) {
-                        values[count] = img[i][j];
-                        //(row * width) + col
-                        pixIdxs[count] = (j * nRows) + i;
-                        count++;
-                    }
-                }
-            }
-            values = Arrays.copyOf(values, count);
-            pixIdxs = Arrays.copyOf(pixIdxs, count);
-            MultiArrayMergeSort.sortByDecr(values, pixIdxs);
-            for (int i = 0; i < values.length; ++i) {
-                int pixIdx = pixIdxs[i];
-                int jj = pixIdx/nRows;
-                int ii = pixIdx - (jj * nRows);
-                outputKeypoints0.add(ii);
-                outputKeypoints1.add(jj);
-            }
-        } else {
-            //need to sort to keep top numPeaks
-            FixedSizeSortedVector<Pix> vec = new
-                FixedSizeSortedVector<Pix>(numPeaks, Pix.class);
-            for (int i = 0; i < mask.length; ++i) {
-                for (int j = 0; j < mask[i].length; ++j) {
-                    if (mask[i][j] > 0.f) {
-                        Pix pix = new Pix(i, j, Float.valueOf(img[i][j]));
-                        vec.add(pix);
-                    }
-                }
-            }
-            for (int i = 0; i < vec.getNumberOfItems(); ++i) {
-                Pix pix = vec.getArray()[i];
-                outputKeypoints0.add(pix.i);
-                outputKeypoints1.add(pix.j);
-            }
-        }
-    }
-
-    private class Pix implements Comparable<Pix> {
+    public static class Pix implements Comparable<Pix> {
 
         public final int i;
         public final int j;
@@ -1651,30 +1436,6 @@ public class ORB {
             return other.value.compareTo(this.value);
         }
 
-    }
-
-    /**
-     * @author nichole
-     * @param img
-     * @param size
-     * @return
-     */
-    private float[][] maximumFilter(float[][] img, int size) {
-
-        int nRows = img.length;
-        int nCols = img[0].length;
-
-        // return_value = out
-        float[][] out = new float[nRows][nCols];
-        for (int i = 0; i < nRows; ++i) {
-            out[i] = new float[nCols];
-        }
-
-        // have adapted median window algorithm for this:
-        StatsInSlidingWindow maxWindow = new StatsInSlidingWindow();
-        maxWindow.calculateMaximum(img, out, size, size);
-
-        return out;
     }
 
     /**

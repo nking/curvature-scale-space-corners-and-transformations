@@ -10811,13 +10811,13 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 paImg.setValue(i, j, v);
             }
         }
-                        
-        ImageProcessor imageProcessor = new ImageProcessor();
+         
+        ImageExt img2 = img.copyToImageExt();
         
+        ImageProcessor imageProcessor = new ImageProcessor();
         List<Set<PairInt>> contigSets = imageProcessor.
             findConnectedSameValueGroups(paImg);
         
-        ImageExt img2 = img.copyToImageExt();
         for (int i = 0; i < contigSets.size(); ++i) {
             Set<PairInt> set = contigSets.get(i);
             if (set.size() < 2) {
@@ -13649,11 +13649,6 @@ int z = 1;
         slic.calculate();
         int[] labels = slic.getLabels();
         
-        // NOTE: at this point, the phase angle as gradient,
-        // and the phase angle modified image produce
-        // better SLIC segmentation than the same step in
-        // objectSegmentation.
-
         List<Set<PairInt>> contigSets0 = LabelToColorHelper
             .extractContiguousLabelPoints(img, labels);
         
