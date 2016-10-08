@@ -17,6 +17,7 @@ import algorithms.imageProcessing.PostLineThinnerCorrections;
 import algorithms.imageProcessing.ZhangSuenLineThinner;
 import algorithms.imageProcessing.scaleSpace.CSSCornerMaker;
 import algorithms.misc.Complex;
+import algorithms.misc.ComplexModifiable;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.Misc;
@@ -447,7 +448,7 @@ public class PhaseCongruencyDetector {
                 capH[row][col] = new Complex(re, im);
             }
         }
-               
+        
         /*
          % First construct a low-pass filter that is as large as possible, yet falls
          % away to zero at the boundaries.  All filters are multiplied by
@@ -1791,5 +1792,110 @@ public class PhaseCongruencyDetector {
         int z = 1;
     }
     */
+   
+    /**
+     * for single purpose use to examine the monogenic transform
+     * in domain space before inverse transform to frequency space.
+     * @param img
+     * @param minWavelength
+     * @param mult
+     * @param sigmaOnf
+     * @return 
+     */
+    public static double[][] logGaborFreqDomainFilter(GreyscaleImage img,
+        final int minWavelength, final float mult, final float sigmaOnf,
+        int s) {
+        
+        int noiseMethod = -1;
+        
+        int nCols = img.getWidth();
+        int nRows = img.getHeight();
+                   
+        FilterGrid fg = new FilterGrid();
+        FilterGrid.FilterGridProducts fgProducts = fg.filtergrid(nRows, nCols);     
+        fgProducts.getRadius()[0][0] = 1;
+        double[][] radius = fgProducts.getRadius();
+        
+        LowPassFilter lpFilter = new LowPassFilter();
+        double[][] lp = lpFilter.lowpassfilter(nRows, nCols, 0.45f, 15);
+                
+        // keeping taus in case need to increase noise estimate
+        double logGaborDenom = 2. * Math.pow(Math.log(sigmaOnf), 2);
+        
+        // Centre frequency of filter.
+        double wavelength = minWavelength * Math.pow(mult, s);
+
+        double fo = 1.0/wavelength;
+
+        // use notation a[row][col]
+        double[][] logGabor = new double[nRows][];
+        for (int row = 0; row < nRows; ++row) {
+            logGabor[row] = new double[nCols];
+            for (int col = 0; col < nCols; ++col) {
+                double v = Math.log(radius[row][col]/fo);
+                v *= v;
+                v = Math.exp(-v/logGaborDenom);
+                //logGabor = logGabor.*lp;
+                logGabor[row][col] = lp[row][col] * v;
+            }
+        }
+        logGabor[0][0] = 0;
+        
+        return logGabor;
+    }
     
+    /**
+     * for single purpose use to examine creating a filter that can be
+     * applied to other images in frequency domain space before
+     * transforming back to spatial domain.
+     * @param img
+     * @return row major result
+     */
+    public static Complex[][] createLowPassFreqDomainFilter(GreyscaleImage img) {
+                
+        int nCols = img.getWidth();
+        int nRows = img.getHeight();
+                   
+        FilterGrid fg = new FilterGrid();
+        FilterGrid.FilterGridProducts fgProducts = fg.filtergrid(nRows, nCols);     
+        fgProducts.getRadius()[0][0] = 1;
+        double[][] radius = fgProducts.getRadius();
+        
+        LowPassFilter lpFilter = new LowPassFilter();
+        double[][] lp = lpFilter.lowpassfilter(nRows, nCols, 0.45f, 15);
+                
+        
+        //Periodic Fourier transform of image, using default normalization
+        // perfft2 results use notation a[row][col]
+        PeriodicFFT perfft2 = new PeriodicFFT();
+        //IM = perfft2(im);                   % 
+        //S, P, s, p where S = FFT of smooth, P = FFT of periodic, s=spatial smooth, p = spatial p
+        Complex[][][] perfResults = perfft2.perfft2(img, false);
+        Complex[][] capIm = perfResults[1];
+    
+        ComplexModifiable sumAbs = new ComplexModifiable(0, 0);
+        for (int row = 0; row < nRows; ++row) {
+            for (int col = 0; col < nCols; ++col) {
+                capIm[row][col] = capIm[row][col].times(lp[row][col]);
+                sumAbs.plus(capIm[row][col]);
+            }
+        }
+        
+        //normalize this to sum of zero and unit standard deviation
+        sumAbs.times(1./((double)nCols * nRows));
+        Complex mean = new Complex(sumAbs.re(), sumAbs.im());
+        Complex factor = new Complex(sumAbs.re(), sumAbs.im());
+        factor = factor.times(1./Math.sqrt(2));
+                
+        if (sumAbs.abs() != 0) {
+            for (int row = 0; row < nRows; ++row) {
+                for (int col = 0; col < nCols; ++col) {
+                    Complex v = capIm[row][col].minus(mean);
+                    capIm[row][col] = v.times(factor);
+                }
+            }
+        }
+            
+        return capIm;
+    }
 }

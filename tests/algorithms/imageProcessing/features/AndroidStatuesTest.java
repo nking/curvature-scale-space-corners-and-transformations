@@ -95,7 +95,7 @@ public class AndroidStatuesTest extends TestCase {
     public AndroidStatuesTest() {
     }
 
-     public void test0() throws Exception {
+    public void est0() throws Exception {
 
         int maxDimension = 256;//512;
 
@@ -274,7 +274,7 @@ public class AndroidStatuesTest extends TestCase {
             img = imageProcessor.binImage(img, binFactor1);
 
             int[] labels4 = imageSegmentation
-                .objectSegmentation2(img);
+                .objectSegmentation(img);
 
             ImageExt img11 = img.createWithDimensions();
             ImageIOHelper.addAlternatingColorLabelsToRegion(
@@ -286,7 +286,7 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void estShapeMatcher() throws Exception {
+    public void testShapeMatcher() throws Exception {
 
         int maxDimension = 256;//512;
         SIGMA sigma = SIGMA.ZEROPOINTFIVE;//SIGMA.ONE;
@@ -375,7 +375,7 @@ public class AndroidStatuesTest extends TestCase {
 
         img = imageProcessor.binImage(img, binFactor1);
 
-        //imageProcessor.exploreLogGaborTextures(img.copyToGreyscale2());
+        imageProcessor.exploreTextures(img.copyToGreyscale2());
         
         ImageExt imgCp = img.copyToImageExt();
        
@@ -393,9 +393,9 @@ public class AndroidStatuesTest extends TestCase {
         Map<String, GreyscaleImage> derivMap = 
             imageProcessor.createTextureTransforms(imgCp.copyToGreyscale(), 2);
         
-        GreyscaleImage gradient = imageSegmentation.createGradient(imgCp, 4, ts);
+        //GreyscaleImage gradient = imageSegmentation.createGradient(imgCp, 4, ts);
 
-        int[] labels4 = imageSegmentation.objectSegmentation(imgCp, gradient);
+        int[] labels4 = imageSegmentation.objectSegmentation(imgCp);
 
         List<Set<PairInt>> listOfPointSets2 = new ArrayList<Set<PairInt>>();
 

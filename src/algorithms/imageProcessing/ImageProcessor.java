@@ -3,6 +3,7 @@ package algorithms.imageProcessing;
 import algorithms.MultiArrayMergeSort;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.features.ORB;
+import algorithms.imageProcessing.features.PhaseCongruencyDetector;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.MiscMath;
@@ -10,10 +11,12 @@ import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.PairInt;
 import algorithms.misc.Complex;
+import algorithms.misc.ComplexModifiable;
 import algorithms.misc.Histogram;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.StatsInSlidingWindow;
+import algorithms.util.ResourceFinder;
 import algorithms.util.TwoDFloatArray;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
@@ -23,6 +26,7 @@ import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
+import java.io.File;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -7392,6 +7396,10 @@ if (sum > 511) {
                 + " >= 0 and maximum must be > 0");
         }
         
+        int nRows = img.getHeight();
+        int nCols = img.getWidth();
+        
+        /*
         // -- switch to row-major ----
         float[][] image = multiply(img, 1.f/max);
         
@@ -7399,9 +7407,6 @@ if (sum > 511) {
         
         //createCurvatureKeyPoints(image, sigma, keypoints0, keypoints1);
         createR5R5KeyPoints(image, sigma, keypoints0, keypoints1);
-        
-        int nRows = img.getHeight();
-        int nCols = img.getWidth();
         
         GreyscaleImage kpImg = new GreyscaleImage(nCols, nRows);
         for (int i = 0; i < keypoints0.size(); ++i) {
@@ -7427,35 +7432,74 @@ if (sum > 511) {
             }
         }
         
-        /*
         TIntList plotRows = new TIntArrayList();
         TIntList plotCols = new TIntArrayList();
+        plotRows.add(10);
+        plotRows.add(50);
+        plotRows.add(100);
+        plotRows.add(110);
+        
+        plotCols.add(10);
+        plotCols.add(50);
+        plotCols.add(100);
+        plotCols.add(150);
+        plotCols.add(200);
+        plotCols.add(210);
         
         String lbl = "keypoints_freq";
         
-        MiscDebug.plot(kpFreqR, plotRows, plotCols, lbl);
+        MiscDebug.plot(kpFreqR, plotCols, plotRows, lbl);
+       
+        MiscMath.applyRescale(kpFreqR, 0, 255);
+        GreyscaleImage kpFreqRImg = new GreyscaleImage(nCols, nRows);
+        for (int i = 0; i < nCols; ++i) {
+            for (int j = 0; j < nRows; ++j) {
+                kpFreqRImg.setValue(i, j, (int)Math.round(kpFreqR[i][j]));
+            }
+        }
+        MiscDebug.writeImage(kpFreqRImg, "_keypoints_freq_");
         */
         
         // ---- edit image to keep only characteristic section ---
-        /*File file = ResourceFinder.findFileInTmpData(
-            "tmp_freq.png");
+        String filePath = ResourceFinder.findFileInResources(
+            "vegetation_peak_texture.png");
         
-        GreyscaleImage img2 = ImageIOHelper.readImage(
-            file.getAbsolutePath()).copyToGreyscale();
+        GreyscaleImage imgPattern = ImageIOHelper.readImage(
+            filePath).copyToGreyscale();
         
-        Complex1D[] ccOut2 = create2DFFT2WithSwapMajor(img2, true);
-
-        double[][] kpFreqR2 = new double[nCols][];
-        double[][] kpFreqI2 = new double[nCols][];
-        for (int i0 = 0; i0 < ccOut2.length; ++i0) {
-            kpFreqR2[i0] = new double[nRows];
-            kpFreqI2[i0] = new double[nRows];
+        Complex[][] fftPattern = PhaseCongruencyDetector
+            .createLowPassFreqDomainFilter(imgPattern);
+       
+        PeriodicFFT perfft2 = new PeriodicFFT();
+        Complex[][][] perfResults = perfft2.perfft2(img, false);
+        Complex[][] fftImage = perfResults[1];
+        
+        // --- image in the frequency domain convolved with texture patch ----
+        Complex[][] freqDomainImageTimesPattern = 
+            convolveWithKernel(fftImage, fftPattern);
+        
+        // ----- transform that to spatial domain ----
+        Complex[][] fComplex = create2DFFT(freqDomainImageTimesPattern, false, false);    
+        double[][] transformedReal = new double[nCols][];
+        for (int i0 = 0; i0 < nCols; ++i0) {
+            transformedReal[i0] = new double[nRows];
             for (int i1 = 0; i1 < nRows; ++i1) {
-                kpFreqR2[i0][i1] = ccOut2[i0].x[i1];
-                kpFreqI2[i0][i1] = ccOut2[i0].y[i1];
+                transformedReal[i0][i1] = fComplex[i1][i0].re();
+                transformedReal[i0][i1] = fComplex[i1][i0].im();
             }
         }
-        */
+        
+        MiscMath.applyRescale(transformedReal, 0, 255);
+        GreyscaleImage kpFreqR2Img = new GreyscaleImage(nCols, nRows);
+        for (int i = 0; i < nCols; ++i) {
+            for (int j = 0; j < nRows; ++j) {
+                kpFreqR2Img.setValue(i, j, 
+                    (int)Math.round(transformedReal[i][j]));
+            }
+        }
+        MiscDebug.writeImage(kpFreqR2Img, "_keypoints_freq2_spatial_");
+    
+        // thresholding shows it finds similar clumps in image
     }
     
     public void createCurvatureKeyPoints(float[][] image, float sigma,
@@ -8122,6 +8166,100 @@ if (sum > 511) {
 
         return out;
     }
+    
+    /**
+     * 
+     * @param img
+     * @param g the kernel to convolve img with at point (x,y).
+     * Note that it's assumed the kernel is already normalized to sum 0.
+     * @return 
+     */
+    public Complex[][] convolveWithKernel(final Complex[][] img, 
+        Complex[][] g) {
+        
+        Complex[][] c = new Complex[img.length][];
+        
+        for (int x = 0; x < img.length; ++x) {
+            c[x] = new Complex[img[0].length];
+            for (int y = 0; y < img[0].length; ++y) {
+                ComplexModifiable sum = 
+                    convolvePointWithKernel(img, x, y, g);
+                c[x][y] = new Complex(sum.re(), sum.im());
+            }
+        }
+       
+        return c;
+    }
+    
+     /**
+     * 
+     * @param img
+     * @param x
+     * @param y
+     * @param g the kernel to convolve img with at point (x,y).
+     * Note that it's assumed the kernel is already normalized to sum 0.
+     * @return sum of convolution at point x,y
+     */
+    public ComplexModifiable convolvePointWithKernel(final Complex[][] img, int x, 
+        int y, Complex[][] g) {
+        
+        int n0 = g.length;
+        int n1 = g[0].length;
+        
+        int h0 = (n0 >> 1);
+        int h1 = (n1 >> 1);
+        
+        int w = img.length;
+        int h = img[0].length;
+        
+        ComplexModifiable sum = new ComplexModifiable(0, 0);
+
+        for (int i = -h0; i < (n0 - h0); i++) {
+            int x2 = x + i;
+            if (x2 < 0) {
+               // replicate
+               x2 = -1*x2 - 1;
+               if (x2 > (w - 1)) {
+                   x2 = w - 1;
+               }
+            } else if (x2 > (w - 1)) {
+                int diff = x2 - w;
+                x2 = w - diff - 1;
+                if (x2 < 0) {
+                    x2 = 0;
+                }
+            }
+            for (int j = -h1; j < (n1 - h1); j++) {
+                int y2 = y + j;
+                if (y2 < 0 || (y2 > (h - 1))) {
+                    continue;
+                }
+                if (y2 < 0) {
+                   // replicate
+                   y2 = -1*y2 - 1;
+                   if (y2 > (h - 1)) {
+                       y2 = h - 1;
+                   }
+                } else if (y2 > (h - 1)) {
+                    int diff = y2 - h;
+                    y2 = h - diff - 1;
+                    if (y2 < 0) {
+                        y2 = 0;
+                    }
+                }
+            
+                Complex gg = g[i + h0][j + h1];
+
+                Complex point = img[x2][y2];
+                
+                Complex m = point.times(gg);
+
+                sum.plus(m);                
+            }
+        }
+        
+        return sum;
+    }    
 
     // TODO: implement the methods in 
     // http://www.merl.com/publications/docs/TR2008-030.pdf

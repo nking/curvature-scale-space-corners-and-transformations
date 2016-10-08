@@ -66,6 +66,14 @@ public class Complex {
         double imag = a.im + b.im;
         return new Complex(real, imag);
     }
+    
+    // return a new Complex object whose value is (this + b)
+    public Complex plus(double b) {
+        Complex a = this;             // invoking object
+        double real = a.re + b;
+        double imag = a.im;
+        return new Complex(real, imag);
+    }
 
     // return a new Complex object whose value is (this - b)
     public Complex minus(Complex b) {
