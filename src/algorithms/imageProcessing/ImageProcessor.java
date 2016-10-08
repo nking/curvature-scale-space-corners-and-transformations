@@ -7220,8 +7220,10 @@ if (sum > 511) {
               3rd deriv gaussian, ...Gabor
      
      NOTE: bright clumps in R5 R5 look useful for finding vegetation.
-        can apply adaptive means to the feature image to find the cluster
-        centers.
+        It finds the bounds of the vegetation... places where the 
+        the change of the change of the gradient is large (and dense).
+        can apply adaptive means to the feature image to find the 
+        brightest of these.
     
      * @param img 
        @param state 0=do not process derivatives further,
@@ -7243,10 +7245,6 @@ if (sum > 511) {
         }
         
         /*
-        NOTE: bright clumps in R5 R5 looks most useful for finding vegetation.
-        can apply adaptive means to the feature image to find the cluster
-        centers.  
-        
         adapted from a cs lecture on texture filters from uw
         (https://courses.cs.washington.edu/courses/cse455/09wi/Lects/lect12.pdf
         which possibly uses:
