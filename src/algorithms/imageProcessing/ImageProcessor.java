@@ -7224,6 +7224,8 @@ if (sum > 511) {
         the change of the change of the gradient is large (and dense).
         can apply adaptive means to the feature image to find the 
         brightest of these.
+        L5 S5 looks useful for finding horizontal lines such as edge segments
+        of windows.
     
      * @param img 
        @param state 0=do not process derivatives further,
@@ -7372,7 +7374,7 @@ if (sum > 511) {
         return transformed;
     }
     
-    public void exploreTextures(GreyscaleImage img) throws IOException {
+    public void exploreTextures() throws IOException {
         
         /*
         textures in frequency space:
@@ -7380,7 +7382,24 @@ if (sum > 511) {
         frequency domain pattern,
         so will calculate the curvature key points as sparse representation.
         */
-     
+        
+        int maxDimension = 256;//512;
+        
+        String fileName1 = "android_statues_02.jpg";
+        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+        GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath1);
+        
+        long ts = MiscDebug.getCurrentTimeFormatted();
+
+        int w1 = img.getWidth();
+        int h1 = img.getHeight();
+
+        int binFactor1 = (int) Math.ceil(Math.max(
+            (float) w1 / maxDimension,
+            (float) h1 / maxDimension));
+
+        img = binImage(img, binFactor1);
+        
         // axis 0 coordinates
         TIntList keypoints0 = new TIntArrayList();
         
@@ -7397,7 +7416,7 @@ if (sum > 511) {
         int nRows = img.getHeight();
         int nCols = img.getWidth();
         
-        /*
+        /* 
         // -- switch to row-major ----
         float[][] image = multiply(img, 1.f/max);
         
@@ -7405,6 +7424,8 @@ if (sum > 511) {
         
         //createCurvatureKeyPoints(image, sigma, keypoints0, keypoints1);
         createR5R5KeyPoints(image, sigma, keypoints0, keypoints1);
+        // strong high density responses in r5r5 for edges of vegetation.
+        // textures such as bricks, would be findable with the L5
         
         GreyscaleImage kpImg = new GreyscaleImage(nCols, nRows);
         for (int i = 0; i < keypoints0.size(); ++i) {
@@ -7457,7 +7478,7 @@ if (sum > 511) {
         }
         MiscDebug.writeImage(kpFreqRImg, "_keypoints_freq_");
         */
-        
+   
         // ---- edited image to keep only characteristic section ---
         String filePath = ResourceFinder.findFileInTestResources(
             "vegetation_peak_texture.png");

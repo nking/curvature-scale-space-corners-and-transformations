@@ -1285,4 +1285,12 @@ public class ImageProcessorTest extends TestCase {
             ImageDisplayer.displayImage("_zero_crossings_adap_mean_",
                 out);            
     }
+    
+    public void testExploreTextures() throws Exception {
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        imageProcessor.exploreTextures();
+        
+        int z = 1;
+    }
 }

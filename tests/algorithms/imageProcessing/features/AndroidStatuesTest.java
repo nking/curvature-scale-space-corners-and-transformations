@@ -374,21 +374,19 @@ public class AndroidStatuesTest extends TestCase {
             (float) h1 / maxDimension));
 
         img = imageProcessor.binImage(img, binFactor1);
-
-        imageProcessor.exploreTextures(img.copyToGreyscale2());
         
         ImageExt imgCp = img.copyToImageExt();
        
-        {
+        /*{
             Map<String, GreyscaleImage> tMap = imageProcessor.createTextureTransforms(
                 img.copyToGreyscale(), 2);
-            String lStr = "E5E5";
+            String lStr = "R5R5";
             GreyscaleImage rImg = tMap.get(lStr);
             MiscDebug.writeImage(rImg, "_" + lStr + "_");
             MiscMath.rescale(rImg, 0, 255);
             imageProcessor.applyAdaptiveMeanThresholding(rImg, 1);
             MiscDebug.writeImage(rImg, "_" + lStr + "_adapt_means_");
-        }
+        }*/
         
         Map<String, GreyscaleImage> derivMap = 
             imageProcessor.createTextureTransforms(imgCp.copyToGreyscale(), 2);
