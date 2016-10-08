@@ -7460,8 +7460,8 @@ if (sum > 511) {
         MiscDebug.writeImage(kpFreqRImg, "_keypoints_freq_");
         */
         
-        // ---- edit image to keep only characteristic section ---
-        String filePath = ResourceFinder.findFileInResources(
+        // ---- edited image to keep only characteristic section ---
+        String filePath = ResourceFinder.findFileInTestResources(
             "vegetation_peak_texture.png");
         
         GreyscaleImage imgPattern = ImageIOHelper.readImage(
@@ -7484,8 +7484,7 @@ if (sum > 511) {
         for (int i0 = 0; i0 < nCols; ++i0) {
             transformedReal[i0] = new double[nRows];
             for (int i1 = 0; i1 < nRows; ++i1) {
-                transformedReal[i0][i1] = fComplex[i1][i0].re();
-                transformedReal[i0][i1] = fComplex[i1][i0].im();
+                transformedReal[i0][i1] = fComplex[i1][i0].abs();
             }
         }
         
@@ -7499,7 +7498,6 @@ if (sum > 511) {
         }
         MiscDebug.writeImage(kpFreqR2Img, "_keypoints_freq2_spatial_");
     
-        // thresholding shows it finds similar clumps in image
     }
     
     public void createCurvatureKeyPoints(float[][] image, float sigma,
