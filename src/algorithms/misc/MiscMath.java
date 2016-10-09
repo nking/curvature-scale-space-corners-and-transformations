@@ -2500,7 +2500,8 @@ System.out.println("value 0 is rescaled to value=" + (-minV*scale)
         }
     }
 
-    public static void applyRescale(float[][] a, float minScaled, float maxScaled) {
+    public static void applyRescale(float[][] a, float minScaled, 
+        float maxScaled) {
         
         float minV = Float.MAX_VALUE;
         float maxV = Float.MIN_VALUE;
@@ -2526,6 +2527,55 @@ System.out.println("value 0 is rescaled to value=" + (-minV*scale)
         for (int i = 0; i < a.length; ++i) {
             for (int j = 0; j < a[i].length; ++j) {
                 a[i][j] = (a[i][j] - minV) * scale;
+            }
+        }
+    }
+    
+    /**
+     * ignores values of MAX_VALUE and MIN_VALUE during scale calculation
+     * and then reassigns those to the calculated min and max of other
+     * values.
+     * @param a
+     * @param minScaled
+     * @param maxScaled 
+     */
+    public static void applyRescale2(float[][] a, float minScaled, 
+        float maxScaled) {
+        
+        float minV = Float.MAX_VALUE;
+        float maxV = Float.MIN_VALUE;
+        
+        for (int i = 0; i < a.length; ++i) {
+            for (int j = 0; j < a[i].length; ++j) {
+                float v = a[i][j];
+                if (v == Float.MAX_VALUE || v == Float.MIN_VALUE) {
+                    continue;
+                }
+                if (v < minV) {
+                    minV = v;
+                }
+                if (v > maxV) {
+                    maxV = v;
+                }
+            }
+        }
+        float range = maxV - minV;
+        
+        float scale = (maxScaled - minScaled)/range;
+        
+System.out.println("value 0 is rescaled to value=" + (-minV*scale)
++ " minV=" + minV + " scale=" + scale);
+        
+        for (int i = 0; i < a.length; ++i) {
+            for (int j = 0; j < a[i].length; ++j) {
+                float v = a[i][j];
+                if (v == Float.MAX_VALUE) {
+                    a[i][j] = maxV;
+                } else if (v == Float.MIN_VALUE) {
+                    a[i][j] = minV;
+                } else {
+                    a[i][j] = (v - minV) * scale;
+                }
             }
         }
     }

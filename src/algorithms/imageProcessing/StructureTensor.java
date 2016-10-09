@@ -109,7 +109,8 @@ public class StructureTensor {
             dY = gY;
             
             // for curvature, need d/dy(dy) and d/dx(dx)
-        
+            kernel = Gaussian1DFirstDeriv.getKernel(sigma);
+            
             d2X = imageProcessor.copy(gX);
             d2Y = imageProcessor.copy(gY);
         

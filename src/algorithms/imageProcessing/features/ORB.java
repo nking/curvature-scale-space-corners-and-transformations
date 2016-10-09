@@ -939,47 +939,49 @@ public class ORB {
                 int z = 1;
             } catch(Exception e) {}            
             */
+        }
             
-            // tensorComponents:
-            // [axx, axy, ayy, dx, d/dx(dx), dy, d/dy(dy)]
-            if (doCreateCurvatureKeyPoints) {
+        if (doCreateCurvatureKeyPoints) {
                 
-                // usually, only create these points for points on an edge.
-                // wanting the min and max of curvature,
-                // and then those maxima that are 2 or 3 times stronger than 
-                // one of the adjacent minima.
-                // with a single edge, the peak curvature should be larger than
-                // 2 times that of the preceding or proceeding minima.
-                
-                imageProcessor.createCurvatureKeyPoints(
-                    tensorComponents, keypoints0, keypoints1);
-                
-                /*
-                try {
-                    float factor = 255.f;
-                    Image img2 = new Image(nRows, nCols);
-                    for (int i = 0; i < nRows; ++i) {
-                        for (int j = 0; j < nCols; ++j) {
-                            int v = Math.round(factor * octaveImage[i][j]);
-                            if (v > 255) {
-                                v = 255;
-                            }
-                            img2.setRGB(i, j, v, v, v);
+            ImageProcessor imageProcessor = new ImageProcessor();
+            
+            // usually, only create these points for points on an edge.
+            // wanting the min and max of curvature,
+            // and then those maxima that are 2 or 3 times stronger than 
+            // one of the adjacent minima.
+            // with a single edge, the peak curvature should be larger than
+            // 2 times that of the preceding or proceeding minima.
+
+            //default thresh is 0.01f
+            imageProcessor.createCurvatureKeyPoints(
+                tensorComponents, keypoints0, keypoints1, 
+                0.1f);
+
+            /*
+            try {
+                float factor = 255.f;
+                Image img2 = new Image(nRows, nCols);
+                for (int i = 0; i < nRows; ++i) {
+                    for (int j = 0; j < nCols; ++j) {
+                        int v = Math.round(factor * octaveImage[i][j]);
+                        if (v > 255) {
+                            v = 255;
                         }
+                        img2.setRGB(i, j, v, v, v);
                     }
-                    for (int i = 0; i < kp20.size(); ++i) {
-                        int y = kp21.get(i);
-                        int x = kp20.get(i);
-                        img2.setRGB(x, y, 255, 0, 0);
-                    }
-                    System.out.println("nRows=" + nRows + " nCols=" + nCols);
-                    algorithms.imageProcessing.ImageDisplayer.displayImage("curvature", img2);
-                    int z = 1;
-                } catch(Exception e) {
-                    System.out.println(e.getMessage());
                 }
-                */
+                for (int i = 0; i < kp20.size(); ++i) {
+                    int y = kp21.get(i);
+                    int x = kp20.get(i);
+                    img2.setRGB(x, y, 255, 0, 0);
+                }
+                System.out.println("nRows=" + nRows + " nCols=" + nCols);
+                algorithms.imageProcessing.ImageDisplayer.displayImage("curvature", img2);
+                int z = 1;
+            } catch(Exception e) {
+                System.out.println(e.getMessage());
             }
+            */
         }
         
         float[][] detA = tensorComponents.getDeterminant();

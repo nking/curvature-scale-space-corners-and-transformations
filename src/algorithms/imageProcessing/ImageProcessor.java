@@ -13,6 +13,7 @@ import algorithms.util.PairInt;
 import algorithms.misc.Complex;
 import algorithms.misc.ComplexModifiable;
 import algorithms.misc.Histogram;
+import algorithms.misc.MedianSmooth;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.StatsInSlidingWindow;
@@ -7350,6 +7351,7 @@ if (sum > 511) {
         int maxDimension = 256;//512;
         
         String fileName1 = "android_statues_02.jpg";
+        fileName1 = "merton_college_I_001.jpg";
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath1);
         
@@ -7380,30 +7382,46 @@ if (sum > 511) {
         // axis 1 coordinates
         TIntList keypoints1 = new TIntArrayList();
         
+        /*ORB orb = new ORB(10000);
+        orb.overrideToNotCreateDescriptors();
+        orb.overrideToAlsoCreate1stDerivKeypoints();
+        //orb.overrideToCreateCurvaturePoints();
+        orb.detectAndExtract(img.copyToColorGreyscale());
+        keypoints0.addAll(orb.getAllKeyPoints0());
+        keypoints1.addAll(orb.getAllKeyPoints1());
+        */
+        
         // -- switch to row-major ----
         float[][] image = multiply(img, 1.f/max);
         
         float sigma = SIGMA.getValue(SIGMA.ZEROPOINTSEVENONE);
         
-        //createCurvatureKeyPoints(image, sigma, keypoints0, keypoints1);
-        //createR5R5KeyPoints(image, sigma, keypoints0, keypoints1);
         //  strong high density responses in r5r5 for edges of vegetation.
-        //  textures such as bricks, would be findable with the L5 S5 but
-        //    need more to distinguish them possibly corner detector with
-        //    low threshold is best for bricks...
-        createFirstDerivKeyPoints(image, sigma, keypoints0, keypoints1);
+        //  textures such as bricks or roof tiles are present in r5r5
+        //  but so are strong edges, so possibly need
+        //  to use the gradient edges here to distinguish between
+        //  corner and the numerous points that are not good matching
+        //  points.
         
-        // could also consider ORB keypoints with default settings to extract only
-        // the Harris points
+        // thresh is usually 0.01f
+        //createCurvatureKeyPoints(image, sigma, keypoints0, keypoints1, 
+        //   0.001f);
         
-        GreyscaleImage kpImg = new GreyscaleImage(nCols, nRows);
+        createR5R5KeyPoints(image, keypoints0, keypoints1);
+        //createE5E5KeyPoints(image, keypoints0, keypoints1);
+        //createL5E5KeyPoints(image, keypoints0, keypoints1);
+        //createS5S5KeyPoints(image, keypoints0, keypoints1);        
+        //createFirstDerivKeyPoints(image, sigma, keypoints0, keypoints1);
+        
+        Image kpImg = img.copyToColorGreyscale();
         for (int i = 0; i < keypoints0.size(); ++i) {
             int x = keypoints1.get(i);
             int y = keypoints0.get(i);
-            kpImg.setValue(x, y, 255);
+            kpImg.setRGB(x, y, 255, 0, 0);
         }
         MiscDebug.writeImage(kpImg, "_keypoints_1_");
         
+        /*
         Complex1D[] ccOut = create2DFFT2WithSwapMajor(kpImg, true);
 
         assert(nRows == ccOut[0].x.length);
@@ -7446,6 +7464,7 @@ if (sum > 511) {
             }
         }
         MiscDebug.writeImage(kpFreqRImg, "_keypoints_freq_");
+        */
         
    /*
         // ---- edited _keypoints_1_ image to keep only a characteristic section ---
@@ -7488,8 +7507,17 @@ if (sum > 511) {
     */
     }
     
+    /**
+     * 
+     * @param image
+     * @param sigma
+     * @param outputKeypoints0
+     * @param outputKeypoints1
+     * @param thresholdRel default is 0.01f
+     */
     public void createCurvatureKeyPoints(float[][] image, float sigma,
-        TIntList outputKeypoints0, TIntList outputKeypoints1) {
+        TIntList outputKeypoints0, TIntList outputKeypoints1,
+        float thresholdRel) {
         
         boolean doCreateCurvatureKeyPoints = true;
         
@@ -7497,18 +7525,25 @@ if (sum > 511) {
             sigma, doCreateCurvatureKeyPoints);
         
         createCurvatureKeyPoints(tensorComponents, outputKeypoints0,
-            outputKeypoints1);
+            outputKeypoints1, thresholdRel);
     }
     
+    /**
+     * 
+     * @param tensorComponents
+     * @param outputKeypoints0
+     * @param outputKeypoints1
+     * @param thresholdRel default is 0.01f
+     */
     public void createCurvatureKeyPoints(StructureTensor tensorComponents,
-        TIntList outputKeypoints0, TIntList outputKeypoints1) {
+        TIntList outputKeypoints0, TIntList outputKeypoints1,
+        float thresholdRel) {
         
         // square of 1st deriv:
-        float[][] firstDeriv = add(tensorComponents.getDXSquared(), 
-            tensorComponents.getDYSquared());
-
-        float max2ndDeriv = MiscMath.findMax(firstDeriv);
-        float f = max2ndDeriv / 10;
+        //float[][] firstDeriv = add(tensorComponents.getDXSquared(), 
+        //    tensorComponents.getDYSquared());
+        //float max1stDeriv = MiscMath.findMax(firstDeriv);
+        //float f = max1stDeriv / 10;
 
         float[][] dx = tensorComponents.getDX();
         float[][] dx2 = tensorComponents.getDDX();
@@ -7533,24 +7568,82 @@ if (sum > 511) {
             }
         }
 
-        peakLocalMax(curvature, 1, 0.01f, outputKeypoints0, 
+        peakLocalMax(curvature, 1, thresholdRel, outputKeypoints0, 
             outputKeypoints1);
+        /*
+        MiscMath.applyRescale(curvature, 0, 255);
+        GreyscaleImage kpImg = new GreyscaleImage(nCols, nRows);
+        for (int i = 0; i < outputKeypoints0.size(); ++i) {
+            int x = outputKeypoints1.get(i);
+            int y = outputKeypoints0.get(i);
+            kpImg.setValue(x, y, Math.round(curvature[y][x]));
+        }
+        MiscDebug.writeImage(kpImg, "_curvature_");
+        */
     }
     
-    public void createR5R5KeyPoints(float[][] image, float sigma,
+    public void createR5R5KeyPoints(float[][] image,
         TIntList outputKeypoints0, TIntList outputKeypoints1) {
         
         //3rd deriv gaussian, a.k.a. Gabor
-        float[] kernelR5 = new float[]{ 1, -4, 6, -4, 1};
-
+        float[] kernel = new float[]{ 1, -4, 6, -4, 1};
+        
+        createLawKeyPoints(image, kernel, kernel, outputKeypoints0, 
+            outputKeypoints1);
+    }
+    
+    public void createS5S5KeyPoints(float[][] image,
+        TIntList outputKeypoints0, TIntList outputKeypoints1) {
+        
+        //-1 times 2nd deriv binomial for sigma=sqrt(2)/2; a.k.a. LOG
+        float[] kernel = new float[]{-1, 0, 2, 0, -1};
+        
+        createLawKeyPoints(image, kernel, kernel, outputKeypoints0, 
+            outputKeypoints1);
+    }
+    
+    public void createE5E5KeyPoints(float[][] image,
+        TIntList outputKeypoints0, TIntList outputKeypoints1) {
+        
+        //1st deriv of gaussian, binomial for sigma=1
+        float[] kernel = new float[]{-1, -2, 0, 2, 1};
+        
+        createLawKeyPoints(image, kernel, kernel, outputKeypoints0, 
+            outputKeypoints1);
+    }
+    
+    public void createL5E5KeyPoints(float[][] image,
+        TIntList outputKeypoints0, TIntList outputKeypoints1) {
+        
+        //1st deriv of gaussian, binomial for sigma=1
+        float[] kernelE5 = new float[]{-1, -2, 0, 2, 1};
+        
+        // gaussian, binomial for sigma=1; B3 spline used in ATrous wavelet
+        float[] kernelL5 = new float[]{1, 4, 6, 4, 1};
+        
+        createLawKeyPoints(image, kernelL5, kernelE5, outputKeypoints0, 
+            outputKeypoints1);
+    }
+    
+    private void createLawKeyPoints(float[][] image, float[] kernel1,
+        float[] kernel2,
+        TIntList outputKeypoints0, TIntList outputKeypoints1) {
+        
         float[][] image2 = copy(image);
         
         // row major, so need to use y operations for x and vice versa
-        applyKernel1D(image2, kernelR5, false);
-        applyKernel1D(image2, kernelR5, true);
-                
+        applyKernel1D(image2, kernel1, true);
+        applyKernel1D(image2, kernel2, false);
+        
+        /*if (!Arrays.equals(kernel1, kernel2)) {
+            float[][] image3 = copy(image2);
+            applyKernel1D(image3, kernel1, false);
+            applyKernel1D(image3, kernel2, true);
+            image2 = divide(image2, image3);
+        }*/
+  
         // put float back into integer scale, 0 to 255
-        MiscMath.applyRescale(image2, 0, 255);
+        MiscMath.applyRescale2(image2, 0, 255);
         
         int nCols = image2.length;
         int nRows = image2[0].length;
@@ -7579,8 +7672,7 @@ if (sum > 511) {
                 image2[i][j] = v;
             }
         }
-        
-        // use adaptive means to extract centers
+       
         GreyscaleImage img2 = imageM.createFullRangeIntWithDimensions();
         for (int i = 0; i < image2.length; ++i) {
             for (int j = 0; j < image2[i].length; ++j) {
@@ -7588,9 +7680,9 @@ if (sum > 511) {
                 img2.setValue(i, j, Math.round(v));
             }
         }
-        
+            
+        // use adaptive means to extract centers
         applyAdaptiveMeanThresholding(img2, 1);
-        
         for (int i = 3; i < img2.getWidth(); ++i) {
             for (int j = 3; j < img2.getHeight(); ++j) {
                 if (img2.getValue(i, j) == 0) {
@@ -7728,6 +7820,24 @@ if (sum > 511) {
         for (int i = 0; i < c.length; ++i) {
             for (int j = 0; j < c[0].length; ++j) {
                 c[i][j] *= b[i][j];
+            }
+        }
+
+        return c;
+    }
+
+    public float[][] divide(float[][] a, float[][] b) {
+
+        float[][] c = copy(a);
+
+        for (int i = 0; i < c.length; ++i) {
+            for (int j = 0; j < c[0].length; ++j) {
+                float v = b[i][j];
+                if (v == 0) {
+                    c[i][j] = Float.MAX_VALUE;
+                } else {
+                    c[i][j] /= v;
+                }
             }
         }
 
