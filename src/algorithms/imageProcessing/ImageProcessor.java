@@ -7391,11 +7391,17 @@ if (sum > 511) {
         keypoints1.addAll(orb.getAllKeyPoints1());
         */
         
-        // -- switch to row-major ----
-        float[][] image = multiply(img, 1.f/max);
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
+        EdgeFilterProducts products = imageSegmentation.createGradient(
+            img.copyToColorGreyscaleExt(), 2, ts);
+        
+        GreyscaleImage gradient = products.getGradientXY();
         
         float sigma = SIGMA.getValue(SIGMA.ZEROPOINTSEVENONE);
         
+        // -- switch to row-major ----
+        float[][] image = multiply(img, 1.f/max);
+                
         //  strong high density responses in r5r5 for edges of vegetation.
         //  textures such as bricks or roof tiles are present in r5r5
         //  but so are strong edges, so possibly need
@@ -7413,7 +7419,8 @@ if (sum > 511) {
         //createS5S5KeyPoints(image, keypoints0, keypoints1);        
         //createFirstDerivKeyPoints(image, sigma, keypoints0, keypoints1);
         
-        Image kpImg = img.copyToColorGreyscale();
+        //Image kpImg = img.copyToColorGreyscale();
+        Image kpImg = gradient.copyToColorGreyscale();
         for (int i = 0; i < keypoints0.size(); ++i) {
             int x = keypoints1.get(i);
             int y = keypoints0.get(i);

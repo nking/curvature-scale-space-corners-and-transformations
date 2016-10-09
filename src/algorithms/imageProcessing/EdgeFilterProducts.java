@@ -20,9 +20,13 @@ public class EdgeFilterProducts {
         
     private GreyscaleImage theta = null;
     
+    // might be null
+    private GreyscaleImage phaseAngle = null;
+    
     /**
      * hough lines as a map with key = hough line set of of points and value =
      * theta and radius.
+     * might be null
      */
     private Map<Set<PairInt>, PairInt> houghLines = null;
 
@@ -74,12 +78,20 @@ public class EdgeFilterProducts {
     public GreyscaleImage getTheta() {
         return theta;
     }
+    
+    public GreyscaleImage getPhaseAngle() {
+        return phaseAngle;
+    }
 
     /**
      * @param theta the theta to set
      */
     public void setTheta(GreyscaleImage theta) {
         this.theta = theta;
+    }
+    
+    public void setPhaseAngle(GreyscaleImage paImage) {
+        this.phaseAngle = paImage;
     }
     
     /**

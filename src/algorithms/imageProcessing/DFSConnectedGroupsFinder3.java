@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.imageProcessing.util.MiscStats;
+import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,6 +23,15 @@ import java.util.logging.Logger;
  * @author nichole
  */
 class DFSConnectedGroupsFinder3 {
+    
+    /**
+     * uses the 4 neighbor region if true, else the 8-neighbor region
+     */
+    protected boolean use4Neighbors = false;
+    
+    public void setToUse4Neighbors() {
+        use4Neighbors = true;
+    }
     
     /**
      * find contiguous pixels having a value within tolerance of the given value and 
@@ -112,6 +122,10 @@ class DFSConnectedGroupsFinder3 {
             float seed = seeds[i];
             
             ContiguousFinder finder = new ContiguousFinder();
+          
+            if (use4Neighbors) {
+                finder.setToUse4Neighbors();
+            }
             
             finder.findConnectedPointGroups(thetaMap, seed,
                 maxValueForWrapAround, toleranceInValue, imageWidth, 
@@ -240,9 +254,7 @@ class DFSConnectedGroupsFinder3 {
                         thetaAvg[idx] = calculateAvg(output.get(idx), thetaMap);
                     }
                     if (centroids[idx] == null) {
-                        double[] xyCen = curveHelper.calculateXYCentroids(output.get(idx));
-                        centroids[idx] = new PairInt((int)Math.round(xyCen[0]),
-                            (int)Math.round(xyCen[1]));
+                        centroids[idx] = curveHelper.calculateXYCentroids2(output.get(idx));
                     }
                     float theta = thetaMap.get(p).floatValue();
                     float diffT = Math.abs(thetaAvg[idx] - theta);
@@ -264,10 +276,8 @@ class DFSConnectedGroupsFinder3 {
                     output.get(idx).remove(p);
                     indexes.remove(indexes.get(i));
                 }
-int z = 1;                
             }
         }
-int z = 1;
     }
 
     private float calculateAvg(Set<PairInt> points, Map<PairInt, Float> thetaMap) {
@@ -283,10 +293,19 @@ int z = 1;
 
     protected static class ContiguousFinder extends AbstractDFSConnectedGroupsFinder {
 
+        /**
+         * uses the 4 neighbor region if true, else the 8-neighbor region
+         */
+        protected boolean use4Neighbors = false;
+    
         public ContiguousFinder() {
             minimumNumberInCluster = 1;        
         }
     
+        public void setToUse4Neighbors() {
+            use4Neighbors = true;
+        }
+        
         public void findConnectedPointGroups(Map<PairInt, Float> pointValueMap,
             float value, int maxValueForWrapAround, int toleranceInValue,
             int imageWidth, int imageHeight) {
@@ -312,6 +331,16 @@ int z = 1;
 
             visited.add(stack.peek());
 
+            int[] dxs;
+            int[] dys;
+            if (use4Neighbors) {
+                dxs = Misc.dx4;
+                dys = Misc.dy4;
+            } else {
+                dxs = Misc.dx8;
+                dys = Misc.dy8;
+            }
+            
             while (!stack.isEmpty()) {
 
                 PairInt uPoint = stack.pop();
@@ -341,57 +370,58 @@ int z = 1;
                     continue;
                 } 
 
-                for (int vX = (uX - 1); vX <= (uX + 1); vX++) {
+                for (int i = 0; i < dxs.length; ++i) {
+                
+                    int vX = uX + dxs[i];
+                    int vY = uY + dys[i];
+
                     if ((vX < 0) || (vX > (imageWidth - 1))) {
                         continue;
                     }
+                    if ((vY < 0) || (vY > (imageHeight - 1))) {
+                        continue;
+                    }
 
-                    for (int vY = (uY - 1); vY <= (uY + 1); vY++) {
-                        if ((vY < 0) || (vY > (imageHeight - 1))) {
-                            continue;
-                        }
+                    PairInt vPoint = new PairInt(vX, vY);
 
-                        PairInt vPoint = new PairInt(vX, vY);
+                    if (vPoint.equals(uPoint)) {
+                        continue;
+                    }
 
-                        if (vPoint.equals(uPoint)) {
-                            continue;
-                        }
+                    if (!pointValueMap.containsKey(vPoint)) {
+                        continue;
+                    }
 
-                        if (!pointValueMap.containsKey(vPoint)) {
-                            continue;
-                        }
+                    if (visited.contains(vPoint)) {
+                        continue;
+                    }
 
-                        if (visited.contains(vPoint)) {
-                            continue;
-                        }
-
-                        float vValue = pointValueMap.get(vPoint).floatValue();
-                        similar = false;
-                        if (Math.abs(vValue - value) <= toleranceInValue) {
+                    float vValue = pointValueMap.get(vPoint).floatValue();
+                    similar = false;
+                    if (Math.abs(vValue - value) <= toleranceInValue) {
+                        similar = true;
+                    }
+                    if (!similar) {
+                        if (Math.abs(vValue - (value - maxValueForWrapAround)) <= toleranceInValue) {
                             similar = true;
                         }
-                        if (!similar) {
-                            if (Math.abs(vValue - (value - maxValueForWrapAround)) <= toleranceInValue) {
-                                similar = true;
-                            }
-                        }
-                        if (!similar) {
-                            if (Math.abs(value - (vValue - maxValueForWrapAround)) <= toleranceInValue) {
-                                similar = true;
-                            }
-                        }
-                        if (!similar) {
-                            continue;
-                        }
-
-                        visited.add(vPoint);
-
-                        processPair(uPoint, vPoint);
-
-                        stack.add(vPoint);
-
-                        foundANeighbor = true;
                     }
+                    if (!similar) {
+                        if (Math.abs(value - (vValue - maxValueForWrapAround)) <= toleranceInValue) {
+                            similar = true;
+                        }
+                    }
+                    if (!similar) {
+                        continue;
+                    }
+
+                    visited.add(vPoint);
+
+                    processPair(uPoint, vPoint);
+
+                    stack.add(vPoint);
+
+                    foundANeighbor = true;
                 }
 
                 if (!foundANeighbor && (minimumNumberInCluster == 1)) {

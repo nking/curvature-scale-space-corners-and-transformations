@@ -10531,106 +10531,45 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
     }
 
     /**
-     * 
+     *
      * @param img
-     * @param gradientMethod 
-     * 0=CannyEdgeFilterAdaptiveDeltaE2000 + CannyEdgeFilterAdaptive,
-     * 1=CannyEdgeFilterAdaptive, 
-     * 2=CannyEdgeFilterAdaptiveDeltaE2000,
-     * 3=PhaseCongruencyDetector
-     * 4= the phase angle image of the phase congruency detector
+     * @param gradientMethod
+     * 0=CannyEdgeFilterAdaptiveDeltaE2000,
+     * 1=CannyEdgeFilterAdaptive,
+     * 2=PhaseCongruencyDetector
      * @param ts timestamp used in debugging image name
-     * @return 
+     * @return
      */
-    public GreyscaleImage createGradient(ImageExt img,
+    public EdgeFilterProducts createGradient(ImageExt img,
         int gradientMethod, long ts) {
 
         ImageExt imgCp = img.copyToImageExt();
-        GreyscaleImage gsImg;
+
+        EdgeFilterProducts products = null;
 
         if (gradientMethod == 0) {
+
             CannyEdgeFilterAdaptiveDeltaE2000 canny =
                 new CannyEdgeFilterAdaptiveDeltaE2000();
             canny.setToNotUseZhangSuen();
             canny.setOtsuScaleFactor(0.3f);
             canny.setToUseSingleThresholdIn2LayerFilter();
             canny.applyFilter(imgCp);
-            GreyscaleImage gsImg2 = canny.getFilterProducts().getGradientXY();
-            for (int i = 0; i < gsImg2.getNPixels(); ++i) {
-                if (gsImg2.getValue(i) > 0) {
-                    gsImg2.setValue(i, 255);
-                } else {
-                    gsImg2.setValue(i, 0);
-                }
-            }
-            MiscDebug.writeImage(gsImg2, "_gradientLAB_" + ts);
-            gsImg2 = canny.getFilterProducts().getGradientXY();
 
-            gsImg = img.copyToGreyscale();
-            CannyEdgeFilterAdaptive canny2 = new CannyEdgeFilterAdaptive();
-            canny2.setToNotUseZhangSuen();
-            canny2.setOtsuScaleFactor(0.3f);
-            canny2.setToUseSingleThresholdIn2LayerFilter();
-            canny2.applyFilter(gsImg);
-            {
-                GreyscaleImage gsImg3 = gsImg.copyImage();
-                for (int i = 0; i < gsImg3.getNPixels(); ++i) {
-                    if (gsImg3.getValue(i) > 0) {
-                        gsImg3.setValue(i, 255);
-                    }
-                }
-                MiscDebug.writeImage(gsImg3, "_gradient_1_" + ts);
-            }
-            for (int i = 0; i < gsImg.getNPixels(); ++i) {
-                int v = gsImg2.getValue(i);
-                if (v > 0 && gsImg.getValue(i) == 0) {
-                    gsImg.setValue(i, v);
-                }
-            }
+            products = canny.getFilterProducts();
 
-            gsImg2 = gsImg.copyImage();
-            for (int i = 0; i < gsImg2.getNPixels(); ++i) {
-                if (gsImg2.getValue(i) > 0) {
-                    gsImg2.setValue(i, 255);
-                } else {
-                    gsImg2.setValue(i, 0);
-                }
-            }
-            MiscDebug.writeImage(gsImg2, "_gradient_comb_" + ts);
         } else if (gradientMethod == 1) {
-            gsImg = img.copyToGreyscale();
+
             CannyEdgeFilterAdaptive canny2 = new CannyEdgeFilterAdaptive();
             canny2.setToNotUseZhangSuen();
             //canny2.setOtsuScaleFactor(0.3f);
             canny2.setToUseSingleThresholdIn2LayerFilter();
-            canny2.applyFilter(gsImg);
-            {
-                GreyscaleImage gsImg3 = gsImg.copyImage();
-                for (int i = 0; i < gsImg3.getNPixels(); ++i) {
-                    if (gsImg3.getValue(i) > 0) {
-                        gsImg3.setValue(i, 255);
-                    }
-                }
-                MiscDebug.writeImage(gsImg3, "_gradient_1_" + ts);
-            }
+            canny2.applyFilter(imgCp.copyToGreyscale2());
+
+            products = canny2.getFilterProducts();
+
         } else if (gradientMethod == 2) {
-            CannyEdgeFilterAdaptiveDeltaE2000 canny =
-                new CannyEdgeFilterAdaptiveDeltaE2000();
-            canny.setToNotUseZhangSuen();
-            canny.setOtsuScaleFactor(0.3f);
-            canny.setToUseSingleThresholdIn2LayerFilter();
-            canny.applyFilter(imgCp);
-            GreyscaleImage gsImg2 = canny.getFilterProducts().getGradientXY();
-            for (int i = 0; i < gsImg2.getNPixels(); ++i) {
-                if (gsImg2.getValue(i) > 0) {
-                    gsImg2.setValue(i, 255);
-                } else {
-                    gsImg2.setValue(i, 0);
-                }
-            }
-            MiscDebug.writeImage(gsImg2, "_gradientLAB_" + ts);
-            gsImg = canny.getFilterProducts().getGradientXY();
-        } else {
+
             float cutOff = 0.5f;//0.3f;//0.5f;
             int nScale = 5;
             int minWavelength = 3;//nScale;//3;
@@ -10643,46 +10582,48 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             double tLow = 0.05;
             double tHigh = 0.1;
             boolean increaseKIfNeeded = false;
-            gsImg = img.copyToGreyscale();
+
             PhaseCongruencyDetector pcd = new PhaseCongruencyDetector();
             PhaseCongruencyDetector.PhaseCongruencyProducts pr
-                = pcd.phaseCongMono(gsImg, nScale, minWavelength, mult,
+                = pcd.phaseCongMono(imgCp.copyToGreyscale2(), nScale, minWavelength, mult,
                 sigmaOnf, k, increaseKIfNeeded,
                 cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
-            if (gradientMethod == 3) {
-                double[][] pc = pr.getPhaseCongruency();
-                GreyscaleImage gsImg2 = gsImg.createWithDimensions();
-                for (int i = 0; i < pr.getThinned().length; ++i) {
-                    for (int j = 0; j < pr.getThinned()[i].length; ++j) {
-                        if (pr.getThinned()[i][j] > 0) {
-                            int v = (int)Math.round(255. * pc[i][j]);
-                            gsImg.setValue(j, i, v);
-                            gsImg2.setValue(j, i, 255);
-                        } else {
-                            gsImg.setValue(j, i, 0);
-                            gsImg2.setValue(j, i, 0);
-                        }
+
+            products = new EdgeFilterProducts();
+
+            int nCols = imgCp.getWidth();
+            int nRows = imgCp.getHeight();
+
+            GreyscaleImage pcImg = new GreyscaleImage(nCols, nRows);
+            double[][] pc = pr.getPhaseCongruency();
+            for (int i = 0; i < pr.getThinned().length; ++i) {
+                for (int j = 0; j < pr.getThinned()[i].length; ++j) {
+                    if (pr.getThinned()[i][j] > 0) {
+                        int v = (int)Math.round(255. * pc[i][j]);
+                        pcImg.setValue(j, i, v);
                     }
                 }
-                MiscDebug.writeImage(gsImg2, "_gradient_2_" + ts);
-            } else if (gradientMethod == 4) {
-                int[][] pa = MiscMath.rescale(pr.getPhaseAngle(), 0, 255);
-                for (int i = 0; i < pa.length; ++i) {
-                    for (int j = 0; j < pa[i].length; ++j) {
-                        int v = pa[i][j];
-                        gsImg.setValue(j, i, v);
-                    }
-                }
-                MiscDebug.writeImage(gsImg, "_phase_angle_" + ts);
             }
+
+            products.setGradientXY(pcImg);
+
+            GreyscaleImage paImg = new GreyscaleImage(nCols, nRows);
+            int[][] pa = MiscMath.rescale(pr.getPhaseAngle(), 0, 255);
+            for (int i = 0; i < pa.length; ++i) {
+                for (int j = 0; j < pa[i].length; ++j) {
+                    int v = pa[i][j];
+                    paImg.setValue(j, i, v);
+                }
+            }
+            products.setPhaseAngle(paImg);
         }
 
-        return gsImg;
+        return products;
     }
-    
+
     private PhaseCongruencyDetector.PhaseCongruencyProducts
         createPhaseCongruency(GreyscaleImage img) {
-    
+
         float cutOff = 0.5f;//0.3f;//0.5f;
         int nScale = 5;
         int minWavelength = 3;//nScale;//3;
@@ -10700,7 +10641,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             = pcd.phaseCongMono(img, nScale, minWavelength, mult,
             sigmaOnf, k, increaseKIfNeeded,
             cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
-        
+
         return pr;
     }
 
@@ -10755,9 +10696,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
     }
 
-    private int[] calcStdDev(List<GroupAverageColors> listOfColors, 
+    private int[] calcStdDev(List<GroupAverageColors> listOfColors,
         List<Integer> indexes) {
-        
+
         float avgR = 0;
         float avgG = 0;
         float avgB = 0;
@@ -10771,7 +10712,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         avgR /= length;
         avgG /= length;
         avgB /= length;
-        
+
         float stdvR = 0;
         float stdvG = 0;
         float stdvB = 0;
@@ -10787,37 +10728,38 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         int stdDevR = (int)Math.round(Math.sqrt(stdvR/(length - 1.0f)));
         int stdDevG = (int)Math.round(Math.sqrt(stdvG/(length - 1.0f)));
         int stdDevB = (int)Math.round(Math.sqrt(stdvB/(length - 1.0f)));
-        
+
         return new int[]{stdDevR, stdDevG, stdDevB};
     }
 
     /**
      * phase angle image normalized to values between 0 and 255 is used to
      * modify img.
-     * 
+     *
      * @param img
      * @param phaseAngleInt
-     * @return 
+     * @return
      */
-    private ImageExt modifyWithPhaseAngle(ImageExt img, int[][] phaseAngleInt) {
-        
+    private ImageExt modifyWithPhaseAngle(ImageExt img, GreyscaleImage 
+        phaseAngleImg) {
+
         int w = img.getWidth();
         int h = img.getHeight();
-        
+
         GreyscaleImage paImg = new GreyscaleImage(w, h);
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
-                int v = phaseAngleInt[j][i];
+                int v = phaseAngleImg.getValue(i, j);
                 paImg.setValue(i, j, v);
             }
         }
-         
+
         ImageExt img2 = img.copyToImageExt();
-        
+
         ImageProcessor imageProcessor = new ImageProcessor();
         List<Set<PairInt>> contigSets = imageProcessor.
             findConnectedSameValueGroups(paImg);
-        
+
         for (int i = 0; i < contigSets.size(); ++i) {
             Set<PairInt> set = contigSets.get(i);
             if (set.size() < 2) {
@@ -10832,7 +10774,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 img2.setRGB(p.getX(), p.getY(), r, g, b);
             }
         }
-        
+
         return img2;
     }
 
@@ -13520,14 +13462,15 @@ int z = 1;
 
         long ts = MiscDebug.getCurrentTimeFormatted();
 
-        //0=canny gs+LAB, 1=canny gs, 2=canny lab, 3=phase cong
-        int gradientMethod = 3;//1;
+        //0=canny LAB, 1=canny gs, 2=phase cong monogenic
+        int gradientMethod = 2;
 
-        GreyscaleImage gsImg = createGradient(img, gradientMethod, ts);
-
-        return objectSegmentation(img, gsImg);
+        EdgeFilterProducts products = 
+            createGradient(img, gradientMethod, ts);
+        
+        return objectSegmentation(img, products);
     }
-    
+
     /**
      * a segmentation method that uses super pixels and a few
      * color merging methods to result in an image which is
@@ -13538,7 +13481,7 @@ int z = 1;
      * @param gradient
      * @return
      */
-    public int[] objectSegmentation(ImageExt img, final GreyscaleImage gradient) {
+    public int[] objectSegmentation(ImageExt img, final EdgeFilterProducts edgeProducts) {
 
         long ts = MiscDebug.getCurrentTimeFormatted();
         ImageExt imgCp = img.copyToImageExt();
@@ -13549,7 +13492,7 @@ int z = 1;
         // extrapolate boundaries at nclusters=x1
         //   NOTE: this method is tailored for images
         //   binned to size near 256 on a side, so will
-        //   need to add comments and maybe a wrapper to 
+        //   need to add comments and maybe a wrapper to
         //   make sure that is true
         float nPix = img.getNPixels();
         int x1 = 17;//11; 17
@@ -13564,11 +13507,11 @@ int z = 1;
         log.info("  n1=" + n10 + "," + n11);
         int nc = (n10+n11)/2;
         SLICSuperPixels slic = new SLICSuperPixels(imgCp, nc);
-        slic.setGradient(gradient);
+        slic.setGradient(edgeProducts.getGradientXY());
         slic.calculate();
         int[] labels = slic.getLabels();
-        
-        ImageExt img3 = img.copyToImageExt();
+
+        ImageExt img3 = img.createWithDimensions();
         ImageIOHelper.addAlternatingColorLabelsToRegion(img3, labels);
         String str = Integer.toString(nc);
         str = (str.length() < 3) ? "0" + str : str;
@@ -13585,7 +13528,108 @@ int z = 1;
         // a safe limit for HSV is 0.025 to not overrun object bounds
         labels = mergeByColor(imgCp, contigSets, ColorSpace.HSV, 0.095f);//0.1f);
         mergeSmallSegments(imgCp, labels, sizeLimit, ColorSpace.HSV);
-    
+
+        // --- below here, using phase angle to further merge labels ---
+        
+        //GreyscaleImage paImg = edgeProducts.getPhaseAngle();
+        //MiscDebug.writeImage(paImg, "_phase_angle_" + ts + "_" + str);
+        
+        /*
+        int[] labelsPA = new int[paImg.getNPixels()];
+        for (int i = 0; i < paImg.getNPixels(); ++i) {
+            labelsPA[i] = paImg.getValue(i);
+        }
+        LabelToColorHelper.condenseLabels(labelsPA);
+        contigSets = LabelToColorHelper
+            .extractContiguousLabelPoints(img, labelsPA);
+                       
+        TIntObjectMap<TIntSet> labelPAIndexMap = new 
+            TIntObjectHashMap<TIntSet>();
+        
+        int count = 0;
+        for (int i = 0; i < contigSets.size(); ++i) {
+            Set<PairInt> set = contigSets.get(i);
+            DFSConnectedGroupsFinder finder3 = new 
+                DFSConnectedGroupsFinder();
+            finder3.setMinimumNumberInCluster(1);
+            finder3.findClustersIterative(set);
+            int n3 = finder3.getNumberOfGroups();
+            for (int j = 0; j < n3; ++j) {
+                TIntSet setI = new TIntHashSet();
+                Set<PairInt> set0 = finder3.getXY(j);
+                for (PairInt p : set0) {
+                    int pixIdx = paImg.getInternalIndex(p.getX(), p.getY());
+                    labelsPA[pixIdx] = count;
+                    setI.add(pixIdx);
+                }
+                labelPAIndexMap.put(count, setI);
+                count++;
+            }
+        }
+        
+        img3 = img.createWithDimensions();
+        ImageIOHelper.addAlternatingColorLabelsToRegion(img3, labelsPA);
+        MiscDebug.writeImage(img3, "_phase_angle_" + ts + "_" + str);
+        
+        // key=pixIdx, value=label from labels
+        TIntIntMap pointIndexLabelMap = new TIntIntHashMap();
+        for (int i = 0; i < labels.length; ++i) {
+            int label = labels[i];
+            pointIndexLabelMap.put(i, label);
+        }
+        // key=label from labels, value=set of pixIdxs
+        TIntObjectMap<TIntSet> labelIndexMap = 
+            LabelToColorHelper.createLabelIndexMap(img, labels);
+        int aBefore = labelIndexMap.size();
+        
+        // -- contiguous sets with same labelsPA value can be merged
+        TIntObjectIterator<TIntSet> iter = labelPAIndexMap.iterator();
+        
+        for (int i = 0; i < labelPAIndexMap.size(); ++i) {
+            iter.advance();
+            TIntSet pixIndexes = iter.value();
+            TIntIterator iter2 = pixIndexes.iterator();
+            int label = -1;
+            while (iter2.hasNext()) {
+                int pixIdx = iter2.next();
+                // find the label and if it conflicts with label, merge 
+                int label2 = pointIndexLabelMap.get(pixIdx);
+                if (label == -1) {
+                    label = label2;
+                    continue;
+                } else if (label == label2) {
+                    continue;
+                }
+                // merge all label2 points with label
+                
+                TIntSet labels2Set = labelIndexMap.get(label2);
+                labelIndexMap.get(label).addAll(labels2Set);
+                
+                TIntIterator iter3 = labels2Set.iterator();
+                while (iter3.hasNext()) {
+                    int pixIdx3 = iter3.next();
+                    pointIndexLabelMap.put(pixIdx3, label);
+                }
+                
+                labelIndexMap.remove(label2);                   
+            }
+        }
+        int aAfter = labelIndexMap.size();
+        
+        // relabel labels with labelIndexMap
+        iter = labelIndexMap.iterator();
+        for (int i = 0; i < labelIndexMap.size(); ++i) {
+            iter.advance();
+            int label = iter.key();
+            TIntSet labels2Set = iter.value();
+            TIntIterator iter3 = labels2Set.iterator();
+            while (iter3.hasNext()) {
+                int pixIdx3 = iter3.next();
+                labels[pixIdx3] = label;
+            }
+        }
+        */
+        
         return labels;
     }
 
@@ -13593,44 +13637,38 @@ int z = 1;
      * NOT READY FOR USE.
      * a segmentation method that uses monogenic phase congruency
      * to create a phase angle image, then uses SLIC super pixels
-     * to make an oversegmented image, then creates a color phase
+     * to make an over-segmented image, then creates a color phase
      * angle image as input to normalized cuts.
      * NOTE that this is tailored for images
      * binned to near size 256 on a side.
-     * 
+     *
      * @param img
      * @return
      */
     public int[] objectSegmentation2(ImageExt img) {
 
-        PhaseCongruencyDetector.PhaseCongruencyProducts pr =
-            createPhaseCongruency(img.copyToGreyscale2());
-        
         long ts = MiscDebug.getCurrentTimeFormatted();
+
+        //0=canny LAB, 1=canny gs, 2=phase cong monogenic
+        int gradientMethod = 2;
+
+        EdgeFilterProducts products = 
+            createGradient(img, gradientMethod, ts);
+        
         ImageExt imgCp = img.copyToImageExt();
 
         int w = img.getWidth();
         int h = img.getHeight();
 
-        double[][] phaseAngle = pr.getPhaseAngle();
-        int[][] phaseAngleInt = MiscMath.rescale(phaseAngle, 0, 255);
-        
-        ImageExt imgCp2 = modifyWithPhaseAngle(img, phaseAngleInt);
-        
+        ImageExt imgCp2 = modifyWithPhaseAngle(imgCp, products.getPhaseAngle());
+
         // substituting phase angle for gradient
-        
-        GreyscaleImage gradient = new GreyscaleImage(w, h);
-        for (int i = 0; i < w; ++i) {
-            for (int j = 0; j < h; ++j) {
-                int v = phaseAngleInt[j][i];
-                gradient.setValue(i, j, v);
-            }
-        }
+        GreyscaleImage gradient = products.getPhaseAngle();
 
         // extrapolate boundaries at nclusters=x1
         //   NOTE: this method is tailored for images
         //   binned to size near 256 on a side, so will
-        //   need to add comments and maybe a wrapper to 
+        //   need to add comments and maybe a wrapper to
         //   make sure that is true
         float nPix = img.getNPixels();
         int x1 = 10;//17;//11; 17
@@ -13648,11 +13686,11 @@ int z = 1;
         slic.setGradient(gradient);
         slic.calculate();
         int[] labels = slic.getLabels();
-        
+
         List<Set<PairInt>> contigSets0 = LabelToColorHelper
-            .extractContiguousLabelPoints(img, labels);
-        
-        ImageExt img3 = img.copyToImageExt();
+            .extractContiguousLabelPoints(imgCp2, labels);
+
+        ImageExt img3 = imgCp2.createWithDimensions();
         ImageIOHelper.addAlternatingColorLabelsToRegion(img3, labels);
         String str = Integer.toString(nc);
         str = (str.length() < 3) ? "0" + str : str;
@@ -13664,27 +13702,27 @@ int z = 1;
         //  boundaries more cleanly.
         //  the phase angle modification was helpful, but
         //  more is needed
-        
+
         NormalizedCuts normCuts = new NormalizedCuts();
         normCuts.setColorSpaceToHSV();
         //thresh = 0.05;
         //sigma = 0.1;
         normCuts.setThreshold(0.065);
         labels = normCuts.normalizedCut(imgCp2, labels);
-        
-        img3 = img.copyToImageExt();
+
+        img3 = imgCp2.createWithDimensions();
         ImageIOHelper.addAlternatingColorLabelsToRegion(img3, labels);
         MiscDebug.writeImage(img3, "_norm_" + ts + "_" + str);
-        
-        List<Set<PairInt>> contigSets = LabelToColorHelper
-            .extractContiguousLabelPoints(img, labels);
 
-        img3 = img.copyToImageExt();
+        List<Set<PairInt>> contigSets = LabelToColorHelper
+            .extractContiguousLabelPoints(imgCp2, labels);
+
+        img3 = imgCp2.createWithDimensions();
         ImageIOHelper.addAlternatingColorLabelsToRegion(img3, labels);
         MiscDebug.writeImage(img3, "_norm_2_" + ts + "_" + str);
-        
+
         return labels;
-        
+
         /*
         ImageExt img3 = img.copyToImageExt();
         ImageIOHelper.addAlternatingColorLabelsToRegion(img3, labels);
@@ -13703,7 +13741,7 @@ int z = 1;
         // a safe limit for HSV is 0.025 to not overrun object bounds
         labels = mergeByColor(imgCp, contigSets, ColorSpace.HSV, 0.095f);//0.1f);
         mergeSmallSegments(imgCp, labels, sizeLimit, ColorSpace.HSV);
-    
+
         return labels;
         */
     }
@@ -14145,7 +14183,7 @@ int z = 1;
         clusterSets.clear();
         clusterSets.addAll(out);
     }
-    
+
     /**
      * filters the groups of labeled points to remove those which have color
      * histograms with small intersections with the template color histogram.
@@ -14153,44 +14191,44 @@ int z = 1;
      * cells and then returns the centroids of the contiguous aggregation of
      * those as outputListOfSeeds.  The outputListOfSeeds is meant to be
      * used for a subsequent kmeans clustering.
-     * 
+     *
      * @param img
      * @param labels
      * @param templateImg
      * @param templatePoints
      * @param outputListOfPointSets
      * @param outputListOfCHs
-     * @param outputListOfSeeds 
-     * @param outputSeedColors 
+     * @param outputListOfSeeds
+     * @param outputSeedColors
      */
     public void filterUsingColorHistogramDifference(ImageExt img,
         int[] labels, ImageExt templateImg, Set<PairInt> templatePoints,
         List<Set<PairInt>> outputListOfPointSets,
-        List<TwoDIntArray> outputListOfCHs, 
-        List<PairInt> outputListOfSeeds, 
+        List<TwoDIntArray> outputListOfCHs,
+        List<PairInt> outputListOfSeeds,
         List<GroupPixelRGB0> outputSeedColors) {
-          
+
         float deltaELimit = 9.5f;//8.5f;
-        
+
         assert(labels.length == img.getNPixels());
-        
+
         int[] labels2 = Arrays.copyOf(labels, labels.length);
-        
+
         List<Set<PairInt>> listOfPointSets = LabelToColorHelper
             .extractContiguousLabelPoints(img, labels2);
-         
+
         // get color information for the template:
         GroupAverageColors templateColors = new GroupAverageColors(
             templateImg, templatePoints);
-        
+
         List<GroupAverageColors> listOfColors = new ArrayList<GroupAverageColors>();
         Set<PairInt> allSetPoints = new HashSet<PairInt>();
         QuadTree<Integer, Integer> qt = new QuadTree<Integer, Integer>();
-        
+
         ColorHistogram clrHist = new ColorHistogram();
-        
+
         int[][] templateCH = clrHist.histogramHSV(templateImg, templatePoints);
-        
+
         // filter sets to remove large differences in deltaE
         for (int i = 0; i < listOfPointSets.size(); ++i) {
             Set<PairInt> set = listOfPointSets.get(i);
@@ -14198,11 +14236,11 @@ int z = 1;
             DeltaESim deltaESimilarity = new DeltaESim(templateColors, setColors);
             if (deltaESimilarity.getDeltaE() < deltaELimit) {
                 int idx = outputListOfPointSets.size();
-                outputListOfPointSets.add(set);                
+                outputListOfPointSets.add(set);
                 allSetPoints.addAll(set);
                 listOfColors.add(setColors);
-                
-                qt.insert(setColors.getXCen(), setColors.getYCen(), 
+
+                qt.insert(setColors.getXCen(), setColors.getYCen(),
                     Integer.valueOf(idx));
 
                 TwoDIntArray a = new TwoDIntArray();
@@ -14210,41 +14248,41 @@ int z = 1;
                 outputListOfCHs.add(a);
             }
         }
-       
-        // make a grid of 2D bins across the image of size 
+
+        // make a grid of 2D bins across the image of size
         // 1 or 1/2 or 1/3 template size for each dimension.
         // for each bin
         //   -- gather all centers within bin into one point set,
         //   -- make a color histogram and if intersection is very small,
         //      -- check to make sure that the individual cells have
         //         similar color (can safely remove them as a group them)
-        
+
         int[] minMaxXY = MiscMath.findMinMaxXY(templatePoints);
         int xLen = minMaxXY[1] - minMaxXY[0];
         int yLen = minMaxXY[3] - minMaxXY[2];
         int maxDim = Math.max(xLen, yLen);
-        
+
         int nX = 2 * ((int)Math.floor(img.getWidth()/maxDim) + 1);
         int nY = 2 * ((int)Math.floor(img.getHeight()/maxDim) + 1);
-        
-        System.out.println("number of segmented cells=" 
+
+        System.out.println("number of segmented cells="
             + outputListOfPointSets.size() + " number removed=" +
             (listOfPointSets.size() - outputListOfPointSets.size()));
-        
+
         TIntSet remove = new TIntHashSet();
         TIntSet removeForSeeds = new TIntHashSet();
         Set<PairInt> skipYX = new HashSet<PairInt>();
-        
+
         int nIter = 0;
         float[] chLimit1s = new float[]{0.2f, 0.35f, 0.45f, 0.5f, 0.55f, 0.6f};
-        
+
         // iterate until about 16 cells are left
         while (nIter < 6) {
-            
+
             //NOTE: can increase this to 0.25 for one test
             float chLimit1 = chLimit1s[nIter];
             nIter++;
-    
+
             for (int j = 0; j < nY; ++j) {
                 int startY = (maxDim/2) * j;
                 if (startY > (img.getHeight() - 1)) {
@@ -14271,7 +14309,7 @@ int z = 1;
 
                     Interval<Integer> intX = new Interval<Integer>(startX, stopX);
                     Interval2D<Integer> rect = new Interval2D<Integer>(intX, intY);
-                 
+
                     List<Integer> indexes = qt.query2D(rect);
                     if (indexes.isEmpty()) {
                         continue;
@@ -14279,13 +14317,13 @@ int z = 1;
                     int[][] ch0 = outputListOfCHs.get(indexes.get(0).intValue()).a;
                     int[][] ch = Arrays.copyOf(ch0, ch0.length);
                     for (int k = 1; k < indexes.size(); ++k) {
-                        clrHist.add2To1(ch, 
+                        clrHist.add2To1(ch,
                             outputListOfCHs.get(indexes.get(k).intValue()).a);
                     }
                     float intersection = clrHist.intersection(templateCH, ch);
 
                     System.out.println(String.format(
-                        "bin (%d:%d, %d:%d)  intersection=%.4f", startX, stopX, 
+                        "bin (%d:%d, %d:%d)  intersection=%.4f", startX, stopX,
                         startY, stopY, intersection));
 
                     if (intersection < chLimit1) {
@@ -14304,24 +14342,24 @@ int z = 1;
                     }
                 }
             }
-            
+
             //TODO: this could be revised
             int ns = outputListOfPointSets.size() - removeForSeeds.size();
             if (ns < 2*16) {
                 break;
             }
         }
-        
+
         // copy outputListOfPointSets for separate seeds calc
         List<Set<PairInt>> tmpSeedSets = new ArrayList<Set<PairInt>>();
         for (Set<PairInt> set : outputListOfPointSets) {
             tmpSeedSets.add(new HashSet<PairInt>(set));
         }
-            
+
         System.out.println("removing " + remove.size() + " more segmented cells");
-        
+
         if (!remove.isEmpty() || !removeForSeeds.isEmpty()) {
-            
+
             TIntList sorted = new TIntArrayList(remove);
             sorted.sort();
             for (int i = (sorted.size() - 1); i > -1; --i) {
@@ -14329,7 +14367,7 @@ int z = 1;
                 outputListOfPointSets.remove(idx);
                 outputListOfCHs.remove(idx);
             }
-            
+
             sorted = new TIntArrayList(removeForSeeds);
             sorted.sort();
             for (int i = (sorted.size() - 1); i > -1; --i) {
@@ -14337,21 +14375,21 @@ int z = 1;
                 tmpSeedSets.remove(idx);
             }
         }
-        
+
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         for (int i = 0; i < tmpSeedSets.size(); ++i) {
-            
+
             Set<PairInt> set = tmpSeedSets.get(i);
-            
+
             double[] xyCen = curveHelper.calculateXYCentroids(set);
             outputListOfSeeds.add(new PairInt(
                 (int)Math.round(xyCen[0]), (int)Math.round(xyCen[1])));
-            
+
             GroupPixelRGB0 clrs = new GroupPixelRGB0();
             clrs.calculateColors(set, img, 0, 0);
-            outputSeedColors.add(clrs);            
+            outputSeedColors.add(clrs);
         }
-        
+
         Arrays.fill(labels, -1);
         for (int i = 0; i < outputListOfPointSets.size(); ++i) {
             Set<PairInt> set = outputListOfPointSets.get(i);
@@ -14361,5 +14399,5 @@ int z = 1;
             }
         }
     }
-    
+
 }
