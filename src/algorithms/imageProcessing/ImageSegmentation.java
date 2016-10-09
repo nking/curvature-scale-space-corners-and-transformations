@@ -10655,7 +10655,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 for (int i = 0; i < pr.getThinned().length; ++i) {
                     for (int j = 0; j < pr.getThinned()[i].length; ++j) {
                         if (pr.getThinned()[i][j] > 0) {
-                            int v = (int)Math.round(pc[i][j]);
+                            int v = (int)Math.round(255. * pc[i][j]);
                             gsImg.setValue(j, i, v);
                             gsImg2.setValue(j, i, 255);
                         } else {
