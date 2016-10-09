@@ -50,7 +50,7 @@ public class ORBWrapper {
         ORB orb = new ORB(nKeypoints);
         orb.overrideFastThreshold(fastThreshold);
         if (create2ndDerivPointsAlso) {
-            orb.overrideToAlsoCreate2ndDerivKeypoints();
+            orb.overrideToAlsoCreate1stDerivKeypoints();
         }
         if (!descrDither.equals(ORB.DescriptorDithers.NONE)) {
             orb.overrideToCreateOffsetsToDescriptors(descrDither);
@@ -130,7 +130,7 @@ public class ORBWrapper {
         ORB orb = new ORB(nKeypoints);
         orb.overrideFastThreshold(fastThreshold);
         if (create2ndDerivPointsAlso) {
-            orb.overrideToAlsoCreate2ndDerivKeypoints();
+            orb.overrideToAlsoCreate1stDerivKeypoints();
         }
         orb.overrideToCreateHSVDescriptors();
         

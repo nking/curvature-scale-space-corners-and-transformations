@@ -5,7 +5,7 @@ import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.SIGMA;
-import algorithms.imageProcessing.features.ORB.TwoDFloatArray;
+import algorithms.imageProcessing.StructureTensor;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
@@ -98,9 +98,11 @@ public class ORBTest extends TestCase {
             }
         }
         
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
         TIntList outputKeypoints0 = new TIntArrayList();
         TIntList outputKeypoints1 = new TIntArrayList();
-        orb.peakLocalMax(img, 1, 0.1f, outputKeypoints0, outputKeypoints1);
+        imageProcessor.peakLocalMax(img, 1, 0.1f, outputKeypoints0, outputKeypoints1);
         
         //System.out.println("peakRowCols=" + peakRowCols.toString());
         
@@ -373,9 +375,10 @@ public class ORBTest extends TestCase {
         }
         img[2][2] = 1.f;
         
-        TwoDFloatArray[] tensorComponents = orb.structureTensor(img, 0.1f);
-        
-        float[][] axx = tensorComponents[0].a;
+        StructureTensor tensorComponents = new 
+            StructureTensor(img, 0.1f, false);
+                
+        float[][] axx = tensorComponents.getDXSquared();
         //for (int i = 0; i < axx.length; ++i) {
         //    System.out.println("axx[" + i + "]=" + Arrays.toString(axx[i]));
         //}
@@ -437,25 +440,20 @@ public class ORBTest extends TestCase {
             }
         }
         
-        TwoDFloatArray[] tensorComponents = orb.structureTensor(img, 1);
+        StructureTensor tensorComponents = new 
+            StructureTensor(img, 1, false);
+        
+        float[][] detA = tensorComponents.getDeterminant();
 
-        float[][] axxyy = orb.multiply(tensorComponents[0].a,
-            tensorComponents[2].a);
-
-        float[][] axyxy = orb.multiply(tensorComponents[1].a,
-            tensorComponents[1].a);
-
-        float[][] detA = orb.subtract(axxyy, axyxy);
-
-        float[][] traceA = orb.add(tensorComponents[0].a,
-            tensorComponents[2].a);
+        float[][] traceA = tensorComponents.getTrace();
         
         float[][] hc = orb.cornerHarris(img, detA, traceA);
         
-        orb.debugPrint("hc=", hc);
+        //orb.debugPrint("hc=", hc);
         
         /*
          >>> from skimage.feature import corner_harris, corner_peaks
+        >>> import numpy as np
         >>> square3 = np.zeros([10, 10])
         >>> square3[2:8, 2:8] = 1
         >>> square3.astype(int)
@@ -469,6 +467,7 @@ public class ORBTest extends TestCase {
                [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
+        
         >>> corner_peaks(corner_harris(square3), min_distance=1)
         array([[2, 2],
                [2, 7],
@@ -553,7 +552,7 @@ public class ORBTest extends TestCase {
         //orb.overrideFastN(12);
         //orb.overrideFastThreshold(0.01f);
         orb.overrideToNotCreateDescriptors();
-        orb.overrideToAlsoCreate2ndDerivKeypoints();
+        orb.overrideToAlsoCreate1stDerivKeypoints();
         
         orb.detectAndExtract(img);
         
@@ -583,7 +582,7 @@ public class ORBTest extends TestCase {
         ORB orb = new ORB(500);
         //orb.overrideFastN(12);
         //orb.overrideFastThreshold(0.01f);
-        orb.overrideToAlsoCreate2ndDerivKeypoints();
+        orb.overrideToAlsoCreate1stDerivKeypoints();
         
         orb.detectAndExtract(img);
         
@@ -613,7 +612,7 @@ public class ORBTest extends TestCase {
         //orb.overrideFastThreshold(0.01f);
         orb.detectAndExtract(img);
         orb.overrideToNotCreateDescriptors();
-        orb.overrideToAlsoCreate2ndDerivKeypoints();
+        orb.overrideToAlsoCreate1stDerivKeypoints();
         
         TIntList keypoints0 = orb.getAllKeyPoints0();
         TIntList keypoints1 = orb.getAllKeyPoints1();
@@ -670,7 +669,7 @@ public class ORBTest extends TestCase {
         ORB orb = new ORB(500);
         //orb.overrideFastN(12);
         orb.overrideToNotCreateDescriptors();
-        orb.overrideToAlsoCreate2ndDerivKeypoints();
+        orb.overrideToAlsoCreate1stDerivKeypoints();
         
         orb.detectAndExtract(img);
         
@@ -739,7 +738,7 @@ public class ORBTest extends TestCase {
         //orb.overrideFastN(12);
         //orb.overrideFastThreshold(0.01f);
         orb.overrideToNotCreateDescriptors();
-        orb.overrideToAlsoCreate2ndDerivKeypoints();
+        orb.overrideToAlsoCreate1stDerivKeypoints();
         
         orb.detectAndExtract(img);
         
@@ -810,7 +809,7 @@ public class ORBTest extends TestCase {
         ORB orb = new ORB(2000);
         //orb.overrideFastN(12);
         orb.overrideToNotCreateDescriptors();
-        orb.overrideToAlsoCreate2ndDerivKeypoints();
+        orb.overrideToAlsoCreate1stDerivKeypoints();
         
         orb.detectAndExtract(img);
         
@@ -875,7 +874,7 @@ public class ORBTest extends TestCase {
         ORB orb = new ORB(2000);
         //orb.overrideFastN(12);
         orb.overrideToNotCreateDescriptors();
-        orb.overrideToAlsoCreate2ndDerivKeypoints();
+        orb.overrideToAlsoCreate1stDerivKeypoints();
         
         orb.detectAndExtract(img);
         

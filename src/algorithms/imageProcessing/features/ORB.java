@@ -9,6 +9,7 @@ import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MedianTransform;
+import algorithms.imageProcessing.StructureTensor;
 import algorithms.imageProcessing.transform.ITransformationFit;
 import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.transform.TransformationParameters;
@@ -104,7 +105,7 @@ Still testing the class, there may be bugs present.
  Example Use:
     int nKeyPoints = 200;
     ORB orb = new ORB(nKeyPoints);
-    orb.overrideToAlsoCreate2ndDerivKeypoints();
+    orb.overrideToAlsoCreate1stDerivKeypoints();
     orb.detectAndExtract(image);
 
     // to get the list of keypoint coordinates in row-major, but separated:
@@ -167,7 +168,7 @@ public class ORB {
     }
     private DescriptorDithers descrDithers = DescriptorDithers.NONE;
     
-    private boolean doCreate2ndDerivKeypoints = false;
+    private boolean doCreate1stDerivKeypoints = false;
     
     private boolean doCreateCurvatureKeyPoints = false;
 
@@ -195,8 +196,8 @@ public class ORB {
     public void overrideToNotCreateDescriptors() {
         descrChoice = DescriptorChoice.NONE;
     }
-    public void overrideToAlsoCreate2ndDerivKeypoints() {
-        doCreate2ndDerivKeypoints = true;
+    public void overrideToAlsoCreate1stDerivKeypoints() {
+        doCreate1stDerivKeypoints = true;
     }
     
     public void overrideToCreateHSVDescriptors() {
@@ -372,21 +373,23 @@ public class ORB {
                     hr.add(this.harrisResponses.get(idx1).get(idx2));
                     s.add(this.scalesList.get(idx1).get(idx2));
 
-                    if (!descrChoice.equals(DescriptorChoice.HSV)) {
-                        int d0 = this.descriptorsList.get(idx1).descriptors[idx2];
-                        d[dCount] = d0;
-                        dCount++;
-                    } else {
-                        int d0 = this.descriptorsListH.get(idx1).descriptors[idx2];
-                        dH[dCount] = d0;
-                        
-                        d0 = this.descriptorsListS.get(idx1).descriptors[idx2];
-                        dS[dCount] = d0;
-                        
-                        d0 = this.descriptorsListV.get(idx1).descriptors[idx2];
-                        dV[dCount] = d0;
-                        
-                        dCount++;
+                    if (!descrChoice.equals(DescriptorChoice.NONE)) {
+                        if (!descrChoice.equals(DescriptorChoice.HSV)) {
+                            int d0 = this.descriptorsList.get(idx1).descriptors[idx2];
+                            d[dCount] = d0;
+                            dCount++;
+                        } else {
+                            int d0 = this.descriptorsListH.get(idx1).descriptors[idx2];
+                            dH[dCount] = d0;
+
+                            d0 = this.descriptorsListS.get(idx1).descriptors[idx2];
+                            dS[dCount] = d0;
+
+                            d0 = this.descriptorsListV.get(idx1).descriptors[idx2];
+                            dV[dCount] = d0;
+
+                            dCount++;
+                        }
                     }
                 }
 
@@ -430,8 +433,6 @@ public class ORB {
      * @return
      */
     private List<TwoDFloatArray> buildPyramid(Image image) {
-
-        int decimationLimit = 8;
 
         GreyscaleImage img = image.copyToGreyscale2();
 
@@ -893,16 +894,6 @@ public class ORB {
         int nRows = fastResponse.length;
         int nCols = fastResponse[0].length;
 
-        /*
-        for (int i = 0; i < nRows; ++i) {
-            for (int j = 0; j < nCols; ++j) {
-                if (fastResponse[i][j] > 0) {
-                    System.out.println("fastResponse row-major: ["+i+"]["+j+"]=" + fastResponse[i][j]);
-                }
-            }
-        }
-        */
-
         TIntList keypoints0 = new TIntArrayList();
         TIntList keypoints1 = new TIntArrayList();
 
@@ -911,9 +902,6 @@ public class ORB {
         if (keypoints0.isEmpty()) {
             return null;
         }
-        //System.out.println("nRows=" + nRows + " nCols=" + nCols + " fastN=" + fastN
-        //    + " fastThreshold=" + fastThreshold
-        //    + "\nkeypoints=" + keypoints1);
 
         maskCoordinates(keypoints0, keypoints1, nRows, nCols, 8);//16);
 
@@ -921,58 +909,17 @@ public class ORB {
         // Standard deviation used for the Gaussian kernel, which is used as
         // weighting function for the auto-correlation matrix.
         float sigma = 1;
+        
+        StructureTensor tensorComponents = new StructureTensor(octaveImage, 
+            sigma, doCreateCurvatureKeyPoints);
 
-        //[Axx, Axy, Ayy], that is Sobel x squared, x*y, y squared
-        TwoDFloatArray[] tensorComponents = structureTensor(octaveImage, sigma);
-
-        float[][] axxyy = multiply(tensorComponents[0].a,
-            tensorComponents[2].a);
-
-        float[][] axyxy = multiply(tensorComponents[1].a,
-            tensorComponents[1].a);
-
-        float[][] detA = subtract(axxyy, axyxy);
-
-        float[][] traceA = add(tensorComponents[0].a,
-            tensorComponents[2].a);
-       
-        if (doCreate2ndDerivKeypoints) {
-            
-            /* considering adding curvature points as local maxima in curvature:
-               dot is the degree of derivative...see ScaleSpaceCurvature
-                      X_dot(t,o~) * Y_dot_dot(t,o~) - Y_dot(t,o~) * X_dot_dot(t,o~) 
-            k(t,o~) = -------------------------------------------------------------
-                                   (X_dot^2(t,o~) + Y_dot^2(t,o~))^1.5
-            */
-
-            float hLimit = 0.09f;//0.05f;
-
-            TIntList kp0 = new TIntArrayList();
-            TIntList kp1 = new TIntArrayList();
-
-            // square of 2nd deriv:
-            float[][] secondDeriv = add(tensorComponents[0].a, tensorComponents[2].a);
-            //secondDeriv = add(secondDeriv, tensorComponents[1].a);
+        if (doCreate1stDerivKeypoints) {
             
             ImageProcessor imageProcessor = new ImageProcessor();
-            imageProcessor.peakLocalMax(secondDeriv, 1, 0.1f, kp0, kp1);
-
-            //float min = MiscMath.findMin(secondDeriv);
-            //float max = MiscMath.findMax(secondDeriv);
-            //System.out.println("min=" + min + " max=" + max);
-            //System.out.println("nRows=" + nRows + " nCols=" + nCols);
-            for (int i = 0; i < kp0.size(); ++i) {
-                int x = kp0.get(i);
-                int y = kp1.get(i);
-                // harmonic mean, Brown, Szeliski, and Winder (2005),
-                float hMean = (detA[x][y]/traceA[x][y]);
-                if (hMean > hLimit) {
-                    //System.out.println(String.format("(%d,%d) detA/tr=%.4f",
-                    //    x, y, hMean));
-                    keypoints0.add(x);
-                    keypoints1.add(y);
-                }
-            }
+            
+            imageProcessor.createFirstDerivKeyPoints(
+                tensorComponents, keypoints0, keypoints1);
+           
             /*
             try {
                 float max = MiscMath.findMax(secondDeriv);
@@ -996,6 +943,7 @@ public class ORB {
             // tensorComponents:
             // [axx, axy, ayy, dx, d/dx(dx), dy, d/dy(dy)]
             if (doCreateCurvatureKeyPoints) {
+                
                 // usually, only create these points for points on an edge.
                 // wanting the min and max of curvature,
                 // and then those maxima that are 2 or 3 times stronger than 
@@ -1003,39 +951,8 @@ public class ORB {
                 // with a single edge, the peak curvature should be larger than
                 // 2 times that of the preceding or proceeding minima.
                 
-                //NOTE: consider filtering by a threshold of second derivative
-                // to reduce the regions to edges
-                float max2ndDeriv = MiscMath.findMax(secondDeriv);
-                float f = max2ndDeriv/10;
-                
-                float[][] dx = tensorComponents[3].a;
-                float[][] dx2 = tensorComponents[4].a;
-                float[][] dy = tensorComponents[5].a;
-                float[][] dy2 = tensorComponents[6].a;
-                float[][] curvature = copy(dx);
-                for (int i = 0; i < nRows; ++i) {
-                    for (int j = 0; j < nCols; ++j) {
-                        if (secondDeriv[i][j] < f) {
-                            continue;
-                        }
-                        float dx2dx2 = dx2[i][j] * dx2[i][j];
-                        float dy2dy2 = dy2[i][j] * dy2[i][j];
-                        if (dx2dx2 == 0 && dy2dy2 == 0) {
-                            curvature[i][j] = Float.MAX_VALUE;
-                            continue;
-                        }
-                        //(dx * dy(dy) - dy * dx(dx)) / (dx(dx)*dx(dx) + dy(dy)*dy(dy))
-                        curvature[i][j] = (dx[i][j] * dy2[i][j] - dy[i][j] * dx2[i][j])
-                            / (dx2dx2 + dy2dy2);
-                    }
-                }
-                TIntList kp20 = new TIntArrayList();
-                TIntList kp21 = new TIntArrayList();
-
-                imageProcessor.peakLocalMax(curvature, 1, 0.01f, kp20, kp21);
-                
-                keypoints0.addAll(kp20);
-                keypoints1.addAll(kp21);
+                imageProcessor.createCurvatureKeyPoints(
+                    tensorComponents, keypoints0, keypoints1);
                 
                 /*
                 try {
@@ -1063,33 +980,23 @@ public class ORB {
                 }
                 */
             }
-
         }
         
+        float[][] detA = tensorComponents.getDeterminant();
+
+        float[][] traceA = tensorComponents.getTrace();
+       
         // size is same a octaveImage
         float[][] harrisResponse = cornerHarris(octaveImage, detA, traceA);
 
-        TIntList kp0 = new TIntArrayList();
-        TIntList kp1 = new TIntArrayList();
         TFloatList responses = new TFloatArrayList(keypoints0.size());
         for (int i = 0; i < keypoints0.size(); ++i) {
             int x = keypoints0.get(i);
             int y = keypoints1.get(i);
             float v = harrisResponse[x][y];
-            //if (v > 0) {
-                responses.add(v);
-                kp0.add(x);
-                kp1.add(y);
-            //}
-        }
-        if (kp0.size() < keypoints0.size()) {
-            keypoints0.clear();
-            keypoints1.clear();
-            keypoints0.addAll(kp0);
-            keypoints1.addAll(kp1);
+            responses.add(v);
         }
         
-        // size is keyPoints2.size/2
         double[] orientations2 = cornerOrientations(octaveImage,
             keypoints0, keypoints1);
         assert(orientations2.length == keypoints0.size());
@@ -1564,7 +1471,7 @@ public class ORB {
         // method = 'k'.  k is Sensitivity factor to separate corners from edges,
         // Small values of k result in detection of sharp corners.
         float k = this.harrisK;
-  
+          
         //response = detA - k * traceA ** 2
         float[][] response = copy(detA);
         for (int i = 0; i < detA.length; ++i) {
@@ -1575,91 +1482,6 @@ public class ORB {
         }
         
         return response;
-    }
-
-    /**
-     Compute structure tensor using sum of squared differences.
-     The structure tensor A is defined as::
-         A = [Axx Axy]
-             [Axy Ayy]
-     which is approximated by the weighted sum of squared differences in a local
-     window around each pixel in the image.
-
-     adapted from
-     https://github.com/scikit-image/scikit-image/blob/master/skimage/feature/corner.py
-     and replaced with existing local project functions.
-
-     * @param image
-     * @param sigma
-     * @return [Axx, Axy, Ayy]
-     * Axx : ndarray
-          Element of the structure tensor for each pixel in the input image.
-       Axy : ndarray
-          Element of the structure tensor for each pixel in the input image.
-       Ayy : ndarray
-          Element of the structure tensor for each pixel in the input image.
-     */
-    protected TwoDFloatArray[] structureTensor(float[][] image, float sigma) {
-
-        // --- create Sobel derivatives (gaussian 1st deriv sqrt(2)/2 = 0.707)----
-        ImageProcessor imageProcessor = new ImageProcessor();
-
-        // switch X and Y sobel operations to match scipy
-
-        float[][] gX = copy(image);
-        imageProcessor.applySobelY(gX);
-
-        float[][] gY = copy(image);
-        imageProcessor.applySobelX(gY);
-
-        //debugPrint("gX", gX);
-        //debugPrint("gY", gY);
-
-        // --- create structure tensors ----
-        float[] kernel = Gaussian1D.getKernel(sigma);
-        float[][] axx = multiply(gX, gX);
-        imageProcessor.applyKernelTwo1Ds(axx, kernel);
-
-        float[][] axy = multiply(gX, gY);
-        imageProcessor.applyKernelTwo1Ds(axy, kernel);
-
-        float[][] ayy = multiply(gY, gY);
-        imageProcessor.applyKernelTwo1Ds(ayy, kernel);
-
-        //TODO: might need to apply a normalization factor
-        // to these for downstream use
-        
-        if (!doCreateCurvatureKeyPoints) {
-
-            TwoDFloatArray[] tensorComponents = new TwoDFloatArray[3];
-            tensorComponents[0] = new TwoDFloatArray(axx);
-            tensorComponents[1] = new TwoDFloatArray(axy);
-            tensorComponents[2] = new TwoDFloatArray(ayy);
-
-            return tensorComponents;
-        }
-        
-        // for curvature, need d/dy(dy) and d/dx(dx)
-        
-        float[][] gX2 = copy(gX);
-        float[][] gY2 = copy(gY);
-        
-        //TODO: revisit this in detail:
-        // row major, so need to use y operations for x and vice versa
-        imageProcessor.applyKernel1D(gX2, kernel, false);
-        imageProcessor.applyKernel1D(gY2, kernel, true);
-        
-        TwoDFloatArray[] tensorComponents = new TwoDFloatArray[7];
-        tensorComponents[0] = new TwoDFloatArray(axx);
-        tensorComponents[1] = new TwoDFloatArray(axy);
-        tensorComponents[2] = new TwoDFloatArray(ayy);
-        
-        tensorComponents[3] = new TwoDFloatArray(gX);
-        tensorComponents[4] = new TwoDFloatArray(gX2);
-        tensorComponents[5] = new TwoDFloatArray(gY);
-        tensorComponents[6] = new TwoDFloatArray(gY2);
-
-        return tensorComponents;
     }
 
     /**

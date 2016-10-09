@@ -20,7 +20,9 @@ import algorithms.util.ResourceFinder;
 import algorithms.util.TwoDFloatArray;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
@@ -5787,6 +5789,54 @@ if (sum > 511) {
 
         return out;
     }
+
+    public void createFirstDerivKeyPoints(float[][] image, 
+        float sigma, TIntList outKeypoints0, TIntList outKeypoints1) {
+
+        boolean createCurvatureComponents = false;
+        
+        StructureTensor tensorComponents = new StructureTensor(image, 
+            sigma, createCurvatureComponents);
+        
+        createFirstDerivKeyPoints(tensorComponents, outKeypoints0, 
+            outKeypoints1);
+    }
+    
+    public void createFirstDerivKeyPoints(
+        StructureTensor tensorComponents, TIntList outKeypoints0, 
+        TIntList outKeypoints1) {
+
+       float hLimit = 0.09f;//0.05f;
+
+        TIntList kp0 = new TIntArrayList();
+        TIntList kp1 = new TIntArrayList();
+
+        // square of 1st deriv:
+        float[][] firstDeriv = add(tensorComponents.getDXSquared(), 
+            tensorComponents.getDYSquared());
+
+        peakLocalMax(firstDeriv, 1, 0.1f, kp0, kp1);
+
+        float[][] detA = tensorComponents.getDeterminant();
+        float[][] traceA = tensorComponents.getTrace();
+        
+        //float min = MiscMath.findMin(secondDeriv);
+        //float max = MiscMath.findMax(secondDeriv);
+        //System.out.println("min=" + min + " max=" + max);
+        //System.out.println("nRows=" + nRows + " nCols=" + nCols);
+        for (int i = 0; i < kp0.size(); ++i) {
+            int x = kp0.get(i);
+            int y = kp1.get(i);
+            // harmonic mean, Brown, Szeliski, and Winder (2005),
+            float hMean = (detA[x][y]/traceA[x][y]);
+            if (hMean > hLimit) {
+                //System.out.println(String.format("(%d,%d) detA/tr=%.4f",
+                //    x, y, hMean));
+                outKeypoints0.add(x);
+                outKeypoints1.add(y);
+            }
+        }   
+    }
     
     public static class Colors {
         private final float[] colors;
@@ -7119,92 +7169,6 @@ if (sum > 511) {
     }
     
     /**
-     Compute structure tensor using sum of squared differences.
-     The structure tensor A is defined as::
-         A = [Axx Axy]
-             [Axy Ayy]
-     which is approximated by the weighted sum of squared differences in a local
-     window around each pixel in the image.
-
-     adapted from
-     https://github.com/scikit-image/scikit-image/blob/master/skimage/feature/corner.py
-     and replaced with existing local project functions.
-      
-     * @param image for best results, values should be normalized to between
-     * 0. and 1.0, inclusive
-     * @param sigma (note, the internal first derivative, first step is
-     * sigma=sqrt(2)/2 so this given sigma should be that or larger.
-     * @param createCurvatureComponents if true, also returns arrays
-     * for the dx, d/dx(dx), dy, d/dy(dy) after the other tensor components.
-     * @return [Axx, Axy, Ayy]
-     * Axx : ndarray
-          Element of the structure tensor for each pixel in the input image.
-       Axy : ndarray
-          Element of the structure tensor for each pixel in the input image.
-       Ayy : ndarray
-          Element of the structure tensor for each pixel in the input image.
-     */
-    public TwoDFloatArray[] structureTensor(float[][] image, float sigma,
-        boolean createCurvatureComponents) {
-
-        // --- create Sobel derivatives (gaussian 1st deriv sqrt(2)/2 = 0.707)----
-        
-        // switch X and Y sobel operations to match scipy
-
-        float[][] gX = copy(image);
-        applySobelY(gX);
-
-        float[][] gY = copy(image);
-        applySobelX(gY);
-
-        // --- create structure tensors ----
-        float[] kernel = Gaussian1D.getKernel(sigma);
-        float[][] axx = multiply(gX, gX);
-        applyKernelTwo1Ds(axx, kernel);
-
-        float[][] axy = multiply(gX, gY);
-        applyKernelTwo1Ds(axy, kernel);
-
-        float[][] ayy = multiply(gY, gY);
-        applyKernelTwo1Ds(ayy, kernel);
-
-        //TODO: might need to apply a normalization factor
-        // to these for downstream use
-        
-        if (!createCurvatureComponents) {
-
-            TwoDFloatArray[] tensorComponents = new TwoDFloatArray[3];
-            tensorComponents[0] = new TwoDFloatArray(axx);
-            tensorComponents[1] = new TwoDFloatArray(axy);
-            tensorComponents[2] = new TwoDFloatArray(ayy);
-
-            return tensorComponents;
-        }
-        
-        // for curvature, need d/dy(dy) and d/dx(dx)
-        
-        float[][] gX2 = copy(gX);
-        float[][] gY2 = copy(gY);
-        
-        //TODO: revisit this in detail:
-        // row major, so need to use y operations for x and vice versa
-        applyKernel1D(gX2, kernel, false);
-        applyKernel1D(gY2, kernel, true);
-        
-        TwoDFloatArray[] tensorComponents = new TwoDFloatArray[7];
-        tensorComponents[0] = new TwoDFloatArray(axx);
-        tensorComponents[1] = new TwoDFloatArray(axy);
-        tensorComponents[2] = new TwoDFloatArray(ayy);
-        
-        tensorComponents[3] = new TwoDFloatArray(gX);
-        tensorComponents[4] = new TwoDFloatArray(gX2);
-        tensorComponents[5] = new TwoDFloatArray(gY);
-        tensorComponents[6] = new TwoDFloatArray(gY2);
-
-        return tensorComponents;
-    }
- 
-    /**
      * create texture transforms from 
      * "Textured Image Segmentation" by Laws, 1980.
      * 
@@ -7380,7 +7344,7 @@ if (sum > 511) {
         textures in frequency space:
         need to simplify the number of points contributing to the
         frequency domain pattern,
-        so will calculate the curvature key points as sparse representation.
+        so will calculate key points as sparse representation.
         */
         
         int maxDimension = 256;//512;
@@ -7400,12 +7364,6 @@ if (sum > 511) {
 
         img = binImage(img, binFactor1);
         
-        // axis 0 coordinates
-        TIntList keypoints0 = new TIntArrayList();
-        
-        // axis 1 coordinates
-        TIntList keypoints1 = new TIntArrayList();
-        
         float max = img.max();
         
         if (max <= 0) {
@@ -7416,16 +7374,27 @@ if (sum > 511) {
         int nRows = img.getHeight();
         int nCols = img.getWidth();
         
-        /* 
+        // axis 0 coordinates
+        TIntList keypoints0 = new TIntArrayList();
+        
+        // axis 1 coordinates
+        TIntList keypoints1 = new TIntArrayList();
+        
         // -- switch to row-major ----
         float[][] image = multiply(img, 1.f/max);
         
         float sigma = SIGMA.getValue(SIGMA.ZEROPOINTSEVENONE);
         
         //createCurvatureKeyPoints(image, sigma, keypoints0, keypoints1);
-        createR5R5KeyPoints(image, sigma, keypoints0, keypoints1);
-        // strong high density responses in r5r5 for edges of vegetation.
-        // textures such as bricks, would be findable with the L5
+        //createR5R5KeyPoints(image, sigma, keypoints0, keypoints1);
+        //  strong high density responses in r5r5 for edges of vegetation.
+        //  textures such as bricks, would be findable with the L5 S5 but
+        //    need more to distinguish them possibly corner detector with
+        //    low threshold is best for bricks...
+        createFirstDerivKeyPoints(image, sigma, keypoints0, keypoints1);
+        
+        // could also consider ORB keypoints with default settings to extract only
+        // the Harris points
         
         GreyscaleImage kpImg = new GreyscaleImage(nCols, nRows);
         for (int i = 0; i < keypoints0.size(); ++i) {
@@ -7470,16 +7439,16 @@ if (sum > 511) {
         MiscDebug.plot(kpFreqR, plotCols, plotRows, lbl);
        
         MiscMath.applyRescale(kpFreqR, 0, 255);
-        GreyscaleImage kpFreqRImg = new GreyscaleImage(nCols, nRows);
+        Image kpFreqRImg = img.copyToColorGreyscale();
         for (int i = 0; i < nCols; ++i) {
             for (int j = 0; j < nRows; ++j) {
-                kpFreqRImg.setValue(i, j, (int)Math.round(kpFreqR[i][j]));
+                kpFreqRImg.setRGB(i, j, (int)Math.round(kpFreqR[i][j]), 0, 0);
             }
         }
         MiscDebug.writeImage(kpFreqRImg, "_keypoints_freq_");
-        */
-   
-        // ---- edited image to keep only characteristic section ---
+        
+   /*
+        // ---- edited _keypoints_1_ image to keep only a characteristic section ---
         String filePath = ResourceFinder.findFileInTestResources(
             "vegetation_peak_texture.png");
         
@@ -7516,39 +7485,42 @@ if (sum > 511) {
             }
         }
         MiscDebug.writeImage(kpFreqR2Img, "_keypoints_freq2_spatial_");
-    
+    */
     }
     
     public void createCurvatureKeyPoints(float[][] image, float sigma,
         TIntList outputKeypoints0, TIntList outputKeypoints1) {
         
-        TwoDFloatArray[] components =
-            createCurvatureComponents(image, sigma);
+        boolean doCreateCurvatureKeyPoints = true;
         
-        // 2nd deriv squared
-        float[][] secondDeriv = add(
-            multiply(copy(components[0].a), copy(components[0].a)),
-            multiply(copy(components[1].a), copy(components[1].a)));
+        StructureTensor tensorComponents = new StructureTensor(image, 
+            sigma, doCreateCurvatureKeyPoints);
         
-        //NOTE: consider filtering by a threshold of second derivative
-                // to reduce the regions to edges
-        float max2ndDeriv = MiscMath.findMax(secondDeriv);
+        createCurvatureKeyPoints(tensorComponents, outputKeypoints0,
+            outputKeypoints1);
+    }
+    
+    public void createCurvatureKeyPoints(StructureTensor tensorComponents,
+        TIntList outputKeypoints0, TIntList outputKeypoints1) {
+        
+        // square of 1st deriv:
+        float[][] firstDeriv = add(tensorComponents.getDXSquared(), 
+            tensorComponents.getDYSquared());
+
+        float max2ndDeriv = MiscMath.findMax(firstDeriv);
         float f = max2ndDeriv / 10;
 
-        float[][] dx = components[0].a;
-        float[][] dx2 = components[1].a;
-        float[][] dy = components[2].a;
-        float[][] dy2 = components[3].a;
+        float[][] dx = tensorComponents.getDX();
+        float[][] dx2 = tensorComponents.getDDX();
+        float[][] dy = tensorComponents.getDY();
+        float[][] dy2 = tensorComponents.getDDY();
         float[][] curvature = copy(dx);
         
-        int nRows = curvature.length;
-        int nCols = curvature[0].length;
+        int nRows = dx.length;
+        int nCols = dx[0].length;
         
         for (int i = 0; i < nRows; ++i) {
             for (int j = 0; j < nCols; ++j) {
-                if (secondDeriv[i][j] < f) {
-                    continue;
-                }
                 float dx2dx2 = dx2[i][j] * dx2[i][j];
                 float dy2dy2 = dy2[i][j] * dy2[i][j];
                 if (dx2dx2 == 0 && dy2dy2 == 0) {

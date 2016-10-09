@@ -1796,7 +1796,7 @@ public class AndroidStatuesTest extends TestCase {
         ORB orb = new ORB(1000);
         //orb.overrideFastThreshold(0.01f);
         orb.overrideToCreateHSVDescriptors();
-        orb.overrideToAlsoCreate2ndDerivKeypoints();
+        orb.overrideToAlsoCreate1stDerivKeypoints();
         orb.detectAndExtract(img);
 
         List<PairInt> kp = orb.getAllKeyPoints();
@@ -1859,7 +1859,7 @@ public class AndroidStatuesTest extends TestCase {
         ORB orb = new ORB(2000);//10000
         //orb.overrideFastThreshold(0.01f);
         orb.overrideToCreateHSVDescriptors();
-        orb.overrideToAlsoCreate2ndDerivKeypoints();
+        orb.overrideToAlsoCreate1stDerivKeypoints();
         orb.overrideToCreateCurvaturePoints();
         //orb.overrideToCreateOffsetsToDescriptors(ORB.DescriptorDithers.FIFTEEN);
         orb.detectAndExtract(img);
