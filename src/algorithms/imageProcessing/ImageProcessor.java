@@ -7029,8 +7029,9 @@ if (sum > 511) {
                     continue;
                 }
                 //(dx * dy(dy) - dy * dx(dx)) / (dx(dx)*dx(dx) + dy(dy)*dy(dy))
-                curvature[i][j] = (gX[i][j] * gY2[i][j] - gY[i][j] * gX2[i][j])
-                    / (gX2gX2 + gY2gY2);
+                curvature[i][j] = (float)(
+                    (gX[i][j] * gY2[i][j] - gY[i][j] * gX2[i][j])
+                    / Math.pow((gX2gX2 + gY2gY2), 1.5));
             }
         }
         
@@ -7569,9 +7570,10 @@ if (sum > 511) {
                     curvature[i][j] = Float.MAX_VALUE;
                     continue;
                 }
-                //(dx * dy(dy) - dy * dx(dx)) / (dx(dx)*dx(dx) + dy(dy)*dy(dy))
-                curvature[i][j] = (dx[i][j] * dy2[i][j] - dy[i][j] * dx2[i][j])
-                    / (dx2dx2 + dy2dy2);
+                //(dx * dy(dy) - dy * dx(dx)) / (dx(dx)*dx(dx) + dy(dy)*dy(dy))^1.5
+                curvature[i][j] = (float)(
+                    (dx[i][j] * dy2[i][j] - dy[i][j] * dx2[i][j])
+                    / Math.pow((dx2dx2 + dy2dy2), 1.5));
             }
         }
 
