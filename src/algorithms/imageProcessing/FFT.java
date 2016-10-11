@@ -12,7 +12,10 @@ public class FFT {
     }
     
     /**
-     * compute the FFT of x[], assuming its length is a power of 2
+     * compute the FFT of x[], assuming its length is a power of 2.
+     * runtime complexity is O(N).
+     * (adapted from  Cormen et al. pseudocode)
+     * ability added
      */ 
     public Complex[] fft(Complex[] x) {
         
@@ -22,6 +25,7 @@ public class FFT {
     /**
      * FFT from  Cormen et al. pseudocode for iterative FFT w/ an inverse
      * ability added.  Note that the length of x must be a power of 2.
+     * runtime complexity is O(N).
      * 
      * @param x
      * @param forward run the transform in forward if true, else perform inverse 
@@ -107,7 +111,11 @@ public class FFT {
         return a;
     }
     
-    // compute the inverse FFT of x[], assuming its length is a power of 2
+    /**
+     * compute the inverse FFT of x[], assuming its length is a power of 2
+     * runtime complexity is O(N).
+     * (adapted from  Cormen et al. pseudocode for forward transform)
+     */
     public Complex[] ifft(Complex[] x) {
         
        return fft(x, false);
@@ -169,7 +177,9 @@ public class FFT {
     }
     
     /**
-     * perform FFT on x using the Cormen et al. pseudocode for iterative FFT.
+     * perform FFT on x
+     * runtime complexity is O(N).
+     * (adapted from  Cormen et al. pseudocode for forward transform).
      * Note that the result cannot be inverted because only the real portion is 
      * returned and inverse FFT needs the real and complex components.
      */

@@ -155,7 +155,6 @@ public class PhaseCongruencyDetector {
     
     private boolean doPlot = true;
     
-    private int kLargeNoise = 2;
     private boolean extractNoise = false;
     
     public void setToCreateCorners() {
@@ -165,13 +164,6 @@ public class PhaseCongruencyDetector {
     public void setToExtractNoise() {
         this.extractNoise = true;
     }
-    
-    //TODO: consider adding a method to make a temporary image, increased to dimensions
-    //      of a power of 2 if not already.
-    //      need to add runtime complexity for fft and non-fft methods
-    //      to look at what range of pixel number increase worsens the runtime.
-    //      if incr size, need to handle trimming the results before further operations
-    //      such as edges or corners
     
     /**
      * <pre>
@@ -359,22 +351,35 @@ public class PhaseCongruencyDetector {
             throw new IllegalArgumentException(
                 "if noiseMethod >= 0, there is no dependency on k");
         }
-        if (extractNoise && (noiseMethod >= 0)) {
-            throw new IllegalArgumentException(
-                "if noiseMethod >= 0, there is no dependency on k "
-                    + "so cannot extract noise");
-        }
         
         int nCols = img.getWidth();
         int nRows = img.getHeight();
         
+        final int nOrigCols = nCols;
+        final int nOrigRows = nRows;
+        /*{ // DO NOT ENABLE UNTIL downsampling and upsamping are implemented
+            int nn0 = 1 << (int)(Math.ceil(Math.log(nCols)/Math.log(2)));
+            int nn1 = 1 << (int)(Math.ceil(Math.log(nRows)/Math.log(2)));
+            if (nn0 > nCols || nn1 > nRows) {
+                // pad the image up to nn0 and nn1, and trim all images when finished
+                ImageProcessor imageProcessor = new ImageProcessor();
+                img = imageProcessor.padToNearestPowerOf2Dimensions(img);
+                nCols = img.getWidth();
+                nRows = img.getHeight();
+                assert(nCols == nn0);
+                assert(nRows == nn1);
+                System.out.println(nOrigCols + "->" + nCols + " , " +
+                    nOrigRows + "->" + nRows);
+            }
+        }*/
+        
         /**
-         * TODO: consider refactoring to downsample images for scale changes,
-         * then upsampling the results at the stage of adding them into the
+         * TODO: consider refactoring to down-sample images for scale changes,
+         * then up-sampling the results at the stage of adding them into the
          * two dimensional sum arrays.
          * Need to keep the same sigma/f_0 for logGabor while doing so.
          * 
-         * a recipe for downsampling the logGabor in frequency domain is in Sec 2.6 of
+         * a recipe for down-sampling the logGabor in frequency domain is in Sec 2.6 of
          * "Self-Invertible 2D Log-Gabor Wavelets" by Fischer, Sroubek,
          * and Perrinet, 2007.
          */
@@ -478,7 +483,7 @@ public class PhaseCongruencyDetector {
         }
         
         for (int s = 0; s < nScale; ++s) {
-                        
+        
             // Centre frequency of filter.
             double wavelength = minWavelength * Math.pow(mult, s);
             
@@ -711,7 +716,6 @@ public class PhaseCongruencyDetector {
         */
         
         double threshold;
-        double thresholdLargeNoise = 0;
         if (noiseMethod >= 0) { 
             //fixed noise threshold
             threshold = noiseMethod;
@@ -732,11 +736,6 @@ public class PhaseCongruencyDetector {
 
             threshold = Math.max(EstNoiseEnergyMean 
                 + ((float)k) * EstNoiseEnergySigma, epsilon);
-            
-            if (extractNoise) {
-                thresholdLargeNoise = Math.max(EstNoiseEnergyMean 
-                    + ((float)kLargeNoise) * EstNoiseEnergySigma, epsilon);
-            }
         }
         
         for (int row = 0; row < nRows; ++row) {
@@ -751,17 +750,7 @@ public class PhaseCongruencyDetector {
                 double eMax = Math.max(energy[row][col] - threshold, 0);
                 
                 pc[row][col] = a * eMax;
-                
-                if (extractNoise) {
-                    double eMaxL = Math.max(energy[row][col] - thresholdLargeNoise, 0);
-                    pcLgNz[row][col] = a * eMaxL;
-                }
             }
-        }
-        
-        if (extractNoise) {
-            System.out.println("thresh=" + threshold + 
-                " threshLgNz=" + thresholdLargeNoise);
         }
         
         PhaseCongruencyProducts products = new PhaseCongruencyProducts(pc, 
@@ -805,15 +794,6 @@ public class PhaseCongruencyDetector {
                     double EstNoiseEnergySigma = totalTau * Math.sqrt((4. - Math.PI)/2.);
                     threshold = Math.max(EstNoiseEnergyMean 
                         + ((float)k) * EstNoiseEnergySigma, epsilon);
-                    if (extractNoise) {
-                        thresholdLargeNoise = Math.max(EstNoiseEnergyMean 
-                            + ((float)kLargeNoise) * EstNoiseEnergySigma, epsilon);
-                    }
-                }
-                
-                if (extractNoise) {
-                    System.out.println("thresh=" + threshold + 
-                        " threshLgNz=" + thresholdLargeNoise);
                 }
                 
                 for (int row = 0; row < nRows; ++row) {
@@ -823,10 +803,6 @@ public class PhaseCongruencyDetector {
                             * Math.max(1. - deviationGain * eDiv, 0)/
                             (energy[row][col] + epsilon);
                         pc[row][col] = a * Math.max(energy[row][col] - threshold, 0);
-                        if (extractNoise) {
-                           pcLgNz[row][col] = a * Math.max(energy[row][col] 
-                               - thresholdLargeNoise, 0);
-                        }
                     }
                 }
 
@@ -845,17 +821,12 @@ public class PhaseCongruencyDetector {
         products.setParameters(nScale, minWavelength, mult, sigmaOnf, k, cutOff,
             g, deviationGain, noiseMethod, tLow, tHigh, increaseKIfNeeded);
         
+        int[][] thinned = createEdges(products.getPhaseCongruency(), thinnedPC, 
+            products.getPhaseAngle(), pcLgNz, tLow, tHigh);
+        
         if (extractNoise) {
-            for (int row = 0; row < nRows; ++row) {
-                for (int col = 0; col < nCols; ++col) {
-                    pcLgNz[row][col] -= pc[row][col];
-                }
-            }
             products.setNoiseyPixels(pcLgNz);
         }
-        
-        int[][] thinned = createEdges(products.getPhaseCongruency(), thinnedPC, 
-            products.getPhaseAngle(), tLow, tHigh);
         
         products.setThinnedImage(thinned);
 
@@ -864,6 +835,10 @@ public class PhaseCongruencyDetector {
             calculateHoughTransforms(products);
                                                 
             calculateCorners(products, img);
+        }
+        
+        if (nOrigCols < nCols || nOrigRows < nRows) {
+            products = trimPaddedData(products, nOrigCols, nOrigRows);
         }
         
         long t1 = System.currentTimeMillis();
@@ -890,12 +865,14 @@ public class PhaseCongruencyDetector {
         List<PairIntArray> theEdges = edgeExtractor.getEdges();
         
         // ---- placing these in coordinate reference frame of images -------
+        //      column major notation
         Set<PairInt> tmp = new HashSet<PairInt>();
         for (PairInt p : junctions) {
             tmp.add(new PairInt(p.getY(), p.getX()));
         }
         junctions = tmp;
         
+        // edges are in row major notation, so switching to column major
         for (PairIntArray edge : theEdges) {
             for (int i = 0; i < edge.getN(); ++i) {
                 int x = edge.getX(i);
@@ -905,6 +882,7 @@ public class PhaseCongruencyDetector {
         }
         
         // ----corners are then in the coordinate reference frame of images -------
+        // column major notation
         CSSCornerMaker cornerMaker = new CSSCornerMaker(img.getWidth(), img.getHeight());
         cornerMaker.doNotStoreCornerRegions();
         
@@ -953,6 +931,7 @@ public class PhaseCongruencyDetector {
         
         // theEdges, corners, and junctions are now in reference frame of
         // GreyscaleImage instance
+        // column major notation
         cornerMaker.useHoughTransformationToFilterCornersForOrdered(theEdges, 
             cornerMap, junctions, products.getHoughLines(),
             nCols, nRows);        
@@ -1001,12 +980,14 @@ public class PhaseCongruencyDetector {
      * @param pc
      * @param thinnedPC
      * @param phaseAngle
+     * @param outputRemovedNoise
      * @param tLow
      * @param tHigh 
      * @return  
      */
     public int[][] createEdges(double[][] pc, double[][] thinnedPC, 
-        double[][] phaseAngle, double tLow, double tHigh) {
+        double[][] phaseAngle, double[][] outputRemovedNoise, double tLow, 
+        double tHigh) {
         
         int nRows = phaseAngle.length;
         int nCols = phaseAngle[0].length;
@@ -1097,7 +1078,7 @@ public class PhaseCongruencyDetector {
                 MiscDebug.getCurrentTimeFormatted());
         }
         
-        pltc.correctForIsolatedPixels(stepPoints, nRows, nCols);
+   //     pltc.correctForIsolatedPixels(stepPoints, nRows, nCols);
 
         double[][] thinned1 = new double[nRows][nCols];
         for (int i = 0; i < nRows; ++i) {
@@ -1108,9 +1089,24 @@ public class PhaseCongruencyDetector {
         }
         stepPoints = null;
         gaps = null;
-        
+     
         int[][] thinned = applyHysThresh(thinned1, tLow, tHigh, true);
         
+        //NOTE: the removed points are sometimes noise that is "texture"
+        // but is sometimes also points that were part of edges
+        // that should be restored if possible in this method.
+        // TODO: restore removed pixels from thinned1 using orientation.
+        //   phase angle, and thinned1 value after the list filter in this method.
+        if (extractNoise) {
+            for (int row = 0; row < nRows; ++row) {
+                for (int col = 0; col < nCols; ++col) {
+                    if (thinned1[row][col] > 0 && thinned[row][col] == 0) {
+                        outputRemovedNoise[row][col] = thinned1[row][col];
+                    }
+                }
+            }
+        }
+                       
         //DEBUG
         if (doPlot) {
             Image paImage = new Image(nCols, nRows);
@@ -1280,6 +1276,101 @@ public class PhaseCongruencyDetector {
         
         products.setHoughLines(transformedLines);        
     }
+
+    private PhaseCongruencyProducts trimPaddedData(PhaseCongruencyProducts products, 
+        int nOrigCols, int nOrigRows) {
+        
+        double[][] nzp = products.getNoiseyPixels();
+        if (nzp != null) {
+            nzp = trim(nzp, nOrigRows, nOrigCols);
+        }
+        double[][] or = products.getOrientation();
+        or = trim(or, nOrigRows, nOrigCols);
+        double[][] pa = products.getPhaseAngle();
+        pa = trim(pa, nOrigRows, nOrigCols);
+        double[][] pc = products.getPhaseCongruency();
+        pc = trim(pc, nOrigRows, nOrigCols);
+        int[][] th = products.getThinned();
+        th = trim(th, nOrigRows, nOrigCols);
+         
+        Set<PairInt> rm = new HashSet<PairInt>();
+        Set<PairInt> corners = products.getCorners();
+        for (PairInt p : corners) {
+            if ((p.getX() > (nOrigCols - 1)) || (p.getX() > (nOrigRows - 1))){
+                rm.add(p);
+            }
+        }
+        corners.removeAll(rm);
+        
+        List<PairIntArray> edgeList = products.getEdgeList();
+        for (int i = 0; i < edgeList.size(); ++i) {
+            PairIntArray a = edgeList.get(i);
+            PairIntArray b = new PairIntArray();
+            for (int j = 0; j < a.getN(); ++j) {
+                int x = a.getX(j);
+                int y = a.getY(j);
+                if (x < nOrigCols && y < nOrigRows) {
+                    b.add(x, y);
+                }
+            }
+            edgeList.set(i, b);
+        }
+        
+        rm = new HashSet<PairInt>();
+        Set<PairInt> junctions = products.getJunctions();
+        for (PairInt p : junctions) {
+            if ((p.getX() > (nOrigCols - 1)) || (p.getX() > (nOrigRows - 1))){
+                rm.add(p);
+            }
+        }
+        junctions.removeAll(rm);
+        
+        Map<Set<PairInt>, PairInt> hLines = products.getHoughLines();
+        for (Entry<Set<PairInt>, PairInt> entry : hLines.entrySet()) {
+            rm = new HashSet<PairInt>();
+            Set<PairInt> set = entry.getKey();
+            for (PairInt p : set) {
+                if ((p.getX() > (nOrigCols - 1)) || (p.getX() > (nOrigRows - 1))){
+                    rm.add(p);
+                }
+            }
+            set.removeAll(rm);
+        }
+        
+        
+        PhaseCongruencyParameters params = products.getParameters();
+         
+        products = new PhaseCongruencyProducts(pc, or, pa, products.getThreshold());
+        products.setThinnedImage(th);
+        products.setParameters(params);
+        products.setCorners(corners);
+        products.setEdges(edgeList);
+        products.setHoughLines(hLines);
+        products.setJunctions(junctions);
+        products.setNoiseyPixels(nzp);
+        
+        return products;
+    }
+
+    private double[][] trim(double[][] a, int nOrigRows, int nOrigCols) {
+
+        double[][] b = new double[nOrigRows][];
+        for (int i = 0; i < nOrigRows; ++i) {
+            b[i] = Arrays.copyOf(a[i], nOrigCols);
+        }
+        
+        return b;
+    }
+    
+    private int[][] trim(int[][] a, int nOrigRows, int nOrigCols) {
+
+        int[][] b = new int[nOrigRows][];
+        for (int i = 0; i < nOrigRows; ++i) {
+            b[i] = Arrays.copyOf(a[i], nOrigCols);
+        }
+        
+        return b;
+    }
     
     public class PhaseCongruencyProducts {
         
@@ -1308,19 +1399,21 @@ public class PhaseCongruencyDetector {
         private final double threshold;
         
         private int[][] thinned = null;
-                
+    
+        // col major notation
         private List<PairIntArray> edgeList = null;
         
+        // col major notation
         private Set<PairInt> junctions = null;
         
+        // col major notation
         private Set<PairInt> corners = null;
         
         /**
-         * noisey pixels are found by subtracting the resulting pc image
-         * made with the user given k from a default k which allows 
-         * more noise into the image.  The resulting "noisey" pixels
-         * may be useful for designing texture filters to remove
-         * such pixels from better keypoints.
+         * noisey pixels are found during the 2 level threshold hysteresis
+         * phase and they sometimes contain textures such as vegetation or
+         * bricks and sometimes contain edge points that should be restored
+         * before this stage.
          */
         private double[][] noiseyPixels = null;
         
@@ -1329,6 +1422,7 @@ public class PhaseCongruencyDetector {
          * the theta and radius for the hough line.  Note that the coordinates
          * in the key are using the same notation as the thinnedImage, that is,
          * a[row][col], but pairint.x is row, and pairint.y is col.
+         * row major notation
          */
         private Map<Set<PairInt>, PairInt> houghLines = null;
         
@@ -1352,7 +1446,7 @@ public class PhaseCongruencyDetector {
         
         /**
          * get the thinned phase congruence image, a.k.a. the edge image.
-         * Note that the array is accessed as a[row][column].
+         * Note that the array is accessed as a[row][column], row major notation.
          * @@return edgeImg 
          */
         public int[][] getThinned() {
@@ -1365,6 +1459,7 @@ public class PhaseCongruencyDetector {
          * more noise into the image.  The resulting "noisey" pixels
          * may be useful for designing texture filters to remove
          * such pixels from better keypoints.
+         * result uses row major notation.
          */
         public double[][] getNoiseyPixels(){
             return noiseyPixels;
@@ -1377,7 +1472,7 @@ public class PhaseCongruencyDetector {
         /**
          * return the gradient image produced by phase congruency as a double
          * array of values in range 0 to 1.0.
-         * Note that the array is accessed as a[row][column].
+         * Note that the array is accessed as a[row][column], row major notation.
          * @return the phaseCongruency
          */
         public double[][] getPhaseCongruency() {
@@ -1386,7 +1481,7 @@ public class PhaseCongruencyDetector {
 
         /**
          * return the orientation image.
-         * Note that the array is accessed as a[row][column].
+         * Note that the array is accessed as a[row][column], row major notation.
          * @return the orientation
          */
         public double[][] getOrientation() {
@@ -1402,7 +1497,7 @@ public class PhaseCongruencyDetector {
                 0 corresponds to a step and 
                 -pi/2 is a dark line.
          * </pre>
-         * Note that the array is accessed as a[row][column].
+         * Note that the array is accessed as a[row][column], row major notation
          * @return the phaseAngle
          */
         public double[][] getPhaseAngle() {
@@ -1410,6 +1505,7 @@ public class PhaseCongruencyDetector {
         }
 
         /**
+         * 
          * @return the threshold
          */
         public double getThreshold() {
@@ -1442,7 +1538,7 @@ public class PhaseCongruencyDetector {
         /**
          * set the junction points found in the edge list.  Note that the
          * points should be using coordinates that are in the reference frame 
-         * of the GreyscaleIamge instance.
+         * of the GreyscaleIamge instance, col major notation.
          * @param theJunctions 
          */
         private void setJunctions(Set<PairInt> theJunctions) {
@@ -1461,7 +1557,7 @@ public class PhaseCongruencyDetector {
 
         /**
          * get the list of extracted edges as points that are in the reference 
-         * frame of the GreyscaleImage instance.
+         * frame of the GreyscaleImage instance, col major notation.
          * @return the edgeList
          */
         public List<PairIntArray> getEdgeList() {
@@ -1470,7 +1566,7 @@ public class PhaseCongruencyDetector {
 
         /**
          * get the set of junction points found within the edges in the reference
-         * frame of the GreyscaleIamge instance.
+         * frame of the GreyscaleIamge instance, col major notation
          * @return the junctions
          */
         public Set<PairInt> getJunctions() {
@@ -1479,7 +1575,7 @@ public class PhaseCongruencyDetector {
 
         /**
          * get the corners found in the edges as set of points that are in the
-         * reference frame of the GreyscaleImage instance.
+         * reference frame of the GreyscaleImage instance, col major notation.
          * @return the corners
          */
         public Set<PairInt> getCorners() {
@@ -1494,7 +1590,7 @@ public class PhaseCongruencyDetector {
          a map with key being a hough line set of points and value being
          the theta and radius for the hough line.  Note that the
          setter has placed the coordinates into the coordinate reference
-         frame of the GreyscaleImage instance.
+         frame of the GreyscaleImage instance, col major notation.
          @param lines 
          */
         public void setHoughLines(Map<Set<PairInt>, PairInt> lines) {
@@ -1522,6 +1618,10 @@ public class PhaseCongruencyDetector {
             parameters.setParameters(nScale, minWavelength, mult, sigmaOnf, k,
                 cutOff, g, deviationGain, noiseMethod, tLow, tHigh, 
                 increaseKIfNeeded);            
+        }
+        
+        private void setParameters(PhaseCongruencyParameters params) {
+            this.parameters = params;        
         }
         
     }

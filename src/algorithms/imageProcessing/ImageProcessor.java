@@ -3725,6 +3725,9 @@ if (sum > 511) {
     }
 
     /**
+     * runtime complexity: is O(N*lg_2(N)) for N not power of 2,
+     * else is 
+     * 
      * perform fft on input.
      * @param input
      * @param doNormalize
@@ -3750,9 +3753,7 @@ if (sum > 511) {
         Complex[][] output = copy(input);
         
         // padding is at front of cols and rows
-        final int offset0 = nn0 - n0;
-        final int offset1 = nn1 - n1;
-        
+    
         FFT fft = new FFT();
         if (!doNormalize) {
             fft.setToNotNormalize();
@@ -3766,7 +3767,7 @@ if (sum > 511) {
                 output[i0] = fft.ifft(output[i0]);
             }
         }
-
+        
         // re-use array for the FFT by dimension 1
         Complex[] tmp = new Complex[nn0];
 
@@ -3777,7 +3778,7 @@ if (sum > 511) {
         [0]  ..........nn1-1
         [1]  ..........nn1-1
         */
-        
+       
         // ----- perform the FFT on dimension 1 ------
         for (int i1 = 0; i1 < nn1; ++i1) {
 
@@ -3797,7 +3798,7 @@ if (sum > 511) {
                 output[i0][i1] = tmp[i0];
             }
         }
-
+        
         return output;        
     }
 
@@ -3878,7 +3879,9 @@ if (sum > 511) {
 
     /**
      * perform a 2-dimension FFT using the JFFTPack library.
-     *
+     * 
+     * runtime complexity: is O(N*lg_2(N)) for N not power of 2.
+     * 
      * @param input double array of complex data in format double[nRows][2*nColumns]
      * where the column elements are alternately the complex real number and the
      * complex imaginary number.
@@ -3915,7 +3918,7 @@ if (sum > 511) {
                 }
             }
         }
-
+        
         // re-use array for the FFT by dimension 1 (across rows)
         Complex1D tmp = new Complex1D();
         tmp.x = new double[n0];
@@ -4290,19 +4293,6 @@ if (sum > 511) {
             for (int row = 0; row < h; row++) {
                 int v = img.getValue(col, row);
                 img2.setValue(col, row, v);
-            }
-            if (h2 > h) {
-                for (int row = h; row < h2; row++) {
-                    img2.setValue(col, row, 0);
-                }
-            }
-        }
-
-        if (!xIsPowerOf2) {
-            for (int col = w; col < w2; col++) {
-                for (int row = 0; row < h2; row++) {
-                    img2.setValue(col, row, 0);
-                }
             }
         }
 

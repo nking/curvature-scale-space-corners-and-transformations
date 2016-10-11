@@ -19,7 +19,7 @@ http://www.netlib.org/fftpack/doc
 */
 class ComplexDoubleFFT_Mixed
 {
-
+    
 /*----------------------------------------------------------------------
    passf2: Complex FFT's forward/backward processing of factor 2;
    isign is +1 for backward and -1 for forward transforms
@@ -310,250 +310,216 @@ class ComplexDoubleFFT_Mixed
    passfg: Complex FFT's forward/backward processing of general factor;
    isign is +1 for backward and -1 for forward transforms
   ----------------------------------------------------------------------*/
-     void passfg(int nac[], int ido, int ip, int l1, int idl1,
-                       final double cc[], double c1[], double c2[], double ch[], double ch2[],
-                       final double wtable[], int offset, int isign)
-     {
-          int idij, idlj, idot, ipph, i, j, k, l, jc, lc, ik, nt, idj, idl, inc, idp;
-          double  wai, war;
-          int iw1;
+    void passfg(int nac[], int ido, int ip, int l1, int idl1,
+        final double cc[], double c1[], double c2[], double ch[], double ch2[],
+        final double wtable[], int offset, int isign) {
+        int idij, idlj, idot, ipph, i, j, k, l, jc, lc, ik, nt, idj, idl, inc, idp;
+        double wai, war;
+        int iw1;
 
-          iw1 = offset;
-    	  idot=ido / 2;
-          nt=ip*idl1;
-          ipph=(ip+1)/ 2;
-          idp=ip*ido;
-          if(ido>=l1)
-          {
-	      for(j=1; j<ipph; j++)
-	      {
-	           jc=ip-j;
-	           for(k=0; k<l1; k++)
-	           {
-		        for(i=0; i<ido; i++)
-		        {
-		            ch[i+(k+j*l1)*ido]=cc[i+(j+k*ip)*ido]+cc[i+(jc+k*ip)*ido];
-		            ch[i+(k+jc*l1)*ido]=cc[i+(j+k*ip)*ido]-cc[i+(jc+k*ip)*ido];
-		        }
-	           }
-	      }
-	      for(k=0; k<l1; k++)
-	         for(i=0; i<ido; i++)
-		     ch[i+k*ido]=cc[i+k*ip*ido];
-          }
-          else
-          {
-	      for(j=1; j<ipph; j++)
-	      {
-	          jc=ip-j;
-	          for(i=0; i<ido; i++)
-	          {
-		      for(k=0; k<l1; k++)
-		      {
-		          ch[i+(k+j*l1)*ido]=cc[i+(j+k*ip)*ido]+cc[i+(jc+k*ip)*ido];
-		          ch[i+(k+jc*l1)*ido]=cc[i+(j+k*ip)*ido]-cc[i+(jc+k*ip)*ido];
-		      }
-	          }
-	      }
-	      for(i=0; i<ido; i++)
-	         for(k=0; k<l1; k++)
-		     ch[i+k*ido]=cc[i+k*ip*ido];
-          }
+        iw1 = offset;
+        idot = ido / 2;
+        nt = ip * idl1;
+        ipph = (ip + 1) / 2;
+        idp = ip * ido;
+        if (ido >= l1) {
+            for (j = 1; j < ipph; j++) {
+                jc = ip - j;
+                for (k = 0; k < l1; k++) {
+                    for (i = 0; i < ido; i++) {
+                        ch[i + (k + j * l1) * ido] = cc[i + (j + k * ip) * ido] + cc[i + (jc + k * ip) * ido];
+                        ch[i + (k + jc * l1) * ido] = cc[i + (j + k * ip) * ido] - cc[i + (jc + k * ip) * ido];
+                    }
+                }
+            }
+            for (k = 0; k < l1; k++) {
+                for (i = 0; i < ido; i++) {
+                    ch[i + k * ido] = cc[i + k * ip * ido];
+                }
+            }
+        } else {
+            for (j = 1; j < ipph; j++) {
+                jc = ip - j;
+                for (i = 0; i < ido; i++) {
+                    for (k = 0; k < l1; k++) {
+                        ch[i + (k + j * l1) * ido] = cc[i + (j + k * ip) * ido] + cc[i + (jc + k * ip) * ido];
+                        ch[i + (k + jc * l1) * ido] = cc[i + (j + k * ip) * ido] - cc[i + (jc + k * ip) * ido];
+                    }
+                }
+            }
+            for (i = 0; i < ido; i++) {
+                for (k = 0; k < l1; k++) {
+                    ch[i + k * ido] = cc[i + k * ip * ido];
+                }
+            }
+        }
 
-          idl=2-ido;
-          inc=0;
-          for(l=1; l<ipph; l++)
-          {
-	      lc=ip-l;
-	      idl+=ido;
-	      for(ik=0; ik<idl1; ik++)
-	      {
-	          c2[ik+l*idl1]=ch2[ik]+wtable[idl-2+iw1]*ch2[ik+idl1];
-	          c2[ik+lc*idl1]=isign*wtable[idl-1+iw1]*ch2[ik+(ip-1)*idl1];
-	      }
-	      idlj=idl;
-	      inc+=ido;
-	      for(j=2; j<ipph; j++)
-	      {
-	          jc=ip-j;
-	          idlj+=inc;
-	          if(idlj>idp) idlj-=idp;
-	          war=wtable[idlj-2+iw1];
-	          wai=wtable[idlj-1+iw1];
-	          for(ik=0; ik<idl1; ik++)
-	          {
-		      c2[ik+l*idl1]+=war*ch2[ik+j*idl1];
-		      c2[ik+lc*idl1]+=isign*wai*ch2[ik+jc*idl1];
-	          }
-	      }
-          }
-          for(j=1; j<ipph; j++)
-	     for(ik=0; ik<idl1; ik++)
-	         ch2[ik]+=ch2[ik+j*idl1];
-          for(j=1; j<ipph; j++)
-          {
-	      jc=ip-j;
-	      for(ik=1; ik<idl1; ik+=2)
-	      {
-	          ch2[ik-1+j*idl1]=c2[ik-1+j*idl1]-c2[ik+jc*idl1];
-	          ch2[ik-1+jc*idl1]=c2[ik-1+j*idl1]+c2[ik+jc*idl1];
-	          ch2[ik+j*idl1]=c2[ik+j*idl1]+c2[ik-1+jc*idl1];
-	          ch2[ik+jc*idl1]=c2[ik+j*idl1]-c2[ik-1+jc*idl1];
-	      }
-          }
-          nac[0]=1;
-          if(ido==2) return;
-          nac[0]=0;
-          for(ik=0; ik<idl1; ik++) c2[ik]=ch2[ik];
-          for(j=1; j<ip; j++)
-          {
-	      for(k=0; k<l1; k++)
-	      {
-	          c1[(k+j*l1)*ido+0]=ch[(k+j*l1)*ido+0];
-	          c1[(k+j*l1)*ido+1]=ch[(k+j*l1)*ido+1];
-	      }
-          }
-          if(idot<=l1)
-          {
-	      idij=0;
-	      for(j=1; j<ip; j++)
-	      {
-	          idij+=2;
-	          for(i=3; i<ido; i+=2)
-	          {
-		      idij+=2;
-		      for(k=0; k<l1; k++)
-		      {
-		          c1[i-1+(k+j*l1)*ido]=
-			       wtable[idij-2+iw1]*ch[i-1+(k+j*l1)*ido]-
-			       isign*wtable[idij-1+iw1]*ch[i+(k+j*l1)*ido];
-		          c1[i+(k+j*l1)*ido]=
-			       wtable[idij-2+iw1]*ch[i+(k+j*l1)*ido]+
-			       isign*wtable[idij-1+iw1]*ch[i-1+(k+j*l1)*ido];
-		      }
-	          }
-	      }
-          }
-          else
-          {
-	      idj=2-ido;
-	      for(j=1; j<ip; j++)
-	      {
-	          idj+=ido;
-	          for(k=0; k<l1; k++)
-	          {
-		      idij=idj;
-		      for(i=3; i<ido; i+=2)
-		      {
-		          idij+=2;
-		          c1[i-1+(k+j*l1)*ido]=
-			       wtable[idij-2+iw1]*ch[i-1+(k+j*l1)*ido]-
-			       isign*wtable[idij-1+iw1]*ch[i+(k+j*l1)*ido];
-		          c1[i+(k+j*l1)*ido]=
-			       wtable[idij-2+iw1]*ch[i+(k+j*l1)*ido]+
-			       isign*wtable[idij-1+iw1]*ch[i-1+(k+j*l1)*ido];
-		      }
-	          }
-	      }
-          }
-      }
+        idl = 2 - ido;
+        inc = 0;
+        for (l = 1; l < ipph; l++) {
+            lc = ip - l;
+            idl += ido;
+            for (ik = 0; ik < idl1; ik++) {
+                c2[ik + l * idl1] = ch2[ik] + wtable[idl - 2 + iw1] * ch2[ik + idl1];
+                c2[ik + lc * idl1] = isign * wtable[idl - 1 + iw1] * ch2[ik + (ip - 1) * idl1];
+            }
+            idlj = idl;
+            inc += ido;
+            for (j = 2; j < ipph; j++) {
+                jc = ip - j;
+                idlj += inc;
+                if (idlj > idp) {
+                    idlj -= idp;
+                }
+                war = wtable[idlj - 2 + iw1];
+                wai = wtable[idlj - 1 + iw1];
+                for (ik = 0; ik < idl1; ik++) {
+                    c2[ik + l * idl1] += war * ch2[ik + j * idl1];
+                    c2[ik + lc * idl1] += isign * wai * ch2[ik + jc * idl1];
+                }
+            }
+        }
+        for (j = 1; j < ipph; j++) {
+            for (ik = 0; ik < idl1; ik++) {
+                ch2[ik] += ch2[ik + j * idl1];
+            }
+        }
+        for (j = 1; j < ipph; j++) {
+            jc = ip - j;
+            for (ik = 1; ik < idl1; ik += 2) {
+                ch2[ik - 1 + j * idl1] = c2[ik - 1 + j * idl1] - c2[ik + jc * idl1];
+                ch2[ik - 1 + jc * idl1] = c2[ik - 1 + j * idl1] + c2[ik + jc * idl1];
+                ch2[ik + j * idl1] = c2[ik + j * idl1] + c2[ik - 1 + jc * idl1];
+                ch2[ik + jc * idl1] = c2[ik + j * idl1] - c2[ik - 1 + jc * idl1];
+            }
+        }
+        nac[0] = 1;
+        if (ido == 2) {
+            return;
+        }
+        nac[0] = 0;
+        for (ik = 0; ik < idl1; ik++) {
+            c2[ik] = ch2[ik];
+        }
+        for (j = 1; j < ip; j++) {
+            for (k = 0; k < l1; k++) {
+                c1[(k + j * l1) * ido + 0] = ch[(k + j * l1) * ido + 0];
+                c1[(k + j * l1) * ido + 1] = ch[(k + j * l1) * ido + 1];
+            }
+        }
+        if (idot <= l1) {
+            idij = 0;
+            for (j = 1; j < ip; j++) {
+                idij += 2;
+                for (i = 3; i < ido; i += 2) {
+                    idij += 2;
+                    for (k = 0; k < l1; k++) {
+                        c1[i - 1 + (k + j * l1) * ido]
+                            = wtable[idij - 2 + iw1] * ch[i - 1 + (k + j * l1) * ido]
+                            - isign * wtable[idij - 1 + iw1] * ch[i + (k + j * l1) * ido];
+                        c1[i + (k + j * l1) * ido]
+                            = wtable[idij - 2 + iw1] * ch[i + (k + j * l1) * ido]
+                            + isign * wtable[idij - 1 + iw1] * ch[i - 1 + (k + j * l1) * ido];
+                    }
+                }
+            }
+        } else {
+            idj = 2 - ido;
+            for (j = 1; j < ip; j++) {
+                idj += ido;
+                for (k = 0; k < l1; k++) {
+                    idij = idj;
+                    for (i = 3; i < ido; i += 2) {
+                        idij += 2;
+                        c1[i - 1 + (k + j * l1) * ido]
+                            = wtable[idij - 2 + iw1] * ch[i - 1 + (k + j * l1) * ido]
+                            - isign * wtable[idij - 1 + iw1] * ch[i + (k + j * l1) * ido];
+                        c1[i + (k + j * l1) * ido]
+                            = wtable[idij - 2 + iw1] * ch[i + (k + j * l1) * ido]
+                            + isign * wtable[idij - 1 + iw1] * ch[i - 1 + (k + j * l1) * ido];
+                    }
+                }
+            }
+        }
+    }
+    
 
 /*---------------------------------------------------------
    cfftf1: further processing of Complex forward FFT
   --------------------------------------------------------*/
-     void cfftf1(int n, double c[], final double wtable[], int isign)
-     {
-          int     idot, i;
-          int     k1, l1, l2;
-          int     na, nf, ip, iw, ido, idl1;
-          int[]  nac = new int[1];
+    void cfftf1(int n, double c[], final double wtable[], int isign) {
+        int idot, i;
+        int k1, l1, l2;
+        int na, nf, ip, iw, ido, idl1;
+        int[] nac = new int[1];
 
-          int     iw1, iw2;
-          double[] ch = new double[2*n];
+        int iw1, iw2;
+        double[] ch = new double[2 * n];
 
-          iw1=2*n;
-          iw2=4*n;
-          System.arraycopy(wtable, 0, ch, 0, 2*n);
+        iw1 = 2 * n;
+        iw2 = 4 * n;
+        System.arraycopy(wtable, 0, ch, 0, 2 * n);
 
-          nac[0] = 0;
+        nac[0] = 0;
 
-          nf=(int)wtable[1+iw2];
-          na=0;
-          l1=1;
-          iw=iw1;
-          for(k1=2; k1<=nf+1; k1++)
-          {
-	      ip=(int)wtable[k1+iw2];
-	      l2=ip*l1;
-	      ido=n / l2;
-	      idot=ido+ido;
-	      idl1=idot*l1;
-	      if(ip==4)
-	      {
-	          if(na==0)
-                  {
-                      passf4(idot, l1, c, ch, wtable, iw, isign);
-                  }
-	          else
-                  {
-                      passf4(idot, l1, ch, c, wtable, iw, isign);
-                  }
-	          na=1-na;
-	      }
-	      else if(ip==2)
-	      {
-	          if(na==0)
-                  {
-                          passf2(idot, l1, c, ch, wtable, iw, isign);
-                  }
-	          else
-                  {
-                          passf2(idot, l1, ch, c, wtable, iw, isign);
-                  }
-	          na=1-na;
-	      }
-	      else if(ip==3)
-	      {
-	          if(na==0)
-                  {
-                        passf3(idot, l1, c, ch, wtable, iw, isign);
-                  }
-	          else
-                  {
-                        passf3(idot, l1, ch, c, wtable, iw, isign);
-                  }
-	          na=1-na;
-	      }
-	      else if(ip==5)
-	      {
-	          if(na==0)
-                  {
-                         passf5(idot, l1, c, ch, wtable, iw, isign);
-                  }
-	          else
-                  {
-                         passf5(idot, l1, ch, c, wtable, iw, isign);     
-                  }
-	          na=1-na;
-	      }
-	      else
-	      {
-	          if(na==0)
-                  {
-                        passfg(nac, idot, ip, l1, idl1, c, c, c, ch, ch, wtable, iw, isign);
-                  }
-	          else
-                  {
-                        passfg(nac, idot, ip, l1, idl1, ch, ch, ch, c, c, wtable, iw, isign);
-                  }
-	          if(nac[0] !=0) na=1-na;
-	      }
-	      l1=l2;
-	      iw+=(ip-1)*idot;
-          }
-          if(na==0) return;
-          for(i=0; i<2*n; i++) c[i]=ch[i];
-     } 
+        nf = (int) wtable[1 + iw2];
+        na = 0;
+        l1 = 1;
+        iw = iw1;  
+        for (k1 = 2; k1 <= nf + 1; k1++) {
+            ip = (int) wtable[k1 + iw2];
+            l2 = ip * l1;
+            ido = n / l2;
+            idot = ido + ido;
+            idl1 = idot * l1;
+            if (ip == 4) {
+                if (na == 0) {
+                    passf4(idot, l1, c, ch, wtable, iw, isign);
+                } else {
+                    passf4(idot, l1, ch, c, wtable, iw, isign);
+                }
+                na = 1 - na;
+            } else if (ip == 2) {
+                if (na == 0) {
+                    passf2(idot, l1, c, ch, wtable, iw, isign);
+                } else {
+                    passf2(idot, l1, ch, c, wtable, iw, isign);
+                }
+                na = 1 - na;
+            } else if (ip == 3) {
+                if (na == 0) {
+                    passf3(idot, l1, c, ch, wtable, iw, isign);
+                } else {
+                    passf3(idot, l1, ch, c, wtable, iw, isign);
+                }
+                na = 1 - na;
+            } else if (ip == 5) {
+                if (na == 0) {
+                    passf5(idot, l1, c, ch, wtable, iw, isign);
+                } else {
+                    passf5(idot, l1, ch, c, wtable, iw, isign);
+                }
+                na = 1 - na;
+            } else {
+                if (na == 0) {
+                    passfg(nac, idot, ip, l1, idl1, c, c, c, ch, ch, wtable, iw, isign);
+                } else {
+                    passfg(nac, idot, ip, l1, idl1, ch, ch, ch, c, c, wtable, iw, isign);
+                }
+                if (nac[0] != 0) {
+                    na = 1 - na;
+                }
+            }
+            l1 = l2;
+            iw += (ip - 1) * idot;
+        }
+        if (na == 0) {
+            return;
+        }
+        for (i = 0; i < 2 * n; i++) {
+            c[i] = ch[i];
+        }
+    }
 
 /*---------------------------------------------------------
    cfftf: Complex forward FFT
