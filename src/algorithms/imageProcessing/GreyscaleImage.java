@@ -1101,6 +1101,24 @@ public class GreyscaleImage {
         return type;
     }
 
+    /**
+     * assuming that max value is 255, return an array normalized by 255
+     * so that all values are in range 0 to 1.0.
+     * @return 
+     */
+    public float[][] toNormalizedRowMajorArray() {
+        
+        float[][] a = new float[height][];
+        for (int i = 0; i < height; ++i) {
+            a[i] = new float[width];
+            for (int j = 0; j < width; ++j) {
+                a[i][j] = ((float)getValue(j, i))/255.f;
+            }
+        }
+        
+        return a;
+    }
+
     @Override
     public String toString() {
         

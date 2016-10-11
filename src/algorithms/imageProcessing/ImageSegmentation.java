@@ -10540,15 +10540,15 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
      * @param ts timestamp used in debugging image name
      * @return
      */
-    public EdgeFilterProducts createGradient(ImageExt img,
+    public EdgeFilterProducts createGradient(Image img,
         int gradientMethod, long ts) {
-
-        ImageExt imgCp = img.copyToImageExt();
 
         EdgeFilterProducts products = null;
 
         if (gradientMethod == 0) {
 
+            ImageExt imgCp = img.copyToImageExt();
+            
             CannyEdgeFilterAdaptiveDeltaE2000 canny =
                 new CannyEdgeFilterAdaptiveDeltaE2000();
             canny.setToNotUseZhangSuen();
@@ -10559,63 +10559,20 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             products = canny.getFilterProducts();
 
         } else if (gradientMethod == 1) {
-
+            
             CannyEdgeFilterAdaptive canny2 = new CannyEdgeFilterAdaptive();
             canny2.setToNotUseZhangSuen();
             //canny2.setOtsuScaleFactor(0.3f);
             canny2.setToUseSingleThresholdIn2LayerFilter();
-            canny2.applyFilter(imgCp.copyToGreyscale2());
+            canny2.applyFilter(img.copyToGreyscale2());
 
             products = canny2.getFilterProducts();
 
         } else if (gradientMethod == 2) {
+            
+            products = createPhaseCongruencyGradient(
+                img.copyBlueToGreyscale());
 
-            float cutOff = 0.5f;//0.3f;//0.5f;
-            int nScale = 5;
-            int minWavelength = 3;//nScale;//3;
-            float mult = 2.1f;
-            float sigmaOnf = 0.55f;
-            int k = 2;
-            float g = 10;
-            float deviationGain = 1.5f;
-            int noiseMethod = -1;
-            double tLow = 0.05;
-            double tHigh = 0.1;
-            boolean increaseKIfNeeded = false;
-
-            PhaseCongruencyDetector pcd = new PhaseCongruencyDetector();
-            PhaseCongruencyDetector.PhaseCongruencyProducts pr
-                = pcd.phaseCongMono(imgCp.copyToGreyscale2(), nScale, minWavelength, mult,
-                sigmaOnf, k, increaseKIfNeeded,
-                cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
-
-            products = new EdgeFilterProducts();
-
-            int nCols = imgCp.getWidth();
-            int nRows = imgCp.getHeight();
-
-            GreyscaleImage pcImg = new GreyscaleImage(nCols, nRows);
-            double[][] pc = pr.getPhaseCongruency();
-            for (int i = 0; i < pr.getThinned().length; ++i) {
-                for (int j = 0; j < pr.getThinned()[i].length; ++j) {
-                    if (pr.getThinned()[i][j] > 0) {
-                        int v = (int)Math.round(255. * pc[i][j]);
-                        pcImg.setValue(j, i, v);
-                    }
-                }
-            }
-
-            products.setGradientXY(pcImg);
-
-            GreyscaleImage paImg = new GreyscaleImage(nCols, nRows);
-            int[][] pa = MiscMath.rescale(pr.getPhaseAngle(), 0, 255);
-            for (int i = 0; i < pa.length; ++i) {
-                for (int j = 0; j < pa[i].length; ++j) {
-                    int v = pa[i][j];
-                    paImg.setValue(j, i, v);
-                }
-            }
-            products.setPhaseAngle(paImg);
         }
 
         return products;
@@ -10776,6 +10733,73 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
 
         return img2;
+    }
+
+    public EdgeFilterProducts createPhaseCongruencyGradient(
+        GreyscaleImage img) {
+        
+        float cutOff = 0.5f;//0.3f;//0.5f;
+        int nScale = 5;
+        int minWavelength = 3;//nScale;//3;
+        float mult = 2.1f;
+        float sigmaOnf = 0.55f;
+        int k = 2;
+        float g = 10;
+        float deviationGain = 1.5f;
+        int noiseMethod = -1;
+        double tLow = 0.05;
+        double tHigh = 0.1;
+        boolean increaseKIfNeeded = false;
+
+        PhaseCongruencyDetector pcd = new PhaseCongruencyDetector();
+        PhaseCongruencyDetector.PhaseCongruencyProducts pr
+            = pcd.phaseCongMono(img, nScale, minWavelength, mult,
+            sigmaOnf, k, increaseKIfNeeded,
+            cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
+
+        EdgeFilterProducts products = new EdgeFilterProducts();
+
+        int nCols = img.getWidth();
+        int nRows = img.getHeight();
+
+        GreyscaleImage pcImg = new GreyscaleImage(nCols, nRows);
+        double[][] pc = pr.getPhaseCongruency();
+        for (int i = 0; i < pr.getThinned().length; ++i) {
+            for (int j = 0; j < pr.getThinned()[i].length; ++j) {
+                if (pr.getThinned()[i][j] > 0) {
+                    int v = (int)Math.round(255. * pc[i][j]);
+                    pcImg.setValue(j, i, v);
+                }
+            }
+        }
+
+        products.setGradientXY(pcImg);
+
+        GreyscaleImage paImg = new GreyscaleImage(nCols, nRows,
+            GreyscaleImage.Type.Bits32FullRangeInt);
+        // range -pi to pi
+        double[][] pa = pr.getPhaseAngle();
+        for (int i = 0; i < pa.length; ++i) {
+            for (int j = 0; j < pa[i].length; ++j) {
+                double v = pa[i][j];
+                int d = (int)Math.round(v * 180./Math.PI);
+                paImg.setValue(j, i, d);
+            }
+        }
+        products.setPhaseAngle(paImg);
+
+        GreyscaleImage orImg = new GreyscaleImage(nCols, nRows);
+        double[][] or = pr.getOrientation();
+        // orientation is already in range 0 to 180
+        for (int i = 0; i < or.length; ++i) {
+            for (int j = 0; j < or[i].length; ++j) {
+                double v = or[i][j];
+                orImg.setValue(j, i, (int)Math.round(v));
+            }
+        }
+        products.setTheta(orImg);
+        
+        return products;
     }
 
     public static class BoundingRegions {
@@ -13458,7 +13482,7 @@ int z = 1;
      * @param img
      * @return
      */
-    public int[] objectSegmentation(ImageExt img) {
+    public int[] objectSegmentation(Image img) {
 
         long ts = MiscDebug.getCurrentTimeFormatted();
 
@@ -13478,10 +13502,10 @@ int z = 1;
      * for shapes.  NOTE that this is tailored for images
      * binned to near size 256 on a side.
      * @param img
-     * @param gradient
+     * @param edgeProducts
      * @return
      */
-    public int[] objectSegmentation(ImageExt img, final EdgeFilterProducts edgeProducts) {
+    public int[] objectSegmentation(Image img, final EdgeFilterProducts edgeProducts) {
 
         long ts = MiscDebug.getCurrentTimeFormatted();
         ImageExt imgCp = img.copyToImageExt();
@@ -13511,7 +13535,7 @@ int z = 1;
         slic.calculate();
         int[] labels = slic.getLabels();
 
-        ImageExt img3 = img.createWithDimensions();
+        Image img3 = img.createWithDimensions();
         ImageIOHelper.addAlternatingColorLabelsToRegion(img3, labels);
         String str = Integer.toString(nc);
         str = (str.length() < 3) ? "0" + str : str;
@@ -13529,11 +13553,35 @@ int z = 1;
         labels = mergeByColor(imgCp, contigSets, ColorSpace.HSV, 0.095f);//0.1f);
         mergeSmallSegments(imgCp, labels, sizeLimit, ColorSpace.HSV);
 
+        // ----- looking at fast marching methods and level sets
+        //       and/or region based active contours
+        contigSets = LabelToColorHelper
+            .extractContiguousLabelPoints(img, labels);
+        // quick look at values of pa on the boundaries of current
+        // segments.
+        
+        //edgeProducts.getPhaseAngle();
+        //NOTE: pa is in range -180 to 180.
+        //  to plot it, can transform the negative values into
+        //  the diagonal quadrant by adding 180,
+        //  or apply a +180 to all to transform to 0 to 360
+        // -- for a quick look at wrap around, making 2 images, with
+        //    offset of 90 so that 0 and 360 are similar intensity in one
+        GreyscaleImage paImg1 = edgeProducts.getPhaseAngle().copyImage();
+        for (int ii = 0; ii < paImg1.getNPixels(); ++ii) {
+            int v = paImg1.getValue(ii);
+            //if (v < 0) {
+                v += 180;
+            //}
+            paImg1.setValue(ii, v);
+        }
+        MiscMath.rescale(paImg1, 0, 255);
+        MiscDebug.writeImage(paImg1, "_angle_phase_" + ts + "_" + str + "_1_");
+        MiscDebug.writeImage(edgeProducts.getTheta(), "_angle_orientation_" + ts + "_" + str + "_1_");
+        
+        ImageProcessor imp = new ImageProcessor();
+        
         // --- below here, using phase angle to further merge labels ---
-        
-        //GreyscaleImage paImg = edgeProducts.getPhaseAngle();
-        //MiscDebug.writeImage(paImg, "_phase_angle_" + ts + "_" + str);
-        
         /*
         int[] labelsPA = new int[paImg.getNPixels()];
         for (int i = 0; i < paImg.getNPixels(); ++i) {

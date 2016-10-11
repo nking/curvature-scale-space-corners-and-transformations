@@ -12,6 +12,7 @@ import algorithms.imageProcessing.CannyEdgeFilterAdaptive;
 import algorithms.imageProcessing.ColorHistogram;
 import algorithms.imageProcessing.DFSContiguousIntValueFinder;
 import algorithms.imageProcessing.DFSContiguousValueFinder;
+import algorithms.imageProcessing.EdgeFilterProducts;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.GroupPixelColors;
 import algorithms.imageProcessing.GroupPixelRGB;
@@ -95,7 +96,7 @@ public class AndroidStatuesTest extends TestCase {
     public AndroidStatuesTest() {
     }
 
-    public void est0() throws Exception {
+    public void test0() throws Exception {
 
         int maxDimension = 256;//512;
 
@@ -273,8 +274,7 @@ public class AndroidStatuesTest extends TestCase {
 
             img = imageProcessor.binImage(img, binFactor1);
 
-            int[] labels4 = imageSegmentation
-                .objectSegmentation(img);
+            int[] labels4 = imageSegmentation.objectSegmentation(img);
 
             ImageExt img11 = img.createWithDimensions();
             ImageIOHelper.addAlternatingColorLabelsToRegion(
@@ -283,10 +283,72 @@ public class AndroidStatuesTest extends TestCase {
             //LabelToColorHelper.applyLabels(img, labels4);
             //MiscDebug.writeImage(img, "_final_" + fileName1Root);
 
+             
+            {// --- a look at the angles of phase and orientation plotted ----
+                List<Set<PairInt>> contigSets = 
+                    LabelToColorHelper.extractContiguousLabelPoints(
+                    img, labels4);
+
+                List<PairIntArray> orderedBoundaries = new ArrayList<PairIntArray>();
+
+                int w = img.getWidth();
+                int h = img.getHeight();
+                SIGMA sigma = SIGMA.ZEROPOINTFIVE;//SIGMA.ONE;
+
+                for (int ii = 0; ii < contigSets.size(); ++ii) {
+                    Set<PairInt> set = contigSets.get(ii);
+                    Set<PairInt> medialAxis = new HashSet<PairInt>();
+                    PairIntArray p = imageProcessor.extractSmoothedOrderedBoundary(
+                         set, sigma, w, h, medialAxis);
+                    if (p.getN() > 24) {
+                        orderedBoundaries.add(p);
+                    }
+                }
+
+                EdgeFilterProducts products = imageSegmentation
+                    .createPhaseCongruencyGradient(
+                    img.copyToGreyscale());
+
+                img11 = img.copyToImageExt();
+
+                for (int ii = 0; ii < orderedBoundaries.size(); ++ii) {
+                    PairIntArray a = orderedBoundaries.get(ii);
+                    for (int j = 0; j < a.getN(); j += 10) {
+                        int x = a.getX(j);
+                        int y = a.getY(j);
+                        double or = products.getTheta().getValue(x, y)
+                            * Math.PI/180.;
+                        double pa = products.getPhaseAngle().getValue(x, y)
+                            * Math.PI/180.;
+                        int dx0 = (int)Math.round(3. * Math.cos(or));
+                        int dy0 = (int)Math.round(3. * Math.sin(or));
+                        int dx1 = (int)Math.round(3. * Math.cos(pa));
+                        int dy1 = (int)Math.round(3. * Math.sin(pa));
+
+                        ImageIOHelper.addPointToImage(x, y, img11, 1, 255, 0, 0);
+                        
+                        int x2, y2;
+                        
+                        x2 = x + dx0;
+                        y2 = y + dy0;
+                        if (x2 >= 0 && x2 < w && y2 >= 0 && y2 < h) {
+                            ImageIOHelper.drawLineInImage(x, y, 
+                                x2, y2, img11, 0, 255, 255, 0);
+                        }
+                        x2 = x + dx1;
+                        y2 = y + dy1;
+                        if (x2 >= 0 && x2 < w && y2 >= 0 && y2 < h) {
+                            ImageIOHelper.drawLineInImage(x, y, 
+                                x2, y2, img11, 0, 0, 0, 255);
+                        }
+                    }
+                }
+                MiscDebug.writeImage(img11, "_aa_" + fileName1Root);
+            }
         }
     }
 
-    public void testShapeMatcher() throws Exception {
+    public void estShapeMatcher() throws Exception {
 
         int maxDimension = 256;//512;
         SIGMA sigma = SIGMA.ZEROPOINTFIVE;//SIGMA.ONE;
@@ -391,8 +453,6 @@ public class AndroidStatuesTest extends TestCase {
         Map<String, GreyscaleImage> derivMap = 
             imageProcessor.createTextureTransforms(imgCp.copyToGreyscale(), 2);
         
-        //GreyscaleImage gradient = imageSegmentation.createGradient(imgCp, 4, ts);
-
         int[] labels4 = imageSegmentation.objectSegmentation(imgCp);
 
         List<Set<PairInt>> listOfPointSets2 = new ArrayList<Set<PairInt>>();
@@ -480,7 +540,7 @@ public class AndroidStatuesTest extends TestCase {
         assertEquals(orderedBoundaries.size(), listOfPointSets2.size());
 
         List<PairInt> keypointsCombined = new ArrayList<PairInt>();
-        
+       
         /*
         Descriptors descriptors = new Descriptors();
         TDoubleList orientations = extractKeypoints(img, listOfPointSets2, 

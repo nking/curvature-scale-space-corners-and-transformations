@@ -29,6 +29,7 @@ import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
+import java.awt.Color;
 import java.io.File;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -6899,6 +6900,87 @@ if (sum > 511) {
         }
     }
     
+    /**
+     * apply 8 hit or miss filters iteratively until convergence to thin the
+     * image.  the operation is performed on all pixels with value > 0.
+     */
+    public void applyThinning(Set<PairInt> points, int imageWidth, int imageHeight) {
+
+        //from https://en.wikipedia.org/wiki/Hit-or-miss_transform
+        // and thinning
+        Set<PairInt> out = new HashSet<PairInt>(points);
+
+        // x,y pairs are sequential in these
+        int[] c1 = new int[]{0, 0, -1, -1, 0, -1, 1, -1};
+        int[] d1 = new int[]{-1, 1, 0, 1, 1, 1};
+        int[] c2 = new int[]{-1, 0, 0, 0, -1, -1, 0, -1};
+        int[] d2 = new int[]{0, 1, 1, 1, 1, 0};
+
+        /*
+        
+            - - -        - -
+              +        + + -
+            + + +      + +
+        
+        */
+        PairInt[][] neighborCoordOffsets
+            = AbstractLineThinner.createCoordinatePointsForEightNeighbors(
+            0, 0);
+
+        int nEdited = 0;
+        int nIter = 0;
+        do {
+            nEdited = 0;
+
+            // test c1, d1 and it rotated by 90 3 times
+            // test c2, d2 and it rotated by 90 3 times
+            // need to alternate direction of approach
+            for (int t = 0; t < 2; ++t) {
+                int[] tmpC;
+                int[] tmpD;
+                if (t == 0) {
+                    tmpC = Arrays.copyOf(c1, c1.length);
+                    tmpD = Arrays.copyOf(d1, d1.length);
+                } else {
+                    tmpC = Arrays.copyOf(c2, c2.length);
+                    tmpD = Arrays.copyOf(d2, d2.length);
+                }
+                for (int r = 0; r < 4; ++r) {
+                    if (r > 0) {
+                        rotatePairsBy90(tmpC);
+                        rotatePairsBy90(tmpD);
+                    }
+                    
+                    for (PairInt p : points) {
+                        int x = p.getX();
+                        int y = p.getY();
+                        if (allArePresent(points, x, y, tmpC)
+                            && allAreNotPresent(points, x, y, tmpD)) {
+                            if (!ImageSegmentation.doesDisconnect(out,
+                                neighborCoordOffsets, x, y, imageWidth, 
+                                imageHeight)) {
+                                out.remove(p);
+                                nEdited++;
+                            }
+                        }
+                    }
+                    
+                    //MiscDebug.writeImage(out, "_thin_");
+                }
+                
+                points.clear();
+                points.addAll(out);
+            }
+            nIter++;
+        } while (nEdited > 0);
+                
+        points.clear();
+        points.addAll(out);
+                
+        PostLineThinnerCorrections pLTC = new PostLineThinnerCorrections();
+        pLTC._correctForArtifacts(points, imageWidth, imageHeight);
+    }
+    
     private void rotatePairsBy90(int[] xy) {
          
         /*
@@ -6938,12 +7020,38 @@ if (sum > 511) {
         return true;
     }
     
+    private boolean allArePresent(Set<PairInt> points, int x, int y, int[] xy) {
+        
+        for (int k = 0; k < xy.length; k += 2) {
+            int tx = x + xy[k];
+            int ty = y + xy[k + 1];
+            if (!points.contains(new PairInt(tx, ty))) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
     private boolean allAreNotPresent(GreyscaleImage img, int x, int y, int[] xy) {
         
         for (int k = 0; k < xy.length; k += 2) {
             int tx = x + xy[k];
             int ty = y + xy[k + 1];
             if (img.getValue(tx, ty) != 0) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    private boolean allAreNotPresent(Set<PairInt> points, int x, int y, int[] xy) {
+        
+        for (int k = 0; k < xy.length; k += 2) {
+            int tx = x + xy[k];
+            int ty = y + xy[k + 1];
+            if (points.contains(new PairInt(tx, ty))) {
                 return false;
             }
         }
@@ -8367,7 +8475,7 @@ if (sum > 511) {
         }
         
         return sum;
-    }    
+    } 
 
     // TODO: implement the methods in 
     // http://www.merl.com/publications/docs/TR2008-030.pdf

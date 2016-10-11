@@ -1,6 +1,7 @@
 package algorithms.compGeometry;
 
 import algorithms.imageProcessing.ContiguousGapFinder;
+import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.PostLineThinnerCorrections;
 import algorithms.imageProcessing.SpurRemover;
 import algorithms.imageProcessing.ZhangSuenLineThinner;
@@ -222,6 +223,15 @@ public class PerimeterFinder2 {
         
         Set<PairInt> medAxisPts = medAxis.getMedialAxisPoints();
        
+        if (medAxisPts.isEmpty()) {
+            // work around until fix bug in MedialAxis
+            int[] minMaxXY = MiscMath.findMinMaxXY(cPts);
+            Set<PairInt> m = new HashSet<PairInt>(cPts);
+            ImageProcessor imp = new ImageProcessor();
+            imp.applyThinning(cPts, minMaxXY[1] + 1, minMaxXY[3] + 1);
+            medAxisPts.addAll(cPts);
+        }
+        
         if (outputMedialAxisPoints != null) {
             outputMedialAxisPoints.addAll(medAxisPts);
         }
@@ -839,6 +849,7 @@ public class PerimeterFinder2 {
         */
         
         Set<PairInt> medAxisClosest = nn.findClosest(x, y);
+ 
         assert(!medAxisClosest.isEmpty());
         PairInt medAxisP = medAxisClosest.iterator().next();
        
