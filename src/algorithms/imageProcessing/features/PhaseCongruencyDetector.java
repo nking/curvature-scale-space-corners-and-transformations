@@ -830,6 +830,7 @@ public class PhaseCongruencyDetector {
         
         products.setThinnedImage(thinned);
 
+        //TODO: these convenience methods do not belong in this class...
         if (determineCorners) {
             
             calculateHoughTransforms(products);
@@ -850,7 +851,7 @@ public class PhaseCongruencyDetector {
     
     protected void calculateCorners(PhaseCongruencyProducts products,
         GreyscaleImage img) {
-        
+                
         // only computing curvature for edge points
         int[][] edgeImage = products.getThinned();
         
@@ -1237,6 +1238,8 @@ public class PhaseCongruencyDetector {
                 }
             }
         }
+        
+        //TODO: improve the hough line transform
         
         // ----- find lines w/ hough transform, then thin line staircase with it ---
         Set<PairInt> pointCp = new HashSet<PairInt>(points);
