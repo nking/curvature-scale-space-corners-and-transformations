@@ -9,6 +9,7 @@ import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.LowPassFilter;
+import algorithms.imageProcessing.MedianTransform;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.MorphologicalFilter;
 import algorithms.imageProcessing.NonMaximumSuppression;
@@ -138,16 +139,15 @@ import java.util.Set;
 %     Peter Kovesi, "Phase Congruency Detects Corners and Edges". Proceedings
 %     DICTA 2003, Sydney Dec 10-12
   
-     runtime complexity of majority of algorithm is a constant factor, that 
-     depends upon parameters chosen, times O(N*lg_2(N)),
-     but each operation uses a transcendental function.
-
      the advantage to using phase congruency is that it's possible to produce
      consistent clean edges with less noise and representing a wide range of 
      intensity contrast.
-
+     * 
+     Note that this class's results are not as good as PhaseCongruencyDetector.
+     The pyramidal decimation helps for large images, but has a lower depth
+     of response and more noise.
  */
-public class PhaseCongruencyDetector {
+public class PhaseCongruencyDetectorPyramidal {
     
     final private static double epsilon = 1E-4;
     
@@ -206,18 +206,24 @@ public class PhaseCongruencyDetector {
      */
     public PhaseCongruencyProducts phaseCongMono(GreyscaleImage img) {
     
-        int nScale = 5;        
-        int minWavelength = 3;        
+        float cutOff = 0.5f;//0.3f;//0.5f;
+        int nScale = 5;
+        int minWavelength = 3;//nScale;// 3;
         float mult = 2.1f;
         float sigmaOnf = 0.55f;
-        int k = 5;//2;
-        float cutOff = 0.5f; 
+        int k = 10;//2;
         float g = 10;
         float deviationGain = 1.5f;
         int noiseMethod = -1;
-        double tLow = 0.0001;//0.1;
-        double tHigh = 0.1;//0.3;
-        boolean increaseKIfNeeded = true;
+        double tLow = 0.0001;
+        double tHigh = 0.1;
+        boolean increaseKIfNeeded = false;
+
+        k = 14;
+        tLow = 0.0001;
+        tHigh = 0.01;
+        minWavelength = 3;
+        deviationGain = 1.5f / (minWavelength - 1);//0.75f
         
         return phaseCongMono(img, nScale, minWavelength, mult, sigmaOnf, k, 
             increaseKIfNeeded, cutOff, g, deviationGain, noiseMethod, 
@@ -267,7 +273,12 @@ public class PhaseCongruencyDetector {
         int noiseMethod = -1;
         double tLow = 0.1;
         double tHigh = 0.3;
-        
+       
+        tLow = 0.0001;
+        tHigh = 0.01;
+        minWavelength = 3;
+        deviationGain = 1.5f / (minWavelength - 1);//0.75f
+                
         return phaseCongMono(img, nScale, minWavelength, mult, sigmaOnf, k, 
             increaseKIfNeeded, cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
     }
@@ -357,7 +368,7 @@ public class PhaseCongruencyDetector {
         
         final int nOrigCols = nCols;
         final int nOrigRows = nRows;
-        /*{ // DO NOT ENABLE UNTIL downsampling and upsamping are implemented
+        /*{ // compare number of pixel increase to decrease in runtime before enabling
             int nn0 = 1 << (int)(Math.ceil(Math.log(nCols)/Math.log(2)));
             int nn1 = 1 << (int)(Math.ceil(Math.log(nRows)/Math.log(2)));
             if (nn0 > nCols || nn1 > nRows) {
@@ -372,26 +383,7 @@ public class PhaseCongruencyDetector {
                     nOrigRows + "->" + nRows);
             }
         }*/
-        
-        /**
-         * TODO: consider refactoring to down-sample images for scale changes,
-         * then up-sampling the results at the stage of adding them into the
-         * two dimensional sum arrays.
-         * Need to keep the same sigma/f_0 for logGabor while doing so.
-         * 
-         * a recipe for down-sampling the logGabor in frequency domain is in Sec 2.6 of
-         * "Self-Invertible 2D Log-Gabor Wavelets" by Fischer, Sroubek,
-         * and Perrinet, 2007.
-         */
-        
-        //Periodic Fourier transform of image, using default normalization
-        // perfft2 results use notation a[row][col]
-        PeriodicFFT perfft2 = new PeriodicFFT();
-        //IM = perfft2(im);                   % 
-        //S, P, s, p where S = FFT of smooth, P = FFT of periodic, s=spatial smooth, p = spatial p
-        Complex[][][] perfResults = perfft2.perfft2(img, false);
-        Complex[][] capIm = perfResults[1];
-          
+       
         /*
         sumAn  = zeros(rows,cols);          % Matrix for accumulating filter response
                                             % amplitude values.
@@ -410,62 +402,6 @@ public class PhaseCongruencyDetector {
             sumH2[row] = new double[nCols];
         }
         
-        /*
-        Generate grid data for constructing filters in the frequency domain    
-        [radius, u1, u2] = filtergrid(rows, cols);
-        */
-        // results use notation a[row][col]
-        FilterGrid fg = new FilterGrid();
-        FilterGridProducts fgProducts = fg.filtergrid(nRows, nCols);     
-        
-        /*
-        Get rid of the 0 radius value in the middle (at top left corner after
-        fftshifting) so that taking the log of the radius, or dividing by the
-        radius, will not cause trouble.
-         radius(1,1) = 1;
-        */
-        fgProducts.getRadius()[0][0] = 1;
-        
-        /*
-         % Construct the monogenic filters in the frequency domain.  The two
-         % filters would normally be constructed as follows
-         %    H1 = i*u1./radius; 
-         %    H2 = i*u2./radius;
-         % However the two filters can be packed together as a complex valued
-         % matrix, one in the real part and one in the imaginary part.  Do this by
-         % multiplying H2 by i and then adding it to H1 (note the subtraction
-         % because i*i = -1).  When the convolution is performed via the fft the
-         % real part of the result will correspond to the convolution with H1 and
-         % the imaginary part with H2.  This allows the two convolutions to be
-         % done as one in the frequency domain, saving time and memory.
-         H = (1i*u1 - u2)./radius;
-        */
-        // results use notation a[row][col]
-        double[][] u1 = fgProducts.getU1();
-        double[][] u2 = fgProducts.getU2();
-        double[][] radius = fgProducts.getRadius();
-        Complex[][] capH = new Complex[nRows][];
-        for (int row = 0; row < nRows; ++row) {
-            capH[row] = new Complex[nCols];
-            for (int col = 0; col < nCols; ++col) {
-                double re = -u2[row][col]/radius[row][col];
-                double im = u1[row][col]/radius[row][col];
-                capH[row][col] = new Complex(re, im);
-            }
-        }
-        
-        /*
-         % First construct a low-pass filter that is as large as possible, yet falls
-         % away to zero at the boundaries.  All filters are multiplied by
-         % this to ensure no extra frequencies at the 'corners' of the FFT are
-         % incorporated as this can upset the normalisation process when
-         % calculating phase congruency
-         lp = lowpassfilter([rows,cols],.45,15);    % Radius .4, 'sharpness' 15
-        */
-        // results use notation a[row][col]
-        LowPassFilter lpFilter = new LowPassFilter();
-        double[][] lp = lpFilter.lowpassfilter(nRows, nCols, 0.45f, 15);
-             
         ImageProcessor imageProcessor = new ImageProcessor();
         
         double[][] maxAN = null;
@@ -482,19 +418,94 @@ public class PhaseCongruencyDetector {
             weight[row] = new double[nCols];
         }
         
+        List<GreyscaleImage> imgPyramid = new ArrayList<GreyscaleImage>();
+        MedianTransform mt = new MedianTransform();
+        mt.multiscalePyramidalMedianTransform(img, imgPyramid, 
+        Math.min(nRows /(nScale * 2), nCols/(nScale * 2)));
+                
         for (int s = 0; s < nScale; ++s) {
-        
+            GreyscaleImage img2 = img;
+            img2 = imgPyramid.get(s);
+            int sFactor;
+            if (s == 0) {
+                sFactor = 1;
+            } else {
+                sFactor = 2 * s;
+                //img2 = imageProcessor.binImage(img2, sFactor);
+            }
+            int nCols2 = img2.getWidth();
+            int nRows2 = img2.getHeight();
+            
+             //Periodic Fourier transform of image, using default normalization
+            PeriodicFFT perfft2 = new PeriodicFFT();
+            //IM = perfft2(im);                   % 
+            //S, P, s, p where S = FFT of smooth, P = FFT of periodic, s=spatial smooth, p = spatial p
+            Complex[][][] perfResults = perfft2.perfft2(img2, false);
+            Complex[][] capIm = perfResults[1];
+
+            /*
+            Generate grid data for constructing filters in the frequency domain    
+            [radius, u1, u2] = filtergrid(rows, cols);
+            */
+            FilterGrid fg = new FilterGrid();
+            FilterGridProducts fgProducts = fg.filtergrid(nRows2, nCols2);     
+
+            /*
+            Get rid of the 0 radius value in the middle (at top left corner after
+            fftshifting) so that taking the log of the radius, or dividing by the
+            radius, will not cause trouble.
+             radius(1,1) = 1;
+            */
+            fgProducts.getRadius()[0][0] = 1;
+
+            /*
+             % Construct the monogenic filters in the frequency domain.  The two
+             % filters would normally be constructed as follows
+             %    H1 = i*u1./radius; 
+             %    H2 = i*u2./radius;
+             % However the two filters can be packed together as a complex valued
+             % matrix, one in the real part and one in the imaginary part.  Do this by
+             % multiplying H2 by i and then adding it to H1 (note the subtraction
+             % because i*i = -1).  When the convolution is performed via the fft the
+             % real part of the result will correspond to the convolution with H1 and
+             % the imaginary part with H2.  This allows the two convolutions to be
+             % done as one in the frequency domain, saving time and memory.
+             H = (1i*u1 - u2)./radius;
+            */
+            double[][] u1 = fgProducts.getU1();
+            double[][] u2 = fgProducts.getU2();
+            double[][] radius = fgProducts.getRadius();
+            Complex[][] capH = new Complex[nRows2][];
+            for (int row = 0; row < nRows2; ++row) {
+                capH[row] = new Complex[nCols2];
+                for (int col = 0; col < nCols2; ++col) {
+                    double re = -u2[row][col]/radius[row][col];
+                    double im = u1[row][col]/radius[row][col];
+                    capH[row][col] = new Complex(re, im);
+                }
+            }
+            
+            /*
+             % First construct a low-pass filter that is as large as possible, yet falls
+             % away to zero at the boundaries.  All filters are multiplied by
+             % this to ensure no extra frequencies at the 'corners' of the FFT are
+             % incorporated as this can upset the normalisation process when
+             % calculating phase congruency
+             lp = lowpassfilter([rows,cols],.45,15);    % Radius .4, 'sharpness' 15
+            */
+            LowPassFilter lpFilter = new LowPassFilter();
+            double[][] lp = lpFilter.lowpassfilter(nRows2, nCols2, 0.45f, 15);
+             
             // Centre frequency of filter.
             double wavelength = minWavelength * Math.pow(mult, s);
             
-            double fo = 1.0/wavelength;
-                        
-            // use notation a[row][col]
-            double[][] logGabor = new double[nRows][];
-            for (int row = 0; row < nRows; ++row) {
-                logGabor[row] = new double[nCols];
-                for (int col = 0; col < nCols; ++col) {
-                    double v = Math.log(radius[row][col]/fo);
+            //double fo = wavelength;
+            
+            double[][] logGabor = new double[nRows2][];
+            for (int row = 0; row < nRows2; ++row) {
+                logGabor[row] = new double[nCols2];
+                for (int col = 0; col < nCols2; ++col) {
+                    double v = Math.log(radius[row][col] * wavelength);
                     v *= v;
                     v = Math.exp(-v/logGaborDenom);
                     //logGabor = logGabor.*lp;
@@ -505,30 +516,29 @@ public class PhaseCongruencyDetector {
             
             DEBUG(logGabor, "s=" + s + " logGabor*low pass filter", s);
             
-            // uses notation a[row][col]
             //Bandpassed image in the frequency domain
-            Complex[][] capIMF = new Complex[nRows][];
-            for (int row = 0; row < nRows; ++row) {
-                capIMF[row] = new Complex[nCols];
-                for (int col = 0; col < nCols; ++col) {
+            Complex[][] capIMF = new Complex[nRows2][];
+            for (int row = 0; row < nRows2; ++row) {
+                capIMF[row] = new Complex[nCols2];
+                for (int col = 0; col < nCols2; ++col) {
                    capIMF[row][col] = capIm[row][col].times(logGabor[row][col]);
                 }
             }
             
-            // uses notation a[row][col]
             //  Bandpassed image in spatial domain.
             //  f = real(ifft2(IMF));
             // the functions used in other code are not normalized on fft, 
             // but are by inverse fft so need a combined division here by nomr=nRows*nCols
-            Complex[][] fComplex = imageProcessor.create2DFFT(capIMF, false, false);    
+            Complex[][] fComplex = imageProcessor.create2DFFT(capIMF, false, 
+                false);    
 
-            double norm = nRows * nCols;
+            double norm = nRows2 * nCols2;
         
             //h = ifft2(IMF.*H);
-            Complex[][] capIMFH = new Complex[nRows][];
-            for (int row = 0; row < nRows; ++row) {
-                capIMFH[row] = new Complex[nCols];
-                for (int col = 0; col < nCols; ++col) {
+            Complex[][] capIMFH = new Complex[nRows2][];
+            for (int row = 0; row < nRows2; ++row) {
+                capIMFH[row] = new Complex[nCols2];
+                for (int col = 0; col < nCols2; ++col) {
                     capIMFH[row][col] = capIMF[row][col].times(capH[row][col]);
                 }
             }
@@ -544,15 +554,23 @@ public class PhaseCongruencyDetector {
             sumh1 = sumh1 + h1;
             sumh2 = sumh2 + h2;
             */
-            // uses notation a[row][col]
             double[][] aN = new double[nRows][];
             for (int row = 0; row < nRows; ++row) {
                 aN[row] = new double[nCols];
                 for (int col = 0; col < nCols; ++col) {
-                    // results of inverse transforms need normalization
-                    double f0 = fComplex[row][col].re()/norm;
-                    double h1 = h[row][col].re()/norm;
-                    double h2 = h[row][col].im()/norm;
+                    double f0, h1, h2;
+                    if (s == 0) {
+                        f0 = fComplex[row][col].re()/norm;
+                        h1 = h[row][col].re()/norm;
+                        h2 = h[row][col].im()/norm;
+                    } else {
+                        f0 = imageProcessor.upsampleUsingBilinearInterp(
+                            fComplex, row, col, true, sFactor)/norm;
+                        h1 = imageProcessor.upsampleUsingBilinearInterp(
+                            h, row, col, true, sFactor)/norm;
+                        h2 = imageProcessor.upsampleUsingBilinearInterp(
+                            h, row, col, false, sFactor)/norm;
+                    }
                     aN[row][col] = Math.sqrt(f0*f0 + h1*h1 + h2*h2);
                     sumAn[row][col] += aN[row][col];
                     sumF[row][col] += f0;
@@ -1300,59 +1318,76 @@ public class PhaseCongruencyDetector {
          
         Set<PairInt> rm = new HashSet<PairInt>();
         Set<PairInt> corners = products.getCorners();
-        for (PairInt p : corners) {
-            if ((p.getX() > (nOrigCols - 1)) || (p.getX() > (nOrigRows - 1))){
-                rm.add(p);
-            }
-        }
-        corners.removeAll(rm);
-        
-        List<PairIntArray> edgeList = products.getEdgeList();
-        for (int i = 0; i < edgeList.size(); ++i) {
-            PairIntArray a = edgeList.get(i);
-            PairIntArray b = new PairIntArray();
-            for (int j = 0; j < a.getN(); ++j) {
-                int x = a.getX(j);
-                int y = a.getY(j);
-                if (x < nOrigCols && y < nOrigRows) {
-                    b.add(x, y);
-                }
-            }
-            edgeList.set(i, b);
-        }
-        
-        rm = new HashSet<PairInt>();
-        Set<PairInt> junctions = products.getJunctions();
-        for (PairInt p : junctions) {
-            if ((p.getX() > (nOrigCols - 1)) || (p.getX() > (nOrigRows - 1))){
-                rm.add(p);
-            }
-        }
-        junctions.removeAll(rm);
-        
-        Map<Set<PairInt>, PairInt> hLines = products.getHoughLines();
-        for (Entry<Set<PairInt>, PairInt> entry : hLines.entrySet()) {
-            rm = new HashSet<PairInt>();
-            Set<PairInt> set = entry.getKey();
-            for (PairInt p : set) {
+        if (corners != null) {
+            for (PairInt p : corners) {
                 if ((p.getX() > (nOrigCols - 1)) || (p.getX() > (nOrigRows - 1))){
                     rm.add(p);
                 }
             }
-            set.removeAll(rm);
+            corners.removeAll(rm);
         }
         
+        List<PairIntArray> edgeList = products.getEdgeList();
+        if (edgeList != null) {
+            for (int i = 0; i < edgeList.size(); ++i) {
+                PairIntArray a = edgeList.get(i);
+                PairIntArray b = new PairIntArray();
+                for (int j = 0; j < a.getN(); ++j) {
+                    int x = a.getX(j);
+                    int y = a.getY(j);
+                    if (x < nOrigCols && y < nOrigRows) {
+                        b.add(x, y);
+                    }
+                }
+                edgeList.set(i, b);
+            }
+        }
+        
+        rm = new HashSet<PairInt>();
+        Set<PairInt> junctions = products.getJunctions();
+        if (junctions != null) {
+            for (PairInt p : junctions) {
+                if ((p.getX() > (nOrigCols - 1)) || (p.getX() > (nOrigRows - 1))){
+                    rm.add(p);
+                }
+            }
+            junctions.removeAll(rm);
+        }
+        
+        Map<Set<PairInt>, PairInt> hLines = products.getHoughLines();
+        if (hLines != null) {
+            for (Entry<Set<PairInt>, PairInt> entry : hLines.entrySet()) {
+                rm = new HashSet<PairInt>();
+                Set<PairInt> set = entry.getKey();
+                for (PairInt p : set) {
+                    if ((p.getX() > (nOrigCols - 1)) || (p.getX() > (nOrigRows - 1))){
+                        rm.add(p);
+                    }
+                }
+                set.removeAll(rm);
+            }
+        }
         
         PhaseCongruencyParameters params = products.getParameters();
          
         products = new PhaseCongruencyProducts(pc, or, pa, products.getThreshold());
         products.setThinnedImage(th);
         products.setParameters(params);
-        products.setCorners(corners);
-        products.setEdges(edgeList);
-        products.setHoughLines(hLines);
-        products.setJunctions(junctions);
-        products.setNoiseyPixels(nzp);
+        if (corners != null) {
+            products.setCorners(corners);
+        }
+        if (edgeList != null) {
+            products.setEdges(edgeList);
+        }
+        if (hLines != null) {
+            products.setHoughLines(hLines);
+        }
+        if (junctions != null) {
+            products.setJunctions(junctions);
+        }
+        if (nzp != null) {
+            products.setNoiseyPixels(nzp);
+        }
         
         return products;
     }

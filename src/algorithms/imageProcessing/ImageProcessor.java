@@ -3078,33 +3078,137 @@ if (sum > 511) {
 
         for (int i = 0; i < outWidth; ++i) {
             for (int j = 0; j < outHeight; ++j) {
-
-                if (((i & 1) != 1) && ((j & 1) != 1)) {
-                    int x0 = i/2;
-                    int y0 = j/2;
-                    if ((x0 < w0) && (y0 < h0)) {
-                        out.setValue(i, j, input.getValue(x0, y0));
-                        continue;
-                    }
-                }
-
-                float x0 = (float)i/2.f;
-                float y0 = (float)j/2.f;
-
-                if (x0 > (w0 - 1)) {
-                    x0 = w0 - 1;
-                }
-                if (y0 > (h0 - 1)) {
-                    y0 = h0 - 1;
-                }
-
-                double v2 = biLinearInterpolation(input, x0, y0);
-
-                out.setValue(i, j, (int)Math.round(v2));
+                int v = upsampleBy2UsingBilinearInterp(input, i, j);
+                out.setValue(i, j, v);
             }
         }
 
         return out;
+    }
+    
+    public int upsampleBy2UsingBilinearInterp(GreyscaleImage input,
+        int x, int y) {
+        
+        int w0 = input.getWidth();
+        int h0 = input.getHeight();
+
+        if (((x & 1) != 1) && ((y & 1) != 1)) {
+            int x0 = x/2;
+            int y0 = y/2;
+            if ((x0 < w0) && (y0 < h0)) {
+                return input.getValue(x0, y0);
+            }
+        }
+
+        float x0 = (float)x/2.f;
+        float y0 = (float)y/2.f;
+
+        if (x0 > (w0 - 1)) {
+            x0 = w0 - 1;
+        }
+        if (y0 > (h0 - 1)) {
+            y0 = h0 - 1;
+        }
+
+        double v2 = biLinearInterpolation(input, x0, y0);
+
+        return (int)Math.round(v2);
+    }
+    
+    // 
+    public double upsampleBy2UsingBilinearInterp(double[][] input,
+        int x, int y) {
+        
+        int w0 = input.length;
+        int h0 = input[0].length;
+
+        if (((x & 1) != 1) && ((y & 1) != 1)) {
+            int x0 = x/2;
+            int y0 = y/2;
+            if ((x0 < w0) && (y0 < h0)) {
+                return input[x0][y0];
+            }
+        }
+
+        float x0 = (float)x/2.f;
+        float y0 = (float)y/2.f;
+
+        if (x0 > (w0 - 1)) {
+            x0 = w0 - 1;
+        }
+        if (y0 > (h0 - 1)) {
+            y0 = h0 - 1;
+        }
+
+        double v2 = biLinearInterpolation(input, x0, y0);
+
+        return v2;
+    }
+    
+    public double upsampleBy2UsingBilinearInterp(Complex[][] input,
+        int x, int y, boolean calcForReal) {
+        
+        int w0 = input.length;
+        int h0 = input[0].length;
+
+        if (((x & 1) != 1) && ((y & 1) != 1)) {
+            int x0 = x/2;
+            int y0 = y/2;
+            if ((x0 < w0) && (y0 < h0)) {
+                if (calcForReal) {
+                    return input[x0][y0].re();
+                } else {
+                    return input[x0][y0].im();
+                }
+            }
+        }
+
+        float x0 = (float)x/2.f;
+        float y0 = (float)y/2.f;
+
+        if (x0 > (w0 - 1)) {
+            x0 = w0 - 1;
+        }
+        if (y0 > (h0 - 1)) {
+            y0 = h0 - 1;
+        }
+
+        double v2 = biLinearInterpolation(input, x0, y0, calcForReal);
+
+        return v2;
+    }
+    
+    public double upsampleUsingBilinearInterp(Complex[][] input,
+        int x, int y, boolean calcForReal, int factor) {
+        
+        int w0 = input.length;
+        int h0 = input[0].length;
+
+        if (((x & 1) != 1) && ((y & 1) != 1)) {
+            int x0 = x/factor;
+            int y0 = y/factor;
+            if ((x0 < w0) && (y0 < h0)) {
+                if (calcForReal) {
+                    return input[x0][y0].re();
+                } else {
+                    return input[x0][y0].im();
+                }
+            }
+        }
+
+        float x0 = (float)x/(float)factor;
+        float y0 = (float)y/(float)factor;
+
+        if (x0 > (w0 - 1)) {
+            x0 = w0 - 1;
+        }
+        if (y0 > (h0 - 1)) {
+            y0 = h0 - 1;
+        }
+
+        double v2 = biLinearInterpolation(input, x0, y0, calcForReal);
+
+        return v2;
     }
     
     public GreyscaleImage unbinImage(GreyscaleImage input, int binFactor) {
@@ -4453,6 +4557,134 @@ if (sum > 511) {
             // interpolate over row y2
             v2 = ((x2 - x)/(x2 - x1)) * gsImg.getValue((int)x1, (int)y2) +
                 ((x - x1)/(x2 - x1)) * gsImg.getValue((int)x2, (int)y2);
+        }
+
+        // interpolate the fraction of v1 and v2 over rows
+        double v = ((y2 - y)/(y2 - y1)) * v1 + ((y - y1)/(y2 - y1)) * v2;
+
+        return v;
+    }
+    
+    /**
+     * NOT YET TESTED
+     *
+     http://en.wikipedia.org/wiki/Bilinear_interpolation
+     http://en.wikipedia.org/wiki/Bilinear_interpolation#/media/File:Bilinear_interpolation_visualisation.svg
+     * @param x
+     * @param y
+     * @return
+     */
+    public double biLinearInterpolation(Complex[][] img, float x, float y,
+        boolean calcForReal) {
+
+        double x1 = Math.floor(x);
+
+        double x2 = Math.ceil(x);
+
+        double y1 = Math.floor(y);
+
+        double y2 = Math.ceil(y);
+
+        double v1, v2;
+
+        if (x1 == x2) {
+
+            if (calcForReal) {
+                v1 = img[(int)x1][(int)y1].re();
+            } else {
+                v1 = img[(int)x1][(int)y1].im();
+            }
+
+            if (y1 == y2) {
+                return v1;
+            }
+
+            if (calcForReal) {
+                v2 = img[(int)(int)x1][(int)y].re();
+            } else {
+                v2 = img[(int)(int)x1][(int)y].im();
+            }
+        } else {
+
+            double a, b;
+            if (calcForReal) {
+                a = img[(int)(int)x1][(int)y1].re();
+                b = img[(int)x2][(int)y1].re();
+            } else {
+                a = img[(int)(int)x1][(int)y1].im();
+                b = img[(int)x2][(int)y1].im();
+            }
+            
+            // interpolate over row y1
+            v1 = ((x2 - x)/(x2 - x1)) * a + ((x - x1)/(x2 - x1)) * b;
+
+            if (y1 == y2) {
+                return v1;
+            }
+
+            double c, d;
+            if (calcForReal) {
+                c = img[(int)x1][(int)y2].re();
+                d = img[(int)x2][(int)y2].re();
+            } else {
+                c = img[(int)x1][(int)y2].im();
+                d = img[(int)x2][(int)y2].im();
+            }
+            
+            // interpolate over row y2
+            v2 = ((x2 - x)/(x2 - x1)) * c + ((x - x1)/(x2 - x1)) * d;
+        }
+
+        // interpolate the fraction of v1 and v2 over rows
+        double v = ((y2 - y)/(y2 - y1)) * v1 + ((y - y1)/(y2 - y1)) * v2;
+
+        return v;
+    }
+    
+    /**
+     * NOT YET TESTED
+     *
+     http://en.wikipedia.org/wiki/Bilinear_interpolation
+     http://en.wikipedia.org/wiki/Bilinear_interpolation#/media/File:Bilinear_interpolation_visualisation.svg
+     * @param x
+     * @param y
+     * @return
+     */
+    public double biLinearInterpolation(double[][] gsImg, float x, float y) {
+
+        double x1 = Math.floor(x);
+
+        double x2 = Math.ceil(x);
+
+        double y1 = Math.floor(y);
+
+        double y2 = Math.ceil(y);
+
+        double v1, v2;
+
+        if (x1 == x2) {
+
+            v1 = gsImg[(int)x1][(int)y1];
+
+            if (y1 == y2) {
+                return v1;
+            }
+
+            v2 = gsImg[(int)(int)x1][(int)y];
+
+        } else {
+
+            // interpolate over row y1
+            v1 = ((x2 - x)/(x2 - x1)) * gsImg[(int)(int)x1][(int)y1] +
+                ((x - x1)/(x2 - x1)) * gsImg[(int)x2][(int)y1];
+
+            if (y1 == y2) {
+                return v1;
+            }
+
+            // interpolate over row y2
+            v2 = ((x2 - x)/(x2 - x1)) * gsImg[(int)x1][(int)y2] +
+                ((x - x1)/(x2 - x1)) * gsImg[(int)x2][(int)y2];
         }
 
         // interpolate the fraction of v1 and v2 over rows

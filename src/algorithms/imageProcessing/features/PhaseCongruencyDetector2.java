@@ -498,7 +498,7 @@ public class PhaseCongruencyDetector2 {
                 orientation, 1.2, new HashSet<PairInt>()); 
 
             int[][] thinned = pcDet0.createEdges(PC[or], 
-                thinnedPC, phaseAngle, tLow, tHigh);
+                thinnedPC, phaseAngle, null, tLow, tHigh);
                             
             GreyscaleImage pcImg = img.createWithDimensions();
             GreyscaleImage thinnedImg = img.createWithDimensions();
