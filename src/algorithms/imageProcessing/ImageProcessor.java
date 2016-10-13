@@ -5132,6 +5132,40 @@ if (sum > 511) {
      * [11] [11] [12]
      * [11] [11] [12]
      * </pre>
+     * runtime complexity is O(N_pixels) and never more than
+     * 4 times O(N_pixels).
+     * @param img
+     * @param halfDimension the pixel center + and - this value in x and y
+     * are averaged
+     */
+    public void applyCenteredMean2(double[][] img, int halfDimension) {
+
+        SummedAreaTable sumTable = new SummedAreaTable();
+        
+        double[][] imgS = sumTable.createAbsoluteSummedAreaTable(img);
+        
+        imgS = sumTable.applyMeanOfWindowFromSummedAreaTable(imgS, 
+            2*halfDimension + 1);
+        
+        for (int i = 0; i < img.length; ++i) {
+            System.arraycopy(imgS[i], 0, img[i], 0, imgS[i].length);
+        }
+    }
+    
+    /**
+     * create an image of the mean of the surrounding dimension x dimension
+     * pixels for each pixel centered on each pixel.  For the starting
+     * and ending (dimension/2) pixels, the average uses a decreasing
+     * number of pixels.
+     * <pre>
+     * for example, image:
+     * [10] [12] [12]
+     * [10] [12] [12]
+     *
+     * for halfDimension = 1 becomes:
+     * [11] [11] [12]
+     * [11] [11] [12]
+     * </pre>
      * runtime complexity is O(N_pixels), but is also dependent upon 
      * halfDimension.  Prefer to use applyCenteredMean2 which is always
      * less than 4 times O(N) in runtime complexity.
@@ -7725,7 +7759,7 @@ if (sum > 511) {
         ImageSegmentation imageSegmentation = new ImageSegmentation();
         EdgeFilterProducts products = imageSegmentation.createGradient(
             img.copyToColorGreyscaleExt(), 2, ts);
-        
+                
         GreyscaleImage gradient = products.getGradientXY();
         
         float sigma = SIGMA.getValue(SIGMA.ZEROPOINTSEVENONE);
@@ -8145,6 +8179,19 @@ if (sum > 511) {
         int n2 = a[0].length;
 
         float[][] out = new float[n1][n2];
+        for (int i = 0; i < n1; ++i) {
+            out[i] = Arrays.copyOf(a[i], a[i].length);
+        }
+
+        return out;
+    }
+    
+    public double[][] copy(double[][] a) {
+
+        int n1 = a.length;
+        int n2 = a[0].length;
+
+        double[][] out = new double[n1][n2];
         for (int i = 0; i < n1; ++i) {
             out[i] = Arrays.copyOf(a[i], a[i].length);
         }

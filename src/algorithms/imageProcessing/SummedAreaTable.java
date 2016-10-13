@@ -48,6 +48,42 @@ public class SummedAreaTable {
         return out;
     }
     
+    public double[][] createAbsoluteSummedAreaTable(double[][] img) {
+
+        int w = img.length;
+        int h = img[0].length;
+        
+        ImageProcessor imp = new ImageProcessor();
+
+        double[][] out = imp.copy(img);
+        //applyAbsoluteValue
+        for (int x = 0; x < w; ++x) {
+            for (int y = 0; y < h; ++y) {
+                double v = out[x][y];
+                if (v < 0) {
+                    out[x][y] *= -1;
+                }
+            }
+        }
+        
+        for (int x = 0; x < w; ++x) {
+            for (int y = 0; y < h; ++y) {
+                if (x > 0 && y > 0) {
+                    double v = out[x - 1][y] + out[x][y - 1] - out[x - 1][y - 1];
+                    out[x][y] += v;
+                } else if (x > 0) {
+                    double v = out[x - 1][y];
+                    out[x][y] += v;
+                } else if (y > 0) {
+                    double v = out[x][y - 1];
+                    out[x][y] += v;
+                }
+            }
+        }
+
+        return out;
+    }
+    
      /**
      * @param imgS
      * @param d
@@ -71,6 +107,38 @@ public class SummedAreaTable {
                 int nPix = sumAndN[1];
                 int v = sumAndN[0]/nPix;
                 img2.setValue(x, y, v);
+            }
+        }
+
+        return img2;
+    }
+    
+    /**
+     * @param imgS
+     * @param d
+     * @return 
+     */
+    public double[][] applyMeanOfWindowFromSummedAreaTable(double[][] imgS, 
+        int d) {
+        
+        int w = imgS.length;
+        int h = imgS[0].length;
+        
+        double[][] img2 = new double[w][];
+        for (int i = 0; i < w; ++i) {
+            img2[i] = new double[h];
+        }
+        
+        double[] sumAndN = new double[2];
+        
+        // extract the summed area of each dxd window centered on x,y
+        // and divide by number of pixels
+        for (int x = 0; x < w; ++x) {
+            for (int y = 0; y < h; ++y) {
+                extractWindowFromSummedAreaTable(imgS, x, y, d, sumAndN);
+                double nPix = sumAndN[1];
+                double v = sumAndN[0]/nPix;
+                img2[x][y] = v;
             }
         }
 
@@ -205,6 +273,138 @@ public class SummedAreaTable {
             // startX < 0 && startY < 0
             int nPix = (r == 0) ? 1 : (stopX + 1) * (stopY + 1);
             int s1 = imgS.getValue(stopX, stopY);
+            output[0] = s1;
+            output[1] = nPix;
+            return;
+        }
+               
+    }
+    
+    /**
+     * extract the sum of a window centered at (x,y) of x dimension d and y
+     * dimension d and return that value and the number of pixels in the
+     * aperture in the output variable, output.
+     * NOTE GreyscaleImage, x, and y are in column major format
+     * @param imgS
+     * @param x coordinate for x center of window
+     * @param y coordinate for y center of window
+     * @param d diameter of window in x and y
+     * @param output one dimensional array of size 2 in which the
+     * sum of the window will be returned and the number of pixels in the 
+     * window.  int[]{sum, nPixels}
+     */
+    public void extractWindowFromSummedAreaTable(double[][] imgS, 
+        int x, int y, int d, double output[]) {
+        
+        if (output == null || output.length != 2) {
+            throw new IllegalArgumentException(
+                "output must be initialized to size 2");
+        }
+        
+        if (d < 0) {
+            throw new IllegalArgumentException(
+                "d must be a non-negative number");
+        }
+        
+        int w = imgS.length;
+        int h = imgS[0].length;
+        
+        if (x < 0 || y < 0 || (x > (w - 1)) || (y > (h - 1))) {
+            throw new IllegalArgumentException("x or y is out of bounds of "
+                + "image. x=" + x + " y=" + y + " w=" + w + " h=" + h);
+        }
+        
+        final int r = (d >> 1);
+        
+        // extract the summed area of dxd window centered on x,y
+        if (r > 0) {
+            if (x > r && x < (w-r) && (y > r) && (y < (h-r))) {
+                int nPix = d * d;
+                double s1 = imgS[x+r][y+r] - imgS[x-r][y+r]
+                    - imgS[x+r][y-r] + imgS[x-r][y-r];
+                output[0] = s1;
+                output[1] = nPix;
+                return;
+            }
+        }
+                
+        // handling borders separately
+        
+        int startX = x - r - 1;
+        int stopX = x + r;
+        int startY = y - r - 1;
+        int stopY = y + r;
+        
+        if (stopX > (w - 1)) {
+            stopX = w - 1;
+        }
+        if (stopY > (h - 1)) {
+            stopY = h - 1;
+        }
+        
+        //System.out.println("x=" + x + " y=" + y + " r=" + r
+        //    + " startX=" + startX +
+        //    " stopX=" + stopX + " startY=" + startY + " stopY=" + stopY);
+       
+        // when r == 0, bounds need another edit or immediate return
+        /*
+         2            2           2           2           2       *
+         1            1 *         1           1    *      1
+         0 *          0           0    *      0           0
+           0  1  2      0  1  2     0  1  2     0  1  2     0  1  2
+        */
+        if (r == 0) {
+            if (stopX == 0) {
+                if (stopY == 0) {
+                    output[1] = 1;
+                    output[0] = imgS[stopX][stopY];
+                    return;
+                }
+                startY = stopY - 1;
+                if (startY == 0) {
+                    output[1] = 1;
+                    output[0] = imgS[stopX][stopY] - imgS[stopX][startY];
+                    return;
+                }
+            } else {
+                // stopX > 0
+                startX = stopX - 1;
+                if (stopY == 0) {
+                    output[1] = 1;
+                    output[0] = imgS[stopX][stopY] - imgS[startX][stopY];
+                    return;
+                }
+                startY = stopY - 1;
+            }
+            //System.out.println(" --> startX=" + startX +
+            //    " stopX=" + stopX + " startY=" + startY + " stopY=" + stopY);            
+        }
+        
+        if (startX >= 0 && startY >= 0) {
+            int nPix = (r == 0) ? 1 : (stopX - startX) * (stopY - startY);
+            double s1 = imgS[stopX][stopY] - imgS[startX][stopY]
+                - imgS[stopX][startY] + imgS[startX][startY];
+            output[0] = s1;
+            output[1] = nPix;
+            return;
+        } else if (startX >= 0) {
+            // startY is < 0
+            int nPix = (r == 0) ? 1 : (stopX - startX) * (stopY + 1);
+            double s1 = imgS[stopX][stopY] - imgS[startX][stopY];
+            output[0] = s1;
+            output[1] = nPix;
+            return;
+        } else if (startY >= 0) {
+            // startX < 0
+            int nPix = (r == 0) ? 1 : (stopX + 1) * (stopY - startY);
+            double s1 = imgS[stopX][stopY] - imgS[stopX][startY];
+            output[0] = s1;
+            output[1] = nPix;
+            return;
+        } else {
+            // startX < 0 && startY < 0
+            int nPix = (r == 0) ? 1 : (stopX + 1) * (stopY + 1);
+            double s1 = imgS[stopX][stopY];
             output[0] = s1;
             output[1] = nPix;
             return;
