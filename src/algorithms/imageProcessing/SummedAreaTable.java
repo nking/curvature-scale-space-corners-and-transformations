@@ -146,9 +146,9 @@ public class SummedAreaTable {
     }
     
     /**
-     * extract the sum of a window centered at (x,y) of x dimension d and y
-     * dimension d and return that value and the number of pixels in the
-     * aperture in the output variable, output.
+     * extract the sum of a window bound by given start and stop coordinates
+     * for x and y and return that value and the number of pixels in the
+     * window in the output variable, output.
      * NOTE GreyscaleImage, x, and y are in column major format
      * @param imgS
      * @param startX coordinate for x start of window
