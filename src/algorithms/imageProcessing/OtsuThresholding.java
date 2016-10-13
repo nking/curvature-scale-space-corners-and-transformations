@@ -3,7 +3,6 @@ package algorithms.imageProcessing;
 import algorithms.misc.Histogram;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -300,7 +299,7 @@ public class OtsuThresholding {
     /**
      * NOT YET TESTED.
      * 
-     * 2-D fast implementation of binary thresholding.
+     * 2-D fast implementation of 2D binary thresholding.
      * 
      * The runtime complexity is at best O(N_pixels) and 
      * at worst nBins^2 if that is larger than N_pixels.
@@ -366,12 +365,16 @@ public class OtsuThresholding {
                 p[binInt][binAvg]++;
             }
         }
-        
+                
+        double minP = Double.MAX_VALUE;
         // finish array of probabilities
         for (PairInt pair : pSet) {
             int i = pair.getX();
             int j = pair.getY();
             p[i][j] /= nPix;
+            if (p[i][j] < minP) {
+                minP = p[i][j];
+            }
         }
         
         /*
@@ -434,12 +437,22 @@ public class OtsuThresholding {
         // summed area table for p_i_j
         SummedAreaTable summed = new SummedAreaTable();
         double[][] pTable = summed.createAbsoluteSummedAreaTable(p);
-       
+        
+        double[] binFactors = new double[nBins];
+        for (int i = 0; i < nBins; ++i) {
+            binFactors[i] = i * binWidth + min;
+        }     
+        
+        //TODO: this needs corrections to avoid overrunning
+        // bounds of table data type
+        
         // the other 2 summed area tables:
         double[][] iPTable = imageProcessor.copy(p);
         double[][] jPTable = imageProcessor.copy(p);
         for (int i = 0; i < nBins; ++i) {
+            double iFactor = binFactors[i];
             for (int j = 0; j < nBins; ++j) {
+                double jFactor = binFactors[j];
                 double iv = 0;
                 double jv = 0;
                 if (i > 0 && j > 0) {
@@ -447,6 +460,13 @@ public class OtsuThresholding {
                         - iPTable[i - 1][j - 1] + iPTable[i][j];
                     jv = jPTable[i - 1][j] + jPTable[i][j - 1] 
                         - jPTable[i - 1][j - 1] + jPTable[i][j];
+                    if (Double.isNaN(jv)) {
+                        System.out.println("jPTable[i - 1][j]=" + jPTable[i - 1][j]
+                            + " jPTable[i][j - 1]=" + jPTable[i][j - 1] 
+                            + " jPTable[i - 1][j - 1]=" + jPTable[i - 1][j - 1]
+                            + " jPTable[i][j]=" + jPTable[i][j]
+                        );
+                    }
                 } else if (i > 0) {
                     iv = iPTable[i - 1][j] + iPTable[i][j];
                     jv = jPTable[i - 1][j] + jPTable[i][j];
@@ -454,8 +474,12 @@ public class OtsuThresholding {
                     iv = iPTable[i][j - 1] + iPTable[i][j];
                     jv = jPTable[i][j - 1] + jPTable[i][j];
                 }
-                iPTable[i][j] = i * iv;
-                jPTable[i][j] = j * jv;
+                iPTable[i][j] = iFactor * iv;
+                jPTable[i][j] = jFactor * jv;
+                assert(!Double.isNaN(iPTable[i][j]));
+                assert(!Double.isNaN(jPTable[i][j]));
+                assert(Double.isFinite(iPTable[i][j]));
+                assert(Double.isFinite(jPTable[i][j]));
             }
         }
         
@@ -473,6 +497,8 @@ public class OtsuThresholding {
             where w_0 is sum of the P_i_j window
                       i=0 to s-1, j=0 to t-1
         */
+        
+        //TODO: handle multiplication by factor over window size
         
         double mTotalI = iPTable[nBins - 1][nBins - 1];
         double mTotalJ = jPTable[nBins - 1][nBins - 1];
@@ -515,6 +541,8 @@ public class OtsuThresholding {
             a *= a;
             double b = mTotalJ * w0 - mJ;
             b *= b;
+            assert(Double.isFinite(w0 * (1 - w0)));
+            assert(!Double.isNaN(w0 * (1 - w0)));
             double trace = (a + b)/(w0 * (1 - w0));
             
             if (trace > maxTrace) {
