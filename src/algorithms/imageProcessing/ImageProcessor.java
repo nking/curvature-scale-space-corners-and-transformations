@@ -32,6 +32,7 @@ import gnu.trove.set.hash.TIntHashSet;
 import java.awt.Color;
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -4600,18 +4601,18 @@ if (sum > 511) {
             }
 
             if (calcForReal) {
-                v2 = img[(int)(int)x1][(int)y].re();
+                v2 = img[(int)x1][(int)y].re();
             } else {
-                v2 = img[(int)(int)x1][(int)y].im();
+                v2 = img[(int)x1][(int)y].im();
             }
         } else {
 
             double a, b;
             if (calcForReal) {
-                a = img[(int)(int)x1][(int)y1].re();
+                a = img[(int)x1][(int)y1].re();
                 b = img[(int)x2][(int)y1].re();
             } else {
-                a = img[(int)(int)x1][(int)y1].im();
+                a = img[(int)x1][(int)y1].im();
                 b = img[(int)x2][(int)y1].im();
             }
             
@@ -4670,12 +4671,12 @@ if (sum > 511) {
                 return v1;
             }
 
-            v2 = gsImg[(int)(int)x1][(int)y];
+            v2 = gsImg[(int)x1][(int)y];
 
         } else {
 
             // interpolate over row y1
-            v1 = ((x2 - x)/(x2 - x1)) * gsImg[(int)(int)x1][(int)y1] +
+            v1 = ((x2 - x)/(x2 - x1)) * gsImg[(int)x1][(int)y1] +
                 ((x - x1)/(x2 - x1)) * gsImg[(int)x2][(int)y1];
 
             if (y1 == y2) {
@@ -6095,7 +6096,7 @@ if (sum > 511) {
             }
         }   
     }
-    
+
     public static class Colors {
         private final float[] colors;
         public Colors(float[] theColors) {
