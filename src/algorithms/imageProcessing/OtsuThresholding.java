@@ -302,8 +302,8 @@ public class OtsuThresholding {
      * 
      * 2-D fast implementation of binary thresholding.
      * 
-     * The runtime complexity is at bet O(N_pixels) and 
-     * at worst nBins * O(N_pixels).
+     * The runtime complexity is at best O(N_pixels) and 
+     * at worst nBins^2 if that is larger than N_pixels.
      * 
      * returns an array of the thresholds indexed by pixel number.
      * 
