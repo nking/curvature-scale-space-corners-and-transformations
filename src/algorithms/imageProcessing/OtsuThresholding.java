@@ -365,6 +365,8 @@ public class OtsuThresholding {
                 p[binInt][binAvg]++;
             }
         }
+        
+        assert(assertSums(p, nPix));
                 
         double minP = Double.MAX_VALUE;
         // finish array of probabilities
@@ -376,6 +378,8 @@ public class OtsuThresholding {
                 minP = p[i][j];
             }
         }
+        
+        assert(assertSums(p, 1));
         
         /*
        for any given point in P_i_j, noted as (s, t) where s is i and t is j,
@@ -444,57 +448,69 @@ public class OtsuThresholding {
         for (int i = 0; i < nBins; ++i) {
             binFactors[i] = i * binWidth + min;
         }     
-       
+        
         //TODO: this needs corrections to avoid overrunning
         // bounds of table data type.
-        // TODO: also need to verify that the simplification of the trace
-        //  printed in wikipedia is correct, else need to correct that
-        //  or return to the longer trace statement that includes w0 and w1
-        //  terms.
         
-        // the other 2 summed area tables:
-        double[][] iPTable = imageProcessor.copy(p);
-        double[][] jPTable = imageProcessor.copy(p);
+        double mTotalI = 0;
+        double mTotalJ = 0;
+        
+        // the other 2 summed area tables.
+        double[][] iPTable = new double[nBins][];
+        double[][] jPTable = new double[nBins][];
         for (int i = 0; i < nBins; ++i) {
+            iPTable[i] = new double[nBins];
+            jPTable[i] = new double[nBins];
+            
             double iFactor = binFactors[i];
+            
             for (int j = 0; j < nBins; ++j) {
                 double jFactor = binFactors[j];
+                
+                mTotalI += (iFactor * p[i][j]);
+                mTotalJ += (jFactor * p[i][j]);
+                                
                 double iv = 0;
                 double jv = 0;
                 if (i > 0 && j > 0) {
                     iv = iPTable[i - 1][j] + iPTable[i][j - 1] 
-                        - iPTable[i - 1][j - 1] + iPTable[i][j];
+                        - iPTable[i - 1][j - 1] 
+                        + iFactor*p[i][j];
                     jv = jPTable[i - 1][j] + jPTable[i][j - 1] 
-                        - jPTable[i - 1][j - 1] + jPTable[i][j];
-                    if (Double.isNaN(jv)) {
-                        System.out.println("jPTable[i - 1][j]=" + jPTable[i - 1][j]
-                            + " jPTable[i][j - 1]=" + jPTable[i][j - 1] 
-                            + " jPTable[i - 1][j - 1]=" + jPTable[i - 1][j - 1]
-                            + " jPTable[i][j]=" + jPTable[i][j]
-                        );
-                    }
+                        - jPTable[i - 1][j - 1] 
+                        + jFactor*p[i][j];
                 } else if (i > 0) {
-                    iv = iPTable[i - 1][j] + iPTable[i][j];
-                    jv = jPTable[i - 1][j] + jPTable[i][j];
+                    iv = iPTable[i - 1][j] + iFactor*p[i][j];
+                    jv = jPTable[i - 1][j] + jFactor*p[i][j];
                 } else if (j > 0) {
-                    iv = iPTable[i][j - 1] + iPTable[i][j];
-                    jv = jPTable[i][j - 1] + jPTable[i][j];
+                    iv = iPTable[i][j - 1] + iFactor*p[i][j];
+                    jv = jPTable[i][j - 1] + jFactor*p[i][j];
+                } else {
+                    assert(i == 0 && j == 0);
+                    iv = iFactor*p[0][0];
+                    jv = jFactor*p[0][0];
                 }
-                iPTable[i][j] = iFactor * iv;
-                jPTable[i][j] = jFactor * jv;
+                iPTable[i][j] = iv;
+                jPTable[i][j] = jv;
                 assert(!Double.isNaN(iPTable[i][j]));
                 assert(!Double.isNaN(jPTable[i][j]));
                 assert(Double.isFinite(iPTable[i][j]));
                 assert(Double.isFinite(jPTable[i][j]));
+                
+                /*System.out.println(String.format(
+                "pair=(%.2f,%.2f)  w=%.2f  iv=%.2f  jv=%.2f",
+                (float)iFactor, (float)jFactor,
+                (float)pTable[i][j], (float)iv, (float)jv));*/
             }
         }
         
         /*
-        tr(S_b) = ( (m_total_i * w_0 - m_i)^2 + (m_total_j * w_0 - m_j)^2)
-                  / (w_0*(1-w_0))
-            where m_i is (sum over i of i * P_i_j)/w_0
+        tr(S_b) = w_0 * ((m_0_i - m_total_i)^2 + (m_0_j - m_total_j)^2) 
+                  + w_1 * ((m_1_i - m_total_i)^2 + (m_1_j - m_total_j)^2)
+          
+            where m_0_i is (sum over i of i * P_i_j)/w_0
                       i=0 to s-1 and j=0 to t-1
-            where m_j is (sum over j of j * P_i_j)/w_0
+            where m_0_j is (sum over j of j * P_i_j)/w_0
                       i=0 to s-1 and j=0 to t-1
             where m_total_i = (sum over i of i * P_i_j)
                       i=0 to nBins-1, j = 0 to nBins-1
@@ -502,54 +518,92 @@ public class OtsuThresholding {
                       i=0 to nBins-1, j = 0 to nBins-1
             where w_0 is sum of the P_i_j window
                       i=0 to s-1, j=0 to t-1
+            where w_1 is sum of the P_i_j window
+                      i=s to nBins-1 and j=t to nBins-1
+            where m_1_i is (sum over i of i * P_i_j)/w_1
+                      i=s to nBins-1 and j=t to nBins-1
+            where m_1_j is (sum over j of j * P_i_j)/w_1
+                      i=s to nBins-1 and j=t to nBins-1
         */
-        
-        //TODO: handle multiplication by factor over window size
-        
-        double mTotalI = iPTable[nBins - 1][nBins - 1];
-        double mTotalJ = jPTable[nBins - 1][nBins - 1];
+                
+        double[] sAndNPix = new double[2];
         
         PairInt maxPair = null;
         double maxTrace = Double.MIN_VALUE;
-        
         for (PairInt pair : pSet) {
             int s = pair.getX();
             int t = pair.getY();
+           
+            double w0, m0I, m0J, w1, m1I, m1J;
             
-            double w0, mI, mJ;
+            summed.extractWindowFromSummedAreaTable(
+                pTable, s, nBins - 1, t, nBins - 1, sAndNPix);
+            w1 = sAndNPix[0];
+            summed.extractWindowFromSummedAreaTable(
+                iPTable, s, nBins - 1, t, nBins - 1, sAndNPix);
+            m1I = sAndNPix[0];
+            summed.extractWindowFromSummedAreaTable(
+                jPTable, s, nBins - 1, t, nBins - 1, sAndNPix);
+            m1J = sAndNPix[0];
+            
             if (s > 0 && t > 0) {
                 w0 = pTable[s - 1][t - 1];
-                mI = iPTable[s - 1][t - 1];
-                mJ = jPTable[s - 1][t - 1];
+                m0I = iPTable[s - 1][t - 1];
+                m0J = jPTable[s - 1][t - 1];
             } else if (s > 0) {
                 assert(t == 0);
                 w0 = pTable[s - 1][t];
-                mI = iPTable[s - 1][t];
-                mJ = jPTable[s - 1][t];
+                m0I = iPTable[s - 1][t];
+                m0J = jPTable[s - 1][t];
             } else if (t > 0) {
                 assert(s == 0);
                 w0 = pTable[s][t - 1];
-                mI = iPTable[s][t - 1];
-                mJ = jPTable[s][t - 1];
+                m0I = iPTable[s][t - 1];
+                m0J = jPTable[s][t - 1];
             } else {
                 // i == 0 and j == 0
                 assert(s == 0);
                 assert(t == 0);
                 w0 = p[s][t];
-                mI = iPTable[s][t];
-                mJ = jPTable[s][t];
+                m0I = iPTable[s][t];
+                m0J = jPTable[s][t];
             }
             assert(w0 <= 1.);
-            mI /= w0;
-            mJ /= w0;
+            m0I /= w0;
+            m0J /= w0;
+            m1I /= w1;
+            m1J /= w1;
             
-            double a = mTotalI * w0 - mI;
+            /*
+            tr(S_b) = w_0 * ((m_0_i - m_total_i)^2 + (m_0_j - m_total_j)^2) 
+                  + w_1 * ((m_1_i - m_total_i)^2 + (m_1_j - m_total_j)^2)
+            */
+            double a = m0I - mTotalI;
             a *= a;
-            double b = mTotalJ * w0 - mJ;
+            double b = m0J - mTotalJ;
             b *= b;
-            assert(Double.isFinite(w0 * (1 - w0)));
-            assert(!Double.isNaN(w0 * (1 - w0)));
-            double trace = (a + b)/(w0 * (1 - w0));
+            double c = m1I - mTotalI;
+            c *= c;
+            double d = m1J - mTotalJ;
+            d *= d;
+            
+            double trace;
+            if (w0 == 0 && w1 == 0) {
+                continue;
+            } else if (w0 == 0) {
+                trace = w1 * (c + d);
+            } else if (w1 == 0) {
+                trace = w0 * (a + b);
+            } else {
+                trace = w0 * (a + b) + w1 * (c + d);
+            }
+            assert(!Double.isNaN(trace));
+            
+            /*System.out.println(String.format(
+                "thresh=(%.2f,%.2f)  tr=%.2f",
+                (float)((pair.getX() * binWidth) + min),
+                (float)((pair.getY() * binWidth) + min),
+                (float)trace));*/
             
             if (trace > maxTrace) {
                 maxTrace = trace;
@@ -559,6 +613,8 @@ public class OtsuThresholding {
         
         double thresh = (maxPair.getX() * binWidth) + min;
         thresh += (binWidth/2);
+        
+        System.out.println("==> " + thresh);
         
         return thresh;
     }
@@ -578,5 +634,19 @@ public class OtsuThresholding {
             }
         }
         return true;
+    }
+
+    private boolean assertSums(double[][] a, double expectedSum) {
+        
+        int w = a.length;
+        int h = a[0].length;
+        double sum = 0;
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                double v = a[i][j];
+                sum += v;
+            }
+        }
+        return (Math.abs(expectedSum - sum) < 0.0001);
     }
 }
