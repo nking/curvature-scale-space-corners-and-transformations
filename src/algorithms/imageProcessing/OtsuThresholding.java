@@ -438,13 +438,19 @@ public class OtsuThresholding {
         SummedAreaTable summed = new SummedAreaTable();
         double[][] pTable = summed.createAbsoluteSummedAreaTable(p);
         
+        assert(allAreRealNumbers(pTable));
+        
         double[] binFactors = new double[nBins];
         for (int i = 0; i < nBins; ++i) {
             binFactors[i] = i * binWidth + min;
         }     
-        
+       
         //TODO: this needs corrections to avoid overrunning
-        // bounds of table data type
+        // bounds of table data type.
+        // TODO: also need to verify that the simplification of the trace
+        //  printed in wikipedia is correct, else need to correct that
+        //  or return to the longer trace statement that includes w0 and w1
+        //  terms.
         
         // the other 2 summed area tables:
         double[][] iPTable = imageProcessor.copy(p);
@@ -555,5 +561,22 @@ public class OtsuThresholding {
         thresh += (binWidth/2);
         
         return thresh;
+    }
+
+    private boolean allAreRealNumbers(double[][] a) {
+        
+        int w = a.length;
+        int h = a[0].length;
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                if (Double.isNaN(a[i][j])) {
+                    return false;
+                }
+                if (Double.isInfinite(a[i][j])) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }
