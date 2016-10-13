@@ -151,6 +151,114 @@ public class SummedAreaTable {
      * aperture in the output variable, output.
      * NOTE GreyscaleImage, x, and y are in column major format
      * @param imgS
+     * @param startX coordinate for x start of window
+     * @param stopX coordinate for x stop of window
+     * @param startY coordinate for y start of window
+     * @param stopY coordinate for y stop of window
+     * @param output one dimensional array of size 2 in which the
+     * sum of the window will be returned and the number of pixels in the 
+     * window.  int[]{sum, nPixels}
+     */
+    public void extractWindowFromSummedAreaTable(GreyscaleImage imgS, 
+        int startX, int stopX, int startY, int stopY, int output[]) {
+        
+        int w = imgS.getWidth();
+        int h = imgS.getHeight();
+        
+        int dx, dy;
+        if (startX > -1) {
+            dx = stopX - startX;
+        } else {
+            dx = stopX;
+        }
+        if (startY > -1) {
+            dy = stopY - startY;
+        } else {
+            dy = stopY;
+        }
+        
+        if (dx > 0 && dy > 0) {
+            if ((startX > 0) && (stopX < w) && (startY > 0) && (stopY < h)) {
+                int nPix = (dx + 1) * (dy + 1);
+                int s1 = imgS.getValue(stopX, stopY) 
+                    - imgS.getValue(startX - 1, stopY)
+                    - imgS.getValue(stopX, startY - 1) 
+                    + imgS.getValue(startX - 1, startY - 1);
+                output[0] = s1;
+                output[1] = nPix;
+                return;
+            }
+        }
+        
+        if (dx == 0 && dy == 0) {
+            if (stopX == 0) {
+                if (stopY == 0) {
+                    output[1] = 1;
+                    output[0] = imgS.getValue(stopX, stopY);
+                    return;
+                }
+                output[1] = 1;
+                output[0] = imgS.getValue(stopX, stopY) 
+                    - imgS.getValue(stopX, stopY - 1);
+                return;
+            } else if (stopY == 0) {
+                //stopX == 0 && stopY == 0 has been handles in previous block
+                output[1] = 1;
+                output[0] = imgS.getValue(stopX, stopY) 
+                    - imgS.getValue(stopX - 1, stopY);
+                return;
+            } else {
+                // stopX > 0
+                output[1] = 1;
+                output[0] = output[0] = imgS.getValue(stopX, stopY) 
+                    - imgS.getValue(startX - 1, stopY)
+                    - imgS.getValue(stopX, startY - 1) 
+                    + imgS.getValue(startX- 1, startY - 1);
+                return;
+            }
+            //System.out.println(" --> startX=" + startX +
+            //    " stopX=" + stopX + " startY=" + startY + " stopY=" + stopY);            
+        }
+        
+        if (startX > 0 && startY > 0) {
+            int nPix = (dx + 1) * (dy + 1);
+            int s1 = imgS.getValue(stopX, stopY) - imgS.getValue(startX, stopY)
+                - imgS.getValue(stopX, startY) + imgS.getValue(startX, startY);
+            output[0] = s1;
+            output[1] = nPix;
+            return;
+        } else if (startX > 0) {
+            // startY is < 0
+            int nPix = (dx + 1) * (stopY + 1);
+            int s1 = imgS.getValue(stopX, stopY) 
+                - imgS.getValue(startX - 1, stopY);
+            output[0] = s1;
+            output[1] = nPix;
+            return;
+        } else if (startY > 0) {
+            // startX < 0
+            int nPix = (stopX + 1) * (dy + 1);
+            int s1 = imgS.getValue(stopX, stopY)
+                - imgS.getValue(stopX, startY - 1);
+            output[0] = s1;
+            output[1] = nPix;
+            return;
+        } else {
+            // startX < 0 && startY < 0
+            int nPix = (stopX + 1) * (stopY + 1);
+            int s1 = imgS.getValue(stopX, stopY);
+            output[0] = s1;
+            output[1] = nPix;
+            return;
+        }
+    }
+    
+    /**
+     * extract the sum of a window centered at (x,y) of x dimension d and y
+     * dimension d and return that value and the number of pixels in the
+     * aperture in the output variable, output.
+     * NOTE GreyscaleImage, x, and y are in column major format
+     * @param imgS
      * @param x coordinate for x center of window
      * @param y coordinate for y center of window
      * @param d diameter of window in x and y
@@ -181,23 +289,9 @@ public class SummedAreaTable {
         
         final int r = (d >> 1);
         
-        // extract the summed area of dxd window centered on x,y
-        if (r > 0) {
-            if (x > r && x < (w-r) && (y > r) && (y < (h-r))) {
-                int nPix = d * d;
-                int s1 = imgS.getValue(x+r, y+r) - imgS.getValue(x-r, y+r)
-                    - imgS.getValue(x+r, y-r) + imgS.getValue(x-r, y-r);
-                output[0] = s1;
-                output[1] = nPix;
-                return;
-            }
-        }
-                
-        // handling borders separately
-        
-        int startX = x - r - 1;
+        int startX = x - r;
         int stopX = x + r;
-        int startY = y - r - 1;
+        int startY = y - r;
         int stopY = y + r;
         
         if (stopX > (w - 1)) {
@@ -206,78 +300,9 @@ public class SummedAreaTable {
         if (stopY > (h - 1)) {
             stopY = h - 1;
         }
-        
-        //System.out.println("x=" + x + " y=" + y + " r=" + r
-        //    + " startX=" + startX +
-        //    " stopX=" + stopX + " startY=" + startY + " stopY=" + stopY);
-       
-        // when r == 0, bounds need another edit or immediate return
-        /*
-         2            2           2           2           2       *
-         1            1 *         1           1    *      1
-         0 *          0           0    *      0           0
-           0  1  2      0  1  2     0  1  2     0  1  2     0  1  2
-        */
-        if (r == 0) {
-            if (stopX == 0) {
-                if (stopY == 0) {
-                    output[1] = 1;
-                    output[0] = imgS.getValue(stopX, stopY);
-                    return;
-                }
-                startY = stopY - 1;
-                if (startY == 0) {
-                    output[1] = 1;
-                    output[0] = imgS.getValue(stopX, stopY) 
-                        - imgS.getValue(stopX, startY);
-                    return;
-                }
-            } else {
-                // stopX > 0
-                startX = stopX - 1;
-                if (stopY == 0) {
-                    output[1] = 1;
-                    output[0] = imgS.getValue(stopX, stopY) 
-                        - imgS.getValue(startX, stopY);
-                    return;
-                }
-                startY = stopY - 1;
-            }
-            //System.out.println(" --> startX=" + startX +
-            //    " stopX=" + stopX + " startY=" + startY + " stopY=" + stopY);            
-        }
-        
-        if (startX >= 0 && startY >= 0) {
-            int nPix = (r == 0) ? 1 : (stopX - startX) * (stopY - startY);
-            int s1 = imgS.getValue(stopX, stopY) - imgS.getValue(startX, stopY)
-                - imgS.getValue(stopX, startY) + imgS.getValue(startX, startY);
-            output[0] = s1;
-            output[1] = nPix;
-            return;
-        } else if (startX >= 0) {
-            // startY is < 0
-            int nPix = (r == 0) ? 1 : (stopX - startX) * (stopY + 1);
-            int s1 = imgS.getValue(stopX, stopY) - imgS.getValue(startX, stopY);
-            output[0] = s1;
-            output[1] = nPix;
-            return;
-        } else if (startY >= 0) {
-            // startX < 0
-            int nPix = (r == 0) ? 1 : (stopX + 1) * (stopY - startY);
-            int s1 = imgS.getValue(stopX, stopY)
-                - imgS.getValue(stopX, startY);
-            output[0] = s1;
-            output[1] = nPix;
-            return;
-        } else {
-            // startX < 0 && startY < 0
-            int nPix = (r == 0) ? 1 : (stopX + 1) * (stopY + 1);
-            int s1 = imgS.getValue(stopX, stopY);
-            output[0] = s1;
-            output[1] = nPix;
-            return;
-        }
-               
+              
+        extractWindowFromSummedAreaTable(imgS, startX, stopX, startY,  
+            stopY, output);
     }
     
     /**
