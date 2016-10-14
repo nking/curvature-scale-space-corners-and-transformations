@@ -858,6 +858,14 @@ public class PhaseCongruencyDetector {
             
             Set<PairIntWithIndex> points2 
                 = new HashSet<PairIntWithIndex>();
+            for (int row = 0; row < nRows; ++row) {
+                for (int col = 0; col < nCols; ++col) {
+                    if (thinned[row][col] > 0) {
+                        points2.add(new PairIntWithIndex(row, col,
+                           points2.size()));
+                    }
+                }
+            }
             
             int[][] dt = new int[nRows][];
             for (int row = 0; row < nRows; ++row) {
@@ -865,8 +873,6 @@ public class PhaseCongruencyDetector {
                 for (int col = 0; col < nCols; ++col) {
                     if (thinnedLowNz[row][col] > 0) {
                         dt[row][col] = 1;
-                        points2.add(new PairIntWithIndex(row, col,
-                           points2.size()));
                     }
                 }
             }
@@ -879,53 +885,67 @@ public class PhaseCongruencyDetector {
             cFinder.findClusters();
             int n = cFinder.getNumberOfClusters();
             
-            float[] clusterSizes = new float[n];
-        
-            Image dbg0 = new Image(nCols, nRows);
+            float[] clusterSizes = new float[n];        
             for (int i = 0; i < n; ++i) {
-                int clr = ImageIOHelper.getNextColorRGB(i);
                 Set<PairIntWithIndex> set =cFinder.getCluster(i);
-                for (PairIntWithIndex p : set) {
-                    dbg0.setRGB(p.getY(), p.getX(), clr);
-                }
                 clusterSizes[i] = set.size();
             }
-            MiscDebug.writeImage(dbg0, "_a_clustering_");
             
             //final float xMin, final float xMax, int nBins,
             HistogramHolder hist = Histogram.createSimpleHistogram(
-                0, 50, 20, clusterSizes, 
+                0, 40, 20, clusterSizes, 
                 Errors.populateYErrorsBySqrt(clusterSizes));
+            int peakIdx = MiscMath.findYMaxIndex(hist.getYHist());
+            assert(peakIdx != -1); 
+            float sizeLimit = hist.getXHist()[peakIdx];
+            if (peakIdx < (hist.getXHist().length - 1)) {
+                sizeLimit = hist.getXHist()[peakIdx + 1];
+            }
+            
             try {
                 hist.plotHistogram("cluster sizes", "_cluster_sizes_");
             } catch (IOException ex) {
                 Logger.getLogger(PhaseCongruencyDetector.class.getName()).log(Level.SEVERE, null, ex);
             }
-            
+               
+            // add the points larger than a size limit to the dt
+            for (int i = 0; i < n; ++i) {
+                int clr = ImageIOHelper.getNextColorRGB(i);
+                Set<PairIntWithIndex> set =cFinder.getCluster(i);
+                if (set.size() > 3*sizeLimit) {
+                    for (PairIntWithIndex p : set) {
+                        dt[p.getX()][p.getY()] = 1;
+                    }
+                }
+            }
+            // points in the distance transform are now the thinned
+            // edges from the default pc return, and also the 
+            // larger noise clusters.
+            // -- this determines the distance of empty pixels to the
+            //    nearest set points.
             DistanceTransform dTrans = new DistanceTransform();
             dt = dTrans.applyMeijsterEtAl(dt);
+            
             List<PairInt> points = new ArrayList<PairInt>();
             TIntList dist = new TIntArrayList();
-            for (int row = 0; row < nRows; ++row) {
-                for (int col = 0; col < nCols; ++col) {
-                    if (pcLowNz[row][col] > 0 && dt[row][col] > 0) {
-                        points.add(new PairInt(row, col));
-                        dist.add(dt[row][col]);
+            
+            Image dbg0 = new Image(nCols, nRows);
+            for (int i = 0; i < n; ++i) {
+                int clr = ImageIOHelper.getNextColorRGB(i);
+                Set<PairIntWithIndex> set =cFinder.getCluster(i);
+                if (set.size() > sizeLimit) {
+                    continue;
+                }
+                for (PairIntWithIndex p : set) {
+                    dbg0.setRGB(p.getY(), p.getX(), clr);
+                    if (pcLowNz[p.getX()][p.getY()] > 0 && dt[p.getX()][p.getY()] > 0) {
+                        points.add(new PairInt(p.getX(), p.getY()));
+                        dist.add(dt[p.getX()][p.getY()]);
                     }
                 }
+                clusterSizes[i] = set.size();
             }
-            if (doPlot) {
-                int[][] dbg = copy(dt);
-                for (int row = 0; row < nRows; ++row) {
-                    for (int col = 0; col < nCols; ++col) {
-                        if (pcLowNz[row][col] == 0) {
-                            dbg[row][col] = 0;
-                        }
-                    }
-                }
-                MiscMath.applyRescale(dbg, 0, 255);
-                MiscDebug.writeImage(dbg, "_a_noise_distance_transform_");
-            }
+            MiscDebug.writeImage(dbg0, "_a_clustering_");
             
             // sort by decr dist
             QuickSort.descendingSort(dist, points);
