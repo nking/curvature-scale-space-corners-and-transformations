@@ -35,7 +35,22 @@ public class QuickSort {
         descendingSort(a, b, 0, a.length - 1);
     }
     
-    public static void descendingSort(List<Float> a, List<? extends Object> b) {
+    public static void descendingSort(TIntList a, List<? extends Object> b) {
+        
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (b == null) {
+            throw new IllegalArgumentException("b cannot be null");
+        }
+        if (a.size() != b.size()) {
+            throw new IllegalArgumentException("a and b must be the same length");
+        }
+        
+        descendingSort(a, b, 0, a.size() - 1);
+    }
+    
+    public static void descendingSort(List<? extends Number> a, List<? extends Object> b) {
         
         if (a == null) {
             throw new IllegalArgumentException("a cannot be null");
@@ -478,12 +493,75 @@ public class QuickSort {
      * sort a from index idxLo to idxHi, inclusive and by descending values.  
      * The swap operations performed on a are performed on b.  Uses the optimized
      * qsort3 from the book "Programming in Pearls" by Jon Bentley.
+     * @param <T>
+     * @param a
+     * @param b
+     * @param idxLo
+     * @param idxHi 
+     */
+    public static <T extends Object> void descendingSort(
+        TIntList a, List<T> b, int idxLo, int idxHi) {
+        
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (b == null) {
+            throw new IllegalArgumentException("b cannot be null");
+        }
+        if (a.size() != b.size()) {
+            throw new IllegalArgumentException("a and b must be same length");
+        }
+        if (a.size() < 2) {
+            return;
+        }
+        
+        if (idxLo < idxHi) {
+
+            int x = a.get(idxLo);
+            int store = idxLo;
+            int idxMid = idxHi + 1;
+
+            while (true) {
+                do {
+                    store++;     
+                } while ((store <= idxHi) && (a.get(store) > x));
+                do {
+                    idxMid--;
+                } while (a.get(idxMid) < x);
+                
+                if (store > idxMid) {
+                    break;
+                }
+                int swap = a.get(store);
+                a.set(store, a.get(idxMid));
+                a.set(idxMid, swap);
+                T swap2 = b.get(store);
+                b.set(store, b.get(idxMid));
+                b.set(idxMid, swap2);
+            }
+            int swap = a.get(idxLo);
+            a.set(idxLo, a.get(idxMid));
+            a.set(idxMid, swap);
+            T swap2 = b.get(idxLo);
+            b.set(idxLo, b.get(idxMid));
+            b.set(idxMid, swap2);
+         
+            descendingSort(a, b, idxLo, idxMid - 1);
+
+            descendingSort(a, b, idxMid + 1, idxHi);
+        }
+    }
+    
+    /**
+     * sort a from index idxLo to idxHi, inclusive and by descending values.  
+     * The swap operations performed on a are performed on b.  Uses the optimized
+     * qsort3 from the book "Programming in Pearls" by Jon Bentley.
      * @param a
      * @param idxLo
      * @param idxHi 
      */
-    public static <T extends Object> void descendingSort(List<Float> a, List<T> b, 
-        int idxLo, int idxHi) {
+    public static <S extends Number, T extends Object> void descendingSort(
+        List<S> a, List<T> b, int idxLo, int idxHi) {
         
         if (a == null) {
             throw new IllegalArgumentException("a cannot be null");
@@ -515,14 +593,14 @@ public class QuickSort {
                 if (store > idxMid) {
                     break;
                 }
-                Float swap = a.get(store);
+                S swap = a.get(store);
                 a.set(store, a.get(idxMid));
                 a.set(idxMid, swap);
                 T swap2 = b.get(store);
                 b.set(store, b.get(idxMid));
                 b.set(idxMid, swap2);
             }
-            Float swap = a.get(idxLo);
+            S swap = a.get(idxLo);
             a.set(idxLo, a.get(idxMid));
             a.set(idxMid, swap);
             T swap2 = b.get(idxLo);

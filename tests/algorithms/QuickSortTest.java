@@ -278,6 +278,39 @@ public class QuickSortTest extends TestCase {
              assertTrue(a.get(i).floatValue() <= prev);
              prev = a.get(i).floatValue();
          }
+         
+         // -----
+         //descendingSort(TIntList a, List<? extends Object> b
+         TIntList aa = new TIntArrayList(a.size());
+         aa.add(4);
+         aa.add(5);
+         aa.add(9);
+         aa.add(0);
+         aa.add(3);
+         aa.add(1);
+         aa.add(6);
+         aa.add(2);
+         aa.add(7);
+         aa.add(8);
+         b = new ArrayList<Float>();
+         b.add(5f);
+         b.add(4f);
+         b.add(0f);
+         b.add(9f);
+         b.add(6f);
+         b.add(8f);
+         b.add(3f);
+         b.add(7f);
+         b.add(2f);
+         b.add(1f);
+         QuickSort.descendingSort(aa, b);
+         
+         int prev2 = aa.get(0);
+         for (int i = 0; i < a.size(); i++) {
+             assertTrue(Math.abs(i - b.get(i)) < 0.01);
+             assertTrue(aa.get(i) <= prev2);
+             prev2 = aa.get(i);
+         }
      }
      
      
