@@ -275,8 +275,8 @@ public class PhaseCongruencyDetectorTest extends TestCase {
 
         String[] fileNames = new String[]{
             //"seattle.jpg", 
-            //"merton_college_I_001.jpg",
-            "house.gif", 
+            "merton_college_I_001.jpg",
+            //"house.gif", 
             // "lena.jpg",
             // "campus_010.jpg", 
             //"android_statues_01.jpg", 
@@ -319,16 +319,10 @@ public class PhaseCongruencyDetectorTest extends TestCase {
             float g = 10;
             float deviationGain = 1.5f;
             int noiseMethod = -1;
-            double tLow = 0.0001;
-            double tHigh = 0.1;
+            double tLow = 0.05;
+            double tHigh = 0.3;
             boolean increaseKIfNeeded = false;
           
-            PhaseCongruencyDetectorPyramidal phaseCDetector0
-                = new PhaseCongruencyDetectorPyramidal();
-            phaseCDetector0.setToCreateCorners();                
-            PhaseCongruencyDetectorPyramidal.PhaseCongruencyProducts products0 =
-                phaseCDetector0.phaseCongMono(img2);
-            
             PhaseCongruencyDetector phaseCDetector 
                 = new PhaseCongruencyDetector();
             phaseCDetector.setToCreateCorners();
@@ -337,6 +331,7 @@ public class PhaseCongruencyDetectorTest extends TestCase {
                 sigmaOnf, k, increaseKIfNeeded,
                 cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
             
+            /*
             assertNotNull(products);
             int[][] thinned = products.getThinned();
                 
@@ -357,6 +352,13 @@ public class PhaseCongruencyDetectorTest extends TestCase {
             MiscDebug.writeImage(out2, "_pc_thinned_"  + "_" + fileName + "_");
             MiscDebug.writeImage(pcImg, "_pc_" + "_" + fileName + "_");
             
+            
+            PhaseCongruencyDetectorPyramidal phaseCDetector0
+                = new PhaseCongruencyDetectorPyramidal();
+            phaseCDetector0.setToCreateCorners();                
+            PhaseCongruencyDetectorPyramidal.PhaseCongruencyProducts products0 =
+                phaseCDetector0.phaseCongMono(img2);
+            
             assertNotNull(products0);
             thinned = products0.getThinned();
             pcImg = img2.createWithDimensions();
@@ -376,6 +378,7 @@ public class PhaseCongruencyDetectorTest extends TestCase {
             MiscDebug.writeImage(out, "_thinned_" + "_" + fileName + "_0"); 
             MiscDebug.writeImage(out2, "_pc_thinned_"  + "_" + fileName + "_0");
             MiscDebug.writeImage(pcImg, "_pc_" + "_" + fileName + "_0");
+            */
         }
     }
    
