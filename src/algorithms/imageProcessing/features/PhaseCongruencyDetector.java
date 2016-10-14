@@ -158,17 +158,71 @@ public class PhaseCongruencyDetector {
     
     private boolean extractNoise = false;
     
-    private int nScale = 5;        
+    /**
+     * number of wavelet scales.  a lower value reveals more fine 
+     * scale features.  The default is 5.
+     */
+    private int nScale = 5; 
+    /**
+     * wavelength of smallest scale filter.  The default is 3.
+     */
     private int minWavelength = 3;        
+    /**
+     * scaling factor between successive filters.  The default is 2.1.
+     */
     private float mult = 2.1f;
+    /**
+     * ratio of standard deviation of Gaussian describing the
+     * log Gabor's filter's transfer function in the frequency domain to the
+     * filter center frequency.  The default is 0.55f.
+     */
     private float sigmaOnf = 0.55f;
+    /**
+     * number of standard deviations of the noise energy beyond the
+     * mean at which we set the noise threshold point.  You may want to vary this
+       up to a value of 10 or 20 for noisy images.
+       The default is 5.
+     */
     private int k = 5;//2;
+    /**
+     * The fractional measure of frequency spread below which phase
+     * congruency values get penalized.  The default is 0.5f.
+     */
     private float cutOff = 0.5f; 
+    /**
+     * Controls the sharpness of the transition in the sigmoid function
+     * used to weight phase congruency for frequency spread.  The default is 10.
+     */
     private float g = 10;
+    /**
+     * factor to apply to the calculated phase
+     * deviation result.  Increasing this sharpens the edge responses, but can
+     * also attenuate their magnitude if the gain is too large.  Sensible values
+     * to use lie in the range 1-2.  The default is 1.5f.
+     */
     private float deviationGain = 1.5f;
+    /**
+     * Parameter specifies method used to determine noise
+     * statistics: -1 use median of smallest scale filter responses;
+     * -2 use mode of smallest scale filter responses;
+     * 0 turns off all noise compensation; and
+     * > 0 use noiseMethod value as the fixed noise threshold.
+     * The default is -1.
+     */
     private int noiseMethod = -1;
+    /**
+     * the low threshold fraction of 1
+     */
     private double tLow = 0.1;
+    /**
+     * the high threshold fraction of 1.  The default is 0.3.
+     * Note that this is ignored if useAdaptiveThreshold is true, which it is
+     * by default.
+     */
     private double tHigh = 0.3;
+    /**
+     * a flag indicating use of adaptive thresholds in the 2 layer filter
+     */
     private boolean useAdaptiveThreshold = true;
         
     public PhaseCongruencyDetector() {
@@ -179,7 +233,17 @@ public class PhaseCongruencyDetector {
         this.determineCorners = true;
     }
     
+    /**
+     * noise is extracted and textures are examined.  this
+     * feature name may change depending upon results in progress.
+     * Note that k must be the default of 5 or less for this feature.
+     */
     public void setToExtractNoise() {
+        if (k > 5 || noiseMethod != -1) {
+            throw new IllegalStateException("currently, the algorihm needs"
+                + " k <= 5 and noiseMethod == -1 for the differencing of pixels.  "
+                + " k=" + k + " and noiseMethod=" + noiseMethod);
+        }
         this.extractNoise = true;
     }
         
@@ -221,11 +285,16 @@ public class PhaseCongruencyDetector {
     /**
      * 
      * @param k number of standard deviations of the noise energy beyond the 
-     * mean at which we set the noise threshold point.  You may want to vary this
-       up to a value of 10 or 20 for noisy images.
+     * mean at which we set the noise threshold point.  You may want to vary 
+     * this up to a value of 10 or 20 for noisy images.
        The default is 5.
      */
     public void setK(int k) {
+        if (extractNoise && k > 5) {
+            throw new IllegalStateException("currently, the algorihm needs"
+                + " k <= 5 for the differencing of pixels requested by"
+                + " 'extractNoise'.");
+        }
         this.k = k;
     }
     
@@ -268,6 +337,10 @@ public class PhaseCongruencyDetector {
      * The default is -1.
      */
     public void setNoiseMethod(int m) {
+        if (extractNoise && (m != -1)) {
+            throw new IllegalStateException("the 'extract noise' feature is set"
+                + " and this requires noiseMethod==-1.");
+        }
         this.noiseMethod = m;
     }
     
@@ -601,15 +674,11 @@ public class PhaseCongruencyDetector {
         double[][] ft = new double[nRows][];
         double[][] energy = new double[nRows][];
         double[][] pc = new double[nRows][];
-        double[][] pcLgNz = extractNoise ? new double[nRows][] : null;
         for (int row = 0; row < nRows; ++row) {
             orientation[row] = new double[nCols];
             ft[row] = new double[nCols];
             energy[row] = new double[nCols];
             pc[row] = new double[nCols];
-            if (extractNoise) {
-                pcLgNz[row] = new double[nCols];
-            }
         }
         
         for (int row = 0; row < nRows; ++row) {
@@ -668,6 +737,7 @@ public class PhaseCongruencyDetector {
         */
         
         double threshold;
+        double thresholdLowNz = -1;
         if (noiseMethod >= 0) { 
             //fixed noise threshold
             threshold = noiseMethod;
@@ -688,6 +758,20 @@ public class PhaseCongruencyDetector {
 
             threshold = Math.max(EstNoiseEnergyMean 
                 + ((float)k) * EstNoiseEnergySigma, epsilon);
+            
+            if (extractNoise) {
+                // empirically, k=10 is chosen
+                thresholdLowNz = Math.max(EstNoiseEnergyMean 
+                    + 10.f * EstNoiseEnergySigma, epsilon);
+            }
+        }
+        
+        double[][] lowNzFactors = null;
+        if (extractNoise) {
+            lowNzFactors = new double[nRows][];
+            for (int row = 0; row < nRows; ++row) {
+                lowNzFactors[row] = new double[nCols];
+            }
         }
         
         for (int row = 0; row < nRows; ++row) {
@@ -702,6 +786,12 @@ public class PhaseCongruencyDetector {
                 double eMax = Math.max(energy[row][col] - threshold, 0);
                 
                 pc[row][col] = a * eMax;
+                
+                if (extractNoise) {
+                    lowNzFactors[row][col] = Math.max(energy[row][col] -
+                        thresholdLowNz, 0);
+                    lowNzFactors[row][col] /= eMax;
+                }
             }
         }
         
@@ -717,14 +807,41 @@ public class PhaseCongruencyDetector {
             g, deviationGain, noiseMethod, tLow, tHigh);
         
         int[][] thinned = createEdges(products.getPhaseCongruency(), thinnedPC, 
-            products.getPhaseAngle(), pcLgNz, tLow, tHigh);
-        
-        if (extractNoise) {
-            products.setNoiseyPixels(pcLgNz);
-        }
+            products.getPhaseAngle(), tLow, tHigh);
         
         products.setThinnedImage(thinned);
-
+        
+        if (extractNoise) {
+            
+            double[][] pcLowNz = copy(products.getPhaseCongruency());
+            for (int row = 0; row < nRows; ++row) {
+                for (int col = 0; col < nCols; ++col) {
+                    if (thinned[row][col] == 0) {
+                        pcLowNz[row][col] = 0;
+                    } else {
+                        pcLowNz[row][col] *= lowNzFactors[row][col];
+                    }
+                }
+            }
+            int[][] thinnedLowNz = applyHysThresh(pcLowNz, 
+                products.getPhaseAngle(), tLow, tHigh, true);
+            // apply thinner
+            for (int row = 0; row < nRows; ++row) {
+                for (int col = 0; col < nCols; ++col) {
+                    // where thinned is > 0 and thinnedLowNz == 0 is a noise pixel
+                    if (thinned[row][col] == 0) {
+                        pcLowNz[row][col] = 0;
+                    } else if (thinnedLowNz[row][col] != 0) {
+                        pcLowNz[row][col] = 0;
+                    }
+                }
+            }
+            
+            products.setNoiseyPixels(pcLowNz);
+            
+            MiscDebug.writeImage(pcLowNz, "_a_noise_");
+        }
+        
         //TODO: these convenience methods do not belong in this class...
         if (determineCorners) {
             
@@ -876,17 +993,12 @@ public class PhaseCongruencyDetector {
      * @param pc
      * @param thinnedPC
      * @param phaseAngle
-     * @param outputRemovedNoise
      * @param tLow
      * @param tHigh 
      * @return  
      */
     public int[][] createEdges(double[][] pc, double[][] thinnedPC, 
-        double[][] phaseAngle, double[][] outputRemovedNoise, double tLow, 
-        double tHigh) {
-        
-        //exploreThinning(pc, thinnedPC, phaseAngle, outputRemovedNoise, 
-        //    tLow, tHigh);
+        double[][] phaseAngle, double tLow, double tHigh) {
         
         int nRows = phaseAngle.length;
         int nCols = phaseAngle[0].length;
@@ -919,7 +1031,7 @@ public class PhaseCongruencyDetector {
         }
         
         //DEBUG
-        /*if (doPlot) {
+        if (doPlot) {
             Image paImage = new Image(nCols, nRows);
             int nExtraForDot = 0;
             for (PairInt p : brightLinePoints) {
@@ -940,45 +1052,13 @@ public class PhaseCongruencyDetector {
                 ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot, 
                     127, 0, 255);
             }
-            MiscDebug.writeImage(paImage, "_phase_angle_components_" +
+            MiscDebug.writeImage(paImage, "_a_0_pa_components_" +
                 MiscDebug.getCurrentTimeFormatted());
-        }*/
+        }
         
         stepPoints.addAll(brightLinePoints);
         stepPoints.addAll(darkLinePoints);
-        
-        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
-        pltc.correctForLineHatHoriz(stepPoints, nRows, nCols);
-        pltc.correctForLineHatVert(stepPoints, nRows, nCols);
-        pltc.correctForLineSpurHoriz(stepPoints, nRows, nCols);
-        pltc.correctForLineSpurVert(stepPoints, nRows, nCols);
-        
-        // ---- complete the edges where possible ----
-        Set<PairInt> gaps = pltc.findGapsOf1(stepPoints, nRows, nCols);
-        for (PairInt p : gaps) {
-            int x = p.getX();
-            int y = p.getY();
-            if (pc[x][y] > 0) {
-                stepPoints.add(new PairInt(x, y));
-            }
-        }
-        
-        //DEBUG
-        if (doPlot) {
-            Image paImage = new Image(nCols, nRows);
-            int nExtraForDot = 0;
-            for (PairInt p : stepPoints) {
-                int x = p.getY();
-                int y = p.getX();
-                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot, 
-                    255, 0, 0);
-            }
-            MiscDebug.writeImage(paImage, "_phase_angle_components_2_" +
-                MiscDebug.getCurrentTimeFormatted());
-        }
-        
-   //     pltc.correctForIsolatedPixels(stepPoints, nRows, nCols);
-
+      
         double[][] thinned1 = new double[nRows][nCols];
         for (int i = 0; i < nRows; ++i) {
             thinned1[i] = new double[nCols];
@@ -987,38 +1067,30 @@ public class PhaseCongruencyDetector {
             thinned1[p.getX()][p.getY()] = pc[p.getX()][p.getY()];
         }
         stepPoints = null;
-        gaps = null;
      
         int[][] thinned = applyHysThresh(thinned1, phaseAngle, tLow, tHigh, true);
-        
-        //NOTE: the removed points are sometimes noise that is "texture"
-        // but is sometimes also points that were part of edges
-        // that should be restored if possible in this method.
-        // TODO: restore removed pixels from thinned1 using orientation.
-        //   phase angle, and thinned1 value after the list filter in this method.
-        if (extractNoise) {
+
+        if (doPlot) {
+            Image pImage = new Image(nCols, nRows);
+            Image tImage = new Image(nCols, nRows);
+            int nExtraForDot = 0;
             for (int row = 0; row < nRows; ++row) {
                 for (int col = 0; col < nCols; ++col) {
-                    if (thinned1[row][col] > 0 && thinned[row][col] == 0) {
-                        outputRemovedNoise[row][col] = thinned1[row][col];
+                    int v = (int)Math.round(255 * pc[row][col]);
+                    if (thinned[row][col] > 0) {
+                        ImageIOHelper.addPointToImage(col, row, pImage, 
+                            nExtraForDot, 255, 255, 255);
+                        ImageIOHelper.addPointToImage(col, row, tImage, 
+                            nExtraForDot, v, v, v);
+                    } else {
+                        ImageIOHelper.addPointToImage(col, row, tImage, 
+                            nExtraForDot, v, 0, 0);
                     }
                 }
             }
-        }
-                       
-        //DEBUG
-        if (doPlot) {
-            Image paImage = new Image(nCols, nRows);
-            int nExtraForDot = 0;
-            for (int i = 0; i < nRows; ++i) {
-                for (int j = 0; j < nCols; ++j) {
-                    if (thinned[i][j] > 0) {
-                        ImageIOHelper.addPointToImage(j, i, paImage, nExtraForDot, 
-                            255, 0, 0);
-                    }
-                }
-            }
-            MiscDebug.writeImage(paImage, "_phase_angle_components_3_" +
+            MiscDebug.writeImage(pImage, "_a_1_thinned_1_" +
+                MiscDebug.getCurrentTimeFormatted());
+            MiscDebug.writeImage(tImage, "_a_2_pc_1_" +
                 MiscDebug.getCurrentTimeFormatted());
         }
         
@@ -1054,19 +1126,26 @@ public class PhaseCongruencyDetector {
                 int x = p.getY();
                 int y = p.getX();
                 ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot, 
-                    255, 0, 0);
+                    255, 255, 255);
             }
-            MiscDebug.writeImage(paImage, "_phase_angle_components_4_" +
+            MiscDebug.writeImage(paImage, "_a_3_edge_from_phase_angle_thin_0_" +
                 MiscDebug.getCurrentTimeFormatted());
         }
+        
+        //ImageProcessor imageProcessor = new ImageProcessor();
+        //imageProcessor.applyThinning(points,nRows, nCols);
         
         //pltc.correctForLineHatHoriz(points, nRows, nCols);
         //pltc.correctForLineHatVert(points, nRows, nCols);
         
         // there are a very small number of clumps thicker than 1 pixel.
-        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
-        lt.applyLineThinner(points, 0, nRows - 1, 0, nCols - 1);
+        //ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
+        //lt.applyLineThinner(points, 0, nRows - 1, 0, nCols - 1);
         
+        /*
+        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
+        pltc.correctForIsolatedPixels(stepPoints, nRows, nCols);
+
         for (int i = 0; i < nRows; ++i) {
             Arrays.fill(thinned[i], 0);
         }
@@ -1084,9 +1163,10 @@ public class PhaseCongruencyDetector {
                 ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot, 
                     255, 0, 0);
             }
-            MiscDebug.writeImage(paImage, "_phase_angle_components_5_" +
+            MiscDebug.writeImage(paImage, "_a_3_edge_from_phase_angle_thin_1_" +
                 MiscDebug.getCurrentTimeFormatted());
         }
+        */
         
         return thinned;
     }
@@ -1271,209 +1351,6 @@ public class PhaseCongruencyDetector {
         }
         
         return b;
-    }
-
-    private void exploreThinning(double[][] pc, double[][] thinnedPC, 
-        double[][] phaseAngle, double[][] outputRemovedNoise, 
-        double tLow, double tHigh) {
-        
-        int nRows = phaseAngle.length;
-        int nCols = phaseAngle[0].length;
- 
-        Set<PairInt> brightLinePoints = new HashSet<PairInt>();
-        Set<PairInt> darkLinePoints = new HashSet<PairInt>();
-        Set<PairInt> stepPoints = new HashSet<PairInt>();
-                    
-        double piDiv4 = Math.PI/4.;
-        double tolerance = piDiv4/2.;
-        
-        for (int row = 0; row < nRows; ++row) {
-            for (int col = 0; col < nCols; ++col) {
-                
-                if (thinnedPC[row][col] < tLow) {
-                    continue;
-                }
-                // placing values closer to -pi/2 than 0 are darklines
-                //         values closer to +p1/2 than 0 are brightlines
-                //         else they are closer to 0 are steps
-                double v = phaseAngle[row][col];
-                if (Math.abs(-piDiv4 - v) < tolerance) {
-                    darkLinePoints.add(new PairInt(row, col));
-                } else if (Math.abs(piDiv4 - v) < tolerance) {
-                    brightLinePoints.add(new PairInt(row, col));
-                } else {
-                    stepPoints.add(new PairInt(row, col));
-                }
-            }
-        }
-        
-        //DEBUG
-        if (doPlot) {
-            Image paImage = new Image(nCols, nRows);
-            int nExtraForDot = 0;
-            for (PairInt p : brightLinePoints) {
-                int x = p.getY();
-                int y = p.getX();
-                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot, 
-                    0, 255, 0);
-            }
-            for (PairInt p : stepPoints) {
-                int x = p.getY();
-                int y = p.getX();
-                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot, 
-                    255, 0, 0);
-            }
-            for (PairInt p : darkLinePoints) {
-                int x = p.getY();
-                int y = p.getX();
-                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot, 
-                    127, 0, 255);
-            }
-            MiscDebug.writeImage(paImage, "_a_0_pa_components_" +
-                MiscDebug.getCurrentTimeFormatted());
-        }
-        
-        stepPoints.addAll(brightLinePoints);
-        stepPoints.addAll(darkLinePoints);
-       
-        /*
-        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
-        pltc.correctForLineHatHoriz(stepPoints, nRows, nCols);
-        pltc.correctForLineHatVert(stepPoints, nRows, nCols);
-        pltc.correctForLineSpurHoriz(stepPoints, nRows, nCols);
-        pltc.correctForLineSpurVert(stepPoints, nRows, nCols);
-        
-        // ---- complete the edges where possible ----
-        Set<PairInt> gaps = pltc.findGapsOf1(stepPoints, nRows, nCols);
-        for (PairInt p : gaps) {
-            int x = p.getX();
-            int y = p.getY();
-            if (pc[x][y] > 0) {
-                stepPoints.add(new PairInt(x, y));
-            }
-        }
-        */
-        
-   //     pltc.correctForIsolatedPixels(stepPoints, nRows, nCols);
-
-        double[][] thinned1 = new double[nRows][nCols];
-        for (int i = 0; i < nRows; ++i) {
-            thinned1[i] = new double[nCols];
-        }
-        for (PairInt p : stepPoints) {
-            thinned1[p.getX()][p.getY()] = pc[p.getX()][p.getY()];
-        }
-        stepPoints = null;
-     
-        int[][] thinned = applyHysThresh(thinned1, phaseAngle, tLow, tHigh, true);
-
-        if (doPlot) {
-            Image pImage = new Image(nCols, nRows);
-            Image tImage = new Image(nCols, nRows);
-            int nExtraForDot = 0;
-            for (int row = 0; row < nRows; ++row) {
-                for (int col = 0; col < nCols; ++col) {
-                    int v = (int)Math.round(255 * pc[row][col]);
-                    if (thinned[row][col] > 0) {
-                        ImageIOHelper.addPointToImage(col, row, pImage, 
-                            nExtraForDot, 255, 255, 255);
-                        ImageIOHelper.addPointToImage(col, row, tImage, 
-                            nExtraForDot, v, v, v);
-                    } else {
-                        ImageIOHelper.addPointToImage(col, row, tImage, 
-                            nExtraForDot, v, 0, 0);
-                    }
-                }
-            }
-            MiscDebug.writeImage(pImage, "_a_1_thinned_1_" +
-                MiscDebug.getCurrentTimeFormatted());
-            MiscDebug.writeImage(tImage, "_a_2_pc_1_" +
-                MiscDebug.getCurrentTimeFormatted());
-        }
-        
-        //NOTE: the removed points are sometimes noise that is "texture"
-        // but is sometimes also points that were part of edges
-        // that should be restored if possible in this method.
-        // TODO: restore removed pixels from thinned1 using orientation.
-        //   phase angle, and thinned1 value after the list filter in this method.
-        if (extractNoise) {
-            for (int row = 0; row < nRows; ++row) {
-                for (int col = 0; col < nCols; ++col) {
-                    if (thinned1[row][col] > 0 && thinned[row][col] == 0) {
-                        outputRemovedNoise[row][col] = thinned1[row][col];
-                    }
-                }
-            }
-        }
-      
-        int[][] thinnedbw = new int[nRows][nCols];
-        for (int i = 0; i < nRows; ++i) {
-            thinnedbw[i] = new int[nCols];
-            for (int j = 0; j < nCols; ++j) {
-                if (thinned[i][j] > 0) {
-                    thinnedbw[i][j] = 1;
-                }
-            }
-        }
-        
-        MorphologicalFilter mFilter = new MorphologicalFilter();
-        int[][] skel = mFilter.bwMorphThin(thinnedbw, Integer.MAX_VALUE);
-
-        Set<PairInt> points = new HashSet<PairInt>();
-        for (int i = 0; i < nRows; ++i) {
-            for (int j = 0; j < nCols; ++j) {
-                int m = skel[i][j];
-                thinned[i][j] *= m;
-                if (thinned[i][j] > 0) {
-                    points.add(new PairInt(i, j));
-                }
-            }
-        }
-        
-        //DEBUG
-        if (doPlot) {
-            Image paImage = new Image(nCols, nRows);
-            int nExtraForDot = 0;
-            for (PairInt p : points) {
-                int x = p.getY();
-                int y = p.getX();
-                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot, 
-                    255, 255, 255);
-            }
-            MiscDebug.writeImage(paImage, "_a_3_phase_angle_components_2_" +
-                MiscDebug.getCurrentTimeFormatted());
-        }
-        
-        //pltc.correctForLineHatHoriz(points, nRows, nCols);
-        //pltc.correctForLineHatVert(points, nRows, nCols);
-        
-        /*
-        // there are a very small number of clumps thicker than 1 pixel.
-        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
-        lt.applyLineThinner(points, 0, nRows - 1, 0, nCols - 1);
-        
-        for (int i = 0; i < nRows; ++i) {
-            Arrays.fill(thinned[i], 0);
-        }
-        for (PairInt p : points) {
-            thinned[p.getX()][p.getY()] = 255;
-        }
-        
-        
-        //DEBUG
-        if (doPlot) {
-            Image paImage = new Image(nCols, nRows);
-            int nExtraForDot = 0;
-            for (PairInt p : points) {
-                int x = p.getY();
-                int y = p.getX();
-                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot, 
-                    255, 0, 0);
-            }
-            MiscDebug.writeImage(paImage, "_phase_angle_components_5_" +
-                MiscDebug.getCurrentTimeFormatted());
-        }
-        */
     }
     
     public class PhaseCongruencyProducts {

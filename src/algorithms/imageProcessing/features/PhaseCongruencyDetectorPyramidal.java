@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.compGeometry.HoughTransform;
+import algorithms.imageProcessing.AdaptiveThresholding;
 import algorithms.imageProcessing.EdgeExtractorSimple;
 import algorithms.imageProcessing.FilterGrid;
 import algorithms.imageProcessing.FilterGrid.FilterGridProducts;
@@ -155,138 +156,194 @@ public class PhaseCongruencyDetectorPyramidal {
     
     private boolean doPlot = true;
     
-    private boolean extractNoise = false;
+    /**
+     * number of wavelet scales.  a lower value reveals more fine 
+     * scale features.  The default is 5.
+     */
+    private int nScale = 5; 
+    /**
+     * wavelength of smallest scale filter.  The default is 3.
+     */
+    private int minWavelength = 3;        
+    /**
+     * scaling factor between successive filters.  The default is 2.1.
+     */
+    private float mult = 2.1f;
+    /**
+     * ratio of standard deviation of Gaussian describing the
+     * log Gabor's filter's transfer function in the frequency domain to the
+     * filter center frequency.  The default is 0.55f.
+     */
+    private float sigmaOnf = 0.55f;
+    /**
+     * number of standard deviations of the noise energy beyond the
+     * mean at which we set the noise threshold point.  You may want to vary this
+       up to a value of 10 or 20 for noisy images.
+       The default is 5.
+     */
+    private int k = 5;//2;
+    /**
+     * The fractional measure of frequency spread below which phase
+     * congruency values get penalized.  The default is 0.5f.
+     */
+    private float cutOff = 0.5f; 
+    /**
+     * Controls the sharpness of the transition in the sigmoid function
+     * used to weight phase congruency for frequency spread.  The default is 10.
+     */
+    private float g = 10;
+    /**
+     * factor to apply to the calculated phase
+     * deviation result.  Increasing this sharpens the edge responses, but can
+     * also attenuate their magnitude if the gain is too large.  Sensible values
+     * to use lie in the range 1-2.  The default is 1.5f.
+     */
+    private float deviationGain = 1.5f;
+    /**
+     * Parameter specifies method used to determine noise
+     * statistics: -1 use median of smallest scale filter responses;
+     * -2 use mode of smallest scale filter responses;
+     * 0 turns off all noise compensation; and
+     * > 0 use noiseMethod value as the fixed noise threshold.
+     * The default is -1.
+     */
+    private int noiseMethod = -1;
+    /**
+     * the low threshold fraction of 1
+     */
+    private double tLow = 0.1;
+    /**
+     * the high threshold fraction of 1.  The default is 0.3.
+     * Note that this is ignored if useAdaptiveThreshold is true, which it is
+     * by default.
+     */
+    private double tHigh = 0.3;
+    /**
+     * a flag indicating use of adaptive thresholds in the 2 layer filter
+     */
+    private boolean useAdaptiveThreshold = true;
+        
+    public PhaseCongruencyDetectorPyramidal() {
+        
+    }
     
     public void setToCreateCorners() {
         this.determineCorners = true;
     }
     
-    public void setToExtractNoise() {
-        this.extractNoise = true;
+    /**
+     * set the number of wavelet scales.
+     * @param n number of wavelet scales.  a lower value reveals more fine 
+     * scale features.  The default is 5.
+     */
+    public void setNScales(int n) {
+        nScale = n;
     }
     
     /**
-     * <pre>
-     * use the phase congruency method of transformations to create
-     * edge maps, orientation, phase angle and a suggested threshold.
-     * The default values are:
-        int nScale = 5;        
-        int minWavelength = 3;     
-        float mult = 2.1f;
-        float sigmaOnf = 0.55f;
-        int k = 5;
-        float cutOff = 0.5f; 
-        float g = 10;
-        float deviationGain = 1.5f;
-        int noiseMethod = -1;
-        double tLow = 0.0001;
-        double tHigh = 0.1;
-     * </pre>
-     * @param img
-     * @return 
-       <pre>
-       NOTE: the return products use notation a[row][col]
-       Returned values:
-         phaseCongruency  - Phase congruency indicating edge significance 
-                            (values are in range 0 to 1.)
-         orientation      - Orientation image in integer degrees 0-180,
-                            positive anticlockwise.
-                            0 corresponds to a vertical edge, 90 is horizontal.
-         phaseAngle       - Local weighted mean phase angle at every point in 
-                            the image. A value of 
-                                pi/2 corresponds to a bright line, 
-                                0 corresponds to a step and 
-                                -pi/2 is a dark line.
-         threshold        - Calculated noise threshold (can be useful for
-                            diagnosing noise characteristics of images).  
-                            Once you know this you can then specify fixed 
-                            thresholds and save some computation time.
-      </pre>
+     * set the scale number of the smallest scale filter.
+     * @param m wavelength of smallest scale filter.  The default is 3.
      */
-    public PhaseCongruencyProducts phaseCongMono(GreyscaleImage img) {
-    
-        float cutOff = 0.5f;//0.3f;//0.5f;
-        int nScale = 5;
-        int minWavelength = 3;//nScale;// 3;
-        float mult = 2.1f;
-        float sigmaOnf = 0.55f;
-        int k = 10;//2;
-        float g = 10;
-        float deviationGain = 1.5f;
-        int noiseMethod = -1;
-        double tLow = 0.0001;
-        double tHigh = 0.1;
-
-        k = 14;
-        tLow = 0.0001;
-        tHigh = 0.01;
-        minWavelength = 3;
-        deviationGain = 1.5f / (minWavelength - 1);//0.75f
-        
-        return phaseCongMono(img, nScale, minWavelength, mult, sigmaOnf, k, 
-            cutOff, g, deviationGain, noiseMethod, 
-            tLow, tHigh);
+    public void setMinWavelength(int m) {
+        minWavelength = m;
     }
     
     /**
      * 
-     * @param img
-     * @param nScale number of wavelet scales.  a lower value reveals more fine 
-     * scale features.
+     * @param f scaling factor between successive filters.  The default is 2.1.
+     */
+    public void setMult(float f) {
+        mult = f;
+    }
+    
+    /**
+     * 
+     * @param s ratio of standard deviation of Gaussian describing the 
+     * log Gabor's filter's transfer function in the frequency domain to the 
+     * filter center frequency.  The default is 0.55f.
+     */
+    public void setSigmaOnf(float s) {
+        sigmaOnf = s;
+    }
+    
+    /**
+     * 
      * @param k number of standard deviations of the noise energy beyond the 
      * mean at which we set the noise threshold point.  You may want to vary this
        up to a value of 10 or 20 for noisy images.
-     * @return 
-       <pre>
-       NOTE: the return products use notation a[row][col]
-       Returned values:
-         phaseCongruency  - Phase congruency indicating edge significance 
-                            (values are in range 0 to 1.)
-         orientation      - Orientation image in integer degrees 0-180,
-                            positive anticlockwise.
-                            0 corresponds to a vertical edge, 90 is horizontal.
-         phaseAngle       - Local weighted mean phase angle at every point in 
-                            the image. A value of 
-                                pi/2 corresponds to a bright line, 
-                                0 corresponds to a step and 
-                                -pi/2 is a dark line.
-         threshold        - Calculated noise threshold (can be useful for
-                            diagnosing noise characteristics of images).  
-                            Once you know this you can then specify fixed 
-                            thresholds and save some computation time.
-      </pre>
-     */    
-    public PhaseCongruencyProducts phaseCongMono(GreyscaleImage img,
-        final int nScale, int k) {
-        
-        int minWavelength = 3;        
-        float mult = 2.1f;
-        float sigmaOnf = 0.55f;
-        float cutOff = 0.5f; 
-        float g = 10;
-        float deviationGain = 1.5f;
-        int noiseMethod = -1;
-        double tLow = 0.1;
-        double tHigh = 0.3;
-       
-        tLow = 0.0001;
-        tHigh = 0.01;
-        minWavelength = 3;
-        deviationGain = 1.5f / (minWavelength - 1);//0.75f
-                
-        return phaseCongMono(img, nScale, minWavelength, mult, sigmaOnf, k, 
-            cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
+       The default is 5.
+     */
+    public void setK(int k) {
+        this.k = k;
     }
     
-    public PhaseCongruencyProducts phaseCongMono(GreyscaleImage img,
-        PhaseCongruencyParameters theParameters) {
-        
-        return phaseCongMono(img, theParameters.getNScale(), 
-            theParameters.getMinWavelength(), theParameters.getMult(), 
-            theParameters.getSigmaOnf(), theParameters.getK(), 
-            theParameters.getCutOff(), theParameters.getG(),
-            theParameters.getDeviationGain(), theParameters.getNoiseMethod(),
-            theParameters.gettLow(), theParameters.gettHigh());
+    /**
+     * 
+     * @param c The fractional measure of frequency spread below which phase 
+     * congruency values get penalized.  The default is 0.5f.
+     */
+    public void setCutOff(float c) {
+        cutOff = c;
+    }
+    
+    /**
+     * 
+     * @param g Controls the sharpness of the transition in the sigmoid function 
+     * used to weight phase congruency for frequency spread.  The default is 10.
+     */
+    public void setG(int g) {
+        this.g = g;
+    }
+    
+    /**
+     * 
+     * @param d Amplification to apply to the calculated phase 
+     * deviation result.  Increasing this sharpens the edge responses, but can 
+     * also attenuate their magnitude if the gain is too large.  Sensible values 
+     * to use lie in the range 1-2.  The default is 1.5f.
+     */
+    public void setDevitionGain(float d) {
+        deviationGain = d;
+    }
+    
+    /**
+     * 
+     * @param m Parameter specifies method used to determine noise 
+     * statistics: -1 use median of smallest scale filter responses; 
+     * -2 use mode of smallest scale filter responses;
+     * 0 turns off all noise compensation; and
+     * > 0 use noiseMethod value as the fixed noise threshold.
+     * The default is -1.
+     */
+    public void setNoiseMethod(int m) {
+        this.noiseMethod = m;
+    }
+    
+    /**
+     * 
+     * @param tLow the low threshold fraction of 1.
+     * The default is 0.1.
+     */
+    public void setLowThreshold(double tLow) {
+        this.tLow = tLow;
+    }
+    
+    /**
+     * 
+     * @param t the high threshold fraction of 1.  The default is 0.3.
+     * Note that this is ignored if useAdaptiveThreshold is true, which it is
+     * by default.
+     */
+    public void setHighThreshold(double t) {
+        this.tHigh = t;
+    }
+    
+    /**
+     * turn off the use of adaptive thresholds in the 2 layer filter, and 
+     * instead use tLow and tHigh only.
+     */
+    public void setToNotUseAdaptiveThreshold() {
+        this.useAdaptiveThreshold = false;
     }
     
     /**
@@ -294,33 +351,6 @@ public class PhaseCongruencyDetectorPyramidal {
      * to create an edge operator that is highly localized and has responses 
      * that are invariant to image contrast. 
      * @param img
-     * @param nScale number of wavelet scales.  a lower value reveals more fine 
-     * scale features.
-     * @param minWavelength wavelength of smallest scale filter
-     * @param mult scaling factor between successive filters
-     * @param sigmaOnf ratio of standard deviation of Gaussian describing the 
-     * log Gabor's filter's transfer function in the frequency domain to the 
-     * filter center frequency
-     * @param k number of standard deviations of the noise energy beyond the 
-     * mean at which we set the noise threshold point.  You may want to vary this
-       up to a value of 10 or 20 for noisy images.
-      
-     * @param cutOff The fractional measure of frequency spread below which phase 
-     * congruency values get penalized
-     * @param g Controls the sharpness of the transition in the sigmoid function 
-     * used to weight phase congruency for frequency spread. 
-     * @param deviationGain Amplification to apply to the calculated phase 
-     * deviation result.  Increasing this sharpens the edge responses, but can 
-     * also attenuate their magnitude if the gain is too large.  Sensible values 
-     * to use lie in the range 1-2.
-     * @param noiseMethod Parameter specifies method used to determine noise 
-     * statistics: -1 use median of smallest scale filter responses; 
-     * -2 use mode of smallest scale filter responses;
-     * 0 turns off all noise compensation; and
-     * > 0 use noiseMethod value as the fixed noise threshold;
-     * @param tLow the low threshold fraction of 1.  this is usually 0.1.
-     * @param tHigh the high threshold fraction of 1.  this is usually 0.3.
-     * 
      * @return 
        <pre>
        NOTE: the return products use notation a[row][col]
@@ -341,12 +371,7 @@ public class PhaseCongruencyDetectorPyramidal {
                             thresholds and save some computation time.
       </pre>
      */    
-    public PhaseCongruencyProducts phaseCongMono(GreyscaleImage img,
-        final int nScale, final int minWavelength, final float mult,
-        final float sigmaOnf, int k,
-        final float cutOff,
-        final float g, final float deviationGain, final int noiseMethod,
-        final double tLow, final double tHigh) {
+    public PhaseCongruencyProducts phaseCongMono(GreyscaleImage img) {
         
         long t0 = System.currentTimeMillis();
         
@@ -656,15 +681,12 @@ public class PhaseCongruencyDetectorPyramidal {
         double[][] ft = new double[nRows][];
         double[][] energy = new double[nRows][];
         double[][] pc = new double[nRows][];
-        double[][] pcLgNz = extractNoise ? new double[nRows][] : null;
         for (int row = 0; row < nRows; ++row) {
             orientation[row] = new double[nCols];
             ft[row] = new double[nCols];
             energy[row] = new double[nCols];
             pc[row] = new double[nCols];
-            if (extractNoise) {
-                pcLgNz[row] = new double[nCols];
-            }
+            
         }
         
         for (int row = 0; row < nRows; ++row) {
@@ -772,11 +794,7 @@ public class PhaseCongruencyDetectorPyramidal {
             g, deviationGain, noiseMethod, tLow, tHigh);
         
         int[][] thinned = createEdges(products.getPhaseCongruency(), thinnedPC, 
-            products.getPhaseAngle(), pcLgNz, tLow, tHigh);
-        
-        if (extractNoise) {
-            products.setNoiseyPixels(pcLgNz);
-        }
+            products.getPhaseAngle(), tLow, tHigh);
         
         products.setThinnedImage(thinned);
 
@@ -931,14 +949,12 @@ public class PhaseCongruencyDetectorPyramidal {
      * @param pc
      * @param thinnedPC
      * @param phaseAngle
-     * @param outputRemovedNoise
      * @param tLow
      * @param tHigh 
      * @return  
      */
     public int[][] createEdges(double[][] pc, double[][] thinnedPC, 
-        double[][] phaseAngle, double[][] outputRemovedNoise, double tLow, 
-        double tHigh) {
+        double[][] phaseAngle, double tLow, double tHigh) {
         
         int nRows = phaseAngle.length;
         int nCols = phaseAngle[0].length;
@@ -1040,23 +1056,9 @@ public class PhaseCongruencyDetectorPyramidal {
         }
         stepPoints = null;
         gaps = null;
-     
-        int[][] thinned = applyHysThresh(thinned1, tLow, tHigh, true);
         
-        //NOTE: the removed points are sometimes noise that is "texture"
-        // but is sometimes also points that were part of edges
-        // that should be restored if possible in this method.
-        // TODO: restore removed pixels from thinned1 using orientation.
-        //   phase angle, and thinned1 value after the list filter in this method.
-        if (extractNoise) {
-            for (int row = 0; row < nRows; ++row) {
-                for (int col = 0; col < nCols; ++col) {
-                    if (thinned1[row][col] > 0 && thinned[row][col] == 0) {
-                        outputRemovedNoise[row][col] = thinned1[row][col];
-                    }
-                }
-            }
-        }
+        int[][] thinned = applyHysThresh(thinned1, phaseAngle, tLow, tHigh, 
+            true);
                        
         //DEBUG
         if (doPlot) {
@@ -1680,22 +1682,45 @@ public class PhaseCongruencyDetectorPyramidal {
      *    neighbors for a strong point
      * @return 
      */
-    int[][] applyHysThresh(double[][] img, double t1, double t2, 
-        boolean extendAssocRadiusTo2) {
+    int[][] applyHysThresh(double[][] img, double[][] pa, double t1, double t2, 
+        boolean restore) {
         
         // note that the kovesi code uses the octave bwselect and bwfill,
         // which results in points > t2 which is thresholding just for 
         // the high value.
-        
-        // so will instead adapt my canny edge detector 2-layer threshold
-        // here.
-        
+        // here instead will use an adaptive 2-layer threshold for values > t1.
+       
         int w = img.length;
         int h = img[0].length;
         int n = w * h;
         
         if (w < 3 || h < 3) {
             throw new IllegalArgumentException("images should be >= 3x3 in size");
+        }
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        double[][] threshImg = null;
+        if (useAdaptiveThreshold) {
+            AdaptiveThresholding th = new AdaptiveThresholding();
+            threshImg = th.createAdaptiveThresholdImage(img, 15, 0.2);
+            /*{//DEBUG
+                double[][] imgCp = imageProcessor.copy(img);
+                double[][] imgCp2 = imageProcessor.copy(threshImg);
+                for (int i = 0; i < w; ++i) {
+                    for (int j = 0; j < h; ++j) {
+                        double t = threshImg[i][j];
+                        if (imgCp[i][j] > t && imgCp[i][j] > t1) {
+                            imgCp[i][j] = 255.;
+                        } else {
+                            imgCp[i][j] = 0;
+                        }
+                        imgCp2[i][j] *= 255.;
+                    }
+                }
+                MiscDebug.writeImage(imgCp, "img_a_thresholded_.png");
+                MiscDebug.writeImage(imgCp2, "img_a_threshold_.png");
+            }*/
         }
     
         int[] dxs = Misc.dx8;
@@ -1704,26 +1729,38 @@ public class PhaseCongruencyDetectorPyramidal {
         double tHigh = t2;
         double tLow = t1;
         
+        System.out.println("tHigh=" + tHigh + 
+            " replace with adaptive threshold image = " + (threshImg != null));
+        
         int[][] img2 = new int[w][];
         for (int i = 0; i < w; ++i) {
             img2[i] = new int[h];
         }
+
+        // store pixels w/ v > tHigh
+        // and store any of it's neighbors w/ v > tLow
                 
         for (int x = 0; x < w; ++x) {
             for (int y = 0; y < h; ++y) {
             
                 double v = img[x][y];
+                
+                double tHigh0, tLow0;
+                if (threshImg != null) {
+                    tHigh0 = threshImg[x][y];
+                    tLow0 = tHigh0/2;
+                } else {
+                    tHigh0 = tHigh;
+                    tLow0 = tLow;
+                }
             
-                if (v < tLow) {
-                    continue;
-                } else if (v > tHigh) {
-                    img2[x][y] = 255;
+                if (v < tHigh0 || v < tLow) {
                     continue;
                 }
                 
-                boolean foundHigh = false;
-                boolean foundMid = false;
-            
+                img2[x][y] = 255;
+                
+                // store any adjacent w/ v > tLow
                 for (int k = 0; k < dxs.length; ++k) {                
                     int x2 = x + dxs[k];
                     int y2 = y + dys[k];
@@ -1731,46 +1768,8 @@ public class PhaseCongruencyDetectorPyramidal {
                         continue;
                     }
                     double v2 = img[x2][y2];
-                    if (v2 > tHigh) {
-                        foundHigh = true;
-                        break;
-                    } else if (v2 > tLow) {
-                        foundMid = true;
-                    }
-                }
-                if (foundHigh) {
-                    img2[x][y] = 255;
-                    continue;
-                }
-                if (!foundMid) {
-                    continue;
-                }
-                
-                if (extendAssocRadiusTo2) {
-                    // search the 5 by 5 region for a "sure edge" pixel
-                    for (int dx = -2; dx <= 2; ++dx) {
-                        int x2 = x + dx;
-                        if ((x2 < 0) || (x2 > (w - 1))) {
-                            continue;
-                        }
-                        for (int dy = -2; dy <= 2; ++dy) {
-                            int y2 = y + dy;
-                            if ((y2 < 0) || (y2 > (h - 1))) {
-                                continue;
-                            }
-                            if (x2 == x && y2 == y) {
-                                continue;
-                            }
-                            double v2 = img[x2][y2];
-                            if (v2 > tHigh) {
-                                img2[x][y] = 255;
-                                foundHigh = true;
-                                break;
-                            }
-                        }
-                        if (foundHigh) {
-                            break;
-                        }
+                    if (v2 > tLow0) {
+                        img2[x2][y2] = 255;
                     }
                 }
             }

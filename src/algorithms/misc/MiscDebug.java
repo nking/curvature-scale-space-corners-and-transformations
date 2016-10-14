@@ -975,7 +975,8 @@ public class MiscDebug {
         }
         try {
             String bin = ResourceFinder.findDirectory("bin");
-            ImageIOHelper.writeOutputImage(bin + "/" + fileName, imgL);
+            ImageIOHelper.writeOutputImage(bin + "/img" + fileName 
+                + ".png", imgL);
         } catch (Exception e) {
              e.printStackTrace();
             log.severe("ERROR: " + e.getMessage());
@@ -999,7 +1000,8 @@ public class MiscDebug {
         }
         try {
             String bin = ResourceFinder.findDirectory("bin");
-            ImageIOHelper.writeOutputImage(bin + "/" + fileName, imgL);
+            ImageIOHelper.writeOutputImage(bin + "/img" + fileName 
+                + ".png", imgL);
         } catch (Exception e) {
              e.printStackTrace();
             log.severe("ERROR: " + e.getMessage());

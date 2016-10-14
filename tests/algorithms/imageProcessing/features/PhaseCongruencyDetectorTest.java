@@ -292,10 +292,27 @@ public class PhaseCongruencyDetectorTest extends TestCase {
             
             PhaseCongruencyDetector phaseCDetector 
                 = new PhaseCongruencyDetector();
-            //phaseCDetector.setK(10);
+            phaseCDetector.setToExtractNoise();
+            //phaseCDetector.setK(7);
             phaseCDetector.setToCreateCorners();
             PhaseCongruencyDetector.PhaseCongruencyProducts products =
                 phaseCDetector.phaseCongMono(img2);
+            
+            double[][] noise = products.getNoiseyPixels();
+            
+            /*
+            //  make a distance transform of noise from thinned.
+            //  choose the furthest in those as candidates for textures.
+            //  -- look at density stats, perhaps following 
+            //     stats in Malik et al. 2001 (but not their filters).
+            //     -- color histograms probably useful to add for insprcting
+            //        the noise groups.
+            //  -- consider designing a spatial frequency filter from 
+            //     a representative patch of the noise as texture.
+            //     NOTE that there may be more than one pattern of textures in
+            //     an image.  would be good to find a test image with
+            //     vegetation and bricks or similar...
+            */
             
             /*
             assertNotNull(products);
