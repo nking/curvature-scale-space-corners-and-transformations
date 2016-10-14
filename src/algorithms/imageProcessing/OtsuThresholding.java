@@ -39,62 +39,6 @@ public class OtsuThresholding {
     }
     
     /**
-     * sparse 1-D implementation of binary thresholding.
-     * only image values > 0 are included in stats because the method
-     * is meant to be used on thinned images.
-     * 
-     * The implementation follows the one dimensional code from wikipedia
-     * at https://en.wikipedia.org/wiki/Otsu%27s_method
-
-     * The runtime complexity is O(N_pixels).
-     * 
-     * @param img
-     * @return 
-     */
-    public double calculateBinaryThreshold1DSparse(double[][] img) {
-        
-        int w = img.length;
-        int h = img[0].length;
-        
-        int nNZ = 0;
-        double min = Double.MAX_VALUE;
-        for (int i = 0; i < w; ++i) {
-            for (int j = 0; j < h; ++j) {
-                double v = img[i][j];
-                if (v > 0) {
-                    if (v < min) {
-                        min = v;
-                    }
-                    nNZ++;
-                }
-            }
-        }
-        
-        int nBins = 256;
-        
-        int minBin = (int)Math.round(255. * min);
-        
-        int[] hist = new int[nBins];
-        // (255 - 0 + 1)/256
-        int binWidth = (255 - minBin + 1)/nBins;
-        
-        for (int i = 0; i < w; ++i) {
-            for (int j = 0; j < h; ++j) {
-                if (img[i][j] <= 0) {
-                    continue;
-                }
-                int v = (int)Math.round(255. * img[i][j]);
-                int binNumber = (v - minBin)/binWidth;            
-                hist[binNumber]++;
-            }
-        }
-        
-        int thresh = calculateBinaryThreshold256(hist, nNZ);
-        
-        return (double)thresh/255.;
-    }
-    
-    /**
      * find the binary threshold for the given points assuming the image is 
      * filled with values between 0 and 255, inclusive.
      * 

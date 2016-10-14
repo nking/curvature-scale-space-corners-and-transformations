@@ -129,23 +129,32 @@ public class OtsuThresholdingTest extends TestCase {
             
             int w = img.getWidth();
             int h = img.getHeight();
-            double[][] imgD = new double[w][];
+            double[][] imgD0 = new double[w][];
+            double[][] imgD1 = new double[w][];
             for (int i = 0; i < w; ++i) {
-                imgD[i] = new double[h];
+                imgD0[i] = new double[h];
+                imgD1[i] = new double[h];
                 for (int j = 0; j < h; ++j) {
-                    imgD[i][j] = img.getValue(i, j);
+                    imgD0[i][j] = img.getValue(i, j);
+                    imgD1[i][j] = img.getValue(i, j)/255;
                 }
             }
         
             OtsuThresholding thrshFinder = new OtsuThresholding();
             
-            double thrsh0 = thrshFinder.calculateBinaryThreshold2D(imgD,
+            double thrsh0 = thrshFinder.calculateBinaryThreshold2D(imgD0,
                 256);
            
+            double thrsh1 = thrshFinder.calculateBinaryThreshold256(img);
+            
             assertTrue(thrsh0 > 0);
             assertTrue(thrsh0 < 255);
             
-            double[][] imgDCp = imageProcessor.copy(imgD);
+            assertTrue(thrsh1 > 0);
+            assertTrue(thrsh1 < 255);
+            
+            double[][] imgDCp = imageProcessor.copy(imgD0);
+            GreyscaleImage img1 = img.copyImage();
             
             for (int i = 0; i < img.getNPixels(); ++i) {
                 if (img.getValue(i) > thrsh0) {
@@ -153,9 +162,16 @@ public class OtsuThresholdingTest extends TestCase {
                 } else {
                     img.setValue(i, 0);
                 }
+                if (img.getValue(i) > thrsh1) {
+                    img1.setValue(i, 255);
+                } else {
+                    img1.setValue(i, 0);
+                }
             }
             
             MiscDebug.writeImage(img, "_twoD_" + fileNameRoot);
+            
+            MiscDebug.writeImage(img1, "_oneD_" + fileNameRoot);
         
             AdaptiveThresholding at = new AdaptiveThresholding();
             at.applyAdaptiveThresholdImage(imgDCp, 15, 0.2, 255.);
