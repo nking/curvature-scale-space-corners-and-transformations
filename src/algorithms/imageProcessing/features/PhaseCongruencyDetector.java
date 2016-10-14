@@ -1,7 +1,10 @@
 package algorithms.imageProcessing.features;
 
+import algorithms.MultiArrayMergeSort;
+import algorithms.QuickSort;
 import algorithms.compGeometry.HoughTransform;
 import algorithms.imageProcessing.AdaptiveThresholding;
+import algorithms.imageProcessing.DistanceTransform;
 import algorithms.imageProcessing.EdgeExtractorSimple;
 import algorithms.imageProcessing.FilterGrid;
 import algorithms.imageProcessing.FilterGrid.FilterGridProducts;
@@ -15,8 +18,8 @@ import algorithms.imageProcessing.MorphologicalFilter;
 import algorithms.imageProcessing.NonMaximumSuppression;
 import algorithms.imageProcessing.PeriodicFFT;
 import algorithms.imageProcessing.PostLineThinnerCorrections;
-import algorithms.imageProcessing.ZhangSuenLineThinner;
 import algorithms.imageProcessing.scaleSpace.CSSCornerMaker;
+import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Complex;
 import algorithms.misc.ComplexModifiable;
 import algorithms.misc.Histogram;
@@ -29,6 +32,10 @@ import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
+import com.climbwithyourfeet.clustering.DTClusterFinder;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -37,6 +44,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  An edge detector that uses principles of phase congruency to create an edge
@@ -154,7 +163,7 @@ public class PhaseCongruencyDetector {
     
     private boolean determineCorners = false;
     
-    private boolean doPlot = true;
+    private boolean doPlot = false;
     
     private boolean extractNoise = false;
     
@@ -227,6 +236,10 @@ public class PhaseCongruencyDetector {
         
     public PhaseCongruencyDetector() {
         
+    }
+    
+    public void setToDebug() {
+        doPlot = true;
     }
     
     public void setToCreateCorners() {
@@ -762,7 +775,7 @@ public class PhaseCongruencyDetector {
             if (extractNoise) {
                 // empirically, k=10 is chosen
                 thresholdLowNz = Math.max(EstNoiseEnergyMean 
-                    + 10.f * EstNoiseEnergySigma, epsilon);
+                    + 7.f * EstNoiseEnergySigma, epsilon);
             }
         }
         
@@ -839,7 +852,96 @@ public class PhaseCongruencyDetector {
             
             products.setNoiseyPixels(pcLowNz);
             
-            MiscDebug.writeImage(pcLowNz, "_a_noise_");
+            if (doPlot) {
+                MiscDebug.writeImage(pcLowNz, "_a_noise_");
+            }
+            
+            Set<PairIntWithIndex> points2 
+                = new HashSet<PairIntWithIndex>();
+            
+            int[][] dt = new int[nRows][];
+            for (int row = 0; row < nRows; ++row) {
+                dt[row] = new int[nCols];
+                for (int col = 0; col < nCols; ++col) {
+                    if (thinnedLowNz[row][col] > 0) {
+                        dt[row][col] = 1;
+                        points2.add(new PairIntWithIndex(row, col,
+                           points2.size()));
+                    }
+                }
+            }
+            
+            DTClusterFinder<PairIntWithIndex> cFinder
+                = new DTClusterFinder<PairIntWithIndex>(points2, 
+                nRows + 1, nCols + 1);
+            //cFinder.setToDebug();
+            cFinder.calculateCriticalDensity();
+            cFinder.findClusters();
+            int n = cFinder.getNumberOfClusters();
+            
+            float[] clusterSizes = new float[n];
+        
+            Image dbg0 = new Image(nCols, nRows);
+            for (int i = 0; i < n; ++i) {
+                int clr = ImageIOHelper.getNextColorRGB(i);
+                Set<PairIntWithIndex> set =cFinder.getCluster(i);
+                for (PairIntWithIndex p : set) {
+                    dbg0.setRGB(p.getY(), p.getX(), clr);
+                }
+                clusterSizes[i] = set.size();
+            }
+            MiscDebug.writeImage(dbg0, "_a_clustering_");
+            
+            //final float xMin, final float xMax, int nBins,
+            HistogramHolder hist = Histogram.createSimpleHistogram(
+                0, 50, 20, clusterSizes, 
+                Errors.populateYErrorsBySqrt(clusterSizes));
+            try {
+                hist.plotHistogram("cluster sizes", "_cluster_sizes_");
+            } catch (IOException ex) {
+                Logger.getLogger(PhaseCongruencyDetector.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            
+            DistanceTransform dTrans = new DistanceTransform();
+            dt = dTrans.applyMeijsterEtAl(dt);
+            List<PairInt> points = new ArrayList<PairInt>();
+            TIntList dist = new TIntArrayList();
+            for (int row = 0; row < nRows; ++row) {
+                for (int col = 0; col < nCols; ++col) {
+                    if (pcLowNz[row][col] > 0 && dt[row][col] > 0) {
+                        points.add(new PairInt(row, col));
+                        dist.add(dt[row][col]);
+                    }
+                }
+            }
+            if (doPlot) {
+                int[][] dbg = copy(dt);
+                for (int row = 0; row < nRows; ++row) {
+                    for (int col = 0; col < nCols; ++col) {
+                        if (pcLowNz[row][col] == 0) {
+                            dbg[row][col] = 0;
+                        }
+                    }
+                }
+                MiscMath.applyRescale(dbg, 0, 255);
+                MiscDebug.writeImage(dbg, "_a_noise_distance_transform_");
+            }
+            
+            // sort by decr dist
+            QuickSort.descendingSort(dist, points);
+
+            int z = 1;            
+            //  make a distance transform of noise from thinned.
+            //  choose the furthest in those as candidates for textures.
+            //  -- look at density stats, perhaps following 
+            //     stats in Malik et al. 2001 (but not their filters).
+            //     -- color histograms probably useful to add for insprcting
+            //        the noise groups.
+            //  -- consider designing a spatial frequency filter from 
+            //     a representative patch of the noise as texture.
+            //     NOTE that there may be more than one pattern of textures in
+            //     an image.  would be good to find a test image with
+            //     vegetation and bricks or similar...
         }
         
         //TODO: these convenience methods do not belong in this class...
@@ -1712,7 +1814,7 @@ public class PhaseCongruencyDetector {
         if (useAdaptiveThreshold) {
             AdaptiveThresholding th = new AdaptiveThresholding();
             threshImg = th.createAdaptiveThresholdImage(img, 15, 0.2);
-            /*{//DEBUG
+            if (doPlot) {//DEBUG
                 double[][] imgCp = imageProcessor.copy(img);
                 double[][] imgCp2 = imageProcessor.copy(threshImg);
                 for (int i = 0; i < w; ++i) {
@@ -1727,8 +1829,8 @@ public class PhaseCongruencyDetector {
                     }
                 }
                 MiscDebug.writeImage(imgCp, "img_a_thresholded_.png");
-                MiscDebug.writeImage(imgCp2, "img_a_threshold_.png");
-            }*/
+                MiscDebug.writeImage(imgCp2, "img_a_adaptive_threshold_.png");
+            }
         }
     
         int[] dxs = Misc.dx8;

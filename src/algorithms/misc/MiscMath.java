@@ -2500,6 +2500,33 @@ System.out.println("value 0 is rescaled to value=" + (-minV*scale)
         }
     }
 
+    public static void applyRescale(int[][] a, int minScaled, int maxScaled) {
+    
+        int minV = Integer.MAX_VALUE;
+        int maxV = Integer.MIN_VALUE;
+        
+        for (int i = 0; i < a.length; ++i) {
+            for (int j = 0; j < a[i].length; ++j) {
+                int v = a[i][j];
+                if (v < minV) {
+                    minV = v;
+                }
+                if (v > maxV) {
+                    maxV = v;
+                }
+            }
+        }
+        float range = maxV - minV;
+        
+        float scale = (maxScaled - minScaled)/range;
+        
+        for (int i = 0; i < a.length; ++i) {
+            for (int j = 0; j < a[i].length; ++j) {
+                a[i][j] = Math.round((a[i][j] - minV) * scale);
+            }
+        }
+    }
+    
     public static void applyRescale(float[][] a, float minScaled, 
         float maxScaled) {
         
@@ -2579,4 +2606,5 @@ System.out.println("value 0 is rescaled to value=" + (-minV*scale)
             }
         }
     }
+
 }

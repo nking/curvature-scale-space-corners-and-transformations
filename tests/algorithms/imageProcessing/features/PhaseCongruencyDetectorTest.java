@@ -293,8 +293,8 @@ public class PhaseCongruencyDetectorTest extends TestCase {
             PhaseCongruencyDetector phaseCDetector 
                 = new PhaseCongruencyDetector();
             phaseCDetector.setToExtractNoise();
-            //phaseCDetector.setK(7);
-            phaseCDetector.setToCreateCorners();
+            phaseCDetector.setToDebug();
+            //phaseCDetector.setToCreateCorners();
             PhaseCongruencyDetector.PhaseCongruencyProducts products =
                 phaseCDetector.phaseCongMono(img2);
             
