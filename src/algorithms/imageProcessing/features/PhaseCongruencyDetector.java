@@ -905,15 +905,14 @@ public class PhaseCongruencyDetector {
             //cFinder.setToDebug();
             cFinder.calculateCriticalDensity();
             cFinder.findClusters();
-            int n = cFinder.getNumberOfClusters();
+            final int n = cFinder.getNumberOfClusters();
             
             float[] clusterSizes = new float[n];        
             for (int i = 0; i < n; ++i) {
-                Set<PairIntWithIndex> set =cFinder.getCluster(i);
+                Set<PairIntWithIndex> set = cFinder.getCluster(i);
                 clusterSizes[i] = set.size();
             }
             
-            //final float xMin, final float xMax, int nBins,
             HistogramHolder hist = Histogram.createSimpleHistogram(
                 0, 40, 20, clusterSizes, 
                 Errors.populateYErrorsBySqrt(clusterSizes));
@@ -933,7 +932,7 @@ public class PhaseCongruencyDetector {
             // add the points larger than a size limit to the dt
             for (int i = 0; i < n; ++i) {
                 int clr = ImageIOHelper.getNextColorRGB(i);
-                Set<PairIntWithIndex> set =cFinder.getCluster(i);
+                Set<PairIntWithIndex> set = cFinder.getCluster(i);
                 if (set.size() > 3*sizeLimit) {
                     for (PairIntWithIndex p : set) {
                         dt[p.getX()][p.getY()] = 1;
@@ -954,7 +953,7 @@ public class PhaseCongruencyDetector {
             Image dbg0 = new Image(nCols, nRows);
             for (int i = 0; i < n; ++i) {
                 int clr = ImageIOHelper.getNextColorRGB(i);
-                Set<PairIntWithIndex> set =cFinder.getCluster(i);
+                Set<PairIntWithIndex> set = cFinder.getCluster(i);
                 if (set.size() > sizeLimit) {
                     continue;
                 }
@@ -965,12 +964,33 @@ public class PhaseCongruencyDetector {
                         dist.add(dt[p.getX()][p.getY()]);
                     }
                 }
-                clusterSizes[i] = set.size();
             }
             MiscDebug.writeImage(dbg0, "_a_clustering_");
             
             // sort by decr dist
             QuickSort.descendingSort(dist, points);
+            
+            //histogram of cluster distances
+            float[] values = new float[dist.size()];
+            for (int i = 0; i < dist.size(); ++i) {
+                values[i] = dist.get(i);
+            }
+            //TODO: consider xmax based on image size
+            hist = Histogram.createSimpleHistogram(
+                0, 400, 20, values, 
+                Errors.populateYErrorsBySqrt(values));
+            peakIdx = MiscMath.findYMaxIndex(hist.getYHist());
+            assert(peakIdx != -1); 
+            sizeLimit = hist.getXHist()[peakIdx];
+            if (peakIdx < (hist.getXHist().length - 1)) {
+                sizeLimit = hist.getXHist()[peakIdx + 1];
+            }
+            
+            try {
+                hist.plotHistogram("dist from edges", "_cluster_distances_");
+            } catch (IOException ex) {
+                Logger.getLogger(PhaseCongruencyDetector.class.getName()).log(Level.SEVERE, null, ex);
+            }
 
             int z = 1;            
            
