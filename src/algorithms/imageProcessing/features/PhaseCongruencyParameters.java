@@ -17,11 +17,10 @@ package algorithms.imageProcessing.features;
      private int noiseMethod = -1;
      private double tLow = 0.0001;//0.1;
      private double tHigh = 0.1;//0.3;
-     private boolean increaseKIfNeeded = true;
 
      public void setParameters(int nScale, int minWavelength, float mult,
          float sigmaOnf, int k, float cutOff, float g, float deviationGain,
-         int noiseMethod, double tLow, double tHigh, boolean increaseKIfNeeded) {
+         int noiseMethod, double tLow, double tHigh) {
          
          this.nScale = nScale;
          this.minWavelength = minWavelength;
@@ -34,7 +33,6 @@ package algorithms.imageProcessing.features;
          this.noiseMethod = noiseMethod;
          this.tLow = tLow;
          this.tHigh = tHigh;
-         this.increaseKIfNeeded = increaseKIfNeeded;
      }
 
     /**
@@ -114,13 +112,6 @@ package algorithms.imageProcessing.features;
         return tHigh;
     }
 
-    /**
-     * @return the increaseKIfNeeded
-     */
-    public boolean doIncreaseKIfNeeded() {
-        return increaseKIfNeeded;
-    }
-    
     @Override
     public String toString() {
          
@@ -136,8 +127,7 @@ package algorithms.imageProcessing.features;
              .append(" deviationGain=").append(deviationGain)
              .append(" noiseMethod=").append(noiseMethod)
              .append(" tLow=").append(tLow)
-             .append(" tHigh=").append(tHigh)
-             .append(" increaseKIfNeeded=").append(increaseKIfNeeded);
+             .append(" tHigh=").append(tHigh);
          
          return sb.toString();
      }

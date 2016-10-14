@@ -67,24 +67,13 @@ public class CornersOfBloxTest extends TestCase {
         
         
         GreyscaleImage img3 = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();        
-        float cutOff = 0.5f;//0.3f;//0.5f;
-        int nScale = 5;
-        int minWavelength = 3;
-        float mult = 2.1f;
-        float sigmaOnf = 0.55f;
-        int k = 2;
-        float g = 10; 
-        float deviationGain = 1.5f;
-        int noiseMethod = -1;
-        double tLow = 0.05;
-        double tHigh = 0.3;
+        
         boolean increaseKIfNeeded = false;
         PhaseCongruencyDetector phaseCDetector = new PhaseCongruencyDetector();
-        phaseCDetector.setToCreateCorners();                
+        phaseCDetector.setToCreateCorners();
+        phaseCDetector.setK(2);
         PhaseCongruencyDetector.PhaseCongruencyProducts products =
-            phaseCDetector.phaseCongMono(img3, nScale, minWavelength, mult, 
-                sigmaOnf, k, increaseKIfNeeded, 
-                cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
+            phaseCDetector.phaseCongMono(img3);
         assertNotNull(products);
         Set<PairInt> pCorners = products.getCorners();
         Image out2 = img3.copyToColorGreyscale();
@@ -98,7 +87,7 @@ public class CornersOfBloxTest extends TestCase {
             }
         }
         ImageIOHelper.addCurveToImage(pCorners, out2, 2, 255, 0, 0);
-        MiscDebug.writeImage(out2, "_phase_congruency_corners_blox_" + cutOff + "_");  
+        MiscDebug.writeImage(out2, "_phase_congruency_corners_blox_");  
         
         
         PairIntArray expectedCorners = getExpectedLabCorners();

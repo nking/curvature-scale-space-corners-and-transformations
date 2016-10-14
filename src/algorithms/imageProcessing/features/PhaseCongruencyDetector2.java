@@ -81,9 +81,7 @@ public class PhaseCongruencyDetector2 {
      * @param k number of standard deviations of the noise energy beyond the 
      * mean at which we set the noise threshold point.  You may want to vary this
        up to a value of 10 or 20 for noisy images.
-       @param increaseKIfNeeded if the number of points in the thinned pc
-       * is very high, this allows k to be increased, pc to be recalculated,
-       * and a result of smaller number of points in the thinned image.
+      
      * @param cutOff The fractional measure of frequency spread below which phase 
      * congruency values get penalized
      * @param g Controls the sharpness of the transition in the sigmoid function 
@@ -112,7 +110,7 @@ public class PhaseCongruencyDetector2 {
     public PhaseCongruencyProducts phaseCong(GreyscaleImage img,
         final int nScale, final int nOrient, final int minWavelength, final float mult,
         final float sigmaOnf,
-        int k, final boolean increaseKIfNeeded,
+        int k, 
         final float cutOff,
         final float g, int noiseMethod, double tLow, double tHigh,
         boolean doStoreConvolution) {
@@ -794,13 +792,12 @@ public class PhaseCongruencyDetector2 {
 
         private void setParameters(int nScale, int minWavelength, float mult, 
             float sigmaOnf, int k, float cutOff, float g, float deviationGain, 
-            int noiseMethod, double tLow, double tHigh, boolean increaseKIfNeeded) {
+            int noiseMethod, double tLow, double tHigh) {
             
             this.parameters = new PhaseCongruencyParameters();
             
             parameters.setParameters(nScale, minWavelength, mult, sigmaOnf, k,
-                cutOff, g, deviationGain, noiseMethod, tLow, tHigh, 
-                increaseKIfNeeded);            
+                cutOff, g, deviationGain, noiseMethod, tLow, tHigh);            
         }
 
         /**

@@ -181,7 +181,6 @@ public class PhaseCongruencyDetectorPyramidal {
         int noiseMethod = -1;
         double tLow = 0.0001;
         double tHigh = 0.1;
-        boolean increaseKIfNeeded = true;
      * </pre>
      * @param img
      * @return 
@@ -217,7 +216,6 @@ public class PhaseCongruencyDetectorPyramidal {
         int noiseMethod = -1;
         double tLow = 0.0001;
         double tHigh = 0.1;
-        boolean increaseKIfNeeded = false;
 
         k = 14;
         tLow = 0.0001;
@@ -226,7 +224,7 @@ public class PhaseCongruencyDetectorPyramidal {
         deviationGain = 1.5f / (minWavelength - 1);//0.75f
         
         return phaseCongMono(img, nScale, minWavelength, mult, sigmaOnf, k, 
-            increaseKIfNeeded, cutOff, g, deviationGain, noiseMethod, 
+            cutOff, g, deviationGain, noiseMethod, 
             tLow, tHigh);
     }
     
@@ -238,9 +236,6 @@ public class PhaseCongruencyDetectorPyramidal {
      * @param k number of standard deviations of the noise energy beyond the 
      * mean at which we set the noise threshold point.  You may want to vary this
        up to a value of 10 or 20 for noisy images.
-       @param increaseKIfNeeded if the number of points in the thinned pc
-       * is very high, this allows k to be increased, pc to be recalculated,
-       * and a result of smaller number of points in the thinned image.
      * @return 
        <pre>
        NOTE: the return products use notation a[row][col]
@@ -262,7 +257,7 @@ public class PhaseCongruencyDetectorPyramidal {
       </pre>
      */    
     public PhaseCongruencyProducts phaseCongMono(GreyscaleImage img,
-        final int nScale, int k, boolean increaseKIfNeeded) {
+        final int nScale, int k) {
         
         int minWavelength = 3;        
         float mult = 2.1f;
@@ -280,7 +275,7 @@ public class PhaseCongruencyDetectorPyramidal {
         deviationGain = 1.5f / (minWavelength - 1);//0.75f
                 
         return phaseCongMono(img, nScale, minWavelength, mult, sigmaOnf, k, 
-            increaseKIfNeeded, cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
+            cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
     }
     
     public PhaseCongruencyProducts phaseCongMono(GreyscaleImage img,
@@ -289,7 +284,6 @@ public class PhaseCongruencyDetectorPyramidal {
         return phaseCongMono(img, theParameters.getNScale(), 
             theParameters.getMinWavelength(), theParameters.getMult(), 
             theParameters.getSigmaOnf(), theParameters.getK(), 
-            theParameters.doIncreaseKIfNeeded(), 
             theParameters.getCutOff(), theParameters.getG(),
             theParameters.getDeviationGain(), theParameters.getNoiseMethod(),
             theParameters.gettLow(), theParameters.gettHigh());
@@ -310,9 +304,7 @@ public class PhaseCongruencyDetectorPyramidal {
      * @param k number of standard deviations of the noise energy beyond the 
      * mean at which we set the noise threshold point.  You may want to vary this
        up to a value of 10 or 20 for noisy images.
-       @param increaseKIfNeeded if the number of points in the thinned pc
-       * is very high, this allows k to be increased, pc to be recalculated,
-       * and a result of smaller number of points in the thinned image.
+      
      * @param cutOff The fractional measure of frequency spread below which phase 
      * congruency values get penalized
      * @param g Controls the sharpness of the transition in the sigmoid function 
@@ -351,17 +343,12 @@ public class PhaseCongruencyDetectorPyramidal {
      */    
     public PhaseCongruencyProducts phaseCongMono(GreyscaleImage img,
         final int nScale, final int minWavelength, final float mult,
-        final float sigmaOnf, int k, final boolean increaseKIfNeeded,
+        final float sigmaOnf, int k,
         final float cutOff,
         final float g, final float deviationGain, final int noiseMethod,
         final double tLow, final double tHigh) {
         
         long t0 = System.currentTimeMillis();
-              
-        if (increaseKIfNeeded && (noiseMethod >= 0)) {
-            throw new IllegalArgumentException(
-                "if noiseMethod >= 0, there is no dependency on k");
-        }
         
         int nCols = img.getWidth();
         int nRows = img.getHeight();
@@ -781,65 +768,8 @@ public class PhaseCongruencyDetectorPyramidal {
         double[][] thinnedPC = ns.nonmaxsup(products.getPhaseCongruency(), 
             products.getOrientation(), 1.2, new HashSet<PairInt>());         
         
-        // NOTE: limit does not scale with resolution, so user may want to
-        // pre-process images to a common resolution or size depending upon goal
-        if (increaseKIfNeeded) {
-            
-            // count number edge points
-            int nEdgePoints = countEdgePoints(products, thinnedPC, tLow, tHigh);
-            
-            System.out.println("nEdgePoints=" + nEdgePoints);
-        
-            int limit = 50000;
-            int lastK = k;
-            while (nEdgePoints > limit) {
-                
-                // k can be as high as 20
-                int deltaK = Math.round(0.333f * (20 - lastK));
-                if (deltaK < 1) {
-                    deltaK = 1;
-                }
-                k = lastK + deltaK;
-                
-                if (k >= 20) {
-                    break;
-                }
-                
-                lastK = k;
-                
-                if (noiseMethod < 0) {
-                    
-                    double totalTau = tau * (1. - Math.pow((1./mult), nScale))/(1. - (1./mult));
-                    double EstNoiseEnergyMean = totalTau * Math.sqrt(Math.PI/2.);
-                    double EstNoiseEnergySigma = totalTau * Math.sqrt((4. - Math.PI)/2.);
-                    threshold = Math.max(EstNoiseEnergyMean 
-                        + ((float)k) * EstNoiseEnergySigma, epsilon);
-                }
-                
-                for (int row = 0; row < nRows; ++row) {
-                    for (int col = 0; col < nCols; ++col) {
-                        double eDiv = Math.acos(energy[row][col] / (sumAn[row][col] + epsilon));
-                        double a = weight[row][col]
-                            * Math.max(1. - deviationGain * eDiv, 0)/
-                            (energy[row][col] + epsilon);
-                        pc[row][col] = a * Math.max(energy[row][col] - threshold, 0);
-                    }
-                }
-
-                products = new PhaseCongruencyProducts(pc, orientation, ft, 
-                    threshold);
-
-                thinnedPC = ns.nonmaxsup(products.getPhaseCongruency(), 
-                    products.getOrientation(), 1.2,  new HashSet<PairInt>());
-
-                nEdgePoints = countEdgePoints(products, thinnedPC, tLow, tHigh);
-                
-                System.out.println("nEdgePoints=" + nEdgePoints);
-            }
-        }
-        
         products.setParameters(nScale, minWavelength, mult, sigmaOnf, k, cutOff,
-            g, deviationGain, noiseMethod, tLow, tHigh, increaseKIfNeeded);
+            g, deviationGain, noiseMethod, tLow, tHigh);
         
         int[][] thinned = createEdges(products.getPhaseCongruency(), thinnedPC, 
             products.getPhaseAngle(), pcLgNz, tLow, tHigh);
@@ -1651,13 +1581,12 @@ public class PhaseCongruencyDetectorPyramidal {
 
         private void setParameters(int nScale, int minWavelength, float mult, 
             float sigmaOnf, int k, float cutOff, float g, float deviationGain, 
-            int noiseMethod, double tLow, double tHigh, boolean increaseKIfNeeded) {
+            int noiseMethod, double tLow, double tHigh) {
             
             this.parameters = new PhaseCongruencyParameters();
             
             parameters.setParameters(nScale, minWavelength, mult, sigmaOnf, k,
-                cutOff, g, deviationGain, noiseMethod, tLow, tHigh, 
-                increaseKIfNeeded);            
+                cutOff, g, deviationGain, noiseMethod, tLow, tHigh);            
         }
         
         private void setParameters(PhaseCongruencyParameters params) {

@@ -39,23 +39,9 @@ public class CSSCornerMaker2Test extends TestCase {
         int nCols = img.getWidth();
         int nRows = img.getHeight();
         
-        float cutOff = 0.5f;//0.3f;//0.5f;
-        int nScale = 5;//5;
-        int minWavelength = nScale;//3;
-        float mult = 2.1f;
-        float sigmaOnf = 0.55f;
-        int k = 5;//10;//2;
-        float g = 10; 
-        float deviationGain = 1.5f;
-        int noiseMethod = -1;
-        double tLow = 0.1;
-        double tHigh = 0.3;
-        boolean increaseKIfNeeded = false;
         PhaseCongruencyDetector phaseCDetector = new PhaseCongruencyDetector();
         PhaseCongruencyDetector.PhaseCongruencyProducts products =
-            phaseCDetector.phaseCongMono(img, nScale, minWavelength, mult, 
-                sigmaOnf, k, increaseKIfNeeded,
-                cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
+            phaseCDetector.phaseCongMono(img);
         assertNotNull(products);
         
         Image tmp = new Image(nCols, nRows);
@@ -172,23 +158,9 @@ public class CSSCornerMaker2Test extends TestCase {
         int nCols = img.getWidth();
         int nRows = img.getHeight();
         
-        float cutOff = 0.5f;//0.3f;//0.5f;
-        int nScale = 5;//5;
-        int minWavelength = nScale;//3;
-        float mult = 2.1f;
-        float sigmaOnf = 0.55f;
-        int k = 5;//10;//2;
-        float g = 10; 
-        float deviationGain = 1.5f;
-        int noiseMethod = -1;
-        double tLow = 0.1;
-        double tHigh = 0.3;
-        boolean increaseKIfNeeded = false;
         PhaseCongruencyDetector phaseCDetector = new PhaseCongruencyDetector();
         PhaseCongruencyDetector.PhaseCongruencyProducts products =
-            phaseCDetector.phaseCongMono(img, nScale, minWavelength, mult, 
-                sigmaOnf, k, increaseKIfNeeded,
-                cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
+            phaseCDetector.phaseCongMono(img);
         assertNotNull(products);
         
         EdgeExtractorSimple edgeExtractor = new EdgeExtractorSimple(

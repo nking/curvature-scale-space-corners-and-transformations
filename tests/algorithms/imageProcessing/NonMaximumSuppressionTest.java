@@ -1,12 +1,10 @@
 package algorithms.imageProcessing;
 
-import algorithms.imageProcessing.features.PhaseCongruencyDetector;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
 import java.util.HashSet;
 import junit.framework.TestCase;
-import static junit.framework.TestCase.assertNotNull;
 
 /**
  *

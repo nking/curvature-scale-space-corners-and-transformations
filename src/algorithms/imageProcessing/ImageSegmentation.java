@@ -4310,29 +4310,14 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
         GreyscaleImage gsImg = img.copyBlueToGreyscale();
 
-        float cutOff = 0.5f;//0.3f;//0.5f;
-        int nScale = 5;
-        int minWavelength = 3;//nScale;// 3;
-        float mult = 2.1f;
-        float sigmaOnf = 0.55f;
-        int k;
-        if (reduceNoise) {
-            k = 5;
-        } else {
-            k = 2;
-        }
-        float g = 10;
-        float deviationGain = 1.5f;
-        int noiseMethod = -1;
-        double tLow = 0.0001;
-        double tHigh = 0.1;
-        boolean increaseKIfNeeded = false;//true;
-
         PhaseCongruencyDetector phaseDetector = new PhaseCongruencyDetector();
+        if (reduceNoise) {
+            phaseDetector.setK(5);
+        } else {
+            phaseDetector.setK(2);
+        }
         PhaseCongruencyDetector.PhaseCongruencyProducts products =
-            phaseDetector.phaseCongMono(gsImg, nScale, minWavelength, mult,
-            sigmaOnf, k, increaseKIfNeeded,
-            cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
+            phaseDetector.phaseCongMono(gsImg);
 
         int[][] thinned = products.getThinned();
         {
@@ -10581,25 +10566,13 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
     private PhaseCongruencyDetector.PhaseCongruencyProducts
         createPhaseCongruency(GreyscaleImage img) {
 
-        float cutOff = 0.5f;//0.3f;//0.5f;
-        int nScale = 5;
-        int minWavelength = 3;//nScale;//3;
-        float mult = 2.1f;
-        float sigmaOnf = 0.55f;
-        int k = 2;
-        float g = 10;
-        float deviationGain = 1.5f;
-        int noiseMethod = -1;
-        double tLow = 0.05;
-        double tHigh = 0.1;
-        boolean increaseKIfNeeded = false;
-        PhaseCongruencyDetector pcd = new PhaseCongruencyDetector();
-        PhaseCongruencyDetector.PhaseCongruencyProducts pr
-            = pcd.phaseCongMono(img, nScale, minWavelength, mult,
-            sigmaOnf, k, increaseKIfNeeded,
-            cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
+        PhaseCongruencyDetector phaseDetector = new PhaseCongruencyDetector();
+        phaseDetector.setK(2);
+        
+        PhaseCongruencyDetector.PhaseCongruencyProducts products =
+            phaseDetector.phaseCongMono(img);
 
-        return pr;
+        return products;
     }
 
     private void growAndErode(GreyscaleImage img) {
@@ -10738,24 +10711,11 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
     public EdgeFilterProducts createPhaseCongruencyGradient(
         GreyscaleImage img) {
         
-        float cutOff = 0.5f;//0.3f;//0.5f;
-        int nScale = 5;
-        int minWavelength = 3;//nScale;//3;
-        float mult = 2.1f;
-        float sigmaOnf = 0.55f;
-        int k = 2;
-        float g = 10;
-        float deviationGain = 1.5f;
-        int noiseMethod = -1;
-        double tLow = 0.05;
-        double tHigh = 0.1;
-        boolean increaseKIfNeeded = false;
-
-        PhaseCongruencyDetector pcd = new PhaseCongruencyDetector();
-        PhaseCongruencyDetector.PhaseCongruencyProducts pr
-            = pcd.phaseCongMono(img, nScale, minWavelength, mult,
-            sigmaOnf, k, increaseKIfNeeded,
-            cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
+        PhaseCongruencyDetector phaseDetector = new PhaseCongruencyDetector();
+        phaseDetector.setK(2);
+        
+        PhaseCongruencyDetector.PhaseCongruencyProducts pr =
+            phaseDetector.phaseCongMono(img);
 
         EdgeFilterProducts products = new EdgeFilterProducts();
 
@@ -11917,19 +11877,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
         GreyscaleImage gsImg = img.copyBlueToGreyscale();
 
-        float cutOff = 0.5f;//0.3f;//0.5f;
-        int nScale = 5;
-        int minWavelength = 3;//nScale;// 3;
-        float mult = 2.1f;
-        float sigmaOnf = 0.55f;
-        int k = 10;//5;//2;
-        float g = 10;
-        float deviationGain = 1.5f;
-        int noiseMethod = -1;
-        double tLow = 0.0001;
-        double tHigh = 0.1;
-        boolean increaseKIfNeeded = false;//true;
-
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
 
@@ -11940,10 +11887,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         final int hN = 2;//3;
 
         PhaseCongruencyDetector phaseDetector = new PhaseCongruencyDetector();
+        
         PhaseCongruencyDetector.PhaseCongruencyProducts products =
-            phaseDetector.phaseCongMono(gsImg, nScale, minWavelength, mult,
-            sigmaOnf, k, increaseKIfNeeded,
-            cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
+            phaseDetector.phaseCongMono(gsImg);
 
         int[][] thinned = products.getThinned();
         {
@@ -12218,19 +12164,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
      */
     public GreyscaleImage createColorEdges_1(Image img, int cellSize) {
 
-        float cutOff = 0.5f;//0.3f;//0.5f;
-        int nScale = 5;//4
-        int minWavelength = 3;//nScale;// 3;
-        float mult = 2.1f;
-        float sigmaOnf = 0.55f;
-        int k = 10;//2;
-        float g = 10;
-        float deviationGain = 1.5f;
-        int noiseMethod = -1;
-        double tLow = 0.001;
-        double tHigh = 0.1;
-        boolean increaseKIfNeeded = false;
-
         int width = img.getWidth();
         int height = img.getHeight();
         int x0 = 0;
@@ -12297,10 +12230,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     }
 
                     PhaseCongruencyDetector phaseDetector = new PhaseCongruencyDetector();
-                    PhaseCongruencyDetector.PhaseCongruencyProducts products
-                        = phaseDetector.phaseCongMono(img2, nScale, minWavelength, mult,
-                            sigmaOnf, k, increaseKIfNeeded,
-                            cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
+        
+                    PhaseCongruencyDetector.PhaseCongruencyProducts products =
+                        phaseDetector.phaseCongMono(img2);
+        
                     int[][] thinned = products.getThinned();
                     assert(thinned.length == szX);
                     assert(thinned[0].length == szY);
