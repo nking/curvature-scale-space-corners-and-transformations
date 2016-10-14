@@ -826,6 +826,11 @@ public class PhaseCongruencyDetector {
         
         if (extractNoise) {
             
+            /*
+            using a higher k=7, subtracting the thinned results from the default
+            thinned image.
+            */
+            
             double[][] pcLowNz = copy(products.getPhaseCongruency());
             for (int row = 0; row < nRows; ++row) {
                 for (int col = 0; col < nCols; ++col) {
@@ -855,6 +860,23 @@ public class PhaseCongruencyDetector {
             if (doPlot) {
                 MiscDebug.writeImage(pcLowNz, "_a_noise_");
             }
+            
+            /*
+            -- from all thinned points in the default image, determining
+               clusters.
+            -- creating a histogram of the cluster sizes
+            -- finding the peak of the histogram as the approx limit of
+               cluster sizes, below which are less often edge points.
+            -- creating a distance transform of the low noise
+               thinned points plus the cluster points from clusters that
+               are 3 times the size of the cluster limit.
+            -- extracting the small clusters less than the size limit
+               from the distance transform results to get their
+               distances from nearest edges essentially with the
+               assumption that the representative textures will be further
+               away from the edges.
+            -- sorting those points by decreasing distance.
+            */
             
             Set<PairIntWithIndex> points2 
                 = new HashSet<PairIntWithIndex>();
@@ -951,8 +973,13 @@ public class PhaseCongruencyDetector {
             QuickSort.descendingSort(dist, points);
 
             int z = 1;            
-            //  make a distance transform of noise from thinned.
-            //  choose the furthest in those as candidates for textures.
+           
+            /*            
+            will next examine color histograms of the snallest clusters
+            then texture statistics such as density.
+            (the density is known by the cluster code so might edit that
+            to export that information...)
+            */
             //  -- look at density stats, perhaps following 
             //     stats in Malik et al. 2001 (but not their filters).
             //     -- color histograms probably useful to add for insprcting
