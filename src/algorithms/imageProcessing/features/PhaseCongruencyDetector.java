@@ -49,7 +49,7 @@ import java.util.logging.Logger;
 
 /**
  An edge detector that uses principles of phase congruency to create an edge
- * map and orientation and phase angle images.  
+ * map and orientation and phase angle images.
  * Phase congruency operates in the frequency domain of fourier transforms and
  * with the inverse FFT produces an image that is summed over scales and
  * cleaned of some of the noise.
@@ -57,16 +57,16 @@ import java.util.logging.Logger;
  * in the frequency domain produced from feature edges in the spatial domain.
  * <pre>
  * The phase congruency method is thought to be better able to find edges
- * under varying illumination conditions.  It also has the characteristic of 
+ * under varying illumination conditions.  It also has the characteristic of
  * producing a single response to an edge (in contrast to many spatial gradient
  * methods which for blurry edges, especially, produce a double response in
  * the gradient image).
  * </pre>
- * Currently, the corners are produced using curvature scale curvature 
+ * Currently, the corners are produced using curvature scale curvature
  * calculations for the extracted edge points.
  * Alternative corner methods may be offered in the future.
  * Note that edge detector follows the codes referenced below.
- * Also note that the Peter Kovesi implementation of Phase Congruency detector 
+ * Also note that the Peter Kovesi implementation of Phase Congruency detector
  * before this version which uses monogenic filters, produced a corner map using
  * minimum moments from the phase congruency energy over 6 angles.  That method
  * may be implemented separately from this class in the future because
@@ -77,27 +77,27 @@ import java.util.logging.Logger;
  * For further reading other than the references below, a summary of band-pass
  * quadrature filters is in
  * https://www.utc.fr/~dboukerr/Papers/Qf_JMIV_2004.pdf
- * 
- * Listings of copyrights for the original source codes in languages Matlab and 
+ *
+ * Listings of copyrights for the original source codes in languages Matlab and
  * python follow:
- * 
- adapted from 
+ *
+ adapted from
   http://www.peterkovesi.com/matlabfns/PhaseCongruency/phasecongmono.m
   which has copyright:
   Copyright (c) 1996-2013 Peter Kovesi
   Centre for Exploration Targeting
   The University of Western Australia
   peter.kovesi at uwa edu au
-  
+
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
   in the Software without restriction, subject to the following conditions:
-  
-  The above copyright notice and this permission notice shall be included in 
+
+  The above copyright notice and this permission notice shall be included in
   all copies or substantial portions of the Software.
- 
+
   The Software is provided "as is", without warranty of any kind.
- 
+
  * useful also was the python phasepack port by Alistair Muldal
  *  http://pydoc.net/Python/phasepack/1.4/phasepack.phasecongmono/
  * which has the following copyright:
@@ -112,24 +112,24 @@ import java.util.logging.Logger;
 # all copies or substantial portions of the Software.
 
 # The software is provided "as is", without warranty of any kind.
-# 
+#
 % =========================================
-* 
-% Notes on specifying parameters:  
+*
+% Notes on specifying parameters:
 %
 % The convolutions are done via the FFT.  Many of the parameters relate to the
 % specification of the filters in the frequency plane.  The values do not seem
 % to be very critical and the defaults are usually fine.  You may want to
 % experiment with the values of 'nscales' and 'k', the noise compensation
 % factor.
-* 
+*
 % Notes on filter settings to obtain even coverage of the spectrum
 % sigmaOnf       .85   mult 1.3
 % sigmaOnf       .75   mult 1.6     (filter bandwidth ~1 octave)
-% sigmaOnf       .65   mult 2.1  
+% sigmaOnf       .65   mult 2.1
 % sigmaOnf       .55   mult 3       (filter bandwidth ~2 octaves)
 %
-% Note that better results are achieved using the large bandwidth filters.  
+% Note that better results are achieved using the large bandwidth filters.
 % I generally use a sigmaOnf value of 0.55 or even smaller.
 %
 % References:
@@ -137,7 +137,7 @@ import java.util.logging.Logger;
 %     Peter Kovesi, "Image Features From Phase Congruency". Videre: A
 %     Journal of Computer Vision Research. MIT Press. Volume 1, Number 3,
 %     Summer 1999 http://mitpress.mit.edu/e-journals/Videre/001/v13.html
-* 
+*
 *     Michael Felsberg and Gerald Sommer, "A New Extension of Linear Signal
 %     Processing for Estimating Local Properties and Detecting Features". DAGM
 %     Symposium 2000, Kiel
@@ -147,35 +147,35 @@ import java.util.logging.Logger;
 %
 %     Peter Kovesi, "Phase Congruency Detects Corners and Edges". Proceedings
 %     DICTA 2003, Sydney Dec 10-12
-  
-     runtime complexity of majority of algorithm is a constant factor, that 
+
+     runtime complexity of majority of algorithm is a constant factor, that
      depends upon parameters chosen, times O(N*lg_2(N)),
      but each operation uses a transcendental function.
 
      the advantage to using phase congruency is that it's possible to produce
-     consistent clean edges with less noise and representing a wide range of 
+     consistent clean edges with less noise and representing a wide range of
      intensity contrast.
 
  */
 public class PhaseCongruencyDetector {
-    
+
     final private static double epsilon = 1E-4;
-    
+
     private boolean determineCorners = false;
-    
+
     private boolean doPlot = false;
-    
+
     private boolean extractNoise = false;
-    
+
     /**
-     * number of wavelet scales.  a lower value reveals more fine 
+     * number of wavelet scales.  a lower value reveals more fine
      * scale features.  The default is 5.
      */
-    private int nScale = 5; 
+    private int nScale = 5;
     /**
      * wavelength of smallest scale filter.  The default is 3.
      */
-    private int minWavelength = 3;        
+    private int minWavelength = 3;
     /**
      * scaling factor between successive filters.  The default is 2.1.
      */
@@ -197,7 +197,7 @@ public class PhaseCongruencyDetector {
      * The fractional measure of frequency spread below which phase
      * congruency values get penalized.  The default is 0.5f.
      */
-    private float cutOff = 0.5f; 
+    private float cutOff = 0.5f;
     /**
      * Controls the sharpness of the transition in the sigmoid function
      * used to weight phase congruency for frequency spread.  The default is 10.
@@ -233,19 +233,19 @@ public class PhaseCongruencyDetector {
      * a flag indicating use of adaptive thresholds in the 2 layer filter
      */
     private boolean useAdaptiveThreshold = true;
-        
+
     public PhaseCongruencyDetector() {
-        
+
     }
-    
+
     public void setToDebug() {
         doPlot = true;
     }
-    
+
     public void setToCreateCorners() {
         this.determineCorners = true;
     }
-    
+
     /**
      * noise is extracted and textures are examined.  this
      * feature name may change depending upon results in progress.
@@ -259,16 +259,16 @@ public class PhaseCongruencyDetector {
         }
         this.extractNoise = true;
     }
-        
+
     /**
      * set the number of wavelet scales.
-     * @param n number of wavelet scales.  a lower value reveals more fine 
+     * @param n number of wavelet scales.  a lower value reveals more fine
      * scale features.  The default is 5.
      */
     public void setNScales(int n) {
         nScale = n;
     }
-    
+
     /**
      * set the scale number of the smallest scale filter.
      * @param m wavelength of smallest scale filter.  The default is 3.
@@ -276,29 +276,29 @@ public class PhaseCongruencyDetector {
     public void setMinWavelength(int m) {
         minWavelength = m;
     }
-    
+
     /**
-     * 
+     *
      * @param f scaling factor between successive filters.  The default is 2.1.
      */
     public void setMult(float f) {
         mult = f;
     }
-    
+
     /**
-     * 
-     * @param s ratio of standard deviation of Gaussian describing the 
-     * log Gabor's filter's transfer function in the frequency domain to the 
+     *
+     * @param s ratio of standard deviation of Gaussian describing the
+     * log Gabor's filter's transfer function in the frequency domain to the
      * filter center frequency.  The default is 0.55f.
      */
     public void setSigmaOnf(float s) {
         sigmaOnf = s;
     }
-    
+
     /**
-     * 
-     * @param k number of standard deviations of the noise energy beyond the 
-     * mean at which we set the noise threshold point.  You may want to vary 
+     *
+     * @param k number of standard deviations of the noise energy beyond the
+     * mean at which we set the noise threshold point.  You may want to vary
      * this up to a value of 10 or 20 for noisy images.
        The default is 5.
      */
@@ -310,40 +310,40 @@ public class PhaseCongruencyDetector {
         }
         this.k = k;
     }
-    
+
     /**
-     * 
-     * @param c The fractional measure of frequency spread below which phase 
+     *
+     * @param c The fractional measure of frequency spread below which phase
      * congruency values get penalized.  The default is 0.5f.
      */
     public void setCutOff(float c) {
         cutOff = c;
     }
-    
+
     /**
-     * 
-     * @param g Controls the sharpness of the transition in the sigmoid function 
+     *
+     * @param g Controls the sharpness of the transition in the sigmoid function
      * used to weight phase congruency for frequency spread.  The default is 10.
      */
     public void setG(int g) {
         this.g = g;
     }
-    
+
     /**
-     * 
-     * @param d Amplification to apply to the calculated phase 
-     * deviation result.  Increasing this sharpens the edge responses, but can 
-     * also attenuate their magnitude if the gain is too large.  Sensible values 
+     *
+     * @param d Amplification to apply to the calculated phase
+     * deviation result.  Increasing this sharpens the edge responses, but can
+     * also attenuate their magnitude if the gain is too large.  Sensible values
      * to use lie in the range 1-2.  The default is 1.5f.
      */
     public void setDevitionGain(float d) {
         deviationGain = d;
     }
-    
+
     /**
-     * 
-     * @param m Parameter specifies method used to determine noise 
-     * statistics: -1 use median of smallest scale filter responses; 
+     *
+     * @param m Parameter specifies method used to determine noise
+     * statistics: -1 use median of smallest scale filter responses;
      * -2 use mode of smallest scale filter responses;
      * 0 turns off all noise compensation; and
      * > 0 use noiseMethod value as the fixed noise threshold.
@@ -356,18 +356,18 @@ public class PhaseCongruencyDetector {
         }
         this.noiseMethod = m;
     }
-    
+
     /**
-     * 
+     *
      * @param tLow the low threshold fraction of 1.
      * The default is 0.1.
      */
     public void setLowThreshold(double tLow) {
         this.tLow = tLow;
     }
-    
+
     /**
-     * 
+     *
      * @param t the high threshold fraction of 1.  The default is 0.3.
      * Note that this is ignored if useAdaptiveThreshold is true, which it is
      * by default.
@@ -375,64 +375,64 @@ public class PhaseCongruencyDetector {
     public void setHighThreshold(double t) {
         this.tHigh = t;
     }
-    
+
     /**
-     * turn off the use of adaptive thresholds in the 2 layer filter, and 
+     * turn off the use of adaptive thresholds in the 2 layer filter, and
      * instead use tLow and tHigh only.
      */
     public void setToNotUseAdaptiveThreshold() {
         this.useAdaptiveThreshold = false;
     }
-    
+
     /**
      * use the phase congruency method of transformations to create
      * edge maps, orientation, phase angle and a suggested threshold.
      * @param img
-     * @return 
+     * @return
        <pre>
        NOTE: the return products use row major and column major notation, so
        read the method products getters carefully.
-       
+
        Returned values:
-         phaseCongruency  - Phase congruency indicating edge significance 
+         phaseCongruency  - Phase congruency indicating edge significance
                             (values are in range 0 to 1.)
          orientation      - Orientation image in integer degrees 0-180,
                             positive anticlockwise.
                             0 corresponds to a vertical edge, 90 is horizontal.
-         phaseAngle       - Local weighted mean phase angle at every point in 
-                            the image. A value of 
-                                pi/2 corresponds to a bright line, 
-                                0 corresponds to a step and 
+         phaseAngle       - Local weighted mean phase angle at every point in
+                            the image. A value of
+                                pi/2 corresponds to a bright line,
+                                0 corresponds to a step and
                                 -pi/2 is a dark line.
          threshold        - Calculated noise threshold (can be useful for
-                            diagnosing noise characteristics of images).  
-                            Once you know this you can then specify fixed 
+                            diagnosing noise characteristics of images).
+                            Once you know this you can then specify fixed
                             thresholds and save some computation time.
       </pre>
      */
     public PhaseCongruencyProducts phaseCongMono(GreyscaleImage img) {
-        
+
         long t0 = System.currentTimeMillis();
-        
+
         int nCols = img.getWidth();
         int nRows = img.getHeight();
-        
+
         final int nOrigCols = nCols;
         final int nOrigRows = nRows;
-        
+
         //Periodic Fourier transform of image, using default normalization
         // perfft2 results use notation a[row][col]
         PeriodicFFT perfft2 = new PeriodicFFT();
-        //IM = perfft2(im);                   % 
+        //IM = perfft2(im);                   %
         //S, P, s, p where S = FFT of smooth, P = FFT of periodic, s=spatial smooth, p = spatial p
         Complex[][][] perfResults = perfft2.perfft2(img, false);
         Complex[][] capIm = perfResults[1];
-          
+
         /*
         sumAn  = zeros(rows,cols);          % Matrix for accumulating filter response
                                             % amplitude values.
-        sumf   = zeros(rows,cols);          % ft is phase angle                   
-        sumh1  = zeros(rows,cols);                                      
+        sumf   = zeros(rows,cols);          % ft is phase angle
+        sumh1  = zeros(rows,cols);
         sumh2  = zeros(rows,cols);
         */
         double[][] sumAn = new double[nRows][];
@@ -445,15 +445,15 @@ public class PhaseCongruencyDetector {
             sumH1[row] = new double[nCols];
             sumH2[row] = new double[nCols];
         }
-        
+
         /*
-        Generate grid data for constructing filters in the frequency domain    
+        Generate grid data for constructing filters in the frequency domain
         [radius, u1, u2] = filtergrid(rows, cols);
         */
         // results use notation a[row][col]
         FilterGrid fg = new FilterGrid();
-        FilterGridProducts fgProducts = fg.filtergrid(nRows, nCols);     
-        
+        FilterGridProducts fgProducts = fg.filtergrid(nRows, nCols);
+
         /*
         Get rid of the 0 radius value in the middle (at top left corner after
         fftshifting) so that taking the log of the radius, or dividing by the
@@ -461,11 +461,11 @@ public class PhaseCongruencyDetector {
          radius(1,1) = 1;
         */
         fgProducts.getRadius()[0][0] = 1;
-        
+
         /*
          % Construct the monogenic filters in the frequency domain.  The two
          % filters would normally be constructed as follows
-         %    H1 = i*u1./radius; 
+         %    H1 = i*u1./radius;
          %    H2 = i*u2./radius;
          % However the two filters can be packed together as a complex valued
          % matrix, one in the real part and one in the imaginary part.  Do this by
@@ -489,7 +489,7 @@ public class PhaseCongruencyDetector {
                 capH[row][col] = new Complex(re, im);
             }
         }
-        
+
         /*
          % First construct a low-pass filter that is as large as possible, yet falls
          % away to zero at the boundaries.  All filters are multiplied by
@@ -501,30 +501,30 @@ public class PhaseCongruencyDetector {
         // results use notation a[row][col]
         LowPassFilter lpFilter = new LowPassFilter();
         double[][] lp = lpFilter.lowpassfilter(nRows, nCols, 0.45f, 15);
-             
+
         ImageProcessor imageProcessor = new ImageProcessor();
-        
+
         double[][] maxAN = null;
-        
+
         double tau = noiseMethod;
         // keeping taus in case need to increase noise estimate
         double sqml4 = Math.sqrt(Math.log(4));
         double logGaborDenom = 2. * Math.pow(Math.log(sigmaOnf), 2);
-        
+
         double[][] width = new double[nRows][];
         double[][] weight = new double[nRows][];
         for (int row = 0; row < nRows; ++row) {
             width[row] = new double[nCols];
             weight[row] = new double[nCols];
         }
-        
+
         for (int s = 0; s < nScale; ++s) {
-        
+
             // Centre frequency of filter.
             double wavelength = minWavelength * Math.pow(mult, s);
-            
+
             double fo = 1.0/wavelength;
-                        
+
             // use notation a[row][col]
             double[][] logGabor = new double[nRows][];
             for (int row = 0; row < nRows; ++row) {
@@ -538,9 +538,9 @@ public class PhaseCongruencyDetector {
                 }
             }
             logGabor[0][0] = 0;
-            
+
             //DEBUG(logGabor, "s=" + s + " logGabor*low pass filter", s);
-            
+
             // uses notation a[row][col]
             //Bandpassed image in the frequency domain
             Complex[][] capIMF = new Complex[nRows][];
@@ -550,16 +550,16 @@ public class PhaseCongruencyDetector {
                    capIMF[row][col] = capIm[row][col].times(logGabor[row][col]);
                 }
             }
-            
+
             // uses notation a[row][col]
             //  Bandpassed image in spatial domain.
             //  f = real(ifft2(IMF));
-            // the functions used in other code are not normalized on fft, 
+            // the functions used in other code are not normalized on fft,
             // but are by inverse fft so need a combined division here by nomr=nRows*nCols
-            Complex[][] fComplex = imageProcessor.create2DFFT(capIMF, false, false);    
+            Complex[][] fComplex = imageProcessor.create2DFFT(capIMF, false, false);
 
             double norm = nRows * nCols;
-        
+
             //h = ifft2(IMF.*H);
             Complex[][] capIMFH = new Complex[nRows][];
             for (int row = 0; row < nRows; ++row) {
@@ -570,10 +570,10 @@ public class PhaseCongruencyDetector {
             }
             // result needs to be divided by norm=nRows*nCols
             Complex[][] h = imageProcessor.create2DFFT(capIMFH, false, false);
- 
+
             /*
-            h1 = real(h); 
-            h2 = imag(h);                                  
+            h1 = real(h);
+            h2 = imag(h);
             An = sqrt(f.^2 + h1.^2 + h2.^2); % Amplitude of this scale component.
             sumAn = sumAn + An;              % Sum of component amplitudes over scale.
             sumf  = sumf  + f;
@@ -596,10 +596,10 @@ public class PhaseCongruencyDetector {
                     sumH2[row][col] += h2;
                 }
             }
-         
+
             /*
             At the smallest scale estimate noise characteristics from the
-            distribution of the filter amplitude responses stored in sumAn. 
+            distribution of the filter amplitude responses stored in sumAn.
             tau is the Rayleigh parameter that is used to describe the
             distribution.
             */
@@ -621,7 +621,7 @@ public class PhaseCongruencyDetector {
             } else {
                 // Record maximum amplitude of components across scales.  This is needed
                 // to determine the frequency spread weighting.
-                //maxAN = max(maxAN, An); 
+                //maxAN = max(maxAN, An);
                 // uses notation a[row][col]
                 for (int row = 0; row < nRows; ++row) {
                     for (int col = 0; col < nCols; ++col) {
@@ -629,7 +629,7 @@ public class PhaseCongruencyDetector {
                     }
                 }
             }
-            
+
             /*
             Form weighting that penalizes frequency distributions that are
             particularly narrow.  Calculate fractional 'width' of the frequencies
@@ -637,10 +637,10 @@ public class PhaseCongruencyDetector {
             by the maximum component amplitude at each point on the image.  If
             there is only one non-zero component width takes on a value of 0, if
             all components are equal width is 1.
-            width = (sumAn./(maxAn + epsilon) - 1) / (nscale-1);    
+            width = (sumAn./(maxAn + epsilon) - 1) / (nscale-1);
 
             Now calculate the sigmoidal weighting function.
-            weight = 1.0 ./ (1 + exp( (cutOff - width)*g)); 
+            weight = 1.0 ./ (1 + exp( (cutOff - width)*g));
             */
             // uses notation a[row][col]
 
@@ -657,7 +657,7 @@ public class PhaseCongruencyDetector {
                 }
             }
         } // end for each scale
-        
+
         /*
         Automatically determine noise threshold
 
@@ -680,7 +680,7 @@ public class PhaseCongruencyDetector {
         allow you to produce the desired output. (though the value of k seems to
         be not at all critical)
         */
-        
+
         // uses notation a[row][col]
         // ft is phase angle
         double[][] orientation = new double[nRows][];
@@ -693,7 +693,7 @@ public class PhaseCongruencyDetector {
             energy[row] = new double[nCols];
             pc[row] = new double[nCols];
         }
-        
+
         for (int row = 0; row < nRows; ++row) {
             for (int col = 0; col < nCols; ++col) {
                 double gY = -sumH2[row][col];
@@ -709,32 +709,32 @@ public class PhaseCongruencyDetector {
                 // orientation values now range 0 - pi
                 // Quantize to 0 - 180 degrees (for NONMAXSUP)
                 orientation[row][col] = (int)(orientation[row][col]*180./Math.PI);
-                
+
                 double h1Sq = sumH1[row][col];
                 h1Sq *= h1Sq;
                 double h2Sq = sumH2[row][col];
                 h2Sq *= h2Sq;
-                
+
                 //Feature type - a phase angle -pi/2 to pi/2.
                 ft[row][col] = Math.atan2(sumF[row][col], Math.sqrt(h1Sq + h2Sq));
-                
+
                 //overall energy
                 double v0 = sumF[row][col];
                 v0 *= v0;
                 energy[row][col] = Math.sqrt(v0 + h1Sq + h2Sq);
             }
         }
-        
+
         /*
-        % Compute phase congruency.  The original measure, 
-        % PC = energy/sumAn 
+        % Compute phase congruency.  The original measure,
+        % PC = energy/sumAn
         % is proportional to the weighted cos(phasedeviation).  This is not very
         % localised so this was modified to
-        % PC = cos(phasedeviation) - |sin(phasedeviation)| 
+        % PC = cos(phasedeviation) - |sin(phasedeviation)|
         % (Note this was actually calculated via dot and cross products.)  This measure
-        % approximates 
+        % approximates
         % PC = 1 - phasedeviation.
-        
+
         % However, rather than use dot and cross products it is simpler and more
         % efficient to simply use acos(energy/sumAn) to obtain the weighted phase
         % deviation directly.  Note, in the expression below the noise threshold is
@@ -748,10 +748,10 @@ public class PhaseCongruencyDetector {
         PC = weight.*max(1 - deviationGain*acos(energy./(sumAn + epsilon)),0) ...
               .* max(energy-T,0)./(energy+epsilon);
         */
-        
+
         double threshold;
         double thresholdLowNz = -1;
-        if (noiseMethod >= 0) { 
+        if (noiseMethod >= 0) {
             //fixed noise threshold
             threshold = noiseMethod;
         } else {
@@ -769,16 +769,16 @@ public class PhaseCongruencyDetector {
             double EstNoiseEnergyMean = totalTau * Math.sqrt(Math.PI/2.);
             double EstNoiseEnergySigma = totalTau * Math.sqrt((4. - Math.PI)/2.);
 
-            threshold = Math.max(EstNoiseEnergyMean 
+            threshold = Math.max(EstNoiseEnergyMean
                 + ((float)k) * EstNoiseEnergySigma, epsilon);
-            
+
             if (extractNoise) {
                 // empirically, k=10 is chosen
-                thresholdLowNz = Math.max(EstNoiseEnergyMean 
+                thresholdLowNz = Math.max(EstNoiseEnergyMean
                     + 7.f * EstNoiseEnergySigma, epsilon);
             }
         }
-        
+
         double[][] lowNzFactors = null;
         if (extractNoise) {
             lowNzFactors = new double[nRows][];
@@ -786,20 +786,20 @@ public class PhaseCongruencyDetector {
                 lowNzFactors[row] = new double[nCols];
             }
         }
-        
+
         for (int row = 0; row < nRows; ++row) {
             for (int col = 0; col < nCols; ++col) {
-                
+
                 double eDiv = Math.acos(energy[row][col]/(sumAn[row][col] + epsilon));
-                
-                double a = weight[row][col] 
-                    * Math.max(1. - deviationGain * eDiv, 0) 
+
+                double a = weight[row][col]
+                    * Math.max(1. - deviationGain * eDiv, 0)
                     / (energy[row][col] + epsilon);
-                
+
                 double eMax = Math.max(energy[row][col] - threshold, 0);
-                
+
                 pc[row][col] = a * eMax;
-                
+
                 if (extractNoise) {
                     lowNzFactors[row][col] = Math.max(energy[row][col] -
                         thresholdLowNz, 0);
@@ -807,30 +807,30 @@ public class PhaseCongruencyDetector {
                 }
             }
         }
-        
-        PhaseCongruencyProducts products = new PhaseCongruencyProducts(pc, 
-            orientation, ft, threshold);      
-        
+
+        PhaseCongruencyProducts products = new PhaseCongruencyProducts(pc,
+            orientation, ft, threshold);
+
         NonMaximumSuppression ns = new NonMaximumSuppression();
-        
-        double[][] thinnedPC = ns.nonmaxsup(products.getPhaseCongruency(), 
-            products.getOrientation(), 1.2, new HashSet<PairInt>());         
-        
+
+        double[][] thinnedPC = ns.nonmaxsup(products.getPhaseCongruency(),
+            products.getOrientation(), 1.2, new HashSet<PairInt>());
+
         products.setParameters(nScale, minWavelength, mult, sigmaOnf, k, cutOff,
             g, deviationGain, noiseMethod, tLow, tHigh);
-        
-        int[][] thinned = createEdges(products.getPhaseCongruency(), thinnedPC, 
+
+        int[][] thinned = createEdges(products.getPhaseCongruency(), thinnedPC,
             products.getPhaseAngle(), tLow, tHigh);
-        
+
         products.setThinnedImage(thinned);
-        
+
         if (extractNoise) {
-            
+
             /*
             using a higher k=7, subtracting the thinned results from the default
             thinned image.
             */
-            
+
             double[][] pcLowNz = copy(products.getPhaseCongruency());
             for (int row = 0; row < nRows; ++row) {
                 for (int col = 0; col < nCols; ++col) {
@@ -841,14 +841,14 @@ public class PhaseCongruencyDetector {
                     }
                 }
             }
-            
-            int[][] thinnedLowNz = applyHysThresh(pcLowNz, 
+
+            int[][] thinnedLowNz = applyHysThresh(pcLowNz,
                 products.getPhaseAngle(), tLow, tHigh, true);
-            
+
             Set<PairInt> noisePoints = new HashSet<PairInt>();
-            
+
             int dtN = 0;
-            int[][] dt = new int[nRows][]; 
+            int[][] dt = new int[nRows][];
             for (int row = 0; row < nRows; ++row) {
                 dt[row] = new int[nCols];
                 for (int col = 0; col < nCols; ++col) {
@@ -867,9 +867,9 @@ public class PhaseCongruencyDetector {
                     }
                 }
             }
-            
+
             products.setNoiseyPixels(pcLowNz);
-            
+
             if (doPlot) {
                 int count = 0;
                 Image dbg0 = new Image(nCols, nRows);
@@ -878,65 +878,109 @@ public class PhaseCongruencyDetector {
                     ImageIOHelper.addPointToImage(p.getY(), p.getX(), dbg0,
                         1, clr[0], clr[1], clr[2]);
                     count++;
-                }            
+                }
                 MiscDebug.writeImage(dbg0, "_a_noise_");
+            }
+
+            /*
+            -- finding distance to non-noise points of the thinned default image
+               from the noise points using a distance transform
+            -- sorting those points by decreasing distance.
+            */
+
+            DistanceTransform dTrans = new DistanceTransform();
+            dt = dTrans.applyMeijsterEtAl(dt);
+
+            Set<PairIntWithIndex> points2
+                = new HashSet<PairIntWithIndex>();
+            for (PairInt p : noisePoints) {
+                points2.add(new PairIntWithIndex(p.getX(), p.getY(),
+                    points2.size()));
+            }
+            DTClusterFinder<PairIntWithIndex> cFinder
+                = new DTClusterFinder<PairIntWithIndex>(points2,
+                nRows + 1, nCols + 1);
+            //cFinder.setToDebug();
+            cFinder.setMinimumNumberInCluster(1);
+            cFinder.calculateCriticalDensity();
+            cFinder.findClusters();
+            final int n = cFinder.getNumberOfClusters();
+
+            float[] clusterSizes = new float[n];
+            Image dbg = new Image(nCols, nRows);
+            for (int i = 0; i < n; ++i) {
+                Set<PairIntWithIndex> set = cFinder.getCluster(i);
+                clusterSizes[i] = set.size();
+                int[] clr = ImageIOHelper.getNextRGB(i);
+                for (PairIntWithIndex p : set) {
+                    ImageIOHelper.addPointToImage(p.getY(), p.getX(), dbg,
+                        1, clr[0], clr[1], clr[2]);
+                }
+            }
+            MiscDebug.writeImage(dbg, "_a_noise_clusters_");
+            
+            HistogramHolder hist = Histogram.createSimpleHistogram(
+                0, 40, 20, clusterSizes, 
+                Errors.populateYErrorsBySqrt(clusterSizes));
+            int peakIdx = MiscMath.findYMaxIndex(hist.getYHist());
+            assert(peakIdx != -1); 
+            float sizeLimit = hist.getXHist()[peakIdx];
+            if (peakIdx < (hist.getXHist().length - 2)) {
+                sizeLimit = hist.getXHist()[peakIdx + 2];
             }
             
             /*
-            -- finding distance to non-noise points of the thinned default image
-               from the noise points using a distance transform 
-            -- sorting those points by decreasing distance.
+            peak y / peak x
+            273        for pc w/ much texture not in edges
+                     for pc w/o texture essentially
             */
-           
-            DistanceTransform dTrans = new DistanceTransform();
-            dt = dTrans.applyMeijsterEtAl(dt);
             
-            {
-                Set<PairIntWithIndex> points2
-                    = new HashSet<PairIntWithIndex>();
-                for (PairInt p : noisePoints) {
-                    points2.add(new PairIntWithIndex(p.getX(), p.getY(),
-                        points2.size()));
-                }
-                DTClusterFinder<PairIntWithIndex> cFinder
-                    = new DTClusterFinder<PairIntWithIndex>(points2, 
-                    nRows + 1, nCols + 1);
-                //cFinder.setToDebug();
-                cFinder.calculateCriticalDensity();
-                cFinder.findClusters();
-                final int n = cFinder.getNumberOfClusters();
-                
-                Image dbg = new Image(nCols, nRows);
-                for (int i = 0; i < n; ++i) {
-                    Set<PairIntWithIndex> set = cFinder.getCluster(i);
-                    int[] clr = ImageIOHelper.getNextRGB(i);
-                    for (PairIntWithIndex p : set) {
-                        ImageIOHelper.addPointToImage(p.getY(), p.getX(), dbg,
-                            1, clr[0], clr[1], clr[2]);
-                    }                    
-                }   
-                MiscDebug.writeImage(dbg, "_a_noise_clusters_");
+            System.out.println("nClusters=" + n 
+                + " peakHist y=" + hist.getYHist()[peakIdx] 
+                + " peakHist x=" + hist.getXHist()[peakIdx] 
+                + " nPix=" + img.getNPixels() + 
+                " peakX/nPix=" + 
+                (float)hist.getXHist()[peakIdx]/(float)img.getNPixels() +
+                " peakY/nPix=" + 
+                (float)hist.getYHist()[peakIdx]/(float)img.getNPixels()
+                + " peakY/peakX=" +
+                (float)hist.getYHist()[peakIdx]/(float)hist.getXHist()[peakIdx]
+            );
+            
+            try {
+                hist.plotHistogram("cluster sizes", "_cluster_sizes_");
+            } catch (IOException ex) {
+                Logger.getLogger(PhaseCongruencyDetector.class.getName()).log(Level.SEVERE, null, ex);
             }
-            
-            int n = noisePoints.size();
+
             int[] dist = new int[n];           
-            PairInt[] points = new PairInt[n];
+            int[] indexes = new int[n];
             int count = 0;
-            for (PairInt p : noisePoints) {
-                int d = dt[p.getX()][p.getY()];
-                if (d > 1) {
-                    dist[count] = d;
-                    points[count] = p;
+            for (int i = 0; i < n; ++i) {
+                Set<PairIntWithIndex> set = cFinder.getCluster(i);
+                if (set.size() > sizeLimit) {
+                    continue;
+                }
+                int sumD = 0;
+                int countD = 0;
+                for (PairIntWithIndex p : set) {
+                    if (pcLowNz[p.getX()][p.getY()] > 0 && dt[p.getX()][p.getY()] > 0) {
+                        sumD += dt[p.getX()][p.getY()];
+                        countD++;
+                    }
+                }
+                if (countD > 0) {
+                    indexes[count] = i;
+                    sumD /= countD;
+                    dist[count] = sumD;
                     count++;
                 }
             }
-            if (count < n) {
-                dist = Arrays.copyOf(dist, count);
-                points = Arrays.copyOf(points, count);
-            }
+            indexes = Arrays.copyOf(indexes, count);
+            dist = Arrays.copyOf(dist, count);
             
             // sort by decr dist
-            QuickSort.descendingSort(dist, points);
+            QuickSort.descendingSort(dist, indexes);
             
             if (doPlot) {
                 //histogram of point distances
@@ -945,8 +989,8 @@ public class PhaseCongruencyDetector {
                     values[i] = dist[i];
                 }
                 //TODO: consider xmax based on image size
-                HistogramHolder hist = Histogram.createSimpleHistogram(
-                    0, 400, 20, values, 
+                hist = Histogram.createSimpleHistogram(
+                    0, 400, 20, values,
                     Errors.populateYErrorsBySqrt(values));
 
                 try {
@@ -955,72 +999,75 @@ public class PhaseCongruencyDetector {
                     Logger.getLogger(PhaseCongruencyDetector.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
-            
+
             int end = 100;
             if (dist.length < end) {
                 end = dist.length;
             }
             Image dbg0 = new Image(nCols, nRows);
             for (int i = 0; i < end; ++i) {
-                PairInt p = points[i];
+                int idx = indexes[i];
                 int[] clr = ImageIOHelper.getNextRGB(i);
-                ImageIOHelper.addPointToImage(p.getY(), p.getX(), dbg0, 
-                    2, clr[0], clr[1], clr[2]);
+                Set<PairIntWithIndex> set = cFinder.getCluster(idx);
+                for (PairIntWithIndex p : set) {
+                    ImageIOHelper.addPointToImage(p.getY(), p.getX(), dbg0,
+                        1, clr[0], clr[1], clr[2]);
+                }
             }
             MiscDebug.writeImage(dbg0, "_a_texture_candidates_");
-            
-            /*            
+
+            /*
             will next examine color histograms of the snallest clusters
             then texture statistics such as density.
             (the density is known by the cluster code so might edit that
             to export that information...)
             */
-            //  -- look at density stats, perhaps following 
+            //  -- look at density stats, perhaps following
             //     stats in Malik et al. 2001 (but not their filters).
             //     -- color histograms probably useful to add for insprcting
             //        the noise groups.
-            //  -- consider designing a spatial frequency filter from 
+            //  -- consider designing a spatial frequency filter from
             //     a representative patch of the noise as texture.
             //     NOTE that there may be more than one pattern of textures in
             //     an image.  would be good to find a test image with
             //     vegetation and bricks or similar...
         }
-        
+
         //TODO: these convenience methods do not belong in this class...
         if (determineCorners) {
-            
+
             calculateHoughTransforms(products);
-                                                
+
             calculateCorners(products, img);
         }
-        
+
         if (nOrigCols < nCols || nOrigRows < nRows) {
             products = trimPaddedData(products, nOrigCols, nOrigRows);
         }
-        
+
         long t1 = System.currentTimeMillis();
-        
+
         System.out.println(((t1 - t0)*1E-3) + " seconds for phasecongmono");
-        
+
         return products;
     }
-    
+
     protected void calculateCorners(PhaseCongruencyProducts products,
         GreyscaleImage img) {
-                
+
         // only computing curvature for edge points
         int[][] edgeImage = products.getThinned();
-        
+
         int nRows = edgeImage.length;
-        int nCols = edgeImage[0].length;        
-        
+        int nCols = edgeImage[0].length;
+
         EdgeExtractorSimple edgeExtractor = new EdgeExtractorSimple(edgeImage);
         edgeExtractor.extractEdges();
-        
+
         Set<PairInt> junctions = edgeExtractor.getJunctions();
-        
+
         List<PairIntArray> theEdges = edgeExtractor.getEdges();
-        
+
         // ---- placing these in coordinate reference frame of images -------
         //      column major notation
         Set<PairInt> tmp = new HashSet<PairInt>();
@@ -1028,7 +1075,7 @@ public class PhaseCongruencyDetector {
             tmp.add(new PairInt(p.getY(), p.getX()));
         }
         junctions = tmp;
-        
+
         // edges are in row major notation, so switching to column major
         for (PairIntArray edge : theEdges) {
             for (int i = 0; i < edge.getN(); ++i) {
@@ -1037,15 +1084,15 @@ public class PhaseCongruencyDetector {
                 edge.set(i, y, x);
             }
         }
-        
+
         // ----corners are then in the coordinate reference frame of images -------
         // column major notation
         CSSCornerMaker cornerMaker = new CSSCornerMaker(img.getWidth(), img.getHeight());
         cornerMaker.doNotStoreCornerRegions();
-        
+
         List<CornerArray> cornerList =
             cornerMaker.findCornersInScaleSpaceMaps(theEdges);
-        
+
         /*
         // quick addition of filter for localizability
         {
@@ -1053,17 +1100,17 @@ public class PhaseCongruencyDetector {
             GreyscaleImage thetaImg = new GreyscaleImage(nCols, nRows);
             for (int i = 0; i < nRows; ++i) {
                 for (int j = 0; j < nCols; ++j) {
-                    pcImg.setValue(j, i, 
+                    pcImg.setValue(j, i,
                         (int)Math.round(255. * products.getPhaseCongruency()[i][j]));
-                    thetaImg.setValue(j, i, 
+                    thetaImg.setValue(j, i,
                         (int)Math.round(products.getOrientation()[i][j]));
                 }
             }
-            cornerList = FeatureHelper.filterByLocalizability(img, pcImg, thetaImg, 
-                cornerList);            
+            cornerList = FeatureHelper.filterByLocalizability(img, pcImg, thetaImg,
+                cornerList);
         }
         */
-        
+
         /*
         filter out small curvature:
         see line 64 of comments in CornerRegion.java.
@@ -1075,33 +1122,33 @@ public class PhaseCongruencyDetector {
             CornerArray ca = cornerList.get(i);
             for (int idx = 0; idx < ca.getN(); ++idx) {
                 float curvature = ca.getCurvature(idx);
-                
+
                 if (Math.abs(curvature) > 0.05) {// should not set above 0.07...
-                                        
+
                     cornerMap.put(
                         new PairInt(Math.round(ca.getX(idx)),
-                        Math.round(ca.getY(idx))), 
+                        Math.round(ca.getY(idx))),
                         Float.valueOf(ca.getCurvature(idx)));
                 }
             }
-        }        
-        
+        }
+
         // theEdges, corners, and junctions are now in reference frame of
         // GreyscaleImage instance
         // column major notation
-        cornerMaker.useHoughTransformationToFilterCornersForOrdered(theEdges, 
+        cornerMaker.useHoughTransformationToFilterCornersForOrdered(theEdges,
             cornerMap, junctions, products.getHoughLines(),
-            nCols, nRows);        
-        
+            nCols, nRows);
+
         Set<PairInt> outputCorners = new HashSet<PairInt>(cornerMap.keySet());
         outputCorners.addAll(junctions);
-        
+
         // this sets the edges, junctions and corners in the GreyscaleImage reference frame
         products.setEdges(theEdges);
         products.setJunctions(junctions);
         products.setCorners(outputCorners);
-        
-        /*        
+
+        /*
         Image imgCp = img.copyToColorGreyscale();
         ImageIOHelper.addAlternatingColorCurvesToImage(theEdges, imgCp, 0, 0, 0);
         ImageIOHelper.addCurveToImage(outputCorners, imgCp, 3, 255, 0, 0);
@@ -1118,9 +1165,9 @@ public class PhaseCongruencyDetector {
     }
 
     private Set<PairInt> extractNonZeroPoints(int[][] binaryImage) {
-        
+
         Set<PairInt> points = new HashSet<PairInt>();
-        
+
         for (int i0 = 0; i0 < binaryImage.length; ++i0) {
             for (int i1 = 0; i1 < binaryImage[0].length; ++i1) {
                 if (binaryImage[i0][i1] > 0) {
@@ -1128,7 +1175,7 @@ public class PhaseCongruencyDetector {
                 }
             }
         }
-        
+
         return points;
     }
 
@@ -1138,25 +1185,25 @@ public class PhaseCongruencyDetector {
      * @param thinnedPC
      * @param phaseAngle
      * @param tLow
-     * @param tHigh 
-     * @return  
+     * @param tHigh
+     * @return
      */
-    public int[][] createEdges(double[][] pc, double[][] thinnedPC, 
+    public int[][] createEdges(double[][] pc, double[][] thinnedPC,
         double[][] phaseAngle, double tLow, double tHigh) {
-        
+
         int nRows = phaseAngle.length;
         int nCols = phaseAngle[0].length;
- 
+
         Set<PairInt> brightLinePoints = new HashSet<PairInt>();
         Set<PairInt> darkLinePoints = new HashSet<PairInt>();
         Set<PairInt> stepPoints = new HashSet<PairInt>();
-                    
+
         double piDiv4 = Math.PI/4.;
         double tolerance = piDiv4/2.;
-        
+
         for (int row = 0; row < nRows; ++row) {
             for (int col = 0; col < nCols; ++col) {
-                
+
                 if (thinnedPC[row][col] < tLow) {
                     continue;
                 }
@@ -1173,7 +1220,7 @@ public class PhaseCongruencyDetector {
                 }
             }
         }
-        
+
         //DEBUG
         if (doPlot) {
             Image paImage = new Image(nCols, nRows);
@@ -1181,28 +1228,28 @@ public class PhaseCongruencyDetector {
             for (PairInt p : brightLinePoints) {
                 int x = p.getY();
                 int y = p.getX();
-                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot, 
+                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot,
                     0, 255, 0);
             }
             for (PairInt p : stepPoints) {
                 int x = p.getY();
                 int y = p.getX();
-                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot, 
+                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot,
                     255, 0, 0);
             }
             for (PairInt p : darkLinePoints) {
                 int x = p.getY();
                 int y = p.getX();
-                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot, 
+                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot,
                     127, 0, 255);
             }
             MiscDebug.writeImage(paImage, "_a_0_pa_components_" +
                 MiscDebug.getCurrentTimeFormatted());
         }
-        
+
         stepPoints.addAll(brightLinePoints);
         stepPoints.addAll(darkLinePoints);
-      
+
         double[][] thinned1 = new double[nRows][nCols];
         for (int i = 0; i < nRows; ++i) {
             thinned1[i] = new double[nCols];
@@ -1211,7 +1258,7 @@ public class PhaseCongruencyDetector {
             thinned1[p.getX()][p.getY()] = pc[p.getX()][p.getY()];
         }
         stepPoints = null;
-     
+
         int[][] thinned = applyHysThresh(thinned1, phaseAngle, tLow, tHigh, true);
 
         if (doPlot) {
@@ -1222,12 +1269,12 @@ public class PhaseCongruencyDetector {
                 for (int col = 0; col < nCols; ++col) {
                     int v = (int)Math.round(255 * pc[row][col]);
                     if (thinned[row][col] > 0) {
-                        ImageIOHelper.addPointToImage(col, row, pImage, 
+                        ImageIOHelper.addPointToImage(col, row, pImage,
                             nExtraForDot, 255, 255, 255);
-                        ImageIOHelper.addPointToImage(col, row, tImage, 
+                        ImageIOHelper.addPointToImage(col, row, tImage,
                             nExtraForDot, v, v, v);
                     } else {
-                        ImageIOHelper.addPointToImage(col, row, tImage, 
+                        ImageIOHelper.addPointToImage(col, row, tImage,
                             nExtraForDot, v, 0, 0);
                     }
                 }
@@ -1237,7 +1284,7 @@ public class PhaseCongruencyDetector {
             MiscDebug.writeImage(tImage, "_a_2_pc_1_" +
                 MiscDebug.getCurrentTimeFormatted());
         }
-        
+
         int[][] thinnedbw = new int[nRows][nCols];
         for (int i = 0; i < nRows; ++i) {
             thinnedbw[i] = new int[nCols];
@@ -1247,7 +1294,7 @@ public class PhaseCongruencyDetector {
                 }
             }
         }
-        
+
         MorphologicalFilter mFilter = new MorphologicalFilter();
         int[][] skel = mFilter.bwMorphThin(thinnedbw, Integer.MAX_VALUE);
 
@@ -1261,7 +1308,7 @@ public class PhaseCongruencyDetector {
                 }
             }
         }
-        
+
         //DEBUG
         if (doPlot) {
             Image paImage = new Image(nCols, nRows);
@@ -1269,23 +1316,23 @@ public class PhaseCongruencyDetector {
             for (PairInt p : points) {
                 int x = p.getY();
                 int y = p.getX();
-                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot, 
+                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot,
                     255, 255, 255);
             }
             MiscDebug.writeImage(paImage, "_a_3_edge_from_phase_angle_thin_0_" +
                 MiscDebug.getCurrentTimeFormatted());
         }
-        
+
         //ImageProcessor imageProcessor = new ImageProcessor();
         //imageProcessor.applyThinning(points,nRows, nCols);
-        
+
         //pltc.correctForLineHatHoriz(points, nRows, nCols);
         //pltc.correctForLineHatVert(points, nRows, nCols);
-        
+
         // there are a very small number of clumps thicker than 1 pixel.
         //ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
         //lt.applyLineThinner(points, 0, nRows - 1, 0, nCols - 1);
-        
+
         /*
         PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
         pltc.correctForIsolatedPixels(stepPoints, nRows, nCols);
@@ -1296,7 +1343,7 @@ public class PhaseCongruencyDetector {
         for (PairInt p : points) {
             thinned[p.getX()][p.getY()] = 255;
         }
-        
+
         //DEBUG
         if (doPlot) {
             Image paImage = new Image(nCols, nRows);
@@ -1304,49 +1351,49 @@ public class PhaseCongruencyDetector {
             for (PairInt p : points) {
                 int x = p.getY();
                 int y = p.getX();
-                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot, 
+                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot,
                     255, 0, 0);
             }
             MiscDebug.writeImage(paImage, "_a_3_edge_from_phase_angle_thin_1_" +
                 MiscDebug.getCurrentTimeFormatted());
         }
         */
-        
+
         return thinned;
     }
-    
+
     /**
      * creating edges using thinned phase angle image.
      * @param products
      * @param tLow
-     * @param tHigh 
+     * @param tHigh
      */
-    private int countEdgePoints(PhaseCongruencyProducts products, 
+    private int countEdgePoints(PhaseCongruencyProducts products,
         double[][] thinnedPC, double tLow, double tHigh) {
-        
+
         double[][] phaseAngle = products.getPhaseAngle();
-        
+
         int nRows = phaseAngle.length;
         int nCols = phaseAngle[0].length;
- 
+
         int count = 0;
-                            
+
         for (int row = 0; row < nRows; ++row) {
-            for (int col = 0; col < nCols; ++col) {                
+            for (int col = 0; col < nCols; ++col) {
                 if (thinnedPC[row][col] < tLow) {
                     continue;
                 }
                 count++;
             }
         }
-        
+
         return count;
     }
 
     /**
-     * calculate the hough transform lines, and use them to thin the 
+     * calculate the hough transform lines, and use them to thin the
      * staircases within inclined lines.
-     * @param products 
+     * @param products
      */
     private void calculateHoughTransforms(PhaseCongruencyProducts products) {
 
@@ -1360,9 +1407,9 @@ public class PhaseCongruencyDetector {
                 }
             }
         }
-        
+
         //TODO: improve the hough line transform
-        
+
         // ----- find lines w/ hough transform, then thin line staircase with it ---
         Set<PairInt> pointCp = new HashSet<PairInt>(points);
         HoughTransform ht = new HoughTransform();
@@ -1370,9 +1417,9 @@ public class PhaseCongruencyDetector {
 
         PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
         pltc.thinLineStaircases(lines, points, thinned.length, thinned[0].length);
-        
-        pointCp.removeAll(points);        
-        
+
+        pointCp.removeAll(points);
+
         for (PairInt p : pointCp) {
             Set<PairInt> line = null;
             for (Set<PairInt> hLine : lines.keySet()) {
@@ -1385,7 +1432,7 @@ public class PhaseCongruencyDetector {
                 line.remove(p);
             }
         }
-        
+
         // ------ put hough lines into reference frame of GreyscaleImage instance
         Map<Set<PairInt>, PairInt> transformedLines = new HashMap<Set<PairInt>, PairInt>();
         for (Entry<Set<PairInt>, PairInt> entry : lines.entrySet()) {
@@ -1398,13 +1445,13 @@ public class PhaseCongruencyDetector {
             }
             transformedLines.put(transformedLine, entry.getValue());
         }
-        
-        products.setHoughLines(transformedLines);        
+
+        products.setHoughLines(transformedLines);
     }
 
-    private PhaseCongruencyProducts trimPaddedData(PhaseCongruencyProducts products, 
+    private PhaseCongruencyProducts trimPaddedData(PhaseCongruencyProducts products,
         int nOrigCols, int nOrigRows) {
-        
+
         double[][] nzp = products.getNoiseyPixels();
         if (nzp != null) {
             nzp = trim(nzp, nOrigRows, nOrigCols);
@@ -1417,7 +1464,7 @@ public class PhaseCongruencyDetector {
         pc = trim(pc, nOrigRows, nOrigCols);
         int[][] th = products.getThinned();
         th = trim(th, nOrigRows, nOrigCols);
-         
+
         Set<PairInt> rm = new HashSet<PairInt>();
         Set<PairInt> corners = products.getCorners();
         for (PairInt p : corners) {
@@ -1426,7 +1473,7 @@ public class PhaseCongruencyDetector {
             }
         }
         corners.removeAll(rm);
-        
+
         List<PairIntArray> edgeList = products.getEdgeList();
         for (int i = 0; i < edgeList.size(); ++i) {
             PairIntArray a = edgeList.get(i);
@@ -1440,7 +1487,7 @@ public class PhaseCongruencyDetector {
             }
             edgeList.set(i, b);
         }
-        
+
         rm = new HashSet<PairInt>();
         Set<PairInt> junctions = products.getJunctions();
         for (PairInt p : junctions) {
@@ -1449,7 +1496,7 @@ public class PhaseCongruencyDetector {
             }
         }
         junctions.removeAll(rm);
-        
+
         Map<Set<PairInt>, PairInt> hLines = products.getHoughLines();
         for (Entry<Set<PairInt>, PairInt> entry : hLines.entrySet()) {
             rm = new HashSet<PairInt>();
@@ -1461,10 +1508,10 @@ public class PhaseCongruencyDetector {
             }
             set.removeAll(rm);
         }
-        
-        
+
+
         PhaseCongruencyParameters params = products.getParameters();
-         
+
         products = new PhaseCongruencyProducts(pc, or, pa, products.getThreshold());
         products.setThinnedImage(th);
         products.setParameters(params);
@@ -1473,7 +1520,7 @@ public class PhaseCongruencyDetector {
         products.setHoughLines(hLines);
         products.setJunctions(junctions);
         products.setNoiseyPixels(nzp);
-        
+
         return products;
     }
 
@@ -1483,57 +1530,57 @@ public class PhaseCongruencyDetector {
         for (int i = 0; i < nOrigRows; ++i) {
             b[i] = Arrays.copyOf(a[i], nOrigCols);
         }
-        
+
         return b;
     }
-    
+
     private int[][] trim(int[][] a, int nOrigRows, int nOrigCols) {
 
         int[][] b = new int[nOrigRows][];
         for (int i = 0; i < nOrigRows; ++i) {
             b[i] = Arrays.copyOf(a[i], nOrigCols);
         }
-        
+
         return b;
     }
-    
+
     public class PhaseCongruencyProducts {
-        
+
         /**
          * indicates edge significance
          */
         private final double[][] phaseCongruency;
-        
+
         /**
          * Orientation image in integer degrees 0-180 with positive anticlockwise.
          */
         private final double[][] orientation;
-        
+
         /**
-         * Local weighted mean phase angle at every point in the image.  
-         * A value of pi/2 corresponds to a bright line, 0 corresponds to a 
+         * Local weighted mean phase angle at every point in the image.
+         * A value of pi/2 corresponds to a bright line, 0 corresponds to a
          * step and -pi/2 is a dark line.
          */
         private final double[][] phaseAngle;
-        
+
         /**
-         * Calculated noise threshold (can be useful for diagnosing noise 
-         * characteristics of images).  Once you know this you can then specify 
+         * Calculated noise threshold (can be useful for diagnosing noise
+         * characteristics of images).  Once you know this you can then specify
          * fixed thresholds and save some computation time.
          */
         private final double threshold;
-        
+
         private int[][] thinned = null;
-    
+
         // col major notation
         private List<PairIntArray> edgeList = null;
-        
+
         // col major notation
         private Set<PairInt> junctions = null;
-        
+
         // col major notation
         private Set<PairInt> corners = null;
-        
+
         /**
          * noisey pixels are found during the 2 level threshold hysteresis
          * phase and they sometimes contain textures such as vegetation or
@@ -1541,7 +1588,7 @@ public class PhaseCongruencyDetector {
          * before this stage.
          */
         private double[][] noiseyPixels = null;
-        
+
         /**
          * a map with key being a hough line set of points and value being
          * the theta and radius for the hough line.  Note that the coordinates
@@ -1550,37 +1597,37 @@ public class PhaseCongruencyDetector {
          * row major notation
          */
         private Map<Set<PairInt>, PairInt> houghLines = null;
-        
+
         private PhaseCongruencyParameters parameters = null;
-        
-        public PhaseCongruencyProducts(double[][] pc, double[][] or, 
+
+        public PhaseCongruencyProducts(double[][] pc, double[][] or,
             double[][] ft, double thr) {
             this.phaseCongruency = copy(pc);
             this.orientation = copy(or);
             this.phaseAngle = copy(ft);
             this.threshold = thr;
         }
-        
+
         /**
          * set the thinned phase congruence image, a.k.a. the edge image.
-         * @param thImg 
+         * @param thImg
          */
         public void setThinnedImage(int[][] thImg) {
             thinned = copy(thImg);
         }
-        
+
         /**
          * get the thinned phase congruence image, a.k.a. the edge image.
          * Note that the array is accessed as a[row][column], row major notation.
-         * @@return edgeImg 
+         * @@return edgeImg
          */
         public int[][] getThinned() {
             return thinned;
         }
-        
+
         /**
          * noisey pixels are found by subtracting the resulting pc image
-         * made with the user given k from a default k which allows 
+         * made with the user given k from a default k which allows
          * more noise into the image.  The resulting "noisey" pixels
          * may be useful for designing texture filters to remove
          * such pixels from better keypoints.
@@ -1589,7 +1636,7 @@ public class PhaseCongruencyDetector {
         public double[][] getNoiseyPixels(){
             return noiseyPixels;
         }
-        
+
         public void setNoiseyPixels(double[][] pixels){
             noiseyPixels = pixels;
         }
@@ -1616,10 +1663,10 @@ public class PhaseCongruencyDetector {
         /**
          * return the phase angle image.
          * <pre>
-         * Local weighted mean phase angle at every point in the image. 
-         * A value of 
-                pi/2 corresponds to a bright line, 
-                0 corresponds to a step and 
+         * Local weighted mean phase angle at every point in the image.
+         * A value of
+                pi/2 corresponds to a bright line,
+                0 corresponds to a step and
                 -pi/2 is a dark line.
          * </pre>
          * Note that the array is accessed as a[row][column], row major notation
@@ -1630,7 +1677,7 @@ public class PhaseCongruencyDetector {
         }
 
         /**
-         * 
+         *
          * @return the threshold
          */
         public double getThreshold() {
@@ -1642,16 +1689,16 @@ public class PhaseCongruencyDetector {
          * that are in the reference frame of the GreyscaleIamge instance.
          * Note that the closed curves are converted to instances of
          * PairIntArrayWithColor.
-         * @param theEdgeList 
+         * @param theEdgeList
          */
         private void setEdges(List<PairIntArray> theEdgeList) {
-            
+
             this.edgeList = new ArrayList<PairIntArray>();
-            
+
             MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-            
+
             for (PairIntArray p : theEdgeList) {
-                
+
                 PairIntArray cp = p.copy();
                 if (curveHelper.isAdjacent(p, 0, p.getN() - 1, 1)) {
                     cp = new PairIntArrayWithColor(cp);
@@ -1662,26 +1709,26 @@ public class PhaseCongruencyDetector {
 
         /**
          * set the junction points found in the edge list.  Note that the
-         * points should be using coordinates that are in the reference frame 
+         * points should be using coordinates that are in the reference frame
          * of the GreyscaleIamge instance, col major notation.
-         * @param theJunctions 
+         * @param theJunctions
          */
         private void setJunctions(Set<PairInt> theJunctions) {
             this.junctions = new HashSet<PairInt>(theJunctions);
         }
 
         /**
-         * set the corners found in the edge list.  Note that the points should 
-         * be using coordinates that are in the reference frame of the 
+         * set the corners found in the edge list.  Note that the points should
+         * be using coordinates that are in the reference frame of the
          * GreyscaleIamge instance.
-         * @param theCorners 
+         * @param theCorners
          */
         private void setCorners(Set<PairInt> theCorners) {
             this.corners = new HashSet<PairInt>(theCorners);
         }
 
         /**
-         * get the list of extracted edges as points that are in the reference 
+         * get the list of extracted edges as points that are in the reference
          * frame of the GreyscaleImage instance, col major notation.
          * @return the edgeList
          */
@@ -1706,7 +1753,7 @@ public class PhaseCongruencyDetector {
         public Set<PairInt> getCorners() {
             return corners;
         }
-        
+
         public PhaseCongruencyParameters getParameters() {
             return parameters;
         }
@@ -1716,81 +1763,81 @@ public class PhaseCongruencyDetector {
          the theta and radius for the hough line.  Note that the
          setter has placed the coordinates into the coordinate reference
          frame of the GreyscaleImage instance, col major notation.
-         @param lines 
+         @param lines
          */
         public void setHoughLines(Map<Set<PairInt>, PairInt> lines) {
-            
+
              this.houghLines = new HashMap<Set<PairInt>, PairInt>(lines);
         }
-        
+
         /**
          * a map with key being a hough line set of points and value being
          * the theta and radius for the hough line.  Note that the coordinates
-         * in the key are using the same notation GreyscaleImage instance, 
+         * in the key are using the same notation GreyscaleImage instance,
          * that x and y are the same as in the image
-         * @return 
+         * @return
          */
         public Map<Set<PairInt>, PairInt> getHoughLines() {
             return houghLines;
         }
 
-        private void setParameters(int nScale, int minWavelength, float mult, 
-            float sigmaOnf, int k, float cutOff, float g, float deviationGain, 
+        private void setParameters(int nScale, int minWavelength, float mult,
+            float sigmaOnf, int k, float cutOff, float g, float deviationGain,
             int noiseMethod, double tLow, double tHigh) {
-            
+
             this.parameters = new PhaseCongruencyParameters();
-            
+
             parameters.setParameters(nScale, minWavelength, mult, sigmaOnf, k,
-                cutOff, g, deviationGain, noiseMethod, tLow, tHigh);            
+                cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
         }
-        
+
         private void setParameters(PhaseCongruencyParameters params) {
-            this.parameters = params;        
+            this.parameters = params;
         }
-        
+
     }
 
     private Complex[][] copy(Complex[][] a) {
-        
+
         Complex[][] b = new Complex[a.length][];
         for (int i = 0; i < b.length; ++i) {
             b[i] = Arrays.copyOf(a[i], a[i].length);
         }
-        
+
         return b;
     }
     private int[][] copy(int[][] a) {
-        
+
         int[][] b = new int[a.length][];
         for (int i = 0; i < b.length; ++i) {
             b[i] = Arrays.copyOf(a[i], a[i].length);
         }
-        
+
         return b;
     }
-    
+
     /**
     adapted from Kovesis phasecongmono.m as documented in class comments above.
-       
+
       Mode is computed by forming a histogram of the data over 50 bins and then
       finding the maximum value in the histogram.  Mean and standard deviation
       can then be calculated from the mode as they are related by fixed
       constants.
-     
+
       mean = mode * sqrt(pi/2)
       std dev = mode * sqrt((4-pi)/2)
-      
+
       See
       http://mathworld.wolfram.com/RayleighDistribution.html
       http://en.wikipedia.org/wiki/Rayleigh_distribution
-      
+
      * @param data data assumed to come from a Rayleigh distribution
-     * @return 
+     * @return
      */
     private double rayleighMode(double[][] data) {
-        
+
         int nBins = 50;
-        
+
         float[] values = new float[data.length];
         float max = Float.MIN_VALUE;
         int count = 0;
@@ -1804,12 +1851,12 @@ public class PhaseCongruencyDetector {
             }
         }
         float[] errs = Errors.populateYErrorsBySqrt(values);
-        
+
         HistogramHolder hist = Histogram.createSimpleHistogram(0, max, nBins,
             values, errs);
-        
+
         int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());
-        
+
         if (yMaxIdx == -1) {
             //should not happen
             throw new IllegalStateException("Error in algorithm for extreme data case. "
@@ -1817,41 +1864,41 @@ public class PhaseCongruencyDetector {
         } else if (yMaxIdx == (hist.getXHist().length - 1)) {
             return hist.getXHist()[yMaxIdx];
         }
-        
+
         double rMode = (hist.getXHist()[yMaxIdx] + hist.getXHist()[yMaxIdx + 1])/2.;
-        
+
         return rMode;
     }
-    
+
     /**
      * apply a 2 level threshold hysteresis filter to the image and use an
      * association radius of 2 and value > t1 from any pixel within a
      * radius of 2 of a pixel with value > t2.
-     * 
+     *
      * @param img the phase congruence image
      * @param t1 low threshold
      * @param t2 high threshold
      * @param restore
-     * @return 
+     * @return
      */
-    int[][] applyHysThresh(double[][] img, double[][] pa, double t1, double t2, 
+    int[][] applyHysThresh(double[][] img, double[][] pa, double t1, double t2,
         boolean restore) {
-        
+
         // note that the kovesi code uses the octave bwselect and bwfill,
-        // which results in points > t2 which is thresholding just for 
+        // which results in points > t2 which is thresholding just for
         // the high value.
         // here instead will use an adaptive 2-layer threshold for values > t1.
-       
+
         int w = img.length;
         int h = img[0].length;
         int n = w * h;
-        
+
         if (w < 3 || h < 3) {
             throw new IllegalArgumentException("images should be >= 3x3 in size");
         }
-        
+
         ImageProcessor imageProcessor = new ImageProcessor();
-        
+
         double[][] threshImg = null;
         if (useAdaptiveThreshold) {
             AdaptiveThresholding th = new AdaptiveThresholding();
@@ -1874,16 +1921,16 @@ public class PhaseCongruencyDetector {
                 MiscDebug.writeImage(imgCp2, "img_a_adaptive_threshold_.png");
             }
         }
-    
+
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
-            
+
         double tHigh = t2;
         double tLow = t1;
-        
-        System.out.println("tHigh=" + tHigh + 
+
+        System.out.println("tHigh=" + tHigh +
             " replace with adaptive threshold image = " + (threshImg != null));
-        
+
         int[][] img2 = new int[w][];
         for (int i = 0; i < w; ++i) {
             img2[i] = new int[h];
@@ -1891,12 +1938,12 @@ public class PhaseCongruencyDetector {
 
         // store pixels w/ v > tHigh
         // and store any of it's neighbors w/ v > tLow
-                
+
         for (int x = 0; x < w; ++x) {
             for (int y = 0; y < h; ++y) {
-            
+
                 double v = img[x][y];
-                
+
                 double tHigh0, tLow0;
                 if (threshImg != null) {
                     tHigh0 = threshImg[x][y];
@@ -1905,15 +1952,15 @@ public class PhaseCongruencyDetector {
                     tHigh0 = tHigh;
                     tLow0 = tLow;
                 }
-            
+
                 if (v < tHigh0 || v < tLow) {
                     continue;
                 }
-                
+
                 img2[x][y] = 255;
-                
+
                 // store any adjacent w/ v > tLow
-                for (int k = 0; k < dxs.length; ++k) {                
+                for (int k = 0; k < dxs.length; ++k) {
                     int x2 = x + dxs[k];
                     int y2 = y + dys[k];
                     if ((x2 < 0) || (y2 < 0) || (x2 > (w - 1)) || (y2 > (h - 1))) {
@@ -1926,12 +1973,12 @@ public class PhaseCongruencyDetector {
                 }
             }
         }
-        
+
         return img2;
     }
-    
+
     private void DEBUG(Complex[][] tmp, String label) {
-       
+
         try {
             algorithms.util.PolygonAndPointPlotter plotter
                 = new algorithms.util.PolygonAndPointPlotter();
@@ -1958,7 +2005,7 @@ public class PhaseCongruencyDetector {
                 plotter.addPlot(-1, nc + 1, minY, maxY, x, y, xPolygon,
                     yPolygon, label + " row=" + rowNumber + " REAL");
             }
-            
+
             // do same for complex
             for (int nf = 1; nf < 4; nf++) {
                 int rowNumber = (int) (((float) nf) * 0.25f * nr);
@@ -1970,15 +2017,15 @@ public class PhaseCongruencyDetector {
                 plotter.addPlot(-1, nc + 1, minY, maxY, x, y, xPolygon,
                     yPolygon, label + " row=" + rowNumber + " IMAGINARY");
             }
-            
+
             plotter.writeFile();
         } catch (Exception e) {
         }
         int z = 1;
     }
-    
+
     private void DEBUG(double[][] tmp, String label, long fileNumber) {
-       
+
         try {
             algorithms.util.PolygonAndPointPlotter plotter
                 = new algorithms.util.PolygonAndPointPlotter();
@@ -1993,7 +2040,7 @@ public class PhaseCongruencyDetector {
             float[] y = new float[nc];
             float[] xPolygon = null;
             float[] yPolygon = null;
-            
+
             float minY = (float)MiscMath.findMin(tmp);
             float maxY = (float)MiscMath.findMax(tmp);
 
@@ -2012,7 +2059,7 @@ public class PhaseCongruencyDetector {
         }
         int z = 1;
     }
-   
+
     /**
      * for single purpose use to examine the monogenic transform
      * in domain space before inverse transform to frequency space.
@@ -2020,28 +2067,28 @@ public class PhaseCongruencyDetector {
      * @param minWavelength
      * @param mult
      * @param sigmaOnf
-     * @return 
+     * @return
      */
     public static double[][] logGaborFreqDomainFilter(GreyscaleImage img,
         final int minWavelength, final float mult, final float sigmaOnf,
         int s) {
-        
+
         int noiseMethod = -1;
-        
+
         int nCols = img.getWidth();
         int nRows = img.getHeight();
-                   
+
         FilterGrid fg = new FilterGrid();
-        FilterGrid.FilterGridProducts fgProducts = fg.filtergrid(nRows, nCols);     
+        FilterGrid.FilterGridProducts fgProducts = fg.filtergrid(nRows, nCols);
         fgProducts.getRadius()[0][0] = 1;
         double[][] radius = fgProducts.getRadius();
-        
+
         LowPassFilter lpFilter = new LowPassFilter();
         double[][] lp = lpFilter.lowpassfilter(nRows, nCols, 0.45f, 15);
-                
+
         // keeping taus in case need to increase noise estimate
         double logGaborDenom = 2. * Math.pow(Math.log(sigmaOnf), 2);
-        
+
         // Centre frequency of filter.
         double wavelength = minWavelength * Math.pow(mult, s);
 
@@ -2060,10 +2107,10 @@ public class PhaseCongruencyDetector {
             }
         }
         logGabor[0][0] = 0;
-        
+
         return logGabor;
     }
-    
+
     /**
      * for single purpose use to examine creating a filter that can be
      * applied to other images in frequency domain space before
@@ -2072,27 +2119,27 @@ public class PhaseCongruencyDetector {
      * @return row major result
      */
     public static Complex[][] createLowPassFreqDomainFilter(GreyscaleImage img) {
-                
+
         int nCols = img.getWidth();
         int nRows = img.getHeight();
-                   
+
         FilterGrid fg = new FilterGrid();
-        FilterGrid.FilterGridProducts fgProducts = fg.filtergrid(nRows, nCols);     
+        FilterGrid.FilterGridProducts fgProducts = fg.filtergrid(nRows, nCols);
         fgProducts.getRadius()[0][0] = 1;
         double[][] radius = fgProducts.getRadius();
-        
+
         LowPassFilter lpFilter = new LowPassFilter();
         double[][] lp = lpFilter.lowpassfilter(nRows, nCols, 0.45f, 15);
-                
-        
+
+
         //Periodic Fourier transform of image, using default normalization
         // perfft2 results use notation a[row][col]
         PeriodicFFT perfft2 = new PeriodicFFT();
-        //IM = perfft2(im);                   % 
+        //IM = perfft2(im);                   %
         //S, P, s, p where S = FFT of smooth, P = FFT of periodic, s=spatial smooth, p = spatial p
         Complex[][][] perfResults = perfft2.perfft2(img, false);
         Complex[][] capIm = perfResults[1];
-    
+
         ComplexModifiable sumAbs = new ComplexModifiable(0, 0);
         for (int row = 0; row < nRows; ++row) {
             for (int col = 0; col < nCols; ++col) {
@@ -2100,13 +2147,13 @@ public class PhaseCongruencyDetector {
                 sumAbs.plus(capIm[row][col]);
             }
         }
-        
+
         //normalize this to sum of zero and unit standard deviation
         sumAbs.times(1./((double)nCols * nRows));
         Complex mean = new Complex(sumAbs.re(), sumAbs.im());
         Complex factor = new Complex(sumAbs.re(), sumAbs.im());
         factor = factor.times(1./Math.sqrt(2));
-                
+
         if (sumAbs.abs() != 0) {
             for (int row = 0; row < nRows; ++row) {
                 for (int col = 0; col < nCols; ++col) {
@@ -2115,7 +2162,7 @@ public class PhaseCongruencyDetector {
                 }
             }
         }
-            
+
         return capIm;
     }
 }
