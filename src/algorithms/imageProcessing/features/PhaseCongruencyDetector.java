@@ -841,16 +841,29 @@ public class PhaseCongruencyDetector {
                     }
                 }
             }
+            
             int[][] thinnedLowNz = applyHysThresh(pcLowNz, 
                 products.getPhaseAngle(), tLow, tHigh, true);
-            // apply thinner
+            
+            Set<PairInt> noisePoints = new HashSet<PairInt>();
+            
+            int dtN = 0;
+            int[][] dt = new int[nRows][]; 
             for (int row = 0; row < nRows; ++row) {
+                dt[row] = new int[nCols];
                 for (int col = 0; col < nCols; ++col) {
                     // where thinned is > 0 and thinnedLowNz == 0 is a noise pixel
-                    if (thinned[row][col] == 0) {
+                    int v = thinned[row][col] - thinnedLowNz[row][col];
+                    if (v > 0) {
+                        // noise = points in thinned, but not in low noise thinned
+                        noisePoints.add(new PairInt(row, col));
+                    } else {
                         pcLowNz[row][col] = 0;
-                    } else if (thinnedLowNz[row][col] != 0) {
-                        pcLowNz[row][col] = 0;
+                        if (thinned[row][col] > 0) {
+                            // non-noise points in thinned
+                            dt[row][col] = 1;
+                            dtN++;
+                        }
                     }
                 }
             }
@@ -858,165 +871,75 @@ public class PhaseCongruencyDetector {
             products.setNoiseyPixels(pcLowNz);
             
             if (doPlot) {
-                MiscDebug.writeImage(pcLowNz, "_a_noise_");
+                int count = 0;
+                Image dbg0 = new Image(nCols, nRows);
+                for (PairInt p : noisePoints) {
+                    int[] clr = ImageIOHelper.getNextRGB(count);
+                    ImageIOHelper.addPointToImage(p.getY(), p.getX(), dbg0,
+                        1, clr[0], clr[1], clr[2]);
+                    count++;
+                }            
+                MiscDebug.writeImage(dbg0, "_a_noise_");
             }
             
             /*
-            -- from all thinned points in the default image, determining
-               clusters.
-            -- creating a histogram of the cluster sizes
-            -- finding the peak of the histogram as the approx limit of
-               cluster sizes, below which are less often edge points.
-            -- creating a distance transform of the low noise
-               thinned points plus the cluster points from clusters that
-               are 3 times the size of the cluster limit.
-            -- extracting the small clusters less than the size limit
-               from the distance transform results to get their
-               distances from nearest edges essentially with the
-               assumption that the representative textures will be further
-               away from the edges.
+            -- finding distance to non-noise points of the thinned default image
+               from the noise points using a distance transform 
             -- sorting those points by decreasing distance.
             */
-            
-            Set<PairIntWithIndex> points2 
-                = new HashSet<PairIntWithIndex>();
-            for (int row = 0; row < nRows; ++row) {
-                for (int col = 0; col < nCols; ++col) {
-                    if (thinned[row][col] > 0) {
-                        points2.add(new PairIntWithIndex(row, col,
-                           points2.size()));
-                    }
-                }
-            }
-            
-            int[][] dt = new int[nRows][];
-            for (int row = 0; row < nRows; ++row) {
-                dt[row] = new int[nCols];
-                for (int col = 0; col < nCols; ++col) {
-                    if (thinnedLowNz[row][col] > 0) {
-                        dt[row][col] = 1;
-                    }
-                }
-            }
-            
-            DTClusterFinder<PairIntWithIndex> cFinder
-                = new DTClusterFinder<PairIntWithIndex>(points2, 
-                nRows + 1, nCols + 1);
-            //cFinder.setToDebug();
-            cFinder.calculateCriticalDensity();
-            cFinder.findClusters();
-            final int n = cFinder.getNumberOfClusters();
-            
-            float[] clusterSizes = new float[n];        
-            for (int i = 0; i < n; ++i) {
-                Set<PairIntWithIndex> set = cFinder.getCluster(i);
-                clusterSizes[i] = set.size();
-            }
-            
-            HistogramHolder hist = Histogram.createSimpleHistogram(
-                0, 40, 20, clusterSizes, 
-                Errors.populateYErrorsBySqrt(clusterSizes));
-            int peakIdx = MiscMath.findYMaxIndex(hist.getYHist());
-            assert(peakIdx != -1); 
-            float sizeLimit = hist.getXHist()[peakIdx];
-            if (peakIdx < (hist.getXHist().length - 1)) {
-                sizeLimit = hist.getXHist()[peakIdx + 1];
-            }
-            
-            try {
-                hist.plotHistogram("cluster sizes", "_cluster_sizes_");
-            } catch (IOException ex) {
-                Logger.getLogger(PhaseCongruencyDetector.class.getName()).log(Level.SEVERE, null, ex);
-            }
-               
-            // add the points larger than a size limit to the dt
-            for (int i = 0; i < n; ++i) {
-                int clr = ImageIOHelper.getNextColorRGB(i);
-                Set<PairIntWithIndex> set = cFinder.getCluster(i);
-                if (set.size() > 3*sizeLimit) {
-                    for (PairIntWithIndex p : set) {
-                        dt[p.getX()][p.getY()] = 1;
-                    }
-                }
-            }
-            // points in the distance transform are now the thinned
-            // edges from the default pc return, and also the 
-            // larger noise clusters.
-            // -- this determines the distance of empty pixels to the
-            //    nearest set points.
+           
             DistanceTransform dTrans = new DistanceTransform();
             dt = dTrans.applyMeijsterEtAl(dt);
             
+            int n = noisePoints.size();
             int[] dist = new int[n];           
-            int[] indexes = new int[n];
+            PairInt[] points = new PairInt[n];
             int count = 0;
-            for (int i = 0; i < n; ++i) {
-                Set<PairIntWithIndex> set = cFinder.getCluster(i);
-                if (set.size() > sizeLimit) {
-                    continue;
-                }
-                int sumD = 0;
-                int countD = 0;
-                for (PairIntWithIndex p : set) {
-                    if (pcLowNz[p.getX()][p.getY()] > 0 && dt[p.getX()][p.getY()] > 0) {
-                        sumD += dt[p.getX()][p.getY()];
-                        countD++;
-                    }
-                }
-                if (countD > 0) {
-                    indexes[count] = i;
-                    sumD /= countD;
-                    dist[count] = sumD;
+            for (PairInt p : noisePoints) {
+                int d = dt[p.getX()][p.getY()];
+                if (d > 1) {
+                    dist[count] = d;
+                    points[count] = p;
                     count++;
                 }
             }
-            indexes = Arrays.copyOf(indexes, count);
-            dist = Arrays.copyOf(dist, count);
+            if (count < n) {
+                dist = Arrays.copyOf(dist, count);
+                points = Arrays.copyOf(points, count);
+            }
             
             // sort by decr dist
-            QuickSort.descendingSort(dist, indexes);
+            QuickSort.descendingSort(dist, points);
             
-            /*
-            //histogram of cluster distances
-            float[] values = new float[dist.size()];
-            for (int i = 0; i < dist.size(); ++i) {
-                values[i] = dist.get(i);
+            //histogram of point distances
+            float[] values = new float[n];
+            for (int i = 0; i < dist.length; ++i) {
+                values[i] = dist[i];
             }
             //TODO: consider xmax based on image size
-            hist = Histogram.createSimpleHistogram(
+            HistogramHolder hist = Histogram.createSimpleHistogram(
                 0, 400, 20, values, 
                 Errors.populateYErrorsBySqrt(values));
-            peakIdx = MiscMath.findYMaxIndex(hist.getYHist());
-            assert(peakIdx != -1); 
-            sizeLimit = hist.getXHist()[peakIdx];
-            if (peakIdx < (hist.getXHist().length - 1)) {
-                sizeLimit = hist.getXHist()[peakIdx + 1];
-            }
             
             try {
-                hist.plotHistogram("dist from edges", "_cluster_distances_");
+                hist.plotHistogram("dist from edges", "_noise_distances_");
             } catch (IOException ex) {
                 Logger.getLogger(PhaseCongruencyDetector.class.getName()).log(Level.SEVERE, null, ex);
             }
-            */
             
-            int end = 10;
+            int end = 100;
             if (dist.length < end) {
                 end = dist.length;
             }
             Image dbg0 = new Image(nCols, nRows);
             for (int i = 0; i < end; ++i) {
-                int idx = indexes[i];
-                int clr = ImageIOHelper.getNextColorRGB(idx);
-                Set<PairIntWithIndex> set = cFinder.getCluster(idx);
-                for (PairIntWithIndex p : set) {
-                    dbg0.setRGB(p.getY(), p.getX(), clr);
-                }
+                PairInt p = points[i];
+                int[] clr = ImageIOHelper.getNextRGB(i);
+                ImageIOHelper.addPointToImage(p.getY(), p.getX(), dbg0, 
+                    2, clr[0], clr[1], clr[2]);
             }
             MiscDebug.writeImage(dbg0, "_a_texture_candidates_");
             
-            
-           
             /*            
             will next examine color histograms of the snallest clusters
             then texture statistics such as density.
