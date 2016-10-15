@@ -891,6 +891,33 @@ public class PhaseCongruencyDetector {
             DistanceTransform dTrans = new DistanceTransform();
             dt = dTrans.applyMeijsterEtAl(dt);
             
+            {
+                Set<PairIntWithIndex> points2
+                    = new HashSet<PairIntWithIndex>();
+                for (PairInt p : noisePoints) {
+                    points2.add(new PairIntWithIndex(p.getX(), p.getY(),
+                        points2.size()));
+                }
+                DTClusterFinder<PairIntWithIndex> cFinder
+                    = new DTClusterFinder<PairIntWithIndex>(points2, 
+                    nRows + 1, nCols + 1);
+                //cFinder.setToDebug();
+                cFinder.calculateCriticalDensity();
+                cFinder.findClusters();
+                final int n = cFinder.getNumberOfClusters();
+                
+                Image dbg = new Image(nCols, nRows);
+                for (int i = 0; i < n; ++i) {
+                    Set<PairIntWithIndex> set = cFinder.getCluster(i);
+                    int[] clr = ImageIOHelper.getNextRGB(i);
+                    for (PairIntWithIndex p : set) {
+                        ImageIOHelper.addPointToImage(p.getY(), p.getX(), dbg,
+                            1, clr[0], clr[1], clr[2]);
+                    }                    
+                }   
+                MiscDebug.writeImage(dbg, "_a_noise_clusters_");
+            }
+            
             int n = noisePoints.size();
             int[] dist = new int[n];           
             PairInt[] points = new PairInt[n];
@@ -911,20 +938,22 @@ public class PhaseCongruencyDetector {
             // sort by decr dist
             QuickSort.descendingSort(dist, points);
             
-            //histogram of point distances
-            float[] values = new float[n];
-            for (int i = 0; i < dist.length; ++i) {
-                values[i] = dist[i];
-            }
-            //TODO: consider xmax based on image size
-            HistogramHolder hist = Histogram.createSimpleHistogram(
-                0, 400, 20, values, 
-                Errors.populateYErrorsBySqrt(values));
-            
-            try {
-                hist.plotHistogram("dist from edges", "_noise_distances_");
-            } catch (IOException ex) {
-                Logger.getLogger(PhaseCongruencyDetector.class.getName()).log(Level.SEVERE, null, ex);
+            if (doPlot) {
+                //histogram of point distances
+                float[] values = new float[n];
+                for (int i = 0; i < dist.length; ++i) {
+                    values[i] = dist[i];
+                }
+                //TODO: consider xmax based on image size
+                HistogramHolder hist = Histogram.createSimpleHistogram(
+                    0, 400, 20, values, 
+                    Errors.populateYErrorsBySqrt(values));
+
+                try {
+                    hist.plotHistogram("dist from edges", "_noise_distances_");
+                } catch (IOException ex) {
+                    Logger.getLogger(PhaseCongruencyDetector.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
             
             int end = 100;
