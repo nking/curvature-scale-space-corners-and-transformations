@@ -947,29 +947,36 @@ public class PhaseCongruencyDetector {
             DistanceTransform dTrans = new DistanceTransform();
             dt = dTrans.applyMeijsterEtAl(dt);
             
-            List<PairInt> points = new ArrayList<PairInt>();
-            TIntList dist = new TIntArrayList();
-            
-            Image dbg0 = new Image(nCols, nRows);
+            int[] dist = new int[n];           
+            int[] indexes = new int[n];
+            int count = 0;
             for (int i = 0; i < n; ++i) {
-                int clr = ImageIOHelper.getNextColorRGB(i);
                 Set<PairIntWithIndex> set = cFinder.getCluster(i);
                 if (set.size() > sizeLimit) {
                     continue;
                 }
+                int sumD = 0;
+                int countD = 0;
                 for (PairIntWithIndex p : set) {
-                    dbg0.setRGB(p.getY(), p.getX(), clr);
                     if (pcLowNz[p.getX()][p.getY()] > 0 && dt[p.getX()][p.getY()] > 0) {
-                        points.add(new PairInt(p.getX(), p.getY()));
-                        dist.add(dt[p.getX()][p.getY()]);
+                        sumD += dt[p.getX()][p.getY()];
+                        countD++;
                     }
                 }
+                if (countD > 0) {
+                    indexes[count] = i;
+                    sumD /= countD;
+                    dist[count] = sumD;
+                    count++;
+                }
             }
-            MiscDebug.writeImage(dbg0, "_a_clustering_");
+            indexes = Arrays.copyOf(indexes, count);
+            dist = Arrays.copyOf(dist, count);
             
             // sort by decr dist
-            QuickSort.descendingSort(dist, points);
+            QuickSort.descendingSort(dist, indexes);
             
+            /*
             //histogram of cluster distances
             float[] values = new float[dist.size()];
             for (int i = 0; i < dist.size(); ++i) {
@@ -991,8 +998,24 @@ public class PhaseCongruencyDetector {
             } catch (IOException ex) {
                 Logger.getLogger(PhaseCongruencyDetector.class.getName()).log(Level.SEVERE, null, ex);
             }
-
-            int z = 1;            
+            */
+            
+            int end = 10;
+            if (dist.length < end) {
+                end = dist.length;
+            }
+            Image dbg0 = new Image(nCols, nRows);
+            for (int i = 0; i < end; ++i) {
+                int idx = indexes[i];
+                int clr = ImageIOHelper.getNextColorRGB(idx);
+                Set<PairIntWithIndex> set = cFinder.getCluster(idx);
+                for (PairIntWithIndex p : set) {
+                    dbg0.setRGB(p.getY(), p.getX(), clr);
+                }
+            }
+            MiscDebug.writeImage(dbg0, "_a_texture_candidates_");
+            
+            
            
             /*            
             will next examine color histograms of the snallest clusters
