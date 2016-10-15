@@ -1,6 +1,5 @@
 package algorithms.imageProcessing.features;
 
-import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.compGeometry.HoughTransform;
 import algorithms.imageProcessing.AdaptiveThresholding;
@@ -33,8 +32,6 @@ import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
 import com.climbwithyourfeet.clustering.DTClusterFinder;
-import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TIntArrayList;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -84,6 +81,7 @@ import java.util.logging.Logger;
  adapted from
   http://www.peterkovesi.com/matlabfns/PhaseCongruency/phasecongmono.m
   which has copyright:
+  -------- begin Kovesi copyright --------
   Copyright (c) 1996-2013 Peter Kovesi
   Centre for Exploration Targeting
   The University of Western Australia
@@ -97,12 +95,13 @@ import java.util.logging.Logger;
   all copies or substantial portions of the Software.
 
   The Software is provided "as is", without warranty of any kind.
-
+  -------- end Kovesi copyright --------
+ 
  * useful also was the python phasepack port by Alistair Muldal
  *  http://pydoc.net/Python/phasepack/1.4/phasepack.phasecongmono/
  * which has the following copyright:
  * # MIT License:
-
+-------- begin phasepack copyright --------
 # Permission is hereby  granted, free of charge, to any  person obtaining a
 # copy of this software and associated  documentation files (the "Software"),
 # to deal in the Software without restriction, subject to the following
@@ -112,7 +111,8 @@ import java.util.logging.Logger;
 # all copies or substantial portions of the Software.
 
 # The software is provided "as is", without warranty of any kind.
-#
+-------- end phasepack copyright --------
+* 
 % =========================================
 *
 % Notes on specifying parameters:
@@ -147,13 +147,49 @@ import java.util.logging.Logger;
 %
 %     Peter Kovesi, "Phase Congruency Detects Corners and Edges". Proceedings
 %     DICTA 2003, Sydney Dec 10-12
+* 
+   Additions by Nichole King:
+    -- use of an adaptive binary threshold in a 2-layer filter.
+       That algorithm is in class AdaptiveThresholding.java and it is from
+       "Efficient Implementation of Local Adaptive Thresholding
+       Techniques Using Integral Images"
+           by Shafaita, Keysersa, and Breuelb
+    -- a flag 'extract noise' to extract the noise as a difference of the
+       result of k factors and to extract a subset of the noise as candidates
+       for finding textures.  It uses a  
+       density based clustering algorithm
+       http://nking.github.io/two-point-correlation/
+       which has an MIT license
+      ---- begin nking copyright ----
+      The MIT License (MIT)
+      Copyright (c) 2013-* Nichole King
+      http://nking.github.io/two-point-correlation/
 
+        Permission is hereby granted, free of charge, to any person obtaining 
+        a copy of this software and associated documentation files 
+        (the "Software"), to deal in the Software without restriction, 
+        including without limitation the rights to use, copy, modify, merge, 
+        publish, distribute, sublicense, and/or sell copies of the Software, 
+        and to permit persons to whom the Software is furnished to do so, 
+        subject to the following conditions:
+
+        The above copyright notice and this permission notice shall be included 
+        in all copies or substantial portions of the Software.
+        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS 
+        OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+        MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
+        IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
+        CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
+        TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
+        SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+     ---- end nking copyright ---- 
+    
      runtime complexity of majority of algorithm is a constant factor, that
      depends upon parameters chosen, times O(N*lg_2(N)),
      but each operation uses a transcendental function.
 
      the advantage to using phase congruency is that it's possible to produce
-     consistent clean edges with less noise and representing a wide range of
+     consistent clean edges with less noise and representing a wide range in
      intensity contrast.
 
  */
