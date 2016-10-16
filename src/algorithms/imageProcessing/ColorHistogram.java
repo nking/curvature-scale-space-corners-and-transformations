@@ -21,16 +21,14 @@ public class ColorHistogram {
      * 0 is for r' histogram and 1 is for the g' histogram.
      */
     public int[][] histogram(Image img, Set<PairInt> points) {
+                
+        int[][] hist = createWithDefaultSize();
         
-        int nBins = 16;
-        
-        int[][] hist = new int[2][];
-        for (int i = 0; i < 2; ++i) {
-            hist[i] = new int[nBins];
-        }
+        // 16
+        int nBins = hist[0].length;
        
         float binWidth = 1.f/(float)nBins;
-                
+           
         for (PairInt p : points) {
             int x = p.getX();
             int y = p.getY();
@@ -171,8 +169,14 @@ public class ColorHistogram {
         float sum1 = 0;
         for (int i = 0; i < hist0.length; ++i) {
             for (int j = 0; j < hist0[i].length; ++j) {
-                float y0 = (float)hist0[i][j]/(float)n0[i];
-                float y1 = (float)hist1[i][j]/(float)n1[i];
+                float y0 = 0;
+                float y1 = 0;
+                if (n0[i] > 0) {
+                    y0 = (float)hist0[i][j]/(float)n0[i];
+                }
+                if (n1[i] > 0) {
+                    y1 = (float)hist1[i][j]/(float)n1[i];
+                }
                 sum += Math.min(y0, y1);
                 sum0 += y0;
                 sum1 += y1;
@@ -182,6 +186,73 @@ public class ColorHistogram {
         float sim = sum / ((float)Math.min(sum0, sum1));
         
         return sim;
+    }
+    
+    public int[][] createWithDefaultSize() {
+        int nBins = 16;
+        
+        int[][] hist = new int[3][];
+        for (int i = 0; i < 3; ++i) {
+            hist[i] = new int[nBins];
+        }
+        return hist;
+    }
+    
+    /**
+     * note, hist0 and hist1 must be normalized before use here 
+     * (unlike intersection which internally normalizes the histograms).
+     * @param hist0
+     * @param hist1
+     * @return 
+     */
+    public float chiSquaredSum(int[][] hist0, int[][] hist1) {
+     
+        float[] x2 = new float[3];
+        chiSquaredSum(hist0, hist1, x2);
+        
+        float sum = 0;
+        for (int i = 0; i < hist0.length; ++i) {
+            sum += x2[i];
+        }
+        
+        return sum;
+    }
+    
+    /**
+     * note, hist0 and hist1 must be normalized before use here 
+     * (unlike intersection which internally normalizes the histograms).
+     * @param hist0
+     * @param hist1
+     * @param output 
+     */
+    public void chiSquaredSum(int[][] hist0, int[][] hist1, float[] output) {
+        
+        if ((hist0.length != hist1.length)) {
+            throw new IllegalArgumentException(
+                "hist0 and hist1 must be same dimensions");
+        }
+        if (output.length != hist0.length) {
+            throw new IllegalArgumentException("output must be same length as "
+                + " hist0 first dimension");
+        }
+        for (int i = 0; i < hist0.length; ++i) {
+            if ((hist0[i].length != hist1[i].length)) {
+                throw new IllegalArgumentException(
+                    "hist0 and hist1 must be same dimensions");
+            }
+        }
+        
+        //1/2 times sum over all bins of : (h1 - h2)^2/(h1 + h2)
+        for (int i = 0; i < hist0.length; ++i) {
+            for (int k = 0; k < hist0[i].length; ++k) {
+                float diff = hist0[i][k] - hist1[i][k];
+                float add = hist0[i][k] + hist1[i][k];
+                if (add > 0) {
+                    output[i] += (diff * diff)/add;
+                }
+            }
+            output[i] *= 0.5;
+        }        
     }
 
     public int[][] histogramRGB(ImageExt img, Set<PairInt> points) {

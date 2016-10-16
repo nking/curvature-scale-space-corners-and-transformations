@@ -4,7 +4,7 @@ import algorithms.misc.MiscMath;
 
 /**
  A class to create an adaptive threshold value image
- based upon the use of integral image
+ based upon the use of integral images
  and using techniques similar to adaptive mean,
  but including standard deviation.
  
