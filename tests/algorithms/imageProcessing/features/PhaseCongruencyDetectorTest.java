@@ -10,6 +10,7 @@ import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.MedianTransform;
 import algorithms.imageProcessing.SegmentationMergeThreshold;
+import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscDebug;
@@ -18,6 +19,7 @@ import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
+import com.climbwithyourfeet.clustering.DTClusterFinder;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TFloatArrayList;
@@ -460,6 +462,83 @@ public class PhaseCongruencyDetectorTest extends TestCase {
             }
             MiscDebug.writeImage(dbg, "_texture_clusters_3_" + fileName);
 
+            /*
+            ideally, for groups that have any points in them,
+               would like to find within each group,
+               the highest density, largest radii that only includes
+               member points
+               and those subsets then become the "representatives" of
+               possible texture classes.
+            
+            Could possibly use the DTClustered again.
+            For each group,
+                form the clusters using the DTClustering code.
+                since the minimum density is the same,
+                should be able to assume the cluster with largest
+                number of points is a good representation.
+            */
+            List<Set<PairInt>> rList = new ArrayList<Set<PairInt>>();           
+            for (int i = 0; i < nGroups; ++i) {
+                TIntList snIndexes = groupIndexes[i];
+                if (snIndexes.size() == 0) {
+                    continue;
+                }
+                Set<PairIntWithIndex> points2 = new HashSet<PairIntWithIndex>();
+                int maxX = Integer.MIN_VALUE;
+                int maxY = Integer.MIN_VALUE;
+                for (int j = 0; j < snIndexes.size(); ++j) {
+                    Set<PairInt> set = subsetNoise.get(snIndexes.get(j));
+                    for (PairInt p : set) {
+                        int x = p.getX();
+                        int y = p.getY();
+                        points2.add(new PairIntWithIndex(x, y, points2.size()));
+                        if (x > maxX) {
+                            maxX = x;
+                        }
+                        if (y > maxY) {
+                            maxY = y;
+                        }
+                    }
+                }
+                
+                DTClusterFinder<PairIntWithIndex> cFinder
+                    = new DTClusterFinder<PairIntWithIndex>(points2,
+                    maxX + 1, maxY + 1);
+               
+                cFinder.setMinimumNumberInCluster(1);
+                cFinder.calculateCriticalDensity();
+                cFinder.findClusters();
+                final int n = cFinder.getNumberOfClusters();
+                
+                int maxN = Integer.MIN_VALUE;
+                int maxNIdx = -1;
+                for (int ii = 0; ii < n; ++ii) {
+                    int sz = cFinder.getCluster(ii).size();
+                    if (sz > maxN) {
+                        maxN = sz;
+                        maxNIdx = ii;
+                    }
+                }
+                if (maxNIdx != -1) {
+                    Set<PairInt> set = new HashSet<PairInt>();
+                    for (PairIntWithIndex p : cFinder.getCluster(maxNIdx)) {
+                        set.add(new PairInt(p.getX(), p.getY()));
+                    }
+                    rList.add(set);
+                }
+            }
+           
+            // plot rList
+            dbg = img.createWithDimensions();
+            for (int i = 0; i < rList.size(); ++i) {
+                int[] clr = ImageIOHelper.getNextRGB(i);
+                ImageIOHelper.addCurveToImage(rList.get(i), dbg, 2,
+                    clr[0], clr[1], clr[2]);
+                System.out.println("**groupId=" + i + " "
+                    + " r=" + clr[0] + " g=" + clr[1] + " b=" + clr[2]);
+            }
+            MiscDebug.writeImage(dbg, "_texture_clusters_4_" + fileName);
+            
             /*
             -- color histograms to look for color classes in the subset noise.
             -- look into the texture stats of Malik et al 2001.
