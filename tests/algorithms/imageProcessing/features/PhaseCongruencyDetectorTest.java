@@ -534,11 +534,9 @@ public class PhaseCongruencyDetectorTest extends TestCase {
                     GroupPixelHSV hsv = new GroupPixelHSV();
                     hsv.calculateColors(set, img);
 
-      //TODO: the window size is not
-      // the right approach.
-      // might need to use the whole pattern in
-      // a set
                     // --- trim pattern to 25 x 25 or smaller within set ------
+                    // looking for highest density region of this set to make
+                    // a representative patch with.
                     // making a small binary image (dimensions just large enough
                     // to hold set - minima) where value is 1 where there is a point.
                     // then summed area image.
@@ -755,6 +753,16 @@ public class PhaseCongruencyDetectorTest extends TestCase {
                 MiscDebug.writeImage(kpFreqR2Img, "_freq_spatial_" +
                     i + "_" + fileName);
 
+                GreyscaleImage img3 = filteredHSVImgs.get(i);
+                for (int j = 0; j < kpFreqR2Img.getNPixels(); ++j) {
+                    if (img3.getValue(j) == 0) {
+                        kpFreqR2Img.setValue(j, 0);
+                    }
+                }
+                
+                MiscDebug.writeImage(kpFreqR2Img, "_freq_spatial_filtered_" +
+                    i + "_" + fileName);
+                
                 // TODO: store in spatialResponses
             }
 
