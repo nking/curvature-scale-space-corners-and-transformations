@@ -14,6 +14,7 @@ import algorithms.imageProcessing.MedianTransform;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.PeriodicFFT;
 import algorithms.imageProcessing.SegmentationMergeThreshold;
+import algorithms.imageProcessing.SummedAreaTable;
 import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Complex;
 import algorithms.misc.Histogram;
@@ -412,6 +413,8 @@ public class PhaseCongruencyDetectorTest extends TestCase {
             }
             MiscDebug.writeImage(dbg, "_texture_clusters_2_" + fileName);
 
+            List<GreyscaleImage> patterns = new ArrayList<GreyscaleImage>();
+            
             MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 
             // ---- a kmeans style iteration to re-org membership
@@ -521,31 +524,108 @@ public class PhaseCongruencyDetectorTest extends TestCase {
                     for (PairIntWithIndex p : cFinder.getCluster(maxNIdx)) {
                         set.add(new PairInt(p.getX(), p.getY()));
                     }
+                    
+                    if (set.isEmpty()) {
+                        continue;
+                    }
 
                     // determine avg and std of color to use as a filter for
                     // image. using HSV
                     GroupPixelHSV hsv = new GroupPixelHSV();
                     hsv.calculateColors(set, img);
 
-                    // --- trim pattern to 24 x 24 or smaller within set ------
+      //TODO: the window size is not
+      // the right approach.
+      // might need to use the whole pattern in
+      // a set
+                    // --- trim pattern to 25 x 25 or smaller within set ------
                     // making a small binary image (dimensions just large enough
-                    // to hold set - minima) where vlue is 1 where there is a point.
+                    // to hold set - minima) where value is 1 where there is a point.
                     // then summed area image.
-                    // then mean over window 24 x 24.
-                    // then max is center of highest density 24 x 24 window
+                    // then mean over window 25 x 25.
+                    // then max is center of highest density 25 x 25 window
+                    int window = 25;
+                    int wHalf = window >> 1;
+                    int[] minMaxXY = MiscMath.findMinMaxXY(set);
+                    int n0 = (minMaxXY[1] - minMaxXY[0]) + 1;
+                    int n1 = (minMaxXY[3] - minMaxXY[2]) + 1;
+                    double[][] pattern = new double[n0][];
+                    for (int j = 0; j < n0; ++j) {
+                        pattern[j] = new double[n1];
+                    }
+                    for (PairInt p : set) {
+                        int x = p.getX() - minMaxXY[0];
+                        int y = p.getY() - minMaxXY[2];
+                        pattern[x][y] = 1;
+                    }
+                    SummedAreaTable summed = new SummedAreaTable();
+                    double[][] dTable = summed
+                        .createAbsoluteSummedAreaTable(pattern);
+                    dTable = summed.applyMeanOfWindowFromSummedAreaTable(
+                        dTable, window);
                     
-                    editing here
-                    
+                    double dMax = Integer.MIN_VALUE;
+                    int dMaxX = -1;
+                    int dMaxY = -1;
+                    for (int j = 0; j < n0; ++j) {
+                        for (int k = 0; k < n1; ++k) {
+                            double v = dTable[j][k];
+                            if (v > dMax) {
+                                dMax = v;
+                                dMaxX = j;
+                                dMaxY = k;
+                            }
+                        }
+                    }
+                    if (dMaxX == -1) {
+                        continue;
+                    }
+                    // transform min and max back into image reference frame
+                    dMaxX += minMaxXY[0];
+                    dMaxY += minMaxXY[2];
+                    assert(dMaxX >= minMaxXY[0] && dMaxX <= minMaxXY[1]);
+                    assert(dMaxY >= minMaxXY[2] && dMaxY <= minMaxXY[3]);
+                    // create a 25 x 25 image centered on dMaxX, dMaxY
+                    GreyscaleImage imagePattern = new GreyscaleImage(window, window);
+                    int x0 = dMaxX - wHalf;
+                    if (x0 < 0) {
+                        x0 = 0;
+                    }
+                    int x1 = dMaxX + wHalf;
+                    if (x1 > minMaxXY[1]) {
+                        x1 = minMaxXY[1];
+                    }
+                    int y0 = dMaxY - wHalf;
+                    if (y0 < 0) {
+                        y0 = 0;
+                    }
+                    int y1 = dMaxY + wHalf;
+                    if (y1 > minMaxXY[3]) {
+                        y1 = minMaxXY[3];
+                    }
+          
+                    int np = 0;
                     for (PairInt p : set) {
                         int x = p.getX();
                         int y = p.getY();
+                        if (x < x0 || y < y0 || x > x1 || y > y1) {
+                            continue;
+                        }
                         
+                        int v = img2.getValue(x, y);
+                        x -= x0;
+                        y -= y0;
+                        imagePattern.setValue(x, y, v);
+                        np++;
                     }
-
-                    if (!set.isEmpty()) {
+                    System.out.println("np=" + np + " for i=" + i 
+                        + " dMax=" + dMax);
+                    MiscDebug.writeImage(imagePattern, "_pattern_" + i);
+                    if (np > 1) {
+                        patterns.add(imagePattern);
                         rList.add(set);
                         colors.add(hsv);
-                    }
+                    }                    
                 }
             }
 
@@ -641,21 +721,9 @@ public class PhaseCongruencyDetectorTest extends TestCase {
                 Set<PairInt> set = rList.get(i);
                 
                 int[] minMaxXY = MiscMath.findMinMaxXY(set);
-                // row major, so switch x and y axes
-                
-                making this above
-                
-                GreyscaleImage imgPattern = new GreyscaleImage(
-                    (minMaxXY[3] - minMaxXY[2]) + 2*buffer,
-                    (minMaxXY[1] - minMaxXY[0]) + 2*buffer);
-                for (PairInt p : set) {
-                    int x = p.getX();
-                    int y = p.getY();
-                    int v = gsImg.getValue(x, y);
-                    assert(v > 0);
-                    imgPattern.setValue(y - minMaxXY[2] + buffer,
-                        x - minMaxXY[0] + buffer, v);
-                }
+                                
+                // imgPattern is in column major format
+                GreyscaleImage imgPattern = patterns.get(i);
 
                 Complex[][] fftPattern = PhaseCongruencyDetector
                     .createLowPassFreqDomainFilter(imgPattern);
