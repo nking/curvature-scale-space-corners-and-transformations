@@ -2,15 +2,20 @@ package algorithms.imageProcessing.features;
 
 import algorithms.compGeometry.clustering.KMeansHSV;
 import algorithms.imageProcessing.ColorHistogram;
+import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.GroupPixelHSV;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.MedianTransform;
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.imageProcessing.PeriodicFFT;
 import algorithms.imageProcessing.SegmentationMergeThreshold;
 import algorithms.imageProcessing.util.PairIntWithIndex;
+import algorithms.misc.Complex;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscDebug;
@@ -27,8 +32,11 @@ import gnu.trove.list.array.TIntArrayList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeMap;
 import junit.framework.TestCase;
 
 /**
@@ -404,6 +412,8 @@ public class PhaseCongruencyDetectorTest extends TestCase {
             }
             MiscDebug.writeImage(dbg, "_texture_clusters_2_" + fileName);
 
+            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+
             // ---- a kmeans style iteration to re-org membership
             //      until no change
             int[][][] sumCHs = new int[nGroups][][];
@@ -438,7 +448,7 @@ public class PhaseCongruencyDetectorTest extends TestCase {
                 }
                 System.out.println("nIter=" + nIter + " totSim=" + totSim);
                 // sim is 1.0 for perfect match
-                if (nIter>0 && 
+                if (nIter>0 &&
                     (Math.abs(totSim - prevTotSim) < (0.01 * nPoints))
                     || (totSim > (0.7 * nPoints))) {
                     break;
@@ -462,22 +472,8 @@ public class PhaseCongruencyDetectorTest extends TestCase {
             }
             MiscDebug.writeImage(dbg, "_texture_clusters_3_" + fileName);
 
-            /*
-            ideally, for groups that have any points in them,
-               would like to find within each group,
-               the highest density, largest radii that only includes
-               member points
-               and those subsets then become the "representatives" of
-               possible texture classes.
-            
-            Could possibly use the DTClustered again.
-            For each group,
-                form the clusters using the DTClustering code.
-                since the minimum density is the same,
-                should be able to assume the cluster with largest
-                number of points is a good representation.
-            */
-            List<Set<PairInt>> rList = new ArrayList<Set<PairInt>>();           
+            List<Set<PairInt>> rList = new ArrayList<Set<PairInt>>();
+            List<GroupPixelHSV> colors = new ArrayList<GroupPixelHSV>();
             for (int i = 0; i < nGroups; ++i) {
                 TIntList snIndexes = groupIndexes[i];
                 if (snIndexes.size() == 0) {
@@ -500,16 +496,16 @@ public class PhaseCongruencyDetectorTest extends TestCase {
                         }
                     }
                 }
-                
+
                 DTClusterFinder<PairIntWithIndex> cFinder
                     = new DTClusterFinder<PairIntWithIndex>(points2,
                     maxX + 1, maxY + 1);
-               
+
                 cFinder.setMinimumNumberInCluster(1);
                 cFinder.calculateCriticalDensity();
                 cFinder.findClusters();
                 final int n = cFinder.getNumberOfClusters();
-                
+
                 int maxN = Integer.MIN_VALUE;
                 int maxNIdx = -1;
                 for (int ii = 0; ii < n; ++ii) {
@@ -520,14 +516,39 @@ public class PhaseCongruencyDetectorTest extends TestCase {
                     }
                 }
                 if (maxNIdx != -1) {
+
                     Set<PairInt> set = new HashSet<PairInt>();
                     for (PairIntWithIndex p : cFinder.getCluster(maxNIdx)) {
                         set.add(new PairInt(p.getX(), p.getY()));
                     }
-                    rList.add(set);
+
+                    // determine avg and std of color to use as a filter for
+                    // image. using HSV
+                    GroupPixelHSV hsv = new GroupPixelHSV();
+                    hsv.calculateColors(set, img);
+
+                    // --- trim pattern to 24 x 24 or smaller within set ------
+                    // making a small binary image (dimensions just large enough
+                    // to hold set - minima) where vlue is 1 where there is a point.
+                    // then summed area image.
+                    // then mean over window 24 x 24.
+                    // then max is center of highest density 24 x 24 window
+                    
+                    editing here
+                    
+                    for (PairInt p : set) {
+                        int x = p.getX();
+                        int y = p.getY();
+                        
+                    }
+
+                    if (!set.isEmpty()) {
+                        rList.add(set);
+                        colors.add(hsv);
+                    }
                 }
             }
-           
+
             // plot rList
             dbg = img.createWithDimensions();
             for (int i = 0; i < rList.size(); ++i) {
@@ -538,7 +559,9 @@ public class PhaseCongruencyDetectorTest extends TestCase {
                     + " r=" + clr[0] + " g=" + clr[1] + " b=" + clr[2]);
             }
             MiscDebug.writeImage(dbg, "_texture_clusters_4_" + fileName);
-            
+
+            ImageProcessor imageProcessor = new ImageProcessor();
+
             /*
             -- color histograms to look for color classes in the subset noise.
             -- look into the texture stats of Malik et al 2001.
@@ -564,6 +587,8 @@ public class PhaseCongruencyDetectorTest extends TestCase {
                     (note, for the intensity weight component, sigma is 0.02,
                      and sigma_TX = 0.025,
                      so might expect similar for other weight sigmas.
+                -- They also include suggestions for using position, that is
+                   adjacency.
 
             -- explore making a frequency domain filter for spatial domain
                from a representative set of subset noise or centered on it.
@@ -572,6 +597,98 @@ public class PhaseCongruencyDetectorTest extends TestCase {
                -- Malik et al. 2001 normalize their texton responses using:
                     F(x) = F(x) X log(1-(|F(x)|/0.03))/|F(x)|
             */
+
+            // make hsv filtered copies of image, then extracy greuscale
+            List<GreyscaleImage> filteredHSVImgs = new
+                ArrayList<GreyscaleImage>();
+            for (int i = 0; i < colors.size(); ++i) {
+                GroupPixelHSV hsv = colors.get(i);
+                float h0 = hsv.getAvgH() - 3*hsv.getStdDevH();
+                float h1 = hsv.getAvgH() + 3*hsv.getStdDevH();
+                float s0 = hsv.getAvgS() - 3*hsv.getStdDevS();
+                float s1 = hsv.getAvgS() + 3*hsv.getStdDevS();
+                float v0 = hsv.getAvgV() - 3*hsv.getStdDevV();
+                float v1 = hsv.getAvgV() + 3*hsv.getStdDevV();
+                Image imgCp = img.copyImage();
+                for (int j = 0; j < img.getNPixels(); ++j) {
+                    float h = img.getHue(j);
+                    float s = img.getSaturation(j);
+                    float v = img.getBrightness(j);
+                    if (h < h0 || h > h1 || s < s0 || s > s1 || v < v0 || v > v1) {
+                        imgCp.setRGB(j, 0, 0, 0);
+                    }
+                }
+                filteredHSVImgs.add(imgCp.copyToGreyscale2());
+                MiscDebug.writeImage(imgCp, "_hsv_filtered_" + i);
+            }
+
+             GreyscaleImage gsImg = img2;
+
+            // use row major for FFTs
+            int nCols = gsImg.getWidth();
+            int nRows = gsImg.getHeight();
+            PeriodicFFT perfft2 = new PeriodicFFT();
+            Complex[][][] perfResults = perfft2.perfft2(gsImg, false);
+            Complex[][] fftImage = perfResults[1];
+
+            int buffer = 5;
+
+            List<GreyscaleImage> spatialResponses
+                = new ArrayList<GreyscaleImage>(rList.size());
+
+            for (int i = 0; i < rList.size(); ++i) {
+               
+                Set<PairInt> set = rList.get(i);
+                
+                int[] minMaxXY = MiscMath.findMinMaxXY(set);
+                // row major, so switch x and y axes
+                
+                making this above
+                
+                GreyscaleImage imgPattern = new GreyscaleImage(
+                    (minMaxXY[3] - minMaxXY[2]) + 2*buffer,
+                    (minMaxXY[1] - minMaxXY[0]) + 2*buffer);
+                for (PairInt p : set) {
+                    int x = p.getX();
+                    int y = p.getY();
+                    int v = gsImg.getValue(x, y);
+                    assert(v > 0);
+                    imgPattern.setValue(y - minMaxXY[2] + buffer,
+                        x - minMaxXY[0] + buffer, v);
+                }
+
+                Complex[][] fftPattern = PhaseCongruencyDetector
+                    .createLowPassFreqDomainFilter(imgPattern);
+
+                // --- image in the frequency domain convolved with texture patch ----
+                Complex[][] freqDomainImageTimesPattern =
+                    imageProcessor.convolveWithKernel(fftImage, fftPattern);
+
+                // ----- transform that to spatial domain ----
+                Complex[][] fComplex = imageProcessor.create2DFFT(
+                    freqDomainImageTimesPattern, false, false);
+
+                double[][] transformedReal = new double[nCols][];
+                for (int i0 = 0; i0 < nCols; ++i0) {
+                    transformedReal[i0] = new double[nRows];
+                    for (int i1 = 0; i1 < nRows; ++i1) {
+                        transformedReal[i0][i1] = fComplex[i1][i0].abs();
+                    }
+                }
+
+                MiscMath.applyRescale(transformedReal, 0, 255);
+                GreyscaleImage kpFreqR2Img = new GreyscaleImage(nCols, nRows);
+                for (int ii = 0; ii < nCols; ++ii) {
+                    for (int j = 0; j < nRows; ++j) {
+                        kpFreqR2Img.setValue(ii, j,
+                            (int)Math.round(transformedReal[ii][j]));
+                    }
+                }
+                MiscDebug.writeImage(kpFreqR2Img, "_freq_spatial_" +
+                    i + "_" + fileName);
+
+                // TODO: store in spatialResponses
+            }
 
             /*
             assertNotNull(products);
@@ -624,4 +741,20 @@ public class PhaseCongruencyDetectorTest extends TestCase {
         }
     }
 
+    public class IntegerPI implements Comparable<IntegerPI> {
+
+        final Integer d;
+        final PairInt p;
+
+        public IntegerPI(Integer d, PairInt p) {
+            this.d = d;
+            this.p = p;
+        }
+
+        @Override
+        public int compareTo(IntegerPI other) {
+            return d.compareTo(other.d);
+        }
+
+    }
 }
