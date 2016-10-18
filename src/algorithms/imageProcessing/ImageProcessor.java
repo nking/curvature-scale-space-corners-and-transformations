@@ -8746,6 +8746,26 @@ if (sum > 511) {
         
         return sum;
     } 
+    
+    public Set<PairInt> createWindowOfPoints(int x, int y, 
+        int windowHalfWidth, int imageWidth, int imageHeight) {
+        
+        Set<PairInt> points = new HashSet<PairInt>();
+        
+        for (int i = (x - windowHalfWidth); i <= (x + windowHalfWidth); ++i) {
+            if (i < 0 || i > (imageWidth - 1)) {
+                continue;
+            }
+            for (int j = (y - windowHalfWidth); j <= (y + windowHalfWidth); ++j) {
+                if (j < 0 || j > (imageHeight - 1)) {
+                    continue;
+                }
+                points.add(new PairInt(i, j));
+            }
+        }
+        
+        return points;
+    }
 
     // TODO: implement the methods in 
     // http://www.merl.com/publications/docs/TR2008-030.pdf

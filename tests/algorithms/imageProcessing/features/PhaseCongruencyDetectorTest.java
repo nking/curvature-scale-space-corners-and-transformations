@@ -21,6 +21,7 @@ import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
+import algorithms.search.NearestNeighbor2D;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -277,12 +278,12 @@ public class PhaseCongruencyDetectorTest extends TestCase {
 
         String[] fileNames = new String[]{
             //"seattle.jpg",
-            "merton_college_I_001.jpg",
+            //"merton_college_I_001.jpg",
             //"house.gif",
             //"lena.jpg",
             //"campus_010.jpg",
             //"android_statues_01.jpg",
-            //"android_statues_02.jpg",
+            "android_statues_02.jpg",
             //"android_statues_03.jpg",
             //"android_statues_04.jpg"
         };
@@ -414,6 +415,9 @@ public class PhaseCongruencyDetectorTest extends TestCase {
             MiscDebug.writeImage(dbg, "_texture_clusters_2_" + fileName);
 
             List<GreyscaleImage> patterns = new ArrayList<GreyscaleImage>();
+            List<GroupPixelHSV> patternColors = new ArrayList<GroupPixelHSV>();
+            
+            ImageProcessor imageProcessor = new ImageProcessor();
             
             MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 
@@ -476,6 +480,8 @@ public class PhaseCongruencyDetectorTest extends TestCase {
             MiscDebug.writeImage(dbg, "_texture_clusters_3_" + fileName);
 
             List<Set<PairInt>> rList = new ArrayList<Set<PairInt>>();
+            //TFloatList critDists = new TFloatArrayList();
+            
             List<GroupPixelHSV> colors = new ArrayList<GroupPixelHSV>();
             for (int i = 0; i < nGroups; ++i) {
                 TIntList snIndexes = groupIndexes[i];
@@ -528,117 +534,114 @@ public class PhaseCongruencyDetectorTest extends TestCase {
                     if (set.isEmpty()) {
                         continue;
                     }
-
-                    // determine avg and std of color to use as a filter for
-                    // image. using HSV
-                    GroupPixelHSV hsv = new GroupPixelHSV();
-                    hsv.calculateColors(set, img);
-
-                    // --- trim pattern to 25 x 25 or smaller within set ------
-                    // looking for highest density region of this set to make
-                    // a representative patch with.
-                    // making a small binary image (dimensions just large enough
-                    // to hold set - minima) where value is 1 where there is a point.
-                    // then summed area image.
-                    // then mean over window 25 x 25.
-                    // then max is center of highest density 25 x 25 window
-                    int window = 25;
-                    int wHalf = window >> 1;
-                    int[] minMaxXY = MiscMath.findMinMaxXY(set);
-                    int n0 = (minMaxXY[1] - minMaxXY[0]) + 1;
-                    int n1 = (minMaxXY[3] - minMaxXY[2]) + 1;
-                    double[][] pattern = new double[n0][];
-                    for (int j = 0; j < n0; ++j) {
-                        pattern[j] = new double[n1];
-                    }
-                    for (PairInt p : set) {
-                        int x = p.getX() - minMaxXY[0];
-                        int y = p.getY() - minMaxXY[2];
-                        pattern[x][y] = 1;
-                    }
-                    SummedAreaTable summed = new SummedAreaTable();
-                    double[][] dTable = summed
-                        .createAbsoluteSummedAreaTable(pattern);
-                    dTable = summed.applyMeanOfWindowFromSummedAreaTable(
-                        dTable, window);
                     
-                    double dMax = Integer.MIN_VALUE;
-                    int dMaxX = -1;
-                    int dMaxY = -1;
-                    for (int j = 0; j < n0; ++j) {
-                        for (int k = 0; k < n1; ++k) {
-                            double v = dTable[j][k];
-                            if (v > dMax) {
-                                dMax = v;
-                                dMaxX = j;
-                                dMaxY = k;
-                            }
+                    // 2 points within this distnce
+                    float critDist = 1.f/cFinder.getCriticalDensity();
+                    
+                    //critDists.add(critDist);
+  
+                    int patchWidth = Math.round(critDist/2.f);
+                    if ((patchWidth & 1) == 0) {
+                        patchWidth++;
+                    }
+                    int patchHalf = patchWidth >> 1;
+           
+                    // --- make representative patches for this set, where
+                    //     patch is the color image histograms centered at
+                    //     point and window with width = patchWidth.
+                    //     -- would like to pick the most different among them.
+                    //        will approx that with sorted by intersection
+                    //        with the sum and take the first, last and mid
+                    //        set.
+                    //        -- then the patches are the window of all pixels
+                    //           around the centroid of pick
+                    PairInt[] rPoints;
+                    if (set.size() < 4) {
+                        rPoints = new PairInt[set.size()];
+                        int count2 = 0;
+                        for (PairInt p : set) {
+                            rPoints[count2] = p;
+                            count2++;
                         }
+                    } else {
+                        int[][][] chs2 = new int[set.size()][][];
+                        int[][] sum2 = chhist.createWithDefaultSize();
+                        int count2 = 0;
+                        for (PairInt p : set) {
+                            int x = p.getX();
+                            int y = p.getY();
+                            Set<PairInt> rect = imageProcessor
+                                .createWindowOfPoints(x, y, patchHalf,
+                                img.getWidth(), img.getHeight());
+                            chs2[count2] = chhist.histogramHSV(img, rect);
+                            chhist.add2To1(sum2, chs2[count2]);
+                            count2++;
+                        }
+                        FixedSizeSortedVector<IntegerPI> sortedInter = new
+                            FixedSizeSortedVector<IntegerPI>(set.size(),
+                            IntegerPI.class);
+                        count2 = 0;
+                        for (PairInt p : set) {
+                            float intersection = chhist.intersection(
+                                sum2, chs2[count2]);
+                            IntegerPI ip = new IntegerPI(
+                                Math.round(100 * intersection), p);
+                            sortedInter.add(ip);
+                            count2++;
+                        }
+                        rPoints = new PairInt[3];
+                        rPoints[0] = sortedInter.getArray()[0].p;
+                        rPoints[1] = sortedInter.getArray()[set.size()/2].p;
+                        rPoints[2] = sortedInter.getArray()[set.size() - 1].p;
                     }
-                    if (dMaxX == -1) {
-                        continue;
-                    }
-                    // transform min and max back into image reference frame
-                    dMaxX += minMaxXY[0];
-                    dMaxY += minMaxXY[2];
-                    assert(dMaxX >= minMaxXY[0] && dMaxX <= minMaxXY[1]);
-                    assert(dMaxY >= minMaxXY[2] && dMaxY <= minMaxXY[3]);
-                    // create a 25 x 25 image centered on dMaxX, dMaxY
-                    GreyscaleImage imagePattern = new GreyscaleImage(window, window);
-                    int x0 = dMaxX - wHalf;
-                    if (x0 < 0) {
-                        x0 = 0;
-                    }
-                    int x1 = dMaxX + wHalf;
-                    if (x1 > minMaxXY[1]) {
-                        x1 = minMaxXY[1];
-                    }
-                    int y0 = dMaxY - wHalf;
-                    if (y0 < 0) {
-                        y0 = 0;
-                    }
-                    int y1 = dMaxY + wHalf;
-                    if (y1 > minMaxXY[3]) {
-                        y1 = minMaxXY[3];
-                    }
-          
-                    int np = 0;
-                    for (PairInt p : set) {
-                        int x = p.getX();
-                        int y = p.getY();
-                        if (x < x0 || y < y0 || x > x1 || y > y1) {
-                            continue;
+                    
+                    for (PairInt r : rPoints) {
+                        
+                        int x = r.getX();
+                        int y = r.getY();
+                        
+                        Set<PairInt> rect = imageProcessor.createWindowOfPoints(
+                            x, y, patchHalf, img.getWidth(), img.getHeight());
+                        
+                        // determine avg and std of color to use as a filter for
+                        // image. using HSV
+                        GroupPixelHSV hsv = new GroupPixelHSV();
+                        hsv.calculateColors(rect, img);
+
+                        int[] minMaxXY = MiscMath.findMinMaxXY(rect);
+                        int n0 = (minMaxXY[1] - minMaxXY[0]) + 1;
+                        int n1 = (minMaxXY[3] - minMaxXY[2]) + 1;
+                    
+                        GreyscaleImage imagePattern = new GreyscaleImage(
+                            patchWidth, patchWidth);
+                        
+                        for (PairInt p2 : rect) {
+                            int x3 = p2.getX();
+                            int y3 = p2.getY();
+                            int v = img2.getValue(x3, y3);
+                            x3 -= minMaxXY[0];
+                            y3 -= minMaxXY[2];
+                            imagePattern.setValue(x3, y3, v);
                         }
                         
-                        int v = img2.getValue(x, y);
-                        x -= x0;
-                        y -= y0;
-                        imagePattern.setValue(x, y, v);
-                        np++;
-                    }
-                    System.out.println("np=" + np + " for i=" + i 
-                        + " dMax=" + dMax);
-                    MiscDebug.writeImage(imagePattern, "_pattern_" + i);
-                    if (np > 1) {
                         patterns.add(imagePattern);
-                        rList.add(set);
+                        rList.add(rect);
                         colors.add(hsv);
-                    }                    
+                    }
                 }
             }
 
             // plot rList
-            dbg = img.createWithDimensions();
             for (int i = 0; i < rList.size(); ++i) {
+                dbg = img.createWithDimensions();
                 int[] clr = ImageIOHelper.getNextRGB(i);
                 ImageIOHelper.addCurveToImage(rList.get(i), dbg, 2,
                     clr[0], clr[1], clr[2]);
-                System.out.println("**groupId=" + i + " "
-                    + " r=" + clr[0] + " g=" + clr[1] + " b=" + clr[2]);
+                //System.out.println("**groupId=" + i + " "
+                //    + " r=" + clr[0] + " g=" + clr[1] + " b=" + clr[2]);
+                MiscDebug.writeImage(dbg, "_texture_clusters_4_" + i + "_" 
+                    + fileName);
             }
-            MiscDebug.writeImage(dbg, "_texture_clusters_4_" + fileName);
-
-            ImageProcessor imageProcessor = new ImageProcessor();
 
             /*
             -- color histograms to look for color classes in the subset noise.
@@ -681,12 +684,12 @@ public class PhaseCongruencyDetectorTest extends TestCase {
                 ArrayList<GreyscaleImage>();
             for (int i = 0; i < colors.size(); ++i) {
                 GroupPixelHSV hsv = colors.get(i);
-                float h0 = hsv.getAvgH() - 3*hsv.getStdDevH();
-                float h1 = hsv.getAvgH() + 3*hsv.getStdDevH();
-                float s0 = hsv.getAvgS() - 3*hsv.getStdDevS();
-                float s1 = hsv.getAvgS() + 3*hsv.getStdDevS();
-                float v0 = hsv.getAvgV() - 3*hsv.getStdDevV();
-                float v1 = hsv.getAvgV() + 3*hsv.getStdDevV();
+                float h0 = hsv.getAvgH() - 2*hsv.getStdDevH();
+                float h1 = hsv.getAvgH() + 2*hsv.getStdDevH();
+                float s0 = hsv.getAvgS() - 2*hsv.getStdDevS();
+                float s1 = hsv.getAvgS() + 2*hsv.getStdDevS();
+                float v0 = hsv.getAvgV() - 2*hsv.getStdDevV();
+                float v1 = hsv.getAvgV() + 2*hsv.getStdDevV();
                 Image imgCp = img.copyImage();
                 for (int j = 0; j < img.getNPixels(); ++j) {
                     float h = img.getHue(j);
@@ -696,6 +699,7 @@ public class PhaseCongruencyDetectorTest extends TestCase {
                         imgCp.setRGB(j, 0, 0, 0);
                     }
                 }
+                
                 filteredHSVImgs.add(imgCp.copyToGreyscale2());
                 MiscDebug.writeImage(imgCp, "_hsv_filtered_" + i);
             }

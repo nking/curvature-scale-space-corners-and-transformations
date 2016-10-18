@@ -1,4 +1,3 @@
-
 package algorithms.imageProcessing;
 
 import algorithms.util.PairInt;
@@ -19,15 +18,17 @@ public class GroupPixelHSV {
     private float stdDevH;
     private float stdDevS;
     private float stdDevV;
+    
+    private GroupPixelCIELAB rgbAndCIEClrs;
 
     public GroupPixelHSV() {
     }
 
     public void calculateColors(final Set<PairInt> points, ImageExt colorImage) {
         
-        GroupPixelRGB0 rgb = new GroupPixelRGB0();
-       
-        rgb.calculateColors(points, colorImage, 0, 0);
+        GroupPixelCIELAB rgb = new GroupPixelCIELAB(points, colorImage);
+        rgbAndCIEClrs = rgb ;
+        
         float[] hsvAvg = new float[3];
         Color.RGBtoHSB(Math.round(rgb.getAvgRed()), 
             Math.round(rgb.getAvgGreen()), 
@@ -47,15 +48,9 @@ public class GroupPixelHSV {
             int x = p.getX();
             int y = p.getY();
             
-            int r = colorImage.getR(x, y);
-            int g = colorImage.getG(x, y);
-            int b = colorImage.getB(x, y);
-            
-            Color.RGBtoHSB(r, g, b, hsv);
-            
-            float diffH = hsv[0] - hsvAvg[0];
-            float diffS = hsv[1] - hsvAvg[1];
-            float diffV = hsv[2] - hsvAvg[2];
+            float diffH = colorImage.getHue(x, y) - hsvAvg[0];
+            float diffS = colorImage.getSaturation(x, y) - hsvAvg[1];
+            float diffV = colorImage.getBrightness(x, y) - hsvAvg[2];
             
             sumH += (diffH * diffH);
             sumS += (diffS * diffS);
@@ -115,4 +110,47 @@ public class GroupPixelHSV {
     public float getStdDevV() {
         return stdDevV;
     }
+   
+     /**
+     * @return the avgL
+     */
+    public float getAvgL() {
+        return rgbAndCIEClrs.getAvgL();
+    }
+
+    /**
+     * @return the stdDevL
+     */
+    public float getStdDevL() {
+        return rgbAndCIEClrs.getStdDevL();
+    }
+
+    /**
+     * @return the avgA
+     */
+    public float getAvgA() {
+        return rgbAndCIEClrs.getAvgA();
+    }
+
+    /**
+     * @return the stdDevA
+     */
+    public float getStdDevA() {
+        return rgbAndCIEClrs.getStdDevA();
+    }
+
+    /**
+     * @return the avgB
+     */
+    public float getAvgB() {
+        return rgbAndCIEClrs.getAvgB();
+    }
+
+    /**
+     * @return the stdDevB
+     */
+    public float getStdDevB() {
+        return rgbAndCIEClrs.getStdDevB();
+    }
+    
 }
