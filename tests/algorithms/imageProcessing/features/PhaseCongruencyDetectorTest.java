@@ -27,10 +27,13 @@ import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import com.climbwithyourfeet.clustering.DTClusterFinder;
+import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -733,8 +736,8 @@ public class PhaseCongruencyDetectorTest extends TestCase {
 
             int buffer = 5;
 
-            List<GreyscaleImage> spatialResponses
-                = new ArrayList<GreyscaleImage>(rList.size());
+            TIntObjectMap<Set<GreyscaleImage>> groupResponseImages = new
+                TIntObjectHashMap<Set<GreyscaleImage>>();
 
             for (int i = 0; i < rList.size(); ++i) {
                
@@ -785,15 +788,43 @@ public class PhaseCongruencyDetectorTest extends TestCase {
                 MiscDebug.writeImage(kpFreqR2Img, "_freq_spatial_filtered_" +
                     i + "_" + fileName);
                 
-                // -- threshold each freq response image
-                //     -- the threshold might be dependent upon
-                //        the intensity range in the template pattern.
-                // -- combine thresholded responses that have the same
-                //    groupIndexList value
-                // -- store that as spatial responses with key = group index
-                
+                int groupIdx = groupIndexList.get(i);
+                Set<GreyscaleImage> rImages = groupResponseImages.get(groupIdx);
+                if (rImages == null) {
+                    rImages = new HashSet<GreyscaleImage>();
+                    groupResponseImages.put(groupIdx, rImages);
+                }
+                rImages.add(kpFreqR2Img);
             }
-
+            
+            // -- threshold each freq response image
+            //     -- the threshold might be dependent upon
+            //        the intensity range in the template pattern.
+            // -- combine thresholded responses that have the same
+            //    groupIndexList value
+            // -- store that as spatial responses with key = group index
+                        
+            for (int i = 0; i < nGroups; ++i) {
+                Set<GreyscaleImage> images = groupResponseImages.get(i);
+                if (images == null) {
+                    continue;
+                }
+                GreyscaleImage gImage = new GreyscaleImage(img.getWidth(), 
+                    img.getHeight());
+                //TODO: revise to find this threshold statistically
+                int thresh = 94;
+                for (GreyscaleImage g : images) {
+                    for (int j = 0; j < g.getNPixels(); ++j) {
+                        int v = g.getValue(j);
+                        if ((gImage.getValue(j) == 0) && v >= thresh) {
+                            gImage.setValue(j, v);
+                        }
+                    }
+                }
+                MiscDebug.writeImage(gImage, "_final_textures_" + i +
+                    fileName);
+            }
+            
             /*
             assertNotNull(products);
             int[][] thinned = products.getThinned();
