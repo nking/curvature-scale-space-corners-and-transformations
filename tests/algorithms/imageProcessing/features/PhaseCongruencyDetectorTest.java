@@ -682,20 +682,36 @@ public class PhaseCongruencyDetectorTest extends TestCase {
             // make hsv filtered copies of image, then extracy greuscale
             List<GreyscaleImage> filteredHSVImgs = new
                 ArrayList<GreyscaleImage>();
+            float eFactor = 1.f;
             for (int i = 0; i < colors.size(); ++i) {
                 GroupPixelHSV hsv = colors.get(i);
-                float h0 = hsv.getAvgH() - 2*hsv.getStdDevH();
-                float h1 = hsv.getAvgH() + 2*hsv.getStdDevH();
-                float s0 = hsv.getAvgS() - 2*hsv.getStdDevS();
-                float s1 = hsv.getAvgS() + 2*hsv.getStdDevS();
-                float v0 = hsv.getAvgV() - 2*hsv.getStdDevV();
-                float v1 = hsv.getAvgV() + 2*hsv.getStdDevV();
+                float h0 = hsv.getAvgH() - eFactor*hsv.getStdDevH();
+                float h1 = hsv.getAvgH() + eFactor*hsv.getStdDevH();
+                float s0 = hsv.getAvgS() - eFactor*hsv.getStdDevS();
+                float s1 = hsv.getAvgS() + eFactor*hsv.getStdDevS();
+                float v0 = hsv.getAvgV() - eFactor*hsv.getStdDevV();
+                float v1 = hsv.getAvgV() + eFactor*hsv.getStdDevV();
+                
+                float l0 = hsv.getAvgL()- eFactor*hsv.getStdDevL();
+                float l1 = hsv.getAvgL() + eFactor*hsv.getStdDevL();
+                float a0 = hsv.getAvgA() - eFactor*hsv.getStdDevA();
+                float a1 = hsv.getAvgA() + eFactor*hsv.getStdDevA();
+                float b0 = hsv.getAvgB() - eFactor*hsv.getStdDevB();
+                float b1 = hsv.getAvgB() + eFactor*hsv.getStdDevB();
+                
                 Image imgCp = img.copyImage();
                 for (int j = 0; j < img.getNPixels(); ++j) {
                     float h = img.getHue(j);
                     float s = img.getSaturation(j);
                     float v = img.getBrightness(j);
                     if (h < h0 || h > h1 || s < s0 || s > s1 || v < v0 || v > v1) {
+                        imgCp.setRGB(j, 0, 0, 0);
+                        continue;
+                    }
+                    float[] lab = img.getCIELAB(j);
+                    if (lab[0] < l0 || lab[0] > l1 || 
+                        lab[1] < a0 || lab[1] > a1 || 
+                        lab[2] < b0 || lab[2] > b1) {
                         imgCp.setRGB(j, 0, 0, 0);
                     }
                 }
@@ -704,7 +720,7 @@ public class PhaseCongruencyDetectorTest extends TestCase {
                 MiscDebug.writeImage(imgCp, "_hsv_filtered_" + i);
             }
 
-             GreyscaleImage gsImg = img2;
+            GreyscaleImage gsImg = img2;
 
             // use row major for FFTs
             int nCols = gsImg.getWidth();
