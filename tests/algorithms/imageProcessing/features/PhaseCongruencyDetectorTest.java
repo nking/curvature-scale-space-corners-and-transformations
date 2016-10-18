@@ -481,8 +481,9 @@ public class PhaseCongruencyDetectorTest extends TestCase {
 
             List<Set<PairInt>> rList = new ArrayList<Set<PairInt>>();
             //TFloatList critDists = new TFloatArrayList();
-            
+            TIntList groupIndexList = new TIntArrayList();
             List<GroupPixelHSV> colors = new ArrayList<GroupPixelHSV>();
+            
             for (int i = 0; i < nGroups; ++i) {
                 TIntList snIndexes = groupIndexes[i];
                 if (snIndexes.size() == 0) {
@@ -594,7 +595,7 @@ public class PhaseCongruencyDetectorTest extends TestCase {
                         rPoints[1] = sortedInter.getArray()[set.size()/2].p;
                         rPoints[2] = sortedInter.getArray()[set.size() - 1].p;
                     }
-                    
+                   
                     for (PairInt r : rPoints) {
                         
                         int x = r.getX();
@@ -627,6 +628,7 @@ public class PhaseCongruencyDetectorTest extends TestCase {
                         patterns.add(imagePattern);
                         rList.add(rect);
                         colors.add(hsv);
+                        groupIndexList.add(i);
                     }
                 }
             }
@@ -692,7 +694,7 @@ public class PhaseCongruencyDetectorTest extends TestCase {
                 float v0 = hsv.getAvgV() - eFactor*hsv.getStdDevV();
                 float v1 = hsv.getAvgV() + eFactor*hsv.getStdDevV();
                 
-                float l0 = hsv.getAvgL()- eFactor*hsv.getStdDevL();
+                float l0 = hsv.getAvgL() - eFactor*hsv.getStdDevL();
                 float l1 = hsv.getAvgL() + eFactor*hsv.getStdDevL();
                 float a0 = hsv.getAvgA() - eFactor*hsv.getStdDevA();
                 float a1 = hsv.getAvgA() + eFactor*hsv.getStdDevA();
@@ -783,7 +785,13 @@ public class PhaseCongruencyDetectorTest extends TestCase {
                 MiscDebug.writeImage(kpFreqR2Img, "_freq_spatial_filtered_" +
                     i + "_" + fileName);
                 
-                // TODO: store in spatialResponses
+                // -- threshold each freq response image
+                //     -- the threshold might be dependent upon
+                //        the intensity range in the template pattern.
+                // -- combine thresholded responses that have the same
+                //    groupIndexList value
+                // -- store that as spatial responses with key = group index
+                
             }
 
             /*
