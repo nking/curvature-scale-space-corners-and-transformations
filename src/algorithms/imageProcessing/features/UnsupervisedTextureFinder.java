@@ -516,7 +516,8 @@ public class UnsupervisedTextureFinder {
             for (GreyscaleImage g : images) {
                 for (int j = 0; j < g.getNPixels(); ++j) {
                     int v = g.getValue(j);
-                    if ((gImage.getValue(j) == 0) && v >= thresh) {
+                    //choosing to keep strongest response if more than one
+                    if ((v > gImage.getValue(j)) && v >= thresh) {
                         gImage.setValue(j, v);
                     }
                 }
