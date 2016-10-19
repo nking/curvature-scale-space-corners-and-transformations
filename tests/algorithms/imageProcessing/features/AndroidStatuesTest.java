@@ -96,7 +96,7 @@ public class AndroidStatuesTest extends TestCase {
     public AndroidStatuesTest() {
     }
 
-    public void test0() throws Exception {
+    public void est0() throws Exception {
 
         int maxDimension = 256;//512;
 
@@ -348,7 +348,7 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void estShapeMatcher() throws Exception {
+    public void testShapeMatcher() throws Exception {
 
         int maxDimension = 256;//512;
         SIGMA sigma = SIGMA.ZEROPOINTFIVE;//SIGMA.ONE;
@@ -439,20 +439,6 @@ public class AndroidStatuesTest extends TestCase {
         
         ImageExt imgCp = img.copyToImageExt();
        
-        /*{
-            Map<String, GreyscaleImage> tMap = imageProcessor.createTextureTransforms(
-                img.copyToGreyscale(), 2);
-            String lStr = "R5R5";
-            GreyscaleImage rImg = tMap.get(lStr);
-            MiscDebug.writeImage(rImg, "_" + lStr + "_");
-            MiscMath.rescale(rImg, 0, 255);
-            imageProcessor.applyAdaptiveMeanThresholding(rImg, 1);
-            MiscDebug.writeImage(rImg, "_" + lStr + "_adapt_means_");
-        }*/
-        
-        Map<String, GreyscaleImage> derivMap = 
-            imageProcessor.createTextureTransforms(imgCp.copyToGreyscale(), 2);
-        
         int[] labels4 = imageSegmentation.objectSegmentation(imgCp);
 
         List<Set<PairInt>> listOfPointSets2 = new ArrayList<Set<PairInt>>();
@@ -572,9 +558,6 @@ public class AndroidStatuesTest extends TestCase {
         }
         MiscDebug.writeImage(img11, "_filtered_2_" + fileName1Root);
         
-        //TIntList indexes = imageProcessor.textureEdgesAndCellAreSimilar(img, 
-        //    listOfPointSets2);
-        
         if (true) {
             
             // -- shows that the large descriptors, change in background,
@@ -611,7 +594,7 @@ public class AndroidStatuesTest extends TestCase {
                     1, 255, 0, 0);
                 
                 System.out.println("orb matched: " + p1 + " " + p2);
-                if (p2.getX() > 160)
+              //  if (p2.getX() > 160)
                 plotter.drawLineInAlternatingColors(p1.getX(), p1.getY(), 
                     p2.getX(), p2.getY(), 0);
             }
