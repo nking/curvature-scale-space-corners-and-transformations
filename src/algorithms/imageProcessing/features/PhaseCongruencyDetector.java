@@ -1043,7 +1043,7 @@ public class PhaseCongruencyDetector {
             if (dist.length < end) {
                 end = dist.length;
             }
-            System.out.println("dist[0]=" + dist[0] + " dist[end]=" + dist[end]);
+            System.out.println("dist[0]=" + dist[0] + " dist[end-1]=" + dist[end-1]);
 
             int np = 0;
             
