@@ -859,6 +859,8 @@ public class PhaseCongruencyDetector {
 
         if (extractNoise) {
 
+            int distMinimum = 70;
+            
             /*
             using a higher k=7, subtracting the thinned results from the default
             thinned image.
@@ -895,7 +897,7 @@ public class PhaseCongruencyDetector {
                         products.getNoiseyPixels().add(new PairInt(col, row));
                     } else {
                         // points that are signal in both
-                        if (thinned[row][col] > 0) {
+                        if (thinnedLowNz[row][col] > 0) {
                             dt[row][col] = 1;
                             dtN++;
                         }
@@ -908,6 +910,14 @@ public class PhaseCongruencyDetector {
             if (doPlot) {
                 int count = 0;
                 Image dbg0 = new Image(nCols, nRows);
+                for (int row = 0; row < nRows; ++row) {
+                    for (int col = 0; col < nCols; ++col) {
+                        int v = thinnedLowNz[row][col];
+                        if (v > 0) {
+                            dbg0.setRGB(col, row, v, v, v);
+                        }
+                    }
+                }
                 for (PairInt p : noisePoints) {
                     int[] clr = ImageIOHelper.getNextRGB(count);
                     ImageIOHelper.addPointToImage(p.getY(), p.getX(), dbg0,
@@ -1033,9 +1043,16 @@ public class PhaseCongruencyDetector {
             if (dist.length < end) {
                 end = dist.length;
             }
+            System.out.println("dist[0]=" + dist[0] + " dist[end]=" + dist[end]);
+
+            int np = 0;
+            
             List<Set<PairInt>> subsetNoise = new ArrayList<Set<PairInt>>();
             Image dbg0 = new Image(nCols, nRows);
             for (int i = 0; i < end; ++i) {
+                if (dist[i] < distMinimum) {
+                    break;
+                }
                 int idx = indexes[i];
                 int[] clr = ImageIOHelper.getNextRGB(i);
                 Set<PairIntWithIndex> set = cFinder.getCluster(idx);
@@ -1046,26 +1063,21 @@ public class PhaseCongruencyDetector {
                     set2.add(new PairInt(p.getY(), p.getX()));
                 }
                 subsetNoise.add(set2);
+                np += set2.size();
+            }
+            for (int row = 0; row < nRows; ++row) {
+                for (int col = 0; col < nCols; ++col) {
+                    int v = thinnedLowNz[row][col];
+                    if (v > 0) {
+                        dbg0.setRGB(col, row, 255, 255, 255);
+                    }
+                }
             }
             MiscDebug.writeImage(dbg0, "_a_texture_candidates_");
+         
+            System.out.println("np=" + np);
             
             products.setSubsetNoise(subsetNoise);
-
-            /*
-            will next examine color histograms of the snallest clusters
-            then texture statistics such as density.
-            (the density is known by the cluster code so might edit that
-            to export that information...)
-            */
-            //  -- look at density stats, perhaps following
-            //     stats in Malik et al. 2001 (but not their filters).
-            //     -- color histograms probably useful to add for insprcting
-            //        the noise groups.
-            //  -- consider designing a spatial frequency filter from
-            //     a representative patch of the noise as texture.
-            //     NOTE that there may be more than one pattern of textures in
-            //     an image.  would be good to find a test image with
-            //     vegetation and bricks or similar...
         }
 
         //TODO: these convenience methods do not belong in this class...

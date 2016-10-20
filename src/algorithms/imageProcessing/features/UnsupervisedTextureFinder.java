@@ -94,32 +94,32 @@ public class UnsupervisedTextureFinder {
         int nBins = 32;
         HistogramHolder histH = Histogram.createSimpleHistogram(
             nBins, valuesH, Errors.populateYErrorsBySqrt(valuesH));
-        try {
+        /*try {
             histH.plotHistogram("cch x2 H", "_color_hist_H");
         } catch (IOException ex) {
             Logger.getLogger(UnsupervisedTextureFinder.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        }*/
         HistogramHolder histS = Histogram.createSimpleHistogram(
             nBins, valuesS, Errors.populateYErrorsBySqrt(valuesS));
-        try {
+        /*try {
             histS.plotHistogram("cch x2 S", "_color_hist_S");
         } catch (IOException ex) {
             Logger.getLogger(UnsupervisedTextureFinder.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        }*/
         HistogramHolder histV = Histogram.createSimpleHistogram(
             nBins, valuesV, Errors.populateYErrorsBySqrt(valuesV));
-        try {
+        /*try {
             histV.plotHistogram("cch x2 V", "_color_hist_V");
         } catch (IOException ex) {
             Logger.getLogger(UnsupervisedTextureFinder.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        }*/
         HistogramHolder hist = Histogram.createSimpleHistogram(
             nBins, values, Errors.populateYErrorsBySqrt(values));
-        try {
+        /*try {
             hist.plotHistogram("cch intersections", "_color_hist_");
         } catch (IOException ex) {
             Logger.getLogger(UnsupervisedTextureFinder.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        }*/
 
         // peaks in h might be clusters when using nBins=16
         //   -- for each h peak,
@@ -511,7 +511,6 @@ public class UnsupervisedTextureFinder {
             }
             GreyscaleImage gImage = new GreyscaleImage(img.getWidth(),
                 img.getHeight());
-            //TODO: revise to find this threshold statistically
             int thresh = 94;
             for (GreyscaleImage g : images) {
                 for (int j = 0; j < g.getNPixels(); ++j) {
@@ -523,7 +522,7 @@ public class UnsupervisedTextureFinder {
                 }
             }
             MiscDebug.writeImage(gImage, "_final_textures_" + i
-                + debugTag);
+                + "_" + debugTag);
             
             groupPatzhes.get(i).responseImage = gImage;
         }
