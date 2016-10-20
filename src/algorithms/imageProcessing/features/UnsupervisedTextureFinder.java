@@ -388,7 +388,7 @@ public class UnsupervisedTextureFinder {
 
         // make hsv filtered copies of image, then extracy greuscale
         List<GreyscaleImage> filteredHSVImgs = new ArrayList<GreyscaleImage>();
-        float eFactor = 1.f;
+        float eFactor = 2.f;
         for (int i = 0; i < colors.size(); ++i) {
             GroupPixelHSV hsv = colors.get(i);
             float h0 = hsv.getAvgH() - eFactor * hsv.getStdDevH();
