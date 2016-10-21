@@ -16,6 +16,7 @@ import algorithms.imageProcessing.features.BlobsAndPerimeters;
 import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.imageProcessing.features.IntensityClrFeatures;
 import algorithms.imageProcessing.features.PhaseCongruencyDetector;
+import algorithms.imageProcessing.features.UnsupervisedTextureFinder;
 import algorithms.imageProcessing.segmentation.ColorSpace;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.imageProcessing.segmentation.NormalizedCuts;
@@ -14408,4 +14409,101 @@ int z = 1;
         }
     }
 
+    /**
+     * NOT READY FOR USE:
+     * 
+     *  method to merge segmented cells using texture information.
+     * Some of the logic is derived from the Malik et al. 2001
+     * texture segmentation paper.
+     * @param img
+     * @param products
+     * @param listOfCells
+     * @param debugTag 
+     */
+    public void mergeByTexture(ImageExt img, 
+        PhaseCongruencyDetector.PhaseCongruencyProducts products,
+        List<Set<PairInt>> listOfCells, String debugTag) {
+     
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        UnsupervisedTextureFinder finder = new UnsupervisedTextureFinder();
+
+        UnsupervisedTextureFinder.TexturePatchesAndResponse[] tpar
+            = finder.createTextureImages(img, products, debugTag);
+ 
+        List<TObjectIntMap<PairInt>> textureIndexMapList = new
+            ArrayList<TObjectIntMap<PairInt>>(tpar.length);
+        
+        for (int i = 0; i < tpar.length; ++i) {
+            
+            TObjectIntMap<PairInt> tPtCellIndexMap 
+                = new TObjectIntHashMap<PairInt>();
+            
+            textureIndexMapList.add(tPtCellIndexMap);            
+        }
+        
+        for (int lIdx = 0; lIdx < listOfCells.size(); ++lIdx) {
+            Set<PairInt> set = listOfCells.get(lIdx);            
+            for (PairInt p : set) {
+                int x = p.getX();
+                int y = p.getY();
+                for (int i = 0; i < tpar.length; ++i) {
+                    GreyscaleImage tImg = tpar[i].responseImage;
+                    if (tImg.getValue(x, y) > 0) {
+                        TObjectIntMap<PairInt> tPtCellIndexMap = 
+                            textureIndexMapList.get(i);
+                        tPtCellIndexMap.put(p, lIdx);
+                        break;
+                    }
+                }
+            }
+        }
+        
+        TObjectIntMap<PairInt> pointIndexMap = new TObjectIntHashMap<PairInt>();
+        for (int lIdx = 0; lIdx < listOfCells.size(); ++lIdx) {
+            Set<PairInt> set = listOfCells.get(lIdx);            
+            for (PairInt p : set) {
+                pointIndexMap.put(p, lIdx);
+            }
+        }
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        TIntObjectMap<TIntSet> adjMap = new TIntObjectHashMap<TIntSet>();
+        for (int lIdx = 0; lIdx < listOfCells.size(); ++lIdx) {
+            TIntSet indexes = new TIntHashSet();
+            Set<PairInt> set = listOfCells.get(lIdx);            
+            for (PairInt p : set) {
+                int x = p.getX();
+                int y = p.getY();
+                for (int k = 0; k < dxs.length; ++k) {
+                    int x2 = x + dxs[k];
+                    int y2 = y + dys[k];
+                    if (x2 < 0 || y2 < 0 || (x2 > (w - 1)) || (y2 > (h - 1))) {
+                        continue;
+                    }
+                    PairInt p2 = new PairInt(x2, y2);
+                    int lIdx2 = pointIndexMap.get(p2);
+                    if (lIdx2 != lIdx) {
+                        indexes.add(lIdx2);
+                    }
+                }
+            }
+            if (!indexes.isEmpty()) {
+                adjMap.put(lIdx, indexes);
+            }
+        }
+        
+        //-- next, need the perimeters of the segmented cells,
+        //         then the subset of texture points among those.
+        //         the later will be the texture perimeters.
+        //         -- then will compare each cell to each other cell
+        //            to merge those which do not have edge points 
+        //            between nearest neighboring adjacent texture perimeter points
+        
+       
+        throw new UnsupportedOperationException("not yet complete");
+    }
+    
 }
