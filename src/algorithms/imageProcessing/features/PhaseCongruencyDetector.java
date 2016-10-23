@@ -1046,7 +1046,7 @@ public class PhaseCongruencyDetector {
             System.out.println("dist[0]=" + dist[0] + " dist[end-1]=" + dist[end-1]);
 
             int np = 0;
-            
+
             List<Set<PairInt>> subsetNoise = new ArrayList<Set<PairInt>>();
             Image dbg0 = new Image(nCols, nRows);
             for (int i = 0; i < end; ++i) {

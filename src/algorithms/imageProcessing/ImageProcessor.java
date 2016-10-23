@@ -6992,6 +6992,43 @@ if (sum > 511) {
     }
     
     /**
+     * 
+     * @param img 
+     * @return  
+     */
+    private Set<PairInt> dilate(Set<PairInt> set, 
+        int imageWidth, int imageHeight, boolean dilate) {
+       
+        int w = imageWidth;
+        int h = imageHeight;
+        
+        Set<PairInt> out = new HashSet<PairInt>();
+        
+        for (PairInt p : set) {
+            int x = p.getX();
+            int y = p.getY();
+            for (int i = -1; i <= 1; ++i) {
+                int x2 = x + i;
+                if (x2 < 0 || x2 > (w - 1)) {
+                    continue;
+                }
+                for (int j = -1; j <= 1; ++j) {
+                    if (i == 0 && j == 0) {
+                        continue;
+                    }
+                    int y2 = y + j;
+                    if (y2 < 0 || y2 > (h - 1)) {
+                        continue;
+                    }
+                    out.add(new PairInt(x2, y2));
+                }
+            }
+        }
+        
+        return out;
+    }
+    
+    /**
      * apply erode then dilate
      * 
      * @param img

@@ -19,10 +19,13 @@ import algorithms.misc.MiscMath;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import com.climbwithyourfeet.clustering.DTClusterFinder;
+import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -388,7 +391,7 @@ public class UnsupervisedTextureFinder {
 
         // make hsv filtered copies of image, then extracy greuscale
         List<GreyscaleImage> filteredHSVImgs = new ArrayList<GreyscaleImage>();
-        float eFactor = 2.f;
+        float eFactor = 1.f;//2.f;
         for (int i = 0; i < colors.size(); ++i) {
             GroupPixelHSV hsv = colors.get(i);
             float h0 = hsv.getAvgH() - eFactor * hsv.getStdDevH();
@@ -435,10 +438,8 @@ public class UnsupervisedTextureFinder {
         Complex[][][] perfResults = perfft2.perfft2(gsImg, false);
         Complex[][] fftImage = perfResults[1];
 
-        int buffer = 5;
-
         TIntObjectMap<Set<GreyscaleImage>> groupResponseImages = new TIntObjectHashMap<Set<GreyscaleImage>>();
-        TIntObjectMap<TexturePatchesAndResponse> groupPatzhes = 
+        TIntObjectMap<TexturePatchesAndResponse> groupPatches = 
             new TIntObjectHashMap<TexturePatchesAndResponse>();
         
         for (int i = 0; i < rList.size(); ++i) {
@@ -491,13 +492,13 @@ public class UnsupervisedTextureFinder {
 
             int groupIdx = groupIndexList.get(i);
             Set<GreyscaleImage> rImages = groupResponseImages.get(groupIdx);
-            TexturePatchesAndResponse tpar = groupPatzhes.get(groupIdx);
+            TexturePatchesAndResponse tpar = groupPatches.get(groupIdx);
             if (rImages == null) {
                 rImages = new HashSet<GreyscaleImage>();
                 groupResponseImages.put(groupIdx, rImages);
                 
                 tpar = new TexturePatchesAndResponse();
-                groupPatzhes.put(groupIdx, tpar);
+                groupPatches.put(groupIdx, tpar);
                 tpar.patches = new ArrayList<GreyscaleImage>();
             }
             rImages.add(kpFreqR2Img);
@@ -524,11 +525,89 @@ public class UnsupervisedTextureFinder {
             MiscDebug.writeImage(gImage, "_final_textures_" + i
                 + "_" + debugTag);
             
-            groupPatzhes.get(i).responseImage = gImage;
+            groupPatches.get(i).responseImage = gImage;
+        }
+
+        // --- merge any texture images/ with significnt overlap in set picels,
+        //     and with similar colors.
+        TIntObjectMap<TIntSet> pointsInImageMap = new
+            TIntObjectHashMap<TIntSet>(groupPatches.size());
+        
+        TIntObjectIterator<TexturePatchesAndResponse> iter =
+            groupPatches.iterator();
+        
+        for (int i = 0; i < groupPatches.size(); ++i) {
+            
+            iter.advance();
+            
+            int idx = iter.key();
+            TexturePatchesAndResponse tPar = iter.value();
+            
+            GreyscaleImage gImage = tPar.responseImage;
+            TIntSet ptSet = new TIntHashSet();
+            for (int j = 0; j < gImage.getNPixels(); ++j) {
+                if (gImage.getValue(j) > 0) {
+                    ptSet.add(j);
+                }
+            }
+            pointsInImageMap.put(idx, ptSet);
         }
         
-        return groupPatzhes.values(
-            new TexturePatchesAndResponse[groupPatzhes.size()]);
+        TIntSet merged = new TIntHashSet();
+        
+        int[] groupKeys = pointsInImageMap.keys();
+        for (int j = 0; j < groupKeys.length; ++j) {
+            int idx0 = groupKeys[j];
+            if (merged.contains(idx0)) {
+                continue;
+            }
+            for (int k = (j + 1); k < groupKeys.length; ++k) {
+                int idx1 = groupKeys[k];
+                TIntSet jIntersectionK = new TIntHashSet(pointsInImageMap.get(idx0));
+                TIntSet setJ = new TIntHashSet(pointsInImageMap.get(idx0));
+                // j - k subtracts the intersection, then J minu that leaves intersetion
+                setJ.removeAll(pointsInImageMap.get(idx1));
+                jIntersectionK.removeAll(setJ);
+                int nI = jIntersectionK.size();
+                float f0 = (float)nI/(float)pointsInImageMap.get(idx0).size();
+                float f1 = (float)nI/(float)pointsInImageMap.get(idx1).size();
+                System.out.println("j intersection=" + nI + 
+                    " frac of J = " + f0 + " frac of k = " + f1);
+                if (f0 > 0.05 || f1 > 0.05) {
+                    int[][] ch0 = chhist.histogramCIELAB(img,
+                        pointsInImageMap.get(idx0));
+                    int[][] ch1 = chhist.histogramCIELAB(img,
+                        pointsInImageMap.get(idx1));
+                    float intersection = chhist.intersection(ch0, ch1);
+                    
+                    System.out.println("   CIELAB intersection=" + intersection);
+                    
+                    //TODO: revisit this
+                    if (intersection < 0.45) {
+                        continue;
+                    }
+                    
+                    TexturePatchesAndResponse tPar0 = groupPatches.get(idx0);
+                    TexturePatchesAndResponse tPar1 = groupPatches.remove(idx1);
+                    
+                    tPar0.patches.addAll(tPar1.patches);
+                    for (int pixIdx = 0; pixIdx < tPar0.responseImage.getNPixels();
+                        ++pixIdx) {
+                        int v1 = tPar1.responseImage.getValue(pixIdx);
+                        if (v1 > 0) {
+                            int v0 = tPar0.responseImage.getValue(pixIdx);
+                            if (v1 > v0) {
+                                tPar0.responseImage.setValue(pixIdx, v1);
+                            }
+                        }
+                    }
+                    
+                    merged.add(idx1);
+                }
+            }
+        }
+        
+        return groupPatches.values(new TexturePatchesAndResponse[groupPatches.size()]);
     }
   
     public class TexturePatchesAndResponse {

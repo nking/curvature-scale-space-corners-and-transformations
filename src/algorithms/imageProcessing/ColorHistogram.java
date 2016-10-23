@@ -1,6 +1,8 @@
 package algorithms.imageProcessing;
 
 import algorithms.util.PairInt;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.set.TIntSet;
 import java.util.Set;
 
 /**
@@ -102,6 +104,59 @@ public class ColorHistogram {
             int y = p.getY();
             
             float[] lab = img.getCIELAB(x, y);
+            
+            int binNumberL = Math.abs(Math.round(lab[0]/binWidthL));
+            if (binNumberL > (nBins - 1)) {
+                binNumberL = nBins - 1;
+            }
+            hist[0][binNumberL]++;
+            
+            int binNumberA = Math.abs(Math.round(lab[1]/binWidthA));
+            if (binNumberA > (nBins - 1)) {
+                binNumberA = nBins - 1;
+            }
+            hist[1][binNumberA]++;
+            
+            int binNumberB = Math.abs(Math.round(lab[2]/binWidthB));
+            if (binNumberB > (nBins - 1)) {
+                binNumberB = nBins - 1;
+            }
+            hist[2][binNumberB]++;
+        }
+        
+        return hist;
+    }
+    
+     /**
+     * histogram of 16 bins each of CIE LAB colors where the bins
+     * of each color are taken to be in the range of min and max
+     * possible values,
+     * (0,0,0) to (28.51 3.28 2.15).
+     * 
+     * @param img
+     * @param points 
+     * @return histogram accessed as hist[0][bin] and hist[1][bin] and
+     * hist[2][bin] where 0, 1, 2 are histograms for L, A, and B, respectively
+     * using a range of values (0,0,0) to (28.51 3.28 2.15) and 16 bins.
+     */
+    public int[][] histogramCIELAB(ImageExt img, TIntSet points) {
+        
+        int nBins = 16;
+        
+        int[][] hist = new int[3][];
+        for (int i = 0; i < 3; ++i) {
+            hist[i] = new int[nBins];
+        }
+        
+        float binWidthL = maxL/(float)nBins;
+        float binWidthA = maxA/(float)nBins;
+        float binWidthB = maxB/(float)nBins;
+                
+        TIntIterator iter = points.iterator();
+        while (iter.hasNext()) {
+            int pixIdx = iter.next();
+            
+            float[] lab = img.getCIELAB(pixIdx);
             
             int binNumberL = Math.abs(Math.round(lab[0]/binWidthL));
             if (binNumberL > (nBins - 1)) {

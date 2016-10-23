@@ -17,6 +17,7 @@ import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.imageProcessing.features.IntensityClrFeatures;
 import algorithms.imageProcessing.features.PhaseCongruencyDetector;
 import algorithms.imageProcessing.features.UnsupervisedTextureFinder;
+import algorithms.imageProcessing.features.UnsupervisedTextureFinder.TexturePatchesAndResponse;
 import algorithms.imageProcessing.segmentation.ColorSpace;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.imageProcessing.segmentation.NormalizedCuts;
@@ -80,6 +81,7 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import jdk.internal.dynalink.support.Lookup;
 import thirdparty.edu.princeton.cs.algs4.Interval;
 import thirdparty.edu.princeton.cs.algs4.Interval2D;
 import thirdparty.edu.princeton.cs.algs4.QuadTree;
@@ -10736,19 +10738,13 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         return img2;
     }
 
-    public EdgeFilterProducts createPhaseCongruencyGradient(
-        GreyscaleImage img) {
+    public EdgeFilterProducts packageToEdgeProduct(
+        PhaseCongruencyDetector.PhaseCongruencyProducts pr) {
         
-        PhaseCongruencyDetector phaseDetector = new PhaseCongruencyDetector();
-        phaseDetector.setK(2);
-        
-        PhaseCongruencyDetector.PhaseCongruencyProducts pr =
-            phaseDetector.phaseCongMono(img);
+        EdgeFilterProducts eProduct = new EdgeFilterProducts();
 
-        EdgeFilterProducts products = new EdgeFilterProducts();
-
-        int nCols = img.getWidth();
-        int nRows = img.getHeight();
+        int nCols = pr.getThinned()[0].length;//img.getWidth();
+        int nRows = pr.getThinned().length;//img.getHeight();
 
         GreyscaleImage pcImg = new GreyscaleImage(nCols, nRows);
         double[][] pc = pr.getPhaseCongruency();
@@ -10761,7 +10757,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
         }
 
-        products.setGradientXY(pcImg);
+        eProduct.setGradientXY(pcImg);
 
         GreyscaleImage paImg = new GreyscaleImage(nCols, nRows,
             GreyscaleImage.Type.Bits32FullRangeInt);
@@ -10774,7 +10770,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 paImg.setValue(j, i, d);
             }
         }
-        products.setPhaseAngle(paImg);
+        eProduct.setPhaseAngle(paImg);
 
         GreyscaleImage orImg = new GreyscaleImage(nCols, nRows);
         double[][] or = pr.getOrientation();
@@ -10785,9 +10781,23 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 orImg.setValue(j, i, (int)Math.round(v));
             }
         }
-        products.setTheta(orImg);
+        eProduct.setTheta(orImg);
         
-        return products;
+        return eProduct;
+    }
+    
+    public EdgeFilterProducts createPhaseCongruencyGradient(
+        GreyscaleImage img) {
+        
+        PhaseCongruencyDetector phaseDetector = new PhaseCongruencyDetector();
+        phaseDetector.setK(2);
+        
+        PhaseCongruencyDetector.PhaseCongruencyProducts pr =
+            phaseDetector.phaseCongMono(img);
+
+        EdgeFilterProducts eProduct = packageToEdgeProduct(pr);
+        
+        return eProduct;
     }
 
     public static class BoundingRegions {
@@ -14412,9 +14422,13 @@ int z = 1;
     /**
      * NOT READY FOR USE:
      * 
-     *  method to merge segmented cells using texture information.
+     * method to merge segmented cells using texture information.
      * Some of the logic is derived from the Malik et al. 2001
      * texture segmentation paper.
+     * NOTE that some images have noise which does not contain patterns that
+     * you might want to use for segmentation, so consider when to use
+     * this method.
+     * 
      * @param img
      * @param products
      * @param listOfCells
@@ -14423,7 +14437,16 @@ int z = 1;
     public void mergeByTexture(ImageExt img, 
         PhaseCongruencyDetector.PhaseCongruencyProducts products,
         List<Set<PairInt>> listOfCells, String debugTag) {
-     
+        
+        TIntIntMap pointIndexMap = new TIntIntHashMap();
+        for (int lIdx = 0; lIdx < listOfCells.size(); ++lIdx) {
+            Set<PairInt> set = listOfCells.get(lIdx);            
+            for (PairInt p : set) {
+                int pIdx = img.getInternalIndex(p);
+                pointIndexMap.put(pIdx, lIdx);
+            }
+        }
+        
         int w = img.getWidth();
         int h = img.getHeight();
         
@@ -14432,39 +14455,60 @@ int z = 1;
         UnsupervisedTextureFinder.TexturePatchesAndResponse[] tpar
             = finder.createTextureImages(img, products, debugTag);
  
-        List<TObjectIntMap<PairInt>> textureIndexMapList = new
-            ArrayList<TObjectIntMap<PairInt>>(tpar.length);
+        // key=pixel, value=texture class index
+        TIntIntMap textureClassMap = new TIntIntHashMap();
         
-        for (int i = 0; i < tpar.length; ++i) {
+        // key=pixel, value=listOfCells index
+        TIntIntMap textureIndexMap = new TIntIntHashMap();
+      
+        // key=listOfCells index, value = texture class index
+        TIntIntMap indexTextureClassMap = new TIntIntHashMap();
+      
+        // key=listOfCells index, value = texture points
+        TIntObjectMap<Set<PairInt>> indexTexturesMap = new
+            TIntObjectHashMap<Set<PairInt>>();
             
-            TObjectIntMap<PairInt> tPtCellIndexMap 
-                = new TObjectIntHashMap<PairInt>();
-            
-            textureIndexMapList.add(tPtCellIndexMap);            
-        }
+        // these are listOfCells indexes containing more than one texture
+        // class
+        TIntSet skipThese = new TIntHashSet();
         
-        for (int lIdx = 0; lIdx < listOfCells.size(); ++lIdx) {
-            Set<PairInt> set = listOfCells.get(lIdx);            
-            for (PairInt p : set) {
-                int x = p.getX();
-                int y = p.getY();
-                for (int i = 0; i < tpar.length; ++i) {
-                    GreyscaleImage tImg = tpar[i].responseImage;
-                    if (tImg.getValue(x, y) > 0) {
-                        TObjectIntMap<PairInt> tPtCellIndexMap = 
-                            textureIndexMapList.get(i);
-                        tPtCellIndexMap.put(p, lIdx);
-                        break;
-                    }
+        for (int lIdx = 0; lIdx < tpar.length; ++lIdx) {
+            TexturePatchesAndResponse tp = tpar[lIdx];
+            GreyscaleImage gImg = tp.responseImage;
+            for (int pixIdx = 0; pixIdx < gImg.getNPixels(); ++pixIdx) {
+                int v = gImg.getValue(pixIdx);
+                if (v == 0) {
+                    continue;
                 }
-            }
-        }
-        
-        TObjectIntMap<PairInt> pointIndexMap = new TObjectIntHashMap<PairInt>();
-        for (int lIdx = 0; lIdx < listOfCells.size(); ++lIdx) {
-            Set<PairInt> set = listOfCells.get(lIdx);            
-            for (PairInt p : set) {
-                pointIndexMap.put(p, lIdx);
+                if (!pointIndexMap.containsKey(pixIdx)) {
+                    continue;
+                }
+                int idx = pointIndexMap.get(pixIdx);
+                
+                {
+                    Set<PairInt> tPoints = indexTexturesMap.get(idx);
+                    if (tPoints == null) {
+                        tPoints = new HashSet<PairInt>();
+                        indexTexturesMap.put(idx, tPoints);
+                    }
+                    PairInt p2 = new PairInt(gImg.getCol(pixIdx), 
+                        gImg.getRow(pixIdx));
+                    tPoints.add(p2);
+                }
+               
+                if (indexTextureClassMap.containsKey(idx)) {
+                    int lIdx2 = indexTextureClassMap.get(idx);
+                    if (lIdx2 != lIdx) {
+                        skipThese.add(idx);
+                        continue;
+                    }
+                } else {
+                    indexTextureClassMap.put(idx, lIdx);
+                }
+                
+                textureClassMap.put(pixIdx, lIdx);
+                
+                textureIndexMap.put(pixIdx, idx);
             }
         }
         
@@ -14472,6 +14516,9 @@ int z = 1;
         int[] dys = Misc.dy8;
         TIntObjectMap<TIntSet> adjMap = new TIntObjectHashMap<TIntSet>();
         for (int lIdx = 0; lIdx < listOfCells.size(); ++lIdx) {
+            if (skipThese.contains(lIdx)) {
+                continue;
+            }
             TIntSet indexes = new TIntHashSet();
             Set<PairInt> set = listOfCells.get(lIdx);            
             for (PairInt p : set) {
@@ -14483,8 +14530,11 @@ int z = 1;
                     if (x2 < 0 || y2 < 0 || (x2 > (w - 1)) || (y2 > (h - 1))) {
                         continue;
                     }
-                    PairInt p2 = new PairInt(x2, y2);
-                    int lIdx2 = pointIndexMap.get(p2);
+                    int pixIdx2 = img.getInternalIndex(x2, y2);
+                    int lIdx2 = pointIndexMap.get(pixIdx2);
+                    if (skipThese.contains(lIdx2)) {
+                        continue;
+                    }
                     if (lIdx2 != lIdx) {
                         indexes.add(lIdx2);
                     }
@@ -14495,15 +14545,313 @@ int z = 1;
             }
         }
         
-        //-- next, need the perimeters of the segmented cells,
-        //         then the subset of texture points among those.
-        //         the later will be the texture perimeters.
-        //         -- then will compare each cell to each other cell
-        //            to merge those which do not have edge points 
-        //            between nearest neighboring adjacent texture perimeter points
+        PerimeterFinder2 pFinder2 = new PerimeterFinder2();
         
-       
-        throw new UnsupportedOperationException("not yet complete");
+        // key = index of listOfCells, value = texture perimeter points
+        TIntObjectMap<Set<PairInt>> texturePerimeters 
+            = new TIntObjectHashMap<Set<PairInt>>();
+
+        for (int i = 0; i < listOfCells.size(); ++i) {
+
+            if (skipThese.contains(i)) {
+                continue;
+            }
+            
+            Set<PairInt> tPoints = indexTexturesMap.get(i);
+            if (tPoints == null || tPoints.isEmpty()) {
+                continue;
+            }
+            
+            Set<PairInt> set = listOfCells.get(i);
+            
+            Set<PairInt> border = pFinder2.extractBorder(set);
+            int[] minMaxXY = MiscMath.findMinMaxXY(border);
+            
+            // for the texture points within this same set, the
+            // perimeter is the closest of them to the border
+          
+            Set<PairInt> tPer = new HashSet<PairInt>();
+            
+            NearestNeighbor2D nn = new NearestNeighbor2D(tPoints, 
+                minMaxXY[1] + 1, minMaxXY[3] + 1);
+            
+            int tClassIdx = -1;
+            
+            for (PairInt p2 : border) {
+                
+                // find closest texture point to p2
+                Set<PairInt> nearest = nn.findClosest(p2.getX(), p2.getY());
+                if (nearest == null || nearest.isEmpty()) {
+                    continue;
+                }
+                
+                for (PairInt p3 : nearest) {
+                    int pixIdx2 = img.getInternalIndex(p3);
+                    if (!textureClassMap.containsKey(pixIdx2)) {
+                        continue;
+                    }
+                    int classIdx = textureClassMap.get(pixIdx2);
+                    if (tClassIdx == -1) {
+                        tClassIdx = classIdx;
+                    } else if (tClassIdx != classIdx) {
+                        tPer = null;
+                        break;
+                    }
+                    tPer.add(p3);
+                }
+                if (tPer == null) {
+                    break;
+                }
+            }
+            if (tPer != null && !tPer.isEmpty()) {
+                texturePerimeters.put(i, tPer);
+            }
+        }
+        
+        //-- next, compare each cell to each other cell
+        //         to merge those which do not have edge points 
+        //         between nearest neighboring adjacent texture perimeter points
+        
+        // row-major format array of edges
+        int[][] thinned = products.getThinned();
+        
+        // key=old cell index, value = new cell index
+        TIntIntMap mergedIndexMap = new TIntIntHashMap();
+        
+        // the 2 indexes i0 and i1 already compared.
+        // there are entries as keys and as values for both.
+        TIntObjectMap<TIntSet> alreadyCompared = new TIntObjectHashMap<TIntSet>();
+        
+        /*
+        for the segmented cells w/ texture points in them,
+           comparing each cell to its adjacent cells w. texture in them.
+           -- if an adjacent cell has a different texture class, then
+              the two cells should not be merged.
+           -- else, for each cell to cell comparision,
+              looking for the closest point from each 
+              texture perimeter and vice versa from the other
+              cell to avoid comparing far side texture points
+              with near side of other cells.
+        */
+        
+        Stack<Integer> stack = new Stack<Integer>();
+        for (int i : texturePerimeters.keys()) {
+            stack.add(Integer.valueOf(i));
+        }
+        
+        while (!stack.isEmpty()) {
+            
+            int i0 = stack.pop().intValue();
+            if (skipThese.contains(i0)) {
+                continue;
+            }
+            
+            // update the index if it has merged into another already
+            while (mergedIndexMap.containsKey(i0)) {
+                i0 = mergedIndexMap.get(i0);
+            }
+
+            Set<PairInt> tSet0 = texturePerimeters.get(i0);
+            TIntSet adjIndexes = adjMap.get(i0);
+            if (adjIndexes == null || adjIndexes.isEmpty()) {
+                continue;
+            }
+            
+            //the nearest neighbor needs maxX and maxY to be as large as any
+            // possible query, so for convenience, this is image size
+            NearestNeighbor2D nn0 = new NearestNeighbor2D(tSet0, w, h);
+  
+            TIntSet updateThese = new TIntHashSet();
+           
+            TIntIterator iter1 = adjIndexes.iterator();
+            while (iter1.hasNext()) {
+                
+                int i1 = iter1.next();
+                
+                if (skipThese.contains(i1)) {
+                    continue;
+                }
+                
+                if (!texturePerimeters.containsKey(i1)) {
+                    continue;
+                }
+                
+                // update the index if it has merged into another already
+                while (mergedIndexMap.containsKey(i1)) {
+                    i1 = mergedIndexMap.get(i1);
+                }
+                if (i0 == i1) {
+                    continue;
+                }
+                // --- if has already been compared, check if can skip ---
+                if (alreadyCompared.containsKey(i0) && 
+                    alreadyCompared.get(i0).contains(i1)) {
+                    continue;
+                } else if (alreadyCompared.containsKey(i1) && 
+                    alreadyCompared.get(i1).contains(i0)) {
+                    continue;
+                }
+                
+                Set<PairInt> tSet1 = texturePerimeters.get(i1);
+                
+                if (tSet1 == null || tSet1.isEmpty()) {
+                    continue;
+                }
+                
+                //int[] minMaxXY1 = MiscMath.findMinMaxXY(tSet1);
+                // this can be sped up by finding maxes of tSet0 and also
+                // of tSet1 and setting the dimensions here to the max of those
+                NearestNeighbor2D nn1 = new NearestNeighbor2D(tSet1, w, h);
+            
+                boolean canMerge = true;
+                int nC = 0;
+                
+                for (PairInt p1 : tSet1) {
+                    int x1 = p1.getX();
+                    int y1 = p1.getY();
+                    
+                    Set<PairInt> nearest0 = nn0.findClosest(x1, y1);    
+                    if (nearest0 == null || nearest0.isEmpty()) {
+                        continue;
+                    }
+                   
+                    for (PairInt p0 : nearest0) {
+                        
+                        int x0 = p0.getX();
+                        int y0 = p0.getY();
+                   
+                        // if this point's nearest is not x1, y1, skip
+                        Set<PairInt> nearest1 = nn1.findClosest(x0, y0);
+                        if (nearest1 == null || nearest1.isEmpty()) {
+                            continue;
+                        }
+                        if (!nearest1.contains(p1)) {
+                            continue;
+                        }
+                    
+                        // draw a line between p1 and nearest, and if there's
+                        // an edge point on that line, then cannot merge
+                        
+                        Set<PairInt> linePoints = new HashSet<PairInt>();
+        
+                        BresenhamsLine.createLinePoints(x0, y0, x1, y1,
+                            linePoints);
+                        
+                        for (PairInt p3 : linePoints) {
+                            // NOTE: Malik et al. 2001 use the phase energy
+                            // magnitude here too and direction.
+                            if (thinned[p3.getY()][p3.getX()] > 0) {
+                                canMerge = false;
+                                break;
+                            }
+                        }
+                        
+                        if (!canMerge) {
+                            break;
+                        }
+                        nC++;
+                    }
+                    if (!canMerge) {
+                        break;
+                    }
+                } // end over all points in tSet1
+                
+                TIntSet t0 = alreadyCompared.get(i0);
+                if (t0 == null) {
+                    t0 = new TIntHashSet();
+                    alreadyCompared.put(i0, t0);
+                }
+                t0.add(i1);
+
+                TIntSet t1 = alreadyCompared.get(i1);
+                if (t1 == null) {
+                    t1 = new TIntHashSet();
+                    alreadyCompared.put(i1, t1);
+                }
+                t1.add(i0);
+                
+                if (!canMerge || nC == 0) {                    
+                    continue;
+                }
+                
+                updateThese.add(i1);
+                
+                //--- merge i1 and i0 and update variables ----
+                //    adj map is updated after loop over neighbors
+                
+                // update alreadyCompared using t1
+                TIntIterator iter2 = t1.iterator();
+                while (iter2.hasNext()) {
+                    int idx3 = iter2.next();
+                    if (idx3 == i1) {
+                        continue;
+                    }
+                    TIntSet setContainingI1 = alreadyCompared.get(idx3);
+                    if (setContainingI1 == null) {
+                        continue;
+                    }
+                    setContainingI1.remove(i1);
+                    setContainingI1.add(i0);
+                }
+                t0.addAll(t1);
+                alreadyCompared.remove(i1);
+                
+                mergedIndexMap.put(i1, i0);
+                
+            } // end loop over adjacent neighbors
+            
+            // update adjacency map
+            if (!updateThese.isEmpty()) {
+                
+                // add i0 back to the stack once to visit neighbors of neigbhors
+                stack.add(Integer.valueOf(i0));
+                                
+                // for every index merged into i0, update
+                // to replace i1 with i0
+                TIntIterator iterU = updateThese.iterator();
+                while (iterU.hasNext()) {
+                    int i1 = iterU.next();
+                     
+                    // update // key = index of listOfCells, 
+                    //           value = texture perimeter points
+                    // TIntObjectMap<Set<PairInt>> texturePerimeters
+                    Set<PairInt> tSet1 = texturePerimeters.remove(i1);
+                    texturePerimeters.get(i0).addAll(tSet1);
+                
+                    
+                    TIntSet adj1 = adjMap.remove(i1);
+                    adj1.remove(i0);
+                    adjMap.get(i0).addAll(adj1);
+                    
+                    // the adj1 set's map value pointing to i1 should
+                    // be changed to point to i0 now
+                    TIntIterator iter2 = adj1.iterator();
+                    while (iter2.hasNext()) {
+                        int i2 = iter2.next();
+                        TIntSet adj2 = adjMap.get(i2);
+                        if (adj2 == null) {
+                            continue;
+                        }
+                        adj2.remove(i1);
+                        adj2.add(i0);
+                    }
+                    
+                    // update list of cells
+                    Set<PairInt> setI1 = listOfCells.get(i1);
+                    listOfCells.get(i0).addAll(setI1);
+                    setI1.clear();
+                }
+            }
+        }
+        
+        int nR = 0;
+        for (int i = (listOfCells.size() - 1);  i > -1; --i) {
+            if (listOfCells.get(i).isEmpty()) {
+                listOfCells.remove(i);
+                nR++;
+            }
+        }
+        System.out.println("textures nMerged=" + nR);
     }
     
 }
