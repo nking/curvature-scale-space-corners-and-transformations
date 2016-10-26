@@ -2,8 +2,6 @@ package algorithms.imageProcessing.features;
 
 import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
-import algorithms.imageProcessing.FixedSizeSortedVector;
-import algorithms.imageProcessing.Gaussian1D;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
@@ -14,23 +12,18 @@ import algorithms.imageProcessing.transform.ITransformationFit;
 import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.misc.Misc;
-import algorithms.misc.MiscMath;
-import algorithms.misc.StatsInSlidingWindow;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.QuadInt;
 import algorithms.util.TwoDFloatArray;
-import gnu.trove.iterator.TIntIterator;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.TObjectIntMap;
-import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.TIntSet;
@@ -131,21 +124,21 @@ public class ORB {
     */
 
     // these could be made static across all instances, but needs guards for synchronous initialization
-    private int[][] OFAST_MASK = null;
-    private int[] OFAST_UMAX = null;
-    private int[][] POS0 = null;
-    private int[][] POS1 = null;
+    protected int[][] OFAST_MASK = null;
+    protected int[] OFAST_UMAX = null;
+    protected int[][] POS0 = null;
+    protected int[][] POS1 = null;
 
-    private int fastN = 9;
-    private float fastThreshold = 0.08f;
-    private final float harrisK = 0.04f;
-    private final int nKeypoints;
+    protected int fastN = 9;
+    protected float fastThreshold = 0.08f;
+    protected final float harrisK = 0.04f;
+    protected final int nKeypoints;
 
-    private List<TIntList> keypoints0List = null;
-    private List<TIntList> keypoints1List = null;
-    private List<TDoubleList> orientationsList = null;
-    private List<TFloatList> harrisResponses = null;
-    private List<TFloatList> scalesList = null;
+    protected List<TIntList> keypoints0List = null;
+    protected List<TIntList> keypoints1List = null;
+    protected List<TDoubleList> orientationsList = null;
+    protected List<TFloatList> harrisResponses = null;
+    protected List<TFloatList> scalesList = null;
 
     //`True`` or ``False`` representing
     //the outcome of the intensity comparison for i-th keypoint on j-th
@@ -156,21 +149,23 @@ public class ORB {
     private List<Descriptors> descriptorsListS = null;
     private List<Descriptors> descriptorsListV = null;
     
-    private static double twoPI = 2. * Math.PI;
+    protected static double twoPI = 2. * Math.PI;
 
-    private static enum DescriptorChoice {
+    protected float curvatureThresh = 0.05f;
+    
+    protected static enum DescriptorChoice {
         NONE, GREYSCALE, HSV
     }
-    private DescriptorChoice descrChoice = DescriptorChoice.GREYSCALE;
+    protected DescriptorChoice descrChoice = DescriptorChoice.GREYSCALE;
     
     public static enum DescriptorDithers {
         NONE, FIFTEEN, TWENTY, FORTY_FIVE, NINETY, ONE_HUNDRED_EIGHTY;
     }
-    private DescriptorDithers descrDithers = DescriptorDithers.NONE;
+    protected DescriptorDithers descrDithers = DescriptorDithers.NONE;
     
-    private boolean doCreate1stDerivKeypoints = false;
+    protected boolean doCreate1stDerivKeypoints = false;
     
-    private boolean doCreateCurvatureKeyPoints = false;
+    protected boolean doCreateCurvatureKeyPoints = false;
 
     /**
      * Still testing the class, there may be bugs present.
@@ -808,7 +803,7 @@ public class ORB {
         descriptorsListV = extractGreyscaleDescriptors(pyramidV, octavesUsed);
     }
 
-    private List<Descriptors> extractGreyscaleDescriptors(List<TwoDFloatArray> pyramid,
+    protected List<Descriptors> extractGreyscaleDescriptors(List<TwoDFloatArray> pyramid,
         TIntList octavesUsed) {
         
         TIntSet octavesUsedSet = new TIntHashSet(octavesUsed);
@@ -917,28 +912,35 @@ public class ORB {
             
             ImageProcessor imageProcessor = new ImageProcessor();
             
+            float hLimit = 0.01f;//0.09f;
+            
             imageProcessor.createFirstDerivKeyPoints(
-                tensorComponents, keypoints0, keypoints1);
-           
+                tensorComponents, keypoints0, keypoints1, hLimit);
+        
             /*
             try {
-                float max = MiscMath.findMax(secondDeriv);
-                float factor = 255.f/max;
-                GreyscaleImage gsImg = new GreyscaleImage(nRows, nCols);
+                float factor = 255.f;
+                Image img2 = new Image(nRows, nCols);
                 for (int i = 0; i < nRows; ++i) {
                     for (int j = 0; j < nCols; ++j) {
-                        int v = Math.round(factor * secondDeriv[i][j]);
+                        int v = Math.round(factor * octaveImage[i][j]);
                         if (v > 255) {
                             v = 255;
                         }
-                        gsImg.setValue(i, j, v);
+                        img2.setRGB(i, j, v, v, v);
                     }
                 }
+                for (int i = 0; i < keypoints0.size(); ++i) {
+                    int y = keypoints1.get(i);
+                    int x = keypoints0.get(i);
+                    img2.setRGB(x, y, 255, 0, 0);
+                }
                 System.out.println("nRows=" + nRows + " nCols=" + nCols);
-                algorithms.imageProcessing.ImageDisplayer.displayImage("adap mean", gsImg);
+                algorithms.imageProcessing.ImageDisplayer.displayImage("curvature", img2);
                 int z = 1;
-            } catch(Exception e) {}            
-            */
+            } catch(Exception e) {
+                System.out.println(e.getMessage());
+            }*/
         }
             
         if (doCreateCurvatureKeyPoints) {
@@ -955,10 +957,9 @@ public class ORB {
             //default thresh is 0.01f
             imageProcessor.createCurvatureKeyPoints(
                 tensorComponents, keypoints0, keypoints1, 
-                0.1f);
-
-            /*
-            try {
+                curvatureThresh);
+    
+            /*try {
                 float factor = 255.f;
                 Image img2 = new Image(nRows, nCols);
                 for (int i = 0; i < nRows; ++i) {
@@ -970,9 +971,9 @@ public class ORB {
                         img2.setRGB(i, j, v, v, v);
                     }
                 }
-                for (int i = 0; i < kp20.size(); ++i) {
-                    int y = kp21.get(i);
-                    int x = kp20.get(i);
+                for (int i = 0; i < keypoints0.size(); ++i) {
+                    int y = keypoints1.get(i);
+                    int x = keypoints0.get(i);
                     img2.setRGB(x, y, 255, 0, 0);
                 }
                 System.out.println("nRows=" + nRows + " nCols=" + nCols);
@@ -980,8 +981,7 @@ public class ORB {
                 int z = 1;
             } catch(Exception e) {
                 System.out.println(e.getMessage());
-            }
-            */
+            }*/
         }
         
         float[][] detA = tensorComponents.getDeterminant();
