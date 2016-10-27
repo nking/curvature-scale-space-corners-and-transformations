@@ -1618,7 +1618,7 @@ public class SegmentedORB {
         return descriptors;
     }
 
-    public List<TIntObjectMap<List<PairInt>>> getJeypointsList() {
+    public List<TIntObjectMap<List<PairInt>>> getKeypointsList() {
         return keypointsList;
     }
     
@@ -1666,6 +1666,44 @@ public class SegmentedORB {
         }
         
         return combineByScale(descriptorsListV);
+    }
+    
+    public TIntObjectMap<List<PairInt>> getAllKeypointsPerCell() {
+        
+        if (keypointsList == null) {
+            return null;
+        }
+        
+        TIntObjectMap<List<PairInt>> out = 
+            new TIntObjectHashMap<List<PairInt>>();
+    
+        TIntSet groupIndexes = new TIntHashSet();
+        for (int i = 0; i < keypointsList.size(); ++i) {
+            TIntObjectMap<List<PairInt>> map = keypointsList.get(i);
+            groupIndexes.addAll(map.keySet());
+        }
+        
+        TIntIterator iter = groupIndexes.iterator();
+        while (iter.hasNext()) {
+            
+            int groupIdx = iter.next();
+            
+            int n = 0;
+            for (int i = 0; i < keypointsList.size(); ++i) {
+                TIntObjectMap<List<PairInt>> map = keypointsList.get(i);
+                List<PairInt> list = map.get(groupIdx);
+                if (list != null && !list.isEmpty()) {
+                    List<PairInt> writeList = out.get(groupIdx);
+                    if (writeList == null) {
+                        writeList = new ArrayList<PairInt>();
+                        out.put(groupIdx, writeList);
+                    }
+                    writeList.addAll(list);
+                }
+            }            
+        }
+        
+        return out;
     }
     
     private TIntObjectMap<Descriptors> combineByScale(
@@ -1815,4 +1853,16 @@ public class SegmentedORB {
         return out;
     }
 
+    public static CorrespondenceList match(List<PairInt> templateKeypoints,
+        SegmentedORB.Descriptors templateHDesc,
+        SegmentedORB.Descriptors templateSDesc,
+        SegmentedORB.Descriptors templateVDesc,
+        TIntObjectMap<List<PairInt>> srchKeypoints,
+        TIntObjectMap<SegmentedORB.Descriptors> srchHDesc,
+        TIntObjectMap<SegmentedORB.Descriptors> srchSDesc,
+        TIntObjectMap<SegmentedORB.Descriptors> srchVDesc
+        ) {
+        
+        throw new UnsupportedOperationException("not yet implemented");
+    }
 }
