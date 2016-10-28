@@ -1858,7 +1858,37 @@ public class SegmentedORB {
                 bestCostGroupIdx[i]);
         }
         */
+       
+         /*
+        evaluating transformations:
+         -- normalized sum of descriptor matches comparable to
+            other results.
+            would want to change from cost to scores.
+               score is sum of each matched (3*256 - cost)
+               the number of template keypoints can be used as total possible to match.
+               = nTemplate
+            so max possible score = 
+                norm = nTemplate * 3 * 256
+            then normalized score = (3*256 - cost)/norm
+        and a normalized cost is 1 - ((3*256 - cost)/norm)
+         -- normalized sum of transformation distances from expected
+            comparable to other results.
+            NOTE that there is possible conflict w/ scale of descriptor
+            used, so may need to limit scale and also limit which descriptors
+            are subsequently used...that is all assuming a euclidean projection
+            is a good representation rather than a large projection which may
+            have extreme differences in scale from far side of object to near side.
+            for distance estimates, 
+                need a normalization
+                will use a tolerance of 100 pixels or so and any unmatched
+                   point within tolerance gets assigned the tolerance as its distance.
+                the sums of the distances are then normalized by the scale
+                and that tolerance.
         
+        the two components will be combined with equal weighting.
+       
+        */
+    
         // DEBUG: 
         // next, looking at a specific image test to look at
         // number of top results per cell that are true matches.
@@ -1874,7 +1904,7 @@ public class SegmentedORB {
         // because the symmetry of it's frosting cuffs and color patterns
         // require the relative use of location of points (== geometric model)
     
-    
+       
         for (int groupIdx : srchKeypoints.keys()) {
             
             List<PairInt> kp1 = srchKeypoints.get(groupIdx);
