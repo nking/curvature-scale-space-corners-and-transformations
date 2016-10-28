@@ -7,6 +7,7 @@ import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MedianTransform;
 import algorithms.imageProcessing.StructureTensor;
+import algorithms.imageProcessing.features.ORB.Descriptors;
 import algorithms.util.PairInt;
 import algorithms.util.TwoDFloatArray;
 import gnu.trove.iterator.TIntIterator;
@@ -608,7 +609,7 @@ public class SegmentedORB {
             }
 
             // note, method filters to keep only those in segmented cells
-            Resp r = detectOctave(octaveImage);
+            Resp r = detectOctave(octaveImage, scale);
 
             if ((r == null) || (r.keypoints0 == null) || r.keypoints0.isEmpty()) {
                 continue;
@@ -795,13 +796,6 @@ public class SegmentedORB {
         TFloatList responses;
     }
 
-    public static class Descriptors {
-        //NOTE: consider packing 4 descriptors into one or
-        // doing as Image.java does with sensing 64 bit and 32 bit to make
-        // long or int bit vectors
-        int[] descriptors;
-    }
-
     /**
      * adapted from
      * https://github.com/scikit-image/scikit-image/blob/master/skimage/feature/orb.py
@@ -809,7 +803,7 @@ public class SegmentedORB {
      * @param octaveImage
      * @return
      */
-    private Resp detectOctave(float[][] octaveImage) {
+    private Resp detectOctave(float[][] octaveImage, float scale) {
 
         float[][] fastResponse = cornerFast(octaveImage, fastN, fastThreshold);
 
@@ -825,7 +819,7 @@ public class SegmentedORB {
             return null;
         }
         
-        filterForSegmentation(keypoints0, keypoints1);
+        filterForSegmentation(keypoints0, keypoints1, scale);
 
         maskCoordinates(keypoints0, keypoints1, nRows, nCols, 8);//16);
 
@@ -846,7 +840,7 @@ public class SegmentedORB {
             imageProcessor.createFirstDerivKeyPoints(
                 tensorComponents, keypoints0, keypoints1, hLimit);
         
-            filterForSegmentation(keypoints0, keypoints1);
+            filterForSegmentation(keypoints0, keypoints1, scale);
             
             /*
             try {
@@ -890,7 +884,7 @@ public class SegmentedORB {
                 tensorComponents, keypoints0, keypoints1, 
                 curvatureThresh);
     
-            filterForSegmentation(keypoints0, keypoints1);
+            filterForSegmentation(keypoints0, keypoints1, scale);
             
             /*try {
                 float factor = 255.f;
@@ -1795,11 +1789,13 @@ public class SegmentedORB {
     }
 
     private void filterForSegmentation(TIntList keypoints0, 
-        TIntList keypoints1) {
+        TIntList keypoints1, float scale) {
         
         TIntList rm = new TIntArrayList();
         for (int i = 0; i < keypoints0.size(); ++i) {
-            PairInt p = new PairInt(keypoints1.get(i), keypoints0.get(i));
+            int x = Math.round(scale * keypoints1.get(i));
+            int y = Math.round(scale * keypoints0.get(i));
+            PairInt p = new PairInt(x, y);
             if (!pointSegmentedIndexMap.containsKey(p)) {
                 rm.add(i);
             }
@@ -1810,6 +1806,7 @@ public class SegmentedORB {
             keypoints0.removeAt(idx);
             keypoints1.removeAt(idx);
         }
+        assert(keypoints0.size() == keypoints1.size());
     }
     
     private TIntObjectMap<TIntList> groupByCell(TIntList kp0, TIntList kp1) {
@@ -1853,15 +1850,76 @@ public class SegmentedORB {
         return out;
     }
 
-    public static CorrespondenceList match(List<PairInt> templateKeypoints,
-        SegmentedORB.Descriptors templateHDesc,
-        SegmentedORB.Descriptors templateSDesc,
-        SegmentedORB.Descriptors templateVDesc,
+    public static CorrespondenceList match(
+        List<PairInt> templateKeypoints,
+        Descriptors templateHDesc,
+        Descriptors templateSDesc,
+        Descriptors templateVDesc,
         TIntObjectMap<List<PairInt>> srchKeypoints,
-        TIntObjectMap<SegmentedORB.Descriptors> srchHDesc,
-        TIntObjectMap<SegmentedORB.Descriptors> srchSDesc,
-        TIntObjectMap<SegmentedORB.Descriptors> srchVDesc
+        TIntObjectMap<Descriptors> srchHDesc,
+        TIntObjectMap<Descriptors> srchSDesc,
+        TIntObjectMap<Descriptors> srchVDesc
         ) {
+        
+        // -- compare each srch cell descriptor to the template
+        //    storing the keypoints and results in parallel arrays 
+        
+        Descriptors[] templateHSVDesc = new Descriptors[]{
+            templateHDesc, templateSDesc, templateVDesc};
+        
+        //NOTE: quick look before further solution
+        int nT = templateKeypoints.size();
+        int[] bestCost = new int[nT];
+        int[] bestCostGroupIdx = new int[bestCost.length];
+        PairInt[] bestCostKP = new PairInt[bestCost.length];
+        Arrays.fill(bestCost, Integer.MAX_VALUE);
+        Arrays.fill(bestCostGroupIdx, -1);
+        
+        for (int groupIdx : srchKeypoints.keys()) {
+            
+            List<PairInt> kp1 = srchKeypoints.get(groupIdx);
+            Descriptors hDesc1 = srchHDesc.get(groupIdx);
+            Descriptors sDesc1 = srchSDesc.get(groupIdx);
+            Descriptors vDesc1 = srchVDesc.get(groupIdx);
+            assert(kp1 != null);
+            assert(hDesc1 != null);
+            assert(sDesc1 != null);
+            assert(vDesc1 != null);
+            
+            Descriptors[] srchHSVDesc = new Descriptors[]{
+                hDesc1, sDesc1, vDesc1};
+            
+            // first dimension of matrix is n template keypoints,
+            // second is n srch keypoints
+            int[][] costMatrix = ORB.calcDescriptorCostMatrix(
+                templateHSVDesc, srchHSVDesc);
+        
+            assert(costMatrix.length == nT);
+            assert(costMatrix[0].length == kp1.size());
+            
+            // a quick look at best results for each template point,
+            for (int i = 0; i < nT; ++i) {
+                for (int j = 0; j < costMatrix[i].length; ++j) {
+                    int c = costMatrix[i][j];
+                    if (c < bestCost[i]) {
+                        bestCost[i] = c;
+                        bestCostGroupIdx[i] = groupIdx;
+                        bestCostKP[i] = kp1.get(j);
+                    }
+                }
+            }
+        }
+        
+        for (int i = 0; i < nT; ++i) {
+            PairInt p = bestCostKP[i];
+            if (p == null) {
+                continue;
+            }
+            System.out.println("c=" + bestCost[i] +
+                " template KP=" + templateKeypoints.get(i) +
+                " srch KP=" + bestCostKP[i] + " groupIdx=" +
+                bestCostKP[i]);
+        }
         
         throw new UnsupportedOperationException("not yet implemented");
     }

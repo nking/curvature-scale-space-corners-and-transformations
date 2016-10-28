@@ -988,28 +988,35 @@ public class AndroidStatuesTest extends TestCase {
         MiscDebug.writeImage(img11, "_orb_" + fileName1);
         
         // --- match methods ----
-        TIntObjectMap<SegmentedORB.Descriptors> 
+        TIntObjectMap<Descriptors> 
             hDesc0 = orb0.getAllDescriptorsHPerCell();
         
-        TIntObjectMap<SegmentedORB.Descriptors> 
+        TIntObjectMap<Descriptors> 
             sDesc0 = orb0.getAllDescriptorsSPerCell();
         
-        TIntObjectMap<SegmentedORB.Descriptors> 
+        TIntObjectMap<Descriptors> 
             vDesc0 = orb0.getAllDescriptorsVPerCell();
         
+        TIntObjectMap<List<PairInt>> 
+            kp0 = orb0.getAllKeypointsPerCell();
         
-        TIntObjectMap<SegmentedORB.Descriptors> 
+        
+        TIntObjectMap<Descriptors> 
             hDesc = orb.getAllDescriptorsHPerCell();
         
-        TIntObjectMap<SegmentedORB.Descriptors> 
+        TIntObjectMap<Descriptors> 
             sDesc = orb.getAllDescriptorsSPerCell();
         
-        TIntObjectMap<SegmentedORB.Descriptors> 
+        TIntObjectMap<Descriptors> 
             vDesc = orb.getAllDescriptorsVPerCell();
         
-        orb0.gq
+        TIntObjectMap<List<PairInt>> 
+            kp = orb.getAllKeypointsPerCell();
         
-            
+        CorrespondenceList corres = SegmentedORB.match(
+            kp0.get(0), hDesc0.get(0), sDesc0.get(0), vDesc0.get(0),
+            kp, hDesc, sDesc, vDesc);
+        
         /*
             img11 = img.copyToImageExt();
             CorrespondencePlotter plotter = new CorrespondencePlotter(
