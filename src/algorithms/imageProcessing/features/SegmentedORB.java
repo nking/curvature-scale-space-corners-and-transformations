@@ -1867,6 +1867,9 @@ public class SegmentedORB {
         Descriptors[] templateHSVDesc = new Descriptors[]{
             templateHDesc, templateSDesc, templateVDesc};
         
+        System.out.println("nCells to search=" + srchKeypoints.size());
+        
+        /*
         //NOTE: quick look before further solution
         int nT = templateKeypoints.size();
         int[] bestCost = new int[nT];
@@ -1896,6 +1899,7 @@ public class SegmentedORB {
         
             assert(costMatrix.length == nT);
             assert(costMatrix[0].length == kp1.size());
+        
             
             // a quick look at best results for each template point,
             for (int i = 0; i < nT; ++i) {
@@ -1918,8 +1922,25 @@ public class SegmentedORB {
             System.out.println("c=" + bestCost[i] +
                 " template KP=" + templateKeypoints.get(i) +
                 " srch KP=" + bestCostKP[i] + " groupIdx=" +
-                bestCostKP[i]);
+                bestCostGroupIdx[i]);
         }
+        */
+        
+        // DEBUG: 
+        // next, looking at a specific image test to look at
+        // number of top results per cell that are true matches.
+        // if can find one true match in top robustly, then can use evaluation
+        // of a geometric transformation derived from a pair of points
+        // to find best global solution.
+        // NOTE: this likely has to be combined with increasing the 
+        // number of keypoints for some objects.
+        // for the very curvy gingerbread man, keypoints that are max
+        // of curvature for edges derived from a thinned adaptive threshold
+        // or adaptive median edges might provide good additional
+        // keypoints.  the gingerbread man is also a good test object
+        // because the symmetry of it's frosting cuffs and color patterns
+        // require the relative use of location of points (== geometric model)
+        
         
         throw new UnsupportedOperationException("not yet implemented");
     }
