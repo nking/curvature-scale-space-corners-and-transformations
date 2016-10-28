@@ -1,6 +1,8 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.QuickSort;
+import algorithms.imageProcessing.FixedSizeSortedIntVector;
+import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
@@ -115,7 +117,9 @@ public class SegmentedORB {
     protected final TObjectIntMap<PairInt> pointSegmentedIndexMap;
  
     //list index is scale.  map key=index, value=set of keypoints in column major format
-    protected List<TIntObjectMap<List<PairInt>>> keypointsList = null;
+    protected List<TIntObjectMap<List<PairInt>>> segKeypointsList = null;
+    protected List<TIntObjectMap<TDoubleList>> segOrientationsList = null;
+    protected List<TIntObjectMap<TFloatList>> segScalesList = null;
     
     private List<TIntObjectMap<Descriptors>> descriptorsList = null;
     private List<TIntObjectMap<Descriptors>> descriptorsListH = null;
@@ -239,27 +243,19 @@ public class SegmentedORB {
         
         System.out.println("nKeyPointsTotal=" + nKeyPointsTotal +
             " this.nKeypoints=" + this.nKeypoints);
-    
-        this.keypointsList = new ArrayList<TIntObjectMap<List<PairInt>>>();
-        
-        // if descrDithers is set to other than none, this increases the
-        // members of instance variables such as keypoint lists too
-        extractDescriptors(image, pyramid, octavesUsed,
-            keypoints0List, keypoints1List, orientationsList, 
-            harrisResponses, scalesList);  
-        
+            
+        // --- if fewer keypoints were requested, filter by response ----
         if (nKeyPointsTotal > this.nKeypoints) {
 
             // prune the lists to nKeypoints by the harris corner response as a score
-
             // once thru to count first
             int n = 0;
             for (int idx1 = 0; idx1 < harrisResponses.size(); ++idx1) {
                 TFloatList hResp = harrisResponses.get(idx1);
                 n += hResp.size();
-                assert(keypoints0List.get(idx1).size() == hResp.size());
-                assert(keypoints1List.get(idx1).size() == hResp.size());
-                assert(orientationsList.get(idx1).size() == hResp.size());
+                assert (keypoints0List.get(idx1).size() == hResp.size());
+                assert (keypoints1List.get(idx1).size() == hResp.size());
+                assert (orientationsList.get(idx1).size() == hResp.size());
             }
 
             float[] scores = new float[n];
@@ -282,7 +278,6 @@ public class SegmentedORB {
             //  the results and keep the number of results requested.
             //  then the segmentation map keypoints and descriptors
             //  are re-written from those.
-           
             TIntObjectMap<TIntList> keep = new TIntObjectHashMap<TIntList>();
 
             // visit largest scores to smallest
@@ -308,7 +303,7 @@ public class SegmentedORB {
             List<TDoubleList> orientationsList2 = new ArrayList<TDoubleList>();
             List<TFloatList> harrisResponses2 = new ArrayList<TFloatList>();
             List<TFloatList> scalesList2 = new ArrayList<TFloatList>();
-             
+
             for (int idx1 = 0; idx1 < keypoints0List.size(); ++idx1) {
                 TIntList keepList = keep.get(idx1);
                 if (keepList == null) {
@@ -321,7 +316,7 @@ public class SegmentedORB {
                 TFloatList hr = new TFloatArrayList(n2);
                 TFloatList s = new TFloatArrayList(n2);
                 TIntList m = new TIntArrayList(n2);
-                
+
                 keypoints0List2.add(kp0);
                 keypoints1List2.add(kp1);
                 orientationsList2.add(or);
@@ -334,69 +329,59 @@ public class SegmentedORB {
             orientationsList = orientationsList2;
             harrisResponses = harrisResponses2;
             scalesList = scalesList2;
+        }
+        
+        // --- write the class level list map variables ---
+        segKeypointsList = new ArrayList<TIntObjectMap<List<PairInt>>>();
+        segOrientationsList = new ArrayList<TIntObjectMap<TDoubleList>>();
+        segScalesList = new ArrayList<TIntObjectMap<TFloatList>>();
+        for (int idx1 = 0; idx1 < keypoints0List.size(); ++idx1) {
+            TIntObjectMap<List<PairInt>> kpMap = new TIntObjectHashMap<List<PairInt>>();
+            segKeypointsList.add(kpMap);
             
-            // --- rewrite the segmentation variables ----
-            for (int ii = 0; ii < keypoints0List.size(); ++ii) {
+            TIntObjectMap<TDoubleList> orMap = new TIntObjectHashMap<TDoubleList>();
+            segOrientationsList.add(orMap);
+        
+            TIntObjectMap<TFloatList> sMap = new TIntObjectHashMap<TFloatList>();
+            segScalesList.add(sMap);
+       
+            // --- the list vars
+            TIntList kp0List = keypoints0List.get(idx1);
+            TIntList kp1List = keypoints1List.get(idx1);
+            TDoubleList orList = orientationsList.get(idx1);
+            TFloatList sList = scalesList.get(idx1);
+            
+            for (int i = 0; i < kp0List.size(); ++i) {
+                PairInt p = new PairInt(kp1List.get(i), kp0List.get(i));
+                int groupIdx = pointSegmentedIndexMap.get(p);
                 
-                Set<PairInt> sPoints = extractColMajPoints(keypoints0List.get(ii),
-                    keypoints1List.get(ii));
-              
-                TIntObjectMap<List<PairInt>> kpToFilter = keypointsList.get(ii);
-                      
-                TIntObjectIterator<List<PairInt>> iter = kpToFilter.iterator();
-                while (iter.hasNext()) {
-                    
-                    int groupIdx = iter.key();
-                    
-                    TIntList keep2 = new TIntArrayList();
-                    
-                    List<PairInt> points = iter.value();
-                    for (int k = (points.size() - 1); k > -1; --k) {
-                        if (sPoints.contains(points.get(k))) {
-                            keep2.add(k);
-                        } else {
-                            points.remove(k);
-                        }
-                    }
-                    
-                    // --- edit descriptors to keep 'keep2' ---
-                    if (descrChoice.equals(DescriptorChoice.HSV)) {
-                        
-                        Descriptors descH = descriptorsListH.get(ii).get(groupIdx);
-                        Descriptors descS = descriptorsListS.get(ii).get(groupIdx);
-                        Descriptors descV = descriptorsListV.get(ii).get(groupIdx);
-                       
-                        int[] dH = new int[keep2.size()];
-                        int[] dS = new int[dH.length];
-                        int[] dV = new int[dH.length];
-                        int count2 = 0;
-                        for (int k = 0; k < keep2.size(); ++k) {
-                            int idx2 = keep2.get(k);
-                            dH[count2] = descH.descriptors[idx2];
-                            dS[count2] = descS.descriptors[idx2];
-                            dV[count2] = descV.descriptors[idx2];
-                            count2++;
-                        }
-                        descH.descriptors = dH;
-                        descS.descriptors = dS;
-                        descV.descriptors = dV;
-                        
-                    } else if (!descrChoice.equals(DescriptorChoice.NONE)) {
-                        
-                        Descriptors desc = descriptorsList.get(ii).get(groupIdx);
-                        
-                        int[] d = new int[keep2.size()];
-                        int count2 = 0;
-                        for (int k = 0; k < keep2.size(); ++k) {
-                            int idx2 = keep2.get(k);
-                            d[count2] = desc.descriptors[idx2];
-                            count2++;
-                        }
-                        desc.descriptors = d;
-                    }
-                }                
+                List<PairInt> l1 = kpMap.get(groupIdx);
+                if (l1 == null) {
+                    l1 = new ArrayList<PairInt>();
+                    kpMap.put(groupIdx, l1);
+                }
+                l1.add(p);
+                
+                TDoubleList l2 = orMap.get(groupIdx);
+                if (l2 == null) {
+                    l2 = new TDoubleArrayList();
+                    orMap.put(groupIdx, l2);
+                }
+                l2.add(orList.get(i));
+                
+                TFloatList l3 = sMap.get(groupIdx);
+                if (l3 == null) {
+                    l3 = new TFloatArrayList();
+                    sMap.put(groupIdx, l3);
+                }
+                l3.add(sList.get(i));
             }
         }
+            
+        // uses instance variables as data and populates the
+        // instance variables for descriptors
+        extractDescriptors(image, pyramid, octavesUsed);  
+       
     }
 
     /**
@@ -573,6 +558,16 @@ public class SegmentedORB {
         return c;
     }
 
+    /**
+     * extract keypoins from greyscale pyramid image array
+     * @param pyramid
+     * @param keypoints0List
+     * @param keypoints1List
+     * @param orientationsList
+     * @param harrisResponses
+     * @param scalesList
+     * @return 
+     */
     private TIntList extractKeypoints(List<TwoDFloatArray> pyramid,
         List<TIntList> keypoints0List, List<TIntList> keypoints1List,
         List<TDoubleList> orientationsList, 
@@ -649,18 +644,12 @@ public class SegmentedORB {
     }
     
     private void extractDescriptors(Image image, List<TwoDFloatArray> pyramid,
-        TIntList octavesUsed,
-        List<TIntList> keypoints0List, List<TIntList> keypoints1List,
-        List<TDoubleList> orientationsList, 
-        List<TFloatList> harrisResponses, List<TFloatList> scalesList
-        ) {
+        TIntList octavesUsed) {
                 
         if (!descrChoice.equals(DescriptorChoice.HSV)) {
             descriptorsList = new ArrayList<TIntObjectMap<Descriptors>>();
             extractGreyscaleDescriptors(pyramid, octavesUsed, 
-                keypoints0List, keypoints1List,
-                orientationsList, harrisResponses, scalesList,                
-                descriptorsList, true);
+                descriptorsList);
             return;
         }
         
@@ -672,28 +661,18 @@ public class SegmentedORB {
                 
         descriptorsListH = new ArrayList<TIntObjectMap<Descriptors>>();
         extractGreyscaleDescriptors(pyramidH, octavesUsed, 
-            keypoints0List, keypoints1List,
-            orientationsList, harrisResponses, scalesList,                
-            descriptorsListH, true);
+            descriptorsListH);
         descriptorsListS = new ArrayList<TIntObjectMap<Descriptors>>();
         extractGreyscaleDescriptors(pyramidS, octavesUsed, 
-            keypoints0List, keypoints1List,
-            orientationsList, harrisResponses, scalesList,                
-            descriptorsListS, false);
+            descriptorsListS);
         descriptorsListV = new ArrayList<TIntObjectMap<Descriptors>>();
         extractGreyscaleDescriptors(pyramidV, octavesUsed, 
-            keypoints0List, keypoints1List,
-            orientationsList, harrisResponses, scalesList,                
-            descriptorsListV, false);
+            descriptorsListV);
     }
 
     protected void extractGreyscaleDescriptors(
         List<TwoDFloatArray> pyramid, TIntList octavesUsed,
-        List<TIntList> keypoints0List, List<TIntList> keypoints1List,
-        List<TDoubleList> orientationsList, 
-        List<TFloatList> harrisResponses, List<TFloatList> scalesList,
-        List<TIntObjectMap<Descriptors>> descMap,
-        boolean populateKeypointList) {
+        List<TIntObjectMap<Descriptors>> descMap) {
         
         TIntSet octavesUsedSet = new TIntHashSet(octavesUsed);
         
@@ -709,66 +688,22 @@ public class SegmentedORB {
 
             float[][] octaveImage = pyramid.get(octave).a; 
 
-            TFloatList scales = scalesList.get(listIdx); 
-            TIntList kp0 = keypoints0List.get(listIdx);
-            TIntList kp1 = keypoints1List.get(listIdx);
-            TDoubleList or = orientationsList.get(listIdx);
-            TFloatList harrisResp = harrisResponses.get(listIdx);
-
-         
-            TIntObjectMap<Descriptors> indexDescMap = new
-                TIntObjectHashMap<Descriptors>();
+            TIntObjectMap<List<PairInt>> kpMap = segKeypointsList.get(listIdx);
+            TIntObjectMap<TDoubleList> orMap = segOrientationsList.get(listIdx);
+            TIntObjectMap<TFloatList> sMap = segScalesList.get(listIdx);
     
-            TIntObjectMap<List<PairInt>> keypointMap = null;
-            
-            if (populateKeypointList) {
-                keypointMap = new TIntObjectHashMap<>();
-            }
-            
-            // ---- further group these by segmented cell -------
-            TIntObjectMap<TIntList> indexesList = groupByCell(kp0, kp1);
-            TIntObjectIterator<TIntList> iter = indexesList.iterator();
-            for (int j = 0; j < indexesList.size(); ++j) {
+            TIntObjectMap<Descriptors> descMap0 = new
+                TIntObjectHashMap<Descriptors>();
+            descMap.add(descMap0);
+    
+            for (int groupIdx : kpMap.keys()) {
+                List<PairInt> kpList = kpMap.get(groupIdx);
+                TDoubleList orList = orMap.get(groupIdx);
                 
-                iter.advance();
+                Descriptors desc = extractOctave(octaveImage, 
+                    kpList, orList, groupIdx);
                 
-                // segmented cell index:
-                int groupIdx = iter.key();
-                
-                // indexes in above lists:
-                TIntList indexes = iter.value();
-                
-                if (indexes.isEmpty()) {
-                    continue;
-                }
-                assert(groupIdx == pointSegmentedIndexMap.get(
-                    new PairInt(
-                        kp1.get(indexes.get(0)), kp0.get(indexes.get(0))
-                    )));
-                
-                // result contains descriptors and mask.
-                // also, modified by mask are the keypoints and orientations
-                Descriptors desc = extractOctave(octaveImage, kp0, kp1, or, 
-                    indexes, groupIdx);
-
-                indexDescMap.put(groupIdx, desc);
-                
-                if (populateKeypointList) {
-                    List<PairInt> kpList = new ArrayList<PairInt>();
-                    for (int ii = 0; ii < indexes.size(); ++ii) {
-                        int y = kp0.get(ii);
-                        int x = kp1.get(ii);
-                        PairInt p = new PairInt(x, y);
-                        kpList.add(p);
-                    }
-                    keypointMap.put(groupIdx, kpList);
-                }
-            }
-           
-            descMap.add(indexDescMap);
-            
-            if (populateKeypointList) {
-                this.keypointsList.add(keypointMap);
+                descMap0.put(groupIdx, desc);
             }
             
             // octave list index:
@@ -861,7 +796,8 @@ public class SegmentedORB {
                     img2.setRGB(x, y, 255, 0, 0);
                 }
                 System.out.println("nRows=" + nRows + " nCols=" + nCols);
-                algorithms.imageProcessing.ImageDisplayer.displayImage("curvature", img2);
+                algorithms.imageProcessing.ImageDisplayer.displayImage(
+                    "first_deriv", img2);
                 int z = 1;
             } catch(Exception e) {
                 System.out.println(e.getMessage());
@@ -1472,21 +1408,19 @@ public class SegmentedORB {
     }
 
     /**
-     * filter the keypoints, orientations, and responses to remove those close
-     * to the border and then create descriptors for the remaining.
-     *
+     * 
      * @param octaveImage
-     * @param keypoints0
-     * @param keypoints1
-     * @param orientations
-     * @param indexes
-     * @param groupIdx
-     * @return the encapsulated descriptors and mask
+     * @param kpList keypoint list
+     * @param orList orientation list
+     * @return 
      */
     protected Descriptors extractOctave(float[][] octaveImage,
-        TIntList keypoints0, TIntList keypoints1,
-        TDoubleList orientations,
-        TIntList indexes, int groupIdx) {
+        List<PairInt> kpList, TDoubleList orList, 
+        int groupIdx) {
+        
+        if (kpList.size() != orList.size()) {
+            throw new IllegalArgumentException("lists must be same size");
+        }
         
         if (POS0 == null) {
             POS0 = ORBDescriptorPositions.POS0;
@@ -1495,16 +1429,13 @@ public class SegmentedORB {
             POS1 = ORBDescriptorPositions.POS1;
         }
 
-        assert(orientations.size() == keypoints0.size());
-        assert(orientations.size() == keypoints1.size());
-
         int[] descriptors = null;
 
         if (descrChoice.equals(DescriptorChoice.NONE)) {
             descriptors = new int[0];
         } else {      
-            descriptors = orbLoop(octaveImage, keypoints0, keypoints1,
-                orientations, indexes, groupIdx);
+            descriptors = orbLoop(octaveImage, 
+                kpList, orList, groupIdx);
         }
 
         Descriptors desc = new Descriptors();
@@ -1520,28 +1451,28 @@ public class SegmentedORB {
      * https://github.com/scikit-image/scikit-image/blob/master/skimage/feature/orb_cy.pyx
      *
      * @param octaveImage
-     * @param keypoints0
-     * @param keypoints1
-     * @param orientations
+     * @param kpList keypoint list
+     * @param orList orientation list
      * @return
      * array of bit vectors of which only 256 bits are used
      * length is [orientations.size]
      */
-    protected int[] orbLoop(float[][] octaveImage, TIntList keypoints0,
-        TIntList keypoints1, TDoubleList orientations,
-        TIntList indexes, int groupIdx) {
+    protected int[] orbLoop(float[][] octaveImage, 
+        List<PairInt> kpList, TDoubleList orList,
+        int groupIdx) {
 
-        assert(orientations.size() == keypoints0.size());
-
+        if (kpList.size() != orList.size()) {
+            throw new IllegalArgumentException("lists must be same size");
+        }
+        
         if (POS0 == null) {
             POS0 = ORBDescriptorPositions.POS0;
         }
         if (POS1 == null) {
             POS1 = ORBDescriptorPositions.POS1;
         }
-
-        //int nKP = orientations.size();
-        int nKP = indexes.size();
+        
+        int nKP = kpList.size();
         
         System.out.println("nKP=" + nKP);
 
@@ -1551,14 +1482,14 @@ public class SegmentedORB {
         double pr0, pc0, pr1, pc1;
         int spr0, spc0, spr1, spc1;
 
-        for (int i = 0; i < indexes.size(); ++i) {
-            int idx = indexes.get(i);
-            double angle = orientations.get(idx);
+        for (int i = 0; i < nKP; ++i) {
+            double angle = orList.get(i);
             double sinA = Math.sin(angle);
             double cosA = Math.cos(angle);
 
-            int kr = keypoints0.get(idx);
-            int kc = keypoints1.get(idx);
+            PairInt p = kpList.get(i);
+            int kr = p.getY();
+            int kc = p.getX();
             
             int descr = 0;
 
@@ -1613,7 +1544,7 @@ public class SegmentedORB {
     }
 
     public List<TIntObjectMap<List<PairInt>>> getKeypointsList() {
-        return keypointsList;
+        return segKeypointsList;
     }
     
     public List<TIntObjectMap<Descriptors>> getDescriptorsList() {
@@ -1664,7 +1595,7 @@ public class SegmentedORB {
     
     public TIntObjectMap<List<PairInt>> getAllKeypointsPerCell() {
         
-        if (keypointsList == null) {
+        if (segKeypointsList == null) {
             return null;
         }
         
@@ -1672,8 +1603,8 @@ public class SegmentedORB {
             new TIntObjectHashMap<List<PairInt>>();
     
         TIntSet groupIndexes = new TIntHashSet();
-        for (int i = 0; i < keypointsList.size(); ++i) {
-            TIntObjectMap<List<PairInt>> map = keypointsList.get(i);
+        for (int i = 0; i < segKeypointsList.size(); ++i) {
+            TIntObjectMap<List<PairInt>> map = segKeypointsList.get(i);
             groupIndexes.addAll(map.keySet());
         }
         
@@ -1683,8 +1614,8 @@ public class SegmentedORB {
             int groupIdx = iter.next();
             
             int n = 0;
-            for (int i = 0; i < keypointsList.size(); ++i) {
-                TIntObjectMap<List<PairInt>> map = keypointsList.get(i);
+            for (int i = 0; i < segKeypointsList.size(); ++i) {
+                TIntObjectMap<List<PairInt>> map = segKeypointsList.get(i);
                 List<PairInt> list = map.get(groupIdx);
                 if (list != null && !list.isEmpty()) {
                     List<PairInt> writeList = out.get(groupIdx);
@@ -1861,6 +1792,8 @@ public class SegmentedORB {
         TIntObjectMap<Descriptors> srchVDesc
         ) {
         
+        int nT = templateKeypoints.size();
+        
         // -- compare each srch cell descriptor to the template
         //    storing the keypoints and results in parallel arrays 
         
@@ -1871,7 +1804,7 @@ public class SegmentedORB {
         
         /*
         //NOTE: quick look before further solution
-        int nT = templateKeypoints.size();
+        
         int[] bestCost = new int[nT];
         int[] bestCostGroupIdx = new int[bestCost.length];
         PairInt[] bestCostKP = new PairInt[bestCost.length];
@@ -1940,8 +1873,109 @@ public class SegmentedORB {
         // keypoints.  the gingerbread man is also a good test object
         // because the symmetry of it's frosting cuffs and color patterns
         // require the relative use of location of points (== geometric model)
+    
+    
+        for (int groupIdx : srchKeypoints.keys()) {
+            
+            List<PairInt> kp1 = srchKeypoints.get(groupIdx);
+            
+            if (isNotInTestRegion(kp1)) {
+                continue;
+            }
+           
+            Descriptors hDesc1 = srchHDesc.get(groupIdx);
+            Descriptors sDesc1 = srchSDesc.get(groupIdx);
+            Descriptors vDesc1 = srchVDesc.get(groupIdx);
+            assert(kp1 != null);
+            assert(hDesc1 != null);
+            assert(sDesc1 != null);
+            assert(vDesc1 != null);
+            
+            Descriptors[] srchHSVDesc = new Descriptors[]{
+                hDesc1, sDesc1, vDesc1};
+            
+            // first dimension of matrix is n template keypoints,
+            // second is n srch keypoints
+            int[][] costMatrix = ORB.calcDescriptorCostMatrix(
+                templateHSVDesc, srchHSVDesc);
+        
+            assert(costMatrix.length == nT);
+            assert(costMatrix[0].length == kp1.size());
+                    
+            FixedSizeSortedVector<CostObj> vector =
+                new FixedSizeSortedVector<CostObj>(costMatrix[0].length,
+                CostObj.class);
+            
+            for (int i = 0; i < nT; ++i) {
+                PairInt p1 = templateKeypoints.get(i);
+                for (int j = 0; j < costMatrix[i].length; ++j) {
+                    int c = costMatrix[i][j];
+                    PairInt p2 = kp1.get(j);
+                    CostObj co = new CostObj(c, p1, p2);
+                    vector.add(co);
+                }
+            }
+            
+            System.out.println("groupIdx=" + groupIdx);
+            for (int ii = 0; ii < vector.getNumberOfItems(); ++ii) {
+                CostObj co = vector.getArray()[ii];
+                System.out.println(ii + ") " + co.p1 + ", " + co.p2 +
+                    " c=" + co.cost);
+            }
+        }
         
         
         throw new UnsupportedOperationException("not yet implemented");
+    }
+    
+    private static class CostObj implements Comparable<CostObj> {
+
+        int cost;
+        PairInt p1;
+        PairInt p2;
+        
+        public CostObj(int c, PairInt templatePt, PairInt srchPt) {
+            this.cost = c;
+            p1 = templatePt;
+            p2 = srchPt;
+        }
+        
+        @Override
+        public int compareTo(CostObj other) {
+            if (cost < other.cost) {
+                return -1;
+            } else if (cost > other.cost) {
+                return 1;
+            }
+            return 0;
+        }
+    }
+    
+    private static boolean isNotInTestRegion(List<PairInt> kps) {
+    
+        for (int i = 0; i < kps.size(); ++i) {
+            PairInt p = kps.get(i);
+            int x = p.getX();
+            int y = p.getY();
+            if (isInTestArea(x, y)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    private static boolean isInTestArea(int x, int y) {
+        
+        if (
+            ((x >= 160) && (x <= 192) && (y <= 40) && (y >= 18)) ){
+            return true;
+        }
+        
+        if (
+            ((x >= 160) && (y >= 40)) ){
+            return true;
+        }
+       
+        return false;
     }
 }
