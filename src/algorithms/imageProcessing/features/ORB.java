@@ -14,6 +14,7 @@ import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculato
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.QuadInt;
@@ -2020,9 +2021,30 @@ public class ORB {
         //  to calcuate euclidean transformations and evaluate them.
         // -- can reduce the number of combinations by imposing a 
         //    distance limit on separation of feasible pairs
-        // setting limit to twice dimension of template
-        //    object dimensions
         
+        int[] minMaxXY = MiscMath.findMinMaxXY(keypoints1);
+        int objDimension = Math.max(minMaxXY[1] - minMaxXY[0],
+            minMaxXY[3] - minMaxXY[2]);
+        int limit = 2 * objDimension;
+        int limitSq = limit * limit;
+        
+        for (int i = 0; i < mS.size(); ++i) {
+            PairInt t1 = mT.get(i);
+            PairInt s1 = mS.get(i);
+            
+            // choose all combinations of 2nd point within distance
+            // limit of point s1.
+            for (int j = (i + 1); j < mS.size(); ++j) {
+                PairInt t2 = mT.get(j);
+                PairInt s2 = mS.get(j);
+                int distSq = distanceSq(s1, s2);
+                if (distSq > limitSq) {
+                    continue;
+                }
+                // -- calculate euclid transformation
+                // -- evaluate the fit
+            }
+        }
         
         throw new UnsupportedOperationException("not yet implemented");
     }
@@ -2530,6 +2552,13 @@ public class ORB {
             assert(p12.getY() < k2Size);
         }
         
+    }
+    
+    private static int distanceSq(PairInt s1, PairInt s2) {
+
+        int diffX = s1.getX() - s2.getX();
+        int diffY = s1.getY() - s2.getY();
+        return diffX * diffX + diffY * diffY;
     }
 
 }
