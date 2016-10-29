@@ -16,6 +16,7 @@ import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.QuadInt;
 import algorithms.util.TwoDFloatArray;
+import algorithms.util.VeryLongBitString;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
@@ -345,16 +346,16 @@ public class ORB {
                 TIntList m = new TIntArrayList(n2);
                 
                 //size is [orientations.size] of bit vectors using POS0.length bits
-                int[] d = null;
-                int[] dH = null;
-                int[] dS = null;
-                int[] dV = null;
+                VeryLongBitString[] d = null;
+                VeryLongBitString[] dH = null;
+                VeryLongBitString[] dS = null;
+                VeryLongBitString[] dV = null;
                 if (!descrChoice.equals(DescriptorChoice.HSV)) {
-                    d = new int[n2];
+                    d = new VeryLongBitString[n2];
                 } else {
-                    dH = new int[n2];
-                    dS = new int[n2];
-                    dV = new int[n2];
+                    dH = new VeryLongBitString[n2];
+                    dS = new VeryLongBitString[n2];
+                    dV = new VeryLongBitString[n2];
                 }
                 
                 int dCount = 0;
@@ -370,11 +371,11 @@ public class ORB {
 
                     if (!descrChoice.equals(DescriptorChoice.NONE)) {
                         if (!descrChoice.equals(DescriptorChoice.HSV)) {
-                            int d0 = this.descriptorsList.get(idx1).descriptors[idx2];
+                            VeryLongBitString d0 = this.descriptorsList.get(idx1).descriptors[idx2];
                             d[dCount] = d0;
                             dCount++;
                         } else {
-                            int d0 = this.descriptorsListH.get(idx1).descriptors[idx2];
+                            VeryLongBitString d0 = this.descriptorsListH.get(idx1).descriptors[idx2];
                             dH[dCount] = d0;
 
                             d0 = this.descriptorsListS.get(idx1).descriptors[idx2];
@@ -872,7 +873,7 @@ public class ORB {
         //NOTE: consider packing 4 descriptors into one or
         // doing as Image.java does with sensing 64 bit and 32 bit to make
         // long or int bit vectors
-        int[] descriptors;
+        VeryLongBitString[] descriptors;
     }
 
     /**
@@ -1570,10 +1571,10 @@ public class ORB {
         assert(orientations.size() == keypoints1.size());
         assert(orientations.size() == responses.size());
 
-        int[] descriptors = null;
+        VeryLongBitString[] descriptors = null;
 
         if (descrChoice.equals(DescriptorChoice.NONE)) {
-            descriptors = new int[0];
+            descriptors = new VeryLongBitString[0];
         } else {
             descriptors = orbLoop(octaveImage, keypoints0, keypoints1,
                 orientations);
@@ -1599,7 +1600,7 @@ public class ORB {
      * array of bit vectors of which only 256 bits are used
      * length is [orientations.size]
      */
-    protected int[] orbLoop(float[][] octaveImage, TIntList keypoints0,
+    protected VeryLongBitString[] orbLoop(float[][] octaveImage, TIntList keypoints0,
         TIntList keypoints1, TDoubleList orientations) {
 
         assert(orientations.size() == keypoints0.size());
@@ -1616,20 +1617,21 @@ public class ORB {
         System.out.println("nKP=" + nKP);
 
         // holds values 1 or 0.  size is [orientations.size][POS0.length]
-        int[] descriptors = new int[nKP];
+        VeryLongBitString[] descriptors = new VeryLongBitString[nKP];
 
         double pr0, pc0, pr1, pc1;
         int spr0, spc0, spr1, spc1;
 
         for (int i = 0; i < descriptors.length; ++i) {
+            
+            descriptors[i] = new VeryLongBitString(256);
+            
             double angle = orientations.get(i);
             double sinA = Math.sin(angle);
             double cosA = Math.cos(angle);
 
             int kr = keypoints0.get(i);
             int kc = keypoints1.get(i);
-            
-            int descr = 0;
 
             for (int j = 0; j < POS0.length; ++j) {
                 pr0 = POS0[j][0];
@@ -1655,10 +1657,9 @@ public class ORB {
                     continue;
                 }
                 if (octaveImage[x0][y0] < octaveImage[x1][y1]) {
-                    descr |= (1 << j);
+                    descriptors[i].setBit(j);
                 }
             }
-            descriptors[i] = descr;
         }
 
         return descriptors;
@@ -1716,13 +1717,14 @@ public class ORB {
         
         int nPos0 = ORBDescriptorPositions.POS0.length;
 
-        int[] combinedD = new int[n];
+        VeryLongBitString[] combinedD = new VeryLongBitString[n];
 
         int count = 0;
         for (int i = 0; i < list.size(); ++i) {
 
-            int[] d = list.get(i).descriptors;
+            VeryLongBitString[] d = list.get(i).descriptors;
             
+            //TODO: may want to revisit this and use the instance copy methods individually
             System.arraycopy(d, 0, combinedD, count, d.length);
             count += d.length;
         }
@@ -1948,9 +1950,10 @@ public class ORB {
      * @return matches - two dimensional int array of indexes in d1 and
      * d2 which are matched.
      */
-    public static int[][] matchDescriptors(int[] d1, int[] d2,
+    public static int[][] matchDescriptors(VeryLongBitString[] d1, 
+        VeryLongBitString[] d2,
         List<PairInt> keypoints1, List<PairInt> keypoints2) {
-
+        
         int n1 = d1.length;
         int n2 = d2.length;
 
@@ -2083,16 +2086,13 @@ int sumKP = 0;
             PairInt[] kpIdxs = new PairInt[n];
 
             for (int k = 0; k < desc1.length; ++k) {
-                int[] d1 = desc1[k].descriptors;
-                int[] d2 = desc2[k].descriptors;
+                VeryLongBitString[] d1 = desc1[k].descriptors;
+                VeryLongBitString[] d2 = desc2[k].descriptors;
                 int count = 0;
                 for (int i = 0; i < keypoints1.size(); ++i) {
                     for (int j : kpIdxs2.toArray()) { 
                         assert(j < keypoints2.size());
-                        // xor gives number of different bits
-                        int xor = d1[i] ^ d2[j];
-                        int nbits = Integer.bitCount(xor);
-                        //cost[i][j] += nbits;
+                        int nbits = (int)d1[i].nBitsDifferent(d2[j]);
                         costs[count] += nbits;
                         if (k == 0) {
                             assert(i < keypoints1.size());
@@ -2263,7 +2263,8 @@ int sumKP = 0;
      * @return matches two dimensional int array of indexes in d1 and
      * d2 which are matched.
      */
-    public static int[][] calcDescriptorCostMatrix(int[] d1, int[] d2) {
+    public static int[][] calcDescriptorCostMatrix(
+        VeryLongBitString[] d1, VeryLongBitString[] d2) {
 
         int n1 = d1.length;
         int n2 = d2.length;
@@ -2272,9 +2273,7 @@ int sumKP = 0;
         for (int i = 0; i < n1; ++i) {
             cost[i] = new int[n2];
             for (int j = 0; j < n2; ++j) {
-                // xor gives number of different bits
-                int xor = d1[i] ^ d2[j];
-                cost[i][j] = Integer.bitCount(xor);
+                cost[i][j] = (int)d1[i].nBitsDifferent(d2[j]);
             }
         }
 
@@ -2312,17 +2311,14 @@ int sumKP = 0;
         }
         
         for (int k = 0; k < nd; ++k) {
-            int[] d1 = desc1[k].descriptors;
-            int[] d2 = desc2[k].descriptors;
+            VeryLongBitString[] d1 = desc1[k].descriptors;
+            VeryLongBitString[] d2 = desc2[k].descriptors;
             assert(d1.length == n1);
             assert(d2.length == n2);
             for (int i = 0; i < n1; ++i) {
                 for (int j = 0; j < n2; ++j) {
-                    // xor gives number of different bits
-                    int xor = d1[i] ^ d2[j];
-                    int nbits = Integer.bitCount(xor);
-                    //cost[i][j] += (nbits * nbits);
-                    cost[i][j] += nbits;
+                    //cost[i][j] += (nbits * nbits); could use sq diff...
+                    cost[i][j] += (int)d1[i].nBitsDifferent(d2[j]);
                 }
             }
         }
