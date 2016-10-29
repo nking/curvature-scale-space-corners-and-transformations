@@ -5,6 +5,7 @@ import algorithms.QuickSort;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
+import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MedianTransform;
 import algorithms.imageProcessing.StructureTensor;
@@ -12,11 +13,13 @@ import algorithms.imageProcessing.transform.ITransformationFit;
 import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.misc.Misc;
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.QuadInt;
 import algorithms.util.TwoDFloatArray;
 import algorithms.util.VeryLongBitString;
+import com.climbwithyourfeet.clustering.DTClusterFinder;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
@@ -1939,6 +1942,89 @@ public class ORB {
      */
     public List<TFloatList> getHarrisResponseList() {
         return harrisResponses;
+    }
+    
+    /**
+     * match descriptors using euclidean transformation evaluation from pairs in
+     * feasible combinations of best matches.
+     * @param d1
+     * @param d2
+     * @param keypoints1
+     * @param keypoints2
+     * @return 
+     */
+    public static CorrespondenceList matchDescriptors2(
+        Descriptors[] d1, Descriptors[] d2,
+        List<PairInt> keypoints1,
+        List<PairInt> keypoints2) {
+        
+        assert(d1.length == d2.length);
+        
+        int n1 = d1[0].descriptors.length;
+        int n2 = d2[0].descriptors.length;
+        
+        assert(n1 == keypoints1.size());
+        assert(n2 == keypoints2.size());
+
+        //[n1][n2]
+        int[][] cost = calcDescriptorCostMatrix(d1, d2);
+
+        int nTot = n1 * n2;
+        PairInt[] indexes = new PairInt[nTot];
+        int[] costs = new int[nTot];
+        int count = 0;
+        for (int i = 0; i < n1; ++i) {
+            for (int j = 0; j < n2; ++j) {
+                indexes[count] = new PairInt(i, j);
+                costs[count] = cost[i][j];
+                count++;
+            }
+        }
+        assert(count == nTot);
+
+        QuickSort.sortBy1stArg(costs, indexes);
+        
+        // storing the indexes of matches with cost < 127 and
+        // less than about 45 in number
+        
+        count = 0;
+        Set<PairInt> set1 = new HashSet<PairInt>();
+        Set<PairInt> set2 = new HashSet<PairInt>();
+        List<PairInt> mT = new ArrayList<PairInt>();
+        List<PairInt> mS = new ArrayList<PairInt>();
+        // visit lowest costs (== differences) first
+        for (int i = 0; i < nTot; ++i) {
+            if (costs[i] > 126 || count > 45) {
+                break;
+            }
+            PairInt index12 = indexes[i];
+            int idx1 = index12.getX();
+            int idx2 = index12.getY();
+            PairInt p1 = keypoints1.get(idx1);
+            PairInt p2 = keypoints2.get(idx2);
+            if (set1.contains(p1) || set2.contains(p2)) {
+                continue;
+            }
+            //System.out.println("p1=" + p1 + " " + " p2=" + p2 + " cost=" + costs[i]);
+            mT.add(p1);
+            mS.add(p2);
+            set1.add(p1);
+            set2.add(p2);
+            count++;
+        }
+
+        System.out.println("have " + mT.size() + " sets of points for "
+            + " n of k=2 combinations");
+        
+        // need to make pairs of combinations from mT,mS
+        //  to calcuate euclidean transformations and evaluate them.
+        // -- can reduce the number of combinations by imposing a 
+        //    distance limit on separation of feasible pairs
+        // setting limit to twice dimension of template
+        //    object dimensions
+        
+        
+        throw new UnsupportedOperationException("not yet implemented");
     }
 
     /**
