@@ -12,9 +12,11 @@ import algorithms.imageProcessing.StructureTensor;
 import algorithms.imageProcessing.transform.ITransformationFit;
 import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.transform.TransformationParameters;
+import algorithms.imageProcessing.transform.Transformer;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
+import algorithms.search.NearestNeighbor2D;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.QuadInt;
@@ -1991,8 +1993,8 @@ public class ORB {
         count = 0;
         Set<PairInt> set1 = new HashSet<PairInt>();
         Set<PairInt> set2 = new HashSet<PairInt>();
-        List<PairInt> mT = new ArrayList<PairInt>();
-        List<PairInt> mS = new ArrayList<PairInt>();
+        PairIntArray mT = new PairIntArray();
+        PairIntArray mS = new PairIntArray();
         // visit lowest costs (== differences) first
         for (int i = 0; i < nTot; ++i) {
             if (costs[i] > 126 || count > 45) {
@@ -2007,8 +2009,8 @@ public class ORB {
                 continue;
             }
             //System.out.println("p1=" + p1 + " " + " p2=" + p2 + " cost=" + costs[i]);
-            mT.add(p1);
-            mS.add(p2);
+            mT.add(p1.getX(), p1.getY());
+            mS.add(p2.getX(), p2.getY());
             set1.add(p1);
             set2.add(p2);
             count++;
@@ -2027,22 +2029,79 @@ public class ORB {
             minMaxXY[3] - minMaxXY[2]);
         int limit = 2 * objDimension;
         int limitSq = limit * limit;
+       
+        int[] minMaxXY2 = MiscMath.findMinMaxXY(set2);
         
-        for (int i = 0; i < mS.size(); ++i) {
-            PairInt t1 = mT.get(i);
-            PairInt s1 = mS.get(i);
+        MatchedPointsTransformationCalculator tc = new
+            MatchedPointsTransformationCalculator();
+        
+        Transformer transformer = new Transformer();
+        
+        NearestNeighbor2D nn = new NearestNeighbor2D(
+           set2, minMaxXY2[1] + limit, minMaxXY2[3] + limit);
+        
+        for (int i = 0; i < mS.getN(); ++i) {
+            int t1X = mT.getX(i);
+            int t1Y = mT.getY(i);
+            int s1X = mS.getX(i);
+            int s1Y = mS.getY(i);
             
             // choose all combinations of 2nd point within distance
             // limit of point s1.
             for (int j = (i + 1); j < mS.size(); ++j) {
-                PairInt t2 = mT.get(j);
-                PairInt s2 = mS.get(j);
-                int distSq = distanceSq(s1, s2);
+                int t2X = mT.getX(j);
+                int t2Y = mT.getY(j);
+                int s2X = mS.getX(j);
+                int s2Y = mS.getY(j);
+                
+                int diffX = s1X - s2X;
+                int diffY = s1Y - s2Y;
+                int distSq = diffX * diffX + diffY * diffY;
                 if (distSq > limitSq) {
                     continue;
                 }
                 // -- calculate euclid transformation
                 // -- evaluate the fit
+                TransformationParameters params = tc.calulateEuclidean(
+                    t1X, t1Y, 
+                    t2X, t2Y, 
+                    s1X, s1Y,
+                    s2X, s2Y,
+                    0, 0);
+                
+                float scale = params.getScale();
+                
+                // template object transformed
+                PairIntArray trT = 
+                    transformer.applyTransformation(params, mT);
+                
+                /*
+                two components to the evaluation and both need normalizations
+                so that their contributions to total result are
+                equally weighted.
+                
+                (1) descriptors:
+                    -- score is sum of each matched (3*256 - cost)
+                    -- the normalization is the maximum possible score,
+                       so will use the number of template points.
+                       --> norm = nTemplate * 3 * 256
+                    -- normalized score = (3*256 - cost)/norm
+                   ==> normalized cost = 1 - ((3*256 - cost)/norm)
+                (2) spatial distances from transforme points:
+                   -- sum of distances within limit
+                      and replace of distance by limit if no matching
+                      nearest neighbor is found.
+                   -- divide each distance by the transformation scale
+                      to compare same values
+                   -- divide th total sum by the total max possible
+                      --> norm = nTemplate * limit / scale
+               
+                Then the total cost is (1) + (2) and the min cost
+                among all of these combinations is the resulting
+                correspondence list
+                */
+               
+                
             }
         }
         
@@ -2553,12 +2612,5 @@ public class ORB {
         }
         
     }
-    
-    private static int distanceSq(PairInt s1, PairInt s2) {
-
-        int diffX = s1.getX() - s2.getX();
-        int diffY = s1.getY() - s2.getY();
-        return diffX * diffX + diffY * diffY;
-    }
-
+   
 }
