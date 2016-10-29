@@ -4,6 +4,7 @@ package algorithms.imageProcessing.features;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.features.ORB.Descriptors;
 import algorithms.util.PairInt;
+import algorithms.util.VeryLongBitString;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TIntList;
 import java.util.List;
@@ -79,7 +80,7 @@ public class ORBWrapper {
             }
         }
         
-        int[] outD = new int[outputKeypoints.size()];
+        VeryLongBitString[] outD = new VeryLongBitString[outputKeypoints.size()];
         int count = 0;
         for (int i = 0; i < kp.size(); ++i) {
             PairInt p = kp.get(i);
@@ -161,9 +162,9 @@ public class ORBWrapper {
             }
         }
         
-        int[] outH = new int[outputKeypoints.size()];
-        int[] outS = new int[outputKeypoints.size()];
-        int[] outV = new int[outputKeypoints.size()];
+        VeryLongBitString[] outH = new VeryLongBitString[outputKeypoints.size()];
+        VeryLongBitString[] outS = new VeryLongBitString[outputKeypoints.size()];
+        VeryLongBitString[] outV = new VeryLongBitString[outputKeypoints.size()];
         int count = 0;
         for (int i = 0; i < kp.size(); ++i) {
             PairInt p = kp.get(i);

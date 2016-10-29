@@ -1,7 +1,6 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.QuickSort;
-import algorithms.imageProcessing.FixedSizeSortedIntVector;
 import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
@@ -16,7 +15,6 @@ import algorithms.util.PairInt;
 import algorithms.util.TwoDFloatArray;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIterator;
-import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
@@ -98,11 +96,13 @@ This version is adapted to work with segmented cells and is using
 * experimental descriptor masks of 0 for pixels not in the 
 * segmented cell of the keypoint.
 
-NOTE: the masking of non segmented cell pixels is not yet correct.
-this class is not ready for use.
+NOTE: the masking for the descriptors is more involved than
+* easily implemented for now, so this class
+* will disappear soon.
 
 * 
  */
+@Deprecated
 public class SegmentedORB {
 
     // these could be made static across all instances, but needs guards for synchronous initialization
@@ -708,7 +708,7 @@ public class SegmentedORB {
                 TDoubleList orList = orMap.get(groupIdx);
                 
                 Descriptors desc = extractOctave(octaveImage, 
-                    kpList, orList, groupIdx);
+                    kpList, orList);
                 
                 descMap0.put(groupIdx, desc);
             }
@@ -1428,8 +1428,7 @@ public class SegmentedORB {
      * @return 
      */
     protected Descriptors extractOctave(float[][] octaveImage,
-        List<PairInt> kpList, TDoubleList orList, 
-        int groupIdx) {
+        List<PairInt> kpList, TDoubleList orList) {
         
         if (kpList.size() != orList.size()) {
             throw new IllegalArgumentException("lists must be same size");
@@ -1442,17 +1441,15 @@ public class SegmentedORB {
             POS1 = ORBDescriptorPositions.POS1;
         }
 
-        VeryLongBitString[] descriptors = null;
+        Descriptors desc = null;
 
         if (descrChoice.equals(DescriptorChoice.NONE)) {
-            descriptors = new VeryLongBitString[0];
+            VeryLongBitString[] descriptors = new VeryLongBitString[0];
+            desc.descriptors = descriptors;
         } else {      
-            descriptors = orbLoop(octaveImage, 
-                kpList, orList, groupIdx);
+            desc = orbLoop(octaveImage, 
+                kpList, orList);
         }
-
-        Descriptors desc = new Descriptors();
-        desc.descriptors = descriptors;
 
         return desc;
     }
@@ -1470,9 +1467,8 @@ public class SegmentedORB {
      * array of bit vectors of which only 256 bits are used
      * length is [orientations.size]
      */
-    protected VeryLongBitString[] orbLoop(float[][] octaveImage, 
-        List<PairInt> kpList, TDoubleList orList,
-        int groupIdx) {
+    protected Descriptors orbLoop(float[][] octaveImage, 
+        List<PairInt> kpList, TDoubleList orList) {
 
         if (kpList.size() != orList.size()) {
             throw new IllegalArgumentException("lists must be same size");
@@ -1491,7 +1487,7 @@ public class SegmentedORB {
 
         // holds values 1 or 0.  size is [orientations.size] 
         VeryLongBitString[] descriptors = new VeryLongBitString[nKP];
-
+        
         double pr0, pc0, pr1, pc1;
         int spr0, spc0, spr1, spc1;
 
@@ -1506,7 +1502,7 @@ public class SegmentedORB {
             PairInt p = kpList.get(i);
             int kr = p.getY();
             int kc = p.getX();
-            
+        
             for (int j = 0; j < POS0.length; ++j) {
                 pr0 = POS0[j][0];
                 pc0 = POS0[j][1];
@@ -1534,28 +1530,22 @@ public class SegmentedORB {
                 PairInt p1 = new PairInt(y1, x1);
                 
                 float v0, v1;
-                if (pointSegmentedIndexMap.containsKey(p0) && 
-                    pointSegmentedIndexMap.get(p0) == groupIdx) {
-                    v0 = octaveImage[x0][y0];
-                } else {
-                    v0 = 0;
-                }
-                if (pointSegmentedIndexMap.containsKey(p1) && 
-                    pointSegmentedIndexMap.get(p1) == groupIdx) {
-                    v1 = octaveImage[x1][y1];
-                } else {
-                    v1 = 0;
-                }
+                v0 = octaveImage[x0][y0];
+                
+                v1 = octaveImage[x1][y1];
                 
                 if (v0 < v1) {
                     descriptors[i].setBit(j);
                 }
             }
         }
+        
+        Descriptors desc = new Descriptors();
+        desc.descriptors = descriptors;
 
-        return descriptors;
+        return desc;
     }
-
+    
     public List<TIntObjectMap<List<PairInt>>> getKeypointsList() {
         return segKeypointsList;
     }
@@ -1651,7 +1641,8 @@ public class SegmentedORB {
             return null;
         }
         
-        TIntObjectMap<Descriptors> out = new TIntObjectHashMap<Descriptors>();
+        TIntObjectMap<Descriptors> out 
+            = new TIntObjectHashMap<Descriptors>();
     
         TIntSet groupIndexes = new TIntHashSet();
         for (int i = 0; i < list.size(); ++i) {
@@ -1689,7 +1680,7 @@ public class SegmentedORB {
                     
                     //TODO: consider using the instance copy individually here
                     System.arraycopy(desc.descriptors, 0, d, n, nLen);
-                    
+                                
                     n += nLen;
                 }
             }
@@ -1717,14 +1708,21 @@ public class SegmentedORB {
         }
        
         VeryLongBitString[] combinedD = new VeryLongBitString[n];
-
+        
         int count = 0;
         for (int i = 0; i < list.size(); ++i) {
 
-            VeryLongBitString[] d = list.get(i).descriptors;
-            
-            System.arraycopy(d, 0, combinedD, count, d.length);
-            count += d.length;
+            Descriptors desc = list.get(i);
+        
+            if (desc != null && desc.descriptors != null) {
+
+                int nLen = desc.descriptors.length;
+
+                //TODO: consider using the instance copy individually here
+                System.arraycopy(desc.descriptors, 0, combinedD, count, nLen);
+  
+                count += nLen;
+            }
         }
 
         Descriptors combined = new Descriptors();
@@ -1964,7 +1962,7 @@ public class SegmentedORB {
             for (int ii = 0; ii < vector.getNumberOfItems(); ++ii) {
                 CostObj co = vector.getArray()[ii];
                 System.out.println(ii + ") " + co.p1 + ", " + co.p2 +
-                    " c=" + co.cost);
+                    " c=" + co.cost + " nNotMasked=");
             }
          
         }

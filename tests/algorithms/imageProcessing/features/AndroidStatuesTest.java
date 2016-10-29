@@ -585,11 +585,18 @@ public class AndroidStatuesTest extends TestCase {
         MiscDebug.writeImage(img11, "_filtered_2_" + fileName1Root);
         
         if (true) {
+
+            //NOTE:
+            //  can see half a dozen true matches in top
+            //     45 and those have cost < 127.
+            //     can calculate the costMatrix here and 
+            //     use pairs within a certain adjacency hop limit
+            //     or strict distance limit to reduc the
+            //     number of pair combinations tried.
+            //     the pairs are used for a rough euclid transformation,
+            //     then an evaluation of that transformation
+            //     is used to create a corres list
             
-            // -- shows that the large descriptors, change in background,
-            //    lighting, and change in pose result in a better match of
-            //    the template gingerbread man to the euclair
-            //    when points are matched singly
             int[][] orbMatches = ORB.matchDescriptors(
                 new Descriptors[]{templateDescriptorsH,
                     templateDescriptorsS, templateDescriptorsV}, 
@@ -598,15 +605,6 @@ public class AndroidStatuesTest extends TestCase {
                 templateKeypoints, keypointsCombined);
             
             
-            /*
-            int[][] orbMatches = ORB.matchDescriptors(
-                new Descriptors[]{templateDescriptorsH,
-                    templateDescriptorsS, templateDescriptorsV}, 
-                new Descriptors[]{descriptorsH,
-                    descriptorsS, descriptorsV},
-                templateKeypoints, keypointsCombined,
-                shape0, listOfPointSets2);
-            */
             img11 = img.copyToImageExt();
             CorrespondencePlotter plotter = new CorrespondencePlotter(
                 imgs0[1], img.copyImage());            
@@ -681,7 +679,7 @@ public class AndroidStatuesTest extends TestCase {
 
             return;
         }
-        
+ 
         SegmentedCellDescriptorMatcher matcher = 
             new SegmentedCellDescriptorMatcher(imgs0[0], img,
             templateKP, srchKP,

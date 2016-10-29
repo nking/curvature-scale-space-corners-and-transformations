@@ -927,24 +927,24 @@ public class ORBTest extends TestCase {
         orb.detectAndExtract(img);
         List<PairInt> kp0 = orb.getAllKeyPoints();
         Descriptors desc0 = orb.getAllDescriptors();
-    
+
         orb = new ORB(2);
         orb.detectAndExtract(img90);
         List<PairInt> kp90 = orb.getAllKeyPoints();
         Descriptors desc90 = orb.getAllDescriptors();
             
-        int[][] costMatrix = ORB.matchDescriptors(
+        int[][] matches = ORB.matchDescriptors(
             desc0.descriptors, desc90.descriptors, 
             kp0, kp90);
         
         // center is 31, 32    side=17,34
         //           32, 33         34,47      
      
-        int m11 = costMatrix[0][0];
-        int m12 = costMatrix[0][1];
+        int m11 = matches[0][0];
+        int m12 = matches[0][1];
         
-        int m21 = costMatrix[1][0];
-        int m22 = costMatrix[1][1];
+        int m21 = matches[1][0];
+        int m22 = matches[1][1];
         
         assertTrue(
             (m11 == 1 && m12 == 1) ||
@@ -953,6 +953,21 @@ public class ORBTest extends TestCase {
         assertTrue(
             (m21 == 1 && m22 == 1) ||
             (m21 == 0 && m22 == 0));
+        
+        int[][] costMatrix = ORB.calcDescriptorCostMatrix(
+            desc0.descriptors, desc90.descriptors);
+
+        int c00 = costMatrix[0][0];
+        int c11 = costMatrix[1][1];
+        
+        int c01 = costMatrix[0][1];
+        int c10 = costMatrix[1][0];
+        
+        assertEquals(0, c00);
+        assertEquals(0, c11);
+        
+        assertTrue(c01 > 0);
+        assertTrue(c10 > 0);
     }
     
     private Image getFigureEight() throws IOException {
