@@ -369,6 +369,35 @@ public final class VeryLongBitString {
     }
 
     /**
+     * return the number of bits different betweeen the bitstring
+     * otherBS and this and return that number.
+     * Note that otherBS must have the same number of bits.
+     * @param otherBS
+     * @return 
+     */
+    public long nBitsDifferent(VeryLongBitString otherBS) {
+        
+        if (nBits != otherBS.nBits) {
+            throw new IllegalArgumentException("otherBS must have same"
+                + " number of bits");
+        }        
+        
+        long nDiff = 0;
+        
+        for (int i = 0; i < otherBS.bitstring.length; ++i) {
+            
+            long bs = otherBS.bitstring[i];
+            long tbs = bitstring[i];
+            
+            // xor gives the  different bits
+            long diff = bs ^ tbs;
+            nDiff += Long.bitCount(diff);
+        }
+        
+        return nDiff;
+    }
+    
+    /**
      * perform a bitwise 'or' on this bitstring and otherBS to make
      * a union operation.
      * @param otherBS

@@ -1,11 +1,16 @@
 package algorithms.imageProcessing.features;
 
+import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageDisplayer;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.StructureTensor;
+import algorithms.imageProcessing.features.ORB.Descriptors;
+import algorithms.imageProcessing.transform.TransformationParameters;
+import algorithms.imageProcessing.transform.Transformer;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
@@ -13,8 +18,10 @@ import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import junit.framework.TestCase;
@@ -890,4 +897,70 @@ public class ORBTest extends TestCase {
         
     }
    
+    public void testDescriptors() throws IOException {
+        
+        /*
+        2 test images:
+           one a figure 8 of length 32 and other same image rotated by 90.
+        
+        positive test:
+           test that descriptors of the center match each other
+        negative test:
+           test that descriptor on edge does not match well a descriptor
+              from the center of the figure.
+        */
+        
+        Image img = getFigureEight();
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        Transformer tr = new Transformer();
+        TransformationParameters params = new TransformationParameters();
+        params.setOriginX(w/2);
+        params.setOriginY(w/2);
+        params.setRotationInDegrees(90);        
+        Image img90 = tr.applyTransformation(img, params, w, h);
+        
+        //MiscDebug.writeImage(img90, "_rotated_");
+        
+        ORB orb = new ORB(2);
+        orb.detectAndExtract(img);
+        List<PairInt> kp0 = orb.getAllKeyPoints();
+        Descriptors desc0 = orb.getAllDescriptors();
+    
+        orb = new ORB(2);
+        orb.detectAndExtract(img90);
+        List<PairInt> kp90 = orb.getAllKeyPoints();
+        Descriptors desc90 = orb.getAllDescriptors();
+            
+        int[][] costMatrix = ORB.matchDescriptors(
+            desc0.descriptors, desc90.descriptors, 
+            kp0, kp90);
+        
+        // center is 31, 32    side=17,34
+        //           32, 33         34,47      
+     
+        int m11 = costMatrix[0][0];
+        int m12 = costMatrix[0][1];
+        
+        int m21 = costMatrix[1][0];
+        int m22 = costMatrix[1][1];
+        
+        assertTrue(
+            (m11 == 1 && m12 == 1) ||
+            (m11 == 0 && m12 == 0));
+               
+        assertTrue(
+            (m21 == 1 && m22 == 1) ||
+            (m21 == 0 && m22 == 0));
+    }
+    
+    private Image getFigureEight() throws IOException {
+        
+        String fileName = "test_img.png";  
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
+        Image img0 = ImageIOHelper.readImageAsGrayScale(filePath);
+        
+        return img0;
+    }
 }

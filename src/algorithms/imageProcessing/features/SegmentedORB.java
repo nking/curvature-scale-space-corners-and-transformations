@@ -10,8 +10,11 @@ import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MedianTransform;
 import algorithms.imageProcessing.StructureTensor;
 import algorithms.imageProcessing.features.ORB.Descriptors;
+import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.TwoDFloatArray;
+import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TDoubleList;
@@ -94,6 +97,10 @@ Still testing the class, there may be bugs present.
 This version is adapted to work with segmented cells and is using
 * experimental descriptor masks of 0 for pixels not in the 
 * segmented cell of the keypoint.
+
+NOTE: the masking of non segmented cell pixels is not yet correct.
+this class is not ready for use.
+
 * 
  */
 public class SegmentedORB {
@@ -758,6 +765,12 @@ public class SegmentedORB {
 
         maskCoordinates(keypoints0, keypoints1, nRows, nCols, 8);//16);
 
+        {// DEBUG
+            float[][] a = copy(fastResponse);
+            MiscMath.applyRescale(a, 0, 255);
+            MiscDebug.writeImage(a, "_fast_response_" 
+                + MiscDebug.getCurrentTimeFormatted());
+        }
         
         // Standard deviation used for the Gaussian kernel, which is used as
         // weighting function for the auto-correlation matrix.
@@ -1429,10 +1442,10 @@ public class SegmentedORB {
             POS1 = ORBDescriptorPositions.POS1;
         }
 
-        int[] descriptors = null;
+        VeryLongBitString[] descriptors = null;
 
         if (descrChoice.equals(DescriptorChoice.NONE)) {
-            descriptors = new int[0];
+            descriptors = new VeryLongBitString[0];
         } else {      
             descriptors = orbLoop(octaveImage, 
                 kpList, orList, groupIdx);
@@ -1457,7 +1470,7 @@ public class SegmentedORB {
      * array of bit vectors of which only 256 bits are used
      * length is [orientations.size]
      */
-    protected int[] orbLoop(float[][] octaveImage, 
+    protected VeryLongBitString[] orbLoop(float[][] octaveImage, 
         List<PairInt> kpList, TDoubleList orList,
         int groupIdx) {
 
@@ -1477,12 +1490,15 @@ public class SegmentedORB {
         System.out.println("nKP=" + nKP);
 
         // holds values 1 or 0.  size is [orientations.size] 
-        int[] descriptors = new int[nKP];
+        VeryLongBitString[] descriptors = new VeryLongBitString[nKP];
 
         double pr0, pc0, pr1, pc1;
         int spr0, spc0, spr1, spc1;
 
         for (int i = 0; i < nKP; ++i) {
+            
+            descriptors[i] = new VeryLongBitString(256);
+            
             double angle = orList.get(i);
             double sinA = Math.sin(angle);
             double cosA = Math.cos(angle);
@@ -1491,8 +1507,6 @@ public class SegmentedORB {
             int kr = p.getY();
             int kc = p.getX();
             
-            int descr = 0;
-
             for (int j = 0; j < POS0.length; ++j) {
                 pr0 = POS0[j][0];
                 pc0 = POS0[j][1];
@@ -1534,10 +1548,9 @@ public class SegmentedORB {
                 }
                 
                 if (v0 < v1) {
-                    descr |= (1 << j);
+                    descriptors[i].setBit(j);
                 }
             }
-            descriptors[i] = descr;
         }
 
         return descriptors;
@@ -1663,7 +1676,7 @@ public class SegmentedORB {
                 continue;
             }
             
-            int[] d = new int[n];
+            VeryLongBitString[] d = new VeryLongBitString[n];
             
             n = 0;
             for (int i = 0; i < list.size(); ++i) {
@@ -1674,6 +1687,7 @@ public class SegmentedORB {
                     
                     int nLen = desc.descriptors.length;
                     
+                    //TODO: consider using the instance copy individually here
                     System.arraycopy(desc.descriptors, 0, d, n, nLen);
                     
                     n += nLen;
@@ -1702,12 +1716,12 @@ public class SegmentedORB {
             n += dl.descriptors.length;
         }
        
-        int[] combinedD = new int[n];
+        VeryLongBitString[] combinedD = new VeryLongBitString[n];
 
         int count = 0;
         for (int i = 0; i < list.size(); ++i) {
 
-            int[] d = list.get(i).descriptors;
+            VeryLongBitString[] d = list.get(i).descriptors;
             
             System.arraycopy(d, 0, combinedD, count, d.length);
             count += d.length;
@@ -1812,7 +1826,7 @@ public class SegmentedORB {
         Arrays.fill(bestCostGroupIdx, -1);
         
         for (int groupIdx : srchKeypoints.keys()) {
-            
+        
             List<PairInt> kp1 = srchKeypoints.get(groupIdx);
             Descriptors hDesc1 = srchHDesc.get(groupIdx);
             Descriptors sDesc1 = srchSDesc.get(groupIdx);
@@ -1859,7 +1873,7 @@ public class SegmentedORB {
         }
         */
        
-         /*
+        /*
         evaluating transformations:
          -- normalized sum of descriptor matches comparable to
             other results.
@@ -1952,6 +1966,7 @@ public class SegmentedORB {
                 System.out.println(ii + ") " + co.p1 + ", " + co.p2 +
                     " c=" + co.cost);
             }
+         
         }
         
         

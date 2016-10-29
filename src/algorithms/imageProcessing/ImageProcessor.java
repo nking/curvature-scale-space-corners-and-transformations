@@ -5119,6 +5119,34 @@ if (sum > 511) {
         img.resetTo(imgS);
     }
 
+    public double[][] createUnitStandardDeviation(GreyscaleImage img, int halfDimension) {
+
+        SummedAreaTable sumTable = new SummedAreaTable();
+        
+        GreyscaleImage imgM = sumTable.createAbsoluteSummedAreaTable(img);
+        imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM, 
+            2*halfDimension + 1);
+         
+        int w = img.getWidth();
+        int h = img.getHeight();
+        double[][] out = new double[w][];
+        for (int i = 0; i < w; ++i) {
+            out[i] = new double[h];
+            for (int j = 0; j < h; ++j) {
+                int m = imgM.getValue(i, j);
+                double v = img.getValue(i, j) - m;
+                if (m == 0) {
+                    v = 0;
+                } else {
+                    v = v / (Math.sqrt(2)/m);
+                }
+                out[i][j] = v;
+            }
+        }
+       
+        return out;
+    }
+    
     /**
      * create an image of the mean of the surrounding dimension x dimension
      * pixels for each pixel centered on each pixel.  For the starting
@@ -5807,6 +5835,17 @@ if (sum > 511) {
         return output;
     }
 
+    public double[][] copy(double[][] input) {
+        
+        int n0 = input.length;
+        
+        double[][] output = new double[n0][];
+        for (int i = 0; i < n0; ++i) {
+            output[i] = Arrays.copyOf(input[i], input[i].length);
+        }
+        
+        return output;
+    }
     public Complex[][] convertToComplex(Complex1D[] input) {
         
         int n0 = input.length;
@@ -6056,17 +6095,17 @@ if (sum > 511) {
         
         StructureTensor tensorComponents = new StructureTensor(image, 
             sigma, createCurvatureComponents);
+       
+        float hLimit = 0.09f;//0.05f;
         
         createFirstDerivKeyPoints(tensorComponents, outKeypoints0, 
-            outKeypoints1);
+            outKeypoints1, hLimit);
     }
     
     public void createFirstDerivKeyPoints(
         StructureTensor tensorComponents, TIntList outKeypoints0, 
-        TIntList outKeypoints1) {
-
-       float hLimit = 0.09f;//0.05f;
-
+        TIntList outKeypoints1, float hLimit) {
+       
         TIntList kp0 = new TIntArrayList();
         TIntList kp1 = new TIntArrayList();
 
@@ -6094,7 +6133,15 @@ if (sum > 511) {
                 outKeypoints0.add(x);
                 outKeypoints1.add(y);
             }
-        }   
+        }
+        
+        /*{// DEBUG
+            float[][] a = copy(firstDeriv);
+            MiscMath.applyRescale(a, 0, 255);
+            MiscDebug.writeImage(a, "_fitsr_deriv_" 
+                + MiscDebug.getCurrentTimeFormatted());
+        }*/
+        
     }
 
     public static class Colors {
@@ -7975,14 +8022,22 @@ if (sum > 511) {
                 //(dx * dy(dy) - dy * dx(dx)) / (dx(dx)*dx(dx) + dy(dy)*dy(dy))^1.5
                 curvature[i][j] = (float)(
                     (dx[i][j] * dy2[i][j] - dy[i][j] * dx2[i][j])
-                    / Math.pow((dx2dx2 + dy2dy2), 1.5));
+                    / (dx2dx2 + dy2dy2));
+                    /// Math.pow((dx2dx2 + dy2dy2), 1.5));
             }
         }
 
         peakLocalMax(curvature, 1, thresholdRel, outputKeypoints0, 
             outputKeypoints1);
-        /*
-        MiscMath.applyRescale(curvature, 0, 255);
+        
+        /*{// DEBUG
+            float[][] a = copy(curvature);
+            MiscMath.applyRescale(a, 0, 255);
+            MiscDebug.writeImage(a, "_curvature_" 
+                + MiscDebug.getCurrentTimeFormatted());
+        }*/
+        
+        /*MiscMath.applyRescale(curvature, 0, 255);
         GreyscaleImage kpImg = new GreyscaleImage(nCols, nRows);
         for (int i = 0; i < outputKeypoints0.size(); ++i) {
             int x = outputKeypoints1.get(i);
@@ -8224,14 +8279,17 @@ if (sum > 511) {
         return out;
     }
     
-    public double[][] copy(double[][] a) {
+    public double[][] copyToDouble(float[][] a) {
 
         int n1 = a.length;
         int n2 = a[0].length;
 
         double[][] out = new double[n1][n2];
         for (int i = 0; i < n1; ++i) {
-            out[i] = Arrays.copyOf(a[i], a[i].length);
+            out[i] = new double[n2];
+            for (int j = 0; j < n2; ++j) {
+                out[i][j] = a[i][j];
+            }
         }
 
         return out;
@@ -8503,22 +8561,24 @@ if (sum > 511) {
         // beginning of the sliding window
         applyShift(imageMax, minDistance, nRows, nCols);
 
-        /*{//DEBUG
+        {//DEBUG
             float min = MiscMath.findMin(img);
             float max = MiscMath.findMax(img);
             System.out.println("min=" + min + " max=" + max);
-            float factor = 255.f;
+            float[][] img2 = copy(img);
+            MiscMath.applyRescale(img2, 0, 255);
             GreyscaleImage gsImg = new GreyscaleImage(nRows, nCols);
             for (int i = 0; i < nRows; ++i) {
                 for (int j = 0; j < nCols; ++j) {
-                    int v = Math.round(factor * img[i][j]);
+                    int v = Math.round(img2[i][j]);
                     if (v > 255) {
                         v = 255;
                     }
                     gsImg.setValue(i, j, v);
                 }
             }
-        }*/
+            MiscDebug.writeImage(gsImg, "_CURVATURE_");
+        }
 
         //TODO: should be able to simplify the mask here
 

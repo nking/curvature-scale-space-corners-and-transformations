@@ -7,6 +7,7 @@ import algorithms.compGeometry.RotatedOffsets;
 import algorithms.compGeometry.clustering.KMeansHSV;
 import algorithms.compGeometry.clustering.KMeansPlusPlus;
 import algorithms.compGeometry.clustering.KMeansPlusPlusColor;
+import algorithms.imageProcessing.AdaptiveThresholding;
 import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.CannyEdgeFilterAdaptive;
 import algorithms.imageProcessing.ColorHistogram;
@@ -348,7 +349,7 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void estShapeMatcher() throws Exception {
+    public void testShapeMatcher() throws Exception {
 
         int maxDimension = 256;//512;
         SIGMA sigma = SIGMA.ZEROPOINTFIVE;//SIGMA.ONE;
@@ -619,7 +620,7 @@ public class AndroidStatuesTest extends TestCase {
                     1, 255, 0, 0);
                 
                 System.out.println("orb matched: " + p1 + " " + p2);
-              //  if (p2.getX() > 160)
+                if (p2.getX() > 160)
                 plotter.drawLineInAlternatingColors(p1.getX(), p1.getY(), 
                     p2.getX(), p2.getY(), 0);
             }
@@ -748,7 +749,7 @@ public class AndroidStatuesTest extends TestCase {
 
     }
 
-    public void testMatchSegmented() throws Exception {
+    public void estMatchSegmented() throws Exception {
 
         int maxDimension = 256;//512;
 
@@ -959,6 +960,29 @@ public class AndroidStatuesTest extends TestCase {
 
         assertEquals(orderedBoundaries.size(), listOfPointSets2.size());
 
+        {// looking at adaptive mean and adaptive thresholding w/ thinning
+            GreyscaleImage gsImg = img.copyToGreyscale2();
+            double[][] gsImg2 = imageProcessor.createUnitStandardDeviation(
+                gsImg, 2);
+           
+            AdaptiveThresholding at = new AdaptiveThresholding();
+            at.applyAdaptiveThresholdImage(gsImg2, 15, 0.2, 255);
+            GreyscaleImage gsImg3 = gsImg.createFullRangeIntWithDimensions();
+            for (int i = 0; i < gsImg3.getWidth(); ++i) {
+                for (int j = 0; j < gsImg3.getHeight(); ++j) {
+                    int v = (int)gsImg2[i][j];
+                    if (v > 0) {
+                        gsImg3.setValue(i, j, gsImg.getValue(i, j));
+                    }
+                }
+            }
+            
+            imageProcessor.applyAdaptiveMeanThresholding(gsImg, 1);
+            
+            MiscDebug.writeImage(gsImg, "_adapt_median_");
+            MiscDebug.writeImage(gsImg3, "_adapt_thresh_");
+        }
+        
         List<PairInt> keypointsCombined = new ArrayList<PairInt>();
        
         SegmentedORB orb = new SegmentedORB(5000, img, listOfPointSets2);
@@ -2197,7 +2221,7 @@ public class AndroidStatuesTest extends TestCase {
         
         exists.clear();
         
-        int[] outD = new int[keypoints.size()];
+        VeryLongBitString[] outD = new VeryLongBitString[keypoints.size()];
         int count = 0;
         for (int i = 0; i < kp.size(); ++i) {
             PairInt p = kp.get(i);
@@ -2263,9 +2287,9 @@ public class AndroidStatuesTest extends TestCase {
         
         exists.clear();
         
-        int[] outH = new int[keypoints.size()];
-        int[] outS = new int[keypoints.size()];
-        int[] outV = new int[keypoints.size()];
+        VeryLongBitString[] outH = new VeryLongBitString[keypoints.size()];
+        VeryLongBitString[] outS = new VeryLongBitString[keypoints.size()];
+        VeryLongBitString[] outV = new VeryLongBitString[keypoints.size()];
         int count = 0;
         for (int i = 0; i < kp.size(); ++i) {
             PairInt p = kp.get(i);
