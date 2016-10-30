@@ -2050,7 +2050,7 @@ public class ORB {
         return completeTheMatching(
             keypoints1, keypoints2, mT, mS, nn,
             minMaxXY2, limit,
-            tIndexes, idx1P2CostMap
+            tIndexes, idx1P2CostMap, indexes, costs
         );       
     }
 
@@ -2182,7 +2182,7 @@ public class ORB {
         return completeTheMatching(
             keypoints1, keypoints2, mT, mS, nn,
             minMaxXY2, limit,
-            tIndexes, idx1P2CostMap
+            tIndexes, idx1P2CostMap, indexes, costs
         );            
     }
     
@@ -2191,7 +2191,8 @@ public class ORB {
         PairIntArray mT, PairIntArray mS, 
         NearestNeighbor2D nn, int[] minMaxXY2, int limit,
         TIntList tIndexes,        
-        TIntObjectMap<TObjectIntMap<PairInt>> idx1P2CostMap
+        TIntObjectMap<TObjectIntMap<PairInt>> idx1P2CostMap,
+        PairInt[] indexes, int[] costs
     ) {
         
         int nTop = mT.getN();
@@ -2372,10 +2373,42 @@ public class ORB {
         }
         
         // TODO: refine for optimal matching and use ransac to remove outliers
-        //minCostCor = refineCorrespondence(minCostCor, keypoints1, keypoints2,
-        //    indexes, costs);
+        //minCostCor = refineCorrespondence(minCostCor, 
+        //    keypoints1, keypoints2, indexes, costs);
         
         return minCostCor; 
+    }
+    
+    private static CorrespondenceList refineCorrespondence(
+        CorrespondenceList minCostCor, 
+        List<PairInt> keypoints1, List<PairInt> keypoints2, 
+        PairInt[] indexes, int[] costs) {
+        
+        /*
+        If there are less than 7 correspondence points, can only improve
+           by making the best unique matches.
+        else:
+        
+        either keep same transformation and then make optimal
+            unique matches (needs the trT array and mS array)
+        OR use epipolar ransac on current corres list,
+           then make a new correspondence list from that 
+           transformation
+        
+           --> needs:
+               correspondence list
+               the descriptor matrix
+               the dist limit
+               the max possible cost of a cost matric value
+           -- write a new epipolar ransac, 
+               but write a new evaluator for it that uses
+               the descriptor cost and distances
+              -- NOTE, might be best to make a euclidean
+                 evaluator too
+        */
+        
+        
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     /**
