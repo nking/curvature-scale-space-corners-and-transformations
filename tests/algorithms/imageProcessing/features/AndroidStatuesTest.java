@@ -597,14 +597,16 @@ public class AndroidStatuesTest extends TestCase {
             //     then an evaluation of that transformation
             //     is used to create a corres list
             
+            /*
             int[][] orbMatches = ORB.matchDescriptors(
                 new Descriptors[]{templateDescriptorsH,
                     templateDescriptorsS, templateDescriptorsV}, 
                 new Descriptors[]{descriptorsH,
                     descriptorsS, descriptorsV},
                 templateKeypoints, keypointsCombined);
-            
-            
+            */
+          
+            /*
             img11 = img.copyToImageExt();
             CorrespondencePlotter plotter = new CorrespondencePlotter(
                 imgs0[1], img.copyImage());            
@@ -625,6 +627,34 @@ public class AndroidStatuesTest extends TestCase {
             
             plotter.writeImage("_orb_corres_");
             System.out.println(orbMatches.length + " matches");
+            MiscDebug.writeImage(img11, "_orb_corres_2_");
+            */
+              
+            CorrespondenceList cor = ORB.matchDescriptors2(
+                new Descriptors[]{templateDescriptorsH,
+                    templateDescriptorsS, templateDescriptorsV}, 
+                new Descriptors[]{descriptorsH,
+                    descriptorsS, descriptorsV},
+                templateKeypoints, keypointsCombined);
+            
+            img11 = img.copyToImageExt();
+            CorrespondencePlotter plotter = new CorrespondencePlotter(
+                imgs0[1], img.copyImage());            
+            for (int ii = 0; ii < cor.getPoints1().size(); ++ii) {
+                PairInt p1 = cor.getPoints1().get(ii);
+                PairInt p2 = cor.getPoints2().get(ii);
+                
+                ImageIOHelper.addPointToImage(p2.getX(), p2.getY(), img11,
+                    1, 255, 0, 0);
+                
+                System.out.println("orb matched: " + p1 + " " + p2);
+                //if (p2.getX() > 160)
+                plotter.drawLineInAlternatingColors(p1.getX(), p1.getY(), 
+                    p2.getX(), p2.getY(), 0);
+            }
+            
+            plotter.writeImage("_orb_corres_");
+            System.out.println(cor.getPoints1().size() + " matches");
             MiscDebug.writeImage(img11, "_orb_corres_2_");
             
             // using template image which is not masked

@@ -1995,6 +1995,12 @@ public class ORB {
         Set<PairInt> set2 = new HashSet<PairInt>();
         PairIntArray mT = new PairIntArray();
         PairIntArray mS = new PairIntArray();
+        TIntList tIndexes = new TIntArrayList();
+        
+        // below, need to look up cost using idx1 and p2: idx1, p2 -> cost
+        TIntObjectMap<TObjectIntMap<PairInt>> idx1P2CostMap = 
+            new TIntObjectHashMap<TObjectIntMap<PairInt>>();
+        
         // visit lowest costs (== differences) first
         for (int i = 0; i < nTot; ++i) {
             if (costs[i] > 126 || count > 45) {
@@ -2013,10 +2019,22 @@ public class ORB {
             mS.add(p2.getX(), p2.getY());
             set1.add(p1);
             set2.add(p2);
+            tIndexes.add(idx1);
+            
+            TObjectIntMap<PairInt> cMap = idx1P2CostMap.get(idx1);
+            if (cMap == null) {
+                cMap = new TObjectIntHashMap<PairInt>();
+                idx1P2CostMap.put(idx1, cMap);
+            }
+            if (!cMap.containsKey(p2)) {
+                // only store the smaller cost, that's reached first
+                cMap.put(p2, costs[i]);
+            }
+            
             count++;
         }
 
-        System.out.println("have " + mT.size() + " sets of points for "
+        System.out.println("have " + mT.getN() + " sets of points for "
             + " n of k=2 combinations");
         
         // need to make pairs of combinations from mT,mS
@@ -2040,6 +2058,9 @@ public class ORB {
         NearestNeighbor2D nn = new NearestNeighbor2D(
            set2, minMaxXY2[1] + limit, minMaxXY2[3] + limit);
         
+        double minCost = Double.MAX_VALUE;
+        CorrespondenceList minCostCor = null;
+        
         for (int i = 0; i < mS.getN(); ++i) {
             int t1X = mT.getX(i);
             int t1Y = mT.getY(i);
@@ -2048,11 +2069,16 @@ public class ORB {
             
             // choose all combinations of 2nd point within distance
             // limit of point s1.
-            for (int j = (i + 1); j < mS.size(); ++j) {
+            for (int j = (i + 1); j < mS.getN(); ++j) {
                 int t2X = mT.getX(j);
                 int t2Y = mT.getY(j);
                 int s2X = mS.getX(j);
                 int s2Y = mS.getY(j);
+                
+                if ((t1X == t2X && t1Y == t2Y) || 
+                    (s1X == s2X && s1Y == s2Y)) {
+                    continue;
+                }
                 
                 int diffX = s1X - s2X;
                 int diffY = s1Y - s2Y;
@@ -2087,25 +2113,96 @@ public class ORB {
                        --> norm = nTemplate * 3 * 256
                     -- normalized score = (3*256 - cost)/norm
                    ==> normalized cost = 1 - ((3*256 - cost)/norm)
-                (2) spatial distances from transforme points:
+                (2) spatial distances from transformed points:
                    -- sum of distances within limit
-                      and replace of distance by limit if no matching
+                      and replacement of distance by limit if no matching
                       nearest neighbor is found.
                    -- divide each distance by the transformation scale
                       to compare same values
-                   -- divide th total sum by the total max possible
+                   -- divide the total sum by the total max possible
                       --> norm = nTemplate * limit / scale
                
                 Then the total cost is (1) + (2) and the min cost
                 among all of these combinations is the resulting
                 correspondence list
                 */
-               
                 
+                double maxCost = 3 * 256;
+                double maxDist = limit/scale;
+                
+                double sum1 = 0;
+                double sum2 = 0;
+                double sum = 0;
+                
+                //TODO: use optimal or greedy matching here
+                //      to enforce unique correspondence.
+                
+                // correspondence list, meanwhile...
+                List<PairInt> m1 = new ArrayList<PairInt>();
+                List<PairInt> m2 = new ArrayList<PairInt>();
+               
+                CorrespondenceList corr =
+                    new CorrespondenceList(
+                    params.getScale(),
+                    Math.round(params.getRotationInDegrees()),
+                    Math.round(params.getTranslationX()),
+                    Math.round(params.getTranslationY()),
+                    0, 0, 0, m1, m2);
+                    
+                for (int k = 0; k < trT.getN(); ++k) {
+                    int xTr = trT.getX(k);
+                    int yTr = trT.getY(k);
+                    
+                    int idx1 = tIndexes.get(k);
+                    
+                    Set<PairInt> nearest = null;
+                    if ((xTr >= 0) && (yTr >= 0) &&
+                        (xTr <= (minMaxXY2[1] + limit)) && 
+                        (yTr <= (minMaxXY2[3] + limit))) {
+                        nearest = nn.findClosest(xTr, yTr, limit);
+                    }
+                    
+                    int minC = Integer.MAX_VALUE;
+                    PairInt minCP2 = null;
+                        
+                    if (nearest != null && !nearest.isEmpty()) {
+                        TObjectIntMap<PairInt> cMap = idx1P2CostMap.get(idx1);
+                        for (PairInt p2 : nearest) {
+                            if (!cMap.containsKey(p2)) {
+                                continue;
+                            }
+                            int c = cMap.get(p2);
+                            if (c < minC) {
+                                minC = c;
+                                minCP2 = p2;
+                            }
+                        }
+                    }
+                    if (minCP2 != null) {
+                        double scoreNorm = (3*256 - minC)/maxCost;
+                        double costNorm = 1. - scoreNorm;
+                        sum1 += costNorm;
+                        
+                        double dist = distance(xTr, yTr, minCP2);
+                        double distNorm = dist/maxDist;
+                        sum2 += distNorm;
+                      
+                        m1.add(keypoints1.get(idx1));
+                        m2.add(minCP2);
+                    } else {
+                        sum1 += 1;
+                        sum2 += 1;
+                    }
+                }
+                sum = sum1 + sum2;
+                if (sum < minCost) {
+                    minCost = sum;
+                    minCostCor = corr;
+                }
             }
         }
-        
-        throw new UnsupportedOperationException("not yet implemented");
+
+        return minCostCor;        
     }
 
     /**
@@ -2612,5 +2709,14 @@ public class ORB {
         }
         
     }
-   
+    
+    private static double distance(int x, int y, PairInt b) {
+    
+        int diffX = x - b.getX();
+        int diffY = y - b.getY();
+        
+        double dist = Math.sqrt(diffX * diffX + diffY * diffY);
+        return dist;
+    }
+       
 }
