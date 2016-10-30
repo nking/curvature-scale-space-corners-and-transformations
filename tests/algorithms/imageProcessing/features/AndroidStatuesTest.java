@@ -629,13 +629,25 @@ public class AndroidStatuesTest extends TestCase {
             System.out.println(orbMatches.length + " matches");
             MiscDebug.writeImage(img11, "_orb_corres_2_");
             */
+            
+            /*
+            NOTE:
+               -- for some object searches, could use the texture information
+               to mask out keypoints that are busy texture as long as
+               the object does not have that texture in it.
+               -- for those cases, and if add a flag to the
+                  matching method to accept an rgument to search
+                  among matches limited by cost 127, then the
+                  search runtime should be much faster.
+            */
               
             CorrespondenceList cor = ORB.matchDescriptors2(
                 new Descriptors[]{templateDescriptorsH,
                     templateDescriptorsS, templateDescriptorsV}, 
                 new Descriptors[]{descriptorsH,
                     descriptorsS, descriptorsV},
-                templateKeypoints, keypointsCombined);
+                templateKeypoints, keypointsCombined,
+                listOfPointSets2, 5);
             
             img11 = img.copyToImageExt();
             CorrespondencePlotter plotter = new CorrespondencePlotter(
