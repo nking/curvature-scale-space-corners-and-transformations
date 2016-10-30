@@ -1988,7 +1988,7 @@ public class ORB {
         QuickSort.sortBy1stArg(costs, indexes);
         
         // storing the indexes of matches with cost < 127 and
-        // less than about 45 in number
+        // fewer in number than about 45
         
         count = 0;
         Set<PairInt> set1 = new HashSet<PairInt>();
@@ -2033,8 +2033,10 @@ public class ORB {
             
             count++;
         }
+        
+        int nTop = mT.getN();
 
-        System.out.println("have " + mT.getN() + " sets of points for "
+        System.out.println("have " + nTop + " sets of points for "
             + " n of k=2 combinations");
         
         // need to make pairs of combinations from mT,mS
@@ -2060,8 +2062,15 @@ public class ORB {
         
         double minCost = Double.MAX_VALUE;
         CorrespondenceList minCostCor = null;
+       
+        // temporary storage of corresp coords until object construction
+        int[] m1x = new int[nTop];
+        int[] m1y = new int[nTop];
+        int[] m2x = new int[nTop];
+        int[] m2y = new int[nTop];
+        int mCount = 0;
         
-        for (int i = 0; i < mS.getN(); ++i) {
+        for (int i = 0; i < nTop; ++i) {
             int t1X = mT.getX(i);
             int t1Y = mT.getY(i);
             int s1X = mS.getX(i);
@@ -2096,6 +2105,8 @@ public class ORB {
                     0, 0);
                 
                 float scale = params.getScale();
+                
+                mCount = 0;
                 
                 // template object transformed
                 PairIntArray trT = 
@@ -2137,18 +2148,6 @@ public class ORB {
                 //TODO: use optimal or greedy matching here
                 //      to enforce unique correspondence.
                 
-                // correspondence list, meanwhile...
-                List<PairInt> m1 = new ArrayList<PairInt>();
-                List<PairInt> m2 = new ArrayList<PairInt>();
-               
-                CorrespondenceList corr =
-                    new CorrespondenceList(
-                    params.getScale(),
-                    Math.round(params.getRotationInDegrees()),
-                    Math.round(params.getTranslationX()),
-                    Math.round(params.getTranslationY()),
-                    0, 0, 0, m1, m2);
-                    
                 for (int k = 0; k < trT.getN(); ++k) {
                     int xTr = trT.getX(k);
                     int yTr = trT.getY(k);
@@ -2187,8 +2186,12 @@ public class ORB {
                         double distNorm = dist/maxDist;
                         sum2 += distNorm;
                       
-                        m1.add(keypoints1.get(idx1));
-                        m2.add(minCP2);
+                        m1x[mCount] = keypoints1.get(idx1).getX();
+                        m1y[mCount] = keypoints1.get(idx1).getY();
+                        m2x[mCount] = minCP2.getX();
+                        m2y[mCount] = minCP2.getY();
+                        mCount++;
+                        
                     } else {
                         sum1 += 1;
                         sum2 += 1;
@@ -2196,11 +2199,31 @@ public class ORB {
                 }
                 sum = sum1 + sum2;
                 if (sum < minCost) {
+                    
                     minCost = sum;
+                    
+                    // correspondence list, meanwhile...
+                    List<PairInt> m1 = new ArrayList<PairInt>();
+                    List<PairInt> m2 = new ArrayList<PairInt>();
+                    CorrespondenceList corr =
+                        new CorrespondenceList(
+                        params.getScale(),
+                        Math.round(params.getRotationInDegrees()),
+                        Math.round(params.getTranslationX()),
+                        Math.round(params.getTranslationY()),
+                        0, 0, 0, m1, m2);
+
+                    for (int mi = 0; mi < mCount; ++mi) {
+                        m1.add(new PairInt(m1x[mi], m1y[mi]));
+                        m2.add(new PairInt(m2x[mi], m2y[mi]));
+                    }
+                    
                     minCostCor = corr;
                 }
             }
         }
+        
+        // TODO: refine for optimal matching and use ransace to remove outliers
 
         return minCostCor;        
     }
