@@ -2036,16 +2036,6 @@ public class ORB {
             count++;
         }
         
-        int nTop = mT.getN();
-
-        System.out.println("have " + nTop + " sets of points for "
-            + " n of k=2 combinations");
-        
-        // need to make pairs of combinations from mT,mS
-        //  to calcuate euclidean transformations and evaluate them.
-        // -- can reduce the number of combinations by imposing a 
-        //    distance limit on separation of feasible pairs
-        
         int[] minMaxXY = MiscMath.findMinMaxXY(keypoints1);
         int objDimension = Math.max(minMaxXY[1] - minMaxXY[0],
             minMaxXY[3] - minMaxXY[2]);
@@ -2054,179 +2044,14 @@ public class ORB {
        
         int[] minMaxXY2 = MiscMath.findMinMaxXY(set2);
         
-        MatchedPointsTransformationCalculator tc = new
-            MatchedPointsTransformationCalculator();
-        
-        Transformer transformer = new Transformer();
-        
         NearestNeighbor2D nn = new NearestNeighbor2D(
            set2, minMaxXY2[1] + limit, minMaxXY2[3] + limit);
         
-        double minCost = Double.MAX_VALUE;
-        CorrespondenceList minCostCor = null;
-       
-        // temporary storage of corresp coords until object construction
-        int[] m1x = new int[nTop];
-        int[] m1y = new int[nTop];
-        int[] m2x = new int[nTop];
-        int[] m2y = new int[nTop];
-        int mCount = 0;
-        
-        for (int i = 0; i < nTop; ++i) {
-            int t1X = mT.getX(i);
-            int t1Y = mT.getY(i);
-            int s1X = mS.getX(i);
-            int s1Y = mS.getY(i);
-            
-            // choose all combinations of 2nd point within distance
-            // limit of point s1.
-            for (int j = (i + 1); j < mS.getN(); ++j) {
-                int t2X = mT.getX(j);
-                int t2Y = mT.getY(j);
-                int s2X = mS.getX(j);
-                int s2Y = mS.getY(j);
-                
-                if ((t1X == t2X && t1Y == t2Y) || 
-                    (s1X == s2X && s1Y == s2Y)) {
-                    continue;
-                }
-                
-                int diffX = s1X - s2X;
-                int diffY = s1Y - s2Y;
-                int distSq = diffX * diffX + diffY * diffY;
-                if (distSq > limitSq) {
-                    continue;
-                }
-
-                // -- calculate euclid transformation
-                // -- evaluate the fit
-                TransformationParameters params = tc.calulateEuclidean(
-                    t1X, t1Y, 
-                    t2X, t2Y, 
-                    s1X, s1Y,
-                    s2X, s2Y,
-                    0, 0);
-                
-                float scale = params.getScale();
-                
-                mCount = 0;
-                
-                // template object transformed
-                PairIntArray trT = 
-                    transformer.applyTransformation(params, mT);
-                
-                /*
-                two components to the evaluation and both need normalizations
-                so that their contributions to total result are
-                equally weighted.
-                
-                (1) descriptors:
-                    -- score is sum of each matched (3*256 - cost)
-                    -- the normalization is the maximum possible score,
-                       so will use the number of template points.
-                       --> norm = nTemplate * 3 * 256
-                    -- normalized score = (3*256 - cost)/norm
-                   ==> normalized cost = 1 - ((3*256 - cost)/norm)
-                (2) spatial distances from transformed points:
-                   -- sum of distances within limit
-                      and replacement of distance by limit if no matching
-                      nearest neighbor is found.
-                   -- divide each distance by the transformation scale
-                      to compare same values
-                   -- divide the total sum by the total max possible
-                      --> norm = nTemplate * limit / scale
-               
-                Then the total cost is (1) + (2) and the min cost
-                among all of these combinations is the resulting
-                correspondence list
-                */
-                
-                double maxCost = 3 * 256;
-                double maxDist = limit/scale;
-                
-                double sum1 = 0;
-                double sum2 = 0;
-                double sum = 0;
-                
-                for (int k = 0; k < trT.getN(); ++k) {
-                    int xTr = trT.getX(k);
-                    int yTr = trT.getY(k);
-                    
-                    int idx1 = tIndexes.get(k);
-                    
-                    Set<PairInt> nearest = null;
-                    if ((xTr >= 0) && (yTr >= 0) &&
-                        (xTr <= (minMaxXY2[1] + limit)) && 
-                        (yTr <= (minMaxXY2[3] + limit))) {
-                        nearest = nn.findClosest(xTr, yTr, limit);
-                    }
-                    
-                    int minC = Integer.MAX_VALUE;
-                    PairInt minCP2 = null;
-                        
-                    if (nearest != null && !nearest.isEmpty()) {
-                        TObjectIntMap<PairInt> cMap = idx1P2CostMap.get(idx1);
-                        for (PairInt p2 : nearest) {
-                            if (!cMap.containsKey(p2)) {
-                                continue;
-                            }
-                            int c = cMap.get(p2);
-                            if (c < minC) {
-                                minC = c;
-                                minCP2 = p2;
-                            }
-                        }
-                    }
-                    if (minCP2 != null) {
-                        double scoreNorm = (3*256 - minC)/maxCost;
-                        double costNorm = 1. - scoreNorm;
-                        sum1 += costNorm;
-                        
-                        double dist = distance(xTr, yTr, minCP2);
-                        double distNorm = dist/maxDist;
-                        sum2 += distNorm;
-                      
-                        m1x[mCount] = keypoints1.get(idx1).getX();
-                        m1y[mCount] = keypoints1.get(idx1).getY();
-                        m2x[mCount] = minCP2.getX();
-                        m2y[mCount] = minCP2.getY();
-                        mCount++;
-                        
-                    } else {
-                        sum1 += 1;
-                        sum2 += 1;
-                    }
-                }
-                sum = sum1 + sum2;
-                if (sum < minCost) {
-                    
-                    minCost = sum;
-                    
-                    List<PairInt> m1 = new ArrayList<PairInt>();
-                    List<PairInt> m2 = new ArrayList<PairInt>();
-                    CorrespondenceList corr =
-                        new CorrespondenceList(
-                        params.getScale(),
-                        Math.round(params.getRotationInDegrees()),
-                        Math.round(params.getTranslationX()),
-                        Math.round(params.getTranslationY()),
-                        0, 0, 0, m1, m2);
-
-                    for (int mi = 0; mi < mCount; ++mi) {
-                        m1.add(new PairInt(m1x[mi], m1y[mi]));
-                        m2.add(new PairInt(m2x[mi], m2y[mi]));
-                    }
-                    
-                    minCostCor = corr;
-                }
-            }
-        }
-        
-        // TODO: refine for optimal matching and use ransac to remove outliers
-        //minCostCor = refineCorrespondence(minCostCor, keypoints1, keypoints2,
-        //    indexes, costs);
-        
-        return minCostCor;        
+        return completeTheMatching(
+            keypoints1, keypoints2, mT, mS, nn,
+            minMaxXY2, limit,
+            tIndexes, idx1P2CostMap
+        );       
     }
 
     /**
@@ -2343,6 +2168,32 @@ public class ORB {
             count++;
         }
         
+        int[] minMaxXY = MiscMath.findMinMaxXY(keypoints1);
+        int objDimension = Math.max(minMaxXY[1] - minMaxXY[0],
+            minMaxXY[3] - minMaxXY[2]);
+        int limit = 2 * objDimension;
+        int limitSq = limit * limit;
+       
+        int[] minMaxXY2 = MiscMath.findMinMaxXY(set2);
+        
+        NearestNeighbor2D nn = new NearestNeighbor2D(
+           set2, minMaxXY2[1] + limit, minMaxXY2[3] + limit);
+        
+        return completeTheMatching(
+            keypoints1, keypoints2, mT, mS, nn,
+            minMaxXY2, limit,
+            tIndexes, idx1P2CostMap
+        );            
+    }
+    
+    private static CorrespondenceList completeTheMatching(
+        List<PairInt> keypoints1, List<PairInt> keypoints2,
+        PairIntArray mT, PairIntArray mS, 
+        NearestNeighbor2D nn, int[] minMaxXY2, int limit,
+        TIntList tIndexes,        
+        TIntObjectMap<TObjectIntMap<PairInt>> idx1P2CostMap
+    ) {
+        
         int nTop = mT.getN();
 
         System.out.println("have " + nTop + " sets of points for "
@@ -2352,22 +2203,13 @@ public class ORB {
         //  to calcuate euclidean transformations and evaluate them.
         // -- can reduce the number of combinations by imposing a 
         //    distance limit on separation of feasible pairs
-        
-        int[] minMaxXY = MiscMath.findMinMaxXY(keypoints1);
-        int objDimension = Math.max(minMaxXY[1] - minMaxXY[0],
-            minMaxXY[3] - minMaxXY[2]);
-        int limit = 2 * objDimension;
+                
         int limitSq = limit * limit;
-       
-        int[] minMaxXY2 = MiscMath.findMinMaxXY(set2);
-        
+               
         MatchedPointsTransformationCalculator tc = new
             MatchedPointsTransformationCalculator();
         
         Transformer transformer = new Transformer();
-        
-        NearestNeighbor2D nn = new NearestNeighbor2D(
-           set2, minMaxXY2[1] + limit, minMaxXY2[3] + limit);
         
         double minCost = Double.MAX_VALUE;
         CorrespondenceList minCostCor = null;
@@ -2533,7 +2375,7 @@ public class ORB {
         //minCostCor = refineCorrespondence(minCostCor, keypoints1, keypoints2,
         //    indexes, costs);
         
-        return minCostCor;        
+        return minCostCor; 
     }
 
     /**
