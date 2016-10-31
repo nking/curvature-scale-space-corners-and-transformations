@@ -13,6 +13,7 @@ import algorithms.imageProcessing.transform.ITransformationFit;
 import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
+import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
@@ -45,6 +46,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import thirdparty.HungarianAlgorithm;
 
 /**
  * An implementation of "ORB: an efficient alternative to SIFT or SURF"
@@ -1952,6 +1954,13 @@ public class ORB {
     /**
      * match descriptors using euclidean transformation evaluation from pairs in
      * feasible combinations of best matches.
+     * Thie method is useful when a geometrical model is necessary to find the
+     * object in an image where the background and foreground have changed and the
+     * lighting may have changed, for example.  
+     * Fpr known simpler conditions such as stereo-projections, RANSAC with
+     * an epipolar or euclidean evaluator can be used instead with the top 45
+     * results and that method will
+     * be offered in this class one day.
      * @param d1
      * @param d2
      * @param keypoints1
@@ -2046,8 +2055,8 @@ public class ORB {
         
         NearestNeighbor2D nn = new NearestNeighbor2D(
            set2, minMaxXY2[1] + limit, minMaxXY2[3] + limit);
-        
-        return completeTheMatching(
+       
+        return completeUsingCombinations(
             keypoints1, keypoints2, mT, mS, nn,
             minMaxXY2, limit,
             tIndexes, idx1P2CostMap, indexes, costs
@@ -2057,9 +2066,13 @@ public class ORB {
     /**
      * match descriptors using euclidean transformation evaluation from pairs in
      * feasible combinations of best matches.
-     * The segmented point sets are used to restrict the number of top
-     * points per segmented cell that are tried in the combinations of
-     * euclidean pairs to sLimit.
+     * Thie method is useful when a geometrical model is necessary to find the
+     * object in an image where the background and foreground have changed and the
+     * lighting may have changed, for example.  
+     * Fpr known simpler conditions such as stereo-projections, RANSAC with
+     * an epipolar or euclidean evaluator can be used instead with the top 45
+     * results and that method will
+     * be offered in this class one day.
      * @param d1
      * @param d2
      * @param keypoints1
@@ -2179,14 +2192,34 @@ public class ORB {
         NearestNeighbor2D nn = new NearestNeighbor2D(
            set2, minMaxXY2[1] + limit, minMaxXY2[3] + limit);
         
-        return completeTheMatching(
+        return completeUsingCombinations(
             keypoints1, keypoints2, mT, mS, nn,
             minMaxXY2, limit,
             tIndexes, idx1P2CostMap, indexes, costs
         );            
     }
     
-    private static CorrespondenceList completeTheMatching(
+    /**
+     * NOTE: preliminary results show that this matches the right pattern as
+     * a subset of the object, but needs to be followed by a slightly larger
+     * aggregated search by segmentation cells using partial shape matcher
+     * for example.  This was started in ShapeFinder, but needs to be
+     * adjusted for a search given seed cells and possibly improved for the
+     * other TODO items).
+     * @param keypoints1
+     * @param keypoints2
+     * @param mT
+     * @param mS
+     * @param nn
+     * @param minMaxXY2
+     * @param limit
+     * @param tIndexes
+     * @param idx1P2CostMap
+     * @param indexes
+     * @param costs
+     * @return 
+     */
+    private static CorrespondenceList completeUsingCombinations(
         List<PairInt> keypoints1, List<PairInt> keypoints2,
         PairIntArray mT, PairIntArray mS, 
         NearestNeighbor2D nn, int[] minMaxXY2, int limit,
@@ -2214,7 +2247,10 @@ public class ORB {
         
         double minCost = Double.MAX_VALUE;
         CorrespondenceList minCostCor = null;
-       
+        PairIntArray minCostTrT = null;
+        double[] minCostI = new double[nTop];
+        double[] minDistI = new double[nTop];
+        
         // temporary storage of corresp coords until object construction
         int[] m1x = new int[nTop];
         int[] m1y = new int[nTop];
@@ -2340,6 +2376,8 @@ public class ORB {
                         m1y[mCount] = keypoints1.get(idx1).getY();
                         m2x[mCount] = minCP2.getX();
                         m2y[mCount] = minCP2.getY();
+                        minCostI[mCount] = costNorm;
+                        minDistI[mCount] = distNorm;
                         mCount++;
                         
                     } else {
@@ -2368,49 +2406,18 @@ public class ORB {
                     }
                     
                     minCostCor = corr;
+                    
+                    minCostTrT = trT;
                 }
             }
         }
         
-        // TODO: refine for optimal matching and use ransac to remove outliers
-        //minCostCor = refineCorrespondence(minCostCor, 
-        //    keypoints1, keypoints2, indexes, costs);
+        //minCostCor = setToBestUnique(
+        //    minCostCor, minCostI, minDistI);
         
         return minCostCor; 
     }
     
-    private static CorrespondenceList refineCorrespondence(
-        CorrespondenceList minCostCor, 
-        List<PairInt> keypoints1, List<PairInt> keypoints2, 
-        PairInt[] indexes, int[] costs) {
-        
-        /*
-        If there are less than 7 correspondence points, can only improve
-           by making the best unique matches.
-        else:
-        
-        either keep same transformation and then make optimal
-            unique matches (needs the trT array and mS array)
-        OR use epipolar ransac on current corres list,
-           then make a new correspondence list from that 
-           transformation
-        
-           --> needs:
-               correspondence list
-               the descriptor matrix
-               the dist limit
-               the max possible cost of a cost matric value
-           -- write a new epipolar ransac, 
-               but write a new evaluator for it that uses
-               the descriptor cost and distances
-              -- NOTE, might be best to make a euclidean
-                 evaluator too
-        */
-        
-        
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
     /**
      * greedy matching of d1 to d2 by min cost, with unique mappings for
      * all indexes.
@@ -2939,4 +2946,52 @@ public class ORB {
         return map;
     }
     
+    private static CorrespondenceList setToBestUnique(
+        CorrespondenceList minCostCor, 
+        double[] minCostI, double[] minDistI) {
+        
+        if (minCostCor == null) {
+            return null;
+        }
+        
+        /*
+        make indexes array and sort by incr cost
+        
+        then uniquely assign pairs from lowest costs
+        */
+        int n = minCostCor.getPoints1().size();
+        int[] idxs = new int[n];
+        float[] totCost = new float[n];
+        for (int i = 0; i < n; ++i) {
+            idxs[i] = i;
+            totCost[i] = (float)(minCostI[i] + minDistI[i]);
+        }
+        QuickSort.sortBy1stArg(totCost, idxs);
+        
+        Set<PairInt> set1 = new HashSet<PairInt>();
+        Set<PairInt> set2 = new HashSet<PairInt>();
+        List<PairInt> m1 = new ArrayList<PairInt>();
+        List<PairInt> m2 = new ArrayList<PairInt>();
+        
+        for (int i = 0; i < n; ++i) {
+            int idx = idxs[i];
+            PairInt p1 = minCostCor.getPoints1().get(idx);
+            PairInt p2 = minCostCor.getPoints2().get(idx);
+            if (set1.contains(p1) || set2.contains(p2)) {
+                continue;
+            }
+            m1.add(p1);
+            m2.add(p2);
+            set1.add(p1);
+            set2.add(p2);
+        }
+        minCostCor.getPoints1().clear();
+        minCostCor.getPoints2().clear();
+        
+        minCostCor.getPoints1().addAll(m1);
+        minCostCor.getPoints2().addAll(m2);
+        
+        return minCostCor;
+    }
+
 }

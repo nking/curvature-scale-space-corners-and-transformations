@@ -43,6 +43,7 @@ import algorithms.imageProcessing.transform.Transformer;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.GroupAverageColors;
 import algorithms.imageProcessing.util.MiscStats;
+import algorithms.imageProcessing.util.RANSACAlgorithmIterations;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
@@ -640,6 +641,12 @@ public class AndroidStatuesTest extends TestCase {
                   among matches limited by cost 127, then the
                   search runtime should be much faster.
             */
+            
+            RANSACAlgorithmIterations raiter = 
+                new RANSACAlgorithmIterations();
+            long niter = raiter.estimateNIterFor99PercentConfidence(
+                45, 7, (double)7./(double)45.);
+            System.out.println("nIter=" + niter);
               
             CorrespondenceList cor = ORB.matchDescriptors2(
                 new Descriptors[]{templateDescriptorsH,
