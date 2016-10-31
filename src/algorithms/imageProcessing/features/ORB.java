@@ -1965,12 +1965,14 @@ public class ORB {
      * @param d2
      * @param keypoints1
      * @param keypoints2
+     * @param scaleFactor the factor that will be the maximum dimension
+     * of the object in the search image, for example, 2.
      * @return 
      */
     public static CorrespondenceList matchDescriptors2(
         Descriptors[] d1, Descriptors[] d2,
         List<PairInt> keypoints1,
-        List<PairInt> keypoints2) {
+        List<PairInt> keypoints2, float scaleFactor) {
         
         assert(d1.length == d2.length);
         
@@ -2014,7 +2016,9 @@ public class ORB {
         
         // visit lowest costs (== differences) first
         for (int i = 0; i < nTot; ++i) {
-            if (costs[i] > 126 || count > 45) {
+            if (costs[i] > 126 
+                || count > 45
+                ) {
                 break;
             }
             PairInt index12 = indexes[i];
@@ -2022,10 +2026,11 @@ public class ORB {
             int idx2 = index12.getY();
             PairInt p1 = keypoints1.get(idx1);
             PairInt p2 = keypoints2.get(idx2);
-            if (set1.contains(p1) || set2.contains(p2)) {
+            if (set1.contains(p1) //|| set2.contains(p2)
+                ) {
                 continue;
             }
-            //System.out.println("p1=" + p1 + " " + " p2=" + p2 + " cost=" + costs[i]);
+            System.out.println("p1=" + p1 + " " + " p2=" + p2 + " cost=" + costs[i]);
             mT.add(p1.getX(), p1.getY());
             mS.add(p2.getX(), p2.getY());
             set1.add(p1);
@@ -2048,7 +2053,7 @@ public class ORB {
         int[] minMaxXY = MiscMath.findMinMaxXY(keypoints1);
         int objDimension = Math.max(minMaxXY[1] - minMaxXY[0],
             minMaxXY[3] - minMaxXY[2]);
-        int limit = 2 * objDimension;
+        int limit = Math.round(scaleFactor * objDimension);
         int limitSq = limit * limit;
        
         int[] minMaxXY2 = MiscMath.findMinMaxXY(set2);
@@ -2079,14 +2084,16 @@ public class ORB {
      * @param keypoints2
      * @param segmentedCells the segmented cells from image 2, that is,
      * keypoints2 are contained within this list of point sets.
-     * @param sLimit number of best matching points per segmented cell to
-     * try in the pair combinations.  For example, sLimit=5.
+     * @param sLimit maximum number of top keypoints to use per segmented cell 
+     * @param scaleFactor the factor that will be the maximum dimension
+     * of the object in the search image, for example, 2.
      * @return 
      */
     public static CorrespondenceList matchDescriptors2(
         Descriptors[] d1, Descriptors[] d2,
         List<PairInt> keypoints1, List<PairInt> keypoints2,
-        List<Set<PairInt>> segmentedCells, int sLimit
+        List<Set<PairInt>> segmentedCells, int sLimit,
+        float scaleFactor
         ) {
         
         assert(d1.length == d2.length);
@@ -2138,7 +2145,9 @@ public class ORB {
         
         // visit lowest costs (== differences) first
         for (int i = 0; i < nTot; ++i) {
-            if (costs[i] > 126 || count > 45) {
+            if (costs[i] > 126 
+                || count > 45
+                ) {
                 break;
             }
             PairInt index12 = indexes[i];
@@ -2180,11 +2189,11 @@ public class ORB {
             
             count++;
         }
-        
+                
         int[] minMaxXY = MiscMath.findMinMaxXY(keypoints1);
         int objDimension = Math.max(minMaxXY[1] - minMaxXY[0],
             minMaxXY[3] - minMaxXY[2]);
-        int limit = 2 * objDimension;
+        int limit = Math.round(scaleFactor * objDimension);
         int limitSq = limit * limit;
        
         int[] minMaxXY2 = MiscMath.findMinMaxXY(set2);
