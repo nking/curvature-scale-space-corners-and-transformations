@@ -302,9 +302,10 @@ public class ORBTest extends TestCase {
         } 
         assertTrue(expected.isEmpty());
         
-        double[] orientation = orb.cornerOrientations(img, keypoints0, keypoints1);
+        TDoubleList orientation = 
+            orb.cornerOrientations(img, keypoints0, keypoints1);
         
-        assertEquals(keypoints0.size(), orientation.length);
+        assertEquals(keypoints0.size(), orientation.size());
         Map<PairInt, Integer> expectedOrientations = new HashMap<PairInt, Integer>();
         expectedOrientations.put(new PairInt(3, 3), Integer.valueOf(45));
         expectedOrientations.put(new PairInt(3, 8), Integer.valueOf(135));
@@ -318,7 +319,7 @@ public class ORBTest extends TestCase {
             int y = keypoints1.get(i);
             PairInt p = new PairInt(x, y);
             Integer expAng = expectedOrientations.get(p);
-            double ang = orientation[i] * 180./Math.PI;
+            double ang = orientation.get(i) * 180./Math.PI;
             //System.out.println("found=" + ang + " expected=" + expAng);
             assertTrue(Math.abs(expAng.intValue() - ang) < 0.001);
         }
