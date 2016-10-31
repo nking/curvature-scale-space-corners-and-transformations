@@ -929,10 +929,10 @@ public class ORBTest extends TestCase {
         List<PairInt> kp0 = orb.getAllKeyPoints();
         Descriptors desc0 = orb.getAllDescriptors();
 
-        orb = new ORB(2);
-        orb.detectAndExtract(img90);
-        List<PairInt> kp90 = orb.getAllKeyPoints();
-        Descriptors desc90 = orb.getAllDescriptors();
+        ORB orb1 = new ORB(2);
+        orb1.detectAndExtract(img90);
+        List<PairInt> kp90 = orb1.getAllKeyPoints();
+        Descriptors desc90 = orb1.getAllDescriptors();
             
         int[][] matches = ORB.matchDescriptors(
             desc0.descriptors, desc90.descriptors, 
@@ -969,11 +969,50 @@ public class ORBTest extends TestCase {
         
         assertTrue(c01 > 0);
         assertTrue(c10 > 0);
+    
+    
+        // --- looking at same image as img, but size 70%
+        Image img2 = getFigureEightSmaller();
+        ORB orb2 = new ORB(2);
+        orb2.detectAndExtract(img2);
+        List<PairInt> kp2 = orb2.getAllKeyPoints();
+        Descriptors desc2 = orb2.getAllDescriptors();
+        List<TDoubleList> or2 = orb2.getOrientationsList();
+        
+        List<TDoubleList> or0 = orb.getOrientationsList();
+    
+        int[][] costMatrix2 = ORB.calcDescriptorCostMatrix(
+            desc0.descriptors, desc2.descriptors);
+
+        // orientations for same feature at another scale
+        // are different.
+        // -- is there an error in the calculation?
+        //    reread paper and code...
+        // -- whether there is an error of not, should take a 
+        //    look at a descriptor for the 70% image created using
+        //      orientation from img.
+        //    if those are similar, then the descriptors, even
+        //       of different scale, can still be ued to recognize similar
+        //       image.
+        //       and in that case,
+        //       need to use more rotation dithers for ORB.java
+        //       .. presumably I have an error in the orientation
+        //          calculations...
+        
+        int z = 1;
     }
     
     private Image getFigureEight() throws IOException {
         
         String fileName = "test_img.png";  
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
+        Image img0 = ImageIOHelper.readImageAsGrayScale(filePath);
+        
+        return img0;
+    }
+    private Image getFigureEightSmaller() throws IOException {
+        
+        String fileName = "test_img_2.png";  
         String filePath = ResourceFinder.findFileInTestResources(fileName);
         Image img0 = ImageIOHelper.readImageAsGrayScale(filePath);
         
