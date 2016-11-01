@@ -957,18 +957,19 @@ public class AndroidStatuesTest extends TestCase {
             (1) building an optional method that has a smaller scale
                 difference for decimation
             (2) in the matching phase, need to consider a tolerance
-                that is the mac error due to difference in scale over
+                that is the max error due to difference in scale over
                 the aperature.
                 For example, for the approx 70% or 75% difference in size of
                 template object from search object, can see
                 about 60 different bits where expect 0 for same size
                 images.  that is tolerance is appprox .25 * nBands * 256
-                and then the value 0 is equiv to false positives 
+                and then the value 60 is equiv to false positives 
                 that are zero.... decreasing the scale differences decreases
                 this error at expense of computation time.
                 -- will create a matching method that accepts 
-                   decimation scale factor and leave the pyramidal
-                   sampling for fast as an optional setting....`
+                   decimation scale factor and have the pyramidal
+                   sampling for fast as an optional setting while 
+                   providing a smaller scale default pyramidal sampling....`
 
             */
             ORB orb0 = new ORB(2000);//10000
