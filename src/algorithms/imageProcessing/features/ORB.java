@@ -1,11 +1,9 @@
 package algorithms.imageProcessing.features;
 
-import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
-import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MedianTransform;
 import algorithms.imageProcessing.StructureTensor;
@@ -13,9 +11,7 @@ import algorithms.imageProcessing.transform.ITransformationFit;
 import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
-import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.Misc;
-import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.search.NearestNeighbor2D;
 import algorithms.util.PairInt;
@@ -23,7 +19,6 @@ import algorithms.util.PairIntArray;
 import algorithms.util.QuadInt;
 import algorithms.util.TwoDFloatArray;
 import algorithms.util.VeryLongBitString;
-import com.climbwithyourfeet.clustering.DTClusterFinder;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
@@ -46,7 +41,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import thirdparty.HungarianAlgorithm;
 
 /**
  * An implementation of "ORB: an efficient alternative to SIFT or SURF"
@@ -145,13 +139,13 @@ public class ORB {
     protected final float harrisK = 0.04f;
     protected final int nKeypoints;
 
-    protected List<TwoDFloatArray> pyramidImages = null;
+    private List<TwoDFloatArray> pyramidImages = null;
     protected List<TwoDFloatArray> harrisResponseImages = null;
 
     // if HSV descriptors are requested, these are built too
-    protected List<TwoDFloatArray> pyramidImagesH = null;
-    protected List<TwoDFloatArray> pyramidImagesS = null;
-    protected List<TwoDFloatArray> pyramidImagesV = null;
+    private List<TwoDFloatArray> pyramidImagesH = null;
+    private List<TwoDFloatArray> pyramidImagesS = null;
+    private List<TwoDFloatArray> pyramidImagesV = null;
 
     protected List<TIntList> keypoints0List = null;
     protected List<TIntList> keypoints1List = null;
@@ -171,6 +165,37 @@ public class ORB {
     protected static double twoPI = 2. * Math.PI;
 
     protected float curvatureThresh = 0.05f;
+
+    // pyramid images will be no smaller than this
+    protected final int decimationLimit = 32;
+    
+    /**
+     * @return the pyramidImages
+     */
+    public List<TwoDFloatArray> getPyramidImages() {
+        return pyramidImages;
+    }
+
+    /**
+     * @return the pyramidImagesH
+     */
+    public List<TwoDFloatArray> getPyramidImagesH() {
+        return pyramidImagesH;
+    }
+
+    /**
+     * @return the pyramidImagesS
+     */
+    public List<TwoDFloatArray> getPyramidImagesS() {
+        return pyramidImagesS;
+    }
+
+    /**
+     * @return the pyramidImagesV
+     */
+    public List<TwoDFloatArray> getPyramidImagesV() {
+        return pyramidImagesV;
+    }
     
     protected static enum DescriptorChoice {
         NONE, GREYSCALE, HSV
@@ -405,8 +430,6 @@ public class ORB {
         GreyscaleImage imageG = image.copyGreenToGreyscale();
         GreyscaleImage imageB = image.copyBlueToGreyscale();
      
-        int decimationLimit = 8;
-
         List<GreyscaleImage> outputR = new ArrayList<GreyscaleImage>();
         MedianTransform mt = new MedianTransform();
         mt.multiscalePyramidalMedianTransform2(imageR, outputR, decimationLimit);
@@ -459,8 +482,6 @@ public class ORB {
      * @return
      */
     private List<TwoDFloatArray> buildPyramid(GreyscaleImage img) {
-
-        int decimationLimit = 8;
 
         ImageProcessor imageProcessor = new ImageProcessor();
         
@@ -562,7 +583,7 @@ public class ORB {
      returned is the list of octaves which were used.
     */
     private void extractKeypoints(Image image) {
-        
+                
         List<TwoDFloatArray> pyramid = buildPyramid(image);
         
         keypoints0List = new ArrayList<TIntList>();
@@ -613,7 +634,8 @@ public class ORB {
                 }
             }
             
-            if (octaveImage.length < 8 || octaveImage[0].length < 8) {
+            if (octaveImage.length < decimationLimit || 
+                octaveImage[0].length < decimationLimit) {
                 continue;
             }
 

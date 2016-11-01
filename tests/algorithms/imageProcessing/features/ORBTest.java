@@ -14,9 +14,11 @@ import algorithms.imageProcessing.transform.Transformer;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
+import algorithms.util.TwoDFloatArray;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import java.io.IOException;
 import java.util.HashMap;
@@ -970,36 +972,64 @@ public class ORBTest extends TestCase {
         assertTrue(c01 > 0);
         assertTrue(c10 > 0);
     
+        int np = 8;
+        orb = new ORB(np);
+        orb.detectAndExtract(img);
+        kp0 = orb.getAllKeyPoints();
+        desc0 = orb.getAllDescriptors();
     
-        // --- looking at same image as img, but size 70%
-        Image img2 = getFigureEightSmaller();
-        ORB orb2 = new ORB(2);
-        orb2.detectAndExtract(img2);
-        List<PairInt> kp2 = orb2.getAllKeyPoints();
-        Descriptors desc2 = orb2.getAllDescriptors();
-        List<TDoubleList> or2 = orb2.getOrientationsList();
-        
-        List<TDoubleList> or0 = orb.getOrientationsList();
-    
-        int[][] costMatrix2 = ORB.calcDescriptorCostMatrix(
-            desc0.descriptors, desc2.descriptors);
+        // --- looking at same image as img, but size 85% and 70%
+        for (int i = 0; i < 2; ++i) {
+            Image img2;
+            if (i == 0) {
+                img2 = getFigureEight1();
+            } else {
+                img2 = getFigureEight2();
+            }
+            ORB orb2 = new ORB(np);
+            orb2.detectAndExtract(img2);
+            List<PairInt> kp2 = orb2.getAllKeyPoints();
+            Descriptors desc2 = orb2.getAllDescriptors();
+            List<TDoubleList> or2 = orb2.getOrientationsList();
 
-        // orientations for same feature at another scale
-        // are different.
-        // -- is there an error in the calculation?
-        //    reread paper and code...
-        // -- whether there is an error of not, should take a 
-        //    look at a descriptor for the 70% image created using
-        //      orientation from img.
-        //    if those are similar, then the descriptors, even
-        //       of different scale, can still be ued to recognize similar
-        //       image.
-        //       and in that case,
-        //       need to use more rotation dithers for ORB.java
-        //       .. presumably I have an error in the orientation
-        //          calculations...
-        
-        int z = 1;
+            int[][] costMatrix2 = ORB.calcDescriptorCostMatrix(
+                desc0.descriptors, desc2.descriptors);
+
+            // orientations for same feature at another scale
+            // are very different.
+            // -- is there an error in the calculation?
+            //    reread paper and code...
+            // -- looking at same image at different scales and
+            //    a fixed orientation from the larger image.
+            //    --> may need more images in the pyramid...currently scale factor
+            //        is 2 and that may need to be smaller
+            //    --> the fixed orientation should tell whether 
+            //        providing descriptors with dithered orientations would improve soln
+
+            boolean foundCenterCostIsZero = false;
+            
+            for (int j = 0; j < costMatrix2.length; ++j) {
+                for (int k = 0; k < costMatrix2[j].length; ++k) {
+                    int c = costMatrix2[j][k];
+                    //System.out.println(
+                    //    "i=" + i + 
+                    //    String.format(" %s:%s ", kp0.get(j),
+                    //    kp2.get(k)) +
+                    //    " c[" + j +"]["+k+"] c=" + c);
+                    
+                    if ((Math.abs(kp0.get(j).getX() - 32) < 3)
+                        && (Math.abs(kp0.get(j).getY() - 32) < 3)
+                        && (Math.abs(kp2.get(k).getX() - 32) < 3)
+                        && (Math.abs(kp2.get(k).getY() - 32) < 3)) {
+                        if (c == 0) {
+                            foundCenterCostIsZero = true;
+                        }
+                    }
+                }
+            }
+            
+            assertTrue(foundCenterCostIsZero);
+        }       
     }
     
     private Image getFigureEight() throws IOException {
@@ -1010,7 +1040,15 @@ public class ORBTest extends TestCase {
         
         return img0;
     }
-    private Image getFigureEightSmaller() throws IOException {
+    private Image getFigureEight1() throws IOException {
+        
+        String fileName = "test_img_1.png";  
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
+        Image img0 = ImageIOHelper.readImageAsGrayScale(filePath);
+        
+        return img0;
+    }
+    private Image getFigureEight2() throws IOException {
         
         String fileName = "test_img_2.png";  
         String filePath = ResourceFinder.findFileInTestResources(fileName);
