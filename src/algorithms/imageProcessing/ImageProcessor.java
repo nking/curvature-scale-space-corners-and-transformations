@@ -8890,6 +8890,45 @@ if (sum > 511) {
         
         return points;
     }
+    
+    public List<TwoDFloatArray> buildPyramid2(float[][] input) {
+        
+        throw new UnsupportedOperationException("not yet implemented");
+        /*
+        a gaussian pyramid based upon a kernel of sigma 0.707
+        can be built recursively, but the number of iterations
+        to reach scale factors larger than 3 is increasingly
+        very large number of recursions.
+        
+        FWHM = 2.35 * sigma
+        for recursive gaussian and kernel0 w/ sigma=sqrt(2)/2 = 0.707
+                                                     sigma   FWHM
+        s1^2 = (sqrt(2)/2)^2 = 0.5                    0.7     1.67
+        s2^2 = 0.5 + (sqrt(2)/2)^2 = 1                1       2.35                 
+        s3^2 = 1 + (sqrt(2)/2)^2                      1.22    2.9
+        s4^2 = 1.5 + (sqrt(2)/2)^2                    1.4     3.3
+        s5^2 = 2 + (sqrt(2)/2)^2                      1.58    3.72                      
+        s6^2 = 2.5 + (sqrt(2)/2)^2                    1.7     4.07
+        s7^2 = 3.0 + (sqrt(2)/2)^2                    1.87    4.4  
+        ...
+        s17^2 = 8.0 + (sqrt(2)/2)^2                   2.83    6.65  <-- factor of 4 from s1
+        
+        Alternatively, making a kernel of size sigma>2 needs larger
+        kernels too so the O(N) has a large constant factor in front of it.
+        
+        A hybrid solution would be to use the current
+        pyramidal median transform which returns images 
+        blurred and downsampled by factors of 2.
+        Then add to that, discrete samplings of scale sizes
+        that improve the pyramid.
+        1   2   4   8   16
+        for example, calculate for scale factors 1.25, 1.5, 1.75
+        then bisecting the existing pyramidal scales to make
+        3, 6, and 12, etc.
+        Might consider a version of this method which provides more
+        scales at higher factors...
+        */
+    }
 
     /**
      * use bilinear interpolation to downsample a two dimensional array.
