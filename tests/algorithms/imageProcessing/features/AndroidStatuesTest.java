@@ -949,6 +949,28 @@ public class AndroidStatuesTest extends TestCase {
             final PairInt tp1 = new PairInt(33, 61);
 
             // debug descriptors for tie in detail here
+            /*
+            NOTE: can see that the difference in scale between the
+            template object and the search object has a difference
+            not well covered by the current pyramidal decimation
+            which uses a factor of 2.
+            (1) building an optional method that has a smaller scale
+                difference for decimation
+            (2) in the matching phase, need to consider a tolerance
+                that is the mac error due to difference in scale over
+                the aperature.
+                For example, for the approx 70% or 75% difference in size of
+                template object from search object, can see
+                about 60 different bits where expect 0 for same size
+                images.  that is tolerance is appprox .25 * nBands * 256
+                and then the value 0 is equiv to false positives 
+                that are zero.... decreasing the scale differences decreases
+                this error at expense of computation time.
+                -- will create a matching method that accepts 
+                   decimation scale factor and leave the pyramidal
+                   sampling for fast as an optional setting....`
+
+            */
             ORB orb0 = new ORB(2000);//10000
             orb0.overrideFastThreshold(0.001f);
             orb0.overrideToCreateHSVDescriptors();
@@ -982,6 +1004,18 @@ public class AndroidStatuesTest extends TestCase {
                 float[][] octaveImage = octaveImages0.get(j).a;
                 TDoubleList orList0 = orb0.cornerOrientations(
                     octaveImage, k0, k1);
+                /*for (int delta = 1; delta< 360; delta += 15) {
+                    double r = orList0.get(0);
+                    double rDelta = delta * Math.PI/180.;
+                    r += rDelta;
+                    // range is -pi to pi
+                    if (r > Math.PI) {
+                        r -= 2*Math.PI;
+                    }
+                    orList0.add(r);
+                    k0.add(k0.get(0));
+                    k1.add(k1.get(0));
+                }*/
                 
                 float[][] octaveImageH = octaveImagesH0.get(j).a;
                 float[][] octaveImageS = octaveImagesS0.get(j).a;
@@ -1030,6 +1064,18 @@ public class AndroidStatuesTest extends TestCase {
                 float[][] octaveImage = octaveImages1.get(j).a;
                 TDoubleList orList1 = orb.cornerOrientations(
                     octaveImage, k0, k1);
+                /*for (int delta = 1; delta< 360; delta += 15) {
+                    double r = orList1.get(0);
+                    double rDelta = delta * Math.PI/180.;
+                    r += rDelta;
+                    // range is -pi to pi
+                    if (r > Math.PI) {
+                        r -= 2*Math.PI;
+                    }
+                    orList1.add(r);
+                    k0.add(k0.get(0));
+                    k1.add(k1.get(0));
+                }*/
                 
                 float[][] octaveImageH = octaveImagesH1.get(j).a;
                 float[][] octaveImageS = octaveImagesS1.get(j).a;
@@ -1058,6 +1104,21 @@ public class AndroidStatuesTest extends TestCase {
             
             int[][] gsCostMatrix = ORB.calcDescriptorCostMatrix(
                 gsDesc0.descriptors, gsDesc1.descriptors);
+            
+            for (int ii = 0; ii < hsvCostMatrix.length; ++ii) {
+                for (int jj = 0; jj < hsvCostMatrix[ii].length; ++jj) {
+                    if (hsvCostMatrix[ii][jj] < 10) {
+                        int z = 0;
+                    }
+                }
+            }
+            for (int ii = 0; ii < gsCostMatrix.length; ++ii) {
+                for (int jj = 0; jj < gsCostMatrix[ii].length; ++jj) {
+                    if (gsCostMatrix[ii][jj] < 10) {
+                        int z = 0;
+                    }
+                }
+            }
             
             int z = 1;
         }
