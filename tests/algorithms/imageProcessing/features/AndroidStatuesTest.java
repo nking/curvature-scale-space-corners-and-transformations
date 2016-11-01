@@ -54,13 +54,16 @@ import algorithms.util.PairIntPair;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.QuadInt;
 import algorithms.util.ResourceFinder;
+import algorithms.util.TwoDFloatArray;
 import algorithms.util.TwoDIntArray;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TDoubleList;
+import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TDoubleArrayList;
+import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
@@ -830,12 +833,13 @@ public class AndroidStatuesTest extends TestCase {
               and evaluation of pair combinations of best mathing keypoints
               from which euclidean transformaions are derived.
         
-        for the solution:
-            It quickly finds a few gingerbread man points, but also finds
-            a few euclair and icecream and grass points.
+        Some changes are in progress.
+        a mask applied to template and none to the search image
+        leads to problems identifying same keypoints in different
+        sized images.
         
-        So, the solution still needs better keypoints and perhaps
-        use of other information.
+        looking at adaptive masks for binary descriptors...
+       
         */
         
         int maxDimension = 256;//512;
@@ -861,7 +865,8 @@ public class AndroidStatuesTest extends TestCase {
         Descriptors templateDescriptorsV = new Descriptors();
         extractTemplateORBKeypoints(fileNameRoot0, shape0,
             templateKeypoints, templateOrientations, 
-            templateDescriptorsH, templateDescriptorsS, templateDescriptorsV);
+            templateDescriptorsH, templateDescriptorsS, 
+            templateDescriptorsV);
  
         //Image imgTempCP = imgs0[0].copyImage();
         int[][] templateKP = new int[templateKeypoints.size()][];
@@ -895,10 +900,11 @@ public class AndroidStatuesTest extends TestCase {
             template_ch_LAB = clrHist.histogramCIELAB(imgs0[1], points0); 
         }
         
+        
         String fileName1 = "android_statues_02.jpg";
         //fileName1 = "android_statues_01.jpg";
         //fileName1 = "android_statues_04.jpg";
-        //fileName1 = "android_statues_03.jpg";
+        fileName1 = "android_statues_03.jpg";
 
         String fileName1Root = fileName1.substring(0, fileName1.lastIndexOf("."));
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
@@ -931,11 +937,131 @@ public class AndroidStatuesTest extends TestCase {
 
         List<PairInt> keypointsCombined = orb.getAllKeyPoints();
         Descriptors[] dHSV = orb.getAllDescriptorsHSV();        
-        //TDoubleList or = orb.getAllOrientations();
+        TDoubleList or = orb.getAllOrientations();
         //Descriptors descriptorsH = dHSV[0];
         //Descriptors descriptorsS = dHSV[1];
         //Descriptors descriptorsV = dHSV[2];
 
+        if (true) {
+            //DEBUG descriptor matching
+            
+            final PairInt tp2 = new PairInt(38, 72);
+            final PairInt tp1 = new PairInt(33, 61);
+
+            // debug descriptors for tie in detail here
+            ORB orb0 = new ORB(2000);//10000
+            orb0.overrideFastThreshold(0.001f);
+            orb0.overrideToCreateHSVDescriptors();
+            orb0.overrideToAlsoCreate1stDerivKeypoints();
+            orb0.overrideToCreateCurvaturePoints();
+            orb0.detectAndExtract(imgs0[0]);
+            //List<PairInt> keypointsCombined0 = orb0.getAllKeyPoints();
+            //Descriptors[] dHSV0 = orb0.getAllDescriptorsHSV();        
+            //TDoubleList or0 = orb0.getAllOrientations();
+            
+            List<TwoDFloatArray> octaveImages0 = orb0.getPyramidImages();
+            int nOctaves0 = octaveImages0.size();
+            TFloatList imageScales0 = new TFloatArrayList(nOctaves0);
+            List<TwoDFloatArray> octaveImagesH0 = orb0.getPyramidImagesH();
+            List<TwoDFloatArray> octaveImagesS0 = orb0.getPyramidImagesS();
+            List<TwoDFloatArray> octaveImagesV0 = orb0.getPyramidImagesV();
+       
+            List<Descriptors> gsDescs0 = new ArrayList<Descriptors>(nOctaves0);
+            List<Descriptors> hDescs0 = new ArrayList<Descriptors>(nOctaves0);
+            List<Descriptors> sDescs0 = new ArrayList<Descriptors>(nOctaves0);
+            List<Descriptors> vDescs0 = new ArrayList<Descriptors>(nOctaves0);
+            for (int j = 0; j < nOctaves0; ++j) {
+                float scale = orb0.getScalesList().get(j).get(0);
+                imageScales0.add(scale);
+                
+                TIntList k0 = new TIntArrayList();
+                TIntList k1 = new TIntArrayList();
+                k0.add(Math.round(tp1.getY()/scale));
+                k1.add(Math.round(tp1.getX()/scale));
+                
+                float[][] octaveImage = octaveImages0.get(j).a;
+                TDoubleList orList0 = orb0.cornerOrientations(
+                    octaveImage, k0, k1);
+                
+                float[][] octaveImageH = octaveImagesH0.get(j).a;
+                float[][] octaveImageS = octaveImagesS0.get(j).a;
+                float[][] octaveImageV = octaveImagesV0.get(j).a;
+                
+                ORB.Descriptors dH = orb0.extractOctave(
+                    octaveImageH, k0, k1, orList0);
+                ORB.Descriptors dS = orb0.extractOctave(
+                    octaveImageS, k0, k1, orList0);
+                ORB.Descriptors dV = orb0.extractOctave(
+                    octaveImageV, k0, k1, orList0);
+                hDescs0.add(dH);
+                sDescs0.add(dS);
+                vDescs0.add(dV);
+                
+                ORB.Descriptors d = orb0.extractOctave(
+                    octaveImage, k0, k1, orList0);
+                gsDescs0.add(d);
+            }
+            Descriptors[] hsvDesc0 = new Descriptors[] {
+                ORB.combineDescriptors(hDescs0),
+                ORB.combineDescriptors(sDescs0),
+                ORB.combineDescriptors(vDescs0)};
+            Descriptors gsDesc0 = ORB.combineDescriptors(gsDescs0);
+            //---
+            List<TwoDFloatArray> octaveImages1 = orb.getPyramidImages();
+            int nOctaves1 = octaveImages1.size();
+            TFloatList imageScales1 = new TFloatArrayList(nOctaves1);
+            List<TwoDFloatArray> octaveImagesH1 = orb.getPyramidImagesH();
+            List<TwoDFloatArray> octaveImagesS1 = orb.getPyramidImagesS();
+            List<TwoDFloatArray> octaveImagesV1 = orb.getPyramidImagesV();
+            
+            List<Descriptors> gsDescs1 = new ArrayList<Descriptors>(nOctaves1);
+            List<Descriptors> hDescs1 = new ArrayList<Descriptors>(nOctaves1);
+            List<Descriptors> sDescs1 = new ArrayList<Descriptors>(nOctaves1);
+            List<Descriptors> vDescs1 = new ArrayList<Descriptors>(nOctaves1);
+            for (int j = 0; j < nOctaves1; ++j) {
+                float scale = orb.getScalesList().get(j).get(0);
+                imageScales1.add(scale);
+                
+                TIntList k0 = new TIntArrayList();
+                TIntList k1 = new TIntArrayList();
+                k0.add(Math.round(tp2.getY()/scale));
+                k1.add(Math.round(tp2.getX()/scale));
+                
+                float[][] octaveImage = octaveImages1.get(j).a;
+                TDoubleList orList1 = orb.cornerOrientations(
+                    octaveImage, k0, k1);
+                
+                float[][] octaveImageH = octaveImagesH1.get(j).a;
+                float[][] octaveImageS = octaveImagesS1.get(j).a;
+                float[][] octaveImageV = octaveImagesV1.get(j).a;
+                
+                ORB.Descriptors dH = orb.extractOctave(
+                    octaveImageH, k0, k1, orList1);
+                ORB.Descriptors dS = orb.extractOctave(
+                    octaveImageS, k0, k1, orList1);
+                ORB.Descriptors dV = orb.extractOctave(
+                    octaveImageV, k0, k1, orList1);
+                hDescs1.add(dH);
+                sDescs1.add(dS);
+                vDescs1.add(dV);
+                ORB.Descriptors d = orb.extractOctave(
+                    octaveImage, k0, k1, orList1);
+                gsDescs1.add(d);
+            }
+            Descriptors[] hsvDesc1 = new Descriptors[] {
+                ORB.combineDescriptors(hDescs1),
+                ORB.combineDescriptors(sDescs1),
+                ORB.combineDescriptors(vDescs1)};
+            Descriptors gsDesc1 = ORB.combineDescriptors(gsDescs1);
+            
+            int[][] hsvCostMatrix = ORB.calcDescriptorCostMatrix(hsvDesc0, hsvDesc1);
+            
+            int[][] gsCostMatrix = ORB.calcDescriptorCostMatrix(
+                gsDesc0.descriptors, gsDesc1.descriptors);
+            
+            int z = 1;
+        }
+        
         // ---- filter keypoints by color ----
         TIntSet rm = new TIntHashSet();
         for (int i = 0; i < keypointsCombined.size(); ++i) {
@@ -961,10 +1087,12 @@ public class AndroidStatuesTest extends TestCase {
             VeryLongBitString[] dS = new VeryLongBitString[nB];
             VeryLongBitString[] dV = new VeryLongBitString[nB];
             List<PairInt> kp = new ArrayList<PairInt>(nB);
+            TDoubleList or2 = new TDoubleArrayList(nB);
             int c1 = 0;
             for (int i = 0; i < keypointsCombined.size(); ++i) {
                 if (rm.contains(i)) { continue;}
                 kp.add(keypointsCombined.get(i));
+                or2.add(or.get(i));
                 dH[c1] = dHSV[0].descriptors[i];
                 dS[c1] = dHSV[1].descriptors[i];
                 dV[c1] = dHSV[2].descriptors[i];
@@ -972,6 +1100,8 @@ public class AndroidStatuesTest extends TestCase {
             }
             keypointsCombined.clear();
             keypointsCombined.addAll(kp);
+            or.clear();
+            or.addAll(or2);
             dHSV[0].descriptors = dH;
             dHSV[1].descriptors = dS;
             dHSV[2].descriptors = dV;
@@ -979,12 +1109,8 @@ public class AndroidStatuesTest extends TestCase {
         
         {
             Image img11 = img.copyImage();
-            int[][] srchKP = new int[keypointsCombined.size()][];
-            for (int i = 0; i < srchKP.length; ++i) {
-                srchKP[i] = new int[2];
+            for (int i = 0; i < keypointsCombined.size(); ++i) {
                 PairInt p = keypointsCombined.get(i);
-                srchKP[i][1] = p.getY();
-                srchKP[i][0] = p.getX();
                 ImageIOHelper.addPointToImage(p.getX(), p.getY(), img11, 1, 255, 0, 0);
                 //double angle = orientations.get(i);
                 //int dx = (int)Math.round(3. * Math.cos(angle));
@@ -996,7 +1122,7 @@ public class AndroidStatuesTest extends TestCase {
         }
                     
         long t0 = System.currentTimeMillis();
-
+    
         CorrespondenceList cor = ORB.matchDescriptors2(
             new Descriptors[]{templateDescriptorsH,
                 templateDescriptorsS, templateDescriptorsV}, 
@@ -2383,34 +2509,36 @@ public class AndroidStatuesTest extends TestCase {
 
         int w = img0.getWidth();
         int h = img0.getHeight();
+        
+        int buffer = 20;
 
-        int xLL = minMaxXY[0] - 5;
+        int xLL = minMaxXY[0] - buffer;
         if (xLL < 0) {
             xLL = 0;
         }
-        int yLL = minMaxXY[2] - 5;
+        int yLL = minMaxXY[2] - buffer;
         if (yLL < 0) {
             yLL = 0;
         }
-        int xUR = minMaxXY[1] + 5;
+        int xUR = minMaxXY[1] + buffer;
         if (xUR > (w - 1)) {
             xUR = w - 1;
         }
-        int yUR = minMaxXY[3] + 5;
+        int yUR = minMaxXY[3] + buffer;
         if (yUR > (h - 1)) {
             yUR = h - 1;
         }
 
         ORBWrapper.extractKeypointsFromSubImage(
             img0, xLL, yLL, xUR, yUR,
-            //200,
-            100,
+            200,
+            //100,
             templateKP, templateOrientations, 
             templateDescriptorsH, 
             templateDescriptorsS,
             templateDescriptorsV, 
-            0.01f, 
-            //0.001f,
+            //0.01f, 
+            0.001f,
             true);
         
         TIntList rm = new TIntArrayList();
@@ -2426,7 +2554,9 @@ public class AndroidStatuesTest extends TestCase {
         
         if (!rm.isEmpty()) {
             for (int i = (rm.size() - 1); i > -1; --i) {
+                
                 int rmIdx = rm.get(i);
+                
                 templateKP.remove(rmIdx);
                 templateOrientations.removeAt(rmIdx);
                 

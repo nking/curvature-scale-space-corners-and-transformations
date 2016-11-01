@@ -14455,6 +14455,42 @@ int z = 1;
         UnsupervisedTextureFinder.TexturePatchesAndResponse[] tpar
             = finder.createTextureImages(img, products, debugTag);
  
+        mergeByTexture(img, products, listOfCells, tpar, debugTag);
+    }
+    
+    /**
+     * NOT READY FOR USE:
+     * 
+     * method to merge segmented cells using texture information.
+     * Some of the logic is derived from the Malik et al. 2001
+     * texture segmentation paper.
+     * NOTE that some images have noise which does not contain patterns that
+     * you might want to use for segmentation, so consider when to use
+     * this method.
+     * 
+     * @param img
+     * @param products
+     * @param listOfCells
+     * @param debugTag 
+     */
+    public void mergeByTexture(ImageExt img, 
+        PhaseCongruencyDetector.PhaseCongruencyProducts products,
+        List<Set<PairInt>> listOfCells, 
+        UnsupervisedTextureFinder.TexturePatchesAndResponse[] tpar,
+        String debugTag) {
+        
+        TIntIntMap pointIndexMap = new TIntIntHashMap();
+        for (int lIdx = 0; lIdx < listOfCells.size(); ++lIdx) {
+            Set<PairInt> set = listOfCells.get(lIdx);            
+            for (PairInt p : set) {
+                int pIdx = img.getInternalIndex(p);
+                pointIndexMap.put(pIdx, lIdx);
+            }
+        }
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+       
         // key=pixel, value=texture class index
         TIntIntMap textureClassMap = new TIntIntHashMap();
         

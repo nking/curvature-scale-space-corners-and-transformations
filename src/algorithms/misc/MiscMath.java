@@ -2607,4 +2607,15 @@ System.out.println("value 0 is rescaled to value=" + (-minV*scale)
         }
     }
 
+    public static void applyAbsoluteValue(float[][] a) {
+
+        for (int i = 0; i < a.length; ++i) {
+            for (int j = 0; j < a[i].length; ++j) {
+                if (a[i][j] < 0) {
+                    a[i][j] *= -1;
+                }
+            }
+        }
+    }
+
 }

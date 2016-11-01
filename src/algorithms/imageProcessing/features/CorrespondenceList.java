@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.features;
 
+import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.util.PairInt;
 import java.util.List;
 
@@ -100,5 +101,16 @@ public class CorrespondenceList {
     public List<PairInt> getPoints2() {
         return points2;
     }
-    
+   
+    public TransformationParameters getParameters() {
+        
+        TransformationParameters params =
+            new TransformationParameters();
+        params.setRotationInDegrees(this.rotationInDegrees);
+        params.setScale(this.scale);
+        params.setTranslationX(this.translationX);
+        params.setTranslationY(this.translationY);
+        
+        return params;
+    }
 }

@@ -128,6 +128,11 @@ public class ORB {
           half-octave or quarter-octave pyramids (Lowe 2004; Triggs 2004)
     */
 
+final static PairInt tp2 = new PairInt(38, 72);
+final static PairInt tp1 = new PairInt(33, 61);
+
+    protected boolean repeatScale1At2 = true;
+    
     // these could be made static across all instances, but needs guards for synchronous initialization
     protected int[][] OFAST_MASK = null;
     protected int[] OFAST_UMAX = null;
@@ -135,6 +140,7 @@ public class ORB {
     protected int[][] POS1 = null;
 
     protected int fastN = 9;
+    // fastThreshold should probably be <= 0.01 for low res images
     protected float fastThreshold = 0.08f;
     protected final float harrisK = 0.04f;
     protected final int nKeypoints;
@@ -342,11 +348,27 @@ public class ORB {
                     indexes[count] = new PairInt(idx1, idx2);
                     scores[count] = hResp.get(idx2);
                     count++;
+ {
+float scale = scalesList.get(idx1).get(idx2);
+int t1XS = Math.round((float)tp1.getX()/scale);
+int t1YS = Math.round((float)tp1.getY()/scale);
+int x = keypoints1List.get(idx1).get(idx2);
+int y = keypoints0List.get(idx1).get(idx2);
+if (Math.abs(t1XS - x) < 3 && Math.abs(t1YS - y) < 3) {
+    System.out.println("for scale=" + scale + " resp=" + hResp.get(idx2));
+}
+ }                   
                 }
             }
 
             QuickSort.sortBy1stArg(scores, indexes);
 
+            System.out.println("--> strongest response=" + 
+                scores[scores.length - 1] 
+                + " and response at last "
+                + "requested keypoint=" 
+                + scores[scores.length - nKeypoints - 1]);
+            
             List<TIntList> keypoints0List2 = new ArrayList<TIntList>();
             List<TIntList> keypoints1List2 = new ArrayList<TIntList>();
             List<TDoubleList> orientationsList2 = new ArrayList<TDoubleList>();
@@ -629,7 +651,7 @@ public class ORB {
                     float y0 = (float)pyramid.get(octave - 1).a[0].length/
                         (float)pyramid.get(octave).a[0].length;
                     scale = prevScl * (x0 + y0)/2.f;
-                    //System.out.println("scl=" + scale + " prevScl=" + prevScl);
+                    System.out.println("scl=" + scale + " prevScl=" + prevScl);
                     prevScl = scale;
                 }
             }
@@ -639,7 +661,7 @@ public class ORB {
                 continue;
             }
 
-            Resp r = extractFastKeypointsAndHarrisImage(octaveImage);
+            Resp r = extractFastKeypointsAndHarrisImage(octaveImage, scale);
 
             if ((r == null) || (r.keypoints0 == null) || r.keypoints0.isEmpty()) {
                 continue;
@@ -647,7 +669,44 @@ public class ORB {
 
             System.out.println("  octave " + octave + " nKeypoints="
                 + r.keypoints0.size());
-        
+
+            if (repeatScale1At2 && (octave == 1)) {
+                //NOTE: an experimental look at making sure strong responses
+                // in scale=1 image are also sampled at octave=1.
+                // If this corrects a problem, then the selection of keypoints
+                // from fast response needs to be improved for lower resolution
+                // images.
+                
+                int n0 = keypoints0List.get(0).size();
+                Set<PairInt> points0 = new HashSet<PairInt>(n0);
+                PairInt[] pointsA0 = new PairInt[n0];
+                float[] r0 = new float[n0];
+                for (int i = 0; i < n0; ++i) {
+                    int row = keypoints0List.get(0).get(i);
+                    int col = keypoints1List.get(0).get(i);
+                    PairInt p = new PairInt(row, col);
+                    points0.add(p);
+                    pointsA0[i] = p;
+                    r0[i] = this.harrisResponses.get(0).get(i);
+                }
+                QuickSort.sortBy1stArg(r0, pointsA0);
+                System.out.println("strongest response=" +
+                    r0[r0.length - 1] + " median response=" +
+                    r0[r0.length/2]
+                    + " and fast response thresh=" + this.fastThreshold
+                );
+                int t1XS = Math.round((float)tp1.getX()/scale);
+                int t1YS = Math.round((float)tp1.getY()/scale);
+                for (int i = 0; i < n0; ++i) {
+                    int x = pointsA0[i].getY();
+                    int y = pointsA0[i].getX();
+                    if (Math.abs(x - t1XS) < 3 && Math.abs(y - t1YS) < 3) {
+                        System.out.println(" oct 0 tie response=" + r0[i]);
+                    }
+                }
+                int z = 1;
+            }
+            
             //mask of length orientations.size() containing a 1 or 0
             // indicating if pixels are within the image (``True``) or in the
             // border region of the image (``False``).
@@ -891,7 +950,8 @@ public class ORB {
      * @param octaveImage
      * @return
      */
-    private Resp extractFastKeypointsAndHarrisImage(float[][] octaveImage) {
+    private Resp extractFastKeypointsAndHarrisImage(float[][] octaveImage,
+        float scale) {
 
         float[][] fastResponse = cornerFast(octaveImage, fastN, fastThreshold);
 
@@ -901,6 +961,19 @@ public class ORB {
         TIntList keypoints0 = new TIntArrayList();
         TIntList keypoints1 = new TIntArrayList();
 
+int t2XS = Math.round((float)tp2.getX()/scale);
+int t2YS = Math.round((float)tp2.getY()/scale);
+System.out.println(
+String.format("srch img tie (%d,%d) fr=%.4f", t2XS, t2YS, 
+    fastResponse[t2YS][t2XS])
+);
+int t1XS = Math.round((float)tp1.getX()/scale);
+int t1YS = Math.round((float)tp1.getY()/scale);
+System.out.println(
+String.format("template img tie (%d,%d) fr=%.4f (scale=%.1f)", t1XS, t1YS, 
+    fastResponse[t1YS][t1XS], scale)
+);
+
         // list of format [row, col, ...] of filtered maxima ordered by intensity
         cornerPeaks(fastResponse, 1, keypoints0, keypoints1);
         if (keypoints0.isEmpty()) {
@@ -909,6 +982,14 @@ public class ORB {
 
         maskCoordinates(keypoints0, keypoints1, nRows, nCols, 8);//16);
 
+if (keypoints0.contains(t2YS) && keypoints1.contains(t2XS)
+    && (keypoints1.get( keypoints0.indexOf(t2YS)) == t2XS)) {
+    System.out.println("found srch img tie in fast response corner");
+}
+if (keypoints0.contains(t1YS) && keypoints1.contains(t1XS)
+    && (keypoints1.get( keypoints0.indexOf(t1YS)) == t1XS)) {
+    System.out.println("found template img tie in fast response corner");
+}
         
         // Standard deviation used for the Gaussian kernel, which is used as
         // weighting function for the auto-correlation matrix.
@@ -926,6 +1007,15 @@ public class ORB {
             imageProcessor.createFirstDerivKeyPoints(
                 tensorComponents, keypoints0, keypoints1, hLimit);
         
+if (keypoints0.contains(t2YS) && keypoints1.contains(t2XS)
+    && (keypoints1.get( keypoints0.indexOf(t2YS)) == t2XS)) {
+    System.out.println("found srch img tie in in or before first deriv");
+}
+if (keypoints0.contains(t1YS) && keypoints1.contains(t1XS)
+    && (keypoints1.get( keypoints0.indexOf(t1YS)) == t1XS)) {
+    System.out.println("found template img tie in in or before first deriv");
+}
+
             /*
             try {
                 float factor = 255.f;
@@ -945,7 +1035,7 @@ public class ORB {
                     img2.setRGB(x, y, 255, 0, 0);
                 }
                 System.out.println("nRows=" + nRows + " nCols=" + nCols);
-                algorithms.imageProcessing.ImageDisplayer.displayImage("curvature", img2);
+                algorithms.imageProcessing.ImageDisplayer.displayImage("first deriv", img2);
                 int z = 1;
             } catch(Exception e) {
                 System.out.println(e.getMessage());
@@ -967,7 +1057,16 @@ public class ORB {
             imageProcessor.createCurvatureKeyPoints(
                 tensorComponents, keypoints0, keypoints1, 
                 curvatureThresh);
-    
+ 
+if (keypoints0.contains(t2YS) && keypoints1.contains(t2XS)
+    && (keypoints1.get( keypoints0.indexOf(t2YS)) == t2XS)) {
+    System.out.println("found srch img tie in in or before curvature");
+}
+if (keypoints0.contains(t1YS) && keypoints1.contains(t1XS)
+    && (keypoints1.get( keypoints0.indexOf(t1YS)) == t1XS)) {
+    System.out.println("found srch img tie in in or before curvature");
+}
+
             /*try {
                 float factor = 255.f;
                 Image img2 = new Image(nRows, nCols);
@@ -1000,6 +1099,19 @@ public class ORB {
         // size is same a octaveImage
         float[][] harrisResponse = cornerHarris(octaveImage, detA, traceA);
 
+        // remove redundant keypoints
+        Set<PairInt> exists = new HashSet<PairInt>();
+        for (int i = (keypoints0.size() - 1); i > -1; --i) {
+            PairInt p = new PairInt(keypoints0.get(i),
+               keypoints1.get(i));
+            if (exists.contains(p)) {
+                keypoints0.removeAt(i);
+                keypoints1.removeAt(i);
+                continue;
+            }
+            exists.add(p);
+        }
+        
         Resp r2 = new Resp();
         r2.keypoints0 = keypoints0;
         r2.keypoints1 = keypoints1;
@@ -1932,6 +2044,8 @@ public class ORB {
         
         assert(d1.length == d2.length);
         
+        int nBands = d1.length;
+        
         int n1 = d1[0].descriptors.length;
         int n2 = d2[0].descriptors.length;
         
@@ -1946,18 +2060,21 @@ public class ORB {
         int[] costs = new int[nTot];
         int count = 0;
         for (int i = 0; i < n1; ++i) {
+PairInt p1 = keypoints1.get(i);
+boolean t1 = distance(p1, tp1) < 3;
+if (t1)
+System.out.println("found tie in template");
             for (int j = 0; j < n2; ++j) {
                 indexes[count] = new PairInt(i, j);
                 costs[count] = cost[i][j];
-                count++;
-if (keypoints2.get(j).getX() < 60) {
-    System.out.println("***" +
-" p1=" + keypoints1.get(i) + 
-" p2=" + keypoints2.get(j) +
- " cost=" + costs[count-1]
-        + " i=" + i + " j=" + j
-    );
-}                
+                count++;                
+PairInt p2 = keypoints2.get(j);
+boolean t2 = distance(p2, tp2) < 3;
+if (t1 && t2) {
+System.out.println("tie c=" + costs[count - 1]);
+} else if (t2) {
+    System.out.println("found tie in search image");
+}
             }
         }
         assert(count == nTot);
@@ -1978,10 +2095,13 @@ if (keypoints2.get(j).getX() < 60) {
         TIntObjectMap<TObjectIntMap<PairInt>> idx1P2CostMap = 
             new TIntObjectHashMap<TObjectIntMap<PairInt>>();
         
+        // for scale 75%, 0.25*3*256 = 192
+        int diffLimit = Math.round(0.25f * nBands * 256);
+        
         // visit lowest costs (== differences) first
         for (int i = 0; i < nTot; ++i) {
-            if (costs[i] > 126 
-                || count > 45
+            if (costs[i] > diffLimit 
+                //|| count > 45
                 ) {
                 break;
             }
@@ -2062,6 +2182,8 @@ if (keypoints2.get(j).getX() < 60) {
         
         assert(d1.length == d2.length);
         
+        int nBands = d1.length;
+        
         int n1 = d1[0].descriptors.length;
         int n2 = d2[0].descriptors.length;
         
@@ -2107,10 +2229,13 @@ if (keypoints2.get(j).getX() < 60) {
         TIntObjectMap<TObjectIntMap<PairInt>> idx1P2CostMap = 
             new TIntObjectHashMap<TObjectIntMap<PairInt>>();
         
+        // for scale 75%, 0.25*3*256 = 192
+        int diffLimit = Math.round(0.25f * nBands * 256);
+        
         // visit lowest costs (== differences) first
         for (int i = 0; i < nTot; ++i) {
-            if (costs[i] > 126 
-                || count > 45
+            if (costs[i] > diffLimit 
+                //|| count > 45
                 ) {
                 break;
             }
@@ -2584,120 +2709,6 @@ if (keypoints2.get(j).getX() < 60) {
         return cost;
     }
     
-    private static String exploreRANSACFilter(PairInt[] kpIdxs, 
-        List<PairInt> keypoints1, List<PairInt> keypoints2) {
-        
-        int n = kpIdxs.length;
-        
-        // ---- too few points, return empty string ----
-        if (n < 2) {
-            return "";
-        }
-        
-        PairIntArray left = new PairIntArray(n);
-        PairIntArray right = new PairIntArray(n);
-        populateCorrespondence(left, right, kpIdxs, keypoints1, keypoints2);
-        
-        // ---- too few points for ransac, return euclid trans w/ outlier removal ----
-        if (n < 7 || n >= 1790) {
-            
-            MatchedPointsTransformationCalculator tc =
-                new MatchedPointsTransformationCalculator();
-            
-            float[] weights = new float[n];
-            Arrays.fill(weights, 1.f/(float)n);
-            
-            TIntList inlierIndexes = new TIntArrayList();
-            
-            TransformationParameters params = tc.calulateEuclidean(left, 
-                right, weights, 0, 0, new float[4], inlierIndexes);
-            
-            if (params == null) {
-                return "- no feasible euclidean trans --";
-            }
-            
-            StringBuilder sb = new StringBuilder();
-            for (int i : inlierIndexes.toArray()) {
-                int x1 = left.getX(i);
-                int y1 = left.getY(i);
-                int x2 = right.getX(i);
-                int y2 = right.getY(i);
-                sb.append(String.format("   euclidean: %d (%d,%d) (%d,%d)\n",
-                    i, x1, y1, x2, y2));
-            }
-            
-            return sb.toString();
-        }
-        
-        // index to lookup order
-        TObjectIntMap<QuadInt> indexesMap = new TObjectIntHashMap<QuadInt>();
-        for (int i = 0; i < left.getN(); ++i) {
-            QuadInt q = new QuadInt(left.getX(i), left.getY(i),
-                right.getX(i), right.getY(i));
-            indexesMap.put(q, i);
-        }
-        
-        // ------ euclidean solution ----
-        PairIntArray outLeft = new PairIntArray(n);
-        PairIntArray outRight = new PairIntArray(n);
-        
-        RANSACEuclideanSolver solver = new RANSACEuclideanSolver();
-        ITransformationFit fit = solver.calculateEuclideanTransformation(
-            left, right, outLeft, outRight);
-        
-        StringBuilder sb = new StringBuilder();
-        
-        if (fit != null) {
-            int[] indexes = new int[outLeft.getN()];
-            QuadInt[] qi = new QuadInt[outLeft.getN()];
-            for (int i = 0; i < outLeft.getN(); ++i) {
-                int x1 = outLeft.getX(i);
-                int y1 = outLeft.getY(i);
-                int x2 = outRight.getX(i);
-                int y2 = outRight.getY(i);
-                QuadInt q = new QuadInt(x1, y1, x2, y2);
-                int idx = indexesMap.get(q);
-                indexes[i] = idx;
-                qi[i] = q;
-            }
-            QuickSort.sortBy1stArg(indexes, qi);
-            for (QuadInt q : qi) {
-                sb.append(String.format("   ransac euclidean: (%d,%d) (%d,%d)\n", 
-                    q.getA(), q.getB(), q.getC(), q.getD()));
-            }
-        }
-        
-        // ---- epipolar solution ---------
-        outLeft = new PairIntArray(n);
-        outRight = new PairIntArray(n);
-        
-        RANSACSolver solver2 = new RANSACSolver();
-        ITransformationFit fit2 = solver2.calculateEpipolarProjection(
-            left, right, outLeft, outRight);
-        
-        if (fit2 != null) {
-            int[] indexes = new int[outLeft.getN()];
-            QuadInt[] qi = new QuadInt[outLeft.getN()];
-            for (int i = 0; i < outLeft.getN(); ++i) {
-                int x1 = outLeft.getX(i);
-                int y1 = outLeft.getY(i);
-                int x2 = outRight.getX(i);
-                int y2 = outRight.getY(i);
-                QuadInt q = new QuadInt(x1, y1, x2, y2);
-                int idx = indexesMap.get(q);
-                indexes[i] = idx;
-                qi[i] = q;
-            }
-            QuickSort.sortBy1stArg(indexes, qi);
-            for (QuadInt q : qi) {
-                sb.append(String.format("   ransac epipolar: (%d,%d) (%d,%d)\n", 
-                    q.getA(), q.getB(), q.getC(), q.getD()));
-            }
-        }
-        
-        return sb.toString();
-    }
-
     private static void populateCorrespondence(PairIntArray left, 
         PairIntArray right, PairInt[] kpIdxs, 
         List<PairInt> keypoints1, List<PairInt> keypoints2) {
@@ -2709,193 +2720,7 @@ if (keypoints2.get(j).getX() < 60) {
             right.add(p2.getX(), p2.getY());
         }
     }
-    
-    private static int removeIdenticalPairs(int[] costs, PairInt[] kpIdxs) {
-        
-        assert(costs.length == kpIdxs.length);
-        
-        int[] costsCp = new int[costs.length];
-        PairInt[] kpIdxsCp = new PairInt[kpIdxs.length];
-        
-        Set<PairInt> set = new HashSet<PairInt>();
-        int count = 0;
-        for (int i = 0; i < kpIdxs.length; ++i) {
-            PairInt p = kpIdxs[i];
-            if (set.contains(p)) {
-                continue;
-            }
-            set.add(p);
-            costsCp[count] = costs[i];
-            kpIdxsCp[count] = p;
-            count++;
-        }
-        if (count < costs.length) {
-            System.arraycopy(costsCp, 0, costs, 0, count);
-            System.arraycopy(kpIdxsCp, 0, kpIdxs, 0, count);
-        }
-        
-        return count;
-    }
-    
-    // fixed radius of 1 for now
-    private static int filterByRadius(int[] costs, PairInt[] kpIdxs,
-        List<PairInt> keypoints2) {
-        
-        assert(costs.length == kpIdxs.length);
-        
-        Set<PairInt> points2 = new HashSet<PairInt>();
-        for (int i = 0; i < kpIdxs.length; ++i) {
-            points2.add(keypoints2.get(kpIdxs[i].getY()));
-        }
-        
-        int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;
-        
-        Set<PairInt> rm = new HashSet<PairInt>();
-        
-        for (int i = 0; i < kpIdxs.length; ++i) {
-            PairInt p2 = keypoints2.get(kpIdxs[i].getY());
-            if (rm.contains(p2)) {
-                continue;
-            }
-            for (int k = 0; k < dxs.length; ++k) {
-                int x2 = p2.getX() + dxs[k];
-                int y2 = p2.getY() + dys[k];
-                PairInt p22 = new PairInt(x2, y2);
-                if (points2.contains(p22)) {
-                    rm.add(p22);
-                }
-            }
-        }
-        
-        if (rm.isEmpty()) {
-            return kpIdxs.length;
-        }
-        
-        int n = kpIdxs.length - rm.size();
-        
-        int[] costsCp = new int[n];
-        PairInt[] kpIdxsCp = new PairInt[n];
-        
-        int count = 0;
-        for (int i = 0; i < kpIdxs.length; ++i) {
-            PairInt p2 = keypoints2.get(kpIdxs[i].getY());
-            if (rm.contains(p2)) {
-                continue;
-            }
-            costsCp[count] = costs[i];
-            kpIdxsCp[count] = kpIdxs[i];
-            count++;
-        }
-        if (count < costs.length) {
-            System.arraycopy(costsCp, 0, costs, 0, count);
-            System.arraycopy(kpIdxsCp, 0, kpIdxs, 0, count);
-        }
-        
-        return count;
-    }
-
-    private static int filterToTopUniqueKeypoints2(int[] costs, 
-        PairInt[] kpIdxs, List<PairInt> keypoints2, int topK) {
-        
-        int count = 0;
-        
-        Map<PairInt, TIntSet> k2IndexMap = new HashMap<PairInt, TIntSet>();
-        for (int i = 0; i < kpIdxs.length; ++i) {
-            PairInt p2 = keypoints2.get(kpIdxs[i].getY());
-            TIntSet set = k2IndexMap.get(p2);
-            if (set != null && set.size() == topK) {
-                continue;
-            }
-            if (set == null) {
-                set = new TIntHashSet();
-                k2IndexMap.put(p2, set);
-            }
-            set.add(i);
-            count++;
-        }
-        
-        if (count == kpIdxs.length) {
-            return count;
-        }
-        
-        int[] costsCp = new int[count];
-        PairInt[] kpIdxsCp = new PairInt[count];
-        
-        count = 0;
-        for (int i = 0; i < kpIdxs.length; ++i) {
-            PairInt p2 = keypoints2.get(kpIdxs[i].getY());
-            TIntSet set = k2IndexMap.get(p2);
-            if (!set.contains(i)) {
-                continue;
-            }
-            costsCp[count] = costs[i];
-            kpIdxsCp[count] = kpIdxs[i];
-            count++;
-        }
-        if (count < costs.length) {
-            System.arraycopy(costsCp, 0, costs, 0, count);
-            System.arraycopy(kpIdxsCp, 0, kpIdxs, 0, count);
-        }
-        
-        return count;
-    }
-    
-    private static int filterToTopUniqueKeypoints1(int[] costs, 
-        PairInt[] kpIdxs, List<PairInt> keypoints1, int topK) {
-        
-        int count = 0;
-        
-        Map<PairInt, TIntSet> k1IndexMap = new HashMap<PairInt, TIntSet>();
-        for (int i = 0; i < kpIdxs.length; ++i) {
-            PairInt p1 = keypoints1.get(kpIdxs[i].getX());
-            TIntSet set = k1IndexMap.get(p1);
-            if (set != null && set.size() == topK) {
-                continue;
-            }
-            if (set == null) {
-                set = new TIntHashSet();
-                k1IndexMap.put(p1, set);
-            }
-            set.add(i);
-            count++;
-        }
-        
-        if (count == kpIdxs.length) {
-            return count;
-        }
-        
-        int[] costsCp = new int[count];
-        PairInt[] kpIdxsCp = new PairInt[count];
-        
-        count = 0;
-        for (int i = 0; i < kpIdxs.length; ++i) {
-            PairInt p1 = keypoints1.get(kpIdxs[i].getX());
-            TIntSet set = k1IndexMap.get(p1);
-            if (!set.contains(i)) {
-                continue;
-            }
-            costsCp[count] = costs[i];
-            kpIdxsCp[count] = kpIdxs[i];
-            count++;
-        }
-        if (count < costs.length) {
-            System.arraycopy(costsCp, 0, costs, 0, count);
-            System.arraycopy(kpIdxsCp, 0, kpIdxs, 0, count);
-        }
-        
-        return count;
-    }
-    
-    private static void assertIndexRange(PairInt[] kpIdxs, int k1Size, int k2Size) {
-        
-        for (PairInt p12 : kpIdxs) {
-            assert(p12.getX() < k1Size);
-            assert(p12.getY() < k2Size);
-        }
-        
-    }
-    
+   
     private static double distance(int x, int y, PairInt b) {
     
         int diffX = x - b.getX();
@@ -2967,4 +2792,9 @@ if (keypoints2.get(j).getX() < 60) {
         return minCostCor;
     }
 
+    private static int distance(PairInt p1, PairInt p2) {
+        int diffX = p1.getX() - p2.getX();
+        int diffY = p1.getY() - p2.getY();
+        return (int)Math.sqrt(diffX * diffX + diffY * diffY);
+    }
 }

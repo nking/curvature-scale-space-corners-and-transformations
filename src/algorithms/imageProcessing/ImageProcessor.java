@@ -4514,6 +4514,31 @@ if (sum > 511) {
         }
     }
 
+    public Set<PairInt> getNeighbors(Image input, PairInt p) {
+
+        int w = input.getWidth();
+        int h = input.getHeight();
+
+        int x = p.getX();
+        int y = p.getY();
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        Set<PairInt> nbrs = new HashSet<PairInt>();
+        
+        for (int k = 0; k < dxs.length; ++k) {
+            int x2 = x + dxs[k];
+            int y2 = y + dys[k];
+            if (x2 < 0 || y2 < 0 || (x2 > (w - 1)) || (y2 > (h - 1))) {
+                continue;
+            }
+            nbrs.add(new PairInt(x2, y2));
+        }
+        
+        return nbrs;
+    }
+
     /**
      * NOT YET TESTED
      *
@@ -8032,6 +8057,8 @@ if (sum > 511) {
         
         /*{// DEBUG
             float[][] a = copy(curvature);
+            System.out.println("min=" + MiscMath.findMin(a) + " max=" + MiscMath.findMax(a));
+            MiscMath.applyAbsoluteValue(a);
             MiscMath.applyRescale(a, 0, 255);
             MiscDebug.writeImage(a, "_curvature_" 
                 + MiscDebug.getCurrentTimeFormatted());
