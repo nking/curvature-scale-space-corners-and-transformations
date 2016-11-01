@@ -995,17 +995,6 @@ public class ORBTest extends TestCase {
             int[][] costMatrix2 = ORB.calcDescriptorCostMatrix(
                 desc0.descriptors, desc2.descriptors);
 
-            // orientations for same feature at another scale
-            // are very different.
-            // -- is there an error in the calculation?
-            //    reread paper and code...
-            // -- looking at same image at different scales and
-            //    a fixed orientation from the larger image.
-            //    --> may need more images in the pyramid...currently scale factor
-            //        is 2 and that may need to be smaller
-            //    --> the fixed orientation should tell whether 
-            //        providing descriptors with dithered orientations would improve soln
-
             boolean foundCenterCostIsZero = false;
             
             for (int j = 0; j < costMatrix2.length; ++j) {
