@@ -1291,6 +1291,81 @@ public class ImageProcessorTest extends TestCase {
         ImageProcessor imageProcessor = new ImageProcessor();
         imageProcessor.exploreTextures();
         
-        int z = 1;
+    }
+    
+    public void testBilinearDownSampling() {
+        
+        int w1 = 10;
+        int h1 = 20;
+        int w2 = 7;
+        int h2 = 14;
+        
+        float[][] a = new float[w1][h1];
+        for (int i = 0; i < w1; ++i) {
+            a[i] = new float[h1];
+            Arrays.fill(a[i], 10);
+        }
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        float[][] b = imageProcessor.bilinearDownSampling(a, w1, h1, w2, h2);
+        
+        assertEquals(w2, b.length);
+        assertEquals(h2, b[0].length);
+        
+        for (int i = 0; i < w2; ++i) {
+            for (int j = 0; j < h2; ++j) {
+                assertEquals(10.0f, b[i][j]);
+            }
+        }
+    }
+    
+    public void testBilinearDownSampling2() {
+        
+        int w1 = 10;
+        int h1 = 10;
+        int w2 = 5;
+        int h2 = 5;
+        
+        float[][] a = new float[w1][h1];
+        for (int i = 0; i < w1; ++i) {
+            a[i] = new float[h1];
+        }
+        for (int i = 0; i < w1; i += 4) {
+            for (int j = 0; j < h1; j += 4) {
+                a[i][j] = 10;
+                if (j + 1 < h1) {
+                    a[i][j + 1] = 10;
+                }
+                if (i + 1 < w1) {
+                    a[i + 1][j] = 10;
+                }
+                if (j + 1 < h1 && i + 1 < w1) {
+                    a[i + 1][j + 1] = 10;
+                }
+            }
+        }
+        /*
+        for (int i = 0; i < w1; ++i) {
+            StringBuilder sb = new StringBuilder("a col=").append(i);
+            for (int j = 0; j < h1; ++j) {
+                sb.append(String.format(" [%d]=%.1f", j, a[i][j]));
+            }
+            System.out.println(sb.toString());
+        }*/
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        float[][] b = imageProcessor.bilinearDownSampling(a, w1, h1, w2, h2);
+        
+        assertEquals(w2, b.length);
+        assertEquals(h2, b[0].length);
+        
+        for (int i = 0; i < w2; i += 2) {
+            //StringBuilder sb = new StringBuilder("b col=").append(i);
+            for (int j = 0; j < h2; j += 2) {
+                //sb.append(String.format(" [%d]=%.1f", j, b[i][j]));
+                assertEquals(10.0f, b[i][j]);
+            }
+            //System.out.println(sb.toString());
+        }
     }
 }

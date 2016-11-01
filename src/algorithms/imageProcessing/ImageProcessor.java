@@ -8891,6 +8891,60 @@ if (sum > 511) {
         return points;
     }
 
+    /**
+     * use bilinear interpolation to downsample a two dimensional array.
+     * 
+     * adapted from pseudocode at
+     * http://tech-algorithm.com/articles/bilinear-image-scaling/
+    
+     * @param pixels
+     * @param w length of first dimension of input array pixels
+     * @param h length of second dimension of input array pixels
+     * @param w2 output length of first dimension of array
+     * @param h2 output length of second dimension of array
+     * @return 
+     */
+    public float[][] bilinearDownSampling(float[][] pixels, int w, int h, 
+        int w2, int h2) {
+        
+        float[][] out = new float[w2][h2];
+        for (int i = 0; i < w2; ++i) {
+            out[i] = new float[h2];  
+        }
+        
+        int x, y;
+        float A, B, C, D, gray;
+        
+        float xRatio = (float)w/(float)w2;
+        float yRatio = (float)h/(float)h2;
+        float xDiff, yDiff;
+        int offset = 0 ;
+        for (int i = 0; i < w2; i++) {
+            for (int j = 0; j < h2; j++) {
+                x = (int)(xRatio * i);
+                y = (int)(yRatio * j);
+                xDiff = (xRatio * i) - x;
+                yDiff = (yRatio * j) - y;
+
+                A = pixels[x][y];
+                B = pixels[x][y+1];
+                C = pixels[x+1][y];
+                D = pixels[x+1][y+1];
+
+                // Y = A(1-w)(1-h) + B(w)(1-h) + C(h)(1-w) + Dwh
+                gray = 
+                    A * (1 - xDiff) * (1 - yDiff) + 
+                    C * (xDiff) * (1 - yDiff) +
+                    B * (yDiff) * (1 - xDiff) +  
+                    D * (xDiff * yDiff);
+
+                out[i][j] = gray;                                   
+            }
+        }
+        
+        return out;
+    }
+    
     // TODO: implement the methods in 
     // http://www.merl.com/publications/docs/TR2008-030.pdf
     // for an O(n) filter.
