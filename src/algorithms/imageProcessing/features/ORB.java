@@ -123,9 +123,6 @@ public class ORB {
           half-octave or quarter-octave pyramids (Lowe 2004; Triggs 2004)
     */
 
-final static PairInt tp2 = new PairInt(38, 72);
-final static PairInt tp1 = new PairInt(33, 61);
-
     protected boolean repeatScale1At2 = true;
     
     // these could be made static across all instances, but needs guards for synchronous initialization
@@ -212,7 +209,7 @@ final static PairInt tp1 = new PairInt(33, 61);
     
     protected boolean doCreateCurvatureKeyPoints = false;
 
-    protected final int nPyramidB = 3;
+    protected int nPyramidB = 3;
     
     /**
      * Still testing the class, there may be bugs present.
@@ -232,6 +229,16 @@ final static PairInt tp1 = new PairInt(33, 61);
         this.fastThreshold = threshold;
     }
 
+    /**
+     * override the number of divisions of scale to add in
+     * between the powers of 2 scalings.  The default number
+     * is 3;
+     * @param n 
+     */
+    public void overridePyamidalExtraN(int n) {
+        this.nPyramidB = n;
+    }
+    
     /**
      * set option to not create descriptors.
      */
@@ -345,16 +352,6 @@ final static PairInt tp1 = new PairInt(33, 61);
                     indexes[count] = new PairInt(idx1, idx2);
                     scores[count] = hResp.get(idx2);
                     count++;
- {
-float scale = scalesList.get(idx1).get(idx2);
-int t1XS = Math.round((float)tp1.getX()/scale);
-int t1YS = Math.round((float)tp1.getY()/scale);
-int x = keypoints1List.get(idx1).get(idx2);
-int y = keypoints0List.get(idx1).get(idx2);
-if (Math.abs(t1XS - x) < 3 && Math.abs(t1YS - y) < 3) {
-    System.out.println("for scale=" + scale + " resp=" + hResp.get(idx2));
-}
- }                   
                 }
             }
 
@@ -670,43 +667,6 @@ if (Math.abs(t1XS - x) < 3 && Math.abs(t1YS - y) < 3) {
 
             System.out.println("  octave " + octave + " nKeypoints="
                 + r.keypoints0.size());
-
-            if (repeatScale1At2 && (octave == 1)) {
-                //NOTE: an experimental look at making sure strong responses
-                // in scale=1 image are also sampled at octave=1.
-                // If this corrects a problem, then the selection of keypoints
-                // from fast response needs to be improved for lower resolution
-                // images.
-                
-                int n0 = keypoints0List.get(0).size();
-                Set<PairInt> points0 = new HashSet<PairInt>(n0);
-                PairInt[] pointsA0 = new PairInt[n0];
-                float[] r0 = new float[n0];
-                for (int i = 0; i < n0; ++i) {
-                    int row = keypoints0List.get(0).get(i);
-                    int col = keypoints1List.get(0).get(i);
-                    PairInt p = new PairInt(row, col);
-                    points0.add(p);
-                    pointsA0[i] = p;
-                    r0[i] = this.harrisResponses.get(0).get(i);
-                }
-                QuickSort.sortBy1stArg(r0, pointsA0);
-                System.out.println("strongest response=" +
-                    r0[r0.length - 1] + " median response=" +
-                    r0[r0.length/2]
-                    + " and fast response thresh=" + this.fastThreshold
-                );
-                int t1XS = Math.round((float)tp1.getX()/scale);
-                int t1YS = Math.round((float)tp1.getY()/scale);
-                for (int i = 0; i < n0; ++i) {
-                    int x = pointsA0[i].getY();
-                    int y = pointsA0[i].getX();
-                    if (Math.abs(x - t1XS) < 3 && Math.abs(y - t1YS) < 3) {
-                        System.out.println(" oct 0 tie response=" + r0[i]);
-                    }
-                }
-                int z = 1;
-            }
             
             //mask of length orientations.size() containing a 1 or 0
             // indicating if pixels are within the image (``True``) or in the
@@ -962,19 +922,6 @@ if (Math.abs(t1XS - x) < 3 && Math.abs(t1YS - y) < 3) {
         TIntList keypoints0 = new TIntArrayList();
         TIntList keypoints1 = new TIntArrayList();
 
-int t2XS = Math.round((float)tp2.getX()/scale);
-int t2YS = Math.round((float)tp2.getY()/scale);
-System.out.println(
-String.format("srch img tie (%d,%d) fr=%.4f", t2XS, t2YS, 
-    fastResponse[t2YS][t2XS])
-);
-int t1XS = Math.round((float)tp1.getX()/scale);
-int t1YS = Math.round((float)tp1.getY()/scale);
-System.out.println(
-String.format("template img tie (%d,%d) fr=%.4f (scale=%.1f)", t1XS, t1YS, 
-    fastResponse[t1YS][t1XS], scale)
-);
-
         // list of format [row, col, ...] of filtered maxima ordered by intensity
         cornerPeaks(fastResponse, 1, keypoints0, keypoints1);
         if (keypoints0.isEmpty()) {
@@ -982,15 +929,6 @@ String.format("template img tie (%d,%d) fr=%.4f (scale=%.1f)", t1XS, t1YS,
         }
 
         maskCoordinates(keypoints0, keypoints1, nRows, nCols, 8);//16);
-
-if (keypoints0.contains(t2YS) && keypoints1.contains(t2XS)
-    && (keypoints1.get( keypoints0.indexOf(t2YS)) == t2XS)) {
-    System.out.println("found srch img tie in fast response corner");
-}
-if (keypoints0.contains(t1YS) && keypoints1.contains(t1XS)
-    && (keypoints1.get( keypoints0.indexOf(t1YS)) == t1XS)) {
-    System.out.println("found template img tie in fast response corner");
-}
         
         // Standard deviation used for the Gaussian kernel, which is used as
         // weighting function for the auto-correlation matrix.
@@ -1007,15 +945,6 @@ if (keypoints0.contains(t1YS) && keypoints1.contains(t1XS)
             
             imageProcessor.createFirstDerivKeyPoints(
                 tensorComponents, keypoints0, keypoints1, hLimit);
-        
-if (keypoints0.contains(t2YS) && keypoints1.contains(t2XS)
-    && (keypoints1.get( keypoints0.indexOf(t2YS)) == t2XS)) {
-    System.out.println("found srch img tie in in or before first deriv");
-}
-if (keypoints0.contains(t1YS) && keypoints1.contains(t1XS)
-    && (keypoints1.get( keypoints0.indexOf(t1YS)) == t1XS)) {
-    System.out.println("found template img tie in in or before first deriv");
-}
 
             /*
             try {
@@ -1058,15 +987,6 @@ if (keypoints0.contains(t1YS) && keypoints1.contains(t1XS)
             imageProcessor.createCurvatureKeyPoints(
                 tensorComponents, keypoints0, keypoints1, 
                 curvatureThresh);
- 
-if (keypoints0.contains(t2YS) && keypoints1.contains(t2XS)
-    && (keypoints1.get( keypoints0.indexOf(t2YS)) == t2XS)) {
-    System.out.println("found srch img tie in in or before curvature");
-}
-if (keypoints0.contains(t1YS) && keypoints1.contains(t1XS)
-    && (keypoints1.get( keypoints0.indexOf(t1YS)) == t1XS)) {
-    System.out.println("found srch img tie in in or before curvature");
-}
 
             /*try {
                 float factor = 255.f;

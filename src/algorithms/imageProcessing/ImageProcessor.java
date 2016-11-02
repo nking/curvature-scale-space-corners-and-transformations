@@ -8974,7 +8974,12 @@ if (sum > 511) {
         
         float f = 1.f/(nBetween + 1);
         
-        for (int i = 1; i < scales.size() - 1; ++i) {
+        int start = 1;
+        if (nBetween > 4) {
+            start = 0;
+        }
+        
+        for (int i = 0; i < scales.size() - 1; ++i) {
             float si = scales.get(i);
             float d = f * (scales.get(i + 1) - si);
             for (int j = 0; j < (nBetween + 1); ++j) {

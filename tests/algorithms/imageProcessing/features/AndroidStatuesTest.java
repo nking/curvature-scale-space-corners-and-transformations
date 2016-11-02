@@ -397,7 +397,7 @@ public class AndroidStatuesTest extends TestCase {
         Descriptors templateDescriptorsH = new Descriptors();
         Descriptors templateDescriptorsS = new Descriptors();
         Descriptors templateDescriptorsV = new Descriptors();
-        extractTemplateORBKeypoints(fileNameRoot0, shape0,
+        extractTemplateORBKeypoints(imgs0[0], shape0,
             templateKeypoints, templateOrientations, 
             templateDescriptorsH, templateDescriptorsS, templateDescriptorsV);
         
@@ -841,7 +841,7 @@ public class AndroidStatuesTest extends TestCase {
         looking at adaptive masks for binary descriptors...
        
         */
-        
+    
         int maxDimension = 256;//512;
         SIGMA sigma = SIGMA.ZEROPOINTFIVE;//SIGMA.ONE;
 
@@ -850,9 +850,14 @@ public class AndroidStatuesTest extends TestCase {
 
         Set<PairInt> shape0 = new HashSet<PairInt>();
 
+        // to compare to "android_statues_01.jpg",
+        //    set this to '2'
+        int binFactor0 = 1;
+        
         String fileNameRoot0 = "android_statues_03_sz1";
         // 1st image is color image, 2nd is masked color image
-        ImageExt[] imgs0 = maskAndBin(fileNameRoot0, 1, shape0);
+        ImageExt[] imgs0 = maskAndBin(fileNameRoot0, 
+            binFactor0, shape0);
 
         int nShape0_0 = shape0.size();
        
@@ -863,26 +868,26 @@ public class AndroidStatuesTest extends TestCase {
         Descriptors templateDescriptorsH = new Descriptors();
         Descriptors templateDescriptorsS = new Descriptors();
         Descriptors templateDescriptorsV = new Descriptors();
-        extractTemplateORBKeypoints(fileNameRoot0, shape0,
+        extractTemplateORBKeypoints(imgs0[0], shape0,
             templateKeypoints, templateOrientations, 
             templateDescriptorsH, templateDescriptorsS, 
             templateDescriptorsV);
  
-        //Image imgTempCP = imgs0[0].copyImage();
+        Image imgTempCP = imgs0[0].copyImage();
         int[][] templateKP = new int[templateKeypoints.size()][];
         for (int i = 0; i < templateKP.length; ++i) {
             templateKP[i] = new int[2];
             PairInt p = templateKeypoints.get(i);
             templateKP[i][1] = p.getY();
             templateKP[i][0] = p.getX();
-            //ImageIOHelper.addPointToImage(p.getX(), p.getY(), imgTempCP, 1, 255, 0, 0);
-            //double angle = templateOrientations.get(i);
-            //int dx = (int)Math.round(3. * Math.cos(angle));
-            //int dy = (int)Math.round(3. * Math.sin(angle));
-            //ImageIOHelper.drawLineInImage(p.getX(), p.getY(), 
-            //    p.getX() + dx, p.getY() + dy, imgTempCP, 0, 255, 255, 0);
+            ImageIOHelper.addPointToImage(p.getX(), p.getY(), imgTempCP, 1, 255, 0, 0);
+            double angle = templateOrientations.get(i);
+            int dx = (int)Math.round(3. * Math.cos(angle));
+            int dy = (int)Math.round(3. * Math.sin(angle));
+            ImageIOHelper.drawLineInImage(p.getX(), p.getY(), 
+                p.getX() + dx, p.getY() + dy, imgTempCP, 0, 255, 255, 0);
         }
-        //MiscDebug.writeImage(imgTempCP, "_filtered_1_" + fileNameRoot0);               
+        MiscDebug.writeImage(imgTempCP, "_filtered_1_" + fileNameRoot0);               
         
         ColorHistogram clrHist = new ColorHistogram();
 
@@ -902,7 +907,7 @@ public class AndroidStatuesTest extends TestCase {
         
         
         String fileName1 = "android_statues_02.jpg";
-        //fileName1 = "android_statues_01.jpg";
+        //fileName1 = "android_statues_01.jpg"; // set binFactor0 to 2
         //fileName1 = "android_statues_04.jpg";
         fileName1 = "android_statues_03.jpg";
 
@@ -942,7 +947,7 @@ public class AndroidStatuesTest extends TestCase {
         //Descriptors descriptorsS = dHSV[1];
         //Descriptors descriptorsV = dHSV[2];
 
-        if (true) {
+        if (false) {
             
             //DEBUG descriptor matching
             
@@ -1127,6 +1132,7 @@ public class AndroidStatuesTest extends TestCase {
                         float szJJ = img.getWidth()/scaleJJ;
                         assertTrue(Math.abs(szII - szJJ) <= 2);
                         found = true;
+                        System.out.println("COST=" + hsvCostMatrix[ii][jj]);
                     }
                 }
             }
@@ -1141,6 +1147,7 @@ public class AndroidStatuesTest extends TestCase {
                         float szJJ = img.getWidth()/scaleJJ;
                         assertTrue(Math.abs(szII - szJJ) <= 5);
                         found = true;
+                        System.out.println("COST=" + hsvCostMatrix[ii][jj]);
                     }
                 }
             }
@@ -1213,7 +1220,7 @@ public class AndroidStatuesTest extends TestCase {
                 templateDescriptorsS, templateDescriptorsV}, 
             dHSV,
             templateKeypoints, keypointsCombined, 1.5f, 
-            0.12f);
+            0.1f);
 
         long t1 = System.currentTimeMillis();
         System.out.println("matching took " + ((t1 - t0)/1000.) + " sec");
@@ -2043,8 +2050,13 @@ public class AndroidStatuesTest extends TestCase {
         String filePath0 = ResourceFinder
             .findFileInTestResources(fileName0);
         ImageExt img0 = ImageIOHelper.readImageExt(filePath0);
-        ImageExt img0Masked = img0.copyToImageExt();
+        
+        img0 = imageProcessor.binImage(img0, binFactor);
+        imgMask0 = imageProcessor.binImage(imgMask0, binFactor);
 
+        
+        ImageExt img0Masked = img0.copyToImageExt();
+        
         assertEquals(imgMask0.getNPixels(), img0.getNPixels());
 
         for (int i = 0; i < imgMask0.getNPixels(); ++i) {
@@ -2054,9 +2066,7 @@ public class AndroidStatuesTest extends TestCase {
                 outputShape.add(new PairInt(imgMask0.getCol(i), imgMask0.getRow(i)));
             }
         }
-
-        img0 = imageProcessor.binImage(img0, binFactor);
-
+        
         return new ImageExt[]{img0, img0Masked};
     }
 
@@ -2585,21 +2595,16 @@ public class AndroidStatuesTest extends TestCase {
         MiscDebug.writeImage(img0, "_template_orb");
     }
 
-    private void extractTemplateORBKeypoints(String fileNameRoot0,
+    private void extractTemplateORBKeypoints(ImageExt img,
         Set<PairInt> shape0, 
         List<PairInt> templateKP, TDoubleList templateOrientations,
         Descriptors templateDescriptorsH, Descriptors templateDescriptorsS,
         Descriptors templateDescriptorsV) throws IOException, Exception {
 
-        String fileName0 = fileNameRoot0 + ".jpg";
-        String filePath0 = ResourceFinder
-            .findFileInTestResources(fileName0);
-        ImageExt img0 = ImageIOHelper.readImageExt(filePath0);
-
         int[] minMaxXY = MiscMath.findMinMaxXY(shape0);
 
-        int w = img0.getWidth();
-        int h = img0.getHeight();
+        int w = img.getWidth();
+        int h = img.getHeight();
         
         int buffer = 20;
 
@@ -2621,7 +2626,7 @@ public class AndroidStatuesTest extends TestCase {
         }
 
         ORBWrapper.extractKeypointsFromSubImage(
-            img0, xLL, yLL, xUR, yUR,
+            img, xLL, yLL, xUR, yUR,
             200,
             //100,
             templateKP, templateOrientations, 
@@ -2632,11 +2637,14 @@ public class AndroidStatuesTest extends TestCase {
             0.001f,
             true);
         
+        ImageExt imgCp = img.copyToImageExt();
+        
         TIntList rm = new TIntArrayList();
         for (int i = 0; i < templateKP.size(); ++i) {
             PairInt p = templateKP.get(i);
             if (shape0.contains(p)) {
-                ImageIOHelper.addPointToImage(p.getX(), p.getY(), img0, 1, 255, 0, 0);
+                ImageIOHelper.addPointToImage(p.getX(), p.getY(), 
+                    imgCp, 1, 255, 0, 0);
             } else {
                 rm.add(i);
                 System.out.println("removing " + p);
@@ -2675,7 +2683,7 @@ public class AndroidStatuesTest extends TestCase {
                 Arrays.copyOf(templateDescriptorsV.descriptors, count);
         }
 
-        MiscDebug.writeImage(img0, "_template_orb");
+        MiscDebug.writeImage(imgCp, "_template_orb");
     }
 
     private TDoubleList extractKeypoints(ImageExt img, 

@@ -137,6 +137,8 @@ public class ORBWrapper {
         
         orb.overrideToCreateCurvaturePoints();
         
+        //orb.overridePyamidalExtraN(19);
+        
         orb.detectAndExtract(subImage);
 
         List<PairInt> kp = orb.getAllKeyPoints();
