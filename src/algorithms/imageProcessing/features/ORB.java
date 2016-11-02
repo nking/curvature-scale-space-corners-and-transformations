@@ -5,18 +5,14 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.MedianTransform;
 import algorithms.imageProcessing.StructureTensor;
-import algorithms.imageProcessing.transform.ITransformationFit;
 import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
-import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.search.NearestNeighbor2D;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.QuadInt;
 import algorithms.util.TwoDFloatArray;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.list.TDoubleList;
@@ -36,10 +32,8 @@ import gnu.trove.set.hash.TIntHashSet;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -452,15 +446,16 @@ if (Math.abs(t1XS - x) < 3 && Math.abs(t1YS - y) < 3) {
         GreyscaleImage imageG = image.copyGreenToGreyscale();
         GreyscaleImage imageB = image.copyBlueToGreyscale();
      
-        List<GreyscaleImage> outputR = new ArrayList<GreyscaleImage>();
-        MedianTransform mt = new MedianTransform();
-        mt.multiscalePyramidalMedianTransform2(imageR, outputR, decimationLimit);
-
-        List<GreyscaleImage> outputG = new ArrayList<GreyscaleImage>();
-        mt.multiscalePyramidalMedianTransform2(imageG, outputG, decimationLimit);
+        ImageProcessor imageProcessor = new ImageProcessor();
         
-        List<GreyscaleImage> outputB = new ArrayList<GreyscaleImage>();
-        mt.multiscalePyramidalMedianTransform2(imageB, outputB, decimationLimit);
+        List<GreyscaleImage> outputR = imageProcessor.buildPyramid2(
+            imageR, decimationLimit);
+        
+        List<GreyscaleImage> outputG = imageProcessor.buildPyramid2(
+            imageG, decimationLimit);
+        
+        List<GreyscaleImage> outputB = imageProcessor.buildPyramid2(
+            imageB, decimationLimit);
         
         float[] hsv = new float[3];
         
@@ -505,12 +500,15 @@ if (Math.abs(t1XS - x) < 3 && Math.abs(t1YS - y) < 3) {
      */
     private List<TwoDFloatArray> buildPyramid(GreyscaleImage img) {
 
+        //TODO: need a finer grained decimation as an option
+        //   can build one with gaussian and down-sampling
+        // of use the ATrous b3 method and down-sampling
+        //   see the upsampling code in image processing to reverse...
+        
         ImageProcessor imageProcessor = new ImageProcessor();
         
-        List<GreyscaleImage> output = new ArrayList<GreyscaleImage>();
-
-        MedianTransform mt = new MedianTransform();
-        mt.multiscalePyramidalMedianTransform2(img, output, decimationLimit);
+        List<GreyscaleImage> output = imageProcessor.buildPyramid2(
+            img, decimationLimit);
 
         List<TwoDFloatArray> output2 = new ArrayList<TwoDFloatArray>();
         for (int i = 0; i < output.size(); ++i) {

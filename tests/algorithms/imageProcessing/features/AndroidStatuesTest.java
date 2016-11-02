@@ -971,6 +971,15 @@ public class AndroidStatuesTest extends TestCase {
                    sampling for fast as an optional setting while 
                    providing a smaller scale default pyramidal sampling....`
 
+            Note that once the matching method with a tolerance for
+            error in bits different due to scale is implemented,
+            might need to make a mask to use with segmentation.
+            
+            Also, for objects with alot of symmetry in patterns 
+            like gingerbread man
+            but with a clear distinguishable orientation,
+            may need to use a very narrow aggregattion search of
+            segmented cells to fit the outline with partial shape matcher.
             */
             ORB orb0 = new ORB(2000);//10000
             orb0.overrideFastThreshold(0.001f);

@@ -126,6 +126,7 @@ public class MedianTransform {
         // empty full size image
         outputCoeff.remove(0);
     }
+    
     /**
      * pyramidal median transform (faster than multiscalePyramidalMedianTransform
      * but reconstruction from coefficients is not exact, so prefer
@@ -175,12 +176,50 @@ public class MedianTransform {
             // decimation:
             GreyscaleImage cJPlus1 = imageProcessor.binImage(cJPlus1Ast, 2);
             
-            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1Ast);
-            
             outputTransformed.add(cJPlus1);
-                        
-            assert(cJ.getWidth() == wJPlus1.getWidth());
         }
+    }
+    
+    /**
+     * create a decimated image by using median transform to blur
+     * then bilinear downsampling to reduce the size.
+     * The parameter downSampleFactor is the factor to reduce the
+     * image size by.
+     * following pseudocode in http://www.multiresolution.com/svbook.pdf
+     * "Handbook of Astronomical Data Analysis" by
+     * Jean-Luc Starck and Fionn Murtagh
+     * @param input
+     * @param downSampleFactor the factor to reduce the input image size by
+     * (for example, size 1.5 would reduce the image width to size width/1.5).
+     * @param minValue if result is below this value, value is set to this
+     * @param maxValue if result is above this value, value is set to this
+     * @return 
+     */
+    public GreyscaleImage decimateImage(GreyscaleImage input,
+        float downSampleFactor, int minValue, int maxValue) {
+
+        int w2 = (int)(input.getWidth()/downSampleFactor);
+        int h2 = (int)(input.getHeight()/downSampleFactor);
+        
+        if (w2 == 0 || h2 == 0) {
+            throw new IllegalArgumentException("factor reduces image size to 0");
+        }
+        
+        int winL = Math.round(2*downSampleFactor + 1);
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+
+        MedianSmooth med = new MedianSmooth();
+        
+        GreyscaleImage cJ = input.copyImage();
+            
+        GreyscaleImage cJPlus1Ast = med.calculate(cJ, winL, winL);   
+            
+        // decimation:
+        GreyscaleImage cJPlus1 = imageProcessor.bilinearDownSampling(
+            cJPlus1Ast, w2, h2, minValue, maxValue);
+       
+        return cJPlus1;
     }
     
     /**
