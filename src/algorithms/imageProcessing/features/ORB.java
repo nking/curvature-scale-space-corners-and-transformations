@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.QuickSort;
+import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
@@ -2041,7 +2042,7 @@ if (keypoints0.contains(t1YS) && keypoints1.contains(t1XS)
         Descriptors[] d1, Descriptors[] d2,
         List<PairInt> keypoints1,
         List<PairInt> keypoints2, float scaleFactor) {
-        
+    
         assert(d1.length == d2.length);
         
         int nBands = d1.length;
@@ -2060,21 +2061,10 @@ if (keypoints0.contains(t1YS) && keypoints1.contains(t1XS)
         int[] costs = new int[nTot];
         int count = 0;
         for (int i = 0; i < n1; ++i) {
-PairInt p1 = keypoints1.get(i);
-boolean t1 = distance(p1, tp1) < 3;
-if (t1)
-System.out.println("found tie in template");
             for (int j = 0; j < n2; ++j) {
                 indexes[count] = new PairInt(i, j);
                 costs[count] = cost[i][j];
                 count++;                
-PairInt p2 = keypoints2.get(j);
-boolean t2 = distance(p2, tp2) < 3;
-if (t1 && t2) {
-System.out.println("tie c=" + costs[count - 1]);
-} else if (t2) {
-    System.out.println("found tie in search image");
-}
             }
         }
         assert(count == nTot);
@@ -2095,12 +2085,11 @@ System.out.println("tie c=" + costs[count - 1]);
         TIntObjectMap<TObjectIntMap<PairInt>> idx1P2CostMap = 
             new TIntObjectHashMap<TObjectIntMap<PairInt>>();
         
-        // for scale 75%, 0.25*3*256 = 192
-        int diffLimit = Math.round(0.25f * nBands * 256);
-        
+        int topLimit = Math.round(0.17f * nBands * 256);
+            
         // visit lowest costs (== differences) first
         for (int i = 0; i < nTot; ++i) {
-            if (costs[i] > diffLimit 
+            if (costs[i] > topLimit 
                 //|| count > 45
                 ) {
                 break;
@@ -2114,7 +2103,7 @@ System.out.println("tie c=" + costs[count - 1]);
                 ) {
                 continue;
             }
-        System.out.println("p1=" + p1 + " " + " p2=" + p2 + " cost=" + costs[i]);
+        //System.out.println("p1=" + p1 + " " + " p2=" + p2 + " cost=" + costs[i]);
             mT.add(p1.getX(), p1.getY());
             mS.add(p2.getX(), p2.getY());
             set1.add(p1);
@@ -2148,7 +2137,141 @@ System.out.println("tie c=" + costs[count - 1]);
         return completeUsingCombinations(
             keypoints1, keypoints2, mT, mS, nn,
             minMaxXY2, limit,
-            tIndexes, idx1P2CostMap, indexes, costs
+            tIndexes, idx1P2CostMap, indexes, costs, nBands
+        );
+    }
+    
+    /**
+     * match descriptors using euclidean transformation evaluation from pairs in
+     * feasible combinations of best matches.
+     * Thie method is useful when a geometrical model is necessary to find the
+     * object in an image where the background and foreground have changed and the
+     * lighting may have changed, for example.  
+     * Fpr known simpler conditions such as stereo-projections, RANSAC with
+     * an epipolar or euclidean evaluator can be used instead with the top 45
+     * results and that method will
+     * be offered in this class one day.
+     * @param d1
+     * @param d2
+     * @param keypoints1
+     * @param keypoints2
+     * @param scaleFactor the factor that will be the maximum dimension
+     * of the object in the search image, for example, 2.
+     * @param sizeScaleFraction (suggested default is 0.12).
+     * the expected largest difference in fraction
+     * of image size between the template object and search object size.
+     * For example, if the scale is 70% then that is represented by 
+     * a pyramidal image scale of approx 1.4, so is approx 0.1 difference from
+     * an existing scale.  This number is used as a tolerance for error in
+     * the descriptor.  For example, the same keypoint in two same images,
+     * but one image scaled by 0.7 produces a best difference in descriptors
+     * of about 20 bits (which is approx 0.08 * 256 bits) per band.
+     * This number is used to calculate a tolerance for equivalent costs so
+     * set it as accurately as possible.
+     * @return 
+     */
+    public static List<CorrespondenceList> matchDescriptors2(
+        Descriptors[] d1, Descriptors[] d2,
+        List<PairInt> keypoints1,
+        List<PairInt> keypoints2, float scaleFactor,
+        float sizeScaleFraction) {
+        
+        assert(d1.length == d2.length);
+        
+        int nBands = d1.length;
+        
+        int n1 = d1[0].descriptors.length;
+        int n2 = d2[0].descriptors.length;
+        
+        assert(n1 == keypoints1.size());
+        assert(n2 == keypoints2.size());
+
+        //[n1][n2]
+        int[][] cost = calcDescriptorCostMatrix(d1, d2);
+
+        int nTot = n1 * n2;
+        PairInt[] indexes = new PairInt[nTot];
+        int[] costs = new int[nTot];
+        int count = 0;
+        for (int i = 0; i < n1; ++i) {
+            for (int j = 0; j < n2; ++j) {
+                indexes[count] = new PairInt(i, j);
+                costs[count] = cost[i][j];
+                count++;                
+            }
+        }
+        assert(count == nTot);
+
+        QuickSort.sortBy1stArg(costs, indexes);
+        
+        // storing the indexes of matches with cost < 127 and
+        // fewer in number than about 45
+        
+        count = 0;
+        Set<PairInt> set1 = new HashSet<PairInt>();
+        Set<PairInt> set2 = new HashSet<PairInt>();
+        PairIntArray mT = new PairIntArray();
+        PairIntArray mS = new PairIntArray();
+        TIntList tIndexes = new TIntArrayList();
+        
+        // below, need to look up cost using idx1 and p2: idx1, p2 -> cost
+        TIntObjectMap<TObjectIntMap<PairInt>> idx1P2CostMap = 
+            new TIntObjectHashMap<TObjectIntMap<PairInt>>();
+        
+        int topLimit = Math.round(0.17f * nBands * 256);
+        int tolerance = Math.round(sizeScaleFraction * nBands * 256);
+            
+        // visit lowest costs (== differences) first
+        for (int i = 0; i < nTot; ++i) {
+            if (costs[i] > topLimit 
+                //|| count > 45
+                ) {
+                break;
+            }
+            PairInt index12 = indexes[i];
+            int idx1 = index12.getX();
+            int idx2 = index12.getY();
+            PairInt p1 = keypoints1.get(idx1);
+            PairInt p2 = keypoints2.get(idx2);
+            if (set1.contains(p1) //|| set2.contains(p2)
+                ) {
+                continue;
+            }
+        //System.out.println("p1=" + p1 + " " + " p2=" + p2 + " cost=" + costs[i]);
+            mT.add(p1.getX(), p1.getY());
+            mS.add(p2.getX(), p2.getY());
+            set1.add(p1);
+            set2.add(p2);
+            tIndexes.add(idx1);
+            
+            TObjectIntMap<PairInt> cMap = idx1P2CostMap.get(idx1);
+            if (cMap == null) {
+                cMap = new TObjectIntHashMap<PairInt>();
+                idx1P2CostMap.put(idx1, cMap);
+            }
+            if (!cMap.containsKey(p2)) {
+                // only store the smaller cost, that's reached first
+                cMap.put(p2, costs[i]);
+            }
+            
+            count++;
+        }
+        
+        int[] minMaxXY = MiscMath.findMinMaxXY(keypoints1);
+        int objDimension = Math.max(minMaxXY[1] - minMaxXY[0],
+            minMaxXY[3] - minMaxXY[2]);
+        int limit = Math.round(scaleFactor * objDimension);
+        int limitSq = limit * limit;
+       
+        int[] minMaxXY2 = MiscMath.findMinMaxXY(set2);
+        
+        NearestNeighbor2D nn = new NearestNeighbor2D(
+           set2, minMaxXY2[1] + limit, minMaxXY2[3] + limit);
+       
+        return completeUsingCombinations(
+            keypoints1, keypoints2, mT, mS, nn,
+            minMaxXY2, limit,
+            tIndexes, idx1P2CostMap, indexes, costs, tolerance, nBands
         );       
     }
 
@@ -2229,12 +2352,12 @@ System.out.println("tie c=" + costs[count - 1]);
         TIntObjectMap<TObjectIntMap<PairInt>> idx1P2CostMap = 
             new TIntObjectHashMap<TObjectIntMap<PairInt>>();
         
-        // for scale 75%, 0.25*3*256 = 192
-        int diffLimit = Math.round(0.25f * nBands * 256);
-        
+        int topLimit = Math.round(0.17f * nBands * 256);
+        int tolerance = Math.round(0.12f * nBands * 256);
+            
         // visit lowest costs (== differences) first
         for (int i = 0; i < nTot; ++i) {
-            if (costs[i] > diffLimit 
+            if (costs[i] > topLimit 
                 //|| count > 45
                 ) {
                 break;
@@ -2293,7 +2416,7 @@ System.out.println("tie c=" + costs[count - 1]);
         return completeUsingCombinations(
             keypoints1, keypoints2, mT, mS, nn,
             minMaxXY2, limit,
-            tIndexes, idx1P2CostMap, indexes, costs
+            tIndexes, idx1P2CostMap, indexes, costs, nBands
         );            
     }
     
@@ -2323,7 +2446,7 @@ System.out.println("tie c=" + costs[count - 1]);
         NearestNeighbor2D nn, int[] minMaxXY2, int limit,
         TIntList tIndexes,        
         TIntObjectMap<TObjectIntMap<PairInt>> idx1P2CostMap,
-        PairInt[] indexes, int[] costs
+        PairInt[] indexes, int[] costs, int nBands
     ) {
         
         int nTop = mT.getN();
@@ -2425,7 +2548,7 @@ System.out.println("tie c=" + costs[count - 1]);
                 correspondence list
                 */
                 
-                double maxCost = 3 * 256;
+                double maxCost = nBands * 256;
                 double maxDist = limit/scale;
                 
                 double sum1 = 0;
@@ -2514,6 +2637,285 @@ System.out.println("tie c=" + costs[count - 1]);
         //    minCostCor, minCostI, minDistI);
         
         return minCostCor; 
+    }
+    
+    /**
+     * NOTE: preliminary results show that this matches the right pattern as
+     * a subset of the object, but needs to be followed by a slightly larger
+     * aggregated search by segmentation cells using partial shape matcher
+     * for example.  This was started in ShapeFinder, but needs to be
+     * adjusted for a search given seed cells and possibly improved for the
+     * other TODO items).
+     * @param keypoints1
+     * @param keypoints2
+     * @param mT
+     * @param mS
+     * @param nn
+     * @param minMaxXY2
+     * @param limit
+     * @param tIndexes
+     * @param idx1P2CostMap
+     * @param indexes
+     * @param costs
+     * @return 
+     */
+    private static List<CorrespondenceList> completeUsingCombinations(
+        List<PairInt> keypoints1, List<PairInt> keypoints2,
+        PairIntArray mT, PairIntArray mS, 
+        NearestNeighbor2D nn, int[] minMaxXY2, int limit,
+        TIntList tIndexes,        
+        TIntObjectMap<TObjectIntMap<PairInt>> idx1P2CostMap,
+        PairInt[] indexes, int[] costs, int bitTolerance,
+        int nBands
+    ) {
+        
+        int nTop = mT.getN();
+
+        System.out.println("have " + nTop + " sets of points for "
+            + " n of k=2 combinations");
+        
+        // need to make pairs of combinations from mT,mS
+        //  to calcuate euclidean transformations and evaluate them.
+        // -- can reduce the number of combinations by imposing a 
+        //    distance limit on separation of feasible pairs
+                
+        int limitSq = limit * limit;
+               
+        MatchedPointsTransformationCalculator tc = new
+            MatchedPointsTransformationCalculator();
+        
+        Transformer transformer = new Transformer();
+  
+        /* can try to use the tolerance in 2 different ways:
+           (1) to adjust the weight of cost.
+               weight = 1 - (tolerance/(256*nBands)).
+               This approach might favor regions of many false keypoints
+               such as highly textured regions.
+           (2) keep the minCost solution, but also keep all solutions
+               that are within cost + tolerance of it.
+               This doesn't discard the true solution.
+               ---> these will need additional information to distinguish
+                    between solutions.
+        procedding with (2).
+        */
+        
+        // this fixed size sorted vector is faster for shorter arrays.
+        // TODO: consider ways to robustly set the size from the cost
+        // statistics to ensure the vector will always contain the
+        // correct solution even if not in top position.
+        int nt = mT.getN();
+        FixedSizeSortedVector<CObject> vec = new 
+            FixedSizeSortedVector<CObject>(nt, CObject.class);
+        
+        double minCost = Double.MAX_VALUE;
+        //CorrespondenceList minCostCor = null;
+        //PairIntArray minCostTrT = null;
+        double[] minCostI = new double[nTop];
+        double[] minDistI = new double[nTop];
+        
+        // temporary storage of corresp coords until object construction
+        int[] m1x = new int[nTop];
+        int[] m1y = new int[nTop];
+        int[] m2x = new int[nTop];
+        int[] m2y = new int[nTop];
+        int mCount = 0;
+        
+        for (int i = 0; i < nTop; ++i) {
+            int t1X = mT.getX(i);
+            int t1Y = mT.getY(i);
+            int s1X = mS.getX(i);
+            int s1Y = mS.getY(i);
+            
+            // choose all combinations of 2nd point within distance
+            // limit of point s1.
+            for (int j = (i + 1); j < mS.getN(); ++j) {
+                int t2X = mT.getX(j);
+                int t2Y = mT.getY(j);
+                int s2X = mS.getX(j);
+                int s2Y = mS.getY(j);
+                
+                if ((t1X == t2X && t1Y == t2Y) || 
+                    (s1X == s2X && s1Y == s2Y)) {
+                    continue;
+                }
+                
+                int diffX = s1X - s2X;
+                int diffY = s1Y - s2Y;
+                int distSq = diffX * diffX + diffY * diffY;
+                if (distSq > limitSq) {
+                    continue;
+                }
+
+                // -- calculate euclid transformation
+                // -- evaluate the fit
+                TransformationParameters params = tc.calulateEuclidean(
+                    t1X, t1Y, 
+                    t2X, t2Y, 
+                    s1X, s1Y,
+                    s2X, s2Y,
+                    0, 0);
+                
+                float scale = params.getScale();
+                
+                mCount = 0;
+                
+                // template object transformed
+                PairIntArray trT = 
+                    transformer.applyTransformation(params, mT);
+                
+                /*
+                two components to the evaluation and both need normalizations
+                so that their contributions to total result are
+                equally weighted.
+                
+                (1) descriptors:
+                    -- score is sum of each matched (3*256 - cost)
+                    -- the normalization is the maximum possible score,
+                       so will use the number of template points.
+                       --> norm = nTemplate * 3 * 256
+                    -- normalized score = (3*256 - cost)/norm
+                   ==> normalized cost = 1 - ((3*256 - cost)/norm)
+                (2) spatial distances from transformed points:
+                   -- sum of distances within limit
+                      and replacement of distance by limit if no matching
+                      nearest neighbor is found.
+                   -- divide each distance by the transformation scale
+                      to compare same values
+                   -- divide the total sum by the total max possible
+                      --> norm = nTemplate * limit / scale
+               
+                Then the total cost is (1) + (2) and the min cost
+                among all of these combinations is the resulting
+                correspondence list
+                */
+                
+                double maxCost = nBands * 256;
+                double maxDist = limit/scale;
+                
+                double sum1 = 0;
+                double sum2 = 0;
+                double sum = 0;
+                
+                for (int k = 0; k < trT.getN(); ++k) {
+                    int xTr = trT.getX(k);
+                    int yTr = trT.getY(k);
+                    
+                    int idx1 = tIndexes.get(k);
+                    
+                    Set<PairInt> nearest = null;
+                    if ((xTr >= 0) && (yTr >= 0) &&
+                        (xTr <= (minMaxXY2[1] + limit)) && 
+                        (yTr <= (minMaxXY2[3] + limit))) {
+                        nearest = nn.findClosest(xTr, yTr, limit);
+                    }
+                    
+                    int minC = Integer.MAX_VALUE;
+                    PairInt minCP2 = null;
+                    
+                    if (nearest != null && !nearest.isEmpty()) {
+                        TObjectIntMap<PairInt> cMap = idx1P2CostMap.get(idx1);
+                        for (PairInt p2 : nearest) {
+                            if (!cMap.containsKey(p2)) {
+                                continue;
+                            }
+                            int c = cMap.get(p2);
+                            if (c < minC) {
+                                minC = c;
+                                minCP2 = p2;
+                            }
+                        }
+                    }
+                    if (minCP2 != null) {
+                        double scoreNorm = (3*256 - minC)/maxCost;
+                        double costNorm = 1. - scoreNorm;
+                        sum1 += costNorm;
+                        
+                        double dist = distance(xTr, yTr, minCP2);
+                        double distNorm = dist/maxDist;
+                        sum2 += distNorm;
+                      
+                        m1x[mCount] = keypoints1.get(idx1).getX();
+                        m1y[mCount] = keypoints1.get(idx1).getY();
+                        m2x[mCount] = minCP2.getX();
+                        m2y[mCount] = minCP2.getY();
+                        minCostI[mCount] = costNorm;
+                        minDistI[mCount] = distNorm;
+                        mCount++;
+                        
+                    } else {
+                        sum1 += 1;
+                        sum2 += 1;
+                    }
+                }
+                sum = sum1 + sum2;
+                
+                if ((minCost == Double.MAX_VALUE) ||
+                    (sum < (minCost + bitTolerance))) {
+                    
+                    if (sum < minCost) {
+                        minCost = sum;
+                    }
+                    
+                    List<PairInt> m1 = new ArrayList<PairInt>();
+                    List<PairInt> m2 = new ArrayList<PairInt>();
+                    CorrespondenceList corr =
+                        new CorrespondenceList(
+                        params.getScale(),
+                        Math.round(params.getRotationInDegrees()),
+                        Math.round(params.getTranslationX()),
+                        Math.round(params.getTranslationY()),
+                        0, 0, 0, m1, m2);
+
+                    for (int mi = 0; mi < mCount; ++mi) {
+                        m1.add(new PairInt(m1x[mi], m1y[mi]));
+                        m2.add(new PairInt(m2x[mi], m2y[mi]));
+                    }
+                    
+                    CObject cObj = new CObject(sum, corr, trT);
+                    
+                    vec.add(cObj);                                        
+                }
+            }
+        }
+        
+        if (vec.getNumberOfItems() == 0) {
+            return null;
+        }
+        
+        List<CorrespondenceList> topResults =
+            new ArrayList<CorrespondenceList>();
+        
+        for (int i = 0; i < vec.getNumberOfItems(); ++i) {
+            CObject a = vec.getArray()[i];
+            if (a.cost > (minCost + bitTolerance)) {
+                break;
+            }
+            topResults.add(a.cCor);
+        }
+        
+        return topResults; 
+    }
+    
+    private static class CObject implements Comparable<CObject> {
+        final double cost;
+        final CorrespondenceList cCor;
+        final PairIntArray transformedTemplate;
+        public CObject(double cost, CorrespondenceList cL, 
+            PairIntArray templTr) {
+            this.cost = cost;
+            this.cCor = cL;
+            this.transformedTemplate = templTr;
+        }
+
+        @Override
+        public int compareTo(CObject other) {
+            if (cost < other.cost) {
+                return -1;
+            } else if (cost > other.cost) {
+                return 1;
+            }
+            return 0;
+        }
     }
     
     /**

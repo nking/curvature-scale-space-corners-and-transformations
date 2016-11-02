@@ -943,6 +943,7 @@ public class AndroidStatuesTest extends TestCase {
         //Descriptors descriptorsV = dHSV[2];
 
         if (true) {
+            
             //DEBUG descriptor matching
             
             final PairInt tp2 = new PairInt(38, 72);
@@ -1115,22 +1116,35 @@ public class AndroidStatuesTest extends TestCase {
             int[][] gsCostMatrix = ORB.calcDescriptorCostMatrix(
                 gsDesc0.descriptors, gsDesc1.descriptors);
             
+            int chk = 20;
+            boolean found = false;
             for (int ii = 0; ii < hsvCostMatrix.length; ++ii) {
                 for (int jj = 0; jj < hsvCostMatrix[ii].length; ++jj) {
-                    if (hsvCostMatrix[ii][jj] < 10) {
-                        int z = 0;
+                    if (hsvCostMatrix[ii][jj] < chk) {
+                        float scaleII = orb.getScalesList().get(ii).get(0);
+                        float scaleJJ = orb.getScalesList().get(jj).get(0);
+                        float szII = imgs0[0].getWidth()/scaleII;
+                        float szJJ = img.getWidth()/scaleJJ;
+                        assertTrue(Math.abs(szII - szJJ) <= 2);
+                        found = true;
                     }
                 }
             }
+            assertTrue(found);
+            found = false;
             for (int ii = 0; ii < gsCostMatrix.length; ++ii) {
                 for (int jj = 0; jj < gsCostMatrix[ii].length; ++jj) {
-                    if (gsCostMatrix[ii][jj] < 10) {
-                        int z = 0;
+                    if (gsCostMatrix[ii][jj] < chk) {
+                        float scaleII = orb.getScalesList().get(ii).get(0);
+                        float scaleJJ = orb.getScalesList().get(jj).get(0);
+                        float szII = imgs0[0].getWidth()/scaleII;
+                        float szJJ = img.getWidth()/scaleJJ;
+                        assertTrue(Math.abs(szII - szJJ) <= 5);
+                        found = true;
                     }
                 }
             }
-            
-            int z = 1;
+            assertTrue(found);
         }
         
         // ---- filter keypoints by color ----
@@ -1194,34 +1208,40 @@ public class AndroidStatuesTest extends TestCase {
                     
         long t0 = System.currentTimeMillis();
     
-        CorrespondenceList cor = ORB.matchDescriptors2(
+        List<CorrespondenceList> corList = ORB.matchDescriptors2(
             new Descriptors[]{templateDescriptorsH,
                 templateDescriptorsS, templateDescriptorsV}, 
             dHSV,
-            templateKeypoints, keypointsCombined, 1.5f);
+            templateKeypoints, keypointsCombined, 1.5f, 
+            0.12f);
 
         long t1 = System.currentTimeMillis();
         System.out.println("matching took " + ((t1 - t0)/1000.) + " sec");
 
-        Image img11 = img.copyToImageExt();
-        CorrespondencePlotter plotter = new CorrespondencePlotter(
-            imgs0[1], img.copyImage());            
-        for (int ii = 0; ii < cor.getPoints1().size(); ++ii) {
-            PairInt p1 = cor.getPoints1().get(ii);
-            PairInt p2 = cor.getPoints2().get(ii);
+        for (int i0 = 0; i0 < corList.size(); ++i0) {
+            
+            CorrespondenceList cor = corList.get(i0);
+            
+            Image img11 = img.copyToImageExt();
+            CorrespondencePlotter plotter = new CorrespondencePlotter(
+                imgs0[1], img.copyImage());            
+            for (int ii = 0; ii < cor.getPoints1().size(); ++ii) {
+                PairInt p1 = cor.getPoints1().get(ii);
+                PairInt p2 = cor.getPoints2().get(ii);
 
-            ImageIOHelper.addPointToImage(p2.getX(), p2.getY(), img11,
-                1, 255, 0, 0);
+                ImageIOHelper.addPointToImage(p2.getX(), p2.getY(), img11,
+                    1, 255, 0, 0);
 
-            System.out.println("orb matched: " + p1 + " " + p2);
-            //if (p2.getX() > 160)
-            plotter.drawLineInAlternatingColors(p1.getX(), p1.getY(), 
-                p2.getX(), p2.getY(), 0);
+                System.out.println("orb matched: " + p1 + " " + p2);
+                //if (p2.getX() > 160)
+                plotter.drawLineInAlternatingColors(p1.getX(), p1.getY(), 
+                    p2.getX(), p2.getY(), 0);
+            }
+
+            plotter.writeImage("_orb_corres_" + i0);
+            System.out.println(cor.getPoints1().size() + " matches");
+            MiscDebug.writeImage(img11, "_orb_matched_" + i0);
         }
-
-        plotter.writeImage("_orb_corres_");
-        System.out.println(cor.getPoints1().size() + " matches");
-        MiscDebug.writeImage(img11, "_orb_corres_2_");
     }
 
     public void estMatchSegmented() throws Exception {
