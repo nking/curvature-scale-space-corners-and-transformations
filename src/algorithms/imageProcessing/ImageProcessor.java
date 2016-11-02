@@ -8933,6 +8933,30 @@ if (sum > 511) {
      */
     public List<GreyscaleImage> buildPyramid2(GreyscaleImage input,
         int decimationLimit) {
+    
+        int nBetween = 3;
+        
+        return buildPyramid2(input, decimationLimit, nBetween);
+    }
+    
+    /**
+     * given an input image, creates a decimation pyramid with 
+     * median smoothing followed by either integer or bilinear
+     * interpolation down-sampling.
+     * This method returns images down-sampled by scale sizes that
+     * are a factor of 2 from each until image size
+     * is smaller than decimationLimit.  Then the
+     * method creates discrete scales in between the factors of 2 
+     * pyramid, such as 1.25, 1.5, 1.75, then bisecting scales
+     * with 3, 5, 12, etc.
+     * @param input
+     * @param decimationLimit limit to smallest image dimension size returned
+     * @param nBetween the number of images to create in between the powers
+     * of 2.
+     * @return 
+     */
+    public List<GreyscaleImage> buildPyramid2(GreyscaleImage input,
+        int decimationLimit, int nBetween) {
         
         List<GreyscaleImage> output = new ArrayList<GreyscaleImage>();
 
@@ -8948,10 +8972,12 @@ if (sum > 511) {
         scalesToBuild.add(1.5f);
         scalesToBuild.add(1.75f);
         
+        float f = 1.f/(nBetween + 1);
+        
         for (int i = 1; i < scales.size() - 1; ++i) {
             float si = scales.get(i);
-            float d = 0.25f * (scales.get(i + 1) - si);
-            for (int j = 0; j < 3; ++j) {
+            float d = f * (scales.get(i + 1) - si);
+            for (int j = 0; j < (nBetween + 1); ++j) {
                 float b = si + d * (j + 1);
                 scalesToBuild.add(b);
             }

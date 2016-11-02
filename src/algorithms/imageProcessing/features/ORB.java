@@ -211,6 +211,8 @@ final static PairInt tp1 = new PairInt(33, 61);
     
     protected boolean doCreateCurvatureKeyPoints = false;
 
+    protected final int nPyramidB = 3;
+    
     /**
      * Still testing the class, there may be bugs present.
      * @param nKeypoints
@@ -449,13 +451,13 @@ if (Math.abs(t1XS - x) < 3 && Math.abs(t1YS - y) < 3) {
         ImageProcessor imageProcessor = new ImageProcessor();
         
         List<GreyscaleImage> outputR = imageProcessor.buildPyramid2(
-            imageR, decimationLimit);
+            imageR, decimationLimit, nPyramidB);
         
         List<GreyscaleImage> outputG = imageProcessor.buildPyramid2(
-            imageG, decimationLimit);
+            imageG, decimationLimit, nPyramidB);
         
         List<GreyscaleImage> outputB = imageProcessor.buildPyramid2(
-            imageB, decimationLimit);
+            imageB, decimationLimit, nPyramidB);
         
         float[] hsv = new float[3];
         
@@ -508,7 +510,7 @@ if (Math.abs(t1XS - x) < 3 && Math.abs(t1YS - y) < 3) {
         ImageProcessor imageProcessor = new ImageProcessor();
         
         List<GreyscaleImage> output = imageProcessor.buildPyramid2(
-            img, decimationLimit);
+            img, decimationLimit, nPyramidB);
 
         List<TwoDFloatArray> output2 = new ArrayList<TwoDFloatArray>();
         for (int i = 0; i < output.size(); ++i) {
