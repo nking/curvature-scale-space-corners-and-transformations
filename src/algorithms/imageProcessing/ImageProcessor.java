@@ -6169,6 +6169,28 @@ if (sum > 511) {
         
     }
 
+    private TFloatList calculateImageScales(List<GreyscaleImage> images) {
+
+        TFloatList scales = new TFloatArrayList();
+        scales.add(1);
+        
+        float prevScl = 1;
+        
+        for (int i = 1; i < images.size(); ++i) {
+            float w = images.get(i).getWidth();
+            float h = images.get(i).getHeight();
+        
+            float x = (float)images.get(i - 1).getWidth()/w;
+            float y = (float)images.get(i - 1).getHeight()/h;
+            
+            float scale = prevScl * (x + y)/2.f;
+            
+            scales.add(scale);
+        }
+        
+        return scales;
+    }
+
     public static class Colors {
         private final float[] colors;
         public Colors(float[] theColors) {
@@ -8891,9 +8913,60 @@ if (sum > 511) {
         return points;
     }
     
-    public List<TwoDFloatArray> buildPyramid2(float[][] input) {
+    /**
+     * given an input image, creates a decimation pyramid with 
+     * median smoothing followed by either integer or bilinear
+     * interpolation down-sampling.
+     * This method returns images down-sampled by scale sizes that
+     * are a factor of 2 from each until image size
+     * is smaller than decimationLimit.  Then the
+     * method creates discrete scales in between the factors of 2 
+     * pyramid, such as 1.25, 1.5, 1.75, then bisecting scales
+     * with 3, 5, 12, etc.
+     * @param input
+     * @param decimationLimit limit to smallest image dimension size returned
+     * @return 
+     */
+    public List<GreyscaleImage> buildPyramid2(GreyscaleImage input,
+        int decimationLimit) {
         
-        throw new UnsupportedOperationException("not yet implemented");
+        List<GreyscaleImage> output = new ArrayList<GreyscaleImage>();
+
+        MedianTransform mt = new MedianTransform();
+        mt.multiscalePyramidalMedianTransform2(input, output, decimationLimit);
+
+        TFloatList scales = calculateImageScales(output);
+        
+        // --- build filler scale images ----
+        TFloatList scalesToBuild = new TFloatArrayList(scales.size() + 2);
+        scalesToBuild.add(1.25f);
+        scalesToBuild.add(1.5f);
+        scalesToBuild.add(1.75f);
+        
+        for (int i = 1; i < scales.size() - 1; ++i) {
+            float b = 0.5f * (scales.get(i + 1) + scales.get(i));
+            scalesToBuild.add(b);
+        }
+        
+        for (int i = scalesToBuild.size() - 1; i > -1; --i) {
+            
+            float scale = scalesToBuild.get(i);
+            
+            GreyscaleImage out = mt.decimateImage(input,
+                scale, 0, 255);
+            
+            //inserts:  0,1,2,   b3    b4    b5
+            //pyramid:  0      1    2     3     4
+            
+            int insIdx = i - 1;
+            if (insIdx < 1) {
+                insIdx = 1;
+            }
+            output.add(insIdx, out);
+        }
+
+        return output;
+        
         /*
         a gaussian pyramid based upon a kernel of sigma 0.707
         can be built recursively, but the number of iterations
@@ -8943,13 +9016,16 @@ if (sum > 511) {
      * @param h2 output length of second dimension of array
      * @return 
      */
-    public float[][] bilinearDownSampling(float[][] pixels, int w, int h, 
+    public float[][] bilinearDownSampling(float[][] pixels,  
         int w2, int h2) {
         
         float[][] out = new float[w2][h2];
         for (int i = 0; i < w2; ++i) {
             out[i] = new float[h2];  
         }
+        
+        int w = pixels.length; 
+        int h = pixels[0].length;
         
         int x, y;
         float A, B, C, D, gray;
@@ -8978,6 +9054,85 @@ if (sum > 511) {
                     D * (xDiff * yDiff);
 
                 out[i][j] = gray;                                   
+            }
+        }
+        
+        return out;
+    }
+    
+    /**
+     * use bilinear interpolation to downsample a two dimensional array.
+     * Assumes that valid pixel values are 0 to 255 and clamps if outside range.
+     * 
+     * adapted from pseudocode at
+     * http://tech-algorithm.com/articles/bilinear-image-scaling/
+    
+     * @param input
+     * @param w2 output length of first dimension of array
+     * @param h2 output length of second dimension of array
+     * @return 
+     */
+    public GreyscaleImage bilinearDownSampling(GreyscaleImage input,
+        int w2, int h2) {
+   
+        return bilinearDownSampling(input, w2, h2, 0, 255);
+    }
+   
+    /**
+     * use bilinear interpolation to downsample a two dimensional array.
+     * 
+     * adapted from pseudocode at
+     * http://tech-algorithm.com/articles/bilinear-image-scaling/
+    
+     * @param input
+     * @param w2 output length of first dimension of array
+     * @param h2 output length of second dimension of array
+     * @param minValue value to clamp results to if less than this
+     * @param maxValue value to clamp results to if larger than this
+     * @return 
+     */
+    public GreyscaleImage bilinearDownSampling(GreyscaleImage input,
+        int w2, int h2, int minValue, int maxValue) {
+        
+        GreyscaleImage out = input.createWithDimensions(w2, h2);
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
+        int x, y;
+        float A, B, C, D, gray;
+        
+        float xRatio = (float)w/(float)w2;
+        float yRatio = (float)h/(float)h2;
+        float xDiff, yDiff;
+        int offset = 0 ;
+        for (int i = 0; i < w2; i++) {
+            for (int j = 0; j < h2; j++) {
+                x = (int)(xRatio * i);
+                y = (int)(yRatio * j);
+                xDiff = (xRatio * i) - x;
+                yDiff = (yRatio * j) - y;
+
+                A = input.getValue(x, y);
+                B = input.getValue(x, y+1);
+                C = input.getValue(x+1, y);
+                D = input.getValue(x+1, y+1);
+
+                // Y = A(1-w)(1-h) + B(w)(1-h) + C(h)(1-w) + Dwh
+                gray = 
+                    A * (1 - xDiff) * (1 - yDiff) + 
+                    C * (xDiff) * (1 - yDiff) +
+                    B * (yDiff) * (1 - xDiff) +  
+                    D * (xDiff * yDiff);
+
+                int v = Math.round(gray);
+                if (v < minValue) {
+                    v = minValue;
+                } else if (v > maxValue) {
+                    v = maxValue;
+                }
+                
+                out.setValue(i, j, v);                              
             }
         }
         

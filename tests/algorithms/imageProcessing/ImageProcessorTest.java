@@ -7,7 +7,9 @@ import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -1307,7 +1309,7 @@ public class ImageProcessorTest extends TestCase {
         }
         
         ImageProcessor imageProcessor = new ImageProcessor();
-        float[][] b = imageProcessor.bilinearDownSampling(a, w1, h1, w2, h2);
+        float[][] b = imageProcessor.bilinearDownSampling(a, w2, h2);
         
         assertEquals(w2, b.length);
         assertEquals(h2, b[0].length);
@@ -1354,7 +1356,7 @@ public class ImageProcessorTest extends TestCase {
         }*/
         
         ImageProcessor imageProcessor = new ImageProcessor();
-        float[][] b = imageProcessor.bilinearDownSampling(a, w1, h1, w2, h2);
+        float[][] b = imageProcessor.bilinearDownSampling(a, w2, h2);
         
         assertEquals(w2, b.length);
         assertEquals(h2, b[0].length);
@@ -1368,4 +1370,64 @@ public class ImageProcessorTest extends TestCase {
             //System.out.println(sb.toString());
         }
     }
+    
+    public void testBilinearDownSampling3() {
+        
+        int w1 = 10;
+        int h1 = 10;
+        int w2 = 5;
+        int h2 = 5;
+        
+        GreyscaleImage a = new GreyscaleImage(w1, h1);
+        
+        for (int i = 0; i < w1; i += 4) {
+            for (int j = 0; j < h1; j += 4) {
+                a.setValue(i, j, 10);
+                if (j + 1 < h1) {
+                    a.setValue(i, j + 1, 10);
+                }
+                if (i + 1 < w1) {
+                    a.setValue(i + 1, j, 10);
+                }
+                if (j + 1 < h1 && i + 1 < w1) {
+                    a.setValue(i + 1, j + 1, 10);
+                }
+            }
+        }
+     
+        ImageProcessor imageProcessor = new ImageProcessor();
+        GreyscaleImage b = imageProcessor.bilinearDownSampling(a, w2, h2);
+        
+        assertEquals(w2, b.getWidth());
+        assertEquals(h2, b.getHeight());
+        
+        for (int i = 0; i < w2; i += 2) {
+            for (int j = 0; j < h2; j += 2) {
+                assertEquals(10, b.getValue(i, j));
+            }
+        }
+    }
+    
+    public void testBuildPyramid2() throws Exception {
+        
+        String filePath = ResourceFinder.findFileInTestResources(
+            "susan-in_plus.png");
+        
+        GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleAvgRGB(
+            filePath);
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        List<GreyscaleImage> pyramid = 
+            imageProcessor.buildPyramid2(img, 64);
+        
+        //TODO: add more than a visual inspection here
+        /*
+        for (int i = 0; i < pyramid.size(); ++i) {
+            GreyscaleImage pImg = pyramid.get(i);
+            MiscDebug.writeImage(pImg, "_pyramid_" + i);
+        }
+        */
+    }
+    
 }
