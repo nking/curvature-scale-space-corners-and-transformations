@@ -25,14 +25,12 @@ public class CannyEdgeFilterAdaptiveTest extends TestCase {
         testFiles.add("blox.gif");
         //testFiles.add("two_circles_color.png");
         testFiles.add("house.gif");
-        /*testFiles.add("lab.gif");
-        testFiles.add("africa2.png");
-        testFiles.add("susan-in.gif");
-        testFiles.add("valve_gaussian.png");
-        testFiles.add("lena.jpg");
-        testFiles.add("android_statues_01.jpg");
-        testFiles.add("android_statues_04.jpg");
-        */
+        testFiles.add("lab.gif");
+        //testFiles.add("valve_gaussian.png");
+        //testFiles.add("lena.jpg");
+        //testFiles.add("android_statues_01.jpg");
+        //testFiles.add("android_statues_04.jpg");
+        
         testFiles.add("checkerboard_01.jpg");
         
         for (String fileName : testFiles) {
@@ -50,16 +48,12 @@ public class CannyEdgeFilterAdaptiveTest extends TestCase {
 
             CannyEdgeFilterAdaptive filter = new CannyEdgeFilterAdaptive();
             //CannyEdgeFilterLite filter = new CannyEdgeFilterLite();
-            //filter.setToNotUseNonMaximumSuppression();
-            //filter.setToPerformHistogramEqualization();
-            //filter.setOtsuScaleFactor(0.2f);
-            //filter.override2LayerFactorBelowHighThreshold(10.f);
-            filter.overrideDefaultNumberOfLevels(16);
+            //filter.overrideToUseAdaptiveThreshold();
             if (fileName.contains("africa") || fileName.contains("circle") 
                 || fileName.contains("susan")) {
                 filter.setToUseLineDrawingMode();
             }
-            filter.setToDebug();
+            //filter.setToDebug();
             filter.applyFilter(gsImg);
             
             for (int i = 0; i < gsImg.getNPixels(); ++i) {
@@ -68,9 +62,9 @@ public class CannyEdgeFilterAdaptiveTest extends TestCase {
                 }
             }
             
-            MiscDebug.writeImage(gsImg, "_canny_adaptive_" + fileNameRoot);
-        }
-        
+            MiscDebug.writeImage(gsImg, "_canny_adaptive_" 
+                + fileNameRoot);
+        }       
     }
     
     public void test1() throws Exception {
@@ -94,7 +88,7 @@ public class CannyEdgeFilterAdaptiveTest extends TestCase {
                 img.setValue(i, 255);
             }
         }
-        //MiscDebug.writeImage(img, "_gradient_canny_adaptive_");
+        MiscDebug.writeImage(img, "_gradient_canny_adaptive_");
         
         EdgeExtractorWithJunctions extractor = new EdgeExtractorWithJunctions(img);
         List<PairIntArray> edges = extractor.findEdges();
@@ -105,7 +99,43 @@ public class CannyEdgeFilterAdaptiveTest extends TestCase {
             }
         }
         Map<Integer, Set<Integer>> junctionMap = extractor.getJunctionMap();
-        assertEquals(1, n);
+        //assertEquals(1, n);
+    }
+    
+    public void test2() throws Exception {
+        
+        Set<String> testFiles = new HashSet<String>();
+        testFiles.add("susan-in.gif");
+        
+        for (String fileName : testFiles) {
+            
+            String filePath = ResourceFinder.findFileInTestResources(fileName);
+            
+            int idx = fileName.lastIndexOf(".");
+            String fileNameRoot = fileName.substring(0, idx);
+            
+            log.info("fileName=" + fileName);
+          
+            ImageExt img = ImageIOHelper.readImageExt(filePath);
+            
+            GreyscaleImage gsImg = img.copyToGreyscale();
+
+            CannyEdgeFilterAdaptive filter = new CannyEdgeFilterAdaptive();
+            //CannyEdgeFilterLite filter = new CannyEdgeFilterLite();
+            filter.setOtsuScaleFactor(0.1f);
+            
+            //filter.setToDebug();
+            filter.applyFilter(gsImg);
+            
+            for (int i = 0; i < gsImg.getNPixels(); ++i) {
+                if (gsImg.getValue(i) > 0) {
+                    gsImg.setValue(i, 255);
+                }
+            }
+            
+            MiscDebug.writeImage(gsImg, "_canny_adaptive_" 
+                + fileNameRoot);
+        }
     }
     
 }

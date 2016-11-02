@@ -21,10 +21,8 @@ import java.util.Set;
  * Their paper has the following qualities: 
  *<pre>
  * -- instead of a Gaussian filter, uses a bilateral filter
- * -- Otsu's method is used for adaptive threshold levels
- * -- they note that their algorithm performs better on high quality images but 
- *    does not find edges well in low signal-to-noise images.
- * </pre>
+ * -- an adaptive threshold algorithm is used in the 2 layer filter
+</pre>
  * This class uses 2 one dimensional binomial filters for smoothing.
  * 
  * <pre>
@@ -36,7 +34,7 @@ import java.util.Set;
  * and a number 16 of higher is recommended.
  * 
  * To see a difference in the adaptive approach, run this class on the test
- * image susan-in.gif using filter.overrideDefaultNumberOfLevels(16) 
+ * image susan-in.gif using filter.overrideToUseAdaptiveThreshold() 
  * 
  * To adjust the filter to remove lower intensity edges, use
  * filter.setOtsuScaleFactor.  The default factor is 0.45 
@@ -50,7 +48,7 @@ import java.util.Set;
  * it would be faster for the user to use 
  *     ImageProcessor.applyAdaptiveMeanThresholding(mask, 1);
  *     followed by
- *     ZhangSuenLineThinner.applyFilter(filterProducts.getGradientXY());
+ *       a line thinner
  * Note that line drawing mode starts with the 2 layer filter here, though.
  * </pre>
  * Not ready for use yet...
@@ -88,17 +86,7 @@ public class CannyEdgeFilterAdaptive {
      */
     private double approxProcessedSigma = 0;
     
-    /**
-     * default number of levels used in the histogram used to find the
-     * high threshold in the 2 - layer thresholding.  it's the number
-     *  of levels given to Otsu's multi-level thresholding.
-     * for a value of 1, the histogram is performed over the entire image.
-     * for a value of 2, histograms are calculated for 2 sets of calculations
-     * over the image, one in which the average intensity of neighbors is
-     * in bin1 and the other in bin2, etc... the histograms are indexed
-     * by the average values of the neighbors.
-     */
-    private int numberOfLevelsForHistogram = 1;
+    private boolean useAdaptiveThreshold = false;
     
     private boolean useAdaptive2Layer = true;
 
@@ -108,7 +96,7 @@ public class CannyEdgeFilterAdaptive {
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
-    protected boolean useZhangSuen = true;
+    protected boolean useLineThinner = true;
     
     public CannyEdgeFilterAdaptive() {        
     }
@@ -117,8 +105,8 @@ public class CannyEdgeFilterAdaptive {
         debug = true;
     }
     
-    public void setToNotUseZhangSuen() {
-        useZhangSuen = false;
+    public void overrideToNotUseLineThinner() {
+        useLineThinner = false;
     }
     
     /**
@@ -166,23 +154,13 @@ public class CannyEdgeFilterAdaptive {
     }
     
     /**
-     * override the default number of levels used in the histogram used to find the
-     * high threshold in the 2 layer thresholding, The default is number of 
-     * levels is 1.  It's the number of levels given to Otsu's multi-level 
-     * thresholding.  For a value of 1, the histogram is performed over the 
-     * entire image.  For a value of 2, histograms are calculated for 2 sets of
-     * calculations over the image, one in which the average intensity of 
-     * neighbors is in bin1 (values 0 to 126)and the other in 
-     * bin2 (values 127 to 255), etc... The histograms are indexed
-     * by the average values of the neighbors.
-     * @param nLevels
+     * set this to use the adaptive threshold in the 2 layer
+     * filter.  it adjusts the threshold by regions of size
+     * 15.  Note that if the image has alot of noise, this
+     * will include alot of noise in the result.
      */
-    public void overrideDefaultNumberOfLevels(int nLevels) {
-        if (nLevels < 1 || nLevels > 255) {
-            throw new IllegalArgumentException(
-                "nLevels must be between 0 and 255, inclusive");
-        }
-        this.numberOfLevelsForHistogram = nLevels;
+    public void overrideToUseAdaptiveThreshold() {
+        useAdaptiveThreshold = true;
     }
     
     public void setToUseSingleThresholdIn2LayerFilter() {
@@ -211,27 +189,17 @@ public class CannyEdgeFilterAdaptive {
         
         if (lineDrawingMode) {
             useAdaptive2Layer = true;
-            this.numberOfLevelsForHistogram = 16;
+            useAdaptiveThreshold = false;
             apply2LayerFilter(input, new HashSet<PairInt>(), input);
             if (debug) {
-                MiscDebug.writeImage(input, "_after_2_layer_");
-            }
-            GreyscaleImage mask = input.copyImage();
-            for (int i = 0; i < input.getNPixels(); ++i) {
-                int v = mask.getValue(i);
-                mask.setValue(i, 255 - v);
-            }                
-            ImageProcessor imageProcessor = new ImageProcessor();
-            imageProcessor.applyAdaptiveMeanThresholding(mask, 1);
-            for (int i = 0; i < mask.getNPixels(); ++i) {
-                int v = mask.getValue(i);
-                if (v == 255) {
-                    input.setValue(i, 0);
+                GreyscaleImage imgcp = input.copyImage();
+                for (int i = 0; i < imgcp.getNPixels(); ++i) {
+                    int v = imgcp.getValue(i);
+                    if (v > 0) {
+                        imgcp.setValue(i, 255);
+                    }
                 }
-                mask.setValue(i, 255 - v);
-            }
-            if (debug) {
-                MiscDebug.writeImage(input, "_adapt_masked_");
+                MiscDebug.writeImage(imgcp, "_after_2_layer_");
             }
             
             filterProducts = createDiffOfGaussians(input);
@@ -243,11 +211,9 @@ public class CannyEdgeFilterAdaptive {
                 MiscDebug.writeImage(filterProducts.getTheta(), "_theta_");
             }
             
-            filterProducts.getGradientXY().resetTo(mask);
-            
-            if (useZhangSuen) {
-                ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
-                lt.applyFilter(filterProducts.getGradientXY());
+            if (useLineThinner) {
+                ImageProcessor imageProcessor = new ImageProcessor();
+                imageProcessor.applyThinning(filterProducts.getGradientXY());
             }
             
             //exploreHoughTransforms(filterProducts.getGradientXY());
@@ -308,7 +274,7 @@ public class CannyEdgeFilterAdaptive {
             float cFraction = (float)c/(float)input.getNPixels();
             if (cFraction > 0.1) {
                 this.useAdaptive2Layer = false;
-                this.numberOfLevelsForHistogram = 1;
+                useAdaptiveThreshold = false;
                 this.otsuScaleFactor = 2.5f;
                 
                 filterProducts.getGradientX().resetTo(gradientCopyBeforeThinning);
@@ -382,14 +348,30 @@ public class CannyEdgeFilterAdaptive {
         if (w < 3 || h < 3) {
             throw new IllegalArgumentException("images should be >= 3x3 in size");
         }
-    
-        int nLevels = numberOfLevelsForHistogram;
-        
-        OtsuThresholding ot = new OtsuThresholding();
-        
-        int[] pixelThresholds = null;
-        if (useAdaptive2Layer && (nLevels > 1)) {
-            pixelThresholds = ot.calculateMultiLevelThreshold256(gradientXY, nLevels);
+           
+        ImageProcessor imageProcessor = new ImageProcessor();
+
+        double[][] threshImg = null;
+       
+        if (useAdaptive2Layer && useAdaptiveThreshold) {
+            AdaptiveThresholding th = new AdaptiveThresholding();
+            threshImg = th.createAdaptiveThresholdImage(
+                imageProcessor.copy(gradientXY), 15, 0.2);
+            if (debug) {//DEBUG
+                double[][] imgCp = imageProcessor.copy(gradientXY);
+                for (int i = 0; i < w; ++i) {
+                    for (int j = 0; j < h; ++j) {
+                        double t = threshImg[i][j];
+                        if (imgCp[i][j] > t) {
+                            imgCp[i][j] = 255.;
+                        } else {
+                            imgCp[i][j] = 0;
+                        }
+                    }
+                }
+                MiscDebug.writeImage(imgCp, "img_a_thresholded_.png");
+                MiscDebug.writeImage(threshImg, "img_a_adaptive_threshold_.png");
+            }
         }
         
         int[] dxs = Misc.dx8;
@@ -428,81 +410,48 @@ public class CannyEdgeFilterAdaptive {
                 
         float tHigh = 0;
         float tLow = 0;
-        if (!useAdaptive2Layer || (nLevels == 1)) {
+        if (!useAdaptive2Layer || !useAdaptiveThreshold) {
+            OtsuThresholding ot = new OtsuThresholding();
             tHigh = otsuScaleFactor * ot.calculateBinaryThreshold256(gradientXY);
             tLow = tHigh/factorBelowHighThreshold;
         }
         
         GreyscaleImage img2 = gradientXY.createWithDimensions();
         
-        for (int i = 0; i < gradientXY.getNPixels(); ++i) {
-            
-            if (useAdaptive2Layer && (nLevels > 1)) {
-                
-                tHigh = otsuScaleFactor * pixelThresholds[i];
-            
-                tLow = tHigh/factorBelowHighThreshold;
-            }
-            
-            int v = gradientXY.getValue(i);
-            
-            if (v < tLow) {
-                continue;
-            } else if (v > tHigh) {
-                img2.setValue(i, v);
-                continue;
-            }
-            
-            int x = gradientXY.getCol(i);
-            int y = gradientXY.getRow(i);
-            
-            boolean foundHigh = false;
-            boolean foundMid = false;
-            
-            for (int k = 0; k < dxs.length; ++k) {                
-                int x2 = x + dxs[k];
-                int y2 = y + dys[k];
-                if ((x2 < 0) || (y2 < 0) || (x2 > (w - 1)) || (y2 > (h - 1))) {
+        // store pixels w/ v > tHigh
+        // and store any of it's neighbors w/ v > tLow
+
+        for (int x = 0; x < w; ++x) {
+            for (int y = 0; y < h; ++y) {
+
+                double v = gradientXY.getValue(x, y);
+
+                double tHigh0, tLow0;
+                if (threshImg != null) {
+                    tHigh0 = threshImg[x][y];
+                    tLow0 = tHigh0/2;
+                } else {
+                    tHigh0 = tHigh;
+                    tLow0 = tLow;
+                }
+
+                if (v < tHigh0 || v < tLow0) {
                     continue;
                 }
-                int v2 = gradientXY.getValue(x2, y2);
-                if (v2 > tHigh) {
-                    foundHigh = true;
-                    break;
-                } else if (v2 > tLow) {
-                    foundMid = true;
-                }
-            }
-            if (foundHigh) {
-                img2.setValue(i, v);
-                continue;
-            }
-            if (!foundMid) {
-                continue;
-            }
-            // search the 5 by 5 region for a "sure edge" pixel
-            for (int dx = -2; dx <= 2; ++dx) {
-                int x2 = x + dx;
-                if ((x2 < 0) || (x2 > (w - 1))) {
-                    continue;
-                }
-                for (int dy = -2; dy <= 2; ++dy) {
-                    int y2 = y + dy;
-                    if ((y2 < 0) || (y2 > (h - 1))) {
+
+                img2.setValue(x, y, 255);
+
+                // store any adjacent w/ v > tLow
+                for (int k = 0; k < dxs.length; ++k) {
+                    int x2 = x + dxs[k];
+                    int y2 = y + dys[k];
+                    if ((x2 < 0) || (y2 < 0) || (x2 > (w - 1)) || (y2 > (h - 1))) {
                         continue;
                     }
-                    if (x2 == x && y2 == y) {
-                        continue;
+                    double v2 = gradientXY.getValue(x2, y2);
+                    if (v2 > tLow0) {
+                        img2.setValue(x2, y2, 255);
                     }
-                    int v2 = gradientXY.getValue(x2, y2);
-                    if (v2 > tHigh) {
-                        img2.setValue(i, v);
-                        foundHigh = true;
-                        break;
-                    }
-                }
-                if (foundHigh) {
-                    break;
                 }
             }
         }
@@ -537,14 +486,18 @@ public class CannyEdgeFilterAdaptive {
                     int y = p.getY();
                     int i = gradientXY.getIndex(x, y);
 
-                    if (useAdaptive2Layer && (nLevels > 1)) {
-                        tHigh = otsuScaleFactor * pixelThresholds[i];
-                        tLow = tHigh/factorBelowHighThreshold;
+                    double tHigh0, tLow0;
+                    if (threshImg != null) {
+                        tHigh0 = threshImg[x][y];
+                        tLow0 = tHigh0/2;
+                    } else {
+                        tHigh0 = tHigh;
+                        tLow0 = tLow;
                     }
                     
                     int v = gradientCopyBeforeThinning.getValue(p);
                                       
-                    if (v > tLow) {
+                    if (v > tLow0) {
                         if (isAdjacentToAHorizOrVertLine(gradientXY, x, y, 3)) {
                             gradientXY.setValue(x, y, 255);
                         }
@@ -1045,7 +998,9 @@ public class CannyEdgeFilterAdaptive {
                 }
             }
         }
-        if (useZhangSuen) {
+        if (useLineThinner) {
+            //ImageProcessor imageProcessor = new ImageProcessor();
+            //imageProcessor.applyThinning(out);
             ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
             lt.applyFilter(out);
         }

@@ -5873,6 +5873,29 @@ if (sum > 511) {
         
         return output;
     }
+    
+    /**
+     * output is column major format
+     * @param input
+     * @return 
+     */
+    public double[][] copy(GreyscaleImage input) {
+        
+        int n0 = input.getNPixels();
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
+        double[][] output = new double[w][h];
+        for (int i = 0; i < w; ++i) {
+            output[i] = new double[h];
+            for (int j = 0; j < h; ++j) {
+                output[i][j] = input.getValue(i, j);
+            }
+        }
+        
+        return output;
+    }
+    
     public Complex[][] convertToComplex(Complex1D[] input) {
         
         int n0 = input.length;
