@@ -824,7 +824,7 @@ public class AndroidStatuesTest extends TestCase {
 
     }
 
-    public void testORBMatcher2() throws Exception {
+    public void estORBMatcher2() throws Exception {
 
         /*
         this demonstrates ORB
@@ -833,13 +833,15 @@ public class AndroidStatuesTest extends TestCase {
               and evaluation of pair combinations of best mathing keypoints
               from which euclidean transformaions are derived.
         
-        Some changes are in progress.
-        a mask applied to template and none to the search image
-        leads to problems identifying same keypoints in different
-        sized images.
+        The results are the top results within a tolerance.
         
-        looking at adaptive masks for binary descriptors...
-       
+        The true match to the object is within the returned top results,
+        but further information is still needed in order to find the
+        correct within the best.
+        
+        see testORBMatcher3 for latest additional use of segmentation
+        and partial shape matching to further locate the object in the
+        search image.
         */
     
         int maxDimension = 256;//512;
@@ -904,7 +906,6 @@ public class AndroidStatuesTest extends TestCase {
             template_ch_HSV = clrHist.histogramHSV(imgs0[1], points0);
             template_ch_LAB = clrHist.histogramCIELAB(imgs0[1], points0); 
         }
-        
         
         String fileName1 = "android_statues_02.jpg";
         //fileName1 = "android_statues_01.jpg"; // set binFactor0 to 2
@@ -1153,6 +1154,229 @@ public class AndroidStatuesTest extends TestCase {
             }
             assertTrue(found);
         }
+        
+        // ---- filter keypoints by color ----
+        TIntSet rm = new TIntHashSet();
+        for (int i = 0; i < keypointsCombined.size(); ++i) {
+            PairInt kp = keypointsCombined.get(i);
+            Set<PairInt> points = imageProcessor.getNeighbors(img, kp);
+            points.add(kp);
+            int[][] ch = clrHist.histogramHSV(img, points);
+            float intersection = clrHist.intersection(template_ch_HSV, ch);
+            
+            if (intersection < 0.2) {
+                rm.add(i);
+            } else {
+                ch = clrHist.histogramCIELAB(img, points);
+                intersection = clrHist.intersection(template_ch_LAB, ch);
+                if (intersection < 0.2) {
+                    rm.add(i);
+                }
+            }
+        }
+        if (!rm.isEmpty()) {
+            int nB = keypointsCombined.size() - rm.size();
+            VeryLongBitString[] dH = new VeryLongBitString[nB];
+            VeryLongBitString[] dS = new VeryLongBitString[nB];
+            VeryLongBitString[] dV = new VeryLongBitString[nB];
+            List<PairInt> kp = new ArrayList<PairInt>(nB);
+            TDoubleList or2 = new TDoubleArrayList(nB);
+            int c1 = 0;
+            for (int i = 0; i < keypointsCombined.size(); ++i) {
+                if (rm.contains(i)) { continue;}
+                kp.add(keypointsCombined.get(i));
+                or2.add(or.get(i));
+                dH[c1] = dHSV[0].descriptors[i];
+                dS[c1] = dHSV[1].descriptors[i];
+                dV[c1] = dHSV[2].descriptors[i];
+                c1++;
+            }
+            keypointsCombined.clear();
+            keypointsCombined.addAll(kp);
+            or.clear();
+            or.addAll(or2);
+            dHSV[0].descriptors = dH;
+            dHSV[1].descriptors = dS;
+            dHSV[2].descriptors = dV;
+        }
+        
+        {
+            Image img11 = img.copyImage();
+            for (int i = 0; i < keypointsCombined.size(); ++i) {
+                PairInt p = keypointsCombined.get(i);
+                ImageIOHelper.addPointToImage(p.getX(), p.getY(), img11, 1, 255, 0, 0);
+                //double angle = orientations.get(i);
+                //int dx = (int)Math.round(3. * Math.cos(angle));
+                //int dy = (int)Math.round(3. * Math.sin(angle));
+                //ImageIOHelper.drawLineInImage(p.getX(), p.getY(), 
+                //    p.getX() + dx, p.getY() + dy, img11, 0, 255, 255, 0);
+            }
+            MiscDebug.writeImage(img11, "_filtered_2_" + fileName1Root);
+        }
+                    
+        long t0 = System.currentTimeMillis();
+    
+        List<CorrespondenceList> corList = ORB.matchDescriptors2(
+            new Descriptors[]{templateDescriptorsH,
+                templateDescriptorsS, templateDescriptorsV}, 
+            dHSV,
+            templateKeypoints, keypointsCombined, 1.5f, 
+            0.1f);
+
+        long t1 = System.currentTimeMillis();
+        System.out.println("matching took " + ((t1 - t0)/1000.) + " sec");
+
+        for (int i0 = 0; i0 < corList.size(); ++i0) {
+            
+            CorrespondenceList cor = corList.get(i0);
+            
+            Image img11 = img.copyToImageExt();
+            CorrespondencePlotter plotter = new CorrespondencePlotter(
+                imgs0[1], img.copyImage());            
+            for (int ii = 0; ii < cor.getPoints1().size(); ++ii) {
+                PairInt p1 = cor.getPoints1().get(ii);
+                PairInt p2 = cor.getPoints2().get(ii);
+
+                ImageIOHelper.addPointToImage(p2.getX(), p2.getY(), img11,
+                    1, 255, 0, 0);
+
+                System.out.println("orb matched: " + p1 + " " + p2);
+                //if (p2.getX() > 160)
+                plotter.drawLineInAlternatingColors(p1.getX(), p1.getY(), 
+                    p2.getX(), p2.getY(), 0);
+            }
+
+            plotter.writeImage("_orb_corres_" + i0);
+            System.out.println(cor.getPoints1().size() + " matches");
+            MiscDebug.writeImage(img11, "_orb_matched_" + i0);
+        }
+    }
+
+    public void testORBMatcher3() throws Exception {
+
+        /*
+        continuing methods from restORBMatcher2
+        
+        this demonstrates ORB
+            followed by filtering of search image keypoints by color.
+            then matching by descriptors 
+              and evaluation of pair combinations of best mathing keypoints
+              from which euclidean transformaions are derived.
+        
+        The results are the top results within a tolerance.
+        
+        The true match to the object is within the returned top results,
+        but further information is still needed in order to find the
+        correct within the best.
+        
+        HERE, adding use of segmentation
+        and partial shape matching to further locate the object in the
+        search image.
+        */
+    
+        int maxDimension = 256;//512;
+        SIGMA sigma = SIGMA.ZEROPOINTFIVE;//SIGMA.ONE;
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
+
+        Set<PairInt> shape0 = new HashSet<PairInt>();
+
+        // to compare to "android_statues_01.jpg",
+        //    set this to '2'
+        int binFactor0 = 1;
+        
+        String fileNameRoot0 = "android_statues_03_sz1";
+        // 1st image is color image, 2nd is masked color image
+        ImageExt[] imgs0 = maskAndBin(fileNameRoot0, 
+            binFactor0, shape0);
+
+        int nShape0_0 = shape0.size();
+       
+        List<PairInt> templateKeypoints = new ArrayList<PairInt>();
+        TDoubleList templateOrientations = new TDoubleArrayList();
+       
+        System.out.println("shape0 nPts=" + nShape0_0);
+        Descriptors templateDescriptorsH = new Descriptors();
+        Descriptors templateDescriptorsS = new Descriptors();
+        Descriptors templateDescriptorsV = new Descriptors();
+        extractTemplateORBKeypoints(imgs0[0], shape0,
+            templateKeypoints, templateOrientations, 
+            templateDescriptorsH, templateDescriptorsS, 
+            templateDescriptorsV);
+ 
+        Image imgTempCP = imgs0[0].copyImage();
+        int[][] templateKP = new int[templateKeypoints.size()][];
+        for (int i = 0; i < templateKP.length; ++i) {
+            templateKP[i] = new int[2];
+            PairInt p = templateKeypoints.get(i);
+            templateKP[i][1] = p.getY();
+            templateKP[i][0] = p.getX();
+            ImageIOHelper.addPointToImage(p.getX(), p.getY(), imgTempCP, 1, 255, 0, 0);
+            double angle = templateOrientations.get(i);
+            int dx = (int)Math.round(3. * Math.cos(angle));
+            int dy = (int)Math.round(3. * Math.sin(angle));
+            ImageIOHelper.drawLineInImage(p.getX(), p.getY(), 
+                p.getX() + dx, p.getY() + dy, imgTempCP, 0, 255, 255, 0);
+        }
+        MiscDebug.writeImage(imgTempCP, "_filtered_1_" + fileNameRoot0);               
+        
+        ColorHistogram clrHist = new ColorHistogram();
+
+        int[][] template_ch_HSV = null;
+        int[][] template_ch_LAB = null;
+        {
+            Set<PairInt> points0 = new HashSet<PairInt>();
+            for (int i = 0; i < templateKP.length; ++i) {
+                PairInt p = templateKeypoints.get(i);
+                Set<PairInt> points = imageProcessor.getNeighbors(imgs0[0], p);
+                points.add(p);
+                points0.addAll(points);
+            }
+            template_ch_HSV = clrHist.histogramHSV(imgs0[1], points0);
+            template_ch_LAB = clrHist.histogramCIELAB(imgs0[1], points0); 
+        }
+        
+        String fileName1 = "android_statues_02.jpg";
+        //fileName1 = "android_statues_01.jpg"; // set binFactor0 to 2
+        //fileName1 = "android_statues_04.jpg";
+        fileName1 = "android_statues_03.jpg";
+
+        String fileName1Root = fileName1.substring(0, fileName1.lastIndexOf("."));
+        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+        ImageExt img = ImageIOHelper.readImageExt(filePath1);
+
+        long ts = MiscDebug.getCurrentTimeFormatted();
+
+        int w1 = img.getWidth();
+        int h1 = img.getHeight();
+
+        int binFactor1 = (int) Math.ceil(Math.max(
+            (float) w1 / maxDimension,
+            (float) h1 / maxDimension));
+
+        img = imageProcessor.binImage(img, binFactor1);
+        
+        ImageExt imgCp = img.copyToImageExt();
+       
+        int w = img.getWidth();
+        int h = img.getHeight();
+       
+        ORB orb = new ORB(2000);//10000
+        //orb.overrideFastThreshold(0.01f);
+        orb.overrideFastThreshold(0.001f);
+        orb.overrideToCreateHSVDescriptors();
+        orb.overrideToAlsoCreate1stDerivKeypoints();
+        orb.overrideToCreateCurvaturePoints();
+        //orb.overrideToCreateOffsetsToDescriptors(ORB.DescriptorDithers.FIFTEEN);
+        orb.detectAndExtract(img);
+
+        List<PairInt> keypointsCombined = orb.getAllKeyPoints();
+        Descriptors[] dHSV = orb.getAllDescriptorsHSV();        
+        TDoubleList or = orb.getAllOrientations();
+        //Descriptors descriptorsH = dHSV[0];
+        //Descriptors descriptorsS = dHSV[1];
+        //Descriptors descriptorsV = dHSV[2];
         
         // ---- filter keypoints by color ----
         TIntSet rm = new TIntHashSet();
@@ -1891,7 +2115,7 @@ public class AndroidStatuesTest extends TestCase {
 
         CannyEdgeFilterAdaptive canny =
             new CannyEdgeFilterAdaptive();
-        canny.setToNotUseZhangSuen();
+        canny.overrideToNotUseLineThinner();
         canny.applyFilter(gsImg);
         for (int i = 0; i < gsImg.getNPixels(); ++i) {
             if (gsImg.getValue(i) > 0) {
