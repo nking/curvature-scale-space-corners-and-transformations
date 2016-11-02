@@ -37,6 +37,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -6186,6 +6188,8 @@ if (sum > 511) {
             float scale = prevScl * (x + y)/2.f;
             
             scales.add(scale);
+            
+            prevScl = scale;
         }
         
         return scales;
@@ -8939,31 +8943,40 @@ if (sum > 511) {
         
         // --- build filler scale images ----
         TFloatList scalesToBuild = new TFloatArrayList(scales.size() + 2);
+        scalesToBuild.add(1.125f);
         scalesToBuild.add(1.25f);
         scalesToBuild.add(1.5f);
         scalesToBuild.add(1.75f);
         
         for (int i = 1; i < scales.size() - 1; ++i) {
-            float b = 0.5f * (scales.get(i + 1) + scales.get(i));
-            scalesToBuild.add(b);
+            float si = scales.get(i);
+            float d = 0.25f * (scales.get(i + 1) - si);
+            for (int j = 0; j < 3; ++j) {
+                float b = si + d * (j + 1);
+                scalesToBuild.add(b);
+            }
         }
         
-        for (int i = scalesToBuild.size() - 1; i > -1; --i) {
+        /*
+        System.out.println("scalesToBuild=" 
+            + Arrays.toString(
+                scalesToBuild.toArray(new float[scalesToBuild.size()]))
+            + " scales-"
+            + Arrays.toString(
+                scales.toArray(new float[scales.size()]))
+        );*/
+        
+        for (int i = 0; i < scalesToBuild.size(); ++i) {
             
             float scale = scalesToBuild.get(i);
             
             GreyscaleImage out = mt.decimateImage(input,
                 scale, 0, 255);
             
-            //inserts:  0,1,2,   b3    b4    b5
-            //pyramid:  0      1    2     3     4
-            
-            int insIdx = i - 1;
-            if (insIdx < 1) {
-                insIdx = 1;
-            }
-            output.add(insIdx, out);
+            output.add(out);
         }
+      
+        Collections.sort(output, new DecreasingSizeComparator());
 
         return output;
         
@@ -9137,6 +9150,40 @@ if (sum > 511) {
         }
         
         return out;
+    }
+    
+    /**
+     * comparator that assumes can compare by widths along,
+     * unless there is a tie, then it uses height.
+     */
+    private class DecreasingSizeComparator implements 
+        Comparator<GreyscaleImage> {
+
+        @Override
+        public int compare(GreyscaleImage o1, 
+            GreyscaleImage o2) {
+        
+            int w1 = o1.getWidth();
+            int w2 = o2.getWidth();
+            
+            if (w1 > w2) {
+                return -1;
+            } else if (w1 < w2) {
+                return 1;
+            }
+        
+            int h1 = o1.getHeight();
+            int h2 = o2.getHeight();
+            
+            if (h1 > h2) {
+                return -1;
+            } else if (h1 < h2) {
+                return 1;
+            }
+            
+            return 0;
+        }
+        
     }
     
     // TODO: implement the methods in 

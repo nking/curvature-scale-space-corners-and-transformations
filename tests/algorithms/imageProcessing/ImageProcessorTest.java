@@ -1419,15 +1419,19 @@ public class ImageProcessorTest extends TestCase {
         ImageProcessor imageProcessor = new ImageProcessor();
         
         List<GreyscaleImage> pyramid = 
-            imageProcessor.buildPyramid2(img, 64);
+            imageProcessor.buildPyramid2(img, 32);
         
         //TODO: add more than a visual inspection here
         /*
         for (int i = 0; i < pyramid.size(); ++i) {
             GreyscaleImage pImg = pyramid.get(i);
-            MiscDebug.writeImage(pImg, "_pyramid_" + i);
-        }
-        */
+            String str = Integer.toString(i);
+            if (str.length() < 2) {
+                str = "0" + str;
+            }
+            MiscDebug.writeImage(pImg, "_pyramid_" + str);
+        }*/
+        
     }
     
 }
