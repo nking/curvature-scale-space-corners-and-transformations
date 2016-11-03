@@ -6,6 +6,7 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.MedianTransform;
 import algorithms.imageProcessing.StructureTensor;
 import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.transform.TransformationParameters;
@@ -165,7 +166,8 @@ public class ORB {
     protected float curvatureThresh = 0.05f;
 
     // pyramid images will be no smaller than this
-    protected final int decimationLimit = 32;
+    private final static int defaultDecimationLimit = 32;
+    protected final int decimationLimit = defaultDecimationLimit;
     
     /**
      * @return the pyramidImages
@@ -211,6 +213,8 @@ public class ORB {
 
     protected int nPyramidB = 3;
     
+    protected boolean useSmallestPyramid = false;
+    
     /**
      * Still testing the class, there may be bugs present.
      * @param nKeypoints
@@ -227,6 +231,10 @@ public class ORB {
     }
     public void overrideFastThreshold(float threshold) {
         this.fastThreshold = threshold;
+    }
+    
+    public void overrideToUseSmallestPyramid() {
+        useSmallestPyramid = true;
     }
 
     /**
@@ -445,17 +453,35 @@ public class ORB {
         GreyscaleImage imageR = image.copyRedToGreyscale();
         GreyscaleImage imageG = image.copyGreenToGreyscale();
         GreyscaleImage imageB = image.copyBlueToGreyscale();
-     
-        ImageProcessor imageProcessor = new ImageProcessor();
+          
+        List<GreyscaleImage> outputR;
+        List<GreyscaleImage> outputG;
+        List<GreyscaleImage> outputB;
         
-        List<GreyscaleImage> outputR = imageProcessor.buildPyramid2(
-            imageR, decimationLimit, nPyramidB);
+        if (useSmallestPyramid) {
         
-        List<GreyscaleImage> outputG = imageProcessor.buildPyramid2(
-            imageG, decimationLimit, nPyramidB);
+            outputR = new ArrayList<GreyscaleImage>();
+            outputG = new ArrayList<GreyscaleImage>();
+            outputB = new ArrayList<GreyscaleImage>();
+            
+            MedianTransform mt = new MedianTransform();
+            mt.multiscalePyramidalMedianTransform2(imageR, outputR, decimationLimit);
+            mt.multiscalePyramidalMedianTransform2(imageG, outputG, decimationLimit);
+            mt.multiscalePyramidalMedianTransform2(imageB, outputB, decimationLimit);
         
-        List<GreyscaleImage> outputB = imageProcessor.buildPyramid2(
-            imageB, decimationLimit, nPyramidB);
+        } else {
+            
+            ImageProcessor imageProcessor = new ImageProcessor();
+            
+            outputR = imageProcessor.buildPyramid2(
+                imageR, decimationLimit, nPyramidB);
+
+            outputG = imageProcessor.buildPyramid2(
+                imageG, decimationLimit, nPyramidB);
+
+            outputB = imageProcessor.buildPyramid2(
+                imageB, decimationLimit, nPyramidB);
+        }
         
         float[] hsv = new float[3];
         
@@ -507,9 +533,18 @@ public class ORB {
         
         ImageProcessor imageProcessor = new ImageProcessor();
         
-        List<GreyscaleImage> output = imageProcessor.buildPyramid2(
-            img, decimationLimit, nPyramidB);
-
+        List<GreyscaleImage> output;
+   
+        if (useSmallestPyramid) {
+            output = new ArrayList<GreyscaleImage>();
+            MedianTransform mt = new MedianTransform();
+            mt.multiscalePyramidalMedianTransform2(img, output, decimationLimit);
+        } else {
+           output = imageProcessor.buildPyramid2(
+               img, decimationLimit, nPyramidB); 
+        }
+        
+        
         List<TwoDFloatArray> output2 = new ArrayList<TwoDFloatArray>();
         for (int i = 0; i < output.size(); ++i) {
             float[][] gsImgF = imageProcessor.multiply(output.get(i), 1.f/255.f);
@@ -1938,6 +1973,57 @@ public class ORB {
      */
     public List<TFloatList> getHarrisResponseList() {
         return harrisResponses;
+    }
+    
+    public static int estimateNumberOfDefaultScales(int imageWidth, int imageHeight) {
+        
+        // duplicating the default loop logic to calculate number
+        // of images in a pyramid for this image size.
+        
+        int nBetween = 3;
+        
+        int imgDimen = Math.min(imageWidth, imageHeight);
+
+        int nr = (int)(Math.log(imgDimen)/Math.log(2));
+        int s = 1;
+        int winL = 2*s + 1;
+        
+        int w = imageWidth;
+        int h = imageHeight;
+        
+        int ns = 1;
+        
+        for (int j = 0; j < (nr - 1); ++j) {
+            if ((w < winL) || (h < winL)) {
+                break;
+            }
+            if ((w <= defaultDecimationLimit) && 
+                (h <= defaultDecimationLimit)) {
+                break;
+            }
+            w /= 2;
+            h /= 2;
+            ns++;
+        }
+        
+        int stop = ns;
+        
+        ns += 4;
+        
+        float f = 1.f/(nBetween + 1);
+        
+        int start = 1;
+        if (nBetween > 4) {
+            start = 0;
+        }
+        
+        for (int i = start; i < stop - 1; ++i) {
+            for (int j = 0; j < (nBetween + 1); ++j) {
+                ns++;
+            }
+        }
+        
+        return ns;
     }
     
     /**

@@ -1255,7 +1255,7 @@ public class AndroidStatuesTest extends TestCase {
     public void testORBMatcher3() throws Exception {
 
         /*
-        continuing methods from restORBMatcher2
+        continuing methods from testORBMatcher2
         
         this demonstrates ORB
             followed by filtering of search image keypoints by color.
@@ -1319,7 +1319,7 @@ public class AndroidStatuesTest extends TestCase {
             ImageIOHelper.drawLineInImage(p.getX(), p.getY(), 
                 p.getX() + dx, p.getY() + dy, imgTempCP, 0, 255, 255, 0);
         }
-        MiscDebug.writeImage(imgTempCP, "_filtered_1_" + fileNameRoot0);               
+        MiscDebug.writeImage(imgTempCP, "_template_keypoints_" + fileNameRoot0);               
         
         ColorHistogram clrHist = new ColorHistogram();
 
@@ -1434,8 +1434,10 @@ public class AndroidStatuesTest extends TestCase {
                 //ImageIOHelper.drawLineInImage(p.getX(), p.getY(), 
                 //    p.getX() + dx, p.getY() + dy, img11, 0, 255, 255, 0);
             }
-            MiscDebug.writeImage(img11, "_filtered_2_" + fileName1Root);
+            MiscDebug.writeImage(img11, "_srch_keypoints_filtered_" + fileName1Root);
         }
+        
+        // ----- add object segmentation ---
                     
         long t0 = System.currentTimeMillis();
     

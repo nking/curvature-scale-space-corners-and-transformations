@@ -9002,7 +9002,7 @@ if (sum > 511) {
             start = 0;
         }
         
-        for (int i = 0; i < scales.size() - 1; ++i) {
+        for (int i = start; i < scales.size() - 1; ++i) {
             float si = scales.get(i);
             float d = f * (scales.get(i + 1) - si);
             for (int j = 0; j < (nBetween + 1); ++j) {

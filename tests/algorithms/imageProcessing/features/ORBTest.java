@@ -13,6 +13,7 @@ import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import algorithms.util.TwoDFloatArray;
 import gnu.trove.list.TDoubleList;
@@ -37,7 +38,7 @@ public class ORBTest extends TestCase {
     public ORBTest() {
     }
     
-    public void testPeakLocalMax() {
+    public void estPeakLocalMax() {
         
         /*
         using a test embedded in scipy code.
@@ -137,7 +138,7 @@ public class ORBTest extends TestCase {
         }
     }
     
-    public void testCornerPeaks() {
+    public void estCornerPeaks() {
         
         ORB orb = new ORB(10);
         
@@ -360,7 +361,7 @@ public class ORBTest extends TestCase {
         */
     }
     
-    public void testTensor() {
+    public void estTensor() {
         
         /*
         >>> from skimage.feature import structure_tensor
@@ -376,6 +377,7 @@ public class ORBTest extends TestCase {
         */
         
         ORB orb = new ORB(100);
+        orb.overrideToUseSmallestPyramid();
         
         int sz = 5;
         
@@ -434,9 +436,10 @@ public class ORBTest extends TestCase {
         assertTrue((Math.round(axx[3][1])/factor - 1.) < 0.01);
     }
     
-    public void testCornerHarris() {
+    public void estCornerHarris() {
         
         ORB orb = new ORB(100);
+        orb.overrideToUseSmallestPyramid();
         
         int sz = 10;
         
@@ -508,7 +511,7 @@ public class ORBTest extends TestCase {
         assertTrue(expected.isEmpty());
     }
     
-    public void testKeypoints_1() throws Exception {
+    public void estKeypoints_1() throws Exception {
         
         String fileName = "susan-in_plus.png";  
         String filePath = ResourceFinder.findFileInTestResources(fileName);
@@ -519,6 +522,7 @@ public class ORBTest extends TestCase {
         //NOTE: the ridges are picked up well with reduced threshold
         
         ORB orb = new ORB(500);
+        orb.overrideToUseSmallestPyramid();
         //orb.overrideFastN(12);
         orb.overrideFastThreshold(0.01f);
         orb.overrideToNotCreateDescriptors();
@@ -545,7 +549,7 @@ public class ORBTest extends TestCase {
         
     }
     
-    public void testKeypoints_2() throws Exception {
+    public void estKeypoints_2() throws Exception {
         
         String fileName = "susan-in_plus.png";  
         String filePath = ResourceFinder.findFileInTestResources(fileName);
@@ -559,6 +563,7 @@ public class ORBTest extends TestCase {
         //NOTE: the ridges are picked up well with reduced threshold
         
         ORB orb = new ORB(500);
+        orb.overrideToUseSmallestPyramid();
         //orb.overrideFastN(12);
         //orb.overrideFastThreshold(0.01f);
         orb.overrideToNotCreateDescriptors();
@@ -578,7 +583,7 @@ public class ORBTest extends TestCase {
         
     }
     
-    public void testKeypoints_3() throws Exception {
+    public void estKeypoints_3() throws Exception {
         
         //NOTE: can see there may still be errors in the code
         // or need to allow relaxation of border distance
@@ -590,6 +595,7 @@ public class ORBTest extends TestCase {
         ImageExt img = img0.copyToImageExt();
                 
         ORB orb = new ORB(500);
+        orb.overrideToUseSmallestPyramid();
         //orb.overrideFastN(12);
         //orb.overrideFastThreshold(0.01f);
         orb.overrideToAlsoCreate1stDerivKeypoints();
@@ -608,7 +614,7 @@ public class ORBTest extends TestCase {
         
     }
     
-    public void testKeypoints_4() throws Exception {
+    public void estKeypoints_4() throws Exception {
         
         String fileName = "blox.gif";
         String filePath = ResourceFinder.findFileInTestResources(fileName);
@@ -619,6 +625,7 @@ public class ORBTest extends TestCase {
         //NOTE: the ridges are picked up well with reduced threshold
         
         ORB orb = new ORB(500);
+        orb.overrideToUseSmallestPyramid();
         //orb.overrideFastThreshold(0.01f);
         orb.detectAndExtract(img);
         orb.overrideToNotCreateDescriptors();
@@ -635,7 +642,7 @@ public class ORBTest extends TestCase {
         MiscDebug.writeImage(img0, "orb_keypoints_04");        
     }
     
-    public void testKeypoints_5() throws Exception {
+    public void estKeypoints_5() throws Exception {
         
         //NOTE: can see there may still be errors in the code
         // or need to allow relaxation of border distance
@@ -647,6 +654,7 @@ public class ORBTest extends TestCase {
         ImageExt img = img0.copyToImageExt();
                 
         ORB orb = new ORB(500);
+        orb.overrideToUseSmallestPyramid();
         //orb.overrideFastN(12);
         orb.overrideFastThreshold(0.01f);
         orb.overrideToNotCreateDescriptors();
@@ -665,7 +673,7 @@ public class ORBTest extends TestCase {
         
     }
     
-    public void testKeypoints_6() throws Exception {
+    public void estKeypoints_6() throws Exception {
         
         //NOTE: can see there may still be errors in the code
         // or need to allow relaxation of border distance
@@ -677,6 +685,7 @@ public class ORBTest extends TestCase {
         ImageExt img = img0.copyToImageExt();
                 
         ORB orb = new ORB(500);
+        orb.overrideToUseSmallestPyramid();
         //orb.overrideFastN(12);
         orb.overrideToNotCreateDescriptors();
         orb.overrideToAlsoCreate1stDerivKeypoints();
@@ -695,7 +704,7 @@ public class ORBTest extends TestCase {
         
     }
     
-     public void testKeypoints_7() throws Exception {
+     public void estKeypoints_7() throws Exception {
         
         //NOTE: can see there may still be errors in the code
         // or need to allow relaxation of border distance
@@ -707,6 +716,7 @@ public class ORBTest extends TestCase {
         ImageExt img = img0.copyToImageExt();
                 
         ORB orb = new ORB(500);
+        orb.overrideToUseSmallestPyramid();
         //orb.overrideFastN(12);
         orb.overrideFastThreshold(0.01f);
         orb.overrideToNotCreateDescriptors();
@@ -733,7 +743,7 @@ public class ORBTest extends TestCase {
         
     }
      
-    public void testKeypoints_8() throws Exception {
+    public void estKeypoints_8() throws Exception {
         
         //NOTE: can see there may still be errors in the code
         // or need to allow relaxation of border distance
@@ -745,6 +755,7 @@ public class ORBTest extends TestCase {
         ImageExt img = img0.copyToImageExt();
                 
         ORB orb = new ORB(500);
+        orb.overrideToUseSmallestPyramid();
         //orb.overrideFastN(12);
         //orb.overrideFastThreshold(0.01f);
         orb.overrideToNotCreateDescriptors();
@@ -764,7 +775,7 @@ public class ORBTest extends TestCase {
         
     }
      
-    public void testKeypoints_9() throws Exception {
+    public void estKeypoints_9() throws Exception {
         
         //NOTE: can see there may still be errors in the code
         // or need to allow relaxation of border distance
@@ -776,6 +787,7 @@ public class ORBTest extends TestCase {
         ImageExt img = img0.copyToImageExt();
                 
         ORB orb = new ORB(2000);
+        orb.overrideToUseSmallestPyramid();
         //orb.overrideFastN(12);
         orb.overrideFastThreshold(0.01f);
         orb.overrideToNotCreateDescriptors();
@@ -802,7 +814,7 @@ public class ORBTest extends TestCase {
         
     }
     
-    public void testKeypoints_10() throws Exception {
+    public void estKeypoints_10() throws Exception {
         
         //NOTE: can see there may still be errors in the code
         // or need to allow relaxation of border distance
@@ -817,6 +829,7 @@ public class ORBTest extends TestCase {
         imageProcessor.blur(img, SIGMA.getValue(SIGMA.TWO), 0, 255);
                 
         ORB orb = new ORB(2000);
+        orb.overrideToUseSmallestPyramid();
         //orb.overrideFastN(12);
         orb.overrideToNotCreateDescriptors();
         orb.overrideToAlsoCreate1stDerivKeypoints();
@@ -835,7 +848,7 @@ public class ORBTest extends TestCase {
         
     }
    
-    public void testKeypoints_11() throws Exception {
+    public void estKeypoints_11() throws Exception {
         
         //NOTE: can see there may still be errors in the code
         // or need to allow relaxation of border distance
@@ -850,6 +863,7 @@ public class ORBTest extends TestCase {
         imageProcessor.blur(img, SIGMA.getValue(SIGMA.TWO), 0, 255);
                 
         ORB orb = new ORB(2000);
+        orb.overrideToUseSmallestPyramid();
         //orb.overrideFastN(12);
         orb.overrideToNotCreateDescriptors();
         
@@ -867,7 +881,7 @@ public class ORBTest extends TestCase {
         
     }
    
-    public void testKeypoints_12() throws Exception {
+    public void estKeypoints_12() throws Exception {
         
         //NOTE: can see there may still be errors in the code
         // or need to allow relaxation of border distance
@@ -882,6 +896,7 @@ public class ORBTest extends TestCase {
         imageProcessor.blur(img, SIGMA.getValue(SIGMA.TWO), 0, 255);
                 
         ORB orb = new ORB(2000);
+        orb.overrideToUseSmallestPyramid();
         //orb.overrideFastN(12);
         orb.overrideToNotCreateDescriptors();
         orb.overrideToAlsoCreate1stDerivKeypoints();
@@ -900,7 +915,7 @@ public class ORBTest extends TestCase {
         
     }
    
-    public void testDescriptors() throws IOException {
+    public void estDescriptors() throws IOException {
         
         /*
         2 test images:
@@ -927,6 +942,7 @@ public class ORBTest extends TestCase {
         //MiscDebug.writeImage(img90, "_rotated_");
         
         ORB orb = new ORB(2);
+        orb.overrideToUseSmallestPyramid();
         orb.detectAndExtract(img);
         List<PairInt> kp0 = orb.getAllKeyPoints();
         Descriptors desc0 = orb.getAllDescriptors();
@@ -1019,6 +1035,109 @@ public class ORBTest extends TestCase {
             
             assertTrue(foundCenterCostIsZero);
         }       
+    }
+    
+    public void testHSVDescriptors() throws IOException {
+        
+        /*
+        test an image with 2 color rectangles having very different
+        HSV colors.
+        
+        (1) matching the original image descriptors with copy of image
+            rotated by 90 degrees.
+        (2) matching original image descriptors with copy of image 
+            totated by 90 and then scaled down to 40 percent.
+        (3) matching original image descriptors with copy of image
+            rotated gy 90 and then scaled up to 140 percent.
+        */
+        
+        // ----- test (1) ----------
+        Image img = getColorRectangles();
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        Transformer tr = new Transformer();
+        TransformationParameters params = new TransformationParameters();
+        params.setOriginX(w/2);
+        params.setOriginY(w/2);
+        params.setRotationInDegrees(90);        
+        Image img90 = tr.applyTransformation(img, params, w, h);
+        
+        MiscDebug.writeImage(img, "_rect_");
+        MiscDebug.writeImage(img90, "_rect_rotated_");
+        
+        int nPyramidImages = ORB.estimateNumberOfDefaultScales(w, h);
+        int np = 8 * nPyramidImages;
+        
+        ORB orb = new ORB(np);
+        orb.overrideToCreateHSVDescriptors();
+        orb.detectAndExtract(img);
+        
+        List<PairInt> kp0 = orb.getAllKeyPoints();
+        Descriptors[] descHSV0 = orb.getAllDescriptorsHSV();
+        List<TIntList> yList = orb.getKeyPoint0List();
+        List<TIntList> xList = orb.getKeyPoint1List();
+        List<TFloatList> scalesList = orb.getScalesList();
+        assertTrue(nPyramidImages >= yList.size());
+        assertTrue(yList.size() == xList.size());
+        
+        ORB orb1 = new ORB(np);
+        orb1.overrideToCreateHSVDescriptors();
+        orb1.detectAndExtract(img90);
+        
+        List<PairInt> kp90 = orb1.getAllKeyPoints();
+        Descriptors[] descHSV90 = orb1.getAllDescriptorsHSV();
+        List<TIntList> yList90 = orb1.getKeyPoint0List();
+        List<TIntList> xList90 = orb1.getKeyPoint1List();
+        
+        int[][] matches = ORB.matchDescriptors(
+            descHSV0, descHSV90, kp0, kp90);
+
+        PairIntArray expected0 = new PairIntArray(8);
+        expected0.add(20, 30);
+        expected0.add(50, 30);
+        expected0.add(20, 50);
+        expected0.add(50, 50);
+        expected0.add(90, 70);
+        expected0.add(110, 70);
+        expected0.add(90, 110);
+        expected0.add(110, 110);
+        
+        PairIntArray expected90 = tr.applyTransformation(params, 
+            expected0);
+               
+    }
+    
+    private Image getColorRectangles() {
+        
+        /*
+        image dimension 126 X 126
+        
+        rectangle of magentish HSB: 0.83,<1,1  RGB:(255,48,255)
+           x:20 to 50, y:30 to 50
+        
+        rectangle of silver    HSB: 0.,0,0.75  RGB:(192,192,192) 
+           x:90 to 110, y:70 to 110
+        
+        */
+        int w = 126;
+        int h = 126;
+        
+        Image img = new Image(w, h);
+        
+        for (int i = 20; i < 50; ++i) {
+            for (int j = 30; j < 50; ++j) {
+                img.setRGB(i, j, 255,48,255);
+            }
+        }
+        
+        for (int i = 90; i < 110; ++i) {
+            for (int j = 70; j < 110; ++j) {
+                img.setRGB(i, j, 192,192,192);
+            }
+        }
+        
+        return img;
     }
     
     private Image getFigureEight() throws IOException {
