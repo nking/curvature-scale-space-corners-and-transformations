@@ -2214,8 +2214,8 @@ public class ORB {
                 TIntList costs = new TIntArrayList(nTot);
                 for (int ii = 0; ii < n1; ++ii) {
                     PairInt p1 = new PairInt(kpX1.get(ii), kpY1.get(ii));
-                  //  for (int jj = 0; jj < n2; ++jj) {
-                    for (int jj = ii; jj < ii + 1; ++jj) {
+                    for (int jj = 0; jj < n2; ++jj) {
+                    //for (int jj = ii; jj < ii + 1; ++jj) {
                         int c = cost[ii][jj];
                         if (c > topLimit) {
                             continue;
@@ -2237,10 +2237,6 @@ public class ORB {
                     }
                 }
                
-     // this is just for debugging and can be removed after
-     TObjectIntMap<PairInt> p2IndexMap = createIndexMap(kpX2, kpY2);
-            
-                
                 // --- calculate transformations in pairs and evaluate ----
                 for (int ii = 0; ii < pairs.size(); ++ii) {
                     
@@ -2296,17 +2292,6 @@ public class ORB {
                         double sum1 = 0;
                         double sum2 = 0;
                         double sum = 0;
-{
-                    int idxt1 = p1IndexMap.get(new PairInt(t1X, t1Y));
-                    int idxt2 = p1IndexMap.get(new PairInt(t2X, t2Y));
-
-                    int idxs1 = p2IndexMap.get(new PairInt(s1X, s1Y));
-                    int idxs2 = p2IndexMap.get(new PairInt(s2X, s2Y));
-
-                    if (idxt1 == idxs1 && idxt2 == idxs2) {
-                        int z = 0;
-                    }
-                }
                         
                         for (int k = 0; k < tr2.getN(); ++k) {
                             int x2Tr = tr2.getX(k);
@@ -2315,7 +2300,8 @@ public class ORB {
                             
                             Set<PairInt> nearest = null;
                             if ((x2Tr >= 0) && (y2Tr >= 0)
-                                && (x2Tr < maxX) && (y2Tr < maxY)) {
+                                && (x2Tr <= (maxX + limit)) 
+                                && (y2Tr <= (maxY + limit))) {
                                 nearest = nn.findClosest(x2Tr, y2Tr, limit);
                             }
                             
@@ -2365,17 +2351,7 @@ public class ORB {
                         if (sum < minCostTotal ||
                             (sum == minCostTotal 
                             && mCount > minCostCor.getPoints1().size())) {
-{
-        int idxt1 = p1IndexMap.get(new PairInt(t1X, t1Y));
-        int idxt2 = p1IndexMap.get(new PairInt(t2X, t2Y));
 
-        int idxs1 = p2IndexMap.get(new PairInt(s1X, s1Y));
-        int idxs2 = p2IndexMap.get(new PairInt(s2X, s2Y));
-
-        if (idxt1 == idxs1 && idxt2 == idxs2) {
-            int z = 0;
-        }
-    }
                             minCostTotal = sum;
                             minCost1 = sum1;
                             minCost2 = sum2;
