@@ -1318,12 +1318,60 @@ public class ORBTest extends TestCase {
             int idx2 = kp90_3.indexOf(p2);
             assert(idx1 == idx2);
         }
-        assertEquals(expected0.getN(), cor.getPoints1().size());
-         
+        assertEquals(expected0.getN(), cor.getPoints1().size());         
         
+        // ---- scramble the order of points in the dataset2 frame for just
+        //      the fist size data and repeat the test.
+        //      (this makes sure that the best answer is found even when
+        //      order of points does not start w/ true matches)
+        {
+            Descriptors h2 = descH2.get(0);
+            Descriptors s2 = descS2.get(0);
+            Descriptors v2 = descV2.get(0);
+            TIntList x2 = keypointsX2.get(0);
+            TIntList y2 = keypointsY2.get(0);
+            // change the order of points.  reverse
+            int nSep = x2.size() >> 1;
+            for (int idx = 0; idx < nSep; ++idx) {
+                int idx2 = x2.size() - 1 - idx;
+                
+                VeryLongBitString swap1 = h2.descriptors[idx];
+                h2.descriptors[idx] = h2.descriptors[idx2];
+                h2.descriptors[idx2] = swap1;
+                
+                swap1 = s2.descriptors[idx];
+                s2.descriptors[idx] = s2.descriptors[idx2];
+                s2.descriptors[idx2] = swap1;
+                
+                swap1 = v2.descriptors[idx];
+                v2.descriptors[idx] = v2.descriptors[idx2];
+                v2.descriptors[idx2] = swap1;
+                
+                int swap2 = x2.get(idx);
+                x2.set(idx, x2.get(idx2));
+                x2.set(idx2, swap2);
+                
+                swap2 = y2.get(idx);
+                y2.set(idx, y2.get(idx2));
+                y2.set(idx2, swap2);
+            }
+        }
+        corList = ORB.matchDescriptors2(
+            scales1, scales2,
+            descH1, descS1, descV1,
+            descH2, descS2, descV2,
+            keypointsX1, keypointsY1,
+            keypointsX2, keypointsY2, 2, 0.1f);
+        cor = corList.get(0);
+        for (int i = 0; i < cor.getPoints1().size(); ++i) {
+            PairInt p1 = cor.getPoints1().get(i);
+            PairInt p2 = cor.getPoints2().get(i);
+            int idx1 = kp0_3.indexOf(p1);
+            int idx2 = kp90_3.indexOf(p2);
+            assert(idx1 == idx2);
+        }
+        assertEquals(expected0.getN(), cor.getPoints1().size()); 
         
-        // ---- scramble the order of points in the dataset2 frame and repeat
-        //      the test for only the scale=1 data
         
         // (2) ------- copy the rotated image and scale it by 0.7 -------
     }
