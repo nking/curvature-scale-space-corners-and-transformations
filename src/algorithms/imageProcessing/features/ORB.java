@@ -11,6 +11,7 @@ import algorithms.imageProcessing.StructureTensor;
 import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
+import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.MiscMath;
 import algorithms.search.NearestNeighbor2D;
 import algorithms.util.PairInt;
@@ -315,7 +316,7 @@ public class ORB {
 
         // extract keypoints and store results and images at class level
         extractKeypoints(image);
-
+        
         int nKeyPointsTotal = countKeypoints();
         
         System.out.println("nKeypointsTotal=" + nKeyPointsTotal +
@@ -521,8 +522,8 @@ public class ORB {
     }    
     
     /**
-     * @param image
-     * @return
+     * @param image in col major format
+     * @return float array of pyramid images in row major format
      */
     private List<TwoDFloatArray> buildPyramid(GreyscaleImage img) {
 
@@ -543,12 +544,13 @@ public class ORB {
            output = imageProcessor.buildPyramid2(
                img, decimationLimit, nPyramidB); 
         }
-        
-        
+               
         List<TwoDFloatArray> output2 = new ArrayList<TwoDFloatArray>();
         for (int i = 0; i < output.size(); ++i) {
-            float[][] gsImgF = imageProcessor.multiply(output.get(i), 1.f/255.f);
-            TwoDFloatArray f = new TwoDFloatArray(gsImgF);
+            float[][] rowMajorImg = imageProcessor.copyToRowMajor(
+                output.get(i));
+            MatrixUtil.multiply(rowMajorImg, 1.f/255.f);
+            TwoDFloatArray f = new TwoDFloatArray(rowMajorImg);
             output2.add(f);
         }
 
@@ -641,6 +643,9 @@ public class ORB {
                 
         List<TwoDFloatArray> pyramid = buildPyramid(image);
         
+        assert(pyramid.get(0).a.length == image.getHeight());
+        assert(pyramid.get(0).a[0].length == image.getWidth());
+
         keypoints0List = new ArrayList<TIntList>();
         keypoints1List = new ArrayList<TIntList>();
         orientationsList = new ArrayList<TDoubleList>();
@@ -661,6 +666,8 @@ public class ORB {
             pyramidV = new ArrayList<TwoDFloatArray>();
             buildHSVPyramid(image, pyramidH, pyramidS, pyramidV);
             assert(pyramidH.size() == pyramid.size());
+            assert(pyramidH.get(0).a.length == image.getHeight());
+            assert(pyramidH.get(0).a[0].length == image.getWidth());
         }
         
         float prevScl = 1;
@@ -722,8 +729,10 @@ public class ORB {
 
             // transform keypoints to full size coordinate reference frame  
             for (int i = 0; i < r.keypoints0.size(); ++i) {
+                
                 int v = Math.round(scale * r.keypoints0.get(i));
                 r.keypoints0.set(i, v);
+                
                 v = Math.round(scale * r.keypoints1.get(i));
                 r.keypoints1.set(i, v);
             }
@@ -1721,6 +1730,16 @@ public class ORB {
         return combineDescriptors(descriptorsList);
     }
     
+    public List<Descriptors> getDescriptorsH() {
+        return descriptorsListH;
+    }
+    public List<Descriptors> getDescriptorsS() {
+        return descriptorsListS;
+    }
+    public List<Descriptors> getDescriptorsV() {
+        return descriptorsListV;
+    }
+    
     /**
      * get a list of each octave's descriptors as a combined descriptor.
      * The coordinates of the descriptors can be found in getAllKeypoints, but
@@ -1797,7 +1816,7 @@ public class ORB {
     /**
      * get a list of each octave's keypoint rows as a combined list.
      * The list contains coordinates which have already been scaled to the
-     * full image reference frame.
+     * full image reference frame and are in column major format.
      * @return
      */
     public List<PairInt> getAllKeyPoints() {
@@ -2049,16 +2068,25 @@ public class ORB {
         List<PairInt> keypoints1,
         List<PairInt> keypoints2, float scaleFactor) {
     
-        assert(d1.length == d2.length);
+        if (d1.length != d2.length) {
+            throw new IllegalArgumentException("d1 and d2 must"
+                + " be same length");
+        }
         
         int nBands = d1.length;
         
         int n1 = d1[0].descriptors.length;
         int n2 = d2[0].descriptors.length;
         
-        assert(n1 == keypoints1.size());
-        assert(n2 == keypoints2.size());
-
+        if (n1 != keypoints1.size()) {
+            throw new IllegalArgumentException("number of descriptors in "
+                + " d1 bitstrings must be same as keypoints1 length");
+        }
+        if (n2 != keypoints2.size()) {
+            throw new IllegalArgumentException("number of descriptors in "
+                + " d2 bitstrings must be same as keypoints2 length");
+        }
+        
         //[n1][n2]
         int[][] cost = calcDescriptorCostMatrix(d1, d2);
 
@@ -2081,7 +2109,6 @@ public class ORB {
         // fewer in number than about 45
         
         count = 0;
-        Set<PairInt> set1 = new HashSet<PairInt>();
         Set<PairInt> set2 = new HashSet<PairInt>();
         PairIntArray mT = new PairIntArray();
         PairIntArray mS = new PairIntArray();
@@ -2105,14 +2132,10 @@ public class ORB {
             int idx2 = index12.getY();
             PairInt p1 = keypoints1.get(idx1);
             PairInt p2 = keypoints2.get(idx2);
-            if (set1.contains(p1) //|| set2.contains(p2)
-                ) {
-                continue;
-            }
+            
         //System.out.println("p1=" + p1 + " " + " p2=" + p2 + " cost=" + costs[i]);
             mT.add(p1.getX(), p1.getY());
             mS.add(p2.getX(), p2.getY());
-            set1.add(p1);
             set2.add(p2);
             tIndexes.add(idx1);
             
@@ -2123,6 +2146,8 @@ public class ORB {
             }
             if (!cMap.containsKey(p2)) {
                 // only store the smaller cost, that's reached first
+                // meaning, same points but different scale sizes
+                // should have larger costs so don't store them
                 cMap.put(p2, costs[i]);
             }
             
@@ -2182,15 +2207,24 @@ public class ORB {
         List<PairInt> keypoints2, float scaleFactor,
         float sizeScaleFraction) {
         
-        assert(d1.length == d2.length);
+        if (d1.length != d2.length) {
+            throw new IllegalArgumentException("d1 and d2 must"
+                + " be same length");
+        }
         
         int nBands = d1.length;
         
         int n1 = d1[0].descriptors.length;
         int n2 = d2[0].descriptors.length;
         
-        assert(n1 == keypoints1.size());
-        assert(n2 == keypoints2.size());
+        if (n1 != keypoints1.size()) {
+            throw new IllegalArgumentException("number of descriptors in "
+                + " d1 bitstrings must be same as keypoints1 length");
+        }
+        if (n2 != keypoints2.size()) {
+            throw new IllegalArgumentException("number of descriptors in "
+                + " d2 bitstrings must be same as keypoints2 length");
+        }
 
         //[n1][n2]
         int[][] cost = calcDescriptorCostMatrix(d1, d2);
@@ -2214,7 +2248,6 @@ public class ORB {
         // fewer in number than about 45
         
         count = 0;
-        Set<PairInt> set1 = new HashSet<PairInt>();
         Set<PairInt> set2 = new HashSet<PairInt>();
         PairIntArray mT = new PairIntArray();
         PairIntArray mS = new PairIntArray();
@@ -2239,14 +2272,10 @@ public class ORB {
             int idx2 = index12.getY();
             PairInt p1 = keypoints1.get(idx1);
             PairInt p2 = keypoints2.get(idx2);
-            if (set1.contains(p1) //|| set2.contains(p2)
-                ) {
-                continue;
-            }
+            
         //System.out.println("p1=" + p1 + " " + " p2=" + p2 + " cost=" + costs[i]);
             mT.add(p1.getX(), p1.getY());
             mS.add(p2.getX(), p2.getY());
-            set1.add(p1);
             set2.add(p2);
             tIndexes.add(idx1);
             
@@ -2309,15 +2338,24 @@ public class ORB {
         float scaleFactor
         ) {
         
-        assert(d1.length == d2.length);
+        if (d1.length != d2.length) {
+            throw new IllegalArgumentException("d1 and d2 must"
+                + " be same length");
+        }
         
         int nBands = d1.length;
         
         int n1 = d1[0].descriptors.length;
         int n2 = d2[0].descriptors.length;
         
-        assert(n1 == keypoints1.size());
-        assert(n2 == keypoints2.size());
+        if (n1 != keypoints1.size()) {
+            throw new IllegalArgumentException("number of descriptors in "
+                + " d1 bitstrings must be same as keypoints1 length");
+        }
+        if (n2 != keypoints2.size()) {
+            throw new IllegalArgumentException("number of descriptors in "
+                + " d2 bitstrings must be same as keypoints2 length");
+        }
 
         //[n1][n2]
         int[][] cost = calcDescriptorCostMatrix(d1, d2);
@@ -2348,7 +2386,6 @@ public class ORB {
         TIntIntMap segIndexCount = new TIntIntHashMap();
         
         count = 0;
-        Set<PairInt> set1 = new HashSet<PairInt>();
         Set<PairInt> set2 = new HashSet<PairInt>();
         PairIntArray mT = new PairIntArray();
         PairIntArray mS = new PairIntArray();
@@ -2373,9 +2410,7 @@ public class ORB {
             int idx2 = index12.getY();
             PairInt p1 = keypoints1.get(idx1);
             PairInt p2 = keypoints2.get(idx2);
-            if (set1.contains(p1) || set2.contains(p2)) {
-                continue;
-            }
+            
             int lIdx2 = pointIndexMap.get(p2);
             if (segIndexCount.containsKey(lIdx2) && segIndexCount.get(lIdx2) 
                 > sLimit) {
@@ -2384,7 +2419,6 @@ public class ORB {
             //System.out.println("p1=" + p1 + " " + " p2=" + p2 + " cost=" + costs[i]);
             mT.add(p1.getX(), p1.getY());
             mS.add(p2.getX(), p2.getY());
-            set1.add(p1);
             set2.add(p2);
             tIndexes.add(idx1);
             
@@ -2553,9 +2587,11 @@ public class ORB {
                 among all of these combinations is the resulting
                 correspondence list
                 */
-                
+               
                 double maxCost = nBands * 256;
                 double maxDist = limit/scale;
+               
+       error here handling scale
                 
                 double sum1 = 0;
                 double sum2 = 0;
@@ -2638,6 +2674,10 @@ public class ORB {
                 }
             }
         }
+        
+        reduce to unique mappings
+        and remove outliers
+        store costs for the outlier removal
         
         //minCostCor = setToBestUnique(
         //    minCostCor, minCostI, minDistI);
@@ -2957,6 +2997,10 @@ public class ORB {
     /**
      * greedy matching of d1 to d2 by min difference, with unique mappings for
      * all indexes.
+     * NOTE that if 2 descriptors match equally well, either one
+     * might get the assignment.  
+     * Consider using instead, matchDescriptors2 which matches
+     * by descriptor and relative spatial location.
      *
      * @param d1
      * @param d2
@@ -2968,13 +3012,22 @@ public class ORB {
     public static int[][] matchDescriptors(Descriptors[] d1, Descriptors[] d2,
         List<PairInt> keypoints1, List<PairInt> keypoints2) {
 
-        assert(d1.length == d2.length);
+        if (d1.length != d2.length) {
+            throw new IllegalArgumentException("d1 and d2 must"
+                + " be same length");
+        }
         
         int n1 = d1[0].descriptors.length;
         int n2 = d2[0].descriptors.length;
         
-        assert(n1 == keypoints1.size());
-        assert(n2 == keypoints2.size());
+        if (n1 != keypoints1.size()) {
+            throw new IllegalArgumentException("number of descriptors in "
+                + " d1 bitstrings must be same as keypoints1 length");
+        }
+        if (n2 != keypoints2.size()) {
+            throw new IllegalArgumentException("number of descriptors in "
+                + " d2 bitstrings must be same as keypoints2 length");
+        }
 
         //[n1][n2]
         int[][] cost = calcDescriptorCostMatrix(d1, d2);

@@ -194,6 +194,24 @@ public class MatrixUtil {
         }
     }
     
+    
+    public static void multiply(float[][] a, float m) {
+
+        if (a == null || a.length == 0) {
+            throw new IllegalArgumentException("a cannot be null or empty");
+        }
+        
+        int mcols = a.length;
+
+        int mrows = a[0].length;
+        
+        for (int col = 0; col < mcols; col++) {
+            for (int row = 0; row < mrows; row++) {
+                a[col][row] *= m;
+            }            
+        }
+    }
+    
     public static void multiply(int[] m, int[] n) {
 
         if (m == null || m.length == 0) {

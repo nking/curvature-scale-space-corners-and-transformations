@@ -5896,6 +5896,28 @@ if (sum > 511) {
         return output;
     }
     
+    /**
+     * output is row major format
+     * @param input
+     * @return 
+     */
+    public float[][] copyToRowMajor(GreyscaleImage input) {
+        
+        int n0 = input.getNPixels();
+        int h = input.getWidth();
+        int w = input.getHeight();
+        
+        float[][] output = new float[w][h];
+        for (int i = 0; i < w; ++i) {
+            output[i] = new float[h];
+            for (int j = 0; j < h; ++j) {
+                output[i][j] = input.getValue(j, i);
+            }
+        }
+        
+        return output;
+    }
+    
     public Complex[][] convertToComplex(Complex1D[] input) {
         
         int n0 = input.length;
