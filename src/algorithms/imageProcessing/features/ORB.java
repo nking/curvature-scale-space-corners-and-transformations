@@ -2352,23 +2352,28 @@ public class ORB {
                             (sum == minCostTotal 
                             && mCount > minCostCor.getPoints1().size())) {
 
+                            System.out.println("minCost=" + sum + ""
+                                + " scale i=" + i + " scale j=" + j);
+                            
                             minCostTotal = sum;
                             minCost1 = sum1;
                             minCost2 = sum2;
 
-                            List<PairInt> m1 = new ArrayList<PairInt>();
-                            List<PairInt> m2 = new ArrayList<PairInt>();
                             CorrespondenceList corr
                                 = new CorrespondenceList(
                                 params.getScale(),
                                 Math.round(params.getRotationInDegrees()),
                                 Math.round(params.getTranslationX()),
                                 Math.round(params.getTranslationY()),
-                                0, 0, 0, m1, m2);
+                                0, 0, 0, 
+                                new ArrayList<PairInt>(), new ArrayList<PairInt>());
 
                             for (int mi = 0; mi < mCount; ++mi) {
-                                m1.add(new PairInt(m1x[mi], m1y[mi]));
-                                m2.add(new PairInt(m2x[mi], m2y[mi]));
+                                corr.addMatch(
+                                    new PairInt(m1x[mi], m1y[mi]),
+                                    new PairInt(m2x[mi], m2y[mi]),
+                                    (minCostI[mi] + minCostI[mi])
+                                );
                             }
 
                             minCostCor = corr;
@@ -2378,7 +2383,7 @@ public class ORB {
                 }
             }
         }
-      
+        
         return minCostCor;
     }
     

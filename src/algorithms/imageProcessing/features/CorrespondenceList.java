@@ -1,8 +1,12 @@
 package algorithms.imageProcessing.features;
 
+import algorithms.QuickSort;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.util.PairInt;
+import gnu.trove.list.TDoubleList;
+import gnu.trove.list.array.TDoubleArrayList;
 import java.util.List;
+import java.util.ArrayList;
 
 /**
  *
@@ -21,6 +25,10 @@ public class CorrespondenceList {
     private final List<PairInt> points1;
     private final List<PairInt> points2;
     
+    // this might be emoty
+    private final TDoubleList cost12 = new TDoubleArrayList();
+    
+    //TODO: refactor so matches1 and 2 are constructed in class, not injected
     public CorrespondenceList(float scale, int rotationInDegrees, 
         int translationX, int translationY, int rangeRotation,
         int rangeTranslationX, int rangeTranslationY, 
@@ -38,7 +46,41 @@ public class CorrespondenceList {
         this.points1 = matched1;
         this.points2 = matched2;
     }
-
+    
+    public void addMatch(PairInt p1, PairInt p2, double cost) {
+        points1.add(p1);
+        points2.add(p2);
+        cost12.add(cost);
+    }
+    
+    /*
+     * sort point pairs by increasing cost.  NOTE that until the class
+     * is refactored, it is up to the user to ensure that the numbers
+     * of point and costs are the same.
+    public void sortByAscendingCost() {
+        
+        if (points1.size() != points2.size() || points1.size() != cost12.size()) {
+            throw new IllegalStateException("points lists and costs list must be same size");
+        }
+        int n = points1.size();
+        int[] indexes = new int[n];
+        for (int i = 0; i < n; ++i) {
+            indexes[i] = i;
+        }
+        
+        QuickSort.sortBy1stArg(cost12, indexes);
+        
+        List<PairInt> m1 = new ArrayList<PairInt>(n);
+        List<PairInt> m2 = new ArrayList<PairInt>(n);
+        
+        for (int i = 0; i < indexes.length; ++i) {
+            int idx = indexes[i];
+            m1.add(points1.get(idx));
+            m2.add(points2.get(idx));
+        }
+    }
+    */
+    
     /**
      * @return the scale
      */

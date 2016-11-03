@@ -1054,7 +1054,7 @@ public class ORBTest extends TestCase {
         (1) matching the original image descriptors with copy of image
             rotated by 90 degrees.
         (2) matching original image descriptors with copy of image 
-            totated by 90 and then scaled down to 40 percent.
+            rotated by 90 and then scaled down to 40 percent.
         (3) matching original image descriptors with copy of image
             rotated gy 90 and then scaled up to 140 percent.
         */
@@ -1164,10 +1164,8 @@ public class ORBTest extends TestCase {
         assertEquals(expected90.getN(), p2IndexMap.size());
         assertEquals(p1IndexMap.size(), p2IndexMap.size());
         
-        /*
-        to make debugging easier, will rearrange data so that index 0
-        is matched to index 0
-        */
+        //to make debugging easier, will rearrange data so that index 0
+        //is matched to index 0, etc
         int np0_3 = p1IndexMap.size();
         int np90_3 = p2IndexMap.size();
         Descriptors dH0_3 = new Descriptors();
@@ -1269,6 +1267,45 @@ public class ORBTest extends TestCase {
             assert(idx1 == idx2);
         }
         assertEquals(expected0.getN(), cor.getPoints1().size());
+        
+        // ------ use all scale descriptors for multiscale test -----
+        for (int i = 1; i < scalesList.size(); ++i) {
+            scales1.add(scalesList.get(i).get(0));
+            descH1.add(orb.getDescriptorsH().get(i));
+            descS1.add(orb.getDescriptorsS().get(i));
+            descV1.add(orb.getDescriptorsV().get(i));
+            keypointsX1.add(yList.get(i));
+            keypointsY1.add(xList.get(i));           
+        }
+        for (int i = 1; i < orList90.size(); ++i) {
+            scales2.add(orb1.getScalesList().get(i).get(0));
+            descH2.add(orb1.getDescriptorsH().get(i));
+            descS2.add(orb1.getDescriptorsS().get(i));
+            descV2.add(orb1.getDescriptorsV().get(i));
+            keypointsX2.add(yList90.get(i));
+            keypointsY2.add(xList90.get(i));
+        }
+        
+        cor = ORB.matchDescriptors2(
+            scales1, scales2,
+            descH1, descS1, descV1,
+            descH2, descS2, descV2,
+            keypointsX1, keypointsY1,
+            keypointsX2, keypointsY2, 2);
+        
+        for (int i = 0; i < cor.getPoints1().size(); ++i) {
+            PairInt p1 = cor.getPoints1().get(i);
+            PairInt p2 = cor.getPoints2().get(i);
+            int idx1 = kp0_3.indexOf(p1);
+            int idx2 = kp90_3.indexOf(p2);
+            assert(idx1 == idx2);
+        }
+        assertEquals(expected0.getN(), cor.getPoints1().size());
+                   
+        // ----- use all scale descriptors for the multiscale test which
+        //       returns the top result and those within tolerance of it
+        
+        // (2) ------- copy the rotated image and scale it by 0.7 -------
     }
     
     private Image getColorRectangles() {

@@ -131,6 +131,28 @@ public class QuickSortTest extends TestCase {
         
         assertTrue(a[3] == 7);
         assertEquals(b[3], "7");
+        
+        // ----
+        TDoubleList c = new TDoubleArrayList();
+        c.add(3);
+        c.add(7);
+        c.add(1);
+        c.add(5);
+        int[] d = new int[]{3, 7, 1, 5};
+        
+        QuickSort.sortBy1stArg(c, d);
+        
+        assertTrue(c.get(0) == 1);
+        assertEquals(1, d[0]);
+        
+        assertTrue(c.get(1) == 3);
+        assertEquals(3, d[1]);
+        
+        assertTrue(c.get(2) == 5);
+        assertEquals(5, d[2]);
+        
+        assertTrue(c.get(3) == 7);
+        assertEquals(7, d[3]);
     }
     
     public void testSortByFirstArgument_2() {
