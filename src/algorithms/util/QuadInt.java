@@ -19,6 +19,12 @@ public class QuadInt {
         c = cPoint;
         d = dPoint;
     }
+    public QuadInt(PairInt ab, PairInt cd) {
+        a = ab.getX();
+        b = ab.getY();
+        c = cd.getX();
+        d = cd.getY();
+    }
     public void setA(int aPoint) {
         a = aPoint;
     }

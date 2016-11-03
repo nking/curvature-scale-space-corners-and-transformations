@@ -16,6 +16,7 @@ import algorithms.misc.MiscMath;
 import algorithms.search.NearestNeighbor2D;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.QuadInt;
 import algorithms.util.TwoDFloatArray;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.list.TDoubleList;
@@ -2055,121 +2056,354 @@ public class ORB {
      * an epipolar or euclidean evaluator can be used instead with the top 45
      * results and that method will
      * be offered in this class one day.
-     * @param d1
-     * @param d2
-     * @param keypoints1
-     * @param keypoints2
+     * @param scales1     
+     * @param scales2     
+     * @param descH1 H descriptors itemized by scales1.
+     *     each descriptor is for a coordinate in similar location in
+     *     lists keypointsX1, keypointsy1.
+     * @param descS1 S descriptors itemized by scales1.
+     *     each descriptor is for a coordinate in similar location in
+     *     lists keypointsX1, keypointsy1.
+     * @param descV1 V descriptors itemized by scales1.
+     *     each descriptor is for a coordinate in similar location in
+     *     lists keypointsX1, keypointsy1.
+     * @param descH2 H descriptors itemized by scales2.
+     *     each descriptor is for a coordinate in similar location in
+     *     lists keypointsX2, keypointsy2.
+     * @param descS2 S descriptors itemized by scales2.
+     *     each descriptor is for a coordinate in similar location in
+     *     lists keypointsX2, keypointsy2.
+     * @param descV2 V descriptors itemized by scales2.
+     *     each descriptor is for a coordinate in similar location in
+     *     lists keypointsX2, keypointsy2.
+     * @param keypointsX1 x coordinates of keypoints itemized by scales1
+     * @param keypointsY1 y coordinates of keypoints itemized by scales1
+     * @param keypointsX2 x coordinates of keypoints itemized by scales2
+     * @param keypointsY2 y coordinates of keypoints itemized by scales2
      * @param scaleFactor the factor that will be the maximum dimension
      * of the object in the search image, for example, 2.
+     
      * @return 
      */
     public static CorrespondenceList matchDescriptors2(
-        Descriptors[] d1, Descriptors[] d2,
-        List<PairInt> keypoints1,
-        List<PairInt> keypoints2, float scaleFactor) {
+        TFloatList scales1, TFloatList scales2,
+        List<Descriptors> descH1, List<Descriptors> descS1, 
+        List<Descriptors> descV1,
+        List<Descriptors> descH2, List<Descriptors> descS2, 
+        List<Descriptors> descV2,
+        List<TIntList> keypointsX1, List<TIntList> keypointsY1,
+        List<TIntList> keypointsX2, List<TIntList> keypointsY2,
+        float scaleFactor) {
     
-        if (d1.length != d2.length) {
-            throw new IllegalArgumentException("d1 and d2 must"
-                + " be same length");
+        if (scales1.size() != descH1.size() ||
+            scales1.size() != descS1.size() ||
+            scales1.size() != descV1.size() ||
+            scales1.size() != keypointsX1.size() ||
+            scales1.size() != keypointsY1.size()
+            ) {
+            throw new IllegalArgumentException("lists for datasets 1"
+                + " must all be same lengths as scales1");
+        }
+        if (scales2.size() != descH2.size() ||
+            scales2.size() != descS2.size() ||
+            scales2.size() != descV2.size() ||
+            scales2.size() != keypointsX2.size() ||
+            scales2.size() != keypointsY2.size()
+            ) {
+            throw new IllegalArgumentException("lists for datasets 2"
+                + " must all be same lengths as scales1");
         }
         
-        int nBands = d1.length;
-        
-        int n1 = d1[0].descriptors.length;
-        int n2 = d2[0].descriptors.length;
-        
-        if (n1 != keypoints1.size()) {
-            throw new IllegalArgumentException("number of descriptors in "
-                + " d1 bitstrings must be same as keypoints1 length");
-        }
-        if (n2 != keypoints2.size()) {
-            throw new IllegalArgumentException("number of descriptors in "
-                + " d2 bitstrings must be same as keypoints2 length");
-        }
-        
-        //[n1][n2]
-        int[][] cost = calcDescriptorCostMatrix(d1, d2);
-
-        int nTot = n1 * n2;
-        PairInt[] indexes = new PairInt[nTot];
-        int[] costs = new int[nTot];
-        int count = 0;
-        for (int i = 0; i < n1; ++i) {
-            for (int j = 0; j < n2; ++j) {
-                indexes[count] = new PairInt(i, j);
-                costs[count] = cost[i][j];
-                count++;                
-            }
-        }
-        assert(count == nTot);
-
-        QuickSort.sortBy1stArg(costs, indexes);
-        
-        // storing the indexes of matches with cost < 127 and
-        // fewer in number than about 45
-        
-        count = 0;
-        Set<PairInt> set2 = new HashSet<PairInt>();
-        PairIntArray mT = new PairIntArray();
-        PairIntArray mS = new PairIntArray();
-        TIntList tIndexes = new TIntArrayList();
-        
-        // below, need to look up cost using idx1 and p2: idx1, p2 -> cost
-        TIntObjectMap<TObjectIntMap<PairInt>> idx1P2CostMap = 
-            new TIntObjectHashMap<TObjectIntMap<PairInt>>();
-        
+        int nBands = 3;
         int topLimit = Math.round(0.17f * nBands * 256);
-            
-        // visit lowest costs (== differences) first
-        for (int i = 0; i < nTot; ++i) {
-            if (costs[i] > topLimit 
-                //|| count > 45
-                ) {
-                break;
+        
+        MatchedPointsTransformationCalculator tc = new
+            MatchedPointsTransformationCalculator();
+        
+        Transformer transformer = new Transformer();
+        
+        // distance portion of costs gets transformed to this reference frame
+        float minScale1 = scales1.min();
+        float diag1 = calculateDiagonal(keypointsX1, keypointsY1,
+            scales1.indexOf(minScale1));
+        
+        // these 2 are used to normalize costs
+        double maxCost = nBands * 256;
+        double maxDist = diag1;        
+        
+        int nMax1 = maxSize(keypointsX1);
+        int nMax2 = maxSize(keypointsX2);
+        int nMax = nMax1 * nMax2;
+        
+        // --- best cost data ----
+        double minCostTotal = Double.MAX_VALUE;
+        double minCost1 = 0;
+        double minCost2 = 0;
+        CorrespondenceList minCostCor = null;
+        PairIntArray minCostTr2 = null;
+        double[] minCostI = new double[nMax];
+        double[] minDistI = new double[nMax];
+        
+        // temporary storage of corresp coords until object construction
+        int[] m1x = new int[nMax];
+        int[] m1y = new int[nMax];
+        int[] m2x = new int[nMax];
+        int[] m2y = new int[nMax];
+        int mCount = 0;
+        
+        for (int i = 0; i < scales1.size(); ++i) {
+            float pScale1 = scales1.get(i);
+            Descriptors dH1 = descH1.get(i);
+            Descriptors dS1 = descS1.get(i);
+            Descriptors dV1 = descV1.get(i);
+            TIntList kpX1 = keypointsX1.get(i);
+            TIntList kpY1 = keypointsY1.get(i);
+            int n1 = kpX1.size();
+            if (n1 != dH1.descriptors.length) {
+                throw new IllegalArgumentException("number of descriptors in "
+                    + " d1 bitstrings must be same as keypoints1 length");
             }
-            PairInt index12 = indexes[i];
-            int idx1 = index12.getX();
-            int idx2 = index12.getY();
-            PairInt p1 = keypoints1.get(idx1);
-            PairInt p2 = keypoints2.get(idx2);
             
-        //System.out.println("p1=" + p1 + " " + " p2=" + p2 + " cost=" + costs[i]);
-            mT.add(p1.getX(), p1.getY());
-            mS.add(p2.getX(), p2.getY());
-            set2.add(p2);
-            tIndexes.add(idx1);
+            float factorToMinScale = pScale1 / minScale1;
             
-            TObjectIntMap<PairInt> cMap = idx1P2CostMap.get(idx1);
-            if (cMap == null) {
-                cMap = new TObjectIntHashMap<PairInt>();
-                idx1P2CostMap.put(idx1, cMap);
-            }
-            if (!cMap.containsKey(p2)) {
-                // only store the smaller cost, that's reached first
-                // meaning, same points but different scale sizes
-                // should have larger costs so don't store them
-                cMap.put(p2, costs[i]);
-            }
+            int minX = kpX1.min();
+            int maxX = kpX1.max();
+            int minY = kpY1.min();
+            int maxY = kpY1.max();
             
-            count++;
+            int objDimension = Math.max(maxX - minX, maxY - minY);
+            int limit = Math.round(scaleFactor * objDimension);
+            int limitSq = limit * limit;
+            
+            NearestNeighbor2D nn = new NearestNeighbor2D(
+                makeSet(kpX1, kpY1), maxX + limit, maxY + limit);
+                           
+            TObjectIntMap<PairInt> p1IndexMap = createIndexMap(kpX1, kpY1);
+            
+            for (int j = 0; j < scales2.size(); ++j) {
+                Descriptors dH2 = descH2.get(j);
+                Descriptors dS2 = descS2.get(j);
+                Descriptors dV2 = descV2.get(j);
+                TIntList kpX2 = keypointsX2.get(j);
+                TIntList kpY2 = keypointsY2.get(j);
+                int n2 = kpX2.size();
+                if (n2 != dH2.descriptors.length) {
+                    throw new IllegalArgumentException("number of descriptors in "
+                        + " d2 bitstrings must be same as keypoints2 length");
+                }
+                
+                //[n1][n2]
+                int[][] cost = calcDescriptorCostMatrix(
+                    new Descriptors[]{dH1, dS1, dV1}, 
+                    new Descriptors[]{dH2, dS2, dV2});
+                
+                int nTot = n1 * n2;
+                
+                // storing points1 in pairintarray to transform
+                // storing points2 in set to create a nearest neighbors
+                
+                PairIntArray a1 = new PairIntArray(nTot/2);
+                PairIntArray a2 = new PairIntArray(nTot/2);
+                
+                TIntList a2Indexes = new TIntArrayList(nTot/2);
+                
+                Set<PairInt> s1 = new HashSet<PairInt>(nTot/2);
+                Set<PairInt> s2 = new HashSet<PairInt>(nTot/2);
+                
+                List<QuadInt> pairs = new ArrayList<QuadInt>(nTot/2);
+                TIntList costs = new TIntArrayList(nTot);
+                for (int ii = 0; ii < n1; ++ii) {
+                    PairInt p1 = new PairInt(kpX1.get(ii), kpY1.get(ii));
+                  //  for (int jj = 0; jj < n2; ++jj) {
+                    for (int jj = ii; jj < ii + 1; ++jj) {
+                        int c = cost[ii][jj];
+                        if (c > topLimit) {
+                            continue;
+                        }
+                     
+                        PairInt p2 = new PairInt(kpX2.get(jj), kpY2.get(jj));
+                        
+                        if (!s1.contains(p1)) {
+                            a1.add(p1.getX(), p1.getY());
+                            s1.add(p1);
+                        }
+                        if (!s2.contains(p2)) {
+                            a2.add(p2.getX(), p2.getY());
+                            a2Indexes.add(jj);
+                            s2.add(p2);
+                        }
+                        pairs.add(new QuadInt(p1, p2));
+                        costs.add(c);
+                    }
+                }
+               
+     // this is just for debugging and can be removed after
+     TObjectIntMap<PairInt> p2IndexMap = createIndexMap(kpX2, kpY2);
+            
+                
+                // --- calculate transformations in pairs and evaluate ----
+                for (int ii = 0; ii < pairs.size(); ++ii) {
+                    
+                    QuadInt pair1 = pairs.get(ii);
+                    
+                    // image 1 point:
+                    int t1X = pair1.getA();
+                    int t1Y = pair1.getB();
+                    // image 2 point:
+                    int s1X = pair1.getC();
+                    int s1Y = pair1.getD();
+
+                    // choose all combinations of 2nd point within distance
+                    // limit of point s1.
+                    for (int jj = (ii + 1); jj < pairs.size(); ++jj) {
+                        
+                        QuadInt pair2 = pairs.get(jj);
+                    
+                        // image 1 point:
+                        int t2X = pair2.getA();
+                        int t2Y = pair2.getB();
+                        // image 2 point:
+                        int s2X = pair2.getC();
+                        int s2Y = pair2.getD();
+
+                        if ((t1X == t2X && t1Y == t2Y)
+                            || (s1X == s2X && s1Y == s2Y)) {
+                            continue;
+                        }
+                        
+                        int diffX = s1X - s2X;
+                        int diffY = s1Y - s2Y;
+                        int distSq = diffX * diffX + diffY * diffY;
+                        if (distSq > limitSq) {
+                            continue;
+                        }
+                                                
+                        // transform dataset 2 into frame 1
+                        TransformationParameters params = tc.calulateEuclidean(
+                            s1X, s1Y,
+                            s2X, s2Y,
+                            t1X, t1Y,
+                            t2X, t2Y,
+                            0, 0);
+
+                        float tSscale = params.getScale();
+
+                        mCount = 0;
+                        
+                        PairIntArray tr2 = 
+                            transformer.applyTransformation(params, a2);
+                
+                        double sum1 = 0;
+                        double sum2 = 0;
+                        double sum = 0;
+{
+                    int idxt1 = p1IndexMap.get(new PairInt(t1X, t1Y));
+                    int idxt2 = p1IndexMap.get(new PairInt(t2X, t2Y));
+
+                    int idxs1 = p2IndexMap.get(new PairInt(s1X, s1Y));
+                    int idxs2 = p2IndexMap.get(new PairInt(s2X, s2Y));
+
+                    if (idxt1 == idxs1 && idxt2 == idxs2) {
+                        int z = 0;
+                    }
+                }
+                        
+                        for (int k = 0; k < tr2.getN(); ++k) {
+                            int x2Tr = tr2.getX(k);
+                            int y2Tr = tr2.getY(k);
+                            int idx2 = a2Indexes.get(k);
+                            
+                            Set<PairInt> nearest = null;
+                            if ((x2Tr >= 0) && (y2Tr >= 0)
+                                && (x2Tr < maxX) && (y2Tr < maxY)) {
+                                nearest = nn.findClosest(x2Tr, y2Tr, limit);
+                            }
+                            
+                            int minC = Integer.MAX_VALUE;
+                            PairInt minCP1 = null;
+                            int minIdx1 = 0;
+                            if (nearest != null && !nearest.isEmpty()) {
+                                for (PairInt p1 : nearest) {
+                                    int idx1 = p1IndexMap.get(p1);
+                                    int c = cost[idx1][idx2];
+                                    if (c < minC) {
+                                        minC = c;
+                                        minCP1 = p1;
+                                        minIdx1 = idx1;
+                                    }
+                                }
+                            }
+                            
+                            if (minCP1 != null) {
+                                double scoreNorm = (nBands*256 - minC)/maxCost;
+                                double costNorm = 1. - scoreNorm;
+                                sum1 += costNorm;
+
+                                // distances get multiplied by factorToMinScale
+                                // to put them into reference frame of largest
+                                // set 1 image (== minScale1 frame)
+
+                                double dist = distance(x2Tr, y2Tr, minCP1);
+                                double distNorm = dist * factorToMinScale / maxDist;
+                                sum2 += distNorm;
+
+                                m2x[mCount] = kpX2.get(idx2);
+                                m2y[mCount] = kpY2.get(idx2);
+                                m1x[mCount] = minCP1.getX();
+                                m1y[mCount] = minCP1.getY();
+                                minCostI[mCount] = costNorm;
+                                minDistI[mCount] = distNorm;
+                                mCount++;
+
+                            } else {
+                                sum1 += 1;
+                                sum2 += 1;
+                            }
+                        }     
+                        sum = sum1 + sum2;
+                               
+                        if (sum < minCostTotal ||
+                            (sum == minCostTotal 
+                            && mCount > minCostCor.getPoints1().size())) {
+{
+        int idxt1 = p1IndexMap.get(new PairInt(t1X, t1Y));
+        int idxt2 = p1IndexMap.get(new PairInt(t2X, t2Y));
+
+        int idxs1 = p2IndexMap.get(new PairInt(s1X, s1Y));
+        int idxs2 = p2IndexMap.get(new PairInt(s2X, s2Y));
+
+        if (idxt1 == idxs1 && idxt2 == idxs2) {
+            int z = 0;
         }
-        
-        int[] minMaxXY = MiscMath.findMinMaxXY(keypoints1);
-        int objDimension = Math.max(minMaxXY[1] - minMaxXY[0],
-            minMaxXY[3] - minMaxXY[2]);
-        int limit = Math.round(scaleFactor * objDimension);
-        int limitSq = limit * limit;
-       
-        int[] minMaxXY2 = MiscMath.findMinMaxXY(set2);
-        
-        NearestNeighbor2D nn = new NearestNeighbor2D(
-           set2, minMaxXY2[1] + limit, minMaxXY2[3] + limit);
-       
-        return completeUsingCombinations(
-            keypoints1, keypoints2, mT, mS, nn,
-            minMaxXY2, limit,
-            tIndexes, idx1P2CostMap, indexes, costs, nBands
-        );
+    }
+                            minCostTotal = sum;
+                            minCost1 = sum1;
+                            minCost2 = sum2;
+
+                            List<PairInt> m1 = new ArrayList<PairInt>();
+                            List<PairInt> m2 = new ArrayList<PairInt>();
+                            CorrespondenceList corr
+                                = new CorrespondenceList(
+                                params.getScale(),
+                                Math.round(params.getRotationInDegrees()),
+                                Math.round(params.getTranslationX()),
+                                Math.round(params.getTranslationY()),
+                                0, 0, 0, m1, m2);
+
+                            for (int mi = 0; mi < mCount; ++mi) {
+                                m1.add(new PairInt(m1x[mi], m1y[mi]));
+                                m2.add(new PairInt(m2x[mi], m2y[mi]));
+                            }
+
+                            minCostCor = corr;
+                            minCostTr2 = tr2;
+                        }
+                    }
+                }
+            }
+        }
+      
+        return minCostCor;
     }
     
     /**
@@ -2489,200 +2723,7 @@ public class ORB {
         PairInt[] indexes, int[] costs, int nBands
     ) {
         
-        int nTop = mT.getN();
-
-        System.out.println("have " + nTop + " sets of points for "
-            + " n of k=2 combinations");
-        
-        // need to make pairs of combinations from mT,mS
-        //  to calcuate euclidean transformations and evaluate them.
-        // -- can reduce the number of combinations by imposing a 
-        //    distance limit on separation of feasible pairs
-                
-        int limitSq = limit * limit;
-               
-        MatchedPointsTransformationCalculator tc = new
-            MatchedPointsTransformationCalculator();
-        
-        Transformer transformer = new Transformer();
-        
-        double minCost = Double.MAX_VALUE;
-        CorrespondenceList minCostCor = null;
-        PairIntArray minCostTrT = null;
-        double[] minCostI = new double[nTop];
-        double[] minDistI = new double[nTop];
-        
-        // temporary storage of corresp coords until object construction
-        int[] m1x = new int[nTop];
-        int[] m1y = new int[nTop];
-        int[] m2x = new int[nTop];
-        int[] m2y = new int[nTop];
-        int mCount = 0;
-        
-        for (int i = 0; i < nTop; ++i) {
-            int t1X = mT.getX(i);
-            int t1Y = mT.getY(i);
-            int s1X = mS.getX(i);
-            int s1Y = mS.getY(i);
-            
-            // choose all combinations of 2nd point within distance
-            // limit of point s1.
-            for (int j = (i + 1); j < mS.getN(); ++j) {
-                int t2X = mT.getX(j);
-                int t2Y = mT.getY(j);
-                int s2X = mS.getX(j);
-                int s2Y = mS.getY(j);
-                
-                if ((t1X == t2X && t1Y == t2Y) || 
-                    (s1X == s2X && s1Y == s2Y)) {
-                    continue;
-                }
-                
-                int diffX = s1X - s2X;
-                int diffY = s1Y - s2Y;
-                int distSq = diffX * diffX + diffY * diffY;
-                if (distSq > limitSq) {
-                    continue;
-                }
-
-                // -- calculate euclid transformation
-                // -- evaluate the fit
-                TransformationParameters params = tc.calulateEuclidean(
-                    t1X, t1Y, 
-                    t2X, t2Y, 
-                    s1X, s1Y,
-                    s2X, s2Y,
-                    0, 0);
-                
-                float scale = params.getScale();
-                
-                mCount = 0;
-                
-                // template object transformed
-                PairIntArray trT = 
-                    transformer.applyTransformation(params, mT);
-                
-                /*
-                two components to the evaluation and both need normalizations
-                so that their contributions to total result are
-                equally weighted.
-                
-                (1) descriptors:
-                    -- score is sum of each matched (3*256 - cost)
-                    -- the normalization is the maximum possible score,
-                       so will use the number of template points.
-                       --> norm = nTemplate * 3 * 256
-                    -- normalized score = (3*256 - cost)/norm
-                   ==> normalized cost = 1 - ((3*256 - cost)/norm)
-                (2) spatial distances from transformed points:
-                   -- sum of distances within limit
-                      and replacement of distance by limit if no matching
-                      nearest neighbor is found.
-                   -- divide each distance by the transformation scale
-                      to compare same values
-                   -- divide the total sum by the total max possible
-                      --> norm = nTemplate * limit / scale
-               
-                Then the total cost is (1) + (2) and the min cost
-                among all of these combinations is the resulting
-                correspondence list
-                */
-               
-                double maxCost = nBands * 256;
-                double maxDist = limit/scale;
-               
-       error here handling scale
-                
-                double sum1 = 0;
-                double sum2 = 0;
-                double sum = 0;
-                
-                for (int k = 0; k < trT.getN(); ++k) {
-                    int xTr = trT.getX(k);
-                    int yTr = trT.getY(k);
-                    
-                    int idx1 = tIndexes.get(k);
-                    
-                    Set<PairInt> nearest = null;
-                    if ((xTr >= 0) && (yTr >= 0) &&
-                        (xTr <= (minMaxXY2[1] + limit)) && 
-                        (yTr <= (minMaxXY2[3] + limit))) {
-                        nearest = nn.findClosest(xTr, yTr, limit);
-                    }
-                    
-                    int minC = Integer.MAX_VALUE;
-                    PairInt minCP2 = null;
-                        
-                    if (nearest != null && !nearest.isEmpty()) {
-                        TObjectIntMap<PairInt> cMap = idx1P2CostMap.get(idx1);
-                        for (PairInt p2 : nearest) {
-                            if (!cMap.containsKey(p2)) {
-                                continue;
-                            }
-                            int c = cMap.get(p2);
-                            if (c < minC) {
-                                minC = c;
-                                minCP2 = p2;
-                            }
-                        }
-                    }
-                    if (minCP2 != null) {
-                        double scoreNorm = (3*256 - minC)/maxCost;
-                        double costNorm = 1. - scoreNorm;
-                        sum1 += costNorm;
-                        
-                        double dist = distance(xTr, yTr, minCP2);
-                        double distNorm = dist/maxDist;
-                        sum2 += distNorm;
-                      
-                        m1x[mCount] = keypoints1.get(idx1).getX();
-                        m1y[mCount] = keypoints1.get(idx1).getY();
-                        m2x[mCount] = minCP2.getX();
-                        m2y[mCount] = minCP2.getY();
-                        minCostI[mCount] = costNorm;
-                        minDistI[mCount] = distNorm;
-                        mCount++;
-                        
-                    } else {
-                        sum1 += 1;
-                        sum2 += 1;
-                    }
-                }
-                sum = sum1 + sum2;
-                if (sum < minCost) {
-                    
-                    minCost = sum;
-                    
-                    List<PairInt> m1 = new ArrayList<PairInt>();
-                    List<PairInt> m2 = new ArrayList<PairInt>();
-                    CorrespondenceList corr =
-                        new CorrespondenceList(
-                        params.getScale(),
-                        Math.round(params.getRotationInDegrees()),
-                        Math.round(params.getTranslationX()),
-                        Math.round(params.getTranslationY()),
-                        0, 0, 0, m1, m2);
-
-                    for (int mi = 0; mi < mCount; ++mi) {
-                        m1.add(new PairInt(m1x[mi], m1y[mi]));
-                        m2.add(new PairInt(m2x[mi], m2y[mi]));
-                    }
-                    
-                    minCostCor = corr;
-                    
-                    minCostTrT = trT;
-                }
-            }
-        }
-        
-        reduce to unique mappings
-        and remove outliers
-        store costs for the outlier removal
-        
-        //minCostCor = setToBestUnique(
-        //    minCostCor, minCostI, minDistI);
-        
-        return minCostCor; 
+        throw new UnsupportedOperationException("changes in progress.  not ready for use");        
     }
     
     /**
@@ -3258,4 +3299,54 @@ public class ORB {
         int diffY = p1.getY() - p2.getY();
         return (int)Math.sqrt(diffX * diffX + diffY * diffY);
     }
+    
+    private static TObjectIntMap<PairInt> createIndexMap(
+        TIntList xList, TIntList yList) {
+
+        TObjectIntMap<PairInt> map = new TObjectIntHashMap<PairInt>();
+
+        for (int i = 0; i < xList.size(); ++i) {
+            int x = xList.get(i);
+            int y = yList.get(i);
+            map.put(new PairInt(x, y), i);
+        }
+        
+        return map;
+    }
+
+    private static int maxSize(List<TIntList> a) {
+
+        int maxSz = Integer.MIN_VALUE;
+        for (TIntList b : a) {
+            int sz = b.size();
+            if (sz > maxSz) {
+                maxSz = sz;
+            }
+        }
+        return maxSz;
+    }
+
+    private static float calculateDiagonal(List<TIntList> keypointsX1, 
+        List<TIntList> keypointsY1, int idx) {
+
+        TIntList x1 = keypointsX1.get(idx);
+        TIntList y1 = keypointsY1.get(idx);
+        
+        int maxX = x1.max();
+        int maxY = y1.max();
+        
+        return (float)Math.sqrt(maxX * maxX + maxY * maxY);
+    }
+    
+    private static Set<PairInt> makeSet(TIntList kpX1, TIntList kpY1) {
+        
+        Set<PairInt> set = new HashSet<PairInt>();
+        for (int i = 0; i < kpX1.size(); ++i) {
+            PairInt p = new PairInt(kpX1.get(i), kpY1.get(i));
+            set.add(p);
+        }
+        
+        return set;
+    }
+
 }

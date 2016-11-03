@@ -9,6 +9,7 @@ import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.StructureTensor;
 import algorithms.imageProcessing.features.ORB.Descriptors;
+import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
 import algorithms.misc.MiscDebug;
@@ -21,7 +22,12 @@ import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TDoubleArrayList;
+import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TIntIntHashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -1125,63 +1131,45 @@ public class ORBTest extends TestCase {
         assertTrue(yList90.get(0).size() == dV90.descriptors.length);
         assertTrue(orList90.get(0).size() == dV90.descriptors.length);
         
-        
-        List<PairInt> kp0_2 = new ArrayList<PairInt>();
-        List<PairInt> kp90_2 = new ArrayList<PairInt>();
-        
-        Set<PairInt> expected0Ordered = new HashSet<PairInt>();
-        Set<PairInt> expected90Ordered = new HashSet<PairInt>();
-        List<PairInt> indexes = new ArrayList<PairInt>();
-        
+        // key=expected index, value=orb index
+        TIntIntMap p1IndexMap = new TIntIntHashMap();
+        TIntIntMap p2IndexMap = new TIntIntHashMap();
         for (int i = 0; i < xList.get(0).size(); ++i) {
             int y = yList.get(0).get(i);
             int x = xList.get(0).get(i);
-            
-            //System.out.println("x=" + x + " y=" + y);
             for (int j = 0; j < expected0.getN(); ++j) {
                 int x1 = expected0.getX(j);
                 int y1 = expected0.getY(j);
-                int x2 = expected90.getX(j);
-                int y2 = expected90.getY(j);
-                        
                 if (Math.abs(x - x1) < 2 && Math.abs(y - y1) < 2) {
                     PairInt p = new PairInt(x, y);
-                    if (!expected0Ordered.contains(p)) {
-                        
-                        // find the 90 degree point in the other list
-                        
-                        for (int k = 0; k < xList90.get(0).size(); ++k) {
-                            int y4 = yList90.get(0).get(k);
-                            int x4 = xList90.get(0).get(k);
-                            if (Math.abs(x2 - x4) < 3 && Math.abs(y2 - y4) < 3) {
-                                PairInt p4 = new PairInt(x4, y4);
-                                if (!expected90Ordered.contains(p4)) {
-                                    
-                                    expected0Ordered.add(p);
-                                    indexes.add(new PairInt(i, k));
-                                    expected90Ordered.add(p4);
-                                    
-                                    kp0_2.add(p);
-                                    kp90_2.add(p4);
-                        
-                                    break;
-                                }
-                            }
-                        }
-                        break;
-                    }
+                    p1IndexMap.put(j, i);
+                    break;
                 }
             }
         }
-        assertEquals(expected0.getN(), expected0Ordered.size());
-        assertEquals(expected0.getN(), expected90Ordered.size());
-       
+        for (int i = 0; i < xList90.get(0).size(); ++i) {
+            int y = yList90.get(0).get(i);
+            int x = xList90.get(0).get(i);
+            for (int j = 0; j < expected90.getN(); ++j) {
+                int x1 = expected90.getX(j);
+                int y1 = expected90.getY(j);
+                if (Math.abs(x - x1) < 2 && Math.abs(y - y1) < 2) {
+                    PairInt p = new PairInt(x, y);
+                    p2IndexMap.put(j, i);
+                    break;
+                }
+            }
+        }
+        assertEquals(expected0.getN(), p1IndexMap.size());
+        assertEquals(expected90.getN(), p2IndexMap.size());
+        assertEquals(p1IndexMap.size(), p2IndexMap.size());
+        
         /*
         to make debugging easier, will rearrange data so that index 0
         is matched to index 0
         */
-        int np0_3 = kp0_2.size();
-        int np90_3 = kp90_2.size();
+        int np0_3 = p1IndexMap.size();
+        int np90_3 = p2IndexMap.size();
         Descriptors dH0_3 = new Descriptors();
         dH0_3.descriptors = new VeryLongBitString[np0_3];
         Descriptors dS0_3 = new Descriptors();
@@ -1198,26 +1186,80 @@ public class ORBTest extends TestCase {
         dV90_3.descriptors = new VeryLongBitString[np90_3];
         List<PairInt> kp90_3 = new ArrayList<PairInt>(np90_3);
         
-        for (int i = 0; i < indexes.size(); ++i) {
-            PairInt idx12 = indexes.get(i);
-            int idx1 = idx12.getX();
-            int idx2 = idx12.getY();
+        for (int i = 0; i < p1IndexMap.size(); ++i) {
+            int idx1 = p1IndexMap.get(i);
+            int idx2 = p2IndexMap.get(i);
             
             dH0_3.descriptors[i] = dH0.descriptors[idx1];
             dS0_3.descriptors[i] = dS0.descriptors[idx1];
             dV0_3.descriptors[i] = dV0.descriptors[idx1];
-            kp0_3.add(kp0_2.get(idx1));
+            kp0_3.add(kp0.get(idx1));
             
             dH90_3.descriptors[i] = dH90.descriptors[idx2];
             dS90_3.descriptors[i] = dS90.descriptors[idx2];
             dV90_3.descriptors[i] = dV90.descriptors[idx2];
-            kp90_3.add(kp90_2.get(idx2));
+            kp90_3.add(kp90.get(idx2));
+        }
+        
+        {
+            MatchedPointsTransformationCalculator tc = new MatchedPointsTransformationCalculator();
+            TransformationParameters params0 = tc.calulateEuclidean(
+                kp0_3.get(0).getX(), kp0_3.get(0).getY(),
+                kp0_3.get(1).getX(), kp0_3.get(1).getY(),
+                kp90_3.get(0).getX(), kp90_3.get(0).getY(),
+                kp90_3.get(1).getX(), kp90_3.get(1).getY(),
+                0, 0);
+            assertTrue(Math.abs(params0.getScale() - 1) < 0.001);
+        }
+        
+        TFloatList scales1 = new TFloatArrayList();
+        scales1.add(orb.getScalesList().get(0).get(0));
+        TFloatList scales2 = new TFloatArrayList();
+        scales2.add(orb1.getScalesList().get(0).get(0));
+        List<Descriptors> descH1 = new ArrayList<Descriptors>();
+        descH1.add(dH0_3);
+        List<Descriptors> descS1 = new ArrayList<Descriptors>();
+        descS1.add(dS0_3);
+        List<Descriptors> descV1 = new ArrayList<Descriptors>();
+        descV1.add(dV0_3);
+        
+        List<Descriptors> descH2 = new ArrayList<Descriptors>();
+        descH2.add(dH90_3);
+        List<Descriptors> descS2 = new ArrayList<Descriptors>();
+        descS2.add(dS90_3);
+        List<Descriptors> descV2 = new ArrayList<Descriptors>();
+        descV2.add(dV90_3);
+        
+        List<TIntList> keypointsX1 = new ArrayList<TIntList>();
+        List<TIntList> keypointsY1 = new ArrayList<TIntList>();
+        keypointsX1.add(new TIntArrayList());
+        keypointsY1.add(new TIntArrayList());
+        for (int i = 0; i < kp0_3.size(); ++i) {
+            int x = kp0_3.get(i).getX();
+            int y = kp0_3.get(i).getY();
+            keypointsX1.get(0).add(x);
+            keypointsY1.get(0).add(y);
+        }
+        assertEquals(expected0.getN(), kp0_3.size());
+        assertEquals(expected90.getN(), kp90_3.size());
+        
+        List<TIntList> keypointsX2 = new ArrayList<TIntList>();
+        List<TIntList> keypointsY2 = new ArrayList<TIntList>();
+        keypointsX2.add(new TIntArrayList());
+        keypointsY2.add(new TIntArrayList());
+        for (int i = 0; i < kp90_3.size(); ++i) {
+            int x = kp90_3.get(i).getX();
+            int y = kp90_3.get(i).getY();
+            keypointsX2.get(0).add(x);
+            keypointsY2.get(0).add(y);
         }
         
         CorrespondenceList cor = ORB.matchDescriptors2(
-            new Descriptors[]{dH0_3, dS0_3, dV0_3},
-            new Descriptors[]{dH90_3, dS90_3, dV90_3},
-            kp0_3, kp90_3, 2);
+            scales1, scales2,
+            descH1, descS1, descV1,
+            descH2, descS2, descV2,
+            keypointsX1, keypointsY1,
+            keypointsX2, keypointsY2, 2);
         
         for (int i = 0; i < cor.getPoints1().size(); ++i) {
             PairInt p1 = cor.getPoints1().get(i);
