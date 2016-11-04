@@ -1372,8 +1372,115 @@ public class ORBTest extends TestCase {
         }
         assertEquals(expected0.getN(), cor.getPoints1().size()); 
         
-        
         // (2) ------- copy the rotated image and scale it by 0.7 -------
+        ImageProcessor imageProcessor = new ImageProcessor();
+        int w2 = Math.round(0.7f * img90.getWidth());
+        int h2 = Math.round(0.7f * img90.getHeight());
+        Image r90s70Img = imageProcessor.bilinearDownSampling(
+            img90, w2, h2, 0, 255);
+        
+        TransformationParameters paramsr90s70 =
+            new TransformationParameters();
+        paramsr90s70.setOriginX(0);
+        paramsr90s70.setOriginY(0);
+        paramsr90s70.setScale(0.7f);
+        
+        PairIntArray expectedr90s70 = tr.applyTransformation(
+            paramsr90s70, expected90);
+        
+        ORB orb7 = new ORB(np);
+        orb7.overrideToUseSmallestPyramid();
+        orb7.overrideToCreateHSVDescriptors();
+        orb7.detectAndExtract(r90s70Img);
+        
+        List<TIntList> yListr90s70 = orb7.getKeyPoint0List();
+        List<TIntList> xListr90s70 = orb7.getKeyPoint1List();        
+        List<TDoubleList> orListr90s70 = orb7.getOrientationsList();
+        List<Descriptors> dHr90s70 = orb7.getDescriptorsH();
+        List<Descriptors> dSr90s70 = orb7.getDescriptorsS();
+        List<Descriptors> dVr90s70 = orb7.getDescriptorsV();
+        TFloatList scalesListr90s70 = new TFloatArrayList();
+        for (int i = 0; i < yListr90s70.size(); ++i) {
+            scalesListr90s70.add(orb7.getScalesList().get(i).get(0));
+        }
+            
+        p2IndexMap.clear();
+        for (int i = 0; i < xListr90s70.get(0).size(); ++i) {
+            int y = yListr90s70.get(0).get(i);
+            int x = xListr90s70.get(0).get(i);
+            for (int j = 0; j < expectedr90s70.getN(); ++j) {
+                int x1 = expectedr90s70.getX(j);
+                int y1 = expectedr90s70.getY(j);
+                if (Math.abs(x - x1) < 2 && Math.abs(y - y1) < 2) {
+                    PairInt p = new PairInt(x, y);
+                    p2IndexMap.put(j, i);
+                    break;
+                }
+            }
+        }
+        assertEquals(expectedr90s70.getN(), p2IndexMap.size());
+        assertEquals(p1IndexMap.size(), p2IndexMap.size());
+        List<PairInt> ordered2 = new ArrayList<PairInt>();
+        for (int i = 0; i < expectedr90s70.getN(); ++i) {
+            int idx = p2IndexMap.get(i);
+            ordered2.add(
+                new PairInt(xListr90s70.get(0).get(idx),
+                yListr90s70.get(0).get(idx)));
+        }
+        
+        // order the first scale data in the second set of data for easier debugging
+        {
+            np90_3 = p2IndexMap.size();
+            Descriptors dH90s70_3 = new Descriptors();
+            dH90s70_3.descriptors = new VeryLongBitString[np90_3];
+            Descriptors dS90s70_3 = new Descriptors();
+            dS90s70_3.descriptors = new VeryLongBitString[np90_3];
+            Descriptors dV90s70_3 = new Descriptors();
+            dV90s70_3.descriptors = new VeryLongBitString[np90_3];
+            TIntList yr90s70 = new TIntArrayList();
+            TIntList xr90s70 = new TIntArrayList();     
+            for (int i = 0; i < p2IndexMap.size(); ++i) {
+                int idx2 = p2IndexMap.get(i);
+                dH90s70_3.descriptors[i] = dHr90s70.get(0).descriptors[idx2];
+                dS90s70_3.descriptors[i] = dSr90s70.get(0).descriptors[idx2];
+                dV90s70_3.descriptors[i] = dVr90s70.get(0).descriptors[idx2];
+                xr90s70.add(xListr90s70.get(0).get(idx2));
+                yr90s70.add(yListr90s70.get(0).get(idx2));
+            }
+            dHr90s70.set(0, dH90s70_3);
+            dSr90s70.set(0, dS90s70_3);
+            dVr90s70.set(0, dV90s70_3);
+            xListr90s70.set(0, xr90s70);
+            yListr90s70.set(0, yr90s70);
+            
+            MatchedPointsTransformationCalculator tc = new MatchedPointsTransformationCalculator();
+            TransformationParameters params0 = tc.calulateEuclidean(
+                kp0_3.get(0).getX(), kp0_3.get(0).getY(),
+                kp0_3.get(1).getX(), kp0_3.get(1).getY(),
+                xListr90s70.get(0).get(0), yListr90s70.get(0).get(0),
+                xListr90s70.get(0).get(1), yListr90s70.get(0).get(1),
+                0, 0);
+            assertTrue(Math.abs(params0.getScale() - 0.7) < 0.02); 
+            assertTrue(Math.abs(params0.getRotationInDegrees()- 90) < 0.2); 
+        }
+        
+        corList = ORB.matchDescriptors2(
+            scales1, scalesListr90s70,
+            descH1, descS1, descV1,
+            dHr90s70, dSr90s70, dVr90s70,
+            keypointsX1, keypointsY1,
+            xListr90s70, yListr90s70, 2, 
+            0.1f);
+        cor = corList.get(0);
+        for (int i = 0; i < cor.getPoints1().size(); ++i) {
+            PairInt p1 = cor.getPoints1().get(i);
+            PairInt p2 = cor.getPoints2().get(i);
+            int idx1 = kp0_3.indexOf(p1);
+            int idx2 = ordered2.indexOf(p2);
+            assert(idx1 == idx2);
+        }
+        assertEquals(expected0.getN(), cor.getPoints1().size()); 
+    
     }
     
     private Image getColorRectangles() {

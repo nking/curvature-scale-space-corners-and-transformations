@@ -2722,6 +2722,15 @@ public class ORB {
                         if ((minCostTotal == Double.MAX_VALUE) ||
                             (sum <= (minCostTotal + bitTolerance))                            
                         ) {
+// in a test:
+// correct has sum=0.2762, 0.2396, .0367, mCount=8
+// a very wrong solution has
+//             sum=0.2458, 0.1406, 0.1052  and wrong params, mCount=4
+// so, can see that need another component to the cost
+//    that is the number of matched points/max number of matchable points.
+// and that statistic means need to refactor
+// to analyze the cost matrixes of all image scales pairings
+// first before beginning search for minimum pairs.
 
                             if (sum < minCostTotal) {
                                 minCostTotal = sum;
