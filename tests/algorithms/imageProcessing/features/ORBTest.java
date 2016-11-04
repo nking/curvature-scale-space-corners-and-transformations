@@ -1481,6 +1481,25 @@ public class ORBTest extends TestCase {
         }
         assertEquals(expected0.getN(), cor.getPoints1().size()); 
     
+        // ----- reverse the order to compare a smaller to larger set of images ----
+        corList = ORB.matchDescriptors2(
+            scalesListr90s70, scales1,
+            dHr90s70, dSr90s70, dVr90s70,
+            descH1, descS1, descV1,
+            xListr90s70, yListr90s70, 
+            keypointsX1, keypointsY1,
+            2, 0.1f);
+        cor = corList.get(0);
+        for (int i = 0; i < cor.getPoints1().size(); ++i) {
+            PairInt p1 = cor.getPoints1().get(i);
+            PairInt p2 = cor.getPoints2().get(i);
+            int idx1 = kp0_3.indexOf(p2);
+            int idx2 = ordered2.indexOf(p1);
+            assert(idx1 == idx2);
+        }
+        assertEquals(expected0.getN(), cor.getPoints1().size()); 
+    
+        
     }
     
     private Image getColorRectangles() {
