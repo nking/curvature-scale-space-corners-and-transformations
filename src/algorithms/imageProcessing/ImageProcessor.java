@@ -9099,8 +9099,6 @@ if (sum > 511) {
      * http://tech-algorithm.com/articles/bilinear-image-scaling/
     
      * @param pixels
-     * @param w length of first dimension of input array pixels
-     * @param h length of second dimension of input array pixels
      * @param w2 output length of first dimension of array
      * @param h2 output length of second dimension of array
      * @return 
@@ -9229,6 +9227,96 @@ if (sum > 511) {
     }
     
     /**
+     * use bilinear interpolation to downsample a two dimensional array.
+     * 
+     * adapted from pseudocode at
+     * http://tech-algorithm.com/articles/bilinear-image-scaling/
+    
+     * @param input
+     * @param w2 output length of first dimension of array
+     * @param h2 output length of second dimension of array
+     * @param minValue value to clamp results to if less than this
+     * @param maxValue value to clamp results to if larger than this
+     * @return 
+     */
+    public Image bilinearDownSampling(Image input,
+        int w2, int h2, int minValue, int maxValue) {
+        
+        Image out = input.createWithDimensions(w2, h2);
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
+        int x, y, rI, gI, bI;
+        float A, B, C, D, red, green, blue;
+        
+        float xRatio = (float)w/(float)w2;
+        float yRatio = (float)h/(float)h2;
+        float xDiff, yDiff;
+        int offset = 0 ;
+        for (int i = 0; i < w2; i++) {
+            for (int j = 0; j < h2; j++) {
+                x = (int)(xRatio * i);
+                y = (int)(yRatio * j);
+                xDiff = (xRatio * i) - x;
+                yDiff = (yRatio * j) - y;
+
+                A = input.getR(x, y);
+                B = input.getR(x, y+1);
+                C = input.getR(x+1, y);
+                D = input.getR(x+1, y+1);
+
+                // Y = A(1-w)(1-h) + B(w)(1-h) + C(h)(1-w) + Dwh
+                red = A * (1 - xDiff) * (1 - yDiff) + 
+                    C * (xDiff) * (1 - yDiff) +
+                    B * (yDiff) * (1 - xDiff) +  
+                    D * (xDiff * yDiff);
+
+                rI = Math.round(red);
+                if (rI < minValue) {
+                    rI = minValue;
+                } else if (rI > maxValue) {
+                    rI = maxValue;
+                }
+                
+                A = input.getG(x, y);
+                B = input.getG(x, y+1);
+                C = input.getG(x+1, y);
+                D = input.getG(x+1, y+1);
+                green = A * (1 - xDiff) * (1 - yDiff) + 
+                    C * (xDiff) * (1 - yDiff) +
+                    B * (yDiff) * (1 - xDiff) +  
+                    D * (xDiff * yDiff);
+                gI = Math.round(green);
+                if (gI < minValue) {
+                    gI = minValue;
+                } else if (gI > maxValue) {
+                    gI = maxValue;
+                }
+                
+                A = input.getB(x, y);
+                B = input.getB(x, y+1);
+                C = input.getB(x+1, y);
+                D = input.getB(x+1, y+1);
+                blue = A * (1 - xDiff) * (1 - yDiff) + 
+                    C * (xDiff) * (1 - yDiff) +
+                    B * (yDiff) * (1 - xDiff) +  
+                    D * (xDiff * yDiff);
+                bI = Math.round(blue);
+                if (bI < minValue) {
+                    bI = minValue;
+                } else if (bI > maxValue) {
+                    bI = maxValue;
+                }
+                
+                out.setRGB(i, j, rI, gI, bI);                              
+            }
+        }
+        
+        return out;
+    }
+    
+    /**
      * comparator that assumes can compare by widths along,
      * unless there is a tie, then it uses height.
      */
@@ -9258,10 +9346,9 @@ if (sum > 511) {
             }
             
             return 0;
-        }
-        
+        }        
     }
-    
+   
     // TODO: implement the methods in 
     // http://www.merl.com/publications/docs/TR2008-030.pdf
     // for an O(n) filter.

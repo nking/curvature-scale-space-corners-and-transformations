@@ -10576,7 +10576,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         } else if (gradientMethod == 1) {
             
             CannyEdgeFilterAdaptive canny2 = new CannyEdgeFilterAdaptive();
-            canny2.setToNotUseZhangSuen();
+            canny2.overrideToNotUseLineThinner();
             //canny2.setOtsuScaleFactor(0.3f);
             canny2.setToUseSingleThresholdIn2LayerFilter();
             canny2.applyFilter(img.copyToGreyscale2());

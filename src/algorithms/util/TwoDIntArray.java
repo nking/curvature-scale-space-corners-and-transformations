@@ -6,4 +6,7 @@ package algorithms.util;
  */
 public class TwoDIntArray {
     public int[][] a;
+    public TwoDIntArray(int[][] t) {
+        a = t;
+    }
 }
