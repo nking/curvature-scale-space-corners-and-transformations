@@ -2404,6 +2404,9 @@ public class ORB {
      * an epipolar or euclidean evaluator can be used instead with the top 45
      * results and that method will
      * be offered in this class one day.
+     * NOTE: that one of the internal cost parameters is an estimate of the 
+     * maximum number of matchable points of any given scale compared to another, 
+     * so reduce the number of keypoints to truly matchable for best results.
      * @param scales1     
      * @param scales2     
      * @param descH1 H descriptors itemized by scales1.
@@ -2475,7 +2478,7 @@ public class ORB {
         int nBands = 3;
         int topLimit = Math.round(0.17f * nBands * 256);
         int bitTolerance = Math.round(sizeScaleFraction * nBands * 256);
-        
+         
         MatchedPointsTransformationCalculator tc = new
             MatchedPointsTransformationCalculator();
         
@@ -2490,6 +2493,10 @@ public class ORB {
         final double maxCost = nBands * 256;
         final double maxDist = diag1;        
         
+        // a rough estimate of maximum number of matchable points in any 
+        //     scale dataset comparison
+        final int nMaxMatchable = calculateNMaxMatchable(keypointsX1, keypointsX2);
+        
         int nMax1 = maxSize(keypointsX1);
         int nMax2 = maxSize(keypointsX2);
         int nMax = nMax1 * nMax2;
@@ -2498,6 +2505,7 @@ public class ORB {
         double minCostTotal = Double.MAX_VALUE;
         double minCost1 = 0;
         double minCost2 = 0;
+        double minCost3 = 0;
         //runtime complexity of this vector depends upon the number of items
         // it is currently holding, so can set the capacity high and fill vector only
         // with items within bitTolerance of best, but too high might affect jvm
@@ -2586,7 +2594,6 @@ public class ORB {
                 for (int ii = 0; ii < n1; ++ii) {
                     PairInt p1 = new PairInt(kpX1.get(ii), kpY1.get(ii));
                     for (int jj = 0; jj < n2; ++jj) {
-                    //for (int jj = ii; jj < ii + 1; ++jj) {
                         int c = cost[ii][jj];
                         if (c > topLimit) {
                             continue;
@@ -2662,6 +2669,7 @@ public class ORB {
                 
                         double sum1 = 0;
                         double sum2 = 0;
+                        double sum3 = 0;
                         double sum = 0;
                         
                         for (int k = 0; k < tr2.getN(); ++k) {
@@ -2717,20 +2725,14 @@ public class ORB {
                                 sum2 += 1;
                             }
                         }     
-                        sum = sum1 + sum2;
+                        
+                        sum3 = 1. - ((double)mCount/(double)nMaxMatchable); 
+                     
+                        sum = sum1 + sum2 + sum3;
                                
                         if ((minCostTotal == Double.MAX_VALUE) ||
                             (sum <= (minCostTotal + bitTolerance))                            
                         ) {
-// in a test:
-// correct has sum=0.2762, 0.2396, .0367, mCount=8
-// a very wrong solution has
-//             sum=0.2458, 0.1406, 0.1052  and wrong params, mCount=4
-// so, can see that need another component to the cost
-//    that is the number of matched points/max number of matchable points.
-// and that statistic means need to refactor
-// to analyze the cost matrixes of all image scales pairings
-// first before beginning search for minimum pairs.
 
                             if (sum < minCostTotal) {
                                 minCostTotal = sum;
@@ -3588,6 +3590,25 @@ public class ORB {
         }
         
         return set;
+    }
+
+    private static int calculateNMaxMatchable(List<TIntList> keypointsX1, 
+        List<TIntList> keypointsX2) {
+    
+        int nMaxM = Integer.MIN_VALUE;
+        
+        for (int i = 0; i < keypointsX1.size(); ++i) {
+            int n1 = keypointsX1.get(i).size();
+            for (int j = 0; j < keypointsX2.size(); ++j) {
+                int n2 = keypointsX2.get(j).size();
+                int min = Math.min(n1, n2);
+                if (min > nMaxM) {
+                    nMaxM = min;
+                }
+            }
+        }
+        
+        return nMaxM;
     }
 
 }
