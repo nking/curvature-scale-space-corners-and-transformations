@@ -672,6 +672,8 @@ public class AndroidStatuesTest extends TestCase {
         
             long t0 = System.currentTimeMillis();
             
+            //TODO:  update this to use all points
+            /*
             CorrespondenceList cor = ORB.matchDescriptors2(
                 new Descriptors[]{templateDescriptorsH,
                     templateDescriptorsS, templateDescriptorsV}, 
@@ -703,6 +705,7 @@ public class AndroidStatuesTest extends TestCase {
             plotter.writeImage("_orb_corres_");
             System.out.println(cor.getPoints1().size() + " matches");
             MiscDebug.writeImage(img11, "_orb_corres_2_");
+            */
             
             // using template image which is not masked
             /*SegmentedCellDescriptorMatcher matcher = 
@@ -823,436 +826,8 @@ public class AndroidStatuesTest extends TestCase {
         }
 
     }
-
-    public void estORBMatcher2() throws Exception {
-
-        /*
-        this demonstrates ORB
-            followed by filtering of search image keypoints by color.
-            then matching by descriptors 
-              and evaluation of pair combinations of best mathing keypoints
-              from which euclidean transformaions are derived.
-        
-        The results are the top results within a tolerance.
-        
-        The true match to the object is within the returned top results,
-        but further information is still needed in order to find the
-        correct within the best.
-        
-        see testORBMatcher3 for latest additional use of segmentation
-        and partial shape matching to further locate the object in the
-        search image.
-        */
     
-        int maxDimension = 256;//512;
-        SIGMA sigma = SIGMA.ZEROPOINTFIVE;//SIGMA.ONE;
-
-        ImageProcessor imageProcessor = new ImageProcessor();
-        ImageSegmentation imageSegmentation = new ImageSegmentation();
-
-        Set<PairInt> shape0 = new HashSet<PairInt>();
-
-        // to compare to "android_statues_01.jpg",
-        //    set this to '2'
-        int binFactor0 = 1;
-        
-        String fileNameRoot0 = "android_statues_03_sz1";
-        // 1st image is color image, 2nd is masked color image
-        ImageExt[] imgs0 = maskAndBin(fileNameRoot0, 
-            binFactor0, shape0);
-
-        int nShape0_0 = shape0.size();
-       
-        List<PairInt> templateKeypoints = new ArrayList<PairInt>();
-        TDoubleList templateOrientations = new TDoubleArrayList();
-       
-        System.out.println("shape0 nPts=" + nShape0_0);
-        Descriptors templateDescriptorsH = new Descriptors();
-        Descriptors templateDescriptorsS = new Descriptors();
-        Descriptors templateDescriptorsV = new Descriptors();
-        extractTemplateORBKeypoints(imgs0[0], shape0,
-            templateKeypoints, templateOrientations, 
-            templateDescriptorsH, templateDescriptorsS, 
-            templateDescriptorsV);
- 
-        Image imgTempCP = imgs0[0].copyImage();
-        int[][] templateKP = new int[templateKeypoints.size()][];
-        for (int i = 0; i < templateKP.length; ++i) {
-            templateKP[i] = new int[2];
-            PairInt p = templateKeypoints.get(i);
-            templateKP[i][1] = p.getY();
-            templateKP[i][0] = p.getX();
-            ImageIOHelper.addPointToImage(p.getX(), p.getY(), imgTempCP, 1, 255, 0, 0);
-            double angle = templateOrientations.get(i);
-            int dx = (int)Math.round(3. * Math.cos(angle));
-            int dy = (int)Math.round(3. * Math.sin(angle));
-            ImageIOHelper.drawLineInImage(p.getX(), p.getY(), 
-                p.getX() + dx, p.getY() + dy, imgTempCP, 0, 255, 255, 0);
-        }
-        MiscDebug.writeImage(imgTempCP, "_filtered_1_" + fileNameRoot0);               
-        
-        ColorHistogram clrHist = new ColorHistogram();
-
-        int[][] template_ch_HSV = null;
-        int[][] template_ch_LAB = null;
-        {
-            Set<PairInt> points0 = new HashSet<PairInt>();
-            for (int i = 0; i < templateKP.length; ++i) {
-                PairInt p = templateKeypoints.get(i);
-                Set<PairInt> points = imageProcessor.getNeighbors(imgs0[0], p);
-                points.add(p);
-                points0.addAll(points);
-            }
-            template_ch_HSV = clrHist.histogramHSV(imgs0[1], points0);
-            template_ch_LAB = clrHist.histogramCIELAB(imgs0[1], points0); 
-        }
-        
-        String fileName1 = "android_statues_02.jpg";
-        //fileName1 = "android_statues_01.jpg"; // set binFactor0 to 2
-        //fileName1 = "android_statues_04.jpg";
-        fileName1 = "android_statues_03.jpg";
-
-        String fileName1Root = fileName1.substring(0, fileName1.lastIndexOf("."));
-        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        ImageExt img = ImageIOHelper.readImageExt(filePath1);
-
-        long ts = MiscDebug.getCurrentTimeFormatted();
-
-        int w1 = img.getWidth();
-        int h1 = img.getHeight();
-
-        int binFactor1 = (int) Math.ceil(Math.max(
-            (float) w1 / maxDimension,
-            (float) h1 / maxDimension));
-
-        img = imageProcessor.binImage(img, binFactor1);
-        
-        ImageExt imgCp = img.copyToImageExt();
-       
-        int w = img.getWidth();
-        int h = img.getHeight();
-       
-        ORB orb = new ORB(2000);//10000
-        //orb.overrideFastThreshold(0.01f);
-        orb.overrideFastThreshold(0.001f);
-        orb.overrideToCreateHSVDescriptors();
-        orb.overrideToAlsoCreate1stDerivKeypoints();
-        orb.overrideToCreateCurvaturePoints();
-        //orb.overrideToCreateOffsetsToDescriptors(ORB.DescriptorDithers.FIFTEEN);
-        orb.detectAndExtract(img);
-
-        List<PairInt> keypointsCombined = orb.getAllKeyPoints();
-        Descriptors[] dHSV = orb.getAllDescriptorsHSV();        
-        TDoubleList or = orb.getAllOrientations();
-        //Descriptors descriptorsH = dHSV[0];
-        //Descriptors descriptorsS = dHSV[1];
-        //Descriptors descriptorsV = dHSV[2];
-
-        if (false) {
-            
-            //DEBUG descriptor matching
-            
-            final PairInt tp2 = new PairInt(38, 72);
-            final PairInt tp1 = new PairInt(33, 61);
-
-            // debug descriptors for tie in detail here
-            /*
-            NOTE: can see that the difference in scale between the
-            template object and the search object has a difference
-            not well covered by the current pyramidal decimation
-            which uses a factor of 2.
-            (1) building an optional method that has a smaller scale
-                difference for decimation
-            (2) in the matching phase, need to consider a tolerance
-                that is the max error due to difference in scale over
-                the aperature.
-                For example, for the approx 70% or 75% difference in size of
-                template object from search object, can see
-                about 60 different bits where expect 0 for same size
-                images.  that is tolerance is appprox .25 * nBands * 256
-                and then the value 60 is equiv to false positives 
-                that are zero.... decreasing the scale differences decreases
-                this error at expense of computation time.
-                -- will create a matching method that accepts 
-                   decimation scale factor and have the pyramidal
-                   sampling for fast as an optional setting while 
-                   providing a smaller scale default pyramidal sampling....`
-
-            Note that once the matching method with a tolerance for
-            error in bits different due to scale is implemented,
-            might need to make a mask to use with segmentation.
-            
-            Also, for objects with alot of symmetry in patterns 
-            like gingerbread man
-            but with a clear distinguishable orientation,
-            may need to use a very narrow aggregattion search of
-            segmented cells to fit the outline with partial shape matcher.
-            */
-            ORB orb0 = new ORB(2000);//10000
-            orb0.overrideFastThreshold(0.001f);
-            orb0.overrideToCreateHSVDescriptors();
-            orb0.overrideToAlsoCreate1stDerivKeypoints();
-            orb0.overrideToCreateCurvaturePoints();
-            orb0.detectAndExtract(imgs0[0]);
-            //List<PairInt> keypointsCombined0 = orb0.getAllKeyPoints();
-            //Descriptors[] dHSV0 = orb0.getAllDescriptorsHSV();        
-            //TDoubleList or0 = orb0.getAllOrientations();
-            
-            List<TwoDFloatArray> octaveImages0 = orb0.getPyramidImages();
-            int nOctaves0 = octaveImages0.size();
-            TFloatList imageScales0 = new TFloatArrayList(nOctaves0);
-            List<TwoDFloatArray> octaveImagesH0 = orb0.getPyramidImagesH();
-            List<TwoDFloatArray> octaveImagesS0 = orb0.getPyramidImagesS();
-            List<TwoDFloatArray> octaveImagesV0 = orb0.getPyramidImagesV();
-       
-            List<Descriptors> gsDescs0 = new ArrayList<Descriptors>(nOctaves0);
-            List<Descriptors> hDescs0 = new ArrayList<Descriptors>(nOctaves0);
-            List<Descriptors> sDescs0 = new ArrayList<Descriptors>(nOctaves0);
-            List<Descriptors> vDescs0 = new ArrayList<Descriptors>(nOctaves0);
-            for (int j = 0; j < nOctaves0; ++j) {
-                float scale = orb0.getScalesList().get(j).get(0);
-                imageScales0.add(scale);
-                
-                TIntList k0 = new TIntArrayList();
-                TIntList k1 = new TIntArrayList();
-                k0.add(Math.round(tp1.getY()/scale));
-                k1.add(Math.round(tp1.getX()/scale));
-                
-                float[][] octaveImage = octaveImages0.get(j).a;
-                TDoubleList orList0 = orb0.cornerOrientations(
-                    octaveImage, k0, k1);
-                /*for (int delta = 1; delta< 360; delta += 15) {
-                    double r = orList0.get(0);
-                    double rDelta = delta * Math.PI/180.;
-                    r += rDelta;
-                    // range is -pi to pi
-                    if (r > Math.PI) {
-                        r -= 2*Math.PI;
-                    }
-                    orList0.add(r);
-                    k0.add(k0.get(0));
-                    k1.add(k1.get(0));
-                }*/
-                
-                float[][] octaveImageH = octaveImagesH0.get(j).a;
-                float[][] octaveImageS = octaveImagesS0.get(j).a;
-                float[][] octaveImageV = octaveImagesV0.get(j).a;
-                
-                ORB.Descriptors dH = orb0.extractOctave(
-                    octaveImageH, k0, k1, orList0);
-                ORB.Descriptors dS = orb0.extractOctave(
-                    octaveImageS, k0, k1, orList0);
-                ORB.Descriptors dV = orb0.extractOctave(
-                    octaveImageV, k0, k1, orList0);
-                hDescs0.add(dH);
-                sDescs0.add(dS);
-                vDescs0.add(dV);
-                
-                ORB.Descriptors d = orb0.extractOctave(
-                    octaveImage, k0, k1, orList0);
-                gsDescs0.add(d);
-            }
-            Descriptors[] hsvDesc0 = new Descriptors[] {
-                ORB.combineDescriptors(hDescs0),
-                ORB.combineDescriptors(sDescs0),
-                ORB.combineDescriptors(vDescs0)};
-            Descriptors gsDesc0 = ORB.combineDescriptors(gsDescs0);
-            //---
-            List<TwoDFloatArray> octaveImages1 = orb.getPyramidImages();
-            int nOctaves1 = octaveImages1.size();
-            TFloatList imageScales1 = new TFloatArrayList(nOctaves1);
-            List<TwoDFloatArray> octaveImagesH1 = orb.getPyramidImagesH();
-            List<TwoDFloatArray> octaveImagesS1 = orb.getPyramidImagesS();
-            List<TwoDFloatArray> octaveImagesV1 = orb.getPyramidImagesV();
-            
-            List<Descriptors> gsDescs1 = new ArrayList<Descriptors>(nOctaves1);
-            List<Descriptors> hDescs1 = new ArrayList<Descriptors>(nOctaves1);
-            List<Descriptors> sDescs1 = new ArrayList<Descriptors>(nOctaves1);
-            List<Descriptors> vDescs1 = new ArrayList<Descriptors>(nOctaves1);
-            for (int j = 0; j < nOctaves1; ++j) {
-                float scale = orb.getScalesList().get(j).get(0);
-                imageScales1.add(scale);
-                
-                TIntList k0 = new TIntArrayList();
-                TIntList k1 = new TIntArrayList();
-                k0.add(Math.round(tp2.getY()/scale));
-                k1.add(Math.round(tp2.getX()/scale));
-                
-                float[][] octaveImage = octaveImages1.get(j).a;
-                TDoubleList orList1 = orb.cornerOrientations(
-                    octaveImage, k0, k1);
-                /*for (int delta = 1; delta< 360; delta += 15) {
-                    double r = orList1.get(0);
-                    double rDelta = delta * Math.PI/180.;
-                    r += rDelta;
-                    // range is -pi to pi
-                    if (r > Math.PI) {
-                        r -= 2*Math.PI;
-                    }
-                    orList1.add(r);
-                    k0.add(k0.get(0));
-                    k1.add(k1.get(0));
-                }*/
-                
-                float[][] octaveImageH = octaveImagesH1.get(j).a;
-                float[][] octaveImageS = octaveImagesS1.get(j).a;
-                float[][] octaveImageV = octaveImagesV1.get(j).a;
-                
-                ORB.Descriptors dH = orb.extractOctave(
-                    octaveImageH, k0, k1, orList1);
-                ORB.Descriptors dS = orb.extractOctave(
-                    octaveImageS, k0, k1, orList1);
-                ORB.Descriptors dV = orb.extractOctave(
-                    octaveImageV, k0, k1, orList1);
-                hDescs1.add(dH);
-                sDescs1.add(dS);
-                vDescs1.add(dV);
-                ORB.Descriptors d = orb.extractOctave(
-                    octaveImage, k0, k1, orList1);
-                gsDescs1.add(d);
-            }
-            Descriptors[] hsvDesc1 = new Descriptors[] {
-                ORB.combineDescriptors(hDescs1),
-                ORB.combineDescriptors(sDescs1),
-                ORB.combineDescriptors(vDescs1)};
-            Descriptors gsDesc1 = ORB.combineDescriptors(gsDescs1);
-            
-            int[][] hsvCostMatrix = ORB.calcDescriptorCostMatrix(hsvDesc0, hsvDesc1);
-            
-            int[][] gsCostMatrix = ORB.calcDescriptorCostMatrix(
-                gsDesc0.descriptors, gsDesc1.descriptors);
-            
-            int chk = 20;
-            boolean found = false;
-            for (int ii = 0; ii < hsvCostMatrix.length; ++ii) {
-                for (int jj = 0; jj < hsvCostMatrix[ii].length; ++jj) {
-                    if (hsvCostMatrix[ii][jj] < chk) {
-                        float scaleII = orb.getScalesList().get(ii).get(0);
-                        float scaleJJ = orb.getScalesList().get(jj).get(0);
-                        float szII = imgs0[0].getWidth()/scaleII;
-                        float szJJ = img.getWidth()/scaleJJ;
-                        assertTrue(Math.abs(szII - szJJ) <= 2);
-                        found = true;
-                        System.out.println("COST=" + hsvCostMatrix[ii][jj]);
-                    }
-                }
-            }
-            assertTrue(found);
-            found = false;
-            for (int ii = 0; ii < gsCostMatrix.length; ++ii) {
-                for (int jj = 0; jj < gsCostMatrix[ii].length; ++jj) {
-                    if (gsCostMatrix[ii][jj] < chk) {
-                        float scaleII = orb.getScalesList().get(ii).get(0);
-                        float scaleJJ = orb.getScalesList().get(jj).get(0);
-                        float szII = imgs0[0].getWidth()/scaleII;
-                        float szJJ = img.getWidth()/scaleJJ;
-                        assertTrue(Math.abs(szII - szJJ) <= 5);
-                        found = true;
-                        System.out.println("COST=" + hsvCostMatrix[ii][jj]);
-                    }
-                }
-            }
-            assertTrue(found);
-        }
-        
-        // ---- filter keypoints by color ----
-        TIntSet rm = new TIntHashSet();
-        for (int i = 0; i < keypointsCombined.size(); ++i) {
-            PairInt kp = keypointsCombined.get(i);
-            Set<PairInt> points = imageProcessor.getNeighbors(img, kp);
-            points.add(kp);
-            int[][] ch = clrHist.histogramHSV(img, points);
-            float intersection = clrHist.intersection(template_ch_HSV, ch);
-            
-            if (intersection < 0.2) {
-                rm.add(i);
-            } else {
-                ch = clrHist.histogramCIELAB(img, points);
-                intersection = clrHist.intersection(template_ch_LAB, ch);
-                if (intersection < 0.2) {
-                    rm.add(i);
-                }
-            }
-        }
-        if (!rm.isEmpty()) {
-            int nB = keypointsCombined.size() - rm.size();
-            VeryLongBitString[] dH = new VeryLongBitString[nB];
-            VeryLongBitString[] dS = new VeryLongBitString[nB];
-            VeryLongBitString[] dV = new VeryLongBitString[nB];
-            List<PairInt> kp = new ArrayList<PairInt>(nB);
-            TDoubleList or2 = new TDoubleArrayList(nB);
-            int c1 = 0;
-            for (int i = 0; i < keypointsCombined.size(); ++i) {
-                if (rm.contains(i)) { continue;}
-                kp.add(keypointsCombined.get(i));
-                or2.add(or.get(i));
-                dH[c1] = dHSV[0].descriptors[i];
-                dS[c1] = dHSV[1].descriptors[i];
-                dV[c1] = dHSV[2].descriptors[i];
-                c1++;
-            }
-            keypointsCombined.clear();
-            keypointsCombined.addAll(kp);
-            or.clear();
-            or.addAll(or2);
-            dHSV[0].descriptors = dH;
-            dHSV[1].descriptors = dS;
-            dHSV[2].descriptors = dV;
-        }
-        
-        {
-            Image img11 = img.copyImage();
-            for (int i = 0; i < keypointsCombined.size(); ++i) {
-                PairInt p = keypointsCombined.get(i);
-                ImageIOHelper.addPointToImage(p.getX(), p.getY(), img11, 1, 255, 0, 0);
-                //double angle = orientations.get(i);
-                //int dx = (int)Math.round(3. * Math.cos(angle));
-                //int dy = (int)Math.round(3. * Math.sin(angle));
-                //ImageIOHelper.drawLineInImage(p.getX(), p.getY(), 
-                //    p.getX() + dx, p.getY() + dy, img11, 0, 255, 255, 0);
-            }
-            MiscDebug.writeImage(img11, "_filtered_2_" + fileName1Root);
-        }
-                    
-        long t0 = System.currentTimeMillis();
-    
-        List<CorrespondenceList> corList = ORB.matchDescriptors2(
-            new Descriptors[]{templateDescriptorsH,
-                templateDescriptorsS, templateDescriptorsV}, 
-            dHSV,
-            templateKeypoints, keypointsCombined, 1.5f, 
-            0.1f);
-
-        long t1 = System.currentTimeMillis();
-        System.out.println("matching took " + ((t1 - t0)/1000.) + " sec");
-
-        for (int i0 = 0; i0 < corList.size(); ++i0) {
-            
-            CorrespondenceList cor = corList.get(i0);
-            
-            Image img11 = img.copyToImageExt();
-            CorrespondencePlotter plotter = new CorrespondencePlotter(
-                imgs0[1], img.copyImage());            
-            for (int ii = 0; ii < cor.getPoints1().size(); ++ii) {
-                PairInt p1 = cor.getPoints1().get(ii);
-                PairInt p2 = cor.getPoints2().get(ii);
-
-                ImageIOHelper.addPointToImage(p2.getX(), p2.getY(), img11,
-                    1, 255, 0, 0);
-
-                System.out.println("orb matched: " + p1 + " " + p2);
-                //if (p2.getX() > 160)
-                plotter.drawLineInAlternatingColors(p1.getX(), p1.getY(), 
-                    p2.getX(), p2.getY(), 0);
-            }
-
-            plotter.writeImage("_orb_corres_" + i0);
-            System.out.println(cor.getPoints1().size() + " matches");
-            MiscDebug.writeImage(img11, "_orb_matched_" + i0);
-        }
-    }
-
-    public void testORBMatcher3() throws Exception {
+    public void testORBMatcher2() throws Exception {
 
         /*
         continuing methods from testORBMatcher2
@@ -1265,13 +840,8 @@ public class AndroidStatuesTest extends TestCase {
         
         The results are the top results within a tolerance.
         
-        The true match to the object is within the returned top results,
-        but further information is still needed in order to find the
-        correct within the best.
-        
-        HERE, adding use of segmentation
-        and partial shape matching to further locate the object in the
-        search image.
+        there is an error in the test data or algorithm
+           here still
         */
     
         int maxDimension = 256;//512;
@@ -1293,42 +863,31 @@ public class AndroidStatuesTest extends TestCase {
 
         int nShape0_0 = shape0.size();
        
-        List<PairInt> templateKeypoints = new ArrayList<PairInt>();
-        TDoubleList templateOrientations = new TDoubleArrayList();
-       
         System.out.println("shape0 nPts=" + nShape0_0);
-        Descriptors templateDescriptorsH = new Descriptors();
-        Descriptors templateDescriptorsS = new Descriptors();
-        Descriptors templateDescriptorsV = new Descriptors();
-        extractTemplateORBKeypoints(imgs0[0], shape0,
-            templateKeypoints, templateOrientations, 
-            templateDescriptorsH, templateDescriptorsS, 
-            templateDescriptorsV);
- 
-        Image imgTempCP = imgs0[0].copyImage();
-        int[][] templateKP = new int[templateKeypoints.size()][];
-        for (int i = 0; i < templateKP.length; ++i) {
-            templateKP[i] = new int[2];
-            PairInt p = templateKeypoints.get(i);
-            templateKP[i][1] = p.getY();
-            templateKP[i][0] = p.getX();
-            ImageIOHelper.addPointToImage(p.getX(), p.getY(), imgTempCP, 1, 255, 0, 0);
-            double angle = templateOrientations.get(i);
-            int dx = (int)Math.round(3. * Math.cos(angle));
-            int dy = (int)Math.round(3. * Math.sin(angle));
-            ImageIOHelper.drawLineInImage(p.getX(), p.getY(), 
-                p.getX() + dx, p.getY() + dy, imgTempCP, 0, 255, 255, 0);
+        
+        ORB orb0 = extractTemplateORBKeypoints(imgs0[0], shape0);
+       
+        List<Descriptors> dTempHList = orb0.getDescriptorsH();
+        List<Descriptors> dTempSList = orb0.getDescriptorsS();
+        List<Descriptors> dTempVList = orb0.getDescriptorsV();
+        List<TIntList> kp0TempList = orb0.getKeyPoint0List();
+        List<TIntList> kp1TempList = orb0.getKeyPoint1List();
+        TFloatList sTempList = new TFloatArrayList(kp0TempList.size());
+        for (int i = 0; i < kp0TempList.size(); ++i) {
+            sTempList.add(orb0.getScalesList().get(i).get(0));
         }
-        MiscDebug.writeImage(imgTempCP, "_template_keypoints_" + fileNameRoot0);               
         
         ColorHistogram clrHist = new ColorHistogram();
 
+        // make the template histograms from the first scale only
         int[][] template_ch_HSV = null;
         int[][] template_ch_LAB = null;
         {
             Set<PairInt> points0 = new HashSet<PairInt>();
-            for (int i = 0; i < templateKP.length; ++i) {
-                PairInt p = templateKeypoints.get(i);
+            for (int i = 0; i < kp0TempList.get(0).size(); ++i) {
+                int y = kp0TempList.get(0).get(i);
+                int x = kp1TempList.get(0).get(i);
+                PairInt p = new PairInt(x, y);
                 Set<PairInt> points = imageProcessor.getNeighbors(imgs0[0], p);
                 points.add(p);
                 points0.addAll(points);
@@ -1368,85 +927,107 @@ public class AndroidStatuesTest extends TestCase {
         orb.overrideToCreateHSVDescriptors();
         orb.overrideToAlsoCreate1stDerivKeypoints();
         orb.overrideToCreateCurvaturePoints();
-        //orb.overrideToCreateOffsetsToDescriptors(ORB.DescriptorDithers.FIFTEEN);
+        //orb.overrideToUseSmallestPyramid();
         orb.detectAndExtract(img);
 
-        List<PairInt> keypointsCombined = orb.getAllKeyPoints();
-        Descriptors[] dHSV = orb.getAllDescriptorsHSV();        
-        TDoubleList or = orb.getAllOrientations();
-        //Descriptors descriptorsH = dHSV[0];
-        //Descriptors descriptorsS = dHSV[1];
-        //Descriptors descriptorsV = dHSV[2];
+        List<Descriptors> dHList = orb.getDescriptorsH();
+        List<Descriptors> dSList = orb.getDescriptorsS();
+        List<Descriptors> dVList = orb.getDescriptorsV();
+        List<TIntList> kp0List = orb.getKeyPoint0List();
+        List<TIntList> kp1List = orb.getKeyPoint1List();
+        TFloatList sList = new TFloatArrayList(kp0List.size());
+        for (int i = 0; i < kp0List.size(); ++i) {
+            sList.add(orb.getScalesList().get(i).get(0));
+        }
         
-        // ---- filter keypoints by color ----
-        TIntSet rm = new TIntHashSet();
-        for (int i = 0; i < keypointsCombined.size(); ++i) {
-            PairInt kp = keypointsCombined.get(i);
-            Set<PairInt> points = imageProcessor.getNeighbors(img, kp);
-            points.add(kp);
-            int[][] ch = clrHist.histogramHSV(img, points);
-            float intersection = clrHist.intersection(template_ch_HSV, ch);
-            
-            if (intersection < 0.2) {
-                rm.add(i);
-            } else {
-                ch = clrHist.histogramCIELAB(img, points);
-                intersection = clrHist.intersection(template_ch_LAB, ch);
+        // --- filter out points at each scale, trimming the other data too ----
+        int ns = kp0List.size();
+        for (int i = 0; i < ns; ++i) {
+            TIntList kp0 = orb.getKeyPoint0List().get(i);
+            TIntList kp1 = orb.getKeyPoint1List().get(i);
+            TDoubleList or = orb.getOrientationsList().get(i);
+            TFloatList s = orb.getScalesList().get(i);
+            Descriptors dH = orb.getDescriptorsH().get(i);
+            Descriptors dS = orb.getDescriptorsS().get(i);
+            Descriptors dV = orb.getDescriptorsV().get(i);
+             
+            int np = kp0.size();
+            TIntList rm = new TIntArrayList();
+            for (int j = 0; j < np; ++j) {
+                PairInt p = new PairInt(kp1.get(j), kp0.get(j));
+                Set<PairInt> points = imageProcessor.getNeighbors(img, p);
+                points.add(p);
+                int[][] ch = clrHist.histogramHSV(img, points);
+                float intersection = clrHist.intersection(template_ch_HSV, ch);
+
                 if (intersection < 0.2) {
-                    rm.add(i);
+                    rm.add(j);
+                } else {
+                    ch = clrHist.histogramCIELAB(img, points);
+                    intersection = clrHist.intersection(template_ch_LAB, ch);
+                    if (intersection < 0.2) {
+                        rm.add(j);
+                    }
                 }
             }
-        }
-        if (!rm.isEmpty()) {
-            int nB = keypointsCombined.size() - rm.size();
-            VeryLongBitString[] dH = new VeryLongBitString[nB];
-            VeryLongBitString[] dS = new VeryLongBitString[nB];
-            VeryLongBitString[] dV = new VeryLongBitString[nB];
-            List<PairInt> kp = new ArrayList<PairInt>(nB);
-            TDoubleList or2 = new TDoubleArrayList(nB);
-            int c1 = 0;
-            for (int i = 0; i < keypointsCombined.size(); ++i) {
-                if (rm.contains(i)) { continue;}
-                kp.add(keypointsCombined.get(i));
-                or2.add(or.get(i));
-                dH[c1] = dHSV[0].descriptors[i];
-                dS[c1] = dHSV[1].descriptors[i];
-                dV[c1] = dHSV[2].descriptors[i];
-                c1++;
+            if (!rm.isEmpty()) {
+                int nb = np - rm.size();
+                Descriptors dH2 = new Descriptors();
+                dH2.descriptors = new VeryLongBitString[nb];
+                Descriptors dS2 = new Descriptors();
+                dS2.descriptors = new VeryLongBitString[nb];
+                Descriptors dV2 = new Descriptors();
+                dV2.descriptors = new VeryLongBitString[nb];
+                
+                TIntSet rmSet = new TIntHashSet(rm);
+                for (int j = (rm.size() - 1); j > -1; --j) {
+                    int idx = rm.get(j);
+                    kp0.removeAt(idx);
+                    kp1.removeAt(idx);
+                    or.removeAt(idx);
+                    s.removeAt(idx);
+                }
+                int count = 0;
+                for (int j = 0; j < np; ++j) {
+                    if (rmSet.contains(j)) {
+                        continue;
+                    }
+                    dH2.descriptors[count] = dH.descriptors[j];
+                    dS2.descriptors[count] = dS.descriptors[j];
+                    dV2.descriptors[count] = dV.descriptors[j];
+                    count++;
+                }
+                assert(count == nb);
+                dH.descriptors = dH2.descriptors;
+                dS.descriptors = dS2.descriptors;
+                dV.descriptors = dV2.descriptors;
             }
-            keypointsCombined.clear();
-            keypointsCombined.addAll(kp);
-            or.clear();
-            or.addAll(or2);
-            dHSV[0].descriptors = dH;
-            dHSV[1].descriptors = dS;
-            dHSV[2].descriptors = dV;
         }
         
         {
             Image img11 = img.copyImage();
-            for (int i = 0; i < keypointsCombined.size(); ++i) {
-                PairInt p = keypointsCombined.get(i);
-                ImageIOHelper.addPointToImage(p.getX(), p.getY(), img11, 1, 255, 0, 0);
-                //double angle = orientations.get(i);
-                //int dx = (int)Math.round(3. * Math.cos(angle));
-                //int dy = (int)Math.round(3. * Math.sin(angle));
-                //ImageIOHelper.drawLineInImage(p.getX(), p.getY(), 
-                //    p.getX() + dx, p.getY() + dy, img11, 0, 255, 255, 0);
+            for (int i = 0; i < ns; ++i) {
+                TIntList kp0 = orb.getKeyPoint0List().get(i);
+                TIntList kp1 = orb.getKeyPoint1List().get(i);
+                for (int j = 0; j < kp0.size(); ++j) {
+                    ImageIOHelper.addPointToImage(kp1.get(j), kp0.get(j), 
+                        img11, 1, 255, 0, 0);
+                }
             }
             MiscDebug.writeImage(img11, "_srch_keypoints_filtered_" + fileName1Root);
         }
         
         // ----- add object segmentation ---
-                    
         long t0 = System.currentTimeMillis();
     
-        List<CorrespondenceList> corList = ORB.matchDescriptors2(
-            new Descriptors[]{templateDescriptorsH,
-                templateDescriptorsS, templateDescriptorsV}, 
-            dHSV,
-            templateKeypoints, keypointsCombined, 1.5f, 
-            0.1f);
+        List<CorrespondenceList> corList 
+            = ORB.matchDescriptors2(
+            sTempList, sList,
+            dTempHList, dTempSList, dTempVList,
+            dHList, dSList, dVList,
+            kp1TempList, kp0TempList,
+            kp1List, kp0List,
+            1.5f, 0.1f);
 
         long t1 = System.currentTimeMillis();
         System.out.println("matching took " + ((t1 - t0)/1000.) + " sec");
@@ -2910,6 +2491,108 @@ public class AndroidStatuesTest extends TestCase {
         }
 
         MiscDebug.writeImage(imgCp, "_template_orb");
+    }
+
+    private ORB extractTemplateORBKeypoints(ImageExt img,
+        Set<PairInt> shape0) throws IOException, Exception {
+
+        int[] minMaxXY = MiscMath.findMinMaxXY(shape0);
+
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        int buffer = 20;
+
+        int xLL = minMaxXY[0] - buffer;
+        if (xLL < 0) {
+            xLL = 0;
+        }
+        int yLL = minMaxXY[2] - buffer;
+        if (yLL < 0) {
+            yLL = 0;
+        }
+        int xUR = minMaxXY[1] + buffer;
+        if (xUR > (w - 1)) {
+            xUR = w - 1;
+        }
+        int yUR = minMaxXY[3] + buffer;
+        if (yUR > (h - 1)) {
+            yUR = h - 1;
+        }
+        
+        float fastThresh = 0.001f;
+        boolean create2ndDerivPointsAlso = true;
+        boolean overrideToCreateSmallestPyramid = false;
+        
+        ORB orb = ORBWrapper.extractHSVKeypointsFromSubImage(
+            img, xLL, yLL, xUR, yUR,
+            200,
+            fastThresh, create2ndDerivPointsAlso,
+            overrideToCreateSmallestPyramid);
+                
+        ImageExt imgCp = img.copyToImageExt();
+        
+        // trim orb data that is outside of shape
+        int ns = orb.getKeyPoint0List().size();
+        
+        for (int i = 0; i < ns; ++i) {
+            TIntList kp0 = orb.getKeyPoint0List().get(i);
+            TIntList kp1 = orb.getKeyPoint1List().get(i);
+            TDoubleList or = orb.getOrientationsList().get(i);
+            TFloatList s = orb.getScalesList().get(i);
+            Descriptors dH = orb.getDescriptorsH().get(i);
+            Descriptors dS = orb.getDescriptorsS().get(i);
+            Descriptors dV = orb.getDescriptorsV().get(i);
+            
+            int n0 = kp0.size();
+            
+            TIntList rm = new TIntArrayList();
+            for (int j = 0; j < n0; ++j) {
+                PairInt p = new PairInt(kp1.get(j), kp0.get(j));
+                if (shape0.contains(p)) {
+                    ImageIOHelper.addPointToImage(p.getX(), p.getY(), 
+                        imgCp, 1, 255, 0, 0);
+                } else {
+                    rm.add(j);
+                }
+            }
+            if (!rm.isEmpty()) {
+                int nb = n0 - rm.size();
+                Descriptors dH2 = new Descriptors();
+                dH2.descriptors = new VeryLongBitString[nb];
+                Descriptors dS2 = new Descriptors();
+                dS2.descriptors = new VeryLongBitString[nb];
+                Descriptors dV2 = new Descriptors();
+                dV2.descriptors = new VeryLongBitString[nb];
+                
+                TIntSet rmSet = new TIntHashSet(rm);
+                for (int j = (rm.size() - 1); j > -1; --j) {
+                    int idx = rm.get(j);
+                    kp0.removeAt(idx);
+                    kp1.removeAt(idx);
+                    or.removeAt(idx);
+                    s.removeAt(idx);
+                }
+                int count = 0;
+                for (int j = 0; j < n0; ++j) {
+                    if (rmSet.contains(j)) {
+                        continue;
+                    }
+                    dH2.descriptors[count] = dH.descriptors[j];
+                    dS2.descriptors[count] = dS.descriptors[j];
+                    dV2.descriptors[count] = dV.descriptors[j];
+                    count++;
+                }
+                assert(count == nb);
+                dH.descriptors = dH2.descriptors;
+                dS.descriptors = dS2.descriptors;
+                dV.descriptors = dV2.descriptors;
+            }
+        }
+        
+        MiscDebug.writeImage(imgCp, "_template_orb");
+        
+        return orb;
     }
 
     private TDoubleList extractKeypoints(ImageExt img, 
