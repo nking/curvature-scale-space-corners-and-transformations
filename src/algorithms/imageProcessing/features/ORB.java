@@ -2486,12 +2486,11 @@ public class ORB {
                                 // of the real scale factor brtween object in the
                                 // template and search images,
                                 // so may need to calculate solutions for 2 vectors.
-                                // one in soln uses the tScale applied as a factor
-                                // to dist and the other vec uses a distance
-                                // component that is a multiple of tScale.
-                                // the decider isn't completely clear yet,
+                                // one soln uses the tScale applied as a factor
+                                // and the other soln uses the tScale applied as a factor
+                                // divisor. the decider isn't completely clear yet,
                                 //   but tentatively looks like the vec which
-                                //   has the smaller minCost1 (== descriptor cost).
+                                //   has the smaller minCost1 (== descriptor cost)
                                 //   for the top item.
                                 //   
                                 double dist = distance(x2Tr, y2Tr, minCP1);
