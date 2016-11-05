@@ -648,8 +648,8 @@ public class AndroidStatuesTest extends TestCase {
                 ImageIOHelper.addPointToImage(p2.getX(), p2.getY(), img11,
                     1, 255, 0, 0);
                 
-                System.out.println("orb matched: " + p1 + " " + p2);
-                if (p2.getX() > 160)
+                //System.out.println("orb matched: " + p1 + " " + p2);
+                //if (p2.getX() > 160)
                 plotter.drawLineInAlternatingColors(p1.getX(), p1.getY(), 
                     p2.getX(), p2.getY(), 0);
             }
@@ -696,7 +696,7 @@ public class AndroidStatuesTest extends TestCase {
                 ImageIOHelper.addPointToImage(p2.getX(), p2.getY(), img11,
                     1, 255, 0, 0);
                 
-                System.out.println("orb matched: " + p1 + " " + p2);
+                //System.out.println("orb matched: " + p1 + " " + p2);
                 //if (p2.getX() > 160)
                 plotter.drawLineInAlternatingColors(p1.getX(), p1.getY(), 
                     p2.getX(), p2.getY(), 0);
@@ -865,7 +865,14 @@ public class AndroidStatuesTest extends TestCase {
        
         System.out.println("shape0 nPts=" + nShape0_0);
         
-        ORB orb0 = extractTemplateORBKeypoints(imgs0[0], shape0);
+        int nKeypoints = 200;
+        float fastThresh = 0.08f;//0.001f;
+        boolean create1stDerivPts = false;
+        boolean createCurvaturePts = false;
+        boolean useSmallPyramid = true;
+        ORB orb0 = extractTemplateORBKeypoints(imgs0[0], shape0, 
+            nKeypoints, fastThresh,
+            useSmallPyramid, create1stDerivPts, createCurvaturePts);
        
         List<Descriptors> dTempHList = orb0.getDescriptorsH();
         List<Descriptors> dTempSList = orb0.getDescriptorsS();
@@ -905,8 +912,13 @@ public class AndroidStatuesTest extends TestCase {
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         ImageExt img = ImageIOHelper.readImageExt(filePath1);
 
+        // template img size is 218  163
+        img = (ImageExt) imageProcessor.bilinearDownSampling(
+            img, 218, 163, 0, 255);
+        
         long ts = MiscDebug.getCurrentTimeFormatted();
 
+        /*
         int w1 = img.getWidth();
         int h1 = img.getHeight();
 
@@ -915,6 +927,7 @@ public class AndroidStatuesTest extends TestCase {
             (float) h1 / maxDimension));
 
         img = imageProcessor.binImage(img, binFactor1);
+        */
         
         ImageExt imgCp = img.copyToImageExt();
        
@@ -923,11 +936,11 @@ public class AndroidStatuesTest extends TestCase {
        
         ORB orb = new ORB(2000);//10000
         //orb.overrideFastThreshold(0.01f);
-        orb.overrideFastThreshold(0.001f);
+        orb.overrideFastThreshold(0.08f);//0.01f);
         orb.overrideToCreateHSVDescriptors();
-        orb.overrideToAlsoCreate1stDerivKeypoints();
-        orb.overrideToCreateCurvaturePoints();
-        //orb.overrideToUseSmallestPyramid();
+        //orb.overrideToAlsoCreate1stDerivKeypoints();
+        //orb.overrideToCreateCurvaturePoints();
+        orb.overrideToUseSmallestPyramid();
         orb.detectAndExtract(img);
 
         List<Descriptors> dHList = orb.getDescriptorsH();
@@ -938,6 +951,17 @@ public class AndroidStatuesTest extends TestCase {
         TFloatList sList = new TFloatArrayList(kp0List.size());
         for (int i = 0; i < kp0List.size(); ++i) {
             sList.add(orb.getScalesList().get(i).get(0));
+        }
+       
+        {
+            Image img11 = img.copyImage();
+            TIntList kp0 = orb.getKeyPoint0List().get(0);
+            TIntList kp1 = orb.getKeyPoint1List().get(0);
+            for (int i = 0; i < kp0.size(); ++i) {
+                ImageIOHelper.addPointToImage(kp1.get(i), kp0.get(i), 
+                    img11, 1, 255, 0, 0);
+            }
+            MiscDebug.writeImage(img11, "_srch_keypoints_before_filter_" + fileName1Root);
         }
         
         // --- filter out points at each scale, trimming the other data too ----
@@ -1006,13 +1030,11 @@ public class AndroidStatuesTest extends TestCase {
         
         {
             Image img11 = img.copyImage();
-            for (int i = 0; i < ns; ++i) {
-                TIntList kp0 = orb.getKeyPoint0List().get(i);
-                TIntList kp1 = orb.getKeyPoint1List().get(i);
-                for (int j = 0; j < kp0.size(); ++j) {
-                    ImageIOHelper.addPointToImage(kp1.get(j), kp0.get(j), 
-                        img11, 1, 255, 0, 0);
-                }
+            TIntList kp0 = orb.getKeyPoint0List().get(0);
+            TIntList kp1 = orb.getKeyPoint1List().get(0);
+            for (int i = 0; i < kp0.size(); ++i) {
+                ImageIOHelper.addPointToImage(kp1.get(i), kp0.get(i), 
+                    img11, 1, 255, 0, 0);
             }
             MiscDebug.writeImage(img11, "_srch_keypoints_filtered_" + fileName1Root);
         }
@@ -1046,7 +1068,7 @@ public class AndroidStatuesTest extends TestCase {
                 ImageIOHelper.addPointToImage(p2.getX(), p2.getY(), img11,
                     1, 255, 0, 0);
 
-                System.out.println("orb matched: " + p1 + " " + p2);
+                //System.out.println("orb matched: " + p1 + " " + p2);
                 //if (p2.getX() > 160)
                 plotter.drawLineInAlternatingColors(p1.getX(), p1.getY(), 
                     p2.getX(), p2.getY(), 0);
@@ -1363,7 +1385,7 @@ public class AndroidStatuesTest extends TestCase {
                 ImageIOHelper.addPointToImage(p2.getX(), p2.getY(), img11,
                     1, 255, 0, 0);
                 
-                System.out.println("orb matched: " + p1 + " " + p2);
+                //System.out.println("orb matched: " + p1 + " " + p2);
               //  if (p2.getX() > 160)
                 plotter.drawLineInAlternatingColors(p1.getX(), p1.getY(), 
                     p2.getX(), p2.getY(), 0);
@@ -2494,7 +2516,11 @@ public class AndroidStatuesTest extends TestCase {
     }
 
     private ORB extractTemplateORBKeypoints(ImageExt img,
-        Set<PairInt> shape0) throws IOException, Exception {
+        Set<PairInt> shape0, 
+        int nKeypoints, float fastThresh,
+        boolean useSmallPyramid,
+        boolean createFirstDerivPts,
+        boolean createCurvaturePts) throws IOException, Exception {
 
         int[] minMaxXY = MiscMath.findMinMaxXY(shape0);
 
@@ -2520,14 +2546,13 @@ public class AndroidStatuesTest extends TestCase {
             yUR = h - 1;
         }
         
-        float fastThresh = 0.001f;
-        boolean create2ndDerivPointsAlso = true;
-        boolean overrideToCreateSmallestPyramid = false;
+        boolean overrideToCreateSmallestPyramid = useSmallPyramid;
         
         ORB orb = ORBWrapper.extractHSVKeypointsFromSubImage(
             img, xLL, yLL, xUR, yUR,
-            200,
-            fastThresh, create2ndDerivPointsAlso,
+            nKeypoints,
+            fastThresh, 
+            createFirstDerivPts, createCurvaturePts,
             overrideToCreateSmallestPyramid);
                 
         ImageExt imgCp = img.copyToImageExt();

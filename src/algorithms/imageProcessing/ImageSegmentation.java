@@ -14262,8 +14262,8 @@ int z = 1;
                 qt.insert(setColors.getXCen(), setColors.getYCen(),
                     Integer.valueOf(idx));
 
-                TwoDIntArray a = new TwoDIntArray();
-                a.a = clrHist.histogramHSV(img, set);
+                TwoDIntArray a = new TwoDIntArray(
+                    clrHist.histogramHSV(img, set));
                 outputListOfCHs.add(a);
             }
         }

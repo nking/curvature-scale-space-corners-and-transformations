@@ -12,6 +12,7 @@ import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculato
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
 import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.search.NearestNeighbor2D;
 import algorithms.util.PairInt;
@@ -1073,11 +1074,15 @@ public class ORB {
             if (exists.contains(p)) {
                 keypoints0.removeAt(i);
                 keypoints1.removeAt(i);
-                continue;
+            } else {
+                exists.add(p);
             }
-            exists.add(p);
         }
         
+        // --- harris corners from response image ----
+        ImageProcessor imageProcessor = new ImageProcessor();
+        imageProcessor.peakLocalMax(harrisResponse, 1, 0.1f,
+            keypoints0, keypoints1);
         Resp r2 = new Resp();
         r2.keypoints0 = keypoints0;
         r2.keypoints1 = keypoints1;
@@ -2534,146 +2539,6 @@ public class ORB {
         return topResults;
     }
     
-    /**
-     * match descriptors using euclidean transformation evaluation from pairs in
-     * feasible combinations of best matches.
-     * Thie method is useful when a geometrical model is necessary to find the
-     * object in an image where the background and foreground have changed and the
-     * lighting may have changed, for example.  
-     * Fpr known simpler conditions such as stereo-projections, RANSAC with
-     * an epipolar or euclidean evaluator can be used instead with the top 45
-     * results and that method will
-     * be offered in this class one day.
-     * @param d1
-     * @param d2
-     * @param keypoints1
-     * @param keypoints2
-     * @param scaleFactor the factor that will be the maximum dimension
-     * of the object in the search image, for example, 2.
-     * @param sizeScaleFraction (suggested default is 0.12).
-     * the expected largest difference in fraction
-     * of image size between the template object and search object size.
-     * For example, if the scale is 70% then that is represented by 
-     * a pyramidal image scale of approx 1.4, so is approx 0.1 difference from
-     * an existing scale.  This number is used as a tolerance for error in
-     * the descriptor.  For example, the same keypoint in two same images,
-     * but one image scaled by 0.7 produces a best difference in descriptors
-     * of about 20 bits (which is approx 0.08 * 256 bits) per band.
-     * This number is used to calculate a tolerance for equivalent costs so
-     * set it as accurately as possible.
-     * @return 
-     * @deprecated
-     */
-    public static List<CorrespondenceList> matchDescriptors2(
-        Descriptors[] d1, Descriptors[] d2,
-        List<PairInt> keypoints1,
-        List<PairInt> keypoints2, float scaleFactor,
-        float sizeScaleFraction) {
-        
-        //TODO: DELETE THIS and update code using it
-        
-        if (d1.length != d2.length) {
-            throw new IllegalArgumentException("d1 and d2 must"
-                + " be same length");
-        }
-        
-        int nBands = d1.length;
-        
-        int n1 = d1[0].descriptors.length;
-        int n2 = d2[0].descriptors.length;
-        
-        if (n1 != keypoints1.size()) {
-            throw new IllegalArgumentException("number of descriptors in "
-                + " d1 bitstrings must be same as keypoints1 length");
-        }
-        if (n2 != keypoints2.size()) {
-            throw new IllegalArgumentException("number of descriptors in "
-                + " d2 bitstrings must be same as keypoints2 length");
-        }
-
-        //[n1][n2]
-        int[][] cost = calcDescriptorCostMatrix(d1, d2);
-
-        int nTot = n1 * n2;
-        PairInt[] indexes = new PairInt[nTot];
-        int[] costs = new int[nTot];
-        int count = 0;
-        for (int i = 0; i < n1; ++i) {
-            for (int j = 0; j < n2; ++j) {
-                indexes[count] = new PairInt(i, j);
-                costs[count] = cost[i][j];
-                count++;                
-            }
-        }
-        assert(count == nTot);
-
-        QuickSort.sortBy1stArg(costs, indexes);
-        
-        // storing the indexes of matches with cost < 127 and
-        // fewer in number than about 45
-        
-        count = 0;
-        Set<PairInt> set2 = new HashSet<PairInt>();
-        PairIntArray mT = new PairIntArray();
-        PairIntArray mS = new PairIntArray();
-        TIntList tIndexes = new TIntArrayList();
-        
-        // below, need to look up cost using idx1 and p2: idx1, p2 -> cost
-        TIntObjectMap<TObjectIntMap<PairInt>> idx1P2CostMap = 
-            new TIntObjectHashMap<TObjectIntMap<PairInt>>();
-        
-        int topLimit = Math.round(0.17f * nBands * 256);
-        int tolerance = Math.round(sizeScaleFraction * nBands * 256);
-            
-        // visit lowest costs (== differences) first
-        for (int i = 0; i < nTot; ++i) {
-            if (costs[i] > topLimit 
-                //|| count > 45
-                ) {
-                break;
-            }
-            PairInt index12 = indexes[i];
-            int idx1 = index12.getX();
-            int idx2 = index12.getY();
-            PairInt p1 = keypoints1.get(idx1);
-            PairInt p2 = keypoints2.get(idx2);
-            
-        //System.out.println("p1=" + p1 + " " + " p2=" + p2 + " cost=" + costs[i]);
-            mT.add(p1.getX(), p1.getY());
-            mS.add(p2.getX(), p2.getY());
-            set2.add(p2);
-            tIndexes.add(idx1);
-            
-            TObjectIntMap<PairInt> cMap = idx1P2CostMap.get(idx1);
-            if (cMap == null) {
-                cMap = new TObjectIntHashMap<PairInt>();
-                idx1P2CostMap.put(idx1, cMap);
-            }
-            if (!cMap.containsKey(p2)) {
-                // only store the smaller cost, that's reached first
-                cMap.put(p2, costs[i]);
-            }
-            
-            count++;
-        }
-        
-        int[] minMaxXY = MiscMath.findMinMaxXY(keypoints1);
-        int objDimension = Math.max(minMaxXY[1] - minMaxXY[0],
-            minMaxXY[3] - minMaxXY[2]);
-        int limit = Math.round(scaleFactor * objDimension);
-        int limitSq = limit * limit;
-       
-        int[] minMaxXY2 = MiscMath.findMinMaxXY(set2);
-        
-        NearestNeighbor2D nn = new NearestNeighbor2D(
-           set2, minMaxXY2[1] + limit, minMaxXY2[3] + limit);
-       
-        return completeUsingCombinations(
-            keypoints1, keypoints2, mT, mS, nn,
-            minMaxXY2, limit,
-            tIndexes, idx1P2CostMap, indexes, costs, tolerance, nBands
-        );       
-    }
 
     /**
      * NOTE: preliminary results show that this matches the right pattern as

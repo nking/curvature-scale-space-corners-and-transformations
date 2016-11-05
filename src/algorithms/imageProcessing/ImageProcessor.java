@@ -8659,6 +8659,7 @@ if (sum > 511) {
         // beginning of the sliding window
         applyShift(imageMax, minDistance, nRows, nCols);
 
+        /*
         {//DEBUG
             float min = MiscMath.findMin(img);
             float max = MiscMath.findMax(img);
@@ -8676,7 +8677,7 @@ if (sum > 511) {
                 }
             }
             MiscDebug.writeImage(gsImg, "_CURVATURE_");
-        }
+        }*/
 
         //TODO: should be able to simplify the mask here
 

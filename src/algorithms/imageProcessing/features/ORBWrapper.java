@@ -7,6 +7,7 @@ import algorithms.util.PairInt;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
 import java.util.List;
 
 /**
@@ -185,6 +186,66 @@ public class ORBWrapper {
         outputDescriptorsH.descriptors = outH;
         outputDescriptorsS.descriptors = outS;
         outputDescriptorsV.descriptors = outV;
+    }
+    
+    public static ORB extractHSVKeypointsFromSubImage(Image img,
+        int xLL, int yLL, int xUR, int yUR, int nKeypoints,
+        float fastThreshold, 
+        boolean create1stDerivPoints,
+        boolean createCurvaturePoints,
+        boolean overrideToCreateSmallestPyramid) {
+         
+        int buffer = 25;
+        
+        int startX = xLL - buffer;
+        if (startX < 0) {
+            startX = 0;
+        }
+        int stopX = xUR + buffer;
+        if (stopX > img.getWidth()) {
+            stopX = img.getWidth();
+        }
+        
+        int startY = yLL - buffer;
+        if (startY < 0) {
+            startY = 0;
+        }
+        int stopY = yUR + buffer;
+        if (stopY > img.getHeight()) {
+            stopY = img.getHeight();
+        }
+        
+        Image subImage = img.copySubImage(startX, stopX, startY, stopY);
+        
+        ORB orb = new ORB(nKeypoints);
+        orb.overrideFastThreshold(fastThreshold);
+        if (create1stDerivPoints) {
+            orb.overrideToAlsoCreate1stDerivKeypoints();
+        }
+        orb.overrideToCreateHSVDescriptors();
+        if (createCurvaturePoints) {
+            orb.overrideToCreateCurvaturePoints();
+        }        
+        if (overrideToCreateSmallestPyramid) {
+            orb.overrideToUseSmallestPyramid();
+        }
+        orb.detectAndExtract(subImage);
+
+        // put the coordinates back into original frame
+        int nSizes = orb.getKeyPoint0List().size();
+        for (int i = 0; i < nSizes; ++i) {
+            TIntList rmList = new TIntArrayList();
+            TIntList kp0 = orb.getKeyPoint0List().get(i);
+            TIntList kp1 = orb.getKeyPoint1List().get(i);           
+            for (int j = 0; j < kp0.size(); ++j) {
+                int y = startY + kp0.get(j);
+                int x = startX + kp1.get(j);
+                kp0.set(j, y);
+                kp1.set(j, x);
+            }
+        }
+      
+        return orb;
     }
     
     public static void extractKeypointsFromSubImage(Image img,
