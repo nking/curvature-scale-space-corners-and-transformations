@@ -1323,6 +1323,92 @@ public class QuickSort {
         }
         return store;
     }
+   
+    public static void sortBy1stThen2ndThen3rd(float[] a, float[] b, 
+        float[] c, int[] d) {
+    
+        if (a == null || b == null || c == null || d == null) {
+            throw new IllegalArgumentException("arrays cannot be null");
+        }
+        if ((a.length != b.length) || (a.length != c.length) ||
+            (a.length != d.length)) {
+            throw new IllegalArgumentException("attay lengths must be same");
+        }
+        
+        sortBy1stThen2ndThen3rd(a, b, c, d, 0, a.length - 1);
+    }
+    
+    public static void sortBy1stThen2ndThen3rd(float[] a, float[] b, 
+        float[] c, int[] d, int idxLo, int idxHi) {
+    
+        if (a == null || b == null || c == null || d == null) {
+            throw new IllegalArgumentException("arrays cannot be null");
+        }
+        if ((a.length != b.length) || (a.length != c.length) ||
+            (a.length != d.length)) {
+            throw new IllegalArgumentException("attay lengths must be same");
+        }
+        if (a.length < 2) {
+            return;
+        }
+        if (idxLo < idxHi) {
+            int idxMid = partitionBy1stThen2ndThen3rd(a, b, c, d, idxLo, idxHi);
+            sortBy1stThen2ndThen3rd(a, b, c, d, idxLo, idxMid - 1);
+            sortBy1stThen2ndThen3rd(a, b, c, d, idxMid + 1, idxHi);
+        }
+    }
+
+    private static int partitionBy1stThen2ndThen3rd(float[] a, float[] b, 
+        float[] c, int[] d, int idxLo, int idxHi) {
+        
+        float x = a[idxHi];
+        int store = idxLo - 1;
+        
+        for (int i = idxLo; i < idxHi; i++) {
+            boolean doSwap = false;
+            if (a[i] < x) {
+                doSwap = true;
+            } else if (a[i] == x) {
+                if (b[i] < b[idxHi]) {
+                    doSwap = true;
+                } else if (b[i] == b[idxHi]) {
+                    if (c[i] <= c[idxHi]) {
+                        doSwap = true;
+                    }
+                }
+            }
+            if (doSwap) {
+                store++;
+                float swap = a[store];
+                a[store] = a[i];
+                a[i] = swap;
+                float swap2 = b[store];
+                b[store] = b[i];
+                b[i] = swap2;
+                swap2 = c[store];
+                c[store] = c[i];
+                c[i] = swap2;
+                int swap3 = d[store];
+                d[store] = d[i];
+                d[i] = swap3;
+            }
+        }
+        store++;
+        float swap = a[store];
+        a[store] = a[idxHi];
+        a[idxHi] = swap;
+        float swap2 = b[store];
+        b[store] = b[idxHi];
+        b[idxHi] = swap2;
+        swap2 = c[store];
+        c[store] = c[idxHi];
+        c[idxHi] = swap2;
+        int swap3 = d[store];
+        d[store] = d[idxHi];
+        d[idxHi] = swap3;
+        
+        return store;
+    }
     
     /**
      * sort a from index idxLo to idxHi, inclusive, with next sorting by b and c

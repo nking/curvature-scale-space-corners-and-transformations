@@ -829,9 +829,7 @@ public class AndroidStatuesTest extends TestCase {
     
     public void testORBMatcher2() throws Exception {
 
-        /*
-        continuing methods from testORBMatcher2
-        
+        /*        
         this demonstrates ORB
             followed by filtering of search image keypoints by color.
             then matching by descriptors 
@@ -840,8 +838,10 @@ public class AndroidStatuesTest extends TestCase {
         
         The results are the top results within a tolerance.
         
-        there is an error in the test data or algorithm
-           here still
+        tentatively, if object is larger than 20 pix of so,
+           this finds the object in the top result,
+           but further location is sometimes needed.
+        
         */
     
         int maxDimension = 256;//512;
@@ -850,6 +850,26 @@ public class AndroidStatuesTest extends TestCase {
         ImageProcessor imageProcessor = new ImageProcessor();
         ImageSegmentation imageSegmentation = new ImageSegmentation();
 
+        /*
+        NOTE: statues_01 has the very small gbman at a different pose.
+            This one needs masked descriptors OR to be made larger
+            so that a the descriptor (which has a radius of 13)
+            is mostly filled by object rather than a background which
+            is very different from the template object gbman.
+            It would be difficult to know that the gbman in this image
+            is small in an unsupervised manner unless segmentation
+            is used or a standard ruler was found in the image.
+         might consider a set of steps that can determine it failed to
+        find it and double the image size and try again... better to use
+        segmentation information maybe.
+        */
+        String[] fileNames1 = new String[]{
+            "android_statues_02.jpg",
+            "android_statues_04.jpg",
+            "android_statues_03.jpg"
+        };
+        for (String fileName1 : fileNames1) {               
+        
         Set<PairInt> shape0 = new HashSet<PairInt>();
 
         // to compare to "android_statues_01.jpg",
@@ -869,7 +889,7 @@ public class AndroidStatuesTest extends TestCase {
         float fastThresh = 0.08f;//0.001f;
         boolean create1stDerivPts = false;
         boolean createCurvaturePts = false;
-        boolean useSmallPyramid = false;
+        boolean useSmallPyramid = true;
         ORB orb0 = extractTemplateORBKeypoints(imgs0[0], shape0, 
             nKeypoints, fastThresh,
             useSmallPyramid, create1stDerivPts, createCurvaturePts);
@@ -903,25 +923,7 @@ public class AndroidStatuesTest extends TestCase {
             template_ch_LAB = clrHist.histogramCIELAB(imgs0[1], points0); 
         }
 
-        /*
-        NOTE: statues_01 has the very small gbman at a different pose.
-            This one needs masked descriptors OR to be made larger
-            so that a the descriptor (which has a radius of 13)
-            is mostly filled by object rather than a background which
-            is very different from the template object gbman.
-            It would be difficult to know that the gbman in this image
-            is small in an unsupervised manner unless segmentation
-            is used or a standard ruler was found in the image.
-         might consider a set of steps that can determine it failed to
-        find it and double the image size and try again... better to use
-        segmentation information maybe.
-        */
         
-        String fileName1 = "android_statues_02.jpg";
-        //fileName1 = "android_statues_01.jpg"; // set binFactor0 to 2
-        fileName1 = "android_statues_04.jpg";
-        //fileName1 = "android_statues_03.jpg";
-
         String fileName1Root = fileName1.substring(0, fileName1.lastIndexOf("."));
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         ImageExt img = ImageIOHelper.readImageExt(filePath1);
@@ -961,7 +963,7 @@ public class AndroidStatuesTest extends TestCase {
         orb.overrideToCreateHSVDescriptors();
         //orb.overrideToAlsoCreate1stDerivKeypoints();
         //orb.overrideToCreateCurvaturePoints();
-        //orb.overrideToUseSmallestPyramid();
+        orb.overrideToUseSmallestPyramid();
         orb.detectAndExtract(img);
 
         List<Descriptors> dHList = orb.getDescriptorsH();
@@ -1099,9 +1101,11 @@ public class AndroidStatuesTest extends TestCase {
             while (str.length() < 3) {
                 str = "0" + str;
             }
-            plotter.writeImage("_orb_corres_" + str);
-            System.out.println(cor.getPoints1().size() + " matches");
-            MiscDebug.writeImage(img11, "_orb_matched_" + str);
+            plotter.writeImage("_orb_corres_" + str + "_" + fileName1Root);
+            System.out.println(cor.getPoints1().size() + " matches " + fileName1Root);
+            MiscDebug.writeImage(img11, "_orb_matched_" + str
+                + "_" + fileName1Root);
+        }
         }
     }
 

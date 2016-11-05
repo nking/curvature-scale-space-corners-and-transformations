@@ -557,4 +557,24 @@ public class QuickSortTest extends TestCase {
             assertEquals(expectedY[i], y[i]);
         }
     }
+    
+    public static void testSortBy1stThen2ndThen3rd_5() {
+        
+        float[] a = new float[]{4, 1, 1, 1};
+        float[] b = new float[]{4, 2, 2, 1};
+        float[] c = new float[]{4, 3, 2, 1};
+        int[] d = new int[]{3, 2, 1, 0};
+        
+        QuickSort.sortBy1stThen2ndThen3rd(a, b, c, d);
+        
+        assertTrue(Arrays.equals(new float[]{1, 1, 1, 4}, 
+            a));
+        assertTrue(Arrays.equals(new float[]{1, 2, 2, 4}, 
+            b));
+        assertTrue(Arrays.equals(new float[]{1, 2, 3, 4}, 
+            c));
+        assertTrue(Arrays.equals(new int[]{0, 1, 2, 3}, 
+            d));
+    }
+    
 }

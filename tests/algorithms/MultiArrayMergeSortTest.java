@@ -603,7 +603,7 @@ public class MultiArrayMergeSortTest extends TestCase {
         assertTrue(Arrays.equals(expectedA, a));
         assertTrue(Arrays.equals(expectedB, b));
     }
-    
+   
     /**
      * Test suite
      * @return static Test

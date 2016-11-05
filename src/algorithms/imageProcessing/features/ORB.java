@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.features;
 
+import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
@@ -2265,6 +2266,14 @@ public class ORB {
         double minCost1 = 0;
         double minCost2 = 0;
         double minCost3 = 0;
+        double minCostTotal_D = Double.MAX_VALUE;
+        double minCost1_D = 0;
+        double minCost2_D = 0;
+        double minCost3_D = 0;
+        double minCostTotal_F = Double.MAX_VALUE;
+        double minCost1_F = 0;
+        double minCost2_F = 0;
+        double minCost3_F = 0;
         //runtime complexity of this vector depends upon the number of items
         // it is currently holding, so can set the capacity high and fill vector only
         // with items within bitTolerance of best, but too high might affect jvm
@@ -2275,17 +2284,27 @@ public class ORB {
         // transformation parameter sets, but since that isn't known
         // until later without refactoring here, will make an assumption for now,
         // that size 100 is generous for number of top solutions.
+        FixedSizeSortedVector<CObject> vecD;
         FixedSizeSortedVector<CObject> vec;
+        FixedSizeSortedVector<CObject> vecF;
         if (returnSingleAnswer) {
-            vec = new FixedSizeSortedVector<CObject>(100, CObject.class);
+            vecD = new FixedSizeSortedVector<CObject>(1, CObject.class);
+            vec = new FixedSizeSortedVector<CObject>(1, CObject.class);
+            vecF = new FixedSizeSortedVector<CObject>(1, CObject.class);
         } else {
-            vec = new FixedSizeSortedVector<CObject>(100, CObject.class);
+            vecD = new FixedSizeSortedVector<CObject>(50, CObject.class);
+            vec = new FixedSizeSortedVector<CObject>(50, CObject.class);
+            vecF = new FixedSizeSortedVector<CObject>(50, CObject.class);
         }
         
         //CorrespondenceList minCostCor = null;
         //PairIntArray minCostTr2 = null;
         double[] minCostI = new double[nMax];
         double[] minDistI = new double[nMax];
+        double[] minCostI_D = new double[nMax];
+        double[] minDistI_D = new double[nMax];
+        double[] minCostI_F = new double[nMax];
+        double[] minDistI_F = new double[nMax];
         
         // temporary storage of corresp coords until object construction
         int[] m1x = new int[nMax];
@@ -2424,8 +2443,7 @@ public class ORB {
 
                             continue;
                         }
-                       // 
-                       // 166,68  157,179  
+                      
                         // transform dataset 2 into frame 1
                         TransformationParameters params = tc.calulateEuclidean(
                             s1X, s1Y,
@@ -2445,6 +2463,12 @@ public class ORB {
                         double sum2 = 0;
                         double sum3 = 0;
                         double sum = 0;
+                        
+                        double sum2_F = 0;
+                        double sum_F = 0;
+                        
+                        double sum2_D = 0;
+                        double sum_D = 0;
                         
                         for (int k = 0; k < tr2.getN(); ++k) {
                             int x2Tr = tr2.getX(k);
@@ -2487,7 +2511,7 @@ public class ORB {
                                 // template and search images,
                                 // so may need to calculate solutions for 2 vectors.
                                 // one soln uses the tScale applied as a factor
-                                // and the other soln uses the tScale applied as a factor
+                                // and the other soln uses the tScale applied as a
                                 // divisor. the decider isn't completely clear yet,
                                 //   but tentatively looks like the vec which
                                 //   has the smaller minCost1 (== descriptor cost)
@@ -2495,11 +2519,11 @@ public class ORB {
                                 //   
                                 double dist = distance(x2Tr, y2Tr, minCP1);
                                 double distNorm = dist * 
-                                    //factorToMinScale / maxDist;
-                                    //factorToMinScale / (tSscale * maxDist);
-                                    tSscale * factorToMinScale / maxDist;
+                                    factorToMinScale / maxDist;
                                 sum2 += distNorm;
-
+                                sum2_F += (dist * tSscale * factorToMinScale / maxDist);
+                                sum2_D += (dist * factorToMinScale / (tSscale * maxDist));
+                                
                                 m2x[mCount] = kpX2.get(idx2);
                                 m2y[mCount] = kpY2.get(idx2);
                                 m1x[mCount] = minCP1.getX();
@@ -2511,6 +2535,8 @@ public class ORB {
                             } else {
                                 sum1 += 1;
                                 sum2 += 1;
+                                sum2_F += 1;
+                                sum2_D += 1;
                             }
                         }     
                         
@@ -2522,6 +2548,10 @@ public class ORB {
                         sum3 = 1. - cf; 
                      
                         sum = sum1 + sum2 + sum3;
+                        
+                        sum_D = sum1 + sum2_D + sum3;
+                        
+                        sum_F = sum1 + sum2_F + sum3;
                        
                         if ((minCostTotal == Double.MAX_VALUE) ||
                             (sum <= (minCostTotal + bitTolerance))                            
@@ -2531,20 +2561,11 @@ public class ORB {
                                 minCostTotal = sum;
                                 minCost1 = sum1;
                                 minCost2 = sum2;
+                                minCost3 = sum3;
                             }
                             
-                           /* System.out.println(
-                                String.format(
-                                    " (%d,%d):(%d,%d) (%d,%d):(%d,%d) scale=%.2f r=%.1f s=%.2f, %.2f, %.2f, %.2f",
-                                    t1X, t1Y, s1X, s1Y, t2X, t2Y, s2X, s2Y,
-                                    params.getScale(), params.getRotationInDegrees(),
-                                    (float) sum, 
-                                    (float) sum1, (float) sum2, (float) sum3));
-                            */
-                           
                             CorrespondenceList corr
-                                = new CorrespondenceList(
-                                params.getScale(),
+                                = new CorrespondenceList(params.getScale(),
                                 Math.round(params.getRotationInDegrees()),
                                 Math.round(params.getTranslationX()),
                                 Math.round(params.getTranslationY()),
@@ -2562,6 +2583,68 @@ public class ORB {
                             CObject cObj = new CObject(sum, corr, tr2);
                             vec.add(cObj);
                         }
+                        
+                        if ((minCostTotal_D == Double.MAX_VALUE) ||
+                            (sum_D <= (minCostTotal_D + bitTolerance))                            
+                        ) {
+
+                            if (sum_D < minCostTotal_D) {
+                                minCostTotal_D = sum_D;
+                                minCost1_D = sum1;
+                                minCost2_D = sum2_D;
+                                minCost3_D = sum3;
+                            }
+                            
+                            CorrespondenceList corr
+                                = new CorrespondenceList(params.getScale(),
+                                Math.round(params.getRotationInDegrees()),
+                                Math.round(params.getTranslationX()),
+                                Math.round(params.getTranslationY()),
+                                0, 0, 0, 
+                                new ArrayList<PairInt>(), new ArrayList<PairInt>());
+
+                            for (int mi = 0; mi < mCount; ++mi) {
+                                corr.addMatch(
+                                    new PairInt(m1x[mi], m1y[mi]),
+                                    new PairInt(m2x[mi], m2y[mi]),
+                                    (minCostI[mi] + minCostI[mi])
+                                );
+                            }
+  
+                            CObject cObj = new CObject(sum_D, corr, tr2);
+                            vecD.add(cObj);
+                        }
+                        
+                        if ((minCostTotal_F == Double.MAX_VALUE) ||
+                            (sum_F <= (minCostTotal_F + bitTolerance))                            
+                        ) {
+
+                            if (sum_F < minCostTotal_F) {
+                                minCostTotal_F = sum_F;
+                                minCost1_F = sum1;
+                                minCost2_F = sum2_F;
+                                minCost3_F = sum3;
+                            }
+                            
+                            CorrespondenceList corr
+                                = new CorrespondenceList(params.getScale(),
+                                Math.round(params.getRotationInDegrees()),
+                                Math.round(params.getTranslationX()),
+                                Math.round(params.getTranslationY()),
+                                0, 0, 0, 
+                                new ArrayList<PairInt>(), new ArrayList<PairInt>());
+
+                            for (int mi = 0; mi < mCount; ++mi) {
+                                corr.addMatch(
+                                    new PairInt(m1x[mi], m1y[mi]),
+                                    new PairInt(m2x[mi], m2y[mi]),
+                                    (minCostI[mi] + minCostI[mi])
+                                );
+                            }
+  
+                            CObject cObj = new CObject(sum_F, corr, tr2);
+                            vecF.add(cObj);
+                        }
                     }
                 }
             }
@@ -2571,14 +2654,66 @@ public class ORB {
             return null;
         }
 
-        System.out.println("minCost=" + minScale1 + " descr component=" +
-            minCost1);
- 
+        System.out.println(
+            String.format(
+            "minCost=%.2f c1=%.2f c2=%.2f c3=%.2f",
+                (float)minCostTotal, (float)minCost1,
+                (float)minCost2, (float)minCost3));
+        System.out.println(
+            String.format(
+            "minCostD=%.2f c1=%.2f c2=%.2f c3=%.2f",
+                (float)minCostTotal_D, (float)minCost1_D,
+                (float)minCost2_D, (float)minCost3_D));
+        System.out.println(
+            String.format(
+            "minCostF=%.2f c1=%.2f c2=%.2f c3=%.2f",
+                (float)minCostTotal_F, (float)minCost1_F,
+                (float)minCost2_F, (float)minCost3_F));
+        
         List<CorrespondenceList> topResults =
             new ArrayList<CorrespondenceList>();
 
+        // if any of the top costs is 0, that vector should be chosen,
+        // else, choose the one with smallest mincost3
+        float[] c0 = new float[]{(float)minCostTotal,
+            (float)minCostTotal_D, (float)minCostTotal_F};
+        float[] c1 = new float[]{(float)minCost1,
+            (float)minCost1_D, (float)minCost1_F};
+        float[] c3 = new float[]{(float)minCost3,
+            (float)minCost3_D, (float)minCost3_F};
+        int[] indexes = new int[]{0, 1, 2};
+        QuickSort.sortBy1stThen2ndThen3rd(c1, c3, c0, indexes);
+        int vecIdx = -1;
+        if (c1[0] == 0) {
+            if (indexes[0] == 0) {
+                vecIdx = 0;
+            } else if (indexes[0] == 1) {
+                vecIdx = 1;
+            } else {
+                vecIdx = 2;
+            }
+        } else {
+            indexes = new int[]{1, 2};
+            c3 = c3 = new float[]{(float)minCost3_D, (float)minCost3_F};
+            MultiArrayMergeSort.sortByDecr(c3, indexes);        
+            for (int i = 0; i < vec.getNumberOfItems(); ++i) {
+                if (indexes[1] == 1) {
+                    vecIdx = 1;
+                } else {
+                    vecIdx = 2;
+                }
+            }
+        }
+
         for (int i = 0; i < vec.getNumberOfItems(); ++i) {
-            CObject a = vec.getArray()[i];
+            CObject a;
+            if (vecIdx == 0) {
+                a = vec.getArray()[i];
+            } else if (vecIdx == 1) {
+                a = vecD.getArray()[i];
+            } else {
+                a = vecF.getArray()[i];
+            }
             if (a.cost > (minCostTotal + bitTolerance)) {
                 break;
             }
