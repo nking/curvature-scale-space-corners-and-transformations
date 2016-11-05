@@ -1083,6 +1083,7 @@ public class ORB {
         ImageProcessor imageProcessor = new ImageProcessor();
         imageProcessor.peakLocalMax(harrisResponse, 1, 0.1f,
             keypoints0, keypoints1);
+
         Resp r2 = new Resp();
         r2.keypoints0 = keypoints0;
         r2.keypoints1 = keypoints1;
@@ -2186,7 +2187,7 @@ public class ORB {
             keypointsX1, keypointsY1, keypointsX2, keypointsY2,
             scaleFactor, sizeScaleFraction, false);
     }
-    
+  
     private static List<CorrespondenceList> matchDescriptors2(
         TFloatList scales1, TFloatList scales2,
         List<Descriptors> descH1, List<Descriptors> descS1, 
@@ -2217,14 +2218,21 @@ public class ORB {
                 + " must all be same lengths as scales1");
         }
         
+        //TODO: may need to revise this or allow it as a method argument:
+        int pixTolerance = 15;
+        
         int nBands = 3;
-        int topLimit = Math.round(0.17f * nBands * 256);
         int bitTolerance; 
         if (returnSingleAnswer) {
             bitTolerance = 0;
         } else {
             bitTolerance = Math.round(sizeScaleFraction * nBands * 256);
         }
+        int topLimit = Math.round(
+            0.17f
+            //0.9f
+            * nBands * 256) + bitTolerance;
+        int minP1Diff = 5;
          
         MatchedPointsTransformationCalculator tc = new
             MatchedPointsTransformationCalculator();
@@ -2242,10 +2250,15 @@ public class ORB {
         // a rough estimate of maximum number of matchable points in any 
         //     scale dataset comparison
         final int nMaxMatchable = calculateNMaxMatchable(keypointsX1, keypointsX2);
+        System.out.println("nMaxMatchable=" + nMaxMatchable);
         
         int nMax1 = maxSize(keypointsX1);
         int nMax2 = maxSize(keypointsX2);
         int nMax = nMax1 * nMax2;
+        
+        if (diag1 <= 16) {
+            minP1Diff = 2;
+        }
         
         // --- best cost data ----
         double minCostTotal = Double.MAX_VALUE;
@@ -2280,7 +2293,7 @@ public class ORB {
         int[] m2x = new int[nMax];
         int[] m2y = new int[nMax];
         int mCount = 0;
-        
+
         for (int i = 0; i < scales1.size(); ++i) {
             float pScale1 = scales1.get(i);
             Descriptors dH1 = descH1.get(i);
@@ -2339,13 +2352,14 @@ public class ORB {
                 
                 Set<PairInt> s1 = new HashSet<PairInt>(nTot/2);
                 Set<PairInt> s2 = new HashSet<PairInt>(nTot/2);
-                
+               
                 List<QuadInt> pairs = new ArrayList<QuadInt>(nTot/2);
                 TIntList costs = new TIntArrayList(nTot);
                 for (int ii = 0; ii < n1; ++ii) {
                     PairInt p1 = new PairInt(kpX1.get(ii), kpY1.get(ii));
                     for (int jj = 0; jj < n2; ++jj) {
                         int c = cost[ii][jj];
+                        
                         if (c > topLimit) {
                             continue;
                         }
@@ -2381,7 +2395,7 @@ public class ORB {
                     // choose all combinations of 2nd point within distance
                     // limit of point s1.
                     for (int jj = (ii + 1); jj < pairs.size(); ++jj) {
-                        
+                               
                         QuadInt pair2 = pairs.get(jj);
                     
                         // image 1 point:
@@ -2395,14 +2409,23 @@ public class ORB {
                             || (s1X == s2X && s1Y == s2Y)) {
                             continue;
                         }
-                        
+
                         int diffX = s1X - s2X;
                         int diffY = s1Y - s2Y;
                         int distSq = diffX * diffX + diffY * diffY;
                         if (distSq > limitSq) {
+
                             continue;
                         }
-                                                
+                        if ((distSq < minP1Diff*minP1Diff) || 
+                            ((t1X - t2X)*(t1X - t2X) +
+                             (t1Y - t2Y)*(t1Y - t2Y)
+                            < minP1Diff)) {
+
+                            continue;
+                        }
+                       // 
+                       // 166,68  157,179  
                         // transform dataset 2 into frame 1
                         TransformationParameters params = tc.calulateEuclidean(
                             s1X, s1Y,
@@ -2430,9 +2453,9 @@ public class ORB {
                             
                             Set<PairInt> nearest = null;
                             if ((x2Tr >= 0) && (y2Tr >= 0)
-                                && (x2Tr <= (maxX + limit)) 
-                                && (y2Tr <= (maxY + limit))) {
-                                nearest = nn.findClosest(x2Tr, y2Tr, limit);
+                                && (x2Tr <= (maxX + pixTolerance)) 
+                                && (y2Tr <= (maxY + pixTolerance))) {
+                                nearest = nn.findClosest(x2Tr, y2Tr, pixTolerance);
                             }
                             
                             int minC = Integer.MAX_VALUE;
@@ -2459,8 +2482,23 @@ public class ORB {
                                 // to put them into reference frame of largest
                                 // set 1 image (== minScale1 frame)
 
+                                // TODO: applying tScale correctly needs knowledge
+                                // of the real scale factor brtween object in the
+                                // template and search images,
+                                // so may need to calculate solutions for 2 vectors.
+                                // one in soln uses the tScale applied as a factor
+                                // to dist and the other vec uses a distance
+                                // component that is a multiple of tScale.
+                                // the decider isn't completely clear yet,
+                                //   but tentatively looks like the vec which
+                                //   has the smaller minCost1 (== descriptor cost).
+                                //   for the top item.
+                                //   
                                 double dist = distance(x2Tr, y2Tr, minCP1);
-                                double distNorm = dist * factorToMinScale / maxDist;
+                                double distNorm = dist * 
+                                    //factorToMinScale / maxDist;
+                                    //factorToMinScale / (tSscale * maxDist);
+                                    tSscale * factorToMinScale / maxDist;
                                 sum2 += distNorm;
 
                                 m2x[mCount] = kpX2.get(idx2);
@@ -2477,25 +2515,34 @@ public class ORB {
                             }
                         }     
                         
-                        sum3 = 1. - ((double)mCount/(double)nMaxMatchable); 
+                        double cf = mCount;
+                        if (cf > nMaxMatchable) {
+                            cf = nMaxMatchable;
+                        }
+                        cf /= nMaxMatchable;
+                        sum3 = 1. - cf; 
                      
                         sum = sum1 + sum2 + sum3;
-                               
+                       
                         if ((minCostTotal == Double.MAX_VALUE) ||
                             (sum <= (minCostTotal + bitTolerance))                            
                         ) {
 
                             if (sum < minCostTotal) {
                                 minCostTotal = sum;
+                                minCost1 = sum1;
+                                minCost2 = sum2;
                             }
                             
-                            System.out.println("minCost=" + sum + ""
-                                + " scale i=" + i + " scale j=" + j);
-                            
-                            minCostTotal = sum;
-                            minCost1 = sum1;
-                            minCost2 = sum2;
-
+                           /* System.out.println(
+                                String.format(
+                                    " (%d,%d):(%d,%d) (%d,%d):(%d,%d) scale=%.2f r=%.1f s=%.2f, %.2f, %.2f, %.2f",
+                                    t1X, t1Y, s1X, s1Y, t2X, t2Y, s2X, s2Y,
+                                    params.getScale(), params.getRotationInDegrees(),
+                                    (float) sum, 
+                                    (float) sum1, (float) sum2, (float) sum3));
+                            */
+                           
                             CorrespondenceList corr
                                 = new CorrespondenceList(
                                 params.getScale(),
@@ -2524,7 +2571,10 @@ public class ORB {
         if (vec.getNumberOfItems() == 0) {
             return null;
         }
-        
+
+        System.out.println("minCost=" + minScale1 + " descr component=" +
+            minCost1);
+ 
         List<CorrespondenceList> topResults =
             new ArrayList<CorrespondenceList>();
 
@@ -2538,7 +2588,6 @@ public class ORB {
 
         return topResults;
     }
-    
 
     /**
      * NOTE: preliminary results show that this matches the right pattern as

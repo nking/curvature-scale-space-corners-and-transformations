@@ -869,11 +869,11 @@ public class AndroidStatuesTest extends TestCase {
         float fastThresh = 0.08f;//0.001f;
         boolean create1stDerivPts = false;
         boolean createCurvaturePts = false;
-        boolean useSmallPyramid = true;
+        boolean useSmallPyramid = false;
         ORB orb0 = extractTemplateORBKeypoints(imgs0[0], shape0, 
             nKeypoints, fastThresh,
             useSmallPyramid, create1stDerivPts, createCurvaturePts);
-       
+
         List<Descriptors> dTempHList = orb0.getDescriptorsH();
         List<Descriptors> dTempSList = orb0.getDescriptorsS();
         List<Descriptors> dTempVList = orb0.getDescriptorsV();
@@ -902,23 +902,37 @@ public class AndroidStatuesTest extends TestCase {
             template_ch_HSV = clrHist.histogramHSV(imgs0[1], points0);
             template_ch_LAB = clrHist.histogramCIELAB(imgs0[1], points0); 
         }
+
+        /*
+        NOTE: statues_01 has the very small gbman at a different pose.
+            This one needs masked descriptors OR to be made larger
+            so that a the descriptor (which has a radius of 13)
+            is mostly filled by object rather than a background which
+            is very different from the template object gbman.
+            It would be difficult to know that the gbman in this image
+            is small in an unsupervised manner unless segmentation
+            is used or a standard ruler was found in the image.
+         might consider a set of steps that can determine it failed to
+        find it and double the image size and try again... better to use
+        segmentation information maybe.
+        */
         
         String fileName1 = "android_statues_02.jpg";
         //fileName1 = "android_statues_01.jpg"; // set binFactor0 to 2
-        //fileName1 = "android_statues_04.jpg";
-        fileName1 = "android_statues_03.jpg";
+        fileName1 = "android_statues_04.jpg";
+        //fileName1 = "android_statues_03.jpg";
 
         String fileName1Root = fileName1.substring(0, fileName1.lastIndexOf("."));
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         ImageExt img = ImageIOHelper.readImageExt(filePath1);
 
         // template img size is 218  163
-        img = (ImageExt) imageProcessor.bilinearDownSampling(
-            img, 218, 163, 0, 255);
+        //img = (ImageExt) imageProcessor.bilinearDownSampling(
+        //    img, 218, 163, 0, 255);
         
         long ts = MiscDebug.getCurrentTimeFormatted();
 
-        /*
+        
         int w1 = img.getWidth();
         int h1 = img.getHeight();
 
@@ -927,20 +941,27 @@ public class AndroidStatuesTest extends TestCase {
             (float) h1 / maxDimension));
 
         img = imageProcessor.binImage(img, binFactor1);
-        */
+       
         
         ImageExt imgCp = img.copyToImageExt();
        
         int w = img.getWidth();
         int h = img.getHeight();
-       
-        ORB orb = new ORB(2000);//10000
+
+        /*RANSACAlgorithmIterations nsIter = new
+            RANSACAlgorithmIterations();
+        long nnn = nsIter.estimateNIterFor99PercentConfidence(
+            300, 7, 20./300.);
+        System.out.println("99 percent nIter for RANSAC=" 
+            + nnn);*/
+        
+        ORB orb = new ORB(1000);//10000
         //orb.overrideFastThreshold(0.01f);
         orb.overrideFastThreshold(0.08f);//0.01f);
         orb.overrideToCreateHSVDescriptors();
         //orb.overrideToAlsoCreate1stDerivKeypoints();
         //orb.overrideToCreateCurvaturePoints();
-        orb.overrideToUseSmallestPyramid();
+        //orb.overrideToUseSmallestPyramid();
         orb.detectAndExtract(img);
 
         List<Descriptors> dHList = orb.getDescriptorsH();
@@ -1074,9 +1095,13 @@ public class AndroidStatuesTest extends TestCase {
                     p2.getX(), p2.getY(), 0);
             }
 
-            plotter.writeImage("_orb_corres_" + i0);
+            String str = Integer.toString(i0);
+            while (str.length() < 3) {
+                str = "0" + str;
+            }
+            plotter.writeImage("_orb_corres_" + str);
             System.out.println(cor.getPoints1().size() + " matches");
-            MiscDebug.writeImage(img11, "_orb_matched_" + i0);
+            MiscDebug.writeImage(img11, "_orb_matched_" + str);
         }
     }
 
