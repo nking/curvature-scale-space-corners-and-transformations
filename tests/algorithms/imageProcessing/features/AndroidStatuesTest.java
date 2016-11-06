@@ -864,9 +864,9 @@ public class AndroidStatuesTest extends TestCase {
         segmentation information maybe.
         */
         String[] fileNames1 = new String[]{
-            "android_statues_02.jpg",
-            "android_statues_04.jpg",
-            "android_statues_03.jpg"
+          //"android_statues_02.jpg",
+          // "android_statues_04.jpg",
+           "android_statues_03.jpg"
         };
         for (String fileName1 : fileNames1) {               
         
@@ -889,7 +889,7 @@ public class AndroidStatuesTest extends TestCase {
         float fastThresh = 0.08f;//0.001f;
         boolean create1stDerivPts = false;
         boolean createCurvaturePts = false;
-        boolean useSmallPyramid = true;
+        boolean useSmallPyramid = false;
         ORB orb0 = extractTemplateORBKeypoints(imgs0[0], shape0, 
             nKeypoints, fastThresh,
             useSmallPyramid, create1stDerivPts, createCurvaturePts);
@@ -963,7 +963,7 @@ public class AndroidStatuesTest extends TestCase {
         orb.overrideToCreateHSVDescriptors();
         //orb.overrideToAlsoCreate1stDerivKeypoints();
         //orb.overrideToCreateCurvaturePoints();
-        orb.overrideToUseSmallestPyramid();
+        //orb.overrideToUseSmallestPyramid();
         orb.detectAndExtract(img);
 
         List<Descriptors> dHList = orb.getDescriptorsH();
@@ -1065,6 +1065,11 @@ public class AndroidStatuesTest extends TestCase {
         // ----- add object segmentation ---
         long t0 = System.currentTimeMillis();
     
+        ORB.pyr1 = orb0.getPyramidImages();
+        ORB.pyr2 = orb.getPyramidImages();
+        ORB.pyrS1 = sTempList;
+        ORB.pyrS2 = sList;
+        
         List<CorrespondenceList> corList 
             = ORB.matchDescriptors2(
             sTempList, sList,
@@ -1077,7 +1082,11 @@ public class AndroidStatuesTest extends TestCase {
         long t1 = System.currentTimeMillis();
         System.out.println("matching took " + ((t1 - t0)/1000.) + " sec");
 
-        for (int i0 = 0; i0 < corList.size(); ++i0) {
+        if (true) {
+        //    continue;  
+        }
+        
+        for (int i0 = 0; i0 < 1/*corList.size()*/; ++i0) {
             
             CorrespondenceList cor = corList.get(i0);
             
