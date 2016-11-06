@@ -2671,13 +2671,18 @@ public static TFloatList pyrS2 = null;
                 //       (NOTE: will be attempting masked descriptors soon... need to
                 //        use segmentation information for that and need to store the masked
                 //        bits to make descriptor area corrections for each comparison in
-                //        order to use the masks...)
+                //        order to use the masks...  Since segmentation will already exist
+                //        for the masked method, can alsu make a faster pair evaluation when
+                //        the segmented cells all have more than 1 keypoint... can choose
+                //        pairs only from same segmented cells and might also retain all keypoints
+                //        by not using a topLimit )
 
                 System.out.println(
                     String.format(
-                        "i=%d j=%d minCost=%.2f c1=%.2f c2=%.2f c3=%.2f  c1Tol=%.2f",
+                        "i=%d j=%d minCost=%.2f c1=%.2f c2=%.2f c3=%.2f  c1Tol=%.2f s1=%.2f s2=%.2f",
                         i, j, (float) minCostTotal, (float) minCost1,
-                        (float) minCost2, (float) minCost3, (float)dbgBitTol));
+                        (float) minCost2, (float) minCost3, (float)dbgBitTol,
+                        pyrS1.get(i), pyrS2.get(j)));
                 System.out.println(
                     String.format(
                         "minCostD=%.2f c1=%.2f c2=%.2f c3=%.2f",
