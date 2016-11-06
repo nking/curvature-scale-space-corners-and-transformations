@@ -6,6 +6,7 @@ import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
+import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MedianTransform;
 import algorithms.imageProcessing.StructureTensor;
@@ -16,6 +17,7 @@ import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.search.NearestNeighbor2D;
+import algorithms.util.CorrespondencePlotter;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.QuadInt;
@@ -2117,7 +2119,7 @@ public class ORB {
         
         return corList.get(0);
     }
-    
+
     /**
      * match descriptors using euclidean transformation evaluation from pairs in
      * feasible combinations of best matches.
@@ -2188,7 +2190,12 @@ public class ORB {
             keypointsX1, keypointsY1, keypointsX2, keypointsY2,
             scaleFactor, sizeScaleFraction, false);
     }
-  
+
+public static List<TwoDFloatArray> pyr1 = null;
+public static List<TwoDFloatArray> pyr2 = null;
+public static TFloatList pyrS1 = null;
+public static TFloatList pyrS2 = null;
+
     private static List<CorrespondenceList> matchDescriptors2(
         TFloatList scales1, TFloatList scales2,
         List<Descriptors> descH1, List<Descriptors> descS1, 
@@ -2248,6 +2255,7 @@ public class ORB {
         // these 3 are used to normalize costs
         final double maxCost = nBands * 256;
         final double maxDist = diag1;        
+        final double dbgBitTol = bitTolerance / maxCost;
         // a rough estimate of maximum number of matchable points in any 
         //     scale dataset comparison
         final int nMaxMatchable = calculateNMaxMatchable(keypointsX1, keypointsX2);
@@ -2266,14 +2274,7 @@ public class ORB {
         double minCost1 = 0;
         double minCost2 = 0;
         double minCost3 = 0;
-        double minCostTotal_D = Double.MAX_VALUE;
-        double minCost1_D = 0;
-        double minCost2_D = 0;
-        double minCost3_D = 0;
-        double minCostTotal_F = Double.MAX_VALUE;
-        double minCost1_F = 0;
-        double minCost2_F = 0;
-        double minCost3_F = 0;
+        
         //runtime complexity of this vector depends upon the number of items
         // it is currently holding, so can set the capacity high and fill vector only
         // with items within bitTolerance of best, but too high might affect jvm
@@ -2284,27 +2285,17 @@ public class ORB {
         // transformation parameter sets, but since that isn't known
         // until later without refactoring here, will make an assumption for now,
         // that size 100 is generous for number of top solutions.
-        FixedSizeSortedVector<CObject> vecD;
         FixedSizeSortedVector<CObject> vec;
-        FixedSizeSortedVector<CObject> vecF;
         if (returnSingleAnswer) {
-            vecD = new FixedSizeSortedVector<CObject>(1, CObject.class);
             vec = new FixedSizeSortedVector<CObject>(1, CObject.class);
-            vecF = new FixedSizeSortedVector<CObject>(1, CObject.class);
         } else {
-            vecD = new FixedSizeSortedVector<CObject>(50, CObject.class);
-            vec = new FixedSizeSortedVector<CObject>(50, CObject.class);
-            vecF = new FixedSizeSortedVector<CObject>(50, CObject.class);
+            vec = new FixedSizeSortedVector<CObject>(10, CObject.class);
         }
         
         //CorrespondenceList minCostCor = null;
         //PairIntArray minCostTr2 = null;
         double[] minCostI = new double[nMax];
         double[] minDistI = new double[nMax];
-        double[] minCostI_D = new double[nMax];
-        double[] minDistI_D = new double[nMax];
-        double[] minCostI_F = new double[nMax];
-        double[] minDistI_F = new double[nMax];
         
         // temporary storage of corresp coords until object construction
         int[] m1x = new int[nMax];
@@ -2341,7 +2332,7 @@ public class ORB {
                 makeSet(kpX1, kpY1), maxX + limit, maxY + limit);
                            
             TObjectIntMap<PairInt> p1IndexMap = createIndexMap(kpX1, kpY1);
-            
+           
             for (int j = 0; j < scales2.size(); ++j) {
                 Descriptors dH2 = descH2.get(j);
                 Descriptors dS2 = descS2.get(j);
@@ -2353,7 +2344,7 @@ public class ORB {
                     throw new IllegalArgumentException("number of descriptors in "
                         + " d2 bitstrings must be same as keypoints2 length");
                 }
-                
+        
                 //[n1][n2]
                 int[][] cost = calcDescriptorCostMatrix(
                     new Descriptors[]{dH1, dS1, dV1}, 
@@ -2372,6 +2363,29 @@ public class ORB {
                 Set<PairInt> s1 = new HashSet<PairInt>(nTot/2);
                 Set<PairInt> s2 = new HashSet<PairInt>(nTot/2);
                
+                FixedSizeSortedVector<CObject> vecD;
+                FixedSizeSortedVector<CObject> vecF;
+                if (returnSingleAnswer) {
+                    vecD = new FixedSizeSortedVector<CObject>(1, CObject.class);
+                    vecF = new FixedSizeSortedVector<CObject>(1, CObject.class);
+                } else {
+                    vecD = new FixedSizeSortedVector<CObject>(5, CObject.class);
+                    vecF = new FixedSizeSortedVector<CObject>(5, CObject.class);
+                }
+                double[] minCostI_D = new double[nMax];
+                double[] minDistI_D = new double[nMax];
+                double[] minCostI_F = new double[nMax];
+                double[] minDistI_F = new double[nMax];
+
+                double minCostTotal_D = Double.MAX_VALUE;
+                double minCost1_D = 0;
+                double minCost2_D = 0;
+                double minCost3_D = 0;
+                double minCostTotal_F = Double.MAX_VALUE;
+                double minCost1_F = 0;
+                double minCost2_F = 0;
+                double minCost3_F = 0;
+
                 List<QuadInt> pairs = new ArrayList<QuadInt>(nTot/2);
                 TIntList costs = new TIntArrayList(nTot);
                 for (int ii = 0; ii < n1; ++ii) {
@@ -2647,73 +2661,105 @@ public class ORB {
                         }
                     }
                 }
-            }
+
+                // TODO: the objective function needs to prefer the largest image
+                //       comparisons when cost is within tolerance of a pair of
+                //       smaller images...
+                //       the aperture is more likely to be filled with object pixels
+                //       rather than foreground and background pixels for the larger
+                //       image comparisons.
+                //       (NOTE: will be attempting masked descriptors soon... need to
+                //        use segmentation information for that and need to store the masked
+                //        bits to make descriptor area corrections for each comparison in
+                //        order to use the masks...)
+
+                System.out.println(
+                    String.format(
+                        "i=%d j=%d minCost=%.2f c1=%.2f c2=%.2f c3=%.2f  c1Tol=%.2f",
+                        i, j, (float) minCostTotal, (float) minCost1,
+                        (float) minCost2, (float) minCost3, (float)dbgBitTol));
+                System.out.println(
+                    String.format(
+                        "minCostD=%.2f c1=%.2f c2=%.2f c3=%.2f",
+                        (float) minCostTotal_D, (float) minCost1_D,
+                        (float) minCost2_D, (float) minCost3_D));
+                System.out.println(
+                    String.format(
+                        "minCostF=%.2f c1=%.2f c2=%.2f c3=%.2f",
+                        (float) minCostTotal_F, (float) minCost1_F,
+                        (float) minCost2_F, (float) minCost3_F));
+
+                if (vecD.getNumberOfItems() == 0) {
+                    System.out.println("no matches for i=" + i + " j=" + j);
+                    continue;
+                }
+
+                debugPlot(i, j, vecD, vecF);
+
+                // if any of the top costs from descriptors is 0, 
+                // that vector should be chosen,
+                // else, choose the one with smallest mincost3
+                float[] c0 = new float[]{(float) minCostTotal,
+                    (float) minCostTotal_D, (float) minCostTotal_F};
+                float[] c1 = new float[]{(float) minCost1,
+                    (float) minCost1_D, (float) minCost1_F};
+                float[] c3 = new float[]{(float) minCost3,
+                    (float) minCost3_D, (float) minCost3_F};
+                int[] indexes = new int[]{0, 1, 2};
+                QuickSort.sortBy1stThen2ndThen3rd(c1, c3, c0, indexes);
+                int vecIdx = -1;
+                if (Math.abs(c1[0] - 0) < 0.001f) {
+                    if (indexes[0] == 0) {
+                        vecIdx = 0;
+                    } else if (indexes[0] == 1) {
+                        vecIdx = 1;
+                    } else {
+                        vecIdx = 2;
+                    }
+                } else {
+                    indexes = new int[]{1, 2};
+                    c3 = c3 = new float[]{(float) minCost3_D, (float) minCost3_F};
+                    MultiArrayMergeSort.sortByDecr(c3, indexes);
+                    for (int ia = 0; ia < vec.getNumberOfItems(); ++ia) {
+                        if (indexes[1] == 1) {
+                            vecIdx = 1;
+                        } else {
+                            vecIdx = 2;
+                        }
+                    }
+                }
+                System.out.println("vecIdx=" + vecIdx);
+                if (vecIdx == 1) {
+                    if (minCostTotal_D < minCostTotal) {
+                        System.out.println("Choosing scale as divisor");
+                        vec = vecD;
+                        minCostTotal = minCostTotal_D;
+                        minCost1 = minCost1_D;
+                        minCost2 = minCost2_D;
+                        minCost3 = minCost3_D;
+                    }
+                } else if (vecIdx != 0) { // vecIdx == 2
+                    if (minCostTotal_F < minCostTotal) {
+                        System.out.println("choosing scale as factor");
+                        vec = vecF;
+                        minCostTotal = minCostTotal_F;
+                        minCost1 = minCost1_F;
+                        minCost2 = minCost2_F;
+                        minCost3 = minCost3_F;
+                    }
+                }
+            }// end loop over image j
         }
         
         if (vec.getNumberOfItems() == 0) {
             return null;
         }
-
-        System.out.println(
-            String.format(
-            "minCost=%.2f c1=%.2f c2=%.2f c3=%.2f",
-                (float)minCostTotal, (float)minCost1,
-                (float)minCost2, (float)minCost3));
-        System.out.println(
-            String.format(
-            "minCostD=%.2f c1=%.2f c2=%.2f c3=%.2f",
-                (float)minCostTotal_D, (float)minCost1_D,
-                (float)minCost2_D, (float)minCost3_D));
-        System.out.println(
-            String.format(
-            "minCostF=%.2f c1=%.2f c2=%.2f c3=%.2f",
-                (float)minCostTotal_F, (float)minCost1_F,
-                (float)minCost2_F, (float)minCost3_F));
         
         List<CorrespondenceList> topResults =
             new ArrayList<CorrespondenceList>();
-
-        // if any of the top costs is 0, that vector should be chosen,
-        // else, choose the one with smallest mincost3
-        float[] c0 = new float[]{(float)minCostTotal,
-            (float)minCostTotal_D, (float)minCostTotal_F};
-        float[] c1 = new float[]{(float)minCost1,
-            (float)minCost1_D, (float)minCost1_F};
-        float[] c3 = new float[]{(float)minCost3,
-            (float)minCost3_D, (float)minCost3_F};
-        int[] indexes = new int[]{0, 1, 2};
-        QuickSort.sortBy1stThen2ndThen3rd(c1, c3, c0, indexes);
-        int vecIdx = -1;
-        if (c1[0] == 0) {
-            if (indexes[0] == 0) {
-                vecIdx = 0;
-            } else if (indexes[0] == 1) {
-                vecIdx = 1;
-            } else {
-                vecIdx = 2;
-            }
-        } else {
-            indexes = new int[]{1, 2};
-            c3 = c3 = new float[]{(float)minCost3_D, (float)minCost3_F};
-            MultiArrayMergeSort.sortByDecr(c3, indexes);        
-            for (int i = 0; i < vec.getNumberOfItems(); ++i) {
-                if (indexes[1] == 1) {
-                    vecIdx = 1;
-                } else {
-                    vecIdx = 2;
-                }
-            }
-        }
-
+        
         for (int i = 0; i < vec.getNumberOfItems(); ++i) {
-            CObject a;
-            if (vecIdx == 0) {
-                a = vec.getArray()[i];
-            } else if (vecIdx == 1) {
-                a = vecD.getArray()[i];
-            } else {
-                a = vecF.getArray()[i];
-            }
+            CObject a = vec.getArray()[i];
             if (a.cost > (minCostTotal + bitTolerance)) {
                 break;
             }
@@ -3405,4 +3451,69 @@ public class ORB {
         return nMaxM;
     }
 
+    private static void debugPlot(int i, int j, 
+        FixedSizeSortedVector<CObject> vecD, 
+        FixedSizeSortedVector<CObject> vecF) {
+    
+        Image img1 = convertToImage(pyr1.get(i));
+        Image img2 = convertToImage(pyr2.get(j));
+        float s1 = pyrS1.get(i);
+        float s2 = pyrS2.get(j);
+        
+        try {
+            for (int i0 = 0; i0 < 2; ++i0) {
+                CorrespondenceList cor = null;
+                if (i0 == 0) {
+                    cor = vecD.getArray()[0].cCor;
+                } else {
+                    cor = vecF.getArray()[0].cCor;
+                }
+                Image img1Cp = img1.copyImage();
+                Image img2Cp = img2.copyImage();
+                CorrespondencePlotter plotter = new CorrespondencePlotter(
+                    img1Cp, img2Cp);
+                for (int ii = 0; ii < cor.getPoints1().size(); ++ii) {
+                    PairInt p1 = cor.getPoints1().get(ii);
+                    PairInt p2 = cor.getPoints2().get(ii);
+                    int x1 = Math.round(p1.getX()/s1);
+                    int y1 = Math.round(p1.getY()/s1);
+                    int x2 = Math.round(p2.getX()/s2);
+                    int y2 = Math.round(p2.getY()/s2);
+                    plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 0);
+                }
+                String strI = Integer.toString(i);
+                while (strI.length() < 3) {
+                    strI = "0" + strI;
+                }
+                String strJ = Integer.toString(j);
+                while (strJ.length() < 3) {
+                    strJ = "0" + strJ;
+                }
+                String str = strI + "_" + strJ + "_";
+                if (i0 == 0) {
+                    str = str + "factor";
+                } else {
+                    str = str + "divisor";
+                }
+                plotter.writeImage("_MATCH_" + str);
+            }
+        } catch(Exception e) {}
+    }
+    private static Image convertToImage(TwoDFloatArray a) {
+        int n1 = a.a.length;
+        int n2 = a.a[0].length;
+        Image img = new Image(n2, n1);
+        for (int i = 0; i < n1; ++i) {
+            for (int j = 0; j < n2; ++j) {
+                float v = 255.f * a.a[i][j];
+                int vInt = Math.round(v);
+                if (vInt > 255) {
+                    vInt = 255;
+                }
+                img.setRGB(j, i, vInt, vInt, vInt);
+            }
+        }
+        return img;
+    }
+    
 }
