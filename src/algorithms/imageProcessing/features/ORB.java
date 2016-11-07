@@ -2227,7 +2227,7 @@ public static TFloatList pyrS2 = null;
         }
         
         //TODO: may need to revise this or allow it as a method argument:
-        int pixTolerance = 15;
+        int pixTolerance = 10;
         
         int nBands = 3;
         int bitTolerance; 
@@ -2237,7 +2237,8 @@ public static TFloatList pyrS2 = null;
             bitTolerance = Math.round(sizeScaleFraction * nBands * 256);
         }
         int topLimit = Math.round(
-            0.17f
+            //0.17f
+            0.3f
             //0.9f
             * nBands * 256) + bitTolerance;
         int minP1Diff = 5;
@@ -2412,6 +2413,7 @@ public static TFloatList pyrS2 = null;
                         costs.add(c);
                     }
                 }
+                System.out.println("i=" + i + " j=" + j + " nPairs=" + pairs.size());
                
                 // --- calculate transformations in pairs and evaluate ----
                 for (int ii = 0; ii < pairs.size(); ++ii) {
@@ -2662,20 +2664,14 @@ public static TFloatList pyrS2 = null;
                     }
                 }
 
-                // TODO: the objective function needs to prefer the largest image
-                //       comparisons when cost is within tolerance of a pair of
-                //       smaller images...
-                //       the aperture is more likely to be filled with object pixels
-                //       rather than foreground and background pixels for the larger
-                //       image comparisons.
-                //       (NOTE: will be attempting masked descriptors soon... need to
-                //        use segmentation information for that and need to store the masked
-                //        bits to make descriptor area corrections for each comparison in
-                //        order to use the masks...  Since segmentation will already exist
-                //        for the masked method, can alsu make a faster pair evaluation when
-                //        the segmented cells all have more than 1 keypoint... can choose
-                //        pairs only from same segmented cells and might also retain all keypoints
-                //        by not using a topLimit )
+                //TODO: seems obvious now that the correct solution will be
+                //      when the transformation scale is "1"...then the descriptor
+                //      apertures will be the same size.
+                //      making changes now.
+                //      NOTE that masked descriptors could still be useful because
+                //      they are more precise, but they might not be necessary for best cases,
+                //      excepting those such as the android test 01 in which the object
+                //      is small in the search image.
 
                 System.out.println(
                     String.format(
@@ -2708,6 +2704,8 @@ public static TFloatList pyrS2 = null;
                     (float) minCostTotal_D, (float) minCostTotal_F};
                 float[] c1 = new float[]{(float) minCost1,
                     (float) minCost1_D, (float) minCost1_F};
+                float[] c2 = new float[]{(float) minCost2,
+                    (float) minCost2_D, (float) minCost2_F};
                 float[] c3 = new float[]{(float) minCost3,
                     (float) minCost3_D, (float) minCost3_F};
                 int[] indexes = new int[]{0, 1, 2};
@@ -2722,9 +2720,17 @@ public static TFloatList pyrS2 = null;
                         vecIdx = 2;
                     }
                 } else {
-                    indexes = new int[]{1, 2};
-                    c3 = c3 = new float[]{(float) minCost3_D, (float) minCost3_F};
-                    MultiArrayMergeSort.sortByDecr(c3, indexes);
+                    c0 = new float[]{(float) minCostTotal,
+                        (float) minCostTotal_D, (float) minCostTotal_F};
+                    c1 = new float[]{(float) minCost1,
+                        (float) minCost1_D, (float) minCost1_F};
+                    c2 = new float[]{(float) minCost2,
+                        (float) minCost2_D, (float) minCost2_F};
+                    c3 = new float[]{(float) minCost3,
+                        (float) minCost3_D, (float) minCost3_F};
+                    indexes = new int[]{0, 1, 2};
+                    // TODO: might need to sort by c3 first here and use bitTolerance w/ c0
+                    QuickSort.sortBy1stThen2ndThen3rd(c0, c3, c1, indexes);
                     for (int ia = 0; ia < vec.getNumberOfItems(); ++ia) {
                         if (indexes[1] == 1) {
                             vecIdx = 1;
