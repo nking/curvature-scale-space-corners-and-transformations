@@ -18,6 +18,7 @@ import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.QuadInt;
 import algorithms.util.TwoDFloatArray;
+import algorithms.util.TwoDIntArray;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
@@ -3554,8 +3555,6 @@ public static TFloatList pyrS2 = null;
     public static int[][] calcDescriptorCostMatrix(
         Descriptors[] desc1, Descriptors[] desc2) {
 
-        //TODO: need to add use of auto-correlation too
-
         assert(desc1.length == desc2.length);
 
         int nd = desc1.length;
@@ -3585,6 +3584,123 @@ public static TFloatList pyrS2 = null;
         }
 
         return cost;
+    }
+    
+    /**
+     * calculate a cost matrix composed of the sum of XOR of each descriptor 
+     * in d1 to d2.  
+     * Three matrixes are currently returned.  
+     * The first is the cost calculated from non-masked bits only.
+     * The second is the first then multiplied by the area ratio of
+     * masked bits to non-masked bits.  The second is the the data
+     * which is present, averaged over the entire descriptor aperture.
+     * The third is the cost calculated from non-masked bits, then
+     * all masked bits are added as set bits.  
+     * The second matrix is probably most useful while the first and
+     * third are min and max bounds of the actual costs.
+     *
+     * @param desc1 two dimensional array with first being keypoint indexes and
+     * second dimension being descriptor.
+     * @param desc2  two dimensional array with first being keypoint indexes and
+     * second dimension being descriptor.
+     * @param descMask1 bit mask for desc1 descriptors.  set bits are
+     * pixels outside of the segmentation cell for the keypoint of the
+     * descriptor.
+     * @param descMask2 bit mask for desc2 descriptors.  set bits are
+     * pixels outside of the segmentation cell for the keypoint of the
+     * descriptor.
+     * @return Three cost matrixes:
+     * The first is the cost calculated from non-masked bits only.
+     * The second is the first then multiplied by the area ratio of
+     * masked bits to non-masked bits.  The second is the the data
+     * which is present, averaged over the entire descriptor aperture.
+     * The third is the cost calculated from non-masked bits, then
+     * all masked bits are added as set bits.  
+     * The second matrix is probably most useful while the first and
+     * third are min and max bounds of the actual costs.
+     */
+    public static TwoDIntArray[] calcMaskedDescriptorCostMatrixes(
+        Descriptors[] desc1, Descriptors[] desc2, 
+        Descriptors descMask1, Descriptors descMask2) {
+
+        if (desc1.length != desc2.length) {
+            throw new IllegalArgumentException("desc1 and desc2 lengths"
+                + " must be same");
+        }
+
+        int nd = desc1.length;
+
+        int n1 = desc1[0].descriptors.length;
+        int n2 = desc2[0].descriptors.length;
+        if (n1 != descMask1.descriptors.length) {
+            throw new IllegalArgumentException("desc1 descriptors and mask"
+                + " must be same lengths");
+        }
+        if (n2 != descMask2.descriptors.length) {
+            throw new IllegalArgumentException("desc2 descriptors and mask"
+                + " must be same lengths");
+        }
+
+        // d1 contains multiple descriptors for same points, such as
+        // descriptors for H, S, and V
+
+        int[][] cost0 = new int[n1][n2];
+        int[][] cost1 = new int[n1][n2];
+        int[][] cost2 = new int[n1][n2];
+        for (int i = 0; i < n1; ++i) {
+            cost0[i] = new int[n2];
+            cost1[i] = new int[n2];
+            cost2[i] = new int[n2];
+        }
+        
+        float dLength = desc1[0].descriptors[0].getInstantiatedBitSize();
+        float fracDiv, nNonMasked;
+        long nSetBits, nMaskedBits;
+        VeryLongBitString costIJ, d12, mComb;
+        for (int k = 0; k < nd; ++k) {
+            VeryLongBitString[] d1 = desc1[k].descriptors;
+            VeryLongBitString[] d2 = desc2[k].descriptors;
+            assert(d1.length == n1);
+            assert(d2.length == n2);
+            for (int i = 0; i < n1; ++i) {
+                VeryLongBitString m1 = descMask1.descriptors[i];
+                for (int j = 0; j < n2; ++j) {
+                    VeryLongBitString m2 = descMask2.descriptors[j];
+                    
+                    // the bits which are different:
+                    d12 = d1[i].xor(d2[j]);
+                    
+                    // combine the set bits of the masks
+                    mComb = m1.or(m2);
+                    
+                    // any place where m1 or m2 is '1' should be set to 0
+                    costIJ = VeryLongBitString.subtract(d12, mComb);
+                    
+                    // the remaining set bits in costIJ are the minimum cost
+                    //     of the descriptors
+                    nSetBits = costIJ.getNSetBits();
+                    cost0[i][j] += nSetBits;
+                    
+                    // cost1 averages costIJ over set non-masked bits
+                    //     and scales to full aperature by that
+                    nMaskedBits = mComb.getNSetBits();
+                    nNonMasked = dLength - nMaskedBits;
+                    fracDiv = (nSetBits/nNonMasked) * nMaskedBits;
+                    cost1[i][j] += (nSetBits + fracDiv);
+                    
+                    // cost 2 adds all masked bits as worse case scenario
+                    cost1[i][j] += (nSetBits + nMaskedBits);
+                }
+            }
+        }
+
+        TwoDIntArray[] costs = new TwoDIntArray[] {
+            new TwoDIntArray(cost0), 
+            new TwoDIntArray(cost1), 
+            new TwoDIntArray(cost2)
+        };
+        
+        return costs;
     }
 
     private static void populateCorrespondence(PairIntArray left,
