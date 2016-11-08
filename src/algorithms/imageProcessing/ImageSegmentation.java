@@ -13538,17 +13538,21 @@ int z = 1;
         //  or apply a +180 to all to transform to 0 to 360
         // -- for a quick look at wrap around, making 2 images, with
         //    offset of 90 so that 0 and 360 are similar intensity in one
-        GreyscaleImage paImg1 = edgeProducts.getPhaseAngle().copyImage();
-        for (int ii = 0; ii < paImg1.getNPixels(); ++ii) {
-            int v = paImg1.getValue(ii);
-            //if (v < 0) {
-                v += 180;
-            //}
-            paImg1.setValue(ii, v);
+        { // DEBUG
+            if (edgeProducts.getPhaseAngle() != null) { 
+                GreyscaleImage paImg1 = edgeProducts.getPhaseAngle().copyImage();
+                for (int ii = 0; ii < paImg1.getNPixels(); ++ii) {
+                    int v = paImg1.getValue(ii);
+                    //if (v < 0) {
+                        v += 180;
+                    //}
+                    paImg1.setValue(ii, v);
+                }
+                MiscMath.rescale(paImg1, 0, 255);
+                MiscDebug.writeImage(paImg1, "_angle_phase_" + ts + "_" + str + "_1_");
+                MiscDebug.writeImage(edgeProducts.getTheta(), "_angle_orientation_" + ts + "_" + str + "_1_");
+            }
         }
-        MiscMath.rescale(paImg1, 0, 255);
-        MiscDebug.writeImage(paImg1, "_angle_phase_" + ts + "_" + str + "_1_");
-        MiscDebug.writeImage(edgeProducts.getTheta(), "_angle_orientation_" + ts + "_" + str + "_1_");
         
         ImageProcessor imp = new ImageProcessor();
         
@@ -14215,7 +14219,8 @@ int z = 1;
      * @param labels
      * @param templateImg
      * @param templatePoints
-     * @param outputListOfPointSets
+     * @param outputListOfPointSets - this is not empty, it is also
+     * used as the input list of point sets, consistent with labels.
      * @param outputListOfCHs
      * @param outputListOfSeeds
      * @param outputSeedColors
@@ -14227,15 +14232,30 @@ int z = 1;
         List<PairInt> outputListOfSeeds,
         List<GroupPixelRGB0> outputSeedColors) {
 
+        outputListOfCHs.clear();
+        outputListOfSeeds.clear();;
+        outputSeedColors.clear();
+        
         float deltaELimit = 9.5f;//8.5f;
 
         assert(labels.length == img.getNPixels());
 
         int[] labels2 = Arrays.copyOf(labels, labels.length);
 
-        List<Set<PairInt>> listOfPointSets = LabelToColorHelper
-            .extractContiguousLabelPoints(img, labels2);
-
+        List<Set<PairInt>> listOfPointSets = null;
+        if (!outputListOfPointSets.isEmpty()) {
+            listOfPointSets = new ArrayList<Set<PairInt>>(outputListOfPointSets.size());
+            for (int i = 0; i < outputListOfPointSets.size(); ++i) {
+                Set<PairInt> set = outputListOfPointSets.get(i);
+                Set<PairInt> set2 = new HashSet<PairInt>(set);
+                listOfPointSets.add(set2);
+            }
+            outputListOfPointSets.clear();
+        } else {
+            listOfPointSets = LabelToColorHelper
+                .extractContiguousLabelPoints(img, labels2);
+        }
+        
         // get color information for the template:
         GroupAverageColors templateColors = new GroupAverageColors(
             templateImg, templatePoints);
@@ -14267,6 +14287,7 @@ int z = 1;
                 outputListOfCHs.add(a);
             }
         }
+        assert(outputListOfPointSets.size() == outputListOfCHs.size());
 
         // make a grid of 2D bins across the image of size
         // 1 or 1/2 or 1/3 template size for each dimension.

@@ -2,8 +2,11 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.features.ORB.Descriptors;
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
+import algorithms.util.TwoDFloatArray;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TIntList;
@@ -231,6 +234,28 @@ public class ORBWrapper {
         }
         orb.detectAndExtract(subImage);
 
+        /*{// DEBUG print each pyramid to see if has matchable points
+            // might need to change the ORb response filter to scale by scale level
+            for (int i0 = 0; i0 < orb.getKeyPoint0List().size(); ++i0) {
+                Image img0Cp = ORB.convertToImage(
+                    orb.getPyramidImages().get(i0));
+                float scale = orb.getScalesList().get(i0).get(0);
+                for (int i = 0; i < orb.getKeyPoint0List().get(i0).size(); ++i) {
+                    int y = orb.getKeyPoint0List().get(i0).get(i);
+                    int x = orb.getKeyPoint1List().get(i0).get(i);
+                    x = Math.round(x/scale);
+                    y = Math.round(y/scale);
+                    ImageIOHelper.addPointToImage(x, y, img0Cp, 
+                        1, 255, 0, 0);
+                }
+                String str = Integer.toString(i0);
+                if (str.length() < 2) {
+                    str = "0" + str;
+                }
+                MiscDebug.writeImage(img0Cp, "SUB_T_PYR_" + str);
+            }
+        }*/
+        
         // put the coordinates back into original frame
         int nSizes = orb.getKeyPoint0List().size();
         for (int i = 0; i < nSizes; ++i) {
@@ -245,6 +270,88 @@ public class ORBWrapper {
             }
         }
       
+        // put the pyramids into the original frame
+        for (int i0 = 0; i0 < orb.getKeyPoint0List().size(); ++i0) {
+            
+            float scale = orb.getScalesList().get(i0).get(0);
+            
+            TwoDFloatArray a = orb.getPyramidImages().get(i0);
+            TwoDFloatArray h = orb.getPyramidImagesH().get(i0);
+            TwoDFloatArray s = orb.getPyramidImagesS().get(i0);
+            TwoDFloatArray v = orb.getPyramidImagesV().get(i0);
+            int n0 = a.a.length;
+            int n1 = a.a[0].length;
+            
+            //offset to add to x, scaled
+            int start0 = Math.round(startY/scale);
+            int start1 = Math.round(startX/scale);
+            
+            float[][] a2 = new float[n0 + start0][];
+            float[][] h2 = new float[n0 + start0][];
+            float[][] s2 = new float[n0 + start0][];
+            float[][] v2 = new float[n0 + start0][];
+            for (int i = 0; i < a2.length; ++i) {
+                a2[i] = new float[n1 + start1];
+                h2[i] = new float[n1 + start1];
+                s2[i] = new float[n1 + start1];
+                v2[i] = new float[n1 + start1];
+            }
+            for (int i = 0; i < n0; ++i) {
+                for (int j = 0; j < n1; ++j) {
+                    a2[i + start0][j + start1] = a.a[i][j];
+                    h2[i + start0][j + start1] = h.a[i][j];
+                    s2[i + start0][j + start1] = s.a[i][j];
+                    v2[i + start0][j + start1] = v.a[i][j];
+                }
+            }
+            
+            orb.getPyramidImages().get(i0).a = a2;
+            orb.getPyramidImagesH().get(i0).a = h2;
+            orb.getPyramidImagesS().get(i0).a = s2;
+            orb.getPyramidImagesV().get(i0).a = v2;
+        }
+        
+        /*{// DEBUG print each pyramid to see if has matchable points
+            // might need to change the ORb response filter to scale by scale level
+            for (int i0 = 0; i0 < orb.getKeyPoint0List().size(); ++i0) {
+                Image img0Cp = img.copyImage();
+                float scale = orb.getScalesList().get(i0).get(0);
+                for (int i = 0; i < orb.getKeyPoint0List().get(i0).size(); ++i) {
+                    int y = orb.getKeyPoint0List().get(i0).get(i);
+                    int x = orb.getKeyPoint1List().get(i0).get(i);
+                    ImageIOHelper.addPointToImage(x, y, img0Cp, 
+                        1, 255, 0, 0);
+                }
+                String str = Integer.toString(i0);
+                if (str.length() < 2) {
+                    str = "0" + str;
+                }
+                MiscDebug.writeImage(img0Cp, "SUB_T_" + str);
+            }
+        }*/
+        
+        /*{// DEBUG print each pyramid to see if has matchable points
+            // might need to change the ORb response filter to scale by scale level
+            for (int i0 = 0; i0 < orb.getKeyPoint0List().size(); ++i0) {
+                Image img0Cp = ORB.convertToImage(
+                    orb.getPyramidImages().get(i0));
+                float scale = orb.getScalesList().get(i0).get(0);
+                for (int i = 0; i < orb.getKeyPoint0List().get(i0).size(); ++i) {
+                    int y = orb.getKeyPoint0List().get(i0).get(i);
+                    int x = orb.getKeyPoint1List().get(i0).get(i);
+                    x = Math.round(x/scale);
+                    y = Math.round(y/scale);
+                    ImageIOHelper.addPointToImage(x, y, img0Cp, 
+                        1, 255, 0, 0);
+                }
+                String str = Integer.toString(i0);
+                if (str.length() < 2) {
+                    str = "0" + str;
+                }
+                MiscDebug.writeImage(img0Cp, "SUB_T_PYR_2_" + str);
+            }
+        }*/
+        
         return orb;
     }
     

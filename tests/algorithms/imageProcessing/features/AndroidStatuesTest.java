@@ -73,6 +73,7 @@ import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
+import java.awt.image.ImageObserver;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -864,9 +865,10 @@ public class AndroidStatuesTest extends TestCase {
         segmentation information maybe.
         */
         String[] fileNames1 = new String[]{
-          //"android_statues_02.jpg",
-          // "android_statues_04.jpg",
-           "android_statues_03.jpg"
+           "android_statues_01.jpg",
+           "android_statues_02.jpg",
+           "android_statues_04.jpg",
+            "android_statues_03.jpg"
         };
         for (String fileName1 : fileNames1) {               
         
@@ -875,17 +877,21 @@ public class AndroidStatuesTest extends TestCase {
         // to compare to "android_statues_01.jpg",
         //    set this to '2'
         int binFactor0 = 1;
-        
-        String fileNameRoot0 = "android_statues_03_sz1";
-        // 1st image is color image, 2nd is masked color image
-        ImageExt[] imgs0 = maskAndBin(fileNameRoot0, 
-            binFactor0, shape0);
-
+       
+        ImageExt[] imgs0 = null;
+        {
+            //String fileNameRoot0 = "android_statues_03_sz1";
+            String fileNameRoot0 = "android_statues_03_sz3";
+            // 1st image is color image, 2nd is masked color image
+            // 218 X 163... full size is 1280 X 960
+            imgs0 = maskAndBin(fileNameRoot0, 
+                binFactor0, shape0);
+        }
         int nShape0_0 = shape0.size();
        
         System.out.println("shape0 nPts=" + nShape0_0);
         
-        int nKeypoints = 200;
+        int nKeypoints = 300;//200;
         float fastThresh = 0.08f;//0.001f;
         boolean create1stDerivPts = false;
         boolean createCurvaturePts = false;
@@ -900,8 +906,30 @@ public class AndroidStatuesTest extends TestCase {
         List<TIntList> kp0TempList = orb0.getKeyPoint0List();
         List<TIntList> kp1TempList = orb0.getKeyPoint1List();
         TFloatList sTempList = new TFloatArrayList(kp0TempList.size());
-        for (int i = 0; i < kp0TempList.size(); ++i) {
+        for (int i = 0; i < orb0.getScalesList().size(); ++i) {
             sTempList.add(orb0.getScalesList().get(i).get(0));
+        }
+        
+        {// DEBUG print each pyramid to see if has matchable points
+            // might need to change the ORb response filter to scale by scale level
+            for (int i0 = 0; i0 < orb0.getKeyPoint0List().size(); ++i0) {
+                Image img0Cp = ORB.convertToImage(
+                    orb0.getPyramidImages().get(i0));
+                float scale = orb0.getScalesList().get(i0).get(0);
+                for (int i = 0; i < orb0.getKeyPoint0List().get(i0).size(); ++i) {
+                    int y = orb0.getKeyPoint0List().get(i0).get(i);
+                    int x = orb0.getKeyPoint1List().get(i0).get(i);
+                    x = Math.round(x/scale);
+                    y = Math.round(y/scale);
+                    ImageIOHelper.addPointToImage(x, y, img0Cp, 
+                        1, 255, 0, 0);
+                }
+                String str = Integer.toString(i0);
+                if (str.length() < 2) {
+                    str = "0" + str;
+                }
+                MiscDebug.writeImage(img0Cp, "T_PYR_" + str);
+            }
         }
         
         ColorHistogram clrHist = new ColorHistogram();
@@ -923,7 +951,6 @@ public class AndroidStatuesTest extends TestCase {
             template_ch_LAB = clrHist.histogramCIELAB(imgs0[1], points0); 
         }
 
-        
         String fileName1Root = fileName1.substring(0, fileName1.lastIndexOf("."));
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         ImageExt img = ImageIOHelper.readImageExt(filePath1);
@@ -944,8 +971,6 @@ public class AndroidStatuesTest extends TestCase {
 
         img = imageProcessor.binImage(img, binFactor1);
        
-        
-        ImageExt imgCp = img.copyToImageExt();
        
         int w = img.getWidth();
         int h = img.getHeight();
@@ -972,11 +997,31 @@ public class AndroidStatuesTest extends TestCase {
         List<TIntList> kp0List = orb.getKeyPoint0List();
         List<TIntList> kp1List = orb.getKeyPoint1List();
         TFloatList sList = new TFloatArrayList(kp0List.size());
-        for (int i = 0; i < kp0List.size(); ++i) {
+        for (int i = 0; i < orb.getScalesList().size(); ++i) {
             sList.add(orb.getScalesList().get(i).get(0));
         }
        
-        {
+        /*
+        for (int i0 = 0; i0 < kp0List.size(); ++i0) {
+            Image img1Cp = ORB.convertToImage(
+                orb.getPyramidImages().get(i0));
+            float scale = sList.get(i0);
+            for (int i = 0; i < kp0List.get(i0).size(); ++i) {
+                int y = kp0List.get(i0).get(i);
+                int x = kp1List.get(i0).get(i);
+                x = Math.round(x / scale);
+                y = Math.round(y / scale);
+                ImageIOHelper.addPointToImage(x, y, img1Cp,
+                    1, 255, 0, 0);
+            }
+            String str = Integer.toString(i0);
+            if (str.length() < 2) {
+                str = "0" + str;
+            }
+            MiscDebug.writeImage(img1Cp, "S_PYR_" + str);
+        }*/
+        
+        /*{
             Image img11 = img.copyImage();
             TIntList kp0 = orb.getKeyPoint0List().get(0);
             TIntList kp1 = orb.getKeyPoint1List().get(0);
@@ -985,10 +1030,11 @@ public class AndroidStatuesTest extends TestCase {
                     img11, 1, 255, 0, 0);
             }
             MiscDebug.writeImage(img11, "_srch_keypoints_before_filter_" + fileName1Root);
-        }
+        }*/
         
         // --- filter out points at each scale, trimming the other data too ----
         int ns = kp0List.size();
+        List<TIntList> rmIndexesList = new ArrayList<TIntList>();
         for (int i = 0; i < ns; ++i) {
             TIntList kp0 = orb.getKeyPoint0List().get(i);
             TIntList kp1 = orb.getKeyPoint1List().get(i);
@@ -1017,41 +1063,11 @@ public class AndroidStatuesTest extends TestCase {
                     }
                 }
             }
-            if (!rm.isEmpty()) {
-                int nb = np - rm.size();
-                Descriptors dH2 = new Descriptors();
-                dH2.descriptors = new VeryLongBitString[nb];
-                Descriptors dS2 = new Descriptors();
-                dS2.descriptors = new VeryLongBitString[nb];
-                Descriptors dV2 = new Descriptors();
-                dV2.descriptors = new VeryLongBitString[nb];
-                
-                TIntSet rmSet = new TIntHashSet(rm);
-                for (int j = (rm.size() - 1); j > -1; --j) {
-                    int idx = rm.get(j);
-                    kp0.removeAt(idx);
-                    kp1.removeAt(idx);
-                    or.removeAt(idx);
-                    s.removeAt(idx);
-                }
-                int count = 0;
-                for (int j = 0; j < np; ++j) {
-                    if (rmSet.contains(j)) {
-                        continue;
-                    }
-                    dH2.descriptors[count] = dH.descriptors[j];
-                    dS2.descriptors[count] = dS.descriptors[j];
-                    dV2.descriptors[count] = dV.descriptors[j];
-                    count++;
-                }
-                assert(count == nb);
-                dH.descriptors = dH2.descriptors;
-                dS.descriptors = dS2.descriptors;
-                dV.descriptors = dV2.descriptors;
-            }
+            rmIndexesList.add(rm);
         }
+        orb.removeAtIndexes(rmIndexesList);
         
-        {
+        /*{
             Image img11 = img.copyImage();
             TIntList kp0 = orb.getKeyPoint0List().get(0);
             TIntList kp1 = orb.getKeyPoint1List().get(0);
@@ -1060,9 +1076,145 @@ public class AndroidStatuesTest extends TestCase {
                     img11, 1, 255, 0, 0);
             }
             MiscDebug.writeImage(img11, "_srch_keypoints_filtered_" + fileName1Root);
+        }*/
+        
+        // ----------- segmentation -------
+        Set<PairInt> kpSet = new HashSet<PairInt>();
+        {
+            TIntList kp0 = orb.getKeyPoint0List().get(0);
+            TIntList kp1 = orb.getKeyPoint1List().get(0);
+            for (int i = 0; i < kp0.size(); ++i) {
+                int x = kp1.get(i);
+                int y = kp0.get(i);
+                kpSet.add(new PairInt(x, y));
+            }
         }
         
-        // ----- add object segmentation ---
+        /*
+        PhaseCongruencyDetector phaseCDetector
+            = new PhaseCongruencyDetector();
+        phaseCDetector.setToExtractNoise();
+        phaseCDetector.setToDebug();
+        //phaseCDetector.setToCreateCorners();
+        PhaseCongruencyDetector.PhaseCongruencyProducts products
+            = phaseCDetector.phaseCongMono(imgCp.copyToGreyscale2());
+        */
+        CannyEdgeFilterAdaptive canny = 
+            new CannyEdgeFilterAdaptive();
+        //canny.overrideToUseAdaptiveThreshold();
+        canny.applyFilter(img.copyToGreyscale2());
+        EdgeFilterProducts edgeProduct = canny.getFilterProducts();
+        
+        ImageExt imgCp = img.copyToImageExt();
+        
+        int[] labels4 = imageSegmentation.objectSegmentation(
+            imgCp, edgeProduct);
+        {
+            ImageExt img11 = img.copyToImageExt();
+            ImageIOHelper.addAlternatingColorLabelsToRegion(
+                img11, labels4);
+            MiscDebug.writeImage(img11, "_segmented_" + fileName1Root);
+        }
+        
+        // make a list of cells which have keypoints in them
+        List<Set<PairInt>> listOfPointSets2 = new ArrayList<Set<PairInt>>();
+        {   // use label = -1 for cells to exclude.
+            // key=label, value=pixIdx
+            TIntObjectMap<Set<PairInt>> labelMap = new 
+                TIntObjectHashMap<Set<PairInt>>();
+            int maxLabel = Integer.MIN_VALUE;
+            for (int pixIdx = 0; pixIdx < labels4.length; ++pixIdx) {
+                PairInt p = new PairInt(img.getCol(pixIdx),
+                    img.getRow(pixIdx));
+                int label = labels4[pixIdx];
+                if (kpSet.contains(p)) {
+                    if (label > maxLabel) {
+                        maxLabel = label;
+                    }
+                    Set<PairInt> set = labelMap.get(label);
+                    if (set == null) {
+                        set = new HashSet<PairInt>();
+                        labelMap.put(label, set);
+                    }
+                    set.add(p);
+                }
+            }
+            /*for (int pixIdx = 0; pixIdx < labels4.length; ++pixIdx) {
+                PairInt p = new PairInt(img.getCol(pixIdx), img.getRow(pixIdx));
+                Set<PairInt> set = labelMap.get(labels4[pixIdx]);
+                if (set != null) {
+                    set.add(p);
+                }
+            }*/
+            Arrays.fill(labels4, -1);
+            for (int i = 0; i <= maxLabel; ++i) {
+                Set<PairInt> ps = labelMap.get(i);
+                if (ps == null) {continue;}
+                int label = listOfPointSets2.size();
+                listOfPointSets2.add(ps);
+                for (PairInt p : ps) {
+                    labels4[img.getInternalIndex(p)] = label;
+                }
+            }
+        }
+             
+        List<TwoDIntArray> listOfCH = new ArrayList<TwoDIntArray>();
+
+        List<PairInt> outputListOfSeeds = new ArrayList<PairInt>();
+        List<GroupPixelRGB0> outputSeedColors = new ArrayList<GroupPixelRGB0>();
+        imageSegmentation.filterUsingColorHistogramDifference(
+            imgCp, labels4, imgs0[1], shape0, 
+            listOfPointSets2, listOfCH,
+            outputListOfSeeds, outputSeedColors);
+
+        ImageExt img11 = img.createWithDimensions();
+        ImageIOHelper.addAlternatingColorPointSetsToImage(listOfPointSets2, 
+            0, 0, 1, img11);
+        ImageIOHelper.addCurveToImage(kpSet, img11, 
+            1, 255, 0, 0);
+        MiscDebug.writeImage(img11, "_filtered_segmentation_" 
+            + fileName1Root);
+        
+        Set<PairInt> allSegmentationPoints = new HashSet<PairInt>();
+        for (Set<PairInt> set : listOfPointSets2) {
+            allSegmentationPoints.addAll(set);
+        }
+        
+        // ---- filter keypoints by filtered segmentation -----
+        rmIndexesList = new ArrayList<TIntList>();
+        for (int i = 0; i < ns; ++i) {
+            TIntList kp0 = orb.getKeyPoint0List().get(i);
+            TIntList kp1 = orb.getKeyPoint1List().get(i);
+            int np = kp0.size();
+            TIntList rm = new TIntArrayList();
+            for (int j = 0; j < np; ++j) {
+                PairInt p = new PairInt(kp1.get(j), kp0.get(j));
+                if (!allSegmentationPoints.contains(p)) {
+                    rm.add(j);
+                }
+            }
+            rmIndexesList.add(rm);
+        }
+        orb.removeAtIndexes(rmIndexesList);
+       
+        {
+            kpSet = new HashSet<PairInt>();
+            TIntList kp0 = orb.getKeyPoint0List().get(0);
+            TIntList kp1 = orb.getKeyPoint1List().get(0);
+            for (int i = 0; i < kp0.size(); ++i) {
+                int x = kp1.get(i);
+                int y = kp0.get(i);
+                kpSet.add(new PairInt(x, y));
+            }
+            img11 = img.createWithDimensions();
+            ImageIOHelper.addAlternatingColorPointSetsToImage(listOfPointSets2, 
+                0, 0, 1, img11);
+            ImageIOHelper.addCurveToImage(kpSet, img11, 
+                1, 255, 0, 0);
+            MiscDebug.writeImage(img11, "_filtered_segmentation_2_" 
+                + fileName1Root);
+        }
+        
         long t0 = System.currentTimeMillis();
     
         ORB.pyr1 = orb0.getPyramidImages();
@@ -1082,23 +1234,15 @@ public class AndroidStatuesTest extends TestCase {
         long t1 = System.currentTimeMillis();
         System.out.println("matching took " + ((t1 - t0)/1000.) + " sec");
 
-        if (true) {
-        //    continue;  
-        }
-        
         for (int i0 = 0; i0 < 1/*corList.size()*/; ++i0) {
             
             CorrespondenceList cor = corList.get(i0);
             
-            Image img11 = img.copyToImageExt();
             CorrespondencePlotter plotter = new CorrespondencePlotter(
                 imgs0[1], img.copyImage());            
             for (int ii = 0; ii < cor.getPoints1().size(); ++ii) {
                 PairInt p1 = cor.getPoints1().get(ii);
                 PairInt p2 = cor.getPoints2().get(ii);
-
-                ImageIOHelper.addPointToImage(p2.getX(), p2.getY(), img11,
-                    1, 255, 0, 0);
 
                 //System.out.println("orb matched: " + p1 + " " + p2);
                 //if (p2.getX() > 160)
@@ -1112,8 +1256,8 @@ public class AndroidStatuesTest extends TestCase {
             }
             plotter.writeImage("_orb_corres_" + str + "_" + fileName1Root);
             System.out.println(cor.getPoints1().size() + " matches " + fileName1Root);
-            MiscDebug.writeImage(img11, "_orb_matched_" + str
-                + "_" + fileName1Root);
+            //MiscDebug.writeImage(img11, "_orb_matched_" + str
+            //    + "_" + fileName1Root);
         }
         }
     }
@@ -1917,10 +2061,11 @@ public class AndroidStatuesTest extends TestCase {
         String filePath0 = ResourceFinder
             .findFileInTestResources(fileName0);
         ImageExt img0 = ImageIOHelper.readImageExt(filePath0);
-        
-        img0 = imageProcessor.binImage(img0, binFactor);
-        imgMask0 = imageProcessor.binImage(imgMask0, binFactor);
-
+    
+        if (binFactor != 1) {
+            img0 = imageProcessor.binImage(img0, binFactor);
+            imgMask0 = imageProcessor.binImage(imgMask0, binFactor);
+        }
         
         ImageExt img0Masked = img0.copyToImageExt();
         
@@ -1933,7 +2078,8 @@ public class AndroidStatuesTest extends TestCase {
                 outputShape.add(new PairInt(imgMask0.getCol(i), imgMask0.getRow(i)));
             }
         }
-        
+        //MiscDebug.writeImage(img0Masked, "_MASKED");
+   
         return new ImageExt[]{img0, img0Masked};
     }
 
@@ -2592,9 +2738,7 @@ public class AndroidStatuesTest extends TestCase {
             fastThresh, 
             createFirstDerivPts, createCurvaturePts,
             overrideToCreateSmallestPyramid);
-                
-        ImageExt imgCp = img.copyToImageExt();
-        
+                        
         // trim orb data that is outside of shape
         int ns = orb.getKeyPoint0List().size();
         
@@ -2612,10 +2756,7 @@ public class AndroidStatuesTest extends TestCase {
             TIntList rm = new TIntArrayList();
             for (int j = 0; j < n0; ++j) {
                 PairInt p = new PairInt(kp1.get(j), kp0.get(j));
-                if (shape0.contains(p)) {
-                    ImageIOHelper.addPointToImage(p.getX(), p.getY(), 
-                        imgCp, 1, 255, 0, 0);
-                } else {
+                if (!shape0.contains(p)) {
                     rm.add(j);
                 }
             }
@@ -2653,7 +2794,24 @@ public class AndroidStatuesTest extends TestCase {
             }
         }
         
-        MiscDebug.writeImage(imgCp, "_template_orb");
+        {// DEBUG print each pyramid to see if has matchable points
+            // might need to change the ORb response filter to scale by scale level
+            for (int i0 = 0; i0 < orb.getKeyPoint0List().size(); ++i0) {
+                Image img0Cp = img.copyImage();
+                float scale = orb.getScalesList().get(i0).get(0);
+                for (int i = 0; i < orb.getKeyPoint0List().get(i0).size(); ++i) {
+                    int y = orb.getKeyPoint0List().get(i0).get(i);
+                    int x = orb.getKeyPoint1List().get(i0).get(i);
+                    ImageIOHelper.addPointToImage(x, y, img0Cp, 
+                        1, 255, 0, 0);
+                }
+                String str = Integer.toString(i0);
+                if (str.length() < 2) {
+                    str = "0" + str;
+                }
+                MiscDebug.writeImage(img0Cp, "_template_orb" + str);
+            }
+        }
         
         return orb;
     }
