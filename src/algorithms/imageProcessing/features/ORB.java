@@ -1,12 +1,10 @@
 package algorithms.imageProcessing.features;
 
-import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
-import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MedianTransform;
 import algorithms.imageProcessing.StructureTensor;
@@ -14,8 +12,6 @@ import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculato
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
 import algorithms.imageProcessing.util.MatrixUtil;
-import algorithms.misc.MiscDebug;
-import algorithms.misc.MiscMath;
 import algorithms.search.NearestNeighbor2D;
 import algorithms.util.CorrespondencePlotter;
 import algorithms.util.PairInt;
@@ -29,11 +25,8 @@ import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.TObjectIntMap;
-import gnu.trove.map.hash.TIntIntHashMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
@@ -132,12 +125,6 @@ public class ORB {
 
     /*
       TODO: need masked descriptors ability:
-      -- method to calculate masks.
-        accepts full size keypoints, octave image, orientations,
-        and map w/ key = point, value = segmentation index.
-        returns a bit vector with '1's where mask pixels
-            are, that is, those pixels outside of the segmentation
-            cell that contains the keypoint.
      -- create a cost matrix method which accepts the
         bit masks as an additional argument.
         it should return more than one matrix as result:
@@ -195,6 +182,16 @@ public class ORB {
     private List<Descriptors> descriptorsListS = null;
     private List<Descriptors> descriptorsListV = null;
 
+    /**
+     * if method createMasks is invoked, these are populated.
+     * a set bit indicates a bit outside of the segmented
+     * cell of the keypoint.
+     */
+    private List<Descriptors> descriptorsMaskList = null;
+    private List<Descriptors> descriptorsMaskListH = null;
+    private List<Descriptors> descriptorsMaskListS = null;
+    private List<Descriptors> descriptorsMaskListV = null;
+    
     protected static double twoPI = 2. * Math.PI;
 
     protected float curvatureThresh = 0.05f;
@@ -1666,7 +1663,7 @@ public class ORB {
 
         return desc;
     }
-
+    
     /**
      * create descriptors for the given keypoints.
      *
@@ -1746,6 +1743,124 @@ public class ORB {
         return descriptors;
     }
 
+    /**
+     * create masks for the descriptors based upon the given segmentation
+     * pointIndexMap.
+     * descriptor pixels that are not in the same segmented cell as the keypoint
+     * for the descriptor are set bits in the descriptor mask.
+     * @param pointIndexMap map of point segmented cell indexes.  key of map
+     * is the x,y coordinates (col major data structure compatible)
+     * and value is the index of the segmented cell.  if a point is not in the
+     * map, it is not in a segmented cell.  points in the same cell will have
+     * the same value.
+     */
+    public void createDescriptorMasks(TObjectIntMap<PairInt> pointIndexMap) {
+        
+        if (descriptorsList == null && descriptorsListH == null) {
+            throw new IllegalStateException("descriptors must be created first");
+        }
+        assert(!descrChoice.equals(DescriptorChoice.NONE));
+        assert(POS0 != null);
+        assert(POS1 != null);
+        assert(orientationsList.size() == keypoints0List.size());
+        assert(keypoints0List.size() == keypoints1List.size());
+        assert(pyramidImages.size() == keypoints0List.size());
+        
+        int ns = keypoints0List.size();
+        if (descrChoice.equals(DescriptorChoice.GREYSCALE)) {
+            descriptorsMaskList = new ArrayList<ORB.Descriptors>();
+        } else {
+            descriptorsMaskListH = new ArrayList<ORB.Descriptors>();
+            descriptorsMaskListS = new ArrayList<ORB.Descriptors>();
+            descriptorsMaskListV = new ArrayList<ORB.Descriptors>();
+        }
+        
+        for (int i = 0; i < ns; ++i) {
+            float scale = scalesList.get(i).get(0);
+            TwoDFloatArray octaveImage = pyramidImages.get(i);
+            TDoubleList or = orientationsList.get(i);
+            TIntList kp0 = keypoints0List.get(i);
+            TIntList kp1 = keypoints1List.get(i);
+            Descriptors mask = createMask(octaveImage.a, kp0, kp1, or,
+                pointIndexMap, scale);
+            
+            if (descriptorsMaskList != null) {
+                descriptorsMaskList.add(mask);
+            } else {
+                descriptorsMaskListH.add(mask);
+                descriptorsMaskListS.add(mask);
+                descriptorsMaskListV.add(mask);
+            }
+        }
+    }
+    
+    protected Descriptors createMask(float[][] octaveImage, TIntList keypoints0,
+        TIntList keypoints1, TDoubleList orientations,
+        TObjectIntMap<PairInt> pointIndexMap, float scale) {
+
+        assert(orientations.size() == keypoints0.size());
+        assert(POS0 != null);
+        assert(POS1 != null);
+        
+        int nKP = orientations.size();
+
+        System.out.println("nKP=" + nKP);
+
+        VeryLongBitString[] descriptors = new VeryLongBitString[nKP];
+        Descriptors desc = new Descriptors();
+        desc.descriptors = descriptors;
+        
+        double pr0, pc0, pr1, pc1;
+        int spr0, spc0, spr1, spc1;
+
+        for (int i = 0; i < descriptors.length; ++i) {
+
+            descriptors[i] = new VeryLongBitString(256);
+
+            double angle = orientations.get(i);
+            double sinA = Math.sin(angle);
+            double cosA = Math.cos(angle);
+
+            int kr = keypoints0.get(i);
+            int kc = keypoints1.get(i);
+
+            PairInt p = new PairInt(Math.round(kc/scale), Math.round(kr/scale));
+            int label = pointIndexMap.get(p);
+            assert(pointIndexMap.containsKey(p));
+            
+            for (int j = 0; j < POS0.length; ++j) {
+                pr0 = POS0[j][0];
+                pc0 = POS0[j][1];
+                pr1 = POS1[j][0];
+                pc1 = POS1[j][1];
+
+                spr0 = (int)Math.round(sinA * pr0 + cosA * pc0);
+                spc0 = (int)Math.round(cosA * pr0 - sinA * pc0);
+                spr1 = (int)Math.round(sinA * pr1 + cosA * pc1);
+                spc1 = (int)Math.round(cosA * pr1 - sinA * pc1);
+
+                int x0 = kr + spr0;
+                int y0 = kc + spc0;
+                int x1 = kr + spr1;
+                int y1 = kc + spc1;
+                
+                // x0,y0 is row major notation and pointIndexMap is col major
+                PairInt p0 = new PairInt(Math.round(y0/scale), Math.round(x0/scale));
+                PairInt p1 = new PairInt(Math.round(y1/scale), Math.round(x1/scale));
+                 
+                if (!pointIndexMap.containsKey(p0) 
+                    || pointIndexMap.get(p0) != label 
+                    || !pointIndexMap.containsKey(p1) 
+                    || pointIndexMap.get(p1) != label) {
+            
+                    descriptors[i].setBit(j);
+                }
+            }
+        }
+
+        return desc;
+    }
+    
     /**
      * get a list of each octave's descriptors.  NOTE that the list
      * is not copied so do not modify.
@@ -1851,7 +1966,19 @@ public class ORB {
             } else if (!descrChoice.equals(DescriptorChoice.NONE)) {
                 d = descriptorsList.get(i);
             }
-             
+            Descriptors m = null;
+            Descriptors mH = null;
+            Descriptors mS = null;
+            Descriptors mV = null;
+            if (descriptorsMaskList != null) {
+                m = descriptorsMaskList.get(i);
+            } 
+            if (descriptorsMaskListH != null) {
+                mH = descriptorsMaskListH.get(i);
+                mS = descriptorsMaskListS.get(i);
+                mV = descriptorsMaskListV.get(i);
+            }
+            
             int np = kp0.size();
             TIntList rm = rmIndexesList.get(i);
             
@@ -1876,6 +2003,23 @@ public class ORB {
                     dV2.descriptors = new VeryLongBitString[nb];
                 }
                 
+                Descriptors m2 = null;
+                Descriptors mH2 = null;
+                Descriptors mS2 = null;
+                Descriptors mV2 = null;
+                if (m != null) {
+                    m2 = new Descriptors();
+                    m2.descriptors = new VeryLongBitString[nb];
+                }
+                if (mH != null) {
+                    mH2 = new Descriptors();
+                    mH2.descriptors = new VeryLongBitString[nb];
+                    mS2 = new Descriptors();
+                    mS2.descriptors = new VeryLongBitString[nb];
+                    mV2 = new Descriptors();
+                    mV2.descriptors = new VeryLongBitString[nb];
+                }
+                
                 TIntSet rmSet = new TIntHashSet(rm);
                 for (int j = (rm.size() - 1); j > -1; --j) {
                     int idx = rm.get(j);
@@ -1897,6 +2041,14 @@ public class ORB {
                         dS2.descriptors[count] = dS.descriptors[j];
                         dV2.descriptors[count] = dV.descriptors[j];
                     }
+                    if (m2 != null) {
+                        m2.descriptors[count] = m.descriptors[j];
+                    }
+                    if (mH2 != null) {
+                        mH2.descriptors[count] = mH.descriptors[j];
+                        mS2.descriptors[count] = mS.descriptors[j];
+                        mV2.descriptors[count] = mV.descriptors[j];
+                    }
                     
                     count++;
                 }
@@ -1908,6 +2060,14 @@ public class ORB {
                     dH.descriptors = dH2.descriptors;
                     dS.descriptors = dS2.descriptors;
                     dV.descriptors = dV2.descriptors;
+                }
+                if (m2 != null) {
+                    m.descriptors = m2.descriptors;
+                }
+                if (mH2 != null) {
+                    mH.descriptors = mH2.descriptors;
+                    mS.descriptors = mS2.descriptors;
+                    mV.descriptors = mV2.descriptors;
                 }
             }
         }
