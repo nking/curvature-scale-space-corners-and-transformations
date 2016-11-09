@@ -125,28 +125,12 @@ public class ORB {
           such as Laplacian pyramids or
           half-octave or quarter-octave pyramids (Lowe 2004; Triggs 2004)
     */
-
+    
     /*
-      TODO: need masked descriptors ability:
-     -- create a cost matrix method which accepts the
-        bit masks as an additional argument.
-        it should return more than one matrix as result:
-         -- the normal value cost matrix is calculated and
-            altered by masked pixels.
-            in detail, if the cost of a masked bit in the descriptor compairson
-             has a set bit at the masked bit, unset it.
-             xor gives the difference bits.  unset the masked bits:
-             A &= ~(1 << x).  note that masked bits are from both keypoint descriptors.
-            Then calc 3 matrixes:
-            (1) total cost should remain as is.  this is a minimum possible cost.
-            (2) total cost should be scaled up by area of masked bits.
-                 this is an averaged cost (between the min and max)
-            (3) total cost should be added to by all bits in mask.  this is
-                maximum possible cost for present and missing information.
-     -- copy and refactor the matching method to use
-            one of the 3 different masked descriptors.
-            presumably (2) will give the best results.
-      */
+    TODO:
+      -- next changing to use nPoints per octave instead
+         of nPoints total.
+    */
 
     protected boolean repeatScale1At2 = true;
 
@@ -703,7 +687,9 @@ public class ORB {
         float prevScl = 1;
 
         TIntList octavesUsed = new TIntArrayList();
-
+        TFloatList octavesScales = new TFloatArrayList();
+        List<TwoDFloatArray> hrList = new ArrayList<TwoDFloatArray>(); 
+        Set<PairInt> kp01CombinedSet = new HashSet<PairInt>();
         for (int octave = 0; octave < pyramid.size(); ++octave) {
 
             //System.out.println("octave=" + octave);
@@ -746,39 +732,72 @@ public class ORB {
             TIntList mask = filterNearBorder(octaveImage, r.keypoints0,
                 r.keypoints1);
 
-            TFloatList responses = new TFloatArrayList(r.keypoints0.size());
-            for (int i = 0; i < r.keypoints0.size(); ++i) {
-                int x = r.keypoints0.get(i);
-                int y = r.keypoints1.get(i);
-                float v = r.harrisResponse[x][y];
+            // store locally:
+            for (int k = 0; k < r.keypoints0.size(); ++k) {
+                int c0 = Math.round(scale * r.keypoints0.get(k));
+                int c1 = Math.round(scale * r.keypoints1.get(k));
+                PairInt p = new PairInt(c0, c1);
+                kp01CombinedSet.add(p);
+            }
+      
+            hrList.add(new TwoDFloatArray(r.harrisResponse));            
+            octavesUsed.add(octave);
+            octavesScales.add(scale);
+        }
+        
+        for (int ij = 0; ij < octavesUsed.size(); ++ij) {
+            
+            int octave = octavesUsed.get(ij);
+            float scale = octavesScales.get(ij);
+            float[][] harrisResponse = hrList.get(ij).a;
+
+            // make a keypoint list for each scale, using set first
+            // to remove redundant points.
+            // TODO: may need to apply a local max filter if points cluster in
+            //    smaller image
+            Set<PairInt> set = new HashSet<PairInt>();
+            for (PairInt p : kp01CombinedSet) {
+                int c0 = Math.round(p.getX()/scale);
+                int c1 = Math.round(p.getY()/scale);
+                set.add(new PairInt(c0, c1));
+            }
+            
+            TFloatList responses = new TFloatArrayList(set.size());
+            TIntList kp0s = new TIntArrayList(set.size());
+            TIntList kp1s = new TIntArrayList(set.size());
+            for (PairInt p : set) {
+                int x = p.getX();
+                int y = p.getY();
+                kp0s.add(x);
+                kp1s.add(y);
+                float v = harrisResponse[x][y];
                 responses.add(v);
             }
-
+            
+            float[][] octaveImage = pyramid.get(octave).a;
+            
             TDoubleList orientations = cornerOrientations(octaveImage,
-                r.keypoints0, r.keypoints1);
+                kp0s, kp1s);
 
             // transform keypoints to full size coordinate reference frame
-            for (int i = 0; i < r.keypoints0.size(); ++i) {
+            for (int i = 0; i < kp0s.size(); ++i) {
+                int v = Math.round(scale * kp0s.get(i));
+                kp0s.set(i, v);
 
-                int v = Math.round(scale * r.keypoints0.get(i));
-                r.keypoints0.set(i, v);
-
-                v = Math.round(scale * r.keypoints1.get(i));
-                r.keypoints1.set(i, v);
+                v = Math.round(scale * kp1s.get(i));
+                kp1s.set(i, v);
             }
 
-            octavesUsed.add(octave);
-
-            keypoints0List.add(r.keypoints0);
-            keypoints1List.add(r.keypoints1);
+            keypoints0List.add(kp0s);
+            keypoints1List.add(kp1s);
             orientationsList.add(orientations);
             harrisResponses.add(responses);
 
             pyramidImages.add(pyramid.get(octave));
-            harrisResponseImages.add(new TwoDFloatArray(r.harrisResponse));
+            harrisResponseImages.add(new TwoDFloatArray(harrisResponse));
 
-            TFloatList scales = new TFloatArrayList(r.keypoints0.size());
-            for (int i = 0; i < r.keypoints0.size(); ++i) {
+            TFloatList scales = new TFloatArrayList(kp0s.size());
+            for (int i = 0; i < kp0s.size(); ++i) {
                 scales.add(scale);
             }
             scalesList.add(scales);
@@ -3357,15 +3376,6 @@ public static TFloatList pyrS2 = null;
                 }
                 System.out.println("i=" + i + " j=" + j + " nPairs=" + pairs.size());
 
-    //TODO: can see here that for the smaller
-    //  pyramid images, there are not many matching
-    //  points, espec where tScale is '1' between 2 very
-    //  different sized images,
-    //  that may be in part due to loss of edges during blur
-    //  before decimation.
-    //  will change the keypoints and data to carry the scale 1 through
-    //  to smaller images next.
-    
                 debugPrint(pairs, i, j);
                 
                 // --- calculate transformations in pairs and evaluate ----
