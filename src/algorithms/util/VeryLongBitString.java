@@ -123,6 +123,10 @@ public final class VeryLongBitString {
         return nSetBits;
     }
     
+    public long getInstantiatedBitSize() {
+        return nBits;
+    }
+    
     public boolean isSet(long nthBit) {
         
         int idx = getRowNumber(nthBit);
@@ -430,6 +434,40 @@ public final class VeryLongBitString {
         
         return out;
     }
+    
+    /**
+     * perform a bitwise 'xor' on this bitstring and otherBS.
+     * The result is the bits which are different.
+     * @param otherBS
+     * @return 
+     */
+    public VeryLongBitString xor(VeryLongBitString otherBS) {
+                
+        VeryLongBitString out;
+        
+        if (nBits == otherBS.nBits || (nBits > otherBS.nBits)) {
+            
+            out = copy();
+            
+            for (int i = 0; i < otherBS.bitstring.length; ++i) {
+                long bs = otherBS.bitstring[i];
+                out.bitstring[i] ^= bs;
+            }
+            
+        } else { //if (nBits < otherBS.nBits) {
+            
+            out = otherBS.copy();
+            
+            for (int i = 0; i < bitstring.length; ++i) {
+                long bs = bitstring[i];
+                out.bitstring[i] ^= bs;
+            }
+        }
+        
+        out.recountNSetBits();
+        
+        return out;
+    }
 
     /**
      * find the bits in this.copy() which are not in otherBS by performing
@@ -468,4 +506,28 @@ public final class VeryLongBitString {
         return out;
     }
 
+    /**
+     * where bits2 are set in bits1, unset the bits in bits1.
+     * This is the bitwise 'subtract' operation A & ~B.
+     * @param bs1
+     * @param bs2
+     * @return 
+     */
+    public static VeryLongBitString subtract(VeryLongBitString bs1,
+        VeryLongBitString bs2) {
+        
+        if (bs1.nBits != bs2.nBits) {
+            throw new IllegalArgumentException("bs1 and bs2 must be same lengths");
+        }
+                
+        VeryLongBitString out = bs1.copy();
+                                
+        for (int i = 0; i < bs2.bitstring.length; ++i) {
+            out.bitstring[i] &= ~bs2.bitstring[i];
+        }
+            
+        out.recountNSetBits();
+        
+        return out;
+    }
 }

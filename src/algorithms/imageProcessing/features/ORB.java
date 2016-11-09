@@ -1777,6 +1777,7 @@ public class ORB {
         }
         
         for (int i = 0; i < ns; ++i) {
+            assert(!scalesList.get(i).isEmpty());
             float scale = scalesList.get(i).get(0);
             TwoDFloatArray octaveImage = pyramidImages.get(i);
             TDoubleList or = orientationsList.get(i);
@@ -1795,6 +1796,19 @@ public class ORB {
         }
     }
     
+    /**
+     * 
+     * @param octaveImage
+     * @param keypoints0 keypoints coordinate for row.  note that they are
+     * assumed to be already scaled up to full frame size, so scale is used
+     * to reduce them to reference frame of octave image.
+     * @param keypoints1 keypoints coordinates for col.  see scale notes in
+     * keypoints0
+     * @param orientations
+     * @param pointIndexMap
+     * @param scale
+     * @return 
+     */
     protected Descriptors createMask(float[][] octaveImage, TIntList keypoints0,
         TIntList keypoints1, TDoubleList orientations,
         TObjectIntMap<PairInt> pointIndexMap, float scale) {
@@ -1825,9 +1839,13 @@ public class ORB {
             int kr = keypoints0.get(i);
             int kc = keypoints1.get(i);
 
-            PairInt p = new PairInt(Math.round(kc/scale), Math.round(kr/scale));
+            PairInt p = new PairInt(Math.round(kc), Math.round(kr));
             int label = pointIndexMap.get(p);
             assert(pointIndexMap.containsKey(p));
+            
+            // put kr and kc into pyrmid image reference frame.
+            kr = Math.round(kr/scale);
+            kc = Math.round(kc/scale);
             
             for (int j = 0; j < POS0.length; ++j) {
                 pr0 = POS0[j][0];
@@ -1845,9 +1863,10 @@ public class ORB {
                 int x1 = kr + spr1;
                 int y1 = kc + spc1;
                 
-                // x0,y0 is row major notation and pointIndexMap is col major
-                PairInt p0 = new PairInt(Math.round(y0/scale), Math.round(x0/scale));
-                PairInt p1 = new PairInt(Math.round(y1/scale), Math.round(x1/scale));
+                // x0,y0 is row major notation and pointIndexMap is col major.
+                // scale up the coordinates to full frame for use with map.
+                PairInt p0 = new PairInt(Math.round(y0*scale), Math.round(x0*scale));
+                PairInt p1 = new PairInt(Math.round(y1*scale), Math.round(x1*scale));
                  
                 if (!pointIndexMap.containsKey(p0) 
                     || pointIndexMap.get(p0) != label 
@@ -1942,6 +1961,12 @@ public class ORB {
         return combined;
     }
     
+    /**
+     * remove items at indexes in list.
+     * Note that a final step of removing all data at a scale size
+     * is performed if there are no keypoints left for that scale.
+     * @param rmIndexesList 
+     */
     public void removeAtIndexes(List<TIntList> rmIndexesList) {
         
         int ns = keypoints0List.size();
@@ -1956,6 +1981,7 @@ public class ORB {
             TIntList kp1 = keypoints1List.get(i);
             TDoubleList or = orientationsList.get(i);
             TFloatList s = scalesList.get(i);
+            TFloatList r = harrisResponses.get(i);
             Descriptors d = null;
             Descriptors dH = null;
             Descriptors dS = null;
@@ -2028,6 +2054,7 @@ public class ORB {
                     kp1.removeAt(idx);
                     or.removeAt(idx);
                     s.removeAt(idx);
+                    r.removeAt(idx);
                 }
                 int count = 0;
                 for (int j = 0; j < np; ++j) {
@@ -2070,6 +2097,93 @@ public class ORB {
                     mS.descriptors = mS2.descriptors;
                     mV.descriptors = mV2.descriptors;
                 }
+            }
+        }
+     
+        assert(keypoints0List.size() == ns);
+        assert(keypoints1List.size() == ns);
+        assert(orientationsList.size() == ns);
+        assert(harrisResponseImages.size() == ns);
+        assert(harrisResponses.size() == ns);
+        assert(scalesList.size() == ns);
+        if (descrChoice.equals(DescriptorChoice.HSV)) {
+            assert(descriptorsListH.size() == ns);
+            assert(descriptorsListS.size() == ns);
+            assert(descriptorsListV.size() == ns);
+            if (descriptorsMaskListH != null) {
+                assert(descriptorsMaskListH.size() == ns);
+                assert(descriptorsMaskListS.size() == ns);
+                assert(descriptorsMaskListV.size() == ns);
+            }
+            assert(pyramidImagesH.size() == ns);
+            assert(pyramidImagesS.size() == ns);
+            assert(pyramidImagesV.size() == ns);
+        } else if (!descrChoice.equals(DescriptorChoice.NONE)) {
+            assert(descriptorsList.size() == ns);
+            if (descriptorsMaskList != null) {
+                assert(descriptorsMaskList.size() == ns);
+            }
+        }
+        
+        ns = keypoints0List.size();
+        for (int i = (ns - 1); i > -1; --i) {
+            
+            if (!keypoints0List.get(i).isEmpty()) {
+                continue;
+            }
+            assert(keypoints1List.get(i).isEmpty());
+                        
+            keypoints0List.remove(i);
+            keypoints1List.remove(i);
+            orientationsList.remove(i);
+            scalesList.remove(i);
+            pyramidImages.remove(i);
+            harrisResponseImages.remove(i);
+            harrisResponses.remove(i);
+            
+            if (descrChoice.equals(DescriptorChoice.HSV)) {
+                descriptorsListH.remove(i);
+                descriptorsListS.remove(i);
+                descriptorsListV.remove(i);
+                if (descriptorsMaskListH != null) {
+                    descriptorsMaskListH.remove(i);
+                    descriptorsMaskListS.remove(i);
+                    descriptorsMaskListV.remove(i);
+                }
+                pyramidImagesH.remove(i);
+                pyramidImagesS.remove(i);
+                pyramidImagesV.remove(i);
+            } else if (!descrChoice.equals(DescriptorChoice.NONE)) {
+                descriptorsList.remove(i);
+                if (descriptorsMaskList != null) {
+                    descriptorsMaskList.remove(i);
+                }
+            }
+        }
+       
+        ns = keypoints0List.size();
+        assert(keypoints0List.size() == ns);
+        assert(keypoints1List.size() == ns);
+        assert(orientationsList.size() == ns);
+        assert(harrisResponseImages.size() == ns);
+        assert(harrisResponses.size() == ns);
+        assert(scalesList.size() == ns);
+        if (descrChoice.equals(DescriptorChoice.HSV)) {
+            assert(descriptorsListH.size() == ns);
+            assert(descriptorsListS.size() == ns);
+            assert(descriptorsListV.size() == ns);
+            if (descriptorsMaskListH != null) {
+                assert(descriptorsMaskListH.size() == ns);
+                assert(descriptorsMaskListS.size() == ns);
+                assert(descriptorsMaskListV.size() == ns);
+            }
+            assert(pyramidImagesH.size() == ns);
+            assert(pyramidImagesS.size() == ns);
+            assert(pyramidImagesV.size() == ns);
+        } else if (!descrChoice.equals(DescriptorChoice.NONE)) {
+            assert(descriptorsList.size() == ns);
+            if (descriptorsMaskList != null) {
+                assert(descriptorsMaskList.size() == ns);
             }
         }
     }

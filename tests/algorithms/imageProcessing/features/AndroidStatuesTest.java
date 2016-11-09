@@ -931,7 +931,7 @@ public class AndroidStatuesTest extends TestCase {
                 MiscDebug.writeImage(img0Cp, "T_PYR_" + str);
             }
         }
-        
+                
         ColorHistogram clrHist = new ColorHistogram();
 
         // make the template histograms from the first scale only
@@ -1196,7 +1196,11 @@ public class AndroidStatuesTest extends TestCase {
             rmIndexesList.add(rm);
         }
         orb.removeAtIndexes(rmIndexesList);
-       
+        sList = new TFloatArrayList(kp0List.size());
+        for (int i = 0; i < orb.getScalesList().size(); ++i) {
+            sList.add(orb.getScalesList().get(i).get(0));
+        }
+        
         {
             kpSet = new HashSet<PairInt>();
             TIntList kp0 = orb.getKeyPoint0List().get(0);
@@ -1214,6 +1218,20 @@ public class AndroidStatuesTest extends TestCase {
             MiscDebug.writeImage(img11, "_filtered_segmentation_2_" 
                 + fileName1Root);
         }
+    
+        TObjectIntMap<PairInt> templatePointIndexes = new TObjectIntHashMap<PairInt>();
+        for (PairInt p : shape0) {
+            templatePointIndexes.put(p, 0);
+        }
+        TObjectIntMap<PairInt> srchPointIndexes = new TObjectIntHashMap<PairInt>();
+        for (int i = 0; i < listOfPointSets2.size(); ++i) {
+            Set<PairInt> set = listOfPointSets2.get(i);
+            for (PairInt p : set) {
+                srchPointIndexes.put(p, i);
+            }
+        }
+        orb0.createDescriptorMasks(templatePointIndexes);
+        orb.createDescriptorMasks(srchPointIndexes);
         
         long t0 = System.currentTimeMillis();
     
