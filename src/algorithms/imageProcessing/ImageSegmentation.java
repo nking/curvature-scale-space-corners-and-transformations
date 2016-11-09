@@ -14314,10 +14314,13 @@ int z = 1;
         Set<PairInt> skipYX = new HashSet<PairInt>();
 
         int nIter = 0;
-        float[] chLimit1s = new float[]{0.2f, 0.35f, 0.45f, 0.5f, 0.55f, 0.6f};
+        float[] chLimit1s = new float[]{
+            0.2f
+            //, 0.35f, 0.45f, 0.5f, 0.55f, 0.6f
+        };
 
         // iterate until about 16 cells are left
-        while (nIter < 6) {
+        while (nIter < chLimit1s.length) {
 
             //NOTE: can increase this to 0.25 for one test
             float chLimit1 = chLimit1s[nIter];

@@ -9,6 +9,7 @@ import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MedianTransform;
 import algorithms.imageProcessing.StructureTensor;
+import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
@@ -22,6 +23,7 @@ import algorithms.util.QuadInt;
 import algorithms.util.TwoDFloatArray;
 import algorithms.util.TwoDIntArray;
 import algorithms.util.VeryLongBitString;
+import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
@@ -30,6 +32,7 @@ import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
@@ -125,13 +128,7 @@ public class ORB {
           such as Laplacian pyramids or
           half-octave or quarter-octave pyramids (Lowe 2004; Triggs 2004)
     */
-    
-    /*
-    TODO:
-      -- next changing to use nPoints per octave instead
-         of nPoints total.
-    */
-
+   
     protected boolean repeatScale1At2 = true;
 
     // these could be made static across all instances, but needs guards for synchronous initialization
@@ -349,96 +346,6 @@ public class ORB {
             assert(pyramidImages.size() == pyramidImagesH.size());
             assert(pyramidImages.size() == pyramidImagesS.size());
             assert(pyramidImages.size() == pyramidImagesV.size());
-        }
-
-        if (nKeyPointsTotal > this.nKeypoints) {
-
-            // prune the lists to nKeypoints by the harris corner response as a score
-
-            // once thru to count first
-            int n = 0;
-            for (int idx1 = 0; idx1 < harrisResponses.size(); ++idx1) {
-                TFloatList hResp = harrisResponses.get(idx1);
-                n += hResp.size();
-                assert(keypoints0List.get(idx1).size() == hResp.size());
-                assert(keypoints1List.get(idx1).size() == hResp.size());
-                assert(orientationsList.get(idx1).size() == hResp.size());
-            }
-
-            float[] scores = new float[n];
-            PairInt[] indexes = new PairInt[n];
-            // outer list index = idx1, inner list index = idx2
-            int count = 0;
-            for (int idx1 = 0; idx1 < harrisResponses.size(); ++idx1) {
-                TFloatList hResp = harrisResponses.get(idx1);
-                for (int idx2 = 0; idx2 < hResp.size(); ++idx2) {
-                    indexes[count] = new PairInt(idx1, idx2);
-                    scores[count] = hResp.get(idx2);
-                    count++;
-                }
-            }
-
-            QuickSort.sortBy1stArg(scores, indexes);
-
-            System.out.println("--> strongest response=" +
-                scores[scores.length - 1]
-                + " and response at last "
-                + "requested keypoint="
-                + scores[scores.length - nKeypoints - 1]);
-
-            List<TIntList> keypoints0List2 = new ArrayList<TIntList>();
-            List<TIntList> keypoints1List2 = new ArrayList<TIntList>();
-            List<TDoubleList> orientationsList2 = new ArrayList<TDoubleList>();
-            List<TFloatList> harrisResponses2 = new ArrayList<TFloatList>();
-            List<TFloatList> scalesList2 = new ArrayList<TFloatList>();
-            for (int ii = 0; ii < keypoints0List.size(); ++ii) {
-                keypoints0List2.add(new TIntArrayList());
-                keypoints1List2.add(new TIntArrayList());
-                orientationsList2.add(new TDoubleArrayList());
-                harrisResponses2.add(new TFloatArrayList());
-                scalesList2.add(new TFloatArrayList());
-            }
-
-            // visit largest scores to smallest
-            count = 0;
-            int idx = n - 1;
-            while (count < nKeypoints) {
-
-                PairInt m = indexes[idx];
-                int idx1 = m.getX();
-                int idx2 = m.getY();
-
-                keypoints0List2.get(idx1).add
-                    (keypoints0List.get(idx1).get(idx2));
-                keypoints1List2.get(idx1).add
-                    (keypoints1List.get(idx1).get(idx2));
-                orientationsList2.get(idx1).add
-                    (orientationsList.get(idx1).get(idx2));
-                harrisResponses2.get(idx1).add
-                    (harrisResponses.get(idx1).get(idx2));
-                scalesList2.get(idx1).add
-                    (scalesList.get(idx1).get(idx2));
-
-                idx--;
-                count++;
-            }
-
-            keypoints0List = keypoints0List2;
-            keypoints1List = keypoints1List2;
-            orientationsList = orientationsList2;
-            harrisResponses = harrisResponses2;
-            scalesList = scalesList2;
-
-            assert(pyramidImages.size() == keypoints0List.size());
-            assert(pyramidImages.size() == keypoints1List.size());
-            assert(pyramidImages.size() == orientationsList.size());
-            assert(pyramidImages.size() == this.harrisResponses.size());
-            assert(pyramidImages.size() == scalesList.size());
-            if (descrChoice.equals(DescriptorChoice.HSV)) {
-                assert(pyramidImages.size() == pyramidImagesH.size());
-                assert(pyramidImages.size() == pyramidImagesS.size());
-                assert(pyramidImages.size() == pyramidImagesV.size());
-            }
         }
 
         extractDescriptors();
@@ -745,6 +652,49 @@ public class ORB {
             octavesScales.add(scale);
         }
         
+        TIntList kpc0s = new TIntArrayList(this.nKeypoints);
+        TIntList kpc1s = new TIntArrayList(this.nKeypoints);
+        // order by response and filter
+        {
+            float[][] harrisResponse = hrList.get(0).a;
+
+            int n = kp01CombinedSet.size();
+
+            float[] scores = new float[n];
+            PairInt[] points = new PairInt[n];
+            int count = 0;
+            for (PairInt p : kp01CombinedSet) {
+                points[count] = p;
+                scores[count] = harrisResponse[p.getX()][p.getY()];
+                count++;
+            }
+
+            QuickSort.sortBy1stArg(scores, points);
+
+            kp01CombinedSet.clear();
+
+            for (int i = (points.length - 1); i > -1; --i) {
+                PairInt p = points[i];
+                int x = p.getX();
+                int y = p.getY();
+                kpc0s.add(x);
+                kpc1s.add(y);
+            } 
+            
+            // then filter
+            maskCoordinates(kpc0s, kpc1s, harrisResponse.length, 
+                harrisResponse[0].length, 4);//8);
+        }
+        
+        // filter for number of points if requested
+        if (kpc0s.size() > this.nKeypoints) {
+            while (kpc0s.size() > this.nKeypoints) {
+                int idx = kpc0s.size() - 1;
+                kpc0s.removeAt(idx);
+                kpc1s.removeAt(idx);
+            }
+        }
+        
         for (int ij = 0; ij < octavesUsed.size(); ++ij) {
             
             int octave = octavesUsed.get(ij);
@@ -756,21 +706,29 @@ public class ORB {
             // TODO: may need to apply a local max filter if points cluster in
             //    smaller image
             Set<PairInt> set = new HashSet<PairInt>();
-            for (PairInt p : kp01CombinedSet) {
-                int c0 = Math.round(p.getX()/scale);
-                int c1 = Math.round(p.getY()/scale);
-                set.add(new PairInt(c0, c1));
-            }
-            
-            TFloatList responses = new TFloatArrayList(set.size());
             TIntList kp0s = new TIntArrayList(set.size());
             TIntList kp1s = new TIntArrayList(set.size());
-            for (PairInt p : set) {
-                int x = p.getX();
-                int y = p.getY();
-                kp0s.add(x);
-                kp1s.add(y);
-                float v = harrisResponse[x][y];
+            for (int i = 0; i < kpc0s.size(); ++i) {
+                int c0 = Math.round(kpc0s.get(i)/scale);
+                int c1 = Math.round(kpc1s.get(i)/scale);
+                PairInt p = new PairInt(c0, c1);
+                if (!set.contains(p)) {
+                    set.add(p);
+                }
+                kp0s.add(c0);
+                kp1s.add(c1);
+            }
+            
+            // then filter for best within a pixel range
+            maskCoordinates(kp0s, kp1s, harrisResponse.length, 
+                harrisResponse[0].length, 4);//8);
+            
+            TFloatList responses = new TFloatArrayList(kp0s.size());
+            
+            for (int i = 0; i < kp0s.size(); ++i) {
+                int c0 = kp0s.get(i);
+                int c1 = kp1s.get(i);
+                float v = harrisResponse[c0][c1];
                 responses.add(v);
             }
             
@@ -2601,8 +2559,8 @@ public static TFloatList pyrS2 = null;
         }
         int topLimit = Math.round(
             //0.17f
-            0.3f
-            //0.9f
+            //0.3f
+            0.99f
             * nBands * 256) + bitTolerance;
         int minP1Diff = 5;
 
@@ -2753,6 +2711,34 @@ public static TFloatList pyrS2 = null;
                 double minCost3_F = Double.MAX_VALUE;
                 float minCostTScale_F = Float.MAX_VALUE;
                 
+                // may need to iterate to reduce pairs.size to szLimit
+                float topLimit2 = topLimit;
+                while (true) {
+                    int count = 0;
+                    for (int ii = 0; ii < n1; ++ii) {
+                        for (int jj = 0; jj < n2; ++jj) {
+                            int c = cost[ii][jj];
+                            if (c > topLimit2) {
+                                continue;
+                            }
+                            count++;
+                        }
+                    }
+                    System.out.println(count);
+                    //TODO: may need to revise this limit
+                    if (count < 200) {
+                        break;
+                    }
+                    topLimit2 -= (0.025f * nBands * 256);
+                    if (topLimit2 == 0) {
+                        topLimit2 = bitTolerance;
+                        if (topLimit2 == 0) {
+                            topLimit2 = nBands * 256 * 0.025f;
+                        }
+                        break;
+                    }
+                }
+                
                 List<QuadInt> pairs = new ArrayList<QuadInt>(nTot/2);
                 TIntList costs = new TIntArrayList(nTot);
                 for (int ii = 0; ii < n1; ++ii) {
@@ -2760,7 +2746,7 @@ public static TFloatList pyrS2 = null;
                     for (int jj = 0; jj < n2; ++jj) {
                         int c = cost[ii][jj];
 
-                        if (c > topLimit) {
+                        if (c > topLimit2) {
                             continue;
                         }
 
@@ -2779,6 +2765,9 @@ public static TFloatList pyrS2 = null;
                         costs.add(c);
                     }
                 }
+                
+                debugPrint(pairs, i, j);
+                
                 System.out.println("i=" + i + " j=" + j + " nPairs=" + pairs.size());
 
                 // --- calculate transformations in pairs and evaluate ----
@@ -3159,7 +3148,10 @@ public static TFloatList pyrS2 = null;
         List<Descriptors> descMasks1, List<Descriptors> descMasks2,
         List<TIntList> keypointsX1, List<TIntList> keypointsY1,
         List<TIntList> keypointsX2, List<TIntList> keypointsY2,
-        float scaleFactor, float sizeScaleFraction, boolean returnSingleAnswer) {
+        TObjectIntMap<PairInt> pointCells1,
+        TObjectIntMap<PairInt> pointCells2,
+        float scaleFactor, float sizeScaleFraction, 
+        boolean returnSingleAnswer) {
 
         if (scales1.size() != descH1.size() ||
             scales1.size() != descS1.size() ||
@@ -3190,12 +3182,6 @@ public static TFloatList pyrS2 = null;
         } else {
             bitTolerance = Math.round(sizeScaleFraction * nBands * 256);
         }
-        int topLimit = Math.round(
-            0.17f
-            //0.3f
-            //1.0f
-            * nBands * 256) + bitTolerance;
-        
         int minP1Diff = 5;
 
         MatchedPointsTransformationCalculator tc = new
@@ -3289,6 +3275,9 @@ public static TFloatList pyrS2 = null;
 
             TObjectIntMap<PairInt> p1IndexMap = createIndexMap(kpX1, kpY1);
             
+            List<TIntList> pointIndexLists1 = 
+                createLabeledLists(kpX1, kpY1, pointCells1);
+        
             for (int j = 0; j < scales2.size(); ++j) {
                 Descriptors dH2 = descH2.get(j);
                 Descriptors dS2 = descS2.get(j);
@@ -3301,28 +3290,27 @@ public static TFloatList pyrS2 = null;
                         + " d2 bitstrings must be same as keypoints2 length");
                 }
 
+                List<TIntList> pointIndexLists2 = 
+                    createLabeledLists(kpX2, kpY2, pointCells2);
+        
                 TwoDIntArray[] costMatrixes = calcMaskedDescriptorCostMatrixes(
                     new Descriptors[]{dH1, dS1, dV1},
                     new Descriptors[]{dH2, dS2, dV2},
                     descMasks1.get(i), descMasks2.get(j)
                 );
-                
+  //TODO decide index              
                 //[n1][n2]
-                int[][] cost = costMatrixes[0].a;
+                int[][] cost = costMatrixes[1].a;
                 
                 int nTot = n1 * n2;
 
-                // storing points1 in pairintarray to transform
-                // storing points2 in set to create a nearest neighbors
-
-                PairIntArray a1 = new PairIntArray(nTot/2);
                 PairIntArray a2 = new PairIntArray(nTot/2);
-
                 TIntList a2Indexes = new TIntArrayList(nTot/2);
-
-                Set<PairInt> s1 = new HashSet<PairInt>(nTot/2);
-                Set<PairInt> s2 = new HashSet<PairInt>(nTot/2);
-
+                for (int k = 0; k < kpX2.size(); ++k) {
+                    a2.add(kpX2.get(k), kpY2.get(k));
+                    a2Indexes.add(k);
+                }
+                
                 FixedSizeSortedVector<CObject> vecD;
                 FixedSizeSortedVector<CObject> vecF;
                 if (returnSingleAnswer) {
@@ -3348,288 +3336,200 @@ public static TFloatList pyrS2 = null;
                 double minCost3_F = Double.MAX_VALUE;
                 float minCostTScale_F = Float.MAX_VALUE;
                 
-                List<QuadInt> pairs = new ArrayList<QuadInt>(nTot/2);
-                TIntList costs = new TIntArrayList(nTot);
-                for (int ii = 0; ii < n1; ++ii) {
-                    PairInt p1 = new PairInt(kpX1.get(ii), kpY1.get(ii));
-                    for (int jj = 0; jj < n2; ++jj) {
-                        int c = cost[ii][jj];
-
-                        if (c > topLimit) {
-                            continue;
-                        }
-
-                        PairInt p2 = new PairInt(kpX2.get(jj), kpY2.get(jj));
-
-                        if (!s1.contains(p1)) {
-                            a1.add(p1.getX(), p1.getY());
-                            s1.add(p1);
-                        }
-                        if (!s2.contains(p2)) {
-                            a2.add(p2.getX(), p2.getY());
-                            a2Indexes.add(jj);
-                            s2.add(p2);
-                        }
-                        pairs.add(new QuadInt(p1, p2));
-                        costs.add(c);
-                    }
-                }
-                System.out.println("i=" + i + " j=" + j + " nPairs=" + pairs.size());
-
-                debugPrint(pairs, i, j);
+                //combinations of pairs with same labels
                 
-                // --- calculate transformations in pairs and evaluate ----
-                for (int ii = 0; ii < pairs.size(); ++ii) {
+                // storing them all to reduce nesting
+                // quadint idx1, idx2, idx3, idx4
+                List<QuadInt> pairIndexes = createPairLabelIndexes
+                    (pointIndexLists1, kpX1, kpY1, 
+                    pointIndexLists2, kpX2, kpY2);
+                
+                System.out.println("i=" + i + " j=" + j + " nPairs=" 
+                    + pairIndexes.size());
+       int z = 0;        
+                
+                for (int ipi = 0; ipi < pairIndexes.size(); ++ipi) {
+                    
+                    QuadInt q = pairIndexes.get(ipi);
+                    
+                    int t1X = kpX1.get(q.getA());
+                    int t1Y = kpY1.get(q.getA());
+                    int t2X = kpX1.get(q.getB());
+                    int t2Y = kpY1.get(q.getB());
+                    
+                    int s1X = kpX2.get(q.getC());
+                    int s1Y = kpY2.get(q.getC());
+                    int s2X = kpX2.get(q.getD());
+                    int s2Y = kpY2.get(q.getD());
+                    
+                    // transform dataset 2 into frame 1
+                    TransformationParameters params = tc.calulateEuclidean(
+                        s1X, s1Y,
+                        s2X, s2Y,
+                        t1X, t1Y,
+                        t2X, t2Y,
+                        0, 0);
 
-                    QuadInt pair1 = pairs.get(ii);
+                    float tScale = params.getScale();
 
-                    // image 1 point:
-                    int t1X = pair1.getA();
-                    int t1Y = pair1.getB();
-                    // image 2 point:
-                    int s1X = pair1.getC();
-                    int s1Y = pair1.getD();
+                    if (Math.abs(tScale - 1.0) > 0.20) {
+                        continue;
+                    }
+                    if (minCostTScale < Float.MAX_VALUE
+                        && (Math.abs(tScale - 1)
+                        > (Math.abs(minCostTScale - 1)))) {
+                    //    continue;
+                    }
+                                        
+                    mCount = 0;
 
-                    // choose all combinations of 2nd point within distance
-                    // limit of point s1.
-                    for (int jj = (ii + 1); jj < pairs.size(); ++jj) {
+                    PairIntArray tr2
+                        = transformer.applyTransformation(params, a2);
 
-                        QuadInt pair2 = pairs.get(jj);
+                    double sum1 = 0;
+                    double sum2 = 0;
+                    double sum3 = 0;
+                    double sum = 0;
 
-                        // image 1 point:
-                        int t2X = pair2.getA();
-                        int t2Y = pair2.getB();
-                        // image 2 point:
-                        int s2X = pair2.getC();
-                        int s2Y = pair2.getD();
+                    double sum2_F = 0;
+                    double sum_F = 0;
 
-                        if ((t1X == t2X && t1Y == t2Y)
-                            || (s1X == s2X && s1Y == s2Y)) {
-                            continue;
+                    double sum2_D = 0;
+                    double sum_D = 0;
+
+                    for (int k = 0; k < tr2.getN(); ++k) {
+                        int x2Tr = tr2.getX(k);
+                        int y2Tr = tr2.getY(k);
+                        int idx2 = a2Indexes.get(k);
+
+                        Set<PairInt> nearest = null;
+                        if ((x2Tr >= 0) && (y2Tr >= 0)
+                            && (x2Tr <= (maxX + pixTolerance))
+                            && (y2Tr <= (maxY + pixTolerance))) {
+                            nearest = nn.findClosest(x2Tr, y2Tr, pixTolerance);
                         }
 
-                        int diffX = s1X - s2X;
-                        int diffY = s1Y - s2Y;
-                        int distSq = diffX * diffX + diffY * diffY;
-                        if (distSq > limitSq) {
-                            continue;
-                        }
-                        if ((distSq < minP1Diff*minP1Diff) ||
-                            ((t1X - t2X)*(t1X - t2X) +
-                             (t1Y - t2Y)*(t1Y - t2Y)
-                            < minP1Diff)) {
-
-                            continue;
-                        }
-
-                        // transform dataset 2 into frame 1
-                        TransformationParameters params = tc.calulateEuclidean(
-                            s1X, s1Y,
-                            s2X, s2Y,
-                            t1X, t1Y,
-                            t2X, t2Y,
-                            0, 0);
-
-                        float tScale = params.getScale();
-
-                        if (Math.abs(tScale - 1.0) > 0.20) {
-                             continue;
-                        }
-                        
-                        if (Math.abs(tScale - 1)
-                            > Math.abs(minCostTScale - 1)) {
-                            continue;
-                        }
-                        //TODO: this may need to be revised.
-                        // wanting to approach scale of '1' from whichever
-                        // direction it is from.
-                        // The current tests pass arguments such that the
-                        // first images in pyramid1 and pyramid2 are the largerst
-                        // for both.
-                        // so if img1 is smaller than img2,
-                        // tScale will be less than 1 and the approach will
-                        // be towards 1, and skip when reach it.
-                        // else if img2 is larger than img2, the
-                        // tScale will be larger than 1, so decresing
-                        // scales until reach "1"....
-                        //might need to note the direction
-                        // of approaching scale "1" and skip when reaches it
-                        
-                        if (minCostTScale < Float.MAX_VALUE &&
-                            (Math.abs(tScale - 1) >
-                            (Math.abs(minCostTScale - 1)))) {
-                            continue;
-                        }
-                        
-                        mCount = 0;
-
-                        PairIntArray tr2 =
-                            transformer.applyTransformation(params, a2);
-
-                        double sum1 = 0;
-                        double sum2 = 0;
-                        double sum3 = 0;
-                        double sum = 0;
-
-                        double sum2_F = 0;
-                        double sum_F = 0;
-
-                        double sum2_D = 0;
-                        double sum_D = 0;
-
-                        for (int k = 0; k < tr2.getN(); ++k) {
-                            int x2Tr = tr2.getX(k);
-                            int y2Tr = tr2.getY(k);
-                            int idx2 = a2Indexes.get(k);
-
-                            Set<PairInt> nearest = null;
-                            if ((x2Tr >= 0) && (y2Tr >= 0)
-                                && (x2Tr <= (maxX + pixTolerance))
-                                && (y2Tr <= (maxY + pixTolerance))) {
-                                nearest = nn.findClosest(x2Tr, y2Tr, pixTolerance);
-                            }
-
-                            int minC = Integer.MAX_VALUE;
-                            PairInt minCP1 = null;
-                            int minIdx1 = 0;
-                            if (nearest != null && !nearest.isEmpty()) {
-                                for (PairInt p1 : nearest) {
-                                    int idx1 = p1IndexMap.get(p1);
-                                    int c = cost[idx1][idx2];
-                                    if (c < minC) {
-                                        minC = c;
-                                        minCP1 = p1;
-                                        minIdx1 = idx1;
-                                    }
+                        int minC = Integer.MAX_VALUE;
+                        PairInt minCP1 = null;
+                        int minIdx1 = 0;
+                        if (nearest != null && !nearest.isEmpty()) {
+                            for (PairInt p1 : nearest) {
+                                int idx1 = p1IndexMap.get(p1);
+                                int c = cost[idx1][idx2];
+                                if (c < minC) {
+                                    minC = c;
+                                    minCP1 = p1;
+                                    minIdx1 = idx1;
                                 }
                             }
-
-                            if (minCP1 != null) {
-                                double scoreNorm = (nBands*256 - minC)/maxCost;
-                                double costNorm = 1. - scoreNorm;
-                                sum1 += costNorm;
-
-                                // TODO: applying tScale correctly needs knowledge
-                                // of the real scale factor brtween object in the
-                                // template and search images,
-                                // so may need to calculate solutions for 2 vectors.
-                                // one soln uses the tScale applied as a factor
-                                // and the other soln uses the tScale applied as a
-                                // divisor. the decider isn't completely clear yet,
-                                //   but tentatively looks like the vec which
-                                //   has the smaller minCost1 (== descriptor cost)
-                                //   for the top item.
-                                //
-                                double dist = distance(x2Tr, y2Tr, minCP1);
-                                double distNorm = dist / maxDist;
-                                sum2 += distNorm;
-                                sum2_F += (dist * tScale / maxDist);
-                                sum2_D += (dist / (tScale * maxDist));
-
-                                m2x[mCount] = kpX2.get(idx2);
-                                m2y[mCount] = kpY2.get(idx2);
-                                m1x[mCount] = minCP1.getX();
-                                m1y[mCount] = minCP1.getY();
-                                minCostI[mCount] = costNorm;
-                                minDistI[mCount] = distNorm;
-                                mCount++;
-
-                            } else {
-                                sum1 += 1;
-                                sum2 += 1;
-                                sum2_F += 1;
-                                sum2_D += 1;
-                            }
                         }
 
-                        double cf = mCount;
-                        if (cf > nMaxMatchable) {
-                            cf = nMaxMatchable;
-                        }
-                        cf /= nMaxMatchable;
-                        sum3 = 1. - cf;
+                        if (minCP1 != null) {
+                            double scoreNorm = (nBands * 256 - minC) / maxCost;
+                            double costNorm = 1. - scoreNorm;
+                            sum1 += costNorm;
 
-                        sum = sum1 + sum2 + sum3;
+                            double dist = distance(x2Tr, y2Tr, minCP1);
+                            double distNorm = dist / maxDist;
+                            sum2 += distNorm;
+                            sum2_F += (dist * tScale / maxDist);
+                            sum2_D += (dist / (tScale * maxDist));
 
-                        sum_D = sum1 + sum2_D + sum3;
+                            m2x[mCount] = kpX2.get(idx2);
+                            m2y[mCount] = kpY2.get(idx2);
+                            m1x[mCount] = minCP1.getX();
+                            m1y[mCount] = minCP1.getY();
+                            minCostI[mCount] = costNorm;
+                            minDistI[mCount] = distNorm;
+                            mCount++;
 
-                        sum_F = sum1 + sum2_F + sum3;
-
-                        if ((minCostTotal_D == Double.MAX_VALUE) ||
-                            (sum_D <= (minCostTotal_D + bitTolerance))
-                        ) {
-
-                            if (sum_D < minCostTotal_D) {
-                                minCostTotal_D = sum_D;
-                                minCost1_D = sum1;
-                                minCost2_D = sum2_D;
-                                minCost3_D = sum3;
-                                minCostTScale_D = tScale;
-                            }
-
-                            CorrespondenceList corr
-                                = new CorrespondenceList(params.getScale(),
-                                Math.round(params.getRotationInDegrees()),
-                                Math.round(params.getTranslationX()),
-                                Math.round(params.getTranslationY()),
-                                0, 0, 0,
-                                new ArrayList<PairInt>(), new ArrayList<PairInt>());
-
-                            for (int mi = 0; mi < mCount; ++mi) {
-                                corr.addMatch(
-                                    new PairInt(m1x[mi], m1y[mi]),
-                                    new PairInt(m2x[mi], m2y[mi]),
-                                    (minCostI[mi] + minCostI[mi])
-                                );
-                            }
-
-                            CObject cObj = new CObject(sum_D, corr, tr2);
-                            vecD.add(cObj);
-                        }
-
-                        if ((minCostTotal_F == Double.MAX_VALUE) ||
-                            (sum_F <= (minCostTotal_F + bitTolerance))
-                        ) {
-
-                            if (sum_F < minCostTotal_F) {
-                                minCostTotal_F = sum_F;
-                                minCost1_F = sum1;
-                                minCost2_F = sum2_F;
-                                minCost3_F = sum3;
-                                minCostTScale_F = tScale;
-                            }
-
-                            CorrespondenceList corr
-                                = new CorrespondenceList(params.getScale(),
-                                Math.round(params.getRotationInDegrees()),
-                                Math.round(params.getTranslationX()),
-                                Math.round(params.getTranslationY()),
-                                0, 0, 0,
-                                new ArrayList<PairInt>(), new ArrayList<PairInt>());
-
-                            for (int mi = 0; mi < mCount; ++mi) {
-                                corr.addMatch(
-                                    new PairInt(m1x[mi], m1y[mi]),
-                                    new PairInt(m2x[mi], m2y[mi]),
-                                    (minCostI[mi] + minCostI[mi])
-                                );
-                            }
-
-                            CObject cObj = new CObject(sum_F, corr, tr2);
-                            vecF.add(cObj);
+                        } else {
+                            sum1 += 1;
+                            sum2 += 1;
+                            sum2_F += 1;
+                            sum2_D += 1;
                         }
                     }
+                                        
+                    double cf = mCount;
+                    if (cf > nMaxMatchable) {
+                        cf = nMaxMatchable;
+                    }
+                    cf /= nMaxMatchable;
+                    sum3 = 1. - cf;
+
+                    sum = sum1 + sum2 + sum3;
+
+                    sum_D = sum1 + sum2_D + sum3;
+
+                    sum_F = sum1 + sum2_F + sum3;
+
+                    if ((minCostTotal_D == Double.MAX_VALUE)
+                        || (sum_D <= (minCostTotal_D + bitTolerance))) {
+
+                        if (sum_D < minCostTotal_D) {
+                            minCostTotal_D = sum_D;
+                            minCost1_D = sum1;
+                            minCost2_D = sum2_D;
+                            minCost3_D = sum3;
+                            minCostTScale_D = tScale;
+                        }
+
+                        CorrespondenceList corr
+                            = new CorrespondenceList(params.getScale(),
+                                Math.round(params.getRotationInDegrees()),
+                                Math.round(params.getTranslationX()),
+                                Math.round(params.getTranslationY()),
+                                0, 0, 0,
+                                new ArrayList<PairInt>(), new ArrayList<PairInt>());
+
+                        for (int mi = 0; mi < mCount; ++mi) {
+                            corr.addMatch(
+                                new PairInt(m1x[mi], m1y[mi]),
+                                new PairInt(m2x[mi], m2y[mi]),
+                                (minCostI[mi] + minCostI[mi])
+                            );
+                        }
+
+                        CObject cObj = new CObject(sum_D, corr, tr2);
+                        vecD.add(cObj);
+                    }
+
+                    if ((minCostTotal_F == Double.MAX_VALUE)
+                        || (sum_F <= (minCostTotal_F + bitTolerance))) {
+
+                        if (sum_F < minCostTotal_F) {
+                            minCostTotal_F = sum_F;
+                            minCost1_F = sum1;
+                            minCost2_F = sum2_F;
+                            minCost3_F = sum3;
+                            minCostTScale_F = tScale;
+                        }
+
+                        CorrespondenceList corr
+                            = new CorrespondenceList(params.getScale(),
+                                Math.round(params.getRotationInDegrees()),
+                                Math.round(params.getTranslationX()),
+                                Math.round(params.getTranslationY()),
+                                0, 0, 0,
+                                new ArrayList<PairInt>(), new ArrayList<PairInt>());
+
+                        for (int mi = 0; mi < mCount; ++mi) {
+                            corr.addMatch(
+                                new PairInt(m1x[mi], m1y[mi]),
+                                new PairInt(m2x[mi], m2y[mi]),
+                                (minCostI[mi] + minCostI[mi])
+                            );
+                        }
+
+                        CObject cObj = new CObject(sum_F, corr, tr2);
+                        vecF.add(cObj);
+                    }
                 }
-
-                //TODO: seems obvious now that the correct solution will be
-                //      when the transformation scale is "1"...then the descriptor
-                //      apertures will be the same size.
-                //      making changes now.
-                //      NOTE that masked descriptors could still be useful because
-                //      they are more precise, but they might not be necessary for best cases,
-                //      excepting those such as the android test 01 in which the object
-                //      is small in the search image.
-
+                
+                // for a given i, j, all combinations were tried at 
+                //  this point
+                               
                 System.out.println(
                     String.format(
                 "i=%d j=%d minCost=%.2f c1=%.2f c2=%.2f c3=%.2f  c1Tol=%.2f s1=%.2f s2=%.2f tS=%.2f",
@@ -4365,8 +4265,10 @@ public static TFloatList pyrS2 = null;
                     nMaskedBits = mComb.getNSetBits();
                     nNonMasked = dLength - nMaskedBits;
                     fracDiv = (nSetBits/nNonMasked) * nMaskedBits;
-                    cost1[i][j] += (nSetBits + fracDiv);
-                    
+                    if (nNonMasked > 0) {
+                        cost1[i][j] += (nSetBits + fracDiv);
+                    }
+  
                     // cost 2 adds all masked bits as worse case scenario
                     cost1[i][j] += (nSetBits + nMaskedBits);
                 }
@@ -4636,10 +4538,119 @@ public static TFloatList pyrS2 = null;
             while (strJ.length() < 3) {
                 strJ = "0" + strJ;
             }
-            String str = strI + "_" + strJ + "_";
+            String str = "_pairs_" + strI + "_" + strJ + "_";
             MiscDebug.writeImage(img1, str + "_" + strI);
             MiscDebug.writeImage(img2, str + "_" + strJ);
         } catch(Exception e) {}
+    }
+
+    private static List<TIntList> createLabeledLists(
+        TIntList keypointsX, TIntList keypointsY, 
+        TObjectIntMap<PairInt> pointCells) {
+    
+        TIntObjectMap<TIntList> map = new TIntObjectHashMap<TIntList>();
+        
+        for (int i = 0; i < keypointsX.size(); ++i) {
+            int x = keypointsX.get(i);
+            int y = keypointsY.get(i);
+            int label = pointCells.get(new PairInt(x, y));
+            TIntList list = map.get(label);
+            if (list == null) {
+                list = new TIntArrayList();
+                map.put(label, list);
+            }
+            list.add(i);
+        }
+        
+        List<TIntList> output = new ArrayList<TIntList>();
+    
+        TIntObjectIterator<TIntList> iter = map.iterator();
+        for (int i = 0; i < map.size(); ++i) {
+            iter.advance();
+            output.add(iter.value());
+        }
+        
+        return output;
+    }
+
+    private static List<QuadInt> createPairLabelIndexes(
+        List<TIntList> pointIndexLists1, TIntList kpX1, TIntList kpY1, 
+        List<TIntList> pointIndexLists2, TIntList kpX2, TIntList kpY2) {
+
+        List<QuadInt> pairIndexes = new ArrayList<QuadInt>();
+
+        for (int ii = 0; ii < pointIndexLists1.size(); ++ii) {
+            TIntList kpIndexes1 = pointIndexLists1.get(ii);
+            if (kpIndexes1.size() < 2) {
+                continue;
+            }
+            // draw 2 from kpIndexes1
+            for (int ii1 = 0; ii1 < kpIndexes1.size(); ++ii1) {
+                int idx1 = kpIndexes1.get(ii1);
+                int t1X = kpX1.get(idx1);
+                int t1Y = kpY1.get(idx1);
+                for (int ii2 = (ii1 + 1); ii2 < kpIndexes1.size(); ++ii2) {
+                    int idx2 = kpIndexes1.get(ii2);
+                    int t2X = kpX1.get(idx2);
+                    int t2Y = kpY1.get(idx2);
+
+                    if ((t1X == t2X && t1Y == t2Y)) {
+                        continue;
+                    }
+                    /*
+                    int diffX = t1X - t2X;
+                    int diffY = t1Y - t2Y;
+                    int distSq = diffX * diffX + diffY * diffY;
+                    if (distSq > limitSq) {
+                        continue;
+                    }
+                    if ((distSq < minP1Diff * minP1Diff)
+                        || ((t1X - t2X) * (t1X - t2X)
+                        + (t1Y - t2Y) * (t1Y - t2Y)
+                        < minP1Diff)) {
+                        continue;
+                    }*/
+
+                    // draw 2 pairs from other dataset
+                    for (int jj = 0; jj < pointIndexLists2.size(); ++jj) {
+                        TIntList kpIndexes2 = pointIndexLists2.get(jj);
+                        if (kpIndexes2.size() < 2) {
+                            continue;
+                        }
+                        // draw 2 from kpIndexes2
+                        for (int jj1 = 0; jj1 < kpIndexes2.size(); ++jj1) {
+                            int idx3 = kpIndexes2.get(jj1);
+                            int s1X = kpX2.get(idx3);
+                            int s1Y = kpY2.get(idx3);
+                            for (int jj2 = (jj1 + 1); jj2 < kpIndexes2.size(); ++jj2) {
+                                int idx4 = kpIndexes2.get(jj2);
+                                int s2X = kpX2.get(idx4);
+                                int s2Y = kpY2.get(idx4);
+                                if ((s1X == s2X && s1Y == s2Y)) {
+                                    continue;
+                                }
+                                /*int diffX2 = s1X - s2X;
+                                int diffY2 = s1Y - s2Y;
+                                int distSq2 = diffX2 * diffX2 + diffY2 * diffY2;
+                                if (distSq2 > limitSq) {
+                                    continue;
+                                }
+                                if ((distSq2 < minP1Diff * minP1Diff)
+                                    || ((s1X - s2X) * (s1X - s2X)
+                                    + (s1Y - s2Y) * (s1Y - s2Y)
+                                    < minP1Diff)) {
+                                    continue;
+                                }*/
+
+                                pairIndexes.add(new QuadInt(idx1, idx2, idx3, idx4));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return pairIndexes;
     }
 
 }
