@@ -4207,7 +4207,7 @@ public static TFloatList pyrS2 = null;
                 + " must be same");
         }
 
-        int nd = desc1.length;
+        int nBands = desc1.length;
 
         int n1 = desc1[0].descriptors.length;
         int n2 = desc2[0].descriptors.length;
@@ -4232,11 +4232,13 @@ public static TFloatList pyrS2 = null;
             cost2[i] = new int[n2];
         }
         
+        int maxCost = nBands * 256;
         float dLength = desc1[0].descriptors[0].getInstantiatedBitSize();
         float fracDiv, nNonMasked;
         long nSetBits, nMaskedBits;
         VeryLongBitString costIJ, d12, mComb;
-        for (int k = 0; k < nd; ++k) {
+        for (int k = 0; k < nBands; ++k) {
+            
             VeryLongBitString[] d1 = desc1[k].descriptors;
             VeryLongBitString[] d2 = desc2[k].descriptors;
             assert(d1.length == n1);
@@ -4258,7 +4260,10 @@ public static TFloatList pyrS2 = null;
                     // the remaining set bits in costIJ are the minimum cost
                     //     of the descriptors
                     nSetBits = costIJ.getNSetBits();
+                    assert(nSetBits <= 256);
+                    
                     cost0[i][j] += nSetBits;
+                    assert(cost0[i][j] <= maxCost);
                     
                     // cost1 averages costIJ over set non-masked bits
                     //     and scales to full aperature by that
@@ -4266,11 +4271,21 @@ public static TFloatList pyrS2 = null;
                     nNonMasked = dLength - nMaskedBits;
                     fracDiv = (nSetBits/nNonMasked) * nMaskedBits;
                     if (nNonMasked > 0) {
-                        cost1[i][j] += (nSetBits + fracDiv);
+                        
+                        int c = Math.round(nSetBits + fracDiv);
+                        assert(c <= 256);
+                        
+                        cost1[i][j] += c;
+                        
+                        assert(cost1[i][j] <= maxCost);
                     }
   
-                    // cost 2 adds all masked bits as worse case scenario
-                    cost1[i][j] += (nSetBits + nMaskedBits);
+                    // cost 2 adds all masked bits as worse case scenario                    
+                    cost2[i][j] += (nSetBits + nMaskedBits);
+                
+                    assert((nSetBits + nMaskedBits) <= 256);
+                    
+                    assert(cost1[i][j] <= maxCost);
                 }
             }
         }
@@ -4577,6 +4592,8 @@ public static TFloatList pyrS2 = null;
         List<TIntList> pointIndexLists1, TIntList kpX1, TIntList kpY1, 
         List<TIntList> pointIndexLists2, TIntList kpX2, TIntList kpY2) {
 
+        int minP1Diff = 4;
+        
         List<QuadInt> pairIndexes = new ArrayList<QuadInt>();
 
         for (int ii = 0; ii < pointIndexLists1.size(); ++ii) {
@@ -4597,19 +4614,16 @@ public static TFloatList pyrS2 = null;
                     if ((t1X == t2X && t1Y == t2Y)) {
                         continue;
                     }
-                    /*
+                    
                     int diffX = t1X - t2X;
                     int diffY = t1Y - t2Y;
                     int distSq = diffX * diffX + diffY * diffY;
-                    if (distSq > limitSq) {
+                    //if (distSq > limitSq) {
+                    //    continue;
+                    //}
+                    if ((distSq < minP1Diff * minP1Diff)) {
                         continue;
                     }
-                    if ((distSq < minP1Diff * minP1Diff)
-                        || ((t1X - t2X) * (t1X - t2X)
-                        + (t1Y - t2Y) * (t1Y - t2Y)
-                        < minP1Diff)) {
-                        continue;
-                    }*/
 
                     // draw 2 pairs from other dataset
                     for (int jj = 0; jj < pointIndexLists2.size(); ++jj) {
@@ -4629,18 +4643,15 @@ public static TFloatList pyrS2 = null;
                                 if ((s1X == s2X && s1Y == s2Y)) {
                                     continue;
                                 }
-                                /*int diffX2 = s1X - s2X;
+                                int diffX2 = s1X - s2X;
                                 int diffY2 = s1Y - s2Y;
                                 int distSq2 = diffX2 * diffX2 + diffY2 * diffY2;
-                                if (distSq2 > limitSq) {
+                                //if (distSq2 > limitSq) {
+                                //    continue;
+                                //}
+                                if ((distSq2 < minP1Diff * minP1Diff)) {
                                     continue;
                                 }
-                                if ((distSq2 < minP1Diff * minP1Diff)
-                                    || ((s1X - s2X) * (s1X - s2X)
-                                    + (s1Y - s2Y) * (s1Y - s2Y)
-                                    < minP1Diff)) {
-                                    continue;
-                                }*/
 
                                 pairIndexes.add(new QuadInt(idx1, idx2, idx3, idx4));
                             }
