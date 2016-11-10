@@ -39,6 +39,8 @@ import gnu.trove.set.hash.TIntHashSet;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -3279,6 +3281,7 @@ public static TFloatList pyrS2 = null;
                 createLabeledLists(kpX1, kpY1, pointCells1);
         
             for (int j = 0; j < scales2.size(); ++j) {
+              
                 Descriptors dH2 = descH2.get(j);
                 Descriptors dS2 = descS2.get(j);
                 Descriptors dV2 = descV2.get(j);
@@ -3298,7 +3301,8 @@ public static TFloatList pyrS2 = null;
                     new Descriptors[]{dH2, dS2, dV2},
                     descMasks1.get(i), descMasks2.get(j)
                 );
-  //TODO decide index              
+  //TODO decide index 
+ 
                 //[n1][n2]
                 int[][] cost = costMatrixes[1].a;
                 
@@ -3346,7 +3350,9 @@ public static TFloatList pyrS2 = null;
                 
                 System.out.println("i=" + i + " j=" + j + " nPairs=" 
                     + pairIndexes.size());
-       int z = 0;        
+       
+                List<TransformationParameters> paramsList = 
+                    new ArrayList<TransformationParameters>();
                 
                 for (int ipi = 0; ipi < pairIndexes.size(); ++ipi) {
                     
@@ -3361,7 +3367,7 @@ public static TFloatList pyrS2 = null;
                     int s1Y = kpY2.get(q.getC());
                     int s2X = kpX2.get(q.getD());
                     int s2Y = kpY2.get(q.getD());
-                    
+                
                     // transform dataset 2 into frame 1
                     TransformationParameters params = tc.calulateEuclidean(
                         s1X, s1Y,
@@ -3371,8 +3377,22 @@ public static TFloatList pyrS2 = null;
                         0, 0);
 
                     float tScale = params.getScale();
-
-                    if (Math.abs(tScale - 1.0) > 0.20) {
+                    
+                    if ((s1X >= 178 && s1X <= 204) && (s2X >= 178 && s2X <= 204)) {
+                        if ((s1Y >= 70 && s1Y <= 110) && (s2Y >= 70 && s2Y <= 110)) {
+                            int c0 = cost[q.getA()][q.getC()];
+                            int c1 = cost[q.getB()][q.getD()];
+                            System.out.println("==> c0=" + c0 
+                                + " c1=" + c1);
+                            if (c0 == 0 && c1 == 0) {
+                                System.out.println(String.format(
+                                "    (%d,%d) (%d,%d) : (%d,%d) (%d,%d)  tScale=%.2f", 
+                                t1X, t1Y, t2X, t2Y, s1X, s1Y, s2X, s2Y, tScale));
+                            }
+                        }
+                    }                  
+                    
+                    if (Math.abs(tScale - 1.0) > 0.05) {
                         continue;
                     }
                     if (minCostTScale < Float.MAX_VALUE
@@ -3380,7 +3400,38 @@ public static TFloatList pyrS2 = null;
                         > (Math.abs(minCostTScale - 1)))) {
                     //    continue;
                     }
-                                        
+                    
+                    paramsList.add(params);
+                }
+                
+                System.out.println("for i=" + i + " j=" + j 
+                    + " paramsList.size()=" + paramsList.size());
+                
+                /*Collections.sort(paramsList, new TransformationSort());
+                for (int ipi = 0; ipi < paramsList.size(); ++ipi) {
+                    TransformationParameters params = paramsList.get(ipi);
+                    System.out.println(String.format(
+                        "s=%.1f r=%.1f tx=%.1f ty=%.1f",
+                        params.getScale(), params.getRotationInDegrees(),
+                        params.getTranslationX(), params.getTranslationY()));
+                }*/
+                
+                // for evaluation,
+                //    found that the sum of normalized cost, transformed distance,
+                //    and number matched was not always the true matches.
+                // now, trying a patch based approach.
+                //     will transform cell from dataset 2 into frame of 1
+                //     and for the intersection of the frame 1 cell,
+                //     will calculate the SSD and count the number of pixels.
+                //     then use those in sum1 and sum3.
+                //     will try first with greyscale    
+
+                for (int ipi = 0; ipi < paramsList.size(); ++ipi) {
+                    
+                    TransformationParameters params = paramsList.get(ipi);
+                    
+                    float tScale = params.getScale();
+                    
                     mCount = 0;
 
                     PairIntArray tr2
@@ -3569,9 +3620,9 @@ public static TFloatList pyrS2 = null;
                 float[] c3 = new float[]{(float) minCost3,
                     (float) minCost3_D, (float) minCost3_F};
                 int[] indexes = new int[]{0, 1, 2};
-                QuickSort.sortBy1stThen2ndThen3rd(c1, c3, c0, indexes);
+                QuickSort.sortBy1stThen2ndThen3rd(c0, c1, c2, indexes);
                 int vecIdx = -1;
-                if (Math.abs(c1[0] - 0) < 0.001f) {
+                //if (Math.abs(c1[0] - 0) < 0.001f) {
                     if (indexes[0] == 0) {
                         vecIdx = 0;
                     } else if (indexes[0] == 1) {
@@ -3579,7 +3630,7 @@ public static TFloatList pyrS2 = null;
                     } else {
                         vecIdx = 2;
                     }
-                } else {
+                /*} else {
                     c0 = new float[]{(float) minCostTotal,
                         (float) minCostTotal_D, (float) minCostTotal_F};
                     c1 = new float[]{(float) minCost1,
@@ -3598,7 +3649,7 @@ public static TFloatList pyrS2 = null;
                             vecIdx = 2;
                         }
                     }
-                }
+                }*/
                 System.out.println("vecIdx=" + vecIdx);
                 if (vecIdx == 1) {
                     if (minCostTotal_D < minCostTotal) {
@@ -4233,6 +4284,7 @@ public static TFloatList pyrS2 = null;
         }
         
         int maxCost = nBands * 256;
+        
         float dLength = desc1[0].descriptors[0].getInstantiatedBitSize();
         float fracDiv, nNonMasked;
         long nSetBits, nMaskedBits;
@@ -4243,9 +4295,13 @@ public static TFloatList pyrS2 = null;
             VeryLongBitString[] d2 = desc2[k].descriptors;
             assert(d1.length == n1);
             assert(d2.length == n2);
+            
             for (int i = 0; i < n1; ++i) {
+                
                 VeryLongBitString m1 = descMask1.descriptors[i];
+                
                 for (int j = 0; j < n2; ++j) {
+                    
                     VeryLongBitString m2 = descMask2.descriptors[j];
                     
                     // the bits which are different:
@@ -4664,4 +4720,40 @@ public static TFloatList pyrS2 = null;
         return pairIndexes;
     }
 
+    private static class TransformationSort implements Comparator<TransformationParameters> {
+
+        @Override
+        public int compare(TransformationParameters o1, 
+            TransformationParameters o2) {
+
+            float s1 = Float.parseFloat(String.format("%.3f", 
+                Math.abs(1 - o1.getScale())));
+            float s2 = Float.parseFloat(String.format("%.3f", 
+                Math.abs(1 - o2.getScale())));
+            float r1 = Float.parseFloat(String.format("%.3f", 
+                o1.getRotationInDegrees()));
+            float r2 = Float.parseFloat(String.format("%.3f", 
+                o2.getRotationInDegrees()));            
+            float t1x = o1.getTranslationX();
+            float t2x = o2.getTranslationX();
+            float t1y = o1.getTranslationY();
+            float t2y = o2.getTranslationY();
+        
+            int comp = Float.compare(s1, s2);
+            if (comp != 0) {
+                return comp;
+            }
+            comp = Float.compare(r1, r2);
+            if (comp != 0) {
+                return comp;
+            }
+            comp = Float.compare(t1x, t2x);
+            if (comp != 0) {
+                return comp;
+            }
+            comp = Float.compare(t1y, t2y);
+            return comp;
+        }
+
+    }
 }
