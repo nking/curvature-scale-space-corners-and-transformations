@@ -3210,7 +3210,7 @@ tPairs.add(new QuadInt(26, 86, 186, 106));
         //TODO: may need to revise this or allow it as a method argument:
         int pixTolerance = 10;
 
-        int nBands = 3;
+        int nBands = 1;
         int bitTolerance;
         if (returnSingleAnswer) {
             bitTolerance = 0;
@@ -3219,6 +3219,8 @@ tPairs.add(new QuadInt(26, 86, 186, 106));
         }
         int minP1Diff = 5;
 
+        int nMaxPatchPixels = 512;
+        
         MatchedPointsTransformationCalculator tc = new
             MatchedPointsTransformationCalculator();
 
@@ -3234,7 +3236,7 @@ tPairs.add(new QuadInt(26, 86, 186, 106));
         // a rough estimate of maximum number of matchable points in any
         //     scale dataset comparison
         final int nMaxMatchable = 
-            Math.round(0.5f*calculateNMaxMatchable(keypointsX1, keypointsX2));
+            Math.round(0.5f * calculateNMaxMatchable(keypointsX1, keypointsX2));
         //TODO: allow a factor to be passed in
         System.out.println("nMaxMatchable=" + nMaxMatchable);
 
@@ -3407,16 +3409,6 @@ for (QuadInt q : tPairs) {
                 System.out.println("for i=" + i + " j=" + j 
                     + " paramsList.size()=" + paramsList.size());
                 
-                // for evaluation,
-                //    found that the sum of normalized cost, transformed distance,
-                //    and number matched was not always the true matches.
-                // now, trying a patch based approach.
-                //     will transform cell from dataset 2 into frame of 1
-                //     and for the intersection of the frame 1 cell,
-                //     will calculate the SSD and count the number of pixels.
-                //     then use those in sum1 and sum3.
-                //     will try first with greyscale    
-
 int maxIPI = 0;                
                 for (int ipi = 0; ipi < paramsList.size(); ++ipi) {
                     
@@ -3461,19 +3453,16 @@ t1X, t1Y, t2X, t2Y, s1X, s1Y, s2X, s2Y, tScale
                     double sum2 = 0;
                     double sum3 = 0;
                     double sum = 0;
-                     
+                  
+                    // note: this is not correct yet:
                     double[] sumDiffAndCount = sumPatchDifference(
                         octaveImg1, octaveImg2, set1, set2, 
-                        params, scale1, scale2);
-
-nermalization needs
-a maximum area such as 512 and
-the max possbile integrated difference.
-- also might need to use hsv
-- also need a method to extract area of 512 when 
-set intersection is larger
-                    
-                    double costNorm = 1. - sumDiffAndCount[0];
+                        params, scale1, scale2, p2_1, p2_2, nMaxPatchPixels);
+    
+                    double costNorm = sumDiffAndCount[0];
+                    if (costNorm > 1) {
+                        costNorm = 1;
+                    }
                     sum1 += costNorm;
 
                     // ----- transform keypoints and sum the distance differences ----
@@ -3485,7 +3474,35 @@ set intersection is larger
                         m1x, m1y, m2x, m2y
                     );
                     
-                    sum2 += distAndCount[0];
+                    //NOTE: for regions w/ many points, many more false 
+                    //      positives may exist, that is,
+                    //      distances to nearest neigbhors are smaller
+                    // Might try this approach which may not be fast but 
+                    //    should be the most accurate:
+                    //       -- for each transformation parameters set,
+                    //          do a patch based comparison of transformed
+                    //          points, but this time, it will be the segmented
+                    //          cells of all of the segmented cells containing
+                    //          keypoints1. the comparison is to the nearest
+                    //          keypoints2 enclosing segmented cells intersection.
+                    //          this may need to use color intensities such as 
+                    //          HSV or CIELAB.
+                    //       -- if shape is necessary beyond patch matching, 
+                    //          that is roughly
+                    //          equiv in runtime (approximating w/ a rectangular bounding...)
+                    //    note that the reason for this more detailed approach
+                    //    is that the foreground and background need to be
+                    //    excluded from the descriptors (test cases are for same
+                    //    object which has moved location, might have different ppse,
+                    //    and different lighting...not a stereoimaging or tracking case)
+                    //    The very fast ORB descriptors, when masked,
+                    //    did not provide robust results.
+                    //    *might consider using them to narrow down the search space
+                    //    quickly to avoid the patch comparison when 
+                    //    possible, then follow with the detailed path and possibly 
+                    //    shape comparisons.
+                    
+                    //sum2 += (distAndCount[0]/maxDist);
                     mCount = (int)distAndCount[1];
                     if (mCount == 0) {
                         continue;
@@ -3496,7 +3513,7 @@ set intersection is larger
                         cf = nMaxMatchable;
                     }
                     cf /= nMaxMatchable;
-                    sum3 = 1. - cf;
+                    //sum3 = 1. - cf;
 
                     sum = sum1 + sum2 + sum3;
 
@@ -4764,12 +4781,13 @@ t1X, t1Y, t2X, t2Y, s1X, s1Y, s2X, s2Y, pairIndexes.size()
     
     private static double[] sumPatchDifference(TwoDFloatArray octaveImg1, 
         TwoDFloatArray octaveImg2, Set<PairInt> set1, Set<PairInt> set2, 
-        TransformationParameters params, float scale1, float scale2) {
+        TransformationParameters params, float scale1, float scale2,
+        PairInt p2_1, PairInt p2_2, int nMaxPatchPixels) {
         
         int ns2 = set2.size();
-        if (ns2 > 500) {
-            // TODO: create a method to extract the nearest
-            //    500 pixels to the keypoints in the cell
+        if (ns2 > nMaxPatchPixels) {
+            //TODO: consider delaying the trim until intersection of transformed
+            set2 = reduceSet(set2, p2_1, p2_2, nMaxPatchPixels);
         }
 
         Transformer transformer = new Transformer();
@@ -4779,14 +4797,17 @@ t1X, t1Y, t2X, t2Y, s1X, s1Y, s2X, s2Y, pairIndexes.size()
             = transformer.applyTransformation(params, list2);
         assert (tr2.getN() == list2.getN());
 
-        int count = 0;
-        double sumDiff = 0;
-        
-        // TODO: normalization here is not completely
-        //   correct
-        // --- calculate patch difference sum normalized ------
+        // scaled intersection of points
         double mean1 = 0;
         double mean2 = 0;
+        TDoubleList v1 = new TDoubleArrayList();
+        TDoubleList v2 = new TDoubleArrayList();
+        
+        /*
+        will either subtract mean then divide by stdev
+        or will subtract mean and divide by (sqrt(2)/mean)
+        */
+        
         for (int k = 0; k < tr2.getN(); ++k) {
             PairInt pt = new PairInt(tr2.getX(k), tr2.getY(k));
             if (!set1.contains(pt)) {
@@ -4804,42 +4825,60 @@ t1X, t1Y, t2X, t2Y, s1X, s1Y, s2X, s2Y, pairIndexes.size()
                 || x2 > (octaveImg2.a[0].length - 1)) {
                 continue;
             }
+            v1.add(octaveImg1.a[y1][x1]);
+            v2.add(octaveImg2.a[y2][x2]);
             mean1 += octaveImg1.a[y1][x1];
             mean2 += octaveImg2.a[y2][x2];
-            count++;
         }
         // count should have at least the 2 points of transformation
-        assert (count != 0);
-        mean1 /= (double) count;
-        mean2 /= (double) count;
-
-        for (int k = 0; k < tr2.getN(); ++k) {
-            PairInt pt = new PairInt(tr2.getX(k), tr2.getY(k));
-            if (!set1.contains(pt)) {
-                continue;
-            }
-            int x1 = Math.round(pt.getX() / scale1);
-            int y1 = Math.round(pt.getY() / scale1);
-            if (y1 > (octaveImg1.a.length - 1)
-                || x1 > (octaveImg1.a[0].length - 1)) {
-                continue;
-            }
-            int x2 = Math.round(list2.getX(k) / scale2);
-            int y2 = Math.round(list2.getY(k) / scale2);
-            if (y2 > (octaveImg2.a.length - 1)
-                || x2 > (octaveImg2.a[0].length - 1)) {
-                continue;
-            }
-
-            double v1 = octaveImg1.a[y1][x1] - mean1;
-            double v2 = octaveImg2.a[y2][x2] - mean2;
-            double diff = Math.abs(v1 - v2);
+        assert (v1.size() > 0);
+        double n = v1.size();
+        
+        mean1 /= n;
+        mean2 /= n;
+        
+        // for the segmentation patches, many of the pixels will be
+        // similar values within the set, so divifing by standard deviation
+        // to leave the most significantly different pixels at high values
+        // will tend to make patches look more similar.
+        // trying with only mean subtraction first to  reduce grey illumination
+        // effects
+        
+        /*
+        // calculate standard deviation
+        double sumStDv1 = 0;
+        double sumStDv2 = 0;
+        for (int i = 0; i < v1.size(); ++i) {
+            double d1 = v1.get(i) - mean1;
+            double d2 = v2.get(i) - mean2;
+            sumStDv1 = (d1 * d1);
+            sumStDv2 = (d2 * d2);
+        }
+        sumStDv1 = Math.sqrt(sumStDv1/(v1.size() - 1.0f));
+        sumStDv2 = Math.sqrt(sumStDv2/(v1.size() - 1.0f));
+        */
+        double sumDiff = 0;
+       
+        for (int i = 0; i < v1.size(); ++i) {
+            //double a = (v1.get(i) - mean1) /sumStDv1;
+            //double b = (v2.get(i) - mean2) /sumStDv2;
+            double a = v1.get(i);
+            double b = v2.get(i);
+            double diff = Math.abs(a - b);
             //sumDiff += (diff * diff);
             sumDiff += diff;
         }
-        sumDiff /= (double) count;
         
-        return new double[]{sumDiff, count};
+        sumDiff /= n;
+        
+        //TODO:
+        // then divide by max possible value to normalize
+        //   this should be calculated.  will use a 
+        //   very rough guesstimate for now.
+        //    127*n/n
+        //sumDiff /= 127.;
+        //System.out.println("sumDiff=" + sumDiff);
+        return new double[]{sumDiff, n};
     }
     
     private static double[] sumKeypointDistanceDifference(
@@ -4925,6 +4964,32 @@ t1X, t1Y, t2X, t2Y, s1X, s1Y, s2X, s2Y, pairIndexes.size()
             MiscDebug.writeImage(img2, str + "_j");
         } catch(Exception e) {}
 
+    }
+    
+    private static Set<PairInt> reduceSet(Set<PairInt> set2, 
+        PairInt p2_1, PairInt p2_2, int nMaxPatchPixels) {
+        
+        float[] minDist = new float[set2.size()];
+        PairInt[] points = new PairInt[minDist.length];
+        
+        int count = 0;
+        for (PairInt p : set2) {
+            double d1 = distance(p, p2_1);
+            double d2 = distance(p, p2_2);
+            minDist[count] = (float)Math.min(d1, d2);
+            points[count] = p;
+            count++;
+        }
+        
+        QuickSort.sortBy1stArg(minDist, points);
+    
+        Set<PairInt> output = new HashSet<PairInt>();
+        for (int i = 0; i < nMaxPatchPixels; ++i) {
+            PairInt p = points[i];
+            output.add(p);
+        }
+        
+        return output;
     }
 
 }
