@@ -979,7 +979,6 @@ public class AndroidStatuesTest extends TestCase {
         //orb.overrideFastThreshold(0.01f);
         orb.overrideFastThreshold(0.08f);//0.01f);
         orb.overrideToNotCreateDescriptors();
-        orb.overrideToCreateHSVDescriptors();
         //orb.overrideToAlsoCreate1stDerivKeypoints();
         //orb.overrideToCreateCurvaturePoints();
         //orb.overrideToUseSmallestPyramid();
@@ -1134,13 +1133,20 @@ public class AndroidStatuesTest extends TestCase {
         }
         
         // descriptors w/ masks
-        corList = ORB.match2(
+        /*corList = ORB.match2(
             orb0.getPyramidImages(), orb.getPyramidImages(),
             sTempList, sList,
             orb0.getKeyPoint1List(), orb0.getKeyPoint0List(), 
             orb.getKeyPoint1List(), orb.getKeyPoint0List(), 
             tempListOfPointSets, listOfPointSets2,
             1.5f, 0.1f, false);
+        */
+        
+        orb0.createDescriptorsHSV(imgs0[0]);
+        orb.createDescriptorsHSV(img);
+        
+        corList = ORB.match3(orb0, orb,
+            tempListOfPointSets, listOfPointSets2);
         
         long t1 = System.currentTimeMillis();
         System.out.println("matching took " + ((t1 - t0)/1000.) + " sec");
