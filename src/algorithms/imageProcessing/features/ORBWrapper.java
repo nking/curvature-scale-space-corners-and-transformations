@@ -355,6 +355,90 @@ public class ORBWrapper {
         return orb;
     }
     
+    public static ORB extractKeypointsFromSubImage(Image img,
+        int xLL, int yLL, int xUR, int yUR, int nKeypoints,
+        float fastThreshold, 
+        boolean create1stDerivPoints,
+        boolean createCurvaturePoints,
+        boolean overrideToCreateSmallestPyramid) {
+         
+        int buffer = 25;
+        
+        int startX = xLL - buffer;
+        if (startX < 0) {
+            startX = 0;
+        }
+        int stopX = xUR + buffer;
+        if (stopX > img.getWidth()) {
+            stopX = img.getWidth();
+        }
+        
+        int startY = yLL - buffer;
+        if (startY < 0) {
+            startY = 0;
+        }
+        int stopY = yUR + buffer;
+        if (stopY > img.getHeight()) {
+            stopY = img.getHeight();
+        }
+        
+        Image subImage = img.copySubImage(startX, stopX, startY, stopY);
+        
+        ORB orb = new ORB(nKeypoints);
+        orb.overrideToNotCreateDescriptors();
+        orb.overrideFastThreshold(fastThreshold);
+        if (create1stDerivPoints) {
+            orb.overrideToAlsoCreate1stDerivKeypoints();
+        }       
+        if (overrideToCreateSmallestPyramid) {
+            orb.overrideToUseSmallestPyramid();
+        }
+        orb.detectAndExtract(subImage);
+
+        // put the coordinates back into original frame
+        int nSizes = orb.getKeyPoint0List().size();
+        for (int i = 0; i < nSizes; ++i) {
+            TIntList rmList = new TIntArrayList();
+            TIntList kp0 = orb.getKeyPoint0List().get(i);
+            TIntList kp1 = orb.getKeyPoint1List().get(i);           
+            for (int j = 0; j < kp0.size(); ++j) {
+                int y = startY + kp0.get(j);
+                int x = startX + kp1.get(j);
+                kp0.set(j, y);
+                kp1.set(j, x);
+            }
+        }
+      
+        // put the pyramids into the original frame
+        for (int i0 = 0; i0 < orb.getKeyPoint0List().size(); ++i0) {
+            
+            float scale = orb.getScalesList().get(i0).get(0);
+            
+            TwoDFloatArray a = orb.getPyramidImages().get(i0);
+            
+            int n0 = a.a.length;
+            int n1 = a.a[0].length;
+            
+            //offset to add to x, scaled
+            int start0 = Math.round(startY/scale);
+            int start1 = Math.round(startX/scale);
+            
+            float[][] a2 = new float[n0 + start0][];
+            for (int i = 0; i < a2.length; ++i) {
+                a2[i] = new float[n1 + start1];
+            }
+            for (int i = 0; i < n0; ++i) {
+                for (int j = 0; j < n1; ++j) {
+                    a2[i + start0][j + start1] = a.a[i][j];
+                }
+            }
+            
+            orb.getPyramidImages().get(i0).a = a2;
+        }
+        
+        return orb;
+    }
+    
     public static void extractKeypointsFromSubImage(Image img,
         int xLL, int yLL, int xUR, int yUR, int nKeypoints,
         List<PairInt> outputKeypoints) {

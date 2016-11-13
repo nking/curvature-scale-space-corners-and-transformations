@@ -1,5 +1,6 @@
 package algorithms;
 
+import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.util.IntIntDouble;
 import algorithms.util.PairInt;
 import gnu.trove.list.TDoubleList;
@@ -12,7 +13,7 @@ import java.util.List;
  */
 public class QuickSort {
     
-     /**
+    /**
      * sort a from index idxLo to idxHi, inclusive.
      * @param a
      */
@@ -1357,7 +1358,7 @@ public class QuickSort {
             sortBy1stThen2ndThen3rd(a, b, c, d, idxMid + 1, idxHi);
         }
     }
-
+ 
     private static int partitionBy1stThen2ndThen3rd(float[] a, float[] b, 
         float[] c, int[] d, int idxLo, int idxHi) {
         
@@ -1409,7 +1410,7 @@ public class QuickSort {
         
         return store;
     }
-    
+   
     /**
      * sort a from index idxLo to idxHi, inclusive, with next sorting by b and c
      * and all swap operations performed on all 3 arrays.  

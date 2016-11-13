@@ -47,6 +47,26 @@ public class CorrespondenceList {
         this.points2 = matched2;
     }
     
+    public CorrespondenceList(TransformationParameters params, 
+        PairInt[] matched1, PairInt[] matched2) {
+        
+        this.scale = params.getScale();
+        this.rotationInDegrees = Math.round(params.getRotationInDegrees());
+        this.translationX = Math.round(params.getTranslationX());
+        this.translationY = Math.round(params.getTranslationY());
+        
+        this.rangeRotation = Integer.MAX_VALUE;
+        this.rangeTranslationX = Integer.MAX_VALUE;
+        this.rangeTranslationY = Integer.MAX_VALUE;
+        
+        this.points1 = new ArrayList<PairInt>();
+        this.points2 = new ArrayList<PairInt>();
+        for (int i = 0; i < matched1.length; ++i) {
+            points1.add(matched1[i]);
+            points2.add(matched2[i]);
+        }
+    }
+    
     public void addMatch(PairInt p1, PairInt p2, double cost) {
         points1.add(p1);
         points2.add(p2);

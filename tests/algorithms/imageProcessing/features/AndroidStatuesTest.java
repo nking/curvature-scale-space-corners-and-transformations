@@ -1131,9 +1131,9 @@ public class AndroidStatuesTest extends TestCase {
             MiscDebug.writeImage(img11, 
                 "_kp_2_" + fileName1Root);
         }
-        
+        /*
         // descriptors w/ masks
-        /*corList = ORB.match2(
+        corList = ORB.match2(
             orb0.getPyramidImages(), orb.getPyramidImages(),
             sTempList, sList,
             orb0.getKeyPoint1List(), orb0.getKeyPoint0List(), 
@@ -1142,9 +1142,9 @@ public class AndroidStatuesTest extends TestCase {
             1.5f, 0.1f, false);
         */
         
+        
         orb0.createDescriptorsHSV(imgs0[0]);
         orb.createDescriptorsHSV(img);
-        
         corList = ORB.match3(orb0, orb,
             tempListOfPointSets, listOfPointSets2);
         

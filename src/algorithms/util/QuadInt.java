@@ -123,8 +123,8 @@ public class QuadInt {
         
         StringBuilder sb = new StringBuilder("(");
         sb.append(Integer.toString(a)).append(",")
-            .append(Integer.toString(b)).append(")")
-            .append(Integer.toString(c)).append(")")
+            .append(Integer.toString(b)).append("), (")
+            .append(Integer.toString(c)).append(",")
             .append(Integer.toString(d)).append(")");
         
         return sb.toString();
