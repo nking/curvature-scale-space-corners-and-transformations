@@ -1111,8 +1111,8 @@ public class AndroidStatuesTest extends TestCase {
         
         long t0 = System.currentTimeMillis();
     
-        ORB.pyrS1 = sTempList;
-        ORB.pyrS2 = sList;
+        //ORB.pyrS1 = sTempList;
+        //ORB.pyrS2 = sList;
         
         List<CorrespondenceList> corList;
         
@@ -1131,20 +1131,15 @@ public class AndroidStatuesTest extends TestCase {
             MiscDebug.writeImage(img11, 
                 "_kp_2_" + fileName1Root);
         }
-        /*
+        
         // descriptors w/ masks
-        corList = ORB.match2(
-            orb0.getPyramidImages(), orb.getPyramidImages(),
-            sTempList, sList,
-            orb0.getKeyPoint1List(), orb0.getKeyPoint0List(), 
-            orb.getKeyPoint1List(), orb.getKeyPoint0List(), 
-            tempListOfPointSets, listOfPointSets2,
+        /*corList = ORB.match2(
+            orb0, orb, tempListOfPointSets, listOfPointSets2,
             1.5f, 0.1f, false);
         */
         
-        
-        orb0.createDescriptorsHSV(imgs0[0]);
-        orb.createDescriptorsHSV(img);
+        orb0.createSmallDescriptorsHSV(imgs0[0]);
+        orb.createSmallDescriptorsHSV(img);
         corList = ORB.match3(orb0, orb,
             tempListOfPointSets, listOfPointSets2);
         
