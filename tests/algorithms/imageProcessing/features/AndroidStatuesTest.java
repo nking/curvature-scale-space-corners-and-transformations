@@ -866,8 +866,8 @@ public class AndroidStatuesTest extends TestCase {
         */
         String[] fileNames1 = new String[]{
          //  "android_statues_01.jpg",
-         //  "android_statues_02.jpg",
-           "android_statues_04.jpg",
+           "android_statues_02.jpg",
+         //  "android_statues_04.jpg",
          //  "android_statues_03.jpg"
         };
         for (String fileName1 : fileNames1) {               
@@ -1140,8 +1140,8 @@ public class AndroidStatuesTest extends TestCase {
         
         orb0.createSmallDescriptorsHSV(imgs0[0]);
         orb.createSmallDescriptorsHSV(img);
-        corList = ORB.match3(orb0, orb,
-            tempListOfPointSets, listOfPointSets2);
+        corList = ORB.match0(orb0, orb,
+            shape0, listOfPointSets2);
         
         long t1 = System.currentTimeMillis();
         System.out.println("matching took " + ((t1 - t0)/1000.) + " sec");
