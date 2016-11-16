@@ -9404,7 +9404,7 @@ if (sum > 511) {
      * @param maxV
      * @return 
      */
-    public GreyscaleImage createCIELABABTheta(ImageExt img, int maxV) {
+    public GreyscaleImage createCIELABTheta(Image img, int maxV) {
         
         int w = img.getWidth();
         int h = img.getHeight();

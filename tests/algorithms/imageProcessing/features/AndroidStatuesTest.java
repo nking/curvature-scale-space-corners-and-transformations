@@ -1138,29 +1138,19 @@ public class AndroidStatuesTest extends TestCase {
             1.5f, 0.1f, false);
         */
        
-        GreyscaleImage[] lab0 = imageProcessor.createCIELABImages(
-            imgs0[0]);
-        GreyscaleImage[] lab1 = imageProcessor.createCIELABImages(
-            img);
-        MiscDebug.writeImage(lab0[0], fileNameRoot0 + "_L_");
-        MiscDebug.writeImage(lab0[1], fileNameRoot0 + "_A_");
-        MiscDebug.writeImage(lab0[2], fileNameRoot0 + "_B_");
+        GreyscaleImage theta0 = imageProcessor.createCIELABTheta(imgs0[0], 255);
+        MiscDebug.writeImage(theta0, fileNameRoot0 + "_theta_");
         
-        MiscDebug.writeImage(lab1[0], fileName1Root + "_L_");
-        MiscDebug.writeImage(lab1[1], fileName1Root + "_A_");
-        MiscDebug.writeImage(lab1[2], fileName1Root + "_B_");
-      
-        MiscDebug.writeImage(
-            imageProcessor.createCIELABABTheta(imgs0[0], 255), 
-            fileNameRoot0 + "_theta_");
+        GreyscaleImage theta1 = imageProcessor.createCIELABTheta(img, 255);
+        MiscDebug.writeImage(theta1, fileName1Root + "_theta_");
         
-        MiscDebug.writeImage(
-            imageProcessor.createCIELABABTheta(img, 255), 
-            fileName1Root + "_theta_");
-        
-        orb0.createSmallDescriptorsHSV(imgs0[0]);
-        orb.createSmallDescriptorsHSV(img);
-        corList = ORB.match3(orb0, orb,
+        //orb0.createSmallDescriptorsHSV(imgs0[0]);
+        //orb.createSmallDescriptorsHSV(img);
+        //TODO: the cost matrix calculation doesn't
+        // yet use wraparound for theta
+        orb0.createDescriptorsLABTheta(imgs0[0]);
+        orb.createDescriptorsLABTheta(img);
+        corList = ORB.match0(orb0, orb,
             shape0, listOfPointSets2);
         
         long t1 = System.currentTimeMillis();

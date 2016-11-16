@@ -4,13 +4,11 @@ import algorithms.QuickSort;
 import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
-import algorithms.imageProcessing.ImageDisplayer;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MedianTransform;
 import algorithms.imageProcessing.StructureTensor;
-import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
@@ -25,7 +23,6 @@ import algorithms.util.QuadInt;
 import algorithms.util.TwoDFloatArray;
 import algorithms.util.TwoDIntArray;
 import algorithms.util.VeryLongBitString;
-import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
@@ -33,14 +30,10 @@ import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TFloatIntMap;
-import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.TObjectDoubleMap;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TFloatIntHashMap;
-import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.map.hash.TObjectDoubleHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
@@ -48,7 +41,6 @@ import java.awt.Color;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -135,6 +127,26 @@ Still testing the class, there may be bugs present.
  */
 public class ORB {
 
+    private static Descriptors[] getDescriptors(ORB orb, int i) {
+        
+        Descriptors[] d = null;
+        
+        if (orb.descrChoice.equals(ORB.DescriptorChoice.ALT)) {
+            d = new Descriptors[]{
+                orb.getDescriptorsListAlt().get(i)};
+        } else if (orb.descrChoice.equals(ORB.DescriptorChoice.HSV)) {
+            d = new Descriptors[]{
+                orb.getDescriptorsH().get(i),
+                orb.getDescriptorsS().get(i),
+                orb.getDescriptorsV().get(i)};
+        } else if (orb.descrChoice.equals(ORB.DescriptorChoice.GREYSCALE)) {
+            d = new Descriptors[]{
+                orb.getDescriptorsList().get(i)};
+        }
+        
+        return d;
+    }
+
     /*
     TODO:
        -- considering adding alternative pyramid building methods
@@ -164,6 +176,9 @@ public class ORB {
     private List<TwoDFloatArray> pyramidImagesS = null;
     private List<TwoDFloatArray> pyramidImagesV = null;
 
+    // alternate colorspace for descriptors created later
+    private List<TwoDFloatArray> pyramidImagesAlt = null;
+    
     protected List<TIntList> keypoints0List = null;
     protected List<TIntList> keypoints1List = null;
     protected List<TDoubleList> orientationsList = null;
@@ -175,6 +190,8 @@ public class ORB {
     //decision pixel-pair. It is ``Q == np.sum(mask)``.
     private List<Descriptors> descriptorsList = null;
 
+    private List<Descriptors> descriptorsListAlt = null;
+    
     private List<Descriptors> descriptorsListH = null;
     private List<Descriptors> descriptorsListS = null;
     private List<Descriptors> descriptorsListV = null;
@@ -211,6 +228,13 @@ public class ORB {
     }
 
     /**
+     * @return the pyramidImagesAlt
+     */
+    public List<TwoDFloatArray> getPyramidImagesAlt() {
+        return pyramidImagesAlt;
+    }
+    
+    /**
      * @return the pyramidImagesH
      */
     public List<TwoDFloatArray> getPyramidImagesH() {
@@ -232,7 +256,7 @@ public class ORB {
     }
 
     protected static enum DescriptorChoice {
-        NONE, GREYSCALE, HSV
+        NONE, GREYSCALE, HSV, ALT
     }
     protected DescriptorChoice descrChoice = DescriptorChoice.GREYSCALE;
 
@@ -382,6 +406,13 @@ public class ORB {
         createDescriptorsHSV(image, false);
     }
     
+    void createSmallDescriptorsLABTheta(Image image) {
+        createDescriptorsLABTheta(image, false);
+    }
+    void createDescriptorsLABTheta(Image image) {
+        createDescriptorsLABTheta(image, true);
+    }
+    
     private void createDescriptorsHSV(Image image, boolean useDefaultSize) {
     
         if (descriptorsListH != null) {
@@ -432,6 +463,47 @@ public class ORB {
         assert(pyramidImages.size() == pyramidImagesH.size());
         assert(pyramidImages.size() == pyramidImagesS.size());
         assert(pyramidImages.size() == pyramidImagesV.size());
+
+        extractDescriptors(useDefaultSize);
+    }
+    
+    private void createDescriptorsLABTheta(Image image, 
+        boolean useDefaultSize) {
+    
+        if (descriptorsListAlt != null) {
+            throw new IllegalStateException("alt descriptors are already built");
+        }
+
+        this.descrChoice = DescriptorChoice.ALT;
+
+        pyramidImagesAlt = new ArrayList<TwoDFloatArray>();
+      
+        buildLABThetaPyramid(image, pyramidImagesAlt);
+
+        // -- may need to remove some of the images if keypoints filtering
+        //    has removed the data for a scale.
+        if (pyramidImages.size() < pyramidImagesAlt.size()) {
+            // use scalesList and octaveScaleMap to remove images
+            
+            List<TwoDFloatArray> alt = new ArrayList<TwoDFloatArray>();
+
+            for (int i = 0; i < scalesList.size(); ++i) {
+                float scale = scalesList.get(i).get(0);
+                assert(octaveScaleMap.containsKey(scale));
+                int octave = octaveScaleMap.get(scale);
+                alt.add(pyramidImagesAlt.get(octave));
+            }
+
+            assert(pyramidImages.size() == alt.size());
+            
+            pyramidImagesAlt.clear();
+            
+            pyramidImagesAlt.addAll(alt);
+        }
+        
+        assert(pyramidImages.size() == keypoints0List.size());
+        assert(pyramidImages.size() == keypoints1List.size());
+        assert(pyramidImages.size() == pyramidImagesAlt.size());
 
         extractDescriptors(useDefaultSize);
     }
@@ -524,6 +596,49 @@ public class ORB {
             pyramidH.add(h);
             pyramidS.add(s);
             pyramidV.add(v);
+        }
+    }
+    
+    /**
+     *
+     * @param image
+     * @param pyramidAlt empty list in which to put resulting H pyramid
+     */
+    private void buildLABThetaPyramid(Image image, 
+        List<TwoDFloatArray> pyramidAlt) {
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        GreyscaleImage imageAlt = imageProcessor.
+            createCIELABTheta(image, 255);
+
+        List<GreyscaleImage> outputAlt;
+
+        if (useSmallestPyramid) {
+
+            outputAlt = new ArrayList<GreyscaleImage>();
+
+            MedianTransform mt = new MedianTransform();
+            mt.multiscalePyramidalMedianTransform2(imageAlt, 
+                outputAlt, decimationLimit);
+
+        } else {
+
+            outputAlt = imageProcessor.buildPyramid2(
+                imageAlt, decimationLimit, nPyramidB);
+        }
+
+        for (int i = 0; i < outputAlt.size(); ++i) {
+            GreyscaleImage imgAlt = outputAlt.get(i);
+
+            int nRows = imgAlt.getHeight();
+            int nCols = imgAlt.getWidth();
+            
+            float[][] rowMajorImg = imageProcessor.copyToRowMajor(
+                imgAlt);
+            MatrixUtil.multiply(rowMajorImg, 1.f/255.f);
+            TwoDFloatArray f = new TwoDFloatArray(rowMajorImg);
+            pyramidAlt.add(f);
         }
     }
 
@@ -979,15 +1094,23 @@ public class ORB {
             return;
         }
 
-        if (!descrChoice.equals(DescriptorChoice.HSV)) {
+        if (descrChoice.equals(DescriptorChoice.GREYSCALE)) {
             descriptorsList = extractGreyscaleDescriptors(pyramidImages, useDefaultSize);
             return;
         }
 
-        descriptorsListH = extractGreyscaleDescriptors(pyramidImagesH, useDefaultSize);
-        descriptorsListS = extractGreyscaleDescriptors(pyramidImagesS, useDefaultSize);
-        descriptorsListV = extractGreyscaleDescriptors(pyramidImagesV, useDefaultSize);
-
+        if (descrChoice.equals(DescriptorChoice.HSV)) {
+            descriptorsListH = extractGreyscaleDescriptors(pyramidImagesH, useDefaultSize);
+            descriptorsListS = extractGreyscaleDescriptors(pyramidImagesS, useDefaultSize);
+            descriptorsListV = extractGreyscaleDescriptors(pyramidImagesV, useDefaultSize);
+            return;
+        }
+        
+        if (descrChoice.equals(DescriptorChoice.ALT)) {
+            descriptorsListAlt = extractGreyscaleDescriptors(
+                pyramidImagesAlt, useDefaultSize);
+            return;
+        }
     }
 
     protected List<Descriptors> extractGreyscaleDescriptors(List<TwoDFloatArray>
@@ -2038,6 +2161,10 @@ public class ORB {
         return descriptorsList;
     }
     
+    public List<Descriptors> getDescriptorsListAlt() {
+        return descriptorsListAlt;
+    }
+    
     /**
      * get a list of each octave's descriptors mask.  NOTE that the list
      * is not copied so do not modify.
@@ -2140,6 +2267,7 @@ public class ORB {
             TFloatList s = scalesList.get(i);
             TFloatList r = harrisResponses.get(i);
             Descriptors d = null;
+            Descriptors dAlt = null;
             Descriptors dH = null;
             Descriptors dS = null;
             Descriptors dV = null;
@@ -2147,8 +2275,10 @@ public class ORB {
                 dH = descriptorsListH.get(i);
                 dS = descriptorsListS.get(i);
                 dV = descriptorsListV.get(i);
-            } else if (!descrChoice.equals(DescriptorChoice.NONE)) {
+            } else if (descrChoice.equals(DescriptorChoice.GREYSCALE)) {
                 d = descriptorsList.get(i);
+            } else if (descrChoice.equals(DescriptorChoice.ALT)) {
+                dAlt = descriptorsListAlt.get(i);
             }
             Descriptors m = null;
             if (descriptorsMaskList != null) {
@@ -2162,6 +2292,7 @@ public class ORB {
                 int nb = np - rm.size();
 
                 Descriptors d2 = null;
+                Descriptors dAlt2 = null;
                 Descriptors dH2 = null;
                 Descriptors dS2 = null;
                 Descriptors dV2 = null;
@@ -2169,6 +2300,10 @@ public class ORB {
                 if (d != null) {
                     d2 = new Descriptors();
                     d2.descriptors = new VeryLongBitString[nb];
+                }
+                if (dAlt != null) {
+                    dAlt2 = new Descriptors();
+                    dAlt2.descriptors = new VeryLongBitString[nb];
                 }
                 if (dH != null) {
                     dH2 = new Descriptors();
@@ -2202,6 +2337,9 @@ public class ORB {
                     if (d2 != null) {
                         d2.descriptors[count] = d.descriptors[j];
                     }
+                    if (dAlt2 != null) {
+                        dAlt2.descriptors[count] = dAlt.descriptors[j];
+                    }
                     if (dH2 != null) {
                         dH2.descriptors[count] = dH.descriptors[j];
                         dS2.descriptors[count] = dS.descriptors[j];
@@ -2216,6 +2354,9 @@ public class ORB {
                 assert(count == nb);
                 if (d2 != null) {
                     d.descriptors = d2.descriptors;
+                }
+                if (dAlt2 != null) {
+                    dAlt.descriptors = dAlt2.descriptors;
                 }
                 if (dH2 != null) {
                     dH.descriptors = dH2.descriptors;
@@ -2241,8 +2382,10 @@ public class ORB {
             assert(pyramidImagesH.size() == ns);
             assert(pyramidImagesS.size() == ns);
             assert(pyramidImagesV.size() == ns);
-        } else if (!descrChoice.equals(DescriptorChoice.NONE)) {
+        } else if (descrChoice.equals(DescriptorChoice.GREYSCALE)) {
             assert(descriptorsList.size() == ns);
+        }  else if (descrChoice.equals(DescriptorChoice.ALT)) {
+            assert(descriptorsListAlt.size() == ns);
         }
         if (descriptorsMaskList != null) {
             assert(descriptorsMaskList.size() == ns);
@@ -2271,8 +2414,10 @@ public class ORB {
                 pyramidImagesH.remove(i);
                 pyramidImagesS.remove(i);
                 pyramidImagesV.remove(i);
-            } else if (!descrChoice.equals(DescriptorChoice.NONE)) {
+            } else if (descrChoice.equals(DescriptorChoice.GREYSCALE)) {
                 descriptorsList.remove(i);
+            } else if (descrChoice.equals(DescriptorChoice.ALT)) {
+                descriptorsListAlt.remove(i);
             }
             if (descriptorsMaskList != null) {
                 descriptorsMaskList.remove(i);
@@ -2293,8 +2438,10 @@ public class ORB {
             assert(pyramidImagesH.size() == ns);
             assert(pyramidImagesS.size() == ns);
             assert(pyramidImagesV.size() == ns);
-        } else if (!descrChoice.equals(DescriptorChoice.NONE)) {
+        } else if (descrChoice.equals(DescriptorChoice.GREYSCALE)) {
             assert(descriptorsList.size() == ns);
+        } else if (descrChoice.equals(DescriptorChoice.ALT)) {
+            assert(descriptorsListAlt.size() == ns);
         }
         if (descriptorsMaskList != null) {
             assert(descriptorsMaskList.size() == ns);
@@ -4580,12 +4727,29 @@ printSumPatchDifference(octaveImg1, octaveImg2,
         Set<PairInt> labeledPoints1,
         List<Set<PairInt>> labeledPoints2) {
   
-        if (orb1.getDescriptorsH() == null) {
-            throw new IllegalStateException("hsv descriptors must be created first");
+        if (!orb1.descrChoice.equals(orb2.descrChoice)) {
+            throw new IllegalStateException(
+            "orbs must contain same kind of descirptors");
         }
-        if (orb2.getDescriptorsH() == null) {
-            throw new IllegalStateException("hsv descriptors must be created first");
+        if (orb1.descrChoice.equals(ORB.DescriptorChoice.HSV)) {
+            if (orb1.getDescriptorsH() == null ||
+                orb2.getDescriptorsH() == null) {
+                throw new IllegalStateException("hsv descriptors must be created first");
+            }
+        } else if (orb1.descrChoice.equals(ORB.DescriptorChoice.ALT)) {
+            if (orb1.getDescriptorsListAlt() == null ||
+                orb2.getDescriptorsListAlt() == null) {
+                throw new IllegalStateException(
+                    "alt descriptors must be created first");
+            }
+        } else if (orb1.descrChoice.equals(ORB.DescriptorChoice.GREYSCALE)) {
+            if (orb1.getDescriptorsList() == null ||
+                orb2.getDescriptorsList() == null) {
+                throw new IllegalStateException(
+                    "descriptors must be created first");
+            }
         }
+        
         boolean useMasks = false;
         if (useMasks) {// initialize the masks, but discard the maps
             TObjectIntMap<PairInt> pointLabels1 = new TObjectIntHashMap<PairInt>();
@@ -4796,28 +4960,18 @@ debugPrint(octaveImg1, octaveImg2, kpX1_2, kpY1_2, kpX2_2, kpY2_2, i, j);
                 //use descriptors with params here to reduce paramsList
                 int[][] cost = null;
                 if (useMasks) {
+                    Descriptors[] desc1 = getDescriptors(orb1, i);
+                    Descriptors[] desc2 = getDescriptors(orb2, j);
+                    
                     cost = calcMaskedDescriptorCostMatrixes(
-                        new Descriptors[]{
-                            orb1.getDescriptorsH().get(i),
-                            orb1.getDescriptorsS().get(i),
-                            orb1.getDescriptorsV().get(i)
-                        }, new Descriptors[]{
-                            orb2.getDescriptorsH().get(j),
-                            orb2.getDescriptorsS().get(j),
-                            orb2.getDescriptorsV().get(j)
-                        }, orb1.getDescriptorsMaskList().get(i),
+                        desc1, desc2, 
+                        orb1.getDescriptorsMaskList().get(i),
                         orb2.getDescriptorsMaskList().get(j))[1].a;
                 } else {
+                    Descriptors[] desc1 = getDescriptors(orb1, i);
+                    Descriptors[] desc2 = getDescriptors(orb2, j);
                     cost = calcDescriptorCostMatrix(
-                        new Descriptors[]{
-                            orb1.getDescriptorsH().get(i),
-                            orb1.getDescriptorsS().get(i),
-                            orb1.getDescriptorsV().get(i)
-                        }, new Descriptors[]{
-                            orb2.getDescriptorsH().get(j),
-                            orb2.getDescriptorsS().get(j),
-                            orb2.getDescriptorsV().get(j)
-                        });
+                        desc1, desc2);
                 }
                                
                 for (int ipi = 0; ipi < pairIndexes.size(); ++ipi) {
