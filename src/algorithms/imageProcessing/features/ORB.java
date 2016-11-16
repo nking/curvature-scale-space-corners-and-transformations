@@ -4721,12 +4721,28 @@ printSumPatchDifference(octaveImg1, octaveImg2,
         return topResults;
     }
 
-    //NOT READY FOR USE.  it's match2 TODO items implemented
+    //NOT READY FOR USE.  
     public static List<CorrespondenceList> match0(
         ORB orb1, ORB orb2,
         Set<PairInt> labeledPoints1,
         List<Set<PairInt>> labeledPoints2) {
   
+        /*
+        uses the descriptors given and then makes masks
+        for them using the labeled points.
+        
+        -- visits each octave pair
+           -- calculates cost of descriptors
+           -- uses the segmentation to calculate every 
+              permutation of 2 pairs of points.
+           -- keep only the pairs with transformation scales newar 1
+           -- keeps only the top 10 percent cost of items
+              from the 2 pair list.
+           -- evaluates the transformation using the transformed
+              keypoints cost difference, distance from nearest
+              neighbor and number of matches
+        */
+        
         if (!orb1.descrChoice.equals(orb2.descrChoice)) {
             throw new IllegalStateException(
             "orbs must contain same kind of descirptors");
@@ -4938,11 +4954,9 @@ debugPrint(octaveImg1, octaveImg2, kpX1_2, kpY1_2, kpX2_2, kpY2_2, i, j);
                 
                 // storing them all to reduce nesting
                 // quadint is idx1, idx2, idx3, idx4
-          //TODO: since this takes awhile to make
-          // should consider making it once for
-          // i==0 j ==0 
-          // with a check for proximity of points
-          // filtering as used
+          
+                //TODO: can use the cost to more quickly filter the
+                // pairs at creation time
                 List<QuadInt> pairIndexes = 
                     createPairLabelIndexes
                     (pointIndexLists1, kpX1_2, kpY1_2, 
@@ -4953,8 +4967,9 @@ debugPrint(octaveImg1, octaveImg2, kpX1_2, kpY1_2, kpX2_2, kpY2_2, i, j);
        
                 FixedSizeSortedVector<CObject4> vecP = 
                     new FixedSizeSortedVector<CObject4>(
-                    //10,
-                    Math.round(0.1f * pairIndexes.size()), 
+                    100,
+                    //Math.round(0.1f * pairIndexes.size()),
+                    //Math.round(0.01f * pairIndexes.size()),
                     CObject4.class);
                 
                 //use descriptors with params here to reduce paramsList
@@ -5025,13 +5040,13 @@ if (dbg) {
                     boolean added = vecP.add(cObj);
                     
 if (added && dbg) {
-    System.out.println("GBman1: cost=" + sum + " " + i + " " + j);
+    System.out.println("GBman1: passed cost=" + sum + " " + i + " " + j);
     int z = 0;
 }
                 }
                 
                 System.out.println("for i=" + i + " j=" + j 
-                    + " paramsList.size()=" + vecP.getNumberOfItems());
+                    + " filtered nPairs=" + vecP.getNumberOfItems());
                
                 double minCostJTotal = Double.MAX_VALUE;
                 double minCostJ1 = Double.MAX_VALUE;
@@ -5187,7 +5202,7 @@ tScale, (float)sum, (float)sumDesc, (float)sumDist, (float)sum3));
                         }
                         str = str + "_" + str2;
                         try {
-                            plotter.writeImage("_indiv_masked_corres_" + str + "_"
+                            plotter.writeImage("_indiv_masked_corres2_" + str + "_"
                                 + ipi);
                         } catch (IOException ex) {
                             Logger.getLogger(ORB.class.getName()).log(Level.SEVERE, null, ex);
