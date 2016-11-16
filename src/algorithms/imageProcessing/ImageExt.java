@@ -267,6 +267,8 @@ public class ImageExt extends Image {
             int rPix = getR(internalIndex);
             int gPix = getG(internalIndex);
             int bPix = getB(internalIndex);
+            
+            //TODO: consider changing this to rgbToCIELAB2
             float[] cieLAB = cieC.rgbToCIELAB(rPix, gPix, bPix);
             lab[internalIndex] = cieLAB;
         }

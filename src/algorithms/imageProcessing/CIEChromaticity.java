@@ -365,6 +365,33 @@ public class CIEChromaticity {
     }
     
     /**
+     * convert rgb to CIE LAB.
+     * 
+     * uses http://en.wikipedia.org/wiki/CIE_1931_color_space#Experimental_results:_the_CIE_RGB_color_space
+     * and http://en.wikipedia.org/wiki/Lab_color_space#Forward_transformation
+     * 
+     * range of return values for
+     * L* 0 to 105
+     * a* -190 to 103
+     * b* -113 to 99
+     * 
+     * @param r
+     * @param g
+     * @param b
+     * @return 
+     */
+    public float[] rgbToCIELAB2(int r, int g, int b) {
+        
+        //range of values is (0,0,0) to (5.65, 5.65, 5.65)
+        float[] a = _rgbToCIEXYZ2((float)r/255.f, (float)g/255.f, (float)b/255.f);
+        
+        // range of values (0,0,0) to (28.512 3.276 2.146)
+        a = cieXYZToCIELAB(a);
+        
+        return a;
+    }
+    
+    /**
      * convert rgb to CIE XYZ (1931).
      * 
      * uses http://en.wikipedia.org/wiki/CIE_1931_color_space#Experimental_results:_the_CIE_RGB_color_space
@@ -455,12 +482,66 @@ public class CIEChromaticity {
     }
     
     /**
+     * convert rgb to CIE XYZ (1931).
+     * 
+     * uses http://en.wikipedia.org/wiki/CIE_1931_color_space#Experimental_results:_the_CIE_RGB_color_space
+     * 
+     * expects r,g,b values between 0 and 1, inclusive.
+     * 
+     * for r=0, g=0, b=0, CIEXY is (0, 0, 0).
+     * for r=1, g=1, b=1, CIEXY is (5.65, 5.65, 5.65)
+     * @param r
+     * @param g
+     * @param b
+     * @return 
+     */
+    public float[] _rgbToCIEXYZ2(float r, float g, float b) {
+       
+        //http://www.easyrgb.com/index.php?X=MATH&H=02#text2
+        
+        float fR = 0; 
+        float fG = 0;
+        float fB = 0;
+        for (int i = 0; i < 3; ++i) {
+            double d;
+            if (i == 0) {
+                d = r;
+            } else if (i == 1) {
+                d = g;
+            } else {
+                d = b;
+            }
+            double f;
+            if (d > 0.04045) {
+                f = Math.pow(d + 0.055/1.055, 2.4);
+            } else {
+                f = d/12.92;
+            }
+            f *= 100.f;
+            if (i == 0) {
+                fR = (float)f;
+            } else if (i == 1) {
+                fG = (float)f;
+            } else {
+                fB = (float)f;
+            }
+        }
+        
+        float capX = fR * 0.4124f + fG * 0.3576f + fB * 0.1805f;
+        float capY = fR * 0.2126f + fG * 0.7152f + fB * 0.0722f;
+        float capZ = fR * 0.0193f + fG * 0.1192f + fB * 0.9505f;
+                   
+        return new float[]{capX, capY, capZ};
+    }
+    
+    /**
      * convert CIE XYZ (1931) to CIE LAB.
      * 
      * uses https://en.wikipedia.org/wiki/Lab_color_space#Forward_transformation
      * 
-     * for r,g,b=(0,0,0)       returns (0, 0, 0)
-     * for r,g,b=(255,255,255) returns (28.51, 3.28, 2.15)
+     * L is from 0 to 100
+     * a is from - to +  (negative are green, pos are red)
+     * b is from - to +  (negative are blue, pos are yellow)
      * 
      * @param cieXYZ
      * @return 
@@ -475,8 +556,8 @@ public class CIEChromaticity {
         float yDiv = cieXYZ[1]/Yn;
         float zDiv = cieXYZ[2]/Zn;
         
-        double comp = Math.pow((6./29.), 3.);
-        
+        double deltaSq = (6./29.)*(6./29.);
+        double deltaCubed = deltaSq * (6./29.);        
         float fX = 0; 
         float fY = 0;
         float fZ = 0;
@@ -490,10 +571,10 @@ public class CIEChromaticity {
                 d = zDiv;
             }
             double f;
-            if (d > comp) {
+            if (d > deltaCubed) {
                 f = Math.pow(d, 1./3.);
             } else {
-                f = ((1./3.)*(29./6.)*(29./6.)*d) + (4./29.);
+                f = (d/(3.*deltaSq)) + (4./29.);
             }
             if (i == 0) {
                 fX = (float)f;

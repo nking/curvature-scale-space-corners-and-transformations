@@ -1137,6 +1137,26 @@ public class AndroidStatuesTest extends TestCase {
             orb0, orb, tempListOfPointSets, listOfPointSets2,
             1.5f, 0.1f, false);
         */
+       
+        GreyscaleImage[] lab0 = imageProcessor.createCIELABImages(
+            imgs0[0]);
+        GreyscaleImage[] lab1 = imageProcessor.createCIELABImages(
+            img);
+        MiscDebug.writeImage(lab0[0], fileNameRoot0 + "_L_");
+        MiscDebug.writeImage(lab0[1], fileNameRoot0 + "_A_");
+        MiscDebug.writeImage(lab0[2], fileNameRoot0 + "_B_");
+        
+        MiscDebug.writeImage(lab1[0], fileName1Root + "_L_");
+        MiscDebug.writeImage(lab1[1], fileName1Root + "_A_");
+        MiscDebug.writeImage(lab1[2], fileName1Root + "_B_");
+      
+        MiscDebug.writeImage(
+            imageProcessor.createCIELABABTheta(imgs0[0], 255), 
+            fileNameRoot0 + "_theta_");
+        
+        MiscDebug.writeImage(
+            imageProcessor.createCIELABABTheta(img, 255), 
+            fileName1Root + "_theta_");
         
         orb0.createSmallDescriptorsHSV(imgs0[0]);
         orb.createSmallDescriptorsHSV(img);

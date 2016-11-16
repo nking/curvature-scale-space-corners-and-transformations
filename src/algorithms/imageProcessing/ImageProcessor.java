@@ -9349,6 +9349,117 @@ if (sum > 511) {
             return 0;
         }        
     }
+    
+    public GreyscaleImage[] createCIELABImages(ImageExt img) {
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        GreyscaleImage ells = new GreyscaleImage(w, h);
+        GreyscaleImage as = new GreyscaleImage(w, h);
+        GreyscaleImage bs = new GreyscaleImage(w, h);
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        float[] mins = new float[]{0,  -190, -113};
+        float[] maxs = new float[]{105, 103, 99};
+        float[] scales = new float[3];
+        
+        for (int i = 0; i < scales.length; ++i) {
+            float r = maxs[i] - mins[i];
+            scales[i] = 255.f/r;
+        }
+        
+        int n = img.getNPixels();
+        int v;
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                
+                int r = img.getR(i, j);
+                int g = img.getG(i, j);
+                int b = img.getB(i, j);
+                
+                float[] lab = cieC.rgbToCIELAB2(r, g, b);
+             
+                v = (int)((lab[0] - mins[0])*scales[0]);
+                ells.setValue(i, j, v);
+                
+                v = (int)((lab[1] - mins[1])*scales[1]);
+                as.setValue(i, j, v);
+                
+                v = (int)((lab[2] - mins[2])*scales[2]);
+                bs.setValue(i, j, v);
+            }
+        }
+        
+        return new GreyscaleImage[]{ells, as, bs};
+    }
+    
+    /**
+     * convert the image to cie l*a*b* and then use a and b
+     * to calculate polar angle around 0 in degrees.
+     * If maxV of 360, returns full value image, 
+     * else if is 255, scales the values to max value of 255, etc.
+     * @param img
+     * @param maxV
+     * @return 
+     */
+    public GreyscaleImage createCIELABABTheta(ImageExt img, int maxV) {
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        GreyscaleImage theta = null;
+        if (maxV < 256) {
+            theta = new GreyscaleImage(w, h);
+        } else {
+            theta = new GreyscaleImage(w, h, 
+                GreyscaleImage.Type.Bits32FullRangeInt);
+        }
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        float[] mins = new float[]{0,  -190, -113};
+        float[] maxs = new float[]{105, 103, 99};
+        float[] scales = new float[3];
+        
+        for (int i = 0; i < scales.length; ++i) {
+            float r = maxs[i] - mins[i];
+            scales[i] = 255.f/r;
+        }
+        
+        double ts = (double)maxV/(double)359;
+        
+        int n = img.getNPixels();
+        int v;
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                
+                int r = img.getR(i, j);
+                int g = img.getG(i, j);
+                int b = img.getB(i, j);
+                
+                float[] lab = cieC.rgbToCIELAB2(r, g, b);
+             
+                //float v1 = (lab[1] - mins[1])*scales[1];
+                //float v2 = (lab[2] - mins[2])*scales[2];
+                float v1 = lab[1];
+                float v2 = lab[2];
+               
+                double t = Math.atan2(v2, v1);
+                if (t < 0) {
+                    t += (2. * Math.PI);
+                }
+                t *= (180./Math.PI);
+                t *= ts;
+                v = (int)t;
+                
+                theta.setValue(i, j, v);
+            }
+        }
+        
+        return theta;
+    }
    
     // TODO: implement the methods in 
     // http://www.merl.com/publications/docs/TR2008-030.pdf
