@@ -865,10 +865,10 @@ public class AndroidStatuesTest extends TestCase {
         segmentation information maybe.
         */
         String[] fileNames1 = new String[]{
-         //  "android_statues_01.jpg",
+           "android_statues_01.jpg",
            "android_statues_02.jpg",
-         //  "android_statues_04.jpg",
-         //  "android_statues_03.jpg"
+           "android_statues_04.jpg",
+           "android_statues_03.jpg"
         };
         for (String fileName1 : fileNames1) {               
        
@@ -1166,7 +1166,7 @@ public class AndroidStatuesTest extends TestCase {
             while (str.length() < 3) {
                 str = "0" + str;
             }
-            plotter.writeImage("_orb_corres_" + str + "_" + fileName1Root);
+            plotter.writeImage("_orb_corres_final_" + str + "_" + fileName1Root);
             System.out.println(cor.getPoints1().size() + " matches " + fileName1Root);
             //MiscDebug.writeImage(img11, "_orb_matched_" + str
             //    + "_" + fileName1Root);
