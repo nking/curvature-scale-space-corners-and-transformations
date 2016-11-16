@@ -4000,24 +4000,34 @@ debugPrint(octaveImg1, octaveImg2, kpX1_2, kpY1_2, kpX2_2, kpY2_2, i, j);
 
                 int nTot = n1 * n2;
 
-                FixedSizeSortedVector<CObject3> vecJ = 
-                    new FixedSizeSortedVector<CObject3>(1, CObject3.class);
-                
-                double minCostJTotal = Double.MAX_VALUE;
-                double minCostJ1 = Double.MAX_VALUE;
-                double minCostJ2 = Double.MAX_VALUE;
-                double minCostJ3 = Double.MAX_VALUE;
-                float minCostJTScale = Float.MAX_VALUE;
+                int[][] cost = null;
+                if (useMasks) {
+                    cost = calcMaskedDescriptorCostMatrixes(
+                        new Descriptors[]{
+                            orb1.getDescriptorsH().get(i),
+                            orb1.getDescriptorsS().get(i),
+                            orb1.getDescriptorsV().get(i)
+                        }, new Descriptors[]{
+                            orb2.getDescriptorsH().get(j),
+                            orb2.getDescriptorsS().get(j),
+                            orb2.getDescriptorsV().get(j)
+                        }, orb1.getDescriptorsMaskList().get(i),
+                        orb2.getDescriptorsMaskList().get(j))[1].a;
+                } else {
+                    cost = calcDescriptorCostMatrix(
+                        new Descriptors[]{
+                            orb1.getDescriptorsH().get(i),
+                            orb1.getDescriptorsS().get(i),
+                            orb1.getDescriptorsV().get(i)
+                        }, new Descriptors[]{
+                            orb2.getDescriptorsH().get(j),
+                            orb2.getDescriptorsS().get(j),
+                            orb2.getDescriptorsV().get(j)
+                        });
+                }    
                 
                 //combinations of pairs with same labels
                 
-                // storing them all to reduce nesting
-                // quadint is idx1, idx2, idx3, idx4
-          //TODO: since this takes awhile to make
-          // should consider making it once for
-          // i==0 j ==0 
-          // with a check for proximity of points
-          // filtering as used
                 List<QuadInt> pairIndexes = 
                     createPairLabelIndexes
                     (pointIndexLists1, kpX1_2, kpY1_2, 
@@ -4025,11 +4035,13 @@ debugPrint(octaveImg1, octaveImg2, kpX1_2, kpY1_2, kpX2_2, kpY2_2, i, j);
                 
                 System.out.println("i=" + i + " j=" + j + " nPairs=" 
                     + pairIndexes.size());
-       
-                List<TransformationParameters> paramsList = 
-                    new ArrayList<TransformationParameters>();
-                List<QuadInt> paramsIndexes = new ArrayList<QuadInt>();
-                                
+            
+                FixedSizeSortedVector<CObject4> vecP = 
+                    new FixedSizeSortedVector<CObject4>(
+                    //10,
+                    Math.round(0.1f * pairIndexes.size()), 
+                    CObject4.class);
+                
                 for (int ipi = 0; ipi < pairIndexes.size(); ++ipi) {
                     
                     QuadInt q = pairIndexes.get(ipi);
@@ -4054,12 +4066,15 @@ debugPrint(octaveImg1, octaveImg2, kpX1_2, kpY1_2, kpX2_2, kpY2_2, i, j);
 
                     float tScale = params.getScale();                                  
                     
-                    if (Math.abs(tScale - 1.0) > 0.15) {
-if (tPairs.contains(
+  boolean dbg = tPairs.contains(
 new QuadInt(kpX1.get(q.getA()), kpY1.get(q.getA()),
     kpX2.get(q.getC()), kpY2.get(q.getC())))
 && tPairs.contains(new QuadInt(kpX1.get(q.getB()), kpY1.get(q.getB()),
-    kpX2.get(q.getD()), kpY2.get(q.getD())))) {
+    kpX2.get(q.getD()), kpY2.get(q.getD())));                  
+                    
+                    if (Math.abs(tScale - 1.0) > 0.15) {
+
+if (dbg) {
     System.out.println(params.getScale() + " " 
     + params.getRotationInDegrees() + " " + i + " " + j);
     int z = 0;
@@ -4067,55 +4082,46 @@ new QuadInt(kpX1.get(q.getA()), kpY1.get(q.getA()),
                         continue;
                     }
                     
-                    paramsList.add(params);
-                    paramsIndexes.add(q);
+                    int idx1_1 = p1KPIndexMap.get(new PairInt(t1X, t1Y));
+                    int idx1_2 = p1KPIndexMap.get(new PairInt(t2X, t2Y));
+                    int idx2_1 = p2KPIndexMap.get(new PairInt(s1X, s1Y));
+                    int idx2_2 = p2KPIndexMap.get(new PairInt(s2X, s2Y));
+                    
+                    int sum = cost[idx1_1][idx2_1] + cost[idx1_2][idx2_2];
+
+                    CObject4 cObj = new CObject4(sum, params, q);
+                
+                    boolean added = vecP.add(cObj);
+                    
+if (added && dbg) {
+    System.out.println("GBman1: cost=" + sum + " " + i + " " + j);
+    int z = 0;
+}
                 }
                 
                 System.out.println("for i=" + i + " j=" + j 
-                    + " paramsList.size()=" + paramsList.size());
+                    + " paramsList.size()=" + vecP.getNumberOfItems());
+               
+                double minCostJTotal = Double.MAX_VALUE;
+                double minCostJ1 = Double.MAX_VALUE;
+                double minCostJ2 = Double.MAX_VALUE;
+                double minCostJ3 = Double.MAX_VALUE;
+                float minCostJTScale = Float.MAX_VALUE;
                 
-                //use descriptors with params here to reduce paramsList
-
-                int[][] cost = null;
-                if (useMasks) {
-                    cost = calcMaskedDescriptorCostMatrixes(
-                    new Descriptors[] {
-                    orb1.getDescriptorsH().get(i),
-                    orb1.getDescriptorsS().get(i), 
-                    orb1.getDescriptorsV().get(i)
-                    }, new Descriptors[] {
-                    orb2.getDescriptorsH().get(j),
-                    orb2.getDescriptorsS().get(j), 
-                    orb2.getDescriptorsV().get(j)
-                    }, orb1.getDescriptorsMaskList().get(i),
-                    orb2.getDescriptorsMaskList().get(j))[1].a;
-                } else {
-                    cost = calcDescriptorCostMatrix(
-                        new Descriptors[] {
-                    orb1.getDescriptorsH().get(i),
-                    orb1.getDescriptorsS().get(i), 
-                    orb1.getDescriptorsV().get(i)
-                    }, new Descriptors[] {
-                    orb2.getDescriptorsH().get(j),
-                    orb2.getDescriptorsS().get(j), 
-                    orb2.getDescriptorsV().get(j)
-                    });
-                }
-                TIntList rm = new TIntArrayList();
-
-                FixedSizeSortedVector<CObject3> vecP = 
+                FixedSizeSortedVector<CObject3> vecP2 = 
                     new FixedSizeSortedVector<CObject3>(
-                        10,
-                        //Math.round(0.5f * paramsList.size()), 
-                        CObject3.class);
+                    Math.round(0.1f * vecP.getNumberOfItems()), 
+                    CObject3.class);
+                
+                for (int ipi = 0; ipi < vecP.getNumberOfItems(); ++ipi) {
+                    
+                    CObject4 c = vecP.getArray()[ipi];
+                    
+                    TransformationParameters params = c.params;
 
-                for (int ipi = 0; ipi < paramsList.size(); ++ipi) {
-                    
-                    TransformationParameters params = paramsList.get(ipi);
-                    
                     float tScale = params.getScale();
                     
-                    QuadInt q = paramsIndexes.get(ipi);
+                    QuadInt q = c.q;
                     
                     int t1X = kpX1_2.get(q.getA());
                     int t1Y = kpY1_2.get(q.getA());
@@ -4156,14 +4162,15 @@ new QuadInt(kpX1.get(q.getA()), kpY1.get(q.getA()),
                         Math.round(pixTolerance/scale2), maxDist,
                         mp1, mp2
                     );
-if (dbg) {
-    System.out.println("*" + params.getScale() + " " 
-    + params.getRotationInDegrees() + " " + i + " " + j);
-    int z = 0;
-}                    
+                    
                     double sumDesc = distAndCount[0];
                     double sumDist = distAndCount[1];
                     int count = (int)distAndCount[2];
+if (dbg) {
+    System.out.println("GBman2: sumDesc=" + sumDesc + " sumDist=" + sumDist 
+        + " count=" + count  + " " + i + " " + j);
+    int z = 0;
+}                   
                     if (count == 0) {
                         continue;
                     }
@@ -4185,26 +4192,28 @@ if (dbg) {
                     double sum3 = nMaxMatchable - count;
 
                     double sum = sumDesc + sumDist + sum3;
+                    
 if (dbg) {
 System.out.println(String.format(
-"GBMan1 -->\nts=%.2f  c=%.2f c1=%.2f c2=%.2f c3=%.2f", 
+"GBMan2 -->\nts=%.2f  c=%.2f c1=%.2f c2=%.2f c3=%.2f", 
 tScale, (float)sum, (float)sumDesc, (float)sumDist, (float)sum3));
 } else {
 System.out.println(String.format(
 "ts=%.2f  c=%.2f c1=%.2f c2=%.2f c3=%.2f", 
 tScale, (float)sum, (float)sumDesc, (float)sumDist, (float)sum3));
 }
-                    // keeping the coordinates in scale specific reference frames
+                    //TODO: this will be streamlined when change to use
+                    // minCost vars top value instead of a vector
                     PairInt[] m1 = new PairInt[mp1.length];
                     PairInt[] m2 = new PairInt[mp1.length];
                     for (int j3 = 0; j3 < m1.length; ++j3) {
                         int idx1 = mp1[j3];
                         int idx2 = mp2[j3];
-                        assert(idx1 < kpX1_2.size() && idx1 > -1);
-                        assert(idx2 < kpX2_2.size() && idx2 > -1);
-                        m1[j3] = new PairInt(kpX1_2.get(idx1), kpY1_2.get(idx1));
-                        m2[j3] = new PairInt(kpX2_2.get(idx2), kpY2_2.get(idx2));
-                        assert(pointLabels1.containsKey(m1[j3]));
+                        assert(idx1 < kpX1.size() && idx1 > -1);
+                        assert(idx2 < kpX2.size() && idx2 > -1);
+                        m1[j3] = new PairInt(kpX1.get(idx1), kpY1.get(idx1));
+                        m2[j3] = new PairInt(kpX2.get(idx2), kpY2.get(idx2));
+                        assert(labeledPoints1.contains(m1[j3]));
                         assert(p1KPIndexMap.get(
                             new PairInt(kpX1_2.get(idx1), kpY1_2.get(idx1)))
                             == idx1);
@@ -4215,8 +4224,15 @@ tScale, (float)sum, (float)sumDesc, (float)sumDist, (float)sum3));
                     CObject2 cObj2 = new CObject2(ipi, sum, sumDesc, sumDist,
                        sum3, m1, m2);
                     CObject3 cObj = new CObject3(cObj2, sum, 0, params);
-                    boolean added = vecP.add(cObj);
-                    if (false && added) {
+                    cObj.q = q;
+                    boolean added = vecP2.add(cObj);
+                    if (added) {
+                        minCostJTotal = sum;
+                        minCostJ1 = sumDesc;
+                        minCostJ2 = sumDist;
+                        minCostJ3 = sum3;
+                        minCostJTScale = tScale;
+                        
                         CorrespondencePlotter plotter = new CorrespondencePlotter(
                             convertToImage(orb1.getPyramidImages().get(i)),
                             convertToImage(orb2.getPyramidImages().get(j)));
@@ -4249,12 +4265,14 @@ tScale, (float)sum, (float)sumDesc, (float)sumDist, (float)sum3));
                     }
                 }// end loop over paramsList
                 
-                if (vecP.getNumberOfItems() == 0) {
+                if (vecP2.getNumberOfItems() == 0) {
                     continue;
                 }
                 
+                vecP = null;
+                
                 { //DEBUG
-                    CObject3 cobj = vecP.getArray()[0];
+                    CObject3 cobj = vecP2.getArray()[0];
                     CorrespondencePlotter plotter = new CorrespondencePlotter(
                         convertToImage(orb1.getPyramidImages().get(i)), 
                         convertToImage(orb2.getPyramidImages().get(j)));
@@ -4302,27 +4320,31 @@ tScale, (float)sum, (float)sumDesc, (float)sumDist, (float)sum3));
                 TIntObjectMap<double[]> cacheResults = new TIntObjectHashMap<double[]>();
                 TObjectIntMap<int[]> nullResults = new TObjectIntHashMap<int[]>();
                
+                FixedSizeSortedVector<CObject3> vecJ = 
+                    new FixedSizeSortedVector<CObject3>(
+                    1, CObject3.class);
+                
         //TODO: instead of segmented cell intensiies,
         // should be comparing hogs
                 
                 // ---- aggregated labeled cell comparisons -----
-                for (int ipi = 0; ipi < vecP.getNumberOfItems(); ++ipi) {
+                for (int ipi = 0; ipi < vecP2.getNumberOfItems(); ++ipi) {
                     
-                    int idx = vecP.getArray()[ipi].index;
-                    
+                    CObject3 c = vecP2.getArray()[ipi];
+                                        
                     // the matched kpx1, kpy1, kpx2, kpy2 coordinate pairs
-                    PairInt[] mp1 = vecP.getArray()[ipi].m1;
-                    PairInt[] mp2 = vecP.getArray()[ipi].m2;
+                    PairInt[] mp1 = c.m1;
+                    PairInt[] mp2 = c.m2;
                     
-                    TransformationParameters params = paramsList.get(idx);
+                    TransformationParameters params = c.params;
                     
                     float tScale = params.getScale();
                    
-                    double descCost = vecP.getArray()[ipi].costDesc;
-                    double distCost = vecP.getArray()[ipi].costDist;
-                    double countCost = vecP.getArray()[ipi].costCount;
+                    double descCost = c.costDesc;
+                    double distCost = c.costDist;
+                    double countCost = c.costCount;
                     
-                    QuadInt q = paramsIndexes.get(idx);
+                    QuadInt q = c.q;
                     
                     int t1X = kpX1_2.get(q.getA());
                     int t1Y = kpY1_2.get(q.getA());
@@ -4455,9 +4477,7 @@ printSumPatchDifference(octaveImg1, octaveImg2,
     aggregatedKP2Labels,
     params, Math.round((float)nMaxPatchPixels/scale2),
     p2_1, p2_2);
-}                       
-                        CObject3 c = vecP.getArray()[ipi];
-                        
+}                                               
                         CObject2 cObj2 = new CObject2(ipi, sum, c.costDesc,
                            c.costDist, c.costCount, c.m1, c.m2);
                        
@@ -4629,8 +4649,8 @@ printSumPatchDifference(octaveImg1, octaveImg2,
         FixedSizeSortedVector<CObject3> minVec = 
             new FixedSizeSortedVector<CObject3>(1, CObject3.class);
       
-        //for (int i = 0; i < scales1.size(); ++i) {
-        for (int i = 0; i < 1; ++i) {
+        for (int i = 0; i < scales1.size(); ++i) {
+        //for (int i = 0; i < 1; ++i) {
             
             float scale1 = scales1.get(i);
             
@@ -4694,8 +4714,8 @@ printSumPatchDifference(octaveImg1, octaveImg2,
                 a1Indexes.add(ii);
             }
           
-            //for (int j = 0; j < scales2.size(); ++j) {
-            for (int j = 0; j < 1; ++j) {
+            for (int j = 0; j < scales2.size(); ++j) {
+            //for (int j = 0; j < 1; ++j) {
               
                 float scale2 = scales2.get(j);
                 
@@ -4750,15 +4770,6 @@ debugPrint(octaveImg1, octaveImg2, kpX1_2, kpY1_2, kpX2_2, kpY2_2, i, j);
 
                 int nTot = n1 * n2;
 
-                FixedSizeSortedVector<CObject3> vecJ = 
-                    new FixedSizeSortedVector<CObject3>(1, CObject3.class);
-                
-                double minCostJTotal = Double.MAX_VALUE;
-                double minCostJ1 = Double.MAX_VALUE;
-                double minCostJ2 = Double.MAX_VALUE;
-                double minCostJ3 = Double.MAX_VALUE;
-                float minCostJTScale = Float.MAX_VALUE;
-                
                 //combinations of pairs with same labels
                 
                 // storing them all to reduce nesting
@@ -4776,10 +4787,39 @@ debugPrint(octaveImg1, octaveImg2, kpX1_2, kpY1_2, kpX2_2, kpY2_2, i, j);
                 System.out.println("i=" + i + " j=" + j + " nPairs=" 
                     + pairIndexes.size());
        
-                List<TransformationParameters> paramsList = 
-                    new ArrayList<TransformationParameters>();
-                List<QuadInt> paramsIndexes = new ArrayList<QuadInt>();
-                                
+                FixedSizeSortedVector<CObject4> vecP = 
+                    new FixedSizeSortedVector<CObject4>(
+                    //10,
+                    Math.round(0.1f * pairIndexes.size()), 
+                    CObject4.class);
+                
+                //use descriptors with params here to reduce paramsList
+                int[][] cost = null;
+                if (useMasks) {
+                    cost = calcMaskedDescriptorCostMatrixes(
+                        new Descriptors[]{
+                            orb1.getDescriptorsH().get(i),
+                            orb1.getDescriptorsS().get(i),
+                            orb1.getDescriptorsV().get(i)
+                        }, new Descriptors[]{
+                            orb2.getDescriptorsH().get(j),
+                            orb2.getDescriptorsS().get(j),
+                            orb2.getDescriptorsV().get(j)
+                        }, orb1.getDescriptorsMaskList().get(i),
+                        orb2.getDescriptorsMaskList().get(j))[1].a;
+                } else {
+                    cost = calcDescriptorCostMatrix(
+                        new Descriptors[]{
+                            orb1.getDescriptorsH().get(i),
+                            orb1.getDescriptorsS().get(i),
+                            orb1.getDescriptorsV().get(i)
+                        }, new Descriptors[]{
+                            orb2.getDescriptorsH().get(j),
+                            orb2.getDescriptorsS().get(j),
+                            orb2.getDescriptorsV().get(j)
+                        });
+                }
+                               
                 for (int ipi = 0; ipi < pairIndexes.size(); ++ipi) {
                     
                     QuadInt q = pairIndexes.get(ipi);
@@ -4794,6 +4834,12 @@ debugPrint(octaveImg1, octaveImg2, kpX1_2, kpY1_2, kpX2_2, kpY2_2, i, j);
                     int s2X = kpX2_2.get(q.getD());
                     int s2Y = kpY2_2.get(q.getD());
                 
+boolean dbg = tPairs.contains(
+new QuadInt(kpX1.get(q.getA()), kpY1.get(q.getA()),
+    kpX2.get(q.getC()), kpY2.get(q.getC())))
+&& tPairs.contains(new QuadInt(kpX1.get(q.getB()), kpY1.get(q.getB()),
+    kpX2.get(q.getD()), kpY2.get(q.getD())));
+
                     // transform dataset 1 into frame 2
                     TransformationParameters params = tc.calulateEuclidean(
                         t1X, t1Y,
@@ -4805,67 +4851,55 @@ debugPrint(octaveImg1, octaveImg2, kpX1_2, kpY1_2, kpX2_2, kpY2_2, i, j);
                     float tScale = params.getScale();                                  
                     
                     if (Math.abs(tScale - 1.0) > 0.15) {
-if (tPairs.contains(
-new QuadInt(kpX1.get(q.getA()), kpY1.get(q.getA()),
-    kpX2.get(q.getC()), kpY2.get(q.getC())))
-&& tPairs.contains(new QuadInt(kpX1.get(q.getB()), kpY1.get(q.getB()),
-    kpX2.get(q.getD()), kpY2.get(q.getD())))) {
+if (dbg) {
     System.out.println(params.getScale() + " " 
     + params.getRotationInDegrees() + " " + i + " " + j);
     int z = 0;
-}                
+}          
                         continue;
                     }
                     
-                    paramsList.add(params);
-                    paramsIndexes.add(q);
+                    int idx1_1 = p1KPIndexMap.get(new PairInt(t1X, t1Y));
+                    int idx1_2 = p1KPIndexMap.get(new PairInt(t2X, t2Y));
+                    int idx2_1 = p2KPIndexMap.get(new PairInt(s1X, s1Y));
+                    int idx2_2 = p2KPIndexMap.get(new PairInt(s2X, s2Y));
+                    
+                    int sum = cost[idx1_1][idx2_1] + cost[idx1_2][idx2_2];
+                    
+                    CObject4 cObj = new CObject4(sum, params, q);
+                
+                    boolean added = vecP.add(cObj);
+                    
+if (added && dbg) {
+    System.out.println("GBman1: cost=" + sum + " " + i + " " + j);
+    int z = 0;
+}
                 }
                 
                 System.out.println("for i=" + i + " j=" + j 
-                    + " paramsList.size()=" + paramsList.size());
+                    + " paramsList.size()=" + vecP.getNumberOfItems());
+               
+                double minCostJTotal = Double.MAX_VALUE;
+                double minCostJ1 = Double.MAX_VALUE;
+                double minCostJ2 = Double.MAX_VALUE;
+                double minCostJ3 = Double.MAX_VALUE;
+                float minCostJTScale = Float.MAX_VALUE;
                 
-                //use descriptors with params here to reduce paramsList
-
-                int[][] cost = null;
-                if (useMasks) {
-                    cost = calcMaskedDescriptorCostMatrixes(
-                    new Descriptors[] {
-                    orb1.getDescriptorsH().get(i),
-                    orb1.getDescriptorsS().get(i), 
-                    orb1.getDescriptorsV().get(i)
-                    }, new Descriptors[] {
-                    orb2.getDescriptorsH().get(j),
-                    orb2.getDescriptorsS().get(j), 
-                    orb2.getDescriptorsV().get(j)
-                    }, orb1.getDescriptorsMaskList().get(i),
-                    orb2.getDescriptorsMaskList().get(j))[1].a;
-                } else {
-                    cost = calcDescriptorCostMatrix(
-                        new Descriptors[] {
-                    orb1.getDescriptorsH().get(i),
-                    orb1.getDescriptorsS().get(i), 
-                    orb1.getDescriptorsV().get(i)
-                    }, new Descriptors[] {
-                    orb2.getDescriptorsH().get(j),
-                    orb2.getDescriptorsS().get(j), 
-                    orb2.getDescriptorsV().get(j)
-                    });
-                }
-                TIntList rm = new TIntArrayList();
-
-                FixedSizeSortedVector<CObject3> vecP = 
+                FixedSizeSortedVector<CObject3> vecJ = 
                     new FixedSizeSortedVector<CObject3>(
-                        10,
-                        //Math.round(0.5f * paramsList.size()), 
-                        CObject3.class);
-
-                for (int ipi = 0; ipi < paramsList.size(); ++ipi) {
+                    1, CObject3.class);
+               
+                // --- evaluate cost of all keypoints, transformed
+                
+                for (int ipi = 0; ipi < vecP.getNumberOfItems(); ++ipi) {
                     
-                    TransformationParameters params = paramsList.get(ipi);
+                    CObject4 c = vecP.getArray()[ipi];
+                    
+                    TransformationParameters params = c.params;
                     
                     float tScale = params.getScale();
                     
-                    QuadInt q = paramsIndexes.get(ipi);
+                    QuadInt q = c.q;
                     
                     int t1X = kpX1_2.get(q.getA());
                     int t1Y = kpY1_2.get(q.getA());
@@ -4906,14 +4940,15 @@ new QuadInt(kpX1.get(q.getA()), kpY1.get(q.getA()),
                         Math.round(pixTolerance/scale2), maxDist,
                         mp1, mp2
                     );
-if (dbg) {
-    System.out.println("*" + params.getScale() + " " 
-    + params.getRotationInDegrees() + " " + i + " " + j);
-    int z = 0;
-}                    
+                    
                     double sumDesc = distAndCount[0];
                     double sumDist = distAndCount[1];
                     int count = (int)distAndCount[2];
+if (dbg) {
+    System.out.println("GBman2: sumDesc=" + sumDesc + " sumDist=" + sumDist 
+        + " count=" + count  + " " + i + " " + j);
+    int z = 0;
+}                   
                     if (count == 0) {
                         continue;
                     }
@@ -4938,7 +4973,7 @@ if (dbg) {
                     
 if (dbg) {
 System.out.println(String.format(
-"GBMan1 -->\nts=%.2f  c=%.2f c1=%.2f c2=%.2f c3=%.2f", 
+"GBMan2 -->\nts=%.2f  c=%.2f c1=%.2f c2=%.2f c3=%.2f", 
 tScale, (float)sum, (float)sumDesc, (float)sumDist, (float)sum3));
 } else {
 System.out.println(String.format(
@@ -4967,8 +5002,14 @@ tScale, (float)sum, (float)sumDesc, (float)sumDist, (float)sum3));
                     CObject2 cObj2 = new CObject2(ipi, sum, sumDesc, sumDist,
                        sum3, m1, m2);
                     CObject3 cObj = new CObject3(cObj2, sum, 0, params);
-                    boolean added = vecP.add(cObj);
+                    boolean added = vecJ.add(cObj);
                     if (added) {
+                        minCostJTotal = sum;
+                        minCostJ1 = sumDesc;
+                        minCostJ2 = sumDist;
+                        minCostJ3 = sum3;
+                        minCostJTScale = tScale;
+                
                         CorrespondencePlotter plotter = new CorrespondencePlotter(
                             convertToImage(orb1.getPyramidImages().get(i)),
                             convertToImage(orb2.getPyramidImages().get(j)));
@@ -5002,14 +5043,12 @@ tScale, (float)sum, (float)sumDesc, (float)sumDist, (float)sum3));
                     
                 }// end loop over paramsList
                 
-                if (vecP.getNumberOfItems() == 0) {
+                if (vecJ.getNumberOfItems() == 0) {
                     continue;
                 }
                 
-                CObject3 cobj = vecP.getArray()[0];
-                vecJ.add(cobj);
-                
                 { //DEBUG
+                    CObject3 cobj = vecJ.getArray()[0];
                     CorrespondencePlotter plotter = new CorrespondencePlotter(
                         convertToImage(orb1.getPyramidImages().get(i)), 
                         convertToImage(orb2.getPyramidImages().get(j)));
@@ -5410,6 +5449,28 @@ tScale, (float)sum, (float)sumDesc, (float)sumDist, (float)sum3));
         }
     }
 
+    private static class CObject4 implements Comparable<CObject4>{
+        final double cost;
+        final TransformationParameters params;
+        final QuadInt q;
+        public CObject4(double sum, TransformationParameters params,
+            QuadInt q) {
+            this.cost = sum;
+            this.q = q;
+            this.params = params;
+        }
+        
+        @Override
+        public int compareTo(CObject4 other) {
+            if (cost < other.cost) {
+                return -1;
+            } else if (cost > other.cost) {
+                return 1;
+            }
+            return 0;
+        }
+    }
+    
     private static class CObject3 implements Comparable<CObject3>{
         final double cost;
         final double costDesc;
@@ -5420,6 +5481,7 @@ tScale, (float)sum, (float)sumDesc, (float)sumDist, (float)sum3));
         final PairInt[] m2;
         final double sumPatch;
         final TransformationParameters params;
+        QuadInt q;
         public CObject3(CObject2 cObject2, double sum, double sumPatch,
             TransformationParameters params) {
             this.sumPatch = sumPatch;
