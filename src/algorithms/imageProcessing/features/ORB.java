@@ -3948,6 +3948,7 @@ System.out.println("MAXIPI=" + maxIPI);
     // object and labelePoints1 to be a single set of points.  
     //  will change arguments to make that clear soon.
     //NOT READY FOR USE.  it's match2 TODO items implemented
+    @Deprecated
     public static List<CorrespondenceList> match3(
         ORB orb1, ORB orb2,
         Set<PairInt> labeledPoints1,
@@ -4900,7 +4901,7 @@ printSumPatchDifference(octaveImg1, octaveImg2,
                 a1.add(x, y);
                 a1Indexes.add(ii);
             }
-          
+                      
             for (int j = 0; j < scales2.size(); ++j) {
             //for (int j = 0; j < 1; ++j) {
               
@@ -5223,8 +5224,10 @@ tScale, (float)sum, (float)sumDesc, (float)sumDist, (float)sum3));
                     continue;
                 }
                 
+                CObject3 cobj = vecJ.getArray()[0];
+                
                 { //DEBUG
-                    CObject3 cobj = vecJ.getArray()[0];
+                    
                     CorrespondencePlotter plotter = new CorrespondencePlotter(
                         convertToImage(orb1.getPyramidImages().get(i)), 
                         convertToImage(orb2.getPyramidImages().get(j)));
@@ -5259,7 +5262,7 @@ tScale, (float)sum, (float)sumDesc, (float)sumDist, (float)sum3));
                
                 // for a given i, j, all combinations were tried at 
                 //  this point
-                               
+                
                 System.out.println(
                     String.format(
                 "i=%d j=%d minCost=%.2f c1=%.2f c2=%.2f c3=%.2f  tS=%.2f",
@@ -5278,45 +5281,14 @@ tScale, (float)sum, (float)sumDesc, (float)sumDist, (float)sum3));
                     continue;
                 }
                 
-                minVec.add(vecJ.getArray()[0]);
+                minVec.add(cobj);
+                
+                bestJs.add(cobj);
 
-                /*
-                //debugPlot2(i, j, vecJ, 
-                //    orb1.getPyramidImages().get(0), 
-                //    orb2.getPyramidImages().get(0), 1, 1);
-
-                // if any of the top costs from descriptors is 0,
-                // that vector should be chosen,
-                // else, choose the one with smallest mincost3
-                float[] c0 = new float[]{(float) minCostTotal,
-                    (float) minCostJTotal};
-                float[] c1 = new float[]{(float) minCost1,
-                    (float) minCostJ1};
-                float[] c2 = new float[]{(float) minCost2,
-                    (float) minCostJ2};
-                float[] c3 = new float[]{(float) minCost3,
-                    (float) minCostJ3};
-                int[] indexes = new int[]{0, 1};
-                QuickSort.sortBy1stThen2ndThen3rd(c0, c1, c2, indexes);
-                int vecIdx = 1;
-                if (indexes[0] == 0) {
-                    vecIdx = 0;
-                }
-                System.out.println("vecIdx=" + vecIdx);
-                if (vecIdx == 1) {
-                    if (minCostJTotal < minCostTotal) {
-                        System.out.println("Choosing new mincost J");
-                        minVec = vecJ;
-                        minCostTotal = minCostJTotal;
-                        minCost1 = minCostJ1;
-                        minCost2 = minCostJ2;
-                        minCost3 = minCostJ3;
-                        minCostTScale = minCostJTScale;
-                    }
-                }
-                */
             }// end loop over image j
         }
+        
+        // --- TODO: further comparison of bestJs
 
         if (minVec.getNumberOfItems() == 0) {
             return null;
