@@ -6,8 +6,10 @@ import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.QuadInt;
 import algorithms.util.ResourceFinder;
+import gnu.trove.iterator.TIntIterator;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
+import gnu.trove.set.TIntSet;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
@@ -581,5 +583,22 @@ public class Misc {
         }
         
         return output;
+    }
+    
+    public static Set<PairInt> convertToCoords(GreyscaleImage img,
+        TIntSet pixIdxs) {
+        
+        Set<PairInt> set = new HashSet<PairInt>();
+        
+        TIntIterator iter = pixIdxs.iterator();
+        
+        while (iter.hasNext()) {
+            int pixIdx = iter.next();
+            int col = img.getCol(pixIdx);
+            int row = img.getRow(pixIdx);
+            set.add(new PairInt(col, row));
+        }
+        
+        return set;
     }
 }

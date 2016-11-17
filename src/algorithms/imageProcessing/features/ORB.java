@@ -4344,7 +4344,8 @@ new QuadInt(kpX1.get(q.getA()), kpY1.get(q.getA()),
                     double sumDist = distAndCount[1];
                     int count = (int)distAndCount[2];
 if (dbg) {
-    System.out.println("GBman2: sumDesc=" + sumDesc + " sumDist=" + sumDist 
+    System.out.println(
+        "GBman2: sumDesc=" + sumDesc + " sumDist=" + sumDist 
         + " count=" + count  + " " + i + " " + j);
     int z = 0;
 }                   
@@ -4409,12 +4410,54 @@ tScale, (float)sum, (float)sumDesc, (float)sumDist, (float)sum3));
                         minCostJ3 = sum3;
                         minCostJTScale = tScale;
                 
+                        if (false) {
+                            CorrespondencePlotter plotter = new CorrespondencePlotter(
+                                convertToImage(orb1.getPyramidImages().get(i)),
+                                convertToImage(orb2.getPyramidImages().get(j)));
+                            for (int ii = 0; ii < cObj.m1.length; ++ii) {
+                                PairInt p1 = cObj.m1[ii];
+                                PairInt p2 = cObj.m2[ii];
+                                int x1 = Math.round((float) p1.getX() / scale1);
+                                int y1 = Math.round((float) p1.getY() / scale1);
+                                int x2 = Math.round((float) p2.getX() / scale2);
+                                int y2 = Math.round((float) p2.getY() / scale2);
+                                plotter.drawLineInAlternatingColors(
+                                    x1, y1, x2, y2, 0);
+                            }
+                            String str = Integer.toString(i);
+                            while (str.length() < 3) {
+                                str = "0" + str;
+                            }
+                            String str2 = Integer.toString(j);
+                            while (str2.length() < 3) {
+                                str2 = "0" + str2;
+                            }
+                            str = str + "_" + str2;
+                            try {
+                                plotter.writeImage(
+                                    "_indiv_masked_corres2_" + str + "_"
+                                    + ipi);
+                            } catch (IOException ex) {
+                                Logger.getLogger(ORB.class.getName()).log(Level.SEVERE, null, ex);
+                            }
+                        }
+                    }
+                    
+                }// end loop over paramsList
+                
+                if (vecJ.getNumberOfItems() == 0) {
+                    continue;
+                }
+                                
+                if (true) { //DEBUG
+                    for (int k = 0; k < vecJ.getNumberOfItems(); ++k) {
+                        CObject3 cobj = vecJ.getArray()[k];
                         CorrespondencePlotter plotter = new CorrespondencePlotter(
-                            convertToImage(orb1.getPyramidImages().get(i)),
+                            convertToImage(orb1.getPyramidImages().get(i)), 
                             convertToImage(orb2.getPyramidImages().get(j)));
-                        for (int ii = 0; ii < cObj.m1.length; ++ii) {
-                            PairInt p1 = cObj.m1[ii];
-                            PairInt p2 = cObj.m2[ii];
+                        for (int ii = 0; ii < cobj.m1.length; ++ii) {
+                            PairInt p1 = cobj.m1[ii];
+                            PairInt p2 = cobj.m2[ii];
                             int x1 = Math.round((float) p1.getX() / scale1);
                             int y1 = Math.round((float) p1.getY() / scale1);
                             int x2 = Math.round((float) p2.getX() / scale2);
@@ -4431,54 +4474,14 @@ tScale, (float)sum, (float)sumDesc, (float)sumDist, (float)sum3));
                             str2 = "0" + str2;
                         }
                         str = str + "_" + str2;
+
                         try {
-                            plotter.writeImage("_indiv_masked_corres2_" + str + "_"
-                                + ipi);
+                            plotter.writeImage("_mindiv_masked_corres3_" + str + "_"
+                                + MiscDebug.getCurrentTimeFormatted());
                         } catch (IOException ex) {
                             Logger.getLogger(ORB.class.getName()).log(Level.SEVERE, null, ex);
                         }
-                    }
-                    
-                }// end loop over paramsList
-                
-                if (vecJ.getNumberOfItems() == 0) {
-                    continue;
-                }
-                
-                CObject3 cobj = vecJ.getArray()[0];
-                
-                { //DEBUG
-                    
-                    CorrespondencePlotter plotter = new CorrespondencePlotter(
-                        convertToImage(orb1.getPyramidImages().get(i)), 
-                        convertToImage(orb2.getPyramidImages().get(j)));
-                    for (int ii = 0; ii < cobj.m1.length; ++ii) {
-                        PairInt p1 = cobj.m1[ii];
-                        PairInt p2 = cobj.m2[ii];
-                        int x1 = Math.round((float) p1.getX() / scale1);
-                        int y1 = Math.round((float) p1.getY() / scale1);
-                        int x2 = Math.round((float) p2.getX() / scale2);
-                        int y2 = Math.round((float) p2.getY() / scale2);
-                        plotter.drawLineInAlternatingColors(
-                            x1, y1, x2, y2, 0);
-                    }
-                    String str = Integer.toString(i);
-                    while (str.length() < 3) {
-                        str = "0" + str;
-                    }
-                    String str2 = Integer.toString(j);
-                    while (str2.length() < 3) {
-                        str2 = "0" + str2;
-                    }
-                    str = str + "_" + str2;
-
-                    try {
-                        plotter.writeImage("_masked_corres_" + str + "_"
-                            + MiscDebug.getCurrentTimeFormatted());
-                    } catch (IOException ex) {
-                        Logger.getLogger(ORB.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                    int z = 0;
+                        }
                 }
                
                 // for a given i, j, all combinations were tried at 
@@ -4502,8 +4505,9 @@ tScale, (float)sum, (float)sumDesc, (float)sumDist, (float)sum3));
                     continue;
                 }
                 
-                bestJs.add(cobj);
-
+                for (int k = 0; k < vecJ.getNumberOfItems(); ++k) {
+                     bestJs.add(vecJ.getArray()[k]);
+                }
             }// end loop over image j
         }
         
@@ -4590,7 +4594,8 @@ tScale, (float)sum, (float)sumDesc, (float)sumDist, (float)sum3));
             } else {
                 aggregatedKP2Labels = new HashSet<PairInt>();
                 for (int label : keys) {
-                    aggregatedKP2Labels.addAll(labeledPoints2.get(label));
+                    aggregatedKP2Labels.addAll(
+                        labeledPoints2.get(label));
                 }
                 // transform the segmented cells from dataset 1 to 2
                 shapeA = Misc.convertWithoutOrder(labeledPoints1);
@@ -4600,7 +4605,7 @@ tScale, (float)sum, (float)sumDesc, (float)sumDist, (float)sum3));
                 sumDiffAndCount = sumPatchDifference(
                     pyr1, pyr2,
                     shapeA, tr1, aggregatedKP2Labels,
-                    params, nMaxPatchPixels);
+                    params);
                 
                 if (sumDiffAndCount == null) {
                     nullResults.put(keys, 1);
@@ -5912,7 +5917,7 @@ for (QuadInt p : tPairs) {
 }*/
         
         int costLimit = Math.round(
-            (float)(nBands * 256) * 0.85f);
+            (float)(nBands * 256) * 0.65f);
         
         int minP1Diff = 3;
         
@@ -6102,8 +6107,7 @@ for (QuadInt p : tPairs) {
     private static double[] sumPatchDifference(TwoDFloatArray octaveImg1, 
         TwoDFloatArray octaveImg2, 
         PairIntArray a1, PairIntArray tr1, 
-        Set<PairInt> set2, TransformationParameters params, 
-        int nMaxPatchPixels) {
+        Set<PairInt> set2, TransformationParameters params) {
         
         int ns2 = set2.size();
 

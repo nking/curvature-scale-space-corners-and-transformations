@@ -9406,6 +9406,25 @@ if (sum > 511) {
      */
     public GreyscaleImage createCIELABTheta(Image img, int maxV) {
         
+        return createCIELABTheta(img, maxV, 0);
+    }
+    
+    /**
+     * convert the image to cie l*a*b* and then use a and b
+     * to calculate polar angle around 0 in degrees.
+     * If maxV of 360, returns full value image, 
+     * else if is 255, scales the values to max value of 255, etc.
+     * @param img
+     * @param maxV
+     * @param offsetTheta an offset in degrees from 0 to shift
+     *    values by.  This is useful for a quick look between 
+     * results of offset=0 and offset=10, for example, to look
+     * at the wrap around point for 360 to 0
+     * @return 
+     */
+    public GreyscaleImage createCIELABTheta(Image img, int maxV, 
+        int offset) {
+        
         int w = img.getWidth();
         int h = img.getHeight();
         
@@ -9447,10 +9466,13 @@ if (sum > 511) {
                 float v2 = lab[2];
                
                 double t = Math.atan2(v2, v1);
-                if (t < 0) {
-                    t += (2. * Math.PI);
-                }
                 t *= (180./Math.PI);
+                t += offset;
+                if (t < 0) {
+                    t += 360;
+                } else if (t > 359) {
+                    t -= 360;
+                }
                 t *= ts;
                 v = (int)t;
                 

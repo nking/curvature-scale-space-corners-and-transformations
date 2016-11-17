@@ -828,7 +828,7 @@ public class AndroidStatuesTest extends TestCase {
 
     }
     
-    public void testORBMatcher2() throws Exception {
+    public void estORBMatcher2() throws Exception {
 
         /*        
         this demonstrates ORB
@@ -981,7 +981,7 @@ public class AndroidStatuesTest extends TestCase {
         orb.overrideToNotCreateDescriptors();
         //orb.overrideToAlsoCreate1stDerivKeypoints();
         //orb.overrideToCreateCurvaturePoints();
-        //orb.overrideToUseSmallestPyramid();
+        orb.overrideToUseSmallestPyramid();
         orb.detectAndExtract(img);
 
         TFloatList sList = new TFloatArrayList(orb.getScalesList().size());
@@ -1143,6 +1143,9 @@ public class AndroidStatuesTest extends TestCase {
         
         GreyscaleImage theta1 = imageProcessor.createCIELABTheta(img, 255);
         MiscDebug.writeImage(theta1, fileName1Root + "_theta_");
+        GreyscaleImage theta_15 = 
+            imageProcessor.createCIELABTheta(img, 255, 15);
+        MiscDebug.writeImage(theta1, fileName1Root + "_theta_15_");
         
         //orb0.createSmallDescriptorsHSV(imgs0[0]);
         //orb.createSmallDescriptorsHSV(img);
@@ -2985,4 +2988,66 @@ public class AndroidStatuesTest extends TestCase {
         return medAxisPts;
     }
 
+    public void testCIETheta() throws Exception {
+    
+        int maxDimension = 256;//512;
+        SIGMA sigma = SIGMA.ZEROPOINTFIVE;//SIGMA.ONE;
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        String[] fileNames1 = new String[]{
+             "android_statues_01.jpg",
+             "android_statues_02.jpg",
+             "android_statues_04.jpg",
+             "android_statues_03.jpg"
+        };
+        for (String fileName1 : fileNames1) {               
+       
+        String fileName1Root = fileName1.substring(0, fileName1.lastIndexOf("."));
+        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+        ImageExt img = ImageIOHelper.readImageExt(filePath1);
+
+        // template img size is 218  163
+        //img = (ImageExt) imageProcessor.bilinearDownSampling(
+        //    img, 218, 163, 0, 255);
+        
+        long ts = MiscDebug.getCurrentTimeFormatted();
+        
+        int w1 = img.getWidth();
+        int h1 = img.getHeight();
+
+        int binFactor1 = (int) Math.ceil(Math.max(
+            (float) w1 / maxDimension,
+            (float) h1 / maxDimension));
+
+        img = imageProcessor.binImage(img, binFactor1);
+       
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        long t0 = System.currentTimeMillis();
+    
+        // descriptors w/ masks
+        /*corList = ORB.match2(
+            orb0, orb, tempListOfPointSets, listOfPointSets2,
+            1.5f, 0.1f, false);
+        */
+       
+        GreyscaleImage theta1 = imageProcessor.createCIELABTheta(img, 255);
+        MiscDebug.writeImage(theta1, fileName1Root + "_theta_");
+        GreyscaleImage theta_15 = 
+            imageProcessor.createCIELABTheta(img, 255, 15);
+        MiscDebug.writeImage(theta_15, fileName1Root + "_theta_15_");
+        
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
+        
+        int[] labels = imageSegmentation.objectSegmentation3(img);
+        ImageIOHelper.addAlternatingColorLabelsToRegion(
+            //LabelToColorHelper.applyLabels(
+            img, labels);
+        MiscDebug.writeImage(img, "_theta_segmentation_" + fileName1Root);
+
+        
+        }
+    }
 }

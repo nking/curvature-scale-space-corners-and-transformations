@@ -6,6 +6,7 @@ import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceContour;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.math.BigDecimal;
@@ -2618,4 +2619,49 @@ System.out.println("value 0 is rescaled to value=" + (-minV*scale)
         }
     }
 
+    public static int calculateThetaAverage(GreyscaleImage img,
+        int wrapAround, Set<PairInt> set) {
+        
+        /*
+        -- calc peak frequency of values
+        -- calculate average of values by assigning each
+           value as the image value or image value
+              + wrap around, depending on which is closer
+              to the peak frequency
+        -- correct the value to fit between 0 and wrap around
+        */
+        
+        float[] values = new float[set.size()];
+        int count = 0;
+        for (PairInt p : set) {
+            values[count] = img.getValue(p);
+            count++;
+        }
+        
+        HistogramHolder hist = Histogram.createSimpleHistogram(values, 
+            Errors.populateYErrorsBySqrt(values));
+        
+        int peakValueIdx = MiscMath.findYMaxIndex(hist.getYHist());
+        
+        final float peakValue = hist.getXHist()[peakValueIdx];
+        
+        double sum = 0;
+        for (int i = 0; i < values.length; ++i) {
+            float v = values[i];
+            float v2 = v + wrapAround;
+            if (Math.abs(v - peakValue) <= Math.abs(v2 - peakValue)) {
+                sum += v;
+            } else {
+                sum += v2;
+            }
+        }
+        sum /= (double)values.length;
+        
+        int avg = (int)Math.round(sum);
+        if (avg > wrapAround) {
+            avg -= wrapAround;
+        }
+        
+        return avg;
+    }
 }

@@ -543,10 +543,23 @@ public class CIEChromaticity {
      * a is from - to +  (negative are green, pos are red)
      * b is from - to +  (negative are blue, pos are yellow)
      * 
+     * to change the reference point, see
+     * http://www.easyrgb.com/index.php?X=MATH&H=15#text15
+     * 
+     * 
      * @param cieXYZ
      * @return 
      */
     public float[] cieXYZToCIELAB(float[] cieXYZ) {
+        
+        /*
+        Incandescent:
+            109.850, 100, 35.585
+        Daylight:
+            95.047, 100, 108.883
+        Fluorescent:
+            99.187, 100, 67.395
+        */
         
         float Xn = 95.047f;
         float Yn = 100.0f;

@@ -10048,6 +10048,151 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             + MiscDebug.getCurrentTimeFormatted());
 
     }
+    
+    private void mergeSmallSegmentsTheta255(GreyscaleImage img,
+        int[] labels, int sizeLimit) {
+        
+        //key = label, value = label indexes
+        TIntObjectMap<TIntSet> labelToIndexMap =
+            LabelToColorHelper.createLabelIndexMap(labels);
+
+        // key = label, value = adjacent label indexes
+        TIntObjectMap<TIntSet> adjacencyMap =
+            LabelToColorHelper.createAdjacencyLabelMap(
+                img, labels, false);
+
+        //key = label, value = average theta
+        TIntIntMap labelThetaMap = new TIntIntHashMap();
+
+        TIntSet merged = new TIntHashSet();
+
+        //labels
+        Stack<Integer> stack = new Stack<Integer>();
+        TIntSet labelSet = labelToIndexMap.keySet();
+        TIntIterator iter = labelSet.iterator();
+        while (iter.hasNext()) {
+            stack.add(Integer.valueOf(iter.next()));
+        }
+
+        int nSmall = 0;
+        while (!stack.isEmpty()) {
+            int label1 = stack.pop().intValue();
+            if (merged.contains(label1)) {
+                continue;
+            }
+
+            TIntSet set = labelToIndexMap.get(label1);
+            if (set.size() < sizeLimit) {
+                nSmall++;
+                // merge w/ closest adjacent above sizeLimit
+                int clrs = labelThetaMap.get(label1);
+                int minLabel = -1;
+                double minDiff = Double.MAX_VALUE;
+                int minDiffClrs = 0;
+
+                TIntSet adj = adjacencyMap.get(label1);
+                if (adj != null) {
+                    TIntIterator iter2 = adj.iterator();
+                    while (iter2.hasNext()) {
+                        int label3 = iter2.next();
+                        if (merged.contains(label3) ||
+                            labelToIndexMap.get(label3).size() < sizeLimit) {
+                            continue;
+                        }
+                        if (!labelThetaMap.containsKey(label1)) {
+                            Set<PairInt> set2 = 
+                                Misc.convertToCoords(img,
+                                labelToIndexMap.get(label1));
+                            clrs = MiscMath.calculateThetaAverage(
+                                img, 255, set2);
+                            labelThetaMap.put(label1, clrs);
+                        }
+                        int clrs3 = labelThetaMap.get(label3);
+                        if (!labelThetaMap.containsKey(label3)) {
+                            Set<PairInt> set3 = 
+                                Misc.convertToCoords(img,
+                                labelToIndexMap.get(label3));
+                            
+                            clrs3 = MiscMath.calculateThetaAverage(
+                                img, 255, set3);
+                            labelThetaMap.put(label3, clrs3);
+                        }
+             
+                        //wrap around diff test
+                        if (clrs > clrs3) {
+                            // add a phase to next value if it's closer to current with addition
+                            if ((clrs - clrs3) > Math.abs(clrs - (clrs3 + 255))) {
+                                clrs3 += 255;
+                            }
+                        } else if (clrs3 > clrs) {
+                            // add a phase to next value if it's closer to current with addition
+                            if ((clrs3 - clrs) > Math.abs(clrs3 - (clrs + 255))) {
+                                clrs += 255;
+                            }
+                        }
+                        int diff = Math.abs(clrs - clrs3);
+
+                        if (diff < 0) {
+                            diff *= -1;
+                        }
+                        if (diff < minDiff) {
+                            minDiff = diff;
+                            minLabel = label3;
+                            minDiffClrs = labelThetaMap.get(label3);
+                        }
+                    }
+                }
+
+                if (minLabel > -1) {
+
+                    // merge this label's data into minLabel's data
+
+                    //update adjacency maps
+                    TIntSet adjLabels1 = adjacencyMap.get(label1);
+                    TIntIterator iter1 = adjLabels1.iterator();
+                    while (iter1.hasNext()) {
+                        // change to adjacent to minLabel instead of label1
+                        int label3 = iter1.next();
+                        if (label3 == minLabel || label3 == label1) {
+                            continue;
+                        }
+                        TIntSet adjLabels3 = adjacencyMap.get(label3);
+                        adjLabels3.remove(label1);
+                        adjLabels3.add(minLabel);
+                    }
+                    adjacencyMap.get(minLabel).addAll(adjLabels1);
+                    adjacencyMap.get(minLabel).remove(label1);
+
+                    // reassign label1 indexes to minLabel
+                    TIntSet set1 = labelToIndexMap.get(label1);
+                    float n1 = set.size();
+                    float n2 = set1.size();
+                    float nTot = n1 + n2;
+                    iter1 = set1.iterator();
+                    while (iter1.hasNext()) {
+                        int lIdx = iter1.next();
+                        labels[lIdx] = minLabel;
+                    }
+
+                    // update color maps
+                    int v = Math.round((clrs*n1 + minDiffClrs*n2)/nTot);
+                    
+                    labelThetaMap.put(label1, v);
+                    
+                    TIntSet set0 = labelToIndexMap.get(minLabel);
+                    set0.addAll(set);
+                    set.clear();
+                    set0.remove(label1);
+                    set0.remove(minLabel);
+
+                    merged.add(label1);
+                    stack.add(minLabel);
+                }
+            }
+        }
+        log.info("number of small merges=" + merged.size()
+           + " nSmall=" + nSmall + " nSets=" + labelToIndexMap.size());
+    }
 
     private void mergeSmallSegments(ImageExt img,
         int[] labels, int sizeLimit, ColorSpace clrSpace) {
@@ -10059,7 +10204,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
         //key = label, value = label indexes
         TIntObjectMap<TIntSet> labelToIndexMap =
-            LabelToColorHelper.createLabelIndexMap(img, labels);
+            LabelToColorHelper.createLabelIndexMap(labels);
 
         // key = label, value = adjacent label indexes
         TIntObjectMap<TIntSet> adjacencyMap =
@@ -13466,6 +13611,20 @@ int z = 1;
         return objectSegmentation(img, products);
     }
 
+    // NOT READY FOR USE
+    public int[] objectSegmentation3(Image img) {
+
+        long ts = MiscDebug.getCurrentTimeFormatted();
+
+        //0=canny LAB, 1=canny gs, 2=phase cong monogenic
+        int gradientMethod = 1;
+
+        EdgeFilterProducts products = 
+            createGradient(img, gradientMethod, ts);
+        
+        return objectSegmentation3(img, products);
+    }
+
     /**
      * a segmentation method that uses super pixels and a few
      * color merging methods to result in an image which is
@@ -13656,6 +13815,99 @@ int z = 1;
         return labels;
     }
 
+    // NOT READY FOR USE YET
+    public int[] objectSegmentation3(Image img, 
+        final EdgeFilterProducts edgeProducts) {
+
+        long ts = MiscDebug.getCurrentTimeFormatted();
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+
+        // extrapolate boundaries at nclusters=x1
+        //   NOTE: this method is tailored for images
+        //   binned to size near 256 on a side, so will
+        //   need to add comments and maybe a wrapper to
+        //   make sure that is true
+        float nPix = img.getNPixels();
+        int x1 = 17;//11; 17
+        float f10 = (float)w/(float)x1;
+        f10 *= f10;
+        float f11 = (float)h/(float)x1;
+        f11 *= f11;
+        int n10 = Math.round(nPix/f10);
+        int n11 = Math.round(nPix/f11);
+        //==> nClusters = nPix/((w/x0)^2)
+        //==> nClusters = nPix/((h/x0)^2)
+        log.info("  n1=" + n10 + "," + n11);
+        int nc = (n10+n11)/2;
+        ImageExt imgCp = img.copyToImageExt();
+        SLICSuperPixels slic = new SLICSuperPixels(imgCp, nc);
+        slic.setGradient(edgeProducts.getGradientXY());
+        slic.calculate();
+        int[] labels = slic.getLabels();
+
+        Image img3 = img.createWithDimensions();
+        ImageIOHelper.addAlternatingColorLabelsToRegion(img3, labels);
+        String str = Integer.toString(nc);
+        str = (str.length() < 3) ? "0" + str : str;
+        MiscDebug.writeImage(img3, "_slic_" + ts + "_" + str);
+
+        List<Set<PairInt>> contigSets = LabelToColorHelper
+            .extractContiguousLabelPoints(img, labels);
+
+        int sizeLimit = 31;
+        if (img.getNPixels() < 100) {
+            sizeLimit = 5;
+        }
+        
+        GreyscaleImage polarTheta = imageProcessor.createCIELABTheta(img, 255);
+
+        //TODO: use a small first threshold,
+        //     then onsider different merge methods
+        
+        // a safe limit for HSV is 0.025 to not overrun object bounds
+        labels = mergeByTheta255(polarTheta, contigSets, 
+            5
+            //10
+            );//0.1f);
+       
+        mergeSmallSegmentsTheta255(polarTheta, labels, sizeLimit);
+
+        // ----- looking at fast marching methods and level sets
+        //       and/or region based active contours
+        contigSets = LabelToColorHelper
+            .extractContiguousLabelPoints(img, labels);
+        // quick look at values of pa on the boundaries of current
+        // segments.
+        
+        //edgeProducts.getPhaseAngle();
+        //NOTE: pa is in range -180 to 180.
+        //  to plot it, can transform the negative values into
+        //  the diagonal quadrant by adding 180,
+        //  or apply a +180 to all to transform to 0 to 360
+        // -- for a quick look at wrap around, making 2 images, with
+        //    offset of 90 so that 0 and 360 are similar intensity in one
+        { // DEBUG
+            if (edgeProducts.getPhaseAngle() != null) { 
+                GreyscaleImage paImg1 = edgeProducts.getPhaseAngle().copyImage();
+                for (int ii = 0; ii < paImg1.getNPixels(); ++ii) {
+                    int v = paImg1.getValue(ii);
+                    //if (v < 0) {
+                        v += 180;
+                    //}
+                    paImg1.setValue(ii, v);
+                }
+                MiscMath.rescale(paImg1, 0, 255);
+                MiscDebug.writeImage(paImg1, "_angle_phase_" + ts + "_" + str + "_1_");
+                MiscDebug.writeImage(edgeProducts.getTheta(), "_angle_orientation_" + ts + "_" + str + "_1_");
+            }
+        }
+                
+        return labels;
+    }
+    
     /**
      * NOT READY FOR USE.
      * a segmentation method that uses monogenic phase congruency
@@ -14118,6 +14370,176 @@ int z = 1;
                     indexColorMap.remove(lIdx2);
                 }
                 indexRGBMap.remove(lIdx2);
+
+                // update adjacency map
+                TIntSet a2 = contigAdjacencyMap.get(lIdx2);
+                TIntIterator iter2 = a2.iterator();
+                while (iter2.hasNext()) {
+                    int lIdx3 = iter2.next();
+                    if (lIdx3 == lIdx2 || lIdx3 == lIdx1) {
+                        continue;
+                    }
+                    TIntSet a3 = contigAdjacencyMap.get(lIdx3);
+                    a3.remove(lIdx2);
+                    a3.add(lIdx1);
+                }
+                a2.remove(lIdx1);
+                add.addAll(a2);
+                contigAdjacencyMap.remove(lIdx2);
+
+                rm.add(lIdx2);
+
+                merged.add(lIdx2);
+            }
+            if (!rm.isEmpty()) {
+                neighbors.addAll(add);
+                neighbors.removeAll(rm);
+                neighbors.remove(lIdx1);
+                stack.add(Integer.valueOf(lIdx1));
+            }
+        }
+
+        for (int i = (contigSets.size() - 1); i > -1; --i) {
+            if (contigSets.get(i).isEmpty()) {
+                contigSets.remove(i);
+            }
+        }
+
+        List<Set<PairInt>> cSets2 = new ArrayList<Set<PairInt>>();
+        int[] labels = new int[img.getNPixels()];
+
+        // separate into contiguous sections
+        int l0 = 0;
+        for (int i = 0; i < contigSets.size(); ++i) {
+            Set<PairInt> set = contigSets.get(i);
+            DFSConnectedGroupsFinder finder
+                = new DFSConnectedGroupsFinder();
+            finder.setMinimumNumberInCluster(1);
+            finder.findConnectedPointGroups(set);
+            int nGroups = finder.getNumberOfGroups();
+            for (int j = 0; j < nGroups; ++j) {
+                Set<PairInt> set2 = finder.getXY(j);
+                for (PairInt p2 : set2) {
+                    int pixIdx = img.getInternalIndex(p2.getX(), p2.getY());
+                    labels[pixIdx] = l0;
+                }
+                l0++;
+                cSets2.add(set2);
+            }
+        }
+
+        contigSets.clear();
+        contigSets.addAll(cSets2);
+
+        int nAfter = contigSets.size();
+
+        log.fine("nMerged=" + (nBefore - nAfter));
+
+        assert(LabelToColorHelper.assertAllPointsFound(contigSets,
+            img.getWidth(), img.getHeight()));
+
+        return labels;
+    }
+
+    public int[] mergeByTheta255(GreyscaleImage img,
+        List<Set<PairInt>> contigSets,
+        float threshold) {
+
+        sortByDecrSize(contigSets);
+
+        // key = index of contigSets, value = list of indexes
+        //       of sets that are adjacent
+        TIntObjectMap<TIntSet> contigAdjacencyMap =
+            LabelToColorHelper.createAdjacencySetMap(contigSets);
+
+        TIntIntMap indexThetaMap = new TIntIntHashMap();
+
+        CIEChromaticity cieC = null;
+
+        TIntObjectMap<Colors> indexColorMap = null;
+        
+        for (int i = 0; i < contigSets.size(); ++i) {
+            
+            Set<PairInt> set = contigSets.get(i);
+            
+            int avg = MiscMath.calculateThetaAverage(img,
+                255, set);
+                
+            indexThetaMap.put(i, avg);
+        }
+
+        TIntSet merged = new TIntHashSet();
+
+        Stack<Integer> stack = new Stack<Integer>();
+        for (int i = contigSets.size() - 1; i > -1; --i) {
+            stack.add(Integer.valueOf(i));
+        }
+
+        int nBefore = contigSets.size();
+
+        while (!stack.isEmpty()) {
+            int lIdx1 = stack.pop().intValue();
+            if (merged.contains(lIdx1)) {
+                continue;
+            }
+            TIntSet neighbors = contigAdjacencyMap.get(lIdx1);
+            if (neighbors == null || neighbors.isEmpty()) {
+                continue;
+            }
+
+            assert(!neighbors.contains(lIdx1));
+
+            TIntSet rm = new TIntHashSet();
+            TIntSet add = new TIntHashSet();
+
+            TIntIterator iter = neighbors.iterator();
+            while (iter.hasNext()) {
+                int lIdx2 = iter.next();
+                if (lIdx2 == lIdx1) {
+                    throw new IllegalStateException(
+                        "ERROR: idx1==idx2 " + lIdx1);
+                }
+                if (merged.contains(lIdx2)) {
+                    continue;
+                }
+
+                int avg1 = indexThetaMap.get(lIdx1);
+                int avg2 = indexThetaMap.get(lIdx2);
+
+                //wrap around diff test
+                if (avg1 > avg2) {
+                    // add a phase to next value if it's closer to current with addition
+                    if ((avg1 - avg2) > Math.abs(avg1 - (avg2 + 255))) {
+                        avg2 += 255;
+                    }
+                } else if (avg2 > avg1) {
+                    // add a phase to next value if it's closer to current with addition
+                    if ((avg2 - avg1) > Math.abs(avg2 - (avg1 + 255))) {
+                        avg1 += 255;
+                    }
+                }
+                int diff = Math.abs(avg1 - avg2);
+                
+                if (diff > threshold) {
+                    continue;
+                }
+
+                Set<PairInt> set2 = contigSets.get(lIdx2);
+                Set<PairInt> set = contigSets.get(lIdx1);
+                float n1 = set.size();
+                float n2 = set2.size();
+                float nTot = n1 + n2;
+                set.addAll(set2);
+                set2.clear();
+
+                // update merged colors
+                int v = Math.round(
+                    (indexThetaMap.get(lIdx1)*n1 +
+                    indexThetaMap.get(lIdx2)*n2)/nTot);
+                
+                indexThetaMap.put(lIdx1, v);
+                
+                indexThetaMap.remove(lIdx2);
 
                 // update adjacency map
                 TIntSet a2 = contigAdjacencyMap.get(lIdx2);

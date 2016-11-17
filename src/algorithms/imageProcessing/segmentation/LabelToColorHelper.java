@@ -157,7 +157,7 @@ public class LabelToColorHelper {
      * the pixel indexes also.
      */
     public static TIntObjectMap<TIntSet> createLabelIndexMap(
-        Image img, int[] labels) {
+        int[] labels) {
         
         TIntObjectMap<TIntSet> map = new TIntObjectHashMap<TIntSet>();
         
@@ -259,6 +259,64 @@ public class LabelToColorHelper {
      */
     public static TIntObjectMap<TIntSet> createAdjacencyLabelMap(
         Image img, int[] labels, boolean excludeNegativeLabels) {
+        
+        TIntObjectMap<TIntSet> adjacencyMap =
+            new TIntObjectHashMap<TIntSet>();
+
+        int h = img.getHeight();
+        int w = img.getWidth();
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        for (int idx1 = 0; idx1 < labels.length; ++idx1) {
+            
+            int l1 = labels[idx1];
+            
+            if (excludeNegativeLabels && (l1 < 0)) {
+                continue;
+            }
+            
+            TIntSet set1 = adjacencyMap.get(l1);
+            if (set1 == null) {
+                set1 = new TIntHashSet();
+                adjacencyMap.put(l1, set1);
+            }
+                        
+            int x = img.getCol(idx1);
+            int y = img.getRow(idx1);
+            for (int j = 0; j < dxs.length; ++j) {
+                int x2 = x + dxs[j];
+                int y2 = y + dys[j];
+                if (x2 < 0 || y2 < 0 || (x2 > (w - 1) ||
+                    (y2 > (h - 1)))) {
+                    continue;
+                }
+                int idx2 = img.getInternalIndex(x2, y2);
+                int l2 = labels[idx2];
+                if (l1 == l2) {
+                    continue;
+                }
+                if (excludeNegativeLabels && (l2 < 0)) {
+                    continue;
+                }
+                set1.add(l2);
+            }
+        }
+        
+        return adjacencyMap;
+    }
+
+    /**
+     * create a map with key = label, value = set of adjacent
+     * labels.
+     * @param img
+     * @param labels
+     * @param excludeNegativeLabels
+     * @return 
+     */
+    public static TIntObjectMap<TIntSet> createAdjacencyLabelMap(
+        GreyscaleImage img, int[] labels, boolean excludeNegativeLabels) {
         
         TIntObjectMap<TIntSet> adjacencyMap =
             new TIntObjectHashMap<TIntSet>();

@@ -182,7 +182,7 @@ public class LabelToColorHelperTest extends TestCase {
         
         
         TIntObjectMap<TIntSet> labelToIndexMap = 
-            LabelToColorHelper.createLabelIndexMap(img, labels);
+            LabelToColorHelper.createLabelIndexMap(labels);
         
         assertEquals(8, labelToIndexMap.get(0).size());
             
