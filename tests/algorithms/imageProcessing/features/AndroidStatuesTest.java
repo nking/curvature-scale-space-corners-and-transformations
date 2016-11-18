@@ -828,7 +828,7 @@ public class AndroidStatuesTest extends TestCase {
 
     }
     
-    public void estORBMatcher2() throws Exception {
+    public void testORBMatcher2() throws Exception {
 
         /*        
         this demonstrates ORB
@@ -903,7 +903,7 @@ public class AndroidStatuesTest extends TestCase {
             sTempList.add(orb0.getScalesList().get(i).get(0));
         }
         
-        {// DEBUG print each pyramid to see if has matchable points
+        /*{// DEBUG print each pyramid to see if has matchable points
             // might need to change the ORb response filter to scale by scale level
             for (int i0 = 0; i0 < orb0.getKeyPoint0List().size(); ++i0) {
                 Image img0Cp = ORB.convertToImage(
@@ -923,7 +923,7 @@ public class AndroidStatuesTest extends TestCase {
                 }
                 MiscDebug.writeImage(img0Cp, "T_PYR_" + str);
             }
-        }
+        }*/
                 
         ColorHistogram clrHist = new ColorHistogram();
 
@@ -1032,29 +1032,6 @@ public class AndroidStatuesTest extends TestCase {
             MiscDebug.writeImage(img11, "_srch_keypoints_filtered_" + fileName1Root);
         }*/
         
-        // ----------- segmentation -------
-        Set<PairInt> kpSet = new HashSet<PairInt>();
-        {
-            TIntList kp0 = orb.getKeyPoint0List().get(0);
-            TIntList kp1 = orb.getKeyPoint1List().get(0);
-            for (int i = 0; i < kp0.size(); ++i) {
-                int x = kp1.get(i);
-                int y = kp0.get(i);
-                kpSet.add(new PairInt(x, y));
-            }
-        }
-        
-        /*
-        PhaseCongruencyDetector phaseCDetector
-            = new PhaseCongruencyDetector();
-        phaseCDetector.setToExtractNoise();
-        phaseCDetector.setToDebug();
-        //phaseCDetector.setToCreateCorners();
-        PhaseCongruencyDetector.PhaseCongruencyProducts products
-            = phaseCDetector.phaseCongMono(img.copyToGreyscale2());
-        EdgeFilterProducts edgeProduct = imageSegmentation.packageToEdgeProduct(
-            products);
-        */
         
         CannyEdgeFilterAdaptive canny = 
             new CannyEdgeFilterAdaptive();
@@ -1073,11 +1050,56 @@ public class AndroidStatuesTest extends TestCase {
                 img11, labels4);
             MiscDebug.writeImage(img11, "_segmented_" + fileName1Root);
         }
-        
+                
         List<Set<PairInt>> listOfPointSets2 = 
             LabelToColorHelper.extractContiguousLabelPoints(imgCp, labels4);
         
-        {
+        // ---- filter segmentation by cie theta histograms
+        boolean changed = imageSegmentation.filterByCIETheta(imgs0[0], shape0,
+            imgCp, listOfPointSets2);
+       
+        // ---- remove keypoints if not in segmented cells
+        if (changed) {
+            TObjectIntMap<PairInt> pointIdxMap = new TObjectIntHashMap<PairInt>();
+            for (int j = 0; j < listOfPointSets2.size(); ++j) {
+                Set<PairInt> set = listOfPointSets2.get(j);
+                for (PairInt p : set) {
+                    pointIdxMap.put(p, j);
+                }
+            }
+            
+            rmIndexesList = new ArrayList<TIntList>();
+            for (int i = 0; i < ns; ++i) {
+                TIntList kp0 = orb.getKeyPoint0List().get(i);
+                TIntList kp1 = orb.getKeyPoint1List().get(i);
+                TDoubleList or = orb.getOrientationsList().get(i);
+                TFloatList s = orb.getScalesList().get(i);
+
+                int np = kp0.size();
+                TIntList rm = new TIntArrayList();
+                for (int j = 0; j < np; ++j) {
+                    PairInt p = new PairInt(kp1.get(j), kp0.get(j));
+                    if (!pointIdxMap.containsKey(p)) {
+                        rm.add(j);
+                    }
+                }
+                rmIndexesList.add(rm);
+            }
+            orb.removeAtIndexes(rmIndexesList);
+        }
+        
+        {   // ----------- segmentation -------
+            Set<PairInt> kpSet = new HashSet<PairInt>();
+            {
+                TIntList kp0 = orb.getKeyPoint0List().get(0);
+                TIntList kp1 = orb.getKeyPoint1List().get(0);
+                for (int i = 0; i < kp0.size(); ++i) {
+                    int x = kp1.get(i);
+                    int y = kp0.get(i);
+                    kpSet.add(new PairInt(x, y));
+                }
+            }
+
             ImageExt img11 = img.createWithDimensions();
             ImageIOHelper.addAlternatingColorPointSetsToImage(
                 listOfPointSets2, 0, 0, 1, img11);
@@ -2988,7 +3010,7 @@ public class AndroidStatuesTest extends TestCase {
         return medAxisPts;
     }
 
-    public void testCIETheta() throws Exception {
+    public void estCIETheta() throws Exception {
     
         int maxDimension = 256;//512;
         SIGMA sigma = SIGMA.ZEROPOINTFIVE;//SIGMA.ONE;
@@ -3033,20 +3055,28 @@ public class AndroidStatuesTest extends TestCase {
             1.5f, 0.1f, false);
         */
        
+        /*
         GreyscaleImage theta1 = imageProcessor.createCIELABTheta(img, 255);
         MiscDebug.writeImage(theta1, fileName1Root + "_theta_");
         GreyscaleImage theta_15 = 
             imageProcessor.createCIELABTheta(img, 255, 15);
         MiscDebug.writeImage(theta_15, fileName1Root + "_theta_15_");
+        */
         
         ImageSegmentation imageSegmentation = new ImageSegmentation();
-        
-        int[] labels = imageSegmentation.objectSegmentation3(img);
+        ImageExt imgCp = img.copyToImageExt();
+        int[] labels = imageSegmentation.objectSegmentation3(imgCp);
         ImageIOHelper.addAlternatingColorLabelsToRegion(
             //LabelToColorHelper.applyLabels(
-            img, labels);
-        MiscDebug.writeImage(img, "_theta_segmentation_" + fileName1Root);
+            imgCp, labels);
+        MiscDebug.writeImage(imgCp, "_theta_segmentation_" + fileName1Root);
 
+        imgCp = img.copyToImageExt();
+        labels = imageSegmentation.objectSegmentation(imgCp);
+        ImageIOHelper.addAlternatingColorLabelsToRegion(
+            //LabelToColorHelper.applyLabels(
+            imgCp, labels);
+        MiscDebug.writeImage(imgCp, "_hsv_segmentation_" + fileName1Root);
         
         }
     }

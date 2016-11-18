@@ -10,6 +10,9 @@ import java.util.Set;
  */
 public class ColorHistogram {
     
+    // TODO: can add the latest CIE 1931 L*A*B* here too
+    //      cieC.rgbToCIELAB2(r, g, b)
+    
     private static float maxL = 28.51f;
     private static float maxA = 3.28f;
     private static float maxB = 2.15f;
@@ -394,6 +397,92 @@ public class ColorHistogram {
         }
         
         return hist;
+    }
+    
+    /**
+     * 1D histogram of 16 bins of greyscale image.  max possible
+     * value in image should be provided also.
+     * 
+     * @param img
+     * @param points 
+     * @return histogram accessed as hist[bin]
+     */
+    public int[] histogram1D(GreyscaleImage img, Set<PairInt> points,
+        int maxV) {
+             
+        int nBins = 16;
+        
+        int[] hist = new int[nBins];
+        
+        float binWidth = (float)maxV/(float)nBins;
+           
+        for (PairInt p : points) {
+            int x = p.getX();
+            int y = p.getY();
+            
+            float v = img.getValue(x, y);
+            
+            int binNumber = Math.round(v/binWidth);
+            if (binNumber > (nBins - 1)) {
+                binNumber = nBins - 1;
+            }
+            hist[binNumber]++;           
+        }
+        
+        return hist;
+    }
+    
+    /**
+     * summation over color histograms of the property min(h_i, h_j)
+     * @param hist0
+     * @param hist1
+     * @return 
+     */
+    public float intersection(int[] hist0, int[] hist1) {
+        
+        if ((hist0.length != hist1.length)) {
+            throw new IllegalArgumentException(
+                "hist0 and hist1 must be same dimensions");
+        }
+                
+        // the values need to be normalized by the total number of points
+        // in the histogram, so calculate that first
+        int n0 = 0;
+        int n1 = 0;
+        for (int i = 0; i < hist0.length; ++i) {
+            n0 += hist0[i];
+            n1 += hist1[i];
+        }
+        
+        /*
+        After histograms are normalized to same total number
+        
+        K(a,b) = 
+            (summation_over_i_from_1_to_n( min(a_i, b_i))
+             /
+            (min(summation_over_i(a_i), summation_over_i(b_i))
+        */
+            
+        float sum = 0;
+        float sum0 = 0;
+        float sum1 = 0;
+        for (int j = 0; j < hist0.length; ++j) {
+            float y0 = 0;
+            float y1 = 0;
+            if (n0 > 0) {
+                y0 = (float)hist0[j]/(float)n0;
+            }
+            if (n1 > 0) {
+                y1 = (float)hist1[j]/(float)n1;
+            }
+            sum += Math.min(y0, y1);
+            sum0 += y0;
+            sum1 += y1;
+        }
+        
+        float sim = sum / ((float)Math.min(sum0, sum1));
+        
+        return sim;
     }
     
 }

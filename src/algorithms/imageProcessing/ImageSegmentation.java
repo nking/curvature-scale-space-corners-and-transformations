@@ -13643,6 +13643,7 @@ int z = 1;
         int w = img.getWidth();
         int h = img.getHeight();
 
+        
         // extrapolate boundaries at nclusters=x1
         //   NOTE: this method is tailored for images
         //   binned to size near 256 on a side, so will
@@ -13670,7 +13671,10 @@ int z = 1;
         String str = Integer.toString(nc);
         str = (str.length() < 3) ? "0" + str : str;
         MiscDebug.writeImage(img3, "_slic_" + ts + "_" + str);
-
+        
+                    
+        //int[] labels = objectSegmentation3(img, edgeProducts, 4);
+        
         List<Set<PairInt>> contigSets = LabelToColorHelper
             .extractContiguousLabelPoints(img, labels);
 
@@ -13818,6 +13822,13 @@ int z = 1;
     // NOT READY FOR USE YET
     public int[] objectSegmentation3(Image img, 
         final EdgeFilterProducts edgeProducts) {
+    
+        return objectSegmentation3(img, edgeProducts, 10);
+    }
+    
+    // NOT READY FOR USE YET
+    public int[] objectSegmentation3(Image img, 
+        final EdgeFilterProducts edgeProducts, int thetaThresh) {
 
         long ts = MiscDebug.getCurrentTimeFormatted();
         ImageProcessor imageProcessor = new ImageProcessor();
@@ -13869,9 +13880,7 @@ int z = 1;
         
         // a safe limit for HSV is 0.025 to not overrun object bounds
         labels = mergeByTheta255(polarTheta, contigSets, 
-            5
-            //10
-            );//0.1f);
+            thetaThresh);
        
         mergeSmallSegmentsTheta255(polarTheta, labels, sizeLimit);
 
@@ -15334,6 +15343,42 @@ int z = 1;
             }
         }
         System.out.println("textures nMerged=" + nR);
+    }
+    
+    public boolean filterByCIETheta(ImageExt templateImage, 
+        Set<PairInt> templateSet, ImageExt img, 
+        List<Set<PairInt>> pointSets) {
+     
+        ImageProcessor imageProcessor = new ImageProcessor();
+        GreyscaleImage theta1 = 
+            imageProcessor.createCIELABTheta(templateImage, 255);
+        
+        GreyscaleImage theta2 = 
+            imageProcessor.createCIELABTheta(img, 255);
+        
+        ColorHistogram ch = new ColorHistogram();
+        
+        int[] tHist = ch.histogram1D(theta1, templateSet, 255);
+        
+        TIntList rm = new TIntArrayList();
+        
+        float limit = 0.2f;
+        
+        for (int i = 0; i < pointSets.size(); ++i) {
+            Set<PairInt> set = pointSets.get(i);
+            int[] hist = ch.histogram1D(theta2, set, 255);
+            float intersection = ch.intersection(tHist, hist);
+            if (intersection < limit) {
+                rm.add(i);
+            }
+        }
+        
+        for (int i = (rm.size() - 1); i > -1; --i) {
+            int rmIdx = rm.get(i);
+            pointSets.remove(rmIdx);
+        }
+        
+        return !rm.isEmpty();
     }
     
 }
