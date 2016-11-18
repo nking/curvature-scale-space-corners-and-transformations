@@ -15362,7 +15362,7 @@ int z = 1;
         
         TIntList rm = new TIntArrayList();
         
-        float limit = 0.2f;
+        float limit = 0.5f;//0.2f;
         
         for (int i = 0; i < pointSets.size(); ++i) {
             Set<PairInt> set = pointSets.get(i);

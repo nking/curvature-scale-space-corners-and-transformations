@@ -865,10 +865,10 @@ public class AndroidStatuesTest extends TestCase {
         segmentation information maybe.
         */
         String[] fileNames1 = new String[]{
-        //   "android_statues_01.jpg",
+             "android_statues_01.jpg",
              "android_statues_02.jpg",
-        //   "android_statues_04.jpg",
-        //   "android_statues_03.jpg"
+             "android_statues_04.jpg",
+             "android_statues_03.jpg"
         };
         for (String fileName1 : fileNames1) {               
        
@@ -893,7 +893,7 @@ public class AndroidStatuesTest extends TestCase {
         float fastThresh = 0.08f;//0.001f;
         boolean create1stDerivPts = false;
         boolean createCurvaturePts = false;
-        boolean useSmallPyramid = false;
+        boolean useSmallPyramid = true;
         ORB orb0 = extractTemplateORBKeypoints2(imgs0[0], shape0, 
             nKeypoints, fastThresh,
             useSmallPyramid, create1stDerivPts, createCurvaturePts);
