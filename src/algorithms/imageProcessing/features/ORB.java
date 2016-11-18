@@ -3596,8 +3596,6 @@ public class ORB {
         FixedSizeSortedVector<CObject3> minVec =
             new FixedSizeSortedVector<CObject3>(1, CObject3.class);
 
-        List<CObject3> bestJs = new ArrayList<CObject3>();
-
         for (int i = 0; i < scales1.size(); ++i) {
         //for (int i = 0; i < 1; ++i) {
 
@@ -3815,9 +3813,6 @@ debugPrint(octaveImg1, octaveImg2, kpX1_2, kpY1_2, kpX2_2, kpY2_2, i, j);
 
                 // --- evaluate cost of all keypoints, transformed
 
- //TODO: make the patch matching optional or remove it
- //  descriptors alone are finding true matches
- 
                 for (int ipi = 0; ipi < vecP.getNumberOfItems(); ++ipi) {
 
                     CObject4 c = vecP.getArray()[ipi];
@@ -4018,171 +4013,10 @@ System.out.println(String.format(
                     continue;
                 }
 
-                for (int k = 0; k < vecJ.getNumberOfItems(); ++k) {
-                     bestJs.add(vecJ.getArray()[k]);
-                }
+                // if expand capacity of minVec, add up to capacity here
+                minVec.add(vecJ.getArray()[0]);
+               
             }// end loop over image j
-        }
-
-        System.out.println("nBestJs=" + bestJs.size());
-
-        // --- further comparison of bestJs
-        /*
-        -- aggregated cell histogram intersections
-        -- if that is not best resolver, add shape matcher
-        */
-        TObjectIntMap<int[]> cacheLookup = new TObjectIntHashMap<int[]>();
-        TIntObjectMap<double[]> cacheResults = new TIntObjectHashMap<double[]>();
-        TObjectIntMap<int[]> nullResults = new TObjectIntHashMap<int[]>();
-
-        TIntList kpX1 = orb1.getKeyPoint1List().get(0);
-        TIntList kpY1 = orb1.getKeyPoint0List().get(0);
-
-        TIntList kpX2 = orb2.getKeyPoint1List().get(0);
-        TIntList kpY2 = orb2.getKeyPoint0List().get(0);
-
-        TObjectIntMap<PairInt> pointLabels2 = new TObjectIntHashMap<PairInt>();
-        for (int i = 0; i < labeledPoints2.size(); ++i) {
-            Set<PairInt> set = labeledPoints2.get(i);
-            for (PairInt p : set) {
-                pointLabels2.put(p, i);
-            }
-        }
-
-        int nMaxPatchPixels = 512;
-
-        TwoDFloatArray pyr1 = null;
-        TwoDFloatArray pyr2 = null;
-        if (orb1.descrChoice.equals(ORB.DescriptorChoice.HSV)) {
-            pyr1 = orb1.getPyramidImages().get(0);
-            pyr2 = orb2.getPyramidImages().get(0);
-        } else if (orb1.descrChoice.equals(ORB.DescriptorChoice.ALT)) {
-            pyr1 = orb1.getPyramidImagesAlt().get(0);
-            pyr2 = orb2.getPyramidImagesAlt().get(0);
-        } else if (orb1.descrChoice.equals(ORB.DescriptorChoice.GREYSCALE)) {
-            pyr1 = orb1.getPyramidImages().get(0);
-            pyr2 = orb2.getPyramidImages().get(0);
-        }
-
-        for (int ipi = 0; ipi < bestJs.size(); ++ipi) {
-
-            CObject3 c = bestJs.get(ipi);
-
-            PairInt[] mp1 = c.m1;
-            PairInt[] mp2 = c.m2;
-
-            TransformationParameters params = c.params;
-
-            float tScale = params.getScale();
-
-            double descCost = c.costDesc;
-            double distCost = c.costDist;
-            double countCost = c.costCount;
-
-            QuadInt q = c.q;
-
-            TIntSet labels = new TIntHashSet();
-            for (int j3 = 0; j3 < mp2.length; ++j3) {
-                PairInt p = mp2[j3];
-                int label = pointLabels2.get(p);
-                labels.add(label);
-            }
-            int[] keys = labels.toArray(new int[labels.size()]);
-            Arrays.sort(keys);
-
-            if (nullResults.containsKey(keys)) {
-                continue;
-            }
-
-            double[] sumDiffAndCount = null;
-
-            // exporting these from block for debugging
-            Set<PairInt> aggregatedKP2Labels = null;
-            PairIntArray shapeA = null;
-            PairIntArray tr1 = null;
-
-            if (cacheLookup.containsKey(keys)) {
-                int idxL = cacheLookup.get(keys);
-                sumDiffAndCount = cacheResults.get(idxL);
-            } else {
-                aggregatedKP2Labels = new HashSet<PairInt>();
-                for (int label : keys) {
-                    aggregatedKP2Labels.addAll(
-                        labeledPoints2.get(label));
-                }
-                // transform the segmented cells from dataset 1 to 2
-                shapeA = Misc.convertWithoutOrder(labeledPoints1);
-                tr1 = transformer.applyTransformation(params, shapeA);
-
-                //TODO: consider averaging the inage in 2 or so pixel
-                // windows across these segmented cells,
-                // but excluding the points not in the cells
-                sumDiffAndCount = sumPatchDifference(
-                    pyr1, pyr2,
-                    shapeA, tr1, aggregatedKP2Labels,
-                    params);
-
-                if (sumDiffAndCount == null) {
-                    nullResults.put(keys, 1);
-                    continue;
-                }
-if (aggregatedKP2Labels != null) {
-    printSumPatchDifference(pyr1, pyr2,
-        shapeA, tr1,
-        aggregatedKP2Labels,
-        params);
-}
-                int idxL = cacheResults.size() + 1;
-                cacheResults.put(idxL, sumDiffAndCount);
-                cacheLookup.put(keys, idxL);
-            }
-
-            double costNorm = sumDiffAndCount[0];
-            if (costNorm > 1) {
-                costNorm = 1;
-            }
-            double sum1 = costNorm;
-            double sum2 = distCost;
-            double sum3 = 1. - (sumDiffAndCount[1]/(double)shapeA.getN());
-            double sum = sum1 + sum2 + sum3;
-            sum = sum1 + sum3;
-
-System.out.println(String.format(
-"** --> s=%.2f s1=%.2f s2=%.2f s3=%.2f prevCountC=%.2f ts=%.2f  ipi=%d",
-(float)sum, (float)sum1, (float)sum2, (float)sum3, 
-(float)countCost, tScale, ipi
-));
-            CObject2 cObj2 = new CObject2(ipi, sum, c.costDesc,
-               c.costDist, c.costCount, c.m1, c.m2);
-
-            CObject3 cObj = new CObject3(cObj2, sum, sum1, params);
-            minVec.add(cObj);
-            
-            if (true) {
-                CorrespondencePlotter plotter = new CorrespondencePlotter(
-                    convertToImage(orb1.getPyramidImages().get(0)),
-                    convertToImage(orb2.getPyramidImages().get(0)));
-                for (int ii = 0; ii < cObj.m1.length; ++ii) {
-                    PairInt p1 = cObj.m1[ii];
-                    PairInt p2 = cObj.m2[ii];
-                    int x1 = Math.round((float) p1.getX());
-                    int y1 = Math.round((float) p1.getY());
-                    int x2 = Math.round((float) p2.getX());
-                    int y2 = Math.round((float) p2.getY());
-                    plotter.drawLineInAlternatingColors(
-                        x1, y1, x2, y2, 0);
-                }
-                String str = Integer.toString(ipi);
-                while (str.length() < 3) {
-                    str = "0" + str;
-                }
-                try {
-                    plotter.writeImage("_mindiv_masked_corres4_" + str + "_"
-                        + MiscDebug.getCurrentTimeFormatted());
-                } catch (IOException ex) {
-                    Logger.getLogger(ORB.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
         }
 
         if (minVec.getNumberOfItems() == 0) {
