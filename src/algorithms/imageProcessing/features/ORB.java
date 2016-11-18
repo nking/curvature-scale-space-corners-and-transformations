@@ -13,6 +13,7 @@ import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculato
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
 import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.compGeometry.FurthestPair;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.search.NearestNeighbor2D;
@@ -30,9 +31,11 @@ import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TFloatIntMap;
+import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TFloatIntHashMap;
+import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.TIntSet;
@@ -2717,772 +2720,27 @@ public class ORB {
     }
 
     /**
-     * match descriptors using euclidean transformation evaluation from pairs in
-     * feasible combinations of best matches.
-     * This method is useful when a geometrical model is necessary to find the
-     * object in an image where the background and foreground have changed and the
-     * lighting may have changed, for example.
-     * (In other words, the number of true positives is very low compared to the
-     * total number of keypoints, so greedy or optimal matching and RANSAC are not
-     * feasible solutions for this case).
-     * Fpr known simpler conditions such as stereo-projections, RANSAC with
-     * an epipolar or euclidean evaluator can be used instead with the top 45
-     * results and that method will
-     * be offered in this class one day.
-     * @param scales1
-     * @param scales2
-     * @param descH1 H descriptors itemized by scales1.
-     *     each descriptor is for a coordinate in similar location in
-     *     lists keypointsX1, keypointsy1.
-     * @param descS1 S descriptors itemized by scales1.
-     *     each descriptor is for a coordinate in similar location in
-     *     lists keypointsX1, keypointsy1.
-     * @param descV1 V descriptors itemized by scales1.
-     *     each descriptor is for a coordinate in similar location in
-     *     lists keypointsX1, keypointsy1.
-     * @param descH2 H descriptors itemized by scales2.
-     *     each descriptor is for a coordinate in similar location in
-     *     lists keypointsX2, keypointsy2.
-     * @param descS2 S descriptors itemized by scales2.
-     *     each descriptor is for a coordinate in similar location in
-     *     lists keypointsX2, keypointsy2.
-     * @param descV2 V descriptors itemized by scales2.
-     *     each descriptor is for a coordinate in similar location in
-     *     lists keypointsX2, keypointsy2.
-     * @param keypointsX1 x coordinates of keypoints itemized by scales1
-     * @param keypointsY1 y coordinates of keypoints itemized by scales1
-     * @param keypointsX2 x coordinates of keypoints itemized by scales2
-     * @param keypointsY2 y coordinates of keypoints itemized by scales2
-     * @param scaleFactor the factor that will be the maximum dimension
-     * of the object in the search image, for example, 2.
-
-     * @return
+     * match template image and shape in orb1 and labeledPoints1
+     * with the same object which is somewhere in the 
+     * segmented labledPoints2 and orb2.
+     * 
+     * NOTE that if the template or the true object match in dataset2
+     * are smaller than 32 pixels across, the method may not find the
+     * object very well so alternative methods should be used in that case
+     * or pre-processing to correct that.
+     * 
+     * NOTE also that if precise correspondence is needed, this method should
+     * probably be followed by partial shape matcher to get better transformation
+     * and then add transformed matching keypoints to that correspondence.
+     * 
+     * NOT READY FOR USE yet.
+     * 
+     * @param orb1
+     * @param orb2
+     * @param labeledPoints1
+     * @param labeledPoints2
+     * @return 
      */
-    public static CorrespondenceList matchDescriptors2(
-        List<TwoDFloatArray> pyr1,
-        List<TwoDFloatArray> pyr2,
-        TFloatList scales1, TFloatList scales2,
-        List<Descriptors> descH1, List<Descriptors> descS1,
-        List<Descriptors> descV1,
-        List<Descriptors> descH2, List<Descriptors> descS2,
-        List<Descriptors> descV2,
-        List<TIntList> keypointsX1, List<TIntList> keypointsY1,
-        List<TIntList> keypointsX2, List<TIntList> keypointsY2,
-        float scaleFactor) {
-
-        List<CorrespondenceList> corList =
-            matchDescriptors2(pyr1, pyr2,
-            scales1, scales2,
-            descH1, descS1, descV1, descH2, descS2, descV2,
-            keypointsX1, keypointsY1, keypointsX2, keypointsY2,
-            scaleFactor, 0, true);
-
-        if (corList == null || corList.isEmpty()) {
-            return null;
-        }
-
-        return corList.get(0);
-    }
-
-    /**
-     * match descriptors using euclidean transformation evaluation from pairs in
-     * feasible combinations of best matches.
-     * This method is useful when a geometrical model is necessary to find the
-     * object in an image where the background and foreground have changed and the
-     * lighting may have changed, for example.
-     * (In other words, the number of true positives is very low compared to the
-     * total number of keypoints, so greedy or optimal matching and RANSAC are not
-     * feasible solutions for this case).
-     * Fpr known simpler conditions such as stereo-projections, RANSAC with
-     * an epipolar or euclidean evaluator can be used instead with the top 45
-     * results and that method will
-     * be offered in this class one day.
-     * NOTE: that one of the internal cost parameters is an estimate of the
-     * maximum number of matchable points of any given scale compared to another,
-     * so reduce the number of keypoints to truly matchable for best results.
-     * @param scales1
-     * @param scales2
-     * @param descH1 H descriptors itemized by scales1.
-     *     each descriptor is for a coordinate in similar location in
-     *     lists keypointsX1, keypointsy1.
-     * @param descS1 S descriptors itemized by scales1.
-     *     each descriptor is for a coordinate in similar location in
-     *     lists keypointsX1, keypointsy1.
-     * @param descV1 V descriptors itemized by scales1.
-     *     each descriptor is for a coordinate in similar location in
-     *     lists keypointsX1, keypointsy1.
-     * @param descH2 H descriptors itemized by scales2.
-     *     each descriptor is for a coordinate in similar location in
-     *     lists keypointsX2, keypointsy2.
-     * @param descS2 S descriptors itemized by scales2.
-     *     each descriptor is for a coordinate in similar location in
-     *     lists keypointsX2, keypointsy2.
-     * @param descV2 V descriptors itemized by scales2.
-     *     each descriptor is for a coordinate in similar location in
-     *     lists keypointsX2, keypointsy2.
-     * @param keypointsX1 x coordinates of keypoints itemized by scales1
-     * @param keypointsY1 y coordinates of keypoints itemized by scales1
-     * @param keypointsX2 x coordinates of keypoints itemized by scales2
-     * @param keypointsY2 y coordinates of keypoints itemized by scales2
-     * @param scaleFactor the factor that will be the maximum dimension
-     * of the object in the search image, for example, 2.
-       @param sizeScaleFraction (suggested default is 0.12).
-     * the expected largest difference in fraction
-     * of image size between the template object and search object size.
-     * For example, if the scale is 70% then that is represented by
-     * a pyramidal image scale of approx 1.4, so is approx 0.1 difference from
-     * an existing scale.  This number is used as a tolerance for error in
-     * the descriptor.  For example, the same keypoint in two same images,
-     * but one image scaled by 0.7 produces a best difference in descriptors
-     * of about 20 bits (which is approx 0.08 * 256 bits) per band.
-     * This number is used to calculate a tolerance for equivalent costs so
-     * set it as accurately as possible.
-     * @return
-     */
-    public static List<CorrespondenceList> matchDescriptors2(
-        List<TwoDFloatArray> pyr1,
-        List<TwoDFloatArray> pyr2,
-        TFloatList scales1, TFloatList scales2,
-        List<Descriptors> descH1, List<Descriptors> descS1,
-        List<Descriptors> descV1,
-        List<Descriptors> descH2, List<Descriptors> descS2,
-        List<Descriptors> descV2,
-        List<TIntList> keypointsX1, List<TIntList> keypointsY1,
-        List<TIntList> keypointsX2, List<TIntList> keypointsY2,
-        float scaleFactor, float sizeScaleFraction) {
-
-        return matchDescriptors2(
-            pyr1, pyr2,
-            scales1, scales2,
-            descH1, descS1, descV1, descH2, descS2, descV2,
-            keypointsX1, keypointsY1, keypointsX2, keypointsY2,
-            scaleFactor, sizeScaleFraction, false);
-    }
-
-    private static List<CorrespondenceList> matchDescriptors2(
-        List<TwoDFloatArray> pyr1,
-        List<TwoDFloatArray> pyr2,
-        TFloatList scales1, TFloatList scales2,
-        List<Descriptors> descH1, List<Descriptors> descS1,
-        List<Descriptors> descV1,
-        List<Descriptors> descH2, List<Descriptors> descS2,
-        List<Descriptors> descV2,
-        List<TIntList> keypointsX1, List<TIntList> keypointsY1,
-        List<TIntList> keypointsX2, List<TIntList> keypointsY2,
-        float scaleFactor, float sizeScaleFraction,
-        boolean returnSingleAnswer) {
-
-        if (scales1.size() != descH1.size() ||
-            scales1.size() != descS1.size() ||
-            scales1.size() != descV1.size() ||
-            scales1.size() != keypointsX1.size() ||
-            scales1.size() != keypointsY1.size()
-            ) {
-            throw new IllegalArgumentException("lists for datasets 1"
-                + " must all be same lengths as scales1");
-        }
-        if (scales2.size() != descH2.size() ||
-            scales2.size() != descS2.size() ||
-            scales2.size() != descV2.size() ||
-            scales2.size() != keypointsX2.size() ||
-            scales2.size() != keypointsY2.size()
-            ) {
-            throw new IllegalArgumentException("lists for datasets 2"
-                + " must all be same lengths as scales1");
-        }
-
-        //TODO: may need to revise this or allow it as a method argument:
-        int pixTolerance = 10;
-
-        int nBands = 3;
-        int bitTolerance;
-        if (returnSingleAnswer) {
-            bitTolerance = 0;
-        } else {
-            bitTolerance = Math.round(sizeScaleFraction * nBands * 256);
-        }
-        int topLimit = Math.round(
-            //0.17f
-            //0.3f
-            0.99f
-            * nBands * 256) + bitTolerance;
-        int minP1Diff = 5;
-
-        MatchedPointsTransformationCalculator tc = new
-            MatchedPointsTransformationCalculator();
-
-        Transformer transformer = new Transformer();
-
-        // distance portion of costs gets transformed to this reference frame
-        float minScale1 = scales1.min();
-        float diag1 = calculateDiagonal(keypointsX1, keypointsY1,
-            scales1.indexOf(minScale1));
-
-        // these 3 are used to normalize costs
-        final double maxCost = nBands * 256;
-        final double maxDist = diag1;
-        final double dbgBitTol = bitTolerance / maxCost;
-        // a rough estimate of maximum number of matchable points in any
-        //     scale dataset comparison
-        final int nMaxMatchable = calculateNMaxMatchable(keypointsX1, keypointsX2);
-        System.out.println("nMaxMatchable=" + nMaxMatchable);
-
-        int nMax1 = maxSize(keypointsX1);
-        int nMax2 = maxSize(keypointsX2);
-        int nMax = nMax1 * nMax2;
-
-        if (diag1 <= 16) {
-            minP1Diff = 2;
-        }
-
-        // --- best cost data ----
-        double minCostTotal = Double.MAX_VALUE;
-        double minCost1 = Double.MAX_VALUE;
-        double minCost2 = Double.MAX_VALUE;
-        double minCost3 = Double.MAX_VALUE;
-        float minCostTScale = Float.MAX_VALUE;
-
-        //runtime complexity of this vector depends upon the number of items
-        // it is currently holding, so can set the capacity high and fill vector only
-        // with items within bitTolerance of best, but too high might affect jvm
-        // performance.
-        // (note, can optimize this for very large results by occassionally ejecting
-        // all values with cost > best + bitTolerance.)
-        // TODO: a safe size is to set capacity to the number of unique
-        // transformation parameter sets, but since that isn't known
-        // until later without refactoring here, will make an assumption for now,
-        // that size 100 is generous for number of top solutions.
-        FixedSizeSortedVector<CObject> vec;
-        if (returnSingleAnswer) {
-            vec = new FixedSizeSortedVector<CObject>(1, CObject.class);
-        } else {
-            vec = new FixedSizeSortedVector<CObject>(10, CObject.class);
-        }
-
-        //CorrespondenceList minCostCor = null;
-        //PairIntArray minCostTr2 = null;
-        double[] minCostI = new double[nMax];
-        double[] minDistI = new double[nMax];
-
-        // temporary storage of corresp coords until object construction
-        int[] m1x = new int[nMax];
-        int[] m1y = new int[nMax];
-        int[] m2x = new int[nMax];
-        int[] m2y = new int[nMax];
-        int mCount = 0;
-
-        for (int i = 0; i < scales1.size(); ++i) {
-            float pScale1 = scales1.get(i);
-            Descriptors dH1 = descH1.get(i);
-            Descriptors dS1 = descS1.get(i);
-            Descriptors dV1 = descV1.get(i);
-            TIntList kpX1 = keypointsX1.get(i);
-            TIntList kpY1 = keypointsY1.get(i);
-            int n1 = kpX1.size();
-            if (n1 != dH1.descriptors.length) {
-                throw new IllegalArgumentException("number of descriptors in "
-                    + " d1 bitstrings must be same as keypoints1 length");
-            }
-
-            float factorToMinScale = pScale1 / minScale1;
-
-            int minX = kpX1.min();
-            int maxX = kpX1.max();
-            int minY = kpY1.min();
-            int maxY = kpY1.max();
-
-            int objDimension = Math.max(maxX - minX, maxY - minY);
-            int limit = Math.round(scaleFactor * objDimension);
-            int limitSq = limit * limit;
-
-            NearestNeighbor2D nn = new NearestNeighbor2D(
-                makeSet(kpX1, kpY1), maxX + limit, maxY + limit);
-
-            TObjectIntMap<PairInt> p1IndexMap = createIndexMap(kpX1, kpY1);
-
-            for (int j = 0; j < scales2.size(); ++j) {
-                Descriptors dH2 = descH2.get(j);
-                Descriptors dS2 = descS2.get(j);
-                Descriptors dV2 = descV2.get(j);
-                TIntList kpX2 = keypointsX2.get(j);
-                TIntList kpY2 = keypointsY2.get(j);
-                int n2 = kpX2.size();
-                if (n2 != dH2.descriptors.length) {
-                    throw new IllegalArgumentException("number of descriptors in "
-                        + " d2 bitstrings must be same as keypoints2 length");
-                }
-
-                //[n1][n2]
-                int[][] cost = calcDescriptorCostMatrix(
-                    new Descriptors[]{dH1, dS1, dV1},
-                    new Descriptors[]{dH2, dS2, dV2});
-
-                int nTot = n1 * n2;
-
-                // storing points1 in pairintarray to transform
-                // storing points2 in set to create a nearest neighbors
-
-                PairIntArray a1 = new PairIntArray(nTot/2);
-                PairIntArray a2 = new PairIntArray(nTot/2);
-
-                TIntList a2Indexes = new TIntArrayList(nTot/2);
-
-                Set<PairInt> s1 = new HashSet<PairInt>(nTot/2);
-                Set<PairInt> s2 = new HashSet<PairInt>(nTot/2);
-
-                FixedSizeSortedVector<CObject> vecD;
-                FixedSizeSortedVector<CObject> vecF;
-                if (returnSingleAnswer) {
-                    vecD = new FixedSizeSortedVector<CObject>(1, CObject.class);
-                    vecF = new FixedSizeSortedVector<CObject>(1, CObject.class);
-                } else {
-                    vecD = new FixedSizeSortedVector<CObject>(5, CObject.class);
-                    vecF = new FixedSizeSortedVector<CObject>(5, CObject.class);
-                }
-                double[] minCostI_D = new double[nMax];
-                double[] minDistI_D = new double[nMax];
-                double[] minCostI_F = new double[nMax];
-                double[] minDistI_F = new double[nMax];
-
-                double minCostTotal_D = Double.MAX_VALUE;
-                double minCost1_D = Double.MAX_VALUE;
-                double minCost2_D = Double.MAX_VALUE;
-                double minCost3_D = Double.MAX_VALUE;
-                float minCostTScale_D = Float.MAX_VALUE;
-                double minCostTotal_F = Double.MAX_VALUE;
-                double minCost1_F = Double.MAX_VALUE;
-                double minCost2_F = Double.MAX_VALUE;
-                double minCost3_F = Double.MAX_VALUE;
-                float minCostTScale_F = Float.MAX_VALUE;
-
-                // may need to iterate to reduce pairs.size to szLimit
-                float topLimit2 = topLimit;
-                while (true) {
-                    int count = 0;
-                    for (int ii = 0; ii < n1; ++ii) {
-                        for (int jj = 0; jj < n2; ++jj) {
-                            int c = cost[ii][jj];
-                            if (c > topLimit2) {
-                                continue;
-                            }
-                            count++;
-                        }
-                    }
-                    System.out.println(count);
-                    //TODO: may need to revise this limit
-                    if (count < 200) {
-                         break;
-                    }
-                    topLimit2 -= (0.025f * nBands * 256);
-                    if (topLimit2 == 0) {
-                        topLimit2 = bitTolerance;
-                        if (topLimit2 == 0) {
-                            topLimit2 = nBands * 256 * 0.025f;
-                        }
-                        break;
-                    }
-                }
-
-                List<QuadInt> pairs = new ArrayList<QuadInt>(nTot/2);
-                TIntList costs = new TIntArrayList(nTot);
-                for (int ii = 0; ii < n1; ++ii) {
-                    PairInt p1 = new PairInt(kpX1.get(ii), kpY1.get(ii));
-                    for (int jj = 0; jj < n2; ++jj) {
-                        int c = cost[ii][jj];
-
-                        if (c > topLimit2) {
-                            continue;
-                        }
-
-                        PairInt p2 = new PairInt(kpX2.get(jj), kpY2.get(jj));
-
-                        if (!s1.contains(p1)) {
-                            a1.add(p1.getX(), p1.getY());
-                            s1.add(p1);
-                        }
-                        if (!s2.contains(p2)) {
-                            a2.add(p2.getX(), p2.getY());
-                            a2Indexes.add(jj);
-                            s2.add(p2);
-                        }
-                        pairs.add(new QuadInt(p1, p2));
-                        costs.add(c);
-                    }
-                }
-
-                System.out.println("i=" + i + " j=" + j + " nPairs=" + pairs.size());
-
-                // --- calculate transformations in pairs and evaluate ----
-                for (int ii = 0; ii < pairs.size(); ++ii) {
-
-                    QuadInt pair1 = pairs.get(ii);
-
-                    // image 1 point:
-                    int t1X = pair1.getA();
-                    int t1Y = pair1.getB();
-                    // image 2 point:
-                    int s1X = pair1.getC();
-                    int s1Y = pair1.getD();
-
-                    // choose all combinations of 2nd point within distance
-                    // limit of point s1.
-                    for (int jj = 0; jj < pairs.size(); ++jj) {
-
-                        if (ii == jj) {
-                            continue;
-                        }
-
-                        QuadInt pair2 = pairs.get(jj);
-
-                        // image 1 point:
-                        int t2X = pair2.getA();
-                        int t2Y = pair2.getB();
-                        // image 2 point:
-                        int s2X = pair2.getC();
-                        int s2Y = pair2.getD();
-
-                        if ((t1X == t2X && t1Y == t2Y)
-                            || (s1X == s2X && s1Y == s2Y)) {
-                            continue;
-                        }
-
-                        int diffX = s1X - s2X;
-                        int diffY = s1Y - s2Y;
-                        int distSq = diffX * diffX + diffY * diffY;
-                        if (distSq > limitSq) {
-                            continue;
-                        }
-                        if ((distSq < minP1Diff*minP1Diff) ||
-                            ((t1X - t2X)*(t1X - t2X) +
-                             (t1Y - t2Y)*(t1Y - t2Y)
-                            < minP1Diff)) {
-
-                            continue;
-                        }
-
-                        // transform dataset 2 into frame 1
-                        TransformationParameters params = tc.calulateEuclidean(
-                            s1X, s1Y,
-                            s2X, s2Y,
-                            t1X, t1Y,
-                            t2X, t2Y,
-                            0, 0);
-
-                        float tScale = params.getScale();
-
-                        if (Math.abs(tScale - 1.0) > 0.20) {
-                             continue;
-                        }
-
-                        if (Math.abs(tScale - 1)
-                            > Math.abs(minCostTScale - 1)) {
-                            continue;
-                        }
-                        //TODO: this may need to be revised.
-                        // wanting to approach scale of '1' from whichever
-                        // direction it is from.
-                        // The current tests pass arguments such that the
-                        // first images in pyramid1 and pyramid2 are the largerst
-                        // for both.
-                        // so if img1 is smaller than img2,
-                        // tScale will be less than 1 and the approach will
-                        // be towards 1, and skip when reach it.
-                        // else if img2 is larger than img2, the
-                        // tScale will be larger than 1, so decresing
-                        // scales until reach "1"....
-                        //might need to note the direction
-                        // of approaching scale "1" and skip when reaches it
-
-                        if (minCostTScale < Float.MAX_VALUE &&
-                            (Math.abs(tScale - 1) >
-                            (Math.abs(minCostTScale - 1)))) {
-                            continue;
-                        }
-
-                        mCount = 0;
-
-                        PairIntArray tr2 =
-                            transformer.applyTransformation(params, a2);
-
-                        double sum1 = 0;
-                        double sum2 = 0;
-                        double sum3 = 0;
-                        double sum = 0;
-
-                        double sum2_F = 0;
-                        double sum_F = 0;
-
-                        double sum2_D = 0;
-                        double sum_D = 0;
-
-                        for (int k = 0; k < tr2.getN(); ++k) {
-                            int x2Tr = tr2.getX(k);
-                            int y2Tr = tr2.getY(k);
-                            int idx2 = a2Indexes.get(k);
-
-                            Set<PairInt> nearest = null;
-                            if ((x2Tr >= 0) && (y2Tr >= 0)
-                                && (x2Tr <= (maxX + pixTolerance))
-                                && (y2Tr <= (maxY + pixTolerance))) {
-                                nearest = nn.findClosest(x2Tr, y2Tr, pixTolerance);
-                            }
-
-                            int minC = Integer.MAX_VALUE;
-                            PairInt minCP1 = null;
-                            int minIdx1 = 0;
-                            if (nearest != null && !nearest.isEmpty()) {
-                                for (PairInt p1 : nearest) {
-                                    int idx1 = p1IndexMap.get(p1);
-                                    int c = cost[idx1][idx2];
-                                    if (c < minC) {
-                                        minC = c;
-                                        minCP1 = p1;
-                                        minIdx1 = idx1;
-                                    }
-                                }
-                            }
-
-                            if (minCP1 != null) {
-                                double scoreNorm = (nBands*256 - minC)/maxCost;
-                                double costNorm = 1. - scoreNorm;
-                                sum1 += costNorm;
-
-                                // distances get multiplied by factorToMinScale
-                                // to put them into reference frame of largest
-                                // set 1 image (== minScale1 frame)
-
-                                // TODO: applying tScale correctly needs knowledge
-                                // of the real scale factor brtween object in the
-                                // template and search images,
-                                // so may need to calculate solutions for 2 vectors.
-                                // one soln uses the tScale applied as a factor
-                                // and the other soln uses the tScale applied as a
-                                // divisor. the decider isn't completely clear yet,
-                                //   but tentatively looks like the vec which
-                                //   has the smaller minCost1 (== descriptor cost)
-                                //   for the top item.
-                                //
-                                double dist = distance(x2Tr, y2Tr, minCP1);
-                                double distNorm = dist *
-                                    factorToMinScale / maxDist;
-                                sum2 += distNorm;
-                                sum2_F += (dist * tScale * factorToMinScale / maxDist);
-                                sum2_D += (dist * factorToMinScale / (tScale * maxDist));
-
-                                m2x[mCount] = kpX2.get(idx2);
-                                m2y[mCount] = kpY2.get(idx2);
-                                m1x[mCount] = minCP1.getX();
-                                m1y[mCount] = minCP1.getY();
-                                minCostI[mCount] = costNorm;
-                                minDistI[mCount] = distNorm;
-                                mCount++;
-
-                            } else {
-                                sum1 += 1;
-                                sum2 += 1;
-                                sum2_F += 1;
-                                sum2_D += 1;
-                            }
-                        }
-
-                        double cf = mCount;
-                        if (cf > nMaxMatchable) {
-                            cf = nMaxMatchable;
-                        }
-                        cf /= nMaxMatchable;
-                        sum3 = 1. - cf;
-
-                        sum = sum1 + sum2 + sum3;
-
-                        sum_D = sum1 + sum2_D + sum3;
-
-                        sum_F = sum1 + sum2_F + sum3;
-
-                        if ((minCostTotal_D == Double.MAX_VALUE) ||
-                            (sum_D <= (minCostTotal_D + bitTolerance))
-                        ) {
-
-                            if (sum_D < minCostTotal_D) {
-                                minCostTotal_D = sum_D;
-                                minCost1_D = sum1;
-                                minCost2_D = sum2_D;
-                                minCost3_D = sum3;
-                                minCostTScale_D = tScale;
-                            }
-
-                            CorrespondenceList corr
-                                = new CorrespondenceList(params.getScale(),
-                                Math.round(params.getRotationInDegrees()),
-                                Math.round(params.getTranslationX()),
-                                Math.round(params.getTranslationY()),
-                                0, 0, 0,
-                                new ArrayList<PairInt>(), new ArrayList<PairInt>());
-
-                            for (int mi = 0; mi < mCount; ++mi) {
-                                corr.addMatch(
-                                    new PairInt(m1x[mi], m1y[mi]),
-                                    new PairInt(m2x[mi], m2y[mi]),
-                                    (minCostI[mi] + minCostI[mi])
-                                );
-                            }
-
-                            CObject cObj = new CObject(sum_D, corr, tr2);
-                            vecD.add(cObj);
-                        }
-
-                        if ((minCostTotal_F == Double.MAX_VALUE) ||
-                            (sum_F <= (minCostTotal_F + bitTolerance))
-                        ) {
-
-                            if (sum_F < minCostTotal_F) {
-                                minCostTotal_F = sum_F;
-                                minCost1_F = sum1;
-                                minCost2_F = sum2_F;
-                                minCost3_F = sum3;
-                                minCostTScale_F = tScale;
-                            }
-
-                            CorrespondenceList corr
-                                = new CorrespondenceList(params.getScale(),
-                                Math.round(params.getRotationInDegrees()),
-                                Math.round(params.getTranslationX()),
-                                Math.round(params.getTranslationY()),
-                                0, 0, 0,
-                                new ArrayList<PairInt>(), new ArrayList<PairInt>());
-
-                            for (int mi = 0; mi < mCount; ++mi) {
-                                corr.addMatch(
-                                    new PairInt(m1x[mi], m1y[mi]),
-                                    new PairInt(m2x[mi], m2y[mi]),
-                                    (minCostI[mi] + minCostI[mi])
-                                );
-                            }
-
-                            CObject cObj = new CObject(sum_F, corr, tr2);
-                            vecF.add(cObj);
-                        }
-                    }
-                }
-
-                //TODO: seems obvious now that the correct solution will be
-                //      when the transformation scale is "1"...then the descriptor
-                //      apertures will be the same size.
-                //      making changes now.
-                //      NOTE that masked descriptors could still be useful because
-                //      they are more precise, but they might not be necessary for best cases,
-                //      excepting those such as the android test 01 in which the object
-                //      is small in the search image.
-
-                System.out.println(
-                    String.format(
-                "i=%d j=%d minCost=%.2f c1=%.2f c2=%.2f c3=%.2f  c1Tol=%.2f  tS=%.2f",
-                        i, j, (float) minCostTotal, (float) minCost1,
-                        (float) minCost2, (float) minCost3, (float)dbgBitTol,
-                        minCostTScale));
-                System.out.println(
-                    String.format(
-                        "minCostD=%.2f c1=%.2f c2=%.2f c3=%.2f tS=%.2f",
-                        (float) minCostTotal_D, (float) minCost1_D,
-                        (float) minCost2_D, (float) minCost3_D,
-                        minCostTScale_D));
-                System.out.println(
-                    String.format(
-                        "minCostF=%.2f c1=%.2f c2=%.2f c3=%.2f tS=%.2f",
-                        (float) minCostTotal_F, (float) minCost1_F,
-                        (float) minCost2_F, (float) minCost3_F,
-                        minCostTScale_F));
-
-                if (vecD.getNumberOfItems() == 0) {
-                    System.out.println("no matches for i=" + i + " j=" + j);
-                    continue;
-                }
-
-                // if any of the top costs from descriptors is 0,
-                // that vector should be chosen,
-                // else, choose the one with smallest mincost3
-                float[] c0 = new float[]{(float) minCostTotal,
-                    (float) minCostTotal_D, (float) minCostTotal_F};
-                float[] c1 = new float[]{(float) minCost1,
-                    (float) minCost1_D, (float) minCost1_F};
-                float[] c2 = new float[]{(float) minCost2,
-                    (float) minCost2_D, (float) minCost2_F};
-                float[] c3 = new float[]{(float) minCost3,
-                    (float) minCost3_D, (float) minCost3_F};
-                int[] indexes = new int[]{0, 1, 2};
-                QuickSort.sortBy1stThen2ndThen3rd(c1, c3, c0, indexes);
-                int vecIdx = -1;
-                if (Math.abs(c1[0] - 0) < 0.001f) {
-                    if (indexes[0] == 0) {
-                        vecIdx = 0;
-                    } else if (indexes[0] == 1) {
-                        vecIdx = 1;
-                    } else {
-                        vecIdx = 2;
-                    }
-                } else {
-                    c0 = new float[]{(float) minCostTotal,
-                        (float) minCostTotal_D, (float) minCostTotal_F};
-                    c1 = new float[]{(float) minCost1,
-                        (float) minCost1_D, (float) minCost1_F};
-                    c2 = new float[]{(float) minCost2,
-                        (float) minCost2_D, (float) minCost2_F};
-                    c3 = new float[]{(float) minCost3,
-                        (float) minCost3_D, (float) minCost3_F};
-                    indexes = new int[]{0, 1, 2};
-                    // TODO: might need to sort by c3 first here and use bitTolerance w/ c0
-                    QuickSort.sortBy1stThen2ndThen3rd(c0, c3, c1, indexes);
-                    for (int ia = 0; ia < vec.getNumberOfItems(); ++ia) {
-                        if (indexes[1] == 1) {
-                            vecIdx = 1;
-                        } else {
-                            vecIdx = 2;
-                        }
-                    }
-                }
-                System.out.println("vecIdx=" + vecIdx);
-                if (vecIdx == 1) {
-                    if (minCostTotal_D < minCostTotal) {
-                        System.out.println("Choosing scale as divisor");
-                        vec = vecD;
-                        minCostTotal = minCostTotal_D;
-                        minCost1 = minCost1_D;
-                        minCost2 = minCost2_D;
-                        minCost3 = minCost3_D;
-                        minCostTScale = minCostTScale_D;
-                    }
-                } else if (vecIdx != 0) { // vecIdx == 2
-                    if (minCostTotal_F < minCostTotal) {
-                        System.out.println("choosing scale as factor");
-                        vec = vecF;
-                        minCostTotal = minCostTotal_F;
-                        minCost1 = minCost1_F;
-                        minCost2 = minCost2_F;
-                        minCost3 = minCost3_F;
-                        minCostTScale = minCostTScale_F;
-                    }
-                }
-            }// end loop over image j
-        }
-
-        if (vec.getNumberOfItems() == 0) {
-            return null;
-        }
-
-        List<CorrespondenceList> topResults =
-            new ArrayList<CorrespondenceList>();
-
-        for (int i = 0; i < vec.getNumberOfItems(); ++i) {
-            CObject a = vec.getArray()[i];
-            if (a.cost > (minCostTotal + bitTolerance)) {
-                break;
-            }
-            topResults.add(a.cCor);
-        }
-
-        return topResults;
-    }
-
-    //NOT READY FOR USE.
     public static List<CorrespondenceList> match0(
         ORB orb1, ORB orb2,
         Set<PairInt> labeledPoints1,
@@ -3596,6 +2854,11 @@ public class ORB {
         FixedSizeSortedVector<CObject3> minVec =
             new FixedSizeSortedVector<CObject3>(1, CObject3.class);
 
+        int templateSize = calculateObjectSize(labeledPoints1);
+        
+        // populated on demand
+        TIntIntMap labeledPointsSizes2 = new TIntIntHashMap();
+        
         for (int i = 0; i < scales1.size(); ++i) {
         //for (int i = 0; i < 1; ++i) {
 
@@ -3647,8 +2910,7 @@ public class ORB {
             }
             Set<PairInt> shape = new HashSet<PairInt>(setScaled);
 
-            int objDimension = Math.max(kpX1_2.max() - kpX1_2.min(),
-                kpY1_2.max() - kpY1_2.min());
+            int objDimension = (int)Math.round((float)templateSize/(float)scale1);
             int limit = Math.round(1.15f * objDimension);
             int limitSq = limit * limit;
 
@@ -3784,12 +3046,32 @@ debugPrint(octaveImg1, octaveImg2, kpX1_2, kpY1_2, kpX2_2, kpY2_2, i, j);
                     if (Math.abs(tScale - 1.0) > 0.15) {
                         continue;
                     }
-
+                    
                     int idx1_1 = p1KPIndexMap.get(new PairInt(t1X, t1Y));
                     int idx1_2 = p1KPIndexMap.get(new PairInt(t2X, t2Y));
                     int idx2_1 = p2KPIndexMap_2.get(new PairInt(s1X, s1Y));
                     int idx2_2 = p2KPIndexMap_2.get(new PairInt(s2X, s2Y));
+                    
+                    // a filter for objects too large to be the template object in
+                    //    dataset 1.
+                    // caveat is that cannot use partial shape matcher on all
+                    //    results in same manner if filter this one out, but it's
+                    //    the right logic if not oversegmented or blended into
+                    //    other objects.
+                    int label2 = pointLabels2.get(new PairInt(
+                        kpX2.get(q.getC()), kpY2.get(q.getC())));
+                    
+                    if (!labeledPointsSizes2.containsKey(label2)) {
+                        int sz = calculateObjectSize(labeledPoints2.get(label2));
+                        labeledPointsSizes2.put(label2, sz);
+                    }
+                    int regionSize = Math.round(
+                        (float)labeledPointsSizes2.get(label2)/(float)scale2);
 
+                    if (regionSize > (1.5*templateSize)) {
+                        continue;
+                    }
+                    
                     int sum = cost[idx1_1][idx2_1] + cost[idx1_2][idx2_2];
 
                     CObject4 cObj = new CObject4(sum, params, q);
@@ -3854,6 +3136,9 @@ debugPrint(octaveImg1, octaveImg2, kpX1_2, kpY1_2, kpX2_2, kpY2_2, i, j);
                         maxX2, maxY2, pixTolerance, maxDist,
                         mp1, mp2
                     );
+                    
+                    //TODO: apply the same object size filter here
+                    // for the combined labeled segmentation sets
 
                     double sumDesc = distAndCount[0];
                     double sumDist = distAndCount[1];
@@ -6082,6 +5367,23 @@ if (v1.size() == 0) {
         }
 
         return b;
+    }
+
+    private static int calculateObjectSize(Set<PairInt> points) {
+
+        // O(N*lg_2(N))
+        FurthestPair furthestPair = new FurthestPair();
+        
+        PairInt[] fp = furthestPair.find(points);
+        
+        if (fp == null || fp.length < 2) {
+            throw new IllegalArgumentException("did not find a furthest pair"
+                + " in points");
+        }
+        
+        double dist = distance(fp[0], fp[1]);
+        
+        return (int)Math.round(dist);
     }
 
 }
