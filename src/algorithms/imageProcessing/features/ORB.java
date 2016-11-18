@@ -2721,25 +2721,25 @@ public class ORB {
 
     /**
      * match template image and shape in orb1 and labeledPoints1
-     * with the same object which is somewhere in the 
+     * with the same object which is somewhere in the
      * segmented labledPoints2 and orb2.
-     * 
+     *
      * NOTE that if the template or the true object match in dataset2
      * are smaller than 32 pixels across, the method may not find the
      * object very well so alternative methods should be used in that case
      * or pre-processing to correct that.
-     * 
+     *
      * NOTE also that if precise correspondence is needed, this method should
      * probably be followed by partial shape matcher to get better transformation
      * and then add transformed matching keypoints to that correspondence.
-     * 
+     *
      * NOT READY FOR USE yet.
-     * 
+     *
      * @param orb1
      * @param orb2
      * @param labeledPoints1
      * @param labeledPoints2
-     * @return 
+     * @return
      */
     public static List<CorrespondenceList> match0(
         ORB orb1, ORB orb2,
@@ -2792,7 +2792,7 @@ public class ORB {
             }
             nBands = 1;
         }
-       
+
         boolean useMasks = false;
         if (useMasks) {// initialize the masks, but discard the maps
             TObjectIntMap<PairInt> pointLabels1 = new TObjectIntHashMap<PairInt>();
@@ -2855,10 +2855,10 @@ public class ORB {
             new FixedSizeSortedVector<CObject3>(1, CObject3.class);
 
         int templateSize = calculateObjectSize(labeledPoints1);
-        
+
         // populated on demand
-        TIntIntMap labeledPointsSizes2 = new TIntIntHashMap();
-        
+        TObjectIntMap<int[]> labeledPointsSizes2 = new TObjectIntHashMap<int[]>();
+
         for (int i = 0; i < scales1.size(); ++i) {
         //for (int i = 0; i < 1; ++i) {
 
@@ -3046,12 +3046,12 @@ debugPrint(octaveImg1, octaveImg2, kpX1_2, kpY1_2, kpX2_2, kpY2_2, i, j);
                     if (Math.abs(tScale - 1.0) > 0.15) {
                         continue;
                     }
-                    
+
                     int idx1_1 = p1KPIndexMap.get(new PairInt(t1X, t1Y));
                     int idx1_2 = p1KPIndexMap.get(new PairInt(t2X, t2Y));
                     int idx2_1 = p2KPIndexMap_2.get(new PairInt(s1X, s1Y));
                     int idx2_2 = p2KPIndexMap_2.get(new PairInt(s2X, s2Y));
-                    
+
                     // a filter for objects too large to be the template object in
                     //    dataset 1.
                     // caveat is that cannot use partial shape matcher on all
@@ -3060,18 +3060,16 @@ debugPrint(octaveImg1, octaveImg2, kpX1_2, kpY1_2, kpX2_2, kpY2_2, i, j);
                     //    other objects.
                     int label2 = pointLabels2.get(new PairInt(
                         kpX2.get(q.getC()), kpY2.get(q.getC())));
-                    
-                    if (!labeledPointsSizes2.containsKey(label2)) {
+                    int[] key = new int[]{label2};
+                    if (!labeledPointsSizes2.containsKey(key)) {
                         int sz = calculateObjectSize(labeledPoints2.get(label2));
-                        labeledPointsSizes2.put(label2, sz);
+                        labeledPointsSizes2.put(key, sz);
                     }
-                    int regionSize = Math.round(
-                        (float)labeledPointsSizes2.get(label2)/(float)scale2);
-
+                    int regionSize = labeledPointsSizes2.get(key);
                     if (regionSize > (1.5*templateSize)) {
                         continue;
                     }
-                    
+
                     int sum = cost[idx1_1][idx2_1] + cost[idx1_2][idx2_2];
 
                     CObject4 cObj = new CObject4(sum, params, q);
@@ -3136,15 +3134,12 @@ debugPrint(octaveImg1, octaveImg2, kpX1_2, kpY1_2, kpX2_2, kpY2_2, i, j);
                         maxX2, maxY2, pixTolerance, maxDist,
                         mp1, mp2
                     );
-                    
-                    //TODO: apply the same object size filter here
-                    // for the combined labeled segmentation sets
 
                     double sumDesc = distAndCount[0];
                     double sumDist = distAndCount[1];
                     int np = (int)distAndCount[2];
                     int count = np;
-                    
+
                     if (count < 2) {
                         continue;
                     }
@@ -3167,15 +3162,23 @@ debugPrint(octaveImg1, octaveImg2, kpX1_2, kpY1_2, kpX2_2, kpY2_2, i, j);
 
                     sumDesc /= (double)count;
                     sumDist /= (double)count;
-                    
+
                     // adding the count component for each
                     // descriptor
                     sum3 *= 2;
-                    
+
                     double sum = sumDesc + sumDist + sum3;
 
-                    //TODO: this will be streamlined when change to use
-                    // minCost vars top value instead of a vector
+                    // if vecJ is filled and sum is not better than last item,
+                    // continue
+                    if (vecJ.getNumberOfItems() == vecJ.getFixedCapacity()) {
+                        if (sum <= vecJ.getArray()[vecJ.getNumberOfItems() - 1].cost) {
+                            continue;
+                        }
+                    }
+
+                    TIntSet labels2 = new TIntHashSet();
+
                     PairInt[] m1 = new PairInt[np];
                     PairInt[] m2 = new PairInt[mp1.length];
                     for (int j3 = 0; j3 < m1.length; ++j3) {
@@ -3192,7 +3195,26 @@ debugPrint(octaveImg1, octaveImg2, kpX1_2, kpY1_2, kpX2_2, kpY2_2, i, j);
                         assert(p2KPIndexMap_2.get(
                             new PairInt(kpX2_2.get(idx2), kpY2_2.get(idx2)))
                             == idx2);
+
+                        labels2.add(pointLabels2.get(m2[j3]));
                     }
+
+                    // apply a size filter
+                    int[] keys = labels2.toArray(new int[labels2.size()]);
+                    Arrays.sort(keys);
+                    if (!labeledPointsSizes2.containsKey(keys)) {
+                        Set<PairInt> combined = new HashSet<PairInt>();
+                        for (int k = 0; k < keys.length; ++k) {
+                            combined.addAll(labeledPoints2.get(keys[k]));
+                        }
+                        int sz = calculateObjectSize(combined);
+                        labeledPointsSizes2.put(keys, sz);
+                    }
+                    int regionSize = labeledPointsSizes2.get(keys);
+                    if (regionSize > (1.5*templateSize)) {
+                        continue;
+                    }
+
                     CObject2 cObj2 = new CObject2(ipi, sum, sumDesc, sumDist,
                        sum3, m1, m2);
                     CObject3 cObj = new CObject3(cObj2, sum, 0, params);
@@ -3207,7 +3229,7 @@ debugPrint(octaveImg1, octaveImg2, kpX1_2, kpY1_2, kpX2_2, kpY2_2, i, j);
 
 System.out.println(String.format(
     "i=%d j=%d ipi=%d ts=%.2f  c=%.2f c1=%.2f c2=%.2f c3=%.2f count=%d",
-    i, j, ipi, tScale, 
+    i, j, ipi, tScale,
     (float) sum, (float) sumDesc, (float) sumDist, (float) sum3,
     count));
 
@@ -3282,17 +3304,17 @@ System.out.println(String.format(
                         } catch (IOException ex) {
                             Logger.getLogger(ORB.class.getName()).log(Level.SEVERE, null, ex);
                         }
-                    
+
                         System.out.println(String.format(
                         "* %d %d ts=%.2f  c=%.2f c1=%.2f c2=%.2f c3=%.2f",
                         i, j, cobj.params.getScale(),
-                        (float) cobj.cost, 
-                        (float) cobj.costDesc, 
-                        (float) cobj.costDist, 
+                        (float) cobj.cost,
+                        (float) cobj.costDesc,
+                        (float) cobj.costDist,
                         (float) cobj.costCount));
                     }
                 }
-                
+
                 if (vecJ.getNumberOfItems() == 0) {
                     System.out.println("no matches for i=" + i + " j=" + j);
                     continue;
@@ -3300,7 +3322,7 @@ System.out.println(String.format(
 
                 // if expand capacity of minVec, add up to capacity here
                 minVec.add(vecJ.getArray()[0]);
-               
+
             }// end loop over image j
         }
 
@@ -4650,7 +4672,7 @@ if (v1.size() == 0) {
         for (int i = 0; i < v1.size(); ++i) {
             double a = v1.get(i);
             double b = v2.get(i);
-            
+
             // since this is a polar theta 0 to 255 image, need to
             //account for wrap around
             if (a > b) {
@@ -5156,7 +5178,7 @@ if (v1.size() == 0) {
         float[] costDesc = new float[tr1.getN()];
         float[] costDist = new float[tr1.getN()];
         int[] indexes = new int[tr1.getN()];
-            
+
         for (int k = 0; k < tr1.getN(); ++k) {
             int x1Tr = tr1.getX(k);
             int y1Tr = tr1.getY(k);
@@ -5205,7 +5227,7 @@ if (v1.size() == 0) {
                 sumDist += 1;
             }
         }
-        
+
         if (count > 1) {
             costA = Arrays.copyOf(costA, count);
             indexes = Arrays.copyOf(indexes, count);
@@ -5373,16 +5395,16 @@ if (v1.size() == 0) {
 
         // O(N*lg_2(N))
         FurthestPair furthestPair = new FurthestPair();
-        
+
         PairInt[] fp = furthestPair.find(points);
-        
+
         if (fp == null || fp.length < 2) {
             throw new IllegalArgumentException("did not find a furthest pair"
                 + " in points");
         }
-        
+
         double dist = distance(fp[0], fp[1]);
-        
+
         return (int)Math.round(dist);
     }
 
