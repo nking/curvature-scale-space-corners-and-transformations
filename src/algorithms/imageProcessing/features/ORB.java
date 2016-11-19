@@ -14,10 +14,12 @@ import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.compGeometry.FurthestPair;
+import algorithms.imageProcessing.ColorHistogram;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.search.NearestNeighbor2D;
 import algorithms.util.CorrespondencePlotter;
+import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.QuadInt;
@@ -2719,29 +2721,152 @@ public class ORB {
         return ns;
     }
 
-    /*
-     TODO: create a method for the cases where object in dataset2
-           segmentation is too small for descriptors.
-           this is to match objects that cannot robustly be matched
-           in match0.
-     while iterating over pyramid scales:
-          -- make an assumption about size range since
-             about to use the partial shape matcher.
-             -- obj sizes should be roughly equal
-          -- calc the intersection of theta image labeled sets w/ template set.
-          -- sort them
-             and find a safe intersection limit
-          -- use partial shape matcher.
-             -- review stats in shape matcher to calc comparable
-                costs or scores over different scales.
-                shape matcher settings for uniform sampling...
-          -- in the documentation of this method, note that
-             the use depends upon segmentation in set2 having
-             the entire matchable object only in one segment,
-             even if there is occlusion.
-             with the small object being the reason to use this
-             method, the assumption is probably often fine.
-    *.
+    /**
+     * 
+     * NOT READY FOR USE yet.
+     * 
+     * needs the orbs to contain the theta pyramidal images.
+     * add usage here.
+     * 
+     * @param orb1
+     * @param orb2
+     * @param labeledPoints1
+     * @param labeledPoints2
+     * @return 
+     */
+    public static List<CorrespondenceList> matchSmall(
+        ORB orb1, ORB orb2,
+        Set<PairInt> labeledPoints1,
+        List<Set<PairInt>> labeledPoints2) {
+
+        /*
+         TODO: create a method for the cases where object in dataset2
+               segmentation is too small for descriptors.
+               this is to match objects that cannot robustly be matched
+               in match0.
+         while iterating over pyramid scales:
+              -- make an assumption about size range since
+                 about to use the partial shape matcher.
+                 -- obj sizes should be roughly equal
+              -- calc the intersection of theta image labeled sets w/ template set.
+              -- sort them
+                 and find a safe intersection limit
+              -- use partial shape matcher.
+                 -- review stats in shape matcher to calc comparable
+                    costs or scores over different scales.
+                    shape matcher settings for uniform sampling...
+              -- in the documentation of this method, note that
+                 the use depends upon segmentation in set2 having
+                 the entire matchable object only in one segment,
+                 even if there is occlusion.
+                 with the small object being the reason to use this
+                 method, the assumption is probably often fine.
+        */
+
+        if (!orb1.descrChoice.equals(orb2.descrChoice)) {
+            throw new IllegalStateException(
+            "orbs must contain same kind of descirptors");
+        }
+        if (!orb1.descrChoice.equals(ORB.DescriptorChoice.ALT)) {
+            throw new IllegalStateException(
+            "orbs must contain Alt cie lab polar theta images");
+        }
+       
+        TFloatList scales1 = extractScales(orb1.getScalesList());
+        TFloatList scales2 = extractScales(orb2.getScalesList());
+
+        ColorHistogram cHist = new ColorHistogram();
+        
+        int templateSize = calculateObjectSize(labeledPoints1);
+        
+        TIntObjectMap<Set<PairInt>> labeledPoints1Lists = new
+            TIntObjectHashMap<Set<PairInt>>();
+        // key = octave number, value = histograms of cie lab theta
+        TIntObjectMap<OneDIntArray> ch1s = new
+            TIntObjectHashMap<OneDIntArray>();
+        for (int octave1 = 0; octave1 < scales1.size(); ++octave1) {
+            float scale1 = scales1.get(octave1);
+            Set<PairInt> set1 = new HashSet<PairInt>();
+            for (PairInt p : labeledPoints1) {
+                PairInt p1 = new PairInt(Math.round((float)p.getX()/scale1), 
+                    Math.round((float)p.getY()/scale1));
+                set1.add(p1);
+            }
+            labeledPoints1Lists.put(octave1, set1);
+            GreyscaleImage img = convertToImageGS(orb1.getPyramidImagesAlt().get(octave1));
+            int[] ch = cHist.histogram1D(img, set1, 255);
+            ch1s.put(octave1, new OneDIntArray(ch));
+        }
+        
+        float intersectionLimit = 0.5f;
+
+        // sizes of the labeled point sets from dataset2 in scale 0 coordinates.
+        // sets are present for each scale if the size is near templateSize
+        TIntIntMap labeledPointsSizes2 = new TIntIntHashMap();
+        // key = octave number, value = list of labeled sets
+        TIntObjectMap<List<Set<PairInt>>> labeledPoints2Lists = new
+            TIntObjectHashMap<List<Set<PairInt>>>();
+        
+        // key = octave number, value = list of hitograms of cie lab theta
+        TIntObjectMap<List<OneDIntArray>> ch2Lists = new
+            TIntObjectHashMap<List<OneDIntArray>>();
+        
+        for (int i = 0; i < labeledPoints2.size(); ++i) {
+            Set<PairInt> set = labeledPoints2.get(i);
+            int sz = calculateObjectSize(set);
+            labeledPointsSizes2.put(i, sz);
+            
+            for (int octave2 = 0; octave2 < scales2.size(); ++octave2) {
+                // NOTE: not keeping same index numbers in set position in lists
+                float scale2 = scales2.get(octave2);
+                float setSize = (float)sz/(float)scale2;
+                if (Math.abs(templateSize - setSize) > 0.15) {
+                    continue;
+                }
+                Set<PairInt> set2 = new HashSet<PairInt>();
+                for (PairInt p : set) {
+                    PairInt p2 = new PairInt(Math.round((float)p.getX()/scale2), 
+                        Math.round((float)p.getY()/scale2));
+                    set2.add(p2);
+                }
+                
+                List<Set<PairInt>> list2 = labeledPoints2Lists.get(octave2);
+                if (list2 == null) {
+                    list2 = new ArrayList<Set<PairInt>>();
+                    labeledPoints2Lists.put(octave2, list2);
+                }
+                list2.add(set2);
+                
+                // create histograms for later comparison w/ template at 
+                // different scales
+                GreyscaleImage img = convertToImageGS(orb2.getPyramidImagesAlt().get(octave2));
+                int[] ch = cHist.histogram1D(img, set2, 255);
+            
+                List<OneDIntArray> ch2List = ch2Lists.get(octave2);
+                if (ch2List == null) {
+                    ch2List = new ArrayList<OneDIntArray>();
+                    ch2Lists.put(octave2, ch2List);
+                }
+                ch2List.add(new OneDIntArray((ch)));                
+            }
+        }
+        
+        // -- compare sets over octaves, first by color histogram intersection,
+        //    then by partial shape matcher
+        
+        for (int i = 0; i < scales1.size(); ++i) {
+        //for (int i = 2; i < 3; ++i) {
+
+            float scale1 = scales1.get(i);
+            
+            for (int j = 0; j < scales2.size(); ++j) {
+            //for (int j = 0; j < 1; ++j) {
+
+            }
+        }
+        
+        throw new UnsupportedOperationException("not yet implemented");
+    }
 
     /**
      * match template image and shape in orb1 and labeledPoints1
@@ -2883,8 +3008,8 @@ public class ORB {
         // populated on demand
         TObjectIntMap<int[]> labeledPointsSizes2 = new TObjectIntHashMap<int[]>();
         
-        //for (int i = 0; i < scales1.size(); ++i) {
-        for (int i = 2; i < 3; ++i) {
+        for (int i = 0; i < scales1.size(); ++i) {
+        //for (int i = 2; i < 3; ++i) {
 
             float scale1 = scales1.get(i);
 
@@ -2947,8 +3072,8 @@ public class ORB {
                 a1Indexes.add(ii);
             }
 
-            //for (int j = 0; j < scales2.size(); ++j) {
-            for (int j = 0; j < 1; ++j) {
+            for (int j = 0; j < scales2.size(); ++j) {
+            //for (int j = 0; j < 1; ++j) {
 
                 float scale2 = scales2.get(j);
 
@@ -4425,6 +4550,27 @@ System.out.println(String.format(
                     vInt = 255;
                 }
                 img.setRGB(j, i, vInt, vInt, vInt);
+            }
+        }
+        return img;
+    }
+    /**
+     * create col major image from row major input
+     * @param a
+     * @return
+     */
+    public static GreyscaleImage convertToImageGS(TwoDFloatArray a) {
+        int n1 = a.a.length;
+        int n2 = a.a[0].length;
+        GreyscaleImage img = new GreyscaleImage(n2, n1);
+        for (int i = 0; i < n1; ++i) {
+            for (int j = 0; j < n2; ++j) {
+                float v = 255.f * a.a[i][j];
+                int vInt = Math.round(v);
+                if (vInt > 255) {
+                    vInt = 255;
+                }
+                img.setValue(j, i, vInt);
             }
         }
         return img;
