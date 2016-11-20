@@ -29,6 +29,7 @@ import algorithms.util.QuadInt;
 import algorithms.util.TwoDFloatArray;
 import algorithms.util.TwoDIntArray;
 import algorithms.util.VeryLongBitString;
+import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
@@ -2899,6 +2900,7 @@ public class ORB {
         //             bundling Results and bounds into an object
         TIntObjectMap<List<PObject>> resultsMap = new TIntObjectHashMap<List<PObject>>();
         TIntObjectMap<TDoubleList> chordDiffSumsMap = new TIntObjectHashMap<TDoubleList>();
+        TIntObjectMap<TFloatList> intersectionsMap = new TIntObjectHashMap<TFloatList>();
         
         //for (int i = 0; i < scales1.size(); ++i) {
         for (int i = 2; i < 3; ++i) {
@@ -2915,6 +2917,7 @@ public class ORB {
         
             List<PObject> results = new ArrayList<PObject>();
             TDoubleList chordDiffSums = new TDoubleArrayList();
+            TFloatList intersections = new TFloatArrayList();
         
             //for (int j = 0; j < scales2.size(); ++j) {
             for (int j = 0; j < 1; ++j) {
@@ -2941,7 +2944,8 @@ public class ORB {
                     }
                 
                     int[] ch2 = listOfCH2s.get(k).a;
-                    if (cHist.intersection(ch1, ch2) < intersectionLimit) {
+                    float intersection = cHist.intersection(ch1, ch2);
+                    if (intersection < intersectionLimit) {
                         continue;
                     }
                     System.out.println("p2=" + 
@@ -2960,13 +2964,14 @@ public class ORB {
                     if (r == null) {continue;}
                     double c = r.getChordDiffSum();
                     
-                    results.add(new PObject(r, bounds1, bounds2));
+                    results.add(new PObject(r, bounds1, bounds2, scale1, scale2));
                     chordDiffSums.add(r.getChordDiffSum());
-        
+                    intersections.add(intersection);
+                    
                     System.out.println("a p in set=" +
                         listOfSets2.get(k).iterator().next() + 
                         " shape matcher d=" + c + "np=" +
-                        r.getNumberOfMatches());
+                        r.getNumberOfMatches() + " intersection=" + intersection);
                     //double d2 = calcTransformationDistanceSum(r, bounds1, 
                     //    bounds2, false);
                     try {
@@ -2998,29 +3003,121 @@ public class ORB {
                         String str = strI + strJ + strK;
                         String filePath = plotter.writeImage("_andr_" + str);
                     } catch (Throwable t) {}
-                }//end loop over k labeled sets of dataset 2
+                } //end loop over k labeled sets of dataset 2
             } // end loop over j datasets 2
         
             if (!results.isEmpty()) {
                 resultsMap.put(i, results);
                 chordDiffSumsMap.put(i, chordDiffSums);
+                intersectionsMap.put(i, intersections);
             }
+            
         } // end loop over i dataset 1
         
         // calculate the Salukwdze distances
+        /*
+        for each i, need the max chord diff sum, nPoints in bound1, and best Results
+        */
+        TIntObjectIterator<List<PObject>> iter = resultsMap.iterator();
+        for (int i = 0; i < resultsMap.size(); ++i) {
+            iter.advance();
+            int idx = iter.key();
+            double maxDiffChordSum = chordDiffSumsMap.get(idx).max();
+            
+            double minCost = Double.MAX_VALUE;
+            int minCostIdx = -1;
+            List<PObject> resultsList = resultsMap.get(idx);
+            for (int j = 0; j < resultsList.size(); ++j) {
+                
+                PObject obj = resultsList.get(j);
+                float costIntersection = 1.f - intersectionsMap.get(idx).get(j);
+                
+                Result r = obj.r;
+                int nb1 = obj.bounds1.getN();
+                
+                double sd = r.calculateSalukwdzeDistanceSquared(maxDiffChordSum,
+                    nb1);
+                
+                // adding a color intersection term to the Salukwdze distance
+                sd += (costIntersection * costIntersection);
+                
+                if (sd < minCost) {
+                    minCost = sd;
+                    minCostIdx = j;
+                }
+                System.out.println("sd=" + sd +
+                    " n1=" + obj.bounds1.getN()
+                    + " origN1=" + r.getOriginalN1()
+                    + " nMatches=" + r.getNumberOfMatches());
+            }
+            assert(minCostIdx > -1);
+            TDoubleList cList = chordDiffSumsMap.get(idx);
+            TFloatList iList = intersectionsMap.get(idx);
+            for (int j = (resultsList.size() - 1); j > -1; --j) {
+                if (j != minCostIdx) {
+                    resultsList.remove(j);
+                    cList.removeAt(j);
+                    iList.removeAt(j);
+                }
+            }
+        }
         
+        if (resultsMap.size() > 1) {
+            // transform results to same reference frame to compare
+            throw new UnsupportedOperationException("not yet implemented");
+        }
         
-        throw new UnsupportedOperationException("not yet implemented");
+        List<CorrespondenceList> topResults =
+            new ArrayList<CorrespondenceList>();
+
+        iter = resultsMap.iterator();
+        for (int i = 0; i < resultsMap.size(); ++i) {
+            iter.advance();
+            int idx = iter.key();
+            List<PObject> resultsList = resultsMap.get(idx);
+            assert(resultsList.size() == 1);
+            PObject obj = resultsList.get(0);
+            
+            int n = obj.r.getNumberOfMatches();
+            PairInt[] m1 = new PairInt[n];
+            PairInt[] m2 = new PairInt[n];
+           
+            float scale1 = obj.scale1;
+            float scale2 = obj.scale2;
+            
+            for (int ii = 0; ii < n; ++ii) {
+                int idx1 = obj.r.getIdx1(ii);
+                int idx2 = obj.r.getIdx2(ii);
+                int x1 = Math.round(obj.bounds1.getX(idx1) * scale1);
+                int y1 = Math.round(obj.bounds1.getY(idx1) * scale1);
+                int x2 = Math.round(obj.bounds2.getX(idx2) * scale2);
+                int y2 = Math.round(obj.bounds2.getY(idx2) * scale2);
+                m1[ii] = new PairInt(x1, y1);
+                m2[ii] = new PairInt(x2, y2);
+            }
+             
+            CorrespondenceList cor = new CorrespondenceList(
+                obj.r.getTransformationParameters(), m1, m2);
+            
+            topResults.add(cor);
+        }
+        
+        return topResults;
     }
     
     private static class PObject {
         final Result r;
         final PairIntArray bounds1;
         final PairIntArray bounds2;
-        public PObject(Result result, PairIntArray b1, PairIntArray b2) {
+        final float scale1;
+        final float scale2;
+        public PObject(Result result, PairIntArray b1, PairIntArray b2,
+            float s1, float s2) {
             r = result;
             bounds1 = b1;
             bounds2 = b2;
+            scale1 = s1;
+            scale2 = s2;
         }
     }
 
@@ -3366,12 +3463,6 @@ debugPrint(octaveImg1, octaveImg2, kpX1_2, kpY1_2, kpX2_2, kpY2_2, i, j);
                     int idx2_1 = p2KPIndexMap_2.get(new PairInt(s1X, s1Y));
                     int idx2_2 = p2KPIndexMap_2.get(new PairInt(s2X, s2Y));
 
-if (s1X >= 73 && s1X <= 83 && s2X >= 73 && s2X <= 83 &&
-    s1Y >= 53 && s1Y <= 65 && s2Y >= 53 && s2Y <= 65
-    ) {
-    System.out.println("GBMan");
-}                                        
-
                     // a filter for objects too large to be the template object in
                     //    dataset 1.
                     // caveat is that cannot use partial shape matcher on all
@@ -3386,12 +3477,7 @@ if (s1X >= 73 && s1X <= 83 && s2X >= 73 && s2X <= 83 &&
                         labeledPointsSizes2.put(key, sz);
                     }
                     int regionSize = labeledPointsSizes2.get(key);
-                    if (regionSize > (1.5*templateSize)) {
-if (s1X >= 73 && s1X <= 83 && s2X >= 73 && s2X <= 83 &&
-    s1Y >= 53 && s1Y <= 65 && s2Y >= 53 && s2Y <= 65
-    ) {
-    System.out.println("too large");
-}                         
+                    if (regionSize > (1.5*templateSize)) {                         
                         continue;
                     }
                     
@@ -3399,13 +3485,7 @@ if (s1X >= 73 && s1X <= 83 && s2X >= 73 && s2X <= 83 &&
 
                     CObject4 cObj = new CObject4(sum, params, q);
 
-                    boolean added = vecP.add(cObj);
-if (s1X >= 73 && s1X <= 83 && s2X >= 73 && s2X <= 83 &&
-    s1Y >= 53 && s1Y <= 65 && s2Y >= 53 && s2Y <= 65
-    ) {
-    System.out.println("    added=" + added + " cost=" + sum + 
-        " best=" + vecP.getArray()[0].cost);
-} 
+                    boolean added = vecP.add(cObj); 
                 }
 
                 System.out.println("for i=" + i + " j=" + j
@@ -3449,12 +3529,7 @@ if (s1X >= 73 && s1X <= 83 && s2X >= 73 && s2X <= 83 &&
                     // trim to image dimensions
                     tr1 = trimToImageBounds(octaveImg2, tr1);
 
-                    if (tr1.getN() == 0) {
-if (s1X >= 73 && s1X <= 83 && s2X >= 73 && s2X <= 83 &&
-    s1Y >= 53 && s1Y <= 65 && s2Y >= 53 && s2Y <= 65
-    ) {
-    System.out.println("removing GBMan2");
-}                        
+                    if (tr1.getN() == 0) {                        
                         continue;
                     }
 
@@ -3474,12 +3549,7 @@ if (s1X >= 73 && s1X <= 83 && s2X >= 73 && s2X <= 83 &&
                     double sumDist = distAndCount[1];
                     int np = (int)distAndCount[2];
                     int count = np;
-               
-if (s1X >= 73 && s1X <= 83 && s2X >= 73 && s2X <= 83 &&
-    s1Y >= 53 && s1Y <= 65 && s2Y >= 53 && s2Y <= 65
-    ) {
-    System.out.println("GBMan2");
-}                    
+                                  
                     if (count < 2) {
                         continue;
                     }
@@ -3554,12 +3624,7 @@ if (s1X >= 73 && s1X <= 83 && s2X >= 73 && s2X <= 83 &&
                     if (regionSize > (1.5*templateSize)) {
                         continue;
                     }                
-                 
-if (s1X >= 73 && s1X <= 83 && s2X >= 73 && s2X <= 83 &&
-    s1Y >= 53 && s1Y <= 65 && s2Y >= 53 && s2Y <= 65
-    ) {
-    System.out.println("GBMan3");
-}                    
+                                     
                     CObject2 cObj2 = new CObject2(ipi, sum, sumDesc, sumDist,
                        sum3, m1, m2);
                     CObject3 cObj = new CObject3(cObj2, sum, 0, params);

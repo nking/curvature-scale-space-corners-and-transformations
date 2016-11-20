@@ -1676,6 +1676,27 @@ public class PartialShapeMatcher {
             float s = (float)(f * f + d * d);
             return s;
         }
+        
+        /**
+         * The Salukwdze distance is the metric used as a
+         * cost in comparisons and this returns the square of
+         * that (sqrt operation not performed).
+         * (note that
+         * the maximum chord sum that was used to determine
+         * a best solution is not stored, because the
+         * Result correspondence lists grow afterwards depending
+         * upon options)
+         * @param maxChordSum
+         * @return
+         */
+        public float calculateSalukwdzeDistanceSquared(double maxChordSum,
+            int maxNumberOfMatchable) {
+            float f = 1.f - ((float)getNumberOfMatches()/
+                (float)maxNumberOfMatchable);
+            double d = getNormalizedChordDiff(maxChordSum);
+            float s = (float)(f * f + d * d);
+            return s;
+        }
 
         void addToChordDifferenceSum(float diff) {
             chordDiffSum += diff;
@@ -1704,6 +1725,12 @@ public class PartialShapeMatcher {
         
         public TransformationParameters getTransformationParameters() {
             return params;
+        }
+        
+        // NOTE: need to complete this for some cases such as
+        // same number of points sampling.
+        public double getDistSum() {
+            return distSum;
         }
 
         /**
