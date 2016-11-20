@@ -71,7 +71,7 @@ public class ShapeFinder {
     private double maxDistTransformSum = Float.MAX_VALUE;
     
     private boolean useEuclideanInCost = false;
-    private float[] euclideanScaleRange = new float[]{0.9f, 1.1f};
+    //private float[] euclideanScaleRange = new float[]{0.9f, 1.1f};
 
     private final float areaFactor = 2.f;
     private final TIntSet outOfSizeRange = new TIntHashSet();
@@ -694,7 +694,7 @@ public class ShapeFinder {
                 maxChord = d;
             }
             if (useEuclideanInCost) {
-                d = calcTransformationDistanceSum(r, template, 
+                d = PartialShapeMatcher.calcTransformationDistanceSum(r, template, 
                     orderedBoundaries.get(i), false);
                 if (d > maxDist) {
                     maxDist = d;
@@ -1212,7 +1212,8 @@ if (index == 67 && bs1.difference(tBS).getSetBits().length == 0) {
                                 double c = f * f + d * d;
 
                                 if (useEuclideanInCost) {
-                                    double dist = calcTransformationDistanceSum(r,
+                                    double dist = 
+                                        PartialShapeMatcher.calcTransformationDistanceSum(r,
                                         template, bIKKJ, true)/maxDistTransformSum;
                                     c += (dist * dist);
                                 }
@@ -1395,7 +1396,7 @@ if (index == 67) {
         double s = (f * f + d * d);
         
         if (useEuclideanInCost) {
-            double dist = calcTransformationDistanceSum(result12,
+            double dist = PartialShapeMatcher.calcTransformationDistanceSum(result12,
                 template, boundary, true) / maxDistTransformSum;
             s += (dist * dist);
         }
@@ -1424,58 +1425,6 @@ if (index == 67) {
         return f2.extractOrderedBorder(allPoints);
     }
 
-    /**
-     * uses the euclidean transformation on the correspondence list
-     * in r.  if useLimits is set, and if the calculated transformation
-     * parameters' scale is out of range, then maxDistTransformSum is returned,
-     * else, the summed differences are returned.
-     * @param r
-     * @param p
-     * @param q
-     * @param useLimits
-     * @return 
-     */
-    private double calcTransformationDistanceSum(Result r, PairIntArray p,
-        PairIntArray q, boolean useLimits) {
-        
-        if (r.getTransformationParameters() == null) {
-            return Double.MAX_VALUE;
-        }
-        
-        PairIntArray left = new PairIntArray(r.getNumberOfMatches());
-        PairIntArray right = new PairIntArray(r.getNumberOfMatches());
-        for (int i = 0; i < r.getNumberOfMatches(); ++i) {
-            int idx = r.getIdx1(i);
-            left.add(p.getX(idx), p.getY(idx));
-            idx = r.getIdx2(i);
-            right.add(q.getX(idx), q.getY(idx));
-        }
-        
-        int tolerance = 5;
-        
-        EuclideanEvaluator evaluator = new EuclideanEvaluator();
-        ITransformationFit fit = evaluator.evaluate(left,
-            right, r.getTransformationParameters(), tolerance);
-        
-        if (useLimits && fit instanceof EuclideanTransformationFit) {
-            TransformationParameters params = 
-                ((EuclideanTransformationFit)fit).getTransformationParameters();
-            float scale = params.getScale();
-            if (scale < euclideanScaleRange[0] || scale > euclideanScaleRange[1]) {
-                return maxDistTransformSum;
-            }
-        }
-        
-        List<Double> distances = fit.getErrors();
-        
-        double sum = 0;
-        for (Double d : distances) {
-            sum += d;
-        }
-        
-        return sum;
-    }
-    
     private void fillCache1(int[] indexes) {
         clear(cache1);
         for (int idx : indexes) {

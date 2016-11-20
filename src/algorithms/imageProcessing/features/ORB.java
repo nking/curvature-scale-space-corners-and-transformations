@@ -2927,9 +2927,6 @@ public class ORB {
                     float sz2 = (float)labeledPointsSizes2.get(k)/scale2;
                     if ((sz1 > sz2 && Math.abs(sz1/sz2) > 1.15) ||
                         (sz2 > sz1 && Math.abs(sz2/sz1) > 1.15)) {
-                        System.out.println("p2=" + 
-                            listOfSets2.get(k).iterator().next() + 
-                            " sz1=" + sz1 + " sz2=" + sz2);
                         continue;
                     }
                 
@@ -2937,16 +2934,25 @@ public class ORB {
                     if (cHist.intersection(ch1, ch2) < intersectionLimit) {
                         continue;
                     }
+                    System.out.println("p2=" + 
+                        listOfSets2.get(k).iterator().next() + 
+                        " sz1=" + sz1 + " sz2=" + sz2
+                        + " nSet=" + listOfSets2.get(k).size()
+                    );
                     
                     PairIntArray bounds2 = listOfBounds2.get(k);
                     
                     PartialShapeMatcher matcher = new PartialShapeMatcher();
                     matcher.overrideSamplingDistance(2);
-                    matcher.setToDebug();
+                    //matcher.setToDebug();
                     //matcher.setToUseSameNumberOfPoints();
                     Result r = matcher.match(bounds1, bounds2);
                     if (r == null) {continue;}
                     double d = r.getChordDiffSum();
+                    System.out.println("a p in set=" +
+                        listOfSets2.get(k).iterator().next() + 
+                        " shape matcher d=" + d + "np=" +
+                        r.getNumberOfMatches());
                     //double d2 = calcTransformationDistanceSum(r, bounds1, 
                     //    bounds2, false);
                     try {

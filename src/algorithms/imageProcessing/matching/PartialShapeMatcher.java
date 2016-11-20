@@ -4,7 +4,9 @@ import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.imageProcessing.features.RANSACEuclideanSolver;
+import algorithms.imageProcessing.transform.EuclideanEvaluator;
 import algorithms.imageProcessing.transform.EuclideanTransformationFit;
+import algorithms.imageProcessing.transform.ITransformationFit;
 import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
@@ -130,7 +132,7 @@ public class PartialShapeMatcher {
 
     private float pixTolerance = 20;
 
-    // 10 degrees is 0.1745
+    // 10 degrees is 0.1745 radians
     private float thresh = (float)(Math.PI/180.) * 10.f;;
 
     protected Logger log = Logger.getLogger(this.getClass().getName());
@@ -236,6 +238,7 @@ public class PartialShapeMatcher {
             r.idx2s.add(dp * idx2);
         }
         r.chordDiffSum = rSub.chordDiffSum;
+        r.distSum = rSub.distSum;
         
         if (rSub.getTransformationParameters() != null) {
        
@@ -254,9 +257,9 @@ public class PartialShapeMatcher {
             // scale changes by factor dp
             
             TransformationParameters params = rSub.getTransformationParameters().copy();
-            params.setScale(dp * params.getScale());
-            params.setTranslationX(dp * params.getTranslationX());
-            params.setTranslationY(dp * params.getTranslationY());
+            params.setScale(params.getScale());
+            params.setTranslationX(params.getTranslationX());
+            params.setTranslationY(params.getTranslationY());
             r.setTransformationParameters(params);
             
         }
@@ -1367,7 +1370,7 @@ public class PartialShapeMatcher {
             int idx1 = result.getIdx1(i);
             int idx2 = result.getIdx2(i);
 
-            result.distSum += read(md, idx1, idx2);
+            result.chordDiffSum += read(md, idx1, idx2);
         }
         
         result.chordsNeedUpdates = false;
@@ -2777,4 +2780,58 @@ public class PartialShapeMatcher {
         
         return max2;
     }
+    
+     /**
+     * uses the euclidean transformation on the correspondence list
+     * in r.  if useLimits is set, and if the calculated transformation
+     * parameters' scale is out of range, then maxDistTransformSum is returned,
+     * else, the summed differences are returned.
+     * @param r
+     * @param p
+     * @param q
+     * @param useLimits
+     * @return 
+     */
+    public static double calcTransformationDistanceSum(Result r, PairIntArray p,
+        PairIntArray q, boolean useLimits) {
+        
+        if (r.getTransformationParameters() == null) {
+            return Double.MAX_VALUE;
+        }
+        
+        PairIntArray left = new PairIntArray(r.getNumberOfMatches());
+        PairIntArray right = new PairIntArray(r.getNumberOfMatches());
+        for (int i = 0; i < r.getNumberOfMatches(); ++i) {
+            int idx = r.getIdx1(i);
+            left.add(p.getX(idx), p.getY(idx));
+            idx = r.getIdx2(i);
+            right.add(q.getX(idx), q.getY(idx));
+        }
+        
+        int tolerance = 5;
+        float[] euclideanScaleRange = new float[]{0.9f, 1.1f};
+            
+        EuclideanEvaluator evaluator = new EuclideanEvaluator();
+        ITransformationFit fit = evaluator.evaluate(left,
+            right, r.getTransformationParameters(), tolerance);
+        
+        if (useLimits && fit instanceof EuclideanTransformationFit) {
+            TransformationParameters params = 
+                ((EuclideanTransformationFit)fit).getTransformationParameters();
+            float scale = params.getScale();
+            if (scale < euclideanScaleRange[0] || scale > euclideanScaleRange[1]) {
+                return Float.MAX_VALUE;
+            }
+        }
+        
+        List<Double> distances = fit.getErrors();
+        
+        double sum = 0;
+        for (Double d : distances) {
+            sum += d;
+        }
+        
+        return sum;
+    }
+    
 }

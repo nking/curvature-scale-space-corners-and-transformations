@@ -197,4 +197,12 @@ public class FixedSizeSortedVector<T extends Comparable<T>> {
     public int getNumberOfItems() {
         return n;
     }
+    
+    /**
+     * get the maximum size of the vector, given at instantiation.
+     * @return 
+     */
+    public int getFixedCapacity() {
+        return size;
+    }
 }

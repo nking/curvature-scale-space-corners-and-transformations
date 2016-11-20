@@ -398,8 +398,8 @@ public class AndroidStatuesTest extends TestCase {
         };
         for (String fileName1 : fileNames1) {               
        
-        String fileNameRoot0 = "android_statues_03_sz1";
-        //String fileNameRoot0 = "android_statues_03_sz3";
+        //String fileNameRoot0 = "android_statues_03_sz1";
+        String fileNameRoot0 = "android_statues_03_sz3";
         
         Set<PairInt> shape0 = new HashSet<PairInt>();
 
@@ -505,8 +505,10 @@ public class AndroidStatuesTest extends TestCase {
         //orb.overrideFastThreshold(0.01f);
         orb.overrideFastThreshold(0.08f);//0.01f);
         orb.overrideToNotCreateDescriptors();
-        //orb.overrideToAlsoCreate1stDerivKeypoints();
-        //orb.overrideToCreateCurvaturePoints();
+        if (fileName1Root.contains("_01")) {
+            orb.overrideToAlsoCreate1stDerivKeypoints();
+            orb.overrideToCreateCurvaturePoints();
+        }
         orb.overrideToUseSmallestPyramid();
         orb.detectAndExtract(img);
 
@@ -698,7 +700,7 @@ public class AndroidStatuesTest extends TestCase {
         // yet use wraparound for theta
         orb0.createDescriptorsLABTheta(imgs0[0]);
         orb.createDescriptorsLABTheta(img);
-        corList = ORB.match0(orb0, orb,
+        corList = ORB.matchSmall(orb0, orb,
             shape0, listOfPointSets2);
         
         long t1 = System.currentTimeMillis();
