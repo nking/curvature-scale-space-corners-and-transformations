@@ -15,6 +15,9 @@ import algorithms.imageProcessing.transform.Transformer;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.compGeometry.FurthestPair;
 import algorithms.imageProcessing.ColorHistogram;
+import algorithms.imageProcessing.SIGMA;
+import algorithms.imageProcessing.matching.PartialShapeMatcher;
+import algorithms.imageProcessing.matching.PartialShapeMatcher.Result;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.search.NearestNeighbor2D;
@@ -2775,6 +2778,19 @@ public class ORB {
         TFloatList scales1 = extractScales(orb1.getScalesList());
         TFloatList scales2 = extractScales(orb2.getScalesList());
 
+        if (Math.abs(scales1.get(0) - 1) > 0.01) {
+            throw new IllegalArgumentException("logic depends upon first scale"
+                + " level being '1'");
+        }
+        if (Math.abs(scales2.get(0) - 1) > 0.01) {
+            throw new IllegalArgumentException("logic depends upon first scale"
+                + " level being '1'");
+        }
+        
+        SIGMA sigma = SIGMA.ZEROPOINTFIVE;
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
         ColorHistogram cHist = new ColorHistogram();
         
         int templateSize = calculateObjectSize(labeledPoints1);
@@ -2784,6 +2800,11 @@ public class ORB {
         // key = octave number, value = histograms of cie lab theta
         TIntObjectMap<OneDIntArray> ch1s = new
             TIntObjectHashMap<OneDIntArray>();
+        
+        // key = octave number, value = ordered boundaries of sets
+        TIntObjectMap<PairIntArray> labeledBoundaries1 = new
+            TIntObjectHashMap<PairIntArray>();
+        
         for (int octave1 = 0; octave1 < scales1.size(); ++octave1) {
             float scale1 = scales1.get(octave1);
             Set<PairInt> set1 = new HashSet<PairInt>();
@@ -2796,33 +2817,42 @@ public class ORB {
             GreyscaleImage img = convertToImageGS(orb1.getPyramidImagesAlt().get(octave1));
             int[] ch = cHist.histogram1D(img, set1, 255);
             ch1s.put(octave1, new OneDIntArray(ch));
-        }
         
+            PairIntArray bounds = imageProcessor.extractSmoothedOrderedBoundary(
+                set1, sigma, img.getWidth(), img.getHeight());
+            
+            labeledBoundaries1.put(octave1, bounds);
+        }
+                
         float intersectionLimit = 0.5f;
 
         // sizes of the labeled point sets from dataset2 in scale 0 coordinates.
         // sets are present for each scale if the size is near templateSize
         TIntIntMap labeledPointsSizes2 = new TIntIntHashMap();
+        
         // key = octave number, value = list of labeled sets
         TIntObjectMap<List<Set<PairInt>>> labeledPoints2Lists = new
             TIntObjectHashMap<List<Set<PairInt>>>();
         
-        // key = octave number, value = list of hitograms of cie lab theta
+        // key = octave number, value = list of histograms of cie lab theta
         TIntObjectMap<List<OneDIntArray>> ch2Lists = new
             TIntObjectHashMap<List<OneDIntArray>>();
         
+        // key = octave number, value = list of ordered points in labeled set
+        TIntObjectMap<List<PairIntArray>> labeledBoundaries2Lists = new
+            TIntObjectHashMap<List<PairIntArray>>();
+        
         for (int i = 0; i < labeledPoints2.size(); ++i) {
             Set<PairInt> set = labeledPoints2.get(i);
+            if (set.size() < 7) {
+                continue;
+            }
             int sz = calculateObjectSize(set);
             labeledPointsSizes2.put(i, sz);
             
             for (int octave2 = 0; octave2 < scales2.size(); ++octave2) {
-                // NOTE: not keeping same index numbers in set position in lists
                 float scale2 = scales2.get(octave2);
-                float setSize = (float)sz/(float)scale2;
-                if (Math.abs(templateSize - setSize) > 0.15) {
-                    continue;
-                }
+                
                 Set<PairInt> set2 = new HashSet<PairInt>();
                 for (PairInt p : set) {
                     PairInt p2 = new PairInt(Math.round((float)p.getX()/scale2), 
@@ -2848,20 +2878,107 @@ public class ORB {
                     ch2Lists.put(octave2, ch2List);
                 }
                 ch2List.add(new OneDIntArray((ch)));                
+            
+                List<PairIntArray> list3 = labeledBoundaries2Lists.get(octave2);
+                if (list3 == null) {
+                    list3 = new ArrayList<PairIntArray>();
+                    labeledBoundaries2Lists.put(octave2, list3);
+                }
+                PairIntArray bounds = imageProcessor.extractSmoothedOrderedBoundary(
+                    set2, sigma, img.getWidth(), img.getHeight());
+                list3.add(bounds);
             }
         }
         
         // -- compare sets over octaves, first by color histogram intersection,
         //    then by partial shape matcher
         
-        for (int i = 0; i < scales1.size(); ++i) {
-        //for (int i = 2; i < 3; ++i) {
+        //for (int i = 0; i < scales1.size(); ++i) {
+        for (int i = 2; i < 3; ++i) {
 
             float scale1 = scales1.get(i);
             
-            for (int j = 0; j < scales2.size(); ++j) {
-            //for (int j = 0; j < 1; ++j) {
+            float sz1 = (float)templateSize/scale1;
+            
+            int[] ch1 = ch1s.get(i).a;
+            
+            Set<PairInt> templateSet = labeledPoints1Lists.get(i);
+           
+            PairIntArray bounds1 = labeledBoundaries1.get(i);
+            
+            //for (int j = 0; j < scales2.size(); ++j) {
+            for (int j = 0; j < 1; ++j) {
 
+                float scale2 = scales2.get(j);
+                
+                List<OneDIntArray> listOfCH2s = ch2Lists.get(j);
+                if (listOfCH2s == null) {
+                    continue;
+                }
+                
+                List<Set<PairInt>> listOfSets2 = labeledPoints2Lists.get(j);
+               
+                List<PairIntArray> listOfBounds2 = labeledBoundaries2Lists.get(j);
+                
+                for (int k = 0; k < listOfCH2s.size(); ++k) {
+                    if (!labeledPointsSizes2.containsKey(k)) {
+                        continue;
+                    }
+                    float sz2 = (float)labeledPointsSizes2.get(k)/scale2;
+                    if ((sz1 > sz2 && Math.abs(sz1/sz2) > 1.15) ||
+                        (sz2 > sz1 && Math.abs(sz2/sz1) > 1.15)) {
+                        System.out.println("p2=" + 
+                            listOfSets2.get(k).iterator().next() + 
+                            " sz1=" + sz1 + " sz2=" + sz2);
+                        continue;
+                    }
+                
+                    int[] ch2 = listOfCH2s.get(k).a;
+                    if (cHist.intersection(ch1, ch2) < intersectionLimit) {
+                        continue;
+                    }
+                    
+                    PairIntArray bounds2 = listOfBounds2.get(k);
+                    
+                    PartialShapeMatcher matcher = new PartialShapeMatcher();
+                    matcher.overrideSamplingDistance(2);
+                    matcher.setToDebug();
+                    //matcher.setToUseSameNumberOfPoints();
+                    Result r = matcher.match(bounds1, bounds2);
+                    if (r == null) {continue;}
+                    double d = r.getChordDiffSum();
+                    //double d2 = calcTransformationDistanceSum(r, bounds1, 
+                    //    bounds2, false);
+                    try {
+                        CorrespondencePlotter plotter = new CorrespondencePlotter(
+                            bounds1, bounds2);
+                        for (int ii = 0; ii < r.getNumberOfMatches(); ++ii) {
+                            int idx1 = r.getIdx1(ii);
+                            int idx2 = r.getIdx2(ii);
+                            int x1 = bounds1.getX(idx1);
+                            int y1 = bounds1.getY(idx1);
+                            int x2 = bounds2.getX(idx2);
+                            int y2 = bounds2.getY(idx2);
+                            if ((ii % 4) == 0) {
+                                plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 0);
+                            }
+                        }
+                        String strI = Integer.toString(i);
+                        while (strI.length() < 2) {
+                            strI = "0" + strI;
+                        }
+                        String strJ = Integer.toString(j);
+                        while (strJ.length() < 2) {
+                            strJ = "0" + strJ;
+                        }
+                        String strK = Integer.toString(k);
+                        while (strK.length() < 2) {
+                            strK = "0" + strK;
+                        }
+                        String str = strI + strJ + strK;
+                        String filePath = plotter.writeImage("_andr_" + str);
+                    } catch (Throwable t) {}
+                }
             }
         }
         
@@ -2970,7 +3087,16 @@ public class ORB {
 
         TFloatList scales1 = extractScales(orb1.getScalesList());
         TFloatList scales2 = extractScales(orb2.getScalesList());
-
+        
+        if (Math.abs(scales1.get(0) - 1) > 0.01) {
+            throw new IllegalArgumentException("logic depends upon first scale"
+                + " level being '1'");
+        }
+        if (Math.abs(scales2.get(0) - 1) > 0.01) {
+            throw new IllegalArgumentException("logic depends upon first scale"
+                + " level being '1'");
+        }
+        
         // a rough estimate of maximum number of matchable points in any
         //     scale dataset comparison
         final int nMaxMatchable =
