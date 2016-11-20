@@ -2892,6 +2892,13 @@ public class ORB {
         
         // -- compare sets over octaves, first by color histogram intersection,
         //    then by partial shape matcher
+      
+        // delaying evaluation of results until end in order to get the
+        // maximum chord differerence sum, needed for Salukwzde distance.
+        // for each i, list of Results, chordDiffSums, bounds1, bounds2
+        //             bundling Results and bounds into an object
+        TIntObjectMap<List<PObject>> resultsMap = new TIntObjectHashMap<List<PObject>>();
+        TIntObjectMap<TDoubleList> chordDiffSumsMap = new TIntObjectHashMap<TDoubleList>();
         
         //for (int i = 0; i < scales1.size(); ++i) {
         for (int i = 2; i < 3; ++i) {
@@ -2905,7 +2912,10 @@ public class ORB {
             Set<PairInt> templateSet = labeledPoints1Lists.get(i);
            
             PairIntArray bounds1 = labeledBoundaries1.get(i);
-            
+        
+            List<PObject> results = new ArrayList<PObject>();
+            TDoubleList chordDiffSums = new TDoubleArrayList();
+        
             //for (int j = 0; j < scales2.size(); ++j) {
             for (int j = 0; j < 1; ++j) {
 
@@ -2948,10 +2958,14 @@ public class ORB {
                     //matcher.setToUseSameNumberOfPoints();
                     Result r = matcher.match(bounds1, bounds2);
                     if (r == null) {continue;}
-                    double d = r.getChordDiffSum();
+                    double c = r.getChordDiffSum();
+                    
+                    results.add(new PObject(r, bounds1, bounds2));
+                    chordDiffSums.add(r.getChordDiffSum());
+        
                     System.out.println("a p in set=" +
                         listOfSets2.get(k).iterator().next() + 
-                        " shape matcher d=" + d + "np=" +
+                        " shape matcher d=" + c + "np=" +
                         r.getNumberOfMatches());
                     //double d2 = calcTransformationDistanceSum(r, bounds1, 
                     //    bounds2, false);
@@ -2984,11 +2998,30 @@ public class ORB {
                         String str = strI + strJ + strK;
                         String filePath = plotter.writeImage("_andr_" + str);
                     } catch (Throwable t) {}
-                }
+                }//end loop over k labeled sets of dataset 2
+            } // end loop over j datasets 2
+        
+            if (!results.isEmpty()) {
+                resultsMap.put(i, results);
+                chordDiffSumsMap.put(i, chordDiffSums);
             }
-        }
+        } // end loop over i dataset 1
+        
+        // calculate the Salukwdze distances
+        
         
         throw new UnsupportedOperationException("not yet implemented");
+    }
+    
+    private static class PObject {
+        final Result r;
+        final PairIntArray bounds1;
+        final PairIntArray bounds2;
+        public PObject(Result result, PairIntArray b1, PairIntArray b2) {
+            r = result;
+            bounds1 = b1;
+            bounds2 = b2;
+        }
     }
 
     /**
