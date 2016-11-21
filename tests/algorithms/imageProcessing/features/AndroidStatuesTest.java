@@ -391,15 +391,15 @@ public class AndroidStatuesTest extends TestCase {
         segmentation information maybe.
         */
         String[] fileNames1 = new String[]{
-             "android_statues_01.jpg",
-        //     "android_statues_02.jpg",
-        //     "android_statues_04.jpg",
-        //     "android_statues_03.jpg"
+            "android_statues_01.jpg",
+            "android_statues_02.jpg",
+            "android_statues_04.jpg",
+            "android_statues_03.jpg"
         };
         for (String fileName1 : fileNames1) {               
        
-        //String fileNameRoot0 = "android_statues_03_sz1";
-        String fileNameRoot0 = "android_statues_03_sz3";
+        String fileNameRoot0 = "android_statues_03_sz1";
+        //String fileNameRoot0 = "android_statues_03_sz3";
         
         Set<PairInt> shape0 = new HashSet<PairInt>();
 
@@ -505,10 +505,6 @@ public class AndroidStatuesTest extends TestCase {
         //orb.overrideFastThreshold(0.01f);
         orb.overrideFastThreshold(0.08f);//0.01f);
         orb.overrideToNotCreateDescriptors();
-        if (fileName1Root.contains("_01")) {
-            orb.overrideToAlsoCreate1stDerivKeypoints();
-            orb.overrideToCreateCurvaturePoints();
-        }
         orb.overrideToUseSmallestPyramid();
         orb.detectAndExtract(img);
 
@@ -700,8 +696,13 @@ public class AndroidStatuesTest extends TestCase {
         // yet use wraparound for theta
         orb0.createDescriptorsLABTheta(imgs0[0]);
         orb.createDescriptorsLABTheta(img);
-        corList = ORB.matchSmall(orb0, orb,
-            shape0, listOfPointSets2);
+        if (fileName1Root.contains("_01")) {
+            corList = ORB.matchSmall(orb0, orb,
+                shape0, listOfPointSets2);
+        } else {
+            corList = ORB.match0(orb0, orb,
+                shape0, listOfPointSets2);
+        }
         
         long t1 = System.currentTimeMillis();
         System.out.println("matching took " + ((t1 - t0)/1000.) + " sec");

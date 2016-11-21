@@ -3135,14 +3135,14 @@ public class ORB {
                 //double sd = r.calculateSalukwdzeDistanceSquared(
                 //    maxDiffChordSum, nb1);                
                 
+                // TODO: consider formal analysis of dependencies and hence
+                //       error terms:
                 //double sd = chordCompSq*countCompSq
                 //    + distCompSq*countCompSq;
                 //double sd = chordCompSq + countCompSq + distCompSq;
                 double sd = chordComp + countComp + distComp;
                 
                 // adding a color intersection term to the Salukwdze distance
-                // NOTE: the intersection costs are elevated in weight
-                //       by not squaring them.  may need to reconsider this.
                 sd += costIntersection;
                 
                 if (sd < minCost) {
@@ -3678,9 +3678,15 @@ debugPrint(octaveImg1, octaveImg2, kpX1_2, kpY1_2, kpX2_2, kpY2_2, i, j);
                     if (count < 2) {
                         continue;
                     }
-                    if (count < mp1.length) {
-                        mp1 = Arrays.copyOf(mp1, count);
-                        mp2 = Arrays.copyOf(mp2, count);
+                    if (count == 2 && (nMaxMatchable > 2*count)) {
+                        // TODO: may want to revise this while still discarding
+                        //    false positives
+                        continue;
+                    }
+                    
+                    if (np < mp1.length) {
+                        mp1 = Arrays.copyOf(mp1, np);
+                        mp2 = Arrays.copyOf(mp2, np);
                     }
 
                     if (count > nMaxMatchable) {
@@ -3693,21 +3699,18 @@ debugPrint(octaveImg1, octaveImg2, kpX1_2, kpY1_2, kpX2_2, kpY2_2, i, j);
                     }
                     cf /= nMaxMatchable;
                     double sum3 = 1. - cf;
-                    //double sum3 = nMaxMatchable - count;
 
-                    sumDesc /= (double)count;
-                    sumDist /= (double)count;
-                    
-                    // adding the count component for each
-                    // descriptor
-                    sum3 *= 2;
+                    //sumDesc /= (double)count;
+                    //sumDist /= (double)count;
+                    sumDesc /= distAndCount[2];
+                    sumDist /= distAndCount[2];
                     
                     double sum = sumDesc + sumDist + sum3;
 
                     // if vecJ is filled and sum is not better than last item,
                     // continue
                     if (vecJ.getNumberOfItems() == vecJ.getFixedCapacity()) {
-                        if (sum <= vecJ.getArray()[vecJ.getNumberOfItems() - 1].cost) {
+                        if (sum < vecJ.getArray()[vecJ.getNumberOfItems() - 1].cost) {
                             continue;
                         }
                     }
