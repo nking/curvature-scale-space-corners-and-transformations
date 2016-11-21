@@ -1,37 +1,18 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.QuickSort;
-import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
-import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MedianTransform;
 import algorithms.imageProcessing.StructureTensor;
-import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
-import algorithms.imageProcessing.transform.TransformationParameters;
-import algorithms.imageProcessing.transform.Transformer;
 import algorithms.imageProcessing.util.MatrixUtil;
-import algorithms.compGeometry.FurthestPair;
-import algorithms.imageProcessing.ColorHistogram;
-import algorithms.imageProcessing.SIGMA;
-import algorithms.imageProcessing.matching.ORBMatcher;
-import algorithms.imageProcessing.matching.PartialShapeMatcher;
-import algorithms.imageProcessing.matching.PartialShapeMatcher.Result;
-import algorithms.misc.Misc;
-import algorithms.misc.MiscDebug;
-import algorithms.search.NearestNeighbor2D;
-import algorithms.util.CorrespondencePlotter;
-import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.QuadInt;
 import algorithms.util.TwoDFloatArray;
 import algorithms.util.TwoDIntArray;
 import algorithms.util.VeryLongBitString;
-import gnu.trove.iterator.TIntIterator;
-import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
@@ -39,26 +20,16 @@ import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TFloatIntMap;
-import gnu.trove.map.TIntIntMap;
-import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TFloatIntHashMap;
-import gnu.trove.map.hash.TIntIntHashMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.map.hash.TObjectIntHashMap;
-import gnu.trove.set.TDoubleSet;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.awt.Color;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * An implementation of "ORB: an efficient alternative to SIFT or SURF"
@@ -133,67 +104,11 @@ Still testing the class, there may be bugs present.
        or
     Descriptors desc = orb.getAllDescriptors();
 
-    // to use brute force, greedy best matching to make a correspondence list:
-    int[][] matches = ORB.matchDescriptors(desc1.descriptors, desc2.descriptors);
- </pre>
+    
+ * </pre>
  */
 public class ORB {
-
-
-    private static TIntList calculateOrientations360_0(ORB orb, 
-        Set<PairInt> labeledPoints) {
-    
-        List<Set<PairInt>> list = new ArrayList<Set<PairInt>>();
-        list.add(labeledPoints);
-    
-        List<TIntList> orList = calculateOrientations360(orb, 
-            list);
-    
-        return orList.get(0);
-    }
-    
-    private static List<TIntList> calculateOrientations360(ORB orb, 
-        List<Set<PairInt>> labeledPoints) {
-        
-        TIntList kp0s = new TIntArrayList();
-        TIntList kp1s = new TIntArrayList();
-        
-        for (int i = 0; i < labeledPoints.size(); ++i) {
-            for (PairInt p : labeledPoints.get(i)) {
-                kp0s.add(p.getY());
-                kp1s.add(p.getX());
-            }
-        }
-        
-        float[][] octaveImage = orb.getPyramidImages().get(0).a;
-        TDoubleList or = orb.cornerOrientations(octaveImage,
-            kp0s, kp1s);
-        
-        // convert to degrees
-        TIntList orD = new TIntArrayList(or.size());
-        for (int i = 0; i < or.size(); ++i) {
-            double d = or.get(i) * 180./Math.PI;
-            if (d < 0) {
-                d += 360;
-            } else if (d > 359) {
-                d -= 360;
-            }
-            orD.add((int)Math.round(d));
-        }
-        
-        List<TIntList> orList = new ArrayList<TIntList>(labeledPoints.size());
-        int count = 0;
-        for (int i = 0; i < labeledPoints.size(); ++i) {
-            int n = labeledPoints.get(i).size();
-            TIntList list = new TIntArrayList(n);
-            orList.add(list);
-            list.addAll(orD.subList(count, count + n));
-            count += n;
-        }
-
-        return orList;        
-    }
-
+   
     /*
     TODO:
        -- considering adding alternative pyramid building methods
@@ -1892,7 +1807,7 @@ public class ORB {
      * @param keypoints0
      * @param keypoints1
      * @param orientations
-     * @param responses
+     * @param scale
      * @return the encapsulated descriptors and mask
      */
     protected Descriptors extractOctave(float[][] octaveImage,
@@ -1913,7 +1828,8 @@ public class ORB {
      * @param keypoints0
      * @param keypoints1
      * @param orientations
-     * @param responses
+     * @param useDefaultSize
+     * @param scale
      * @return the encapsulated descriptors and mask
      */
     protected Descriptors extractOctave(float[][] octaveImage,
@@ -1939,17 +1855,14 @@ public class ORB {
         assert(orientations.size() == keypoints0.size());
         assert(orientations.size() == keypoints1.size());
 
-        VeryLongBitString[] descriptors = null;
+        Descriptors desc = new Descriptors();
 
         if (descrChoice.equals(DescriptorChoice.NONE)) {
-            descriptors = new VeryLongBitString[0];
+            desc.descriptors = new VeryLongBitString[0];
         } else {
-            descriptors = orbLoop(octaveImage, keypoints0, keypoints1,
+            desc.descriptors = orbLoop(octaveImage, keypoints0, keypoints1,
                 orientations, useDefaultSize, scale);
         }
-
-        Descriptors desc = new Descriptors();
-        desc.descriptors = descriptors;
 
         return desc;
     }
@@ -1964,6 +1877,7 @@ public class ORB {
      * @param keypoints0
      * @param keypoints1
      * @param orientations
+     * @param scale
      * @return
      * array of bit vectors of which only 256 bits are used
      * length is [orientations.size]
@@ -2777,8 +2691,6 @@ public class ORB {
         return ns;
     }
 
-
-
     /**
      * calculate a cost matrix composed of the sum of XOR of each descriptor in d1 to d2.
      *
@@ -2999,84 +2911,6 @@ public class ORB {
         }
     }
 
-
-    private static TObjectIntMap<PairInt> createIndexMap(
-        List<Set<PairInt>> segmentedCells) {
-
-        TObjectIntMap<PairInt> map = new TObjectIntHashMap<PairInt>();
-
-        for (int i = 0; i < segmentedCells.size(); ++i) {
-            for (PairInt p : segmentedCells.get(i)) {
-                map.put(p, i);
-            }
-        }
-
-        return map;
-    }
-
-    private static CorrespondenceList setToBestUnique(
-        CorrespondenceList minCostCor,
-        double[] minCostI, double[] minDistI) {
-
-        if (minCostCor == null) {
-            return null;
-        }
-
-        /*
-        make indexes array and sort by incr cost
-
-        then uniquely assign pairs from lowest costs
-        */
-        int n = minCostCor.getPoints1().size();
-        int[] idxs = new int[n];
-        float[] totCost = new float[n];
-        for (int i = 0; i < n; ++i) {
-            idxs[i] = i;
-            totCost[i] = (float)(minCostI[i] + minDistI[i]);
-        }
-        QuickSort.sortBy1stArg(totCost, idxs);
-
-        Set<PairInt> set1 = new HashSet<PairInt>();
-        Set<PairInt> set2 = new HashSet<PairInt>();
-        List<PairInt> m1 = new ArrayList<PairInt>();
-        List<PairInt> m2 = new ArrayList<PairInt>();
-
-        for (int i = 0; i < n; ++i) {
-            int idx = idxs[i];
-            PairInt p1 = minCostCor.getPoints1().get(idx);
-            PairInt p2 = minCostCor.getPoints2().get(idx);
-            if (set1.contains(p1) || set2.contains(p2)) {
-                continue;
-            }
-            m1.add(p1);
-            m2.add(p2);
-            set1.add(p1);
-            set2.add(p2);
-        }
-        minCostCor.getPoints1().clear();
-        minCostCor.getPoints2().clear();
-
-        minCostCor.getPoints1().addAll(m1);
-        minCostCor.getPoints2().addAll(m2);
-
-        return minCostCor;
-    }
-
-
-    private static TObjectIntMap<PairInt> createIndexMap(
-        TIntList xList, TIntList yList) {
-
-        TObjectIntMap<PairInt> map = new TObjectIntHashMap<PairInt>();
-
-        for (int i = 0; i < xList.size(); ++i) {
-            int x = xList.get(i);
-            int y = yList.get(i);
-            map.put(new PairInt(x, y), i);
-        }
-
-        return map;
-    }
-
     /**
      * create col major image from row major input
      * @param a
@@ -3098,6 +2932,7 @@ public class ORB {
         }
         return img;
     }
+    
     /**
      * create col major image from row major input
      * @param a
@@ -3119,59 +2954,5 @@ public class ORB {
         }
         return img;
     }
-
-
-    private static List<TIntList> createLabeledLists(
-        TIntList keypointsX, TIntList keypointsY,
-        List<Set<PairInt>> labeledPoints,
-        TObjectIntMap<PairInt> pointLabels) {
-
-        int ns = labeledPoints.size();
-        List<TIntList> output = new ArrayList<TIntList>();
-        for (int i = 0; i < ns; ++i) {
-            output.add(new TIntArrayList());
-        }
-
-        for (int i = 0; i < keypointsX.size(); ++i) {
-            int x = keypointsX.get(i);
-            int y = keypointsY.get(i);
-            int label = pointLabels.get(new PairInt(x, y));
-            TIntList list = output.get(label);
-            assert(list != null);
-            list.add(i);
-        }
-
-        return output;
-    }
-
-    private static Set<PairInt> extractLabeledRegions(
-        PairInt[] points, TObjectIntMap<PairInt> pointLabels,
-        List<Set<PairInt>> labeledPoints) {
-
-        Set<PairInt> out = new HashSet<PairInt>();
-
-        for (int i = 0; i < points.length; ++i) {
-            PairInt p = points[i];
-            int label = pointLabels.get(p);
-            out.addAll(labeledPoints.get(label));
-        }
-
-        return out;
-    }
-
-    private static int count(Set<PairInt> set, float scale) {
-
-        Set<PairInt> out = new HashSet<PairInt>();
-        for (PairInt p : set) {
-            int x = Math.round(p.getX()/scale);
-            int y = Math.round(p.getY()/scale);
-            out.add(new PairInt(x, y));
-        }
-
-        return out.size();
-    }
-
-
-
 
 }
