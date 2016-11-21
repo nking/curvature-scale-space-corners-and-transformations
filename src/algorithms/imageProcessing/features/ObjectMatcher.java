@@ -120,10 +120,12 @@ public class ObjectMatcher {
      * are further evaluated for descriptor cost, number of matching points,
      * and the distance between transformed points and nearest matching
      * points.  The lowest cost solution is returned as a correspondence list.
-     * Note that the smallest number of pyramid images are used, which locates
-     * the object, but precise correspondence is better achieved by setting
-     * the flag to use larger number of pyramid images to true, at the expense 
-     * of runtime.
+     * Note that the smallest number of pyramid images are used by default, 
+     * which locates the object, but precise correspondence is better 
+     * achieved by setting the flag to use larger number of pyramid images 
+     * to true at the expense of runtime or by refining the results
+     * with another method (such as an aggregated partial shape matching
+     * as in the unfinished ShapeFinder.java).
      * 
      * Note that if the object in img1 is expected to be smaller than 16 or so
      * pixels wide and high, there will not be enough keypoints, so the user
