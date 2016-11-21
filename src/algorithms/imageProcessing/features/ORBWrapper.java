@@ -357,9 +357,6 @@ public class ORBWrapper {
     
     public static ORB extractKeypointsFromSubImage(Image img,
         int xLL, int yLL, int xUR, int yUR, int nKeypoints,
-        float fastThreshold, 
-        boolean create1stDerivPoints,
-        boolean createCurvaturePoints,
         boolean overrideToCreateSmallestPyramid) {
          
         int buffer = 25;
@@ -386,10 +383,6 @@ public class ORBWrapper {
         
         ORB orb = new ORB(nKeypoints);
         orb.overrideToNotCreateDescriptors();
-        orb.overrideFastThreshold(fastThreshold);
-        if (create1stDerivPoints) {
-            orb.overrideToAlsoCreate1stDerivKeypoints();
-        }       
         if (overrideToCreateSmallestPyramid) {
             orb.overrideToUseSmallestPyramid();
         }

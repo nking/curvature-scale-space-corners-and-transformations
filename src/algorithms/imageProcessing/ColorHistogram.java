@@ -2,6 +2,7 @@ package algorithms.imageProcessing;
 
 import algorithms.util.PairInt;
 import gnu.trove.iterator.TIntIterator;
+import gnu.trove.list.TIntList;
 import gnu.trove.set.TIntSet;
 import java.util.Set;
 
@@ -433,6 +434,35 @@ public class ColorHistogram {
     }
     
     /**
+     * 1D histogram of 16 bins of greyscale image.  max possible
+     * value in image should be provided also.
+     * 
+     * @param values from 0 to maxV, inclusive 
+     * @return histogram accessed as hist[bin]
+     */
+    public int[] histogram1D(TIntList values, int maxV) {
+             
+        int nBins = 16;
+        
+        int[] hist = new int[nBins];
+        
+        float binWidth = (float)maxV/(float)nBins;
+           
+        for (int i = 0; i < values.size(); ++i) {
+            
+            float v = values.get(i);
+            
+            int binNumber = Math.round(v/binWidth);
+            if (binNumber > (nBins - 1)) {
+                binNumber = nBins - 1;
+            }
+            hist[binNumber]++;           
+        }
+        
+        return hist;
+    }
+    
+    /**
      * summation over color histograms of the property min(h_i, h_j)
      * @param hist0
      * @param hist1
@@ -471,6 +501,65 @@ public class ColorHistogram {
             float y1 = 0;
             if (n0 > 0) {
                 y0 = (float)hist0[j]/(float)n0;
+            }
+            if (n1 > 0) {
+                y1 = (float)hist1[j]/(float)n1;
+            }
+            sum += Math.min(y0, y1);
+            sum0 += y0;
+            sum1 += y1;
+        }
+        
+        float sim = sum / ((float)Math.min(sum0, sum1));
+        
+        return sim;
+    }
+
+    /**
+     * 
+     * @param hist0
+     * @param hist21
+     * @param bins0Shift the number of bins to shift bins1 by during
+     * comparison.
+     * @return 
+     */
+    public float intersection(int[] hist0, int[] hist1, int bins0Shift) {
+    
+        if ((hist0.length != hist1.length)) {
+            throw new IllegalArgumentException(
+                "hist0 and hist1 must be same dimensions");
+        }
+                
+        // the values need to be normalized by the total number of points
+        // in the histogram, so calculate that first
+        int n0 = 0;
+        int n1 = 0;
+        for (int i = 0; i < hist0.length; ++i) {
+            n0 += hist0[i];
+            n1 += hist1[i];
+        }
+        
+        /*
+        After histograms are normalized to same total number
+        
+        K(a,b) = 
+            (summation_over_i_from_1_to_n( min(a_i, b_i))
+             /
+            (min(summation_over_i(a_i), summation_over_i(b_i))
+        */
+            
+        float sum = 0;
+        float sum0 = 0;
+        float sum1 = 0;
+        for (int j = 0; j < hist0.length; ++j) {
+            float y0 = 0;
+            float y1 = 0;
+            int idx0 = j + bins0Shift;
+            if (idx0 > (hist0.length - 1)) {
+                idx0 -= hist0.length;
+            }
+            if (n0 > 0) {
+                y0 = (float)hist0[idx0]/(float)n0;
             }
             if (n1 > 0) {
                 y1 = (float)hist1[j]/(float)n1;
