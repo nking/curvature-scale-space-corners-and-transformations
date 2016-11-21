@@ -443,7 +443,7 @@ public class AndroidStatuesTest extends TestCase {
                     settings.setToUseSmallObjectMethod();
                 }
                 //settings.setToUseLargerPyramid0();
-                //objMatcher.setToDebug();
+                objMatcher.setToDebug();
                 CorrespondenceList cor = objMatcher.findObject(imgs0[0], shape0, 
                     img, settings);
                 

@@ -54,12 +54,15 @@ public class SLICSuperPixels {
     protected final double threshold;
     
     // range of CIE LAB values is (0,0,0) to (28.51 3.28 2.15);  
-    // sqrt(sum sq) = 28.78
+    // sqrt(sum sq) = 28.78 for CIE 1994
     // paper recommends using value between 1 and 40
     protected final double maxCIELAB;
 
-    // max possible value is 19.22
+    // max possible value is 19.22 for CIE 1994
     protected final double maxDeltaE;
+    
+    // if false, uses CIE L*a*b* 1931
+    private boolean use1994 = false;
     
     /**
      * constructor for the super-pixel algorithm SLIC that uses the default
@@ -98,6 +101,9 @@ public class SLICSuperPixels {
         log.info("k = " + k + " s=" + this.s + " nXs=" + nXs + " nYs=" + nYs);
         
         this.img = img;
+        if (!use1994) {
+            img.overrideToUseCIELAB1931();
+        }
         
         // l, a, b, x, y
         seedDescriptors = new float[k][];
@@ -176,6 +182,9 @@ public class SLICSuperPixels {
         log.info("k = " + k);
         
         this.img = img;
+        if (!use1994) {
+            img.overrideToUseCIELAB1931();
+        }
         
         // l, a, b, x, y
         seedDescriptors = new float[k][];
@@ -192,7 +201,7 @@ public class SLICSuperPixels {
      public void calculate() {
         
         init();
-        
+                
         int nIterMax = 20;
         
         int nIter = 0;
@@ -238,7 +247,7 @@ public class SLICSuperPixels {
         if (gradient == null) {
             gradient = calcGradient();
         }
-        
+                
         /*
         sampled on a regular grid spaced S pixels apart. 
         To produce roughly equally sized superpixels, 
@@ -305,7 +314,9 @@ public class SLICSuperPixels {
                                 
                 // [l, a, b, x, y]
                 float[] lab = img.getCIELAB(minX2, minY2);
+                
                 System.arraycopy(lab, 0, seedDescriptors[kCurrent], 0, 3);
+                
                 seedDescriptors[kCurrent][3] = minX2;
                 seedDescriptors[kCurrent][4] = minY2;
                 
@@ -333,9 +344,7 @@ public class SLICSuperPixels {
        for (int i = 0; i < width; ++i) {
            gradient[i] = new double[height];
        }
-       
-       CIEChromaticity cieC = new CIEChromaticity();
-       
+              
        float[] kernel = Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive();
               
        int h = (kernel.length - 1) >> 1;
@@ -496,6 +505,11 @@ public class SLICSuperPixels {
 
     private double calcDist2(float[] desc1, float[] lab2, 
         int x2, int y2) {
+        
+        if (!use1994) {
+            throw new IllegalStateException("this method is meant for use"
+                + " with cie 1004, and current settings are for 1931");
+        }
 
         CIEChromaticity cieC = new CIEChromaticity();
        

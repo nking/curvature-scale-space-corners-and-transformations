@@ -26,6 +26,27 @@ public class ImageExt extends Image {
     
     //CIE LAB 1994
     protected float[][] lab;
+   
+    // if this is set to false, CIE 1931 is used, but this can only be changed
+    // if aCIECalcOccurred = false;
+    private boolean useCIE1994 = true;
+    
+    // a guard to prevent mixing of cie 1941 and 1931
+    private boolean aCIECalcOccurred = false;
+    
+    public void overrideToUseCIELAB1931() {
+        if (!useCIE1994) {
+            return;
+        }
+        if (aCIECalcOccurred) {
+            //TODO: may change this to a warning in the future
+            // and wipe out existing CIE values.
+            throw new IllegalStateException(
+                "values have already been stored"
+                + " as cie 1994, so use reset CIELAB first.");
+        }
+        useCIE1994 = false;
+    }
     
     /**
      * luma is the y of yuv.
@@ -268,9 +289,16 @@ public class ImageExt extends Image {
             int gPix = getG(internalIndex);
             int bPix = getB(internalIndex);
             
-            //TODO: consider changing this to rgbToCIELAB2
-            float[] cieLAB = cieC.rgbToCIELAB(rPix, gPix, bPix);
+            float[] cieLAB;
+            if (useCIE1994) {
+                cieLAB = cieC.rgbToCIELAB(rPix, gPix, bPix);
+            } else {
+                // this uses cie lab 1931
+                cieLAB = cieC.rgbToCIELAB2(rPix, gPix, bPix);
+            }            
             lab[internalIndex] = cieLAB;
+        
+            aCIECalcOccurred = true;
         }
        
         return lab[internalIndex];

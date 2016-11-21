@@ -330,6 +330,9 @@ public class ORBMatcher {
                     //    the right logic if not oversegmented or blended into
                     //    other objects.
                     int label2 = pointLabels2.get(new PairInt(kpX2.get(q.getC()), kpY2.get(q.getC())));
+                    if (labeledPoints2.get(label2).size() < 2) {
+                        continue;
+                    }
                     int[] key = new int[]{label2};
                     if (!labeledPointsSizes2.containsKey(key)) {
                         int sz = calculateObjectSize(labeledPoints2.get(label2));
