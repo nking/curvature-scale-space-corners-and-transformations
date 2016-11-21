@@ -6240,6 +6240,18 @@ if (sum > 511) {
         return scales;
     }
 
+    public Set<PairInt> binPoints(Set<PairInt> points, int binFactor) {
+    
+        Set<PairInt> out = new HashSet<PairInt>();
+        for (PairInt p : points) {
+            int x = Math.round((float)p.getX()/(float)binFactor);
+            int y = Math.round((float)p.getY()/(float)binFactor);
+            out.add(new PairInt(x, y));
+        }
+        
+        return out;
+    }
+
     public static class Colors {
         private final float[] colors;
         public Colors(float[] theColors) {
