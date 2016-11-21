@@ -9,6 +9,7 @@ import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
+import algorithms.imageProcessing.matching.ORBMatcher;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
@@ -363,10 +364,10 @@ public class ObjectMatcher {
         orb0.createDescriptorsLABTheta(imgs0[0]);
         orb1.createDescriptorsLABTheta(img1);
         if (settings.isUseSmallObjectMethod()) {
-            corList = ORB.matchSmall(orb0, orb1,
+            corList = ORBMatcher.matchSmall(orb0, orb1,
                 shape0, listOfPointSets2);
         } else {
-            corList = ORB.match0(orb0, orb1,
+            corList = ORBMatcher.match0(orb0, orb1,
                 shape0, listOfPointSets2);
         }
 

@@ -10,6 +10,7 @@ import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.StructureTensor;
 import algorithms.imageProcessing.features.ORB.Descriptors;
+import algorithms.imageProcessing.matching.ORBMatcher;
 import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
@@ -985,7 +986,7 @@ public class ORBTest extends TestCase {
                 orb.getKeyPoint0List().get(0).get(i)));
         }
        
-        int[][] matches = ORB.matchDescriptors(
+        int[][] matches = ORBMatcher.matchDescriptors(
             desc00.descriptors, desc90.descriptors, 
             kp00, kp90);
         
