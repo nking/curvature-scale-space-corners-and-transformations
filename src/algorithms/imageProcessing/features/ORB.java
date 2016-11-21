@@ -29,6 +29,7 @@ import algorithms.util.QuadInt;
 import algorithms.util.TwoDFloatArray;
 import algorithms.util.TwoDIntArray;
 import algorithms.util.VeryLongBitString;
+import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
@@ -44,6 +45,7 @@ import gnu.trove.map.hash.TFloatIntHashMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
+import gnu.trove.set.TDoubleSet;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.awt.Color;
@@ -154,6 +156,60 @@ public class ORB {
         }
 
         return d;
+    }
+
+    private static TIntList calculateOrientations360_0(ORB orb, 
+        Set<PairInt> labeledPoints) {
+    
+        List<Set<PairInt>> list = new ArrayList<Set<PairInt>>();
+        list.add(labeledPoints);
+    
+        List<TIntList> orList = calculateOrientations360(orb, 
+            list);
+    
+        return orList.get(0);
+    }
+    
+    private static List<TIntList> calculateOrientations360(ORB orb, 
+        List<Set<PairInt>> labeledPoints) {
+        
+        TIntList kp0s = new TIntArrayList();
+        TIntList kp1s = new TIntArrayList();
+        
+        for (int i = 0; i < labeledPoints.size(); ++i) {
+            for (PairInt p : labeledPoints.get(i)) {
+                kp0s.add(p.getY());
+                kp1s.add(p.getX());
+            }
+        }
+        
+        float[][] octaveImage = orb.getPyramidImages().get(0).a;
+        TDoubleList or = orb.cornerOrientations(octaveImage,
+            kp0s, kp1s);
+        
+        // convert to degrees
+        TIntList orD = new TIntArrayList(or.size());
+        for (int i = 0; i < or.size(); ++i) {
+            double d = or.get(i) * 180./Math.PI;
+            if (d < 0) {
+                d += 360;
+            } else if (d > 359) {
+                d -= 360;
+            }
+            orD.add((int)Math.round(d));
+        }
+        
+        List<TIntList> orList = new ArrayList<TIntList>(labeledPoints.size());
+        int count = 0;
+        for (int i = 0; i < labeledPoints.size(); ++i) {
+            int n = labeledPoints.get(i).size();
+            TIntList list = new TIntArrayList(n);
+            orList.add(list);
+            list.addAll(orD.subList(count, count + n));
+            count += n;
+        }
+
+        return orList;        
     }
 
     /*
@@ -2796,16 +2852,22 @@ public class ORB {
         
         int templateSize = calculateObjectSize(labeledPoints1);
         
+        TIntList labeledOrientations1 = calculateOrientations360_0(
+            orb1, labeledPoints1);
+        
+        List<TIntList> labeledOrientations2 = calculateOrientations360(
+            orb2, labeledPoints2);
+        
         TIntObjectMap<Set<PairInt>> labeledPoints1Lists = new
             TIntObjectHashMap<Set<PairInt>>();
         // key = octave number, value = histograms of cie lab theta
         TIntObjectMap<OneDIntArray> ch1s = new
             TIntObjectHashMap<OneDIntArray>();
-        
+                
         // key = octave number, value = ordered boundaries of sets
         TIntObjectMap<PairIntArray> labeledBoundaries1 = new
             TIntObjectHashMap<PairIntArray>();
-        
+                
         for (int octave1 = 0; octave1 < scales1.size(); ++octave1) {
             float scale1 = scales1.get(octave1);
             Set<PairInt> set1 = new HashSet<PairInt>();
@@ -2820,11 +2882,12 @@ public class ORB {
             ch1s.put(octave1, new OneDIntArray(ch));
         
             PairIntArray bounds = imageProcessor.extractSmoothedOrderedBoundary(
-                set1, sigma, img.getWidth(), img.getHeight());
+                new HashSet(set1), sigma, img.getWidth(), img.getHeight());
             
             labeledBoundaries1.put(octave1, bounds);
         }
                 
+        int dp = 1;//2;
         float intersectionLimit = 0.5f;
 
         // sizes of the labeled point sets from dataset2 in scale 0 coordinates.
@@ -2850,6 +2913,8 @@ public class ORB {
             }
             int sz = calculateObjectSize(set);
             labeledPointsSizes2.put(i, sz);
+            
+            // only calculating orientation histograms for octave 0
             
             for (int octave2 = 0; octave2 < scales2.size(); ++octave2) {
                 float scale2 = scales2.get(octave2);
@@ -2886,7 +2951,7 @@ public class ORB {
                     labeledBoundaries2Lists.put(octave2, list3);
                 }
                 PairIntArray bounds = imageProcessor.extractSmoothedOrderedBoundary(
-                    set2, sigma, img.getWidth(), img.getHeight());
+                    new HashSet(set2), sigma, img.getWidth(), img.getHeight());
                 list3.add(bounds);
             }
         }
@@ -2902,15 +2967,19 @@ public class ORB {
         TIntObjectMap<TDoubleList> chordDiffSumsMap = new TIntObjectHashMap<TDoubleList>();
         TIntObjectMap<TFloatList> intersectionsMap = new TIntObjectHashMap<TFloatList>();
         
-        //for (int i = 0; i < scales1.size(); ++i) {
-        for (int i = 2; i < 3; ++i) {
+        double maxDiffChordSum = Double.MIN_VALUE;
+        double maxAvgDiffChord = Double.MIN_VALUE;
+        double maxAvgDist = Double.MIN_VALUE;
+        
+        for (int i = 0; i < scales1.size(); ++i) {
+        //for (int i = 2; i < 3; ++i) {
 
             float scale1 = scales1.get(i);
             
             float sz1 = (float)templateSize/scale1;
             
             int[] ch1 = ch1s.get(i).a;
-            
+                    
             Set<PairInt> templateSet = labeledPoints1Lists.get(i);
            
             PairIntArray bounds1 = labeledBoundaries1.get(i);
@@ -2919,8 +2988,8 @@ public class ORB {
             TDoubleList chordDiffSums = new TDoubleArrayList();
             TFloatList intersections = new TFloatArrayList();
         
-            //for (int j = 0; j < scales2.size(); ++j) {
-            for (int j = 0; j < 1; ++j) {
+            for (int j = 0; j < scales2.size(); ++j) {
+            //for (int j = 0; j < 1; ++j) {
 
                 float scale2 = scales2.get(j);
                 
@@ -2957,7 +3026,7 @@ public class ORB {
                     PairIntArray bounds2 = listOfBounds2.get(k);
                     
                     PartialShapeMatcher matcher = new PartialShapeMatcher();
-                    matcher.overrideSamplingDistance(2);
+                    matcher.overrideSamplingDistance(dp);
                     //matcher.setToDebug();
                     //matcher.setToUseSameNumberOfPoints();
                     Result r = matcher.match(bounds1, bounds2);
@@ -2968,12 +3037,25 @@ public class ORB {
                     chordDiffSums.add(r.getChordDiffSum());
                     intersections.add(intersection);
                     
-                    System.out.println("a p in set=" +
-                        listOfSets2.get(k).iterator().next() + 
-                        " shape matcher d=" + c + "np=" +
-                        r.getNumberOfMatches() + " intersection=" + intersection);
-                    //double d2 = calcTransformationDistanceSum(r, bounds1, 
-                    //    bounds2, false);
+                    if (r.getChordDiffSum() > maxDiffChordSum) {
+                        maxDiffChordSum = r.getChordDiffSum();
+                    }
+                    double avgCD = r.getChordDiffSum()/(double)r.getNumberOfMatches();
+                    if (avgCD > maxAvgDiffChord) {
+                        maxAvgDiffChord = avgCD;
+                    }
+                    
+                    double avgDist = r.getDistSum()/(double)r.getNumberOfMatches();
+                    if (avgDist > maxAvgDist) {
+                        maxAvgDist = avgDist;
+                    }
+                                         
+                    System.out.println(String.format(
+ "%d %d p in set=%s  shape matcher c=%.2f np=%d  inter=%.2f  dist=%.2f avgDist=%.2f",
+                        i, j, listOfSets2.get(k).iterator().next().toString(), 
+                            (float)c, r.getNumberOfMatches(), 
+                            (float)intersection,
+                            (float)r.getDistSum(), (float)avgDist));
                     try {
                         CorrespondencePlotter plotter = new CorrespondencePlotter(
                             bounds1, bounds2);
@@ -3018,11 +3100,13 @@ public class ORB {
         /*
         for each i, need the max chord diff sum, nPoints in bound1, and best Results
         */
+        double minSD = Double.MAX_VALUE;
+        int minSDI = -1;
         TIntObjectIterator<List<PObject>> iter = resultsMap.iterator();
         for (int i = 0; i < resultsMap.size(); ++i) {
             iter.advance();
             int idx = iter.key();
-            double maxDiffChordSum = chordDiffSumsMap.get(idx).max();
+            //double maxDiffChordSum = chordDiffSumsMap.get(idx).max();
             
             double minCost = Double.MAX_VALUE;
             int minCostIdx = -1;
@@ -3031,22 +3115,47 @@ public class ORB {
                 
                 PObject obj = resultsList.get(j);
                 float costIntersection = 1.f - intersectionsMap.get(idx).get(j);
-                
+                                
                 Result r = obj.r;
-                int nb1 = obj.bounds1.getN();
+                int nb1 = Math.round((float)obj.bounds1.getN()/(float)dp);
+                float np = r.getNumberOfMatches();
+                float countComp = 1.f - (np/(float)nb1);
+                float countCompSq = countComp*countComp;
                 
-                double sd = r.calculateSalukwdzeDistanceSquared(maxDiffChordSum,
-                    nb1);
+                double chordComp 
+                    //= (float)r.getChordDiffSum()/maxDiffChordSum;
+                    = ((float)r.getChordDiffSum()/np)/maxAvgDiffChord;
+                double chordCompSq = chordComp * chordComp;
+                
+                double avgDist = r.getDistSum()/np;
+                double distComp = avgDist/maxAvgDist;
+                double distCompSq = distComp * distComp;
+                
+                // Salukwzde uses square sums
+                //double sd = r.calculateSalukwdzeDistanceSquared(
+                //    maxDiffChordSum, nb1);                
+                
+                //double sd = chordCompSq*countCompSq
+                //    + distCompSq*countCompSq;
+                //double sd = chordCompSq + countCompSq + distCompSq;
+                double sd = chordComp + countComp + distComp;
                 
                 // adding a color intersection term to the Salukwdze distance
-                sd += (costIntersection * costIntersection);
+                // NOTE: the intersection costs are elevated in weight
+                //       by not squaring them.  may need to reconsider this.
+                sd += costIntersection;
                 
                 if (sd < minCost) {
                     minCost = sd;
                     minCostIdx = j;
                 }
+                if (sd < minSD) {
+                    minSD = sd;
+                    minSDI = idx;
+                }
                 System.out.println("sd=" + sd +
-                    " n1=" + obj.bounds1.getN()
+                    " n1=" + obj.bounds1.getN() +
+                    " n2=" + obj.bounds2.getN()
                     + " origN1=" + r.getOriginalN1()
                     + " nMatches=" + r.getNumberOfMatches());
             }
@@ -3063,8 +3172,24 @@ public class ORB {
         }
         
         if (resultsMap.size() > 1) {
-            // transform results to same reference frame to compare
-            throw new UnsupportedOperationException("not yet implemented");
+            // TODO: build a test for this.
+            //    possibly need to transform results to same reference
+            //    frame to compare.
+            //    using best SD for now
+            TIntSet rm = new TIntHashSet();
+            iter = resultsMap.iterator();
+            for (int i = 0; i < resultsMap.size(); ++i) {
+                iter.advance();
+                int idx = iter.key();
+                if (idx != minSDI) {
+                    rm.add(idx);
+                }
+            }
+            TIntIterator iter2 = rm.iterator();
+            while (iter2.hasNext()) {
+                int idx = iter2.next();
+                resultsMap.remove(idx);
+            }
         }
         
         List<CorrespondenceList> topResults =
