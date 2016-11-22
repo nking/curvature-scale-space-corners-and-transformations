@@ -81,6 +81,9 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
  */
 public class NormalizedCuts {
     
+    //TODO: needs to be edited to use spatial location and adjacency
+    //   map.  look at DNCuts
+    
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
     // number of normalized cuts to perform before 
@@ -153,9 +156,9 @@ public class NormalizedCuts {
     public void setColorSpaceToCIELAB() {
         colorOption = ColorOption.CIELAB;
         colorSpace = ColorSpace.CIELAB;
-        // for superpixels w/ n=200 thresh=1e-12  sigma=6
-        thresh = 1e-12;//-12
-        sigma = 6;
+        // for superpixels w/ n=200 
+        thresh = 0.06; 
+        sigma = 10;
     }
     
     /**

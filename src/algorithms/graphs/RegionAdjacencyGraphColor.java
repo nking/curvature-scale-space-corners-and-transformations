@@ -496,6 +496,8 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
         }
         int[] count = new int[nNodes];
         
+        CIEChromaticity cieC = new CIEChromaticity();
+        
         for (int row = 0; row < nRows; ++row) {
             for (int col = 0; col < nCols; ++col) {
 
@@ -520,6 +522,14 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
                 nodeColors[0][i] = hsb[0];
                 nodeColors[1][i] = hsb[1];
                 nodeColors[2][i] = hsb[2];
+            } else if (colorSpace.equals(ColorSpace.CIELAB)) {
+                float[] lab = cieC.rgbToCIELAB2(
+                    Math.round(nodeColors[0][i]), 
+                    Math.round(nodeColors[1][i]), 
+                    Math.round(nodeColors[2][i]));
+                nodeColors[0][i] = lab[0];
+                nodeColors[1][i] = lab[1];
+                nodeColors[2][i] = lab[2];
             }
         }
         
@@ -581,7 +591,7 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
         CIEChromaticity cieC = new CIEChromaticity();
         
         Set<PairInt> added = new HashSet<PairInt>();
-        
+    
         for (Entry<Integer, Set<Integer>> entry : adjacencyMap.entrySet()) {
             Integer index1 = entry.getKey();
             int idx1 = index1.intValue();
@@ -599,28 +609,13 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
                 }
                 added.add(p);
                 
-                double diff;
-                if (clrSpace.equals(ColorSpace.HSV)) {
-                    float sumDiff = 0;
-                    for (int m = 0; m < 3; ++m) {
-                        float d = nodeColors[m][idx1] - nodeColors[m][idx2];
-                        sumDiff += Math.sqrt(d * d);
-                    }
-                    diff = Math.sqrt(sumDiff);
-                } else if (clrSpace.equals(ColorSpace.CIELAB)) {
-                    diff = Math.abs(cieC.calcDeltaECIE2000(
-                        nodeColors[0][idx1], nodeColors[1][idx1], nodeColors[2][idx1],
-                        nodeColors[0][idx2], nodeColors[1][idx2], nodeColors[2][idx2]
-                    ));
-                } else {
-                    //RGB
-                    float sumDiff = 0;
-                    for (int m = 0; m < 3; ++m) {
-                        float d = nodeColors[m][idx1] - nodeColors[m][idx2];
-                        sumDiff += Math.sqrt(d * d);
-                    }
-                    diff = Math.sqrt(sumDiff);
+                float sumDiff = 0;
+                for (int m = 0; m < 3; ++m) {
+                    float d = nodeColors[m][idx1] - nodeColors[m][idx2];
+                    sumDiff += Math.sqrt(d * d);
                 }
+                double diff = Math.sqrt(sumDiff);
+                
                 // set both [i][j] and [j][i] to make matrix symmetric
                 diffOrSim.set(idx1, idx2, diff);
                 diffOrSim.set(idx2, idx1, diff);

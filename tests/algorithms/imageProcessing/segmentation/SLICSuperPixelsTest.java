@@ -226,6 +226,7 @@ public class SLICSuperPixelsTest extends TestCase {
             //==> nClusters = nPix/((w/x0)^2)
             //==> nClusters = nPix/((h/x0)^2)
             int nc = (n10+n11)/2;
+        //nc = 40;
             SLICSuperPixels slic = new SLICSuperPixels(img, nc);
             slic.setGradient(edgeProducts.getGradientXY());
             slic.calculate();
@@ -238,6 +239,15 @@ public class SLICSuperPixelsTest extends TestCase {
                 str = "0" + str;
             }
             MiscDebug.writeImage(img3, "_slic_" + "_" + str);
+        
+            /*NormalizedCuts norm = new NormalizedCuts();
+            norm.setColorSpaceToCIELAB();
+            labels = norm.normalizedCut(img, labels);
+            
+            img3 = img.createWithDimensions();
+            ImageIOHelper.addAlternatingColorLabelsToRegion(img3, labels);
+            MiscDebug.writeImage(img3, "_norm_" + "_" + str);
+            */
         }
     }
 
