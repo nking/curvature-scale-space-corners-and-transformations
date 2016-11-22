@@ -355,7 +355,7 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void testORBMatcher2() throws Exception {
+    public void estORBMatcher() throws Exception {
 
         /*        
         this demonstrates ORB
@@ -472,6 +472,114 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
+    public void testORBMatcher2() throws Exception {
+
+        // TODO: this one either needs more keypoints across the cupcake in
+        //       android statues 02 image,
+        //    or it needs an algorithm similar to matchSmall which does not
+        //    use descriptors, but instead uses color histograms and partial
+        //    shape matching, but with the addition of aggregated shape
+        //    comparisons (== the unfinished ShapeFinder)
+        //
+        //   and as always, improved segmentation would help, but the cupcake is
+        //   in partly shaded locations.
+        
+        int maxDimension = 256;//512;
+        SIGMA sigma = SIGMA.ZEROPOINTFIVE;//SIGMA.ONE;
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
+
+        String[] fileNames0 = new String[]{
+            "android_statues_04.jpg",
+            "android_statues_04_cupcake_mask.png",
+        };
+
+        String[] fileNames1 = new String[]{
+          //  "android_statues_01.jpg",   // needs aggregated shape matching
+            "android_statues_02.jpg", // needs aggregated shape matching 
+          //  "android_statues_04.jpg", // descr are fine
+        };
+
+        for (String fileName1 : fileNames1) {               
+
+            long t0 = System.currentTimeMillis();
+
+            Set<PairInt> shape0 = new HashSet<PairInt>();
+
+            ImageExt[] imgs0 = maskAndBin2(fileNames0, 
+                maxDimension, shape0);
+            int nShape0_0 = shape0.size();
+
+            System.out.println("shape0 nPts=" + nShape0_0);
+
+
+            String fileName1Root = fileName1.substring(0, 
+                fileName1.lastIndexOf("."));
+            String filePath1 = ResourceFinder.findFileInTestResources(
+                fileName1);
+            ImageExt img = ImageIOHelper.readImageExt(filePath1);
+
+            long ts = MiscDebug.getCurrentTimeFormatted();
+
+            int w1 = img.getWidth();
+            int h1 = img.getHeight();
+
+            int binFactor1 = (int) Math.ceil(Math.max(
+                (float) w1 / maxDimension,
+                (float) h1 / maxDimension));
+
+            img = imageProcessor.binImage(img, binFactor1);
+
+            int w = img.getWidth();
+            int h = img.getHeight();
+
+            /*RANSACAlgorithmIterations nsIter = new
+                RANSACAlgorithmIterations();
+            long nnn = nsIter.estimateNIterFor99PercentConfidence(
+                300, 7, 20./300.);
+            System.out.println("99 percent nIter for RANSAC=" 
+                + nnn);*/
+
+            //GreyscaleImage theta1 = imageProcessor.createCIELABTheta(imgs0[0], 255);
+            //MiscDebug.writeImage(theta1, fileName1Root + "_theta_0");
+            //theta1 = imageProcessor.createCIELABTheta(img, 255);
+            //MiscDebug.writeImage(theta1, fileName1Root + "_theta_1");
+        
+            Settings settings = new Settings();
+
+            ObjectMatcher objMatcher = new ObjectMatcher();
+            if (fileName1Root.contains("_01")) {
+                settings.setToUseSmallObjectMethod();
+            }
+            //settings.setToUseLargerPyramid0();
+            objMatcher.setToDebug();
+            CorrespondenceList cor = objMatcher.findObject(imgs0[0], shape0, 
+                img, settings);
+
+            long t1 = System.currentTimeMillis();
+            System.out.println("matching took " + ((t1 - t0)/1000.) + " sec");
+
+            CorrespondencePlotter plotter = new CorrespondencePlotter(
+                imgs0[1], img.copyImage());            
+            for (int ii = 0; ii < cor.getPoints1().size(); ++ii) {
+                PairInt p1 = cor.getPoints1().get(ii);
+                PairInt p2 = cor.getPoints2().get(ii);
+
+                //System.out.println("orb matched: " + p1 + " " + p2);
+                //if (p2.getX() > 160)
+                plotter.drawLineInAlternatingColors(p1.getX(), p1.getY(), 
+                    p2.getX(), p2.getY(), 0);
+            }
+
+            plotter.writeImage("_orb_corres_final_" + 
+                "_" + fileName1Root);
+            System.out.println(cor.getPoints1().size() + 
+                " matches " + fileName1Root + " test2");
+            //MiscDebug.writeImage(img11, "_orb_matched_" + str
+            //    + "_" + fileName1Root);
+        }
+    }
 
     public void estMkImgs() throws Exception {
 
@@ -1778,5 +1886,46 @@ public class AndroidStatuesTest extends TestCase {
         MiscDebug.writeImage(imgCp, "_hsv_segmentation_" + fileName1Root);
         
         }
+    }
+
+    private ImageExt[] maskAndBin2(String[] fileNames, 
+        int maxDimension, Set<PairInt> outputShape) throws IOException {
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+
+        String fileNameMask0 = fileNames[1];
+        String filePathMask0 = ResourceFinder
+            .findFileInTestResources(fileNameMask0);
+        ImageExt imgMask0 = ImageIOHelper.readImageExt(filePathMask0);
+
+        String fileName0 = fileNames[0];
+        String filePath0 = ResourceFinder
+            .findFileInTestResources(fileName0);
+        ImageExt img0 = ImageIOHelper.readImageExt(filePath0);
+    
+        int w0 = img0.getWidth();
+        int h0 = img0.getHeight();
+
+        int binFactor0 = (int) Math.ceil(Math.max(
+             (float) w0 / maxDimension,
+             (float) h0 / maxDimension));
+        
+        img0 = imageProcessor.binImage(img0, binFactor0);
+        imgMask0 = imageProcessor.binImage(imgMask0, binFactor0);
+        
+        ImageExt img0Masked = img0.copyToImageExt();
+        
+        assertEquals(imgMask0.getNPixels(), img0.getNPixels());
+
+        for (int i = 0; i < imgMask0.getNPixels(); ++i) {
+            if (imgMask0.getR(i) == 0) {
+                img0Masked.setRGB(i, 0, 0, 0);
+            } else {
+                outputShape.add(new PairInt(imgMask0.getCol(i), 
+                    imgMask0.getRow(i)));
+            }
+        }
+   
+        return new ImageExt[]{img0, img0Masked};
     }
 }
