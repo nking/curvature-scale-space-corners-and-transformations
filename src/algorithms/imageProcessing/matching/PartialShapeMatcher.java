@@ -110,9 +110,6 @@ based upon algorithm in paper
  */
 public class PartialShapeMatcher {
 
-    //TODO: editing the objective cost function, Saluwzde distance,
-    //
- 
     /**
      * in sampling the boundaries of the shapes, one can
      * choose to use the same number for each (which can result
@@ -1673,10 +1670,6 @@ public class PartialShapeMatcher {
          * @return
          */
         public float calculateSalukwdzeDistanceSquared(double maxChordSum) {
-            
-            paused here
-            need to use fscore instead of fraction of whole
-            
             float f = 1.f - getFractionOfWhole();
             double d = getNormalizedChordDiff(maxChordSum);
             float s = (float)(f * f + d * d);
@@ -1696,10 +1689,6 @@ public class PartialShapeMatcher {
          * @return
          */
         public float calculateSalukwdzeDistanceSquared(double maxChordSum,
-            
-            paused here
-            need to use fscore instead of fraction of whole
-            
             int maxNumberOfMatchable) {
             float f = 1.f - ((float)getNumberOfMatches()/
                 (float)maxNumberOfMatchable);
