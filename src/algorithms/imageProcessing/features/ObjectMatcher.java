@@ -30,7 +30,14 @@ import java.util.List;
 import java.util.Set;
 
 /**
- *
+ * a class that finds a template object in another image where the 
+ * object may have changed poses, may have different lighting, or
+ * may have different foreground or background.
+ * 
+ * NOTE that future options might include ability to choose between
+ * 3 or more different light sources and the ability to use an
+ * articulated search for small object matches.
+ * 
  * @author nichole
  */
 public class ObjectMatcher {
