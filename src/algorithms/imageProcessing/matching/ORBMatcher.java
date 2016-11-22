@@ -826,18 +826,28 @@ public class ORBMatcher {
         TIntObjectIterator<List<PObject>> iter = resultsMap.iterator();
         
         for (int i = 0; i < resultsMap.size(); ++i) {
+            
             iter.advance();
+            
             int idx = iter.key();
+            
             //double maxDiffChordSum = chordDiffSumsMap.get(idx).max();
             double minCost = Double.MAX_VALUE;
             int minCostIdx = -1;
             List<PObject> resultsList = resultsMap.get(idx);
+            
             for (int j = 0; j < resultsList.size(); ++j) {
+                
                 PObject obj = resultsList.get(j);
+                
                 float costIntersection = 1.0F - intersectionsMap.get(idx).get(j);
+                
                 PartialShapeMatcher.Result r = obj.r;
+                
                 int nb1 = Math.round((float) obj.bounds1.getN() / (float) dp);
+                
                 float np = r.getNumberOfMatches();
+                
                 float countComp = 1.0F - (np / (float) nb1);
                 float countCompSq = countComp * countComp;
                 double chordComp = ((float) r.getChordDiffSum() / np) / maxAvgDiffChord;
@@ -854,6 +864,14 @@ public class ORBMatcher {
                 //       error terms:
                 //double sd = chordCompSq*countCompSq
                 //    + distCompSq*countCompSq;
+                
+                //TODO: the count component is the representation of
+                //  part over whole fraction,
+                //  but can see for one test that the count component
+                //  needs to prefer points distributed over more of both
+                //  objects too.
+                //  This correction needs to be handled in PartialShapeMatcher
+                //  first, then can be included here too.
                 
                 //double sd = chordCompSq + countCompSq + distCompSq;
                 double sd = chordComp + countComp + distComp;
