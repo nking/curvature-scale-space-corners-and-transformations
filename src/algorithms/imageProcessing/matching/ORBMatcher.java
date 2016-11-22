@@ -870,14 +870,13 @@ public class ORBMatcher {
                 // but a term representing the spatial distribution appears
                 // to be necessary also.
                 // will try largestNumberGap/maxNumberMatchable
+                // though need to improve this in detail later
                 int lGap = maxNumberOfGaps(obj.bounds1, r);
                 float gCountComp = (float)lGap/(float)nb1;
                 
                 //double sd = chordCompSq + countCompSq + distCompSq;
-                double sd = chordComp + countComp + gCountComp + distComp;
-                
-                // adding a color intersection term to the Salukwdze distance
-                sd += costIntersection;
+                double sd = chordComp + countComp + gCountComp + distComp
+                    + costIntersection;
                 
                 if (sd < minCost) {
                     minCost = sd;
