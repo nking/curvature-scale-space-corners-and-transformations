@@ -639,9 +639,22 @@ public class ORBMatcher {
                 
                 float scale2 = scales2.get(octave2);
                 
+                GreyscaleImage img = ORB.convertToImageGS(
+                    orb2.getPyramidImagesAlt().get(octave2));
+                int w2 = img.getWidth();
+                int h2 = img.getHeight();
+                
                 Set<PairInt> set2 = new HashSet<PairInt>();
                 for (PairInt p : set) {
-                    PairInt p2 = new PairInt(Math.round((float) p.getX() / scale2), Math.round((float) p.getY() / scale2));
+                    int x = Math.round((float) p.getX() / scale2);
+                    int y = Math.round((float) p.getY() / scale2);
+                    if (x == w2) {
+                        x = w2 - 1;
+                    }
+                    if (y == h2) {
+                        y = h2 - 1;
+                    }
+                    PairInt p2 = new PairInt(x, y);
                     set2.add(p2);
                 }
                 List<Set<PairInt>> list2 = labeledPoints2Lists.get(octave2);
@@ -653,7 +666,6 @@ public class ORBMatcher {
                 
                 // create histograms for later comparison w/ template at
                 // different scales
-                GreyscaleImage img = ORB.convertToImageGS(orb2.getPyramidImagesAlt().get(octave2));
                 int[] ch = cHist.histogram1D(img, set2, 255);
                 List<OneDIntArray> ch2List = ch2Lists.get(octave2);
                 if (ch2List == null) {
