@@ -865,16 +865,16 @@ public class ORBMatcher {
                 //double sd = chordCompSq*countCompSq
                 //    + distCompSq*countCompSq;
                 
-                //TODO: the count component is the representation of
-                //  part over whole fraction,
-                //  but can see for one test that the count component
-                //  needs to prefer points distributed over more of both
-                //  objects too.
-                //  This correction needs to be handled in PartialShapeMatcher
-                //  first, then can be included here too.
+                //NOTE: The coverage of the matches is currently
+                // approximated as simply numberMatched/maxNumberMatchable,
+                // but a term representing the spatial distribution appears
+                // to be necessary also.
+                // will try largestNumberGap/maxNumberMatchable
+                int lGap = maxNumberOfGaps(obj.bounds1, r);
+                float gCountComp = (float)lGap/(float)nb1;
                 
                 //double sd = chordCompSq + countCompSq + distCompSq;
-                double sd = chordComp + countComp + distComp;
+                double sd = chordComp + countComp + gCountComp + distComp;
                 
                 // adding a color intersection term to the Salukwdze distance
                 sd += costIntersection;
@@ -887,7 +887,16 @@ public class ORBMatcher {
                     minSD = sd;
                     minSDI = idx;
                 }
-                System.out.println("sd=" + sd + " n1=" + obj.bounds1.getN() + " n2=" + obj.bounds2.getN() + " origN1=" + r.getOriginalN1() + " nMatches=" + r.getNumberOfMatches());
+                System.out.println("sd=" + sd + " n1=" 
+                    + obj.bounds1.getN() + " n2=" + obj.bounds2.getN() 
+                    + " origN1=" + r.getOriginalN1() 
+                    + " nMatches=" + r.getNumberOfMatches()
+                    + String.format(
+                    " chord=%.2f count=%.2f spatial=%.2f dist=%.2f inter=%.2f", 
+                    (float)chordComp, (float)countComp,
+                    (float)gCountComp, (float)distComp,
+                    (float)costIntersection)
+                );
             }
             assert (minCostIdx > -1);
             
@@ -1779,6 +1788,68 @@ public class ORBMatcher {
         }
         
         return out;
+    }
+
+    private static int maxNumberOfGaps(PairIntArray bounds, 
+        PartialShapeMatcher.Result r) {
+        
+        TIntSet mIdxs = new TIntHashSet(r.getNumberOfMatches());
+        for (int i = 0; i < r.getNumberOfMatches(); ++i) {
+            mIdxs.add(r.getIdx1(i));
+        }
+        
+        int maxGapStartIdx = -1;
+        int maxGap = 0;
+        int cStartIdx = -1;
+        int cGap = 0;
+        
+        // handling for startIdx of 0 to check for wraparound
+        // of gap at end of block
+        int gap0 = 0;
+        
+        for (int i = 0; i < bounds.getN(); ++i) {
+            if (!mIdxs.contains(i)) {
+                // is a gap
+                if (cStartIdx == -1) {
+                    cStartIdx = i;
+                }
+                cGap++;
+                if (i == (bounds.getN() - 1)) {
+                    if (gap0 > 0) {
+                        // 0 1 2 3 4 5
+                        // g g     g g
+                        // gap0=2
+                        // cGap=2 cStartIdx=4
+                        if (cStartIdx > (gap0 - 1)) {
+                            gap0 += cGap;
+                        }
+                    }
+                    if (cGap > maxGap) {
+                        maxGap = cGap;
+                        maxGapStartIdx = cStartIdx;
+                    }
+                    if (gap0 > maxGap) {
+                        maxGap = gap0;
+                        maxGapStartIdx = 0;
+                    }
+                }
+            } else {
+                // is not a gap
+                if (cStartIdx > -1) {
+                    if (cGap > maxGap) {
+                        maxGap = cGap;
+                        maxGapStartIdx = cStartIdx;
+                    }
+                    if (cStartIdx == 0) {
+                        gap0 = cGap;
+                    }
+                    cStartIdx = -1;
+                    cGap = 0;
+                }
+            }
+        }
+
+        return maxGap;        
     }
 
     private static class PObject {
