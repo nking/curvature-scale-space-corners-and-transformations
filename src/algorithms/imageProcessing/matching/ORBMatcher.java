@@ -87,6 +87,7 @@ public class ORBMatcher {
      */
     public static List<CorrespondenceList> match0(ORB orb1, ORB orb2, 
         Set<PairInt> labeledPoints1, List<Set<PairInt>> labeledPoints2) {
+        
         /*
         uses the descriptors given and then makes masks
         for them using the labeled points.
@@ -125,6 +126,7 @@ public class ORBMatcher {
             }
             nBands = 1;
         }
+        
         boolean useMasks = false;
         if (useMasks) {
             // initialize the masks, but discard the maps
@@ -143,18 +145,22 @@ public class ORBMatcher {
             orb1.createDescriptorMasks(pointLabels1);
             orb2.createDescriptorMasks(pointLabels2);
         }
+        
         //TODO: may need to revise this or allow it as a method argument:
         int pixTolerance = 10;
         MatchedPointsTransformationCalculator tc = new MatchedPointsTransformationCalculator();
         Transformer transformer = new Transformer();
+        
         TFloatList scales1 = extractScales(orb1.getScalesList());
         TFloatList scales2 = extractScales(orb2.getScalesList());
+        
         if (Math.abs(scales1.get(0) - 1) > 0.01) {
             throw new IllegalArgumentException("logic depends upon first scale" + " level being '1'");
         }
         if (Math.abs(scales2.get(0) - 1) > 0.01) {
             throw new IllegalArgumentException("logic depends upon first scale" + " level being '1'");
         }
+        
         // a rough estimate of maximum number of matchable points in any
         //     scale dataset comparison
         final int nMaxMatchable = Math.round(0.5F * calculateNMaxMatchable(orb1.getKeyPoint1List(), orb2.getKeyPoint1List()));
@@ -555,29 +561,7 @@ public class ORBMatcher {
      * @return
      */
     public static List<CorrespondenceList> matchSmall(ORB orb1, ORB orb2, Set<PairInt> labeledPoints1, List<Set<PairInt>> labeledPoints2) {
-        /*
-        TODO: create a method for the cases where object in dataset2
-        segmentation is too small for descriptors.
-        this is to match objects that cannot robustly be matched
-        in match0.
-        while iterating over pyramid scales:
-        -- make an assumption about size range since
-        about to use the partial shape matcher.
-        -- obj sizes should be roughly equal
-        -- calc the intersection of theta image labeled sets w/ template set.
-        -- sort them
-        and find a safe intersection limit
-        -- use partial shape matcher.
-        -- review stats in shape matcher to calc comparable
-        costs or scores over different scales.
-        shape matcher settings for uniform sampling...
-        -- in the documentation of this method, note that
-        the use depends upon segmentation in set2 having
-        the entire matchable object only in one segment,
-        even if there is occlusion.
-        with the small object being the reason to use this
-        method, the assumption is probably often fine.
-         */
+        
         if (!orb1.getDescrChoice().equals(orb2.getDescrChoice())) {
             throw new IllegalStateException("orbs must contain same kind of descirptors");
         }
@@ -627,9 +611,6 @@ public class ORBMatcher {
         }
         int dp = 1; //2;
         float intersectionLimit = 0.5F;
-        // sizes of the labeled point sets from dataset2 in scale 0 coordinates.
-        // sets are present for each scale if the size is near templateSize
-        TIntIntMap labeledPointsSizes2 = new TIntIntHashMap();
         
         // key = octave number, value = list of labeled sets
         TIntObjectMap<List<Set<PairInt>>> labeledPoints2Lists = new TIntObjectHashMap<List<Set<PairInt>>>();
@@ -640,16 +621,24 @@ public class ORBMatcher {
         // key = octave number, value = list of ordered points in labeled set
         TIntObjectMap<List<PairIntArray>> labeledBoundaries2Lists = new TIntObjectHashMap<List<PairIntArray>>();
         
-        for (int i = 0; i < labeledPoints2.size(); ++i) {
-            Set<PairInt> set = labeledPoints2.get(i);
+        for (int k = 0; k < labeledPoints2.size(); ++k) {
+            Set<PairInt> set = labeledPoints2.get(k);
             if (set.size() < 7) {
+                // NOTE: this means that subsequent datasets2 will not be
+                //   lists having same indexes as labeledPoints2
                 continue;
             }
-            int sz = calculateObjectSize(set);
-            labeledPointsSizes2.put(i, sz);
-            // only calculating orientation histograms for octave 0
+            
+            assert(Math.abs(scales2.get(0) - 1) < 0.02);
+            PairIntArray bounds = imageProcessor.extractSmoothedOrderedBoundary(
+                new HashSet(set), sigma, 
+                orb2.getPyramidImages().get(0).a[0].length, 
+                orb2.getPyramidImages().get(0).a.length);
+            
             for (int octave2 = 0; octave2 < scales2.size(); ++octave2) {
+                
                 float scale2 = scales2.get(octave2);
+                
                 Set<PairInt> set2 = new HashSet<PairInt>();
                 for (PairInt p : set) {
                     PairInt p2 = new PairInt(Math.round((float) p.getX() / scale2), Math.round((float) p.getY() / scale2));
@@ -661,6 +650,7 @@ public class ORBMatcher {
                     labeledPoints2Lists.put(octave2, list2);
                 }
                 list2.add(set2);
+                
                 // create histograms for later comparison w/ template at
                 // different scales
                 GreyscaleImage img = ORB.convertToImageGS(orb2.getPyramidImagesAlt().get(octave2));
@@ -671,15 +661,25 @@ public class ORBMatcher {
                     ch2Lists.put(octave2, ch2List);
                 }
                 ch2List.add(new OneDIntArray(ch));
+                
                 List<PairIntArray> list3 = labeledBoundaries2Lists.get(octave2);
                 if (list3 == null) {
                     list3 = new ArrayList<PairIntArray>();
                     labeledBoundaries2Lists.put(octave2, list3);
                 }
-                PairIntArray bounds = imageProcessor.extractSmoothedOrderedBoundary(new HashSet(set2), sigma, img.getWidth(), img.getHeight());
-                list3.add(bounds);
+                PairIntArray bounds2 = reduceBounds(bounds, scale2);
+                list3.add(bounds2);
+                
+                assert(labeledBoundaries2Lists.get(octave2).size() ==
+                       labeledPoints2Lists.get(octave2).size());
+                assert(labeledBoundaries2Lists.get(octave2).size() ==
+                       ch2Lists.get(octave2).size());
             }
         }
+        
+        // populated on demand,  key=octave, key=segmented cell, value=size
+        TObjectIntMap<PairInt> size2Map = new TObjectIntHashMap<PairInt>();
+        
         // -- compare sets over octaves, first by color histogram intersection,
         //    then by partial shape matcher
         // delaying evaluation of results until end in order to get the
@@ -693,30 +693,45 @@ public class ORBMatcher {
         double maxAvgDiffChord = Double.MIN_VALUE;
         double maxAvgDist = Double.MIN_VALUE;
         for (int i = 0; i < scales1.size(); ++i) {
-            //for (int i = 2; i < 3; ++i) {
+        //for (int i = 2; i < 3; ++i) {
+            
             float scale1 = scales1.get(i);
-            float sz1 = (float) templateSize / scale1;
+            
             int[] ch1 = ch1s.get(i).a;
-            Set<PairInt> templateSet = labeledPoints1Lists.get(i);
+            //Set<PairInt> templateSet = labeledPoints1Lists.get(i);
             PairIntArray bounds1 = labeledBoundaries1.get(i);
+            float sz1 = calculateObjectSize(bounds1);
+            
             List<PObject> results = new ArrayList<PObject>();
             TDoubleList chordDiffSums = new TDoubleArrayList();
             TFloatList intersections = new TFloatArrayList();
+            
             for (int j = 0; j < scales2.size(); ++j) {
-                //for (int j = 0; j < 1; ++j) {
+            //for (int j = 0; j < 1; ++j) {
+                
                 float scale2 = scales2.get(j);
+                
                 List<OneDIntArray> listOfCH2s = ch2Lists.get(j);
                 if (listOfCH2s == null) {
                     continue;
                 }
                 List<Set<PairInt>> listOfSets2 = labeledPoints2Lists.get(j);
                 List<PairIntArray> listOfBounds2 = labeledBoundaries2Lists.get(j);
+                
                 for (int k = 0; k < listOfCH2s.size(); ++k) {
-                    if (!labeledPointsSizes2.containsKey(k)) {
-                        continue;
+                    
+                    PairIntArray bounds2 = listOfBounds2.get(k);
+                    
+                    PairInt octLabelKey = new PairInt(j, k);
+                    float sz2;
+                    if (size2Map.containsKey(octLabelKey)) {
+                        sz2 = size2Map.get(octLabelKey);
+                    } else {
+                        sz2 = calculateObjectSize(bounds2);
                     }
-                    float sz2 = (float) labeledPointsSizes2.get(k) / scale2;
-                    if ((sz1 > sz2 && Math.abs(sz1 / sz2) > 1.15) || (sz2 > sz1 && Math.abs(sz2 / sz1) > 1.15)) {
+                        
+                    if ((sz1 > sz2 && Math.abs(sz1 / sz2) > 1.15) || 
+                        (sz2 > sz1 && Math.abs(sz2 / sz1) > 1.15)) {
                         continue;
                     }
                     int[] ch2 = listOfCH2s.get(k).a;
@@ -724,8 +739,12 @@ public class ORBMatcher {
                     if (intersection < intersectionLimit) {
                         continue;
                     }
-                    System.out.println("p2=" + listOfSets2.get(k).iterator().next() + " sz1=" + sz1 + " sz2=" + sz2 + " nSet=" + listOfSets2.get(k).size());
-                    PairIntArray bounds2 = listOfBounds2.get(k);
+                   
+                    System.out.println("p2=" + 
+                        listOfSets2.get(k).iterator().next() 
+                        + " sz1=" + sz1 + " sz2=" + sz2 
+                        + " nSet=" + listOfSets2.get(k).size());
+                    
                     PartialShapeMatcher matcher = new PartialShapeMatcher();
                     matcher.overrideSamplingDistance(dp);
                     //matcher.setToDebug();
@@ -734,10 +753,13 @@ public class ORBMatcher {
                     if (r == null) {
                         continue;
                     }
+                    
                     double c = r.getChordDiffSum();
+                    
                     results.add(new PObject(r, bounds1, bounds2, scale1, scale2));
                     chordDiffSums.add(r.getChordDiffSum());
                     intersections.add(intersection);
+                    
                     if (r.getChordDiffSum() > maxDiffChordSum) {
                         maxDiffChordSum = r.getChordDiffSum();
                     }
@@ -749,7 +771,12 @@ public class ORBMatcher {
                     if (avgDist > maxAvgDist) {
                         maxAvgDist = avgDist;
                     }
-                    System.out.println(String.format("%d %d p in set=%s  shape matcher c=%.2f np=%d  inter=%.2f  dist=%.2f avgDist=%.2f", i, j, listOfSets2.get(k).iterator().next().toString(), (float) c, r.getNumberOfMatches(), (float) intersection, (float) r.getDistSum(), (float) avgDist));
+                    
+                    System.out.println(String.format(
+                        "%d %d p in set=%s  shape matcher c=%.2f np=%d  inter=%.2f  dist=%.2f avgDist=%.2f", 
+                        i, j, listOfSets2.get(k).iterator().next().toString(), 
+                        (float) c, r.getNumberOfMatches(), (float) intersection, 
+                        (float) r.getDistSum(), (float) avgDist));
                     try {
                         CorrespondencePlotter plotter = new CorrespondencePlotter(bounds1, bounds2);
                         for (int ii = 0; ii < r.getNumberOfMatches(); ++ii) {
@@ -1228,6 +1255,10 @@ public class ORBMatcher {
         }
         double dist = ORBMatcher.distance(fp[0], fp[1]);
         return (int) Math.round(dist);
+    }
+    
+    private static int calculateObjectSize(PairIntArray points) {
+        return calculateObjectSize(Misc.convert(points));
     }
 
     private static float calculateDiagonal(List<TIntList> keypointsX1, List<TIntList> keypointsY1, int idx) {
@@ -1712,6 +1743,24 @@ public class ORBMatcher {
             b.add(x, y);
         }
         return b;
+    }
+
+    private static PairIntArray reduceBounds(PairIntArray bounds, float scale) {
+        
+        Set<PairInt> added = new HashSet<PairInt>();
+        PairIntArray out = new PairIntArray(bounds.getN());
+        for (int i = 0; i < bounds.getN(); ++i) {
+            int x = Math.round((float)bounds.getX(i)/scale);
+            int y = Math.round((float)bounds.getY(i)/scale);
+            PairInt p = new PairInt(x, y);
+            if (added.contains(p)) {
+                continue;
+            }
+            out.add(x, y);
+            added.add(p);
+        }
+        
+        return out;
     }
 
     private static class PObject {
