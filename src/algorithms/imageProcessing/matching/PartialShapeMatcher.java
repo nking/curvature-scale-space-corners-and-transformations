@@ -111,9 +111,8 @@ based upon algorithm in paper
 public class PartialShapeMatcher {
 
     //TODO: editing the objective cost function, Saluwzde distance,
-    // to use f score from precision and recall rather than
-    // the simpler nMatched/nMaxMatchable
-    
+    //
+ 
     /**
      * in sampling the boundaries of the shapes, one can
      * choose to use the same number for each (which can result
@@ -535,7 +534,7 @@ public class PartialShapeMatcher {
                 List<Result> results =
                     createResults(mergedMinDiffs2, n1, n2, topK);
                 best = combineBestDisjoint(results, md,
-                     mergedMinDiffs2);
+                    mergedMinDiffs2);
             } else {
                 best = createResult(mergedMinDiffs2, 0);
             }
@@ -1107,8 +1106,7 @@ public class PartialShapeMatcher {
             is shifted left and up by 1 (or some other value).
 
             M_D^n = A_1(1:M,1:M) - A_2(n:n+M-1,n:n+M-1)
-                shifting A_2 by 0 through n where n is (N-M+1?),
-                but shifting it by N instead would cover all
+                shifting A_2 by 0 through N covering all
                 orientation angles.
         (2) make Summary Area Tables of the N M_D^m matrices.
         (3) search: starting on the diagonals of the integral images
@@ -1668,13 +1666,17 @@ public class PartialShapeMatcher {
          * that (sqrt operation not performed).
          * (note that
          * the maximum chord sum that was used to determine
-         * a best solution is not stored, because the
+         * a best solution is not always stored, because the
          * Result correspondence lists grow afterwards depending
-         * upon options)
+         * upon options).
          * @param maxChordSum
          * @return
          */
         public float calculateSalukwdzeDistanceSquared(double maxChordSum) {
+            
+            paused here
+            need to use fscore instead of fraction of whole
+            
             float f = 1.f - getFractionOfWhole();
             double d = getNormalizedChordDiff(maxChordSum);
             float s = (float)(f * f + d * d);
@@ -1687,13 +1689,17 @@ public class PartialShapeMatcher {
          * that (sqrt operation not performed).
          * (note that
          * the maximum chord sum that was used to determine
-         * a best solution is not stored, because the
+         * a best solution is not always stored, because the
          * Result correspondence lists grow afterwards depending
          * upon options)
          * @param maxChordSum
          * @return
          */
         public float calculateSalukwdzeDistanceSquared(double maxChordSum,
+            
+            paused here
+            need to use fscore instead of fraction of whole
+            
             int maxNumberOfMatchable) {
             float f = 1.f - ((float)getNumberOfMatches()/
                 (float)maxNumberOfMatchable);
