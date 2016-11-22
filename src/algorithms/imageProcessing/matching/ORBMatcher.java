@@ -869,9 +869,9 @@ public class ORBMatcher {
                 // approximated as simply numberMatched/maxNumberMatchable,
                 // but a term representing the spatial distribution appears
                 // to be necessary also.
-                // will try largestNumberGap/maxNumberMatchable
-                // though need to improve this in detail later
-                int lGap = maxNumberOfGaps(obj.bounds1, r);
+                // will try largestNumberGap/maxNumberMatchable.
+                // TODO: need to improve this in detail later
+                int lGap = maxNumberOfGaps(obj.bounds1, r)/dp;
                 float gCountComp = (float)lGap/(float)nb1;
                 
                 //double sd = chordCompSq + countCompSq + distCompSq;
