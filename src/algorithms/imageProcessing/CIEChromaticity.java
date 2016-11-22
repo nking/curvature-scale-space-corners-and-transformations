@@ -555,10 +555,16 @@ public class CIEChromaticity {
         /*
         Incandescent:
             109.850, 100, 35.585
-        Daylight:
+        Daylight, midday (D65):
             95.047, 100, 108.883
         Fluorescent:
             99.187, 100, 67.395
+        
+        would like tristimulus colors for a range of cloud and shade
+        conditions.  Mie scattering for cloulds and Rayleigh scattering for air,
+        then consideration for aerosols... these aren't single scattering
+        conditions, so empirically gathered data might be more useful to derive
+        ranges from...many intresting databases with relevant data...
         */
         
         float Xn = 95.047f;
