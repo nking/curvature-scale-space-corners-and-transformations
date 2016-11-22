@@ -110,6 +110,10 @@ based upon algorithm in paper
  */
 public class PartialShapeMatcher {
 
+    //TODO: editing the objective cost function, Saluwzde distance,
+    // to use f score from precision and recall rather than
+    // the simpler nMatched/nMaxMatchable
+    
     /**
      * in sampling the boundaries of the shapes, one can
      * choose to use the same number for each (which can result
