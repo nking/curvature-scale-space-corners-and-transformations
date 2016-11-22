@@ -76,6 +76,8 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
     https://github.com/fommil/matrix-toolkits-java/wiki
     https://github.com/fommil/matrix-toolkits-java/blob/master/src/main/java/no/uib/cipr/matrix/sparse/ArpackSym.java
     http://www.javadoc.io/doc/com.googlecode.matrix-toolkits-java/mtj/1.0.4
+    
+    their license is at lib/NETLIB-JAVA.tst
     </pre>
  * @author nichole
  */
