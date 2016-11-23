@@ -1593,17 +1593,17 @@ public class PartialShapeMatcher {
     }
 
     public static class Result {
-        private double distSum = 0;
-        private double chordDiffSum = 0;
-        private boolean chordsNeedUpdates = true;
-        private TransformationParameters params = null;
-        private TIntList idx1s = new TIntArrayList();
-        private TIntList idx2s = new TIntArrayList();
-        private final int n1;
-        private final int n2;
-        private final int origOffset;
-        private final int origN1;
-        private Object[] data = null;
+        protected double distSum = 0;
+        protected double chordDiffSum = 0;
+        protected boolean chordsNeedUpdates = true;
+        protected TransformationParameters params = null;
+        protected TIntList idx1s = new TIntArrayList();
+        protected TIntList idx2s = new TIntArrayList();
+        protected final int n1;
+        protected final int n2;
+        protected final int origOffset;
+        protected final int origN1;
+        protected Object[] data = null;
         public Result(int n1, int n2, int offset) {
             this.n1 = n1;
             this.n2 = n2;

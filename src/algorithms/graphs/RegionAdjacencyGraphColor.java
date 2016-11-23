@@ -57,6 +57,9 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
     
     private boolean ltRGB = false;
     
+    // TODO: experimental...
+    private boolean useAdjMap = true;
+    
      /**
      * constructor.  
      *        
@@ -417,6 +420,15 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
                 double d = diffOrSim.get(idx1, idx2);
                 assert(d == diffOrSim.get(idx2, idx1));
                 double similarity = Math.exp(-1*d*d/sigma);
+                if (useAdjMap) {
+                    if (!adjacencyMap.containsKey(index1) ||
+                    !adjacencyMap.get(index1).contains(index2)) {
+                        similarity = 0;
+                    } else if (!adjacencyMap.containsKey(index2) ||
+                    !adjacencyMap.get(index2).contains(index1)) {
+                        similarity = 0;
+                    }
+                }
                 diffOrSim.set(idx1, idx2, similarity);
                 diffOrSim.set(idx2, idx1, similarity);
             }
@@ -629,6 +641,16 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
                     sumDiff += Math.sqrt(d * d);
                 }
                 double diff = Math.sqrt(sumDiff);
+                
+                if (useAdjMap) {
+                    if (!adjacencyMap.containsKey(index1) ||
+                    !adjacencyMap.get(index1).contains(index2)) {
+                        diff = Double.MAX_VALUE;
+                    } else if (!adjacencyMap.containsKey(index2) ||
+                    !adjacencyMap.get(index2).contains(index1)) {
+                        diff = Double.MAX_VALUE;
+                    }
+                }
                 
                 // set both [i][j] and [j][i] to make matrix symmetric
                 diffOrSim.set(idx1, idx2, diff);
