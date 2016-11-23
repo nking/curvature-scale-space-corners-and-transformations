@@ -6,8 +6,10 @@ import gnu.trove.map.TIntObjectMap;
 import java.util.List;
 import algorithms.imageProcessing.matching.PartialShapeMatcher.Result;
 import algorithms.misc.Misc;
+import algorithms.misc.MiscMath;
 import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
+import algorithms.util.QuadInt;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
@@ -20,6 +22,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
+import javax.naming.directory.SearchResult;
 import thirdparty.edu.princeton.cs.algs4.Interval;
 import thirdparty.edu.princeton.cs.algs4.Interval2D;
 import thirdparty.edu.princeton.cs.algs4.QuadTree;
@@ -58,6 +61,7 @@ public class ShapeFinder {
     private final TObjectIntMap<PairInt> pointIndexes2Map;
     private final TIntObjectMap<TIntSet> adj2Map;
     private final List<PairInt> xyCen2List;
+    private final List<QuadInt> xyMinMax2List;
     
     private final int xMax1;
     private final int yMax1;
@@ -120,6 +124,7 @@ public class ShapeFinder {
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
+        this.xyMinMax2List = new ArrayList<QuadInt>();
         this.xyCen2List = new ArrayList<PairInt>();
         this.pointIndexes2Map = new TObjectIntHashMap<PairInt>();
         for (int i = 0; i < listOfSets2.size(); ++i) {
@@ -130,6 +135,9 @@ public class ShapeFinder {
             double[] xyCen = curveHelper.calculateXYCentroids(set);
             xyCen2List.add(new PairInt(
                 (int)Math.round(xyCen[0]), (int)Math.round(xyCen[1])));
+            int[] minMaxXY = MiscMath.findMinMaxXY(set);
+            xyMinMax2List.add(new QuadInt(minMaxXY[0], minMaxXY[1], minMaxXY[2],
+                minMaxXY[3]));
         }
         
         int[] dxs = Misc.dx8;
@@ -244,7 +252,7 @@ public class ShapeFinder {
         //   that so a restricted list of set indexes is created
         //   for each search start.
         
-        // sort so all x for same y are listed, then next x for larger y
+        // sort so that all x for same y are listed, then next x for larger y
         List<PairInt> sortedBinNumbers = new ArrayList<PairInt>(binNumbers);
         Collections.sort(sortedBinNumbers, new XYSort());
         
@@ -267,15 +275,18 @@ public class ShapeFinder {
             Interval<Integer> intY = new Interval<Integer>(startY, stopY);
             Interval2D<Integer> rect = new Interval2D<Integer>(intX, intY);
              
-            // centroid list indexes
+            // centroid list indexes (these are same indexes are for label2 sets)
             List<Integer> indexes = centroidQT.query2D(rect);
             assert(!indexes.isEmpty());
                 
             // chose the smallest x, smallest y in bin
             int srchIdx = findSmallestXYCentroid(indexes, xyCen2List);
             
+            QuadInt srchXYMinMax = xyMinMax2List.get(srchIdx);
+            
             // aggregate adjacent indexes of larger x or larger y
             TIntSet adjIdxs = new TIntHashSet();
+            adjIdxs.addAll(indexes);
             
             PairInt nextBin = new PairInt(xyBin.getX() + 1, xyBin.getY());
             if (binNumbers.contains(nextBin)) {
@@ -287,7 +298,12 @@ public class ShapeFinder {
                 List<Integer> indexes2 = centroidQT.query2D(rect2);
                 if (indexes2 != null) {
                     for (int idx2 : indexes2) {
-                        adjIdxs.add(idx2);
+                        // if extent + srch extent is > 1.15*sz1, exclude
+                        int maxDim = minMaxXY(srchXYMinMax, 
+                            xyMinMax2List.get(idx2));
+                        if (maxDim <= 1.15 * sz1) {
+                            adjIdxs.add(idx2);
+                        }
                     }
                 }
             }
@@ -302,7 +318,11 @@ public class ShapeFinder {
                 List<Integer> indexes2 = centroidQT.query2D(rect2);
                 if (indexes2 != null) {
                     for (int idx2 : indexes2) {
-                        adjIdxs.add(idx2);
+                        int maxDim = minMaxXY(srchXYMinMax, 
+                            xyMinMax2List.get(idx2));
+                        if (maxDim <= 1.15 * sz1) {
+                            adjIdxs.add(idx2);
+                        }
                     }
                 }
             }
@@ -316,17 +336,32 @@ public class ShapeFinder {
                 List<Integer> indexes2 = centroidQT.query2D(rect2);
                 if (indexes2 != null) {
                     for (int idx2 : indexes2) {
-                        adjIdxs.add(idx2);
+                        int maxDim = minMaxXY(srchXYMinMax, 
+                            xyMinMax2List.get(idx2));
+                        if (maxDim <= 1.15 * sz1) {
+                            adjIdxs.add(idx2);
+                        }
                     }
                 }
             }
             
             // TODO: invoke the local search with restricted label range
-        
+            SearchResult r = searchUsingFloydWarshall(srchIdx, adjIdxs);
+            
+            //TODO: when replace aspectj w/ another AOP library, assert that 
+            //   all list 2 set labels are covered in adjIdxs and srchIdx,
+            //   after all FW invocations.
         }
         
         throw new UnsupportedOperationException(
             "Not supported yet."); 
+    }
+
+    private SearchResult searchUsingFloydWarshall(int srchIdx, TIntSet adjIdxs) {
+        
+        
+        throw new UnsupportedOperationException(
+            "Not supported yet.");
     }
 
     private int findSmallestXYCentroid(List<Integer> indexes, 
@@ -355,6 +390,19 @@ public class ShapeFinder {
         assert(minIdx > -1);
         
         return minIdx;
+    }
+
+    private int minMaxXY(QuadInt srchXYMinMax, QuadInt otherXYMinMax) {
+        int diffX = Math.max(
+            Math.abs(srchXYMinMax.getA() - otherXYMinMax.getB()),
+            Math.abs(srchXYMinMax.getB() - otherXYMinMax.getA()));
+        
+        int diffY = Math.max(
+            Math.abs(srchXYMinMax.getC() - otherXYMinMax.getD()),
+            Math.abs(srchXYMinMax.getD() - otherXYMinMax.getC()));
+        
+        // consider taking the diagonal here
+        return Math.max(diffX, diffY);
     }
     
     public static class ShapeFinderResult extends Result {
