@@ -1175,8 +1175,12 @@ public class ORBMatcher {
 
                 ShapeFinder shapeFinder = new ShapeFinder(
                     bounds1, ch1, scale1, sz1,
+                    orb1.getPyramidImages().get(0).a[0].length -1,
+                    orb1.getPyramidImages().get(0).a.length - 1,
                     listOfSets2, listOfCH2s, scale2,
                     keyIndexMap, indexBoundsMap, 
+                    orb2.getPyramidImages().get(0).a[0].length -1,
+                    orb2.getPyramidImages().get(0).a.length - 1,
                     intersectionLimit
                 );
                 ShapeFinderResult r = shapeFinder.findAggregated();

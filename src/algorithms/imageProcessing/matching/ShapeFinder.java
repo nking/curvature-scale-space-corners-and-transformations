@@ -1,13 +1,28 @@
 package algorithms.imageProcessing.matching;
 
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.util.PairIntArray;
 import gnu.trove.map.TIntObjectMap;
 import java.util.List;
 import algorithms.imageProcessing.matching.PartialShapeMatcher.Result;
+import algorithms.misc.Misc;
 import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
+import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TIntIntHashMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Set;
+import thirdparty.edu.princeton.cs.algs4.Interval;
+import thirdparty.edu.princeton.cs.algs4.Interval2D;
+import thirdparty.edu.princeton.cs.algs4.QuadTree;
 
 /**
  * uses PartialShapeMatcher and search patterns to
@@ -39,6 +54,15 @@ public class ShapeFinder {
     private final TObjectIntMap<int[]> keyIndexMap;
     private final TIntObjectMap<PairIntArray> indexBoundsMap;
     private final float intersectionLimit;
+    
+    private final TObjectIntMap<PairInt> pointIndexes2Map;
+    private final TIntObjectMap<TIntSet> adj2Map;
+    private final List<PairInt> xyCen2List;
+    
+    private final int xMax1;
+    private final int yMax1;
+    private final int xMax2;
+    private final int yMax2;
     
     /**
      * NOT READY FOR USE.
@@ -72,9 +96,11 @@ public class ShapeFinder {
      * indexBoundsMap,
      */
     public ShapeFinder(PairIntArray bounds1, int[] ch1, float scale1, float sz1,
+        int xMax1, int yMax1,
         List<Set<PairInt>> listOfSets2, List<OneDIntArray> listOfCH2s,
         float scale2, TObjectIntMap<int[]> keyIndexMap,
         TIntObjectMap<PairIntArray>  indexBoundsMap,
+        int xMax2, int yMax2,
         float intersectionLimit) {
         
         this.bounds1 = bounds1;
@@ -87,6 +113,248 @@ public class ShapeFinder {
         this.keyIndexMap = keyIndexMap;
         this.indexBoundsMap = indexBoundsMap;
         this.intersectionLimit = intersectionLimit;
+        this.xMax1 = xMax1;
+        this.yMax1 = yMax1;
+        this.xMax2 = xMax2;
+        this.yMax2 = yMax2;
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        this.xyCen2List = new ArrayList<PairInt>();
+        this.pointIndexes2Map = new TObjectIntHashMap<PairInt>();
+        for (int i = 0; i < listOfSets2.size(); ++i) {
+            Set<PairInt> set = listOfSets2.get(i);
+            for (PairInt p : set) {
+                pointIndexes2Map.put(p, i);
+            }
+            double[] xyCen = curveHelper.calculateXYCentroids(set);
+            xyCen2List.add(new PairInt(
+                (int)Math.round(xyCen[0]), (int)Math.round(xyCen[1])));
+        }
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        this.adj2Map = new TIntObjectHashMap<TIntSet>();
+        for (int idx1 = 0; idx1 < listOfSets2.size(); ++idx1) {
+            Set<PairInt> set = listOfSets2.get(idx1);
+            for (PairInt p : set) {
+                int x = p.getX();
+                int y = p.getY();
+                // find adjacent labels that are not idx1
+                for (int k = 0; k < dxs.length; ++k) {
+                    int x2 = x + dxs[k];
+                    int y2 = y + dys[k];
+                    PairInt p2 = new PairInt(x2, y2);
+                    int idx2 = pointIndexes2Map.get(p2);
+                    if (idx2 == idx1) {
+                        continue;
+                    }
+                    TIntSet set2 = adj2Map.get(idx1);
+                    if (set2 == null) {
+                        set2 = new TIntHashSet();
+                        adj2Map.put(idx1, set2);
+                    }
+                    set2.add(idx2);
+                }
+            }
+        }
+    }
+
+    /**
+     * NOT READY FOR USE.
+     * uses PartialShapeMatcher and search patterns to
+     * find the best fitting match between a
+     * group of adjacent segmented cells
+     * to a template shape. 
+     *
+     * The runtime is dependent upon which of the 3 search
+     * patterns is kept in the end, so that will be
+     * filled in here after implementation and testing.
+     *
+     * @return
+     */
+    public ShapeFinderResult findAggregated() {
+
+        /*
+        some notes that will be updated when return to the search
+        task.
+        
+        basically, have a global grid search,
+        wrapping local FloydWarshall searches where search
+            is the best fitting bounds of aggregated labels sets and
+            their color histograms
+        
+        step (1) O(N_cells) + O(N_cells_in_bin * log_2(N_cells_in_bin)):
+           - 2D bins, that is x and y of size sz1.
+           - sort the cells within each bin by x centroid and ties by y centroid
+        step (2) local search pattern
+            The bigger picture is a sliding window of the 2D bin
+            where the core of the search and aggregation is done
+            within the 2D bin, but the aggregation can continue
+            into the next bin to the right, next bin above,
+            or above and to the right.
+            
+           this is the part that is changing.
+           would like to use Dijkstra's within each bin to find the best 
+             matching aggregation of cells, but unfortunately, the 
+             aggregation of cell boundaries is not inductive, that is
+             two wrong steps of aggregation might have better results than
+             two correct steps.
+           therefore, using the more time consuming but more complete
+           Floyd-Warshal search within each 2D bin.
+           Note that this might be improvable in the future.               
+        */
+        
+        globalGridSearch();
+           
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+
+    private void globalGridSearch() {
+        
+        int w = xMax2 + 1;
+        int h = yMax2 + 1;
+        
+        int nPPB = 1;
+        
+        int nX = nPPB * ((int)Math.floor(w/sz1) + 1);
+        int nY = nPPB * ((int)Math.floor(h/sz1) + 1);
+        int binSz = (int)Math.ceil(sz1);
+        
+        QuadTree<Integer, Integer> centroidQT = new QuadTree<Integer, Integer>();
+            
+        // populated bin numbers, x, y
+        Set<PairInt> binNumbers = new HashSet<PairInt>();
+        
+        // store the segmented cell centroids into quadtree
+        for (int i = 0; i < xyCen2List.size(); ++i) {
+            PairInt xy = xyCen2List.get(i);
+            
+            centroidQT.insert(xy.getX(), xy.getY(), Integer.valueOf(i));
+            
+            int xBin = xy.getX()/binSz;
+            int yBin = xy.getY()/binSz;
+            binNumbers.add(new PairInt(xBin, yBin));
+        }
+        
+        // visit the bins by smallest x,y first,
+        //   and start each search with the labeled set which has the
+        //   smallest x,y in that bin.
+        //   any search can agregate from an adjacent bin, but not beyond
+        //   that so a restricted list of set indexes is created
+        //   for each search start.
+        
+        // sort so all x for same y are listed, then next x for larger y
+        List<PairInt> sortedBinNumbers = new ArrayList<PairInt>(binNumbers);
+        Collections.sort(sortedBinNumbers, new XYSort());
+        
+        for (int i = 0; i < sortedBinNumbers.size(); ++i) {
+            PairInt xyBin = sortedBinNumbers.get(i);
+            int startX = xyBin.getX() * binSz;
+            int startY = xyBin.getY() * binSz;
+            
+            int stopX = startX + binSz;
+            if (stopX > (w - 1)) {
+                stopX = w - 1;
+            }
+            
+            int stopY = startY + binSz;
+            if (stopY > (h - 1)) {
+                stopY = h - 1;
+            }
+            
+            Interval<Integer> intX = new Interval<Integer>(startX, stopX);
+            Interval<Integer> intY = new Interval<Integer>(startY, stopY);
+            Interval2D<Integer> rect = new Interval2D<Integer>(intX, intY);
+             
+            // centroid list indexes
+            List<Integer> indexes = centroidQT.query2D(rect);
+            assert(!indexes.isEmpty());
+                
+            // chose the smallest x, smallest y in bin
+            int srchIdx = findSmallestXYCentroid(indexes, xyCen2List);
+            
+            // aggregate adjacent indexes of larger x or larger y
+            TIntSet adjIdxs = new TIntHashSet();
+            
+            PairInt nextBin = new PairInt(xyBin.getX() + 1, xyBin.getY());
+            if (binNumbers.contains(nextBin)) {
+                Interval<Integer> intX2 = new Interval<Integer>(startX + binSz, 
+                    stopX + binSz);
+                Interval<Integer> intY2 = new Interval<Integer>(startY, stopY);
+                Interval2D<Integer> rect2 = new Interval2D<Integer>(intX2, intY2);
+                // centroid list indexes
+                List<Integer> indexes2 = centroidQT.query2D(rect2);
+                if (indexes2 != null) {
+                    for (int idx2 : indexes2) {
+                        adjIdxs.add(idx2);
+                    }
+                }
+            }
+            nextBin = new PairInt(xyBin.getX() + 1, xyBin.getY() + 1);
+            if (binNumbers.contains(nextBin)) {
+                Interval<Integer> intX2 = new Interval<Integer>(startX + binSz, 
+                    stopX + binSz);
+                Interval<Integer> intY2 = new Interval<Integer>(startY + binSz, 
+                    stopY + binSz);
+                Interval2D<Integer> rect2 = new Interval2D<Integer>(intX2, intY2);
+                // centroid list indexes
+                List<Integer> indexes2 = centroidQT.query2D(rect2);
+                if (indexes2 != null) {
+                    for (int idx2 : indexes2) {
+                        adjIdxs.add(idx2);
+                    }
+                }
+            }
+            nextBin = new PairInt(xyBin.getX(), xyBin.getY() + 1);
+            if (binNumbers.contains(nextBin)) {
+                Interval<Integer> intX2 = new Interval<Integer>(startX, stopX);
+                Interval<Integer> intY2 = new Interval<Integer>(startY + binSz, 
+                    stopY + binSz);
+                Interval2D<Integer> rect2 = new Interval2D<Integer>(intX2, intY2);
+                // centroid list indexes
+                List<Integer> indexes2 = centroidQT.query2D(rect2);
+                if (indexes2 != null) {
+                    for (int idx2 : indexes2) {
+                        adjIdxs.add(idx2);
+                    }
+                }
+            }
+            
+            // TODO: invoke the local search with restricted label range
+        
+        }
+        
+        throw new UnsupportedOperationException(
+            "Not supported yet."); 
+    }
+
+    private int findSmallestXYCentroid(List<Integer> indexes, 
+        List<PairInt> xyCenList) {
+        
+        int minX = Integer.MAX_VALUE;
+        int minX_Y = Integer.MAX_VALUE;
+        int minIdx = -1;
+        
+        for (int i = 0; i < indexes.size(); ++i) {
+            int idx = indexes.get(i);
+            int x = xyCenList.get(idx).getX();
+            int y = xyCenList.get(idx).getY();
+            if (x < minX) {
+                minX = x;
+                minX_Y = y;
+                minIdx = idx;
+            } else if (x == minX) {
+                if (y < minX_Y) {
+                    minX_Y = y;
+                    minIdx = idx;
+                }
+            }
+        }
+        
+        assert(minIdx > -1);
+        
+        return minIdx;
     }
     
     public static class ShapeFinderResult extends Result {
@@ -115,52 +383,19 @@ public class ShapeFinder {
         }
     }
     
-    /**
-     * NOT READY FOR USE.
-     * uses PartialShapeMatcher and search patterns to
-     * find the best fitting match between a
-     * group of adjacent segmented cells
-     * to a template shape. 
-     *
-     * The runtime is dependent upon which of the 3 search
-     * patterns is kept in the end, so that will be
-     * filled in here after implementation and testing.
-     *
-     * @return
-     */
-    public ShapeFinderResult findAggregated() {
+    // sorted so that all X of same Y are first, then all X of larger Y
+    private class XYSort implements Comparator<PairInt> {
 
-        /*
-        some notes that will be updated when return to the search
-        task.
-        
-        basically, have a global grid search,
-        wrapping local FloydWarshall searches where search
-            is the best fitting bounds of aggregated labels sets and
-            their color histograms
-        
-        step (1) O(N_cells) + O(N_cells_in_bin * log_2(N_cells_in_bin)):
-           - 2D bins, that is x and y of size sz1.
-           - sort the cells within each bin by x centroid and ties by y centroid
-        step (2) search pattern, 3 are presented.
-            The bigger picture is a sliding window of the 2D bin
-            where the core of the search and aggregation is done
-            within the 2D bin, but the aggregation can continue
-            into the next bin to the right, next bin above,
-            or above and to the right.
-            
-           this is the part that is changing.
-           would like to use Dijkstra's within each bin to find the best 
-             matching aggregation of cells, but unfortunately, the 
-             aggregation of cell boundaries is not inductive, that is
-             two wrong steps of aggregation might have better results than
-             two correct steps.
-           therefore, using the more time consuming but more complete
-           Floyd-Warshal search within each 2D bin.
-           Note that this might be improvable in the future.               
-        */
-        
-        throw new UnsupportedOperationException("not yet implemented");
+        @Override
+        public int compare(PairInt o1, PairInt o2) {
+
+            int comp = Integer.compare(o1.getY(), o2.getY());
+            if (comp != 0) {
+                return comp;
+            }
+            comp = Integer.compare(o1.getX(), o2.getX());
+            return comp;
+        }
+
     }
-
 }
