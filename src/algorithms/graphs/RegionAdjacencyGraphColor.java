@@ -3,6 +3,7 @@ package algorithms.graphs;
 import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.ColorHistogram;
 import algorithms.imageProcessing.ImageExt;
+import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.segmentation.ColorSpace;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
@@ -498,6 +499,8 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
         
         CIEChromaticity cieC = new CIEChromaticity();
         
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
         for (int row = 0; row < nRows; ++row) {
             for (int col = 0; col < nCols; ++col) {
 
@@ -530,6 +533,17 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
                 nodeColors[0][i] = lab[0];
                 nodeColors[1][i] = lab[1];
                 nodeColors[2][i] = lab[2];
+            } else if (colorSpace.equals(ColorSpace.POLAR_CIELAB)) {
+                int polarT = imageProcessor.calculateCIELABTheta(
+                    Math.round(nodeColors[0][i]), 
+                    Math.round(nodeColors[1][i]), 
+                    Math.round(nodeColors[2][i]), 255
+                );
+                // TODO: make a graph for 1-D color space.
+                //  this is a quick fudge to look at results
+                nodeColors[0][i] = polarT;
+                nodeColors[1][i] = polarT;
+                nodeColors[2][i] = polarT;
             }
         }
         

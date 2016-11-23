@@ -6,5 +6,5 @@ package algorithms.imageProcessing.segmentation;
  */
 public enum ColorSpace {
     
-    HSV, CIELAB, RGB
+    HSV, CIELAB, RGB, POLAR_CIELAB
 }

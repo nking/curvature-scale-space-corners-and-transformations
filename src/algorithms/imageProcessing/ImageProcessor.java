@@ -9494,6 +9494,38 @@ if (sum > 511) {
         
         return theta;
     }
+    
+    /**
+     * convert the image to cie l*a*b* and then use a and b
+     * to calculate polar angle around 0 in degrees.
+     * If maxV of 360, returns full value image, 
+     * else if is 255, scales the values to max value of 255, etc.
+     * @param img
+     * @param maxV
+     * @return 
+     */
+    public int calculateCIELABTheta(int red, int green, int blue, int maxV) {
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+       
+        double ts = (double)maxV/(double)359;
+        
+        float[] lab = cieC.rgbToCIELAB2(red, green, blue);
+        
+        float v1 = lab[1];
+        float v2 = lab[2];
+
+        double t = Math.atan2(v2, v1);
+        t *= (180./Math.PI);
+        if (t < 0) {
+            t += 360;
+        } else if (t > 359) {
+            t -= 360;
+        }
+        t *= ts;
+        
+        return (int)t;
+    }
    
     // TODO: implement the methods in 
     // http://www.merl.com/publications/docs/TR2008-030.pdf

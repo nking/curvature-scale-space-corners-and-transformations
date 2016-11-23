@@ -1,11 +1,19 @@
 package algorithms.imageProcessing.segmentation;
 
+import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.Gaussian1DFirstDeriv;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
+import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.misc.Histogram;
+import algorithms.misc.HistogramHolder;
 import algorithms.misc.Misc;
+import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
+import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.set.TIntSet;
@@ -20,16 +28,12 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 /**
- * a variant of kmeans whose goal is to make k super-pixels in the image
- * based upon CIE Lab color similarity and x,y proximity.
+ * this is SLICSuperPixels operating on a CIE LAB polar theta color space.
+ * @see SLICSuperPixels
  * 
- * The code implements the algorithm of:
- * "SLIC Superpixels Compared to State-of-the-Art Superpixel Methods"
-   by Achanta, Appu Shaji,Smith,  Lucchi, Fua, and Su ̈sstrunk,
- *  
  * @author nichole
  */
-public class SLICSuperPixels {
+public class SLICSuperPixelsPolarTheta {
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
@@ -47,26 +51,19 @@ public class SLICSuperPixels {
     
     protected final float[][] seedDescriptors;
     
-    protected final ImageExt img;
+    protected final GreyscaleImage img;
     
     protected double[][] gradient = null;
     
     protected final double threshold;
     
-    // range of CIE LAB values is (0,0,0) to (28.51 3.28 2.15);  
-    // sqrt(sum sq) = 28.78 for CIE 1994
-    // paper recommends using value between 1 and 40
     protected final double maxCIELAB;
 
-    // max possible value is 19.22 for CIE 1994
     protected final double maxDeltaE;
-    
-    // if false, uses CIE L*a*b* 1931
-    private boolean use1994 = false;
     
     /**
      * constructor for the super-pixel algorithm SLIC that uses the default
-     * color space of CIE LAB and creates approximately nClusters (a.k.a. 
+     * color space of polar theta of CIE LAB and creates approximately nClusters (a.k.a. 
      * super-pixels).
      * The number of
      * clusters may be adjusted for even intervals over width and height.
@@ -76,7 +73,7 @@ public class SLICSuperPixels {
      * and a number closer to 40 produces very blocky segmentation mostly 
      * lacking curves.  
      */
-    public SLICSuperPixels(ImageExt img, int nClusters, double clrNorm) {
+    public SLICSuperPixelsPolarTheta(ImageExt img, int nClusters, double clrNorm) {
         
         if (clrNorm < 1 || (clrNorm > 40)) {
             throw new IllegalArgumentException("clrNorm should be in range "
@@ -100,47 +97,20 @@ public class SLICSuperPixels {
         
         log.info("k = " + k + " s=" + this.s + " nXs=" + nXs + " nYs=" + nYs);
         
-        this.img = img;
-        if (!use1994) {
-            img.overrideToUseCIELAB1931();
-        }
+        ImageProcessor imageProcessor = new ImageProcessor();
         
-        // l, a, b, x, y
+        this.img = imageProcessor.createCIELABTheta(img, 255);
+        
+        // t, x, y
         seedDescriptors = new float[k][];
         for (int i = 0; i < k; ++i) {
-            seedDescriptors[i] = new float[5];
+            seedDescriptors[i] = new float[3];
         }
         
         // max error would be ( maxClr * maxClr * k) + 2*( s/2 * s/2 * k)
         double maxError = 2*(maxCIELAB * maxCIELAB * k);
         maxError = Math.sqrt(maxError);
         threshold = 0.01 * maxError;
-    }
-    
-    /**
-     * an optional method to set the gradient, else is
-     * calculated internal to the class and discarded.
-     * @param gradientImg
-     */
-    public void setGradient(GreyscaleImage gradientImg) {
-       
-        if (gradientImg.getNPixels() != img.getNPixels()
-            || gradientImg.getWidth() != img.getWidth()
-            || gradientImg.getHeight() != img.getHeight()) {
-            throw new IllegalArgumentException(
-                "gradientImg must be same size as img");
-        }
-
-        int width = gradientImg.getWidth();
-        int height = gradientImg.getHeight();
-
-        gradient = new double[width][];
-        for (int i = 0; i < width; ++i) {
-            gradient[i] = new double[height];
-            for (int j = 0; j < height; ++j) {
-                gradient[i][j] = gradientImg.getValue(i, j);
-            }
-        }
     }
     
     /**
@@ -153,7 +123,7 @@ public class SLICSuperPixels {
      * @param img
      * @param nClusters 
      */
-    public SLICSuperPixels(ImageExt img, int nClusters) {
+    public SLICSuperPixelsPolarTheta(ImageExt img, int nClusters) {
         
         if  (nClusters > img.getNPixels()) {
             throw new IllegalArgumentException(
@@ -181,15 +151,14 @@ public class SLICSuperPixels {
         
         log.info("k = " + k);
         
-        this.img = img;
-        if (!use1994) {
-            img.overrideToUseCIELAB1931();
-        }
+        ImageProcessor imageProcessor = new ImageProcessor();
         
-        // l, a, b, x, y
+        this.img = imageProcessor.createCIELABTheta(img, 255);
+        
+        // t, x, y
         seedDescriptors = new float[k][];
         for (int i = 0; i < k; ++i) {
-            seedDescriptors[i] = new float[5];
+            seedDescriptors[i] = new float[3];
         }
         
         // max error would be ( maxClr * maxClr * k) + 2*( s/2 * s/2 * k)
@@ -201,7 +170,7 @@ public class SLICSuperPixels {
      public void calculate() {
         
         init();
-                
+      
         int nIterMax = 20;
         
         int nIter = 0;
@@ -209,9 +178,9 @@ public class SLICSuperPixels {
         while (nIter < nIterMax) {
          
             assignPixelsNearSeeds();
-            
+     
             double l2Norm = adjustClusterCenters();
-            
+ 
             log.fine("l2Norm=" + l2Norm + " nIter=" + nIter);
             
             if (l2Norm < threshold) {
@@ -220,7 +189,7 @@ public class SLICSuperPixels {
             
             nIter++;
         }
-        
+       
         assignTheUnassigned();
     }
 
@@ -247,7 +216,7 @@ public class SLICSuperPixels {
         if (gradient == null) {
             gradient = calcGradient();
         }
-                
+ 
         /*
         sampled on a regular grid spaced S pixels apart. 
         To produce roughly equally sized superpixels, 
@@ -312,13 +281,10 @@ public class SLICSuperPixels {
                     }
                 }
                                 
-                // [l, a, b, x, y]
-                float[] lab = img.getCIELAB(minX2, minY2);
-                
-                System.arraycopy(lab, 0, seedDescriptors[kCurrent], 0, 3);
-                
-                seedDescriptors[kCurrent][3] = minX2;
-                seedDescriptors[kCurrent][4] = minY2;
+                // [t, x, y]
+                seedDescriptors[kCurrent][0] = img.getValue(minX2, minY2);
+                seedDescriptors[kCurrent][1] = minX2;
+                seedDescriptors[kCurrent][2] = minY2;
                 
                 int pixIdx2 = img.getInternalIndex(minX2, minY2);
                 labels[pixIdx2] = kCurrent;
@@ -340,77 +306,117 @@ public class SLICSuperPixels {
        int width = img.getWidth();
        int height = img.getHeight();
               
-       double[][] gradient = new double[width][];              
+       float[][] gradient0 = new float[width][];              
        for (int i = 0; i < width; ++i) {
-           gradient[i] = new double[height];
+           gradient0[i] = new float[height];
+       }
+       double[][] gradient1 = new double[width][];              
+       for (int i = 0; i < width; ++i) {
+           gradient1[i] = new double[height];
        }
               
        float[] kernel = Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive();
               
        int h = (kernel.length - 1) >> 1;
        
-       // TODO: edit to operate on one direction, then operate on that result
-       //        in other direction
+       // because polar theta wraps around from 0 to 255 to 0,
+       // the arithmetic sometimes needs a "phase" correction
        
-       for (int i = 0; i < nPix; ++i) {
-           final int x1 = img.getCol(i);
-           final int y1 = img.getRow(i);
+       float[] values = new float[kernel.length];
+       float[] kFactors = new float[kernel.length];
+       int count = 0;
+       
+       for (int dir = 0; dir < 2; ++dir) {
            
-           float rXSum = 0;
-           float gXSum = 0;
-           float bXSum = 0;
-           float rYSum = 0;
-           float gYSum = 0;
-           float bYSum = 0;
-           
-           for (int g = 0; g < kernel.length; ++g) {
-               float gg = kernel[g];
-               if (gg == 0) {
+           for (int i = 0; i < nPix; ++i) {
+               final int x1 = img.getCol(i);
+               final int y1 = img.getRow(i);
+
+               count = 0;
+
+               for (int g = 0; g < kernel.length; ++g) {
+                   float gg = kernel[g];
+                   if (gg == 0) {
+                       continue;
+                   }
+
+                   int x2, y2;
+                   // calc for X gradient first
+                   int delta = g - h;
+                   if (dir == 0) {
+                       x2 = x1 + delta;
+                       y2 = y1;
+                       // edge corrections.  use replication
+                       if (x2 < 0) {
+                           x2 = -1 * x2 - 1;
+                       } else if (x2 >= width) {
+                           int diff = x2 - width;
+                           x2 = width - diff - 1;
+                       }
+                       values[count] = img.getValue(x2, y2);
+                   } else {
+                       y2 = y1 + delta;
+                       x2 = x1;
+                       // edge corrections.  use replication
+                       if (y2 < 0) {
+                           y2 = -1 * y2 - 1;
+                       } else if (y2 >= height) {
+                           int diff = y2 - height;
+                           y2 = height - diff - 1;
+                       }
+                       values[count] = gradient0[x2][y2];
+                   }                   
+                   kFactors[count] = gg;
+                   count++;
+               }
+               
+               if (count == 0) {
                    continue;
                }
-                
-               int x2, y2;
-               // calc for X gradient first
-               int delta = g - h;
-                x2 = x1 + delta;
-                y2 = y1;
-                // edge corrections.  use replication
-                if (x2 < 0) {
-                    x2 = -1 * x2 - 1;
-                } else if (x2 >= width) {
-                    int diff = x2 - width;
-                    x2 = width - diff - 1;
-                }
-                rXSum += gg * img.getR(x2, y2);
-                gXSum += gg * img.getG(x2, y2);
-                bXSum += gg * img.getB(x2, y2);
-               
-                // calc for y
-                y2 = y1 + delta;
-                x2 = x1;
-                // edge corrections.  use replication
-                if (y2 < 0) {
-                    y2 = -1 * y2 - 1;
-                } else if (y2 >= height) {
-                    int diff = y2 - height;
-                    y2 = height - diff - 1;
-                }
-                rYSum += gg * img.getR(x2, y2);
-                gYSum += gg * img.getG(x2, y2);
-                bYSum += gg * img.getB(x2, y2);
+
+               // adding angles closest to highest frequency value
+
+               float[] values2 = Arrays.copyOf(values, count);
+               HistogramHolder hist = Histogram.createSimpleHistogram(values2, 
+                   Errors.populateYErrorsBySqrt(values2));
+
+               int peakIdx = MiscMath.findYMaxIndex(hist.getYHist());
+               float peakValue = hist.getXHist()[peakIdx];
+
+               float sum = 0;
+               for (int ii = 0; ii < count; ++ii) {
+                   float v = values[ii];
+                   float v2 = v + 255;
+                   if (Math.abs(v - peakValue) <= Math.abs(v2 - peakValue)) {
+                       sum += (v * kFactors[ii]);
+                   } else {
+                       sum += (v2 * kFactors[ii]);
+                   }
+               }
+
+               if (dir == 0) {
+                   gradient0[x1][y1] = sum;
+               } else {
+                   gradient1[x1][y1] = sum;
+               }
            }
-           
-           double rC = Math.sqrt(rXSum * rXSum + rYSum * rYSum);
-           double gC = Math.sqrt(gXSum * gXSum + gYSum * gYSum);
-           double bC = Math.sqrt(bXSum * bXSum + bYSum * bYSum);
-           
-           // presumably, greyscale gradient is fine
-           double gr = (rC + gC + bC)/3;
-           
-           gradient[x1][y1] = gr;
        }
        
-        return gradient;
+       /*{//DEBUG
+           ImageProcessor imageProcessor = new ImageProcessor();
+           GreyscaleImage img = new GreyscaleImage(width, height);
+           double[][] tmp = imageProcessor.copy(gradient1);
+           int[][] tmp2 = MiscMath.rescale(tmp, 0, 255);
+           for (int i = 0; i < width; ++i) {
+               for (int j = 0; j < height; ++j) {
+                  img.setValue(i, j, tmp2[i][j]);
+               }
+           }
+           MiscDebug.writeImage(img, "_gradient_");
+           int z = 0;
+       }*/
+       
+        return gradient1;
     }
     
     private void assignPixelsNearSeeds() {
@@ -421,8 +427,8 @@ public class SLICSuperPixels {
         for (int kCurrent = 0; kCurrent < k; ++kCurrent) {
 
             float[] desc1 = seedDescriptors[kCurrent];
-            int x1 = (int) desc1[3];
-            int y1 = (int) desc1[4];
+            int x1 = (int) desc1[1];
+            int y1 = (int) desc1[2];
             
             for (int x2 = (x1 - s); x2 <= (x1 + s); ++x2) {
                 for (int y2 = (y1 - s); y2 <= (y1 + s); ++y2) {
@@ -433,7 +439,7 @@ public class SLICSuperPixels {
                     int pixIdx2 = img.getInternalIndex(x2, y2);
 
                     double dist = calcDist(desc1, 
-                        img.getCIELAB(x2, y2), x2, y2);
+                        img.getValue(x2, y2), x2, y2);
 
                     if (dist < distances[pixIdx2]) {
                         distances[pixIdx2] = dist;
@@ -450,9 +456,9 @@ public class SLICSuperPixels {
         // L2 norm is the residuals added in quadratur
         
         double[][] meanDescriptors = new double[k][];        
-        // l, a, b, x, y
+        // t, x, y
         for (int i = 0; i < k; ++i) {
-            meanDescriptors[i] = new double[5];
+            meanDescriptors[i] = new double[3];
         } 
         
         // calculate new colors
@@ -466,24 +472,22 @@ public class SLICSuperPixels {
             }
             int x = img.getCol(i);
             int y = img.getRow(i);
-            float[] lab = img.getCIELAB(i);
+            int polarV = img.getValue(i);
 
-            for (int m = 0; m < 3; ++m) {
-                meanDescriptors[label][m] += lab[m];
-            }
-            meanDescriptors[label][3] += x;
-            meanDescriptors[label][4] += y;
+            meanDescriptors[label][0] += polarV;
+            meanDescriptors[label][1] += x;
+            meanDescriptors[label][2] += y;
             count[label]++;
         }
         
-        // l, a, b, x, y
-        double[] sqDiffSum = new double[5];
+        // t, x, y
+        double[] sqDiffSum = new double[3];
         
         double diff;
         for (int kCurrent = 0; kCurrent < k; ++kCurrent) {  
             assert(count[kCurrent] > 0);
             float nc = count[kCurrent];
-            for (int m = 0; m < 5; ++m) {
+            for (int m = 0; m < 3; ++m) {
                 meanDescriptors[kCurrent][m] /= nc;
                 diff = meanDescriptors[kCurrent][m] - seedDescriptors[kCurrent][m];
                 sqDiffSum[m] += (diff * diff);
@@ -498,7 +502,7 @@ public class SLICSuperPixels {
         
         // calc sqrt of sum of sq diffs with old centers and reset old centers
         for (int kCurrent = 0; kCurrent < k; ++kCurrent) {            
-            for (int m = 0; m < 5; ++m) {
+            for (int m = 0; m < 3; ++m) {
                 seedDescriptors[kCurrent][m] = (float)meanDescriptors[kCurrent][m];
             }
         }
@@ -506,43 +510,20 @@ public class SLICSuperPixels {
         return l2Norm;
     }
 
-    private double calcDist2(float[] desc1, float[] lab2, 
-        int x2, int y2) {
-        
-        if (!use1994) {
-            throw new IllegalStateException("this method is meant for use"
-                + " with cie 1004, and current settings are for 1931");
-        }
-
-        CIEChromaticity cieC = new CIEChromaticity();
-       
-        double deltaE = cieC.calcDeltaECIE2000(
-            desc1[0], desc1[1], desc1[2],
-            lab2[0], lab2[1], lab2[2]);
-            
-        double dClrSq = Math.abs(deltaE);
-        
-        float diffX = desc1[3] - x2;
-        float diffY = desc1[4] - y2;
-        double dXYSq = diffX * diffX + diffY * diffY;
-        
-        double dComb = dClrSq + (dXYSq * maxCIELAB * maxCIELAB)/((float)s * s);
-        
-        dComb = Math.sqrt(dComb);
-        
-        return dComb;
-    }
-
-    private double calcDist(float[] desc1, float[] lab2, int x2, int y2) {
+    private double calcDist(float[] desc1, int polarV, int x2, int y2) {
             
         double dClrSq = 0;
-        for (int i = 0; i < 3; ++i) {
-            float diff = desc1[i] - lab2[i];
-            dClrSq += (diff * diff);
+        int polarV2 = polarV + 255;
+        float diff;
+        if (Math.abs(polarV - desc1[0]) < Math.abs(polarV2 - desc1[0])) {
+            diff = polarV - desc1[0];
+        } else {
+            diff = polarV2 - desc1[0];
         }
+        dClrSq += (diff * diff);
         
-        float diffX = desc1[3] - x2;
-        float diffY = desc1[4] - y2;
+        float diffX = desc1[1] - x2;
+        float diffY = desc1[2] - y2;
         double dXYSq = diffX * diffX + diffY * diffY;
         
         double dComb = dClrSq + (dXYSq * maxCIELAB * maxCIELAB)/((float)s * s);
@@ -613,7 +594,7 @@ public class SLICSuperPixels {
             while (iter.hasNext()) {
                 int label2 = iter.next();
                 double dist = calcDist(seedDescriptors[label2],
-                    img.getCIELAB(x1, y1), x1, y1);
+                    img.getValue(x1, y1), x1, y1);
 
                 if (dist < minD) {
                     minD = dist;

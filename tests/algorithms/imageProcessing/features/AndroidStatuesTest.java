@@ -472,7 +472,7 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void estORBMatcher2() throws Exception {
+    public void testORBMatcher2() throws Exception {
 
         // TODO: this one either needs more keypoints across the cupcake in
         //       android statues 02 image,
@@ -581,7 +581,7 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void testORBMatcher3() throws Exception {
+    public void estORBMatcher3() throws Exception {
 
         // TODO: needs better segmentation for the icecream in status 01 and 02
         //    AND/OR a different light source for polar theta CIE LAB

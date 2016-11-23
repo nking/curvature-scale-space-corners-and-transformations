@@ -99,7 +99,7 @@ public class NormalizedCuts {
     
     private enum ColorOption {
         RGB, HSV, LOW_THRESHOLD_RGB, LOW_THRESHOLD_HSV, HSV_COLOR_HISTOGRAMS,
-        CIELAB
+        CIELAB, POLAR_CIELAB
     }
     
     private double thresh = 0.06;
@@ -161,6 +161,18 @@ public class NormalizedCuts {
         // for superpixels w/ n=200 
         thresh = 0.06; 
         sigma = 10;
+    }
+    
+    /**
+     * NOTE: this one especially, should improve when location
+     * and adjacency maps are used in the similarity score
+     */
+    public void setColorSpaceToPolarCIELAB() {
+        colorOption = ColorOption.POLAR_CIELAB;
+        colorSpace = ColorSpace.POLAR_CIELAB;
+        // for superpixels w/ n=200 
+        thresh = 0.01; 
+        sigma = 4.;//4: 5
     }
     
     /**
