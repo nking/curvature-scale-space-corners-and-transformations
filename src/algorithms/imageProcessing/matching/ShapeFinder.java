@@ -366,6 +366,11 @@ public class ShapeFinder {
 
     private ShapeFinderResult searchUsingFloydWarshall(int srchIdx, TIntSet adjIdxs) {
         
+        /*
+        the Floyd-Warshal all oairs pattern is adapted from the pseudocode in
+        Cormen et al. "Intro to Algorithms"
+        */
+        
         // 
         // -- each bounds can be filtered for size near sz1
         
