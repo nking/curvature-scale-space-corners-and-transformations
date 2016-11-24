@@ -1175,14 +1175,18 @@ public class ORBMatcher {
 
                 ShapeFinder shapeFinder = new ShapeFinder(
                     bounds1, ch1, scale1, sz1,
-                    orb1.getPyramidImages().get(0).a[0].length -1,
-                    orb1.getPyramidImages().get(0).a.length - 1,
+                    orb1.getPyramidImages().get(i).a[0].length -1,
+                    orb1.getPyramidImages().get(i).a.length - 1,
                     listOfSets2, listOfCH2s, scale2,
                     keyIndexMap, indexBoundsMap, 
-                    orb2.getPyramidImages().get(0).a[0].length -1,
-                    orb2.getPyramidImages().get(0).a.length - 1,
+                    orb2.getPyramidImages().get(j).a[0].length -1,
+                    orb2.getPyramidImages().get(j).a.length - 1,
                     intersectionLimit
                 );
+    shapeFinder.pyr1 = orb1.getPyramidImages().get(i);
+    shapeFinder.pyr2 = orb2.getPyramidImages().get(j);
+    shapeFinder.lbl = Integer.toString(i) + ":" + Integer.toString(j) + "_";
+    
                 ShapeFinderResult r = shapeFinder.findAggregated();
                 
                 if (r == null) {
@@ -1190,7 +1194,7 @@ public class ORBMatcher {
                 }
                                 
                 double c = r.getChordDiffSum();
-                    
+                
                 results.add(new PObject(r, r.bounds1, r.bounds2, scale1, scale2));
                 chordDiffSums.add(r.getChordDiffSum());
                 intersections.add(r.intersection);

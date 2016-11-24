@@ -50,15 +50,18 @@ public class ObjectMatcher {
     public static class Settings {
         private boolean useLargerPyramid0 = false;
         private boolean useLargerPyramid1 = false;
+        
+        //TODO: refactor to use an enum to avoid inconsistent state
         private boolean useSmallObjectMethod = false;
-
+        private boolean useShapeFinder = false;
+        
         /**
          * @return the useLargerPyramid0
          */
         public boolean isUseLargerPyramid0() {
             return useLargerPyramid0;
         }
-
+        
         /**
          if this is set, the default number of pyramid
          image 0 images separated by a factor of 2 in scale is increased
@@ -91,6 +94,14 @@ public class ObjectMatcher {
          */
         public boolean isUseSmallObjectMethod() {
             return useSmallObjectMethod;
+        }
+
+        public boolean isUseShapeFinder() {
+            return useShapeFinder;
+        }
+        
+        public void setToUseShapeFinderMethod() {
+            useShapeFinder = true;
         }
 
         /**
@@ -371,6 +382,9 @@ public class ObjectMatcher {
         orb1.createDescriptorsLABTheta(img1);
         if (settings.isUseSmallObjectMethod()) {
             corList = ORBMatcher.matchSmall(orb0, orb1,
+                shape0, listOfPointSets2);
+        } else if (settings.isUseShapeFinder()) {
+            corList = ORBMatcher.matchAggregatedShape(orb0, orb1,
                 shape0, listOfPointSets2);
         } else {
             corList = ORBMatcher.match0(orb0, orb1,

@@ -1,18 +1,23 @@
 package algorithms.imageProcessing.matching;
 
 import algorithms.imageProcessing.ColorHistogram;
+import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.SIGMA;
+import algorithms.imageProcessing.features.ORB;
+import static algorithms.imageProcessing.matching.ORBMatcher.maxNumberOfGaps;
 import algorithms.util.PairIntArray;
 import gnu.trove.map.TIntObjectMap;
 import java.util.List;
 import algorithms.imageProcessing.matching.PartialShapeMatcher.Result;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
+import algorithms.util.CorrespondencePlotter;
 import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
 import algorithms.util.QuadInt;
+import algorithms.util.TwoDFloatArray;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.map.TIntIntMap;
@@ -174,6 +179,11 @@ public class ShapeFinder {
             }
         }
     }
+    
+// DEBUG
+public static TwoDFloatArray pyr1 = null;
+public static TwoDFloatArray pyr2 = null;
+public static String lbl = "";
 
     /**
      * NOT READY FOR USE.
@@ -220,15 +230,17 @@ public class ShapeFinder {
            Note that this might be improvable in the future.               
         */
         
-        globalGridSearch();
-           
-        throw new UnsupportedOperationException("not yet implemented");
+        ShapeFinderResult sr = globalGridSearch();
+
+        return sr;
     }
 
-    private void globalGridSearch() {
+    private ShapeFinderResult globalGridSearch() {
         
         int w = xMax2 + 1;
         int h = yMax2 + 1;
+        
+        List<ShapeFinderResult> results = new ArrayList<ShapeFinderResult>();
         
         int nPPB = 1;
         
@@ -359,11 +371,103 @@ public class ShapeFinder {
             //   all list 2 set labels are covered in adjIdxs and srchIdx,
             //   after all FW invocations.
             
+            if (r == null) {
+                continue;
+            }
+       
+            int sz2 = ORBMatcher.calculateObjectSize(r.bounds2);
+        
+            if ((sz1 > sz2 && Math.abs(sz1 / sz2) > 1.15) || 
+                (sz2 > sz1 && Math.abs(sz2 / sz1) > 1.15)) {
+                continue;
+            }
             
+            results.add(r);
+            
+            //if (debug) {
+            {
+                Image img1 = ORB.convertToImage(pyr1);
+                Image img2 = ORB.convertToImage(pyr2);
+
+                try {
+                    CorrespondencePlotter plotter = new CorrespondencePlotter(
+                        r.bounds1, r.bounds2);
+                    for (int ii = 0; ii < r.getNumberOfMatches(); ++ii) {
+                        int idx1 = r.getIdx1(ii);
+                        int idx2 = r.getIdx2(ii);
+                        int x1 = r.bounds1.getX(idx1);
+                        int y1 = r.bounds1.getY(idx1);
+                        int x2 = r.bounds2.getX(idx2);
+                        int y2 = r.bounds2.getY(idx2);
+                        if ((ii % 4) == 0) {
+                            plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 0);
+                        }
+                    }
+                    String strI = Integer.toString(startX);
+                    while (strI.length() < 3) {
+                        strI = "0" + strI;
+                    }
+                    String strJ = Integer.toString(startY);
+                    while (strJ.length() < 3) {
+                        strJ = "0" + strJ;
+                    }
+                    String str = lbl + "bin_" + strI + "_" + strJ;
+                    String filePath = plotter.writeImage("_shape_" + str);
+                } catch (Throwable t) {
+                }
+            }
         }
         
-        throw new UnsupportedOperationException(
-            "Not supported yet."); 
+        if (results.isEmpty()) {
+            return null;
+        } else if (results.size() == 1) {
+            return results.get(0);
+        }
+        
+        // once though to find max diff chord sum and max dist
+        double maxAvgDiffChord = Double.MIN_VALUE;
+        double maxAvgDist = Double.MIN_VALUE;
+        for (int i = 0; i < results.size(); ++i) {
+            ShapeFinderResult r = results.get(i);
+            double avgCD = r.getChordDiffSum() / (double) r.getNumberOfMatches();
+            if (avgCD > maxAvgDiffChord) {
+                maxAvgDiffChord = avgCD;
+            }
+            double avgDist = r.getDistSum() / (double) r.getNumberOfMatches();
+            if (avgDist > maxAvgDist) {
+                maxAvgDist = avgDist;
+            }
+        }
+        
+        double minCost = Double.MAX_VALUE;
+        ShapeFinderResult minCostR = null;
+        
+        for (int i = 0; i < results.size(); ++i) {
+            
+            ShapeFinderResult r = results.get(i);
+            
+            int nb1 = Math.round((float) r.bounds1.getN() / (float) dp);
+                
+            float np = r.getNumberOfMatches();
+                
+            float countComp = 1.0F - (np / (float) nb1);
+            double chordComp = ((float) r.getChordDiffSum() / np) / maxAvgDiffChord;
+            double avgDist = r.getDistSum() / np;
+            double distComp = avgDist / maxAvgDist;
+
+            int lGap = maxNumberOfGaps(r.bounds1, r)/dp;
+            float gCountComp = (float)lGap/(float)nb1;
+                
+            double sd = chordComp + countComp + gCountComp + distComp
+                + r.intersection;
+            
+            if (sd < minCost) {
+                minCost = sd;
+                minCostR = r;
+            }
+        }
+        
+        return minCostR;
     }
 
     private ShapeFinderResult searchUsingFloydWarshall(int srchIdx, TIntSet adjIdxs) {
@@ -507,6 +611,10 @@ public class ShapeFinder {
                         continue;
                     }
                     
+                    if (rIJ == null) {
+                        return rIKPlusKJ;
+                    }
+                    
                     //TODO: consider whether to re-do the cost everytime
                     // with new max.  should be fine to re-calc as needed and
                     // then at the end.
@@ -592,6 +700,10 @@ public class ShapeFinder {
                     minCostSR = sr;
                 }
             }
+        }
+        
+        if (minCostSR != null) {
+            minCostSR.data = new Object[]{Double.valueOf(minCost)};
         }
         
         return minCostSR;
