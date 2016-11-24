@@ -220,14 +220,16 @@ public static String lbl = "";
             or above and to the right.
             
            this is the part that is changing.
-           -- made an impl of Floyd Warshals all pairs
+           -- made an impl of Floyd Warshals all pairs.
            -- will impl a dijkstra's for every source 
                but with the path constrained to be within
                an association distance of the template object size
         
         */
         
-        ShapeFinderResult sr = globalGridSearch();
+        //ShapeFinderResult sr = globalGridSearch();
+        
+        ShapeFinderResult sr = multiSourceBFS();
 
         return sr;
     }
@@ -378,10 +380,7 @@ public static String lbl = "";
             //if ((sz1 > sz2 && Math.abs(sz1 / sz2) > 1.4) || 
             //    (sz2 > sz1 && Math.abs(sz2 / sz1) > 1.4)) {
             if ((sz1 > sz2 && Math.abs(sz1 / sz2) > 1.15) || 
-                (sz2 > sz1 && Math.abs(sz2 / sz1) > 1.15)) {
-if (startX == 20 && startY == 40) {
-     int z = 0;
-}                
+                (sz2 > sz1 && Math.abs(sz2 / sz1) > 1.15)) {                
                 continue;
             }
             
@@ -417,10 +416,7 @@ if (startX == 20 && startY == 40) {
                     String str = lbl + "bin_" + strI + "_" + strJ;
                     String filePath = plotter.writeImage("_shape_" + str);
                 } catch (Throwable t) {
-                }
-if (startX == 20 && startY == 40) {
-     int z = 0;
-}                
+                }                
             }
         }
   
@@ -480,7 +476,8 @@ if (startX == 20 && startY == 40) {
         
         /*
         the Floyd-Warshal all oairs pattern is adapted from the pseudocode in
-        Cormen et al. "Intro to Algorithms"
+        Cormen et al. "Intro to Algorithms".
+        the runtime is O(V^3).
         */
         
         // -- each bounds can be filtered for size near sz1
@@ -857,6 +854,42 @@ if (startX == 20 && startY == 40) {
         sr.intersection = intersection;
             
         return sr;
+    }
+
+    private ShapeFinderResult multiSourceBFS() {
+        
+        // -- make a cache of search results
+        //    to resuse
+        // -- launch a BFS search from each label2 set.
+        
+        TObjectIntMap<int[]> keysIndex = new TObjectIntHashMap<int[]>();
+        TIntObjectMap<ShapeFinderResult> cacheResults 
+            = new TIntObjectHashMap<ShapeFinderResult>();
+        
+        List<ShapeFinderResult> results = new ArrayList<ShapeFinderResult>();
+        for (int i = 0; i < listOfSets2.size(); ++i) {
+            
+            ShapeFinderResult sr = bfs(i, keysIndex, cacheResults);
+            
+            if (sr != null) {
+                results.add(sr);
+            }
+        }
+        
+        // find max chord diffs and dists to calc normalized cost and
+        //   find min cost
+        
+        throw new UnsupportedOperationException("not yet implemented");
+        
+    }
+
+    private ShapeFinderResult bfs(int i, TObjectIntMap<int[]> keysIndex, 
+        TIntObjectMap<ShapeFinderResult> sacheResults) {
+
+        // only serch within radius of sz1
+        
+        
+        throw new UnsupportedOperationException("Not supported yet."); 
     }
     
     public static class ShapeFinderResult extends Result {
