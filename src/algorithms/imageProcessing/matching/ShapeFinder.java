@@ -575,7 +575,8 @@ if (startX == 20 && startY == 40) {
             
             for (int j = 0; j < n; ++j) {
                 if (i == j) {
-                    //results[i][j] = sr;
+                    // replacing default 0
+                    results[i][j] = sr;
                     continue;
                 }
                 int idxJ0 = i2ToOrigIndexMap.get(j);
@@ -614,9 +615,8 @@ if (startX == 20 && startY == 40) {
                         // i,j remains as is
                         continue;
                     }
-//TODO: consider a cache for this                              
-                    ShapeFinderResult rIKPlusKJ = 
-                        aggregateAndMatch(rIK, rKJ);
+             
+                    ShapeFinderResult rIKPlusKJ = aggregateAndMatch(rIK, rKJ);
                     
                     if (rIKPlusKJ == null) {
                         // i,j remains as is
