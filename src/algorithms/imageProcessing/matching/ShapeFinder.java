@@ -296,6 +296,7 @@ public static String lbl = "";
              
             // centroid list indexes (these are same indexes are for label2 sets)
             List<Integer> indexes = centroidQT.query2D(rect);
+    
             assert(!indexes.isEmpty());
                 
             // chose the smallest x, smallest y in bin
@@ -363,7 +364,7 @@ public static String lbl = "";
                     }
                 }
             }
-            
+  
             // TODO: invoke the local search with restricted label range
             ShapeFinderResult r = searchUsingFloydWarshall(srchIdx, adjIdxs);
             
@@ -371,14 +372,19 @@ public static String lbl = "";
             //   all list 2 set labels are covered in adjIdxs and srchIdx,
             //   after all FW invocations.
             
-            if (r == null) {
+            if (r == null) {                
                 continue;
             }
        
             int sz2 = ORBMatcher.calculateObjectSize(r.bounds2);
-        
+             
+            //if ((sz1 > sz2 && Math.abs(sz1 / sz2) > 1.4) || 
+            //    (sz2 > sz1 && Math.abs(sz2 / sz1) > 1.4)) {
             if ((sz1 > sz2 && Math.abs(sz1 / sz2) > 1.15) || 
                 (sz2 > sz1 && Math.abs(sz2 / sz1) > 1.15)) {
+if (startX == 20 && startY == 40) {
+     int z = 0;
+}                
                 continue;
             }
             
@@ -415,9 +421,12 @@ public static String lbl = "";
                     String filePath = plotter.writeImage("_shape_" + str);
                 } catch (Throwable t) {
                 }
+if (startX == 20 && startY == 40) {
+     int z = 0;
+}                
             }
         }
-        
+  
         if (results.isEmpty()) {
             return null;
         } else if (results.size() == 1) {
@@ -566,6 +575,7 @@ public static String lbl = "";
             
             for (int j = 0; j < n; ++j) {
                 if (i == j) {
+                    //results[i][j] = sr;
                     continue;
                 }
                 int idxJ0 = i2ToOrigIndexMap.get(j);
@@ -604,8 +614,9 @@ public static String lbl = "";
                         // i,j remains as is
                         continue;
                     }
-                                        
-                    ShapeFinderResult rIKPlusKJ = aggregateAndMatch(rIK, rKJ);
+//TODO: consider a cache for this                              
+                    ShapeFinderResult rIKPlusKJ = 
+                        aggregateAndMatch(rIK, rKJ);
                     
                     if (rIKPlusKJ == null) {
                         // i,j remains as is
@@ -613,7 +624,8 @@ public static String lbl = "";
                     }
                     
                     if (rIJ == null) {
-                        return rIKPlusKJ;
+                        results[i][j] = rIKPlusKJ;
+                        continue;
                     }
                     
                     //TODO: consider whether to re-do the cost everytime
@@ -838,6 +850,10 @@ public static String lbl = "";
         //matcher.setToDebug();
         //matcher.setToUseSameNumberOfPoints();
         PartialShapeMatcher.Result r = matcher.match(bounds1, boundsI);
+        
+        if (r == null) {
+            return null;
+        }
         
         ShapeFinderResult sr = new ShapeFinderResult(r, bounds1, boundsI,
             keysI);
