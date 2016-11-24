@@ -569,7 +569,8 @@ public static String lbl = "";
                     continue;
                 }
                 int idxJ0 = i2ToOrigIndexMap.get(j);
-                if (adj2Map.get(idxI0).contains(idxJ0)) {
+                if (adj2Map.containsKey(idxI0) &&
+                    adj2Map.get(idxI0).contains(idxJ0)) {
                     results[i][j] = sr;
                 }
             }
