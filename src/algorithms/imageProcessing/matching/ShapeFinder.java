@@ -1,6 +1,9 @@
 package algorithms.imageProcessing.matching;
 
+import algorithms.imageProcessing.ColorHistogram;
+import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.imageProcessing.SIGMA;
 import algorithms.util.PairIntArray;
 import gnu.trove.map.TIntObjectMap;
 import java.util.List;
@@ -10,6 +13,8 @@ import algorithms.misc.MiscMath;
 import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
 import algorithms.util.QuadInt;
+import algorithms.util.VeryLongBitString;
+import gnu.trove.iterator.TIntIterator;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
@@ -22,7 +27,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
-import javax.naming.directory.SearchResult;
 import thirdparty.edu.princeton.cs.algs4.Interval;
 import thirdparty.edu.princeton.cs.algs4.Interval2D;
 import thirdparty.edu.princeton.cs.algs4.QuadTree;
@@ -67,6 +71,8 @@ public class ShapeFinder {
     private final int yMax1;
     private final int xMax2;
     private final int yMax2;
+    
+    private SIGMA sigma = SIGMA.ZEROPOINTFIVE;
     
     /**
      * NOT READY FOR USE.
@@ -359,6 +365,168 @@ public class ShapeFinder {
 
     private SearchResult searchUsingFloydWarshall(int srchIdx, TIntSet adjIdxs) {
         
+        // 
+        // -- each bounds can be filtered for size near sz1
+        
+        // -- need to assert contiguous before partial shape matcher,
+        //       so, can only compare if adjacent to a set member
+        
+        // -- the dynamic programming array can be made smaller by making
+        //    a second assignment of labels here and the lookup maps
+      
+        TIntIntMap i2ToOrigIndexMap = new TIntIntHashMap();
+        TIntIntMap origIndexToI2Map = new TIntIntHashMap();
+        
+        i2ToOrigIndexMap.put(0, srchIdx);
+        origIndexToI2Map.put(srchIdx, 0);
+        
+        TIntIterator iter = adjIdxs.iterator();
+        while (iter.hasNext()) {
+            int idx0 = iter.next();
+            int idx2 = origIndexToI2Map.size();
+            origIndexToI2Map.put(idx0, idx2);
+            i2ToOrigIndexMap.put(idx2, idx0);
+        }
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        ColorHistogram cHist = new ColorHistogram();
+        
+        int nb1 = Math.round((float) bounds1.getN() / (float) dp);
+        
+        // for the cost calculations, need the maximum average chord diff sums
+        //   and dist sums
+        double maxAvgDiffChord = Double.MIN_VALUE;
+        double maxAvgDist = Double.MIN_VALUE;
+        
+        // ----- initialize the arrays ----------
+        
+        int n = origIndexToI2Map.size();
+        
+        ShapeFinderResult[][] results = new ShapeFinderResult[n][];
+        
+        double[][] d = new double[n][];
+        
+        for (int i = 0; i < n; ++i) {
+            d[i] = new double[n];
+            results[i] = new ShapeFinderResult[n];
+            
+            int idxI0 = i2ToOrigIndexMap.get(i);
+          
+            // note, the size filter before the invocation of this method 
+            // assures that each set is within size sz1
+            
+            int[] ch2 = listOfCH2s.get(k).a;
+            float intersection = cHist.intersection(ch1, ch2);
+            if (intersection < intersectionLimit) {
+                continue;
+            }
+            
+            // ----- calculate the cost of the shape match as init "w"s -----
+            int[] keysI = new int[]{i};
+            PairIntArray boundsI;
+            if (keyIndexMap.containsKey(keysI)) {
+                boundsI = indexBoundsMap.get(keyIndexMap.get(keysI));
+            } else {
+                Set<PairInt> set1 = this.listOfSets2.get(idxI0);
+                boundsI = imageProcessor.extractSmoothedOrderedBoundary(
+                    new HashSet(set1), sigma, xMax2 + 1, yMax2 + 1);
+                int kIdx = keyIndexMap.size();
+                keyIndexMap.put(keysI, kIdx);
+                indexBoundsMap.put(kIdx, boundsI);
+            }
+            PartialShapeMatcher matcher = new PartialShapeMatcher();
+            matcher.overrideSamplingDistance(dp);
+            //matcher.setToDebug();
+            //matcher.setToUseSameNumberOfPoints();
+            PartialShapeMatcher.Result r = matcher.match(bounds1, boundsI);
+            if (r == null) {
+                continue;
+            }            
+            double avgCD = r.getChordDiffSum() / (double) r.getNumberOfMatches();
+            if (avgCD > maxAvgDiffChord) {
+                maxAvgDiffChord = avgCD;
+            }
+            double avgDist = r.getDistSum() / (double) r.getNumberOfMatches();
+            if (avgDist > maxAvgDist) {
+                maxAvgDist = avgDist;
+            }
+            ShapeFinderResult sr = new ShapeFinderResult(r, bounds1, boundsI,
+                keysI);
+            sr.intersection = intersection;
+            
+            for (int j = 0; j < n; ++j) {
+                if (i == j) {
+                    d[i][j] = 0;
+                    continue;
+                }
+                int idxJ0 = i2ToOrigIndexMap.get(j);
+                if (!adj2Map.get(idxI0).contains(idxJ0)) {
+                    d[i][j] = Integer.MAX_VALUE;
+                } else {                    
+                    d[i][j] = 1;
+                    results[i][j] = sr;
+                }
+            }
+        }
+        
+        // --- finish initializing d w/ the rough estimate of shape matching
+        //       cost using the max numbers needed for normalization
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < n; ++j) {
+                ShapeFinderResult r = results[i][j];
+                if (r == null) {
+                    continue;
+                }
+                float np = r.getNumberOfMatches();
+                float countComp = 1.0F - (np / (float) nb1);
+                double chordComp = ((float) r.getChordDiffSum() / np) / maxAvgDiffChord;
+                double avgDist = r.getDistSum() / np;
+                double distComp = avgDist / maxAvgDist;
+                int lGap = ORBMatcher.maxNumberOfGaps(bounds1, r)/dp;
+                float gCountComp = (float)lGap/(float)nb1;
+                double sd = chordComp + countComp + gCountComp + distComp
+                    + r.intersection;
+                d[i][j] = sd;
+            }
+        }
+        
+        // ----- populate the arrays ----------
+        
+        // W is an nxn matrix of w[i][j] 
+        //     where each entry is the edge weight if any b etween i and j.  
+        // W has values 0 if i==j and inf where there is no connection.
+        // D is an nxn matrix of d[i][j] 
+        //     where each entry is the weight of the shortest path between i and j.
+        // d[i][j]_k = w[i][j]                                   if k = 0
+        //           = min( d[i][k]_(k-1) + d[k][j]_(k-1) )      if k >= 1
+        
+        for (int k = 0; k < n; k++) {
+            int idxK0 = i2ToOrigIndexMap.get(k);
+            for (int i = 0; i < n; i++) {
+                int idxI0 = i2ToOrigIndexMap.get(i);
+                for (int j = 0; j < n; j++) {
+                    int idxJ0 = i2ToOrigIndexMap.get(j);
+                    boolean setPrev = true;                    
+                    if (i == j) {
+                        d[i][j] = 0;
+                        continue;
+                    }
+                  //paused here  
+                   /*
+                    double s0 = d[i][j];
+                    double s1 = d[i][k] + d[k][j];
+                                 
+                    if ((s0 <= s1) || ((d[i][k] == Integer.MAX_VALUE) 
+                        || (d[k][j] == Integer.MAX_VALUE))) {
+                        d[i][j] = s0;
+                    } else {
+                        d[i][j] = s1;
+                        prev[i][j] = prev[k][j];
+                    }*/ 
+                }
+            }
+        }
         
         throw new UnsupportedOperationException(
             "Not supported yet.");
@@ -410,24 +578,44 @@ public class ShapeFinder {
         protected float intersection;
         protected final PairIntArray bounds1;
         protected final PairIntArray bounds2;
+        protected final int[] labels2;
+        
+        public ShapeFinderResult(Result r, PairIntArray bounds1,
+            PairIntArray bounds2, int[] keys) {
+            
+            super(r.n1, r.n2, r.getOriginalN1());
+            
+            this.bounds1 = bounds1;
+            this.bounds2 = bounds2;
+            this.chordDiffSum = r.chordDiffSum;
+            this.distSum = r.distSum;
+            this.chordsNeedUpdates = r.chordsNeedUpdates;
+            this.idx1s = r.idx1s;
+            this.idx2s = r.idx2s;
+            this.params = r.params;
+            this.data = r.data;
+            this.labels2 = keys;
+        }
         
         public ShapeFinderResult(int n1, int n2, int offset, PairIntArray bounds1,
-            PairIntArray bounds2) {
+            PairIntArray bounds2, int[] keys) {
             
             super(n1, n2, offset);
             
             this.bounds1 = bounds1;
             this.bounds2 = bounds2;
+            this.labels2 = keys;
         }
         
         public ShapeFinderResult(int n1, int n2, int nOriginal, 
             int offset, PairIntArray bounds1,
-            PairIntArray bounds2) {
+            PairIntArray bounds2, int[] keys) {
             
             super(n1, n2, nOriginal, offset);
             
             this.bounds1 = bounds1;
             this.bounds2 = bounds2;
+            this.labels2 = keys;
         }
     }
     
