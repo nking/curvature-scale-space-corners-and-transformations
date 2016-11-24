@@ -513,16 +513,16 @@ public class ShapeFinder {
                     }
                     ShapeFinderResult rIJ = results[i][j];
                     ShapeFinderResult rIK = results[i][k];
-                    ShapeFinderResult rJK = results[j][k];
+                    ShapeFinderResult rKJ = results[k][j];
                     
-                    if (rIK == null && rJK == null) {
+                    if (rIK == null && rKJ == null) {
                         // i,j remains as is
                         continue;
                     }
                     
-                    //PAUSED hete
-                    ShapeFinderResult rIKPlusKJ = null;
-                    //aggregate(rIK, rKJ);
+                    
+                    //PAUSED HERE
+                    ShapeFinderResult rIKPlusKJ = null;//aggregate(rIK, rKJ);
                     
                     //TODO: consider whether to re-do the cost everytime
                     // with new max.  should be fine to re-calc as needed and
