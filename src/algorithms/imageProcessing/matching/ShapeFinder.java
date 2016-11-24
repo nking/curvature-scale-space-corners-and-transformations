@@ -23,6 +23,7 @@ import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -519,10 +520,13 @@ public class ShapeFinder {
                         // i,j remains as is
                         continue;
                     }
+                                        
+                    ShapeFinderResult rIKPlusKJ = aggregateAndMatch(rIK, rKJ);
                     
-                    
-                    //PAUSED HERE
-                    ShapeFinderResult rIKPlusKJ = null;//aggregate(rIK, rKJ);
+                    if (rIKPlusKJ == null) {
+                        // i,j remains as is
+                        continue;
+                    }
                     
                     //TODO: consider whether to re-do the cost everytime
                     // with new max.  should be fine to re-calc as needed and
@@ -627,6 +631,101 @@ public class ShapeFinder {
         
         // consider taking the diagonal here
         return Math.max(diffX, diffY);
+    }
+
+    private ShapeFinderResult aggregateAndMatch(ShapeFinderResult rIK, 
+        ShapeFinderResult rKJ) {
+        
+        // -- either might be null but not both
+        if (rIK == null) {
+            return rKJ;
+        } else if (rKJ == null) {
+            return rIK;
+        }
+        
+        // if both have same keys, assert same results and return one of them
+        int[] l1 = rIK.labels2;  
+        int[] l2 = rKJ.labels2;
+        if (Arrays.equals(l1, l2)) {
+            // TODO: assert same content
+            return rIK;
+        }
+        
+        // -- check that the two have at least one adjacent set between them
+        boolean foundAdj = false;
+        for (int i = 0; i < l1.length; ++i) {
+            int idx1 = l1[i];
+            for (int j = 0; j < l2.length; ++j) {
+                int idx2 = l2[j];
+                if (this.adj2Map.containsKey(idx1) && adj2Map.get(idx1).contains(idx2)) {
+                    foundAdj = true;
+                    break;
+                }
+            }
+            if (foundAdj) {
+                break;
+            }
+        }
+        if (!foundAdj) {
+            return null;
+        }
+        
+        TIntSet combIdxs = new TIntHashSet(l1.length + l2.length);
+        combIdxs.addAll(l1);
+        combIdxs.addAll(l2);
+        
+        ColorHistogram cHist = new ColorHistogram();
+        
+        int[] ch2 = new int[ch1.length];
+        TIntIterator iter = combIdxs.iterator();
+        while (iter.hasNext()) {
+            int idx = iter.next();
+            cHist.add2To1(ch2, listOfCH2s.get(idx).a);
+        }
+        
+        float intersection = cHist.intersection(ch1, ch2);
+        if (intersection < intersectionLimit) {
+            return null;
+        }
+
+        int[] keysI = combIdxs.toArray(new int[combIdxs.size()]);
+        Arrays.sort(keysI);
+        
+        PairIntArray boundsI;
+        if (keyIndexMap.containsKey(keysI)) {
+            boundsI = indexBoundsMap.get(keyIndexMap.get(keysI));
+        } else {
+            Set<PairInt> combSet = new HashSet<PairInt>();
+            iter = combIdxs.iterator();
+            while (iter.hasNext()) {
+                int idx = iter.next();
+                combSet.addAll(this.listOfSets2.get(idx));
+            }
+            ImageProcessor imageProcessor = new ImageProcessor();        
+            boundsI = imageProcessor.extractSmoothedOrderedBoundary(
+                new HashSet(combSet), sigma, xMax2 + 1, yMax2 + 1);
+            int kIdx = keyIndexMap.size();
+            keyIndexMap.put(keysI, kIdx);
+            indexBoundsMap.put(kIdx, boundsI);
+        }
+                
+        int sz2 = ORBMatcher.calculateObjectSize(boundsI);
+        
+        if (sz2 > 1.15 * sz1) {
+            return null;
+        }
+        
+        PartialShapeMatcher matcher = new PartialShapeMatcher();
+        matcher.overrideSamplingDistance(dp);
+        //matcher.setToDebug();
+        //matcher.setToUseSameNumberOfPoints();
+        PartialShapeMatcher.Result r = matcher.match(bounds1, boundsI);
+        
+        ShapeFinderResult sr = new ShapeFinderResult(r, bounds1, boundsI,
+            keysI);
+        sr.intersection = intersection;
+            
+        return sr;
     }
     
     public static class ShapeFinderResult extends Result {
