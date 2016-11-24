@@ -352,7 +352,7 @@ public class ShapeFinder {
             }
             
             // TODO: invoke the local search with restricted label range
-            SearchResult r = searchUsingFloydWarshall(srchIdx, adjIdxs);
+            ShapeFinderResult r = searchUsingFloydWarshall(srchIdx, adjIdxs);
             
             //TODO: when replace aspectj w/ another AOP library, assert that 
             //   all list 2 set labels are covered in adjIdxs and srchIdx,
@@ -363,7 +363,7 @@ public class ShapeFinder {
             "Not supported yet."); 
     }
 
-    private SearchResult searchUsingFloydWarshall(int srchIdx, TIntSet adjIdxs) {
+    private ShapeFinderResult searchUsingFloydWarshall(int srchIdx, TIntSet adjIdxs) {
         
         // 
         // -- each bounds can be filtered for size near sz1
@@ -416,14 +416,14 @@ public class ShapeFinder {
             // note, the size filter before the invocation of this method 
             // assures that each set is within size sz1
             
-            int[] ch2 = listOfCH2s.get(k).a;
+            int[] ch2 = listOfCH2s.get(idxI0).a;
             float intersection = cHist.intersection(ch1, ch2);
             if (intersection < intersectionLimit) {
                 continue;
             }
             
             // ----- calculate the cost of the shape match as init "w"s -----
-            int[] keysI = new int[]{i};
+            int[] keysI = new int[]{idxI0};
             PairIntArray boundsI;
             if (keyIndexMap.containsKey(keysI)) {
                 boundsI = indexBoundsMap.get(keyIndexMap.get(keysI));
@@ -462,7 +462,7 @@ public class ShapeFinder {
                 }
                 int idxJ0 = i2ToOrigIndexMap.get(j);
                 if (!adj2Map.get(idxI0).contains(idxJ0)) {
-                    d[i][j] = Integer.MAX_VALUE;
+                    d[i][j] = Double.MAX_VALUE;
                 } else {                    
                     d[i][j] = 1;
                     results[i][j] = sr;
@@ -507,26 +507,82 @@ public class ShapeFinder {
                 int idxI0 = i2ToOrigIndexMap.get(i);
                 for (int j = 0; j < n; j++) {
                     int idxJ0 = i2ToOrigIndexMap.get(j);
-                    boolean setPrev = true;                    
                     if (i == j) {
                         d[i][j] = 0;
                         continue;
                     }
-                  //paused here  
-                   /*
-                    double s0 = d[i][j];
-                    double s1 = d[i][k] + d[k][j];
-                                 
-                    if ((s0 <= s1) || ((d[i][k] == Integer.MAX_VALUE) 
-                        || (d[k][j] == Integer.MAX_VALUE))) {
+                    ShapeFinderResult rIJ = results[i][j];
+                    ShapeFinderResult rIK = results[i][k];
+                    ShapeFinderResult rJK = results[j][k];
+                    
+                    if (rIK == null && rJK == null) {
+                        // i,j remains as is
+                        continue;
+                    }
+                    
+                    //PAUSED hete
+                    ShapeFinderResult rIKPlusKJ = null;
+                    //aggregate(rIK, rKJ);
+                    
+                    //TODO: consider whether to re-do the cost everytime
+                    // with new max.  should be fine to re-calc as needed and
+                    // then at the end.
+                    double avgCD = rIJ.getChordDiffSum() / (double) rIJ.getNumberOfMatches();
+                    if (avgCD > maxAvgDiffChord) {
+                        maxAvgDiffChord = avgCD;
+                    }
+                    double avgDist = rIJ.getDistSum() / (double) rIJ.getNumberOfMatches();
+                    if (avgDist > maxAvgDist) {
+                        maxAvgDist = avgDist;
+                    }
+                    avgCD = rIKPlusKJ.getChordDiffSum() / 
+                        (double) rIKPlusKJ.getNumberOfMatches();
+                    if (avgCD > maxAvgDiffChord) {
+                        maxAvgDiffChord = avgCD;
+                    }
+                    avgDist = rIKPlusKJ.getDistSum() / 
+                        (double) rIKPlusKJ.getNumberOfMatches();
+                    if (avgDist > maxAvgDist) {
+                        maxAvgDist = avgDist;
+                    }
+                    
+                    float np = rIJ.getNumberOfMatches();
+                    float countComp = 1.0F - (np / (float) nb1);
+                    double chordComp = ((float) rIJ.getChordDiffSum() / np) 
+                        / maxAvgDiffChord;
+                    avgDist = rIJ.getDistSum() / np;
+                    double distComp = avgDist / maxAvgDist;
+                    int lGap = ORBMatcher.maxNumberOfGaps(bounds1, rIJ)/dp;
+                    float gCountComp = (float)lGap/(float)nb1;
+                    double sd = chordComp + countComp + gCountComp + distComp
+                        + rIJ.intersection;
+                    double s0 = sd;
+                    
+                    np = rIKPlusKJ.getNumberOfMatches();
+                    countComp = 1.0F - (np / (float) nb1);
+                    chordComp = ((float) rIKPlusKJ.getChordDiffSum() / np) 
+                        / maxAvgDiffChord;
+                    avgDist = rIKPlusKJ.getDistSum() / np;
+                    distComp = avgDist / maxAvgDist;
+                    lGap = ORBMatcher.maxNumberOfGaps(bounds1, rIKPlusKJ)/dp;
+                    gCountComp = (float)lGap/(float)nb1;
+                    sd = chordComp + countComp + gCountComp + distComp
+                        + rIKPlusKJ.intersection;
+                    double s1 = sd;
+                    
+                    if (s0 <= s1) {
                         d[i][j] = s0;
                     } else {
                         d[i][j] = s1;
-                        prev[i][j] = prev[k][j];
-                    }*/ 
+                        // TODO: revisit this
+                        //prev[i][j] = prev[k][j];
+                        results[i][j] = rIKPlusKJ;
+                    }
                 }
             }
         }
+        
+        // --- review results, updating cost and return the mincost result
         
         throw new UnsupportedOperationException(
             "Not supported yet.");
