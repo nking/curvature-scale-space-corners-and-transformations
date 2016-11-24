@@ -358,6 +358,8 @@ public class ShapeFinder {
             //TODO: when replace aspectj w/ another AOP library, assert that 
             //   all list 2 set labels are covered in adjIdxs and srchIdx,
             //   after all FW invocations.
+            
+            
         }
         
         throw new UnsupportedOperationException(
@@ -371,7 +373,6 @@ public class ShapeFinder {
         Cormen et al. "Intro to Algorithms"
         */
         
-        // 
         // -- each bounds can be filtered for size near sz1
         
         // -- need to assert contiguous before partial shape matcher,
@@ -410,11 +411,8 @@ public class ShapeFinder {
         int n = origIndexToI2Map.size();
         
         ShapeFinderResult[][] results = new ShapeFinderResult[n][];
-        
-        double[][] d = new double[n][];
-        
+                
         for (int i = 0; i < n; ++i) {
-            d[i] = new double[n];
             results[i] = new ShapeFinderResult[n];
             
             int idxI0 = i2ToOrigIndexMap.get(i);
@@ -441,6 +439,7 @@ public class ShapeFinder {
                 keyIndexMap.put(keysI, kIdx);
                 indexBoundsMap.put(kIdx, boundsI);
             }
+            
             PartialShapeMatcher matcher = new PartialShapeMatcher();
             matcher.overrideSamplingDistance(dp);
             //matcher.setToDebug();
@@ -463,37 +462,12 @@ public class ShapeFinder {
             
             for (int j = 0; j < n; ++j) {
                 if (i == j) {
-                    d[i][j] = 0;
                     continue;
                 }
                 int idxJ0 = i2ToOrigIndexMap.get(j);
-                if (!adj2Map.get(idxI0).contains(idxJ0)) {
-                    d[i][j] = Double.MAX_VALUE;
-                } else {                    
-                    d[i][j] = 1;
+                if (adj2Map.get(idxI0).contains(idxJ0)) {
                     results[i][j] = sr;
                 }
-            }
-        }
-        
-        // --- finish initializing d w/ the rough estimate of shape matching
-        //       cost using the max numbers needed for normalization
-        for (int i = 0; i < n; ++i) {
-            for (int j = 0; j < n; ++j) {
-                ShapeFinderResult r = results[i][j];
-                if (r == null) {
-                    continue;
-                }
-                float np = r.getNumberOfMatches();
-                float countComp = 1.0F - (np / (float) nb1);
-                double chordComp = ((float) r.getChordDiffSum() / np) / maxAvgDiffChord;
-                double avgDist = r.getDistSum() / np;
-                double distComp = avgDist / maxAvgDist;
-                int lGap = ORBMatcher.maxNumberOfGaps(bounds1, r)/dp;
-                float gCountComp = (float)lGap/(float)nb1;
-                double sd = chordComp + countComp + gCountComp + distComp
-                    + r.intersection;
-                d[i][j] = sd;
             }
         }
         
@@ -514,7 +488,7 @@ public class ShapeFinder {
                 for (int j = 0; j < n; j++) {
                     int idxJ0 = i2ToOrigIndexMap.get(j);
                     if (i == j) {
-                        d[i][j] = 0;
+                        //d[i][j] = 0;
                         continue;
                     }
                     ShapeFinderResult rIJ = results[i][j];
@@ -580,9 +554,9 @@ public class ShapeFinder {
                     double s1 = sd;
                     
                     if (s0 <= s1) {
-                        d[i][j] = s0;
+                       // d[i][j] = s0;
                     } else {
-                        d[i][j] = s1;
+                        //d[i][j] = s1;
                         // TODO: revisit this
                         //prev[i][j] = prev[k][j];
                         results[i][j] = rIKPlusKJ;
@@ -593,8 +567,34 @@ public class ShapeFinder {
         
         // --- review results, updating cost and return the mincost result
         
-        throw new UnsupportedOperationException(
-            "Not supported yet.");
+        double minCost = Double.MAX_VALUE;
+        ShapeFinderResult minCostSR = null;
+        
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < n; ++j) {
+                ShapeFinderResult sr = results[i][j];
+                if (sr == null) {
+                    continue;
+                }
+                float np = sr.getNumberOfMatches();
+                float countComp = 1.0F - (np / (float) nb1);
+                double chordComp = ((float) sr.getChordDiffSum() / np)
+                    / maxAvgDiffChord;
+                double avgDist = sr.getDistSum() / np;
+                double distComp = avgDist / maxAvgDist;
+                int lGap = ORBMatcher.maxNumberOfGaps(bounds1, sr) / dp;
+                float gCountComp = (float) lGap / (float) nb1;
+                double sd = chordComp + countComp + gCountComp + distComp
+                    + sr.intersection;
+                
+                if (sd < minCost) {
+                    minCost = sd;
+                    minCostSR = sr;
+                }
+            }
+        }
+        
+        return minCostSR;
     }
 
     private int findSmallestXYCentroid(List<Integer> indexes, 
