@@ -220,14 +220,11 @@ public static String lbl = "";
             or above and to the right.
             
            this is the part that is changing.
-           would like to use Dijkstra's within each bin to find the best 
-             matching aggregation of cells, but unfortunately, the 
-             aggregation of cell boundaries is not inductive, that is
-             two wrong steps of aggregation might have better results than
-             two correct steps.
-           therefore, using the more time consuming but more complete
-           Floyd-Warshal search within each 2D bin.
-           Note that this might be improvable in the future.               
+           -- made an impl of Floyd Warshals all pairs
+           -- will impl a dijkstra's for every source 
+               but with the path constrained to be within
+               an association distance of the template object size
+        
         */
         
         ShapeFinderResult sr = globalGridSearch();
