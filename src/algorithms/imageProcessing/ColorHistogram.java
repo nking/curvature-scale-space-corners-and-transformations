@@ -78,6 +78,12 @@ public class ColorHistogram {
         }
     }
     
+    public void add2To1(int[] hist1, int[] hist2) {
+        for (int i = 0; i < hist1.length; ++i) {
+            hist1[i] += hist2[i];
+        }
+    }
+    
     /**
      * histogram of 16 bins each of CIE LAB colors where the bins
      * of each color are taken to be in the range of min and max

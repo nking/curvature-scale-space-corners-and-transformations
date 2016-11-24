@@ -1704,7 +1704,7 @@ public class ORBMatcher {
         return pairIndexes;
     }
 
-    private static int calculateObjectSize(Set<PairInt> points) {
+    public static int calculateObjectSize(Set<PairInt> points) {
         // O(N*lg_2(N))
         FurthestPair furthestPair = new FurthestPair();
         PairInt[] fp = furthestPair.find(points);
@@ -1715,7 +1715,7 @@ public class ORBMatcher {
         return (int) Math.round(dist);
     }
     
-    private static int calculateObjectSize(PairIntArray points) {
+    public static int calculateObjectSize(PairIntArray points) {
         return calculateObjectSize(Misc.convert(points));
     }
 
@@ -2221,7 +2221,7 @@ public class ORBMatcher {
         return out;
     }
 
-    private static int maxNumberOfGaps(PairIntArray bounds, 
+    public static int maxNumberOfGaps(PairIntArray bounds, 
         PartialShapeMatcher.Result r) {
         
         TIntSet mIdxs = new TIntHashSet(r.getNumberOfMatches());
