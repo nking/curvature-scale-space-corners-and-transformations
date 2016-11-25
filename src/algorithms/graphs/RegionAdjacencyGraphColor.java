@@ -538,7 +538,7 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
                 nodeColors[1][i] = hsb[1];
                 nodeColors[2][i] = hsb[2];
             } else if (colorSpace.equals(ColorSpace.CIELAB)) {
-                float[] lab = cieC.rgbToCIELAB2(
+                float[] lab = cieC.rgbToCIELAB1931(
                     Math.round(nodeColors[0][i]), 
                     Math.round(nodeColors[1][i]), 
                     Math.round(nodeColors[2][i]));

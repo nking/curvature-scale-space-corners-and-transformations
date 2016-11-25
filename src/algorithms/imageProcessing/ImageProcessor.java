@@ -126,14 +126,13 @@ public class ImageProcessor {
     }
         
     /**
-     * gradient is the equivalent of a gaussian first derivative with sigma=0.5.
-     * the results are multiplied by factor 
-     * and all values below the
-     * JND are removed.
+     * calculate the sobel graident of the color image using CIELAB DeltaE 2000
+     * and return gX, gY, and gXY with array indices being pixel
+     * indexes of the image.
      * @param img
-     * @return 
+     * @return float[][]{gX, gY, gXY}
      */
-    public int[] calculateGradientUsingDeltaE2000(ImageExt img) {
+    public float[][] calculateGradientUsingDeltaE2000(ImageExt img) {
         
         int n = img.getNPixels();
         
@@ -144,70 +143,67 @@ public class ImageProcessor {
         
         float jnd = 2.3f;
         
+        // using 1D sobel kernel -1,0,1, calculating deltaE
+        // between the pixels to either side of center pixel
+        
+        int x1, y1, x2, y2;
+        
         float[] outX = new float[n];                    
         for (int i = 0; i < w; i++) {
-            for (int j = 0; j < h; j++) {
-                double d0;
-                if (i < (w - 2)) {
-                    float[] lab0 = img.getCIELAB(i, j);
-                    float[] lab1 = img.getCIELAB(i + 1, j);
-                    float[] lab2 = img.getCIELAB(i + 2, j);
-                    d0 = cieC.calcDeltaECIE2000(lab0, lab1) -
-                        cieC.calcDeltaECIE2000(lab1, lab2);
-                    if (d0 < 0) {d0 *= -1;}
-                } else if (i == (w - 2)) {
-                    float[] lab0 = img.getCIELAB(i, j);
-                    float[] lab1 = img.getCIELAB(i + 1, j);
-                    d0 = cieC.calcDeltaECIE2000(lab0, lab1);
-                    if (d0 < 0) {d0 *= -1;}
-                } else {
-                    // replicate previous point
-                    d0 = outX[img.getInternalIndex(i - 1, j)];
-                    if (d0 < 0) {d0 *= -1;}
-                }
-                outX[img.getInternalIndex(i, j)] = (float)d0;
-            }                    
-        }
-        
-        float[] outY = new float[n];
-        for (int i = 0; i < w; i++) {
-            for (int j = 0; j < h; j++) {
-                double d0;
-                if (j < (h - 2)) {
-                    float[] lab0 = img.getCIELAB(i, j);
-                    float[] lab1 = img.getCIELAB(i, j + 1);
-                    float[] lab2 = img.getCIELAB(i, j + 2);
-                    d0 = cieC.calcDeltaECIE2000(lab0, lab1) -
-                        cieC.calcDeltaECIE2000(lab1, lab2);
-                    if (d0 < 0) {d0 *= -1;}
-                } else if (j == (h - 2)) {
-                    float[] lab0 = img.getCIELAB(i, j);
-                    float[] lab1 = img.getCIELAB(i, j + 1);
-                    d0 = cieC.calcDeltaECIE2000(lab0, lab1);
-                    if (d0 < 0) {d0 *= -1;}
-                } else {
-                    // replicate previous point
-                    d0 = outY[img.getInternalIndex(i, j - 1)];
-                    if (d0 < 0) {d0 *= -1;}
-                }
-                outY[img.getInternalIndex(i, j)] = (float)d0;
-            }                    
-        }
-        
-        // add max 19.22 in case negative, then mult by 4.4
-        
-        int[] out = new int[n];
-        for (int i = 0; i < n; ++i) {
             
-            double d = Math.sqrt(outX[i]*outX[i] + outY[i] + outY[i]);
-            
-            if (d < jnd) {
-                continue;
+            x1 = i - 1;
+            if (x1 < 0) {
+                x1 = 0;
             }
-            out[i] = (int)Math.round(4.69 * d);
+            x2 = i + 1;
+            if (x2 > (w - 1)) {
+                x2 = w - 1;
+            }
+            
+            for (int j = 0; j < h; j++) {
+                
+                float[] lab1 = img.getCIELAB(x1, j);
+                float[] lab2 = img.getCIELAB(x2, j);
+                
+                double deltaE = cieC.calcDeltaECIE2000(
+                    lab1, lab2);
+                
+                outX[img.getInternalIndex(i, j)] = (float)deltaE;
+            }                    
         }
         
-        return out;
+        float[] outY = new float[n];                    
+        for (int i = 0; i < w; i++) {
+           
+            for (int j = 0; j < h; j++) {
+                
+                y1 = j - 1;
+                if (y1 < 0) {
+                    y1 = 0;
+                }
+                y2 = j + 1;
+                if (y2 > (h - 1)) {
+                    y2 = h - 1;
+                }
+                
+                float[] lab1 = img.getCIELAB(i, y1);
+                float[] lab2 = img.getCIELAB(i, y2);
+                
+                double deltaE = cieC.calcDeltaECIE2000(
+                    lab1, lab2);
+                
+                outY[img.getInternalIndex(i, j)] = (float)deltaE;
+            }                    
+        }
+        
+        // make a combined array
+        float[] outXY = new float[outX.length];
+        for (int i = 0; i < outX.length; ++i) {
+            double gXY = Math.sqrt(outX[i] * outX[i] + outY[i] * outY[i]);
+            outXY[i] = (float)gXY;
+        }
+      
+        return new float[][]{outX, outY, outXY};
     }
     
     /**
@@ -9391,7 +9387,7 @@ if (sum > 511) {
                 int g = img.getG(i, j);
                 int b = img.getB(i, j);
                 
-                float[] lab = cieC.rgbToCIELAB2(r, g, b);
+                float[] lab = cieC.rgbToCIELAB1931(r, g, b);
              
                 v = (int)((lab[0] - mins[0])*scales[0]);
                 ells.setValue(i, j, v);
@@ -9470,7 +9466,7 @@ if (sum > 511) {
                 int g = img.getG(i, j);
                 int b = img.getB(i, j);
                 
-                float[] lab = cieC.rgbToCIELAB2(r, g, b);
+                float[] lab = cieC.rgbToCIELAB1931(r, g, b);
              
                 //float v1 = (lab[1] - mins[1])*scales[1];
                 //float v2 = (lab[2] - mins[2])*scales[2];
@@ -9510,7 +9506,7 @@ if (sum > 511) {
        
         double ts = (double)maxV/(double)359;
         
-        float[] lab = cieC.rgbToCIELAB2(red, green, blue);
+        float[] lab = cieC.rgbToCIELAB1931(red, green, blue);
         
         float v1 = lab[1];
         float v2 = lab[2];
@@ -9527,6 +9523,54 @@ if (sum > 511) {
         return (int)t;
     }
    
+    /**
+     * convert the image to cie luv and then calculate polar angle of u and v
+     * around 0 in degrees.
+     * If maxV of 360, returns full value image, 
+     * else if is 255, scales the values to max value of 255, etc.
+     * @param img
+     * @param maxV
+     * @return 
+     */
+    public GreyscaleImage createCIELUVTheta(Image img, int maxV) {
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        GreyscaleImage theta = null;
+        if (maxV < 256) {
+            theta = new GreyscaleImage(w, h);
+        } else {
+            theta = new GreyscaleImage(w, h, 
+                GreyscaleImage.Type.Bits32FullRangeInt);
+        }
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        double ts = (double)maxV/(double)359;
+        
+        int n = img.getNPixels();
+        int v;
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                
+                int r = img.getR(i, j);
+                int g = img.getG(i, j);
+                int b = img.getB(i, j);
+                
+                float[] lma = cieC.rgbToPolarCIELUV(r, g, b);
+             
+                double t = lma[2];
+                t *= ts;
+                v = (int)t;
+                
+                theta.setValue(i, j, v);
+            }
+        }
+        
+        return theta;
+    }
+    
     // TODO: implement the methods in 
     // http://www.merl.com/publications/docs/TR2008-030.pdf
     // for an O(n) filter.

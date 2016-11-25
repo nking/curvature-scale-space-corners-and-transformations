@@ -465,93 +465,37 @@ public class CannyEdgeFilterAdaptiveDeltaE2000 {
      */
     protected EdgeFilterProducts createGradient(final ImageExt img) {
 
-        GreyscaleImage gX, gY, g, theta;
-
         ImageProcessor imageProcessor = new ImageProcessor();
 
         int n = img.getNPixels();
-
-        CIEChromaticity cieC = new CIEChromaticity();
-
         int w = img.getWidth();
         int h = img.getHeight();
 
         float jnd = 2.3f;
+        
+        // using deltaE between pixels with coords -1 and +1 of 
+        // center pixels.
 
+        // the maximum of any point should be math.sqrt(2)*19.22     
+        float[][] gradients = imageProcessor
+            .calculateGradientUsingDeltaE2000(img);
+            
+        float scale = 255.f/(float)(19.22f * Math.sqrt(2));
+        
+        GreyscaleImage gX, gY, g, theta;
+        
         gX = new GreyscaleImage(w, h);
-        for (int i = 0; i < w; i++) {
-            for (int j = 0; j < h; j++) {
-                double d0;
-                if (i < (w - 2)) {
-                    float[] lab0 = img.getCIELAB(i, j);
-                    float[] lab1 = img.getCIELAB(i + 1, j);
-                    float[] lab2 = img.getCIELAB(i + 2, j);
-                    d0 = cieC.calcDeltaECIE2000(lab0, lab1) -
-                        cieC.calcDeltaECIE2000(lab1, lab2);
-                    if (d0 < 0) {d0 *= -1;}
-                    if (d0 < jnd) {continue;}
-                    int d = (int)Math.round(4.69 * d0);
-                    gX.setValue(img.getInternalIndex(i, j), d);
-                } else if (i == (w - 2)) {
-                    float[] lab0 = img.getCIELAB(i, j);
-                    float[] lab1 = img.getCIELAB(i + 1, j);
-                    d0 = cieC.calcDeltaECIE2000(lab0, lab1);
-                    if (d0 < 0) {d0 *= -1;}
-                    if (d0 < jnd) {continue;}
-                    int d = (int)Math.round(4.69 * d0);
-                    gX.setValue(img.getInternalIndex(i, j), d);
-                } else {
-                    // replicate previous point
-                    d0 = gX.getValue(img.getInternalIndex(i - 1, j));
-                    if (d0 < jnd) {continue;}
-                    gX.setValue(img.getInternalIndex(i, j),
-                        (int)Math.round(d0));
-                }
-            }
-        }
-
         gY = new GreyscaleImage(w, h);
-        for (int i = 0; i < w; i++) {
-            for (int j = 0; j < h; j++) {
-                double d0;
-                if (j < (h - 2)) {
-                    float[] lab0 = img.getCIELAB(i, j);
-                    float[] lab1 = img.getCIELAB(i, j + 1);
-                    float[] lab2 = img.getCIELAB(i, j + 2);
-                    d0 = cieC.calcDeltaECIE2000(lab0, lab1) -
-                        cieC.calcDeltaECIE2000(lab1, lab2);
-                    if (d0 < 0) {d0 *= -1;}
-                    if (d0 < jnd) {continue;}
-                    int d = (int)Math.round(4.69 * d0);
-                    gY.setValue(img.getInternalIndex(i, j), d);
-                } else if (j == (h - 2)) {
-                    float[] lab0 = img.getCIELAB(i, j);
-                    float[] lab1 = img.getCIELAB(i, j + 1);
-                    d0 = cieC.calcDeltaECIE2000(lab0, lab1);
-                    if (d0 < 0) {d0 *= -1;}
-                    if (d0 < jnd) {continue;}
-                    int d = (int)Math.round(4.69 * d0);
-                    gY.setValue(img.getInternalIndex(i, j), d);
-                } else {
-                    // replicate previous point
-                    d0 = gY.getValue(img.getInternalIndex(i, j - 1));
-                    if (d0 < jnd) {continue;}
-                    gY.setValue(img.getInternalIndex(i, j),
-                        (int)Math.round(d0));
-                }
-            }
-        }
-
-        // add max 19.22 in case negative, then mult by 4.4
-
         g = new GreyscaleImage(w, h);
+        
         for (int i = 0; i < n; ++i) {
-
-            int vX = gX.getValue(i);
-            int vY = gY.getValue(i);
-            double d = Math.sqrt(vX * vX + vY * vY);
-
-            g.setValue(i, (int)Math.round(d));
+            float vX = gradients[0][i] * 19.22f;
+            float vY = gradients[1][i] * 19.22f;
+            float vXY = gradients[2][i] * scale;
+            
+            gX.setValue(i, Math.round(vX));
+            gY.setValue(i, Math.round(vY));
+            g.setValue(i, Math.round(vXY));
         }
         
         /*

@@ -294,7 +294,7 @@ public class ImageExt extends Image {
                 cieLAB = cieC.rgbToCIELAB(rPix, gPix, bPix);
             } else {
                 // this uses cie lab 1931
-                cieLAB = cieC.rgbToCIELAB2(rPix, gPix, bPix);
+                cieLAB = cieC.rgbToCIELAB1931(rPix, gPix, bPix);
             }            
             lab[internalIndex] = cieLAB;
         

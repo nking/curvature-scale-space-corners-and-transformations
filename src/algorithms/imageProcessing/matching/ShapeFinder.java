@@ -235,6 +235,10 @@ public static int oct2 = -1;
 
         ShapeFinderResult sr = multiSourceBFS();
 
+        if (sr != null) {
+            print(sr, Long.toString(MiscDebug.getCurrentTimeFormatted()));
+        }
+        
         return sr;
     }
 
