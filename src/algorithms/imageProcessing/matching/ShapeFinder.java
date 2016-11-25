@@ -12,6 +12,7 @@ import gnu.trove.map.TIntObjectMap;
 import java.util.List;
 import algorithms.imageProcessing.matching.PartialShapeMatcher.Result;
 import algorithms.misc.Misc;
+import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.CorrespondencePlotter;
 import algorithms.util.OneDIntArray;
@@ -185,6 +186,8 @@ public class ShapeFinder {
 public static TwoDFloatArray pyr1 = null;
 public static TwoDFloatArray pyr2 = null;
 public static String lbl = "";
+public static int oct1 = -1;
+public static int oct2 = -1;
 
     /**
      * NOT READY FOR USE.
@@ -388,37 +391,18 @@ public static String lbl = "";
             results.add(r);
 
             //if (debug) {
-            {
-                Image img1 = ORB.convertToImage(pyr1);
-                Image img2 = ORB.convertToImage(pyr2);
-
-                try {
-                    CorrespondencePlotter plotter = new CorrespondencePlotter(
-                        r.bounds1, r.bounds2);
-                    for (int ii = 0; ii < r.getNumberOfMatches(); ++ii) {
-                        int idx1 = r.getIdx1(ii);
-                        int idx2 = r.getIdx2(ii);
-                        int x1 = r.bounds1.getX(idx1);
-                        int y1 = r.bounds1.getY(idx1);
-                        int x2 = r.bounds2.getX(idx2);
-                        int y2 = r.bounds2.getY(idx2);
-                        if ((ii % 4) == 0) {
-                            plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 0);
-                        }
-                    }
-                    String strI = Integer.toString(startX);
-                    while (strI.length() < 3) {
-                        strI = "0" + strI;
-                    }
-                    String strJ = Integer.toString(startY);
-                    while (strJ.length() < 3) {
-                        strJ = "0" + strJ;
-                    }
-                    String str = lbl + "bin_" + strI + "_" + strJ;
-                    String filePath = plotter.writeImage("_shape_" + str);
-                } catch (Throwable t) {
+            /*{
+                String strI = Integer.toString(startX);
+                while (strI.length() < 3) {
+                    strI = "0" + strI;
                 }
-            }
+                String strJ = Integer.toString(startY);
+                while (strJ.length() < 3) {
+                    strJ = "0" + strJ;
+                }
+                String str = "bin_" + strI + "_" + strJ;
+                print(r, str); 
+            }*/
         }
 
         if (results.isEmpty()) {
@@ -877,6 +861,7 @@ public static String lbl = "";
         //    to resuse
         // -- launch a BFS search from each label2 set.
 
+ //TODO: need to replace use of int arrays as keys.       
         TObjectIntMap<int[]> keysIndex = new TObjectIntHashMap<int[]>();
         TIntObjectMap<ShapeFinderResult> cacheResults
             = new TIntObjectHashMap<ShapeFinderResult>();
@@ -885,6 +870,12 @@ public static String lbl = "";
 
         double[] maxChordAndDiff = matchSingly(keysIndex, cacheResults, idxs);
 
+    System.out.println("check for idx=17 " 
+        + Arrays.toString(
+            cacheResults.get(keysIndex.get(new int[]{17}))
+            .labels2)
+    );
+        
         TIntIterator iter = idxs.iterator();
 
         List<ShapeFinderResult> results = new ArrayList<ShapeFinderResult>();
@@ -897,7 +888,7 @@ public static String lbl = "";
                 maxChordAndDiff);
 
             if (sr != null) {
-                results.add(sr);
+                results.add(sr);               
             }
         }
 
@@ -935,11 +926,12 @@ public static String lbl = "";
         ImageProcessor imageProcessor = new ImageProcessor();
         ColorHistogram cHist = new ColorHistogram();
 
+        
         for (int i = 0; i < listOfSets2.size(); ++i) {
 
             int[] ch2 = listOfCH2s.get(i).a;
             float intersection = cHist.intersection(ch1, ch2);
-            if (intersection < intersectionLimit) {
+            if (intersection < intersectionLimit) {                
                 continue;
             }
 
@@ -958,7 +950,7 @@ public static String lbl = "";
 
             int sz2 = ORBMatcher.calculateObjectSize(boundsI);
 
-            if (sz2 > 1.15 * sz1) {
+            if (sz2 > 1.15 * sz1) {                
                 continue;
             }
 
@@ -967,10 +959,10 @@ public static String lbl = "";
             //matcher.setToDebug();
             //matcher.setToUseSameNumberOfPoints();
             PartialShapeMatcher.Result r = matcher.match(bounds1, boundsI);
-            if (r == null) {
+            if (r == null) {                
                 continue;
             }
-
+            
             outIdxs.add(i);
 
             double avgCD = r.getChordDiffSum() / (double) r.getNumberOfMatches();
@@ -985,6 +977,14 @@ public static String lbl = "";
                 keysI);
             sr.intersection = intersection;
 
+PairInt tt = xyCen2List.get(i);//i==4, 16, 17
+boolean debug = 
+(Math.abs(tt.getX() - 150) < 4 && Math.abs(tt.getY() - 106) < 4) 
+|| (Math.abs(tt.getX() - 154) < 4 && Math.abs(tt.getY() - 102) < 4) 
+|| (Math.abs(tt.getX() - 154) < 4 && Math.abs(tt.getY() - 88) < 4); 
+if (debug) {
+    print2(sr, "_FIRST_" + i);
+}            
             int kIdx = keysIndex.size();
             keysIndex.put(keysI, kIdx);
             cacheResults.put(kIdx, sr);
@@ -996,11 +996,17 @@ public static String lbl = "";
     private ShapeFinderResult bfs(int srcIdx, TObjectIntMap<int[]> keysIndex,
         TIntObjectMap<ShapeFinderResult> cacheResults, TIntSet idxs,
         double[] maxChordAndDiff) {
-        
+
         int[] srcKeys = new int[]{srcIdx};
         if (keysIndex.containsKey(srcKeys)) {
             return null;
         }
+        
+PairInt tt = xyCen2List.get(srcIdx);//i==4, 16, 17
+boolean debug = 
+(Math.abs(tt.getX() - 150) < 4 && Math.abs(tt.getY() - 106) < 4) 
+|| (Math.abs(tt.getX() - 154) < 4 && Math.abs(tt.getY() - 102) < 4) 
+|| (Math.abs(tt.getX() - 154) < 4 && Math.abs(tt.getY() - 88) < 4);         
         
         // only searching within radius of sz1
 
@@ -1015,7 +1021,8 @@ public static String lbl = "";
 
         visited[srcIdx] = 1;
         results[srcIdx] = cacheResults.get(keysIndex.get(srcKeys));
-        dist[srcIdx] = calcCost(results[srcIdx], maxChordAndDiff[0],
+        dist[srcIdx] = calcCost(results[srcIdx], 
+            maxChordAndDiff[0],
             maxChordAndDiff[1]);
 
         // make a FIFO queue.
@@ -1026,13 +1033,20 @@ public static String lbl = "";
         double mc = maxChordAndDiff[0];
         double md = maxChordAndDiff[1];
         
+        QuadInt srcMinMax2 = xyMinMax2List.get(srcIdx);
+        
         while (!queue.isEmpty()) {
 
             Integer uIndex = queue.pop();
             int uIdx = uIndex.intValue();
-
+           
             TIntSet adjSet = adj2Map.get(uIdx);
 
+if (debug) {
+    System.out.println("pop  u=" + xyCen2List.get(uIdx) 
+        + " idxs=" + Arrays.toString(results[uIdx].labels2)
+    + " uIdx=" + uIdx);
+}            
             if (adjSet == null) {
                 continue;
             }
@@ -1040,28 +1054,28 @@ public static String lbl = "";
             TIntIterator iter = adjSet.iterator();
             while (iter.hasNext()) {
                 int vIdx = iter.next();
+           
                 if (!idxs.contains(vIdx)) {
                     continue;
                 }
-                if (visited[vIdx] != 0) {
+                if (visited[vIdx] == 2) {
                     continue;
                 }
-                
+                if (results[vIdx] != null && 
+                    (Arrays.binarySearch(results[vIdx].labels2,
+                        uIdx) > -1)) {
+                    continue;
+                }
+           
                 assert(results[uIdx] != null);
                 
                 ShapeFinderResult rV = results[vIdx];
-                double sdV;
+                double sdV = dist[vIdx];
                 if (rV == null) {
                     int[] vKeys = new int[]{vIdx};
                     rV = cacheResults.get(keysIndex.get(vKeys));
-                    sdV = calcCost(rV, maxChordAndDiff[0],
-                        maxChordAndDiff[1]);
-                    results[vIdx] = rV;
-                    dist[vIdx] = sdV;
-                } else {
-                    sdV = dist[vIdx];
                 }
-                
+               
                 ShapeFinderResult uPlusV = aggregateAndMatch(results[uIdx], rV);
            
                 int sz2 = ORBMatcher.calculateObjectSize(uPlusV.bounds2);
@@ -1069,12 +1083,29 @@ public static String lbl = "";
                 if (sz2 > 1.15 * sz1) {
                     continue;
                 }
-                
+           
+if (debug) {
+    String str;
+    if (rV != null) {
+        str = " idxs=" + Arrays.toString(rV.labels2);
+    } else {
+        str = " idx=" + vIdx;
+    }
+    System.out.println("  v " + xyCen2List.get(vIdx) + str);
+}
+
                 double sdUPlusV = calcCost(uPlusV, maxChordAndDiff[0],
                     maxChordAndDiff[1]);
-                                
-                visited[vIdx] = 1;
+        
+if (debug) {
+    System.out.println("  comp dv=" + sdV + 
+    " to duv" + sdUPlusV + " to du" + dist[uIdx]);
+}                
+                //visited[vIdx] = 1;
                 if (sdUPlusV < sdV) {
+if (debug) {
+    System.out.println("  adding v " + xyCen2List.get(vIdx) + " idx=" + vIdx);
+}                    
                     dist[vIdx] = sdUPlusV;
                     results[vIdx] = uPlusV;
                     queue.add(vIdx);
@@ -1106,18 +1137,40 @@ public static String lbl = "";
         for (int i = 0; i < results.length; ++i) {
             
             ShapeFinderResult r = results[i];
-            
+           
             if (r == null) {
                 continue;
             }
             double sd = calcCost(r, maxChordAndDiff[0], maxChordAndDiff[1]);
-        
+if (debug) {
+int nb1 = Math.round((float) r.bounds1.getN() / (float) dp);
+float np = r.getNumberOfMatches();
+int lGap = maxNumberOfGaps(r.bounds1, r)/dp;
+float gCountComp = (float)lGap/(float)nb1;
+
+System.out.println("expected: cost=" + sd + " count=" + np + 
+" chordAvg=" + ((float) r.getChordDiffSum() / np) +
+" distAvg=" + (float)(r.getDistSum() / np) +
+" gapAvg=" + gCountComp + ""
+    + " trqns=" + r.params);
+}       
             if (sd < minCost) {
                 minCost = sd;
                 minCostR = r;
             }
         }
+{
+ShapeFinderResult r = minCostR;
+int nb1 = Math.round((float) r.bounds1.getN() / (float) dp);
+float np = r.getNumberOfMatches();
+int lGap = maxNumberOfGaps(r.bounds1, r)/dp;
+float gCountComp = (float)lGap/(float)nb1;
 
+System.out.println("min: cost=" + minCost + " count=" + np + 
+" chordAvg=" + ((float) r.getChordDiffSum() / np) +
+" distAvg=" + (float)(r.getDistSum() / np) +
+" gapAvg=" + gCountComp);
+}
         return minCostR;
     }
 
@@ -1140,6 +1193,56 @@ public static String lbl = "";
             + r.intersection;
         
         return sd;
+    }
+
+    private void print(ShapeFinderResult r, String lbl2) {
+        
+        Image img1 = ORB.convertToImage(pyr1);
+        Image img2 = ORB.convertToImage(pyr2);
+        try {
+            CorrespondencePlotter plotter = new CorrespondencePlotter(
+                //r.bounds1, r.bounds2);
+                img1, img2);
+            for (int ii = 0; ii < r.getNumberOfMatches(); ++ii) {
+                int idx1 = r.getIdx1(ii);
+                int idx2 = r.getIdx2(ii);
+                int x1 = r.bounds1.getX(idx1);
+                int y1 = r.bounds1.getY(idx1);
+                int x2 = r.bounds2.getX(idx2);
+                int y2 = r.bounds2.getY(idx2);
+                if ((ii % 4) == 0) {
+                    plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 0);
+                }
+            }
+            String str = lbl + "bin_" + lbl2;
+            String filePath = plotter.writeImage("_shape_" + str);
+        } catch (Throwable t) {
+        }
+    }
+
+    private void print2(ShapeFinderResult r, String lbl2) {
+        
+        Image img1 = ORB.convertToImage(pyr1);
+        Image img2 = ORB.convertToImage(pyr2);
+        try {
+            CorrespondencePlotter plotter = new CorrespondencePlotter(
+                r.bounds1, r.bounds2);
+                //img1, img2);
+            for (int ii = 0; ii < r.getNumberOfMatches(); ++ii) {
+                int idx1 = r.getIdx1(ii);
+                int idx2 = r.getIdx2(ii);
+                int x1 = r.bounds1.getX(idx1);
+                int y1 = r.bounds1.getY(idx1);
+                int x2 = r.bounds2.getX(idx2);
+                int y2 = r.bounds2.getY(idx2);
+                if ((ii % 4) == 0) {
+                    plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 0);
+                }
+            }
+            String str = lbl + "bin_" + lbl2;
+            String filePath = plotter.writeImage("_shape_" + str);
+        } catch (Throwable t) {
+        }
     }
 
     public static class ShapeFinderResult extends Result {
