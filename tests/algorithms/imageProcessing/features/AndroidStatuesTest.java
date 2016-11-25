@@ -472,7 +472,7 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void testORBMatcher2() throws Exception {
+    public void estORBMatcher2() throws Exception {
 
         // TODO: this one either needs more keypoints across the cupcake in
         //       android statues 02 image,
@@ -496,9 +496,9 @@ public class AndroidStatuesTest extends TestCase {
         };
 
         String[] fileNames1 = new String[]{
-         //   "android_statues_01.jpg",   // needs aggregated shape matching
-            "android_statues_02.jpg", // needs aggregated shape matching 
-         //   "android_statues_04.jpg", // descr are fine
+             "android_statues_01.jpg",   // needs aggregated shape matching
+        //   "android_statues_02.jpg", // needs aggregated shape matching 
+        //   "android_statues_04.jpg", // descr are fine
         };
 
         for (String fileName1 : fileNames1) {               
@@ -584,7 +584,7 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void estORBMatcher3() throws Exception {
+    public void testORBMatcher3() throws Exception {
 
         // TODO: needs better segmentation for the icecream in status 01 and 02
         //    AND/OR a different light source for polar theta CIE LAB
@@ -595,6 +595,17 @@ public class AndroidStatuesTest extends TestCase {
         ImageProcessor imageProcessor = new ImageProcessor();
         ImageSegmentation imageSegmentation = new ImageSegmentation();
 
+        /*
+        TODO: to match this:
+           -- may need to use a later cielab for the polar theta image 
+              for color space with corrections for neutral hues..
+              colors close to white
+           -- may need to define limits based upon segmentation,
+              and/or return top results.
+              the shapefinder requires good segmentation so need to look at
+              the super pixels to see that the cupcake boundary is actually
+              findable in the first place.
+        */
         String[] fileNames0 = new String[]{
             "android_statues_04.jpg",
             "android_statues_04_icecream_mask.png",
@@ -654,8 +665,10 @@ public class AndroidStatuesTest extends TestCase {
             Settings settings = new Settings();
 
             ObjectMatcher objMatcher = new ObjectMatcher();
-            if (fileName1Root.contains("_01")) {
-                settings.setToUseSmallObjectMethod();
+            if (
+                fileName1Root.contains("_01") ||
+                fileName1Root.contains("_02")) {
+                settings.setToUseShapeFinderMethod();
             }
             //settings.setToUseLargerPyramid0();
             objMatcher.setToDebug();
