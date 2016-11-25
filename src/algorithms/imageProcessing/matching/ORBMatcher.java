@@ -46,8 +46,10 @@ import gnu.trove.set.hash.TIntHashSet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -1135,17 +1137,10 @@ public class ORBMatcher {
         // list is octave2 items
         //  each map key=segmented cell label indexes, 
         //           value = index to map in octave2IndexBoundsMaps
-        List<TObjectIntMap<OneDIntArray>> octave2KeyIndexMaps 
-            = new ArrayList<TObjectIntMap<OneDIntArray>>();
+        List<Map<OneDIntArray, PairIntArray>> octave2KeyIndexMaps 
+            = new ArrayList<Map<OneDIntArray, PairIntArray>>();
         for (int j = 0; j < scales2.size(); ++j) {
-            octave2KeyIndexMaps.add(new TObjectIntHashMap<OneDIntArray>());
-        }
-        //   map keys=segmented cell label indexes, 
-        //           value = aggregated points boundary
-        List<TIntObjectMap<PairIntArray>> octave2IndexBoundsMaps 
-            = new ArrayList<TIntObjectMap<PairIntArray>>();
-        for (int j = 0; j < scales2.size(); ++j) {
-            octave2IndexBoundsMaps.add(new TIntObjectHashMap<PairIntArray>());
+            octave2KeyIndexMaps.add(new HashMap<OneDIntArray, PairIntArray>());
         }
         
         for (int i = 0; i < scales1.size(); ++i) {
@@ -1173,16 +1168,15 @@ public class ORBMatcher {
                 }
                 List<Set<PairInt>> listOfSets2 = labeledPoints2Lists.get(j);
                 
-                TObjectIntMap<OneDIntArray> keyIndexMap = 
-                    octave2KeyIndexMaps.get(j);
-                TIntObjectMap<PairIntArray> indexBoundsMap = octave2IndexBoundsMaps.get(j);
+                Map<OneDIntArray, PairIntArray> keyBoundsMap 
+                    = octave2KeyIndexMaps.get(j);
 
                 ShapeFinder shapeFinder = new ShapeFinder(
                     bounds1, ch1, scale1, sz1,
                     orb1.getPyramidImages().get(i).a[0].length -1,
                     orb1.getPyramidImages().get(i).a.length - 1,
                     listOfSets2, listOfCH2s, scale2,
-                    keyIndexMap, indexBoundsMap, 
+                    keyBoundsMap, 
                     orb2.getPyramidImages().get(j).a[0].length -1,
                     orb2.getPyramidImages().get(j).a.length - 1,
                     intersectionLimit
