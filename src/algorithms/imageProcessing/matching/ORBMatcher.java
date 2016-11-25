@@ -189,7 +189,8 @@ public class ORBMatcher {
         FixedSizeSortedVector<CObject3> minVec = new FixedSizeSortedVector<CObject3>(1, CObject3.class);
         int templateSize = calculateObjectSize(labeledPoints1);
         // populated on demand
-        TObjectIntMap<int[]> labeledPointsSizes2 = new TObjectIntHashMap<int[]>();
+        TObjectIntMap<OneDIntArray> labeledPointsSizes2 = 
+            new TObjectIntHashMap<OneDIntArray>();
         for (int i = 0; i < scales1.size(); ++i) {
             //for (int i = 2; i < 3; ++i) {
             float scale1 = scales1.get(i);
@@ -340,7 +341,7 @@ public class ORBMatcher {
                     if (labeledPoints2.get(label2).size() < 2) {
                         continue;
                     }
-                    int[] key = new int[]{label2};
+                    OneDIntArray key = new OneDIntArray(new int[]{label2});
                     if (!labeledPointsSizes2.containsKey(key)) {
                         int sz = calculateObjectSize(labeledPoints2.get(label2));
                         labeledPointsSizes2.put(key, sz);
@@ -438,12 +439,13 @@ public class ORBMatcher {
                         labels2.add(pointLabels2.get(m2[j3]));
                     }
                     // apply a size filter
-                    int[] keys = labels2.toArray(new int[labels2.size()]);
-                    Arrays.sort(keys);
+                    OneDIntArray keys = new OneDIntArray(
+                        labels2.toArray(new int[labels2.size()]));
+                    Arrays.sort(keys.a);
                     if (!labeledPointsSizes2.containsKey(keys)) {
                         Set<PairInt> combined = new HashSet<PairInt>();
-                        for (int k = 0; k < keys.length; ++k) {
-                            combined.addAll(labeledPoints2.get(keys[k]));
+                        for (int k = 0; k < keys.a.length; ++k) {
+                            combined.addAll(labeledPoints2.get(keys.a[k]));
                         }
                         int sz = calculateObjectSize(combined);
                         labeledPointsSizes2.put(keys, sz);
@@ -1133,9 +1135,10 @@ public class ORBMatcher {
         // list is octave2 items
         //  each map key=segmented cell label indexes, 
         //           value = index to map in octave2IndexBoundsMaps
-        List<TObjectIntMap<int[]>> octave2KeyIndexMaps = new ArrayList<TObjectIntMap<int[]>>();
+        List<TObjectIntMap<OneDIntArray>> octave2KeyIndexMaps 
+            = new ArrayList<TObjectIntMap<OneDIntArray>>();
         for (int j = 0; j < scales2.size(); ++j) {
-            octave2KeyIndexMaps.add(new TObjectIntHashMap<int[]>());
+            octave2KeyIndexMaps.add(new TObjectIntHashMap<OneDIntArray>());
         }
         //   map keys=segmented cell label indexes, 
         //           value = aggregated points boundary
@@ -1146,7 +1149,7 @@ public class ORBMatcher {
         }
         
         for (int i = 0; i < scales1.size(); ++i) {
-        //for (int i = 2; i < 3; ++i) {
+        //for (int i = 0; i < 1; ++i) {
             
             float scale1 = scales1.get(i);
             
@@ -1170,7 +1173,8 @@ public class ORBMatcher {
                 }
                 List<Set<PairInt>> listOfSets2 = labeledPoints2Lists.get(j);
                 
-                TObjectIntMap<int[]> keyIndexMap = octave2KeyIndexMaps.get(j);
+                TObjectIntMap<OneDIntArray> keyIndexMap = 
+                    octave2KeyIndexMaps.get(j);
                 TIntObjectMap<PairIntArray> indexBoundsMap = octave2IndexBoundsMaps.get(j);
 
                 ShapeFinder shapeFinder = new ShapeFinder(
@@ -1186,7 +1190,27 @@ public class ORBMatcher {
     shapeFinder.pyr1 = orb1.getPyramidImages().get(i);
     shapeFinder.pyr2 = orb2.getPyramidImages().get(j);
     shapeFinder.lbl = Integer.toString(i) + ":" + Integer.toString(j) + "_";
+    shapeFinder.oct1 = i;
+    shapeFinder.oct2 = j;
+    {
+    //if (i==2&&j==0) {
+    Image img1 = ORB.convertToImage(orb1.getPyramidImages().get(i));
+    Image img2 = ORB.convertToImage(orb2.getPyramidImages().get(j));
+    MiscDebug.writeImage(img2, "AAA_2_" + j); 
+    MiscDebug.writeImage(img1, "AAA_1_" + i);
     
+    for (int i2 = 0; i2 < listOfSets2.size(); ++i2) {
+    int clr = ImageIOHelper.getNextColorRGB(i2);
+    Set<PairInt> set = listOfSets2.get(i2);
+    for (PairInt p : set) {
+        ImageIOHelper.addPointToImage(p.getX(), p.getY(),
+        img2, 1, clr);
+    }
+    }
+    MiscDebug.writeImage(img2,
+    "_AAA_2_s_" + j);
+    //}
+    }
                 ShapeFinderResult r = shapeFinder.findAggregated();
                 
                 if (r == null) {
@@ -1216,32 +1240,6 @@ public class ORBMatcher {
                     i, j, r.bounds2.getX(0), r.bounds2.getY(0), 
                     (float) c, r.getNumberOfMatches(), (float) r.intersection, 
                     (float) r.getDistSum(), (float) avgDist));
-                try {
-                    CorrespondencePlotter plotter = new CorrespondencePlotter(
-                        r.bounds1, r.bounds2);
-                    for (int ii = 0; ii < r.getNumberOfMatches(); ++ii) {
-                        int idx1 = r.getIdx1(ii);
-                        int idx2 = r.getIdx2(ii);
-                        int x1 = r.bounds1.getX(idx1);
-                        int y1 = r.bounds1.getY(idx1);
-                        int x2 = r.bounds2.getX(idx2);
-                        int y2 = r.bounds2.getY(idx2);
-                        if ((ii % 4) == 0) {
-                            plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 0);
-                        }
-                    }
-                    String strI = Integer.toString(i);
-                    while (strI.length() < 2) {
-                        strI = "0" + strI;
-                    }
-                    String strJ = Integer.toString(j);
-                    while (strJ.length() < 2) {
-                        strJ = "0" + strJ;
-                    }
-                    String str = strI + strJ;
-                    String filePath = plotter.writeImage("_andr_" + str);
-                } catch (Throwable t) {
-                }
                 
             } // end loop over j datasets 2
             if (!results.isEmpty()) {

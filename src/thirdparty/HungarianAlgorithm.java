@@ -1,5 +1,6 @@
 package thirdparty;
 
+import algorithms.util.OneDIntArray;
 import java.util.*;
 
 /**
@@ -274,24 +275,25 @@ public class HungarianAlgorithm {
 
         int j, i = unpairedZeroPrime[1];
 
-        Set<int[]> zeroSequence = new LinkedHashSet<int[]>();
-        zeroSequence.add(unpairedZeroPrime);
+        Set<OneDIntArray> zeroSequence = new LinkedHashSet<OneDIntArray>();
+        zeroSequence.add(new OneDIntArray(unpairedZeroPrime));
         boolean paired = false;
         do {
             j = starsByCol[i];
-            paired = (-1 != j) && zeroSequence.add(new int[]{j, i});
+            paired = (-1 != j) && zeroSequence.add(new OneDIntArray(new int[]{j, i}));
             if (!paired) {
                 break;
             }
 
             i = primesByRow[j];
-            paired = -1 != i && zeroSequence.add(new int[]{j, i});
+            paired = -1 != i && zeroSequence.add(new OneDIntArray(new int[]{j, i}));
 
         } while (paired);
 
         // unstar each starred zero of the sequence
         // and star each primed zero of the sequence
-        for (int[] zero : zeroSequence) {
+        for (OneDIntArray zeroW : zeroSequence) {
+            int[] zero = zeroW.a;
             if (starsByCol[zero[1]] == zero[0]) {
                 starsByCol[zero[1]] = -1;
                 starsByRow[zero[0]] = -1;

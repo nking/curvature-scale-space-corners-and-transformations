@@ -66,7 +66,7 @@ public class ShapeFinder {
     private final List<Set<PairInt>> listOfSets2;
     private final List<OneDIntArray> listOfCH2s;
     private final float scale2;
-    private final TObjectIntMap<int[]> keyIndexMap;
+    private final TObjectIntMap<OneDIntArray> keyIndexMap;
     private final TIntObjectMap<PairIntArray> indexBoundsMap;
     private final float intersectionLimit;
 
@@ -116,7 +116,7 @@ public class ShapeFinder {
     public ShapeFinder(PairIntArray bounds1, int[] ch1, float scale1, float sz1,
         int xMax1, int yMax1,
         List<Set<PairInt>> listOfSets2, List<OneDIntArray> listOfCH2s,
-        float scale2, TObjectIntMap<int[]> keyIndexMap,
+        float scale2, TObjectIntMap<OneDIntArray> keyIndexMap,
         TIntObjectMap<PairIntArray>  indexBoundsMap,
         int xMax2, int yMax2,
         float intersectionLimit) {
@@ -517,7 +517,7 @@ public static int oct2 = -1;
             }
 
             // ----- calculate the cost of the shape match as init "w"s -----
-            int[] keysI = new int[]{idxI0};
+            OneDIntArray keysI = new OneDIntArray(new int[]{idxI0});
             PairIntArray boundsI;
             if (keyIndexMap.containsKey(keysI)) {
                 boundsI = indexBoundsMap.get(keyIndexMap.get(keysI));
@@ -553,7 +553,7 @@ public static int oct2 = -1;
                 maxAvgDist = avgDist;
             }
             ShapeFinderResult sr = new ShapeFinderResult(r, bounds1, boundsI,
-                keysI);
+                keysI.a);
             sr.intersection = intersection;
 
             for (int j = 0; j < n; ++j) {
@@ -811,8 +811,9 @@ public static int oct2 = -1;
             return null;
         }
 
-        int[] keysI = combIdxs.toArray(new int[combIdxs.size()]);
-        Arrays.sort(keysI);
+        OneDIntArray keysI = new OneDIntArray(
+            combIdxs.toArray(new int[combIdxs.size()]));
+        Arrays.sort(keysI.a);
 
         PairIntArray boundsI;
         if (keyIndexMap.containsKey(keysI)) {
@@ -849,7 +850,7 @@ public static int oct2 = -1;
         }
 
         ShapeFinderResult sr = new ShapeFinderResult(r, bounds1, boundsI,
-            keysI);
+            keysI.a);
         sr.intersection = intersection;
 
         return sr;
@@ -861,20 +862,14 @@ public static int oct2 = -1;
         //    to resuse
         // -- launch a BFS search from each label2 set.
 
- //TODO: need to replace use of int arrays as keys.       
-        TObjectIntMap<int[]> keysIndex = new TObjectIntHashMap<int[]>();
+        TObjectIntMap<OneDIntArray> keysIndex = 
+            new TObjectIntHashMap<OneDIntArray>();
         TIntObjectMap<ShapeFinderResult> cacheResults
             = new TIntObjectHashMap<ShapeFinderResult>();
 
         TIntSet idxs = new TIntHashSet();
 
         double[] maxChordAndDiff = matchSingly(keysIndex, cacheResults, idxs);
-
-    System.out.println("check for idx=17 " 
-        + Arrays.toString(
-            cacheResults.get(keysIndex.get(new int[]{17}))
-            .labels2)
-    );
         
         TIntIterator iter = idxs.iterator();
 
@@ -916,7 +911,7 @@ public static int oct2 = -1;
     // match the label2 sets that are near size sz1 and cache the
     // results and return the maximum chord diff avg and maximum
     // dist avg
-    private double[] matchSingly(TObjectIntMap<int[]> keysIndex,
+    private double[] matchSingly(TObjectIntMap<OneDIntArray> keysIndex,
         TIntObjectMap<ShapeFinderResult> cacheResults, TIntSet outIdxs) {
 
         // once though to find max diff chord sum and max dist
@@ -925,7 +920,6 @@ public static int oct2 = -1;
 
         ImageProcessor imageProcessor = new ImageProcessor();
         ColorHistogram cHist = new ColorHistogram();
-
         
         for (int i = 0; i < listOfSets2.size(); ++i) {
 
@@ -935,7 +929,7 @@ public static int oct2 = -1;
                 continue;
             }
 
-            int[] keysI = new int[]{i};
+            OneDIntArray keysI = new OneDIntArray(new int[]{i});
             PairIntArray boundsI;
             if (keyIndexMap.containsKey(keysI)) {
                 boundsI = indexBoundsMap.get(keyIndexMap.get(keysI));
@@ -949,7 +943,7 @@ public static int oct2 = -1;
             }
 
             int sz2 = ORBMatcher.calculateObjectSize(boundsI);
-
+       
             if (sz2 > 1.15 * sz1) {                
                 continue;
             }
@@ -974,17 +968,9 @@ public static int oct2 = -1;
                 maxAvgDist = avgDist;
             }
             ShapeFinderResult sr = new ShapeFinderResult(r, bounds1, boundsI,
-                keysI);
+                keysI.a);
             sr.intersection = intersection;
-
-PairInt tt = xyCen2List.get(i);//i==4, 16, 17
-boolean debug = 
-(Math.abs(tt.getX() - 150) < 4 && Math.abs(tt.getY() - 106) < 4) 
-|| (Math.abs(tt.getX() - 154) < 4 && Math.abs(tt.getY() - 102) < 4) 
-|| (Math.abs(tt.getX() - 154) < 4 && Math.abs(tt.getY() - 88) < 4); 
-if (debug) {
-    print2(sr, "_FIRST_" + i);
-}            
+            
             int kIdx = keysIndex.size();
             keysIndex.put(keysI, kIdx);
             cacheResults.put(kIdx, sr);
@@ -993,21 +979,15 @@ if (debug) {
         return new double[]{maxAvgDiffChord, maxAvgDist};
     }
 
-    private ShapeFinderResult bfs(int srcIdx, TObjectIntMap<int[]> keysIndex,
+    private ShapeFinderResult bfs(int srcIdx, TObjectIntMap<OneDIntArray> keysIndex,
         TIntObjectMap<ShapeFinderResult> cacheResults, TIntSet idxs,
         double[] maxChordAndDiff) {
 
-        int[] srcKeys = new int[]{srcIdx};
-        if (keysIndex.containsKey(srcKeys)) {
+        OneDIntArray srcKeys = new OneDIntArray(new int[]{srcIdx});
+        if (!keysIndex.containsKey(srcKeys)) {
             return null;
         }
-        
-PairInt tt = xyCen2List.get(srcIdx);//i==4, 16, 17
-boolean debug = 
-(Math.abs(tt.getX() - 150) < 4 && Math.abs(tt.getY() - 106) < 4) 
-|| (Math.abs(tt.getX() - 154) < 4 && Math.abs(tt.getY() - 102) < 4) 
-|| (Math.abs(tt.getX() - 154) < 4 && Math.abs(tt.getY() - 88) < 4);         
-        
+
         // only searching within radius of sz1
 
         // TODO: re-map the indexes to 0 to idxs.size
@@ -1041,12 +1021,7 @@ boolean debug =
             int uIdx = uIndex.intValue();
            
             TIntSet adjSet = adj2Map.get(uIdx);
-
-if (debug) {
-    System.out.println("pop  u=" + xyCen2List.get(uIdx) 
-        + " idxs=" + Arrays.toString(results[uIdx].labels2)
-    + " uIdx=" + uIdx);
-}            
+            
             if (adjSet == null) {
                 continue;
             }
@@ -1072,40 +1047,35 @@ if (debug) {
                 ShapeFinderResult rV = results[vIdx];
                 double sdV = dist[vIdx];
                 if (rV == null) {
-                    int[] vKeys = new int[]{vIdx};
+                    OneDIntArray vKeys = new OneDIntArray(new int[]{vIdx});
                     rV = cacheResults.get(keysIndex.get(vKeys));
                 }
                
                 ShapeFinderResult uPlusV = aggregateAndMatch(results[uIdx], rV);
            
+                if (uPlusV == null) {
+                    continue;
+                }
+                
+                // store results in cache
+                OneDIntArray uvKeys = new OneDIntArray(
+                    Arrays.copyOf(uPlusV.labels2, uPlusV.labels2.length));
+                int kIdx = keysIndex.size();
+                keysIndex.put(uvKeys, kIdx);
+                cacheResults.put(kIdx, uPlusV);
+                
                 int sz2 = ORBMatcher.calculateObjectSize(uPlusV.bounds2);
 
                 if (sz2 > 1.15 * sz1) {
                     continue;
                 }
-           
-if (debug) {
-    String str;
-    if (rV != null) {
-        str = " idxs=" + Arrays.toString(rV.labels2);
-    } else {
-        str = " idx=" + vIdx;
-    }
-    System.out.println("  v " + xyCen2List.get(vIdx) + str);
-}
 
                 double sdUPlusV = calcCost(uPlusV, maxChordAndDiff[0],
                     maxChordAndDiff[1]);
         
-if (debug) {
-    System.out.println("  comp dv=" + sdV + 
-    " to duv" + sdUPlusV + " to du" + dist[uIdx]);
-}                
                 //visited[vIdx] = 1;
                 if (sdUPlusV < sdV) {
-if (debug) {
-    System.out.println("  adding v " + xyCen2List.get(vIdx) + " idx=" + vIdx);
-}                    
+                    
                     dist[vIdx] = sdUPlusV;
                     results[vIdx] = uPlusV;
                     queue.add(vIdx);
@@ -1142,18 +1112,7 @@ if (debug) {
                 continue;
             }
             double sd = calcCost(r, maxChordAndDiff[0], maxChordAndDiff[1]);
-if (debug) {
-int nb1 = Math.round((float) r.bounds1.getN() / (float) dp);
-float np = r.getNumberOfMatches();
-int lGap = maxNumberOfGaps(r.bounds1, r)/dp;
-float gCountComp = (float)lGap/(float)nb1;
-
-System.out.println("expected: cost=" + sd + " count=" + np + 
-" chordAvg=" + ((float) r.getChordDiffSum() / np) +
-" distAvg=" + (float)(r.getDistSum() / np) +
-" gapAvg=" + gCountComp + ""
-    + " trqns=" + r.params);
-}       
+       
             if (sd < minCost) {
                 minCost = sd;
                 minCostR = r;
