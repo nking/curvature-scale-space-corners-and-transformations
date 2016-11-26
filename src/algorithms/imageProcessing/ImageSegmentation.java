@@ -4173,7 +4173,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 for (int k = 0; k < dxs.length; ++k) {
                     int x2 = x + dxs[k];
                     int y2 = y + dys[k];
-                    if (x2 < 0 || y2 < 0 || (x2 > (w - 1)) || (y2 > (h - 1))) {
+                    if (x2 < 0 || y2 < 0 || 
+                        (x2 > (w - 1)) || (y2 > (h - 1))) {
                         continue;
                     }
                     PairInt p2 = new PairInt(x2, y2);
@@ -4294,9 +4295,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
      * NOTE: parameters in this algorithm are sensitive to
      * the PSF.
      *
-     * NOTE: this doesn't reproduce their results very well.
-     * TODO: use super-pixels as the first step and edit
-     * the code to operate on those segments.
+     * NOTE: this implementation doesn't reproduce their results as
+     * precisely so needs some improvements.
      *
      * @param input
      * @return
@@ -4304,6 +4304,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
     public List<Set<PairInt>> createColorEdgeSegmentation(ImageExt input,
         String debugTag) {
 
+        //PAUSED here. editing tR
+        
         // 0 is CIE LAB, 1 is HSV
         final int clrSpace = 0;
 
@@ -4316,7 +4318,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         if (clrSpace == 0) {
             // JND for deltaE is ~2.3, so tColor must be that or larger
             tColor = 2.8;//4.0;//5.5;
-            tR = 1.0;
+            tR = 0.8;//1.0;
             tLen = 1;
             tSmallMerge = 0.02;//0.095;
         } else {
@@ -4349,6 +4351,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         PhaseCongruencyDetector.PhaseCongruencyProducts products =
             phaseDetector.phaseCongMono(gsImg);
 
+        // thinned is in row major format
         int[][] thinned = products.getThinned();
         {
             GreyscaleImage out2 = gsImg.createWithDimensions();
@@ -4378,6 +4381,50 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
         return edges;
     }
+    
+    public List<PairIntArray> extractEdges2(Image img,
+        String debugTag) {
+
+        if (debugTag == null) {
+            debugTag = "";
+        }
+
+        CannyEdgeFilterAdaptiveDeltaE2000 canny = 
+            new CannyEdgeFilterAdaptiveDeltaE2000();
+        canny.applyFilter(img.copyToImageExt());
+
+        GreyscaleImage gXY = canny.getFilterProducts().getGradientXY();
+        
+        int w = gXY.getWidth();
+        int h = gXY.getHeight();
+        
+        assert(img.getWidth() == w);
+        assert(img.getHeight() == h);
+        
+        int[][] thinned = new int[w][];
+        for (int i = 0; i < w; ++i) {
+            thinned[i] = new int[h];
+            for (int j = 0; j < h; ++j) {
+                thinned[i][j] = gXY.getValue(i, j);
+            }
+        }
+
+        EdgeExtractorSimple extractor = new EdgeExtractorSimple(thinned);
+        extractor.extractEdges();
+        List<PairIntArray> edges = new ArrayList<PairIntArray>();
+        // put in framework of images
+        for (int i = 0; i < extractor.getEdges().size(); ++i) {
+            PairIntArray edge = extractor.getEdges().get(i).copy();
+            for (int j = 0; j < edge.getN(); ++j) {
+                int x = edge.getX(j);
+                int y = edge.getY(j);
+                edge.set(j, x, y);
+            }
+            edges.add(edge);
+        }
+
+        return edges;
+    }
 
     /**
      * create segmented image by creating edges with phase congruence,
@@ -4388,12 +4435,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
      * Jie and Peng-fei 2003, "Natural Color Image Segmentation",
        http://www-labs.iro.umontreal.ca/~mignotte/IFT6150/Articles/TRASH/ARTICLES_2010/cr1231.pdf
 
-     The runtime complexity is _______, so for images larger than 512 or so in
-     either dimension, consider using pyramidal decimation first to reduce the
-     size.
-     TODO: make a wrapper method for decimation of input image and subsequent
-     corrections of output for full frame data after parameters have been optimized.
-
+     NOTE: this implementation doesn't reproduce their results as
+     * precisely so needs some improvements.
+     * 
      * @param input
      * @return
      */
@@ -4401,8 +4445,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         int clrSpace, int tLen, double tColor, double tR, boolean reduceNoise,
         double tSmallMerge, String debugTag) {
 
-        List<PairIntArray> edges = extractEdges(input, reduceNoise, debugTag);
+        List<PairIntArray> edges = extractEdges2(input, debugTag);
 
+        //List<PairIntArray> edges = extractEdges(input, reduceNoise, debugTag);
+        
         return createColorEdgeSegmentation(input, edges,
             clrSpace, tLen, tColor, tR, reduceNoise, tSmallMerge, debugTag);
     }
@@ -4416,12 +4462,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
      * Jie and Peng-fei 2003, "Natural Color Image Segmentation",
        http://www-labs.iro.umontreal.ca/~mignotte/IFT6150/Articles/TRASH/ARTICLES_2010/cr1231.pdf
 
-     The runtime complexity is _______, so for images larger than 512 or so in
-     either dimension, consider using pyramidal decimation first to reduce the
-     size.
-     TODO: make a wrapper method for decimation of input image and subsequent
-     corrections of output for full frame data after parameters have been optimized.
-
+     NOTE: this implementation doesn't reproduce their results as
+     * precisely so needs some improvements.
+     * 
      * @param input
      * @return
      */
@@ -13667,7 +13710,8 @@ int z = 1;
         log.info("  n1=" + n10 + "," + n11);
         int nc = (n10+n11)/2;
         SLICSuperPixels slic = new SLICSuperPixels(imgCp, 
-            nc, 6);
+            nc, 5); 
+            //6);
         slic.setGradient(edgeProducts.getGradientXY());
         slic.calculate();
         int[] labels = slic.getLabels();

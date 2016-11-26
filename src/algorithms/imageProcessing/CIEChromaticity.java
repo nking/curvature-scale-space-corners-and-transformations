@@ -347,7 +347,12 @@ public class CIEChromaticity {
      * uses http://en.wikipedia.org/wiki/CIE_1931_color_space#Experimental_results:_the_CIE_RGB_color_space
      * and http://en.wikipedia.org/wiki/Lab_color_space#Forward_transformation
      *
-     * range of return values is (0,0,0) to (28.51 3.28 2.15).
+     * range of return values is
+     * <pre>
+     *    L    0 to 28.5
+     *    A  -46.9  62.5
+     *    B  -45.7  48.0
+     * </pre>
      *
      * @param r
      * @param g
@@ -356,10 +361,8 @@ public class CIEChromaticity {
      */
     public float[] rgbToCIELAB(int r, int g, int b) {
 
-        //range of values is (0,0,0) to (5.65, 5.65, 5.65)
         float[] a = _rgbToCIEXYZ(r, g, b);
 
-        // range of values (0,0,0) to (28.512 3.276 2.146)
         a = cieXYZToCIELAB(a);
 
         return a;
@@ -503,10 +506,11 @@ public class CIEChromaticity {
      * and http://en.wikipedia.org/wiki/Lab_color_space#Forward_transformation
      * http://www.easyrgb.com/index.php?X=MATH&H=16#text16
      *
-     * range of return values for
-     * L
-     * u
-     * v
+     * range of return values when using default standard illumination of
+     * D65 daylight is:
+     * L       0 to 104.5
+     * u   -86.9 to 183.8
+     * v  -141.4 to 112.3
      *
      * @param r
      * @param g
@@ -515,10 +519,62 @@ public class CIEChromaticity {
      */
     public float[] rgbToCIELUV(int r, int g, int b) {
 
-        //range of values is (0,0,0) to (5.65, 5.65, 5.65)
         float[] a = _rgbToCIEXYZ2((float)r/255.f, (float)g/255.f, (float)b/255.f);
 
         a = cieXYZToCIELUV(a);
+
+        return a;
+    }
+
+    /**
+     * convert rgb to CIE LUV (a.k.a. CIEL*A*B* 1976?)
+     * CIE 1976 (L*, u*, v*) 
+     * and use the given standard illumination in tristimulus coordinates.
+     * 
+      <pre>
+      Incandescent:
+          109.850, 100, 35.585
+          range of return values for incandescent
+           L       0 to 104.5
+           u  -156.2 to 141.6
+           v  -172.0 to 45.6
+      Daylight, midday (D65):
+          95.047, 100, 108.883
+          range of return values for D65
+           L       0 to 104.5
+           u   -86.9 to 183.8
+           v  -141.4 to 112.3
+      Fluorescent:
+          99.187, 100, 67.395
+          range of return values for Fluorescent
+           L       0 to 104.5
+           u  -113.6 to 167.5
+           v  -158.5 to 75.0
+      D75:
+          94.972,  100, 122.638
+          range of return values for D75
+           L       0 to 104.5
+           u   -81.7 to 186.9
+           v  -136.2 to 124.5
+      </pre>
+     * uses http://en.wikipedia.org/wiki/CIE_1931_color_space#Experimental_results:_the_CIE_RGB_color_space
+     * and http://en.wikipedia.org/wiki/Lab_color_space#Forward_transformation
+     * http://www.easyrgb.com/index.php?X=MATH&H=16#text16
+     
+     * @param r
+     * @param g
+     * @param b
+     * @param Xn standard illuminant X
+     * @param Yn standard illuminant Y
+     * #param Zn standard illuminant Z
+     * @return
+     */
+    public float[] rgbToCIELUV(int r, int g, int b,
+        float Xn, float Yn, float Zn) {
+
+        float[] a = _rgbToCIEXYZ2((float)r/255.f, (float)g/255.f, (float)b/255.f);
+
+        a = cieXYZToCIELUV(a, Xn, Yn, Zn);
 
         return a;
     }

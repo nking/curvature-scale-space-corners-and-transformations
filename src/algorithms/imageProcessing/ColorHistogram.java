@@ -11,13 +11,6 @@ import java.util.Set;
  */
 public class ColorHistogram {
     
-    // TODO: can add the latest CIE 1931 L*A*B* here too
-    //      cieC.rgbToCIELAB2(r, g, b)
-    
-    private static float maxL = 28.51f;
-    private static float maxA = 3.28f;
-    private static float maxB = 2.15f;
-        
     /**
      * histogram of 16 bins each of r' = r/(r+g+b) and g' = g/(r+g+b).
      * 
@@ -87,14 +80,18 @@ public class ColorHistogram {
     /**
      * histogram of 16 bins each of CIE LAB colors where the bins
      * of each color are taken to be in the range of min and max
-     * possible values,
-     * (0,0,0) to (28.51 3.28 2.15).
+     * possible values
+     * <pre>
+     *    L    0 to 28.5
+     *    A  -46.9  62.5
+     *    B  -45.7  48.0
+     * </pre>
      * 
      * @param img
      * @param points 
      * @return histogram accessed as hist[0][bin] and hist[1][bin] and
      * hist[2][bin] where 0, 1, 2 are histograms for L, A, and B, respectively
-     * using a range of values (0,0,0) to (28.51 3.28 2.15) and 16 bins.
+     * using a range of values (0,-50,-50) to (28.5 62.5 48.0) and 16 bins.
      */
     public int[][] histogramCIELAB(ImageExt img, Set<PairInt> points) {
         
@@ -105,9 +102,11 @@ public class ColorHistogram {
             hist[i] = new int[nBins];
         }
         
-        float binWidthL = maxL/(float)nBins;
-        float binWidthA = maxA/(float)nBins;
-        float binWidthB = maxB/(float)nBins;
+        //(0,-50,-50) to (28.5 62.5 48.0) 
+        
+        float binWidthL = 28.5f/(float)nBins;
+        float binWidthA = (62.5f + 50.f)/(float)nBins;
+        float binWidthB = (48.0f + 50.f)/(float)nBins;
                 
         for (PairInt p : points) {
             int x = p.getX();
@@ -115,19 +114,20 @@ public class ColorHistogram {
             
             float[] lab = img.getCIELAB(x, y);
             
-            int binNumberL = Math.abs(Math.round(lab[0]/binWidthL));
+            int binNumberL = (int)(lab[0]/binWidthL);
             if (binNumberL > (nBins - 1)) {
                 binNumberL = nBins - 1;
             }
             hist[0][binNumberL]++;
             
-            int binNumberA = Math.abs(Math.round(lab[1]/binWidthA));
+            //(0,-50,-50) to (28.5 62.5 48.0)
+            int binNumberA = (int)((lab[1] - -50.f)/binWidthA);
             if (binNumberA > (nBins - 1)) {
                 binNumberA = nBins - 1;
             }
             hist[1][binNumberA]++;
             
-            int binNumberB = Math.abs(Math.round(lab[2]/binWidthB));
+            int binNumberB = (int)((lab[2] - -50.f)/binWidthB);
             if (binNumberB > (nBins - 1)) {
                 binNumberB = nBins - 1;
             }
@@ -141,13 +141,13 @@ public class ColorHistogram {
      * histogram of 16 bins each of CIE LAB colors where the bins
      * of each color are taken to be in the range of min and max
      * possible values,
-     * (0,0,0) to (28.51 3.28 2.15).
+     * range of values (0,-50,-50) to (28.5 62.5 48.0).
      * 
      * @param img
      * @param points 
      * @return histogram accessed as hist[0][bin] and hist[1][bin] and
      * hist[2][bin] where 0, 1, 2 are histograms for L, A, and B, respectively
-     * using a range of values (0,0,0) to (28.51 3.28 2.15) and 16 bins.
+     * using a range of values range of values (0,-50,-50) to (28.5 62.5 48.0) and 16 bins.
      */
     public int[][] histogramCIELAB(ImageExt img, TIntSet points) {
         
@@ -158,9 +158,11 @@ public class ColorHistogram {
             hist[i] = new int[nBins];
         }
         
-        float binWidthL = maxL/(float)nBins;
-        float binWidthA = maxA/(float)nBins;
-        float binWidthB = maxB/(float)nBins;
+        //(0,-50,-50) to (28.5 62.5 48.0) 
+        
+        float binWidthL = 28.5f/(float)nBins;
+        float binWidthA = (62.5f + 50.f)/(float)nBins;
+        float binWidthB = (48.0f + 50.f)/(float)nBins;
                 
         TIntIterator iter = points.iterator();
         while (iter.hasNext()) {
@@ -168,19 +170,20 @@ public class ColorHistogram {
             
             float[] lab = img.getCIELAB(pixIdx);
             
-            int binNumberL = Math.abs(Math.round(lab[0]/binWidthL));
+            int binNumberL = (int)(lab[0]/binWidthL);
             if (binNumberL > (nBins - 1)) {
                 binNumberL = nBins - 1;
             }
             hist[0][binNumberL]++;
             
-            int binNumberA = Math.abs(Math.round(lab[1]/binWidthA));
+            //(0,-50,-50) to (28.5 62.5 48.0)
+            int binNumberA = (int)((lab[1] - -50.f)/binWidthA);
             if (binNumberA > (nBins - 1)) {
                 binNumberA = nBins - 1;
             }
             hist[1][binNumberA]++;
             
-            int binNumberB = Math.abs(Math.round(lab[2]/binWidthB));
+            int binNumberB = (int)((lab[2] - -50.f)/binWidthB);
             if (binNumberB > (nBins - 1)) {
                 binNumberB = nBins - 1;
             }

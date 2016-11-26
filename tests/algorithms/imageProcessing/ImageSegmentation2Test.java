@@ -36,8 +36,8 @@ public class ImageSegmentation2Test extends TestCase {
 
         String[] fileNames = new String[]{
            "seattle.jpg", 
-           "tmp2.png",
-           //"susan-in_plus.png", 
+           "tmp2.png", //snapshot from the paper
+           "susan-in_plus.png", 
            "lena.jpg",
            "campus_010.jpg", 
            "android_statues_01.jpg", 
@@ -58,9 +58,19 @@ public class ImageSegmentation2Test extends TestCase {
             String fileNameRoot = fileName.substring(0, fileName.lastIndexOf("."));
             
             ImageExt img = ImageIOHelper.readImageExt(filePath);
-            
             int w = img.getWidth();
             int h = img.getHeight();
+            
+            int binFactor = (int) Math.ceil(Math.max(
+                (float) w / 256,
+                (float) h / 256));
+
+            ImageProcessor imageProcessor = new ImageProcessor();
+            
+            img = imageProcessor.binImage(img, binFactor);
+            
+            w = img.getWidth();
+            h = img.getHeight();
             List<ImageExt> transformed = null;
             int selectIdx = -1;
             int minDimension = 512;

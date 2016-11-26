@@ -253,16 +253,18 @@ public class ObjectMatcher {
         }
         orb1.removeAtIndexes(rmIndexesList);
 
-        CannyEdgeFilterAdaptive canny
-            = new CannyEdgeFilterAdaptive();
-        //canny.overrideToUseAdaptiveThreshold();
-        canny.applyFilter(img1.copyToGreyscale2());
-        EdgeFilterProducts edgeProduct = canny.getFilterProducts();
-
         ImageExt img1Cp = img1.copyToImageExt();
+        
+        //CannyEdgeFilterAdaptive canny
+        //    = new CannyEdgeFilterAdaptive();
+        //canny.overrideToUseAdaptiveThreshold();
+        //canny.applyFilter(img1.copyToGreyscale2());
+        //EdgeFilterProducts edgeProduct = canny.getFilterProducts();
 
-        int[] labels4 = imageSegmentation.objectSegmentation(
-            img1Cp, edgeProduct);
+        //int[] labels4 = imageSegmentation.objectSegmentation(
+        //    img1Cp, edgeProduct);
+        
+        int[] labels4 = imageSegmentation.objectSegmentation(img1Cp);
         
         if (debug) {
             ImageExt img11 = img1.copyToImageExt();
