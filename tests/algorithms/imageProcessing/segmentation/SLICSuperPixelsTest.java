@@ -30,8 +30,6 @@ public class SLICSuperPixelsTest extends TestCase {
     
     public void test0() throws Exception {
 
-        int maxDimension = 256;//512;
-
         String fileName1 = "";
 
         for (int i = 0; i < 4; ++i) {
@@ -200,10 +198,11 @@ public class SLICSuperPixelsTest extends TestCase {
             int w1 = img.getWidth();
             int h1 = img.getHeight();
 
+            int maxDimension = 128;//256;//512;
+
             int binFactor1 = (int) Math.ceil(Math.max(
                 (float) w1 / maxDimension,
                 (float) h1 / maxDimension));
-
             img = imageProcessor.binImage(img, binFactor1);
 
             int w = img.getWidth();
@@ -226,10 +225,11 @@ public class SLICSuperPixelsTest extends TestCase {
             //==> nClusters = nPix/((w/x0)^2)
             //==> nClusters = nPix/((h/x0)^2)
             int nc = (n10+n11)/2;
-        //nc = 40;
-            //SLICSuperPixels slic = new SLICSuperPixels(img, nc);
-            //slic.setGradient(edgeProducts.getGradientXY());
-            SLICSuperPixelsPolarTheta slic = new SLICSuperPixelsPolarTheta(img, nc);
+            //nc = 40;
+            //nc *= 2;
+            System.out.println("nc=" + nc);
+            SLICSuperPixels slic = new SLICSuperPixels(img, nc);
+            slic.setGradient(edgeProducts.getGradientXY());
             slic.calculate();
             int[] labels = slic.getLabels();
 
