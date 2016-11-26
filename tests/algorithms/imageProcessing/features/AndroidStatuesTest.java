@@ -10,6 +10,7 @@ import algorithms.compGeometry.clustering.KMeansPlusPlusColor;
 import algorithms.imageProcessing.AdaptiveThresholding;
 import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.CannyEdgeFilterAdaptive;
+import algorithms.imageProcessing.CannyEdgeFilterAdaptiveDeltaE2000;
 import algorithms.imageProcessing.ColorHistogram;
 import algorithms.imageProcessing.DFSContiguousIntValueFinder;
 import algorithms.imageProcessing.DFSContiguousValueFinder;
@@ -291,7 +292,7 @@ public class AndroidStatuesTest extends TestCase {
             //MiscDebug.writeImage(img, "_final_" + fileName1Root);
 
              
-            {// --- a look at the angles of phase and orientation plotted ----
+            /*{// --- a look at the angles of phase and orientation plotted ----
                 List<Set<PairInt>> contigSets = 
                     LabelToColorHelper.extractContiguousLabelPoints(
                     img, labels4);
@@ -351,7 +352,7 @@ public class AndroidStatuesTest extends TestCase {
                     }
                 }
                 MiscDebug.writeImage(img11, "_aa_" + fileName1Root);
-            }
+            }*/
         }
     }
 
@@ -474,6 +475,47 @@ public class AndroidStatuesTest extends TestCase {
 
     public void estORBMatcher2() throws Exception {
 
+        if (true) {
+            int d = 1;
+            double minL = Double.MAX_VALUE;
+            double minU = Double.MAX_VALUE;
+            double minV = Double.MAX_VALUE;
+            double maxL = Double.MIN_VALUE;
+            double maxU = Double.MIN_VALUE;
+            double maxV = Double.MIN_VALUE;
+            CIEChromaticity cieC = new CIEChromaticity();
+            for (int r = 0; r < 255; r+=d) {
+                for (int g = 0; g < 255; g+=d) {
+                    for (int b = 0; b < 255; b+=d) {
+                        float[] lab = cieC.rgbToCIELAB(r, g, b);
+                        //    99.187f, 100f, 67.395f);
+                        if (lab[0] < minL) {
+                            minL = lab[0];
+                        }
+                        if (lab[1] < minU) {
+                            minU = lab[1];
+                        }
+                        if (lab[2] < minV) {
+                            minV = lab[2];
+                        }
+                        if (lab[0] > maxL) {
+                            maxL = lab[0];
+                        }
+                        if (lab[1] > maxU) {
+                            maxU = lab[1];
+                        }
+                        if (lab[2] > maxV) {
+                            maxV = lab[2];
+                        }
+                    }
+                }
+            }
+            System.out.println("minL=" + minL + " maxL=" + maxL);
+            System.out.println("minU=" + minU + " maxU=" + maxU);
+            System.out.println("minV=" + minV + " maxV=" + maxV);
+            return;
+        }
+        
         // TODO: this one either needs more keypoints across the cupcake in
         //       android statues 02 image,
         //    or it needs an algorithm similar to matchSmall which does not
@@ -584,7 +626,7 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void testORBMatcher3() throws Exception {
+    public void estORBMatcher3() throws Exception {
 
         // TODO: needs better segmentation for the icecream in status 01 and 02
         //    AND/OR a different light source for polar theta CIE LAB
@@ -657,9 +699,9 @@ public class AndroidStatuesTest extends TestCase {
             System.out.println("99 percent nIter for RANSAC=" 
                 + nnn);*/
 
-            GreyscaleImage theta1 = imageProcessor.createCIELABTheta(imgs0[0], 255);
+            GreyscaleImage theta1 = imageProcessor.createCIELUVTheta(imgs0[0], 255);
             MiscDebug.writeImage(theta1, fileName1Root + "_theta_0");
-            theta1 = imageProcessor.createCIELABTheta(img, 255);
+            theta1 = imageProcessor.createCIELUVTheta(img, 255);
             MiscDebug.writeImage(theta1, fileName1Root + "_theta_1");
         
             Settings settings = new Settings();
@@ -738,6 +780,18 @@ public class AndroidStatuesTest extends TestCase {
             ImageProcessor imageProcessor = new ImageProcessor();
             img = imageProcessor.binImage(img, binFactor1);
 
+            {
+                ImageExt imgCp = img.copyToImageExt();  
+                CannyEdgeFilterAdaptiveDeltaE2000 canny = new 
+                    CannyEdgeFilterAdaptiveDeltaE2000();
+                //canny.setToDebug();
+                canny.setToUseSingleThresholdIn2LayerFilter();
+                canny.applyFilter(imgCp);
+                MiscDebug.writeImage(canny.getFilterProducts().getGradientXY(),
+                    "_GXY_" + fileName1Root);
+            
+            }
+            
             ImageExt imgCp = img.copyToImageExt();
 
             int nClusters = 200;//100;
@@ -2045,5 +2099,89 @@ public class AndroidStatuesTest extends TestCase {
         }
    
         return new ImageExt[]{img0, img0Masked};
+    }
+    
+    public void testStatueColorMethods() throws Exception {
+        
+        ImageExt[] icecream = loadMaskedIcecream();
+        ImageExt[] cupcake = loadMaskedCupcake();
+        ImageExt[] gingerBreadman = loadMaskedGingerBreadMan();
+        ImageExt[] euclair = loadMaskedEuclair();
+        
+        
+    }
+    
+    private ImageExt[] loadMaskedIcecream() throws IOException {
+        
+        // icecream images are x:0 to 255, y=0 to 63
+        int d = 64;
+        
+        String filePath = ResourceFinder.findFileInTestResources(
+            "android_statues_objects.png");
+        ImageExt img = ImageIOHelper.readImageExt(filePath);
+
+        ImageExt[] out = new ImageExt[3];
+        
+        out[0] = (ImageExt) img.copySubImage(0, d, 0, d);
+        out[1] = (ImageExt) img.copySubImage(d, 2*d, 0, d);
+        out[2] = (ImageExt) img.copySubImage(3*d, 4*d, 0, d);
+        
+        return out;
+    }
+    
+    private ImageExt[] loadMaskedCupcake() throws IOException {
+        
+        // cupckes images are x:0 to 255, y=64 to 128
+        int d = 64;
+        
+        String filePath = ResourceFinder.findFileInTestResources(
+            "android_statues_objects.png");
+        ImageExt img = ImageIOHelper.readImageExt(filePath);
+
+        ImageExt[] out = new ImageExt[3];
+        
+        out[0] = (ImageExt) img.copySubImage(0, d, d, 2*d);
+        out[1] = (ImageExt) img.copySubImage(d, 2*d, d, 2*d);
+        out[2] = (ImageExt) img.copySubImage(3*d, 4*d, d, 2*d);
+        
+        return out;
+    }
+    
+    private ImageExt[] loadMaskedGingerBreadMan() throws IOException {
+        
+        // cupckes images are x:0 to 255, y=128 to 192
+        int d = 64;
+        
+        String filePath = ResourceFinder.findFileInTestResources(
+            "android_statues_objects.png");
+        ImageExt img = ImageIOHelper.readImageExt(filePath);
+
+        ImageExt[] out = new ImageExt[4];
+        
+        out[0] = (ImageExt) img.copySubImage(0,     d, 2*d, 3*d);
+        out[1] = (ImageExt) img.copySubImage(d,   2*d, 2*d, 3*d);
+        out[2] = (ImageExt) img.copySubImage(2*d, 3*d, 2*d, 3*d);
+        out[3] = (ImageExt) img.copySubImage(3*d, 4*d, 2*d, 3*d);
+        
+        return out;
+    }
+    
+    private ImageExt[] loadMaskedEuclair() throws IOException {
+        
+        // cupckes images are x:0 to 255, y=192 to 256
+        int d = 64;
+        
+        String filePath = ResourceFinder.findFileInTestResources(
+            "android_statues_objects.png");
+        ImageExt img = ImageIOHelper.readImageExt(filePath);
+
+        ImageExt[] out = new ImageExt[4];
+        
+        out[0] = (ImageExt) img.copySubImage(0,     d, 3*d, 4*d);
+        out[1] = (ImageExt) img.copySubImage(d,   2*d, 3*d, 4*d);
+        out[2] = (ImageExt) img.copySubImage(2*d, 3*d, 3*d, 4*d);
+        out[3] = (ImageExt) img.copySubImage(3*d, 4*d, 3*d, 4*d);
+        
+        return out;
     }
 }
