@@ -479,38 +479,29 @@ public class CannyEdgeFilterAdaptiveDeltaE2000 {
         // the maximum of any point should be math.sqrt(2)*19.22     
         float[][] gradients = imageProcessor
             .calculateGradientUsingDeltaE2000(img);
-            
-        float scale = 255.f/(float)(19.22f * Math.sqrt(2));
+          
+        //TODO: consider what a good scale range would be for these
+        
+        //float scale1 = 19.22f;
+        //float scale = 255.f/(float)(19.22f * Math.sqrt(2));
+        float scale1 = 1;
+        float scale = 1;
         
         GreyscaleImage gX, gY, g, theta;
         
-        gX = new GreyscaleImage(w, h);
-        gY = new GreyscaleImage(w, h);
-        g = new GreyscaleImage(w, h);
+        gX = new GreyscaleImage(w, h, GreyscaleImage.Type.Bits32FullRangeInt);
+        gY = new GreyscaleImage(w, h, GreyscaleImage.Type.Bits32FullRangeInt);
+        g = new GreyscaleImage(w, h, GreyscaleImage.Type.Bits32FullRangeInt);
         
         for (int i = 0; i < n; ++i) {
-            float vX = gradients[0][i] * 19.22f;
-            float vY = gradients[1][i] * 19.22f;
+            float vX = gradients[0][i] * scale1;
+            float vY = gradients[1][i] * scale1;
             float vXY = gradients[2][i] * scale;
             
             gX.setValue(i, Math.round(vX));
             gY.setValue(i, Math.round(vY));
             g.setValue(i, Math.round(vXY));
         }
-        
-        /*
-        try {
-            float[] values = gY.getFloatValues();
-            HistogramHolder hist = 
-                Histogram.createSimpleHistogram(values, 
-                    Errors.populateYErrorsBySqrt(values));
-            hist.plotHistogram("GY", "GY");
-        } catch (IOException e) {}
-        MiscDebug.writeImage(gX, "_GX_");
-        MiscDebug.writeImage(gY, "_GY_");
-        GreyscaleImage gCopy = g.copyImage();
-        MiscDebug.writeImage(gCopy, "_G_");
-        */
             
         // the theta is in range 0 to 180
         theta = imageProcessor.computeTheta180(gX, gY);
