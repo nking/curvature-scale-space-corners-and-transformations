@@ -13598,15 +13598,20 @@ int z = 1;
      * @param img
      * @return
      */
-    public int[] objectSegmentation(Image img) {
+    public int[] objectSegmentation(ImageExt img) {
 
         long ts = MiscDebug.getCurrentTimeFormatted();
 
         //0=canny LAB, 1=canny gs, 2=phase cong monogenic
         int gradientMethod = 2;
 
-        EdgeFilterProducts products = 
-            createGradient(img, gradientMethod, ts);
+        //EdgeFilterProducts products = 
+        //    createGradient(img.copyImage(), gradientMethod, ts);
+        
+        CannyEdgeFilterAdaptiveDeltaE2000 canny =
+            new CannyEdgeFilterAdaptiveDeltaE2000();
+        canny.applyFilter(img.copyToImageExt());
+        EdgeFilterProducts products = canny.getFilterProducts();        
         
         return objectSegmentation(img, products);
     }
@@ -15351,10 +15356,16 @@ int z = 1;
      
         ImageProcessor imageProcessor = new ImageProcessor();
         GreyscaleImage theta1 = 
-            imageProcessor.createCIELABTheta(templateImage, 255);
+            imageProcessor.createCIELUVTheta(templateImage, 255);
         
         GreyscaleImage theta2 = 
-            imageProcessor.createCIELABTheta(img, 255);
+            imageProcessor.createCIELUVTheta(img, 255);
+        
+        //TODO:  may need special handling for colors near center,
+        //   that is grey-ish colors, because the polar direction
+        //   error in that small radius is large.
+        //  looking at bigger picture changes to use deltaE2000
+        //  again...
         
         ColorHistogram ch = new ColorHistogram();
         
