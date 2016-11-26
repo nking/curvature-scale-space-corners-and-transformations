@@ -27,15 +27,16 @@ public class ImageExt extends Image {
     //CIE LAB 1994
     protected float[][] lab;
    
-    // if this is set to false, CIE 1931 is used, but this can only be changed
-    // if aCIECalcOccurred = false;
-    private boolean useCIE1994 = true;
+    private enum CIE {
+        DEFAULT, LAB1931, LUV1976
+    }
+    private CIE cieType = CIE.DEFAULT;
     
     // a guard to prevent mixing of cie 1941 and 1931
     private boolean aCIECalcOccurred = false;
     
     public void overrideToUseCIELAB1931() {
-        if (!useCIE1994) {
+        if (cieType.equals(CIE.LAB1931)) {
             return;
         }
         if (aCIECalcOccurred) {
@@ -45,7 +46,21 @@ public class ImageExt extends Image {
                 "values have already been stored"
                 + " as cie 1994, so use reset CIELAB first.");
         }
-        useCIE1994 = false;
+        cieType = CIE.LAB1931;
+    }
+    
+    public void overrideToUseCIELUV1976() {
+        if (cieType.equals(CIE.LUV1976)) {
+            return;
+        }
+        if (aCIECalcOccurred) {
+            //TODO: may change this to a warning in the future
+            // and wipe out existing CIE values.
+            throw new IllegalStateException(
+                "values have already been stored"
+                + " as cie 1994, so use reset CIELAB first.");
+        }
+        cieType = CIE.LUV1976;
     }
     
     /**
@@ -289,12 +304,14 @@ public class ImageExt extends Image {
             int gPix = getG(internalIndex);
             int bPix = getB(internalIndex);
             
-            float[] cieLAB;
-            if (useCIE1994) {
+            float[] cieLAB = null;
+            if (cieType.equals(CIE.DEFAULT)) {
                 cieLAB = cieC.rgbToCIELAB(rPix, gPix, bPix);
-            } else {
+            } else if (cieType.equals(CIE.LAB1931)) {
                 // this uses cie lab 1931
                 cieLAB = cieC.rgbToCIELAB1931(rPix, gPix, bPix);
+            } else if (cieType.equals(CIE.LUV1976)) {
+                cieLAB = cieC.rgbToCIELUV(rPix, gPix, bPix);
             }            
             lab[internalIndex] = cieLAB;
         

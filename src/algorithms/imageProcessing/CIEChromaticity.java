@@ -6,7 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *
+ *  convenience methods for color space not present
+    in jdk.
  * see http://hyperphysics.phy-astr.gsu.edu/hbase/vision/cie.html
  * and
  * http://en.wikipedia.org/wiki/CIE_1931_color_space#mediaviewer/File:CIE1931xy_blank.svg
@@ -415,8 +416,10 @@ public class CIEChromaticity {
     }
 
     /**
-     * convert rgb to polar coordinates of CIELUV.
+     * convert rgb to polar coordinates of CIELUV (a.k.a. CIEL*A*B* 1976?)
      *
+     * CIE 1976 (L*, u*, v*).
+     * 
      * uses http://en.wikipedia.org/wiki/CIE_1931_color_space#Experimental_results:_the_CIE_RGB_color_space
      * and http://en.wikipedia.org/wiki/Lab_color_space#Forward_transformation
      *
@@ -451,7 +454,8 @@ public class CIEChromaticity {
 
     /**
      * convert rgb to polar coordinates of CIELUV.
-     *
+     *  CIE 1976 (L*, u*, v*) 
+     * 
      * uses http://en.wikipedia.org/wiki/CIE_1931_color_space#Experimental_results:_the_CIE_RGB_color_space
      * and http://en.wikipedia.org/wiki/Lab_color_space#Forward_transformation
      *
@@ -489,8 +493,12 @@ public class CIEChromaticity {
     }
 
     /**
-     * convert rgb to CIE LUV.
-     *
+     * convert rgb to CIE LUV (a.k.a. CIEL*A*B* 1976?)
+     * CIE 1976 (L*, u*, v*) 
+     * 
+     * Note that differences in CIELUV are simply the differences
+     * in each component added in quadrature (no deltaE formula).
+     * 
      * uses http://en.wikipedia.org/wiki/CIE_1931_color_space#Experimental_results:_the_CIE_RGB_color_space
      * and http://en.wikipedia.org/wiki/Lab_color_space#Forward_transformation
      * http://www.easyrgb.com/index.php?X=MATH&H=16#text16
@@ -756,7 +764,8 @@ public class CIEChromaticity {
 
     /**
      * convert CIE XYZ (1931) to CIE LUV.
-     *
+     * CIE 1976 (L*, u*, v*) 
+     * 
      * uses https://en.wikipedia.org/wiki/Lab_color_space#Forward_transformation
      *
      * http://www.easyrgb.com/index.php?X=MATH&H=15#text15
@@ -794,7 +803,8 @@ public class CIEChromaticity {
 
     /**
      * convert CIE XYZ (1931) to CIE LUV.
-     *
+     * CIE 1976 (L*, u*, v*) 
+     * 
      * uses https://en.wikipedia.org/wiki/Lab_color_space#Forward_transformation
      *
      * http://www.easyrgb.com/index.php?X=MATH&H=15#text15
@@ -1009,7 +1019,11 @@ public class CIEChromaticity {
      *
      * Note that the "Just noticeable difference", JND, begins at E_ab ~ 2.3.
      *
-     * The range of resulting values is 0 to 19.22.
+     * The range of resulting values if CIELUV values are given
+     * is 0 to about 130-ish.
+     *
+     * The range of resulting values if CIELAB1931 values are given
+     * is 0 to about 120-ish.
      *
      * @return deltaE
      */
@@ -1033,8 +1047,12 @@ public class CIEChromaticity {
      *
      * Note that the "Just noticeable difference", JND, begins at E_ab ~ 2.3.
      *
-     * The range of resulting values is 0 to 19.21.
+     * The range of resulting values if CIELUV values are given
+     * is 0 to about 130-ish.
      *
+     * The range of resulting values if CIELAB1931 values are given
+     * is 0 to about 120-ish.
+     * 
      * @return deltaE
      */
     public double calcDeltaECIE2000(float L1, float a1, float b1,

@@ -13666,7 +13666,8 @@ int z = 1;
         //==> nClusters = nPix/((h/x0)^2)
         log.info("  n1=" + n10 + "," + n11);
         int nc = (n10+n11)/2;
-        SLICSuperPixels slic = new SLICSuperPixels(imgCp, nc);
+        SLICSuperPixels slic = new SLICSuperPixels(imgCp, 
+            nc, 6);
         slic.setGradient(edgeProducts.getGradientXY());
         slic.calculate();
         int[] labels = slic.getLabels();

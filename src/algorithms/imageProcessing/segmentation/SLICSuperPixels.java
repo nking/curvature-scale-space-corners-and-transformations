@@ -61,8 +61,8 @@ public class SLICSuperPixels {
     // max possible value is 19.22 for CIE 1994
     protected final double maxDeltaE;
     
-    // if false, uses CIE L*a*b* 1931
-    private boolean use1994 = false;
+    // 0 = default cielab, 1 = cielab 1931, 2 = cieluv 1976
+    private int cieType = 2;
     
     /**
      * constructor for the super-pixel algorithm SLIC that uses the default
@@ -101,8 +101,10 @@ public class SLICSuperPixels {
         log.info("k = " + k + " s=" + this.s + " nXs=" + nXs + " nYs=" + nYs);
         
         this.img = img;
-        if (!use1994) {
+        if (cieType == 1) {
             img.overrideToUseCIELAB1931();
+        } else if (cieType == 2) {
+            img.overrideToUseCIELUV1976();
         }
         
         // l, a, b, x, y
@@ -182,8 +184,10 @@ public class SLICSuperPixels {
         log.info("k = " + k);
         
         this.img = img;
-        if (!use1994) {
+        if (cieType == 1) {
             img.overrideToUseCIELAB1931();
+        } else if (cieType == 2) {
+            img.overrideToUseCIELUV1976();
         }
         
         // l, a, b, x, y
@@ -509,11 +513,6 @@ public class SLICSuperPixels {
     private double calcDist2(float[] desc1, float[] lab2, 
         int x2, int y2) {
         
-        if (!use1994) {
-            throw new IllegalStateException("this method is meant for use"
-                + " with cie 1004, and current settings are for 1931");
-        }
-
         CIEChromaticity cieC = new CIEChromaticity();
        
         double deltaE = cieC.calcDeltaECIE2000(
