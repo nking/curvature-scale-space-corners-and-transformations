@@ -87,6 +87,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -2115,7 +2116,7 @@ public class AndroidStatuesTest extends TestCase {
         lab31
         luv
         lch
-        and aberage of all intersections
+        and average of all intersections
         -----------
         cupcake
         */
@@ -2123,54 +2124,85 @@ public class AndroidStatuesTest extends TestCase {
         ColorHistogram cHist = new ColorHistogram();
         
         // storing the 1D histograms for each image in each class
-        //[vlass idx][image idx][histogtam bin idx]
+        //[class idx][image idx][histogtam bin idx]
         int[][][] histLCH = new int[4][][];
         histLCH[0] = new int[3][];
         histLCH[1] = new int[3][];
         histLCH[2] = new int[4][];
         histLCH[3] = new int[4][];
         
-        // 2 X 4 storing average and st dev for each object class
-        float[][] rgbClass = new float[2][4];
-        float[][] hsvClass = new float[2][4];
-        float[][] labClass = new float[2][4];
-        float[][] lab31Class = new float[2][4];
-        float[][] luvClass = new float[2][4];
-        float[][] lchClass = new float[2][4];
-        // 2 X 4 intersections average and stand dev for each class
-        float[][] lch2Class = new float[2][4];
-        float[][] hsv2Class = new float[2][4];
+        //[class idx][image idx][histogtam clr idx][histogtam bin idx]
+        int[][][][] histHSV = new int[4][][][];
+        histHSV[0] = new int[3][][];
+        histHSV[1] = new int[3][][];
+        histHSV[2] = new int[4][][];
+        histHSV[3] = new int[4][][];
+        
+        // storing average and st dev for each object class
+        //    for each band in the color space
+        float[][][] hsvClass = new float[4][3][2];
+        float[][][] labClass = new float[4][3][2];
+        float[][][] lab31Class = new float[4][3][2];
+        float[][][] luvClass = new float[4][3][2];
+        float[][][] lchClass = new float[4][3][2];
+        // ntersections average and stand dev for each class
+        float[][] lch2Class = new float[4][2];
+        float[][] hsv2Class = new float[4][2];
         
         for (int i = 0; i < 4; ++i) {
             ImageExt[] imgs = null;
             List<Set<PairInt>> shape = null;
-            int[][] hists = null;
+            int[][] histsCH = null;
+            int[][][] histsHSV = null;
             String lbl = "";
             switch(i) {
                 case 0:
                     imgs = icecream;
                     shape = iceCreamShape;
-                    hists = histLCH[0];
+                    histsCH = histLCH[0];
+                    histsHSV = histHSV[0];
                     lbl = "ice";
                     break;
                 case 1:
                     imgs = cupcake;
                     shape = cupcakeShape;
-                    hists = histLCH[1];
+                    histsCH = histLCH[1];
+                    histsHSV = histHSV[1];
                     lbl = "cup";
                     break;
                 case 2:
                     imgs = gingerBreadman;
                     shape = gingerBreadmanShape;
-                    hists = histLCH[2];
+                    histsCH = histLCH[2];
+                    histsHSV = histHSV[2];
                     lbl = "gbm";
                     break;
                 default:
                     imgs = euclair;
                     shape = euclairShape;
-                    hists = histLCH[3];
+                    histsCH = histLCH[3];
+                    histsHSV = histHSV[3];
                     lbl = "euc";
             }
+            // h,s,v,l,a,b,...
+            Map<String, List<Double>> valuesMap = new HashMap<String, List<Double>>();
+            valuesMap.put("hsvH", new ArrayList<Double>());
+            valuesMap.put("hsvS", new ArrayList<Double>());
+            valuesMap.put("hsvV", new ArrayList<Double>());
+            valuesMap.put("labL", new ArrayList<Double>());
+            valuesMap.put("labA", new ArrayList<Double>());
+            valuesMap.put("labB", new ArrayList<Double>());
+            valuesMap.put("labL31", new ArrayList<Double>());
+            valuesMap.put("labA31", new ArrayList<Double>());
+            valuesMap.put("labB31", new ArrayList<Double>());
+            valuesMap.put("luvL", new ArrayList<Double>());
+            valuesMap.put("luvU", new ArrayList<Double>());
+            valuesMap.put("luvV", new ArrayList<Double>());
+            valuesMap.put("lchL", new ArrayList<Double>());
+            valuesMap.put("lchC", new ArrayList<Double>());
+            valuesMap.put("lchH", new ArrayList<Double>());
+            valuesMap.put("interCH", new ArrayList<Double>());
+            valuesMap.put("interHSV", new ArrayList<Double>());
             
             List<StringBuilder> lines = new ArrayList<StringBuilder>();
             lines.add(new StringBuilder("     "));
@@ -2203,6 +2235,9 @@ public class AndroidStatuesTest extends TestCase {
                 sb.append(String.format(" (%.2f %.2f %.2f) ", 
                     grHSV.getStdDevH(), grHSV.getStdDevS(), 
                     grHSV.getStdDevV()));
+                valuesMap.get("hsvH").add(Double.valueOf(grHSV.getAvgH()));
+                valuesMap.get("hsvS").add(Double.valueOf(grHSV.getAvgS()));
+                valuesMap.get("hsvV").add(Double.valueOf(grHSV.getAvgV()));
 
                 GroupPixelCIELAB grLAB = new GroupPixelCIELAB(set, img);
                 grLAB.calculateColors(set, img, 0, 0);
@@ -2214,7 +2249,10 @@ public class AndroidStatuesTest extends TestCase {
                 sb.append(String.format(" (%.2f %.2f %.2f) ", 
                     grLAB.getStdDevL(), grLAB.getStdDevA(), 
                     grLAB.getStdDevB()));
-                
+                valuesMap.get("labL").add(Double.valueOf(grLAB.getAvgL()));
+                valuesMap.get("labA").add(Double.valueOf(grLAB.getAvgA()));
+                valuesMap.get("labB").add(Double.valueOf(grLAB.getAvgB()));
+
                 GroupPixelCIELAB1931 grLAB31 = new GroupPixelCIELAB1931(set, img);
                 grLAB31.calculateColors(set, img, 0, 0);
                 sb = lines.get(6);
@@ -2225,7 +2263,10 @@ public class AndroidStatuesTest extends TestCase {
                 sb.append(String.format(" (%.2f %.2f %.2f) ", 
                     grLAB31.getStdDevL(),
                     grLAB31.getStdDevA(), grLAB31.getStdDevB()));
-                
+                valuesMap.get("labL31").add(Double.valueOf(grLAB31.getAvgL()));
+                valuesMap.get("labA31").add(Double.valueOf(grLAB31.getAvgA()));
+                valuesMap.get("labB31").add(Double.valueOf(grLAB31.getAvgB()));
+
                 GroupPixelCIELUV grLUV = new GroupPixelCIELUV(set, img);
                 grLUV.calculateColors(set, img, 0, 0);
                 sb = lines.get(8);
@@ -2236,7 +2277,10 @@ public class AndroidStatuesTest extends TestCase {
                 sb.append(String.format(" (%.2f %.2f %.2f) ", 
                     grLUV.getStdDevL(),
                     grLUV.getStdDevU(), grLUV.getStdDevV()));
-                
+                valuesMap.get("luvL").add(Double.valueOf(grLUV.getAvgL()));
+                valuesMap.get("luvU").add(Double.valueOf(grLUV.getAvgU()));
+                valuesMap.get("luvV").add(Double.valueOf(grLUV.getAvgV()));
+
                 GroupPixelCIELCH grLCH = new GroupPixelCIELCH(set, img);
                 grLCH.calculateColors(set, img, 0, 0);
                 sb = lines.get(10);
@@ -2247,14 +2291,109 @@ public class AndroidStatuesTest extends TestCase {
                 sb.append(String.format(" (%.2f %.2f %.2f) ", 
                     grLCH.getStdDevL(),
                     grLCH.getStdDevC(), grLCH.getStdDevH()));
-                
-                hists[j] = cHist.histogramCIECH64(img, set);
+                valuesMap.get("lchL").add(Double.valueOf(grLCH.getAvgL()));
+                valuesMap.get("lchC").add(Double.valueOf(grLCH.getAvgC()));
+                valuesMap.get("lchH").add(Double.valueOf(grLCH.getAvgH()));
 
+                histsCH[j] = cHist.histogramCIECH64(img, set);
+                histsHSV[j] = cHist.histogramHSV(img, set);
             }
             for (int j = 0; j < lines.size(); ++j) {
                 System.out.println(lines.get(j).toString());
             }
             lines = null;
+            
+            for (int j = 0; j < imgs.length; ++j) {
+                int[] ch1 = histsCH[j];
+                for (int k = (j + 1); k < imgs.length; ++k) {
+                    int[] ch2 = histsCH[k];
+                    float inter = cHist.intersection(ch1, ch2);
+                    valuesMap.get("interCH").add(Double.valueOf(inter));
+                }
+            }
+            for (int j = 0; j < imgs.length; ++j) {
+                int[][] ch1 = histsHSV[j];
+                for (int k = (j + 1); k < imgs.length; ++k) {
+                    int[][] ch2 = histsHSV[k];
+                    float inter = cHist.intersection(ch1, ch2);
+                    valuesMap.get("interHSV").add(Double.valueOf(inter));
+                }
+            }
+            
+            double[] avgStdv = null;
+            
+            lch2Class[i] = new float[2];
+            hsv2Class[i] = new float[2];
+            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("interCH"));
+            lch2Class[i][0] = (float) avgStdv[0];
+            lch2Class[i][1] = (float) avgStdv[1];
+            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("interHSV"));
+            hsv2Class[i][0] = (float) avgStdv[0];
+            hsv2Class[i][1] = (float) avgStdv[1];
+        
+            hsvClass[i] = new float[3][2];
+            labClass[i] = new float[3][2];
+            lab31Class[i] = new float[3][2];
+            luvClass[i] = new float[3][2];
+            lchClass[i] = new float[3][2];
+            for (int j = 0; j < 3; ++j) {
+                hsvClass[i][j] = new float[2];
+                labClass[i][j] = new float[2];
+                lab31Class[i][j] = new float[2];
+                luvClass[i][j] = new float[2];
+                lchClass[i][j] = new float[2];
+            }
+            
+            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("hsvH"));
+            hsvClass[i][0][0] = (float) avgStdv[0];
+            hsvClass[i][0][1] = (float) avgStdv[1];
+            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("hsvS"));
+            hsvClass[i][1][0] = (float) avgStdv[0];
+            hsvClass[i][1][1] = (float) avgStdv[1];
+            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("hsvV"));
+            hsvClass[i][2][0] = (float) avgStdv[0];
+            hsvClass[i][2][1] = (float) avgStdv[1];
+           
+            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("labL"));
+            labClass[i][0][0] = (float) avgStdv[0];
+            labClass[i][0][1] = (float) avgStdv[1];
+            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("labA"));
+            labClass[i][1][0] = (float) avgStdv[0];
+            labClass[i][1][1] = (float) avgStdv[1];
+            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("labB"));
+            labClass[i][2][0] = (float) avgStdv[0];
+            labClass[i][2][1] = (float) avgStdv[1];
+         
+            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("labL31"));
+            lab31Class[i][0][0] = (float) avgStdv[0];
+            lab31Class[i][0][1] = (float) avgStdv[1];
+            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("labA31"));
+            lab31Class[i][1][0] = (float) avgStdv[0];
+            lab31Class[i][1][1] = (float) avgStdv[1];
+            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("labB31"));
+            lab31Class[i][2][0] = (float) avgStdv[0];
+            lab31Class[i][2][1] = (float) avgStdv[1];
+            
+            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("luvL"));
+            luvClass[i][0][0] = (float) avgStdv[0];
+            luvClass[i][0][1] = (float) avgStdv[1];
+            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("luvU"));
+            luvClass[i][1][0] = (float) avgStdv[0];
+            luvClass[i][1][1] = (float) avgStdv[1];
+            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("luvV"));
+            luvClass[i][2][0] = (float) avgStdv[0];
+            luvClass[i][2][1] = (float) avgStdv[1];
+            
+            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("lchL"));
+            lchClass[i][0][0] = (float) avgStdv[0];
+            lchClass[i][0][1] = (float) avgStdv[1];
+            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("lchC"));
+            lchClass[i][1][0] = (float) avgStdv[0];
+            lchClass[i][1][1] = (float) avgStdv[1];
+            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("lchH"));
+            lchClass[i][2][0] = (float) avgStdv[0];
+            lchClass[i][2][1] = (float) avgStdv[1];
+            
         }
     }
     
