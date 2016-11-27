@@ -85,6 +85,7 @@ public class GroupPixelCIELCH extends GroupPixelRGB0 {
         }
         this.avgH = (float)(sumH/nPoints);
         
+        /*
         System.out.println("Lavg indiv = " + avgL);
         System.out.println("Cavg indiv = " + avgC);
         System.out.println("Havg indiv = " + avgH);
@@ -92,6 +93,7 @@ public class GroupPixelCIELCH extends GroupPixelRGB0 {
         System.out.println("Lavg group = " + cieLCHAvg[0]);
         System.out.println("Cavg group = " + cieLCHAvg[1]);
         System.out.println("Havg group = " + cieLCHAvg[2]);
+        */
         
         sumL = 0;
         sumC = 0;

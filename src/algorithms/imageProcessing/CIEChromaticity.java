@@ -401,8 +401,8 @@ public class CIEChromaticity {
      *
      * range of return values for
      * L* 0 to 105
-     * c
-     * h 0 to 359
+     * c  0 to 139
+     * h  0 to 359
      *
      * @param r
      * @param g

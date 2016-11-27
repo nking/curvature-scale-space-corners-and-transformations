@@ -137,7 +137,7 @@ public class ColorHistogram {
         return hist;
     }
     
-     /**
+    /**
      * histogram of 16 bins each of CIE LAB colors where the bins
      * of each color are taken to be in the range of min and max
      * possible values,
@@ -188,6 +188,69 @@ public class ColorHistogram {
                 binNumberB = nBins - 1;
             }
             hist[2][binNumberB]++;
+        }
+        
+        return hist;
+    }
+    
+    /**
+     * histogram of CIE LUV C and H which are the polar angle of U,V and the 
+     * magnitude.  The histogram is a one dimensional binning of 
+     * divisions of C and H in combination.  8 divisions in C or H results
+     * in 84 bins, for example.
+     * 
+     * The ranges of the bins are the ranges from use of the D65 standard
+     * illuminant which are
+     * <pre>
+     * * L* 0 to 105
+     * c  0 to 139
+     * h  0 to 359
+     * </pre>
+     * 
+     * @param img
+     * @param points 
+     * @return istogram of CIE LUV C and H which are the polar angle of 
+     * U,V and the magnitude.  The histogram is a one dimensional binning 
+     * of divisions of C and H in combination.  8 divisions in C or H 
+     * results in 84 bins, for example.
+     */
+    public int[] histogramCIECH64(ImageExt img, Set<PairInt> points) {
+        
+        int nBins = 8;
+        
+        int nTot = nBins * nBins;
+
+        int[] hist = new int[nTot];
+        
+        float binWidthC = 139.f/(float)nBins;
+        float binWidthH = 359.f/(float)nBins;
+        
+        // idx = (cBin * nBins) + hBin
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        for (PairInt p : points) {
+            
+            int pixIdx = img.getInternalIndex(p);
+            
+            float[] lch = cieC.rgbToCIELCH(
+                img.getR(pixIdx), img.getG(pixIdx), img.getR(pixIdx));
+            
+            int binNumberC = (int)(lch[1]/binWidthC);
+            if (binNumberC > (nBins - 1)) {
+                binNumberC = nBins - 1;
+            }
+            
+            int binNumberH = (int)(lch[2]/binWidthH);
+            if (binNumberH > (nBins - 1)) {
+                binNumberH = nBins - 1;
+            }
+            
+            int hIdx = (binNumberC * nBins) + binNumberH;
+            
+            assert(hIdx < nTot);
+            
+            hist[hIdx]++;
         }
         
         return hist;
@@ -578,7 +641,7 @@ public class ColorHistogram {
             sum1 += y1;
         }
         
-        float sim = sum / ((float)Math.min(sum0, sum1));
+        float sim = sum / Math.min(sum0, sum1);
         
         return sim;
     }

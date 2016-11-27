@@ -16,7 +16,12 @@ import algorithms.imageProcessing.DFSContiguousIntValueFinder;
 import algorithms.imageProcessing.DFSContiguousValueFinder;
 import algorithms.imageProcessing.EdgeFilterProducts;
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.GroupPixelCIELAB;
+import algorithms.imageProcessing.GroupPixelCIELAB1931;
+import algorithms.imageProcessing.GroupPixelCIELCH;
+import algorithms.imageProcessing.GroupPixelCIELUV;
 import algorithms.imageProcessing.GroupPixelColors;
+import algorithms.imageProcessing.GroupPixelHSV;
 import algorithms.imageProcessing.GroupPixelRGB;
 import algorithms.imageProcessing.GroupPixelRGB0;
 import algorithms.imageProcessing.Image;
@@ -2067,14 +2072,10 @@ public class AndroidStatuesTest extends TestCase {
         ImageExt[] gingerBreadman = loadMaskedGingerBreadMan();
         ImageExt[] euclair = loadMaskedEuclair();
         
-        List<Set<PairInt>> iceCreamShape 
-            = extractNonZeros(icecream);
-        List<Set<PairInt>> cupcakeShape 
-            = extractNonZeros(cupcake);
-        List<Set<PairInt>> gingerBreadmanShape 
-            = extractNonZeros(gingerBreadman);
-        List<Set<PairInt>> euclairShape 
-            = extractNonZeros(euclair);
+        List<Set<PairInt>> iceCreamShape = extractNonZeros(icecream);
+        List<Set<PairInt>> cupcakeShape = extractNonZeros(cupcake);
+        List<Set<PairInt>> gingerBreadmanShape = extractNonZeros(gingerBreadman);
+        List<Set<PairInt>> euclairShape = extractNonZeros(euclair);
         
         // -- compare average deltaE's within and between classes
         // -- compare average hsv's within and between classes
@@ -2089,8 +2090,172 @@ public class AndroidStatuesTest extends TestCase {
         // GroupPixelCIELAB, GroupPixelCIELUV, GroupPixelCIELAB1931
         // GroupPixelCIELCH 
         //    histogramCIECH64
-        --
+       
+        /*
+        ----------
+        icecream
+                img1         img2          img3         (img4)
+        rgb
+        hsv  mean(+=srfv)
+        lab
+        lab31
+        luv
+        lch  mean(+=srdev)
+        lch  inter w/ 2     inter w/3      (inter w/ 4)
+             inter w/ 3     (inter w/ 4)
+             (inter w/ 4)
+        hsv  inter w/ 2     inter w/3      (inter w/ 4)
+             inter w/ 3     (inter w/ 4)
+             (inter w/ 4)
         
+        averages of images:
+        rgb       
+        hsv
+        lab
+        lab31
+        luv
+        lch
+        and aberage of all intersections
+        -----------
+        cupcake
+        */
+        
+        ColorHistogram cHist = new ColorHistogram();
+        
+        // storing the 1D histograms for each image in each class
+        //[vlass idx][image idx][histogtam bin idx]
+        int[][][] histLCH = new int[4][][];
+        histLCH[0] = new int[3][];
+        histLCH[1] = new int[3][];
+        histLCH[2] = new int[4][];
+        histLCH[3] = new int[4][];
+        
+        // 2 X 4 storing average and st dev for each object class
+        float[][] rgbClass = new float[2][4];
+        float[][] hsvClass = new float[2][4];
+        float[][] labClass = new float[2][4];
+        float[][] lab31Class = new float[2][4];
+        float[][] luvClass = new float[2][4];
+        float[][] lchClass = new float[2][4];
+        // 2 X 4 intersections average and stand dev for each class
+        float[][] lch2Class = new float[2][4];
+        float[][] hsv2Class = new float[2][4];
+        
+        for (int i = 0; i < 4; ++i) {
+            ImageExt[] imgs = null;
+            List<Set<PairInt>> shape = null;
+            int[][] hists = null;
+            String lbl = "";
+            switch(i) {
+                case 0:
+                    imgs = icecream;
+                    shape = iceCreamShape;
+                    hists = histLCH[0];
+                    lbl = "ice";
+                    break;
+                case 1:
+                    imgs = cupcake;
+                    shape = cupcakeShape;
+                    hists = histLCH[1];
+                    lbl = "cup";
+                    break;
+                case 2:
+                    imgs = gingerBreadman;
+                    shape = gingerBreadmanShape;
+                    hists = histLCH[2];
+                    lbl = "gbm";
+                    break;
+                default:
+                    imgs = euclair;
+                    shape = euclairShape;
+                    hists = histLCH[3];
+                    lbl = "euc";
+            }
+            
+            List<StringBuilder> lines = new ArrayList<StringBuilder>();
+            lines.add(new StringBuilder("     "));
+            lines.add(new StringBuilder(lbl)
+                .append(String.format(
+                " %10s img1 %10s img2 %10s img3 %10s img4",
+                    " ", " ", " ", " ")));
+            lines.add(new StringBuilder("  hsv"));//2
+            lines.add(new StringBuilder("     "));//3
+            lines.add(new StringBuilder("  lab"));//4
+            lines.add(new StringBuilder("     "));//5
+            lines.add(new StringBuilder("lab31"));//6
+            lines.add(new StringBuilder("     "));//7
+            lines.add(new StringBuilder(" luv:"));//8
+            lines.add(new StringBuilder("     "));//9
+            lines.add(new StringBuilder("  lch"));//10
+            lines.add(new StringBuilder("     "));//11
+            
+            for (int j = 0; j < imgs.length; ++j) {
+                ImageExt img = imgs[j];
+                Set<PairInt> set = shape.get(j);
+                
+                GroupPixelHSV grHSV = new GroupPixelHSV();
+                grHSV.calculateColors(set, img);
+                StringBuilder sb = lines.get(2);
+                sb.append(String.format("  %.2f %.2f %.2f  ", 
+                    grHSV.getAvgH(), grHSV.getAvgS(), 
+                    grHSV.getAvgV()));
+                sb = lines.get(3);
+                sb.append(String.format(" (%.2f %.2f %.2f) ", 
+                    grHSV.getStdDevH(), grHSV.getStdDevS(), 
+                    grHSV.getStdDevV()));
+
+                GroupPixelCIELAB grLAB = new GroupPixelCIELAB(set, img);
+                grLAB.calculateColors(set, img, 0, 0);
+                sb = lines.get(4);
+                sb.append(String.format("  %.2f %.2f %.2f ", 
+                    grLAB.getAvgL(), grLAB.getAvgA(), 
+                    grLAB.getAvgB()));
+                sb = lines.get(5);
+                sb.append(String.format(" (%.2f %.2f %.2f) ", 
+                    grLAB.getStdDevL(), grLAB.getStdDevA(), 
+                    grLAB.getStdDevB()));
+                
+                GroupPixelCIELAB1931 grLAB31 = new GroupPixelCIELAB1931(set, img);
+                grLAB31.calculateColors(set, img, 0, 0);
+                sb = lines.get(6);
+                sb.append(String.format("  %.2f %.2f %.2f ",
+                    grLAB31.getAvgL(), grLAB31.getAvgA(), 
+                    grLAB31.getAvgB()));
+                sb = lines.get(7);
+                sb.append(String.format(" (%.2f %.2f %.2f) ", 
+                    grLAB31.getStdDevL(),
+                    grLAB31.getStdDevA(), grLAB31.getStdDevB()));
+                
+                GroupPixelCIELUV grLUV = new GroupPixelCIELUV(set, img);
+                grLUV.calculateColors(set, img, 0, 0);
+                sb = lines.get(8);
+                sb.append(String.format("  %.2f %.2f %.2f ",
+                    grLUV.getAvgL(), grLUV.getAvgU(), 
+                    grLUV.getAvgV()));
+                sb = lines.get(9);
+                sb.append(String.format(" (%.2f %.2f %.2f) ", 
+                    grLUV.getStdDevL(),
+                    grLUV.getStdDevU(), grLUV.getStdDevV()));
+                
+                GroupPixelCIELCH grLCH = new GroupPixelCIELCH(set, img);
+                grLCH.calculateColors(set, img, 0, 0);
+                sb = lines.get(10);
+                sb.append(String.format("  %.2f %.2f %.2f ",
+                    grLCH.getAvgL(), grLCH.getAvgC(), 
+                    grLCH.getAvgH()));
+                sb = lines.get(11);
+                sb.append(String.format(" (%.2f %.2f %.2f) ", 
+                    grLCH.getStdDevL(),
+                    grLCH.getStdDevC(), grLCH.getStdDevH()));
+                
+                hists[j] = cHist.histogramCIECH64(img, set);
+
+            }
+            for (int j = 0; j < lines.size(); ++j) {
+                System.out.println(lines.get(j).toString());
+            }
+            lines = null;
+        }
     }
     
     private List<Set<PairInt>> extractNonZeros(ImageExt[] imgs) {
