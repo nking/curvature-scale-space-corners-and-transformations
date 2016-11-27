@@ -2500,7 +2500,7 @@ public class AndroidStatuesTest extends TestCase {
             
         }
         
-        //TODO: write the intraclass variables
+        //TODO: write the interclass variables
     }
     
     private List<Set<PairInt>> extractNonZeros(ImageExt[] imgs) {
