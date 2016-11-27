@@ -2067,16 +2067,60 @@ public class AndroidStatuesTest extends TestCase {
         ImageExt[] gingerBreadman = loadMaskedGingerBreadMan();
         ImageExt[] euclair = loadMaskedEuclair();
         
+        List<Set<PairInt>> iceCreamShape 
+            = extractNonZeros(icecream);
+        List<Set<PairInt>> cupcakeShape 
+            = extractNonZeros(cupcake);
+        List<Set<PairInt>> gingerBreadmanShape 
+            = extractNonZeros(gingerBreadman);
+        List<Set<PairInt>> euclairShape 
+            = extractNonZeros(euclair);
+        
         // -- compare average deltaE's within and between classes
         // -- compare average hsv's within and between classes
         // -- compare intersection of histograms of cieluv cyl angle and magnitude
+        //      -- these are large so will look at avgs and stcev
+        //         first to see if only 8 divisions in angle and 8 in
+        //         magnitude (== hist size 64) would be fine enough
+        //         to distinguish between objects.
         // -- compare intersection of hsv histograms
         
-       // GroupPixelHSV, GroupPixelRGB, 
-       // GroupPixelCIELAB, GroupPixelCIELUV, GroupPixelCIELAB1931
-       // GroupPixelCIELCH 
-       
-       
+        // GroupPixelHSV, GroupPixelRGB, 
+        // GroupPixelCIELAB, GroupPixelCIELUV, GroupPixelCIELAB1931
+        // GroupPixelCIELCH 
+        //    histogramCIECH64
+        --
+        
+    }
+    
+    private List<Set<PairInt>> extractNonZeros(ImageExt[] imgs) {
+        
+        List<Set<PairInt>> shape 
+            = new ArrayList<Set<PairInt>>(imgs.length);
+        
+        for (int i = 0; i < imgs.length; ++i) {
+            shape.add(extractNonZeros(imgs[i]));
+        }
+        
+        return shape;
+    }
+    
+    /**
+     * extract all non-zero pixels
+     * assuming all pixels with 0 value in r,g,b are mask pixels.
+     * @param img
+     * @return 
+     */
+    private Set<PairInt> extractNonZeros(ImageExt img) {
+        
+        Set<PairInt> set = new HashSet<PairInt>();
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            if (img.getR(i) != 0 ||  img.getG(i) != 0 || img.getB(i) != 0) {
+                set.add(new PairInt(img.getCol(i), img.getRow(i)));
+            }
+        }
+        
+        return set;
     }
         
     private ImageExt[] loadMaskedIcecream() throws IOException {
