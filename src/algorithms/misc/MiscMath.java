@@ -611,7 +611,7 @@ public class MiscMath {
         
         int length = x.size();
         
-        long sumX = 0;
+        double sumX = 0;
         for (int i = 0; i < length; i++) {
             sumX += x.get(i);
         }

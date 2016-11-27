@@ -2152,36 +2152,26 @@ public class AndroidStatuesTest extends TestCase {
         for (int i = 0; i < 4; ++i) {
             ImageExt[] imgs = null;
             List<Set<PairInt>> shape = null;
-            int[][] histsCH = null;
-            int[][][] histsHSV = null;
             String lbl = "";
             switch(i) {
                 case 0:
                     imgs = icecream;
                     shape = iceCreamShape;
-                    histsCH = histLCH[0];
-                    histsHSV = histHSV[0];
                     lbl = "ice";
                     break;
                 case 1:
                     imgs = cupcake;
                     shape = cupcakeShape;
-                    histsCH = histLCH[1];
-                    histsHSV = histHSV[1];
                     lbl = "cup";
                     break;
                 case 2:
                     imgs = gingerBreadman;
                     shape = gingerBreadmanShape;
-                    histsCH = histLCH[2];
-                    histsHSV = histHSV[2];
                     lbl = "gbm";
                     break;
                 default:
                     imgs = euclair;
                     shape = euclairShape;
-                    histsCH = histLCH[3];
-                    histsHSV = histHSV[3];
                     lbl = "euc";
             }
             // h,s,v,l,a,b,...
@@ -2295,26 +2285,28 @@ public class AndroidStatuesTest extends TestCase {
                 valuesMap.get("lchC").add(Double.valueOf(grLCH.getAvgC()));
                 valuesMap.get("lchH").add(Double.valueOf(grLCH.getAvgH()));
 
-                histsCH[j] = cHist.histogramCIECH64(img, set);
-                histsHSV[j] = cHist.histogramHSV(img, set);
+                histLCH[i][j] = cHist.histogramCIECH64(img, set);
+                histHSV[i][j] = cHist.histogramHSV(img, set);
             }
             for (int j = 0; j < lines.size(); ++j) {
                 System.out.println(lines.get(j).toString());
             }
             lines = null;
+             
+            //TODO: the deltaes from cielab, cielab31, cieluv
             
             for (int j = 0; j < imgs.length; ++j) {
-                int[] ch1 = histsCH[j];
+                int[] ch1 = histLCH[i][j];
                 for (int k = (j + 1); k < imgs.length; ++k) {
-                    int[] ch2 = histsCH[k];
+                    int[] ch2 = histLCH[i][k];
                     float inter = cHist.intersection(ch1, ch2);
                     valuesMap.get("interCH").add(Double.valueOf(inter));
                 }
             }
             for (int j = 0; j < imgs.length; ++j) {
-                int[][] ch1 = histsHSV[j];
+                int[][] ch1 = histHSV[i][j];
                 for (int k = (j + 1); k < imgs.length; ++k) {
-                    int[][] ch2 = histsHSV[k];
+                    int[][] ch2 = histHSV[i][k];
                     float inter = cHist.intersection(ch1, ch2);
                     valuesMap.get("interHSV").add(Double.valueOf(inter));
                 }
@@ -2330,6 +2322,13 @@ public class AndroidStatuesTest extends TestCase {
             avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("interHSV"));
             hsv2Class[i][0] = (float) avgStdv[0];
             hsv2Class[i][1] = (float) avgStdv[1];
+            
+            System.out.println(String.format(
+                "LCH avg intersection=%.2f  stdv=%.2f", 
+                lch2Class[i][0], lch2Class[i][1]));
+            System.out.println(String.format(
+                "HSV avg intersection=%.2f  stdv=%.2f", 
+                hsv2Class[i][0], hsv2Class[i][1]));
         
             hsvClass[i] = new float[3][2];
             labClass[i] = new float[3][2];
