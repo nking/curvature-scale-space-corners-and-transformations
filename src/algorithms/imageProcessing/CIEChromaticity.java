@@ -426,11 +426,13 @@ public class CIEChromaticity {
      * uses http://en.wikipedia.org/wiki/CIE_1931_color_space#Experimental_results:_the_CIE_RGB_color_space
      * and http://en.wikipedia.org/wiki/Lab_color_space#Forward_transformation
      *
-     * range of return values for
-     * L*
-     * magnitude:
-     * angle:      0 to 359
-     *
+     * <pre>
+     * using the standard illuminant of daylight, D65,
+     * the range of return values is
+     *   luminosity L*  0 to 104.5
+     *   magnitude, C:  0 to 139 
+     *   angle,     H:  0 to 359
+     * </pre>
      * @param r
      * @param g
      * @param b
@@ -584,9 +586,6 @@ public class CIEChromaticity {
      *
      * uses http://en.wikipedia.org/wiki/CIE_1931_color_space#Experimental_results:_the_CIE_RGB_color_space
      *
-     * for r=0, g=0, b=0, CIEXY is (0, 0, 0).
-     * for r=1, g=1, b=1, CIEXY is (5.65, 5.65, 5.65)
-     * for r=255, g=255, b=255, CIEXY is (1440.922, 1440.922, 1440.922)
      * @param r
      * @param g
      * @param b

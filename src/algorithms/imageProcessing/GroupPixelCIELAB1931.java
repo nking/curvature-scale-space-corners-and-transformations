@@ -7,7 +7,7 @@ import java.util.Set;
  *
  * @author nichole
  */
-public class GroupPixelCIELAB extends GroupPixelRGB0 {
+public class GroupPixelCIELAB1931 extends GroupPixelRGB0 {
     
     private float avgL;
     private float stdDevL;
@@ -16,7 +16,7 @@ public class GroupPixelCIELAB extends GroupPixelRGB0 {
     private float avgB;
     private float stdDevB;
     
-    public GroupPixelCIELAB(final Set<PairInt> points, ImageExt colorImage) {
+    public GroupPixelCIELAB1931(final Set<PairInt> points, ImageExt colorImage) {
                
         if (points == null) {
             throw new IllegalArgumentException("points cannot be null");
@@ -28,7 +28,7 @@ public class GroupPixelCIELAB extends GroupPixelRGB0 {
         calculateColors(points, colorImage, 0, 0);
         
         CIEChromaticity cieC = new CIEChromaticity();
-        float[] cieLABAvg = cieC.rgbToCIELAB(
+        float[] cieLABAvg = cieC.rgbToCIELAB1931(
             Math.round(getAvgRed()), 
             Math.round(getAvgGreen()), 
             Math.round(getAvgBlue()));
@@ -47,7 +47,9 @@ public class GroupPixelCIELAB extends GroupPixelRGB0 {
             int x = p.getX();
             int y = p.getY();
             
-            float[] lab = colorImage.getCIELAB(x, y);
+            float[] lab = cieC.rgbToCIELAB1931(
+                colorImage.getR(x, y), colorImage.getG(x, y), 
+                colorImage.getB(x, y));
             
             float diffL = lab[0] - cieLABAvg[0];
             float diffA = lab[1] - cieLABAvg[1];
@@ -71,20 +73,20 @@ public class GroupPixelCIELAB extends GroupPixelRGB0 {
      * @param other
      * @return 
      */
-    public float calcNormalizedDifference(GroupPixelCIELAB other) {
+    public float calcNormalizedDifference(GroupPixelCIELAB1931 other) {
        
         /*
         * using the standard illuminant of daylight, D65,
         * the range of return values is
-        *    L    0 to 28.5
-        *    A  -46.9  62.5
-        *    B  -45.7  48.0
+        * L*    0 to 104.5
+        * a* -190 to 103
+        * b* -113 to 99
         */
         
         float[] diffs = calcDifference(other);
-        diffs[0] /= 28.5f;
-        diffs[1] /= (62.5f + 46.9f);
-        diffs[2] /= (48.0f + 45.7f);
+        diffs[0] /= 104.5f;
+        diffs[1] /= (103f + 190f);
+        diffs[2] /= (99f + 113.f);
         
         return (diffs[0] + diffs[1] + diffs[2])/3.f;
     }
@@ -96,7 +98,7 @@ public class GroupPixelCIELAB extends GroupPixelRGB0 {
      * @param other
      * @return 
      */
-    public float calcDeltaE2000(GroupPixelCIELAB other) {
+    public float calcDeltaE2000(GroupPixelCIELAB1931 other) {
        
         CIEChromaticity cieC = new CIEChromaticity();
         
@@ -112,7 +114,7 @@ public class GroupPixelCIELAB extends GroupPixelRGB0 {
      * @param other
      * @return 
      */
-    public float[] calcDifference(GroupPixelCIELAB other) {
+    public float[] calcDifference(GroupPixelCIELAB1931 other) {
        
         float[] diffs = new float[3];
         diffs[0] = Math.abs(avgL - other.getAvgL());
@@ -121,7 +123,7 @@ public class GroupPixelCIELAB extends GroupPixelRGB0 {
         
         return diffs;
     }
-    
+
     /**
      * @return the avgL
      */

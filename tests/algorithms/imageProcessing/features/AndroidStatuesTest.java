@@ -474,47 +474,6 @@ public class AndroidStatuesTest extends TestCase {
     }
 
     public void estORBMatcher2() throws Exception {
-
-        if (true) {
-            int d = 1;
-            double minL = Double.MAX_VALUE;
-            double minU = Double.MAX_VALUE;
-            double minV = Double.MAX_VALUE;
-            double maxL = Double.MIN_VALUE;
-            double maxU = Double.MIN_VALUE;
-            double maxV = Double.MIN_VALUE;
-            CIEChromaticity cieC = new CIEChromaticity();
-            for (int r = 0; r < 255; r+=d) {
-                for (int g = 0; g < 255; g+=d) {
-                    for (int b = 0; b < 255; b+=d) {
-                        float[] lab = cieC.rgbToCIELAB(r, g, b);
-                        //    99.187f, 100f, 67.395f);
-                        if (lab[0] < minL) {
-                            minL = lab[0];
-                        }
-                        if (lab[1] < minU) {
-                            minU = lab[1];
-                        }
-                        if (lab[2] < minV) {
-                            minV = lab[2];
-                        }
-                        if (lab[0] > maxL) {
-                            maxL = lab[0];
-                        }
-                        if (lab[1] > maxU) {
-                            maxU = lab[1];
-                        }
-                        if (lab[2] > maxV) {
-                            maxV = lab[2];
-                        }
-                    }
-                }
-            }
-            System.out.println("minL=" + minL + " maxL=" + maxL);
-            System.out.println("minU=" + minU + " maxU=" + maxU);
-            System.out.println("minV=" + minV + " maxV=" + maxV);
-            return;
-        }
         
         // TODO: this one either needs more keypoints across the cupcake in
         //       android statues 02 image,
@@ -2108,9 +2067,18 @@ public class AndroidStatuesTest extends TestCase {
         ImageExt[] gingerBreadman = loadMaskedGingerBreadMan();
         ImageExt[] euclair = loadMaskedEuclair();
         
+        // -- compare average deltaE's within and between classes
+        // -- compare average hsv's within and between classes
+        // -- compare intersection of histograms of cieluv cyl angle and magnitude
+        // -- compare intersection of hsv histograms
         
+       // GroupPixelHSV, GroupPixelRGB, 
+       // GroupPixelCIELAB, GroupPixelCIELUV, GroupPixelCIELAB1931
+       // GroupPixelCIELCH 
+       
+       
     }
-    
+        
     private ImageExt[] loadMaskedIcecream() throws IOException {
         
         // icecream images are x:0 to 255, y=0 to 63
