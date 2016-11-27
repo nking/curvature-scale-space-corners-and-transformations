@@ -2121,6 +2121,15 @@ public class AndroidStatuesTest extends TestCase {
         cupcake
         */
         
+        double[][] deltaELAB = new double[4][2];
+        double[][] deltaELAB31 = new double[4][2];
+        double[][] deltaELUV = new double[4][2];
+        for (int i = 0; i < 4; ++i) {
+            deltaELAB[i] = new double[2];
+            deltaELAB31[i] = new double[2];
+            deltaELUV[i] = new double[2];
+        }
+        
         ColorHistogram cHist = new ColorHistogram();
         
         // storing the 1D histograms for each image in each class
@@ -2292,9 +2301,7 @@ public class AndroidStatuesTest extends TestCase {
                 System.out.println(lines.get(j).toString());
             }
             lines = null;
-             
-            //TODO: the deltaes from cielab, cielab31, cieluv
-            
+           
             for (int j = 0; j < imgs.length; ++j) {
                 int[] ch1 = histLCH[i][j];
                 for (int k = (j + 1); k < imgs.length; ++k) {
@@ -2313,6 +2320,76 @@ public class AndroidStatuesTest extends TestCase {
             }
             
             double[] avgStdv = null;
+              
+            CIEChromaticity cieC = new CIEChromaticity();
+            List<Double> c1, c2, c3, de;
+            c1 = valuesMap.get("labL");
+            c2 = valuesMap.get("labA");
+            c3 = valuesMap.get("labB");
+            de = new ArrayList<Double>();
+            for (int j = 0; j < c1.size(); ++j) {
+                float l1 = c1.get(j).floatValue();
+                float a1 = c2.get(j).floatValue();
+                float b1 = c3.get(j).floatValue();
+                for (int k = (j + 1); k < c1.size(); ++k) {
+                    float l2 = c1.get(k).floatValue();
+                    float a2 = c2.get(k).floatValue();
+                    float b2 = c3.get(k).floatValue();
+                    de.add(cieC.calcDeltaECIE2000(l1, a1, b1, l2, a2, b2));
+                }
+            }
+            avgStdv = MiscMath.getAvgAndStDev(de);
+            deltaELAB[i][0] = avgStdv[0];
+            deltaELAB[i][1] = avgStdv[1];
+            
+           
+            c1 = valuesMap.get("labL31");
+            c2 = valuesMap.get("labA31");
+            c3 = valuesMap.get("labB31");
+            de = new ArrayList<Double>();
+            for (int j = 0; j < c1.size(); ++j) {
+                float l1 = c1.get(j).floatValue();
+                float a1 = c2.get(j).floatValue();
+                float b1 = c3.get(j).floatValue();
+                for (int k = (j + 1); k < c1.size(); ++k) {
+                    float l2 = c1.get(k).floatValue();
+                    float a2 = c2.get(k).floatValue();
+                    float b2 = c3.get(k).floatValue();
+                    de.add(cieC.calcDeltaECIE2000(l1, a1, b1, l2, a2, b2));
+                }
+            }
+            avgStdv = MiscMath.getAvgAndStDev(de);
+            deltaELAB31[i][0] = avgStdv[0];
+            deltaELAB31[i][1] = avgStdv[1];
+
+            c1 = valuesMap.get("luvL");
+            c2 = valuesMap.get("luvU");
+            c3 = valuesMap.get("luvV");
+            de = new ArrayList<Double>();
+            for (int j = 0; j < c1.size(); ++j) {
+                float l1 = c1.get(j).floatValue();
+                float a1 = c2.get(j).floatValue();
+                float b1 = c3.get(j).floatValue();
+                for (int k = (j + 1); k < c1.size(); ++k) {
+                    float l2 = c1.get(k).floatValue();
+                    float a2 = c2.get(k).floatValue();
+                    float b2 = c3.get(k).floatValue();
+                    de.add(cieC.calcDeltaECIE2000(l1, a1, b1, l2, a2, b2));
+                }
+            }
+            avgStdv = MiscMath.getAvgAndStDev(de);
+            deltaELUV[i][0] = avgStdv[0];
+            deltaELUV[i][1] = avgStdv[1];
+           
+            System.out.println(String.format(
+                "lab avg deltaE=%.2f  stdv=%.2f", 
+                deltaELAB[i][0], deltaELAB[i][1]));
+            System.out.println(String.format(
+                "lab31 avg deltaE=%.2f  stdv=%.2f", 
+                deltaELAB31[i][0], deltaELAB31[i][1]));
+            System.out.println(String.format(
+                "luv avg deltaE=%.2f  stdv=%.2f", 
+                deltaELUV[i][0], deltaELUV[i][1]));
             
             lch2Class[i] = new float[2];
             hsv2Class[i] = new float[2];
