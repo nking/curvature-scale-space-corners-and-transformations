@@ -2137,6 +2137,8 @@ public class AndroidStatuesTest extends TestCase {
         }
         
         ColorHistogram cHist = new ColorHistogram();
+       
+        CIEChromaticity cieC = new CIEChromaticity();
         
         // storing the 1D histograms for each image in each class
         //[class idx][image idx][histogtam bin idx]
@@ -2327,7 +2329,6 @@ public class AndroidStatuesTest extends TestCase {
             
             double[] avgStdv = null;
               
-            CIEChromaticity cieC = new CIEChromaticity();
             List<Double> c1, c2, c3, de, diff;
             c1 = valuesMap.get("labL");
             c2 = valuesMap.get("labA");
@@ -2499,8 +2500,113 @@ public class AndroidStatuesTest extends TestCase {
             lchClass[i][2][1] = (float) avgStdv[1];
             
         }
+            
+        System.out.println("--- between class stats ----");
         
-        //TODO: write the interclass variables
+        for (int i = 0; i < 4; ++i) {
+            int nImg = histLCH[i].length;
+            int[] h1 = Arrays.copyOf(histLCH[i][0], histLCH[i][0].length);
+            for (int ii = 0; ii < nImg; ++ii) { 
+                cHist.add2To1(h1, histLCH[i][ii]);
+            }
+            for (int j = (i + 1); j < 4; ++j) {
+                int n2Img = histLCH[j].length;
+                int[] h2 = Arrays.copyOf(histLCH[j][0], histLCH[j][0].length);
+                for (int jj = 0; jj < n2Img; ++jj) { 
+                    cHist.add2To1(h2, histLCH[j][jj]);
+                }
+                float inter = cHist.intersection(h1, h2);
+                System.out.printf("class %d to %d ch intersection=%.2f\n",
+                    i, j, inter);
+            }
+        }
+        
+        for (int i = 0; i < 4; ++i) {
+            int nImg = histHSV[i].length;
+            int[][] h1 = Arrays.copyOf(histHSV[i][0], histHSV[i][0].length);
+            for (int ii = 0; ii < nImg; ++ii) { 
+                cHist.add2To1(h1, histHSV[i][ii]);
+            }
+            for (int j = (i + 1); j < 4; ++j) {
+                int n2Img = histHSV[j].length;
+                int[][] h2 = Arrays.copyOf(histHSV[j][0], histHSV[j][0].length);
+                for (int jj = 0; jj < n2Img; ++jj) { 
+                    cHist.add2To1(h2, histHSV[j][jj]);
+                }
+                float inter = cHist.intersection(h1, h2);
+                System.out.printf("class %d to %d hsv intersection=%.2f\n",
+                    i, j, inter);
+            }
+        }
+        
+        /*        
+        // storing average and st dev for each object class
+        //    for each band in the color space
+        float[][][] labClass = new float[4][3][2];
+        float[][][] lab31Class = new float[4][3][2];
+        float[][][] luvClass = new float[4][3][2];
+        float[][][] lchClass = new float[4][3][2];
+        */
+        for (int i = 0; i < 4; ++i) {
+            float h1 = hsvClass[i][0][0];
+            float s1 = hsvClass[i][1][0];
+            float v1 = hsvClass[i][2][0];
+            float labL1 = labClass[i][0][0];
+            float labA1 = labClass[i][1][0];
+            float labB1 = labClass[i][2][0];
+            float labL1_31 = lab31Class[i][0][0];
+            float labA1_31 = lab31Class[i][1][0];
+            float labB1_31 = lab31Class[i][2][0];
+            float luvL1 = luvClass[i][0][0];
+            float luvU1 = luvClass[i][1][0];
+            float luvV1 = luvClass[i][2][0];
+            for (int j = (i + 1); j < 4; ++j) {
+                float h2 = hsvClass[j][0][0];
+                float s2 = hsvClass[j][1][0];
+                float v2 = hsvClass[j][2][0];
+                float labL2 = labClass[j][0][0];
+                float labA2 = labClass[j][1][0];
+                float labB2 = labClass[j][2][0];
+                float labL2_31 = lab31Class[j][0][0];
+                float labA2_31 = lab31Class[j][1][0];
+                float labB2_31 = lab31Class[j][2][0];
+                float luvL2 = luvClass[j][0][0];
+                float luvU2 = luvClass[j][1][0];
+                float luvV2 = luvClass[j][2][0];
+            
+                float hsvDiff = (Math.abs(h1 - h2) + Math.abs(s1 - s2) + 
+                    Math.abs(v1 - v2))/3.f;
+                
+                System.out.printf("class %d to %d hsv avg diff=%.2f\n",
+                    i, j, hsvDiff);
+            
+                double de = cieC.calcDeltaECIE2000(
+                    labL1, labA1, labB1, labL2, labA2, labB2);
+                System.out.printf("class %d to %d CIELAB deltaE=%.2f\n",
+                    i, j, (float)de);
+                
+                de = cieC.calcDeltaECIE2000(
+                    labL1_31, labA1_31, labB1_31, labL2_31, labA2_31, labB2_31);
+                System.out.printf("class %d to %d LAB1931 deltaE=%.2f\n",
+                    i, j, (float)de);
+                
+                float diff = cieC.calcNormalizedDifferenceLAB31(
+                    labL1_31, labA1_31, labB1_31, labL2_31, labA2_31, labB2_31);
+                System.out.printf("class %d to %d LAB1931 normalized diff=%.2f\n",
+                    i, j, diff);
+                
+                //---
+                de = cieC.calcDeltaECIE2000(
+                    luvL1, luvU1, luvV1, luvL2, luvU2, luvV2);
+                System.out.printf("class %d to %d LUV deltaE=%.2f\n",
+                    i, j, (float)de);
+                
+                diff = cieC.calcNormalizedDifferenceLAB31(
+                    luvL1, luvU1, luvV1, luvL2, luvU2, luvV2);
+                System.out.printf("class %d to %d LUV normalized diff=%.2f\n",
+                    i, j, diff);
+            }
+        }
     }
     
     private List<Set<PairInt>> extractNonZeros(ImageExt[] imgs) {
