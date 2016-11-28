@@ -32,6 +32,7 @@ import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageProcessor.Colors;
 import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.ImageSegmentation.DecimatedData;
+import algorithms.imageProcessing.IntraClassColorStats;
 import algorithms.imageProcessing.PixelColors;
 import algorithms.imageProcessing.matching.PartialShapeMatcher;
 import algorithms.imageProcessing.SIGMA;
@@ -2121,50 +2122,25 @@ public class AndroidStatuesTest extends TestCase {
         cupcake
         */
         
-        double[][] deltaELAB = new double[4][2];
-        double[][] deltaELAB31 = new double[4][2];
-        double[][] deltaELUV = new double[4][2];
-        double[][] diffLAB31 = new double[4][2];
-        double[][] diffLUV = new double[4][2];
-        double[][] diffHSV = new double[4][2];
-        for (int i = 0; i < 4; ++i) {
-            deltaELAB[i] = new double[2];
-            deltaELAB31[i] = new double[2];
-            deltaELUV[i] = new double[2];
-            diffLAB31[i] = new double[2];
-            diffLUV[i] = new double[2];
-            diffHSV[i] = new double[2];
-        }
+        IntraClassColorStats iccs = new IntraClassColorStats();
         
-        ColorHistogram cHist = new ColorHistogram();
-       
-        CIEChromaticity cieC = new CIEChromaticity();
+        float[][] deltaELAB = new float[4][2];
+        float[][] deltaELAB31 = new float[4][2];
+        float[][] deltaELUV = new float[4][2];
         
-        // storing the 1D histograms for each image in each class
-        //[class idx][image idx][histogtam bin idx]
-        int[][][] histLCH = new int[4][][];
-        histLCH[0] = new int[3][];
-        histLCH[1] = new int[3][];
-        histLCH[2] = new int[4][];
-        histLCH[3] = new int[4][];
-        
-        //[class idx][image idx][histogtam clr idx][histogtam bin idx]
-        int[][][][] histHSV = new int[4][][][];
-        histHSV[0] = new int[3][][];
-        histHSV[1] = new int[3][][];
-        histHSV[2] = new int[4][][];
-        histHSV[3] = new int[4][][];
+        float[][] diffHSV = new float[4][3];
+        float[][] diffLAB = new float[4][3];
+        float[][] diffLAB31 = new float[4][3];
+        float[][] diffLUV = new float[4][3];
+        float[][] diffLCH = new float[4][3];
         
         // storing average and st dev for each object class
         //    for each band in the color space
-        float[][][] hsvClass = new float[4][3][2];
-        float[][][] labClass = new float[4][3][2];
-        float[][][] lab31Class = new float[4][3][2];
-        float[][][] luvClass = new float[4][3][2];
-        float[][][] lchClass = new float[4][3][2];
-        // ntersections average and stand dev for each class
-        float[][] lch2Class = new float[4][2];
-        float[][] hsv2Class = new float[4][2];
+        float[][][] meanHSV = new float[4][3][3];
+        float[][][] meanLAB = new float[4][3][3];
+        float[][][] meanLAB31 = new float[4][3][3];
+        float[][][] meanLUV = new float[4][3][3];
+        float[][][] meanLCH = new float[4][3][3];
         
         for (int i = 0; i < 4; ++i) {
             ImageExt[] imgs = null;
@@ -2174,49 +2150,133 @@ public class AndroidStatuesTest extends TestCase {
                 case 0:
                     imgs = icecream;
                     shape = iceCreamShape;
-                    lbl = "ice";
+                    lbl = "icecream";
                     break;
                 case 1:
                     imgs = cupcake;
                     shape = cupcakeShape;
-                    lbl = "cup";
+                    lbl = "cupcake";
                     break;
                 case 2:
                     imgs = gingerBreadman;
                     shape = gingerBreadmanShape;
-                    lbl = "gbm";
+                    lbl = "gingerbreadman";
                     break;
                 default:
                     imgs = euclair;
                     shape = euclairShape;
-                    lbl = "euc";
+                    lbl = "euclair";
             }
-            // h,s,v,l,a,b,...
-            Map<String, List<Double>> valuesMap = new HashMap<String, List<Double>>();
-            valuesMap.put("hsvH", new ArrayList<Double>());
-            valuesMap.put("hsvS", new ArrayList<Double>());
-            valuesMap.put("hsvV", new ArrayList<Double>());
-            valuesMap.put("labL", new ArrayList<Double>());
-            valuesMap.put("labA", new ArrayList<Double>());
-            valuesMap.put("labB", new ArrayList<Double>());
-            valuesMap.put("labL31", new ArrayList<Double>());
-            valuesMap.put("labA31", new ArrayList<Double>());
-            valuesMap.put("labB31", new ArrayList<Double>());
-            valuesMap.put("luvL", new ArrayList<Double>());
-            valuesMap.put("luvU", new ArrayList<Double>());
-            valuesMap.put("luvV", new ArrayList<Double>());
-            valuesMap.put("lchL", new ArrayList<Double>());
-            valuesMap.put("lchC", new ArrayList<Double>());
-            valuesMap.put("lchH", new ArrayList<Double>());
-            valuesMap.put("interCH", new ArrayList<Double>());
-            valuesMap.put("interHSV", new ArrayList<Double>());
+            deltaELAB[i] = iccs.calculateWithinClassDeltaE(imgs, shape, 
+                ColorSpace.CIELAB);
+            deltaELAB31[i] = iccs.calculateWithinClassDeltaE(imgs, shape, 
+                ColorSpace.CIELAB1931);
+            deltaELUV[i] = iccs.calculateWithinClassDeltaE(imgs, shape, 
+                ColorSpace.CIELUV);
+            
+            diffHSV[i] = iccs.calculateWithinClassNormalizedDiffererences(
+                imgs, shape, ColorSpace.HSV);
+            diffLAB[i] = iccs.calculateWithinClassNormalizedDiffererences(
+                imgs, shape, ColorSpace.CIELAB);
+            diffLAB31[i] = iccs.calculateWithinClassNormalizedDiffererences(
+                imgs, shape, ColorSpace.CIELAB1931);
+            diffLUV[i] = iccs.calculateWithinClassNormalizedDiffererences(
+                imgs, shape, ColorSpace.CIELUV);
+            diffLCH[i] = iccs.calculateWithinClassNormalizedDiffererences(
+                imgs, shape, ColorSpace.CIELCH);
+        
+            meanHSV[i] = iccs.calculateWithinClassMeans(
+                imgs, shape, ColorSpace.HSV);
+            meanLAB[i] = iccs.calculateWithinClassMeans(
+                imgs, shape, ColorSpace.CIELAB);
+            meanLAB31[i] = iccs.calculateWithinClassMeans(
+                imgs, shape, ColorSpace.CIELAB1931);
+            meanLUV[i] = iccs.calculateWithinClassMeans(
+                imgs, shape, ColorSpace.CIELUV);
+            meanLCH[i] = iccs.calculateWithinClassMeans(
+                imgs, shape, ColorSpace.CIELCH);   
+        
+            // -------- log intra-class means -------
             
             List<StringBuilder> lines = new ArrayList<StringBuilder>();
             lines.add(new StringBuilder("     "));
             lines.add(new StringBuilder(lbl)
-                .append(String.format(
-                " %10s img1 %10s img2 %10s img3 %10s img4",
-                    " ", " ", " ", " ")));
+                .append("   MEAN of class"));
+            lines.add(new StringBuilder("  hsv"));//2
+            lines.add(new StringBuilder("     "));//3
+            lines.add(new StringBuilder("     "));//4
+            lines.add(new StringBuilder("  lab"));//5
+            lines.add(new StringBuilder("     "));//6
+            lines.add(new StringBuilder("     "));//7
+            lines.add(new StringBuilder("lab31"));//8
+            lines.add(new StringBuilder("     "));//9
+            lines.add(new StringBuilder("     "));//10
+            lines.add(new StringBuilder(" luv:"));//11
+            lines.add(new StringBuilder("     "));//12
+            lines.add(new StringBuilder("     "));//13
+            lines.add(new StringBuilder("  lch"));//14
+            lines.add(new StringBuilder("     "));//15
+            lines.add(new StringBuilder("     "));//16
+            
+            StringBuilder sb = lines.get(2);
+            sb.append(String.format("  %.2f %.2f %.2f  ", 
+                meanHSV[i][0][0],meanHSV[i][1][0], meanHSV[i][2][0]));
+            sb = lines.get(3);
+            sb.append(String.format(" (%.2f %.2f %.2f) ", 
+                meanHSV[i][0][1],meanHSV[i][1][1], meanHSV[i][2][1]));
+            sb = lines.get(4);
+            sb.append(String.format(" (%.2f %.2f %.2f) ", 
+                meanHSV[i][0][2],meanHSV[i][1][2], meanHSV[i][2][2]));
+
+            sb = lines.get(5);
+            sb.append(String.format("  %.2f %.2f %.2f ", 
+                meanLAB[i][0][0],meanLAB[i][1][0], meanLAB[i][2][0]));
+            sb = lines.get(6);
+            sb.append(String.format(" (%.2f %.2f %.2f) ", 
+                meanLAB[i][0][1],meanLAB[i][1][1], meanLAB[i][2][1]));
+            sb = lines.get(7);
+            sb.append(String.format(" (%.2f %.2f %.2f) ", 
+                meanLAB[i][0][2],meanLAB[i][1][2], meanLAB[i][2][2]));
+
+            sb = lines.get(8);
+            sb.append(String.format("  %.2f %.2f %.2f ",
+                meanLAB31[i][0][0],meanLAB31[i][1][0], meanLAB31[i][2][0]));
+            sb = lines.get(9);
+            sb.append(String.format(" (%.2f %.2f %.2f) ", 
+                meanLAB31[i][0][1],meanLAB31[i][1][1], meanLAB31[i][2][1]));
+            sb = lines.get(10);
+            sb.append(String.format(" (%.2f %.2f %.2f) ", 
+                meanLAB31[i][0][2],meanLAB31[i][1][2], meanLAB31[i][2][2]));
+
+            sb = lines.get(11);
+            sb.append(String.format("  %.2f %.2f %.2f ",
+                meanLUV[i][0][0],meanLUV[i][1][0], meanLUV[i][2][0]));
+            sb = lines.get(12);
+            sb.append(String.format(" (%.2f %.2f %.2f) ", 
+                meanLUV[i][0][1],meanLUV[i][1][1], meanLUV[i][2][1]));
+            sb = lines.get(13);
+            sb.append(String.format(" (%.2f %.2f %.2f) ", 
+                meanLUV[i][0][2],meanLUV[i][1][2], meanLUV[i][2][2]));
+
+            sb = lines.get(14);
+            sb.append(String.format("  %.2f %.2f %.2f ",
+                meanLCH[i][0][0],meanLCH[i][1][0], meanLCH[i][2][0]));
+            sb = lines.get(15);
+            sb.append(String.format(" (%.2f %.2f %.2f) ", 
+                meanLCH[i][0][1],meanLCH[i][1][1], meanLCH[i][2][1]));
+            sb = lines.get(16);
+            sb.append(String.format(" (%.2f %.2f %.2f) ", 
+                meanLCH[i][0][2],meanLCH[i][1][2], meanLCH[i][2][2]));
+            
+            for (int j = 0; j < lines.size(); ++j) {
+                System.out.println(lines.get(j).toString());
+            }
+            
+            // -------- log intra-class differences -------
+            lines = new ArrayList<StringBuilder>();
+            lines.add(new StringBuilder("     "));
+            lines.add(new StringBuilder(lbl)
+                .append("   DIFF within class"));
             lines.add(new StringBuilder("  hsv"));//2
             lines.add(new StringBuilder("     "));//3
             lines.add(new StringBuilder("  lab"));//4
@@ -2227,386 +2287,83 @@ public class AndroidStatuesTest extends TestCase {
             lines.add(new StringBuilder("     "));//9
             lines.add(new StringBuilder("  lch"));//10
             lines.add(new StringBuilder("     "));//11
+          
+            sb = lines.get(2);
+            sb.append(String.format("  %.2f  ", 
+                diffHSV[i][0]));
+            sb = lines.get(3);
+            sb.append(String.format(" (%.2f, %.2f) ", 
+                diffHSV[i][1], diffHSV[i][2]));
+
+            sb = lines.get(4);
+            sb.append(String.format("  %.2f  ", 
+                diffLAB[i][0]));
+            sb = lines.get(5);
+            sb.append(String.format(" (%.2f, %.2f) ", 
+                diffLAB[i][1], diffLAB[i][2]));;
+
+            sb = lines.get(6);
+            sb.append(String.format("  %.2f  ", 
+                diffLAB31[i][0]));
+            sb = lines.get(7);
+            sb.append(String.format(" (%.2f, %.2f) ", 
+                diffLAB31[i][1], diffLAB31[i][2]));;
+
+            sb = lines.get(8);
+            sb.append(String.format("  %.2f  ", 
+                diffLUV[i][0]));
+            sb = lines.get(9);
+            sb.append(String.format(" (%.2f, %.2f) ", 
+                diffLUV[i][1], diffLUV[i][2]));;
+
+            sb = lines.get(10);
+            sb.append(String.format("  %.2f  ", 
+                diffLCH[i][0]));
+            sb = lines.get(11);
+            sb.append(String.format(" (%.2f, %.2f) ", 
+                diffLCH[i][1], diffLCH[i][2]));;
             
-            for (int j = 0; j < imgs.length; ++j) {
-                ImageExt img = imgs[j];
-                Set<PairInt> set = shape.get(j);
-                
-                GroupPixelHSV grHSV = new GroupPixelHSV();
-                grHSV.calculateColors(set, img);
-                StringBuilder sb = lines.get(2);
-                sb.append(String.format("  %.2f %.2f %.2f  ", 
-                    grHSV.getAvgH(), grHSV.getAvgS(), 
-                    grHSV.getAvgV()));
-                sb = lines.get(3);
-                sb.append(String.format(" (%.2f %.2f %.2f) ", 
-                    grHSV.getStdDevH(), grHSV.getStdDevS(), 
-                    grHSV.getStdDevV()));
-                valuesMap.get("hsvH").add(Double.valueOf(grHSV.getAvgH()));
-                valuesMap.get("hsvS").add(Double.valueOf(grHSV.getAvgS()));
-                valuesMap.get("hsvV").add(Double.valueOf(grHSV.getAvgV()));
-
-                GroupPixelCIELAB grLAB = new GroupPixelCIELAB(set, img);
-                grLAB.calculateColors(set, img, 0, 0);
-                sb = lines.get(4);
-                sb.append(String.format("  %.2f %.2f %.2f ", 
-                    grLAB.getAvgL(), grLAB.getAvgA(), 
-                    grLAB.getAvgB()));
-                sb = lines.get(5);
-                sb.append(String.format(" (%.2f %.2f %.2f) ", 
-                    grLAB.getStdDevL(), grLAB.getStdDevA(), 
-                    grLAB.getStdDevB()));
-                valuesMap.get("labL").add(Double.valueOf(grLAB.getAvgL()));
-                valuesMap.get("labA").add(Double.valueOf(grLAB.getAvgA()));
-                valuesMap.get("labB").add(Double.valueOf(grLAB.getAvgB()));
-
-                GroupPixelCIELAB1931 grLAB31 = new GroupPixelCIELAB1931(set, img);
-                grLAB31.calculateColors(set, img, 0, 0);
-                sb = lines.get(6);
-                sb.append(String.format("  %.2f %.2f %.2f ",
-                    grLAB31.getAvgL(), grLAB31.getAvgA(), 
-                    grLAB31.getAvgB()));
-                sb = lines.get(7);
-                sb.append(String.format(" (%.2f %.2f %.2f) ", 
-                    grLAB31.getStdDevL(),
-                    grLAB31.getStdDevA(), grLAB31.getStdDevB()));
-                valuesMap.get("labL31").add(Double.valueOf(grLAB31.getAvgL()));
-                valuesMap.get("labA31").add(Double.valueOf(grLAB31.getAvgA()));
-                valuesMap.get("labB31").add(Double.valueOf(grLAB31.getAvgB()));
-
-                GroupPixelCIELUV grLUV = new GroupPixelCIELUV(set, img);
-                grLUV.calculateColors(set, img, 0, 0);
-                sb = lines.get(8);
-                sb.append(String.format("  %.2f %.2f %.2f ",
-                    grLUV.getAvgL(), grLUV.getAvgU(), 
-                    grLUV.getAvgV()));
-                sb = lines.get(9);
-                sb.append(String.format(" (%.2f %.2f %.2f) ", 
-                    grLUV.getStdDevL(),
-                    grLUV.getStdDevU(), grLUV.getStdDevV()));
-                valuesMap.get("luvL").add(Double.valueOf(grLUV.getAvgL()));
-                valuesMap.get("luvU").add(Double.valueOf(grLUV.getAvgU()));
-                valuesMap.get("luvV").add(Double.valueOf(grLUV.getAvgV()));
-
-                GroupPixelCIELCH grLCH = new GroupPixelCIELCH(set, img);
-                grLCH.calculateColors(set, img, 0, 0);
-                sb = lines.get(10);
-                sb.append(String.format("  %.2f %.2f %.2f ",
-                    grLCH.getAvgL(), grLCH.getAvgC(), 
-                    grLCH.getAvgH()));
-                sb = lines.get(11);
-                sb.append(String.format(" (%.2f %.2f %.2f) ", 
-                    grLCH.getStdDevL(),
-                    grLCH.getStdDevC(), grLCH.getStdDevH()));
-                valuesMap.get("lchL").add(Double.valueOf(grLCH.getAvgL()));
-                valuesMap.get("lchC").add(Double.valueOf(grLCH.getAvgC()));
-                valuesMap.get("lchH").add(Double.valueOf(grLCH.getAvgH()));
-
-                histLCH[i][j] = cHist.histogramCIECH64(img, set);
-                histHSV[i][j] = cHist.histogramHSV(img, set);
-            }
             for (int j = 0; j < lines.size(); ++j) {
                 System.out.println(lines.get(j).toString());
             }
-            lines = null;
-           
-            for (int j = 0; j < imgs.length; ++j) {
-                int[] ch1 = histLCH[i][j];
-                for (int k = (j + 1); k < imgs.length; ++k) {
-                    int[] ch2 = histLCH[i][k];
-                    float inter = cHist.intersection(ch1, ch2);
-                    valuesMap.get("interCH").add(Double.valueOf(inter));
-                }
-            }
-            for (int j = 0; j < imgs.length; ++j) {
-                int[][] ch1 = histHSV[i][j];
-                for (int k = (j + 1); k < imgs.length; ++k) {
-                    int[][] ch2 = histHSV[i][k];
-                    float inter = cHist.intersection(ch1, ch2);
-                    valuesMap.get("interHSV").add(Double.valueOf(inter));
-                }
-            }
-            
-            double[] avgStdv = null;
-              
-            List<Double> c1, c2, c3, de, diff;
-            c1 = valuesMap.get("labL");
-            c2 = valuesMap.get("labA");
-            c3 = valuesMap.get("labB");
-            de = new ArrayList<Double>();
-            for (int j = 0; j < c1.size(); ++j) {
-                float l1 = c1.get(j).floatValue();
-                float a1 = c2.get(j).floatValue();
-                float b1 = c3.get(j).floatValue();
-                for (int k = (j + 1); k < c1.size(); ++k) {
-                    float l2 = c1.get(k).floatValue();
-                    float a2 = c2.get(k).floatValue();
-                    float b2 = c3.get(k).floatValue();
-                    de.add(cieC.calcDeltaECIE2000(l1, a1, b1, l2, a2, b2));
-                }
-            }
-            avgStdv = MiscMath.getAvgAndStDev(de);
-            deltaELAB[i][0] = avgStdv[0];
-            deltaELAB[i][1] = avgStdv[1];
-            
-           
-            c1 = valuesMap.get("labL31");
-            c2 = valuesMap.get("labA31");
-            c3 = valuesMap.get("labB31");
-            de = new ArrayList<Double>();
-            diff = new ArrayList<Double>();
-            for (int j = 0; j < c1.size(); ++j) {
-                float l1 = c1.get(j).floatValue();
-                float a1 = c2.get(j).floatValue();
-                float b1 = c3.get(j).floatValue();
-                for (int k = (j + 1); k < c1.size(); ++k) {
-                    float l2 = c1.get(k).floatValue();
-                    float a2 = c2.get(k).floatValue();
-                    float b2 = c3.get(k).floatValue();
-                    de.add(cieC.calcDeltaECIE2000(l1, a1, b1, l2, a2, b2));
-                    diff.add(
-                        Double.valueOf(cieC.calcNormalizedDifferenceLAB31(
-                            l1, a1, b1, l2, a2, b2)));                    
-                }
-            }
-            avgStdv = MiscMath.getAvgAndStDev(de);
-            deltaELAB31[i][0] = avgStdv[0];
-            deltaELAB31[i][1] = avgStdv[1];
-            
-            avgStdv = MiscMath.getAvgAndStDev(diff);
-            diffLAB31[i][0] = avgStdv[0];
-            diffLAB31[i][1] = avgStdv[1];
 
-            c1 = valuesMap.get("luvL");
-            c2 = valuesMap.get("luvU");
-            c3 = valuesMap.get("luvV");
-            de = new ArrayList<Double>();
-            diff = new ArrayList<Double>();
-            for (int j = 0; j < c1.size(); ++j) {
-                float l1 = c1.get(j).floatValue();
-                float a1 = c2.get(j).floatValue();
-                float b1 = c3.get(j).floatValue();
-                for (int k = (j + 1); k < c1.size(); ++k) {
-                    float l2 = c1.get(k).floatValue();
-                    float a2 = c2.get(k).floatValue();
-                    float b2 = c3.get(k).floatValue();
-                    de.add(cieC.calcDeltaECIE2000(l1, a1, b1, l2, a2, b2));
-                    diff.add(
-                        Double.valueOf(cieC.calcNormalizedDifferenceLUV(
-                            l1, a1, b1, l2, a2, b2)));   
-                }
-            }
-            avgStdv = MiscMath.getAvgAndStDev(de);
-            deltaELUV[i][0] = avgStdv[0];
-            deltaELUV[i][1] = avgStdv[1];
-           
-            avgStdv = MiscMath.getAvgAndStDev(diff);
-            diffLUV[i][0] = avgStdv[0];
-            diffLUV[i][1] = avgStdv[1];
+            // ---- log the intra-class deltaEs
             
-            System.out.println(String.format(
-                "lab avg deltaE=%.2f  stdv=%.2f", 
-                deltaELAB[i][0], deltaELAB[i][1]));
-            System.out.println(String.format(
-                "lab31 avg deltaE=%.2f  stdv=%.2f", 
-                deltaELAB31[i][0], deltaELAB31[i][1]));
-            System.out.println(String.format(
-                "lab31 avg normalized diff=%.2f  stdv=%.2f", 
-                diffLAB31[i][0], diffLAB31[i][1]));
-            System.out.println(String.format(
-                "luv avg deltaE=%.2f  stdv=%.2f", 
-                deltaELUV[i][0], deltaELUV[i][1]));
-            System.out.println(String.format(
-                "luv avg normalized diff=%.2f  stdv=%.2f", 
-                diffLUV[i][0], diffLUV[i][1]));
+            lines = new ArrayList<StringBuilder>();
+            lines.add(new StringBuilder("     "));
+            lines.add(new StringBuilder(lbl)
+               .append("   deltaE within class"));
+            lines.add(new StringBuilder("  lab"));//2
+            lines.add(new StringBuilder("     "));//3
+            lines.add(new StringBuilder("lab31"));//4
+            lines.add(new StringBuilder("     "));//5
+            lines.add(new StringBuilder(" luv:"));//6
+            lines.add(new StringBuilder("     "));//7
+          
+            sb = lines.get(2);
+            sb.append(String.format("  %.2f  ", deltaELAB[i][0]));
+            sb = lines.get(3);
+            sb.append(String.format(" (%.2f) ",  deltaELAB[i][1]));
+
+            sb = lines.get(4);
+            sb.append(String.format("  %.2f  ", deltaELAB31[i][0]));
+            sb = lines.get(5);
+            sb.append(String.format(" (%.2f) ",  deltaELAB31[i][1]));
+
+            sb = lines.get(6);
+            sb.append(String.format("  %.2f  ", deltaELUV[i][0]));
+            sb = lines.get(7);
+            sb.append(String.format(" (%.2f) ",  deltaELUV[i][1]));
             
-            lch2Class[i] = new float[2];
-            hsv2Class[i] = new float[2];
-            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("interCH"));
-            lch2Class[i][0] = (float) avgStdv[0];
-            lch2Class[i][1] = (float) avgStdv[1];
-            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("interHSV"));
-            hsv2Class[i][0] = (float) avgStdv[0];
-            hsv2Class[i][1] = (float) avgStdv[1];
+            for (int j = 0; j < lines.size(); ++j) {
+                System.out.println(lines.get(j).toString());
+            }            
             
-            System.out.println(String.format(
-                "LCH avg intersection=%.2f  stdv=%.2f", 
-                lch2Class[i][0], lch2Class[i][1]));
-            System.out.println(String.format(
-                "HSV avg intersection=%.2f  stdv=%.2f", 
-                hsv2Class[i][0], hsv2Class[i][1]));
-        
-            hsvClass[i] = new float[3][2];
-            labClass[i] = new float[3][2];
-            lab31Class[i] = new float[3][2];
-            luvClass[i] = new float[3][2];
-            lchClass[i] = new float[3][2];
-            for (int j = 0; j < 3; ++j) {
-                hsvClass[i][j] = new float[2];
-                labClass[i][j] = new float[2];
-                lab31Class[i][j] = new float[2];
-                luvClass[i][j] = new float[2];
-                lchClass[i][j] = new float[2];
-            }
-            
-            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("hsvH"));
-            hsvClass[i][0][0] = (float) avgStdv[0];
-            hsvClass[i][0][1] = (float) avgStdv[1];
-            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("hsvS"));
-            hsvClass[i][1][0] = (float) avgStdv[0];
-            hsvClass[i][1][1] = (float) avgStdv[1];
-            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("hsvV"));
-            hsvClass[i][2][0] = (float) avgStdv[0];
-            hsvClass[i][2][1] = (float) avgStdv[1];
-           
-            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("labL"));
-            labClass[i][0][0] = (float) avgStdv[0];
-            labClass[i][0][1] = (float) avgStdv[1];
-            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("labA"));
-            labClass[i][1][0] = (float) avgStdv[0];
-            labClass[i][1][1] = (float) avgStdv[1];
-            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("labB"));
-            labClass[i][2][0] = (float) avgStdv[0];
-            labClass[i][2][1] = (float) avgStdv[1];
-         
-            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("labL31"));
-            lab31Class[i][0][0] = (float) avgStdv[0];
-            lab31Class[i][0][1] = (float) avgStdv[1];
-            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("labA31"));
-            lab31Class[i][1][0] = (float) avgStdv[0];
-            lab31Class[i][1][1] = (float) avgStdv[1];
-            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("labB31"));
-            lab31Class[i][2][0] = (float) avgStdv[0];
-            lab31Class[i][2][1] = (float) avgStdv[1];
-            
-            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("luvL"));
-            luvClass[i][0][0] = (float) avgStdv[0];
-            luvClass[i][0][1] = (float) avgStdv[1];
-            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("luvU"));
-            luvClass[i][1][0] = (float) avgStdv[0];
-            luvClass[i][1][1] = (float) avgStdv[1];
-            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("luvV"));
-            luvClass[i][2][0] = (float) avgStdv[0];
-            luvClass[i][2][1] = (float) avgStdv[1];
-            
-            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("lchL"));
-            lchClass[i][0][0] = (float) avgStdv[0];
-            lchClass[i][0][1] = (float) avgStdv[1];
-            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("lchC"));
-            lchClass[i][1][0] = (float) avgStdv[0];
-            lchClass[i][1][1] = (float) avgStdv[1];
-            avgStdv = MiscMath.getAvgAndStDev(valuesMap.get("lchH"));
-            lchClass[i][2][0] = (float) avgStdv[0];
-            lchClass[i][2][1] = (float) avgStdv[1];
-            
+            lines = null;
         }
             
         System.out.println("--- between class stats ----");
         
-        for (int i = 0; i < 4; ++i) {
-            int nImg = histLCH[i].length;
-            int[] h1 = Arrays.copyOf(histLCH[i][0], histLCH[i][0].length);
-            for (int ii = 0; ii < nImg; ++ii) { 
-                cHist.add2To1(h1, histLCH[i][ii]);
-            }
-            for (int j = (i + 1); j < 4; ++j) {
-                int n2Img = histLCH[j].length;
-                int[] h2 = Arrays.copyOf(histLCH[j][0], histLCH[j][0].length);
-                for (int jj = 0; jj < n2Img; ++jj) { 
-                    cHist.add2To1(h2, histLCH[j][jj]);
-                }
-                float inter = cHist.intersection(h1, h2);
-                System.out.printf("class %d to %d ch intersection=%.2f\n",
-                    i, j, inter);
-            }
-        }
-        
-        for (int i = 0; i < 4; ++i) {
-            int nImg = histHSV[i].length;
-            int[][] h1 = Arrays.copyOf(histHSV[i][0], histHSV[i][0].length);
-            for (int ii = 0; ii < nImg; ++ii) { 
-                cHist.add2To1(h1, histHSV[i][ii]);
-            }
-            for (int j = (i + 1); j < 4; ++j) {
-                int n2Img = histHSV[j].length;
-                int[][] h2 = Arrays.copyOf(histHSV[j][0], histHSV[j][0].length);
-                for (int jj = 0; jj < n2Img; ++jj) { 
-                    cHist.add2To1(h2, histHSV[j][jj]);
-                }
-                float inter = cHist.intersection(h1, h2);
-                System.out.printf("class %d to %d hsv intersection=%.2f\n",
-                    i, j, inter);
-            }
-        }
-        
-        /*        
-        // storing average and st dev for each object class
-        //    for each band in the color space
-        float[][][] labClass = new float[4][3][2];
-        float[][][] lab31Class = new float[4][3][2];
-        float[][][] luvClass = new float[4][3][2];
-        float[][][] lchClass = new float[4][3][2];
-        */
-        for (int i = 0; i < 4; ++i) {
-            float h1 = hsvClass[i][0][0];
-            float s1 = hsvClass[i][1][0];
-            float v1 = hsvClass[i][2][0];
-            float labL1 = labClass[i][0][0];
-            float labA1 = labClass[i][1][0];
-            float labB1 = labClass[i][2][0];
-            float labL1_31 = lab31Class[i][0][0];
-            float labA1_31 = lab31Class[i][1][0];
-            float labB1_31 = lab31Class[i][2][0];
-            float luvL1 = luvClass[i][0][0];
-            float luvU1 = luvClass[i][1][0];
-            float luvV1 = luvClass[i][2][0];
-            for (int j = (i + 1); j < 4; ++j) {
-                float h2 = hsvClass[j][0][0];
-                float s2 = hsvClass[j][1][0];
-                float v2 = hsvClass[j][2][0];
-                float labL2 = labClass[j][0][0];
-                float labA2 = labClass[j][1][0];
-                float labB2 = labClass[j][2][0];
-                float labL2_31 = lab31Class[j][0][0];
-                float labA2_31 = lab31Class[j][1][0];
-                float labB2_31 = lab31Class[j][2][0];
-                float luvL2 = luvClass[j][0][0];
-                float luvU2 = luvClass[j][1][0];
-                float luvV2 = luvClass[j][2][0];
-            
-                float hsvDiff = (Math.abs(h1 - h2) + Math.abs(s1 - s2) + 
-                    Math.abs(v1 - v2))/3.f;
-                
-                System.out.printf("class %d to %d hsv avg diff=%.2f\n",
-                    i, j, hsvDiff);
-            
-                double de = cieC.calcDeltaECIE2000(
-                    labL1, labA1, labB1, labL2, labA2, labB2);
-                System.out.printf("class %d to %d CIELAB deltaE=%.2f\n",
-                    i, j, (float)de);
-                
-                de = cieC.calcDeltaECIE2000(
-                    labL1_31, labA1_31, labB1_31, labL2_31, labA2_31, labB2_31);
-                System.out.printf("class %d to %d LAB1931 deltaE=%.2f\n",
-                    i, j, (float)de);
-                
-                float diff = cieC.calcNormalizedDifferenceLAB31(
-                    labL1_31, labA1_31, labB1_31, labL2_31, labA2_31, labB2_31);
-                System.out.printf("class %d to %d LAB1931 normalized diff=%.2f\n",
-                    i, j, diff);
-                
-                //---
-                de = cieC.calcDeltaECIE2000(
-                    luvL1, luvU1, luvV1, luvL2, luvU2, luvV2);
-                System.out.printf("class %d to %d LUV deltaE=%.2f\n",
-                    i, j, (float)de);
-                
-                diff = cieC.calcNormalizedDifferenceLAB31(
-                    luvL1, luvU1, luvV1, luvL2, luvU2, luvV2);
-                System.out.printf("class %d to %d LUV normalized diff=%.2f\n",
-                    i, j, diff);
-            }
-        }
     }
     
     private List<Set<PairInt>> extractNonZeros(ImageExt[] imgs) {

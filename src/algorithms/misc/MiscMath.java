@@ -2680,13 +2680,13 @@ System.out.println("value 0 is rescaled to value=" + (-minV*scale)
         for (float stdv : stdvs) {
             sum += (stdv * stdv);
         }
-        float sq = (float)Math.sqrt(sum);
+        float sq = (float)Math.sqrt(sum/((float)stdvs.length - 1.0f));
         
         return new float[]{avgAndStdv[0], avgAndStdv[1], sq};
     }
 
     public static float[] calcMeanAndStDevWithWrapAround(float[] a, 
-        int wrapAroundValue, float[] s) {
+        int wrapAroundValue, float[] stdvs) {
         
         HistogramHolder hist = Histogram.createSimpleHistogram(a, 
             Errors.populateYErrorsBySqrt(a));
@@ -2712,10 +2712,10 @@ System.out.println("value 0 is rescaled to value=" + (-minV*scale)
         }
         
         double sum = 0;
-        for (float stdv : s) {
+        for (float stdv : stdvs) {
             sum += (stdv * stdv);
         }
-        float sq = (float)Math.sqrt(sum);
+        float sq = (float)Math.sqrt(sum/((float)stdvs.length - 1.0f));
         
         return new float[]{avgAndStdv[0], avgAndStdv[1], sq};
     }
