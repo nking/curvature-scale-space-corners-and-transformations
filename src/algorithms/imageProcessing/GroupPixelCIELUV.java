@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.util.PairInt;
+import java.util.Collection;
 import java.util.Set;
 
 /**
@@ -16,7 +17,8 @@ public class GroupPixelCIELUV extends GroupPixelRGB0 {
     private float avgV;
     private float stdDevV;
     
-    public GroupPixelCIELUV(final Set<PairInt> points, ImageExt colorImage) {
+    public GroupPixelCIELUV(final Collection<PairInt> points, 
+        ImageExt colorImage) {
                
         if (points == null) {
             throw new IllegalArgumentException("points cannot be null");

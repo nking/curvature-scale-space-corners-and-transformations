@@ -1704,7 +1704,7 @@ public class ORBMatcher {
         // O(N*lg_2(N))
         FurthestPair furthestPair = new FurthestPair();
         PairInt[] fp = furthestPair.find(points);
-        if (fp == null || fp.length < 2) {
+        if (fp == null || fp.length < 2) {            
             throw new IllegalArgumentException("did not find a furthest pair" + " in points");
         }
         double dist = ORBMatcher.distance(fp[0], fp[1]);

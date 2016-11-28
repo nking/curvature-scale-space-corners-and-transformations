@@ -2588,6 +2588,21 @@ public class ORB {
     }
 
     /**
+     * get a list of an octave's keypoints in column major format,
+     * that is pairint(x=column, y=row).
+     * @return
+     */
+    public List<PairInt> getKeyPointListColMaj(int octave) {
+        List<PairInt> out = new ArrayList<PairInt>();
+        for (int i = 0; i < keypoints0List.get(octave).size(); ++i) {
+            int x = keypoints1List.get(octave).get(i);
+            int y = keypoints0List.get(octave).get(i);
+            out.add(new PairInt(x, y));
+        }
+        return out;
+    }
+    
+    /**
      * get a list of each octave's keypoint rows in the reference frame
      * of the original full image size.  NOTE that the list
      * is not copied so do not modify.

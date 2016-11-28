@@ -15395,6 +15395,44 @@ int z = 1;
         System.out.println("textures nMerged=" + nR);
     }
     
+    public boolean filterByLUVDeltaE(ImageExt templateImage, 
+        Set<PairInt> templateSet, ImageExt img, 
+        List<Set<PairInt>> pointSets, float luvDeltaELimit) {
+        
+        GroupPixelCIELUV luvTemplate = new GroupPixelCIELUV(
+            templateSet, templateImage);
+        luvTemplate.calculateColors(templateSet, templateImage, 0, 0);
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        TIntList rm = new TIntArrayList();
+                
+        for (int i = 0; i < pointSets.size(); ++i) {
+            
+            Set<PairInt> set = pointSets.get(i);
+            
+            GroupPixelCIELUV luv = new GroupPixelCIELUV(set, img);
+            luv.calculateColors(set, img, 0, 0);
+            
+            double deltaE = cieC.calcDeltaECIE2000(
+                luvTemplate.getAvgL(), luvTemplate.getAvgU(),
+                luvTemplate.getAvgV(),
+                luv.getAvgL(), luv.getAvgU(), luv.getAvgV());
+             
+            // TODO: this may need to be a higher limit
+            if (Math.abs(deltaE) > luvDeltaELimit) {
+                rm.add(i);
+            }
+        }
+        
+        for (int i = (rm.size() - 1); i > -1; --i) {
+            int rmIdx = rm.get(i);
+            pointSets.remove(rmIdx);
+        }
+                
+        return !rm.isEmpty();
+    }
+    
     public boolean filterByCIETheta(ImageExt templateImage, 
         Set<PairInt> templateSet, ImageExt img, 
         List<Set<PairInt>> pointSets) {

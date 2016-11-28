@@ -3,6 +3,7 @@ package algorithms.imageProcessing;
 import algorithms.util.PairInt;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.set.TIntSet;
+import java.util.Collection;
 import java.util.Set;
 
 /**
@@ -19,8 +20,8 @@ public class GroupPixelRGB0 {
     public GroupPixelRGB0() {
     }
 
-    public void calculateColors(final Set<PairInt> points, ImageExt colorImage, 
-        int xOffset, int yOffset) {
+    public void calculateColors(final Collection<PairInt> points, 
+        ImageExt colorImage, int xOffset, int yOffset) {
         
         float n = points.size();
         float sumRed = 0;

@@ -1,9 +1,11 @@
 package algorithms.imageProcessing.features;
 
+import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.CannyEdgeFilterAdaptive;
 import algorithms.imageProcessing.ColorHistogram;
 import algorithms.imageProcessing.EdgeFilterProducts;
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.GroupPixelCIELUV;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
@@ -184,28 +186,6 @@ public class ObjectMatcher {
             sTempList.add(orb0.getScalesList().get(i).get(0));
         }
 
-        ColorHistogram clrHist = new ColorHistogram();
-
-        // make the template histograms from the first scale only
-        int[][] template_ch_HSV = null;
-        int[][] template_ch_LAB = null;
-        {
-            List<TIntList> kp0TempList = orb0.getKeyPoint0List();
-            List<TIntList> kp1TempList = orb0.getKeyPoint1List();
-            Set<PairInt> points0 = new HashSet<PairInt>();
-            for (int i = 0; i < kp0TempList.get(0).size(); ++i) {
-                int y = kp0TempList.get(0).get(i);
-                int x = kp1TempList.get(0).get(i);
-                PairInt p = new PairInt(x, y);
-                Set<PairInt> points = imageProcessor.getNeighbors(
-                    imgs0[0], p);
-                points.add(p);
-                points0.addAll(points);
-            }
-            template_ch_HSV = clrHist.histogramHSV(imgs0[1], points0);
-            template_ch_LAB = clrHist.histogramCIELAB(imgs0[1], points0);
-        }
-
         ORB orb1 = new ORB(500);
         orb1.overrideToNotCreateDescriptors();
         if (!settings.isUseLargerPyramid1()) {
@@ -217,40 +197,127 @@ public class ObjectMatcher {
         for (int i = 0; i < orb1.getScalesList().size(); ++i) {
             sList.add(orb1.getScalesList().get(i).get(0));
         }
-
-        // --- filter out points at each scale, then associated data ----
+        
         int ns = sList.size();
         List<TIntList> rmIndexesList = new ArrayList<TIntList>();
-        for (int i = 0; i < ns; ++i) {
-            TIntList kp0 = orb1.getKeyPoint0List().get(i);
-            TIntList kp1 = orb1.getKeyPoint1List().get(i);
-            TDoubleList or = orb1.getOrientationsList().get(i);
-            TFloatList s = orb1.getScalesList().get(i);
+        
+        float luvDeltaELimit = 10;// between 10 and 20, 25
+        
+        boolean useCHist = true;
+        if (useCHist) {
+        
+            ColorHistogram clrHist = new ColorHistogram();
 
-            int np = kp0.size();
-            TIntList rm = new TIntArrayList();
-            for (int j = 0; j < np; ++j) {
-                PairInt p = new PairInt(kp1.get(j), kp0.get(j));
-                Set<PairInt> points = imageProcessor.getNeighbors(
-                    img1, p);
-                points.add(p);
-                int[][] ch = clrHist.histogramHSV(img1, points);
-                float intersection = clrHist.intersection(
-                    template_ch_HSV, ch);
+            // make the template histograms from the first scale only
+            int[][] template_ch_HSV = null;
+            int[][] template_ch_LAB = null;
+            {
+                List<TIntList> kp0TempList = orb0.getKeyPoint0List();
+                List<TIntList> kp1TempList = orb0.getKeyPoint1List();
+                Set<PairInt> points0 = new HashSet<PairInt>();
+                for (int i = 0; i < kp0TempList.get(0).size(); ++i) {
+                    int y = kp0TempList.get(0).get(i);
+                    int x = kp1TempList.get(0).get(i);
+                    PairInt p = new PairInt(x, y);
+                    Set<PairInt> points = imageProcessor.getNeighbors(
+                        imgs0[0], p);
+                    points.add(p);
+                    points0.addAll(points);
+                }
+                template_ch_HSV = clrHist.histogramHSV(imgs0[1], points0);
+                template_ch_LAB = clrHist.histogramCIELAB(imgs0[1], points0);
+            }
 
-                if (intersection < 0.2) {
-                    rm.add(j);
-                } else {
-                    ch = clrHist.histogramCIELAB(img1, points);
-                    intersection = clrHist.intersection(
-                        template_ch_LAB, ch);
+            // --- filter out key points at each scale, then associated data ----
+
+            for (int i = 0; i < ns; ++i) {
+                TIntList kp0 = orb1.getKeyPoint0List().get(i);
+                TIntList kp1 = orb1.getKeyPoint1List().get(i);
+                TDoubleList or = orb1.getOrientationsList().get(i);
+                TFloatList s = orb1.getScalesList().get(i);
+
+                int np = kp0.size();
+                TIntList rm = new TIntArrayList();
+                for (int j = 0; j < np; ++j) {
+                    PairInt p = new PairInt(kp1.get(j), kp0.get(j));
+                    Set<PairInt> points = imageProcessor.getNeighbors(
+                        img1, p);
+                    points.add(p);
+                    int[][] ch = clrHist.histogramHSV(img1, points);
+                    float intersection = clrHist.intersection(
+                        template_ch_HSV, ch);
+
                     if (intersection < 0.2) {
+                        rm.add(j);
+                    } else {
+                        ch = clrHist.histogramCIELAB(img1, points);
+                        intersection = clrHist.intersection(
+                            template_ch_LAB, ch);
+                        if (intersection < 0.2) {
+                            rm.add(j);
+                        }
+                    }
+                }
+                rmIndexesList.add(rm);
+            }
+            
+        } else {
+                 
+            // ---- calculate the template CIE LUV colors ----
+            //      -- also calculate separately, the colors of the 
+            //         entire shape to compare results when using the
+            //         colors as filters.
+            Set<PairInt> set0 = new HashSet<PairInt>();
+            for (PairInt p : orb0.getKeyPointListColMaj(0)) {
+                Set<PairInt> points = imageProcessor.getNeighbors(
+                    img0, p);
+                set0.add(p);
+                set0.addAll(points);
+            }
+            GroupPixelCIELUV meanLUVKeypoints = new GroupPixelCIELUV(set0, img0);
+            meanLUVKeypoints.calculateColors(set0, img0, 0, 0);
+            
+            CIEChromaticity cieC = new CIEChromaticity();
+
+            for (int i = 0; i < ns; ++i) {
+                TIntList kp0 = orb1.getKeyPoint0List().get(i);
+                TIntList kp1 = orb1.getKeyPoint1List().get(i);
+                TDoubleList or = orb1.getOrientationsList().get(i);
+                TFloatList s = orb1.getScalesList().get(i);
+
+                int np = kp0.size();
+                TIntList rm = new TIntArrayList();
+                for (int j = 0; j < np; ++j) {
+                    
+                    PairInt p = new PairInt(kp1.get(j), kp0.get(j));
+                    Set<PairInt> points = imageProcessor.getNeighbors(
+                        img1, p);
+                    points.add(p);
+             
+                    GroupPixelCIELUV luv1 = new GroupPixelCIELUV(points, img1);
+                    luv1.calculateColors(points, img1, 0, 0);
+                    
+                    // -- for LUV, a deltaE limit of 9?
+                    double deltaE = cieC.calcDeltaECIE2000(
+                        meanLUVKeypoints.getAvgL(),
+                        meanLUVKeypoints.getAvgU(),
+                        meanLUVKeypoints.getAvgV(),
+                        luv1.getAvgL(),
+                        luv1.getAvgU(),
+                        luv1.getAvgV());
+                    
+                    if (Math.abs(deltaE) > luvDeltaELimit) {
                         rm.add(j);
                     }
                 }
+                rmIndexesList.add(rm);
             }
-            rmIndexesList.add(rm);
         }
+        
+        if (orb1.getKeyPoint0List().isEmpty()) {
+            return null;
+        }
+  
         orb1.removeAtIndexes(rmIndexesList);
 
         ImageExt img1Cp = img1.copyToImageExt();
@@ -260,7 +327,6 @@ public class ObjectMatcher {
         //canny.overrideToUseAdaptiveThreshold();
         //canny.applyFilter(img1.copyToGreyscale2());
         //EdgeFilterProducts edgeProduct = canny.getFilterProducts();
-
         //int[] labels4 = imageSegmentation.objectSegmentation(
         //    img1Cp, edgeProduct);
         
@@ -276,10 +342,16 @@ public class ObjectMatcher {
         List<Set<PairInt>> listOfPointSets2
             = LabelToColorHelper.extractContiguousLabelPoints(img1Cp, labels4);
 
-        // ---- filter segmentation by cie theta histograms
-        boolean changed = imageSegmentation.filterByCIETheta(imgs0[0],
-            shape0, img1Cp, listOfPointSets2);
-
+        boolean changed;
+        if (useCHist) {
+            // ---- filter segmentation by cie theta histograms
+            changed = imageSegmentation.filterByCIETheta(imgs0[0],
+                shape0, img1Cp, listOfPointSets2);
+        } else {
+            changed = imageSegmentation.filterByLUVDeltaE(imgs0[0],
+                shape0, img1Cp, listOfPointSets2, luvDeltaELimit);
+        }
+        
         // ---- remove keypoints if not in segmented cells
         if (changed) {
             TObjectIntMap<PairInt> pointIdxMap
@@ -309,6 +381,12 @@ public class ObjectMatcher {
                 rmIndexesList.add(rm);
             }
             orb1.removeAtIndexes(rmIndexesList);
+        }
+        
+        // TODO: if point sets size < 3 or so, remove it
+        
+        if (orb1.getKeyPoint0List().isEmpty()) {
+            return null;
         }
 
         if (debug) {   // ----------- segmentation -------
