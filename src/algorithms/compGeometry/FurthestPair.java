@@ -4,7 +4,9 @@ import algorithms.compGeometry.convexHull.GrahamScan;
 import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
 import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.util.PairInt;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -50,7 +52,7 @@ public class FurthestPair {
             // this can happen for colinear points reducting sorted size < 3
             //Logger.getLogger(FurthestPair.class.getName()).log(Level.SEVERE, null, ex);
             
-            return null;
+            return findWithBruteForce(points);
         }
         
         float[] xHull = scan.getXHull();
@@ -102,5 +104,32 @@ public class FurthestPair {
         float dy = y1 - y2;
         
         return (dx*dx + dy*dy);
+    }
+    
+    PairInt[] findWithBruteForce(Set<PairInt> points) {
+        
+        if (points.size() < 2) {
+            return null;
+        }
+        
+        float max = Float.MIN_VALUE;
+        PairInt maxP1 = null;
+        PairInt maxP2 = null;
+        
+        List<PairInt> list = new ArrayList<PairInt>(points);
+        for (int i = 0; i < list.size(); ++i) {
+            PairInt p1 = list.get(i);
+            for (int j = (i + 1); j < list.size(); ++j) {
+                PairInt p2 = list.get(j);
+                float d = distanceSq(p1, p2);
+                if (d > max) {
+                    max = d;
+                    maxP1 = p1;
+                    maxP2 = p2;
+                }
+            }
+        }
+        
+        return new PairInt[]{maxP1, maxP2};
     }
 }
