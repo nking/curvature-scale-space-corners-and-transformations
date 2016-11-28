@@ -2391,6 +2391,21 @@ public class AndroidStatuesTest extends TestCase {
             bccs.calculateDiffBetweenClasses(meanLCH);
         System.out.println("LCH min significant diff=" 
             + lchInterStats.findMinSignficance());
+    
+        AllClassInterStats labDeltaEInterStats = 
+            bccs.calculateDeltaEBetweenClasses(meanLAB, deltaELAB);
+        System.out.println("LAB DeltaE min significant diff=" 
+            + labDeltaEInterStats.findMinSignficance());
+        
+        AllClassInterStats lab31DeltaEInterStats = 
+            bccs.calculateDeltaEBetweenClasses(meanLAB31, deltaELAB31);
+        System.out.println("LAB31 DeltaE min significant diff=" 
+            + lab31DeltaEInterStats.findMinSignficance());
+        
+        AllClassInterStats luvDeltaEInterStats = 
+            bccs.calculateDeltaEBetweenClasses(meanLUV, deltaELUV);
+        System.out.println("LUV DeltaE min significant diff=" 
+            + luvDeltaEInterStats.findMinSignficance());
     }
     
     private List<Set<PairInt>> extractNonZeros(ImageExt[] imgs) {

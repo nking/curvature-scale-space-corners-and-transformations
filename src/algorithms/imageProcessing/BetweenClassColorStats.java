@@ -14,7 +14,55 @@ import java.util.List;
  */
 public class BetweenClassColorStats {
     
-    //TODO: need a method for deltaE
+    /**
+     * 
+     * @param meanLAB [class idx][color idx][avg, std dev]
+     * @param deltaELAB [class idx][deltaE avg, std dev]
+     * @return 
+     */
+    public AllClassInterStats calculateDeltaEBetweenClasses(
+        float[][][] meanLAB, float[][] deltaELAB) {
+        
+        AllClassInterStats allStats = new AllClassInterStats();
+        
+        int nClasses = meanLAB.length;
+        int nBands = meanLAB[0].length;
+        
+        if (nClasses != deltaELAB.length) {
+            throw new IllegalArgumentException("meanLAB and deltaELAB"
+                + " must be same length");
+        }
+
+        CIEChromaticity cieC = new CIEChromaticity();
+
+        int nComb = nClasses - 1;
+        
+        for (int i = 0; i < nClasses; ++i) {
+            
+            OneClassInterStats stats = new OneClassInterStats();
+            stats.totDiffs = new float[nComb];
+            stats.signifOfDiffs = new float[nComb];
+            allStats.stats.add(stats);
+            
+            float stdvDeltaE = deltaELAB[i][1];
+            float avgDeltaE = deltaELAB[i][0];
+            
+            int count = 0;
+            for (int j = 0; j < nClasses; ++j) {
+                if (i == j) { continue;}
+                float totDiff = (float)cieC.calcDeltaECIE2000(
+                        meanLAB[i][0][0], meanLAB[i][1][0], meanLAB[i][2][0], 
+                        meanLAB[j][0][0], meanLAB[j][1][0], meanLAB[j][2][0]);
+                stats.totDiffs[count] = totDiff;
+                stats.signifOfDiffs[count] = totDiff / stdvDeltaE;
+                count++;
+            }
+            assert(count == nComb);
+            stats.calcSignficanceStats();
+        }
+       
+        return allStats;
+    }
     
     /**
      * 
