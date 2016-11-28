@@ -121,6 +121,16 @@ public class BetweenClassColorStats {
             }
             return min;
         }
+        
+        public float findMinOfAverageSignficance() {
+            float min = Float.MAX_VALUE;
+            for (OneClassInterStats s : stats) {
+                if (s.avgSignificance < min) {
+                    min = s.avgSignificance;
+                }
+            }
+            return min;
+        }
     }
     
     public static class OneClassInterStats {

@@ -2369,43 +2369,79 @@ public class AndroidStatuesTest extends TestCase {
         BetweenClassColorStats bccs = new BetweenClassColorStats();
         AllClassInterStats hsvInterStats = 
             bccs.calculateDiffBetweenClasses(meanHSV);
-        System.out.println("HSV min significant diff=" 
-            + hsvInterStats.findMinSignficance());
+        System.out.println("HSV min signif diff=" 
+            + hsvInterStats.findMinSignficance()
+            + "\n  min of avg sig="
+            + hsvInterStats.findMinOfAverageSignficance()
+        );
         
         AllClassInterStats labInterStats = 
             bccs.calculateDiffBetweenClasses(meanLAB);
         System.out.println("LAB min significant diff=" 
-            + labInterStats.findMinSignficance());
+            + labInterStats.findMinSignficance()
+            + "\n  min of avg sig="
+            + labInterStats.findMinOfAverageSignficance()
+        );
         
         AllClassInterStats lab31InterStats = 
             bccs.calculateDiffBetweenClasses(meanLAB31);
         System.out.println("LAB1931 min significant diff=" 
-            + lab31InterStats.findMinSignficance());
+            + lab31InterStats.findMinSignficance()
+            
+            + "\n  min of avg sig="
+            + lab31InterStats.findMinOfAverageSignficance()
+        );
     
         AllClassInterStats luvInterStats = 
             bccs.calculateDiffBetweenClasses(meanLUV);
         System.out.println("LUV min significant diff=" 
-            + luvInterStats.findMinSignficance());
+            + luvInterStats.findMinSignficance()
+            
+            + "\n  min of avg sig="
+            + luvInterStats.findMinOfAverageSignficance()
+        );
+        
         
         AllClassInterStats lchInterStats = 
             bccs.calculateDiffBetweenClasses(meanLCH);
         System.out.println("LCH min significant diff=" 
-            + lchInterStats.findMinSignficance());
+            + lchInterStats.findMinSignficance()
+            
+            + "\n  min of avg sig="
+            + lchInterStats.findMinOfAverageSignficance()
+        );
+        
     
         AllClassInterStats labDeltaEInterStats = 
             bccs.calculateDeltaEBetweenClasses(meanLAB, deltaELAB);
         System.out.println("LAB DeltaE min significant diff=" 
-            + labDeltaEInterStats.findMinSignficance());
+            + labDeltaEInterStats.findMinSignficance()
+            
+            + "\n  min of avg sig="
+            + labInterStats.findMinOfAverageSignficance()
+        );
+        
         
         AllClassInterStats lab31DeltaEInterStats = 
             bccs.calculateDeltaEBetweenClasses(meanLAB31, deltaELAB31);
         System.out.println("LAB31 DeltaE min significant diff=" 
-            + lab31DeltaEInterStats.findMinSignficance());
+            + lab31DeltaEInterStats.findMinSignficance()
+            
+            + "\n  min of avg sig="
+            + lab31InterStats.findMinOfAverageSignficance()
+        );
+        
         
         AllClassInterStats luvDeltaEInterStats = 
             bccs.calculateDeltaEBetweenClasses(meanLUV, deltaELUV);
         System.out.println("LUV DeltaE min significant diff=" 
-            + luvDeltaEInterStats.findMinSignficance());
+            + luvDeltaEInterStats.findMinSignficance()
+            
+            + "\n  min of avg sig="
+            + luvInterStats.findMinOfAverageSignficance()
+        );
+        
+    
     }
     
     private List<Set<PairInt>> extractNonZeros(ImageExt[] imgs) {
