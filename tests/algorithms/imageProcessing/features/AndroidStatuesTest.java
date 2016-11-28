@@ -8,6 +8,8 @@ import algorithms.compGeometry.clustering.KMeansHSV;
 import algorithms.compGeometry.clustering.KMeansPlusPlus;
 import algorithms.compGeometry.clustering.KMeansPlusPlusColor;
 import algorithms.imageProcessing.AdaptiveThresholding;
+import algorithms.imageProcessing.BetweenClassColorStats;
+import algorithms.imageProcessing.BetweenClassColorStats.AllClassInterStats;
 import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.CannyEdgeFilterAdaptive;
 import algorithms.imageProcessing.CannyEdgeFilterAdaptiveDeltaE2000;
@@ -2363,7 +2365,32 @@ public class AndroidStatuesTest extends TestCase {
         }
             
         System.out.println("--- between class stats ----");
+       
+        BetweenClassColorStats bccs = new BetweenClassColorStats();
+        AllClassInterStats hsvInterStats = 
+            bccs.calculateDiffBetweenClasses(meanHSV);
+        System.out.println("HSV min significant diff=" 
+            + hsvInterStats.findMinSignficance());
         
+        AllClassInterStats labInterStats = 
+            bccs.calculateDiffBetweenClasses(meanLAB);
+        System.out.println("LAB min significant diff=" 
+            + labInterStats.findMinSignficance());
+        
+        AllClassInterStats lab31InterStats = 
+            bccs.calculateDiffBetweenClasses(meanLAB31);
+        System.out.println("LAB1931 min significant diff=" 
+            + lab31InterStats.findMinSignficance());
+    
+        AllClassInterStats luvInterStats = 
+            bccs.calculateDiffBetweenClasses(meanLUV);
+        System.out.println("LUV min significant diff=" 
+            + luvInterStats.findMinSignficance());
+        
+        AllClassInterStats lchInterStats = 
+            bccs.calculateDiffBetweenClasses(meanLCH);
+        System.out.println("LCH min significant diff=" 
+            + lchInterStats.findMinSignficance());
     }
     
     private List<Set<PairInt>> extractNonZeros(ImageExt[] imgs) {
