@@ -814,6 +814,39 @@ public class IntraClassStats {
         /*
         * using the standard illuminant of daylight, D65,
         * the range of return values is
+        *    L    0 to 28.5
+        *    A  -46.9  62.5
+        *    B  -45.7  48.0
+        */
+        
+        float d1 = 1.f/28.5f;
+        float d2 = 1.f/(62.5f + 46.9f);
+        float d3 = 1.f/(48.0f + 45.7f);
+        
+        r[0][0] *= d1; 
+        r[1][0] *= d2;
+        r[2][0] *= d3;
+        
+        float sum1 = (r[0][0] + r[1][0] + r[2][0])/3.f;
+        
+        float sum2 = (float)Math.sqrt(r[0][1]*r[0][1]*d1*d1 
+            + r[1][1]*r[1][1]*d2*d2 
+            + r[2][1] * r[2][1]*d2*d2)/3.f;
+        
+        float sum3 = (float)Math.sqrt(r[0][2]*r[0][2]*d1*d1 
+            + r[1][2]*r[1][2]*d2*d2 
+            + r[2][2] * r[2][2]*d3*d3)/3.f;
+        
+        return new float[]{sum1, sum2, sum3};
+    }
+
+    private float[][] calcNormDiffForCIELAB1931(ImageExt[] imgs, List<Set<PairInt>> shapes) {
+
+        float[][] r = calcDiffForCIELAB(imgs, shapes);
+        
+        /*
+        * using the standard illuminant of daylight, D65,
+        * the range of return values is
         * L*    0 to 104.5
         * a* -190 to 103
         * b* -113 to 99
@@ -840,15 +873,24 @@ public class IntraClassStats {
         return new float[]{sum1, sum2, sum3};
     }
 
-    private float[][] calcNormDiffForCIELAB1931(ImageExt[] imgs, List<Set<PairInt>> shapes) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
     private float[][] calcNormDiffForCIELUV(ImageExt[] imgs, List<Set<PairInt>> shapes) {
+        /*
+        L       0 to 104.5
+           u   -86.9 to 183.8
+           v  -141.4 to 112.3
+        */
+        
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     private float[][] calcNormDiffForCIELCH(ImageExt[] imgs, List<Set<PairInt>> shapes) {
+        /*
+        the range of return values is
+     *   luminosity L*  0 to 104.5
+     *   magnitude, C:  0 to 139 
+     *   angle,     H:  0 to 359
+        */
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
+    
 }
