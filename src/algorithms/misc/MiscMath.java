@@ -2664,4 +2664,60 @@ System.out.println("value 0 is rescaled to value=" + (-minV*scale)
         
         return avg;
     }
+
+    /**
+     * calculate the mean of the averages, the standard deviation of those
+     * averages and the addition of the standard deviations added in quadrature.
+     * @param avgs
+     * @param stdvs
+     * @return [mean][std dev of mean][stdvs added in quadrature]
+     */
+    public static float[] calcMeanAndStDev(float[] avgs, float[] stdvs) {
+    
+        float[] avgAndStdv = MiscMath.getAvgAndStDev(avgs);
+        
+        double sum = 0;
+        for (float stdv : stdvs) {
+            sum += (stdv * stdv);
+        }
+        float sq = (float)Math.sqrt(sum);
+        
+        return new float[]{avgAndStdv[0], avgAndStdv[1], sq};
+    }
+
+    public static float[] calcMeanAndStDevWithWrapAround(float[] a, 
+        int wrapAroundValue, float[] s) {
+        
+        HistogramHolder hist = Histogram.createSimpleHistogram(a, 
+            Errors.populateYErrorsBySqrt(a));
+        
+        int peakValueIdx = MiscMath.findYMaxIndex(hist.getYHist());
+        
+        final float peakValue = hist.getXHist()[peakValueIdx];
+        
+        float[] a2 = new float[a.length];
+        for (int i = 0; i < a.length; ++i) {
+            float v = a[i];
+            float v2 = v + wrapAroundValue;
+            if (Math.abs(v - peakValue) <= Math.abs(v2 - peakValue)) {
+                a2[i] = v;
+            } else {
+                a2[i] = v2;
+            }
+        }
+
+        float[] avgAndStdv = MiscMath.getAvgAndStDev(a2);
+        if (avgAndStdv[0] > wrapAroundValue) {
+            avgAndStdv[0] -= wrapAroundValue;
+        }
+        
+        double sum = 0;
+        for (float stdv : s) {
+            sum += (stdv * stdv);
+        }
+        float sq = (float)Math.sqrt(sum);
+        
+        return new float[]{avgAndStdv[0], avgAndStdv[1], sq};
+    }
+    
 }

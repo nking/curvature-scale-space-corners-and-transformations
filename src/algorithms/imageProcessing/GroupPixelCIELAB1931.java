@@ -66,9 +66,9 @@ public class GroupPixelCIELAB1931 extends GroupPixelRGB0 {
     }
 
     /**
-     * calculate the difference in L, U, V between this and other and
+     * calculate the difference in L, A, B 1931 between this and other and
      * normalize the values to a sum of "1" using the range of values
-     * possible from the use of a standard illumant, D65.
+     * possible from the use of a standard illuminant, D65.
      * 
      * @param other
      * @return 

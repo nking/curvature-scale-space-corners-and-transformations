@@ -1377,4 +1377,54 @@ public class CIEChromaticity {
         return (dist <= 0.03333);//(dist <= 0.075);
     }
 
+    /**
+     * calculate the difference in L,A,B 1931 between between the two sets and
+     * normalize the values to a sum of "1" using the range of values
+     * possible from the use of a standard illuminant, D65.
+     * 
+     * @return 
+     */
+    public float calcNormalizedDifferenceLAB31(float ell1, float a1, float b1,
+        float ell2, float a2, float b2) {
+       
+        /*
+        * using the standard illuminant of daylight, D65,
+        * the range of return values is
+        * L*    0 to 104.5
+        * a* -190 to 103
+        * b* -113 to 99
+        */
+        
+        float diff1 = Math.abs(ell1 - ell2)/104.5f;
+        float diff2 = Math.abs(a1 - a2)/(103f + 190f);
+        float diff3 = Math.abs(b1 - b2)/(99f + 113.f);
+        
+        return (diff1 + diff2 + diff3)/3.f;
+    }
+    
+    /**
+     * calculate the difference in L, U, V 1976 between between the two sets and
+     * normalize the values to a sum of "1" using the range of values
+     * possible from the use of a standard illuminant, D65.
+     * 
+     * @return 
+     */
+    public float calcNormalizedDifferenceLUV(float ell1, float u1, float v1,
+        float ell2, float u2, float v2) {
+       
+        /*
+        * using the standard illuminant of daylight, D65,
+        * the range of return values is
+        * L       0 to 104.5
+        * u   -86.9 to 183.8
+        * v  -141.4 to 112.3
+        */
+        
+        float diff1 = Math.abs(ell1 - ell2)/104.5f;
+        float diff2 = Math.abs(u1 - u2)/(183.8f + 86.9f);
+        float diff3 = Math.abs(v1 - v2)/(112.3f + 141.4f);
+        
+        return (diff1 + diff2 + diff3)/3.f;
+    }
+    
 }
