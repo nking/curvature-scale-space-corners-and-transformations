@@ -760,6 +760,21 @@ public class ORBMatcher {
                         continue;
                     }
                     
+                    //NOTE: to increase the abilit to find projected objects
+                    //  that have euclidean poses and skew, might consider
+                    //  fast ways to approximate an affine and evaluate it
+                    //  after the euclidean solution here.
+                    //  affine transformations leave parallel lines in the
+                    //    transformed space so could look for that in the
+                    //    unmatched portion:
+                    //  for example, if half of the object is matched,
+                    //  could determine the distance of the matched to the
+                    //  unmatched and use that with knowledge of the 
+                    //  euclidean expected distance to approximate a shear.
+                    //  for the evaluations to remain easy to compare results
+                    //  with other results, would not want to allow too much
+                    //  shear...
+                    
                     double c = r.getChordDiffSum();
                     
                     results.add(new PObject(r, bounds1, bounds2, scale1, scale2));
