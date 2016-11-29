@@ -132,6 +132,7 @@ public class LabelToColorHelper {
             iter.advance();
             Set<PairInt> set = iter.value();
             DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
+            // setting is for 4 neighbors
             finder.setMinimumNumberInCluster(1);
             finder.findConnectedPointGroups(set);
             for (int j = 0; j < finder.getNumberOfGroups(); ++j) {
@@ -252,6 +253,7 @@ public class LabelToColorHelper {
     /**
      * create a map with key = label, value = set of adjacent
      * labels.
+     * Note, this uses a 4 nieghbor region, not 8.
      * @param img
      * @param labels
      * @param excludeNegativeLabels
@@ -266,8 +268,8 @@ public class LabelToColorHelper {
         int h = img.getHeight();
         int w = img.getWidth();
         
-        int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;
+        int[] dxs = Misc.dx4;
+        int[] dys = Misc.dy4;
         
         for (int idx1 = 0; idx1 < labels.length; ++idx1) {
             
@@ -310,6 +312,7 @@ public class LabelToColorHelper {
     /**
      * create a map with key = label, value = set of adjacent
      * labels.
+     * Note that it uses a 4 neighbor region, not 8.
      * @param img
      * @param labels
      * @param excludeNegativeLabels
@@ -324,8 +327,8 @@ public class LabelToColorHelper {
         int h = img.getHeight();
         int w = img.getWidth();
         
-        int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;
+        int[] dxs = Misc.dx4;
+        int[] dys = Misc.dy4;
         
         for (int idx1 = 0; idx1 < labels.length; ++idx1) {
             
@@ -368,6 +371,7 @@ public class LabelToColorHelper {
     /**
      * create a map with key = label, value = set of adjacent
      * labels.
+     * Note uses 4 neighbor region, not 8.
      * @param img
      * @param labels
      * @return 
@@ -381,8 +385,8 @@ public class LabelToColorHelper {
         int h = img.getHeight();
         int w = img.getWidth();
         
-        int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;
+        int[] dxs = Misc.dx4;
+        int[] dys = Misc.dy4;
         
         for (int idx1 = 0; idx1 < labels.length; ++idx1) {
             
@@ -470,6 +474,7 @@ public class LabelToColorHelper {
      *   set of indexes of contiguousSets which are adjacent to key's set.
      * Note that int[] labels usually have a value that is an index
      * of contiguousSets.
+     * Note also that it uses a 4 neighbor region, not 8.
      * @param contiguousSets
      * @return 
      */
@@ -487,8 +492,8 @@ public class LabelToColorHelper {
         TIntObjectMap<TIntSet> contigAdjacencyMap =
             new TIntObjectHashMap<TIntSet>();
 
-        int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;
+        int[] dxs = Misc.dx4;
+        int[] dys = Misc.dy4;
         for (int lIdx = 0; lIdx < contiguousSets.size(); ++lIdx) {
 
             TIntSet setIdx1 = contigAdjacencyMap.get(lIdx);

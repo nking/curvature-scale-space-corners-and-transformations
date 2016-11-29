@@ -4303,8 +4303,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
      */
     public List<Set<PairInt>> createColorEdgeSegmentation(ImageExt input,
         String debugTag) {
-
-        //PAUSED here. editing tR
         
         // 0 is CIE LAB, 1 is HSV
         final int clrSpace = 0;
@@ -13679,6 +13677,10 @@ int z = 1;
      * still over-segmented, but a result which is searchable
      * for shapes.  NOTE that this is tailored for images
      * binned to near size 256 on a side.
+     * 
+     * TODO: need an argument to allow  lower threshold in merging when user
+     * knows that there are large neutral tone landscape boundaries.
+     * 
      * @param img
      * @param edgeProducts
      * @return
@@ -13728,7 +13730,7 @@ int z = 1;
         List<Set<PairInt>> contigSets = LabelToColorHelper
             .extractContiguousLabelPoints(img, labels);
 
-        int sizeLimit = 31;
+        int sizeLimit = 16;//31;
         if (img.getNPixels() < 100) {
             sizeLimit = 5;
         }
@@ -13742,8 +13744,12 @@ int z = 1;
         contigSets = LabelToColorHelper
             .extractContiguousLabelPoints(img, labels);
         
+        //TODO and NOTE:  for landscapes having snow and cloud boundaries,
+        //   or other ceutral tone boundaries, may want to
+        //   set the CIE LUV limit to a lower value such as 0.035
+        
         labels = mergeByColor(imgCp, contigSets, 
-            ColorSpace.CIELUV_NORMALIZED, 0.05f);//0.06 is slightly too much
+            ColorSpace.CIELUV_NORMALIZED, 0.0475f);//0.06 is slightly too much
         
         mergeSmallSegments(imgCp, labels, sizeLimit, 
             ColorSpace.CIELAB);

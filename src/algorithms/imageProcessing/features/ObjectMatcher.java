@@ -313,12 +313,12 @@ public class ObjectMatcher {
                 }
             }
             rmIndexesList.add(rm);
-            
-            orb1.removeAtIndexes(rmIndexesList);
-                        
-            if (orb1.getKeyPoint0List().isEmpty()) {
-                return null;
-            }
+        }
+
+        orb1.removeAtIndexes(rmIndexesList);
+
+        if (orb1.getKeyPoint0List().isEmpty()) {
+            return null;
         }
         
         ImageExt img1Cp = img1.copyToImageExt();
