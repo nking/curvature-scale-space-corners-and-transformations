@@ -110,6 +110,9 @@ Still testing the class, there may be bugs present.
 public class ORB {
    
     /*
+    TODO: -- consider making other high quality keypoints from atrous
+             wavelet transform coefficients or the wavelet median transform
+             coefficents
     TODO:
        -- considering adding alternative pyramid building methods
           such as Laplacian pyramids or

@@ -774,6 +774,9 @@ public class ORBMatcher {
                     //  for the evaluations to remain easy to compare results
                     //  with other results, would not want to allow too much
                     //  shear...
+                    //  in order to add the chord differences, this additional
+                    //  calculation needs to be handled in the
+                    //  partial shape matcher (but can be left until the end)
                     
                     double c = r.getChordDiffSum();
                     
