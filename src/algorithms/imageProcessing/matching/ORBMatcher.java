@@ -26,6 +26,7 @@ import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.QuadInt;
 import algorithms.util.TwoDFloatArray;
+import algorithms.util.TwoDIntArray;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
@@ -372,11 +373,11 @@ public class ORBMatcher {
                     int t1X = kpX1_2.get(q.getA());
                     int t1Y = kpY1_2.get(q.getA());
                     int t2X = kpX1_2.get(q.getB());
-                    int t2Y = kpY1_2.get(q.getB());
+                    int t2Y = kpY1_2.get(q.getB());              
                     int s1X = kpX2_2.get(q.getC());
                     int s1Y = kpY2_2.get(q.getC());
                     int s2X = kpX2_2.get(q.getD());
-                    int s2Y = kpY2_2.get(q.getD());
+                    int s2Y = kpY2_2.get(q.getD());                    
                     // ----- transform keypoints and sum the distance differences ----
                     PairIntArray tr1 = transformer.applyTransformation(params, a1);
                     // trim to image dimensions
@@ -567,23 +568,9 @@ public class ORBMatcher {
      */
     public static List<CorrespondenceList> matchSmall(ORB orb1, ORB orb2, Set<PairInt> labeledPoints1, List<Set<PairInt>> labeledPoints2) {
         
-        if (!orb1.getDescrChoice().equals(orb2.getDescrChoice())) {
-            throw new IllegalStateException("orbs must contain same kind of descirptors");
-        }
-        if (!orb1.getDescrChoice().equals(ORB.DescriptorChoice.ALT)) {
-            throw new IllegalStateException("orbs must contain Alt cie lab polar theta images");
-        }
-        
         TFloatList scales1 = extractScales(orb1.getScalesList());
         TFloatList scales2 = extractScales(orb2.getScalesList());
-        
-        if (Math.abs(scales1.get(0) - 1) > 0.01) {
-            throw new IllegalArgumentException("logic depends upon first scale" + " level being '1'");
-        }
-        if (Math.abs(scales2.get(0) - 1) > 0.01) {
-            throw new IllegalArgumentException("logic depends upon first scale" + " level being '1'");
-        }
-        
+          
         SIGMA sigma = SIGMA.ZEROPOINTFIVE;
         
         ImageProcessor imageProcessor = new ImageProcessor();
@@ -594,8 +581,8 @@ public class ORBMatcher {
         
         TIntObjectMap<Set<PairInt>> labeledPoints1Lists = new TIntObjectHashMap<Set<PairInt>>();
         
-        // key = octave number, value = histograms of cie lab theta
-        TIntObjectMap<OneDIntArray> ch1s = new TIntObjectHashMap<OneDIntArray>();
+        // key = octave number, value = histograms of cie luv
+        TIntObjectMap<TwoDIntArray> ch1s = new TIntObjectHashMap<TwoDIntArray>();
         
         // key = octave number, value = ordered boundaries of sets
         TIntObjectMap<PairIntArray> labeledBoundaries1 = new TIntObjectHashMap<PairIntArray>();
@@ -608,9 +595,9 @@ public class ORBMatcher {
                 set1.add(p1);
             }
             labeledPoints1Lists.put(octave1, set1);
-            GreyscaleImage img = ORB.convertToImageGS(orb1.getPyramidImagesAlt().get(octave1));
-            int[] ch = cHist.histogram1D(img, set1, 255);
-            ch1s.put(octave1, new OneDIntArray(ch));
+            Image img = ORB.convertToImage(orb1.getPyramidImages().get(octave1));
+            int[][] ch = cHist.histogramCIELUV(img, set1);
+            ch1s.put(octave1, new TwoDIntArray(ch));
             PairIntArray bounds = imageProcessor.extractSmoothedOrderedBoundary(new HashSet(set1), sigma, img.getWidth(), img.getHeight());
             labeledBoundaries1.put(octave1, bounds);
         }
@@ -621,7 +608,8 @@ public class ORBMatcher {
         TIntObjectMap<List<Set<PairInt>>> labeledPoints2Lists = new TIntObjectHashMap<List<Set<PairInt>>>();
         
         // key = octave number, value = list of histograms of cie lab theta
-        TIntObjectMap<List<OneDIntArray>> ch2Lists = new TIntObjectHashMap<List<OneDIntArray>>();
+        TIntObjectMap<List<TwoDIntArray>> ch2Lists 
+            = new TIntObjectHashMap<List<TwoDIntArray>>();
         
         // key = octave number, value = list of ordered points in labeled set
         TIntObjectMap<List<PairIntArray>> labeledBoundaries2Lists = new TIntObjectHashMap<List<PairIntArray>>();
@@ -644,8 +632,8 @@ public class ORBMatcher {
                 
                 float scale2 = scales2.get(octave2);
                 
-                GreyscaleImage img = ORB.convertToImageGS(
-                    orb2.getPyramidImagesAlt().get(octave2));
+                Image img = ORB.convertToImage(
+                    orb2.getPyramidImages().get(octave2));
                 int w2 = img.getWidth();
                 int h2 = img.getHeight();
                 
@@ -671,13 +659,13 @@ public class ORBMatcher {
                 
                 // create histograms for later comparison w/ template at
                 // different scales
-                int[] ch = cHist.histogram1D(img, set2, 255);
-                List<OneDIntArray> ch2List = ch2Lists.get(octave2);
+                int[][] ch = cHist.histogramCIELUV(img, set2);
+                List<TwoDIntArray> ch2List = ch2Lists.get(octave2);
                 if (ch2List == null) {
-                    ch2List = new ArrayList<OneDIntArray>();
+                    ch2List = new ArrayList<TwoDIntArray>();
                     ch2Lists.put(octave2, ch2List);
                 }
-                ch2List.add(new OneDIntArray(ch));
+                ch2List.add(new TwoDIntArray(ch));
                 
                 List<PairIntArray> list3 = labeledBoundaries2Lists.get(octave2);
                 if (list3 == null) {
@@ -714,7 +702,7 @@ public class ORBMatcher {
             
             float scale1 = scales1.get(i);
             
-            int[] ch1 = ch1s.get(i).a;
+            int[][] ch1 = ch1s.get(i).a;
             //Set<PairInt> templateSet = labeledPoints1Lists.get(i);
             PairIntArray bounds1 = labeledBoundaries1.get(i);
             float sz1 = calculateObjectSize(bounds1);
@@ -728,7 +716,7 @@ public class ORBMatcher {
                 
                 float scale2 = scales2.get(j);
                 
-                List<OneDIntArray> listOfCH2s = ch2Lists.get(j);
+                List<TwoDIntArray> listOfCH2s = ch2Lists.get(j);
                 if (listOfCH2s == null) {
                     continue;
                 }
@@ -751,7 +739,8 @@ public class ORBMatcher {
                         (sz2 > sz1 && Math.abs(sz2 / sz1) > 1.15)) {
                         continue;
                     }
-                    int[] ch2 = listOfCH2s.get(k).a;
+                  
+                    int[][] ch2 = listOfCH2s.get(k).a;
                     float intersection = cHist.intersection(ch1, ch2);
                     if (intersection < intersectionLimit) {
                         continue;
@@ -988,9 +977,6 @@ public class ORBMatcher {
      * fitting shape and color object where template is 
      * dataset 1 and the searchable is dataset 2. 
      * 
-     * needs the orbs to contain the theta pyramidal images.
-     * add usage here.
-     *
      * @param orb1
      * @param orb2
      * @param labeledPoints1
@@ -1000,14 +986,7 @@ public class ORBMatcher {
     public static List<CorrespondenceList> matchAggregatedShape(
         ORB orb1, ORB orb2, Set<PairInt> labeledPoints1, 
         List<Set<PairInt>> labeledPoints2) {
-        
-        if (!orb1.getDescrChoice().equals(orb2.getDescrChoice())) {
-            throw new IllegalStateException("orbs must contain same kind of descirptors");
-        }
-        if (!orb1.getDescrChoice().equals(ORB.DescriptorChoice.ALT)) {
-            throw new IllegalStateException("orbs must contain Alt cie lab polar theta images");
-        }
-        
+       
         TFloatList scales1 = extractScales(orb1.getScalesList());
         TFloatList scales2 = extractScales(orb2.getScalesList());
         
@@ -1028,8 +1007,8 @@ public class ORBMatcher {
         
         TIntObjectMap<Set<PairInt>> labeledPoints1Lists = new TIntObjectHashMap<Set<PairInt>>();
         
-        // key = octave number, value = histograms of cie lab theta
-        TIntObjectMap<OneDIntArray> ch1s = new TIntObjectHashMap<OneDIntArray>();
+        // key = octave number, value = histograms of cie cie luv
+        TIntObjectMap<TwoDIntArray> ch1s = new TIntObjectHashMap<TwoDIntArray>();
         
         // key = octave number, value = ordered boundaries of sets
         TIntObjectMap<PairIntArray> labeledBoundaries1 = new TIntObjectHashMap<PairIntArray>();
@@ -1042,9 +1021,9 @@ public class ORBMatcher {
                 set1.add(p1);
             }
             labeledPoints1Lists.put(octave1, set1);
-            GreyscaleImage img = ORB.convertToImageGS(orb1.getPyramidImagesAlt().get(octave1));
-            int[] ch = cHist.histogram1D(img, set1, 255);
-            ch1s.put(octave1, new OneDIntArray(ch));
+            Image img = ORB.convertToImage(orb1.getPyramidImages().get(octave1));
+            int[][] ch = cHist.histogramCIELUV(img, set1);
+            ch1s.put(octave1, new TwoDIntArray(ch));
             PairIntArray bounds = imageProcessor.extractSmoothedOrderedBoundary(new HashSet(set1), sigma, img.getWidth(), img.getHeight());
             labeledBoundaries1.put(octave1, bounds);
         }
@@ -1055,7 +1034,8 @@ public class ORBMatcher {
         TIntObjectMap<List<Set<PairInt>>> labeledPoints2Lists = new TIntObjectHashMap<List<Set<PairInt>>>();
         
         // key = octave number, value = list of histograms of cie lab theta
-        TIntObjectMap<List<OneDIntArray>> ch2Lists = new TIntObjectHashMap<List<OneDIntArray>>();
+        TIntObjectMap<List<TwoDIntArray>> ch2Lists 
+            = new TIntObjectHashMap<List<TwoDIntArray>>();
         
         for (int k = 0; k < labeledPoints2.size(); ++k) {
             Set<PairInt> set = labeledPoints2.get(k);
@@ -1075,8 +1055,8 @@ public class ORBMatcher {
                 
                 float scale2 = scales2.get(octave2);
                 
-                GreyscaleImage img = ORB.convertToImageGS(
-                    orb2.getPyramidImagesAlt().get(octave2));
+                Image img = ORB.convertToImage(
+                    orb2.getPyramidImages().get(octave2));
                 int w2 = img.getWidth();
                 int h2 = img.getHeight();
                 
@@ -1102,13 +1082,13 @@ public class ORBMatcher {
                 
                 // create histograms for later comparison w/ template at
                 // different scales
-                int[] ch = cHist.histogram1D(img, set2, 255);
-                List<OneDIntArray> ch2List = ch2Lists.get(octave2);
+                int[][] ch = cHist.histogramCIELUV(img, set2);
+                List<TwoDIntArray> ch2List = ch2Lists.get(octave2);
                 if (ch2List == null) {
-                    ch2List = new ArrayList<OneDIntArray>();
+                    ch2List = new ArrayList<TwoDIntArray>();
                     ch2Lists.put(octave2, ch2List);
                 }
-                ch2List.add(new OneDIntArray(ch));
+                ch2List.add(new TwoDIntArray(ch));
                 
                 assert(labeledPoints2Lists.get(octave2).size() ==
                     ch2Lists.get(octave2).size());
@@ -1148,7 +1128,7 @@ public class ORBMatcher {
             
             float scale1 = scales1.get(i);
             
-            int[] ch1 = ch1s.get(i).a;
+            int[][] ch1 = ch1s.get(i).a;
             //Set<PairInt> templateSet = labeledPoints1Lists.get(i);
             PairIntArray bounds1 = labeledBoundaries1.get(i);
             float sz1 = calculateObjectSize(bounds1);
@@ -1162,7 +1142,7 @@ public class ORBMatcher {
                 
                 float scale2 = scales2.get(j);
                 
-                List<OneDIntArray> listOfCH2s = ch2Lists.get(j);
+                List<TwoDIntArray> listOfCH2s = ch2Lists.get(j);
                 if (listOfCH2s == null) {
                     continue;
                 }

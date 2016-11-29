@@ -19,6 +19,7 @@ import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
 import algorithms.util.QuadInt;
 import algorithms.util.TwoDFloatArray;
+import algorithms.util.TwoDIntArray;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.map.TIntIntMap;
@@ -62,11 +63,11 @@ public class ShapeFinder {
     private final boolean useSameNSampl = false;
 
     private final PairIntArray bounds1;
-    private final int[] ch1;
+    private final int[][] ch1;
     private final float scale1;
     private final float sz1;
     private final List<Set<PairInt>> listOfSets2;
-    private final List<OneDIntArray> listOfCH2s;
+    private final List<TwoDIntArray> listOfCH2s;
     private final float scale2;
     private final Map<OneDIntArray, PairIntArray> keyBoundsMap;
     private final float intersectionLimit;
@@ -114,9 +115,9 @@ public class ShapeFinder {
      * bounding points of the aggregated sets of labels from the key in
      * indexBoundsMap,
      */
-    public ShapeFinder(PairIntArray bounds1, int[] ch1, float scale1, float sz1,
+    public ShapeFinder(PairIntArray bounds1, int[][] ch1, float scale1, float sz1,
         int xMax1, int yMax1,
-        List<Set<PairInt>> listOfSets2, List<OneDIntArray> listOfCH2s,
+        List<Set<PairInt>> listOfSets2, List<TwoDIntArray> listOfCH2s,
         float scale2, 
         Map<OneDIntArray, PairIntArray> keyBoundsMap,
         int xMax2, int yMax2,
@@ -514,7 +515,7 @@ public static int oct2 = -1;
             // note, the size filter before the invocation of this method
             // assures that each set is within size sz1
 
-            int[] ch2 = listOfCH2s.get(idxI0).a;
+            int[][] ch2 = listOfCH2s.get(idxI0).a;
             float intersection = cHist.intersection(ch1, ch2);
             if (intersection < intersectionLimit) {
                 continue;
@@ -801,7 +802,7 @@ public static int oct2 = -1;
 
         ColorHistogram cHist = new ColorHistogram();
 
-        int[] ch2 = new int[ch1.length];
+        int[][] ch2 = cHist.createWithDefaultSize();
         TIntIterator iter = combIdxs.iterator();
         while (iter.hasNext()) {
             int idx = iter.next();
@@ -921,7 +922,7 @@ public static int oct2 = -1;
         
         for (int i = 0; i < listOfSets2.size(); ++i) {
 
-            int[] ch2 = listOfCH2s.get(i).a;
+            int[][] ch2 = listOfCH2s.get(i).a;
             float intersection = cHist.intersection(ch1, ch2);
             if (intersection < intersectionLimit) {                
                 continue;

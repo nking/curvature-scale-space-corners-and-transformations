@@ -365,7 +365,7 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void estORBMatcher() throws Exception {
+    public void testORBMatcher_gingerbreadman() throws Exception {
 
         /*        
         this demonstrates ORB
@@ -386,13 +386,19 @@ public class AndroidStatuesTest extends TestCase {
             "android_statues_03_sz3"
         };
 
+        /*
+        NOTE: andr 03 and 04 have a very small number of keypoints, but
+        just enough to match along w/ the very few number of
+        sergmented cells remaining after filter which could possibly
+        be matched.
+        */
         String[] fileNames1 = new String[]{
-            "android_statues_01.jpg",
-            "android_statues_02.jpg",
-            "android_statues_04.jpg",
-            "android_statues_03.jpg"
+        //    "android_statues_01.jpg", // no kp remaining
+              "android_statues_02.jpg", // no kp remaining
+        //    "android_statues_04.jpg", // OK: match0, matchSmall works
+        //    "android_statues_03.jpg" // OK: match0, matchSmall works
         };
-
+        
         int fn0 = 0;
         for (String fileNameRoot0 : fileNames0) {               
             fn0++;
@@ -449,17 +455,22 @@ public class AndroidStatuesTest extends TestCase {
                 Settings settings = new Settings();
                            
                 ObjectMatcher objMatcher = new ObjectMatcher();
-                if (fileName1Root.contains("_01")) {
+                //if (fileName1Root.contains("_01")) {
+                    settings.setToUseLargerPyramid0();
+                    settings.setToUseLargerPyramid1();
                     settings.setToUseSmallObjectMethod();
-                }
-                //settings.setToUseLargerPyramid0();
+                //}
                 objMatcher.setToDebug();
                 CorrespondenceList cor = objMatcher.findObject(imgs0[0], shape0, 
                     img, settings);
                 
                 long t1 = System.currentTimeMillis();
                 System.out.println("matching took " + ((t1 - t0)/1000.) + " sec");
-                            
+                         
+                if (cor == null) {
+                    continue;
+                }
+                
                 CorrespondencePlotter plotter = new CorrespondencePlotter(
                     imgs0[1], img.copyImage());            
                 for (int ii = 0; ii < cor.getPoints1().size(); ++ii) {
@@ -482,7 +493,7 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void estORBMatcher2() throws Exception {
+    public void estORBMatcher_cupcake() throws Exception {
         
         // TODO: this one either needs more keypoints across the cupcake in
         //       android statues 02 image,
@@ -507,8 +518,8 @@ public class AndroidStatuesTest extends TestCase {
 
         String[] fileNames1 = new String[]{
              "android_statues_01.jpg",   // needs aggregated shape matching
-        //   "android_statues_02.jpg", // needs aggregated shape matching 
-        //   "android_statues_04.jpg", // descr are fine
+             "android_statues_02.jpg", // needs aggregated shape matching 
+             "android_statues_04.jpg", // descr are fine
         };
 
         for (String fileName1 : fileNames1) {               
@@ -559,11 +570,11 @@ public class AndroidStatuesTest extends TestCase {
             Settings settings = new Settings();
 
             ObjectMatcher objMatcher = new ObjectMatcher();
-            if (
-                fileName1Root.contains("_01") ||
-                fileName1Root.contains("_02")) {
-                settings.setToUseShapeFinderMethod();
-            }
+          //  if (
+          //      fileName1Root.contains("_01") ||
+          //      fileName1Root.contains("_02")) {
+          //      settings.setToUseShapeFinderMethod();
+          //  }
             
             //settings.setToUseLargerPyramid0();
             objMatcher.setToDebug();
@@ -573,6 +584,10 @@ public class AndroidStatuesTest extends TestCase {
             long t1 = System.currentTimeMillis();
             System.out.println("matching took " + ((t1 - t0)/1000.) + " sec");
 
+            if (cor == null) {
+                continue;
+            }
+            
             CorrespondencePlotter plotter = new CorrespondencePlotter(
                 imgs0[1], img.copyImage());            
             for (int ii = 0; ii < cor.getPoints1().size(); ++ii) {
@@ -594,7 +609,7 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void estORBMatcher3() throws Exception {
+    public void estORBMatcher_icecream() throws Exception {
 
         // TODO: needs better segmentation for the icecream in status 01 and 02
         //    AND/OR a different light source for polar theta CIE LAB
@@ -622,9 +637,9 @@ public class AndroidStatuesTest extends TestCase {
         };
 
         String[] fileNames1 = new String[]{
-          //"android_statues_01.jpg",  
+            "android_statues_01.jpg",  
             "android_statues_02.jpg",
-          //  "android_statues_04.jpg", // descr are fine
+            "android_statues_04.jpg", // descr are fine
         };
 
         for (String fileName1 : fileNames1) {               
@@ -675,11 +690,11 @@ public class AndroidStatuesTest extends TestCase {
             Settings settings = new Settings();
 
             ObjectMatcher objMatcher = new ObjectMatcher();
-            if (
-                fileName1Root.contains("_01") ||
-                fileName1Root.contains("_02")) {
-                settings.setToUseShapeFinderMethod();
-            }
+            //if (
+            //    fileName1Root.contains("_01") ||
+            //    fileName1Root.contains("_02")) {
+            //    settings.setToUseShapeFinderMethod();
+            //}
             //settings.setToUseLargerPyramid0();
             objMatcher.setToDebug();
             CorrespondenceList cor = objMatcher.findObject(imgs0[0], shape0, 
@@ -688,6 +703,10 @@ public class AndroidStatuesTest extends TestCase {
             long t1 = System.currentTimeMillis();
             System.out.println("matching took " + ((t1 - t0)/1000.) + " sec");
 
+            if (cor == null) {
+                continue;
+            }
+            
             CorrespondencePlotter plotter = new CorrespondencePlotter(
                 imgs0[1], img.copyImage());            
             for (int ii = 0; ii < cor.getPoints1().size(); ++ii) {
@@ -2069,7 +2088,7 @@ public class AndroidStatuesTest extends TestCase {
         return new ImageExt[]{img0, img0Masked};
     }
     
-    public void testStatueColorMethods() throws Exception {
+    public void estStatueColorMethods() throws Exception {
         
         ImageExt[] icecream = loadMaskedIcecream();
         ImageExt[] cupcake = loadMaskedCupcake();

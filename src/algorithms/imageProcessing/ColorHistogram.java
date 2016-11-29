@@ -138,6 +138,67 @@ public class ColorHistogram {
     }
     
     /**
+     * histogram of 16 bins each of CIE LUV colors where the bins
+     * of each color are taken to be in the range of min and max
+     * possible values
+     * <pre>
+     * range of return values when using default standard illumination of
+     * D65 daylight is:
+     * L       0 to 104.5
+     * u   -86.9 to 183.8
+     * v  -141.4 to 112.3
+     * </pre>
+     * 
+     * @param img
+     * @param points 
+     * @return histogram accessed as hist[0][bin] and hist[1][bin] and
+     * hist[2][bin] where 0, 1, 2 are histograms for L, A, and B, respectively
+     * using a range of values and 16 bins.
+     */
+    public int[][] histogramCIELUV(Image img, Set<PairInt> points) {
+        
+        int nBins = 16;
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        int[][] hist = new int[3][];
+        for (int i = 0; i < 3; ++i) {
+            hist[i] = new int[nBins];
+        }
+               
+        float binWidthL = 104.5f/(float)nBins;
+        float binWidthU = (183.8f + 86.9f)/(float)nBins;
+        float binWidthV = (112.3f + 141.4f)/(float)nBins;
+                
+        for (PairInt p : points) {
+            
+            float[] lab = cieC.rgbToPolarCIELUV(
+                img.getR(p), img.getG(p), img.getB(p));
+            
+            int binNumberL = (int)(lab[0]/binWidthL);
+            if (binNumberL > (nBins - 1)) {
+                binNumberL = nBins - 1;
+            }
+            hist[0][binNumberL]++;
+            
+            //(0,-50,-50) to (28.5 62.5 48.0)
+            int binNumberU = (int)((lab[1] - -50.f)/binWidthU);
+            if (binNumberU > (nBins - 1)) {
+                binNumberU = nBins - 1;
+            }
+            hist[1][binNumberU]++;
+            
+            int binNumberV = (int)((lab[2] - -50.f)/binWidthV);
+            if (binNumberV > (nBins - 1)) {
+                binNumberV = nBins - 1;
+            }
+            hist[2][binNumberV]++;
+        }
+        
+        return hist;
+    }
+    
+    /**
      * histogram of 16 bins each of CIE LAB colors where the bins
      * of each color are taken to be in the range of min and max
      * possible values,

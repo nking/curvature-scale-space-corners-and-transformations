@@ -224,7 +224,7 @@ public class ObjectMatcher {
         }
 
         // --- filter out key points at each scale, then associated data ----
-
+        ns = orb1.getScalesList().size();
         for (int i = 0; i < ns; ++i) {
             TIntList kp0 = orb1.getKeyPoint0List().get(i);
             TIntList kp1 = orb1.getKeyPoint1List().get(i);
@@ -252,7 +252,7 @@ public class ObjectMatcher {
                         rm.add(j);
                     }
                 }
-            }
+            }           
             rmIndexesList.add(rm);
         }
         orb1.removeAtIndexes(rmIndexesList);
@@ -271,8 +271,7 @@ public class ObjectMatcher {
         //         colors as filters.
         Set<PairInt> set0 = new HashSet<PairInt>();
         for (PairInt p : orb0.getKeyPointListColMaj(0)) {
-            Set<PairInt> points = imageProcessor.getNeighbors(
-                img0, p);
+            Set<PairInt> points = imageProcessor.getNeighbors(img0, p);
             set0.add(p);
             set0.addAll(points);
         }
@@ -281,6 +280,7 @@ public class ObjectMatcher {
 
         CIEChromaticity cieC = new CIEChromaticity();
 
+        ns = orb1.getScalesList().size();
         for (int i = 0; i < ns; ++i) {
             TIntList kp0 = orb1.getKeyPoint0List().get(i);
             TIntList kp1 = orb1.getKeyPoint1List().get(i);
@@ -311,7 +311,7 @@ public class ObjectMatcher {
                 if (Math.abs(deltaE) > luvDeltaELimit) {
                     rm.add(j);
                 }
-            }
+            }           
             rmIndexesList.add(rm);
         }
 
@@ -361,8 +361,18 @@ public class ObjectMatcher {
                 shape0, img1Cp, listOfPointSets2, luvDeltaELimit);
         }*/
         
+        if (debug) {
+            ImageExt img11 = img1.copyToImageExt();
+            ImageIOHelper.addAlternatingColorCurvesToImage0(listOfPointSets2, 
+                img11, 1);
+            //ImageIOHelper.addAlternatingColorLabelsToRegion(
+            //    img11, labels4);
+            MiscDebug.writeImage(img11, "_segmented_2_" + ts);
+        }
+        
         // ---- remove keypoints if not in segmented cells
-        if (changed) {
+        if (changed && !settings.isUseSmallObjectMethod()
+            && !settings.isUseShapeFinder()) {
             TObjectIntMap<PairInt> pointIdxMap
                 = new TObjectIntHashMap<PairInt>();
             for (int j = 0; j < listOfPointSets2.size(); ++j) {
@@ -371,7 +381,8 @@ public class ObjectMatcher {
                     pointIdxMap.put(p, j);
                 }
             }
-
+            
+            ns = orb1.getScalesList().size();
             rmIndexesList = new ArrayList<TIntList>();
             for (int i = 0; i < ns; ++i) {
                 TIntList kp0 = orb1.getKeyPoint0List().get(i);
@@ -386,7 +397,7 @@ public class ObjectMatcher {
                     if (!pointIdxMap.containsKey(p)) {
                         rm.add(j);
                     }
-                }
+                }               
                 rmIndexesList.add(rm);
                 System.out.println("rm at scale " + i + " n=" +
                     rm.size());
@@ -460,17 +471,9 @@ public class ObjectMatcher {
             MiscDebug.writeImage(img11,"_kp_2_" + ts);
         }
 
-        if (debug) {
-            GreyscaleImage theta0 = imageProcessor.createCIELABTheta(
-                imgs0[0], 255);
-            MiscDebug.writeImage(theta0, "_theta_0_" +  ts);
-            GreyscaleImage theta1 = imageProcessor.createCIELABTheta(img1, 
-                255);
-            MiscDebug.writeImage(theta1, "_theta_1_" +  ts);
-        }
-        
-        orb0.createDescriptorsLABTheta(imgs0[0]);
-        orb1.createDescriptorsLABTheta(img1);
+        //TODO: might need to revise intersection limit in
+        // these matching methods ... untested changes
+   
         if (settings.isUseSmallObjectMethod()) {
             corList = ORBMatcher.matchSmall(orb0, orb1,
                 shape0, listOfPointSets2);
@@ -478,6 +481,8 @@ public class ObjectMatcher {
             corList = ORBMatcher.matchAggregatedShape(orb0, orb1,
                 shape0, listOfPointSets2);
         } else {
+            orb0.createDescriptorsHSV(imgs0[0]);
+            orb1.createDescriptorsHSV(img1);
             corList = ORBMatcher.match0(orb0, orb1,
                 shape0, listOfPointSets2);
         }
