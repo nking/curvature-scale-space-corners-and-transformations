@@ -13741,131 +13741,16 @@ int z = 1;
         //       and/or region based active contours
         contigSets = LabelToColorHelper
             .extractContiguousLabelPoints(img, labels);
-        // quick look at values of pa on the boundaries of current
-        // segments.
         
-        //edgeProducts.getPhaseAngle();
-        //NOTE: pa is in range -180 to 180.
-        //  to plot it, can transform the negative values into
-        //  the diagonal quadrant by adding 180,
-        //  or apply a +180 to all to transform to 0 to 360
-        // -- for a quick look at wrap around, making 2 images, with
-        //    offset of 90 so that 0 and 360 are similar intensity in one
-        { // DEBUG
-            if (edgeProducts.getPhaseAngle() != null) { 
-                GreyscaleImage paImg1 = edgeProducts.getPhaseAngle().copyImage();
-                for (int ii = 0; ii < paImg1.getNPixels(); ++ii) {
-                    int v = paImg1.getValue(ii);
-                    //if (v < 0) {
-                        v += 180;
-                    //}
-                    paImg1.setValue(ii, v);
-                }
-                MiscMath.rescale(paImg1, 0, 255);
-                MiscDebug.writeImage(paImg1, "_angle_phase_" + ts + "_" + str + "_1_");
-                MiscDebug.writeImage(edgeProducts.getTheta(), "_angle_orientation_" + ts + "_" + str + "_1_");
-            }
-        }
+        labels = mergeByColor(imgCp, contigSets, 
+            ColorSpace.CIELUV_NORMALIZED, 0.05f);//0.06 is slightly too much
         
-        ImageProcessor imp = new ImageProcessor();
-        
-        // --- below here, using phase angle to further merge labels ---
-        /*
-        int[] labelsPA = new int[paImg.getNPixels()];
-        for (int i = 0; i < paImg.getNPixels(); ++i) {
-            labelsPA[i] = paImg.getValue(i);
-        }
-        LabelToColorHelper.condenseLabels(labelsPA);
+        mergeSmallSegments(imgCp, labels, sizeLimit, 
+            ColorSpace.CIELAB);
+
         contigSets = LabelToColorHelper
-            .extractContiguousLabelPoints(img, labelsPA);
-                       
-        TIntObjectMap<TIntSet> labelPAIndexMap = new 
-            TIntObjectHashMap<TIntSet>();
-        
-        int count = 0;
-        for (int i = 0; i < contigSets.size(); ++i) {
-            Set<PairInt> set = contigSets.get(i);
-            DFSConnectedGroupsFinder finder3 = new 
-                DFSConnectedGroupsFinder();
-            finder3.setMinimumNumberInCluster(1);
-            finder3.findClustersIterative(set);
-            int n3 = finder3.getNumberOfGroups();
-            for (int j = 0; j < n3; ++j) {
-                TIntSet setI = new TIntHashSet();
-                Set<PairInt> set0 = finder3.getXY(j);
-                for (PairInt p : set0) {
-                    int pixIdx = paImg.getInternalIndex(p.getX(), p.getY());
-                    labelsPA[pixIdx] = count;
-                    setI.add(pixIdx);
-                }
-                labelPAIndexMap.put(count, setI);
-                count++;
-            }
-        }
-        
-        img3 = img.createWithDimensions();
-        ImageIOHelper.addAlternatingColorLabelsToRegion(img3, labelsPA);
-        MiscDebug.writeImage(img3, "_phase_angle_" + ts + "_" + str);
-        
-        // key=pixIdx, value=label from labels
-        TIntIntMap pointIndexLabelMap = new TIntIntHashMap();
-        for (int i = 0; i < labels.length; ++i) {
-            int label = labels[i];
-            pointIndexLabelMap.put(i, label);
-        }
-        // key=label from labels, value=set of pixIdxs
-        TIntObjectMap<TIntSet> labelIndexMap = 
-            LabelToColorHelper.createLabelIndexMap(img, labels);
-        int aBefore = labelIndexMap.size();
-        
-        // -- contiguous sets with same labelsPA value can be merged
-        TIntObjectIterator<TIntSet> iter = labelPAIndexMap.iterator();
-        
-        for (int i = 0; i < labelPAIndexMap.size(); ++i) {
-            iter.advance();
-            TIntSet pixIndexes = iter.value();
-            TIntIterator iter2 = pixIndexes.iterator();
-            int label = -1;
-            while (iter2.hasNext()) {
-                int pixIdx = iter2.next();
-                // find the label and if it conflicts with label, merge 
-                int label2 = pointIndexLabelMap.get(pixIdx);
-                if (label == -1) {
-                    label = label2;
-                    continue;
-                } else if (label == label2) {
-                    continue;
-                }
-                // merge all label2 points with label
+            .extractContiguousLabelPoints(img, labels);
                 
-                TIntSet labels2Set = labelIndexMap.get(label2);
-                labelIndexMap.get(label).addAll(labels2Set);
-                
-                TIntIterator iter3 = labels2Set.iterator();
-                while (iter3.hasNext()) {
-                    int pixIdx3 = iter3.next();
-                    pointIndexLabelMap.put(pixIdx3, label);
-                }
-                
-                labelIndexMap.remove(label2);                   
-            }
-        }
-        int aAfter = labelIndexMap.size();
-        
-        // relabel labels with labelIndexMap
-        iter = labelIndexMap.iterator();
-        for (int i = 0; i < labelIndexMap.size(); ++i) {
-            iter.advance();
-            int label = iter.key();
-            TIntSet labels2Set = iter.value();
-            TIntIterator iter3 = labels2Set.iterator();
-            while (iter3.hasNext()) {
-                int pixIdx3 = iter3.next();
-                labels[pixIdx3] = label;
-            }
-        }
-        */
-        
         return labels;
     }
 
@@ -14304,7 +14189,10 @@ int z = 1;
         CIEChromaticity cieC = null;
 
         TIntObjectMap<Colors> indexColorMap = null;
-        if (ColorSpace.HSV.equals(clrSpace) || ColorSpace.CIELAB.equals(clrSpace)) {
+        if (ColorSpace.HSV.equals(clrSpace) 
+            || ColorSpace.CIELAB.equals(clrSpace)
+            || ColorSpace.CIELUV_NORMALIZED.equals(clrSpace)
+            ) {
             indexColorMap = new TIntObjectHashMap<Colors>();
             cieC = new CIEChromaticity();
         }
@@ -14326,6 +14214,10 @@ int z = 1;
                 float[] lab = cieC.rgbToCIELAB(
                     Math.round(r), Math.round(g), Math.round(b));
                 indexColorMap.put(i, new Colors(lab));
+            } else if (ColorSpace.CIELUV_NORMALIZED.equals(clrSpace)) {
+                float[] luv = cieC.rgbToCIELUV(
+                    Math.round(r), Math.round(g), Math.round(b));
+                indexColorMap.put(i, new Colors(luv));
             }
         }
 
@@ -14366,21 +14258,21 @@ int z = 1;
 
                 Colors rgb1 = indexRGBMap.get(lIdx1);
                 Colors rgb2 = indexRGBMap.get(lIdx2);
-
+                                    
                 if (ColorSpace.HSV.equals(clrSpace)) {
-                    Colors hsv1 = indexColorMap.get(lIdx1);
-                    Colors hsv2 = indexColorMap.get(lIdx2);
+                    Colors clr1 = indexColorMap.get(lIdx1);
+                    Colors clr2 = indexColorMap.get(lIdx2);
                     // hsv 3 components each have range 0 to 1
-                    float diffH = Math.abs(hsv1.getColors()[0]
-                        - hsv2.getColors()[0]);
-                    float diffS = Math.abs(hsv1.getColors()[1]
-                        - hsv2.getColors()[1]);
-                    float diffB = Math.abs(hsv1.getColors()[2]
-                        - hsv2.getColors()[2]);
+                    float diff1 = Math.abs(clr1.getColors()[0]
+                        - clr2.getColors()[0]);
+                    float diff2 = Math.abs(clr1.getColors()[1]
+                        - clr2.getColors()[1]);
+                    float diff3 = Math.abs(clr1.getColors()[2]
+                        - clr2.getColors()[2]);
                     //double diff = Math.sqrt(diffH * diffH
                     //    + diffS * diffS + diffB * diffB);
-                    if ((diffH > threshold) || (diffS > threshold)
-                        || (diffB > threshold)) {
+                    if ((diff1 > threshold) || (diff2 > threshold)
+                        || (diff3 > threshold)) {
                         continue;
                     }
                 } else if (ColorSpace.CIELAB.equals(clrSpace)) {
@@ -14389,6 +14281,16 @@ int z = 1;
                     double delta = Math.abs(cieC.calcDeltaECIE2000(
                         lab1.getColors(), lab2.getColors()));
                     if (delta > threshold) {
+                        continue;
+                    }
+                } else if (ColorSpace.CIELUV_NORMALIZED.equals(clrSpace)) {
+                    Colors clr1 = indexColorMap.get(lIdx1);
+                    Colors clr2 = indexColorMap.get(lIdx2);
+                    // hsv 3 components each have range 0 to 1
+                    float diff = cieC.calcNormalizedDifferenceLUV(
+                        clr1.getColors()[0], clr1.getColors()[1], clr1.getColors()[2], 
+                        clr2.getColors()[0], clr2.getColors()[1], clr2.getColors()[2]);
+                    if (diff > threshold) {
                         continue;
                     }
                 } else if (ColorSpace.RGB.equals(clrSpace)) {
@@ -14426,6 +14328,12 @@ int z = 1;
                     float[] lab = cieC.rgbToCIELAB(r, g, b);
                     System.arraycopy(lab, 0, lab1.getColors(),
                         0, lab.length);
+                    indexColorMap.remove(lIdx2);
+                } else if (ColorSpace.CIELUV_NORMALIZED.equals(clrSpace)) {
+                    Colors luv1 = indexColorMap.get(lIdx1);
+                    float[] luv = cieC.rgbToCIELUV(r, g, b);
+                    System.arraycopy(luv, 0, luv1.getColors(),
+                        0, luv.length);
                     indexColorMap.remove(lIdx2);
                 }
                 indexRGBMap.remove(lIdx2);
@@ -15463,6 +15371,34 @@ int z = 1;
             int[] hist = ch.histogram1D(theta2, set, 255);
             float intersection = ch.intersection(tHist, hist);
             if (intersection < limit) {
+                rm.add(i);
+            }
+        }
+        
+        for (int i = (rm.size() - 1); i > -1; --i) {
+            int rmIdx = rm.get(i);
+            pointSets.remove(rmIdx);
+        }
+                
+        return !rm.isEmpty();
+    }
+    
+    public boolean filterByCIECH(ImageExt templateImage, 
+        Set<PairInt> templateSet, ImageExt img, 
+        List<Set<PairInt>> pointSets, float lowerLimit) {
+     
+        ColorHistogram ch = new ColorHistogram();
+        
+        int[] tHist = ch.histogramCIECH64(templateImage, 
+            templateSet);
+        
+        TIntList rm = new TIntArrayList();
+                
+        for (int i = 0; i < pointSets.size(); ++i) {
+            Set<PairInt> set = pointSets.get(i);
+            int[] hist = ch.histogramCIECH64(img, set);
+            float intersection = ch.intersection(tHist, hist);
+            if (intersection < lowerLimit) {
                 rm.add(i);
             }
         }

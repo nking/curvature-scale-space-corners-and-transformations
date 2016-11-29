@@ -636,7 +636,7 @@ public class SLICSuperPixels {
                 if (labels[pixIdx2] == -1) {
                     PairInt p2 = new PairInt(x2, y2);
                     queue1.add(p2);
-                    assert (!visited.contains(p2));
+                    //assert (!visited.contains(p2));
                 }
             }
             nIter++;
