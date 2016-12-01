@@ -8,6 +8,8 @@ import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MedianTransform;
 import algorithms.imageProcessing.StructureTensor;
 import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.TwoDFloatArray;
@@ -1292,6 +1294,45 @@ public class ORB {
             }
         }
 
+        /*{//DEBUG
+            GreyscaleImage dbg = new GreyscaleImage(harrisResponse[0].length,
+                harrisResponse.length);
+            float[] tmp = new float[dbg.getNPixels()];
+            for (int i = 0; i < dbg.getNPixels(); ++i) {
+                int x = dbg.getCol(i);
+                int y = dbg.getRow(i);
+                tmp[i] = fastResponse[y][x];
+            }
+            MiscMath.rescale(tmp, 0, 255);
+            for (int i = 0; i < dbg.getNPixels(); ++i) {
+                int x = dbg.getCol(i);
+                int y = dbg.getRow(i);
+                if (tmp[i] > 0) {
+                    dbg.setValue(i, 255);
+                }
+            }
+            MiscDebug.writeImage(dbg, "_fr_" + 
+                MiscDebug.getCurrentTimeFormatted());
+            tmp = new float[dbg.getNPixels()];
+            dbg = new GreyscaleImage(harrisResponse[0].length,
+                harrisResponse.length);
+            for (int i = 0; i < dbg.getNPixels(); ++i) {
+                int x = dbg.getCol(i);
+                int y = dbg.getRow(i);
+                tmp[i] = harrisResponse[y][x];
+            }
+            MiscMath.rescale(tmp, 0, 255);
+            for (int i = 0; i < dbg.getNPixels(); ++i) {
+                int x = dbg.getCol(i);
+                int y = dbg.getRow(i);
+                if (tmp[i] > 0) {
+                    dbg.setValue(i, 255);
+                }
+            }
+            MiscDebug.writeImage(dbg, "_hr_" + 
+                MiscDebug.getCurrentTimeFormatted());
+        }*/
+        
         // --- harris corners from response image ----
         ImageProcessor imageProcessor = new ImageProcessor();
         imageProcessor.peakLocalMax(harrisResponse, 1, 0.1f,

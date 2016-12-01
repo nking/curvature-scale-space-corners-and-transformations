@@ -9,6 +9,7 @@ import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.SIGMA;
+import algorithms.imageProcessing.VanishingPoints;
 import algorithms.imageProcessing.features.CorrespondenceList;
 import algorithms.imageProcessing.features.ORB;
 import algorithms.imageProcessing.features.ORB.Descriptors;
@@ -67,6 +68,13 @@ import java.util.logging.Logger;
  */
 public class ORBMatcher {
 
+    // vahnishing points for dataset2
+    private VanishingPoints vp2 = null;
+  
+    public void setVanishingPointsForSet2(VanishingPoints vp) {
+        vp2 = vp;
+    }
+    
     /**
      * match template image and shape in orb1 and labeledPoints1
      * with the same object which is somewhere in the
@@ -89,7 +97,7 @@ public class ORBMatcher {
      * @param labeledPoints2
      * @return
      */
-    public static List<CorrespondenceList> match0(ORB orb1, ORB orb2, 
+    public List<CorrespondenceList> match0(ORB orb1, ORB orb2, 
         Set<PairInt> labeledPoints1, List<Set<PairInt>> labeledPoints2) {
         
         /*
@@ -566,7 +574,7 @@ public class ORBMatcher {
      * @param labeledPoints2
      * @return
      */
-    public static List<CorrespondenceList> matchSmall(ORB orb1, ORB orb2, Set<PairInt> labeledPoints1, List<Set<PairInt>> labeledPoints2) {
+    public List<CorrespondenceList> matchSmall(ORB orb1, ORB orb2, Set<PairInt> labeledPoints1, List<Set<PairInt>> labeledPoints2) {
         
         TFloatList scales1 = extractScales(orb1.getScalesList());
         TFloatList scales2 = extractScales(orb2.getScalesList());
@@ -1001,7 +1009,7 @@ public class ORBMatcher {
      * @param labeledPoints2
      * @return
      */
-    public static List<CorrespondenceList> matchAggregatedShape(
+    public List<CorrespondenceList> matchAggregatedShape(
         ORB orb1, ORB orb2, Set<PairInt> labeledPoints1, 
         List<Set<PairInt>> labeledPoints2) {
        
@@ -1389,7 +1397,7 @@ public class ORBMatcher {
         return topResults;
     }
 
-    private static TFloatList extractScales(List<TFloatList> scalesList) {
+    private TFloatList extractScales(List<TFloatList> scalesList) {
         TFloatList scales = new TFloatArrayList();
         for (int i = 0; i < scalesList.size(); ++i) {
             scales.add(scalesList.get(i).get(0));
@@ -1397,7 +1405,7 @@ public class ORBMatcher {
         return scales;
     }
 
-    private static int calculateNMaxMatchable(List<TIntList> keypointsX1, List<TIntList> keypointsX2) {
+    private int calculateNMaxMatchable(List<TIntList> keypointsX1, List<TIntList> keypointsX2) {
         int nMaxM = Integer.MIN_VALUE;
         for (int i = 0; i < keypointsX1.size(); ++i) {
             int n1 = keypointsX1.get(i).size();
@@ -1412,7 +1420,7 @@ public class ORBMatcher {
         return nMaxM;
     }
 
-    private static int maxSize(List<TIntList> a) {
+    private int maxSize(List<TIntList> a) {
         int maxSz = Integer.MIN_VALUE;
         for (TIntList b : a) {
             int sz = b.size();

@@ -11,6 +11,7 @@ import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
+import algorithms.imageProcessing.VanishingPoints;
 import algorithms.imageProcessing.matching.ORBMatcher;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.misc.MiscDebug;
@@ -57,6 +58,8 @@ public class ObjectMatcher {
         private boolean useSmallObjectMethod = false;
         private boolean useShapeFinder = false;
         
+        private boolean findVanishingPoints = false;
+        
         /**
          * @return the useLargerPyramid0
          */
@@ -81,6 +84,10 @@ public class ObjectMatcher {
             return useLargerPyramid1;
         }
 
+        public void setToFindVnishingPoints() {
+            this.findVanishingPoints = true;
+        }
+        
         /**
          if this is set, the default number of pyramid
          image 1 images separated by a factor of 2 in scale is increased
@@ -117,6 +124,10 @@ public class ObjectMatcher {
          */
         public void setToUseSmallObjectMethod() {
             this.useSmallObjectMethod = true;
+        }
+
+        private boolean isFindVanishingPoints() {
+            return findVanishingPoints;
         }
         
     }
@@ -343,6 +354,14 @@ public class ObjectMatcher {
         List<Set<PairInt>> listOfPointSets2
             = LabelToColorHelper.extractContiguousLabelPoints(img1Cp, labels4);
 
+        VanishingPoints vp2 = null;
+        if (settings.isFindVanishingPoints()) {
+            // vanishing points are used for attempts to account for 
+            // foreshortening of object dimensions at the end of 
+            // partial shape matching
+            throw new UnsupportedOperationException("not yet implemented");
+        }
+        
         boolean useCHist = false;
 
         boolean changed = false;
@@ -474,16 +493,21 @@ public class ObjectMatcher {
         //TODO: might need to revise intersection limit in
         // these matching methods ... untested changes
    
+        ORBMatcher orbMatcher = new ORBMatcher();
+        if (vp2 != null) {
+            orbMatcher.setVanishingPointsForSet2(vp2);
+        }
+        
         if (settings.isUseSmallObjectMethod()) {
-            corList = ORBMatcher.matchSmall(orb0, orb1,
+            corList = orbMatcher.matchSmall(orb0, orb1,
                 shape0, listOfPointSets2);
         } else if (settings.isUseShapeFinder()) {
-            corList = ORBMatcher.matchAggregatedShape(orb0, orb1,
+            corList = orbMatcher.matchAggregatedShape(orb0, orb1,
                 shape0, listOfPointSets2);
         } else {
             orb0.createDescriptorsHSV(imgs0[0]);
             orb1.createDescriptorsHSV(img1);
-            corList = ORBMatcher.match0(orb0, orb1,
+            corList = orbMatcher.match0(orb0, orb1,
                 shape0, listOfPointSets2);
         }
 

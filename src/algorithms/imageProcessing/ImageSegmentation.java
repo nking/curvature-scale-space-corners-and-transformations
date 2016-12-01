@@ -10752,7 +10752,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             
             CannyEdgeFilterAdaptiveDeltaE2000 canny =
                 new CannyEdgeFilterAdaptiveDeltaE2000();
-            canny.setToNotUseZhangSuen();
             canny.setOtsuScaleFactor(0.3f);
             canny.setToUseSingleThresholdIn2LayerFilter();
             canny.applyFilter(imgCp);
@@ -13651,6 +13650,8 @@ int z = 1;
         
         CannyEdgeFilterAdaptiveDeltaE2000 canny =
             new CannyEdgeFilterAdaptiveDeltaE2000();
+        //canny.overrideToUseAdaptiveThreshold();
+        //canny.setToDebug();
         canny.applyFilter(img.copyToImageExt());
         EdgeFilterProducts products = canny.getFilterProducts();        
         
