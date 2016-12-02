@@ -378,9 +378,9 @@ public class HoughTransform {
     public Map<PairInt, Set<PairInt>> findLines(List<PairIntArray> 
         listOfOrderedBoundaries) {
     
-        // goal, find lines within the point map
+        // goal, find lines within each listOfOrderedBoundaries
         // -- the clever efficient matrixes holding difference of chords in 
-        //    ParitalShapeMatcher.java could be used here
+        //    PartialShapeMatcher.java could be used here
         //    to find the longest stretches of lines.
         //    -- still thinking about this...the quick solution would be to use
         //       the PartialShapeMatcher as is to match it to a line of
