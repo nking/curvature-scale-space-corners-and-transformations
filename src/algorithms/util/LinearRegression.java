@@ -69,7 +69,7 @@ public class LinearRegression {
         Arrays.sort(s);
         int idx = s.length/2;
         float median;
-        if ((idx & 1) == 0) {
+        if ((idx & 1) == 0 && idx > 0) {
             median = (s[idx] + s[idx - 1])/2.f;
         } else {
             median = s[idx];
@@ -256,7 +256,7 @@ public class LinearRegression {
         s = Arrays.copyOf(s, count);
         Arrays.sort(s);
         int idx = s.length/2;
-        if ((idx & 1) == 0) {
+        if ((idx & 1) == 0 && idx > 0) {
             median = (s[idx] + s[idx - 1])/2.f;
         } else {
             median = s[idx];
@@ -343,7 +343,7 @@ public class LinearRegression {
         Arrays.sort(s);
         int idx = s.length/2;
         float median;
-        if ((idx & 1) == 0) {
+        if ((idx & 1) == 0 && idx > 0) {
             median = (s[idx] + s[idx - 1])/2.f;
         } else {
             median = s[idx];
