@@ -1499,6 +1499,17 @@ public class PartialShapeMatcher {
         if (results == null || results.isEmpty()) {
             return null;
         }
+        
+        // fill the results articulatedSegment with a single number
+        //   to append to here
+        for (Result r : results) {
+            assert(r.articulatedSegment == null);
+            r.articulatedSegment = new TIntArrayList();
+            int n = r.idx1s.size();
+            for (int i = 0; i < n; ++i) {
+                r.articulatedSegment.add(0);
+            }
+        }
 
         // NOTE: may need to revise this
         int minGapSize = 3;
@@ -1525,7 +1536,6 @@ public class PartialShapeMatcher {
             for (int j = (i + 1); j < mmd2.length(); ++j) {
                 int s0 = mmd2.getStartIMinusBlock(j);
                 int s1 = mmd2.mmd.stopIs[j];
-  double dbg = mmd2.sumChordDiffs[j];
                 int mOffset = mmd2.getOffset(j);
                 boolean didAdd = false;
                 for (int g = 0; g < gaps.getN(); ++g) {
@@ -1580,9 +1590,13 @@ public class PartialShapeMatcher {
 
                     //TODO: revise this limit:
                     if (cwConsistent.size() > minGapSize) {
+                        int n = result.articulatedSegment.isEmpty() ? 0 :
+                            (result.articulatedSegment.get(
+                            result.articulatedSegment.size() - 1) + 1);
                         for (PairInt p : cwConsistent) {
                             result.idx1s.add(p.getX());
                             result.idx2s.add(p.getY());
+                            result.articulatedSegment.add(n);
                         }
                         didAdd = true;
                         result.chordsNeedUpdates = true;
@@ -1621,8 +1635,13 @@ public class PartialShapeMatcher {
         protected double chordDiffSum = 0;
         protected boolean chordsNeedUpdates = true;
         protected TransformationParameters params = null;
+        // indexes for the correspondence from shape 1
         protected TIntList idx1s = new TIntArrayList();
+        // indexes for the correspondence from shape 2
         protected TIntList idx2s = new TIntArrayList();
+        // if articulated search, this contains a segment number
+        //   for each gap filled with contiguous correspondence.
+        protected TIntList articulatedSegment = null;
         protected final int n1;
         protected final int n2;
         protected final int origOffset;
@@ -1643,14 +1662,16 @@ public class PartialShapeMatcher {
          * make the correspondence list.
          * @param offset 
          */
-        public Result(int n1, int n2, int nOriginal, 
-            int offset) {
+        public Result(int n1, int n2, int nOriginal, int offset) {
             this.n1 = n1;
             this.n2 = n2;
             this.origOffset = offset;
             this.origN1 = nOriginal;
         }
 
+        public int getArticulatedSegment(int idx) {
+            return articulatedSegment.get(idx);
+        }
         public void insert(int idx1, int idx2, float dist) {
             idx1s.add(idx1);
             idx2s.add(idx2);
@@ -1769,6 +1790,10 @@ public class PartialShapeMatcher {
             t.distSum = distSum;
             t.chordDiffSum = chordDiffSum;
             t.data = data;
+            
+            if (articulatedSegment != null) {
+                t.articulatedSegment = new TIntArrayList(articulatedSegment);
+            }
             
             if (params != null) {
                 MatchedPointsTransformationCalculator tc =
