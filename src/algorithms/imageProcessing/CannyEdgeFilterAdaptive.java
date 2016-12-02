@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import algorithms.compGeometry.HoughTransform;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import java.util.logging.Logger;
@@ -215,9 +214,7 @@ public class CannyEdgeFilterAdaptive {
                 ImageProcessor imageProcessor = new ImageProcessor();
                 imageProcessor.applyThinning(filterProducts.getGradientXY());
             }
-            
-            //exploreHoughTransforms(filterProducts.getGradientXY());
-            
+                        
             input.resetTo(filterProducts.getGradientXY());
             
             return;
@@ -307,9 +304,7 @@ public class CannyEdgeFilterAdaptive {
                 filterProducts.getGradientXY().setValue(i, 0);
             }
         }
-        
-        applyHoughBasedLineThinning(filterProducts);
-                               
+                                       
         input.resetTo(filterProducts.getGradientXY());
     }
    
@@ -927,8 +922,8 @@ public class CannyEdgeFilterAdaptive {
     }
 
     /**
-     * get the filter products for gradient and orientation, and hough
-     * lines.  note that the orientation image has values between 0 and 180.
+     * get the filter products for gradient and orientation.
+     * note that the orientation image has values between 0 and 180.
      * @return the filterProducts
      */
     public EdgeFilterProducts getFilterProducts() {
@@ -1018,55 +1013,6 @@ public class CannyEdgeFilterAdaptive {
         }
         
         return n;
-    }
-
-    private void applyHoughBasedLineThinning(EdgeFilterProducts products) {
-        
-        GreyscaleImage gradientXY = products.getGradientXY();
-        
-        int n = gradientXY.getNPixels();
-        int w = gradientXY.getWidth();
-        int h = gradientXY.getHeight();
-        
-        Set<PairInt> points = new HashSet<PairInt>();
-        
-        for (int i = 0; i < n; ++i) {
-            if (gradientXY.getValue(i) > 0) {
-                points.add(new PairInt(gradientXY.getCol(i), gradientXY.getRow(i)));
-            }
-        }
-        Set<PairInt> pointsCp = new HashSet<PairInt>(points);
-                
-        HoughTransform ht = new HoughTransform();
-        Map<Set<PairInt>, PairInt> lines = ht.findContiguousLines(points, 3);
-                
-        products.setHoughLines(lines);
-        
-        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
-        pltc.thinLineStaircases(lines, points, w, h);
-        pltc.correctForLineSpurHoriz(points, w, h);
-        pltc.correctForLineSpurVert(points, w, h);
-        pltc.correctForLine2SpurVert(points, w, h);
-        pltc.correctForLine2SpurHoriz(points, w, h);
-        pltc.correctForIsolatedPixels(points, w, h);
-    
-        pointsCp.removeAll(points);
-        
-        for (PairInt p : pointsCp) {
-            gradientXY.setValue(p.getX(), p.getY(), 0);
-            
-            Set<PairInt> line = null;
-            for (Set<PairInt> hLine : lines.keySet()) {
-                if (hLine.contains(p)) {
-                    line = hLine;
-                    break;
-                }
-            }
-            if (line != null) {
-                line.remove(p);
-            }
-        }
-        
     }
     
 }

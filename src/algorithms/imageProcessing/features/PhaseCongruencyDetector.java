@@ -1,7 +1,6 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.QuickSort;
-import algorithms.compGeometry.HoughTransform;
 import algorithms.imageProcessing.AdaptiveThresholding;
 import algorithms.imageProcessing.DistanceTransform;
 import algorithms.imageProcessing.EdgeExtractorSimple;
@@ -1083,8 +1082,6 @@ public class PhaseCongruencyDetector {
         //TODO: these convenience methods do not belong in this class...
         if (determineCorners) {
 
-            calculateHoughTransforms(products);
-
             calculateCorners(products, img);
         }
 
@@ -1175,13 +1172,6 @@ public class PhaseCongruencyDetector {
                 }
             }
         }
-
-        // theEdges, corners, and junctions are now in reference frame of
-        // GreyscaleImage instance
-        // column major notation
-        cornerMaker.useHoughTransformationToFilterCornersForOrdered(theEdges,
-            cornerMap, junctions, products.getHoughLines(),
-            nCols, nRows);
 
         Set<PairInt> outputCorners = new HashSet<PairInt>(cornerMap.keySet());
         outputCorners.addAll(junctions);
@@ -1418,65 +1408,6 @@ public class PhaseCongruencyDetector {
         return count;
     }
 
-    /**
-     * calculate the hough transform lines, and use them to thin the
-     * staircases within inclined lines.
-     * @param products
-     */
-    private void calculateHoughTransforms(PhaseCongruencyProducts products) {
-
-        int[][] thinned = products.getThinned();
-
-        Set<PairInt> points = new HashSet<PairInt>();
-        for (int i = 0; i < thinned.length; ++i) {
-            for (int j = 0; j < thinned[i].length; ++j) {
-                if (thinned[i][j] > 0) {
-                    points.add(new PairInt(i, j));
-                }
-            }
-        }
-
-        //TODO: improve the hough line transform
-
-        // ----- find lines w/ hough transform, then thin line staircase with it ---
-        Set<PairInt> pointCp = new HashSet<PairInt>(points);
-        HoughTransform ht = new HoughTransform();
-        Map<Set<PairInt>, PairInt> lines = ht.findContiguousLines(points, 3);
-
-        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
-        pltc.thinLineStaircases(lines, points, thinned.length, thinned[0].length);
-
-        pointCp.removeAll(points);
-
-        for (PairInt p : pointCp) {
-            Set<PairInt> line = null;
-            for (Set<PairInt> hLine : lines.keySet()) {
-                if (hLine.contains(p)) {
-                    line = hLine;
-                    break;
-                }
-            }
-            if (line != null) {
-                line.remove(p);
-            }
-        }
-
-        // ------ put hough lines into reference frame of GreyscaleImage instance
-        Map<Set<PairInt>, PairInt> transformedLines = new HashMap<Set<PairInt>, PairInt>();
-        for (Entry<Set<PairInt>, PairInt> entry : lines.entrySet()) {
-            Set<PairInt> line = entry.getKey();
-            Set<PairInt> transformedLine = new HashSet<PairInt>();
-            for (PairInt p : line) {
-                int x = p.getX();
-                int y = p.getY();
-                transformedLine.add(new PairInt(y, x));
-            }
-            transformedLines.put(transformedLine, entry.getValue());
-        }
-
-        products.setHoughLines(transformedLines);
-    }
-
     public class PhaseCongruencyProducts {
 
         /**
@@ -1531,15 +1462,6 @@ public class PhaseCongruencyDetector {
          */
         private List<Set<PairInt>> subsetNoise = null;
         
-        /**
-         * a map with key being a hough line set of points and value being
-         * the theta and radius for the hough line.  Note that the coordinates
-         * in the key are using the same notation as the thinnedImage, that is,
-         * a[row][col], but pairint.x is row, and pairint.y is col.
-         * row major notation
-         */
-        private Map<Set<PairInt>, PairInt> houghLines = null;
-
         private PhaseCongruencyParameters parameters = null;
 
         public PhaseCongruencyProducts(double[][] pc, double[][] or,
@@ -1751,29 +1673,6 @@ public class PhaseCongruencyDetector {
 
         public PhaseCongruencyParameters getParameters() {
             return parameters;
-        }
-
-        /**
-         a map with key being a hough line set of points and value being
-         the theta and radius for the hough line.  Note that the
-         setter has placed the coordinates into the coordinate reference
-         frame of the GreyscaleImage instance, col major notation.
-         @param lines
-         */
-        public void setHoughLines(Map<Set<PairInt>, PairInt> lines) {
-
-             this.houghLines = new HashMap<Set<PairInt>, PairInt>(lines);
-        }
-
-        /**
-         * a map with key being a hough line set of points and value being
-         * the theta and radius for the hough line.  Note that the coordinates
-         * in the key are using the same notation GreyscaleImage instance,
-         * that x and y are the same as in the image
-         * @return
-         */
-        public Map<Set<PairInt>, PairInt> getHoughLines() {
-            return houghLines;
         }
 
         private void setParameters(int nScale, int minWavelength, float mult,

@@ -53,5 +53,4 @@ public class VanishingPoints {
         polarMap = thetaRadiusMap;
     }
     
-    
 }

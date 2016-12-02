@@ -26,7 +26,10 @@ public class EdgeFilterProducts {
     /**
      * hough lines as a map with key = hough line set of of points and value =
      * theta and radius.
-     * might be null
+     * might be null.  note that changes in the algorithm are in progress so
+     * results of deprecated methods have been removed and due to planned
+     * refactorings, have not been updated or replaced.  this should
+     * be consistent upon next major build but possibly not before then.
      */
     private Map<Set<PairInt>, PairInt> houghLines = null;
 
