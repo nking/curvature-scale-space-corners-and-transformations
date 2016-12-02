@@ -38,7 +38,7 @@ public class PartialShapeMatcherTest extends TestCase {
     public PartialShapeMatcherTest() {
     }
 
-    public void testSummedAreaTables() {
+    public void estSummedAreaTables() {
 
         /*
         2 9  2  7     9 11  18   16 22  36
@@ -60,7 +60,7 @@ public class PartialShapeMatcherTest extends TestCase {
 
     }
 
-    public void testScissorsMatch0() throws Exception {
+    public void estScissorsMatch0() throws Exception {
 
         // 60
         PairIntArray p = getScissors1();
@@ -109,7 +109,7 @@ public class PartialShapeMatcherTest extends TestCase {
 
     }
 
-    public void testScissorsMatch16() throws Exception {
+    public void estScissorsMatch16() throws Exception {
 
         // rotate points p so that start points are
         // different and assert that wrap around is
@@ -160,7 +160,7 @@ public class PartialShapeMatcherTest extends TestCase {
         assertTrue(result.getFractionOfWhole() > 0.3);
     }
     
-    public void testAndroidGingerbreadSameScale() throws Exception {
+    public void estAndroidGingerbreadSameScale() throws Exception {
 
         String fileName0
             = "android_statues_03_sz1_mask_small.png";
@@ -280,7 +280,7 @@ public class PartialShapeMatcherTest extends TestCase {
         }
     }
     
-    public void testAndroidGingerbreadDiffScale() throws Exception {
+    public void estAndroidGingerbreadDiffScale() throws Exception {
 
         SIGMA sigma = SIGMA.ONE;
 
@@ -389,7 +389,7 @@ public class PartialShapeMatcherTest extends TestCase {
         }
     }
     
-    public void testRangeSearch() {
+    public void estRangeSearch() {
         
         IntervalRangeSearch<Integer, Integer> rt =
             new IntervalRangeSearch<Integer, Integer>();
@@ -417,6 +417,69 @@ public class PartialShapeMatcherTest extends TestCase {
         }
         assertEquals(2, nq);
         assertTrue(expected.isEmpty());
+    }
+    
+    public void testMatchLines() {
+        
+        PairIntArray triangle = getTriangle();
+        PairIntArray line = createLine(12, 5, 5);
+        //LINE: 5,5  6,6  7,7  8,8  9,9  ...
+        // 0:0  or  5:0
+        /*
+        5                *
+        4             *     *
+        3          *           *
+        2       *  *  *  *  *  *  *
+        1
+        0 
+          0  1  2  3  4  5  6  7  8  9 10
+        */
+        
+        PartialShapeMatcher matcher = new PartialShapeMatcher();
+        matcher.setToDebug();
+        matcher._overrideToThreshhold((float)(1e-9));
+        matcher.overrideSamplingDistance(1);
+        matcher._overrideToDisableEuclideanMatch();
+        matcher.setToArticulatedMatch();
+        PartialShapeMatcher.Result r = matcher.match(line, triangle);
+ 
+        for (int i = 0; i < r.idx1s.size(); ++i) {
+            int x1 = line.getX(r.idx1s.get(i)); 
+            int y1 = line.getY(r.idx1s.get(i)); 
+            int x2 = triangle.getX(r.idx2s.get(i)); 
+            int y2 = triangle.getX(r.idx2s.get(i)); 
+            System.out.println(x1 + ", " + y1 + " " + x2 + ", " + y2);
+        }
+        int z = 1;
+    }
+    
+    protected PairIntArray getTriangle() {
+        /*
+        5                *
+        4             *     *
+        3          *           *
+        2       *  *  *  *  *  *  *
+        1
+        0 
+          0  1  2  3  4  5  6  7  8  9 10
+        */
+        
+        PairIntArray p = new PairIntArray(12);
+        for (int i = 2; i <= 8; ++i) {
+            p.add(i, 2);
+        }
+        p.add(7, 3); p.add(6, 4); p.add(5, 5);
+        p.add(4, 4); p.add(3, 3);
+
+        return p;
+    }
+    
+    protected PairIntArray createLine(int len, int xOff, int yOff) {
+        PairIntArray a = new PairIntArray(len);
+        for (int i = 0; i < len; ++i) {
+            a.add(xOff + i, yOff + i);
+        }
+        return a;
     }
 
     protected PairIntArray getScissors1() {

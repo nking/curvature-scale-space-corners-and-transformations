@@ -128,11 +128,12 @@ public class PartialShapeMatcher {
     // this helps to remove points far from
     // euclidean transformations using RANSAC.
     // it should probably always be true.
-    private final boolean performEuclidTrans = true;
+    private boolean performEuclidTrans = true;
 
     private float pixTolerance = 20;
 
     // 10 degrees is 0.1745 radians
+    // for a fit to a line, consider 1E-9
     private float thresh = (float)(Math.PI/180.) * 10.f;;
 
     protected Logger log = Logger.getLogger(this.getClass().getName());
@@ -141,6 +142,25 @@ public class PartialShapeMatcher {
 
     public void setToArticulatedMatch() {
         srchForArticulatedParts = true;
+    }
+    
+    /**
+     * turn off the euclidean transformation filter and addition of points.
+     * NOTE that this should probably not normally be used.
+     */
+    public void _overrideToDisableEuclideanMatch() {
+        performEuclidTrans = false;
+    }
+    
+    /**
+     * override the threshhold for using a chord differernce value
+     * to this.   By default it is set to a generous 10 degree, but
+     * to fit a perfect line or similar, one may want to reduce this
+     * threshhold to 1E-9 or so.
+     * @param t 
+     */
+    public void _overrideToThreshhold(float t) {
+        this.thresh = t;
     }
 
     /**
@@ -909,11 +929,11 @@ public class PartialShapeMatcher {
      * 
      * @param md
      * @param r
-     * @param thresh
+     * @param thrsh
      * @return 
      */
     protected MergedMinDiffs extractSequences(float[][][] md,
-        int r, float thresh) {
+        int r, float thrsh) {
 
         //md[0:n2-1][0:n1-1][0:n1-1]
 
@@ -921,7 +941,7 @@ public class PartialShapeMatcher {
         int n1 = md[0].length;
 
         MinDiffs mins = new MinDiffs(n1);
-        findMinDifferenceMatrix(md, r, thresh, mins);
+        findMinDifferenceMatrix(md, r, thrsh, mins);
 
         // merge ranges of sequential offsets.
         // key=offset, data=start i, start r, stop i
@@ -988,7 +1008,7 @@ public class PartialShapeMatcher {
         mmd.startRs = Arrays.copyOf(startRs, cIdx);
         mmd.stopIs = Arrays.copyOf(stopIs, cIdx);
 
-        // re-read matrix to find eqivalent best
+        // re-read matrix to find equivalent best
         // for same block size and existing ranges
         // at given offset.
 
@@ -1010,7 +1030,7 @@ public class PartialShapeMatcher {
 
                 float min = mins.mins[readI];
 
-                double lThresh = Math.sqrt(startBlock) * thresh;
+                double lThresh = Math.sqrt(startBlock) * thrsh;
 
                 float s1 = read(md, readI, currentOffset,
                     startBlock, rUsed);
@@ -1480,7 +1500,11 @@ public class PartialShapeMatcher {
             return null;
         }
 
+        // NOTE: may need to revise this
         int minGapSize = 3;
+        if (mmd2.n1 < 24) {
+            minGapSize = 1;
+        }
 
         int[] startStopI = new int[2];
 
@@ -1501,7 +1525,7 @@ public class PartialShapeMatcher {
             for (int j = (i + 1); j < mmd2.length(); ++j) {
                 int s0 = mmd2.getStartIMinusBlock(j);
                 int s1 = mmd2.mmd.stopIs[j];
-
+  double dbg = mmd2.sumChordDiffs[j];
                 int mOffset = mmd2.getOffset(j);
                 boolean didAdd = false;
                 for (int g = 0; g < gaps.getN(); ++g) {
@@ -1585,7 +1609,7 @@ public class PartialShapeMatcher {
         // the end and sort results by Salukwdze dist, then
         // choose the top item as the best to return.
 
-        { //DEBUG, recalc the saluk score to see if top has changed
+        { //DEBUG, recalc the salukqdze cost to see if top has changed
             //TODO:   
         }
      
@@ -2786,7 +2810,7 @@ public class PartialShapeMatcher {
                 && (idx2 > prev2 || prev2 == -1)
                 && (idx2 < postGapIdx2 || postGapIdx1 == -1)) {
                 if (idx2 >= n2) {
-                    n2 -= n2;
+                    idx2 -= n2;
                 }
                 set.add(new PairInt(idx1, idx2));
             }
