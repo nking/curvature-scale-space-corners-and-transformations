@@ -1536,7 +1536,7 @@ public class PartialShapeMatcher {
                         continue;
                     }
                     // check to see if the idx2 axis is clockwise consistent
-
+                    
                     // since points may have been added by euclid
                     // trans that don't have same offset,
                     // cannot simply look at the gap in idx1 and offset
@@ -2799,19 +2799,19 @@ public class PartialShapeMatcher {
             int idx2 = idx1 + offset;
             if (idx2 < idx1) {
                 idx2 += n2;
+            } else if (idx2 >= n2) {
+                idx2 -= n2;
             }
 
             log.fine(String.format(
-                "offset=%d prev1=%d,prev2=%d  test1=%d,test2=%d  post1=%d,post2=%d",
+                "consistent? offset=%d prev1=%d,prev2=%d  test1=%d,test2=%d  post1=%d,post2=%d",
                 offset, prev1, prev2, idx1, idx2, postGapIdx1, postGapIdx2));
 
             if ((idx1 > prev1 || prev1 == -1)
                 && (idx1 < postGapIdx1 || postGapIdx1 == -1)
                 && (idx2 > prev2 || prev2 == -1)
                 && (idx2 < postGapIdx2 || postGapIdx1 == -1)) {
-                if (idx2 >= n2) {
-                    idx2 -= n2;
-                }
+                
                 set.add(new PairInt(idx1, idx2));
             }
         }

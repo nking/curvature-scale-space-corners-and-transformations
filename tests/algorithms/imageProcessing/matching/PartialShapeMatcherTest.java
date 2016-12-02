@@ -447,7 +447,7 @@ public class PartialShapeMatcherTest extends TestCase {
             int x1 = line.getX(r.idx1s.get(i)); 
             int y1 = line.getY(r.idx1s.get(i)); 
             int x2 = triangle.getX(r.idx2s.get(i)); 
-            int y2 = triangle.getX(r.idx2s.get(i)); 
+            int y2 = triangle.getY(r.idx2s.get(i)); 
             System.out.println(x1 + ", " + y1 + " " + x2 + ", " + y2);
         }
         int z = 1;
