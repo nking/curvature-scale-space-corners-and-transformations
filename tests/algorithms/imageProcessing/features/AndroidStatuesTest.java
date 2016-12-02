@@ -453,6 +453,7 @@ public class AndroidStatuesTest extends TestCase {
                     + nnn);*/
                  
                 Settings settings = new Settings();
+                settings.setToFindVnishingPoints();
                            
                 ObjectMatcher objMatcher = new ObjectMatcher();
                 //if (fileName1Root.contains("_01")) {
@@ -568,7 +569,8 @@ public class AndroidStatuesTest extends TestCase {
             //MiscDebug.writeImage(theta1, fileName1Root + "_theta_1");
         
             Settings settings = new Settings();
-
+            settings.setToFindVnishingPoints();
+            
             ObjectMatcher objMatcher = new ObjectMatcher();
           //  if (
           //      fileName1Root.contains("_01") ||
@@ -688,7 +690,8 @@ public class AndroidStatuesTest extends TestCase {
             MiscDebug.writeImage(theta1, fileName1Root + "_theta_1");
         
             Settings settings = new Settings();
-
+            settings.setToFindVnishingPoints();
+            
             ObjectMatcher objMatcher = new ObjectMatcher();
             //if (
             //    fileName1Root.contains("_01") ||

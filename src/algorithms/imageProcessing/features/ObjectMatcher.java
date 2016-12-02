@@ -29,6 +29,8 @@ import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -357,8 +359,31 @@ public class ObjectMatcher {
         VanishingPoints vp2 = null;
         if (settings.isFindVanishingPoints()) {
             // vanishing points are used for attempts to account for 
-            // foreshortening of object dimensions at the end of 
+            // foreshortening of object dimensions from euclidean values,
+            // and this correction is used at the end of 
             // partial shape matching
+            
+            vp2 = new VanishingPoints();
+            vp2.find(listOfPointSets2);
+            {// DEBUG
+                Map<PairInt, Set<PairInt>> lines = vp2.polarMap;
+                Image imgCp = img1.copyToGreyscale2().copyToColorGreyscale();
+                if (false) {
+                    // plot the keys only, all across image
+                } else {
+                    int count = 0;
+                    // plot the balues only
+                    for (Entry<PairInt, Set<PairInt>> entry : lines.entrySet()) {
+                        int clr = ImageIOHelper.getNextColorRGB(count);
+                        for (PairInt p : entry.getValue()) {
+                            imgCp.setRGB(p.getX(), p.getY(), clr);
+                        }
+                        count++;
+                    }
+                }
+                MiscDebug.writeImage(imgCp, "_HT_");
+            }
+            
             throw new UnsupportedOperationException("not yet implemented");
         }
         

@@ -14,6 +14,8 @@ import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
+import gnu.trove.list.TDoubleList;
+import gnu.trove.list.TIntList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -319,15 +321,87 @@ public class HoughTransform {
     }
     
     /**
+     * 
+     * @param xCoords
+     * @param yCoords
+     * @param theta orientations of xCoords, yCoords in range 0 to 359,
+     * inclusive.
+     * @return 
+     */
+    public Map<PairInt, PairInt> calculatehHoughTransforms(
+        TIntList xCoords, TIntList yCoords, TIntList theta) {
+        
+        if (xCoords.size() == yCoords.size() || xCoords.size() == 
+            theta.size()) {
+            throw new IllegalArgumentException("xCoords, yCoords, and theta "
+                + "must be same lengths");
+        }
+        
+        // theta is 0 to 360
+        Map<Integer, Double> cosineMap = Misc.getCosineThetaMapForTwoPI();
+        Map<Integer, Double> sineMap = Misc.getSineThetaMapForTwoPI();
+                        
+        Map<PairInt, PairInt> pointTRMap = new HashMap<PairInt, PairInt>();
+                
+        for (int i = 0; i < xCoords.size(); ++i) {
+            int x = xCoords.get(i);
+            int y = yCoords.get(i);
+            int t = theta.get(i);
+            
+            Integer th = Integer.valueOf(t);
+            
+            double ct = cosineMap.get(th).doubleValue();
+            double st = sineMap.get(th).doubleValue();
+
+            double r = (x * ct) + (y * st);
+
+            if (r < 0) {
+                r *= -1;
+            }
+
+            PairInt pTR = new PairInt(t, (int) Math.round(r));
+
+            pointTRMap.put(new PairInt(x, y), pTR);
+        }
+        
+        return pointTRMap;
+    }
+    
+    /**
+     * given a list of closed, clockwise ordered boundaries of shapes,
+     * find lines in the boundaries and return them in a map with
+     * key = pairint(polar theta, polar radius), value = set of
+     * points with the key.
+     * @param listOfOrderedBoundaries
+     * @return 
+     */
+    public Map<PairInt, Set<PairInt>> findLines(List<PairIntArray> 
+        listOfOrderedBoundaries) {
+    
+        // goal, find lines within the point map
+        // -- the clever efficient matrixes holding difference of chords in 
+        //    ParitalShapeMatcher.java could be used here
+        //    to find the longest stretches of lines.
+        //    -- still thinking about this...the quick solution would be to use
+        //       the PartialShapeMatcher as is to match it to a line of
+        //       length longest dimension of a contiguous set of points
+        //       and to use the articulated setting to find segments.
+        //       
+        
+        throw new IllegalArgumentException("not yet implemented");
+    }
+    
+    /**
      * given a set of points, search for contiguous lines within the points
      * and return a map of the groups of points with value being their
      * theta and radius.
      * 
-     * not ready for use yet
+     * <emph> not ready for use yet <emph>
      * 
      * @param points
      * @return map with key = group of connected points having same theta and
      * radius, value = pairint of the theta and radius for the group.
+     @deprecated 
      */
     public Map<Set<PairInt>, PairInt> findContiguousLines(Set<PairInt> points,
         int minimumGroupSize) {
