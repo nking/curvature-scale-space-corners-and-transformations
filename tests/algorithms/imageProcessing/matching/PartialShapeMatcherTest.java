@@ -421,69 +421,111 @@ public class PartialShapeMatcherTest extends TestCase {
     
     public void testMatchLines() {
         
+        // close to correct, but one set of lines is interpreted as
+        // 1 line instead of 2 due to threshold of consecutive points.
+        //   so may need to make a PartialShapeMatcher specific
+        //   to the task of matching a line...that should remove sensitivity
+        //   to the model line length and the added corners to make a closed
+        //   shape of lines...
+        // use of this meanwhile, depends upon results of a null test
+        // to not find lines where there are only curves 
+        // so the resulting sum of chords is important for that last test
+        
         PairIntArray triangle = getTriangle();
-        PairIntArray line = createLine(18, 5, 5);
-        //LINE: 5,5  6,6  7,7  8,8  9,9  ...
-        // 0:0  or  5:0
+        
+        PairIntArray rectangle = createRectangle(11, 6, 5, 5);
         /*
-        5                 *
-        4              *     *
-        3           *           *
-        2        *  *  *  *  *  *  *
+        7                    *
+        6                 *     *
+        5              *           *
+        4           *                 *
+        3        *                       *
+        2     *  *  *  *  *  *  *  *  *  *  *
         1
-        0 
-           0  1  2  3  4  5  6  7  8  9 10
+        0
+           0  1  2  3  4  5  6  7  8  9 10 11
         */
-        
-        //Note, this could be improved w/ a larger threshold.
-        //   the small is removing some combinations which are
-        //   later trimmed to a gap interval, hence, instertable
-        
+      
         PartialShapeMatcher matcher = new PartialShapeMatcher();
         //matcher.setToDebug();
-        matcher._overrideToThreshhold((float)(1e-9));
+        matcher._overrideToThreshhold((float)(1e-7));
         matcher.overrideSamplingDistance(1);
         matcher._overrideToDisableEuclideanMatch();
         matcher.setToArticulatedMatch();
-        PartialShapeMatcher.Result r = matcher.match(line, triangle);
- 
+        PartialShapeMatcher.Result r = matcher.match(rectangle, triangle);
         for (int i = 0; i < r.idx1s.size(); ++i) {
-            int x1 = line.getX(r.idx1s.get(i)); 
-            int y1 = line.getY(r.idx1s.get(i)); 
+            int x1 = rectangle.getX(r.idx1s.get(i)); 
+            int y1 = rectangle.getY(r.idx1s.get(i)); 
             int x2 = triangle.getX(r.idx2s.get(i)); 
             int y2 = triangle.getY(r.idx2s.get(i)); 
             int segIdx = r.getArticulatedSegment(i);
-            System.out.println(x1 + ", " + y1 + " " + x2 + ", " + y2 
-                + " segIdx=" + segIdx);
+            System.out.println(x1 + ", " + y1 + "   " + x2 + ", " + y2 
+                + " segIdx=" + segIdx 
+                + " idx1=" + r.idx1s.get(i)
+                + " idx2=" + r.idx2s.get(i)
+            );
         }
+        System.out.println("triangle size=" + triangle.getN() +
+            " matched size=" + r.getNumberOfMatches());
     }
     
     protected PairIntArray getTriangle() {
         /*
-        5                *
-        4             *     *
-        3          *           *
-        2       *  *  *  *  *  *  *
+        7                    *
+        6                 *     *
+        5              *           *
+        4           *                 *
+        3        *                       *
+        2     *  *  *  *  *  *  *  *  *  *  *
         1
-        0 
-          0  1  2  3  4  5  6  7  8  9 10
+        0
+           0  1  2  3  4  5  6  7  8  9 10 11
         */
         
-        PairIntArray p = new PairIntArray(12);
-        for (int i = 2; i <= 8; ++i) {
+        PairIntArray p = new PairIntArray(20);
+        for (int i = 1; i <= 6; ++i) {
+            p.add(i, i + 1); 
+        }
+        p.add(7, 6); p.add(8, 5);  p.add(9, 4);  p.add(10, 3); 
+        for (int i = 11; i >= 2; --i) {
             p.add(i, 2);
         }
-        p.add(7, 3); p.add(6, 4); p.add(5, 5);
-        p.add(4, 4); p.add(3, 3);
-
+        
         return p;
     }
     
     protected PairIntArray createLine(int len, int xOff, int yOff) {
         PairIntArray a = new PairIntArray(len);
-        for (int i = 0; i < len; ++i) {
+        for (int i = (len - 1); i >= 0; --i) {
             a.add(xOff + i, yOff + i);
         }
+        return a;
+    }
+    
+    protected PairIntArray createRectangle(int width, int height, int xOff, 
+        int yOff) {
+        /*
+          h
+        
+          0     w
+        */
+        PairIntArray a = new PairIntArray(2*width + 2*height);
+        for (int i = (width - 1); i >= 0; --i) {
+            a.add(i, 0);
+        }
+        for (int i = 1; i < height; ++i) {
+            a.add(0, i);
+        }
+        for (int i = 1; i < width; ++i) {
+            a.add(i, height - 1);
+        }
+        for (int i = (height - 2); i >= 1; --i) {
+            a.add(width - 1, i);
+        }
+        for (int i = 0; i < a.getN(); ++i) {
+            a.set(i, a.getX(i) + xOff, a.getY(i) + yOff);
+        }
+        
         return a;
     }
 

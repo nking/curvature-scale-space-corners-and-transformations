@@ -260,6 +260,14 @@ public class PartialShapeMatcher {
         r.chordDiffSum = rSub.chordDiffSum;
         r.distSum = rSub.distSum;
         
+        if (rSub.articulatedSegment != null) {
+            r.articulatedSegment = new TIntArrayList();
+            for (int i = 0; i < rSub.idx1s.size(); ++i) {
+                int segIdx = rSub.articulatedSegment.get(i);
+                r.articulatedSegment.add(segIdx);
+            }
+        }
+        
         if (rSub.getTransformationParameters() != null) {
        
             /*
@@ -335,6 +343,14 @@ public class PartialShapeMatcher {
             r.idx2s.add(qDp * idx2);
         }
         r.chordDiffSum = rSub.chordDiffSum;
+        
+        if (rSub.articulatedSegment != null) {
+            r.articulatedSegment = new TIntArrayList();
+            for (int i = 0; i < rSub.idx1s.size(); ++i) {
+                int segIdx = rSub.articulatedSegment.get(i);
+                r.articulatedSegment.add(segIdx);
+            }
+        }
         
         if (rSub.getTransformationParameters() != null) {
             
