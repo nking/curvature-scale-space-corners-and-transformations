@@ -187,6 +187,11 @@ public class LineFinder {
                 
                 if (d < thresh) {
                     if (start == -1) {
+                        // do not start if on diagonal
+                        // TODO: revise this soon
+                        if (j == i) {
+                            continue;
+                        }
                         start = j;
                     }
                     if ((j == (md[i].length - 1)) && (start > -1)) {
@@ -199,12 +204,7 @@ public class LineFinder {
                 if (store) {
                     
                     // create an interval,
-                    int stop;
-                    if (j == (md[i].length - 1)) {
-                        stop = j;
-                    } else {
-                        stop = j - 1;
-                    }
+                    int stop = j - 1;
                     
 System.out.println("adding i=" + i + " start=" + (start - 1) + " stop=" + stop);
                     
@@ -260,8 +260,6 @@ System.out.println("adding i=" + i + " start=" + (start - 1) + " stop=" + stop);
                 }
             }
         } // end loop j
-        
-        // TODO: need to handle wrap around check
                 
         List<Interval<Integer>> list = rangeSearch.getAllIntrvals();
         
@@ -284,6 +282,10 @@ System.out.println("adding i=" + i + " start=" + (start - 1) + " stop=" + stop);
                 existing.add(i);
             }
         }
+        
+        // TODO: add here a seatch to extend inyo gaps where possible.
+        //    some of the steps above in trying to assure separated
+        //    segments, have left some indexes of found lines out
         
         return result;
     }
@@ -418,7 +420,7 @@ System.out.println("adding i=" + i + " start=" + (start - 1) + " stop=" + stop);
                 
                 if (i2 == (i1 + 2)) {
                     // fill in missing point, assume same value
-                    a[i1][i1 + 1] = a[i1][i2];
+                //    a[i1][i1 + 1] = a[i1][i2];
                 }
             }
         }
