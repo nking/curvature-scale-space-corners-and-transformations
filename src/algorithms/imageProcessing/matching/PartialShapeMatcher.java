@@ -114,6 +114,11 @@ public class PartialShapeMatcher {
     //      coluns along columns of matrix...reading
     //      over the block size square 
     //      includes a strict range of indexes
+    //      - could also edit to use the range search intervals
+    //        while reading from the matrix and use the
+    //        salukwzde cost for decisions about intersections.
+    //        it's the same logic as throughout the code but
+    //        moved up front and condensed
     //TODO: articulated match needs improvements
     
     /**
