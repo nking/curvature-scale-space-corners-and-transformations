@@ -362,6 +362,114 @@ public class SummedAreaTable {
     }
     
     /**
+     * extract the sum of a window bound by given start and stop coordinates
+     * for x and y and return that value and the number of pixels in the
+     * window in the output variable, output.
+     * NOTE GreyscaleImage, x, and y are in column major format
+     * @param imgS
+     * @param startX coordinate for x start of window
+     * @param stopX coordinate for x stop of window
+     * @param startY coordinate for y start of window
+     * @param stopY coordinate for y stop of window
+     * @param output one dimensional array of size 2 in which the
+     * sum of the window will be returned and the number of pixels in the 
+     * window.  int[]{sum, nPixels}
+     */
+    public void extractWindowFromSummedAreaTable(float[][] imgS, 
+        int startX, int stopX, int startY, int stopY, float output[]) {
+        
+        int w = imgS.length;
+        int h = imgS[0].length;
+        
+        int dx, dy;
+        if (startX > -1) {
+            dx = stopX - startX;
+        } else {
+            dx = stopX;
+        }
+        if (startY > -1) {
+            dy = stopY - startY;
+        } else {
+            dy = stopY;
+        }
+        
+        if (dx > 0 && dy > 0) {
+            if ((startX > 0) && (stopX < w) && (startY > 0) && (stopY < h)) {
+                int nPix = (dx + 1) * (dy + 1);
+                float s1 = imgS[stopX][stopY]
+                    - imgS[startX - 1][stopY]
+                    - imgS[stopX][startY - 1] 
+                    + imgS[startX - 1][startY - 1];
+                output[0] = s1;
+                output[1] = nPix;
+                return;
+            }
+        }
+        
+        if (dx == 0 && dy == 0) {
+            if (stopX == 0) {
+                if (stopY == 0) {
+                    output[1] = 1;
+                    output[0] = imgS[stopX][stopY];
+                    return;
+                }
+                output[1] = 1;
+                output[0] = imgS[stopX][stopY] 
+                    - imgS[stopX][stopY - 1];
+                return;
+            } else if (stopY == 0) {
+                //stopX == 0 && stopY == 0 has been handles in previous block
+                output[1] = 1;
+                output[0] = imgS[stopX][stopY]
+                    - imgS[stopX - 1][stopY];
+                return;
+            } else {
+                // stopX > 0
+                output[1] = 1;
+                output[0] = output[0] = imgS[stopX][stopY] 
+                    - imgS[startX - 1][stopY]
+                    - imgS[stopX][startY - 1] 
+                    + imgS[startX- 1][startY - 1];
+                return;
+            }
+            //System.out.println(" --> startX=" + startX +
+            //    " stopX=" + stopX + " startY=" + startY + " stopY=" + stopY);            
+        }
+        
+        if (startX > 0 && startY > 0) {
+            int nPix = (dx + 1) * (dy + 1);
+            float s1 = imgS[stopX][stopY] - imgS[startX][stopY]
+                - imgS[stopX][startY] + imgS[startX][startY];
+            output[0] = s1;
+            output[1] = nPix;
+            return;
+        } else if (startX > 0) {
+            // startY is < 0
+            int nPix = (dx + 1) * (stopY + 1);
+            float s1 = imgS[stopX][stopY]
+                - imgS[startX - 1][stopY];
+            output[0] = s1;
+            output[1] = nPix;
+            return;
+        } else if (startY > 0) {
+            // startX < 0
+            int nPix = (stopX + 1) * (dy + 1);
+            float s1 = imgS[stopX][stopY]
+                - imgS[stopX][startY - 1];
+            output[0] = s1;
+            output[1] = nPix;
+            return;
+        } else {
+            // startX < 0 && startY < 0
+            int nPix = (stopX + 1) * (stopY + 1);
+            float s1 = imgS[stopX][stopY];
+            output[0] = s1;
+            output[1] = nPix;
+            return;
+        }
+    }
+    
+    /**
      * extract the sum of a window centered at (x,y) of x dimension d and y
      * dimension d and return that value and the number of pixels in the
      * aperture in the output variable, output.

@@ -1,5 +1,8 @@
 package thirdparty.edu.princeton.cs.algs4;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /******************************************************************************
  A specialization of RangeSearch for an Interval parameterized type.
   
@@ -23,6 +26,29 @@ public class IntervalRangeSearch<T extends Comparable<T>, Value> extends
         //System.out.println("srch interval=" + interval);
         range0(root, interval, list);
         return list;
+    }
+    
+    public List<Interval<T>> getAllIntrvals() {
+        List<Interval<T>> list = new ArrayList<Interval<T>>();
+        getAllIntervals(root, list);
+        return list;
+    }
+    
+    private void getAllIntervals(RangeSearchNode<Interval<T>, Value> x, 
+        List<Interval<T>> list) {
+        
+        if (x == null) {
+            return;
+        }
+        list.add(x.key);
+            
+        if (x.left != null) {
+            getAllIntervals(x.left, list);
+        }
+        
+        if (x.right != null) {
+            getAllIntervals(x.right, list);
+        }
     }
     
     private void range0(RangeSearchNode<Interval<T>, Value> x, 

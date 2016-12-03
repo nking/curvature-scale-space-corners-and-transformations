@@ -41,38 +41,40 @@ public class LineFinderTest extends TestCase {
 
     public void testMatchLines2() {
         
+        //TODO: rotate the triangle by a couple of points to
+        // make sure wrap around is handled.
+        
         PairIntArray triangle = getTriangle();
                 
         /*
-        7                    *
+        7                    *5
         6                 *     *
         5              *           *
         4           *                 *
         3        *                       *
-        2     *  *  *  *  *  *  *  *  *  *  *
-        1
+        2     *  *  *  *  *  *  *  *  *  *  *10
+        1        19
         0
            0  1  2  3  4  5  6  7  8  9 10 11
         */
       
         LineFinder matcher = new LineFinder();
         matcher.setToDebug();
-        matcher._overrideToThreshhold((float)(1e-7));
-        matcher.overrideSamplingDistance(1);
         
-        LineFinder.Result r = matcher.match(triangle);
-        for (int i = 0; i < r.idx1s.size(); ++i) {
-            int x1 = triangle.getX(r.idx1s.get(i)); 
-            int y1 = triangle.getY(r.idx1s.get(i)); 
-            int segIdx = r.getArticulatedSegment(i);
-            System.out.println(x1 + ", " + y1 + "   " 
-                + " segIdx=" + segIdx 
-                + " idx1=" + r.idx1s.get(i)
-                + " idx2=" + r.idx2s.get(i)
-            );
+        LineFinder.LineResult r = matcher.match(triangle);
+        List<PairInt> lr = r.getLineIndexRanges();
+        int nMatched = 0;
+        for (int i = 0; i < lr.size(); ++i) {
+            int x = lr.get(i).getX(); 
+            int y = lr.get(i).getY(); 
+            System.out.println(x + ":" + y + "   " 
+                + " segIdx=" + i);
+            nMatched += (y - x + 1);
         }
         System.out.println("triangle size=" + triangle.getN() +
-            " matched size=" + r.getNumberOfMatches());
+            " matched size=" + nMatched);
+        
+        assertEquals(triangle.getN(), nMatched);
     }
     
     protected PairIntArray getTriangle() {

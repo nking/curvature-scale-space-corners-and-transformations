@@ -46,7 +46,7 @@ adapted from http://algs4.cs.princeton.edu/92search/
 public class RangeSearch<Key extends Comparable<Key>, Value>  {
 
     protected RangeSearchNode<Key, Value> root;   // root of the BST
-
+    
     //BST helper node data type
     protected class RangeSearchNode<T, S> {
         T key;              // key
