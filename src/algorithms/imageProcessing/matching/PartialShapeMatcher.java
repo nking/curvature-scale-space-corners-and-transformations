@@ -113,7 +113,10 @@ public class PartialShapeMatcher {
     //TODO: edit to read only the block width of 
     //      coluns along columns of matrix...reading
     //      over the block size square 
-    //      includes a strict range of indexes
+    //      includes a less strict range of indexes.
+    //      and in that case, can replace the area summed table
+    //      with a column summed table.  that results in
+    //      2 steps for extrcting the sum instead of four.
     //      - could also edit to use the range search intervals
     //        while reading from the matrix and use the
     //        salukwzde cost for decisions about intersections.
