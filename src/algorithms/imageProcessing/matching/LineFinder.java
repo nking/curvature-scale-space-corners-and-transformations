@@ -234,6 +234,9 @@ public class LineFinder {
                         // clashes with existing, so make sure the largest
                         // remains in range tree
                         Interval<Integer> comp = intervalMap.get(existing);
+
+            //TODO: change to use salukwzde distance here to allow
+            //   tolerance under threshold to truly be used
                         int nc = comp.max().intValue() - comp.min().intValue() + 2;
                         int ni = stop - start + 2;
                         if (nc > ni) {
