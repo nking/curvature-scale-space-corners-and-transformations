@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.matching;
 
+import algorithms.compGeometry.LinesAndAngles;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
@@ -434,6 +435,8 @@ public class PartialShapeMatcherTest extends TestCase {
         PairIntArray triangle = getTriangle();
         
         PairIntArray rectangle = createRectangle(11, 6, 5, 5);
+        rectangle = createLine(triangle.getN(), 5, 5);
+        
         /*
         7                    *
         6                 *     *
@@ -447,17 +450,18 @@ public class PartialShapeMatcherTest extends TestCase {
         */
       
         PartialShapeMatcher matcher = new PartialShapeMatcher();
-        //matcher.setToDebug();
+        matcher.setToDebug();
         matcher._overrideToThreshhold((float)(1e-7));
         matcher.overrideSamplingDistance(1);
         matcher._overrideToDisableEuclideanMatch();
         matcher.setToArticulatedMatch();
-        PartialShapeMatcher.Result r = matcher.match(rectangle, triangle);
+        
+        PartialShapeMatcher.Result r = matcher.match(triangle, rectangle);
         for (int i = 0; i < r.idx1s.size(); ++i) {
-            int x1 = rectangle.getX(r.idx1s.get(i)); 
-            int y1 = rectangle.getY(r.idx1s.get(i)); 
-            int x2 = triangle.getX(r.idx2s.get(i)); 
-            int y2 = triangle.getY(r.idx2s.get(i)); 
+            int x1 = triangle.getX(r.idx1s.get(i)); 
+            int y1 = triangle.getY(r.idx1s.get(i)); 
+            int x2 = rectangle.getX(r.idx2s.get(i)); 
+            int y2 = rectangle.getY(r.idx2s.get(i)); 
             int segIdx = r.getArticulatedSegment(i);
             System.out.println(x1 + ", " + y1 + "   " + x2 + ", " + y2 
                 + " segIdx=" + segIdx 

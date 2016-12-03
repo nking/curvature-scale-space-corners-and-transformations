@@ -450,6 +450,41 @@ public class LinesAndAngles {
 
         double d = direction(x3, y3, x2, y2, x1, y1);
 
+        double angleA = calcAngle(x1, y1, x2, y2, x3, y3);
+        
+        //System.out.println("direction=" + d +
+        //    " d1d3=" + d1d3 + " d2d3=" + d2d3 + 
+        //    " d1d2=" + d1d2);
+        
+        if (d > 0) {
+            angleA = 2.*Math.PI - angleA;
+        }
+        
+        return angleA;
+    }
+ 
+    /**
+     * Calculate the angle of segment P3:P1 sweeping clockwise
+     * to segment P3:P2.
+     * 
+     * Internally, the method uses the law of cosines and
+     * the direction method.
+     * <pre>
+     *   P1     P2
+     * 
+     *      P3
+     * </pre>
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param x3
+     * @param y3
+     * @return 
+     */
+    public static double calcAngle(int x1, int y1, 
+        int x2, int y2, int x3, int y3) {
+
         // c
         int d1d3 = distanceSqEucl(x1, y1, x3, y3);
 
@@ -464,14 +499,6 @@ public class LinesAndAngles {
             / (2 * Math.sqrt(d1d3 * d2d3));
 
         double angleA = Math.acos(cosA);
-        
-        //System.out.println("direction=" + d +
-        //    " d1d3=" + d1d3 + " d2d3=" + d2d3 + 
-        //    " d1d2=" + d1d2);
-        
-        if (d > 0) {
-            angleA = 2.*Math.PI - angleA;
-        }
         
         return angleA;
     }
