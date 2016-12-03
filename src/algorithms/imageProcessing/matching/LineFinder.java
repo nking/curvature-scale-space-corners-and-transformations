@@ -188,7 +188,7 @@ public class LineFinder {
                 if (d < thresh) {
                     if (start == -1) {
                         // do not start if on diagonal
-                        // TODO: revise this soon
+                        // TODO: revisit this soon
                         if (j == i) {
                             continue;
                         }
@@ -205,9 +205,7 @@ public class LineFinder {
                     
                     // create an interval,
                     int stop = j - 1;
-                    
-System.out.println("adding i=" + i + " start=" + (start - 1) + " stop=" + stop);
-                    
+                                        
                     // to prevent two intersecting lines from being merged
                     // into one, will use a start interval one
                     // index higher, and correct for it later.
@@ -238,15 +236,9 @@ System.out.println("adding i=" + i + " start=" + (start - 1) + " stop=" + stop);
                         Interval<Integer> comp = intervalMap.get(existing);
                         int nc = comp.max().intValue() - comp.min().intValue() + 2;
                         int ni = stop - start + 2;
- System.out.println("  comparing to existing n=" + nc + " current n=" + ni);
- System.out.println("     existing start=" + (comp.min() - 1) 
-     + " stop=" + comp.max());
                         if (nc > ni) {
                             Integer rmvd = rangeSearch.put(comp, existing);
                             assert(rmvd != null);
- if (rmvd.intValue() != sz) {
-     int z = 0;
- }
                             assert(rmvd.intValue() == sz);
                         } else {
                             intervalMap.put(Integer.valueOf(sz), interval);
@@ -283,10 +275,11 @@ System.out.println("adding i=" + i + " start=" + (start - 1) + " stop=" + stop);
             }
         }
         
-        // TODO: add here a seatch to extend inyo gaps where possible.
+        // TODO: add here a search to extend into gaps where possible.
         //    some of the steps above in trying to assure separated
         //    segments, have left some indexes of found lines out
-        
+        //    at the intersection of lines
+                
         return result;
     }
 
@@ -420,7 +413,9 @@ System.out.println("adding i=" + i + " start=" + (start - 1) + " stop=" + stop);
                 
                 if (i2 == (i1 + 2)) {
                     // fill in missing point, assume same value
-                //    a[i1][i1 + 1] = a[i1][i2];
+                    if (a[i1][i2] == a[i1][ii]) {
+                        a[i1][i1 + 1] = a[i1][i2];
+                    }
                 }
             }
         }

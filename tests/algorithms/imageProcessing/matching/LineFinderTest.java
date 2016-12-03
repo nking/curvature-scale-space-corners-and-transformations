@@ -72,7 +72,7 @@ public class LineFinderTest extends TestCase {
             " matched size=" + nMatched);
         
         assertTrue(triangle.getN() >= nMatched);
-        //assertTrue(triangle.getN() - nMatched < 4);
+        assertTrue(triangle.getN() - nMatched < 4);
         
         // ------ rotate the triangle points by
         triangle.rotateLeft(2);
@@ -97,7 +97,7 @@ public class LineFinderTest extends TestCase {
             " matched size=" + nMatched);
         
         assertTrue(triangle.getN() >= nMatched);
-        //assertTrue(triangle.getN() - nMatched < 4);
+        assertTrue(triangle.getN() - nMatched < 4);
         
     }
     
