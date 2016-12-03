@@ -110,6 +110,8 @@ based upon algorithm in paper
  */
 public class PartialShapeMatcher {
 
+    //TODO: articulated match needs improvements
+    
     /**
      * in sampling the boundaries of the shapes, one can
      * choose to use the same number for each (which can result
@@ -1275,7 +1277,9 @@ public class PartialShapeMatcher {
                 
                 if (i2 == (i1 + 2)) {
                     // fill in missing point, assume same value
-                    a[i1][i1 + 1] = a[i1][i2];
+                    if (a[i1][i2] == a[i1][ii]) {
+                        a[i1][i1 + 1] = a[i1][i2];
+                    }
                 }
             }
         }
