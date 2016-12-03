@@ -110,6 +110,10 @@ based upon algorithm in paper
  */
 public class PartialShapeMatcher {
 
+    //TODO: edit to read only the block width of 
+    //      coluns along columns of matrix...reading
+    //      over the block size square 
+    //      includes a strict range of indexes
     //TODO: articulated match needs improvements
     
     /**
