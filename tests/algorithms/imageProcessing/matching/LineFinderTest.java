@@ -6,6 +6,7 @@ import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.SIGMA;
+import algorithms.imageProcessing.matching.LineFinder.LineResult;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.util.CorrespondencePlotter;
@@ -138,9 +139,8 @@ public class LineFinderTest extends TestCase {
     public void testMatchLines3() {
         
         // looking at roof lines in house test image
-                
-        PairIntArray triangle = new PairIntArray();
-             
+        
+        
         /* shallow staircase line and flat line
                                   11         16
         8                          _ _ _ _ _ _ 
@@ -155,13 +155,58 @@ public class LineFinderTest extends TestCase {
            0 1 2 3 4 5 6 7 8 910111213141516171819
                               2                   3
         */
-      
+                
+        PairIntArray a = new PairIntArray();
+        a.add(2,2); a.add(2,3); a.add(3,3); a.add(4,4); a.add(5,4); 
+        a.add(6,5); a.add(7,5); a.add(8,6); a.add(9,6); 
+        a.add(10,7); a.add(11,7);
+        a.add(12,8); a.add(13,8); a.add(14,8 ); a.add(15,8 );
+        a.add(16,8 ); a.add(17,8); a.add(18,7 ); a.add(18,6 );
+        a.add(17,5 ); a.add(16,5 ); a.add(15,6 ); a.add(14,5 );
+        a.add(13,5 ); a.add(12,4 ); a.add(12,3); a.add(13,2 );
+        a.add(12,1 ); a.add(11,1 ); a.add(10,2 ); a.add(9,2 );
+        a.add(8,1 ); a.add(7,1 ); a.add(6,2 ); a.add(5,2 );
+        a.add(4,1 ); a.add(3,1 );
+        
+        // expected intervals of indexes, junctions are printed in more
+        //   than one segment
+        Set<PairInt> expectedIntervals = new HashSet<PairInt>();
+        expectedIntervals.add(new PairInt(0, 12));
+        expectedIntervals.add(new PairInt(11, 16));
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        
         LineFinder matcher = new LineFinder();
+        matcher._overrideToThreshhold(0.35f);
+        matcher.overrideSamplingDistance(2);
         //matcher.setToDebug();
+        LineResult r = matcher.match(a);
+        List<PairInt> lr = r.getLineIndexRanges();
+        int nMatched = 0;
+        for (int i = 0; i < lr.size(); ++i) {
+            int x = lr.get(i).getX(); 
+            int y = lr.get(i).getY(); 
+            System.out.println(x + ":" + y + "   " + " segIdx=" + i);
+            nMatched += (y - x + 1);
         
-        //LineFinder.LineResult r = matcher.match(triangle);
-        //List<PairInt> lr = r.getLineIndexRanges();
+            PairInt m = null;
+            for (PairInt p : expectedIntervals) {
+                if (x >= p.getX() && y <= p.getY()) {
+                    m = p;
+                    break;
+                }
+            }
+            //assertNotNull(m);
+            if (m != null) {
+                expectedIntervals.remove(m);
+            }
+        }
+        assertTrue(expectedIntervals.size() <= 1);
+        System.out.println("a size=" + a.getN() +
+            " matched size=" + nMatched);
         
+        assertTrue(a.getN() >= nMatched);        
     }
     
     protected PairIntArray getTriangle() {
