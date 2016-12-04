@@ -407,13 +407,16 @@ public class LineFinder {
             a2 = createDescriptorMatrix(q, n1);
         } else if (lineIndex == 3) {
             // line pattern: 3 horiz, up one level, then 3 horiz...
-            
+            PairIntArray q = createLine4(n1);
+            a2 = createDescriptorMatrix(q, n1);
         } else if (lineIndex == 4) {
             // same as 3, but offset by 1 index
-        
+            PairIntArray q = createLine5(n1);
+            a2 = createDescriptorMatrix(q, n1);
         } else {
             // same as 3, but offset by 2 indexes
-        
+            PairIntArray q = createLine6(n1);
+            a2 = createDescriptorMatrix(q, n1);
         }
         
         /*
@@ -652,15 +655,49 @@ public class LineFinder {
         }
         return q;
     }
+    
+    private PairIntArray createLine4(int n1) {
+
+        /*
+              - - -
+        - - - 
+        */
+        PairIntArray q = new PairIntArray(n1);
+        int prevX = 0;
+        int prevY = 0;
+        for (int i = 0; i < n1; ++i) {
+            switch (i % 3) {
+                case 0:
+                    prevY++;
+                default:
+                    prevX++;
+                    break;
+            }
+            q.add(prevX, prevY);
+        }
+        return q;
+    }
 
     private PairIntArray createLine3(int n1) {
 
         /*
-            - -
-        - - 
+              - -
+          - -
+        - 
         */
         PairIntArray q = createLine2(n1);
         q.rotateLeft(-1);
+        return q;
+    }
+    
+    private PairIntArray createLine5(int n1) {
+        PairIntArray q = createLine4(n1);
+        q.rotateLeft(-1);
+        return q;
+    }
+    private PairIntArray createLine6(int n1) {
+        PairIntArray q = createLine4(n1);
+        q.rotateLeft(-2);
         return q;
     }
 

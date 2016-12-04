@@ -40,7 +40,7 @@ public class LineFinderTest extends TestCase {
     public LineFinderTest() {
     }
 
-    public void estMatchLines2() {
+    public void testMatchLines2() {
         
         PairIntArray triangle = getTriangle();
              
@@ -181,10 +181,9 @@ public class LineFinderTest extends TestCase {
         
         ImageProcessor imageProcessor = new ImageProcessor();
         
-        
         LineFinder matcher = new LineFinder();
         //matcher.overrideMinimumLineLength(4);
-        matcher.setToDebug();
+        //matcher.setToDebug();
         LineResult r = matcher.match(a);
         List<PairInt> lr = r.getLineIndexRanges();
         int nMatched = 0;
@@ -213,7 +212,7 @@ public class LineFinderTest extends TestCase {
         assertTrue(a.getN() >= nMatched);        
     }
     
-    public void estMatchLines4() {
+    public void testMatchLines4() {
         
         // looking at roof lines in house test image
         
@@ -291,6 +290,9 @@ public class LineFinderTest extends TestCase {
         
         assertTrue(a.getN() >= nMatched);        
     }
+    
+    // TODO: add a circle test (== null test)
+    //       add tests empirically to find reasonable threshold
     
     protected PairIntArray getTriangle() {
         /*
