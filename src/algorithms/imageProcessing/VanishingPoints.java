@@ -2,6 +2,8 @@ package algorithms.imageProcessing;
 
 import algorithms.compGeometry.HoughTransform;
 import algorithms.compGeometry.PerimeterFinder2;
+import algorithms.imageProcessing.matching.LineFinder;
+import algorithms.imageProcessing.matching.LinesFinder;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import gnu.trove.list.TDoubleList;
@@ -21,9 +23,7 @@ import java.util.Set;
  * @author nichole
  */
 public class VanishingPoints {
-    
-    public Map<PairInt, Set<PairInt>> polarMap;
-    
+        
     /**
      * points and orientations to use for calculating vanishing lines and points.
      * NOTE that the points should probably be edge points or
@@ -31,26 +31,11 @@ public class VanishingPoints {
      */
     public void find(List<Set<PairInt>> listOfContigousLabels) {
         
-        // -- extract the boundaries of the sets
-        // -- use hough transform to find the lines
-        // -- find the parallel and overlapping lines
-        // -- calculate intersection of non-parallel and non-overlapping lines.
-        // -- use mode and average to combine results to
-        //    local vanishing points
-        // -- assert that geometry is consistent when possible
-        // -- assert that have no more than 3 vanishing points
-       
-        List<PairIntArray> listOfBounds = new ArrayList<PairIntArray>();
+        LinesFinder finder = new LinesFinder();
         
-        // TODO: extract ordered bounds
-        
-        HoughTransform ht = new HoughTransform();
-        
-        // make map w/ key = pairint(theta, radius), value = keypoints
-        Map<PairInt, Set<PairInt>> thetaRadiusMap = ht.findLines(
-            listOfBounds);
-                
-        polarMap = thetaRadiusMap;
+        finder.find(listOfContigousLabels);
+    
+        throw new UnsupportedOperationException("not yet implemented");
     }
     
 }

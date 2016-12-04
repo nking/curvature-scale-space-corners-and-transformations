@@ -370,56 +370,7 @@ public class HoughTransform {
         
         return pointTRMap;
     }
-    
-    /**
-     * given a list of closed, clockwise ordered boundaries of shapes,
-     * find lines in the boundaries and return them in a map with
-     * key = pairint(polar theta, polar radius), value = set of
-     * points with the key.
-     * @param listOfOrderedBoundaries
-     * @return 
-     */
-    public Map<PairInt, Set<PairInt>> findLines(List<PairIntArray> 
-        listOfOrderedBoundaries) {
-    
-        // goal, find lines within each listOfOrderedBoundaries
-        // -- the clever efficient matrixes holding difference of chords in 
-        //    PartialShapeMatcher.java could be used here
-        //    to find the longest stretches of lines.
-        //    -- still thinking about this...the quick solution would be to use
-        //       the PartialShapeMatcher as is to match it to a line of
-        //       length longest dimension of a contiguous set of points
-        //       and to use the articulated setting to find segments.
-        
-        for (PairIntArray b : listOfOrderedBoundaries) {
-            
-            int[] minMaxXY = MiscMath.findMinMaxXY(b);
-            //int sz = ORBMatcher.calculateObjectSize(b);
-            int sumLen = 2 * (minMaxXY[1] - minMaxXY[0]) +
-                2 * (minMaxXY[3] - minMaxXY[2]);
-            
-            /*
-            might need special options for this in PartialShapeMatcher.
-                -- lower threshold to a limit?
-                   -- need tests to step through range of conditions
-                -- 
-            */
-            
-            PairIntArray line = createLine(sumLen, 20, 20);
-            
-            PartialShapeMatcher matcher = new PartialShapeMatcher();            
-            //matcher.setToDebug();
-            matcher._overrideToThreshhold((float) (1e-9));
-            matcher.overrideSamplingDistance(1);
-            matcher._overrideToDisableEuclideanMatch();
-            matcher.setToArticulatedMatch();
-            PartialShapeMatcher.Result r = matcher.match(line, b);
-
-            
-        }
-        throw new UnsupportedOperationException("not yet implemented");
-    }
-    
+           
     protected PairIntArray createLine(int len, int xOff, int yOff) {
         PairIntArray a = new PairIntArray(len);
         for (int i = 0; i < len; ++i) {
