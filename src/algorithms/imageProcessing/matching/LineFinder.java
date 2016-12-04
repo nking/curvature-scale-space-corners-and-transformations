@@ -1,14 +1,17 @@
 package algorithms.imageProcessing.matching;
 
 import algorithms.compGeometry.LinesAndAngles;
+import algorithms.imageProcessing.SummedColumnTable;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntDoubleMap;
+import gnu.trove.map.TIntFloatMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntDoubleHashMap;
+import gnu.trove.map.hash.TIntFloatHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
@@ -35,6 +38,14 @@ curve.
 */
 public class LineFinder {
 
+    // TODO: 
+    //    to use a low threshold and still find lines, possibly need to
+    //      make changes to compare w/ stepped lines with large chord differences.
+    //          search 3 or so more patterns of lines:
+    //          step line with 2 horiz + 1 diag pattern,
+    //          step line with 2 horiz + 2 vert pattern,
+    //          step line with 3 horiz and 1 vert pattern
+    
     /**
      * in sampling the boundaries of the shapes, one can
      * choose to use the same number for each (which can result
@@ -68,10 +79,14 @@ public class LineFinder {
     /**
      * set the minimum line length to length.  Note that the
      * default value is 3.
+     * Nnte that this cannot be set to a value smaller than 2.
      * 
      * @param length 
      */
     public void overrideMinimumLineLength(int length) {
+        if (length < 2) {
+            throw new IllegalArgumentException("length must be >= 2");
+        }
         this.minLength = length;
     }
 
@@ -147,8 +162,10 @@ public class LineFinder {
 
         for (int i = 0; i < lr.size(); ++i) {
             PairInt startStop = lr.get(i);
+            int len = startStop.getY() - startStop.getX() + 1;
+            len *= dp;
             int x = startStop.getX() * dp;
-            int y = startStop.getY() * dp;
+            int y = x + len - 1;
             r.addLineRange(new PairInt(x, y));
         }
 
@@ -164,12 +181,22 @@ public class LineFinder {
 
         // --- make difference matrix ---
 
-        //md[0:n2-1][0:n1-1][0:n1-1]
+        //md[0:n1-1][0:n1-1]
         int n1 = p.getN();
         float[][] md = createDifferenceMatrices(p);
 
+        // ----- convert to summed column table
+        SummedColumnTable smt = new SummedColumnTable();
+        md = smt.create(md);
+        
         // ---- read the difference matrix to find minimum cost assignments ----
-
+        
+        // reading over a range of window sizes to keep the sum/nPix below thresh
+        // and keeping the mincost solutions.
+        
+        // ranges start from large c, then decreasing to get a more acurate
+        //    max sum diff of chords from the start.
+        
         // find the intervals of contiguous 0s and assign curve indexes to the
         // largest segments.
         // (note that the 0s are the values below threshold, effectively
@@ -189,7 +216,7 @@ public class LineFinder {
             new TIntObjectHashMap<Interval<Integer>>();
 
         // key = key of intervalMap.  item = chord diff sum
-        TIntDoubleMap chordMap = new TIntDoubleHashMap();
+        TIntFloatMap chordMap = new TIntFloatHashMap();
 
         // storing the interval of consecutive indexes, each below threshold,
         //   and storing as the value, the key to entry in intervalMap
@@ -200,64 +227,55 @@ public class LineFinder {
 
         double maxChordSum = Double.MIN_VALUE;
 
-        for (int i = 0; i < md.length; ++i) {
+        float[] outC = new float[2];
+        int stop, start;
+        int mdLen = md[0].length;
+        
+        for (int jRange = (mdLen - 1); jRange >= minLength; --jRange) {
+        
+            for (int i = 0; i < md.length; ++i) {
 
-            int start = -1;
-            double sum = 0;
+                for (int j = 0; j < mdLen; j += jRange) {
 
-            for (int j = 0; j < md[i].length; ++j) {
-
-                float d = md[i][j];
-
-                boolean store = false;
-
-                if (d < thresh) {
-                    if (start == -1) {
-                        // do not start if on diagonal
-                        // TODO: revisit this soon
-                        if (j == i) {
-                            continue;
-                        }
-                        start = j;
+                    stop = j + jRange;
+                    if (stop > (mdLen - 1)) {
+                        stop = mdLen - 1;
                     }
-                    sum += d;
-                    if ((j == (md[i].length - 1)) && (start > -1)) {
-                        store = true;
+                    
+                    smt.extractWindowInColumn(md, j, stop, i, outC);
+
+                    float d = outC[0]/outC[1];
+                    
+                    if (debug) {
+                        //System.out.println(String.format(
+                        //"len=%d i=%d d=%.2f", (stop - j + 1), i, d));
                     }
-                } else if (start > -1) {
-                    store = true;
-                }
-
-                if (store) {
-
-                    // create an interval,
-                    int stop = j - 1;
-
+                    
+                    if (d > thresh) {
+                        continue;
+                    }
+                    if (d > maxChordSum) {
+                        maxChordSum = d;
+                    }
+                    
                     // to prevent two intersecting lines from being merged
                     // into one, will use a start interval one
                     // index higher, and correct for it later.
                     // also, not storing single index matches
 
-                    start++;
-                    if (start > (md[i].length - 1)) {
-                        start = (md[i].length - 1);
+                    start = j + 1;
+                    if (start > (mdLen - 1)) {
+                        start = (mdLen - 1);
                     }
 
                     if (stop < start) {
                         // do not store single index matches
-                        start = -1;
-                        sum = 0;
                         continue;
                     }
-                    
-                    int ni = stop - start + 2;
 
+                    int ni = stop - start + 2;
                     if (ni < minLength) {
                         continue;
-                    }
-
-                    if (sum > maxChordSum) {
-                        maxChordSum = sum;
                     }
 
                     interval =  new Interval<Integer>(start, stop);
@@ -268,6 +286,14 @@ public class LineFinder {
                     Integer existing = rangeSearch.put(interval,
                         Integer.valueOf(sz));
 
+                    // store current interval in associated maps
+                    intervalMap.put(Integer.valueOf(sz), interval);
+                    chordMap.put(sz, d);
+                        
+                    if (debug) {
+                        System.out.println("  adding " + interval + " d=" + d);
+                    }
+                    
                     if (existing != null) {
                         // clashes with existing, so make sure the lowest cost
                         // remains in range tree
@@ -278,45 +304,47 @@ public class LineFinder {
                         double compSD = calcSalukDist(compChord, maxChordSum,
                             nc, md.length);
 
-                        double currentSD = calcSalukDist(sum, maxChordSum,
+                        double currentSD = calcSalukDist(d, maxChordSum,
                             ni, md.length);
 
                         if (compSD < currentSD) {
+                            Integer rmvd0 = rangeSearch.remove(interval);
+                            assert(rmvd0 != null);
                             //re-insert existing interval
                             Integer rmvd = rangeSearch.put(comp, existing);
-                            assert(rmvd != null);
-                            assert(rmvd.intValue() == sz);
-                        } else {
-                            //store current interval in associated maps
-                            intervalMap.put(Integer.valueOf(sz), interval);
-                            chordMap.put(sz, sum);
+                            if (rmvd != null) {
+                                if (debug) {
+                                    System.out.println("  conflict w. removal. " 
+                                        + " re-ins existing=" + comp +
+                                        "  but removed=" + intervalMap.get(rmvd));
+                                }
+                            }
                         }
-                    } else {
-                        // store current interval in associated maps
-                        intervalMap.put(Integer.valueOf(sz), interval);
-                        chordMap.put(sz, sum);
                     }
-
-                    // reset vars
-                    start = -1;
-                    sum = 0;
                 }
-            }
-        } // end loop j
+            } // end loop j
+        }
 
         // ---- retrieve the intervals from range tree, trimming to unique -----
         List<Interval<Integer>> list = rangeSearch.getAllIntrvals();
 
+        if (debug) {
+            System.out.println("nIntervals=" + list.size());
+        }
+        
         TIntSet existing = new TIntHashSet();
 
         LineResult result = new LineResult();
         for (Interval<Integer> interval2 : list) {
+            if (debug) {
+                System.out.println("interval2=" + interval2);
+            }
             // correct for the interval start being +1
-            int start = interval2.min() - 1;
+            start = interval2.min() - 1;
             if (existing.contains(start)) {
                 start++;
             }
-            int stop = interval2.max();
+            stop = interval2.max();
             if (existing.contains(stop)) {
                 stop--;
             }
