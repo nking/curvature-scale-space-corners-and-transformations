@@ -7,8 +7,12 @@ import algorithms.imageProcessing.DFSSimilarThetaRadiusGroupsFinder;
 import algorithms.imageProcessing.DFSConnectedHoughTransformGroupsFinder;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.imageProcessing.matching.ORBMatcher;
+import algorithms.imageProcessing.matching.PartialShapeMatcher;
+import algorithms.imageProcessing.matching.PartialShapeMatcher.Result;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Misc;
+import algorithms.misc.MiscMath;
 import algorithms.util.LinearRegression;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
@@ -386,9 +390,42 @@ public class HoughTransform {
         //       the PartialShapeMatcher as is to match it to a line of
         //       length longest dimension of a contiguous set of points
         //       and to use the articulated setting to find segments.
-        //       
         
-        throw new IllegalArgumentException("not yet implemented");
+        for (PairIntArray b : listOfOrderedBoundaries) {
+            
+            int[] minMaxXY = MiscMath.findMinMaxXY(b);
+            //int sz = ORBMatcher.calculateObjectSize(b);
+            int sumLen = 2 * (minMaxXY[1] - minMaxXY[0]) +
+                2 * (minMaxXY[3] - minMaxXY[2]);
+            
+            /*
+            might need special options for this in PartialShapeMatcher.
+                -- lower threshold to a limit?
+                   -- need tests to step through range of conditions
+                -- 
+            */
+            
+            PairIntArray line = createLine(sumLen, 20, 20);
+            
+            PartialShapeMatcher matcher = new PartialShapeMatcher();            
+            //matcher.setToDebug();
+            matcher._overrideToThreshhold((float) (1e-9));
+            matcher.overrideSamplingDistance(1);
+            matcher._overrideToDisableEuclideanMatch();
+            matcher.setToArticulatedMatch();
+            PartialShapeMatcher.Result r = matcher.match(line, b);
+
+            
+        }
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+    
+    protected PairIntArray createLine(int len, int xOff, int yOff) {
+        PairIntArray a = new PairIntArray(len);
+        for (int i = 0; i < len; ++i) {
+            a.add(xOff + i, yOff + i);
+        }
+        return a;
     }
     
     /**
