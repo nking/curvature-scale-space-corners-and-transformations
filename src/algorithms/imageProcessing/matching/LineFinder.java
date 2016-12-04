@@ -24,11 +24,11 @@ import thirdparty.edu.princeton.cs.algs4.IntervalRangeSearch;
 NOTE: NOT READY FOR USE YET... still testing.
 
 Adapted the chord descriptor difference matrix from PartialShapeMatcher.java
-* which was made following the paper
+which was made following the paper
 "Efficient Partial Shape Matching of Outer Contours" by Donoser
 
 The differences in chords of the implied second shape, a line is always 0,
-so edits are present specific to a one dimensional line instead of a closed
+so edits are present specific to a one dimensional value instead of a closed
 curve.
 
 @author nichole
@@ -251,7 +251,7 @@ public class LineFinder {
                         Integer.valueOf(sz));
 
                     if (existing != null) {
-                        // clashes with existing, so make sure the largest
+                        // clashes with existing, so make sure the lowest cost
                         // remains in range tree
                         Interval<Integer> comp = intervalMap.get(existing);
                         double compChord = chordMap.get(existing.intValue());
@@ -288,6 +288,7 @@ public class LineFinder {
             }
         } // end loop j
 
+        // ---- retrieve the intervals from range tree, trimming to unique -----
         List<Interval<Integer>> list = rangeSearch.getAllIntrvals();
 
         TIntSet existing = new TIntHashSet();
@@ -312,7 +313,7 @@ public class LineFinder {
 
         //TODO: add the intersection of lines to LineResult as junctions
         // when a point is clearly part of two lines.  such points are
-        // currently seen as gaps between intervals
+        // currently usually seen as gaps between intervals
 
         return result;
     }
