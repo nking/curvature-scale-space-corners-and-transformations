@@ -183,12 +183,10 @@ public class LineFinder {
 
         //md[0:n1-1][0:n1-1]
         int n1 = p.getN();
-        float[][] md = createDifferenceMatrices(p);
-
-        // ----- convert to summed column table
-        SummedColumnTable smt = new SummedColumnTable();
-        md = smt.create(md);
         
+        //log.fine("a1:");
+        float[][] a1 = createDescriptorMatrix(p, p.getN());
+
         // ---- read the difference matrix to find minimum cost assignments ----
         
         // reading over a range of window sizes to keep the sum/nPix below thresh
@@ -229,129 +227,147 @@ public class LineFinder {
 
         float[] outC = new float[2];
         int stop, start;
-        int mdLen = md[0].length;
+        int mdLen = a1[0].length;
         
-        for (int jRange = (mdLen - 1); jRange >= minLength; --jRange) {
+        LineResult result = null;
         
-            for (int i = 0; i < md.length; ++i) {
+        for (int a2i = 0; a2i < 1; ++a2i) {
+            
+            float[][] md = createDifferenceMatrices(a1, a2i);
+            //convert to summed column table
+            SummedColumnTable smt = new SummedColumnTable();
+            md = smt.create(md);
+        
+            for (int jRange = (mdLen - 1); jRange >= minLength; --jRange) {
 
-                for (int j = 0; j < mdLen; j += jRange) {
+                for (int i = 0; i < md.length; ++i) {
 
-                    stop = j + jRange;
-                    if (stop > (mdLen - 1)) {
-                        stop = mdLen - 1;
-                    }
-                    
-                    smt.extractWindowInColumn(md, j, stop, i, outC);
+                    for (int j = 0; j < mdLen; j += jRange) {
 
-                    float d = outC[0]/outC[1];
-                    
-                    if (debug) {
-                        //System.out.println(String.format(
-                        //"len=%d i=%d d=%.2f", (stop - j + 1), i, d));
-                    }
-                    
-                    if (d > thresh) {
-                        continue;
-                    }
-                    if (d > maxChordSum) {
-                        maxChordSum = d;
-                    }
-                    
-                    // to prevent two intersecting lines from being merged
-                    // into one, will use a start interval one
-                    // index higher, and correct for it later.
-                    // also, not storing single index matches
+                        stop = j + jRange;
+                        if (stop > (mdLen - 1)) {
+                            stop = mdLen - 1;
+                        }
 
-                    start = j + 1;
-                    if (start > (mdLen - 1)) {
-                        start = (mdLen - 1);
-                    }
+                        smt.extractWindowInColumn(md, j, stop, i, outC);
 
-                    if (stop < start) {
-                        // do not store single index matches
-                        continue;
-                    }
+                        float d = outC[0]/outC[1];
 
-                    int ni = stop - start + 2;
-                    if (ni < minLength) {
-                        continue;
-                    }
+                        if (debug) {
+                            //System.out.println(String.format(
+                            //"len=%d i=%d d=%.2f", (stop - j + 1), i, d));
+                        }
 
-                    interval =  new Interval<Integer>(start, stop);
+                        if (d > thresh) {
+                            continue;
+                        }
+                        if (d > maxChordSum) {
+                            maxChordSum = d;
+                        }
 
-                    int sz = intervalMap.size();
+                        // to prevent two intersecting lines from being merged
+                        // into one, will use a start interval one
+                        // index higher, and correct for it later.
+                        // also, not storing single index matches
 
-                    // store it in range search
-                    Integer existing = rangeSearch.put(interval,
-                        Integer.valueOf(sz));
+                        start = j + 1;
+                        if (start > (mdLen - 1)) {
+                            start = (mdLen - 1);
+                        }
 
-                    // store current interval in associated maps
-                    intervalMap.put(Integer.valueOf(sz), interval);
-                    chordMap.put(sz, d);
-                        
-                    if (debug) {
-                        System.out.println("  adding " + interval + " d=" + d);
-                    }
-                    
-                    if (existing != null) {
-                        // clashes with existing, so make sure the lowest cost
-                        // remains in range tree
-                        Interval<Integer> comp = intervalMap.get(existing);
-                        double compChord = chordMap.get(existing.intValue());
-                        int nc = comp.max().intValue() - comp.min().intValue() + 2;
+                        if (stop < start) {
+                            // do not store single index matches
+                            continue;
+                        }
 
-                        double compSD = calcSalukDist(compChord, maxChordSum,
-                            nc, md.length);
+                        int ni = stop - start + 2;
+                        if (ni < minLength) {
+                            continue;
+                        }
 
-                        double currentSD = calcSalukDist(d, maxChordSum,
-                            ni, md.length);
+                        interval =  new Interval<Integer>(start, stop);
 
-                        if (compSD < currentSD) {
-                            Integer rmvd0 = rangeSearch.remove(interval);
-                            assert(rmvd0 != null);
-                            //re-insert existing interval
-                            Integer rmvd = rangeSearch.put(comp, existing);
-                            if (rmvd != null) {
-                                if (debug) {
-                                    System.out.println("  conflict w. removal. " 
-                                        + " re-ins existing=" + comp +
-                                        "  but removed=" + intervalMap.get(rmvd));
+                        int sz = intervalMap.size();
+
+                        // store it in range search
+                        Integer existing = rangeSearch.put(interval,
+                            Integer.valueOf(sz));
+
+                        // store current interval in associated maps
+                        intervalMap.put(Integer.valueOf(sz), interval);
+                        chordMap.put(sz, d);
+
+                        if (debug) {
+                            System.out.println("  adding " + interval + " d=" + d);
+                        }
+
+                        if (existing != null) {
+                            // clashes with existing, so make sure the lowest cost
+                            // remains in range tree
+                            Interval<Integer> comp = intervalMap.get(existing);
+                            double compChord = chordMap.get(existing.intValue());
+                            int nc = comp.max().intValue() - comp.min().intValue() + 2;
+
+                            double compSD = calcSalukDist(compChord, maxChordSum,
+                                nc, md.length);
+
+                            double currentSD = calcSalukDist(d, maxChordSum,
+                                ni, md.length);
+
+                            if (compSD < currentSD) {
+                                Integer rmvd0 = rangeSearch.remove(interval);
+                                assert(rmvd0 != null);
+                                //re-insert existing interval
+                                Integer rmvd = rangeSearch.put(comp, existing);
+                                if (rmvd != null) {
+                                    if (debug) {
+                                        System.out.println("  conflict w. removal. " 
+                                            + " re-ins existing=" + comp +
+                                            "  but removed=" + intervalMap.get(rmvd));
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            } // end loop j
-        }
+                } // end loop j
+            } // end jRange
+            
+            // read out the intervals and if all are matched or nearly all, break
+            // ---- retrieve the intervals from range tree, trimming to unique -----
+            List<Interval<Integer>> list = rangeSearch.getAllIntrvals();
 
-        // ---- retrieve the intervals from range tree, trimming to unique -----
-        List<Interval<Integer>> list = rangeSearch.getAllIntrvals();
-
-        if (debug) {
-            System.out.println("nIntervals=" + list.size());
-        }
-        
-        TIntSet existing = new TIntHashSet();
-
-        LineResult result = new LineResult();
-        for (Interval<Integer> interval2 : list) {
             if (debug) {
-                System.out.println("interval2=" + interval2);
+                System.out.println("nIntervals=" + list.size());
             }
-            // correct for the interval start being +1
-            start = interval2.min() - 1;
-            if (existing.contains(start)) {
-                start++;
+
+            int nMatched = 0;
+            
+            TIntSet existing = new TIntHashSet();
+
+            result = new LineResult();
+            for (Interval<Integer> interval2 : list) {
+                if (debug) {
+                    System.out.println("interval2=" + interval2);
+                }
+                // correct for the interval start being +1
+                start = interval2.min() - 1;
+                if (existing.contains(start)) {
+                    start++;
+                }
+                stop = interval2.max();
+                if (existing.contains(stop)) {
+                    stop--;
+                }
+                PairInt s = new PairInt(start, stop);
+                result.addLineRange(s);
+                for (int i = start; i <= stop; ++i) {
+                    existing.add(i);
+                    nMatched++;
+                }
             }
-            stop = interval2.max();
-            if (existing.contains(stop)) {
-                stop--;
-            }
-            PairInt s = new PairInt(start, stop);
-            result.addLineRange(s);
-            for (int i = start; i <= stop; ++i) {
-                existing.add(i);
+            
+            if (nMatched > (0.85f * mdLen)) {
+                break;
             }
         }
 
@@ -369,25 +385,17 @@ public class LineFinder {
       returns a[0:p.n-1][0:p.n-1]
     */
     protected float[][] createDifferenceMatrices(
-        PairIntArray p) {
+        float[][] a1, int lineIndex) {
+        
+        int n1 = a1.length;
 
-        /*
-        | a_1_1...a_1_N |
-        | a_2_1...a_2_N |
-               ...
-        | a_N_1...a_N_N |
-           elements on the diagonal are zero
-
-           to shift to different first point as reference,
-           can shift down k-1 rows and left k-1 columns.
-        */
-
-        //log.fine("a1:");
-        float[][] a1 = createDescriptorMatrix(p, p.getN());
-
+       
         //log.fine("a2:");
-        float[][] a2 = createLineDescriptorMatrix(p.getN());
-
+        float[][] a2 = null;
+        if (lineIndex == 0) {
+            a2 = createLineDescriptorMatrix(n1);
+        }
+        
         /*
             MXM              <XM
          20 21 22        20 21 22
@@ -396,7 +404,6 @@ public class LineFinder {
         */
 
         // --- make difference matrices ---
-        int n1 = p.getN();
         int n2 = n1;
         float[][] md = copy(a2);
         // NOTE: absolute values are stored.
@@ -441,6 +448,15 @@ public class LineFinder {
          d is the number of points before j in the sequence of points P.
 
          a_i_j is the angle between the 2 chords P_i_P_j and P_j_P_(j-d)
+        
+        | a_1_1...a_1_N |
+        | a_2_1...a_2_N |
+               ...
+        | a_N_1...a_N_N |
+           elements on the diagonal are zero
+
+           to shift to different first point as reference,
+           can shift down k-1 rows and left k-1 columns.
     */
     protected float[][] createDescriptorMatrix(PairIntArray p,
         int n) {
