@@ -40,7 +40,7 @@ public class LineFinderTest extends TestCase {
     public LineFinderTest() {
     }
 
-    public void testMatchLines2() {
+    public void estMatchLines2() {
         
         PairIntArray triangle = getTriangle();
              
@@ -136,7 +136,7 @@ public class LineFinderTest extends TestCase {
         
     }
     
-    public void estMatchLines3() {
+    public void testMatchLines3() {
         
         // this one shows that in order to keep the threshold
         //   low, need to add patterns for lines that are
@@ -183,7 +183,7 @@ public class LineFinderTest extends TestCase {
         
         
         LineFinder matcher = new LineFinder();
-        //matcher._overrideToThreshhold(0.46f);
+        //matcher.overrideMinimumLineLength(4);
         matcher.setToDebug();
         LineResult r = matcher.match(a);
         List<PairInt> lr = r.getLineIndexRanges();

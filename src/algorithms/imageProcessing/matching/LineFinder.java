@@ -5,6 +5,7 @@ import algorithms.imageProcessing.SummedColumnTable;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import gnu.trove.list.TDoubleList;
+import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntDoubleMap;
@@ -231,7 +232,7 @@ public class LineFinder {
         
         LineResult result = null;
         
-        for (int a2i = 0; a2i < 1; ++a2i) {
+        for (int a2i = 0; a2i < 3; ++a2i) {
             
             float[][] md = createDifferenceMatrices(a1, a2i);
             //convert to summed column table
@@ -343,7 +344,8 @@ public class LineFinder {
             int nMatched = 0;
             
             TIntSet existing = new TIntHashSet();
-
+            TIntSet junctions = new TIntHashSet();
+            
             result = new LineResult();
             for (Interval<Integer> interval2 : list) {
                 if (debug) {
@@ -352,10 +354,12 @@ public class LineFinder {
                 // correct for the interval start being +1
                 start = interval2.min() - 1;
                 if (existing.contains(start)) {
+                    junctions.add(start);
                     start++;
                 }
                 stop = interval2.max();
                 if (existing.contains(stop)) {
+                    junctions.add(stop);
                     stop--;
                 }
                 PairInt s = new PairInt(start, stop);
@@ -366,14 +370,12 @@ public class LineFinder {
                 }
             }
             
+            result.junctionIndexes = junctions;
+            
             if (nMatched > (0.85f * mdLen)) {
                 break;
             }
         }
-
-        //TODO: add the intersection of lines to LineResult as junctions
-        // when a point is clearly part of two lines.  such points are
-        // currently usually seen as gaps between intervals
 
         return result;
     }
@@ -389,11 +391,29 @@ public class LineFinder {
         
         int n1 = a1.length;
 
-       
         //log.fine("a2:");
         float[][] a2 = null;
         if (lineIndex == 0) {
             a2 = createLineDescriptorMatrix(n1);
+        } else if (lineIndex == 1) {
+            // line pattern: 2 horiz, up one level, then 2 horiz...
+            //     - -
+            // - -
+            PairIntArray q = createLine2(n1);
+            a2 = createDescriptorMatrix(q, n1);
+        } else if (lineIndex == 2) {
+            // same as 1, but beginning 1 index later
+            PairIntArray q = createLine3(n1);
+            a2 = createDescriptorMatrix(q, n1);
+        } else if (lineIndex == 3) {
+            // line pattern: 3 horiz, up one level, then 3 horiz...
+            
+        } else if (lineIndex == 4) {
+            // same as 3, but offset by 1 index
+        
+        } else {
+            // same as 3, but offset by 2 indexes
+        
         }
         
         /*
@@ -517,7 +537,7 @@ public class LineFinder {
 
         return a;
     }
-
+    
     protected int distanceSqEucl(int x1, int y1, int x2, int y2) {
         int diffX = x1 - x2;
         int diffY = y1 - y2;
@@ -611,10 +631,45 @@ public class LineFinder {
         return f*f + d*d;
     }
 
+    private PairIntArray createLine2(int n1) {
+
+        /*
+            - -
+        - - 
+        */
+        PairIntArray q = new PairIntArray(n1);
+        int prevX = 0;
+        int prevY = 0;
+        for (int i = 0; i < n1; ++i) {
+            switch (i % 2) {
+                case 0:
+                    prevY++;
+                default:
+                    prevX++;
+                    break;
+            }
+            q.add(prevX, prevY);
+        }
+        return q;
+    }
+
+    private PairIntArray createLine3(int n1) {
+
+        /*
+            - -
+        - - 
+        */
+        PairIntArray q = createLine2(n1);
+        q.rotateLeft(-1);
+        return q;
+    }
+
     public static class LineResult {
 
         List<PairInt> lineIndexRanges = new ArrayList<PairInt>();
 
+        TIntSet junctionIndexes = null;
+        
         public LineResult() {
         }
 
