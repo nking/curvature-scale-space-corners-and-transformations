@@ -135,6 +135,35 @@ public class LineFinderTest extends TestCase {
         
     }
     
+    public void testMatchLines3() {
+        
+        // looking at roof lines in house test image
+                
+        PairIntArray triangle = new PairIntArray();
+             
+        /* shallow staircase line and flat line
+                                  11         16
+        8                          _ _ _ _ _ _ 
+        7                      - -             * 17    
+        6                  - -           *     *         
+        5              - -           * *   * *   
+        4          - -             *
+        3      - -                 *
+        2    0 *     * *     * *     * 26
+        1        * *     * *     * *
+        0       36                            
+           0 1 2 3 4 5 6 7 8 910111213141516171819
+                              2                   3
+        */
+      
+        LineFinder matcher = new LineFinder();
+        //matcher.setToDebug();
+        
+        //LineFinder.LineResult r = matcher.match(triangle);
+        //List<PairInt> lr = r.getLineIndexRanges();
+        
+    }
+    
     protected PairIntArray getTriangle() {
         /*
         7                    *

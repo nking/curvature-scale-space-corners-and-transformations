@@ -43,13 +43,15 @@ public class LineFinder {
      * points.
      * dp is the set distance between sampling points.
        The authors of the paper use 3 as an example.
-     */
+    */
     protected int dp = 1;
 
     // 10 degrees is 0.1745 radians
     // for a fit to a line, consider 1E-9
     private float thresh = (float)(1.e-7);
 
+    private int minLength = 3;
+    
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
     private boolean debug = false;
@@ -61,6 +63,16 @@ public class LineFinder {
      */
     public void _overrideToThreshhold(float t) {
         this.thresh = t;
+    }
+    
+    /**
+     * set the minimum line length to length.  Note that the
+     * default value is 3.
+     * 
+     * @param length 
+     */
+    public void overrideMinimumLineLength(int length) {
+        this.minLength = length;
     }
 
     /**
@@ -237,6 +249,12 @@ public class LineFinder {
                         sum = 0;
                         continue;
                     }
+                    
+                    int ni = stop - start + 2;
+
+                    if (ni < minLength) {
+                        continue;
+                    }
 
                     if (sum > maxChordSum) {
                         maxChordSum = sum;
@@ -256,8 +274,6 @@ public class LineFinder {
                         Interval<Integer> comp = intervalMap.get(existing);
                         double compChord = chordMap.get(existing.intValue());
                         int nc = comp.max().intValue() - comp.min().intValue() + 2;
-
-                        int ni = stop - start + 2;
 
                         double compSD = calcSalukDist(compChord, maxChordSum,
                             nc, md.length);
