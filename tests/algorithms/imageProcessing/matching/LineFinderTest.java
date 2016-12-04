@@ -42,7 +42,7 @@ public class LineFinderTest extends TestCase {
     public void testMatchLines2() {
         
         PairIntArray triangle = getTriangle();
-                
+             
         /*
         7                    *5
         6                 *     *
@@ -56,7 +56,14 @@ public class LineFinderTest extends TestCase {
         */
       
         LineFinder matcher = new LineFinder();
-        matcher.setToDebug();
+        //matcher.setToDebug();
+        
+        // expected intervals of indexes, junctions are printed in more
+        //   than one segment
+        Set<PairInt> expectedIntervals = new HashSet<PairInt>();
+        expectedIntervals.add(new PairInt(0, 5));
+        expectedIntervals.add(new PairInt(5, 10));
+        expectedIntervals.add(new PairInt(10, 19));
         
         LineFinder.LineResult r = matcher.match(triangle);
         List<PairInt> lr = r.getLineIndexRanges();
@@ -64,21 +71,37 @@ public class LineFinderTest extends TestCase {
         for (int i = 0; i < lr.size(); ++i) {
             int x = lr.get(i).getX(); 
             int y = lr.get(i).getY(); 
-            System.out.println(x + ":" + y + "   " 
-                + " segIdx=" + i);
+            System.out.println(x + ":" + y + "   " + " segIdx=" + i);
             nMatched += (y - x + 1);
+        
+            PairInt m = null;
+            for (PairInt p : expectedIntervals) {
+                if (x >= p.getX() && y <= p.getY()) {
+                    m = p;
+                    break;
+                }
+            }
+            assertNotNull(m);
+            expectedIntervals.remove(m);
         }
+        assertEquals(0, expectedIntervals.size());
         System.out.println("triangle size=" + triangle.getN() +
             " matched size=" + nMatched);
         
         assertTrue(triangle.getN() >= nMatched);
-        assertTrue(triangle.getN() - nMatched < 4);
+        assertTrue((triangle.getN() - nMatched) < 4);
         
         // ------ rotate the triangle points by
         triangle.rotateLeft(2);
         
+        expectedIntervals = new HashSet<PairInt>();
+        expectedIntervals.add(new PairInt(0, 3));
+        expectedIntervals.add(new PairInt(3, 8));
+        expectedIntervals.add(new PairInt(8, 18));
+        expectedIntervals.add(new PairInt(18, 19));
+        
         matcher = new LineFinder();
-        matcher.setToDebug();
+        //matcher.setToDebug();
         r = matcher.match(triangle);
         lr = r.getLineIndexRanges();
         nMatched = 0;
@@ -92,7 +115,18 @@ public class LineFinderTest extends TestCase {
                 triangle.getX(y), triangle.getY(y))
             );
             nMatched += (y - x + 1);
+       
+            PairInt m = null;
+            for (PairInt p : expectedIntervals) {
+                if (x >= p.getX() && y <= p.getY()) {
+                    m = p;
+                    break;
+                }
+            }
+            assertNotNull(m);
+            expectedIntervals.remove(m);
         }
+        assertTrue(expectedIntervals.size() <= 1);
         System.out.println("triangle size=" + triangle.getN() +
             " matched size=" + nMatched);
         
