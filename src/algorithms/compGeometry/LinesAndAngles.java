@@ -511,4 +511,57 @@ public class LinesAndAngles {
         return (diffX * diffX + diffY * diffY);
     }
     
+    /**
+     * given a polar angle and radius, calculate the line perpendicular to that
+     * point where it intersects with the image boundary.
+     * @param thetaDegress
+     * @param radius
+     * @param imageWidth
+     * @param imageHeight
+     * @return new int[] {x1, y1, x2, y2}
+     */
+    public static int[] calcPolarLineEndPoints(int thetaDegrees, int radius,
+        int imageWidth, int imageHeight) {
+        
+        if (thetaDegrees == 0) {
+            return new int[]{radius, 0, radius, imageHeight - 1};
+        } else if (thetaDegrees == 180) {
+            return new int[]{-radius, 0, -radius, imageHeight - 1};
+        } else if (thetaDegrees == 90) {
+            return new int[]{0, radius, imageWidth - 1, radius};
+        } else if (thetaDegrees == 270) {
+            return new int[]{0, -radius, imageWidth - 1, -radius};
+        } else if (thetaDegrees < 90) {
+            double a = (double)thetaDegrees * Math.PI/180.;
+            double b = (Math.PI/2.) - a;
+            int xInter1 = (int)Math.round((double)radius / Math.sin(b));
+            int yInter1 = (int)Math.round((double)xInter1 * Math.tan(b));
+            if (xInter1 < imageWidth) {
+                if (yInter1 < imageHeight) {
+                    return new int[] {0, yInter1, xInter1, 0};
+                }
+                int y2 = yInter1 - imageHeight;
+                // yInter1/y2 = xInter1/x2 ==> x2 = xInter1 * y2 / yInter1
+                int x2 = (int)Math.round((double)(y2 * xInter1)/(double)(yInter1));
+                return new int[] {x2, imageHeight - 1, xInter1, 0};
+            }
+            // xInt > imageWidth - 1
+            int x2 = xInter1 - imageWidth;
+            int y2 = (int)Math.round((double)(x2 * yInter1)/(double)(xInter1));
+            if (yInter1 < imageHeight) {
+                return new int[] {0, yInter1, imageWidth - 1, y2};
+            }
+            // yInt > imageHeight - 1
+            int y3 = yInter1 - imageHeight;
+            int x3 = (int)Math.round((double)(y3 * xInter1)/(double)(yInter1));
+            return new int[] {x3, imageHeight - 1, xInter1, 0};
+        } else if (thetaDegrees < 180) {
+            
+        } else if (thetaDegrees < 270) {
+            
+        } else {
+            
+        }
+        throw new UnsupportedOperationException("not yet impl");
+    } 
 }
