@@ -156,6 +156,8 @@ public class LinesFinder {
                 if (thetaDeg < 0) {
                     // reverse the line direction
                     thetaDeg += 180;
+                } else if (thetaDeg == 180) {
+                    thetaDeg = 0;
                 }
 
                 // don't store lines on image bundaries if this is set               
