@@ -350,7 +350,7 @@ public class ObjectMatcher {
             ImageExt img11 = img1.copyToImageExt();
             ImageIOHelper.addAlternatingColorLabelsToRegion(
                 img11, labels4);
-            MiscDebug.writeImage(img11, "_segmented_" + ts);
+            MiscDebug.writeImage(img11, "_segmented_v_" + ts);
         }
 
         List<Set<PairInt>> listOfPointSets2
@@ -364,12 +364,13 @@ public class ObjectMatcher {
             // partial shape matching
             
             vp2 = new VanishingPoints();
+            vp2.setToDebug();
             vp2.find(listOfPointSets2, img1.getWidth(),
                 img1.getHeight());
             {// DEBUG
-                //Image img11 = img1.copyImage();
-                //vp2.debugDraw(img11);
-                //MiscDebug.writeImage(img11, "_lines_");
+                Image img11 = img1.copyImage();
+                vp2.debugDraw(img11);
+                MiscDebug.writeImage(img11, "_lines_");
             }
             
             throw new UnsupportedOperationException("not yet implemented");

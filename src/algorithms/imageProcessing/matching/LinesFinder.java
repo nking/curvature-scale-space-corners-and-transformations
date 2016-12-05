@@ -66,6 +66,12 @@ public class LinesFinder {
     private int lastCol = -1;
     private int lastRow = -1;
     
+    private int minLineLength = 20;
+    
+    private boolean debug = false;
+    
+    private float thresh = (float)(1.e-7);
+    
     /**
      * if this is set, vertical lines found at polar radius 0 and width from
      * origin are removed and so are horizontal lines found at polar radius
@@ -75,7 +81,38 @@ public class LinesFinder {
         this.lastCol = lastColumn;
         this.lastRow = lastRow;
     }
+    
+    /**
+     * override the default minimum line length of 30 to the given value
+     * @param length 
+     */
+    public void overrideMinimumLineLength(int length) {
+        this.minLineLength = length;
+    }
+    
+    /**
+     * override default minimum length of 20, to this value
+     * @param length 
+     */
+    public void overrideMinimumLength(int length) {
+        minLineLength = length;
+    }
    
+    /**
+     * override the default threshold of 1.e7.  the absolute average differernce
+     * of chords over a window size must be less than the threshold in order
+     * for the segment to be considered a line.  Increasing this number
+     * too much will possibly result in including curves.
+     * @param threshold 
+     */
+    public void overrideThreshold(float threshold) {
+        this.thresh = threshold;
+    }
+    
+    public void setToDebug() {
+        debug = true;
+    }
+    
     public void find(List<Set<PairInt>> listOfContigousLabels) {
         
         // -- extract the boundaries of the sets
@@ -94,6 +131,7 @@ public class LinesFinder {
             if (set.size() < 3) {
                 continue;
             }
+         
             PairIntArray b = pFinder.extractOrderedBorder(new HashSet<PairInt>(
                 set));
             if (b != null && b.getN() > 2) {
@@ -125,46 +163,71 @@ public class LinesFinder {
             }
         
             LineFinder matcher = new LineFinder();
-            //matcher.setToDebug();
+            if (debug) {
+                matcher.setToDebug();
+            }
+            matcher.overrideMinimumLineLength(minLineLength);
+            matcher._overrideToThreshhold(thresh);
             LineFinder.LineResult r = matcher.match(b);
             List<PairInt> lr = r.getLineIndexRanges();
 
             for (int ii = 0; ii < lr.size(); ++ii) {
                 int startIdx = lr.get(ii).getX(); 
                 int stopIdx = lr.get(ii).getY(); 
-                System.out.println(startIdx + ":" + stopIdx + "   " + " segIdx=" + ii);
-
+                
+                if (debug) {
+                    System.out.println("indexes: " + startIdx + ":" + stopIdx 
+                        + "   " + " segIdx=" + ii);
+                }
+                
                 int lineX0 = b.getX(startIdx);
                 int lineY0 = b.getY(startIdx);
                 int lineX1 = b.getX(stopIdx);
                 int lineY1 = b.getY(stopIdx);
 
+                if (debug) {
+                    System.out.println("coords: (" + lineX0 + "," + lineY0 + ") "
+                        + " (" + lineX1 + "," + lineY1 + ") ");
+                }
+                
                 double polarR = curveHelper.distanceFromPointToALine(
                     lineX0, lineY0, lineX1, lineY1, 0, 0);
                 int radius = (int)Math.round(polarR);
                 
                 // don't store lines on image boundaries if this is set
                 if (lastCol > -1) {
-                    if (radius == 0) {
+                    if (radius < 2) {
                         continue;
                     }
                 }
                 
-                // -180 to 180
+                // -180 to 180 are the ranges.  also need an offset by 90 perpendicular
                 double theta = Math.atan2(lineY1 - lineY0, lineX1 - lineX0);
                 int thetaDeg = (int)Math.round(theta * 180./Math.PI);
+                // perpendicular to slipe:
+                thetaDeg -= 90;
+                // correction to place within range 0 to 180:
                 if (thetaDeg < 0) {
-                    // reverse the line direction
-                    thetaDeg += 180;
+                    while (thetaDeg < 0) {
+                        // reverse the line direction
+                        thetaDeg += 180;
+                    }
                 } else if (thetaDeg == 180) {
                     thetaDeg = 0;
+                }
+                
+                if (debug) {
+                    System.out.println("theta, radius: (" + thetaDeg + "," 
+                        + radius + ")");
                 }
 
                 // don't store lines on image bundaries if this is set               
                 if (lastCol > -1) {
-                    if ((thetaDeg == 0 || thetaDeg == 180) && (lastRow == radius)) {
+                    if ((thetaDeg == 0 || thetaDeg == 180) && 
+                        (radius > (lastCol - 2))) {
                         continue;
-                    } else if ((thetaDeg == 90 || thetaDeg == 270) && (lastCol == radius)) {
+                    } else if ((thetaDeg == 90 || thetaDeg == 270) 
+                        && (radius > (lastRow - 2))) {
                         continue;
                     }
                 }
@@ -260,22 +323,40 @@ public class LinesFinder {
             int lIdx = lIdxs[i];
             int np = nPoints[i];
             if (np < 25) {
-                break;
+            //    break;
             }
             
             PairInt tr = trs[lIdx];
           
             int[] clr = ImageIOHelper.getNextRGB(i);
-            int[] eps = LinesAndAngles.calcPolarLineEndPoints(
-                tr.getX(), tr.getY(), img.getWidth(), img.getHeight());
             
-            System.out.println("tr=" + tr.toString() + " eps=" +
-                Arrays.toString(eps) + " w=" + img.getWidth() + 
-                " h=" + img.getHeight());
+            boolean drawLines = true;
             
-            ImageIOHelper.drawLineInImage(
-                eps[0], eps[1], eps[2], eps[3], img, 1, 
-                clr[0],clr[1], clr[2]);            
+            if (drawLines) {
+                int[] eps = LinesAndAngles.calcPolarLineEndPoints(
+                    tr.getX(), tr.getY(), img.getWidth(), img.getHeight());
+
+                System.out.println("tr=" + tr.toString() + " eps=" +
+                    Arrays.toString(eps) + " w=" + img.getWidth() + 
+                    " h=" + img.getHeight());
+
+                ImageIOHelper.drawLineInImage(
+                    eps[0], eps[1], eps[2], eps[3], img, 1, 
+                    clr[0],clr[1], clr[2]);            
+            } else {
+               
+                TIntList segIdxs = trSegmentIndexesMap.get(tr);
+                for (int j = 0; j < segIdxs.size(); ++j) {
+                    int segIdx = segIdxs.get(j);
+                    TIntList idxs = segmentIndexes.get(segIdx);
+                    for (int k = 0; k < idxs.size(); ++k) {
+                        int x = xs.get(k);
+                        int y = ys.get(k);
+                        ImageIOHelper.addPointToImage(x, y, img, 1, 
+                            clr[0], clr[1], clr[2]);
+                    }
+                }
+            }
         }
     }
 }

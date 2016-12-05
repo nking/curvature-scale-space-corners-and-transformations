@@ -17,6 +17,11 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 /**
+ * 
+ * NOT READY FOR USE.  first tests find safe segments
+ * of lines, but the entire line(s) over a labelled cell
+ * could be completed from the found segment.
+ * 
  * a class to hold various methods for determining vanishing points
  * and to hold the resulting vanishing points.
  * 
@@ -24,6 +29,12 @@ import java.util.Set;
  */
 public class VanishingPoints {
         
+    private boolean debug = false;
+    
+    public void setToDebug() {
+        debug = true;
+    }
+    
     /**
      * points and orientations to use for calculating vanishing lines and points.
      * NOTE that the points should probably be edge points or
@@ -33,12 +44,24 @@ public class VanishingPoints {
         int imageWidth, int imageHeight) {
         
         LinesFinder finder = new LinesFinder();
+        if (debug) {
+            finder.setToDebug();
+        }
+        //finder.overrideThreshold(0.085f);
+        finder.overrideMinimumLength(10);
         finder.setToRemoveBorderLines(imageWidth - 1, imageHeight - 1);
         finder.find(listOfContigousLabels);
     
         finder.debugPrintTRStats();
-        
-        throw new UnsupportedOperationException("not yet implemented");
+        this.finder = finder;
+        //throw new UnsupportedOperationException("not yet implemented");
     }
     
+    LinesFinder finder = null;
+    
+    public void debugDraw(Image img) {
+        
+        // draw lines onto img
+        finder.debugDraw(img);
+    }
 }
