@@ -1,7 +1,9 @@
 package algorithms.imageProcessing.matching;
 
 import algorithms.QuickSort;
+import algorithms.compGeometry.LinesAndAngles;
 import algorithms.compGeometry.PerimeterFinder2;
+import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -11,6 +13,7 @@ import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -147,10 +150,12 @@ public class LinesFinder {
                     }
                 }
                 
+                // -180 to 180
                 double theta = Math.atan2(lineY1 - lineY0, lineX1 - lineX0);
                 int thetaDeg = (int)Math.round(theta * 180./Math.PI);
                 if (thetaDeg < 0) {
-                    thetaDeg += 360;
+                    // reverse the line direction
+                    thetaDeg += 180;
                 }
 
                 // don't store lines on image bundaries if this is set               
@@ -218,6 +223,57 @@ public class LinesFinder {
             int lIdx = lIdxs[i];
             System.out.println(String.format("np=%d nL=%d tr=%s", 
                 nPoints[i], nLines[lIdx], trs[lIdx].toString()));
+        }
+    }
+    
+    public void debugDraw(algorithms.imageProcessing.Image img) {
+        
+        int n = trSegmentIndexesMap.size();
+        PairInt[] trs = new PairInt[n];
+        int[] nLines = new int[n];
+        int[] nPoints = new int[n];
+        int[] lIdxs = new int[n];
+        
+        int count = 0;
+        for (Entry<PairInt, TIntList> entry : trSegmentIndexesMap.entrySet()) {
+            trs[count] = entry.getKey();
+            TIntList segIdxs = entry.getValue();
+            nLines[count] = segIdxs.size();
+            
+            int np = 0;
+            for (int j = 0; j < segIdxs.size(); ++j) {
+                int segIdx = segIdxs.get(j);
+                np += segmentIndexes.get(segIdx).size();
+            }
+            nPoints[count] = np;
+            lIdxs[count] = count;
+            count++;
+        }
+        QuickSort.sortBy1stArg(nPoints, lIdxs);
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        for (int i = (count - 1); i > -1; --i) {
+            int lIdx = lIdxs[i];
+            int np = nPoints[i];
+            if (np < 25) {
+                break;
+            }
+            
+            PairInt tr = trs[lIdx];
+          
+            int[] clr = ImageIOHelper.getNextRGB(i);
+            int[] eps = LinesAndAngles.calcPolarLineEndPoints(
+                tr.getX(), tr.getY(), img.getWidth(), img.getHeight());
+            
+            System.out.println("tr=" + tr.toString() + " eps=" +
+                Arrays.toString(eps) + " w=" + img.getWidth() + 
+                " h=" + img.getHeight());
+            
+            ImageIOHelper.drawLineInImage(
+                eps[0], eps[1], eps[2], eps[3], img, 1, 
+                clr[0],clr[1], clr[2]);            
         }
     }
 }
