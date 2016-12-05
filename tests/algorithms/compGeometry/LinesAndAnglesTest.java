@@ -1,5 +1,6 @@
 package algorithms.compGeometry;
 
+import java.util.Arrays;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 
@@ -344,6 +345,192 @@ public class LinesAndAnglesTest extends TestCase {
         expected = 6.*Math.PI/4.;
         //System.out.println("a=" + angle + " expected=" + expected);
         assertTrue(Math.abs(angle - expected) < eps);
+        
+    }
+    
+    public void testCalcPolarPerp() {
+        
+        int[] ep;
+        int w, h, t;
+        
+        int radius = 4;
+        
+        w = 5; h = 5; t = 0;
+        ep = LinesAndAngles.calcPolarLineEndPoints(t, radius, w, h);
+        //System.out.println(Arrays.toString(ep));
+        
+        assertEquals(radius, ep[0]);
+        assertEquals(0, ep[1]);
+        assertEquals(radius, ep[2]);
+        assertEquals(h - 1, ep[3]);
+        
+        w = 5; h = 5; t = 180;
+        ep = LinesAndAngles.calcPolarLineEndPoints(t, radius, w, h);
+        //System.out.println(Arrays.toString(ep));
+        
+        assertEquals(-radius, ep[0]);
+        assertEquals(0, ep[1]);
+        assertEquals(-radius, ep[2]);
+        assertEquals(h - 1, ep[3]);
+        
+        w = 5; h = 5; t = 270;
+        ep = LinesAndAngles.calcPolarLineEndPoints(t, radius, w, h);
+        //System.out.println(Arrays.toString(ep));
+        
+        assertEquals(0, ep[0]);
+        assertEquals(-radius, ep[1]);
+        assertEquals(w - 1, ep[2]);
+        assertEquals(-radius, ep[3]);
+        
+        w = 5; h = 5; t = 90;
+        ep = LinesAndAngles.calcPolarLineEndPoints(t, radius, w, h);
+        //System.out.println(Arrays.toString(ep));
+        
+        assertEquals(0, ep[0]);
+        assertEquals(radius, ep[1]);
+        assertEquals(w - 1, ep[2]);
+        assertEquals(radius, ep[3]);
+        
+        // ----- 30 degrees ------
+        w = 5; h = 10; t = 30;
+        ep = LinesAndAngles.calcPolarLineEndPoints(t, radius, w, h);
+        //System.out.println(Arrays.toString(ep));
+        assertEquals(0, ep[0]);
+        assertEquals(8, ep[1]);
+        assertEquals(5, ep[2]);
+        assertEquals(0, ep[3]);
+        
+        w = 5; h = 5; t = 30;
+        ep = LinesAndAngles.calcPolarLineEndPoints(t, radius, w, h);
+        //System.out.println(Arrays.toString(ep));
+        assertEquals(2, ep[0]);
+        assertEquals(4, ep[1]);
+        assertEquals(5, ep[2]);
+        assertEquals(0, ep[3]);
+        
+        w = 4; h = 5; t = 30;
+        ep = LinesAndAngles.calcPolarLineEndPoints(t, radius, w, h);
+        //System.out.println(Arrays.toString(ep));
+        assertEquals(2, ep[0]);
+        assertEquals(4, ep[1]);
+        assertEquals(3, ep[2]);
+        assertEquals(3, ep[3]);
+       
+        w = 4; h = 10; t = 30;
+        ep = LinesAndAngles.calcPolarLineEndPoints(t, radius, w, h);
+        //System.out.println(Arrays.toString(ep));
+        assertEquals(0, ep[0]);
+        assertEquals(8, ep[1]);
+        assertEquals(3, ep[2]);
+        assertEquals(3, ep[3]);
+      
+        // ----- 60 degrees
+        w = 10; h = 5; t = 60;
+        ep = LinesAndAngles.calcPolarLineEndPoints(t, radius, w, h);
+        //System.out.println(Arrays.toString(ep));
+        assertEquals(0, ep[0]);
+        assertEquals(5, ep[1]);
+        assertEquals(8, ep[2]);
+        assertEquals(0, ep[3]);
+        
+        // --- 150 degrees ---
+        w = 5; h = 10; t = 150;
+        ep = LinesAndAngles.calcPolarLineEndPoints(t, radius, w, h);
+        //System.out.println(Arrays.toString(ep));
+        assertEquals(0, ep[0]);
+        assertEquals(8, ep[1]);
+        assertEquals(-5, ep[2]);
+        assertEquals(0, ep[3]);
+        
+        w = 5; h = 5; t = 150;
+        ep = LinesAndAngles.calcPolarLineEndPoints(t, radius, w, h);
+        //System.out.println(Arrays.toString(ep));
+        assertEquals(-2, ep[0]);
+        assertEquals(4, ep[1]);
+        assertEquals(-5, ep[2]);
+        assertEquals(0, ep[3]);
+        
+        w = 4; h = 5; t = 150;
+        ep = LinesAndAngles.calcPolarLineEndPoints(t, radius, w, h);
+        //System.out.println(Arrays.toString(ep));
+        assertEquals(-2, ep[0]);
+        assertEquals(4, ep[1]);
+        assertEquals(-3, ep[2]);
+        assertEquals(3, ep[3]);
+       
+        w = 4; h = 10; t = 150;
+        ep = LinesAndAngles.calcPolarLineEndPoints(t, radius, w, h);
+        //System.out.println(Arrays.toString(ep));
+        assertEquals(0, ep[0]);
+        assertEquals(8, ep[1]);
+        assertEquals(-3, ep[2]);
+        assertEquals(3, ep[3]);
+        
+        // --- 210 degrees ---
+        w = 5; h = 10; t = 210;
+        ep = LinesAndAngles.calcPolarLineEndPoints(t, radius, w, h);
+        //System.out.println(Arrays.toString(ep));
+        assertEquals(0, ep[0]);
+        assertEquals(-8, ep[1]);
+        assertEquals(-5, ep[2]);
+        assertEquals(0, ep[3]);
+        
+        w = 5; h = 5; t = 210;
+        ep = LinesAndAngles.calcPolarLineEndPoints(t, radius, w, h);
+        //System.out.println(Arrays.toString(ep));
+        assertEquals(-2, ep[0]);
+        assertEquals(-4, ep[1]);
+        assertEquals(-5, ep[2]);
+        assertEquals(0, ep[3]);
+        
+        w = 4; h = 5; t = 210;
+        ep = LinesAndAngles.calcPolarLineEndPoints(t, radius, w, h);
+        //System.out.println(Arrays.toString(ep));
+        assertEquals(-2, ep[0]);
+        assertEquals(-4, ep[1]);
+        assertEquals(-3, ep[2]);
+        assertEquals(-3, ep[3]);
+       
+        w = 4; h = 10; t = 210;
+        ep = LinesAndAngles.calcPolarLineEndPoints(t, radius, w, h);
+        //System.out.println(Arrays.toString(ep));
+        assertEquals(0, ep[0]);
+        assertEquals(-8, ep[1]);
+        assertEquals(-3, ep[2]);
+        assertEquals(-3, ep[3]);
+        
+        // --- 330 degrees ---
+        w = 5; h = 10; t = 330;
+        ep = LinesAndAngles.calcPolarLineEndPoints(t, radius, w, h);
+        //System.out.println(Arrays.toString(ep));
+        assertEquals(0, ep[0]);
+        assertEquals(-8, ep[1]);
+        assertEquals(5, ep[2]);
+        assertEquals(0, ep[3]);
+        
+        w = 5; h = 5; t = 330;
+        ep = LinesAndAngles.calcPolarLineEndPoints(t, radius, w, h);
+        //System.out.println(Arrays.toString(ep));
+        assertEquals(2, ep[0]);
+        assertEquals(-4, ep[1]);
+        assertEquals(5, ep[2]);
+        assertEquals(0, ep[3]);
+        
+        w = 4; h = 5; t = 330;
+        ep = LinesAndAngles.calcPolarLineEndPoints(t, radius, w, h);
+        //System.out.println(Arrays.toString(ep));
+        assertEquals(2, ep[0]);
+        assertEquals(-4, ep[1]);
+        assertEquals(3, ep[2]);
+        assertEquals(-3, ep[3]);
+       
+        w = 4; h = 10; t = 330;
+        ep = LinesAndAngles.calcPolarLineEndPoints(t, radius, w, h);
+        //System.out.println(Arrays.toString(ep));
+        assertEquals(0, ep[0]);
+        assertEquals(-8, ep[1]);
+        assertEquals(3, ep[2]);
+        assertEquals(-3, ep[3]);
         
     }
 }

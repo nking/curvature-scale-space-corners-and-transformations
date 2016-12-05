@@ -563,30 +563,37 @@ public class LinesAndAngles {
     private static int[] calcPolarLineEndPointsForThetaLT90(int thetaDegrees, 
         int radius, int imageWidth, int imageHeight) {
 
+        int lx = imageWidth - 1;
+        int ly = imageHeight - 1;
+        
         double a = (double) thetaDegrees * Math.PI / 180.;
         double b = (Math.PI / 2.) - a;
         
-        int xInter1 = (int) Math.round((double) radius / Math.sin(b));
-        int yInter1 = (int) Math.round((double) xInter1 * Math.tan(b));
+        double xInter1 = (double) radius / Math.cos(a);
+        double yInter1 = (double) xInter1 * Math.tan(b);
         if (xInter1 < imageWidth) {
             if (yInter1 < imageHeight) {
-                return new int[]{0, yInter1, xInter1, 0};
+                return new int[]{0, (int) Math.round(yInter1), 
+                    (int) Math.round(xInter1), 0};
             }
-            int y2 = yInter1 - imageHeight;
+            double y2 = yInter1 - ly;
             // yInter1/y2 = xInter1/x2 ==> x2 = xInter1 * y2 / yInter1
-            int x2 = (int) Math.round((double) (y2 * xInter1) / (double) (yInter1));
-            return new int[]{x2, imageHeight - 1, xInter1, 0};
+            double x2 = (double) (y2 * xInter1) / (double) (yInter1);
+            return new int[]{(int) Math.round(x2), ly, 
+                (int) Math.round(xInter1), 0};
         }
         // xInt > imageWidth - 1
-        int x2 = xInter1 - imageWidth;
-        int y2 = (int) Math.round((double) (x2 * yInter1) / (double) (xInter1));
+        double x2 = xInter1 - lx;
+        double y2 = (double) x2 * Math.tan(b);
         if (yInter1 < imageHeight) {
-            return new int[]{0, yInter1, imageWidth - 1, y2};
+            return new int[]{0, (int) Math.round(yInter1), 
+                lx, (int) Math.round(y2)};
         }
         // yInt > imageHeight - 1
-        int y3 = yInter1 - imageHeight;
-        int x3 = (int) Math.round((double) (y3 * xInter1) / (double) (yInter1));
+        double y3 = yInter1 - ly;
+        double x3 = (double) (y3 * xInter1) / (double) (yInter1);
         
-        return new int[]{x3, imageHeight - 1, xInter1, 0};
+        return new int[]{(int) Math.round(x3), ly, 
+            lx, (int) Math.round(y2)};
     }
 }
