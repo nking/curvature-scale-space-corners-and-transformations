@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.matching;
 
+import algorithms.QuickSort;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.util.PairInt;
@@ -14,6 +15,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -57,6 +59,19 @@ public class LinesFinder {
     private Map<PairInt, TIntList> trSegmentIndexesMap = new HashMap<PairInt, TIntList>();
     
     private int lastSegIdx = -1;
+    
+    private int lastCol = -1;
+    private int lastRow = -1;
+    
+    /**
+     * if this is set, vertical lines found at polar radius 0 and width from
+     * origin are removed and so are horizontal lines found at polar radius
+     * and height from origin.
+     */
+    public void setToRemoveBorderLines(int lastColumn, int lastRow) {
+        this.lastCol = lastColumn;
+        this.lastRow = lastRow;
+    }
    
     public void find(List<Set<PairInt>> listOfContigousLabels) {
         
@@ -123,16 +138,33 @@ public class LinesFinder {
 
                 double polarR = curveHelper.distanceFromPointToALine(
                     lineX0, lineY0, lineX1, lineY1, 0, 0);
+                int radius = (int)Math.round(polarR);
+                
+                // don't store lines on image boundaries if this is set
+                if (lastCol > -1) {
+                    if (radius == 0) {
+                        continue;
+                    }
+                }
                 
                 double theta = Math.atan2(lineY1 - lineY0, lineX1 - lineX0);
                 int thetaDeg = (int)Math.round(theta * 180./Math.PI);
                 if (thetaDeg < 0) {
                     thetaDeg += 360;
                 }
+
+                // don't store lines on image bundaries if this is set               
+                if (lastCol > -1) {
+                    if ((thetaDeg == 0 || thetaDeg == 180) && (lastRow == radius)) {
+                        continue;
+                    } else if ((thetaDeg == 90 || thetaDeg == 270) && (lastCol == radius)) {
+                        continue;
+                    }
+                }
                 
                 lastSegIdx++;
                 
-                PairInt tr = new PairInt(thetaDeg, (int)Math.round(polarR));
+                PairInt tr = new PairInt(thetaDeg, radius);
                 segmentTRMap.put(lastSegIdx, tr);
                 
                 int xsIdx = xs.size();
@@ -154,6 +186,38 @@ public class LinesFinder {
                 }
                 segIdxs.add(lastSegIdx);
             }
+        }
+    }
+    
+    public void debugPrintTRStats() {
+        
+        int n = trSegmentIndexesMap.size();
+        PairInt[] trs = new PairInt[n];
+        int[] nLines = new int[n];
+        int[] nPoints = new int[n];
+        int[] lIdxs = new int[n];
+        
+        int count = 0;
+        for (Entry<PairInt, TIntList> entry : trSegmentIndexesMap.entrySet()) {
+            trs[count] = entry.getKey();
+            TIntList segIdxs = entry.getValue();
+            nLines[count] = segIdxs.size();
+            
+            int np = 0;
+            for (int j = 0; j < segIdxs.size(); ++j) {
+                int segIdx = segIdxs.get(j);
+                np += segmentIndexes.get(segIdx).size();
+            }
+            nPoints[count] = np;
+            lIdxs[count] = count;
+            count++;
+        }
+        QuickSort.sortBy1stArg(nPoints, lIdxs);
+        
+        for (int i = (count - 1); i > -1; --i) {
+            int lIdx = lIdxs[i];
+            System.out.println(String.format("np=%d nL=%d tr=%s", 
+                nPoints[i], nLines[lIdx], trs[lIdx].toString()));
         }
     }
 }

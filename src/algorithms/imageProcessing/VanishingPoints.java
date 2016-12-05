@@ -29,12 +29,15 @@ public class VanishingPoints {
      * NOTE that the points should probably be edge points or
      * the boundaries of segmentation contiguous labels as filtered edges.
      */
-    public void find(List<Set<PairInt>> listOfContigousLabels) {
+    public void find(List<Set<PairInt>> listOfContigousLabels,
+        int imageWidth, int imageHeight) {
         
         LinesFinder finder = new LinesFinder();
-        
+        finder.setToRemoveBorderLines(imageWidth - 1, imageHeight - 1);
         finder.find(listOfContigousLabels);
     
+        finder.debugPrintTRStats();
+        
         throw new UnsupportedOperationException("not yet implemented");
     }
     

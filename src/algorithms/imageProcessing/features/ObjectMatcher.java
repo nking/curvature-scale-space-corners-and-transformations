@@ -364,24 +364,12 @@ public class ObjectMatcher {
             // partial shape matching
             
             vp2 = new VanishingPoints();
-            vp2.find(listOfPointSets2);
+            vp2.find(listOfPointSets2, img1.getWidth(),
+                img1.getHeight());
             {// DEBUG
-                Map<PairInt, Set<PairInt>> lines = vp2.polarMap;
-                Image imgCp = img1.copyToGreyscale2().copyToColorGreyscale();
-                if (false) {
-                    // plot the keys only, all across image
-                } else {
-                    int count = 0;
-                    // plot the balues only
-                    for (Entry<PairInt, Set<PairInt>> entry : lines.entrySet()) {
-                        int clr = ImageIOHelper.getNextColorRGB(count);
-                        for (PairInt p : entry.getValue()) {
-                            imgCp.setRGB(p.getX(), p.getY(), clr);
-                        }
-                        count++;
-                    }
-                }
-                MiscDebug.writeImage(imgCp, "_HT_");
+                //Image img11 = img1.copyImage();
+                //vp2.debugDraw(img11);
+                //MiscDebug.writeImage(img11, "_lines_");
             }
             
             throw new UnsupportedOperationException("not yet implemented");
