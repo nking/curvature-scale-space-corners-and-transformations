@@ -1,20 +1,14 @@
 package algorithms.imageProcessing.matching;
 
-import algorithms.compGeometry.LinesAndAngles;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
-import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.matching.LineFinder.LineResult;
-import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
-import algorithms.util.CorrespondencePlotter;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
-import algorithms.util.ResourceFinder;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -22,11 +16,6 @@ import java.util.logging.Logger;
 import junit.framework.TestCase;
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertTrue;
-import org.junit.Test;
-import static org.junit.Assert.*;
-import thirdparty.edu.princeton.cs.algs4.Interval;
-import thirdparty.edu.princeton.cs.algs4.Queue;
-import thirdparty.edu.princeton.cs.algs4.IntervalRangeSearch;
 
 /**
  *
@@ -58,7 +47,7 @@ public class LineFinderTest extends TestCase {
       
         LineFinder matcher = new LineFinder();
         //matcher.setToDebug();
-        
+        matcher.overrideMinimumLineLength(3);
         // expected intervals of indexes, junctions are printed in more
         //   than one segment
         Set<PairInt> expectedIntervals = new HashSet<PairInt>();
@@ -102,6 +91,7 @@ public class LineFinderTest extends TestCase {
         expectedIntervals.add(new PairInt(18, 19));
         
         matcher = new LineFinder();
+        matcher.overrideMinimumLineLength(3);
         //matcher.setToDebug();
         r = matcher.match(triangle);
         lr = r.getLineIndexRanges();
@@ -182,7 +172,7 @@ public class LineFinderTest extends TestCase {
         ImageProcessor imageProcessor = new ImageProcessor();
         
         LineFinder matcher = new LineFinder();
-        //matcher.overrideMinimumLineLength(4);
+        matcher.overrideMinimumLineLength(3);
         //matcher.setToDebug();
         LineResult r = matcher.match(a);
         List<PairInt> lr = r.getLineIndexRanges();
@@ -259,10 +249,8 @@ public class LineFinderTest extends TestCase {
         
         
         LineFinder matcher = new LineFinder();
-        matcher._overrideToThreshhold(0.35f);
-        //matcher.overrideMinimumLineLength(2);
-        //matcher.overrideSamplingDistance(2);
-        matcher.setToDebug();
+        matcher.overrideMinimumLineLength(3);
+        //matcher.setToDebug();
         LineResult r = matcher.match(a);
         List<PairInt> lr = r.getLineIndexRanges();
         int nMatched = 0;
