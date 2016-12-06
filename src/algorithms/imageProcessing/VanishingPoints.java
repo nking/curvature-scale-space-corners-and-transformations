@@ -48,11 +48,12 @@ public class VanishingPoints {
             finder.setToDebug();
         }
         //finder.overrideThreshold(0.085f);
-        finder.overrideThreshold(1.5f);
-        finder.overrideMinimumLength(10);
+        //finder.overrideThreshold(0.5f);
+        finder.overrideMinimumLength(15);
         finder.setToRemoveBorderLines(imageWidth - 1, imageHeight - 1);
         finder.find(listOfContigousLabels);
-    
+        finder.groupWithinTolerance();
+
         finder.debugPrintTRStats();
         this.finder = finder;
         //throw new UnsupportedOperationException("not yet implemented");

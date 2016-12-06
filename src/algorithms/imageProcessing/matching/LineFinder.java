@@ -239,7 +239,7 @@ public class LineFinder {
             //convert to summed column table
             SummedColumnTable smt = new SummedColumnTable();
             md = smt.create(md);
-        
+                    
             for (int jRange = (mdLen - 1); jRange >= minLength; --jRange) {
 
                 for (int i = 0; i < md.length; ++i) {
@@ -253,8 +253,12 @@ public class LineFinder {
 
                         smt.extractWindowInColumn(md, j, stop, i, outC);
 
+                        if (outC[1] < 1) {
+                            continue;
+                        }
+                        
                         float d = outC[0]/outC[1];
-
+        
                         if (debug) {
                             //System.out.println(String.format(
                             //"len=%d i=%d d=%.2f", (stop - j + 1), i, d));
@@ -300,7 +304,12 @@ public class LineFinder {
                         chordMap.put(sz, d);
 
                         if (debug) {
-                            System.out.println("  adding " + interval + " d=" + d);
+                            System.out.println("  adding " + interval 
+                                + String.format(" d=%.2f (%d,%d) (%d,%d)", 
+                                d, p.getX(interval.min()),
+                                p.getY(interval.min()),
+                                p.getX(interval.max()),
+                                p.getY(interval.max())));
                         }
 
                         if (existing != null) {
@@ -356,11 +365,13 @@ public class LineFinder {
                 start = interval2.min() - 1;
                 if (existing.contains(start)) {
                     junctions.add(start);
+        System.out.println("junction: " + p.getX(start) + " , " + p.getY(start));
                     start++;
                 }
                 stop = interval2.max();
                 if (existing.contains(stop)) {
                     junctions.add(stop);
+        System.out.println("junction: " + p.getX(stop) + " , " + p.getY(stop));
                     stop--;
                 }
                 PairInt s = new PairInt(start, stop);
@@ -436,7 +447,7 @@ public class LineFinder {
 
         if (debug) {
             print("a1", a1);
-            print("a2", a2);
+            //print("a2", a2);
             print("diff matrix", md);
         }
 
@@ -515,7 +526,7 @@ public class LineFinder {
                 if (i2 > (n - 1)) {
                     i2 -= n;
                 }
-
+                
                 //log.fine("i1=" + i1 + " imid=" + imid + " i2=" + i2);
 
                 double angleA = LinesAndAngles
@@ -525,9 +536,31 @@ public class LineFinder {
                     p.getX(imid), p.getY(imid)
                 );
 
+                // TODO revisit this
+                if (Double.isNaN(angleA)) {
+                    if (i2 < i1 && i1 < imid) {
+                        angleA = LinesAndAngles
+                            .calcClockwiseAngle(
+                            p.getX(i2), p.getY(i2),
+                            p.getX(i1), p.getY(i1),
+                            p.getX(imid), p.getY(imid));
+                        if (Double.isNaN(angleA)) {
+                            angleA = LinesAndAngles
+                            .calcClockwiseAngle(
+                            p.getX(i2), p.getY(i2),
+                            p.getX(i1), p.getY(i1),
+                            p.getX(imid), p.getY(imid));
+                        }
+                    } else {
+                        System.out.println(
+                        "SKIP i1=" + i1 + " imid=" + imid + " i2=" + i2);
+                        continue;
+                    }
+                }
+
                 //System.out.println("i1=" + i1 + " imid=" + imid + " i2=" + i2 +
                 //    "  angleA=" + angleA);
-
+          
                 a[i1][i2] = (float)angleA;
 
                 if (i2 == (i1 + 2)) {

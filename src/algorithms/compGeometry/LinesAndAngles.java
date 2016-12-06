@@ -437,6 +437,7 @@ public class LinesAndAngles {
      * 
      *      P3
      * </pre>
+     * NOTE that if given a single point, it will return NaN
      * @param x1
      * @param y1
      * @param x2
@@ -451,11 +452,7 @@ public class LinesAndAngles {
         double d = direction(x3, y3, x2, y2, x1, y1);
 
         double angleA = calcAngle(x1, y1, x2, y2, x3, y3);
-        
-        //System.out.println("direction=" + d +
-        //    " d1d3=" + d1d3 + " d2d3=" + d2d3 + 
-        //    " d1d2=" + d1d2);
-        
+       
         if (d > 0) {
             angleA = 2.*Math.PI - angleA;
         }
@@ -496,7 +493,7 @@ public class LinesAndAngles {
 
         //cosine A = (b^2 + c^2 - a^2)/2bc
         double cosA = (d1d3 + d2d3 - d1d2)
-            / (2 * Math.sqrt(d1d3 * d2d3));
+            / (2 * Math.sqrt((double)d1d3 * (double)d2d3));
 
         double angleA = Math.acos(cosA);
         

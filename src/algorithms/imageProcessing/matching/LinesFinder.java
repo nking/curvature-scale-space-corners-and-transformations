@@ -61,6 +61,9 @@ public class LinesFinder {
      */
     private Map<PairInt, TIntList> trSegmentIndexesMap = new HashMap<PairInt, TIntList>();
     
+    private List<PairInt> orderedTRList = null;
+    private List<TIntList> orderedTRXYIndexes = null;
+    
     private int lastSegIdx = -1;
     
     private int lastCol = -1;
@@ -196,7 +199,7 @@ public class LinesFinder {
                 
                 // don't store lines on image boundaries if this is set
                 if (lastCol > -1) {
-                    if (radius < 2) {
+                    if (radius < 5) {
                         continue;
                     }
                 }
@@ -224,10 +227,10 @@ public class LinesFinder {
                 // don't store lines on image bundaries if this is set               
                 if (lastCol > -1) {
                     if ((thetaDeg == 0 || thetaDeg == 180) && 
-                        (radius > (lastCol - 2))) {
+                        (radius > (lastCol - 5))) {
                         continue;
                     } else if ((thetaDeg == 90 || thetaDeg == 270) 
-                        && (radius > (lastRow - 2))) {
+                        && (radius > (lastRow - 5))) {
                         continue;
                     }
                 }
@@ -256,6 +259,90 @@ public class LinesFinder {
                 }
                 segIdxs.add(lastSegIdx);
             }
+        }
+    }
+    
+    /**
+     * combine the entries for a theta and radius within theta tolerance
+     * and radius tolerance into lists.
+     */
+    public void groupWithinTolerance() {
+        
+        orderedTRList = new ArrayList<PairInt>();
+        orderedTRXYIndexes = new ArrayList<TIntList>();
+    
+        Map<PairInt, TIntList> trXYIndexesMap = new
+            HashMap<PairInt, TIntList>();
+                
+        int n = trSegmentIndexesMap.size();
+        PairInt[] trs = new PairInt[n];
+        int[] nLines = new int[n];
+        int[] nPoints = new int[n];
+        int[] lIdxs = new int[n];
+        
+        int count = 0;
+        for (Entry<PairInt, TIntList> entry : trSegmentIndexesMap.entrySet()) {
+            trs[count] = entry.getKey();
+            TIntList segIdxs = entry.getValue();
+            nLines[count] = segIdxs.size();
+        
+            int np = 0;
+            for (int j = 0; j < segIdxs.size(); ++j) {
+                int segIdx = segIdxs.get(j);
+                TIntList idxs = segmentIndexes.get(segIdx);
+                np += idxs.size();
+                
+                PairInt tr = entry.getKey();
+                TIntList a = trXYIndexesMap.get(tr);
+                if (a == null) {
+                    a = new TIntArrayList();
+                    trXYIndexesMap.put(tr, a);
+                }
+                a.addAll(idxs);
+            }
+            nPoints[count] = np;
+            lIdxs[count] = count;
+            count++;
+        }
+        QuickSort.sortBy1stArg(nPoints, lIdxs);
+        
+        Set<PairInt> skip = new HashSet<PairInt>();
+        
+        for (int i = (count - 1); i > -1; --i) {
+            int lIdx = lIdxs[i];
+            int np = nPoints[i];
+            
+            PairInt tr = trs[lIdx];
+            TIntList xyList = new TIntArrayList();
+            
+            int sumT = 0;
+            int sumR = 0;
+            int sumN = 0;
+            
+            if (skip.contains(tr)) {
+                continue;
+            }
+            
+            for (int t0 = tr.getX() - 2; t0 <= tr.getX() + 2; ++t0) {
+                for (int r0 = tr.getY() - 2; r0 <= tr.getY() + 2; ++r0) {
+                    PairInt tr0 = new PairInt(t0, r0);
+                    TIntList a = trXYIndexesMap.get(tr0);
+                    if (a == null) {
+                        continue;
+                    }
+                    xyList.addAll(a);
+                    trXYIndexesMap.remove(tr0);
+                    skip.add(tr0);
+                    sumT += tr0.getX();
+                    sumR += tr0.getY();
+                    sumN++;
+                }
+            }
+            sumR /= sumN;
+            sumT /= sumN;
+            PairInt tr0 = new PairInt(sumR, sumT);
+            orderedTRList.add(tr0);
+            orderedTRXYIndexes.add(xyList);
         }
     }
     
@@ -293,50 +380,27 @@ public class LinesFinder {
     
     public void debugDraw(algorithms.imageProcessing.Image img) {
         
-        int n = trSegmentIndexesMap.size();
-        PairInt[] trs = new PairInt[n];
-        int[] nLines = new int[n];
-        int[] nPoints = new int[n];
-        int[] lIdxs = new int[n];
-        
-        int count = 0;
-        for (Entry<PairInt, TIntList> entry : trSegmentIndexesMap.entrySet()) {
-            trs[count] = entry.getKey();
-            TIntList segIdxs = entry.getValue();
-            nLines[count] = segIdxs.size();
-            
-            int np = 0;
-            for (int j = 0; j < segIdxs.size(); ++j) {
-                int segIdx = segIdxs.get(j);
-                np += segmentIndexes.get(segIdx).size();
-            }
-            nPoints[count] = np;
-            lIdxs[count] = count;
-            count++;
+        if (orderedTRList == null) {
+            throw new IllegalStateException("groupWithinTolerance must be "
+                + " invoked first");
         }
-        QuickSort.sortBy1stArg(nPoints, lIdxs);
         
         int w = img.getWidth();
         int h = img.getHeight();
         
-        int end = count - 10;
-        if (end < 0) {
-            end = 0;
-        }
-        //for (int i = (count - 1); i > -1; --i) {
-        for (int i = (count - 1); i >= end; --i) {
-            int lIdx = lIdxs[i];
-            int np = nPoints[i];
-            if (np < 25) {
-            //    break;
-            }
+        int end = 10;
+        //if (end > (orderedTRList.size() - 1)) {
+            end = orderedTRList.size();
+        //}
+        //for (int i = 0; i < orderedTRList.size(); ++i) {
+        for (int i = 0; i < end; ++i) {
             
-            PairInt tr = trs[lIdx];
+            PairInt tr = orderedTRList.get(i);
           
             int[] clr = ImageIOHelper.getNextRGB(i);
             
-            boolean drawLines = true;
-            
+            boolean drawLines = false;
+          
             if (drawLines) {
                 int[] eps = LinesAndAngles.calcPolarLineEndPoints(
                     tr.getX(), tr.getY(), img.getWidth(), img.getHeight());
@@ -349,18 +413,14 @@ public class LinesFinder {
                     eps[0], eps[1], eps[2], eps[3], img, 1, 
                     clr[0],clr[1], clr[2]);            
             } else {
-               
-                TIntList segIdxs = trSegmentIndexesMap.get(tr);
-                for (int j = 0; j < segIdxs.size(); ++j) {
-                    int segIdx = segIdxs.get(j);
-                    TIntList idxs = segmentIndexes.get(segIdx);
-                    for (int k = 0; k < idxs.size(); ++k) {
-                        int x = xs.get(k);
-                        int y = ys.get(k);
-                        ImageIOHelper.addPointToImage(x, y, img, 1, 
-                            clr[0], clr[1], clr[2]);
-                    }
+                TIntList idxs = orderedTRXYIndexes.get(i);
+                for (int k = 0; k < idxs.size(); ++k) {
+                    int x = xs.get(k);
+                    int y = ys.get(k);
+                    ImageIOHelper.addPointToImage(x, y, img, 1, 
+                        clr[0], clr[1], clr[2]);
                 }
+                System.out.println("  tr=" + tr + " n=" + idxs.size());
             }
         }
     }
