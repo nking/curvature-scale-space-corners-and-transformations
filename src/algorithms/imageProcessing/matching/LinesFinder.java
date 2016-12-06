@@ -261,7 +261,7 @@ public class LinesFinder {
             }
         }
     }
-    
+     
     /**
      * combine the entries for a theta and radius within theta tolerance
      * and radius tolerance into lists.
@@ -303,7 +303,7 @@ public class LinesFinder {
             count++;
         }
         QuickSort.sortBy1stArg(nPoints, lIdxs);
-        
+                
         Set<PairInt> skip = new HashSet<PairInt>();
         
         for (int i = (count - 1); i > -1; --i) {
@@ -345,38 +345,6 @@ public class LinesFinder {
         }
     }
     
-    public void debugPrintTRStats() {
-        
-        int n = trSegmentIndexesMap.size();
-        PairInt[] trs = new PairInt[n];
-        int[] nLines = new int[n];
-        int[] nPoints = new int[n];
-        int[] lIdxs = new int[n];
-        
-        int count = 0;
-        for (Entry<PairInt, TIntList> entry : trSegmentIndexesMap.entrySet()) {
-            trs[count] = entry.getKey();
-            TIntList segIdxs = entry.getValue();
-            nLines[count] = segIdxs.size();
-            
-            int np = 0;
-            for (int j = 0; j < segIdxs.size(); ++j) {
-                int segIdx = segIdxs.get(j);
-                np += segmentIndexes.get(segIdx).size();
-            }
-            nPoints[count] = np;
-            lIdxs[count] = count;
-            count++;
-        }
-        QuickSort.sortBy1stArg(nPoints, lIdxs);
-        
-        for (int i = (count - 1); i > -1; --i) {
-            int lIdx = lIdxs[i];
-            System.out.println(String.format("np=%d nL=%d tr=%s", 
-                nPoints[i], nLines[lIdx], trs[lIdx].toString()));
-        }
-    }
-    
     public void debugDraw(algorithms.imageProcessing.Image img) {
         
         if (orderedTRList == null) {
@@ -386,7 +354,7 @@ public class LinesFinder {
         
         int w = img.getWidth();
         int h = img.getHeight();
-        
+                
         int end = 10;
         //if (end > (orderedTRList.size() - 1)) {
             end = orderedTRList.size();
@@ -396,7 +364,7 @@ public class LinesFinder {
             
             PairInt tr = orderedTRList.get(i);
           
-            int[] clr = ImageIOHelper.getNextRGB(i);
+            int clr = ImageIOHelper.getNextColorRGB(i);
             
             boolean drawLines = false;
           
@@ -407,19 +375,22 @@ public class LinesFinder {
                 System.out.println("tr=" + tr.toString() + " eps=" +
                     Arrays.toString(eps) + " w=" + img.getWidth() + 
                     " h=" + img.getHeight());
-
+               
                 ImageIOHelper.drawLineInImage(
                     eps[0], eps[1], eps[2], eps[3], img, 1, 
-                    clr[0],clr[1], clr[2]);            
+                    clr);            
             } else {
                 TIntList idxs = orderedTRXYIndexes.get(i);
+                
                 for (int k = 0; k < idxs.size(); ++k) {
                     int x = xs.get(k);
                     int y = ys.get(k);
                     ImageIOHelper.addPointToImage(x, y, img, 1, 
-                        clr[0], clr[1], clr[2]);
+                        clr);
+                    
                 }
-                System.out.println("  tr=" + tr + " n=" + idxs.size());
+                System.out.println("  tr=" + tr + " n=" 
+                    + idxs.size() + " i=" + i + " clr=" + clr);
             }
         }
     }

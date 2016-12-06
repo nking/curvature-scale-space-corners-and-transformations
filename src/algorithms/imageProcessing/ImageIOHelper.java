@@ -983,6 +983,31 @@ public class ImageIOHelper {
      */
     public static void drawLineInImage(int x1, int y1, 
         int x2, int y2,
+        Image input, int nExtraForDot, int rgbClr) {
+        
+        int r = (rgbClr >> 16) & 0xFF;
+        int g = (rgbClr >> 8) & 0xFF;
+        int b = rgbClr & 0xFF;
+        
+        drawLineInImage(x1, y1, x2, y2, input, nExtraForDot, r, g, b);
+    }
+    
+    /**
+     * draw lines from points at index i to index i+1 in the requested color
+     * onto the input.
+     * 
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param input
+     * @param nExtraForDot
+     * @param rClr
+     * @param gClr
+     * @param bClr 
+     */
+    public static void drawLineInImage(int x1, int y1, 
+        int x2, int y2,
         Image input, int nExtraForDot, int rClr, int gClr, 
         int bClr) {
         
