@@ -276,7 +276,6 @@ public class LinesFinder {
                 
         int n = trSegmentIndexesMap.size();
         PairInt[] trs = new PairInt[n];
-        int[] nLines = new int[n];
         int[] nPoints = new int[n];
         int[] lIdxs = new int[n];
         
@@ -284,7 +283,6 @@ public class LinesFinder {
         for (Entry<PairInt, TIntList> entry : trSegmentIndexesMap.entrySet()) {
             trs[count] = entry.getKey();
             TIntList segIdxs = entry.getValue();
-            nLines[count] = segIdxs.size();
         
             int np = 0;
             for (int j = 0; j < segIdxs.size(); ++j) {
@@ -313,16 +311,17 @@ public class LinesFinder {
             int np = nPoints[i];
             
             PairInt tr = trs[lIdx];
-            TIntList xyList = new TIntArrayList();
-            
-            int sumT = 0;
-            int sumR = 0;
-            int sumN = 0;
             
             if (skip.contains(tr)) {
                 continue;
             }
-            
+
+            TIntList xyList = new TIntArrayList();
+
+            int sumT = 0;
+            int sumR = 0;
+            int sumN = 0;
+           
             for (int t0 = tr.getX() - 2; t0 <= tr.getX() + 2; ++t0) {
                 for (int r0 = tr.getY() - 2; r0 <= tr.getY() + 2; ++r0) {
                     PairInt tr0 = new PairInt(t0, r0);
@@ -340,7 +339,7 @@ public class LinesFinder {
             }
             sumR /= sumN;
             sumT /= sumN;
-            PairInt tr0 = new PairInt(sumR, sumT);
+            PairInt tr0 = new PairInt(sumT, sumR);
             orderedTRList.add(tr0);
             orderedTRXYIndexes.add(xyList);
         }
