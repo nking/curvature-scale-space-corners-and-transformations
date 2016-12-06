@@ -48,6 +48,7 @@ public class VanishingPoints {
             finder.setToDebug();
         }
         //finder.overrideThreshold(0.085f);
+        finder.overrideThreshold(1.5f);
         finder.overrideMinimumLength(10);
         finder.setToRemoveBorderLines(imageWidth - 1, imageHeight - 1);
         finder.find(listOfContigousLabels);

@@ -363,8 +363,13 @@ public class ObjectMatcher {
             // and this correction is used at the end of 
             // partial shape matching
             
+            //NOTE that the segmentation is good for removing noise and vegetation,
+            // etc, but sometimes also has blended in office windows to the
+            // building by this point, so may need to use segmentation
+            // before filtering
+            
             vp2 = new VanishingPoints();
-            vp2.setToDebug();
+            //vp2.setToDebug();
             vp2.find(listOfPointSets2, img1.getWidth(),
                 img1.getHeight());
             {// DEBUG

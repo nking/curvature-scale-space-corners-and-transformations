@@ -39,6 +39,7 @@ import algorithms.imageProcessing.PixelColors;
 import algorithms.imageProcessing.matching.PartialShapeMatcher;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.SegmentationMergeThreshold;
+import algorithms.imageProcessing.VanishingPoints;
 import algorithms.imageProcessing.features.ORB.Descriptors;
 import algorithms.imageProcessing.features.ObjectMatcher.Settings;
 import algorithms.imageProcessing.matching.PartialShapeMatcher.Result;
@@ -113,13 +114,13 @@ public class AndroidStatuesTest extends TestCase {
     public AndroidStatuesTest() {
     }
 
-    public void est0() throws Exception {
+    public void test0() throws Exception {
 
         int maxDimension = 256;//512;
 
         String fileName1 = "";
 
-        //for (int i = 0; i < 1; ++i) {
+        //for (int i = 16; i < 17; ++i) {
         for (int i = 0; i < 37; ++i) {
 
             switch(i) {
@@ -300,6 +301,21 @@ public class AndroidStatuesTest extends TestCase {
             //LabelToColorHelper.applyLabels(img, labels4);
             //MiscDebug.writeImage(img, "_final_" + fileName1Root);
 
+            {
+                img11 = (ImageExt) img.copyImage();
+                List<Set<PairInt>> contigSets = 
+                    LabelToColorHelper.extractContiguousLabelPoints(
+                    img, labels4);
+                
+                VanishingPoints vp2 = new VanishingPoints();
+                //vp2.setToDebug();
+                vp2.find(contigSets, img11.getWidth(),
+                    img11.getHeight());
+                vp2.debugDraw(img11);
+                MiscDebug.writeImage(img11, "_lines_" + fileName1Root);
+            
+                continue;
+            }
              
             /*{// --- a look at the angles of phase and orientation plotted ----
                 List<Set<PairInt>> contigSets = 
@@ -365,7 +381,7 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void testORBMatcher_gingerbreadman() throws Exception {
+    public void estORBMatcher_gingerbreadman() throws Exception {
 
         /*        
         this demonstrates ORB
@@ -383,7 +399,7 @@ public class AndroidStatuesTest extends TestCase {
 
         String[] fileNames0 = new String[]{
             "android_statues_03_sz1",
-            "android_statues_03_sz3"
+        //    "android_statues_03_sz3"
         };
 
         /*

@@ -319,7 +319,12 @@ public class LinesFinder {
         int w = img.getWidth();
         int h = img.getHeight();
         
-        for (int i = (count - 1); i > -1; --i) {
+        int end = count - 10;
+        if (end < 0) {
+            end = 0;
+        }
+        //for (int i = (count - 1); i > -1; --i) {
+        for (int i = (count - 1); i >= end; --i) {
             int lIdx = lIdxs[i];
             int np = nPoints[i];
             if (np < 25) {

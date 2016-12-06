@@ -232,8 +232,8 @@ public class LineFinder {
         
         LineResult result = null;
         
-        //for (int a2i = 0; a2i < 3; ++a2i) {
-        for (int a2i = 0; a2i < 1; ++a2i) {
+        for (int a2i = 0; a2i < 3; ++a2i) {
+        //for (int a2i = 0; a2i < 1; ++a2i) {
             
             float[][] md = createDifferenceMatrices(a1, a2i);
             //convert to summed column table
