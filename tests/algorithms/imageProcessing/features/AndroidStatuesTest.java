@@ -120,7 +120,7 @@ public class AndroidStatuesTest extends TestCase {
 
         String fileName1 = "";
 
-        //for (int i = 35; i < 36; ++i) {
+        //for (int i = 15; i < 18; ++i) {
         for (int i = 0; i < 37; ++i) {
 
             switch(i) {

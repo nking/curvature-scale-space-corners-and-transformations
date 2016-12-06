@@ -1,9 +1,13 @@
 package algorithms.imageProcessing.matching;
 
+import algorithms.compGeometry.FurthestPair;
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.imageProcessing.SummedColumnTable;
+import algorithms.imageProcessing.features.ObjectMatcher;
+import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.TwoDFloatArray;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TDoubleArrayList;
@@ -18,7 +22,10 @@ import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import thirdparty.edu.princeton.cs.algs4.Interval;
@@ -62,12 +69,15 @@ public class LineFinder {
     // for a fit to a line, consider 1E-9
     private float thresh = (float)(1.e-7);
 
-    private int minLength = 3;
+    private int minLength = 10;
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
     private boolean debug = false;
 
+    private int lastCol = -1;
+    private int lastRow = -1;
+    
     /**
      * override the threshhold for using a chord differernce value
      * to this.   By default it is set to 1.e-7 radians.
@@ -100,6 +110,16 @@ public class LineFinder {
      */
     public void overrideSamplingDistance(int d) {
         this.dp = d;
+    }
+    
+    /**
+     * if this is set, vertical lines found at polar radius 0 and width from
+     * origin are removed and so are horizontal lines found at polar radius
+     * and height from origin.
+     */
+    public void setToRemoveBorderLines(int lastColumn, int lastRow) {
+        this.lastCol = lastColumn;
+        this.lastRow = lastRow;
     }
 
     public void setToDebug() {
@@ -185,9 +205,8 @@ public class LineFinder {
         //md[0:n1-1][0:n1-1]
         int n1 = p.getN();
         
-        //log.fine("a1:");
-        float[][] a1 = createDescriptorMatrix(p, p.getN());
-
+        int sz = calculateObjectSize(p);
+        
         // ---- read the difference matrix to find minimum cost assignments ----
         
         // reading over a range of window sizes to keep the sum/nPix below thresh
@@ -209,7 +228,76 @@ public class LineFinder {
            if intersects with existing interval, compare cost and
               keep the one that is smallest cost in the interval tree
         */
+  
+        IntervalRangeSearch<Integer, Integer> rangeSearch = search(p);
 
+        // merge the results with the combined if they do not clash
+        // read out the intervals and if all are matched or nearly all, break
+        // ---- retrieve the intervals from range tree, trimming to unique -----
+        List<Interval<Integer>> list = rangeSearch.getAllIntervals();
+
+        if (debug) {
+            System.out.println("nIntervals=" + list.size());
+        }
+  
+        int nMatched = 0;
+
+        TIntSet existing = new TIntHashSet();
+        TIntSet junctions = new TIntHashSet();
+
+        LineResult result = new LineResult();
+        
+        int start, stop;
+        
+        for (Interval<Integer> interval2 : list) {
+            if (debug) {
+                System.out.println("interval2=" + interval2);
+            }
+            // correct for the interval start being +1
+            start = interval2.min() - 1;
+            if (existing.contains(start)) {
+                junctions.add(start);
+    System.out.println("junction: " + p.getX(start) + " , " + p.getY(start));
+                start++;
+            }
+            stop = interval2.max();
+            if (existing.contains(stop)) {
+                junctions.add(stop);
+    System.out.println("junction: " + p.getX(stop) + " , " + p.getY(stop));
+                stop--;
+            }
+            if (debug) {
+                System.out.println("*** final: " + 
+                    String.format(" (%d,%d) to (%d,%d) ",
+                    p.getX(interval2.min()),
+                    p.getY(interval2.min()),
+                    p.getX(interval2.max()),
+                    p.getY(interval2.max()))
+                    + " similar to? " + 
+                    String.format(" (%d,%d) to (%d,%d) ",
+                    p.getX(start), p.getY(start),
+                    p.getX(stop), p.getY(stop))
+                );
+            }
+            PairInt s = new PairInt(start, stop);
+            result.addLineRange(s);
+            for (int i = start; i <= stop; ++i) {
+                existing.add(i);
+                nMatched++;
+            }
+        }
+
+        //System.out.println("nRanges=" + result.lineIndexRanges.size());
+        
+        result.junctionIndexes = junctions;
+
+        return result;
+    }
+    
+    private IntervalRangeSearch<Integer, Integer> search(PairIntArray p) {
+        
+        TwoDFloatArray[] mds = createSummedDifferences(p);
+      
         // key = map size at put, value = interval
         TIntObjectMap<Interval<Integer>> intervalMap =
             new TIntObjectHashMap<Interval<Integer>>();
@@ -221,24 +309,22 @@ public class LineFinder {
         //   and storing as the value, the key to entry in intervalMap
         IntervalRangeSearch<Integer, Integer> rangeSearch =
             new IntervalRangeSearch<Integer, Integer>();
-
+        
         Interval<Integer> interval = null;
 
+        Set<PairInt> added = new HashSet<PairInt>();
+        
         double maxChordSum = Double.MIN_VALUE;
 
         float[] outC = new float[2];
         int stop, start;
-        int mdLen = a1[0].length;
+        int mdLen = mds[0].a[0].length;
         
-        LineResult result = null;
-        
-        for (int a2i = 0; a2i < 3; ++a2i) {
-        //for (int a2i = 0; a2i < 1; ++a2i) {
+        SummedColumnTable smt = new SummedColumnTable();
+                
+        for (int a2i = 0; a2i < mds.length; ++a2i) {
             
-            float[][] md = createDifferenceMatrices(a1, a2i);
-            //convert to summed column table
-            SummedColumnTable smt = new SummedColumnTable();
-            md = smt.create(md);
+            float[][] md = mds[a2i].a;
                     
             for (int jRange = (mdLen - 1); jRange >= minLength; --jRange) {
 
@@ -249,6 +335,19 @@ public class LineFinder {
                         stop = j + jRange;
                         if (stop > (mdLen - 1)) {
                             stop = mdLen - 1;
+                        }
+                        
+                        int x0 = p.getX(j);
+                        int y0 = p.getY(j);
+                        int x1 = p.getX(stop);
+                        int y1 = p.getY(stop);
+                        if (lastCol > -1) {
+                            if ((x0 < 3) || (x0 > (lastCol - 3)) || 
+                                (y0 < 3) || (y0 > (lastRow - 3)) ||
+                                (x1 < 3) || (x1 > (lastCol - 3)) ||
+                                (y1 < 3) || (y1 > (lastRow - 3))) {
+                                continue;
+                            }
                         }
 
                         smt.extractWindowInColumn(md, j, stop, i, outC);
@@ -285,6 +384,9 @@ public class LineFinder {
                             // do not store single index matches
                             continue;
                         }
+                        
+                        x0 = p.getX(start);
+                        y0 = p.getY(start);
 
                         int ni = stop - start + 2;
                         if (ni < minLength) {
@@ -292,7 +394,11 @@ public class LineFinder {
                         }
 
                         interval =  new Interval<Integer>(start, stop);
-
+                        PairInt s = new PairInt(start, stop);
+                        if (added.contains(s)) {
+                            continue;
+                        }
+                        
                         int sz = intervalMap.size();
 
                         // store it in range search
@@ -302,20 +408,19 @@ public class LineFinder {
                         // store current interval in associated maps
                         intervalMap.put(Integer.valueOf(sz), interval);
                         chordMap.put(sz, d);
+                        added.add(s);
 
                         if (debug) {
                             System.out.println("  adding " + interval 
                                 + String.format(" d=%.2f (%d,%d) (%d,%d)", 
-                                d, p.getX(interval.min()),
-                                p.getY(interval.min()),
-                                p.getX(interval.max()),
-                                p.getY(interval.max())));
+                                d, x0, y0, x1, y1));
                         }
 
                         if (existing != null) {
                             // clashes with existing, so make sure the lowest cost
                             // remains in range tree
                             Interval<Integer> comp = intervalMap.get(existing);
+                            
                             double compChord = chordMap.get(existing.intValue());
                             int nc = comp.max().intValue() - comp.min().intValue() + 2;
 
@@ -342,54 +447,9 @@ public class LineFinder {
                     }
                 } // end loop j
             } // end jRange
-            
-            // read out the intervals and if all are matched or nearly all, break
-            // ---- retrieve the intervals from range tree, trimming to unique -----
-            List<Interval<Integer>> list = rangeSearch.getAllIntrvals();
-
-            if (debug) {
-                System.out.println("nIntervals=" + list.size());
-            }
-
-            int nMatched = 0;
-            
-            TIntSet existing = new TIntHashSet();
-            TIntSet junctions = new TIntHashSet();
-            
-            result = new LineResult();
-            for (Interval<Integer> interval2 : list) {
-                if (debug) {
-                    System.out.println("interval2=" + interval2);
-                }
-                // correct for the interval start being +1
-                start = interval2.min() - 1;
-                if (existing.contains(start)) {
-                    junctions.add(start);
-        System.out.println("junction: " + p.getX(start) + " , " + p.getY(start));
-                    start++;
-                }
-                stop = interval2.max();
-                if (existing.contains(stop)) {
-                    junctions.add(stop);
-        System.out.println("junction: " + p.getX(stop) + " , " + p.getY(stop));
-                    stop--;
-                }
-                PairInt s = new PairInt(start, stop);
-                result.addLineRange(s);
-                for (int i = start; i <= stop; ++i) {
-                    existing.add(i);
-                    nMatched++;
-                }
-            }
-            
-            result.junctionIndexes = junctions;
-            
-            if (nMatched > (0.85f * mdLen)) {
-                break;
-            }
         }
-
-        return result;
+        
+        return rangeSearch;
     }
 
     /**
@@ -729,10 +789,30 @@ public class LineFinder {
         q.rotateLeft(-1);
         return q;
     }
+    
     private PairIntArray createLine6(int n1) {
         PairIntArray q = createLine4(n1);
         q.rotateLeft(-2);
         return q;
+    }
+
+    private TwoDFloatArray[] createSummedDifferences(PairIntArray p) {
+        
+        //log.fine("a1:");
+        float[][] a1 = createDescriptorMatrix(p, p.getN());
+
+        int na2 = 3;
+        
+        TwoDFloatArray[] mds = new TwoDFloatArray[na2];
+        
+        for (int a2i = 0; a2i < na2; ++a2i) {
+            float[][] md = createDifferenceMatrices(a1, a2i);
+            //convert to summed column table
+            SummedColumnTable smt = new SummedColumnTable();
+            mds[a2i] = new TwoDFloatArray(smt.create(md));
+        }      
+        
+        return mds;
     }
 
     public static class LineResult {
@@ -755,5 +835,20 @@ public class LineFinder {
         public List<PairInt> getLineIndexRanges() {
             return lineIndexRanges;
         }
+    }
+    
+    public static int calculateObjectSize(Set<PairInt> points) {
+        // O(N*lg_2(N))
+        FurthestPair furthestPair = new FurthestPair();
+        PairInt[] fp = furthestPair.find(points);
+        if (fp == null || fp.length < 2) {            
+            throw new IllegalArgumentException("did not find a furthest pair" + " in points");
+        }
+        double dist = ORBMatcher.distance(fp[0], fp[1]);
+        return (int) Math.round(dist);
+    }
+    
+    public static int calculateObjectSize(PairIntArray points) {
+        return calculateObjectSize(Misc.convert(points));
     }
 }

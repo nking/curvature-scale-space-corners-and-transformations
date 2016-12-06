@@ -28,9 +28,9 @@ public class IntervalRangeSearch<T extends Comparable<T>, Value> extends
         return list;
     }
     
-    public List<Interval<T>> getAllIntrvals() {
+    public List<Interval<T>> getAllIntervals() {
         List<Interval<T>> list = new ArrayList<Interval<T>>();
-        getAllIntervals(root, list);
+        IntervalRangeSearch.this.getAllIntervals(root, list);
         return list;
     }
     

@@ -1,19 +1,8 @@
 package algorithms.imageProcessing;
 
-import algorithms.compGeometry.HoughTransform;
-import algorithms.compGeometry.PerimeterFinder2;
-import algorithms.imageProcessing.matching.LineFinder;
 import algorithms.imageProcessing.matching.LinesFinder;
 import algorithms.util.PairInt;
-import algorithms.util.PairIntArray;
-import gnu.trove.list.TDoubleList;
-import gnu.trove.list.TIntList;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -47,9 +36,11 @@ public class VanishingPoints {
         if (debug) {
             finder.setToDebug();
         }
-        finder.overrideThreshold(0.085f);
-        //finder.overrideThreshold(0.5f);
-        finder.overrideMinimumLength(25);
+        // consider 2 different thresholds for 2 different
+        //    minimum lengths
+        //finder.overrideThreshold(0.05f);
+        //finder.overrideThreshold(0.2f);
+        finder.overrideMinimumLength(10); //ml=25,t=.2  ml=60,t=.2
         finder.setToRemoveBorderLines(imageWidth - 1, imageHeight - 1);
         finder.find(listOfContigousLabels);
         finder.groupWithinTolerance();

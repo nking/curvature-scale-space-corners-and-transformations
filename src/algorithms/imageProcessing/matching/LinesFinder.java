@@ -169,18 +169,26 @@ public class LinesFinder {
             if (debug) {
                 matcher.setToDebug();
             }
-            matcher.overrideMinimumLineLength(minLineLength);
-            matcher._overrideToThreshhold(thresh);
+            if (lastCol > -1) {
+                matcher.setToRemoveBorderLines(lastCol, lastRow);
+            }
+            //matcher.overrideMinimumLineLength(minLineLength);
+            //matcher._overrideToThreshhold(thresh);
             LineFinder.LineResult r = matcher.match(b);
             List<PairInt> lr = r.getLineIndexRanges();
-
+            System.out.println("reading nRanges=" + lr.size());
+            
             for (int ii = 0; ii < lr.size(); ++ii) {
                 int startIdx = lr.get(ii).getX(); 
                 int stopIdx = lr.get(ii).getY(); 
                 
                 if (debug) {
                     System.out.println("indexes: " + startIdx + ":" + stopIdx 
-                        + "   " + " segIdx=" + ii);
+                        + "   " + " segIdx=" + ii +
+                        String.format(" (%d,%d) to (%d,%d) ",
+                        b.getX(startIdx), b.getY(startIdx),
+                        b.getX(stopIdx), b.getY(stopIdx))
+                    );
                 }
                 
                 int lineX0 = b.getX(startIdx);
@@ -240,15 +248,20 @@ public class LinesFinder {
                 PairInt tr = new PairInt(thetaDeg, radius);
                 segmentTRMap.put(lastSegIdx, tr);
                 
-                int xsIdx = xs.size();
+                if (debug) {
+                    System.out.println("*coords: (" + lineX0 + "," + lineY0 + ") "
+                        + " (" + lineX1 + "," + lineY1 + ") ");
+                }
+                
+                int xsIdx;
                 TIntList idxs = new TIntArrayList();
                 for (int j = startIdx; j <= stopIdx; ++j) {
                     int x = b.getX(j);
                     int y = b.getY(j);
+                    xsIdx = xs.size();
                     xs.add(x);
                     ys.add(y);
                     idxs.add(xsIdx);
-                    xsIdx++;
                 }
                 segmentIndexes.put(lastSegIdx, idxs);
                 
@@ -273,7 +286,7 @@ public class LinesFinder {
     
         Map<PairInt, TIntList> trXYIndexesMap = new
             HashMap<PairInt, TIntList>();
-                
+        
         int n = trSegmentIndexesMap.size();
         PairInt[] trs = new PairInt[n];
         int[] nPoints = new int[n];
@@ -281,7 +294,7 @@ public class LinesFinder {
         
         int count = 0;
         for (Entry<PairInt, TIntList> entry : trSegmentIndexesMap.entrySet()) {
-            trs[count] = entry.getKey();
+            PairInt tr = entry.getKey();            
             TIntList segIdxs = entry.getValue();
         
             int np = 0;
@@ -290,14 +303,24 @@ public class LinesFinder {
                 TIntList idxs = segmentIndexes.get(segIdx);
                 np += idxs.size();
                 
-                PairInt tr = entry.getKey();
                 TIntList a = trXYIndexesMap.get(tr);
                 if (a == null) {
                     a = new TIntArrayList();
                     trXYIndexesMap.put(tr, a);
                 }
                 a.addAll(idxs);
+              
+                /*
+                for (int k = 0; k < idxs.size(); ++k) {
+                    int idx = idxs.get(k);
+                    System.out.println(
+                        String.format("-- (%d,%d) ",
+                        xs.get(idx), ys.get(idx))
+                    );
+                }
+                */
             }
+            trs[count] = tr;
             nPoints[count] = np;
             lIdxs[count] = count;
             count++;
@@ -329,6 +352,15 @@ public class LinesFinder {
                     if (a == null) {
                         continue;
                     }
+                    
+                    /*for (int k = 0; k < a.size(); ++k) {
+                        int idx = a.get(k);
+                        System.out.println(
+                        String.format("-- (%d,%d) tr=%s",
+                        xs.get(idx), ys.get(idx), tr0)
+                        );
+                    }*/
+                    
                     xyList.addAll(a);
                     trXYIndexesMap.remove(tr0);
                     skip.add(tr0);
@@ -363,7 +395,8 @@ public class LinesFinder {
         for (int i = 0; i < end; ++i) {
             
             PairInt tr = orderedTRList.get(i);
-          
+            TIntList xyIdxs = orderedTRXYIndexes.get(i);
+            
             int clr = ImageIOHelper.getNextColorRGB(i);
             
             boolean drawLines = false;
@@ -379,18 +412,17 @@ public class LinesFinder {
                 ImageIOHelper.drawLineInImage(
                     eps[0], eps[1], eps[2], eps[3], img, 1, 
                     clr);            
-            } else {
-                TIntList idxs = orderedTRXYIndexes.get(i);
-                
-                for (int k = 0; k < idxs.size(); ++k) {
-                    int x = xs.get(k);
-                    int y = ys.get(k);
+            } else {                
+                for (int k = 0; k < xyIdxs.size(); ++k) {
+                    int idx = xyIdxs.get(k);
+                    int x = xs.get(idx);
+                    int y = ys.get(idx);
                     ImageIOHelper.addPointToImage(x, y, img, 1, 
                         clr);
                     
                 }
                 System.out.println("  tr=" + tr + " n=" 
-                    + idxs.size() + " i=" + i + " clr=" + clr);
+                    + xyIdxs.size() + " i=" + i + " clr=" + clr);
             }
         }
     }
