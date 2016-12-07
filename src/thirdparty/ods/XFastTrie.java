@@ -69,7 +69,8 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
         final int ix = it.intValue(x);
         if (ix > maxC) {
             throw new IllegalArgumentException("w=" + w
-               + " so max value can add is " + maxC);
+               + " so max value can add is " + maxC
+               + " . ix=" + ix);
         }
         S u = r;
         S v;

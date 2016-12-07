@@ -36,11 +36,7 @@ public class VanishingPoints {
         if (debug) {
             finder.setToDebug();
         }
-        // consider 2 different thresholds for 2 different
-        //    minimum lengths
-        //finder.overrideThreshold(0.05f);
-        //finder.overrideThreshold(0.2f);
-        finder.overrideMinimumLength(10); //ml=25,t=.2  ml=60,t=.2
+        
         finder.setToRemoveBorderLines(imageWidth - 1, imageHeight - 1);
         finder.find(listOfContigousLabels);
         finder.groupWithinTolerance();
@@ -50,8 +46,11 @@ public class VanishingPoints {
     
     LinesFinder finder = null;
     
+    public void correctLinesWithGradient(GreyscaleImage img) {
+        finder.correctLinesWithGradient(img);
+    }
+    
     public void debugDraw(Image img) {
-        
         // draw lines onto img
         finder.debugDraw(img);
     }

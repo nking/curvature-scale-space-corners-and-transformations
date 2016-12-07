@@ -66,9 +66,13 @@ public class LineFinder {
     protected int dp = 1;
 
     // 10 degrees is 0.1745 radians
-    // for a fit to a line, consider 1E-9
-    private float thresh = (float)(1.e-7);
-
+    // for a fit to a line, consider 1E-7
+    private float thresh = 0.3f;      
+    
+    // this one is a rough limi to the total chord diff
+    // sum over a found line segment.
+    private int thresh3 = 10;
+    
     private int minLength = 10;
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
@@ -79,12 +83,23 @@ public class LineFinder {
     private int lastRow = -1;
     
     /**
-     * override the threshhold for using a chord differernce value
-     * to this.   By default it is set to 1.e-7 radians.
+     * override the threshhold for using a chord difference value
+     * to this limit for the chord sum diff / number of pixels. 
+     * By default it is set to 0.3f;
      * @param t
      */
     public void _overrideToThreshhold(float t) {
         this.thresh = t;
+    }
+    
+    /**
+      change the limi to the total chord difference
+      sum over a found line segment.
+      The default is 10.
+     * @param t 
+     */
+    public void _overrideToTotalThreshol(int t) {
+        thresh3 = t;
     }
     
     /**
@@ -321,11 +336,11 @@ public class LineFinder {
         int mdLen = mds[0].a[0].length;
         
         SummedColumnTable smt = new SummedColumnTable();
-                
+        
         for (int a2i = 0; a2i < mds.length; ++a2i) {
             
             float[][] md = mds[a2i].a;
-                    
+            
             for (int jRange = (mdLen - 1); jRange >= minLength; --jRange) {
 
                 for (int i = 0; i < md.length; ++i) {
@@ -363,7 +378,7 @@ public class LineFinder {
                             //"len=%d i=%d d=%.2f", (stop - j + 1), i, d));
                         }
 
-                        if (d > thresh) {
+                        if (d > thresh || outC[0] > thresh3) {
                             continue;
                         }
                         if (d > maxChordSum) {
@@ -411,9 +426,12 @@ public class LineFinder {
                         added.add(s);
 
                         if (debug) {
-                            System.out.println("  adding " + interval 
-                                + String.format(" d=%.2f (%d,%d) (%d,%d)", 
-                                d, x0, y0, x1, y1));
+                            float avgN = (float)(maxChordSum * outC[1]);
+                            System.out.println(
+                                "  adding " + interval 
+                                + String.format(
+                                " d=%.2f (%d,%d) (%d,%d)  cs=%.2f avg*N=%.2f", 
+                                d, x0, y0, x1, y1, outC[0], avgN));
                         }
 
                         if (existing != null) {
@@ -506,9 +524,9 @@ public class LineFinder {
         md = subtract(a1, md);
 
         if (debug) {
-            print("a1", a1);
+            //print("a1", a1);
             //print("a2", a2);
-            print("diff matrix", md);
+            //print("diff matrix", md);
         }
 
         return md;
@@ -801,7 +819,7 @@ public class LineFinder {
         //log.fine("a1:");
         float[][] a1 = createDescriptorMatrix(p, p.getN());
 
-        int na2 = 3;
+        int na2 = 1;//3;
         
         TwoDFloatArray[] mds = new TwoDFloatArray[na2];
         

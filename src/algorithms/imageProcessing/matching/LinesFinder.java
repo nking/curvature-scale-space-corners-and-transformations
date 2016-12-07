@@ -3,14 +3,25 @@ package algorithms.imageProcessing.matching;
 import algorithms.QuickSort;
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.compGeometry.PerimeterFinder2;
+import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
+import algorithms.util.LinearRegression;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.TIntSet;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -117,7 +128,7 @@ public class LinesFinder {
     }
     
     public void find(List<Set<PairInt>> listOfContigousLabels) {
-        
+                
         // -- extract the boundaries of the sets
         // -- find the lines around each boundary using shape fitting
         // -- store results as member variables
@@ -138,10 +149,15 @@ public class LinesFinder {
             PairIntArray b = pFinder.extractOrderedBorder(new HashSet<PairInt>(
                 set));
             if (b != null && b.getN() > 2) {
-                listOfBounds.add(b);
+                listOfBounds.add(b);            
             }
         }
         
+Image dbg = new Image(256, 192);
+ImageIOHelper.addAlternatingColorCurvesToImage(
+listOfBounds, dbg, 0);
+MiscDebug.writeImage(dbg, "_boundaries_");
+
         find1(listOfBounds);
     }
     
@@ -176,7 +192,7 @@ public class LinesFinder {
             //matcher._overrideToThreshhold(thresh);
             LineFinder.LineResult r = matcher.match(b);
             List<PairInt> lr = r.getLineIndexRanges();
-            System.out.println("reading nRanges=" + lr.size());
+            //System.out.println("reading nRanges=" + lr.size());
             
             for (int ii = 0; ii < lr.size(); ++ii) {
                 int startIdx = lr.get(ii).getX(); 
@@ -272,6 +288,139 @@ public class LinesFinder {
                 }
                 segIdxs.add(lastSegIdx);
             }
+        }
+    }
+    
+    /**
+     * for best results, consider the deltae2000 gradient
+     * which is used in ImageSegmentation.objectSegmentation
+     * @param gradient 
+     */
+    public void correctLinesWithGradient(GreyscaleImage gradient) {
+         
+        if (orderedTRList == null) {
+            groupWithinTolerance();
+        }
+        
+        MiscDebug.writeImage(gradient, "_gradient_");
+    
+        // for each line 
+        //    extract a region + and minus 10 pixels
+        //    to a side in the gradient image and fit a
+        //    line to those pixels.
+        //    can use thiel sen, but there are probably
+        //    faster algorithms which also remove outliers.
+        //    -- can use the intensities for weights, but the
+        //       deltae gradient largely has same intensity
+        //       in most pixels...
+        
+        boolean changed = false;
+        
+        for (int i = 0; i < orderedTRList.size(); ++i) {
+            PairInt tr = orderedTRList.get(i);
+            TIntList xyIdxs = orderedTRXYIndexes.get(i);
+            //82, 48
+            int[] xyMinMax = findXYBounds(xyIdxs);
+            //System.out.println("syminmax=" + Arrays.toString(xyMinMax));    
+            //System.out.println("line: " + tr);
+            double thetaR = tr.getX() * Math.PI/180.;
+            // extract bounds += 10 pix from gradient
+            // perpendicular to endpoints
+            int d = 8;
+            int dX = (int)Math.round(d * Math.cos(thetaR));
+            int dY = (int)Math.round(d * Math.sin(thetaR));
+            int x0 = xyMinMax[0] - dX;
+            if (x0 < 0) { x0 = 0;}
+            int x1 = xyMinMax[1] + dX;
+            if (x1 > (xyMinMax[1] - 1)) { x1 = xyMinMax[1] - 1;}
+            int y0 = xyMinMax[2] - dY;
+            if (y0 < 0) { y0 = 0;}
+            int y1 = xyMinMax[3] + dY;
+            if (y1 > (xyMinMax[3] - 1)) { y1 = xyMinMax[3] - 1;}
+
+            TFloatList xG = new TFloatArrayList();
+            TFloatList yG = new TFloatArrayList();
+
+            for (int x = x0; x <= x1; ++x) {
+                for (int y = y0; y <= y1; ++y) {
+                    int v = gradient.getValue(x, y);
+                    if (v > 0) {
+                        yG.add(y);
+                        xG.add(x);
+                    }
+                }
+            }
+
+            if (xG.size() < 4) {
+                continue;
+            }
+
+            LinearRegression lr = new LinearRegression();
+            float[] yinterceptSlope 
+                = lr.calculateTheilSenEstimatorParams(
+            //lr.plotTheLinearRegression(
+                xG.toArray(new float[xG.size()]), 
+                yG.toArray(new float[yG.size()]));
+
+            System.out.println("yin and slope=" + Arrays.toString(yinterceptSlope));
+            int t = Math.round(yinterceptSlope[1]) - 90;
+            if (t < 0) {
+                t += 180;
+            }
+            int r = Math.round(yinterceptSlope[0]);
+
+            float dt = Math.abs(t - tr.getX());
+            float dr = Math.abs(r - tr.getY());
+            
+            if ((dt > 25) || (dr > 25)) {
+                continue;
+            }
+
+            if ((dt > 0.5) || (dr > 0.5)) {
+                changed = true;
+            }
+            
+            orderedTRList.set(i, new PairInt(t, r));
+        }
+        
+        if (changed) {
+            // assuming not many lines and using
+            // an O(N^2) approach for now
+            for (int i = (orderedTRList.size() - 1); 
+                i > -1; --i) {
+                PairInt tr = orderedTRList.get(i);
+                for (int j = 0; j < (i - 1); ++j) {
+                    PairInt tr2 = orderedTRList.get(j);
+                    if (tr2.equals(tr)) {
+                        TIntList xyi = 
+                            orderedTRXYIndexes.get(i);
+                        orderedTRXYIndexes.get(j)
+                            .addAll(xyi);
+                        orderedTRList.remove(i);
+                        orderedTRXYIndexes.remove(i);
+                        break;
+                    }
+                }
+            }
+            // sort
+            int[] indexes = new int[orderedTRList.size()];
+            int[] np = new int[indexes.length];
+            for (int i = 0; i < np.length; ++i) {
+                indexes[i] = i;
+                np[i] = orderedTRXYIndexes.get(i).size();
+            }
+            QuickSort.sortBy1stArg(np, indexes);
+            
+            List<PairInt> otl = new ArrayList<PairInt>();
+            List<TIntList> otiL = new ArrayList<TIntList>();
+            
+            for (int i = (np.length - 1); i > -1; --i) {
+                int idx = indexes[i];
+                otl.add(orderedTRList.get(idx));
+                otiL.add(orderedTRXYIndexes.get(idx));
+            }
+            orderedTRList = otl;
+            orderedTRXYIndexes = otiL;
         }
     }
      
@@ -386,10 +535,12 @@ public class LinesFinder {
         
         int w = img.getWidth();
         int h = img.getHeight();
+          
+        boolean drawLines = true;
                 
-        int end = 10;
+        int end = 20;
         //if (end > (orderedTRList.size() - 1)) {
-            end = orderedTRList.size();
+        //    end = orderedTRList.size();
         //}
         //for (int i = 0; i < orderedTRList.size(); ++i) {
         for (int i = 0; i < end; ++i) {
@@ -399,9 +550,8 @@ public class LinesFinder {
             
             int clr = ImageIOHelper.getNextColorRGB(i);
             
-            boolean drawLines = false;
-          
             if (drawLines) {
+                
                 int[] eps = LinesAndAngles.calcPolarLineEndPoints(
                     tr.getX(), tr.getY(), img.getWidth(), img.getHeight());
 
@@ -411,7 +561,8 @@ public class LinesFinder {
                
                 ImageIOHelper.drawLineInImage(
                     eps[0], eps[1], eps[2], eps[3], img, 1, 
-                    clr);            
+                    clr);
+                
             } else {                
                 for (int k = 0; k < xyIdxs.size(); ++k) {
                     int idx = xyIdxs.get(k);
@@ -421,9 +572,37 @@ public class LinesFinder {
                         clr);
                     
                 }
-                System.out.println("  tr=" + tr + " n=" 
-                    + xyIdxs.size() + " i=" + i + " clr=" + clr);
+                //System.out.println("  tr=" + tr + " n=" 
+                //    + xyIdxs.size() + " i=" + i + " clr=" + clr);
             }
         }
+    }
+
+    private int[] findXYBounds(TIntList xyIdxs) {
+
+        int xMin = Integer.MAX_VALUE;
+        int xMax = Integer.MIN_VALUE;
+        int yMin = Integer.MAX_VALUE;
+        int yMax = Integer.MIN_VALUE;
+        
+        for (int i = 0; i < xyIdxs.size(); ++i) {
+            int idx = xyIdxs.get(i);
+            int x = xs.get(idx);
+            int y = ys.get(idx);
+            if (x < xMin) {
+                xMin = x;
+            }
+            if (y < yMin) {
+                yMin = y;
+            }
+            if (x > xMax) {
+                xMax = x;
+            }
+            if (y > yMax) {
+                yMax = y;
+            }
+        }
+        
+        return new int[]{xMin, xMax, yMin, yMax};
     }
 }

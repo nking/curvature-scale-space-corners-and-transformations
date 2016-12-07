@@ -3,6 +3,7 @@ package algorithms.imageProcessing;
 import algorithms.compGeometry.HoughTransform;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
 import java.util.logging.Logger;
 import java.util.HashSet;
 import algorithms.util.PairInt;
@@ -533,13 +534,15 @@ public class CannyEdgeFilterAdaptiveDeltaE2000 {
         // the maximum of any point should be math.sqrt(2)*19.22     
         float[][] gradients = imageProcessor
             .calculateGradientUsingDeltaE2000(img);
-          
-        //TODO: consider what a good scale range would be for these
         
-        //float scale1 = 19.22f;
+        // scale the data
+        //float maxV = MiscMath.findMax(gradients);
+        //float scale = (int)(255.f/maxV);
+        //float scale1 = 255.f/19.22f;
         //float scale = 255.f/(float)(19.22f * Math.sqrt(2));
-        float scale1 = 1;
+        //float scale1 = (float)(scale/Math.sqrt(2));
         float scale = 1;
+        float scale1 = 1;
         
         GreyscaleImage gX, gY, g, theta;
         

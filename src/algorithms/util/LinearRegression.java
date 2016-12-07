@@ -264,7 +264,8 @@ public class LinearRegression {
         
         log.fine("thiel sen beta=" + median);
        
-        // find the y-intercept as the median of the values y[i] − median * x[i]
+        // find the y-intercept as the median of the values 
+        //     y[i] − median * x[i]
         float[] s2 = new float[x.length];
         for (int i = 0; i < x.length; i++) {
             s2[i] = y[i] - median * x[i];

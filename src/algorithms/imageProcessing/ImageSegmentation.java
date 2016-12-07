@@ -10730,6 +10730,69 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
         return false;
     }
+    
+    public float[][] createSobelGradient(GreyscaleImage img) {
+
+        int nPix = img.getNPixels();
+        int width = img.getWidth();
+        int height = img.getHeight();
+
+        float[][] gradient = new float[width][];
+        for (int i = 0; i < width; ++i) {
+            gradient[i] = new float[height];
+        }
+
+        float[] kernel = Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive();
+
+        int h = (kernel.length - 1) >> 1;
+
+        for (int i = 0; i < nPix; ++i) {
+            final int x1 = img.getCol(i);
+            final int y1 = img.getRow(i);
+
+            float xSum = 0;
+            float ySum = 0;
+
+            for (int g = 0; g < kernel.length; ++g) {
+                float gg = kernel[g];
+                if (gg == 0) {
+                    continue;
+                }
+
+                int x2, y2;
+                // calc for X gradient first
+                int delta = g - h;
+                x2 = x1 + delta;
+                y2 = y1;
+                // edge corrections.  use replication
+                if (x2 < 0) {
+                    x2 = -1 * x2 - 1;
+                } else if (x2 >= width) {
+                    int diff = x2 - width;
+                    x2 = width - diff - 1;
+                }
+                xSum += gg * img.getValue(x2, y2);
+
+                // calc for y
+                y2 = y1 + delta;
+                x2 = x1;
+                // edge corrections.  use replication
+                if (y2 < 0) {
+                    y2 = -1 * y2 - 1;
+                } else if (y2 >= height) {
+                    int diff = y2 - height;
+                    y2 = height - diff - 1;
+                }
+                ySum += gg * img.getValue(x2, y2);
+            }
+
+            double c = Math.sqrt(xSum * xSum + ySum * ySum);
+
+            gradient[x1][y1] = (float) c;
+        }
+
+        return gradient;
+    }
 
     /**
      *
@@ -13643,7 +13706,7 @@ int z = 1;
         long ts = MiscDebug.getCurrentTimeFormatted();
 
         //0=canny LAB, 1=canny gs, 2=phase cong monogenic
-        int gradientMethod = 2;
+        //int gradientMethod = 2;
 
         //EdgeFilterProducts products = 
         //    createGradient(img.copyImage(), gradientMethod, ts);
