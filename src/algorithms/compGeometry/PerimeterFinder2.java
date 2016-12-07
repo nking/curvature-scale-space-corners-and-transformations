@@ -365,7 +365,7 @@ public class PerimeterFinder2 {
                             int[] minMaxY = MiscMath.findMinMaxXY(
                                 borderPoints);
                             nn = new NearestNeighbor2D(medialAxisPoints,
-                                minMaxY[1], minMaxY[3]);
+                                minMaxY[1] + 1, minMaxY[3] + 1);
                         }
      
                         int prevX = -1;
@@ -467,7 +467,7 @@ public class PerimeterFinder2 {
                 if (nn == null) {
                     int[] minMaxY = MiscMath.findMinMaxXY(borderPoints);
                     nn = new NearestNeighbor2D(medialAxisPoints, 
-                        minMaxY[1], minMaxY[3]);
+                        minMaxY[1] + 1, minMaxY[3] + 1);
                 }
                 
                 int prevX = -1;
@@ -1198,7 +1198,7 @@ public class PerimeterFinder2 {
                             int[] minMaxY = MiscMath.findMinMaxXY(
                                 borderPoints);
                             nn = new NearestNeighbor2D(medialAxisPoints,
-                                minMaxY[1], minMaxY[3]);
+                                minMaxY[1] + 1, minMaxY[3] + 1);
                         }
      
                         int prevX = -1;
@@ -1226,7 +1226,7 @@ public class PerimeterFinder2 {
                 if (nn == null) {
                     int[] minMaxY = MiscMath.findMinMaxXY(borderPoints);
                     nn = new NearestNeighbor2D(medialAxisPoints, 
-                        minMaxY[1], minMaxY[3]);
+                        minMaxY[1] + 1, minMaxY[3] + 1);
                 }
           
                 int prevX = -1;
