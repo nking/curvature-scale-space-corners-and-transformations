@@ -403,8 +403,21 @@ MiscDebug.writeImage(dbg, "_boundaries_");
                 }
             }
             // sort
+            sortOrderedLists();
+        }
+    }
+    
+    private void sortOrderedLists() {
+        
+        if (orderedTRList == null) {
+        
+            groupWithinTolerance();
+        
+        } else {
+            
             int[] indexes = new int[orderedTRList.size()];
             int[] np = new int[indexes.length];
+            
             for (int i = 0; i < np.length; ++i) {
                 indexes[i] = i;
                 np[i] = orderedTRXYIndexes.get(i).size();
@@ -533,31 +546,36 @@ MiscDebug.writeImage(dbg, "_boundaries_");
                 + " invoked first");
         }
         
+        sortOrderedLists();
+        
         int w = img.getWidth();
         int h = img.getHeight();
           
         boolean drawLines = true;
-                
-        int end = 20;
-        //if (end > (orderedTRList.size() - 1)) {
-        //    end = orderedTRList.size();
-        //}
-        //for (int i = 0; i < orderedTRList.size(); ++i) {
+             
+        // TODO: consider revising this by nPoints
+        int end = 10;
+        if (end > (orderedTRList.size() - 1)) {
+            end = orderedTRList.size();
+        }
         for (int i = 0; i < end; ++i) {
             
             PairInt tr = orderedTRList.get(i);
             TIntList xyIdxs = orderedTRXYIndexes.get(i);
+            int np = xyIdxs.size();
             
             int clr = ImageIOHelper.getNextColorRGB(i);
+            
+            System.out.println("np=" + np + " tr=" + tr);
             
             if (drawLines) {
                 
                 int[] eps = LinesAndAngles.calcPolarLineEndPoints(
                     tr.getX(), tr.getY(), img.getWidth(), img.getHeight());
 
-                System.out.println("tr=" + tr.toString() + " eps=" +
-                    Arrays.toString(eps) + " w=" + img.getWidth() + 
-                    " h=" + img.getHeight());
+                //System.out.println("tr=" + tr.toString() + " eps=" +
+                //    Arrays.toString(eps) + " w=" + img.getWidth() + 
+                //    " h=" + img.getHeight());
                
                 ImageIOHelper.drawLineInImage(
                     eps[0], eps[1], eps[2], eps[3], img, 1, 

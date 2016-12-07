@@ -114,13 +114,13 @@ public class AndroidStatuesTest extends TestCase {
     public AndroidStatuesTest() {
     }
 
-    public void test0() throws Exception {
+    public void est0() throws Exception {
 
         int maxDimension = 256;//512;
 
         String fileName1 = "";
 
-        //for (int i = 15; i < 18; ++i) {
+        //for (int i = 15; i < 16; ++i) {
         for (int i = 0; i < 37; ++i) {
 
             switch(i) {
@@ -292,7 +292,14 @@ public class AndroidStatuesTest extends TestCase {
 
             img = imageProcessor.binImage(img, binFactor1);
 
-            int[] labels4 = imageSegmentation.objectSegmentation(img);
+            CannyEdgeFilterAdaptiveDeltaE2000 canny =
+                new CannyEdgeFilterAdaptiveDeltaE2000();
+            //canny.overrideToUseAdaptiveThreshold();
+            //canny.setToDebug();
+            canny.applyFilter(img.copyToImageExt());
+            EdgeFilterProducts products = canny.getFilterProducts();        
+            
+            int[] labels4 = imageSegmentation.objectSegmentation(img, products);
 
             ImageExt img11 = img.createWithDimensions();
             ImageIOHelper.addAlternatingColorLabelsToRegion(
@@ -300,22 +307,6 @@ public class AndroidStatuesTest extends TestCase {
             MiscDebug.writeImage(img11, "_final_" + fileName1Root);
             //LabelToColorHelper.applyLabels(img, labels4);
             //MiscDebug.writeImage(img, "_final_" + fileName1Root);
-
-            {
-                img11 = (ImageExt) img.copyImage();
-                List<Set<PairInt>> contigSets = 
-                    LabelToColorHelper.extractContiguousLabelPoints(
-                    img, labels4);
-                
-                VanishingPoints vp2 = new VanishingPoints();
-                //vp2.setToDebug();
-                vp2.find(contigSets, img11.getWidth(),
-                    img11.getHeight());
-                vp2.debugDraw(img11);
-                MiscDebug.writeImage(img11, "_lines_" + fileName1Root);
-            
-                continue;
-            }
              
             /*{// --- a look at the angles of phase and orientation plotted ----
                 List<Set<PairInt>> contigSets = 
@@ -381,7 +372,7 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void estORBMatcher_gingerbreadman() throws Exception {
+    public void testORBMatcher_gingerbreadman() throws Exception {
 
         /*        
         this demonstrates ORB
