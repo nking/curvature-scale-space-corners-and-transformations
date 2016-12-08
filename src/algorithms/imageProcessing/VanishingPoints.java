@@ -25,12 +25,22 @@ public class VanishingPoints {
     }
     
     /**
-     * points and orientations to use for calculating vanishing lines and points.
-     * NOTE that the points should probably be edge points or
-     * the boundaries of segmentation contiguous labels as filtered edges.
+     * 
      */
     public void find(List<Set<PairInt>> listOfContigousLabels,
         int imageWidth, int imageHeight) {
+     
+        /*
+        NOTE: may need to allow additional logic related to buildings
+        and the logic cpuld be used either by an option set outside
+        or a method here to look for buildings.
+        
+        for buidings, would want to find rectangles first 
+        and then small lines associated
+        with them and then use the frequency of lines not
+        orthogonal to the 2-d image plane to find the
+        projected dimension.
+        */
         
         LinesFinder finder = new LinesFinder();
         if (debug) {

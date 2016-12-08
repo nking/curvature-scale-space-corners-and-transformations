@@ -32,6 +32,11 @@ public class VanishingPointsTest extends TestCase {
         /*
         NOTE that the vanishing lines for the Merton college
         images could be improved w/ improved segmentation.
+        Also, for the Seattle test images, can see that
+        finding rectangles first and then small lines associated
+        with them and then using the frequency of lines not
+        orthogonal to the 2-d image plane would find the
+        projected dimension.
         */
         
         int maxDimension = 256;//512;

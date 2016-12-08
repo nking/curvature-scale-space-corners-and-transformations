@@ -145,6 +145,19 @@ public class LineFinder {
     /**
       NOT READY FOR USE... still testing...
 
+      Find lines in the clockwise ordered set of points p.
+      Note that p is expected to be a closed curve.
+      
+      The algorithm may actually work for open curves too,
+      but the matching of points across an expected wrap
+      around of last to first point would add artificial 
+      matching statistics that affect the results.
+      NOTE: the code could be altered for edge logic, that
+      is, to add an infinitely large difference of chords
+      to the boundary when the first and last points are
+      not adjacent, but that is not current logic in this
+      algorithm at this time...
+      
       A shape is defined as the clockwise ordered sequence
       of points P_1...P_N.
       The spacings used within this method are equidistant
@@ -155,11 +168,9 @@ public class LineFinder {
      <em>NOTE: You may need to pre-process the shape points
      for example, smooth the boundary.</em>
      <pre>
-     This method:
+     Gaussian smoothing of 2 sigma or related options for smaller:
         PairIntArray p = imageProcessor
             .extractSmoothedOrderedBoundary()
-        uses a Gaussian smoothing of 2 sigma,
-        but a smaller sigma can be specified.
       </pre>
      @param p
     */
