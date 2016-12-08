@@ -24,9 +24,6 @@ public class VanishingPoints {
         debug = true;
     }
     
-    /**
-     * 
-     */
     public void find(List<Set<PairInt>> listOfContigousLabels,
         int imageWidth, int imageHeight) {
      
@@ -35,11 +32,14 @@ public class VanishingPoints {
         and the logic cpuld be used either by an option set outside
         or a method here to look for buildings.
         
-        for buidings, would want to find rectangles first 
-        and then small lines associated
-        with them and then use the frequency of lines not
-        orthogonal to the 2-d image plane to find the
-        projected dimension.
+        for buidings, would need to allow for shorter lines
+        possibly for projected dimensions
+        and maybe look for those lines connected by junctions
+        (and same or adjacent sementation).
+        If more than one building had same pose and proximity,
+        the vanishing lines should have similar perpendiculat
+        polar angles...there is much additional logic that
+        could be applied to the found lines.
         */
         
         LinesFinder finder = new LinesFinder();
