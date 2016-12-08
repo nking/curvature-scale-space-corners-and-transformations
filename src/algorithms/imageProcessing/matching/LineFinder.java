@@ -46,14 +46,6 @@ curve.
 */
 public class LineFinder {
 
-    // TODO: 
-    //    to use a low threshold and still find lines, possibly need to
-    //      make changes to compare w/ stepped lines with large chord differences.
-    //          search 3 or so more patterns of lines:
-    //          step line with 2 horiz + 1 diag pattern,
-    //          step line with 2 horiz + 2 vert pattern,
-    //          step line with 3 horiz and 1 vert pattern
-    
     /**
      * in sampling the boundaries of the shapes, one can
      * choose to use the same number for each (which can result
@@ -66,7 +58,8 @@ public class LineFinder {
     protected int dp = 1;
 
     // 10 degrees is 0.1745 radians
-    // for a fit to a line, consider 1E-7
+    // for a fit to a horizontal or vertical line only, 
+    // consider 1E-7
     private float thresh = 0.3f;      
     
     // this one is a rough limi to the total chord diff
@@ -83,9 +76,11 @@ public class LineFinder {
     private int lastRow = -1;
     
     /**
-     * override the threshhold for using a chord difference value
+     * override the threshold for using a chord difference value
      * to this limit for the chord sum diff / number of pixels. 
      * By default it is set to 0.3f;
+     * Note, to find only horizontal or vertical lines, use a
+     * very small threshold such as 1e-7.
      * @param t
      */
     public void _overrideToThreshhold(float t) {
@@ -105,7 +100,7 @@ public class LineFinder {
     /**
      * set the minimum line length to length.  Note that the
      * default value is 3.
-     * Nnte that this cannot be set to a value smaller than 2.
+     * Note that this cannot be set to a value smaller than 2.
      * 
      * @param length 
      */
@@ -157,6 +152,7 @@ public class LineFinder {
       to the boundary when the first and last points are
       not adjacent, but that is not current logic in this
       algorithm at this time...
+      TODO: add such an option and logic.
       
       A shape is defined as the clockwise ordered sequence
       of points P_1...P_N.
@@ -237,9 +233,6 @@ public class LineFinder {
         
         // reading over a range of window sizes to keep the sum/nPix below thresh
         // and keeping the mincost solutions.
-        
-        // ranges start from large c, then decreasing to get a more acurate
-        //    max sum diff of chords from the start.
         
         // find the intervals of contiguous 0s and assign curve indexes to the
         // largest segments.
@@ -489,6 +482,18 @@ public class LineFinder {
     */
     protected float[][] createDifferenceMatrices(
         float[][] a1, int lineIndex) {
+        
+        /*
+        note, this section of the code was designed to create 
+        line patterns including spatially aliased lines
+        with the global goal being to use a small threshold and precisely
+        find line patterns.
+        
+        Note that found that using
+        a straight line (lineIndex==0) and increasing the threshold gave better
+        results for first tests, but this should be revisited more
+        robustly to explore runtimes and accuracy one day.
+        */
         
         int n1 = a1.length;
 
