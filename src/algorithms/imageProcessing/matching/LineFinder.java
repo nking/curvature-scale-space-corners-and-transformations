@@ -497,8 +497,8 @@ public class LineFinder {
         robustly to explore runtimes and accuracy one day with a
         larger number of aliased line patters (the line patterns
         would be those produced by integer effects of a line rendered for
-        polar angles from 0 to 89 degrees fpr the number of points
-        p.n.  If p is a short closed curve, then many of the 90 line
+        polar angles from 0 to 44 degrees fpr the number of points
+        p.n.  If p is a short closed curve, then many of the 45 line
         patterns might be identical within that distance so a table of
         pre-processed pattern indexes could be made to improve the 
         runtime in that case in this alternate code).
