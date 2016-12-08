@@ -153,7 +153,7 @@ public class LinesFinder {
             }
         }
         
-        assert(assertUniquePoints(listOfBounds));
+        //assert(assertUniquePoints(listOfBounds));
         
 Image dbg = new Image(256, 192);
 ImageIOHelper.addAlternatingColorCurvesToImage(
@@ -634,6 +634,7 @@ MiscDebug.writeImage(dbg, "_boundaries_");
             for (int j = 0; j < a.getN(); ++j) {
                 PairInt p = new PairInt(a.getX(j), a.getY(j));
                 if (exists.contains(p)) {
+          System.out.println("ERROR: exists " + p);
                     return false;
                 }
                 exists.add(p);
