@@ -34,11 +34,21 @@ import thirdparty.edu.princeton.cs.algs4.IntervalRangeSearch;
 /**
 NOTE: NOT READY FOR USE YET... still testing.
 
-Adapted the chord descriptor difference matrix from PartialShapeMatcher.java
-which was made following the paper
+a class for finding lines in a closed shape of clockwise ordered
+points.
+
+Note that comments are present throughout the code that can be followed
+to add options specific to different use cases.  the algorithm is currently
+tailored for use with LinesFinder and VanishingPoints to find lines in
+image segmentation boundaries.  The code could be edited to work on
+ordered edges.  The code could also be edited to find line patterns
+precisely for specific rendered spatial aliasing patterns ("jaggles").
+
+Internally, the chord difference descriptor matrix is adapted from
+PartialShapeMatcher.java which was made following the paper
 "Efficient Partial Shape Matching of Outer Contours" by Donoser
 
-The differences in chords of the implied second shape, a line is always 0,
+The differences in chords of the implied second shape, a line is always pi,
 so edits are present specific to a one dimensional value instead of a closed
 curve.
 
