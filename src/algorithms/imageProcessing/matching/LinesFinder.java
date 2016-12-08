@@ -146,12 +146,14 @@ public class LinesFinder {
                 continue;
             }
          
-            PairIntArray b = pFinder.extractOrderedBorder(new HashSet<PairInt>(
-                set));
+            PairIntArray b = pFinder.extractOrderedBorder(
+                new HashSet<PairInt>(set));
             if (b != null && b.getN() > 2) {
                 listOfBounds.add(b);            
             }
         }
+        
+        assert(assertUniquePoints(listOfBounds));
         
 Image dbg = new Image(256, 192);
 ImageIOHelper.addAlternatingColorCurvesToImage(
@@ -621,5 +623,23 @@ MiscDebug.writeImage(dbg, "_boundaries_");
         }
         
         return new int[]{xMin, xMax, yMin, yMax};
+    }
+
+    private boolean assertUniquePoints(
+        List<PairIntArray> listOfBounds) {
+
+        Set<PairInt> exists = new HashSet<PairInt>();
+        for (int i = 0; i < listOfBounds.size(); ++i) {
+            PairIntArray a = listOfBounds.get(i);
+            for (int j = 0; j < a.getN(); ++j) {
+                PairInt p = new PairInt(a.getX(j), a.getY(j));
+                if (exists.contains(p)) {
+                    return false;
+                }
+                exists.add(p);
+            }
+        }
+        
+        return true;
     }
 }

@@ -91,7 +91,7 @@ public class LabelToColorHelper {
                 assert(img.getRow(pixIdx) < img.getHeight());
             }
         }
-       
+        
         return out;
     }
     

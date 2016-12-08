@@ -2,6 +2,7 @@ package algorithms.compGeometry;
 
 import algorithms.imageProcessing.ContiguousGapFinder;
 import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.PostLineThinnerCorrections;
 import algorithms.imageProcessing.SpurRemover;
 import algorithms.imageProcessing.ZhangSuenLineThinner;
@@ -18,6 +19,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.Stack;
 import java.util.logging.Logger;
 
 /**
@@ -67,40 +69,87 @@ public class PerimeterFinder2 {
      */
     public Set<PairInt> findEmbeddedGaps(Set<PairInt> contiguousPoints) {
         
-        ContiguousGapFinder finder = new ContiguousGapFinder(
-            contiguousPoints);
-        finder.setMinimumNumberInCluster(1);
+        /*
+        makes a boundary 1 pixel larger than largest dimensions
+        surrounding contigyousPoints and finds all connected
+        spaces surrounding the points.
+        Then flood fills the points not those in the bounds.
+        then subtracts the filled from original to
+        return the embedded points.
+        */
         
-        int minX = finder.getMinX();
-        int maxX = finder.getMaxX();
-        int minY = finder.getMinY();
-        int maxY = finder.getMaxY();
-                
-        finder.findGaps();
+        int[] minmaxXY = MiscMath.findMinMaxXY(contiguousPoints);
         
-        int nGroups = finder.getNumberOfGapGroups();
+        // visit the 1 pixel region surrounding the shape and
+        // place the pixels in a stack.
+        // then visit their neighbors that are not in contig points
+        // until have reached them all
         
-        Set<PairInt> embedded = new HashSet<PairInt>();
-                
-        for (int i = 0; i < nGroups; ++i) {
-            Set<PairInt> set = finder.getXY(i);
-            boolean foundEdgePoint = false;
-            for (PairInt p : set) {
-                int x = p.getX();
-                int y = p.getY();
-                if (x == minX || x == maxX || y == minY || y == maxY) {
-                    foundEdgePoint = true;
-                    break;
+        int startX = minmaxXY[0] - 1;
+        int startY = minmaxXY[2] - 1;
+        int stopX = minmaxXY[1] + 1;
+        int stopY = minmaxXY[3] + 1;
+        
+        Stack<PairInt> stack = new Stack<PairInt>();
+        for (int i = startX; i <= stopX; ++i) {
+            stack.add(new PairInt(i, startY));
+            stack.add(new PairInt(i, stopY));
+        }
+        for (int j = startY+1; j <= stopY-1; ++j) {
+            stack.add(new PairInt(startX, j));
+            stack.add(new PairInt(stopX, j));
+        }
+        
+        Set<PairInt> visited = new HashSet<PairInt>();
+        
+        Set<PairInt> surrounding = new HashSet<PairInt>();
+        int[] dxs = Misc.dx4;
+        int[] dys = Misc.dy4;
+        while (!stack.isEmpty()) {
+            PairInt s = stack.pop();
+            if (visited.contains(s)) {
+                continue;
+            }
+            surrounding.add(s);
+            int x = s.getX();
+            int y = s.getY();
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                if (x2 < startX || y2 < startY || x2 > stopX ||
+                    y2 > stopY) {
+                    continue;
+                }
+                PairInt p2 = new PairInt(x2, y2);
+                if (!contiguousPoints.contains(p2)) {
+                    stack.add(p2);
                 }
             }
-            if (!foundEdgePoint) {
-                embedded.addAll(set);
+            visited.add(s);
+        }
+       
+        // visit entire region within min and max, and place
+        // any point not in surrounding nor in contig into
+        // embedded
+        startX++;
+        stopX--;
+        startY++;
+        stopY--;
+        Set<PairInt> embedded = new HashSet<PairInt>();
+        for (int i = startX; i <= stopX; ++i) {
+            for (int j = startY; j <= stopY; ++j) {
+                PairInt p = new PairInt(i, j);
+                if (!contiguousPoints.contains(p) && 
+                    !surrounding.contains(p)) {
+                    embedded.add(p);
+                }
             }
         }
         
         return embedded;
     }
     
+  
     /**
      * finds the outer boundary points of the contiguous points.
      * any embedded holes in the contiguousPoints are not included
@@ -229,7 +278,7 @@ public class PerimeterFinder2 {
             Set<PairInt> m = new HashSet<PairInt>(cPts);
             ImageProcessor imp = new ImageProcessor();
             imp.applyThinning(cPts, minMaxXY[1] + 1, minMaxXY[3] + 1);
-            medAxisPts.addAll(cPts);
+            medAxisPts.addAll(m);
         }
         
         if (outputMedialAxisPoints != null) {
