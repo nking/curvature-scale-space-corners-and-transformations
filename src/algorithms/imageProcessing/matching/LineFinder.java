@@ -98,7 +98,7 @@ public class LineFinder {
     }
     
     /**
-      change the limi to the total chord difference
+      change the limit of the total chord difference
       sum over a found line segment.
       The default is 10.
      * @param t 
@@ -502,7 +502,14 @@ public class LineFinder {
         Note that found that using
         a straight line (lineIndex==0) and increasing the threshold gave better
         results for first tests, but this should be revisited more
-        robustly to explore runtimes and accuracy one day.
+        robustly to explore runtimes and accuracy one day with a
+        larger number of aliased line patters (the line patterns
+        would be those produced by integer effects of a line rendered for
+        polar angles from 0 to 89 degrees fpr the number of points
+        p.n.  If p is a short closed curve, then many of the 90 line
+        patterns might be identical within that distance so a table of
+        pre-processed pattern indexes could be made to improve the 
+        runtime in that case in this alternate code).
         */
         
         int n1 = a1.length;
@@ -518,20 +525,8 @@ public class LineFinder {
             PairIntArray q = createLine2(n1);
             a2 = createDescriptorMatrix(q, n1);
         } else if (lineIndex == 2) {
-            // same as 1, but beginning 1 index later
-            PairIntArray q = createLine3(n1);
-            a2 = createDescriptorMatrix(q, n1);
-        } else if (lineIndex == 3) {
             // line pattern: 3 horiz, up one level, then 3 horiz...
             PairIntArray q = createLine4(n1);
-            a2 = createDescriptorMatrix(q, n1);
-        } else if (lineIndex == 4) {
-            // same as 3, but offset by 1 index
-            PairIntArray q = createLine5(n1);
-            a2 = createDescriptorMatrix(q, n1);
-        } else {
-            // same as 3, but offset by 2 indexes
-            PairIntArray q = createLine6(n1);
             a2 = createDescriptorMatrix(q, n1);
         }
         

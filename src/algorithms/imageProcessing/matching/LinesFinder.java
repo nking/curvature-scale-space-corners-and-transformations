@@ -385,9 +385,8 @@ MiscDebug.writeImage(dbg, "_boundaries_");
         
         if (changed) {
             // assuming not many lines and using
-            // an O(N^2) approach for now
-            for (int i = (orderedTRList.size() - 1); 
-                i > -1; --i) {
+            // an O(N^2) approach for the merging for now
+            for (int i = (orderedTRList.size() - 1); i > -1; --i) {
                 PairInt tr = orderedTRList.get(i);
                 for (int j = 0; j < (i - 1); ++j) {
                     PairInt tr2 = orderedTRList.get(j);
