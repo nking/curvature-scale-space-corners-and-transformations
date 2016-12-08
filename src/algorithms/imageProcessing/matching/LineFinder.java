@@ -43,6 +43,7 @@ PartialShapeMatcher.java which was made following the paper
 The differences in chords of the implied second shape, a line is always pi,
 so edits are present specific to a one dimensional value instead of a closed
 curve.
+Also, the summed table of the chord differences is only along columns.
 
 @author nichole
 */
