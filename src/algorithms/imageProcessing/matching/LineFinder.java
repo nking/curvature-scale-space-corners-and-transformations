@@ -499,9 +499,9 @@ public class LineFinder {
         would be those produced by integer effects of a line rendered for
         polar angles from 0 to 45 degrees fpr the number of points
         p.n.  If p is a short closed curve, then many of the 46 line
-        patterns might be identical within that distance so a table of
-        pre-processed pattern indexes could be made to improve the 
-        runtime in that case in this alternate code).
+        patterns might be identical within that length so a table of
+        pre-processed pattern indexes for a length could be made to 
+        improve the runtime in that case in this alternate code).
         */
         
         int n1 = a1.length;
