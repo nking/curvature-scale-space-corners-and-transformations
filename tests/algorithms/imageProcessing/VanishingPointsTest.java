@@ -43,8 +43,8 @@ public class VanishingPointsTest extends TestCase {
 
         String fileName1 = "";
 
-        //for (int i = 15; i < 16; ++i) {
-        for (int i = 0; i < 37; ++i) {
+        //for (int i = 37; i < 38; ++i) {
+        for (int i = 0; i < 38; ++i) {
 
             switch(i) {
                 case 0: {
@@ -191,8 +191,12 @@ public class VanishingPointsTest extends TestCase {
                     fileName1 = "checkerboard_01.jpg";
                     break;
                 }
-                default: {
+                case 36: {
                     fileName1 = "checkerboard_02.jpg";
+                    break;
+                }
+                default: {
+                    fileName1 = "house_color.png";
                     break;
                 }
             }

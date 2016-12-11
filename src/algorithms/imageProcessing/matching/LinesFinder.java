@@ -158,7 +158,7 @@ public class LinesFinder {
 Image dbg = new Image(256, 192);
 ImageIOHelper.addAlternatingColorCurvesToImage(
 listOfBounds, dbg, 0);
-MiscDebug.writeImage(dbg, "_boundaries_");
+MiscDebug.writeImage(dbg, "_boundaries_" +MiscDebug.getCurrentTimeFormatted());
 
         find1(listOfBounds);
     }
@@ -408,7 +408,7 @@ MiscDebug.writeImage(dbg, "_boundaries_");
         }
     }
     
-    private void sortOrderedLists() {
+    public void sortOrderedLists() {
         
         if (orderedTRList == null) {
         
@@ -537,7 +537,7 @@ MiscDebug.writeImage(dbg, "_boundaries_");
             PairInt tr0 = new PairInt(sumT, sumR);
             orderedTRList.add(tr0);
             orderedTRXYIndexes.add(xyList);
-        }
+        }        
     }
     
     public void debugDraw(algorithms.imageProcessing.Image img) {
@@ -554,8 +554,8 @@ MiscDebug.writeImage(dbg, "_boundaries_");
           
         boolean drawLines = true;
              
-        // TODO: consider revising this by nPoints
-        int end = 10;
+        // TODO: consider revising this
+        int end = 15;
         if (end > (orderedTRList.size() - 1)) {
             end = orderedTRList.size();
         }
@@ -642,5 +642,33 @@ MiscDebug.writeImage(dbg, "_boundaries_");
         }
         
         return true;
+    }
+
+    /**
+     * @return the xs
+     */
+    public TIntList getXs() {
+        return xs;
+    }
+
+    /**
+     * @return the ys
+     */
+    public TIntList getYs() {
+        return ys;
+    }
+
+    /**
+     * @return the orderedTRList
+     */
+    public List<PairInt> getOrderedTRList() {
+        return orderedTRList;
+    }
+
+    /**
+     * @return the orderedTRXYIndexes
+     */
+    public List<TIntList> getOrderedTRXYIndexes() {
+        return orderedTRXYIndexes;
     }
 }

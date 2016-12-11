@@ -68,6 +68,10 @@ public class LineFinder {
     // this one is a rough limi to the total chord diff
     // sum over a found line segment.
     private int thresh3 = 10;
+
+    //NOTE: for staircase roofs like house_color.png has, 
+    //   increasing thresh to 0.4 nd thresh3 to 15 finds the
+    //   remaining lines
     
     private int minLength = 10;
     
@@ -84,6 +88,9 @@ public class LineFinder {
      * By default it is set to 0.3f;
      * Note, to find only horizontal or vertical lines, use a
      * very small threshold such as 1e-7.
+      NOTE: for staircase roofs like house_color.png has, 
+      increasing thresh to 0.4 nd thresh3 to 15 finds the
+      remaining lines
      * @param t
      */
     public void _overrideToThreshhold(float t) {
@@ -94,6 +101,9 @@ public class LineFinder {
       change the limit of the total chord difference
       sum over a found line segment.
       The default is 10.
+      NOTE: for staircase roofs like house_color.png has, 
+      increasing thresh to 0.4 nd thresh3 to 15 finds the
+      remaining lines
      * @param t 
      */
     public void _overrideToTotalThreshol(int t) {
