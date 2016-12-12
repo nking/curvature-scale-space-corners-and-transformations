@@ -10305,6 +10305,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                         Colors clrs3 = labelColorMap.get(label3);
                         if (rgbClrs3 == null) {
                             TIntSet set3 = labelToIndexMap.get(label3);
+                            if (set3.size() < sizeLimit) {
+                                continue;
+                            }
                             rgbClrs3 = calculateSetColor(set3, img,
                                 ColorSpace.RGB);
                             labelRGBMap.put(label3, rgbClrs3);
@@ -11046,6 +11049,83 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         EdgeFilterProducts eProduct = packageToEdgeProduct(pr);
         
         return eProduct;
+    }
+
+    private boolean separateSinglePixelChains(
+        List<Set<PairInt>> contigSets, Image img, 
+        int[] labels) {
+        
+        /*
+        - ind labeled points which only have 2 neighbors
+          and use a DFS serach to chain them.
+          -- chains longer than 3 are separated.
+        */
+        TIntObjectMap<List<Set<PairInt>>> a = new
+            TIntObjectHashMap<List<Set<PairInt>>>();
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        for (int i = 0; i < contigSets.size(); ++i) {
+            List<Set<PairInt>> b = new ArrayList<Set<PairInt>>();
+            Set<PairInt> set = contigSets.get(i);
+            Stack<PairInt> stack = new Stack<PairInt>();
+            stack.addAll(set);
+                
+            Set<PairInt> visited = new HashSet<PairInt>();
+            Set<PairInt> c = new HashSet<PairInt>();
+            while (!stack.isEmpty()) {
+                PairInt p = stack.pop();
+                if (visited.contains(p)) {
+                    continue;
+                }
+                int nn = 0;
+                for (int k = 0; k < dxs.length; k++) {
+                    int x2 = p.getX() + dxs[k];
+                    int y2 = p.getY() + dys[k];
+                    PairInt p2 = new PairInt(x2, y2);
+                    if (set.contains(p2)) {
+                        nn++;
+                    }
+                }
+                if (nn < 3) {
+                    c.add(p);
+                    stack.add(p);
+                } else if (c.size() > 2) {
+                    b.add(c);
+                    c = new HashSet<PairInt>();
+                } else {
+                    c.clear();
+                }
+                visited.add(p);
+            }
+            if (!b.isEmpty()) {
+                a.put(i, b);
+            }
+        }
+        TIntObjectIterator<List<Set<PairInt>>> iter = 
+            a.iterator();
+        for (int i = 0; i < a.size(); ++i) {
+            
+            iter.advance();
+            
+            int segIdx = iter.key();
+            List<Set<PairInt>> sets = iter.value();
+            
+            for (Set<PairInt> set : sets) {
+                contigSets.get(segIdx).removeAll(set);
+                contigSets.add(set);
+            }
+        }
+        
+        if (a.size() == 0) {
+            return false;
+        }
+        for (int i = 0; i < contigSets.size(); ++i) {
+            for (PairInt p : contigSets.get(i)) {
+                int pixIdx = img.getInternalIndex(p);
+                labels[pixIdx] = i;
+            }
+        }
+        return true;
     }
 
     public static class BoundingRegions {
@@ -13820,7 +13900,16 @@ int z = 1;
 
         contigSets = LabelToColorHelper
             .extractContiguousLabelPoints(img, labels);
-                
+        
+        // break single pixel chains
+        boolean didChange = separateSinglePixelChains(contigSets,
+            img, labels);
+        
+        if (didChange) {
+            contigSets = LabelToColorHelper
+                .extractContiguousLabelPoints(img, labels);
+        }
+        
         return labels;
     }
 
