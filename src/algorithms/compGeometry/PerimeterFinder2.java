@@ -10,6 +10,8 @@ import algorithms.search.NearestNeighbor2D;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -235,20 +237,27 @@ public class PerimeterFinder2 {
     }
     
     public void thinTheBoundary(Set<PairInt> boundary,
-        Set<PairInt> removedPoints) {
+        Set<PairInt> removedPoints,
+        Set<PairInt> contiguousPoints) {
         
         Set<PairInt> b = new HashSet<PairInt>(boundary);
         
         int[] minMaxXY = MiscMath.findMinMaxXY(b); 
         
-        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
-        lt.applyLineThinner(b, 
-            minMaxXY[0] - 1, minMaxXY[1] + 1, 
-            minMaxXY[2] - 1, minMaxXY[3] + 1);
+        ImageProcessor imp = new ImageProcessor();
+        imp.applyThinning(boundary, minMaxXY[1] + 1, minMaxXY[3] + 1);
         
-        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
-        pltc._correctForArtifacts(b, minMaxXY[1] + 3, 
-            minMaxXY[3] + 3);
+        //ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
+        //lt.applyLineThinner(b, 
+        //    minMaxXY[0] - 1, minMaxXY[1] + 1, 
+        //    minMaxXY[2] - 1, minMaxXY[3] + 1);
+        
+
+        //NOTE: this is a corrector and thinner so sometimes
+        //   adds points
+        //PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
+        //pltc._correctForArtifacts(b, minMaxXY[1] + 3, 
+        //    minMaxXY[3] + 3);
         
         SpurRemover spurRm = new SpurRemover();
         spurRm.remove(b, minMaxXY[1] + 3, 
@@ -321,10 +330,21 @@ public class PerimeterFinder2 {
         Set<PairInt> set2 = new HashSet<PairInt>(contiguousPoints);
         set2.addAll(embedded);        
         
-        Set<PairInt> rmPts = new HashSet<PairInt>();
+        // remove any points in boundary that aren't in contiguousPoints
+        Set<PairInt> rmPts = new HashSet<PairInt>(); 
+        for (PairInt p : boundary) {
+            if (!contiguousPoints.contains(p)) {
+                rmPts.add(p);
+            }
+        }
+        if (!rmPts.isEmpty()){
+        boundary.removeAll(rmPts);
+        }
+        
+        rmPts = new HashSet<PairInt>();
         
         //TODO: methods used for this could be improved
-        thinTheBoundary(boundary, rmPts);
+        thinTheBoundary(boundary, rmPts, contiguousPoints);
         
         Set<PairInt> cPts = new HashSet<PairInt>(set2);
         // NOTE: if this is small cavity, removing these points
@@ -332,7 +352,7 @@ public class PerimeterFinder2 {
         // a more exact method should test for whether each point is
         // within boundary and if not, remove it.
         cPts.removeAll(rmPts);
-        
+            
         // O(N*log_2(N))
         MedialAxis medAxis = new MedialAxis(cPts, boundary);
         medAxis.fastFindMedialAxis();
@@ -351,8 +371,20 @@ public class PerimeterFinder2 {
         if (outputMedialAxisPoints != null) {
             outputMedialAxisPoints.addAll(medAxisPts);
         }
+        PairIntArray a = extractOrderedBorder(boundary, 
+            medAxisPts, contiguousPoints);
+        TIntList b = new TIntArrayList();
+        for (int i = 0; i < a.getN(); ++i) {
+            PairInt p = new PairInt(a.getX(i), a.getY(i));
+            if (!contiguousPoints.contains(p)) {
+                b.add(i);
+            }
+        }
+        if (!b.isEmpty()) {
+            int z = 0;
+        }
         
-        return extractOrderedBorder(boundary, medAxisPts, cPts);
+        return a;
         //return extractOrderedBorder00(boundary, medAxisPts);
     }
 
@@ -375,7 +407,7 @@ public class PerimeterFinder2 {
     public PairIntArray extractOrderedBorder(Set<PairInt> 
         borderPoints, Set<PairInt> medialAxisPoints,
         Set<PairInt> contiguousShapePoints) {
-        
+
         /*
         -- note points which only have 1 neighbor.  these
            are the single pixel wide spurs that result in
@@ -401,7 +433,7 @@ public class PerimeterFinder2 {
         PairIntArray output = new PairIntArray(borderPoints.size());
         
         Set<PairInt> remaining = new HashSet<PairInt>(borderPoints);
-        
+
         PairInt pt1 = findMinXY(borderPoints);
 
         output.add(pt1.getX(), pt1.getY());        
@@ -481,7 +513,7 @@ public class PerimeterFinder2 {
                             int[] minMaxY = MiscMath.findMinMaxXY(
                                 borderPoints);
                             nn = new NearestNeighbor2D(medialAxisPoints,
-                                minMaxY[1] + 1, minMaxY[3] + 1);
+                                minMaxY[1] + 5, minMaxY[3] + 5);
                         }
      
                         int prevX = -1;
@@ -583,7 +615,7 @@ public class PerimeterFinder2 {
                 if (nn == null) {
                     int[] minMaxY = MiscMath.findMinMaxXY(borderPoints);
                     nn = new NearestNeighbor2D(medialAxisPoints, 
-                        minMaxY[1] + 1, minMaxY[3] + 1);
+                        minMaxY[1] + 5, minMaxY[3] + 5);
                 }
                 
                 int prevX = -1;
@@ -763,6 +795,7 @@ public class PerimeterFinder2 {
                             minDistIdx++;
                         }
                     }
+                    
                     output.insert(minDistIdx, xp, yp);
                 }
             }
@@ -968,21 +1001,17 @@ public class PerimeterFinder2 {
  
         assert(!medAxisClosest.isEmpty());
         PairInt medAxisP = medAxisClosest.iterator().next();
-       
-        /*
-        System.out.println(
-            String.format("x,y=(%d,%d) medAxis=(%d,%d)", x, y, 
-                medAxisP.getX(), medAxisP.getY()));
-        */
+        
+        //System.out.println(
+        //    String.format("x,y=(%d,%d) medAxis=(%d,%d)", x, y, 
+        //        medAxisP.getX(), medAxisP.getY()));
         
         double minAngle = Double.MAX_VALUE;
         int minIdx = -1;
         
-        /*
-        System.out.println(
-            String.format("    (%d,%d) (%d,%d) (%d,%d) nXY=%d", 
-                prevX, prevY, x, y, medAxisP.getX(), medAxisP.getY(), nXY));
-        */
+        //System.out.println(
+        //    String.format("    (%d,%d) (%d,%d) (%d,%d) nXY=%d", 
+        //        prevX, prevY, x, y, medAxisP.getX(), medAxisP.getY(), nXY));
         
         // if (x,y) == medAxisP or (x2,y2) == medAxisP
         // angle is NAN
@@ -995,10 +1024,25 @@ public class PerimeterFinder2 {
                 double angle = LinesAndAngles.calcClockwiseAngle(
                     x, y, x2, y2, medAxisP.getX(), medAxisP.getY());
 
-                /*
-                System.out.println(
-                    String.format("    (%d,%d) a=%.4f", x2, y2, (float) angle));
-                */
+                if (Double.isNaN(angle)) {
+                    if (x == x2 && x == medAxisP.getX()) {
+                        if (y < y2) {
+                            angle = 0;
+                        } else {
+                            angle = Math.PI;
+                        }
+                    } else if (y == y2 && y == medAxisP.getY()) {
+                        if (x < x2) {
+                            angle = Math.PI/2.;
+                        } else {
+                            angle = 3. * Math.PI/2.;
+                        }
+                    }
+                }
+               
+                //System.out.println(String.format(
+                //    "    (%d,%d) a=%.4f", 
+                //    x2, y2, (float) angle));
                 
                 if (angle < minAngle) {
                     minAngle = angle;
@@ -1019,11 +1063,26 @@ public class PerimeterFinder2 {
                 double angle = LinesAndAngles.calcClockwiseAngle(
                     prevX, prevY, x2, y2, x, y);
 
-                /*
-                System.out.println(
-                    String.format("    *(%d,%d) a=%.4f", 
-                        x2, y2, (float) angle));
-                */
+                if (Double.isNaN(angle)) {
+                    if (x == x2 && x == medAxisP.getX()) {
+                        if (y < y2) {
+                            angle = 0;
+                        } else {
+                            angle = Math.PI;
+                        }
+                    } else if (y == y2 && y == medAxisP.getY()) {
+                        if (x < x2) {
+                            angle = Math.PI/2.;
+                        } else {
+                            angle = 3. * Math.PI/2.;
+                        }
+                    }
+                }
+                
+                //System.out.println(
+                //    String.format("    *(%d,%d) a=%.4f", 
+                //        x2, y2, (float) angle));
+                
                 
                 if (angle < minAngle) {
                     minAngle = angle;
@@ -1314,7 +1373,7 @@ public class PerimeterFinder2 {
                             int[] minMaxY = MiscMath.findMinMaxXY(
                                 borderPoints);
                             nn = new NearestNeighbor2D(medialAxisPoints,
-                                minMaxY[1] + 1, minMaxY[3] + 1);
+                                minMaxY[1] + 5, minMaxY[3] + 5);
                         }
      
                         int prevX = -1;
@@ -1342,7 +1401,7 @@ public class PerimeterFinder2 {
                 if (nn == null) {
                     int[] minMaxY = MiscMath.findMinMaxXY(borderPoints);
                     nn = new NearestNeighbor2D(medialAxisPoints, 
-                        minMaxY[1] + 1, minMaxY[3] + 1);
+                        minMaxY[1] + 5, minMaxY[3] + 5);
                 }
           
                 int prevX = -1;
@@ -1547,6 +1606,22 @@ public class PerimeterFinder2 {
                 double angle = LinesAndAngles.calcClockwiseAngle(
                     x, y, x2, y2, medAxisP.getX(), medAxisP.getY());
 
+                if (Double.isNaN(angle)) {
+                    if (x == x2 && x == medAxisP.getX()) {
+                        if (y < y2) {
+                            angle = 0;
+                        } else {
+                            angle = Math.PI;
+                        }
+                    } else if (y == y2 && y == medAxisP.getY()) {
+                        if (x < x2) {
+                            angle = Math.PI/2.;
+                        } else {
+                            angle = 3. * Math.PI/2.;
+                        }
+                    }
+                }
+                
                 /*
                 System.out.println(
                     String.format("    (%d,%d) a=%.4f", x2, y2, (float) angle));
@@ -1571,6 +1646,22 @@ public class PerimeterFinder2 {
                 double angle = LinesAndAngles.calcClockwiseAngle(
                     prevX, prevY, x2, y2, x, y);
 
+                if (Double.isNaN(angle)) {
+                    if (x == x2 && x == medAxisP.getX()) {
+                        if (y < y2) {
+                            angle = 0;
+                        } else {
+                            angle = Math.PI;
+                        }
+                    } else if (y == y2 && y == medAxisP.getY()) {
+                        if (x < x2) {
+                            angle = Math.PI/2.;
+                        } else {
+                            angle = 3. * Math.PI/2.;
+                        }
+                    }
+                }
+                
                 /*
                 System.out.println(
                     String.format("    *(%d,%d) a=%.4f", 

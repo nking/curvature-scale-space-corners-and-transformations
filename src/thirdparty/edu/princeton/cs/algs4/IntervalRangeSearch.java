@@ -34,6 +34,29 @@ public class IntervalRangeSearch<T extends Comparable<T>, Value> extends
         return list;
     }
     
+    public void getAllIntervals(List<Interval<T>> outputIntervals, 
+        List<Value> outputValues) {
+        getAllIntervals(root, outputIntervals, outputValues);
+    }
+    
+    private void getAllIntervals(RangeSearchNode<Interval<T>, Value> x, 
+        List<Interval<T>> outputIntervals, List<Value> outputValues) {
+        
+        if (x == null) {
+            return;
+        }
+        outputIntervals.add(x.key);
+        outputValues.add(x.val);
+            
+        if (x.left != null) {
+            getAllIntervals(x.left, outputIntervals, outputValues);
+        }
+        
+        if (x.right != null) {
+            getAllIntervals(x.right, outputIntervals, outputValues);
+        }
+    }
+    
     private void getAllIntervals(RangeSearchNode<Interval<T>, Value> x, 
         List<Interval<T>> list) {
         

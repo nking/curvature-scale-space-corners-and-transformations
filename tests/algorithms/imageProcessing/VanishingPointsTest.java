@@ -1,16 +1,12 @@
 package algorithms.imageProcessing;
 
-import algorithms.imageProcessing.CannyEdgeFilterAdaptiveDeltaE2000;
-import algorithms.imageProcessing.EdgeFilterProducts;
-import algorithms.imageProcessing.ImageExt;
-import algorithms.imageProcessing.ImageIOHelper;
-import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.ImageSegmentation;
-import algorithms.imageProcessing.VanishingPoints;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
+import algorithms.util.QuadInt;
 import algorithms.util.ResourceFinder;
+import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.map.TIntObjectMap;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -43,9 +39,9 @@ public class VanishingPointsTest extends TestCase {
 
         String fileName1 = "";
 
-        //for (int i = 37; i < 38; ++i) {
+        //for (int i = 3; i < 4; ++i) {
         for (int i = 0; i < 38; ++i) {
-
+System.out.println("index i=" + i);
             switch(i) {
                 case 0: {
                     fileName1 = "android_statues_01.jpg";
@@ -235,18 +231,28 @@ public class VanishingPointsTest extends TestCase {
             //LabelToColorHelper.applyLabels(img, labels4);
             //MiscDebug.writeImage(img, "_final_" + fileName1Root);
 
-            img11 = (ImageExt) img.copyImage();
             List<Set<PairInt>> contigSets = 
                 LabelToColorHelper.extractContiguousLabelPoints(
                 img, labels4);
                 
             VanishingPoints vp2 = new VanishingPoints();
             vp2.setToDebug();
-            vp2.find(contigSets, img11.getWidth(),
-                img11.getHeight());
-            //vp2.correctLinesWithGradient(products.getGradientXY());
-            vp2.debugDraw(img11);
-            MiscDebug.writeImage(img11, "_lines_" + fileName1Root);
+            vp2.find(contigSets, img.getWidth(), img.getHeight());
+            //vp2.correctLinesWithGradient(products.getGradientXY());            
+            //MiscDebug.writeImage(img, "_lines_" + fileName1Root);
+        
+            TIntObjectMap<QuadInt> linesMap = vp2.getVanishingLines();
+            TIntObjectIterator<QuadInt> iter = linesMap.iterator();
+            for (int ii = 0; ii < linesMap.size(); ++ii) {
+                iter.advance();
+                QuadInt eps = iter.value();
+                int segIdx = iter.key();
+                int clr = ImageIOHelper.getNextColorRGB(ii);
+                
+                ImageIOHelper.drawLineInImage(
+                    eps.getA(), eps.getB(), eps.getC(), eps.getD(), img, 1, clr);
+            }
+            MiscDebug.writeImage(img, fileName1 + "_lines_");
         }
     }
 

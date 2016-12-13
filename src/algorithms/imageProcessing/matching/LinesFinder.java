@@ -133,6 +133,8 @@ public class LinesFinder {
         // -- find the lines around each boundary using shape fitting
         // -- store results as member variables
         
+        assert(assertUniquePoints2(listOfContigousLabels));
+        
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
         List<PairIntArray> listOfBounds = new ArrayList<PairIntArray>();
@@ -141,6 +143,7 @@ public class LinesFinder {
         PerimeterFinder2 pFinder = new PerimeterFinder2();
         List<PairIntArray> extractedBounds = new ArrayList<PairIntArray>();
         for (int i = 0; i < listOfContigousLabels.size(); ++i) {
+        //for (int i = 71; i < 72; ++i) {
             Set<PairInt> set = listOfContigousLabels.get(i);
             if (set.size() < 3) {
                 continue;
@@ -152,8 +155,7 @@ public class LinesFinder {
                 listOfBounds.add(b);            
             }
         }
-        
-        //assert(assertUniquePoints(listOfBounds));
+        assert(assertUniquePoints(listOfBounds));
         
 Image dbg = new Image(256, 192);
 ImageIOHelper.addAlternatingColorCurvesToImage(
@@ -625,6 +627,24 @@ MiscDebug.writeImage(dbg, "_boundaries_" +MiscDebug.getCurrentTimeFormatted());
         return new int[]{xMin, xMax, yMin, yMax};
     }
 
+    private boolean assertUniquePoints2(List<Set<PairInt>> 
+        list) {
+
+        Set<PairInt> exists = new HashSet<PairInt>();
+        for (int i = 0; i < list.size(); ++i) {
+            Set<PairInt> set = list.get(i);
+            for (PairInt p : set) {
+                if (exists.contains(p)) {
+                    System.err.println("error: exists " + p);
+                    return false;
+                }
+                exists.add(p);
+            }
+        }
+        
+        return true;
+    }
+    
     private boolean assertUniquePoints(
         List<PairIntArray> listOfBounds) {
 
@@ -671,4 +691,5 @@ MiscDebug.writeImage(dbg, "_boundaries_" +MiscDebug.getCurrentTimeFormatted());
     public List<TIntList> getOrderedTRXYIndexes() {
         return orderedTRXYIndexes;
     }
+
 }

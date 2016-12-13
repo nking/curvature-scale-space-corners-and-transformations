@@ -374,7 +374,6 @@ public class ObjectMatcher {
                 img1.getHeight());
             {// DEBUG
                 Image img11 = img1.copyImage();
-                vp2.debugDraw(img11);
                 MiscDebug.writeImage(img11, "_lines_");
             }
             

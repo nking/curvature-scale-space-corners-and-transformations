@@ -246,7 +246,7 @@ public class LineFinder {
         
         // reading over a range of window sizes to keep the sum/nPix below thresh
         // and keeping the mincost solutions.
-        
+
         // find the intervals of contiguous 0s and assign curve indexes to the
         // largest segments.
         // (note that the 0s are the values below threshold, effectively
@@ -257,10 +257,11 @@ public class LineFinder {
         reading each row
            read start and stop cols of values < threshold
            and store each as an interval.
-           if intersects with existing interval, compare cost and
-              keep the one that is smallest cost in the interval tree
+           if intersects with existing interval, compare 
+              cost and keep the one that is smallest cost 
+              in the interval tree
         */
-  
+
         IntervalRangeSearch<Integer, Integer> rangeSearch = search(p);
 
         // merge the results with the combined if they do not clash
@@ -271,7 +272,7 @@ public class LineFinder {
         if (debug) {
             System.out.println("nIntervals=" + list.size());
         }
-  
+
         int nMatched = 0;
 
         TIntSet existing = new TIntHashSet();
@@ -432,20 +433,19 @@ public class LineFinder {
                         }
                         
                         int sz = intervalMap.size();
+                        Integer szI = Integer.valueOf(sz);
 
                         // store it in range search
-                        Integer existing = rangeSearch.put(interval,
-                            Integer.valueOf(sz));
+                        Integer existing = rangeSearch.put(interval, szI);
 
                         // store current interval in associated maps
-                        intervalMap.put(Integer.valueOf(sz), interval);
+                        intervalMap.put(szI, interval);
                         chordMap.put(sz, d);
                         added.add(s);
 
                         if (debug) {
                             float avgN = (float)(maxChordSum * outC[1]);
-                            System.out.println(
-                                "  adding " + interval 
+                            System.out.println("  adding " + interval 
                                 + String.format(
                                 " d=%.2f (%d,%d) (%d,%d)  cs=%.2f avg*N=%.2f", 
                                 d, x0, y0, x1, y1, outC[0], avgN));

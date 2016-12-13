@@ -1275,6 +1275,27 @@ public class PartialShapeMatcher {
                     p.getX(imid), p.getY(imid)
                 );
 
+                if (Double.isNaN(angleA)) {
+                    if (i2 < i1 && i1 < imid) {
+                        angleA = LinesAndAngles
+                            .calcClockwiseAngle(
+                            p.getX(i2), p.getY(i2),
+                            p.getX(i1), p.getY(i1),
+                            p.getX(imid), p.getY(imid));
+                        if (Double.isNaN(angleA)) {
+                            angleA = LinesAndAngles
+                            .calcClockwiseAngle(
+                            p.getX(i2), p.getY(i2),
+                            p.getX(i1), p.getY(i1),
+                            p.getX(imid), p.getY(imid));
+                        }
+                    } else {
+                        System.out.println(
+                        "SKIP i1=" + i1 + " imid=" + imid + " i2=" + i2);
+                        continue;
+                    }
+                }
+                
                 /*
                 String str = String.format(
                     "[%d](%d,%d) [%d](%d,%d) [%d](%d,%d) a=%.4f",

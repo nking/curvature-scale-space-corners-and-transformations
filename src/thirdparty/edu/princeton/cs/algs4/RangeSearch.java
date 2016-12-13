@@ -124,6 +124,68 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
         //System.out.println("<==root=" + root);
     }
     
+    /**
+     * put key in map, and if compareVal is greater than or equal to the
+     * replaced value, re-insert the replaced value and return false, rlse
+     * the insert succeeded and returns true.
+     * @param <Value2>
+     * @param key
+     * @param val
+     * @return 
+     */
+    public <Value2 extends Comparable<Value>> boolean 
+        putIfLessThan(Key key, Value val, Value2 compareVal) {
+          
+        //if the insert replaced an object, this holds the value, then key
+        Object[] replaced = new Object[1];
+        boolean[] inserted = new boolean[1];
+        
+        root = putIfLessThan(root, key, val, compareVal, replaced, inserted);
+        
+        return inserted[0];
+        
+        //System.out.println("<==root=" + root);
+    }
+    
+    // make new node the root with uniform probability
+    private <Value2 extends Comparable<Value>> 
+        RangeSearchNode<Key, Value> putIfLessThan(RangeSearchNode<Key, Value> x, 
+        Key key, Value val, Value2 compareVal, Object[] replaced,
+        boolean[] inserted) {
+                    
+        if (x == null) {
+            inserted[0] = true;
+            return new RangeSearchNode(key, val);
+        }
+        
+        int cmp = key.compareTo(x.key);
+        if (cmp == 0) {
+            int cmpV = compareVal.compareTo(val);
+            if (cmpV < 0) {
+                // continue w/ insert
+                replaced[0] = x.val;
+                x.val = val;
+                inserted[0] = true;
+            } else {
+                inserted[0] = false;
+            }
+            return x;
+        }
+        if (StdRandom.bernoulli(1.0 / (size(x) + 1.0))) {
+            return putRootIfLessThan(x, key, val, compareVal, replaced, inserted);
+        }
+        if (cmp < 0) {
+            x.left  = putIfLessThan(x.left,  key, val, compareVal, replaced,
+                inserted);
+        } else {
+            x.right = putIfLessThan(x.right, key, val, compareVal, replaced,
+                inserted);
+        }
+        // (x.N)++;
+        fix(x);
+        return x;
+    }
+    
     // make new node the root with uniform probability
     private RangeSearchNode<Key, Value> put(RangeSearchNode<Key, Value> x, 
         Key key, Value val, Object[] replaced) {
@@ -132,7 +194,7 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
         if (cmp == 0) {
             replaced[0] = x.val;
             x.val = val;
-            return x; 
+            return x;
         }
         if (StdRandom.bernoulli(1.0 / (size(x) + 1.0))) {
             return putRoot(x, key, val, replaced);
@@ -147,6 +209,39 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
         return x;
     }
 
+    private <Value2 extends Comparable<Value>> 
+    RangeSearchNode<Key, Value> putRootIfLessThan(
+        RangeSearchNode<Key, Value> x, Key key, Value val, Value2 compareVal,
+        Object[] replaced, boolean[] inserted) {
+        
+        if (x == null) {
+            inserted[0] = true;
+            return new RangeSearchNode<Key, Value>(key, val);
+        }
+        
+        int cmp = key.compareTo(x.key);
+        if (cmp == 0) {
+            int cmpV = compareVal.compareTo(val);
+            if (cmpV < 0) {
+                replaced[0] = x.val;
+                x.val = val;
+                inserted[0] = true;
+            } else {
+                inserted[0] = false;
+            }
+            return x; 
+        } else if (cmp  < 0) { 
+            x.left  = putRootIfLessThan(x.left,  key, val, compareVal, replaced,
+                inserted); 
+            x = rotR(x); 
+        } else { 
+            x.right = putRootIfLessThan(x.right, key, val, compareVal, replaced,
+                inserted); 
+            x = rotL(x); 
+        }
+        return x;
+    }
+    
     private RangeSearchNode<Key, Value> putRoot(
         RangeSearchNode<Key, Value> x, Key key, Value val,
         Object[] replaced) {
