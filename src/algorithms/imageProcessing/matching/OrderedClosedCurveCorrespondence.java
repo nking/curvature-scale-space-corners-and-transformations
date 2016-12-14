@@ -3,6 +3,7 @@ package algorithms.imageProcessing.matching;
 import algorithms.imageProcessing.matching.PartialShapeMatcher2.SR;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -37,9 +38,20 @@ class OrderedClosedCurveCorrespondence {
     public void addIntervals(List<SR> intervals, int n1, int n2) {
 
         for (PartialShapeMatcher2.SR sr: intervals) {
-            boolean didIns = addInterval(sr, n1, n2);
+            addInterval(sr, n1, n2);
         }
 
+    }
+    
+    public List<SR> getResultsAsList() {
+        
+        List<SR> list = new ArrayList<SR>();
+        
+        for (Entry<Integer, SR> entry : t1.entrySet()) {
+            list.add(entry.getValue());
+        }
+        
+        return list;
     }
 
     private void addFirstInterval(SR sr) {
@@ -64,15 +76,14 @@ class OrderedClosedCurveCorrespondence {
      * @param sr
      * @param n1
      * @param n2
-     * @return
      */
-    public boolean addInterval(SR sr, int n1, int n2) {
+    public void addInterval(SR sr, int n1, int n2) {
 
         assert(sr.startIdx1 != sr.stopIdx1);
 
         if (t1.isEmpty()) {
             addFirstInterval(sr);
-            return true;
+            return;
         }
 
         //assert clockwise consistent
@@ -135,44 +146,6 @@ class OrderedClosedCurveCorrespondence {
                       -#- | [-#-]
                startIdx1  | [sr]
 
-
-            find t1 floor for sr.startIdx1 - 1.
-            -- if floor stopIdx1 < sr.startIdx1
-               -- if floor stopIdx2 < sr.startIdx2
-                  can add interval
-               -- else
-                  can test each idx1, idx2 and add those
-                  with idx2 > floor stopIdx2.
-            -- else
-               can test each idx1, idx2 in region and add those
-                  with idx1 > floot stopIdx1 &&
-                  with idx2 > floor stopIdx2
-
-           then dividing the logic of the decision tree into 3 tests to make the
-           logic usable within part of case 2 also.
-
-            (1) find t1 floor for sr.startIdx1 - 1.
-
-            (2) test that entire range is consistent
-                -- if floor stopIdx1 is < sr.startIdx1
-                   -- if floor stopIdx2 is < sr.startIdx2
-                      can add interval
-            (3) iterate over each idx1,idx2 in sr interval
-                test for each ifx1,idx2
-                -- if idx1 > floor stopIdx1
-                   -- if idx2 > floor stopIdx2
-                      can add interval
-
-        Then the methods for these invoked by the case finding
-        logic are:
-        
-        - addForCase0(SR sr, Entry<Integer, SR> strt1Floor,
-            int n2) : void
-        - case0AllConsistent(SR sr,
-            Entry<Integer, SR> strt1Floor, int n2) : boolean
-        - populateCase0Idx1s(SR sr, int floorStopIdx1,
-            int floorStopIdx2, TIntList subsetIdx1s, int n2) : void
-        
         --------------------------------------------------------
         case 1: sr.startIdx1 ceiling is not null, that is, there are
                 intervals in t1 at same or larger index position
@@ -187,32 +160,6 @@ class OrderedClosedCurveCorrespondence {
                startIdx1  | [sr]
                       -#- | [-#-]
 
-        find t1 ceiling for sr.stopIdx1 + 1.
-           -- if ceiling startIdx2 is larger than sr.stopIdx2
-                 can add interval
-
-        then dividing the logic of the decision tree into 3 tests to make
-        the logic usable within part of case 2 also.
-
-            (1) find t1 ceiling for sr.stopIdx1 + 1.
-
-            (2) test that entire range is consistent
-                -- if ceiling startIdx2 is larger than sr.stopIdx2
-                   return is consistent
-            (3) iterate over each idx1,idx2 in sr interval
-                test for each ifx1,idx2
-                -- if ceiling start idx2 is larger than idx2
-                   return is consistent
-        
-        Then the methods for these invoked by the case finding
-        logic are:
-        
-        - addForCase1(SR sr, Entry<Integer, SR> stp1Ceil, int n2) : void
-        - case1AllConsistent(SR sr,
-            Entry<Integer, SR> stp1Ceil, int n2) : boolean
-        - populateCase1Idx1s(SR sr, int ceilStartIdx1,
-            TIntList subsetIdx1s, int n2) : void
-        
         --------------------------------------------------------
         case 2: sr.startIdx1 ceiling is not null, that is, there are
                 intervals in t1 at same or larger index position
@@ -227,43 +174,22 @@ class OrderedClosedCurveCorrespondence {
                startIdx1  | [sr]
                       -#- | [-#-]
 
-            for each idx1, idx2 in sr,
-               test for case 1 and if returns true,
-               test for case 0 and if returns true, add it
-
-         Then the methods for these invoked by the case finding
-         logic are:
-        
-         - addForCase2(SR sr, Entry<Integer, SR> strt1Floor, 
-             Entry<Integer, SR> stp1Ceil, int n2) : void
-         - populateCase0Idx1s(int offset, TIntList inputIdx1s, 
-             int floorStopIdx1, int floorStopIdx2, 
-             TIntList outSubsetIdx1s, int n2) : void
-         - populateCase1Idx1s(int offset, TIntList inputIdx1s,
-             int ceilStartIdx1, TIntList subsetIdx1s, int n2) : void
-        
-        --------------------------------------------------------
-
         */
+        
+        Entry<Integer, SR> stp1Ceil = t1.ceilingEntry(
+            Integer.valueOf(sr.stopIdx1 + 1));
 
-        Integer strt1 = Integer.valueOf(sr.startIdx1);
-        Integer stp1 = Integer.valueOf(sr.stopIdx1);
-        int strt2Int = sr.startIdx1 - sr.offsetIdx2;
-        int stp2Int = sr.stopIdx1 - sr.offsetIdx2;
-        if (strt2Int < 0) {
-            strt2Int += n2;
-        }
-        if (stp2Int < 0) {
-            stp2Int += n2;
-        }
-        Integer strt2 = Integer.valueOf(strt2Int);
-        Integer stp2 = Integer.valueOf(stp2Int);
+        if (sr.startIdx1 == 0) {
+                
+            // case 1
 
-        Entry<Integer, SR> strt1Ceil = t1.ceilingEntry(strt1);
-
-        if (strt1Ceil == null) {
+            addForCase1(sr, stp1Ceil, n2);
+        
+        } else if (stp1Ceil == null) {
 
             // case 0
+            
+            // no entries below sr are in t1
 
             assert(sr.startIdx1 > 0);
 
@@ -279,38 +205,24 @@ class OrderedClosedCurveCorrespondence {
 
         } else {
 
-            if (sr.startIdx1 == 0) {
-                
-                // case 1
+            Entry<Integer, SR> strt1Floor = t1.floorEntry(
+                Integer.valueOf(sr.startIdx1 - 1));
 
-                Entry<Integer, SR> stp1Ceil = t1.floorEntry(
-                    Integer.valueOf(sr.stopIdx1 + 1));
+            if (strt1Floor == null) {
+
+                // case 1
                 
+                // there are no entries above sr in t1
+
                 addForCase1(sr, stp1Ceil, n2);
-                
+
             } else {
 
-                Entry<Integer, SR> strt1Floor = t1.floorEntry(
-                    Integer.valueOf(sr.startIdx1 - 1));
-                
-                Entry<Integer, SR> stp1Ceil = t1.floorEntry(
-                    Integer.valueOf(sr.stopIdx1 + 1));
-                
-                if (strt1Floor == null) {
-                    
-                    // case 1
+                // case 2
 
-                    addForCase1(sr, stp1Ceil, n2);
-                    
-                } else {
-                    
-                    // case 2
-
-                    addForCase2(sr, strt1Floor, stp1Ceil, n2);
-                }
+                addForCase2(sr, strt1Floor, stp1Ceil, n2);
             }
         }
-
     }
 
     private void addForCase0(SR sr, Entry<Integer, SR> strt1Floor,
@@ -542,7 +454,7 @@ class OrderedClosedCurveCorrespondence {
         int prev = list.get(0);
         for (int i = 1; i < list.size(); ++i) {
             int v = list.get(i);
-            if (v == (prev - 1)) {
+            if (v == (prev + 1)) {
                 prev = v;
                 continue;
             }
@@ -597,6 +509,8 @@ class OrderedClosedCurveCorrespondence {
         if (ns < minLength) {
             return;
         }
+        
+        assert(assertContiguous(subsetIdx1s));
 
         SR ceil = stp1Ceil.getValue();
         int ceilStrtIdx2 = ceil.startIdx1 - ceil.offsetIdx2;
@@ -617,10 +531,10 @@ class OrderedClosedCurveCorrespondence {
             return;
         }
 
-        assert(assertContiguous(subsetIdx1s));
+        assert(assertContiguous(subsetIdx1s2));
 
-        sr.startIdx1 = subsetIdx1s.get(0);
-        sr.stopIdx1 = subsetIdx1s.get(ns - 1);
+        sr.startIdx1 = subsetIdx1s2.get(0);
+        sr.stopIdx1 = subsetIdx1s2.get(ns - 1);
         sr.setChordSumNeedsUpdate(true);
 
         Integer k1 = Integer.valueOf(sr.startIdx1);
