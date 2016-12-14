@@ -160,6 +160,8 @@ public class PartialShapeMatcher2 {
     // for a fit to a line, consider 1E-9
     private float thresh = (float)(Math.PI/180.) * 10.f;;
 
+    private int minLength = 3;
+    
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
     private boolean debug = false;
@@ -684,6 +686,8 @@ public class PartialShapeMatcher2 {
         OrderedClosedCurveCorrespondence occ = 
             new OrderedClosedCurveCorrespondence();
         
+        occ.setMinimumLength(minLength);
+        
         occ.addIntervals(allResults, n1, n2);
         
         throw new UnsupportedOperationException(
@@ -737,6 +741,7 @@ public class PartialShapeMatcher2 {
         int nMax;
         double diffChordSum;
         double maxChordSum;
+        boolean chordSumNeedsUpdate = true;
 
         @Override
         public boolean equals(Object obj) {
@@ -787,6 +792,10 @@ public class PartialShapeMatcher2 {
             return 0;
         }
         
+        public void setChordSumNeedsUpdate(boolean needsUpdate) {
+            chordSumNeedsUpdate = needsUpdate;
+        }
+        
         double calcSalukDist() {
             return calcSalukDist(diffChordSum, maxChordSum, 
                 (stopIdx1 - startIdx1 + 1), n);
@@ -827,9 +836,6 @@ public class PartialShapeMatcher2 {
 
         float[] outC = new float[2];
         int stop, start;
-        
-        //TODO: extract this to class level:
-        int minLength = 3;
         
         SummedColumnTable sct = new SummedColumnTable();
         
@@ -882,6 +888,7 @@ public class PartialShapeMatcher2 {
                     sr.offsetIdx2 = offset;
                     sr.row = row;
                     sr.diffChordSum = d;
+                    sr.setChordSumNeedsUpdate(false);
                     sr.maxChordSum = maxChordSum;
                     sr.n = ni;
                     sr.nMax = n2;
