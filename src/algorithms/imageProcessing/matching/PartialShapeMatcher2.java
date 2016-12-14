@@ -158,7 +158,7 @@ public class PartialShapeMatcher2 {
 
     // 10 degrees is 0.1745 radians
     // for a fit to a line, consider 1E-9
-    private float thresh = (float)(Math.PI/180.) * 10.f;;
+    private float thresh = (float)(Math.PI/180.) * 10.f;
 
     private int minLength = 3;
     
@@ -482,7 +482,83 @@ public class PartialShapeMatcher2 {
         of the Paretto frontier.
         */
         
-        List<SR> results = findMinima(md, n1, n2);
+        List<SR> minima = findMinima(md, n1, n2);
+        
+        /*
+        TODO: need to restore the options
+            espec euclid transformation
+        need to also add for the best result a check that
+            projection effects may be causing misingg points
+            due to foreshortening, etc, and attempt to
+            correct those
+        */
+        
+        if (performEuclidTrans) {
+
+            /*
+            List<PartialShapeMatcher.Result> results;
+
+            // solve for transformation, add points near projection,
+            // return sorted solutions, best is at top.
+            // note that RANSAC has been used to remove outliers
+            // from the already matched points too
+
+            // the added points from the projection
+            List<PairIntArray> addedPoints =
+                new ArrayList<PairIntArray>(topK);
+
+            if (diffN <= 0) {
+                results = transformAndEvaluate(minima, p, q,
+                    md, pixTolerance, topK, addedPoints);
+            } else {
+                results = transformAndEvaluate(minima, q, p,
+                    md, pixTolerance, topK, addedPoints);
+            }
+
+            // -- results is now a list of size .leq. topK --
+            //    and the results' chord diff sums have been updated
+            
+            if (srchForArticulatedParts) {
+                //NOTE: results is derived from the topK of
+                // mergedMinDiffs2, the items are parallel
+                best = combineBestDisjoint(results, md,
+                     mergedMinDiffs2);
+            } else {
+                if (results == null || results.isEmpty()) {
+                    best = null;
+                } else {
+                    best = results.get(0);
+                }
+            }
+            */
+            
+        } else {
+            
+            /*
+            mergedMinDiffs2.sortBySalukwdzeDistance();
+            
+            if (srchForArticulatedParts) {
+                List<PartialShapeMatcher.Result> results =
+                    createResults(mergedMinDiffs2, n1, n2, topK);
+                best = combineBestDisjoint(results, md,
+                    mergedMinDiffs2);
+            } else {
+                best = createResult(mergedMinDiffs2, 0);
+            }
+            */
+        }
+        
+        throw new UnsupportedOperationException("not yet implemented");
+        
+        /*
+        OrderedClosedCurveCorrespondence occ = 
+            new OrderedClosedCurveCorrespondence();
+        
+        occ.setMinimumLength(minLength);
+        
+        occ.addIntervals(minima.subList(0, 20), n1, n2);
+                
+        List<SR> results = occ.getResultsAsList();
         
         Result best = new Result(n1, n2, 0);
         for (int i = 0; i < results.size(); ++i) {
@@ -513,7 +589,7 @@ public class PartialShapeMatcher2 {
         //throw new UnsupportedOperationException("not yet implmented");
         
         return best;        
-        
+        (/
         /*
         Result best;
 
@@ -683,86 +759,9 @@ public class PartialShapeMatcher2 {
         Collections.sort(allResults, new SRComparator());
         
         System.out.println("nIntervals to proces=" + allResults.size());
+       
+        return allResults;
         
-        /*
-        TODO: need to restore the options
-            espec euclid transformation
-        need to also add for the best result a check that
-            projection effects may be causing misingg points
-            due to foreshortening, etc, and attempt to
-            correct those
-        */
-        
-        if (performEuclidTrans) {
-
-            /*
-            List<PartialShapeMatcher.Result> results;
-
-            // solve for transformation, add points near projection,
-            // return sorted solutions, best is at top.
-            // note that RANSAC has been used to remove outliers
-            // from the already matched points too
-
-            // the added points from the projection
-            List<PairIntArray> addedPoints =
-                new ArrayList<PairIntArray>(topK);
-
-            if (diffN <= 0) {
-                results = transformAndEvaluate(mergedMinDiffs2, p, q,
-                    md, pixTolerance, topK, addedPoints);
-            } else {
-                results = transformAndEvaluate(mergedMinDiffs2, q, p,
-                    md, pixTolerance, topK, addedPoints);
-            }
-
-            // -- results is now a list of size .leq. topK --
-            //    and the results' chord diff sums have been updated
-            
-            if (srchForArticulatedParts) {
-                //NOTE: results is derived from the topK of
-                // mergedMinDiffs2, the items are parallel
-                best = combineBestDisjoint(results, md,
-                     mergedMinDiffs2);
-            } else {
-                if (results == null || results.isEmpty()) {
-                    best = null;
-                } else {
-                    best = results.get(0);
-                }
-            }
-            */
-            
-        } else {
-            
-            /*
-            mergedMinDiffs2.sortBySalukwdzeDistance();
-            
-            if (srchForArticulatedParts) {
-                List<PartialShapeMatcher.Result> results =
-                    createResults(mergedMinDiffs2, n1, n2, topK);
-                best = combineBestDisjoint(results, md,
-                    mergedMinDiffs2);
-            } else {
-                best = createResult(mergedMinDiffs2, 0);
-            }
-            */
-        }
-        
-        
-        throw new UnsupportedOperationException("not yet implemented");
-        
-        /*
-        OrderedClosedCurveCorrespondence occ = 
-            new OrderedClosedCurveCorrespondence();
-        
-        occ.setMinimumLength(minLength);
-        
-        occ.addIntervals(allResults.subList(0, 20), n1, n2);
-                
-        List<SR> results = occ.getResultsAsList();
-        
-        return results;
-        */
     }
     
     private double calcSalukDist(double compChord, double maxChord,
@@ -925,8 +924,11 @@ public class PartialShapeMatcher2 {
                         //System.out.println(String.format(
                         //"len=%d i=%d d=%.2f", (stop - j + 1), i, d));
                     }
-                    if (d > thresh 
+                    if (
+                        //d > thresh 
                         //|| outC[0] > thresh3
+                        outC[0] > thresh
+                        //|| d > (5.f * Math.PI/180.)
                         ) {
                         continue;
                     }
@@ -2294,4 +2296,54 @@ public class PartialShapeMatcher2 {
         return sum;
     }
     
+    /*
+    paused here
+    private List<Result> transformAndEvaluate(
+        List<SR> intervals, PairIntArray p, PairIntArray q,
+        float[][][] md, float pixTol, int topK,
+        List<PairIntArray> addedPointLists) {
+
+        if (intervals.size() == 0) {
+            return null;
+        }
+
+        //NOTE: at this stage, the top item in sequences
+        // is the correct answer for the main offset
+        // of matches in tests so far in PartialShapeMatcher, but it is not
+        // in this class.
+
+        if (topK > intervals.size()) {
+            topK =intervals.size();
+        }
+
+        List<Result> results = new ArrayList<Result>(topK);
+        for (int i = 0; i < topK; ++i) {
+            int len = mmd2.getLength(i);
+            if (len < 7) {
+                // 7 points are needed for the RANSAC algorithm
+                continue;
+            }
+            PairIntArray added = new PairIntArray();
+            Result result = addByTransformation(mmd2, i, p, q,
+                pixTol, added);
+            if (result != null) {
+                populateWithChordDiffs(result, md, p.getN(), q.getN());
+                log.fine("calc'ed chords: " + result.toStringAbbrev());
+                results.add(result);
+                addedPointLists.add(added);
+            }
+        }
+
+        if (results.isEmpty()) {
+            return null;
+        }
+        
+        { //DEBUG, recalc the saluk score to see if top has changed
+            //TODO:   
+        }
+     
+        return results;
+    }
+    */
+
 }
