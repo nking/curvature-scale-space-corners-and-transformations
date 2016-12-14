@@ -482,39 +482,38 @@ public class PartialShapeMatcher2 {
         of the Paretto frontier.
         */
         
-        findMinima(md, n1, n2);
+        List<SR> results = findMinima(md, n1, n2);
         
-        throw new UnsupportedOperationException("not yet implmented");
-        
-        /*
         Result best = new Result(n1, n2, 0);
-        for (int i = 0; i < outputValues.size(); ++i) {
-            Interval<Integer> interval = outputIntervals.get(i);
-            SR sr = outputValues.get(i);
+        for (int i = 0; i < results.size(); ++i) {
+            
+            SR sr = results.get(i);
     
             if (diffN <= 0) {
                 for (int idx1 = sr.startIdx1; idx1 <= sr.stopIdx1; ++idx1) {
-                    int idx2 = idx1 - sr.offsetIdx2;
-                    if (idx2 < 0) {
-                        idx2 += n2;
+                    int idx2 = idx1 + sr.offsetIdx2;
+                    if (idx2 > (n2 - 1)) {
+                        idx2 -= n2;
                     }
                     best.idx1s.add(idx1);
                     best.idx2s.add(idx2);
                 }
             } else {
                 for (int idx2 = sr.startIdx1; idx2 <= sr.stopIdx1; ++idx2) {
-                    int idx1 = idx2 - sr.offsetIdx2;
-                    if (idx1 < 0) {
-                        idx1 += n1;
+                    int idx1 = idx2 + sr.offsetIdx2;
+                    if (idx2 > (n2 - 1)) {
+                        idx2 -= n2;
                     }
                     best.idx1s.add(idx1);
                     best.idx2s.add(idx2);
                 }
             }
         }
-
+        
+        //throw new UnsupportedOperationException("not yet implmented");
+        
         return best;        
-        */
+        
         /*
         Result best;
 
@@ -614,7 +613,7 @@ public class PartialShapeMatcher2 {
         }
     }
  
-    private TreeMap<Integer, Integer> findMinima(float[][][] md, int n1, int n2) {
+    private List<SR> findMinima(float[][][] md, int n1, int n2) {
 
         // reading over a range of window sizes to keep the 
         // sum/nPix below thresh and keeping the mincost solutions.
@@ -683,17 +682,87 @@ public class PartialShapeMatcher2 {
         // sort by salukwzde distance
         Collections.sort(allResults, new SRComparator());
         
+        System.out.println("nIntervals to proces=" + allResults.size());
+        
+        /*
+        TODO: need to restore the options
+            espec euclid transformation
+        need to also add for the best result a check that
+            projection effects may be causing misingg points
+            due to foreshortening, etc, and attempt to
+            correct those
+        */
+        
+        if (performEuclidTrans) {
+
+            /*
+            List<PartialShapeMatcher.Result> results;
+
+            // solve for transformation, add points near projection,
+            // return sorted solutions, best is at top.
+            // note that RANSAC has been used to remove outliers
+            // from the already matched points too
+
+            // the added points from the projection
+            List<PairIntArray> addedPoints =
+                new ArrayList<PairIntArray>(topK);
+
+            if (diffN <= 0) {
+                results = transformAndEvaluate(mergedMinDiffs2, p, q,
+                    md, pixTolerance, topK, addedPoints);
+            } else {
+                results = transformAndEvaluate(mergedMinDiffs2, q, p,
+                    md, pixTolerance, topK, addedPoints);
+            }
+
+            // -- results is now a list of size .leq. topK --
+            //    and the results' chord diff sums have been updated
+            
+            if (srchForArticulatedParts) {
+                //NOTE: results is derived from the topK of
+                // mergedMinDiffs2, the items are parallel
+                best = combineBestDisjoint(results, md,
+                     mergedMinDiffs2);
+            } else {
+                if (results == null || results.isEmpty()) {
+                    best = null;
+                } else {
+                    best = results.get(0);
+                }
+            }
+            */
+            
+        } else {
+            
+            /*
+            mergedMinDiffs2.sortBySalukwdzeDistance();
+            
+            if (srchForArticulatedParts) {
+                List<PartialShapeMatcher.Result> results =
+                    createResults(mergedMinDiffs2, n1, n2, topK);
+                best = combineBestDisjoint(results, md,
+                    mergedMinDiffs2);
+            } else {
+                best = createResult(mergedMinDiffs2, 0);
+            }
+            */
+        }
+        
+        
+        throw new UnsupportedOperationException("not yet implemented");
+        
+        /*
         OrderedClosedCurveCorrespondence occ = 
             new OrderedClosedCurveCorrespondence();
         
         occ.setMinimumLength(minLength);
         
-        occ.addIntervals(allResults, n1, n2);
+        occ.addIntervals(allResults.subList(0, 20), n1, n2);
+                
+        List<SR> results = occ.getResultsAsList();
         
-        throw new UnsupportedOperationException(
-           "not yet implemented");
-        
-        //return rangeSearch;
+        return results;
+        */
     }
     
     private double calcSalukDist(double compChord, double maxChord,
