@@ -240,7 +240,7 @@ class OrderedClosedCurveCorrespondence {
              int floorStopIdx1, int floorStopIdx2, 
              TIntList outSubsetIdx1s, int n2) : void
          - populateCase1Idx1s(int offset, TIntList inputIdx1s,
-            int ceilStartIdx1, TIntList subsetIdx1s, int n2) : void
+             int ceilStartIdx1, TIntList subsetIdx1s, int n2) : void
         
         --------------------------------------------------------
 
@@ -311,7 +311,6 @@ class OrderedClosedCurveCorrespondence {
             }
         }
 
-        throw new UnsupportedOperationException("not yet mplemented");
     }
 
     private void addForCase0(SR sr, Entry<Integer, SR> strt1Floor,
