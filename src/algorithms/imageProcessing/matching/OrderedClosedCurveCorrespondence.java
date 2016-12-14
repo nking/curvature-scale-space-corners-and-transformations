@@ -25,39 +25,6 @@ class OrderedClosedCurveCorrespondence {
     // and only add the clockwise consistent intervals to a combined output        
     protected TreeMap<Integer, PartialShapeMatcher2.SR> t1 = new TreeMap<Integer, PartialShapeMatcher2.SR>();
 
-    // note: these variables are evolving while outlining the decision tree:
-    /**
-     * wIdx2 is an idx1 index. if an idx2==0 is in t1 and if that occurs after
-     * an idx2 > 0, mapping of idx1 to idx2, wIdx2 will be set and the wrap
-     * around is known precisely as this value which is idx1 (and it maps to
-     * idx2 == 0).
-     */
-    protected int wIdx2 = -1;
-
-    /**
-     * maxIdx2BeforeW is an idx1 index. if wIdx2UpperLimit is > -1 that means a
-     * wrap around has been found but the true start of it may occur at an
-     * earlier index idx1. maxIdx2BeforeW is the largest idx1 index which maps
-     * to an idx2 before the wrap around. maxIdx2BeforeW reaches its maximum
-     * when idx1 maps to n2-1, but that mapping might not exist for this p,q
-     * correspondence. This variable is used in consistency checks if wIdx2==-1
-     * and maxIdx2BeforeW is greater than -1.
-     */
-    protected int maxIdx2BeforeW = -1;
-
-    /**
-     * wIdx2UpperLimit is an idx1 index. if an idx2 is in t1 and if that occurs
-     * after an idx2 of smaller value wIdx2UpperLimit will be set and updated
-     * for matchings of smaller idx1 and idx2 that approach idx2 being 0. this
-     * indicates that a wrap around has occurred, but the final first location
-     * of the idx2 wrap around is not necessarily determined. This means that
-     * between the interval above wIdx2UpperLimit and the interval containing
-     * wIdx2UpperLimit, an inserted interval might have idx1 indexes that map to
-     * a region between idx1 after maxIdx2BeforeW and before n2-1 or it might
-     * map to region between where idx1 maps to idx2=0 and idx1=wIdx2UpperLimit.
-     */
-    protected int wIdx2UpperLimit = -1;
-
     public void addIntervals(List<SR> intervals, int n1, int n2) {
         
         for (PartialShapeMatcher2.SR sr: intervals) {
@@ -80,27 +47,22 @@ class OrderedClosedCurveCorrespondence {
             }
             Integer k1 = Integer.valueOf(i1);
             t1.put(k1, sr);
-            if (wIdx2 > -1) {
-                // the exact location of idx2 wrap around is found
-                continue;
-            }
-            if (i2 == (n2 - 1)) {
-                maxIdx2BeforeW = i1;
-                continue;
-            }
-            if (i2 < i1) {
-                // wrap around has or is occurring
-                if (i2 == 0) {
-                    wIdx2 = i1;
-                } else if (wIdx2UpperLimit == -1) {
-                    wIdx2UpperLimit = i1;
-                }
-            } else {
-                maxIdx2BeforeW = i1;
-            }
         }
     }
-    
+
+    /**
+     * add intervals to the clockwise ordered unique correspondence
+     * list intrnal to this instance.
+     * Note that each interval is expected to be clockwise consistent
+     * (stopIdx1 > startIdx1) and the list of intervals is expected
+     * to be sorted so that the highest priority (== lowest cost)
+     * intervals are at the smallest list indexes, that is the
+     * list is increasing in cost with index.
+     * @param sr
+     * @param n1
+     * @param n2
+     * @return 
+     */    
     public boolean addInterval(SR sr, int n1, int n2) {
                     
         assert(sr.startIdx1 != sr.stopIdx1);
@@ -120,7 +82,7 @@ class OrderedClosedCurveCorrespondence {
                 stopIdx2 += n2;
             }
         }
-
+        
         //NOTE: if an interval is trimmed rather than discarded here
         // because of clockwise consistency,
         // then might need to consider re-doing the interval sort...
@@ -141,10 +103,7 @@ class OrderedClosedCurveCorrespondence {
 
         first structures:
             t1 is an ordered tree map w/ key = sr.startIdx1 of interval sr
-                and value = interval sr
-
-            the wrap around variables above are used to check consistency of
-                idx2 indexes.
+                and value = interval sr.
 
         NOTE: ideally would like simpler logic such as
             t1 w/ keys of idx1 and t2 w/ keys of idx2
@@ -157,6 +116,13 @@ class OrderedClosedCurveCorrespondence {
             floor method returns a key-value mapping associated
                 with the greatest key less than or equal to the given key, 
                 or null if there is no such key
+        
+        NOTE: to simplify the order checks of idx2, will add a phase
+            to idx2 when idx2 < idx1.
+            For example, let n1=n2=10, and one pair has idx1=2 w/ idx2=9
+            then the next pair w/ idx1=3 maps to idx2=0, 
+            but to keep idx2 increasing, will add n2 to make it 10.
+        
         
         --------------------------------------------------------
         case 0: sr.startIdx1 ceiling is null, that is, there are
