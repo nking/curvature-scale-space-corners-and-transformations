@@ -106,9 +106,6 @@ class OrderedClosedCurveCorrespondence {
         // same result in the future).
 
         /*
-        outlined here are decision trees for different use cases in order
-        to find all needed datastructures.
-
         ---------------------
         goal: to check that a new interval to insert into t1 is consistent
               with t1 existing indexes in idx1 and in idx2
