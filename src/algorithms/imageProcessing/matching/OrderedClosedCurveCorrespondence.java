@@ -123,7 +123,6 @@ class OrderedClosedCurveCorrespondence {
             then the next pair w/ idx1=3 maps to idx2=0, 
             but to keep idx2 increasing, will add n2 to make it 10.
         
-        
         --------------------------------------------------------
         case 0: sr.startIdx1 ceiling is null, that is, there are
                 no intervals in t1 at same or larger index position
@@ -139,14 +138,35 @@ class OrderedClosedCurveCorrespondence {
 
         
             find t1 floor for sr.startIdx1.
-               
-        paused here...
+            -- if floor stopIdx1 >= sr.startIdx1
+               -- if floor stopIdx1 > sr.stopIdx1
+                  sr is not consistent, so do not add
+               -- else 
+                  a subset of sr might be added where 
+                  idx1 is > floor stopIdx1 if passes idx2 checks:
+                  -- if floor stopIdx2 > sr.stopIdx2
+                     sr is not consistent, so do not add
+                  -- else
+                     subset of sr where 
+                     idx1 is > floor stopIdx1 and
+                     idx2 is > floor stopIdx2
+                     can be added
+            -- else floor stopIdx1 is < sr.startIdx1
+               -- if floor stopIdx2 >= sr.startIdx2
+                  -- if floor stopIdx2 > sr.stopIdx2
+                     sr is not consistent, so do not add
+                  -- else
+                     subset of sr where 
+                     idx2 is > floor stopIdx2
+                     can be added
+               -- else floor stopIdx2 is < sr.startIdx2
+                  can add interval
         
         --------------------------------------------------------
         case 1: sr.startIdx1 ceiling is not null, that is, there are
                 intervals in t1 at same or larger index position
                 than st.startIdx1 
-                and there may or may not be intervals in t1 at a
+                and there are not intervals in t1 at a
                 smaller index position that st.startIdx1.
 
             content ordered by idx1
@@ -156,9 +176,35 @@ class OrderedClosedCurveCorrespondence {
                startIdx1  | [sr]
                       -#- | [-#-]
        
-        paused here
-           -- ceiling key is larger than sr.stopIdx1
-           -- ceiling key is not larger than sr.stopIdx1
+        find t1 ceiling for sr.stopIdx1.
+           -- if ceiling startIdx1 is larger than sr.stopIdx1
+              -- if ceiling startIdx2 is larger than sr.stopIdx2
+                 can add interval
+              -- else 
+                 can add subset of interval sr where 
+                     idx2 < sr.startIdx2
+           -- else ceiling startIdx1 is smaller than or equal to 
+              sr.stopIdx1
+                  can add subset of interval sr where 
+                     idx1 < sr.startIdx1 and idx2 < sr.startIdx2
+           
+        --------------------------------------------------------
+        case 2: sr.startIdx1 ceiling is not null, that is, there are
+                intervals in t1 at same or larger index position
+                than st.startIdx1 
+                and there are intervals in t1 at a
+                smaller index position that st.startIdx1.
+
+            content ordered by idx1
+                      t1  |  interval
+               ------------------------
+                      -#- | [-#-]    
+               startIdx1  | [sr]
+                      -#- | [-#-]
+       
+            for each idx1, idx2 in sr,
+               test for case 1 and if returns true,
+               test for case 0 and if returns true, add it
         
         --------------------------------------------------------
 
