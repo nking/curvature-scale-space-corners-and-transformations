@@ -88,13 +88,13 @@ class OrderedClosedCurveCorrespondence {
 
         //assert clockwise consistent
 
-        int startIdx2 = sr.startIdx1 - sr.offsetIdx2;
-        int stopIdx2 = sr.stopIdx1 - sr.offsetIdx2;
-        if (startIdx2 < 0) {
-            startIdx2 += n2;
-            if (stopIdx2 < 0) {
-                stopIdx2 += n2;
-            }
+        int startIdx2 = sr.startIdx1 + sr.offsetIdx2;
+        int stopIdx2 = sr.stopIdx1 + sr.offsetIdx2;
+        if (startIdx2 > (n2 - 1)) {
+            startIdx2 -= n2;
+            stopIdx2 -= n2;
+        } else if (stopIdx2 > (n2 - 1)) {
+            stopIdx2 -= n2;
         }
 
         //NOTE: if an interval is trimmed rather than discarded here
@@ -246,7 +246,7 @@ class OrderedClosedCurveCorrespondence {
 
         SR floor = strt1Floor.getValue();
         int floorStopIdx1 = floor.stopIdx1;
-        int floorStopIdx2 = floor.stopIdx1 - floor.offsetIdx2;
+        int floorStopIdx2 = floor.stopIdx1 + floor.offsetIdx2;
         if (floorStopIdx2 < 0) {
             floorStopIdx2 += n2;
         }
@@ -301,9 +301,9 @@ class OrderedClosedCurveCorrespondence {
         }
 
         SR ceil = stp1Ceil.getValue();
-        int ceilStrtIdx2 = ceil.startIdx1 - ceil.offsetIdx2;
-        if (ceilStrtIdx2 < 0) {
-            ceilStrtIdx2 += n2;
+        int ceilStrtIdx2 = ceil.startIdx1 + ceil.offsetIdx2;
+        if (ceilStrtIdx2 > (n2 - 1)) {
+            ceilStrtIdx2 -= n2;
         }
         if (ceilStrtIdx2 < ceil.startIdx1) {
             ceilStrtIdx2 += n2;
@@ -333,18 +333,18 @@ class OrderedClosedCurveCorrespondence {
 
         SR floor = strt1Floor.getValue();
         int floorStopIdx1 = floor.stopIdx1;
-        int floorStopIdx2 = floor.stopIdx1 - floor.offsetIdx2;
-        if (floorStopIdx2 < 0) {
-            floorStopIdx2 += n2;
+        int floorStopIdx2 = floor.stopIdx1 + floor.offsetIdx2;
+        if (floorStopIdx2 > (n2 - 1)) {
+            floorStopIdx2 -= n2;
         }
         if (floorStopIdx2 < floorStopIdx1) {
             floorStopIdx2 += n2;
         }
 
         int startIdx1 = sr.startIdx1;
-        int startIdx2 = sr.startIdx1 - sr.offsetIdx2;
-        if (startIdx2 < 0) {
-            startIdx2 += n2;
+        int startIdx2 = sr.startIdx1 + sr.offsetIdx2;
+        if (startIdx2 > (n2 - 1)) {
+            startIdx2 -= n2;
         }
         if (startIdx2 < startIdx1) {
             startIdx2 += n2;
@@ -373,9 +373,9 @@ class OrderedClosedCurveCorrespondence {
 
         for (int i = 0; i < inputIdx1s.size(); ++i) {
             int idx1 = inputIdx1s.get(i);
-            int idx2 = idx1 - offset;
-            if (idx2 < 0) {
-                idx2 += n2;
+            int idx2 = idx1 + offset;
+            if (idx2 > (n2 - 1)) {
+                idx2 -= n2;
             }
             if (idx2 < idx1) {
                 idx2 += n2;
@@ -407,9 +407,9 @@ class OrderedClosedCurveCorrespondence {
 
         for (int i = 0; i < inputIdx1s.size(); ++i) {
             int idx1 = inputIdx1s.get(i);
-            int idx2 = idx1 - offset;
-            if (idx2 < 0) {
-                idx2 += n2;
+            int idx2 = idx1 + offset;
+            if (idx2 > (n2 - 1)) {
+                idx2 -= n2;
             }
             if (idx2 < idx1) {
                 idx2 += n2;
@@ -466,16 +466,16 @@ class OrderedClosedCurveCorrespondence {
         
         SR ceil = stp1Ceil.getValue();
         int ceilStrtIdx2 = ceil.startIdx1 - ceil.offsetIdx2;
-        if (ceilStrtIdx2 < 0) {
-            ceilStrtIdx2 += n2;
+        if (ceilStrtIdx2 > (n2 - 1)) {
+            ceilStrtIdx2 -= n2;
         }
         if (ceilStrtIdx2 < ceil.startIdx1) {
             ceilStrtIdx2 += n2;
         }
 
         int stpIdx2 = sr.stopIdx1 - sr.offsetIdx2;
-        if (stpIdx2 < 0) {
-            stpIdx2 += n2;
+        if (stpIdx2 > (n2 - 1)) {
+            stpIdx2 -= n2;
         }
         if (stpIdx2 < sr.startIdx1) {
             stpIdx2 += n2;
@@ -490,9 +490,9 @@ class OrderedClosedCurveCorrespondence {
         
         SR floor = strt1Floor.getValue();
         int floorStopIdx1 = floor.stopIdx1;
-        int floorStopIdx2 = floor.stopIdx1 - floor.offsetIdx2;
-        if (floorStopIdx2 < 0) {
-            floorStopIdx2 += n2;
+        int floorStopIdx2 = floor.stopIdx1 + floor.offsetIdx2;
+        if (floorStopIdx2 > (n2 - 1)) {
+            floorStopIdx2 -= n2;
         }
         if (floorStopIdx2 < floorStopIdx1) {
             floorStopIdx2 += n2;
@@ -510,9 +510,9 @@ class OrderedClosedCurveCorrespondence {
         assert(assertContiguous(subsetIdx1s));
 
         SR ceil = stp1Ceil.getValue();
-        int ceilStrtIdx2 = ceil.startIdx1 - ceil.offsetIdx2;
-        if (ceilStrtIdx2 < 0) {
-            ceilStrtIdx2 += n2;
+        int ceilStrtIdx2 = ceil.startIdx1 + ceil.offsetIdx2;
+        if (ceilStrtIdx2 > (n2 - 1)) {
+            ceilStrtIdx2 -= n2;
         }
         if (ceilStrtIdx2 < ceil.startIdx1) {
             ceilStrtIdx2 += n2;
