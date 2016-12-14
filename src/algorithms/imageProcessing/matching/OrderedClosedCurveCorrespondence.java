@@ -3,6 +3,7 @@ package algorithms.imageProcessing.matching;
 import algorithms.imageProcessing.matching.PartialShapeMatcher2.SR;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 
 /**
@@ -135,32 +136,34 @@ class OrderedClosedCurveCorrespondence {
                           |      
                       -#- | [-#-]
                startIdx1  | [sr]
-
+      
         
-            find t1 floor for sr.startIdx1.
-            -- if floor stopIdx1 >= sr.startIdx1
-               -- if floor stopIdx1 > sr.stopIdx1
-                  sr is not consistent, so do not add
-               -- else 
-                  a subset of sr might be added where 
-                  idx1 is > floor stopIdx1 if passes idx2 checks:
-                  -- if floor stopIdx2 > sr.stopIdx2
-                     sr is not consistent, so do not add
-                  -- else
-                     subset of sr where 
-                     idx1 is > floor stopIdx1 and
-                     idx2 is > floor stopIdx2
-                     can be added
-            -- else floor stopIdx1 is < sr.startIdx1
-               -- if floor stopIdx2 >= sr.startIdx2
-                  -- if floor stopIdx2 > sr.stopIdx2
-                     sr is not consistent, so do not add
-                  -- else
-                     subset of sr where 
-                     idx2 is > floor stopIdx2
-                     can be added
-               -- else floor stopIdx2 is < sr.startIdx2
+            find t1 floor for sr.startIdx1 - 1.
+            -- if floor stopIdx1 < sr.startIdx1
+               -- if floor stopIdx2 < sr.startIdx2
                   can add interval
+               -- else 
+                  can test each idx1, idx2 and add those
+                  with idx2 > floor stopIdx2.
+            -- else 
+               can test each idx1, idx2 in region and add those
+                  with idx1 > floot stopIdx1 &&
+                  with idx2 > floor stopIdx2
+        
+           then dividing the logic of the decision tree into 3 tests to make the
+           logic usable within part of case 2 also.
+
+            (1) find t1 floor for sr.startIdx1 - 1.
+
+            (3) test that entire range is consistent
+                -- if floor stopIdx1 is < sr.startIdx1
+                   -- if floor stopIdx2 is < sr.startIdx2
+                      can add interval
+            (4) iterate over each idx1,idx2 in sr interval
+                test for each ifx1,idx2
+                -- if idx1 > floor stopIdx1
+                   -- if idx2 > floor stopIdx2
+                      can add interval
         
         --------------------------------------------------------
         case 1: sr.startIdx1 ceiling is not null, that is, there are
@@ -176,18 +179,22 @@ class OrderedClosedCurveCorrespondence {
                startIdx1  | [sr]
                       -#- | [-#-]
        
-        find t1 ceiling for sr.stopIdx1.
-           -- if ceiling startIdx1 is larger than sr.stopIdx1
-              -- if ceiling startIdx2 is larger than sr.stopIdx2
+        find t1 ceiling for sr.stopIdx1 + 1.
+           -- if ceiling startIdx2 is larger than sr.stopIdx2
                  can add interval
-              -- else 
-                 can add subset of interval sr where 
-                     idx2 < sr.startIdx2
-           -- else ceiling startIdx1 is smaller than or equal to 
-              sr.stopIdx1
-                  can add subset of interval sr where 
-                     idx1 < sr.startIdx1 and idx2 < sr.startIdx2
-           
+        
+        then dividing the logic of the decision tree into 3 tests to make 
+        the logic usable within part of case 2 also.
+
+            (1) find t1 ceiling for sr.stopIdx1.
+
+            (2) test that entire range is consistent
+                -- if ceiling startIdx2 is larger than sr.stopIdx2
+                   return is consistent
+            (4) iterate over each idx1,idx2 in sr interval
+                test for each ifx1,idx2
+                -- if ceiling idx2 is larger than idx2
+                   return is consistent
         --------------------------------------------------------
         case 2: sr.startIdx1 ceiling is not null, that is, there are
                 intervals in t1 at same or larger index position
@@ -207,9 +214,46 @@ class OrderedClosedCurveCorrespondence {
                test for case 0 and if returns true, add it
         
         --------------------------------------------------------
-
+        
         */
-
+        
+        Integer strt1 = Integer.valueOf(sr.startIdx1);
+        Integer stp1 = Integer.valueOf(sr.stopIdx1);
+        int strt2Int = sr.startIdx1 - sr.offsetIdx2;
+        int stp2Int = sr.stopIdx1 - sr.offsetIdx2;
+        if (strt2Int < 0) {
+            strt2Int += n2;
+        }
+        if (stp2Int < 0) {
+            stp2Int += n2;
+        }
+        Integer strt2 = Integer.valueOf(strt2Int);
+        Integer stp2 = Integer.valueOf(stp2Int);
+        
+        Entry<Integer, SR> strt1Ceil = t1.ceilingEntry(strt1);
+        Entry<Integer, SR> strt1Floor = t1.floorEntry(strt1);
+        
+        if (strt1Ceil == null) {
+            if (strt1Floor == null) {
+                throw new IllegalStateException("Error in algorithm: "
+                    + " there should be at least one entry in t1 at this point");
+            }
+            // case 0
+            addForCase0(sr, strt1Floor);
+        } else {
+            if (strt1Floor == null) {
+                // case 1
+            } else {
+                // case 2
+            }
+        }
+        
         throw new UnsupportedOperationException("not yet mplemented");
     }        
+
+   
+    private void addForCase0(SR sr, Entry<Integer, SR> strt1Floor) {
+    
+        
+    }
 }
