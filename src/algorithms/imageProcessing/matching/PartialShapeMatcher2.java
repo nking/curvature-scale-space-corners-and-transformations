@@ -480,13 +480,11 @@ public class PartialShapeMatcher2 {
         of the Paretto frontier.
         */
         
-        IntervalRangeSearch<Integer, SR> minIntervals = findMinima(md, n1, n2);
+        findMinima(md, n1, n2);
         
-        List<Interval<Integer>> outputIntervals 
-            = new ArrayList<Interval<Integer>>();
-        List<SR> outputValues = new ArrayList<SR>();
-        minIntervals.getAllIntervals(outputIntervals, outputValues);
-
+        throw new UnsupportedOperationException("not yet implmented");
+        
+        /*
         Result best = new Result(n1, n2, 0);
         for (int i = 0; i < outputValues.size(); ++i) {
             Interval<Integer> interval = outputIntervals.get(i);
@@ -514,7 +512,7 @@ public class PartialShapeMatcher2 {
         }
 
         return best;        
-        
+        */
         /*
         Result best;
 
@@ -614,8 +612,7 @@ public class PartialShapeMatcher2 {
         }
     }
  
-    private IntervalRangeSearch<Integer, SR> findMinima(float[][][] md, 
-        int n1, int n2) {
+    private TreeMap<Integer, Integer> findMinima(float[][][] md, int n1, int n2) {
 
         // reading over a range of window sizes to keep the 
         // sum/nPix below thresh and keeping the mincost solutions.
@@ -673,10 +670,7 @@ public class PartialShapeMatcher2 {
             
             // the intervals are in the reference frame of p and of q shifted by
             // offset.
-            
-            // the output should be clockwise consistent
-            //assert(assertClockWiseConsistent(outputIntervals, offset));
-            
+                        
             allResults.addAll(outputValues);
         }
         
@@ -684,19 +678,13 @@ public class PartialShapeMatcher2 {
             sr.maxChordSum = maxChordSum;
         }
         
-        IntervalRangeSearch<Integer, SR> rangeSearch =
-            new IntervalRangeSearch<Integer, SR>();
-        
         // sort by salukwzde distance
         Collections.sort(allResults, new SRComparator());
         
-        for (SR sr: allResults) {
-            
-            //TODO: assert clockwise consistent
-            
-            interval = new Interval<Integer>(sr.startIdx1, sr.stopIdx1);
-            boolean didIns = rangeSearch.putIfLessThan(interval, sr, sr);
-        }
+        OrderedClosedCurveCorrespondence occ = 
+            new OrderedClosedCurveCorrespondence();
+        
+        occ.addIntervals(allResults, n1, n2);
         
         throw new UnsupportedOperationException(
            "not yet implemented");
