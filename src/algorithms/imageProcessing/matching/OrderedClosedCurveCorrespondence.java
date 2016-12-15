@@ -185,8 +185,11 @@ class OrderedClosedCurveCorrespondence {
                 Integer.valueOf(sr.startIdx1 - 1));
 
             if (strt1Floor == null) {
-                throw new IllegalStateException("Error in algorithm: "
-                    + " there should be at least one entry in t1 at this point");
+                // this can happen if there's only one item in t1 and
+                // sr has the same or smaller range than it.
+                return;
+                //throw new IllegalStateException("Error in algorithm: "
+                //    + " there should be at least one entry in t1 at this point");
             }
 
             addForCase0(sr, strt1Floor, n2);
@@ -257,6 +260,7 @@ class OrderedClosedCurveCorrespondence {
 
         sr.startIdx1 = subsetIdx1s.get(0);
         sr.stopIdx1 = subsetIdx1s.get(ns - 1);
+        sr.mLen = sr.stopIdx1 - sr.startIdx1 + 1;
         sr.setChordSumNeedsUpdate(true);
 
         Integer k1 = Integer.valueOf(sr.startIdx1);
@@ -311,6 +315,7 @@ class OrderedClosedCurveCorrespondence {
 
         sr.startIdx1 = subsetIdx1s.get(0);
         sr.stopIdx1 = subsetIdx1s.get(ns - 1);
+        sr.mLen = sr.stopIdx1 - sr.startIdx1 + 1;
         sr.setChordSumNeedsUpdate(true);
 
         Integer k1 = Integer.valueOf(sr.startIdx1);
@@ -514,6 +519,7 @@ class OrderedClosedCurveCorrespondence {
 
         sr.startIdx1 = subsetIdx1s2.get(0);
         sr.stopIdx1 = subsetIdx1s2.get(ns - 1);
+        sr.mLen = sr.stopIdx1 - sr.startIdx1 + 1;
         sr.setChordSumNeedsUpdate(true);
 
         Integer k1 = Integer.valueOf(sr.startIdx1);

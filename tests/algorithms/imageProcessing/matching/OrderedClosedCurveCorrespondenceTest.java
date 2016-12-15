@@ -30,7 +30,9 @@ public class OrderedClosedCurveCorrespondenceTest extends TestCase {
             PairInt range = ranges.get(i);
             SR sr = new SR();
             sr.startIdx1 = range.getX(); sr.stopIdx1 = range.getY(); 
-            sr.row = 0; sr.n = 10; sr.nMax = 10; 
+            sr.row = 0; 
+            sr.mLen = sr.stopIdx1 - sr.startIdx1 + 1; 
+            sr.nMax = 10; 
             sr.diffChordSum = 1; sr.diffChordSum = 10;
             intervals.add(sr);
         }
@@ -59,7 +61,9 @@ public class OrderedClosedCurveCorrespondenceTest extends TestCase {
             PairInt range = ranges.get(i);
             SR sr = new SR();
             sr.startIdx1 = range.getX(); sr.stopIdx1 = range.getY(); 
-            sr.row = 0; sr.n = 10; sr.nMax = 10; 
+            sr.row = 0; 
+            sr.mLen = sr.stopIdx1 - sr.startIdx1 + 1;
+            sr.nMax = 10; 
             sr.diffChordSum = 1; sr.diffChordSum = 10;
             intervals.add(sr);
         }
@@ -97,7 +101,8 @@ public class OrderedClosedCurveCorrespondenceTest extends TestCase {
             SR sr = new SR();
             sr.startIdx1 = range.getX(); sr.stopIdx1 = range.getY(); 
             sr.offsetIdx2 = 6;
-            sr.row = 0; sr.n = 10; sr.nMax = 10; 
+            sr.mLen = sr.stopIdx1 - sr.startIdx1 + 1;
+            sr.row = 0; sr.nMax = 10; 
             sr.diffChordSum = 1; sr.diffChordSum = 10;
             intervals.add(sr);
         }
@@ -149,7 +154,9 @@ public class OrderedClosedCurveCorrespondenceTest extends TestCase {
             SR sr = new SR();
             sr.startIdx1 = range.getX(); sr.stopIdx1 = range.getY(); 
             sr.offsetIdx2 = 6;
-            sr.row = 0; sr.n = n1; sr.nMax = n1; 
+            sr.row = 0; 
+            sr.mLen = sr.stopIdx1 - sr.startIdx1 + 1;
+            sr.nMax = n1; 
             sr.diffChordSum = 1; sr.diffChordSum = 10;
             if (range.getX() == 4 && range.getY() == 6) {
                 sr.offsetIdx2 = 6;
@@ -205,7 +212,9 @@ public class OrderedClosedCurveCorrespondenceTest extends TestCase {
             SR sr = new SR();
             sr.startIdx1 = range.getX(); sr.stopIdx1 = range.getY(); 
             sr.offsetIdx2 = 6;
-            sr.row = 0; sr.n = n1; sr.nMax = n1; 
+            sr.row = 0; 
+            sr.mLen = sr.stopIdx1 - sr.startIdx1 + 1;
+            sr.nMax = n1; 
             sr.diffChordSum = 1; sr.diffChordSum = 10;
             if (range.getX() == 4 && range.getY() == 6) {
                 sr.offsetIdx2 = 6;
@@ -220,7 +229,9 @@ public class OrderedClosedCurveCorrespondenceTest extends TestCase {
         SR sr = new SR();
         sr.startIdx1 = 6; sr.stopIdx1 = 9; 
         sr.offsetIdx2 = 0;
-        sr.row = 0; sr.n = n1; sr.nMax = n1; 
+        sr.row = 0; 
+        sr.mLen = sr.stopIdx1 - sr.startIdx1 + 1;
+        sr.nMax = n1; 
         sr.diffChordSum = 1; sr.diffChordSum = 10;
         intervals.add(sr);
         

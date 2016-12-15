@@ -49,8 +49,8 @@ public class SummedColumnTable {
      * window in the output variable, output.
      * for example, extracting columns 3 through 5 of row 2 is a[2][3:5]
      * @param input
-     * @param start coordinate for x start of window
-     * @param stop coordinate for x stop of window
+     * @param start coordinate for x start of window, inclusive
+     * @param stop coordinate for x stop of window, inclusive
      * @param row coordinate for row, that is first dimension of input array
      * @param output one dimensional array of size 2 in which the
      * sum of the window will be returned and the number of pixels in the 

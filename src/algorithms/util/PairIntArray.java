@@ -1,6 +1,5 @@
 package algorithms.util;
 
-import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.Rotate;
 import java.util.Arrays;
@@ -146,15 +145,19 @@ public class PairIntArray {
     }
     
     public int getX(int index) {
-        if (index > (n - 1)) {
-            throw new IllegalArgumentException("index is out of range in getX");
+        if (index > (n - 1) || (index < 0)) {
+            throw new IllegalArgumentException(
+            "index is out of range in getX.  n=" + n + 
+             " index=" + index);
         }
         return x[index];
     }
     
     public int getY(int index) {
-        if (index > (n - 1)) {
-            throw new IllegalArgumentException("index is out of range in getY");
+        if (index > (n - 1) || (index < 0)) {
+            throw new IllegalArgumentException(
+            "index is out of range in getY.  n=" + n + 
+             " index=" + index);
         }
         return y[index];
     }
