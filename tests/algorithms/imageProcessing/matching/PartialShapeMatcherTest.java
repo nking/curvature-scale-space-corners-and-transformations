@@ -34,12 +34,12 @@ public class PartialShapeMatcherTest extends TestCase {
     public PartialShapeMatcherTest() {
     }
 
-    public void testSummedAreaTables() {
+    public void testSummedColumnTables() {
 
         /*
-        2 9  2  7     9 11  18   16 22  36
-        1 5  1  2     5  6   8    7 11  18
-        0 2  3  5     2  5  10    2  5  10
+        2 9  2  7     9 11  18
+        1 5  1  2     5  6   8 
+        0 2  3  5     2  5  10 
           0  1  2
          */
         float[][] a = new float[3][];
@@ -48,11 +48,11 @@ public class PartialShapeMatcherTest extends TestCase {
         a[2] = new float[]{9, 2, 7};
 
         PartialShapeMatcher matcher = new PartialShapeMatcher();
-        matcher.applySummedAreaTableConversion(a);
+        matcher.applySummedColumnTableConversion(a);
 
         assertTrue(Arrays.equals(new float[]{2, 5, 10}, a[0]));
-        assertTrue(Arrays.equals(new float[]{7, 11, 18}, a[1]));
-        assertTrue(Arrays.equals(new float[]{16, 22, 36}, a[2]));
+        assertTrue(Arrays.equals(new float[]{5, 6, 8}, a[1]));
+        assertTrue(Arrays.equals(new float[]{9, 11, 18}, a[2]));
 
     }
 
@@ -69,13 +69,13 @@ public class PartialShapeMatcherTest extends TestCase {
         log.info("p.n=" + p.getN() + " q.n=" + q.getN());
 
         //q.rotateLeft(q.getN() - 3);
-        PartialShapeMatcher2 shapeMatcher = new PartialShapeMatcher2();
+        PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
         shapeMatcher.overrideSamplingDistance(1);
         shapeMatcher.setToArticulatedMatch();
         //shapeMatcher.setToDebug();
         shapeMatcher._overrideToThreshhold(0.01f);
 
-        PartialShapeMatcher2.Result result = shapeMatcher.match(p, q);
+        PartialShapeMatcher.Result result = shapeMatcher.match(p, q);
 
         assertNotNull(result);
 
@@ -122,14 +122,14 @@ public class PartialShapeMatcherTest extends TestCase {
         log.info("p.n=" + p.getN() + " q.n=" + q.getN());
 
         //q.rotateLeft(q.getN() - 3);
-        PartialShapeMatcher2 shapeMatcher = new PartialShapeMatcher2();
+        PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
         shapeMatcher.overrideSamplingDistance(1);
         shapeMatcher.setToArticulatedMatch();
         //shapeMatcher.setToDebug();
         shapeMatcher._overrideToThreshhold(0.01f);
         
         // articulated:
-        PartialShapeMatcher2.Result result = shapeMatcher.match(p, q);
+        PartialShapeMatcher.Result result = shapeMatcher.match(p, q);
 
         assertNotNull(result);
 
@@ -220,12 +220,12 @@ public class PartialShapeMatcherTest extends TestCase {
 
             int dp = 2;
 
-            PartialShapeMatcher2 matcher =
-                new PartialShapeMatcher2();
+            PartialShapeMatcher matcher =
+                new PartialShapeMatcher();
             //matcher.setToDebug();
             matcher.overrideSamplingDistance(dp);
 
-            PartialShapeMatcher2.Result result = matcher.match(p, q);
+            PartialShapeMatcher.Result result = matcher.match(p, q);
 
             assertNotNull(result);
 
@@ -339,13 +339,13 @@ public class PartialShapeMatcherTest extends TestCase {
             + " points to " + q.getN() + " points");
 
             int dp = 1;
-            PartialShapeMatcher2 matcher =
-                new PartialShapeMatcher2();
+            PartialShapeMatcher matcher =
+                new PartialShapeMatcher();
             //matcher.setToDebug();
             matcher.setToUseSameNumberOfPoints();
             matcher.overrideSamplingDistance(dp);
 
-            PartialShapeMatcher2.Result result = matcher.match(p, q);
+            PartialShapeMatcher.Result result = matcher.match(p, q);
 
             assertNotNull(result);
 
@@ -421,14 +421,14 @@ public class PartialShapeMatcherTest extends TestCase {
            0  1  2  3  4  5  6  7  8  9 10 11
         */
       
-        PartialShapeMatcher2 matcher = new PartialShapeMatcher2();
+        PartialShapeMatcher matcher = new PartialShapeMatcher();
         //matcher.setToDebug();
         matcher._overrideToThreshhold((float)(1e-7));
         matcher.overrideSamplingDistance(1);
         matcher._overrideToDisableEuclideanMatch();
         matcher.setToArticulatedMatch();
         
-        PartialShapeMatcher2.Result r = matcher.match(triangle, rectangle);
+        PartialShapeMatcher.Result r = matcher.match(triangle, rectangle);
         for (int i = 0; i < r.idx1s.size(); ++i) {
             int x1 = triangle.getX(r.idx1s.get(i)); 
             int y1 = triangle.getY(r.idx1s.get(i)); 

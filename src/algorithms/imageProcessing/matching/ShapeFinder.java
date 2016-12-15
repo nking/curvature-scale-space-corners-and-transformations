@@ -1235,7 +1235,7 @@ System.out.println("min: cost=" + minCost + " count=" + np +
             int offset, PairIntArray bounds1,
             PairIntArray bounds2, int[] keys) {
 
-            super(n1, n2, nOriginal, offset);
+            super(n1, n2, nOriginal);
 
             this.bounds1 = bounds1;
             this.bounds2 = bounds2;

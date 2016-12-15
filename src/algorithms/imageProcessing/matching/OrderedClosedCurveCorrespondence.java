@@ -1,6 +1,6 @@
 package algorithms.imageProcessing.matching;
 
-import algorithms.imageProcessing.matching.PartialShapeMatcher2.SR;
+import algorithms.imageProcessing.matching.PartialShapeMatcher.SR;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import java.util.ArrayList;
@@ -12,7 +12,7 @@ import java.util.TreeMap;
 /**
  * a class to handle additions and clockwise consistency checks
  * to a growing correspondency list.
- * The class is specialized for use with PartialShapeMatcher2.java
+ * The class is specialized for use with PartialShapeMatcher.java
  * which has intervals it attempts to add to this structure in
  * order of increasing cost.
  * The intervals are given as ranges of indexes called idx1
@@ -27,7 +27,7 @@ class OrderedClosedCurveCorrespondence {
 
     // visit each interval in order of smallest cost,
     // and only add the clockwise consistent intervals to a combined output
-    protected TreeMap<Integer, PartialShapeMatcher2.SR> t1 = new TreeMap<Integer, PartialShapeMatcher2.SR>();
+    protected TreeMap<Integer, PartialShapeMatcher.SR> t1 = new TreeMap<Integer, PartialShapeMatcher.SR>();
 
     private int minLength = 3;
 
@@ -37,7 +37,7 @@ class OrderedClosedCurveCorrespondence {
 
     public void addIntervals(List<SR> intervals, int n1, int n2) {
 
-        for (PartialShapeMatcher2.SR sr: intervals) {
+        for (PartialShapeMatcher.SR sr: intervals) {
             addInterval(sr, n1, n2);
         }
 
