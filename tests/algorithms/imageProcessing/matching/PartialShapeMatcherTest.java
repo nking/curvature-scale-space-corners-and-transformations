@@ -71,9 +71,7 @@ public class PartialShapeMatcherTest extends TestCase {
         //q.rotateLeft(q.getN() - 3);
         PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
         shapeMatcher.overrideSamplingDistance(1);
-        shapeMatcher.setToArticulatedMatch();
         //shapeMatcher.setToDebug();
-        shapeMatcher._overrideToThreshhold(0.01f);
 
         PartialShapeMatcher.Result result = shapeMatcher.match(p, q);
 
@@ -124,9 +122,7 @@ public class PartialShapeMatcherTest extends TestCase {
         //q.rotateLeft(q.getN() - 3);
         PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
         shapeMatcher.overrideSamplingDistance(1);
-        shapeMatcher.setToArticulatedMatch();
         //shapeMatcher.setToDebug();
-        shapeMatcher._overrideToThreshhold(0.01f);
         
         // articulated:
         PartialShapeMatcher.Result result = shapeMatcher.match(p, q);
@@ -179,106 +175,110 @@ public class PartialShapeMatcherTest extends TestCase {
 
         String fileName1 = "";
 
-        for (int i = 0; i < 4; ++i) {
-        //for (int i = 1; i < 2; ++i) {
+        for (int type = 0; type < 2; ++type) {
+            for (int i = 0; i < 4; ++i) {
 
-            switch(i) {
-                case 0: {
-                    fileName1
-                        = "android_statues_01_sz1_mask_small.png";
-                    break;
+                switch(i) {
+                    case 0: {
+                        fileName1
+                            = "android_statues_01_sz1_mask_small.png";
+                        break;
+                    }
+                    case 1: {
+                        fileName1 = "android_statues_02_sz1_mask_small.png";
+                        break;
+                    }
+                    case 2: {
+                        fileName1 = "android_statues_03_sz1_mask_small.png";
+                        break;
+                    }
+                    case 3: {
+                        fileName1 = "android_statues_04_sz1_mask_small.png";
+                        break;
+                    }
+                    default: {
+                        break;
+                    }
                 }
-                case 1: {
-                    fileName1 = "android_statues_02_sz1_mask_small.png";
-                    break;
+
+                idx = fileName1.lastIndexOf(".");
+                String fileName1Root = fileName1.substring(0, idx);
+
+                String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+                ImageExt img = ImageIOHelper.readImageExt(filePath1);
+
+                PairIntArray q = extractOrderedBoundary(img);
+                plot(q, (i+1)*100 + 1);
+
+                log.info("matching " + fileName0Root
+                + " to " + fileName1Root + " (" + p.getN()
+                + " points to " + q.getN() + " points");
+
+                int dp = 2;
+
+                PartialShapeMatcher matcher =
+                    new PartialShapeMatcher();
+                //matcher.setToDebug();
+                if (type == 1) {
+                    matcher.setToUseEuclidean();
                 }
-                case 2: {
-                    fileName1 = "android_statues_03_sz1_mask_small.png";
-                    break;
+                matcher.overrideSamplingDistance(dp);
+
+                PartialShapeMatcher.Result result = matcher.match(p, q);
+
+                assertNotNull(result);
+
+                log.info("RESULTS=" + fileName1Root + " : " +
+                    result.toString());
+
+                CorrespondencePlotter plotter = new
+                    CorrespondencePlotter(p, q);
+
+                for (int ii = 0; ii < result.getNumberOfMatches(); ++ii) {
+                    int idx1 = result.getIdx1(ii);
+                    int idx2 = result.getIdx2(ii);
+                    int x1 = p.getX(idx1);
+                    int y1 = p.getY(idx1);
+                    int x2 = q.getX(idx2);
+                    int y2 = q.getY(idx2);
+                    //System.out.println(String.format(
+                    //"(%d, %d) <=> (%d, %d)", x1, y1, x2, y2));
+
+                    if ((ii % 2) == 0) {
+                        plotter.drawLineInAlternatingColors(x1, y1, x2, y2,
+                            0);
+                    }
                 }
-                case 3: {
-                    fileName1 = "android_statues_04_sz1_mask_small.png";
-                    break;
+                String filePath = plotter.writeImage("_" +
+                        fileName1Root + "_corres_" + type);
+
+                int expOffset = 0;
+                float expFrac = 0.4f;
+                switch (i) {
+                    case 0:
+                        expOffset = 217;
+                        break;
+                    case 1:
+                        expOffset = 112;
+                        break;
+                    case 2:
+                        expOffset = 0;
+                        expFrac = 1.0f;
+                        break;
+                    case 3:
+                        expOffset = 173;//168
+                        break;
+                    default:
+                        break;
                 }
-                default: {
-                    break;
+
+                expFrac /= (float)dp;
+
+                System.out.println(" expOffset=" + expOffset); 
+
+                if (enableAsserts) {
+                    assertTrue(result.getFractionOfWhole() >= expFrac);
                 }
-            }
-
-            idx = fileName1.lastIndexOf(".");
-            String fileName1Root = fileName1.substring(0, idx);
-
-            String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-            ImageExt img = ImageIOHelper.readImageExt(filePath1);
-
-            PairIntArray q = extractOrderedBoundary(img);
-            plot(q, (i+1)*100 + 1);
-
-            log.info("matching " + fileName0Root
-            + " to " + fileName1Root + " (" + p.getN()
-            + " points to " + q.getN() + " points");
-
-            int dp = 2;
-
-            PartialShapeMatcher matcher =
-                new PartialShapeMatcher();
-            //matcher.setToDebug();
-            matcher.overrideSamplingDistance(dp);
-
-            PartialShapeMatcher.Result result = matcher.match(p, q);
-
-            assertNotNull(result);
-
-            log.info("RESULTS=" + fileName1Root + " : " +
-                result.toString());
-
-            CorrespondencePlotter plotter = new
-                CorrespondencePlotter(p, q);
-
-            for (int ii = 0; ii < result.getNumberOfMatches(); ++ii) {
-                int idx1 = result.getIdx1(ii);
-                int idx2 = result.getIdx2(ii);
-                int x1 = p.getX(idx1);
-                int y1 = p.getY(idx1);
-                int x2 = q.getX(idx2);
-                int y2 = q.getY(idx2);
-                //System.out.println(String.format(
-                //"(%d, %d) <=> (%d, %d)", x1, y1, x2, y2));
-
-                if ((ii % 4) == 0) {
-                    plotter.drawLineInAlternatingColors(x1, y1, x2, y2,
-                        0);
-                }
-            }
-            String filePath = plotter.writeImage("_" +
-                    fileName1Root + "_corres");
-
-            int expOffset = 0;
-            float expFrac = 0.4f;
-            switch (i) {
-                case 0:
-                    expOffset = 217;
-                    break;
-                case 1:
-                    expOffset = 112;
-                    break;
-                case 2:
-                    expOffset = 0;
-                    expFrac = 1.0f;
-                    break;
-                case 3:
-                    expOffset = 173;//168
-                    break;
-                default:
-                    break;
-            }
-
-            expFrac /= (float)dp;
-
-            System.out.println(" expOffset=" + expOffset); 
-
-            if (enableAsserts) {
-                assertTrue(result.getFractionOfWhole() >= expFrac);
             }
         }
     }
@@ -425,8 +425,6 @@ public class PartialShapeMatcherTest extends TestCase {
         //matcher.setToDebug();
         matcher._overrideToThreshhold((float)(1e-7));
         matcher.overrideSamplingDistance(1);
-        matcher._overrideToDisableEuclideanMatch();
-        matcher.setToArticulatedMatch();
         
         PartialShapeMatcher.Result r = matcher.match(triangle, rectangle);
         for (int i = 0; i < r.idx1s.size(); ++i) {

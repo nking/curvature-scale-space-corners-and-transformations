@@ -5,8 +5,6 @@ import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.List;
 import junit.framework.TestCase;
-import org.junit.Test;
-import static org.junit.Assert.*;
 
 /**
  *

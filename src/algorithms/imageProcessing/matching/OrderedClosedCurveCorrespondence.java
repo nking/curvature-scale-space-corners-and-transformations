@@ -5,7 +5,6 @@ import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
@@ -168,7 +167,13 @@ class OrderedClosedCurveCorrespondence {
             Integer.valueOf(sr.stopIdx1 + 1));
 
         if (sr.startIdx1 == 0) {
-                
+            
+            if (stp1Ceil == null) {
+                // this can happen if there's only one item in t1 and
+                // sr has the same or smaller range than it.
+                return;
+            }
+            
             // case 1
 
             addForCase1(sr, stp1Ceil, n2);

@@ -6913,7 +6913,7 @@ if (sum > 511) {
     public PairIntArray extractSmoothedOrderedBoundary(
         Set<PairInt> contiguousPoints, int imgWidth, int imgHeight) {
         
-        return extractSmoothedOrderedBoundary(contiguousPoints, SIGMA.TWO, 
+        return extractSmoothedOrderedBoundary(contiguousPoints, SIGMA.ONE, 
             imgWidth, imgHeight);
     }
     

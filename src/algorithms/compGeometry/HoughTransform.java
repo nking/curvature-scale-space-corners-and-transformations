@@ -1,24 +1,18 @@
 package algorithms.compGeometry;
 
 import algorithms.MultiArrayMergeSort;
-import algorithms.imageProcessing.DFSConnectedGroupsFinder;
 import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.imageProcessing.DFSSimilarThetaRadiusGroupsFinder;
 import algorithms.imageProcessing.DFSConnectedHoughTransformGroupsFinder;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
-import algorithms.imageProcessing.matching.ORBMatcher;
-import algorithms.imageProcessing.matching.PartialShapeMatcher;
-import algorithms.imageProcessing.matching.PartialShapeMatcher.Result;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Misc;
-import algorithms.misc.MiscMath;
 import algorithms.util.LinearRegression;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
-import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TIntList;
 import java.util.ArrayList;
 import java.util.Arrays;

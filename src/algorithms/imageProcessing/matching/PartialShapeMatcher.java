@@ -98,8 +98,7 @@ based upon algorithm in paper
      This method:  
         PairIntArray p = imageProcessor
             .extractSmoothedOrderedBoundary()
-        uses a Gaussian smoothing of 2 sigma,
-        but a smaller sigma can be specified.
+        uses a Gaussian smoothing of 1 sigma,
   </pre>
   @author nichole
  */
@@ -130,12 +129,10 @@ public class PartialShapeMatcher {
 
     private boolean useSameNumberOfPoints = false;
 
-    private boolean srchForArticulatedParts = false;
-
     // this helps to remove points far from
     // euclidean transformations using RANSAC.
     // it should probably always be true.
-    private boolean performEuclidTrans = true;
+    private boolean performEuclidTrans = false;
 
     private float pixTolerance = 20;
 
@@ -150,21 +147,11 @@ public class PartialShapeMatcher {
     private boolean debug = false;
 
     /**
-     * set to articulated match and unset the default euclidean transformation
+     * turn on the euclidean transformation process to evaluate the best
+     * initial answers.
      */
-    public void setToArticulatedMatch() {
-        
-        srchForArticulatedParts = true;
-        
-        performEuclidTrans = false;
-    }
-    
-    /**
-     * turn off the euclidean transformation filter and addition of points.
-     * NOTE that this should probably not normally be used.
-     */
-    public void _overrideToDisableEuclideanMatch() {
-        performEuclidTrans = false;
+    public void setToUseEuclidean() {
+        performEuclidTrans = true;
     }
     
     /**
@@ -508,7 +495,11 @@ public class PartialShapeMatcher {
         }
         
         minima = minima.subList(0, topK);
-                
+
+        if (minima == null) {
+            return null;
+        }
+        
         /*
         TODO: need to restore the options
             espec euclid transformation
@@ -594,7 +585,7 @@ public class PartialShapeMatcher {
             //   an unmatched and consistent range, is filtered to the subset of 
             //   the interval which does fit.
 
-            occ.addIntervals(minima.subList(0, 10), n1, n2);
+            occ.addIntervals(minima.subList(0, minima.size()), n1, n2);
 
             List<SR> results = occ.getResultsAsList();
 
