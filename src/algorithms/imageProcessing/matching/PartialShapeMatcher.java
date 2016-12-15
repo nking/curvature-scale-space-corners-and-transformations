@@ -108,13 +108,13 @@ public class PartialShapeMatcher {
     /**
      * TODO:
      * (1) improve the articulated matching
-     * (2) add to the end of the euclidean treansformation, a check for effects
+     * (2) add to the end of the euclidean transformation, a check for effects
      *     due to prpjection and an attempt to correct them.
      * (3) to decrease the runtime for constructing the matrix to m X n,
-     *     try a variant of the differnce chord matric
-     *     which only uses 2 shift images instead of 1 for each 
-     *     row, that is the difference matrix for offset=0 would be present
-     *     and then the differernce matrix for offset=n2/2.
+     *     will try a variant of the difference chord matrix
+     *     which only uses 2 shift images instead of 1 for each row, 
+     *     more specifically the difference matrix for offset=0 would be present
+     *     and then the difference matrix for offset=n2/2.
      */
     
     /**
