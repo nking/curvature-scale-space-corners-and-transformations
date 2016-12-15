@@ -551,6 +551,8 @@ public class PartialShapeMatcher {
             OrderedClosedCurveCorrespondence occ = 
                 new OrderedClosedCurveCorrespondence();
         
+     occ.dbg1 = p;
+     occ.dbg2 = q;
             occ.setMinimumLength(minLength);
 
             //TODO: for articulated, may want to consider an option here

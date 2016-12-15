@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.matching;
 
 import algorithms.imageProcessing.matching.PartialShapeMatcher.SR;
+import algorithms.util.PairIntArray;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import java.util.ArrayList;
@@ -20,6 +21,9 @@ import java.util.TreeMap;
  * Each interval has a single offset which may be different
  * from the offset in other intervals.
  *
+ * NOTE: this class is not "thread safe", that is, only a single thread should
+ * access it because it uses an internal cache that is not guarded..
+ * 
  * @author nichole
  */
 class OrderedClosedCurveCorrespondence {
@@ -30,6 +34,9 @@ class OrderedClosedCurveCorrespondence {
 
     private int minLength = 3;
 
+    // NOTE: this makes the code "not thread safe"
+    private int[] cachedIdx2 = new int[2];
+    
     public void setMinimumLength(int length) {
         minLength = length;
     }
@@ -41,17 +48,25 @@ class OrderedClosedCurveCorrespondence {
         }
 
     }
-    
+
     public List<SR> getResultsAsList() {
-        
+
         List<SR> list = new ArrayList<SR>();
-        
+
         for (Entry<Integer, SR> entry : t1.entrySet()) {
             list.add(entry.getValue());
         }
-        
+
         return list;
     }
+
+public PairIntArray dbg1 = null;
+public PairIntArray dbg2 = null;
+private void print(SR sr, String label) {
+    System.out.println(label + String.format(" -->add p:(%d, %d) : (%d, %d)", 
+        dbg1.getX(sr.startIdx1), dbg1.getY(sr.startIdx1),
+        dbg1.getX(sr.stopIdx1), dbg1.getY(sr.stopIdx1)));
+}
 
     private void addFirstInterval(SR sr) {
 
@@ -162,26 +177,26 @@ class OrderedClosedCurveCorrespondence {
                       -#- | [-#-]
 
         */
-        
+
         Entry<Integer, SR> stp1Ceil = t1.ceilingEntry(
             Integer.valueOf(sr.stopIdx1 + 1));
 
         if (sr.startIdx1 == 0) {
-            
+
             if (stp1Ceil == null) {
                 // this can happen if there's only one item in t1 and
                 // sr has the same or smaller range than it.
                 return;
             }
-            
+
             // case 1
 
             addForCase1(sr, stp1Ceil, n2);
-        
+
         } else if (stp1Ceil == null) {
 
             // case 0
-            
+
             // no entries below sr are in t1
 
             assert(sr.startIdx1 > 0);
@@ -207,7 +222,7 @@ class OrderedClosedCurveCorrespondence {
             if (strt1Floor == null) {
 
                 // case 1
-                
+
                 // there are no entries above sr in t1
 
                 addForCase1(sr, stp1Ceil, n2);
@@ -240,21 +255,17 @@ class OrderedClosedCurveCorrespondence {
         if (case0AllConsistent(sr, strt1Floor, n2)) {
             Integer k1 = Integer.valueOf(sr.startIdx1);
             t1.put(k1, sr);
+ print(sr, "case 0");           
             return;
         }
 
         SR floor = strt1Floor.getValue();
-        int floorStopIdx1 = floor.stopIdx1;
-        int floorStopIdx2 = floor.stopIdx1 + floor.offsetIdx2;
-        if (floorStopIdx2 < floorStopIdx1) {
-            floorStopIdx2 += n2;
-        } else if (floorStopIdx2 >= n2) {
-            floorStopIdx2 -= n2;
-        }
-        
+        calculateIds2s(floor, n2);
+        int floorStopIdx2 = cachedIdx2[1];
+
         TIntList subsetIdx1s = new TIntArrayList();
 
-        populateCase0Idx1s(sr, floorStopIdx1, floorStopIdx2, subsetIdx1s, n2);
+        populateCase0Idx1s(sr, floor.startIdx1, floorStopIdx2, subsetIdx1s, n2);
 
         int ns = subsetIdx1s.size();
         if (ns < minLength) {
@@ -267,7 +278,7 @@ class OrderedClosedCurveCorrespondence {
         sr.stopIdx1 = subsetIdx1s.get(ns - 1);
         sr.mLen = sr.stopIdx1 - sr.startIdx1 + 1;
         sr.setChordSumNeedsUpdate(true);
-
+print(sr, "case 0 indiv");
         Integer k1 = Integer.valueOf(sr.startIdx1);
         t1.put(k1, sr);
     }
@@ -282,7 +293,7 @@ class OrderedClosedCurveCorrespondence {
                           |
                startIdx1  | [sr]
                       -#- | [-#-]
-        
+
         (1) find t1 ceiling for sr.stopIdx1 + 1.
         (2) test that entire range is consistent
             -- if ceiling startIdx2 is larger than sr.stopIdx2
@@ -296,16 +307,13 @@ class OrderedClosedCurveCorrespondence {
         if (case1AllConsistent(sr, stp1Ceil, n2)) {
             Integer k1 = Integer.valueOf(sr.startIdx1);
             t1.put(k1, sr);
+   print(sr, "case 1");         
             return;
         }
 
         SR ceil = stp1Ceil.getValue();
-        int ceilStrtIdx2 = ceil.startIdx1 + ceil.offsetIdx2;
-        if (ceilStrtIdx2 < ceil.startIdx1) {
-            ceilStrtIdx2 += n2;
-        } else if (ceilStrtIdx2 > (n2 - 1)) {
-            ceilStrtIdx2 -= n2;
-        }
+        calculateIds2s(ceil, n2);
+        int ceilStrtIdx2 = cachedIdx2[0];
 
         TIntList subsetIdx1s = new TIntArrayList();
 
@@ -322,30 +330,20 @@ class OrderedClosedCurveCorrespondence {
         sr.stopIdx1 = subsetIdx1s.get(ns - 1);
         sr.mLen = sr.stopIdx1 - sr.startIdx1 + 1;
         sr.setChordSumNeedsUpdate(true);
-
+print(sr, "case 1 indev");
         Integer k1 = Integer.valueOf(sr.startIdx1);
         t1.put(k1, sr);
     }
-    
+
     private boolean case0AllConsistent(SR sr,
         Entry<Integer, SR> strt1Floor, int n2) {
 
         SR floor = strt1Floor.getValue();
-        int floorStopIdx1 = floor.stopIdx1;
-        int floorStopIdx2 = floor.stopIdx1 + floor.offsetIdx2;
-        if (floorStopIdx2 < floorStopIdx1) {
-            floorStopIdx2 += n2;
-        } else if (floorStopIdx2 > (n2 - 1)) {
-            floorStopIdx2 -= n2;
-        }
+        calculateIds2s(floor, n2);
+        int floorStopIdx2 = cachedIdx2[1];
 
-        int startIdx1 = sr.startIdx1;
-        int startIdx2 = sr.startIdx1 + sr.offsetIdx2;
-        if (startIdx2 < startIdx1) {
-            startIdx2 += n2;
-        } else if (startIdx2 > (n2 - 1)) {
-            startIdx2 -= n2;
-        }
+        calculateIds2s(sr, n2);
+        int startIdx2 = cachedIdx2[0];
 
         /*
                content ordered by idx1
@@ -355,7 +353,7 @@ class OrderedClosedCurveCorrespondence {
                       -#- | [-#-]
                startIdx1  | [sr]
         */
-        if (floorStopIdx1 < startIdx1) {
+        if (floor.stopIdx1 < sr.startIdx1) {
             if (floorStopIdx2 < startIdx2) {
                 return true;
             }
@@ -364,7 +362,7 @@ class OrderedClosedCurveCorrespondence {
         return false;
     }
 
-    private void populateCase0Idx1s(int offset, 
+    private void populateCase0Idx1s(int offset,
         TIntList inputIdx1s, int floorStopIdx1,
         int floorStopIdx2, TIntList outSubsetIdx1s, int n2) {
 
@@ -384,7 +382,7 @@ class OrderedClosedCurveCorrespondence {
             }
         }
     }
-    
+
     private void populateCase0Idx1s(SR sr, int floorStopIdx1,
         int floorStopIdx2, TIntList outSubsetIdx1s, int n2) {
 
@@ -392,12 +390,12 @@ class OrderedClosedCurveCorrespondence {
         for (int idx1 = sr.startIdx1; idx1 <= sr.stopIdx1; ++idx1) {
             input.add(idx1);
         }
-        
+
         populateCase0Idx1s(sr.offsetIdx2, input, floorStopIdx1,
             floorStopIdx2, outSubsetIdx1s, n2);
     }
-    
-    private void populateCase1Idx1s(int offset, 
+
+    private void populateCase1Idx1s(int offset,
         TIntList inputIdx1s, int ceilStrtIdx2,
         TIntList subsetIdx1s, int n2) {
 
@@ -409,7 +407,7 @@ class OrderedClosedCurveCorrespondence {
             } else if (idx2 > (n2 - 1)) {
                 idx2 -= n2;
             }
-            
+
             /*
             content ordered by idx1
                       t1  |  interval
@@ -424,7 +422,7 @@ class OrderedClosedCurveCorrespondence {
             }
         }
     }
-    
+
     private void populateCase1Idx1s(SR sr, int ceilStrtIdx2,
         TIntList outSubsetIdx1s, int n2) {
 
@@ -432,11 +430,11 @@ class OrderedClosedCurveCorrespondence {
         for (int idx1 = sr.startIdx1; idx1 <= sr.stopIdx1; ++idx1) {
             input.add(idx1);
         }
-        
-        populateCase1Idx1s(sr.offsetIdx2, input, ceilStrtIdx2, 
+
+        populateCase1Idx1s(sr.offsetIdx2, input, ceilStrtIdx2,
             outSubsetIdx1s, n2);
     }
-    
+
     private boolean assertContiguous(TIntList list) {
 
         if (list.size() < 2) {
@@ -456,59 +454,64 @@ class OrderedClosedCurveCorrespondence {
         return true;
     }
 
-    private boolean case1AllConsistent(SR sr, Entry<Integer, SR> stp1Ceil, 
+    private boolean case1AllConsistent(SR sr, Entry<Integer, SR> stp1Ceil,
         int n2) {
-        
+
         SR ceil = stp1Ceil.getValue();
-        int ceilStrtIdx2 = ceil.startIdx1 - ceil.offsetIdx2;
-        if (ceilStrtIdx2 < ceil.startIdx1) {
-            ceilStrtIdx2 += n2;
-        } else if (ceilStrtIdx2 > (n2 - 1)) {
-            ceilStrtIdx2 -= n2;
-        }
-        
-        int stpIdx2 = sr.stopIdx1 - sr.offsetIdx2;
-        
-        if (stpIdx2 < sr.startIdx1) {
-            stpIdx2 += n2;
-        } else if (stpIdx2 > (n2 - 1)) {
-            stpIdx2 -= n2;
-        }
-        
+        calculateIds2s(ceil, n2);
+        int ceilStrtIdx2 = cachedIdx2[0];
+
+        calculateIds2s(sr, n2);
+        int stpIdx2 = cachedIdx2[1];
+
         return (ceilStrtIdx2 > stpIdx2);
+
+    }
+    
+    /**
+     * calculate the idx2s from idx1 and offset.
+     * can retrieve the result from cachedIdx2
+     * @param sr 
+     */
+    private void calculateIds2s(SR sr, int n2) {
         
+        cachedIdx2[0] = sr.startIdx1 + sr.offsetIdx2;
+        cachedIdx2[1] = sr.stopIdx1 + sr.offsetIdx2;
+        
+        if (cachedIdx2[0] < sr.startIdx1) {
+            cachedIdx2[0] += n2;
+        } else if (cachedIdx2[0] > (n2 - 1)) {
+            cachedIdx2[0] -= n2;
+        }
+        
+        if (cachedIdx2[1] < sr.startIdx1) {
+            cachedIdx2[1] += n2;
+        } else if (cachedIdx2[1] > (n2 - 1)) {
+            cachedIdx2[1] -= n2;
+        }
     }
 
-    private void addForCase2(SR sr, Entry<Integer, SR> strt1Floor, 
+    private void addForCase2(SR sr, Entry<Integer, SR> strt1Floor,
         Entry<Integer, SR> stp1Ceil, int n2) {
-        
-        SR floor = strt1Floor.getValue();
-        int floorStopIdx1 = floor.stopIdx1;
-        int floorStopIdx2 = floor.stopIdx1 + floor.offsetIdx2;
-        if (floorStopIdx2 < floorStopIdx1) {
-            floorStopIdx2 += n2;
-        } else if (floorStopIdx2 > (n2 - 1)) {
-            floorStopIdx2 -= n2;
-        }
 
+        SR floor = strt1Floor.getValue();
+        calculateIds2s(floor, n2);
+        int floorStopIdx2 = cachedIdx2[1];
+        
         TIntList subsetIdx1s = new TIntArrayList();
 
-        populateCase0Idx1s(sr, floorStopIdx1, floorStopIdx2, subsetIdx1s, n2);
+        populateCase0Idx1s(sr, floor.startIdx1, floorStopIdx2, subsetIdx1s, n2);
 
         int ns = subsetIdx1s.size();
         if (ns < minLength) {
             return;
         }
-        
+
         assert(assertContiguous(subsetIdx1s));
 
         SR ceil = stp1Ceil.getValue();
-        int ceilStrtIdx2 = ceil.startIdx1 + ceil.offsetIdx2;
-        if (ceilStrtIdx2 < ceil.startIdx1) {
-            ceilStrtIdx2 += n2;
-        } else if (ceilStrtIdx2 > (n2 - 1)) {
-            ceilStrtIdx2 -= n2;
-        }
+        calculateIds2s(ceil, n2);
+        int ceilStrtIdx2 = cachedIdx2[0];
 
         TIntList subsetIdx1s2 = new TIntArrayList();
 
@@ -526,9 +529,9 @@ class OrderedClosedCurveCorrespondence {
         sr.stopIdx1 = subsetIdx1s2.get(ns - 1);
         sr.mLen = sr.stopIdx1 - sr.startIdx1 + 1;
         sr.setChordSumNeedsUpdate(true);
-
+print(sr, "case 2 indev");
         Integer k1 = Integer.valueOf(sr.startIdx1);
-        t1.put(k1, sr);       
+        t1.put(k1, sr);
     }
 
 }

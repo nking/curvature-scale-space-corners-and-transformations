@@ -34,7 +34,7 @@ public class PartialShapeMatcherTest extends TestCase {
     public PartialShapeMatcherTest() {
     }
 
-    public void testSummedColumnTables() {
+    public void estSummedColumnTables() {
 
         /*
         2 9  2  7     9 11  18
@@ -71,7 +71,7 @@ public class PartialShapeMatcherTest extends TestCase {
         //q.rotateLeft(q.getN() - 3);
         PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
         shapeMatcher.overrideSamplingDistance(1);
-        //shapeMatcher.setToDebug();
+        shapeMatcher.setToDebug();
 
         PartialShapeMatcher.Result result = shapeMatcher.match(p, q);
 
@@ -92,7 +92,7 @@ public class PartialShapeMatcherTest extends TestCase {
             //System.out.println(String.format(
             //"(%d, %d) <=> (%d, %d)", x1, y1, x2, y2));
 
-            if ((ii % 4) == 0) {
+            if ((ii % 2) == 0) {
                 plotter.drawLineInAlternatingColors(x1, y1, x2, y2,
                     0);
             }
