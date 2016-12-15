@@ -66,15 +66,18 @@ based upon algorithm in paper
              - can handle similarity transforms.
                disadvantage is that it is less able to
                handle occlusion or extraneous shapes in
-               the shape, though the euclidean projection
-               used within, works around this.
-             - to use in this mode:
+               the shape.
+               using the euclidean option works around this.
+             - 
+               to use in this mode:
                    setToUseSameNumberOfPoints()
                       and the number of points can be set 
                       using dp, with nSample = min(p.n, q.n)/dp
                       and
                    overrideSamplingDistance(dp)
-         (b) OR, equidistant points
+               and optionally:
+                   setToUseEuclidean()
+         (b) OR, equidistant points (default)
              - can handle occlusion.
                disadvantage in matching when there are
                scale differences between the shapes is
@@ -83,10 +86,13 @@ based upon algorithm in paper
              - the default sampling of pixels is 3.
                this can be changed using
                    overrideSamplingDistance(dp)
+               unit test using dp of 1 and 2 work well
 
        The runtime complexity for building the integral
        image is O(m*n) where n and m are the number of sampled
        points on the input shapes.
+       (note:  this is a work in progress, the current runtime has another
+       factor of n in it)
 
        The runtime complexity for the search of the
        integral image of summed differences and analysis
@@ -147,7 +153,7 @@ public class PartialShapeMatcher {
     private boolean debug = false;
 
     /**
-     * turn on the euclidean transformation process to evaluate the best
+     * turn on the euclidean transformation to evaluate the best
      * initial answers.
      */
     public void setToUseEuclidean() {
@@ -156,9 +162,8 @@ public class PartialShapeMatcher {
     
     /**
      * override the threshold for using a chord differernce value
-     * to this.   By default it is set to a generous 10 degree, but
-     * to fit a perfect line or similar, one may want to reduce this
-     * threshold to 1E-9 or so.
+     * for the average value.   
+     * By default it is set to 0.01.
      * @param t 
      */
     public void _overrideToThreshhold(float t) {
@@ -176,10 +181,17 @@ public class PartialShapeMatcher {
         useSameNumberOfPoints = true;
     }
 
+    /**
+     * the default sampling distance is 3.  use this method to override it.
+     * @param d 
+     */
     public void overrideSamplingDistance(int d) {
         this.dp = d;
     }
 
+    /**
+     * use this to enable the debug log comments and plots
+     */
     public void setToDebug() {
         debug = true;
         log.setLevel(Level.FINE);
@@ -499,45 +511,7 @@ public class PartialShapeMatcher {
         if (minima == null) {
             return null;
         }
-        
-        /*
-        TODO: need to restore the options
-            espec euclid transformation
-        need to also add for the best result a check whether
-            projection effects may be causing missing points
-            due to foreshortening, etc, and an attempt to
-            correct those.
-        
-        NOTE: tests show that most of the objects have the correct main
-        offset (and hence correspoendence) for the top result, but not
-        always (sometimes due to order...for articulated objects w/ 
-        patterns that are similar enough to look like they repeat, 
-        an articulated section that is the wrong match may have equal
-        cost as the similar pattern which is the right match, but the
-        adjacent points which are articulated differently do not
-        lead to a longer match for the true pattern segment...
-        so for articulated patterns like a clover leaf for example,
-        2 leafs which are not adjacent might be unchanged 
-        in q w.r.t. shape p, and they are
-        separated by 2 articulated leafs, so matching the overall pattern
-        requires an analysis that prefers a geometry (rigid or rigid + tolerance
-        for projection) and then finds
-        the matching "interleaving" patterns that remain unmatched after the
-        geometric match.
-        
-        NOTE also that the results depend upon the threshold too.  For the scissors
-        tests, a smaller threshold near 0.2 works better that twice that size,
-        but for the noise gingerbread man profiles which have even been smoothed,
-        a larger threshold has better results.
-        
-        Therefore, can see that an evaulation of the topK is how to find the best
-        solution among the top intervals and then search for remaining results
-        consistent with the user set options and remaining unmatched points.
-        
-        TODO: for the andr 02 statue test, the larger projection
-        requires some edits in this....
-        */
-        
+      
         if (performEuclidTrans) {
 
             // solve for transformation, add points near projection,
