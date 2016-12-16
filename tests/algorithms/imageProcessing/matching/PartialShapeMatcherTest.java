@@ -34,7 +34,7 @@ public class PartialShapeMatcherTest extends TestCase {
     public PartialShapeMatcherTest() {
     }
 
-    public void estSummedColumnTables() {
+    public void testSummedColumnTables() {
 
         /*
         2 9  2  7     9 11  18
@@ -92,7 +92,7 @@ public class PartialShapeMatcherTest extends TestCase {
             //System.out.println(String.format(
             //"(%d, %d) <=> (%d, %d)", x1, y1, x2, y2));
 
-            if ((ii % 2) == 0) {
+            if ((ii % 4) == 0) {
                 plotter.drawLineInAlternatingColors(x1, y1, x2, y2,
                     0);
             }
@@ -107,15 +107,17 @@ public class PartialShapeMatcherTest extends TestCase {
 
     public void testScissorsMatch16() throws Exception {
 
+        // TODO: there's a bug in the cw consistency check
+        
         // rotate points p so that start points are
         // different and assert that wrap around is
         // handled correctly
         PairIntArray p = getScissors1();
         p.rotateLeft(16);
-        //plot(p, 200);
+        plot(p, 200);
 
         PairIntArray q = getScissors2();
-        //plot(q, 201);
+        plot(q, 201);
 
         log.info("p.n=" + p.getN() + " q.n=" + q.getN());
 

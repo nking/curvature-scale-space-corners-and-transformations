@@ -1044,6 +1044,68 @@ public class QuickSort {
      * @param idxLo
      * @param idxHi 
      */
+    public static void sortBy1stArg(double[] a, List b, int idxLo, int idxHi) {
+        
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (b == null) {
+            throw new IllegalArgumentException("b cannot be null");
+        }
+        if (a.length != b.size()) {
+            throw new IllegalArgumentException("a and b must be the same length");
+        }
+        
+        if (a.length < 2) {
+            return;
+        }
+        
+        if (idxLo < idxHi) {
+
+            double x = a[idxLo];
+            int store = idxLo;
+            int idxMid = idxHi + 1;
+
+            while (true) {
+                do {
+                    store++;     
+                } while ((store <= idxHi) && (a[store] < x));
+                do {
+                    idxMid--;
+                } while (a[idxMid] > x);
+                if (store > idxMid) {
+                    break;
+                }
+                double swap = a[store];
+                a[store] = a[idxMid];
+                a[idxMid] = swap;
+                
+                Object bSwap = b.get(store);
+                b.set(store, b.get(idxMid));
+                b.set(idxMid, bSwap);
+            }
+            double swap = a[idxLo];
+            a[idxLo] = a[idxMid];
+            a[idxMid] = swap;
+            
+            Object bSwap = b.get(idxLo);
+            b.set(idxLo, b.get(idxMid));
+            b.set(idxMid, bSwap);
+         
+            sortBy1stArg(a, b, idxLo, idxMid - 1);
+
+            sortBy1stArg(a, b, idxMid + 1, idxHi);
+        }
+    }
+    
+    /**
+     * sort a from index idxLo to idxHi, inclusive.  Uses the optimized
+     * qsort3 from the book "Programming in Pearls" by Jon Bentley.
+     * @param a
+     * @param b
+     * @param idxLo
+     * @param idxHi 
+     */
     public static void sortBy1stArg(float[] a, Object[] b, int idxLo, int idxHi) {
         
         if (a == null) {

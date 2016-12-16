@@ -19,10 +19,8 @@ import algorithms.util.PairIntArray;
 import gnu.trove.iterator.TObjectFloatIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TObjectFloatMap;
 import gnu.trove.map.TObjectIntMap;
-import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TObjectFloatHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
@@ -33,7 +31,6 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import thirdparty.edu.princeton.cs.algs4.Interval;
@@ -115,11 +112,6 @@ public class PartialShapeMatcher {
      * (1) improve the articulated matching
      * (2) add to the end of the euclidean transformation, a check for effects
      *     due to prpjection and an attempt to correct them.
-     * (3) to decrease the runtime for constructing the matrix to m X n,
-     *     will try a variant of the difference chord matrix
-     *     which only uses 2 shift images instead of 1 for each row, 
-     *     more specifically the difference matrix for offset=0 would be present
-     *     and then the difference matrix for offset=n2/2.
      */
     
     /**
@@ -144,9 +136,9 @@ public class PartialShapeMatcher {
 
     // 10 degrees is 0.1745 radians
     // for a fit to a line, consider 1E-9
-    private float thresh = 0.01f;//(float)(Math.PI/180.) * 10.f;
+    private float thresh = 1.f;//0.85f;//(float)(Math.PI/180.) * 10.f;
 
-    private int minLength = 3;
+    private int minLength = 7;//3;
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
@@ -501,7 +493,7 @@ public class PartialShapeMatcher {
         
         List<SR> minima = findMinima(md, n1, n2);
         
-        int topK = 20;
+        int topK = 100;
         if (minima.size() < topK) {
             topK = minima.size();
         }
@@ -525,22 +517,43 @@ public class PartialShapeMatcher {
             List<Result> results = transformAndEvaluate(minima, p, q,
                 md, pixTolerance, topK, addedPoints);
 
-            if (results != null) {
-                for (int i = 0; i < topK; ++i) {
-                    Result result = results.get(i);
-                    populateWithChordDiffs(result, md, p.getN(), q.getN());
-                    log.fine("calc'ed chords: " + result.toStringAbbrev());
-                    assert(assertIndexesWithinBounds(result, p.getN(), q.getN()));
-                }
-                
-                double maxChordDiff = findMaxChordDiff(results);
-                
-                Collections.sort(results, new ResultsComparator(maxChordDiff, n1));
-            }
-            
             if (results == null) {
                 return null;
             }
+            
+            for (int i = 0; i < results.size(); ++i) {
+                Result result = results.get(i);
+                populateWithChordDiffs(result, md, p.getN(), q.getN());
+                log.fine("calc'ed chords: " + result.toStringAbbrev());
+                assert(assertIndexesWithinBounds(result, p.getN(), q.getN()));
+            }
+
+            // need to decide between using the total chord diff sum
+            //   and hence the max of all of those when calculationg
+            //    he salukwzde distance
+            //   or need to use the average chord diff sum for each resul
+            //    and the maximum of those
+            // choosingthe later here, just as did in previous sorting of
+            // intervals, chose the later.
+
+            double maxChordAvg = Double.MIN_VALUE;
+            for (Result r : results) {
+                double d = r.chordDiffSum/(double)r.getNumberOfMatches();
+                if (d > maxChordAvg) {
+                    maxChordAvg = d;
+                }
+            }
+            double[] avgCosts = new double[results.size()];
+            for (int i = 0; i < results.size(); ++i) {
+                Result r = results.get(i);
+                float n = r.getNumberOfMatches();
+                double avgD = r.chordDiffSum/n;
+                float f = 1.f - (n/(float)n1);
+                double d = avgD/maxChordAvg;
+                float s = (float) (f * f + d * d);
+                avgCosts[i] = s;
+            }
+            QuickSort.sortBy1stArg(avgCosts, results, 0, results.size() - 1);            
             
             return results.get(0);
 
@@ -548,20 +561,21 @@ public class PartialShapeMatcher {
         
             // NOT YET FINISHED
             
-            OrderedClosedCurveCorrespondence occ = 
-                new OrderedClosedCurveCorrespondence();
-        
-     occ.dbg1 = p;
-     occ.dbg2 = q;
-            occ.setMinimumLength(minLength);
-
             //TODO: for articulated, may want to consider an option here
             //   where a partial interval is rejected if more than the endpoints
             //   are trimmed.  currently, the interval, if not entirely within
             //   an unmatched and consistent range, is filtered to the subset of 
             //   the interval which does fit.
 
-            occ.addIntervals(minima.subList(0, minima.size()), n1, n2);
+            OrderedClosedCurveCorrespondence occ = 
+                new OrderedClosedCurveCorrespondence();
+        
+            //occ.dbg1 = p;
+            //occ.dbg2 = q;
+            //occ.dp = dp;
+            occ.setMinimumLength(minLength);
+
+            occ.addIntervals(minima, n1, n2);
 
             List<SR> results = occ.getResultsAsList();
 
@@ -641,7 +655,11 @@ public class PartialShapeMatcher {
             
             search(a, outputIntervals, outputValues, offset);
             
-            if (offset == 0) {
+            if (outputValues.isEmpty()) {
+                continue;
+            }
+            
+            if (maxChordSum == Double.MIN_VALUE) {
                 maxChordSum = findMaxDiffChordSum(outputValues);
             }
             
@@ -649,6 +667,12 @@ public class PartialShapeMatcher {
             // offset.
                         
             allResults.addAll(outputValues);
+        }
+        
+        for (SR sr: allResults) {
+            if (sr.maxChordSum > maxChordSum) {
+                maxChordSum = sr.maxChordSum;
+            }
         }
         
         for (SR sr: allResults) {
@@ -1003,32 +1027,6 @@ public class PartialShapeMatcher {
         return max;
     }
     
-    public static class ResultsComparator implements Comparator<Result> {
-
-        final double maxChordDiffSum;
-        final int maxNMatchable;
-        
-        public ResultsComparator(double maxChordDiff, int maxNumberMatchable) {
-            this.maxChordDiffSum = maxChordDiff;
-            this.maxNMatchable = maxNumberMatchable;
-        }
-        
-        @Override
-        public int compare(Result o1, Result o2) {
-            double d1 = o1.calculateSalukwdzeDistanceSquared(maxChordDiffSum, 
-                maxNMatchable);
-            double d2 = o2.calculateSalukwdzeDistanceSquared(maxChordDiffSum, 
-                maxNMatchable);
-            if (d1 < d2) {
-                return -1;
-            } else if (d1 > d2) {
-                return 1;
-            }
-            return 0;
-        }
-    
-    }
-
     public static class SRComparator implements Comparator<SR> {
 
         @Override
@@ -1107,8 +1105,11 @@ public class PartialShapeMatcher {
         
         @Override
         public int compareTo(SR other) {
-            double d1 = calcSalukDist(diffChordSum, maxChordSum, mLen, nMax);
-            double d2 = calcSalukDist(other.diffChordSum, other.maxChordSum, 
+            //to handle a changing maxDiffChordSum, will attempt to
+            // use the largest on both SR instances
+            double maxDiffChord = Math.max(maxChordSum, other.maxChordSum);
+            double d1 = calcSalukDist(diffChordSum, maxDiffChord, mLen, nMax);
+            double d2 = calcSalukDist(other.diffChordSum, maxDiffChord, 
                 other.mLen, other.nMax);
             if (d1 < d2) {
                 return -1;
@@ -1124,7 +1125,7 @@ public class PartialShapeMatcher {
         
         double calcSalukDist() {
             return calcSalukDist(diffChordSum, maxChordSum, 
-                (stopIdx1 - startIdx1 + 1), mLen);
+                (stopIdx1 - startIdx1 + 1), nMax);
         }
         
         double calcSalukDist(double compChord, double maxChord,
@@ -1174,22 +1175,7 @@ public class PartialShapeMatcher {
                     if (stop > (n2 - 1)) {
                         stop = n2 - 1;
                     }
-                    sct.extractWindowInColumn(a, col, stop, row, outC);
-                    if (outC[1] < 1) {
-                        continue;
-                    }
-                    float d = outC[0]/outC[1];
-                    if (debug) {
-                        //System.out.println(String.format(
-                        //"len=%d i=%d d=%.2f", (stop - j + 1), i, d));
-                    }
-                    if (d > thresh) {
-                        continue;
-                    }
-                    if (d > maxChordSum) {
-                        maxChordSum = d;
-                    }
-                    start = col;
+                     start = col;
                     if (stop == start) {
                         // do not store single index matches
                         continue;
@@ -1198,6 +1184,24 @@ public class PartialShapeMatcher {
                     int ni = stop - start + 1;
                     if (ni < minLength) {
                         continue;
+                    }
+                    sct.extractWindowInColumn(a, col, stop, row, outC);
+                    if (outC[1] < 1) {
+                        continue;
+                    }
+                    float d = outC[0]/outC[1];
+                    if (debug) {
+                        System.out.println("interval intervals" + d + 
+                        " sr=" + col + " : " + stop + " off=" + offset 
+                        + " Len=" + (stop - col + 1));
+                        //System.out.println(String.format(
+                        //"len=%d i=%d d=%.2f", (stop - j + 1), i, d));
+                    }
+                    if (d > thresh) {
+                        continue;
+                    }
+                    if (d > maxChordSum) {
+                        maxChordSum = d;
                     }
 
                     interval =  new Interval<Integer>(start, stop);
@@ -1216,10 +1220,19 @@ public class PartialShapeMatcher {
                     sr.setChordSumNeedsUpdate(false);
                     sr.maxChordSum = maxChordSum;
                     sr.mLen = ni;
-                    sr.nMax = n2;
+                    sr.nMax = n1; // n1 <= n2
                 
                     boolean didIns = rangeSearch.putIfLessThan(interval, sr, sr);
 
+                    System.out.println("interval: " + d + 
+                        " sr=" + col + " : " + stop 
+                        + " off=" + offset + " row=" + row 
+                        + " Len=" + (stop - col + 1)
+                        + " didIns=" + didIns 
+                        + " (maxCh=" + sr.maxChordSum
+                        + " sd=" + 
+                        sr.calcSalukDist());
+                    
                     added.add(s);
                 }
             } // end loop j
@@ -1349,6 +1362,8 @@ public class PartialShapeMatcher {
             assert(md[i][0].length == n1);
             prevA2Shifted = shifted2;
         }
+       
+        //print("differences:", md);
 
         // ---- make summary area table for md-----
         for (int i = 0; i < md.length; ++i) {
@@ -1410,7 +1425,8 @@ public class PartialShapeMatcher {
 
                 //log.fine("i1=" + i1 + " imid=" + imid + " i2=" + i2);
 
-                double angleA = LinesAndAngles.calcClockwiseAngle(
+                double angleA = LinesAndAngles.calcAngle(
+                //double angleA = LinesAndAngles.calcClockwiseAngle(
                     p.getX(i1), p.getY(i1),
                     p.getX(i2), p.getY(i2),
                     p.getX(imid), p.getY(imid)
@@ -1418,17 +1434,17 @@ public class PartialShapeMatcher {
                 
                 if (Double.isNaN(angleA)) {
                     if (i2 < i1 && i1 < imid) {
-                        angleA = LinesAndAngles
-                            .calcClockwiseAngle(
+                        angleA = LinesAndAngles.calcAngle(
+                        //angleA = LinesAndAngles.calcClockwiseAngle(
                             p.getX(i2), p.getY(i2),
                             p.getX(i1), p.getY(i1),
                             p.getX(imid), p.getY(imid));
                         if (Double.isNaN(angleA)) {
-                            angleA = LinesAndAngles
-                            .calcClockwiseAngle(
-                            p.getX(i2), p.getY(i2),
-                            p.getX(i1), p.getY(i1),
-                            p.getX(imid), p.getY(imid));
+                            angleA = LinesAndAngles.calcAngle(
+                            //angleA = LinesAndAngles.calcClockwiseAngle(
+                                p.getX(i2), p.getY(i2),
+                                p.getX(i1), p.getY(i1),
+                                p.getX(imid), p.getY(imid));
                         }
                     } else {
                         System.out.println(
@@ -2037,6 +2053,28 @@ public class PartialShapeMatcher {
             pixTol, outAddedPoints);
         
         return result;        
+    }
+
+     private void print(String label, float[][][] a) {
+        for (int i = 0; i < a.length; ++i) {
+            print(label + " off " + i, a[i]);
+        }
+    }
+
+    private void print(String label, float[][] a) {
+
+        StringBuilder sb = new StringBuilder(label);
+        sb.append("\n");
+
+        for (int i = 0; i < a.length; ++i) {
+            sb.append(String.format("row %3d: ", i));
+            for (int j = 0; j < a[i].length; ++j) {
+                sb.append(String.format(" %.2f,", a[i][j]));
+            }
+            log.fine(sb.toString());
+            System.out.println(sb.toString());
+            sb.delete(0, sb.length());
+        }
     }
 
 }

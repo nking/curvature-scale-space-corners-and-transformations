@@ -37,14 +37,32 @@ class OrderedClosedCurveCorrespondence {
     // NOTE: this makes the code "not thread safe"
     private int[] cachedIdx2 = new int[2];
     
+    private int nMatched = 0;
+    
+    private boolean doStopAt90Percent = true;
+    
     public void setMinimumLength(int length) {
         minLength = length;
+    }
+    
+    public void overrideStopAt90PercentMatched() {
+        this.doStopAt90Percent = false;
     }
 
     public void addIntervals(List<SR> intervals, int n1, int n2) {
 
+        // rule from PartialShapeMatcher is n1 <= n2.
+        float nMaxMatchable = n1;
+        
         for (PartialShapeMatcher.SR sr: intervals) {
+            //System.out.println("cost=" + sr.calcSalukDist() + 
+            //    " sr=" + sr.startIdx1 + " : " + sr.stopIdx1);
+            
             addInterval(sr, n1, n2);
+            
+            if (doStopAt90Percent && (nMatched > 0.9 * nMaxMatchable)) {
+                return;
+            }
         }
 
     }
@@ -60,13 +78,25 @@ class OrderedClosedCurveCorrespondence {
         return list;
     }
 
-public PairIntArray dbg1 = null;
-public PairIntArray dbg2 = null;
-private void print(SR sr, String label) {
-    System.out.println(label + String.format(" -->add p:(%d, %d) : (%d, %d)", 
-        dbg1.getX(sr.startIdx1), dbg1.getY(sr.startIdx1),
-        dbg1.getX(sr.stopIdx1), dbg1.getY(sr.stopIdx1)));
-}
+    /*
+    public PairIntArray dbg1 = null;
+    public PairIntArray dbg2 = null;
+    public int dp = 1;
+    private void print(SR sr, String label, int n2) {
+    calculateIds2s(sr, n2);
+    System.out.println(label + String.format(
+    "\n    -->add p: %d %d : (%d, %d) : (%d, %d) off=%d\n", 
+        sr.startIdx1, sr.stopIdx1,
+        dp*dbg1.getX(sr.startIdx1), dp*dbg1.getY(sr.startIdx1),
+        dp*dbg1.getX(sr.stopIdx1), dp*dbg1.getY(sr.stopIdx1),
+        sr.offsetIdx2)
+        + String.format(
+    "    idx2s: %d %d : (%d, %d) : (%d, %d) \n", 
+        cachedIdx2[0], cachedIdx2[1],
+        dp*dbg2.getX(cachedIdx2[0]), dp*dbg2.getY(cachedIdx2[0]),
+        dp*dbg2.getX(cachedIdx2[1]), dp*dbg2.getY(cachedIdx2[1]))
+        );
+    }*/
 
     private void addFirstInterval(SR sr) {
 
@@ -77,6 +107,8 @@ private void print(SR sr, String label) {
 
         Integer k1 = Integer.valueOf(sr.startIdx1);
         t1.put(k1, sr);
+        
+        nMatched += sr.mLen;
     }
 
     /**
@@ -97,6 +129,7 @@ private void print(SR sr, String label) {
 
         if (t1.isEmpty()) {
             addFirstInterval(sr);
+            //print(sr, "first : ", n2);
             return;
         }
 
@@ -135,6 +168,12 @@ private void print(SR sr, String label) {
             then the next pair w/ idx1=3 maps to idx2=0,
             but to keep idx2 increasing, will add n2 to make it 10.
 
+        NOTE: have added an exclusion clause that may need to be edited.
+            If a candidate interval will be adjacent to an existing interval
+            in t1 in terms of idx1, then idx2 must be adjacent also
+             within a pixel or so.
+            This is to prevent a large discontinuity.
+        
         --------------------------------------------------------
         case 0: sr.startIdx1 ceiling is null, that is, there are
                 no intervals in t1 at same or larger index position
@@ -177,66 +216,82 @@ private void print(SR sr, String label) {
                       -#- | [-#-]
 
         */
-
-        Entry<Integer, SR> stp1Ceil = t1.ceilingEntry(
+        
+        // possibly intersecting, so remove complete intersection,
+        // or inconsistent intersection
+        Entry<Integer, SR> midE = t1.ceilingEntry(
+            Integer.valueOf(sr.startIdx1));
+        if (isEmbeddedOrInconsistentWith(sr, midE, n2)) {
+            return;
+        }
+       
+        
+        Entry<Integer, SR> above = t1.floorEntry(
+            Integer.valueOf(sr.startIdx1 - 1));
+        //calculateIds2s(above.getValue(), n2);
+        //int aboveStrtIdx2 = cachedIdx2[0];
+        //int aboveStpIdx2 = cachedIdx2[1];
+        if (isEmbeddedOrInconsistentWith(sr, above, n2)) {
+            return;
+        }
+        
+        Entry<Integer, SR> below = t1.ceilingEntry(
             Integer.valueOf(sr.stopIdx1 + 1));
-
+        //calculateIds2s(below.getValue(), n2);
+        //int belowSrtIdx2 = cachedIdx2[0];
+        
+        if (isEmbeddedOrInconsistentWith(sr, below, n2)) {
+            return;
+        }
+        
         if (sr.startIdx1 == 0) {
 
-            if (stp1Ceil == null) {
+            if (below == null) {
                 // this can happen if there's only one item in t1 and
                 // sr has the same or smaller range than it.
                 return;
             }
-
+           
             // case 1
 
-            addForCase1(sr, stp1Ceil, n2);
+            addForCase1(sr, below, n2);
 
-        } else if (stp1Ceil == null) {
+        } else if (below == null) {
 
             // case 0
 
             // no entries below sr are in t1
 
             assert(sr.startIdx1 > 0);
-
-            Entry<Integer, SR> strt1Floor = t1.floorEntry(
-                Integer.valueOf(sr.startIdx1 - 1));
-
-            if (strt1Floor == null) {
+            
+            if (above == null) {
                 // this can happen if there's only one item in t1 and
                 // sr has the same or smaller range than it.
                 return;
-                //throw new IllegalStateException("Error in algorithm: "
-                //    + " there should be at least one entry in t1 at this point");
             }
 
-            addForCase0(sr, strt1Floor, n2);
+            addForCase0(sr, above, n2);
 
         } else {
 
-            Entry<Integer, SR> strt1Floor = t1.floorEntry(
-                Integer.valueOf(sr.startIdx1 - 1));
-
-            if (strt1Floor == null) {
+            if (above == null) {
 
                 // case 1
 
                 // there are no entries above sr in t1
 
-                addForCase1(sr, stp1Ceil, n2);
+                addForCase1(sr, below, n2);
 
             } else {
 
                 // case 2
 
-                addForCase2(sr, strt1Floor, stp1Ceil, n2);
+                addForCase2(sr, above, below, n2);
             }
         }
     }
 
-    private void addForCase0(SR sr, Entry<Integer, SR> strt1Floor,
+    private void addForCase0(SR sr, Entry<Integer, SR> above,
         int n2) {
 
         /*
@@ -252,20 +307,26 @@ private void print(SR sr, String label) {
                   can add interval
         */
 
-        if (case0AllConsistent(sr, strt1Floor, n2)) {
+        if (excludeCase0(above.getValue(), sr, n2)) {
+            return;
+        }
+        
+        if (case0AllConsistent(sr, above, n2)) {
             Integer k1 = Integer.valueOf(sr.startIdx1);
             t1.put(k1, sr);
- print(sr, "case 0");           
+            nMatched += sr.mLen;
+            //print(sr, "case 0", n2);           
             return;
         }
 
-        SR floor = strt1Floor.getValue();
+        SR floor = above.getValue();
         calculateIds2s(floor, n2);
         int floorStopIdx2 = cachedIdx2[1];
 
         TIntList subsetIdx1s = new TIntArrayList();
 
-        populateCase0Idx1s(sr, floor.startIdx1, floorStopIdx2, subsetIdx1s, n2);
+        populateCase0Idx1s(sr, floor.startIdx1, floorStopIdx2, 
+            subsetIdx1s, n2);
 
         int ns = subsetIdx1s.size();
         if (ns < minLength) {
@@ -278,12 +339,13 @@ private void print(SR sr, String label) {
         sr.stopIdx1 = subsetIdx1s.get(ns - 1);
         sr.mLen = sr.stopIdx1 - sr.startIdx1 + 1;
         sr.setChordSumNeedsUpdate(true);
-print(sr, "case 0 indiv");
+        //print(sr, "case 0 indiv", n2);
         Integer k1 = Integer.valueOf(sr.startIdx1);
         t1.put(k1, sr);
+        nMatched += sr.mLen;
     }
 
-    private void addForCase1(SR sr, Entry<Integer, SR> stp1Ceil,
+    private void addForCase1(SR sr, Entry<Integer, SR> below,
         int n2) {
 
         /*
@@ -304,14 +366,19 @@ print(sr, "case 0 indiv");
                return is consistent
         */
 
-        if (case1AllConsistent(sr, stp1Ceil, n2)) {
+        if (excludeCase1(below.getValue(), sr, n2)) {
+            return;
+        }
+        
+        if (case1AllConsistent(sr, below, n2)) {
             Integer k1 = Integer.valueOf(sr.startIdx1);
             t1.put(k1, sr);
-   print(sr, "case 1");         
+            nMatched += sr.mLen;
+            //print(sr, "case 1", n2);         
             return;
         }
 
-        SR ceil = stp1Ceil.getValue();
+        SR ceil = below.getValue();
         calculateIds2s(ceil, n2);
         int ceilStrtIdx2 = cachedIdx2[0];
 
@@ -330,9 +397,10 @@ print(sr, "case 0 indiv");
         sr.stopIdx1 = subsetIdx1s.get(ns - 1);
         sr.mLen = sr.stopIdx1 - sr.startIdx1 + 1;
         sr.setChordSumNeedsUpdate(true);
-print(sr, "case 1 indev");
+        //print(sr, "case 1 indev", n2);
         Integer k1 = Integer.valueOf(sr.startIdx1);
         t1.put(k1, sr);
+        nMatched += sr.mLen;
     }
 
     private boolean case0AllConsistent(SR sr,
@@ -529,9 +597,81 @@ print(sr, "case 1 indev");
         sr.stopIdx1 = subsetIdx1s2.get(ns - 1);
         sr.mLen = sr.stopIdx1 - sr.startIdx1 + 1;
         sr.setChordSumNeedsUpdate(true);
-print(sr, "case 2 indev");
+        //print(sr, "case 2 indev", n2);
         Integer k1 = Integer.valueOf(sr.startIdx1);
         t1.put(k1, sr);
+        nMatched += sr.mLen;
+    }
+
+    private boolean excludeCase0(SR above, SR sr, int n2) {
+                
+        // exclude if aboveStopIdx1 is near strt1
+        //  and strt2 is far from abovestp2
+        calculateIds2s(above, n2);
+        int aboveStp2 = cachedIdx2[1];
+        if ((sr.startIdx1 - above.startIdx1) < 2) {
+            calculateIds2s(sr, n2);
+            int strt2 = cachedIdx2[0];
+            int stp2 = cachedIdx2[1];
+            if ((strt2 < aboveStp2) || ((strt2 - aboveStp2) > 2)) {
+                //print(sr, "excluding by c0: ", n2);         
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    private boolean excludeCase1(SR below, SR sr, int n2) {
+                
+        // exclude if below.startIdx is nearly adj ro sr.stp1
+        //  and belowstrtidx2 is far from stopIdx2
+        calculateIds2s(below, n2);
+        int belowStrt2 = cachedIdx2[0];
+        if ((below.startIdx1 - sr.stopIdx1) < 2) {
+            calculateIds2s(sr, n2);
+            int strt2 = cachedIdx2[0];
+            int stp2 = cachedIdx2[1];
+            if ((belowStrt2 < stp2) || ((belowStrt2 - stp2) > 2)) {
+                //print(sr, "excluding by c1: ", n2);         
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isEmbeddedOrInconsistentWith(SR sr, 
+        Entry<Integer, SR> compE, int n2) {
+        
+        if (compE == null) {
+            return false;
+        }
+        
+        calculateIds2s(sr, n2);
+        int strtIdx2 = cachedIdx2[0];
+        int stpIdx2 = cachedIdx2[1];
+
+        SR comp = compE.getValue();
+        calculateIds2s(comp, n2);
+        int compStrtIdx2 = cachedIdx2[0];
+        int compStpIdx2 = cachedIdx2[1];
+
+        if (comp.startIdx1 < sr.startIdx1) {
+            if (!(compStrtIdx2 < stpIdx2)) {
+                return true;
+            }
+        } else if (comp.startIdx1 > sr.startIdx1) {
+            if (!(compStrtIdx2 > stpIdx2)) {
+                return true;
+            }
+        }
+        if (sr.startIdx1 >= comp.startIdx1 && sr.stopIdx1 <= comp.stopIdx1) {
+            return true;
+        }
+        if (strtIdx2 >= compStrtIdx2 && stpIdx2 <= compStpIdx2) {
+            return true;
+        }
+
+        return false;        
     }
 
 }
