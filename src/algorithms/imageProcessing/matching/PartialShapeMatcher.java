@@ -529,12 +529,12 @@ public class PartialShapeMatcher {
             }
 
             // need to decide between using the total chord diff sum
-            //   and hence the max of all of those when calculationg
-            //    he salukwzde distance
-            //   or need to use the average chord diff sum for each resul
+            //   and hence the max of all of those when calculating
+            //    the salukwzde distance
+            //   or need to use the average chord diff sum for each result
             //    and the maximum of those
-            // choosingthe later here, just as did in previous sorting of
-            // intervals, chose the later.
+            // choosing the later here, just as did in previous sorting of
+            // intervals.
 
             double maxChordAvg = Double.MIN_VALUE;
             for (Result r : results) {
@@ -543,7 +543,7 @@ public class PartialShapeMatcher {
                     maxChordAvg = d;
                 }
             }
-            double[] avgCosts = new double[results.size()];
+            float[] avgCosts = new float[results.size()];
             for (int i = 0; i < results.size(); ++i) {
                 Result r = results.get(i);
                 float n = r.getNumberOfMatches();
