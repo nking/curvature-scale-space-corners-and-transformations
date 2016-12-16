@@ -5,6 +5,8 @@ import algorithms.QuickSort;
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.imageProcessing.SummedColumnTable;
 import algorithms.imageProcessing.features.RANSACEuclideanSolver;
+import algorithms.imageProcessing.features.RANSACSolver;
+import algorithms.imageProcessing.transform.EpipolarTransformationFit;
 import algorithms.imageProcessing.transform.EuclideanTransformationFit;
 import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.transform.TransformationParameters;
@@ -22,6 +24,7 @@ import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TObjectFloatMap;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectFloatHashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
@@ -132,11 +135,13 @@ public class PartialShapeMatcher {
     // it should probably always be true.
     private boolean performEuclidTrans = false;
 
+    private boolean useRANSAC = false;
+    
     private float pixTolerance = 20;
 
     // 10 degrees is 0.1745 radians
     // for a fit to a line, consider 1E-9
-    private float thresh = 1.f;//0.85f;//(float)(Math.PI/180.) * 10.f;
+    private float thresh = 1.f;//(float)(Math.PI/180.) * 10.f;
 
     private int minLength = 7;//3;
     
@@ -147,9 +152,15 @@ public class PartialShapeMatcher {
     /**
      * turn on the euclidean transformation to evaluate the best
      * initial answers.
+     * NOTE: this needs to be improved.  might need to be combined with
+     * a lower threshold.
      */
     public void setToUseEuclidean() {
         performEuclidTrans = true;
+    }
+    
+    public void setToRemoveOutliers() {
+        useRANSAC = true;
     }
     
     /**
@@ -570,9 +581,10 @@ public class PartialShapeMatcher {
             OrderedClosedCurveCorrespondence occ = 
                 new OrderedClosedCurveCorrespondence();
         
-            //occ.dbg1 = p;
-            //occ.dbg2 = q;
-            //occ.dp = dp;
+            occ.dbg1 = p;
+            occ.dbg2 = q;
+            occ.dp = dp;
+            
             occ.setMinimumLength(minLength);
 
             occ.addIntervals(minima, n1, n2);
@@ -594,6 +606,10 @@ public class PartialShapeMatcher {
                 }
                 
                 best.chordDiffSum += sr.diffChordSum;
+            }
+            
+            if (useRANSAC) {
+                improveWithRANSAC(best, p, q, md, n1, n2);
             }
 
             return best;
@@ -1025,6 +1041,56 @@ public class PartialShapeMatcher {
             }
         }
         return max;
+    }
+
+    private void improveWithRANSAC(Result best, PairIntArray p, PairIntArray q, 
+        float[][][] md, int n1, int n2) {
+        
+        int n = best.getNumberOfMatches();
+        
+        TObjectIntMap<PairInt> pPointIndexMap = new TObjectIntHashMap<PairInt>();
+        
+        PairIntArray matchedLeftXY = new PairIntArray(n);
+        PairIntArray matchedRightXY = new PairIntArray(n);
+        for (int i = 0; i < n; ++i) {
+            int idx1 = best.idx1s.get(i);
+            int idx2 = best.idx2s.get(i);
+            matchedLeftXY.add(p.getX(idx1), p.getY(idx1));
+            matchedRightXY.add(q.getX(idx2), q.getY(idx2));
+            pPointIndexMap.put(new PairInt(p.getX(idx1), p.getY(idx1)), i);
+        }
+        
+        PairIntArray outputLeftXY = new PairIntArray();
+        PairIntArray outputRightXY = new PairIntArray();
+        
+        RANSACSolver solver = new RANSACSolver();
+
+        EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
+            matchedLeftXY, matchedRightXY, outputLeftXY, outputRightXY);
+
+        // consider ways to match the unmatched if can see that projection
+        // effects have led to large unmatched portion.
+        //    foreshortening along an axis... no vanishing lines
+        //    are present in this class for now for that
+
+        if (outputLeftXY.getN() < matchedLeftXY.getN()) {
+            int nOut = outputLeftXY.getN();
+            TIntSet present = new TIntHashSet();
+            for (int i = 0; i < nOut; ++i) {
+                PairInt p1 = new PairInt(outputLeftXY.getX(i),
+                    outputLeftXY.getY(i));
+                int lIdx = pPointIndexMap.get(p1);
+                present.add(lIdx);
+            }
+            // remove best indexes not in final output
+            for (int ii = (n - 1); ii > -1; --ii) {
+                if (!present.contains(ii)) {
+                    best.idx1s.removeAt(ii);
+                    best.idx2s.removeAt(ii);
+                }
+            }
+            populateWithChordDiffs(best, md, n1, n2);
+        }       
     }
     
     public static class SRComparator implements Comparator<SR> {

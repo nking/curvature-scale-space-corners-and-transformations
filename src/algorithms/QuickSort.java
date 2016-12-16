@@ -1044,7 +1044,7 @@ public class QuickSort {
      * @param idxLo
      * @param idxHi 
      */
-    public static void sortBy1stArg(double[] a, List b, int idxLo, int idxHi) {
+    public static void sortBy1stArg(float[] a, List b, int idxLo, int idxHi) {
         
         if (a == null) {
             throw new IllegalArgumentException("a cannot be null");
@@ -1062,7 +1062,7 @@ public class QuickSort {
         
         if (idxLo < idxHi) {
 
-            double x = a[idxLo];
+            float x = a[idxLo];
             int store = idxLo;
             int idxMid = idxHi + 1;
 
@@ -1076,7 +1076,7 @@ public class QuickSort {
                 if (store > idxMid) {
                     break;
                 }
-                double swap = a[store];
+                float swap = a[store];
                 a[store] = a[idxMid];
                 a[idxMid] = swap;
                 
@@ -1084,7 +1084,7 @@ public class QuickSort {
                 b.set(store, b.get(idxMid));
                 b.set(idxMid, bSwap);
             }
-            double swap = a[idxLo];
+            float swap = a[idxLo];
             a[idxLo] = a[idxMid];
             a[idxMid] = swap;
             

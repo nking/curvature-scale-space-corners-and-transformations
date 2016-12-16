@@ -55,8 +55,8 @@ class OrderedClosedCurveCorrespondence {
         float nMaxMatchable = n1;
         
         for (PartialShapeMatcher.SR sr: intervals) {
-            //System.out.println("cost=" + sr.calcSalukDist() + 
-            //    " sr=" + sr.startIdx1 + " : " + sr.stopIdx1);
+            System.out.println("cost=" + sr.calcSalukDist() + 
+                " sr=" + sr.startIdx1 + " : " + sr.stopIdx1);
             
             addInterval(sr, n1, n2);
             
@@ -78,7 +78,7 @@ class OrderedClosedCurveCorrespondence {
         return list;
     }
 
-    /*
+    
     public PairIntArray dbg1 = null;
     public PairIntArray dbg2 = null;
     public int dp = 1;
@@ -96,7 +96,7 @@ class OrderedClosedCurveCorrespondence {
         dp*dbg2.getX(cachedIdx2[0]), dp*dbg2.getY(cachedIdx2[0]),
         dp*dbg2.getX(cachedIdx2[1]), dp*dbg2.getY(cachedIdx2[1]))
         );
-    }*/
+    }
 
     private void addFirstInterval(SR sr) {
 
@@ -129,7 +129,7 @@ class OrderedClosedCurveCorrespondence {
 
         if (t1.isEmpty()) {
             addFirstInterval(sr);
-            //print(sr, "first : ", n2);
+            print(sr, "first : ", n2);
             return;
         }
 
@@ -315,7 +315,7 @@ class OrderedClosedCurveCorrespondence {
             Integer k1 = Integer.valueOf(sr.startIdx1);
             t1.put(k1, sr);
             nMatched += sr.mLen;
-            //print(sr, "case 0", n2);           
+            print(sr, "case 0", n2);           
             return;
         }
 
@@ -339,7 +339,7 @@ class OrderedClosedCurveCorrespondence {
         sr.stopIdx1 = subsetIdx1s.get(ns - 1);
         sr.mLen = sr.stopIdx1 - sr.startIdx1 + 1;
         sr.setChordSumNeedsUpdate(true);
-        //print(sr, "case 0 indiv", n2);
+        print(sr, "case 0 indiv", n2);
         Integer k1 = Integer.valueOf(sr.startIdx1);
         t1.put(k1, sr);
         nMatched += sr.mLen;
@@ -374,7 +374,7 @@ class OrderedClosedCurveCorrespondence {
             Integer k1 = Integer.valueOf(sr.startIdx1);
             t1.put(k1, sr);
             nMatched += sr.mLen;
-            //print(sr, "case 1", n2);         
+            print(sr, "case 1", n2);         
             return;
         }
 
@@ -397,7 +397,7 @@ class OrderedClosedCurveCorrespondence {
         sr.stopIdx1 = subsetIdx1s.get(ns - 1);
         sr.mLen = sr.stopIdx1 - sr.startIdx1 + 1;
         sr.setChordSumNeedsUpdate(true);
-        //print(sr, "case 1 indev", n2);
+        print(sr, "case 1 indev", n2);
         Integer k1 = Integer.valueOf(sr.startIdx1);
         t1.put(k1, sr);
         nMatched += sr.mLen;
@@ -597,7 +597,7 @@ class OrderedClosedCurveCorrespondence {
         sr.stopIdx1 = subsetIdx1s2.get(ns - 1);
         sr.mLen = sr.stopIdx1 - sr.startIdx1 + 1;
         sr.setChordSumNeedsUpdate(true);
-        //print(sr, "case 2 indev", n2);
+        print(sr, "case 2 indev", n2);
         Integer k1 = Integer.valueOf(sr.startIdx1);
         t1.put(k1, sr);
         nMatched += sr.mLen;
@@ -614,7 +614,7 @@ class OrderedClosedCurveCorrespondence {
             int strt2 = cachedIdx2[0];
             int stp2 = cachedIdx2[1];
             if ((strt2 < aboveStp2) || ((strt2 - aboveStp2) > 2)) {
-                //print(sr, "excluding by c0: ", n2);         
+                print(sr, "excluding by c0: ", n2);         
                 return true;
             }
         }
@@ -632,7 +632,7 @@ class OrderedClosedCurveCorrespondence {
             int strt2 = cachedIdx2[0];
             int stp2 = cachedIdx2[1];
             if ((belowStrt2 < stp2) || ((belowStrt2 - stp2) > 2)) {
-                //print(sr, "excluding by c1: ", n2);         
+                print(sr, "excluding by c1: ", n2);         
                 return true;
             }
         }
