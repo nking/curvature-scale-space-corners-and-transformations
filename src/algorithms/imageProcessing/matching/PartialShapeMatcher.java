@@ -581,9 +581,9 @@ public class PartialShapeMatcher {
             OrderedClosedCurveCorrespondence occ = 
                 new OrderedClosedCurveCorrespondence();
         
-            occ.dbg1 = p;
-            occ.dbg2 = q;
-            occ.dp = dp;
+            //occ.dbg1 = p;
+            //occ.dbg2 = q;
+            //occ.dp = dp;
             
             occ.setMinimumLength(minLength);
 
@@ -1290,7 +1290,7 @@ public class PartialShapeMatcher {
                 
                     boolean didIns = rangeSearch.putIfLessThan(interval, sr, sr);
 
-                    System.out.println("interval: " + d + 
+                    /*System.out.println("interval: " + d + 
                         " sr=" + col + " : " + stop 
                         + " off=" + offset + " row=" + row 
                         + " Len=" + (stop - col + 1)
@@ -1298,6 +1298,7 @@ public class PartialShapeMatcher {
                         + " (maxCh=" + sr.maxChordSum
                         + " sd=" + 
                         sr.calcSalukDist());
+                    */
                     
                     added.add(s);
                 }

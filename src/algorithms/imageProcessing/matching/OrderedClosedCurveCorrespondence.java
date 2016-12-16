@@ -55,8 +55,8 @@ class OrderedClosedCurveCorrespondence {
         float nMaxMatchable = n1;
         
         for (PartialShapeMatcher.SR sr: intervals) {
-            System.out.println("cost=" + sr.calcSalukDist() + 
-                " sr=" + sr.startIdx1 + " : " + sr.stopIdx1);
+            //System.out.println("cost=" + sr.calcSalukDist() + 
+            //    " sr=" + sr.startIdx1 + " : " + sr.stopIdx1);
             
             addInterval(sr, n1, n2);
             
@@ -79,11 +79,11 @@ class OrderedClosedCurveCorrespondence {
     }
 
     
-    public PairIntArray dbg1 = null;
-    public PairIntArray dbg2 = null;
-    public int dp = 1;
+    //public PairIntArray dbg1 = null;
+    //public PairIntArray dbg2 = null;
+    //public int dp = 1;
     private void print(SR sr, String label, int n2) {
-    calculateIds2s(sr, n2);
+    /*calculateIds2s(sr, n2);
     System.out.println(label + String.format(
     "\n    -->add p: %d %d : (%d, %d) : (%d, %d) off=%d\n", 
         sr.startIdx1, sr.stopIdx1,
@@ -96,6 +96,7 @@ class OrderedClosedCurveCorrespondence {
         dp*dbg2.getX(cachedIdx2[0]), dp*dbg2.getY(cachedIdx2[0]),
         dp*dbg2.getX(cachedIdx2[1]), dp*dbg2.getY(cachedIdx2[1]))
         );
+        */
     }
 
     private void addFirstInterval(SR sr) {
