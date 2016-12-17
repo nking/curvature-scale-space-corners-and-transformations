@@ -46,6 +46,7 @@ import thirdparty.edu.princeton.cs.algs4.IntervalRangeSearch;
 based upon algorithm in paper
  "Efficient Partial Shape Matching
     of Outer Contours: by Donoser
+  
      - called IS-Match, integral shape match
      - a silhouette of ordered points are sampled
          making it an "order preserved assignment problem".
@@ -88,6 +89,11 @@ based upon algorithm in paper
                    overrideSamplingDistance(dp)
                unit test using dp of 1 and 2 work well
 
+       Note: in the code here I use summed columns instead of summed areas.
+       Also note that I've added options for euclidean transformations
+       as evaluation for best solution and have added the ability to use
+       RANSAC to remove outliers from the best solution.
+  
        The runtime complexity for building the integral
        image is O(m*n) where n and m are the number of sampled
        points on the input shapes.
@@ -110,13 +116,6 @@ based upon algorithm in paper
  */
 public class PartialShapeMatcher {
 
-    /**
-     * TODO:
-     * (1) improve the articulated matching
-     * (2) add to the end of the euclidean transformation, a check for effects
-     *     due to prpjection and an attempt to correct them.
-     */
-    
     /**
      * in sampling the boundaries of the shapes, one can
      * choose to use the same number for each (which can result
