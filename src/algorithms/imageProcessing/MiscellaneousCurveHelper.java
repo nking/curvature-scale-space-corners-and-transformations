@@ -4,6 +4,8 @@ import algorithms.compGeometry.convexHull.GrahamScanPairInt;
 import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
 import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceContour;
+import algorithms.imageProcessing.transform.TransformationParameters;
+import algorithms.imageProcessing.transform.Transformer;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.PairIntWithIndex0;
 import algorithms.misc.AverageUtil;
@@ -2188,6 +2190,32 @@ public class MiscellaneousCurveHelper {
                 (closedCurve.getX(0) - closedCurve.getX(n -1)));
         
         return sum;
+    }
+
+    public PairIntArray scaleDown(PairIntArray a, float scale) {
+        
+        double[] cenXY = calculateXYCentroids(a);
+     
+        TransformationParameters params = new TransformationParameters();
+        params.setOriginX((float)cenXY[0]);
+        params.setOriginX((float)cenXY[1]);
+        params.setScale(scale);
+        
+        Transformer transformer = new Transformer();
+        PairIntArray b = transformer.applyTransformation(params, a);
+    
+        // when shrinking, there may be overlapping points
+        Set<PairInt> added = new HashSet<PairInt>();
+        for (int i = (b.getN() - 1); i > -1; --i) {
+            PairInt p = new PairInt(b.getX(i), b.getY(i));
+            if (added.contains(p)) {
+                b.removeRange(i, i);
+            } else {
+                added.add(p);
+            }
+        }
+        
+        return b;
     }
 
 }

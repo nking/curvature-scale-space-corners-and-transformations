@@ -166,11 +166,19 @@ public class PartialShapeMatcher {
     /**
      * override the threshold for using a chord differernce value
      * for the average value.   
-     * By default it is set to 0.01.
+     * By default it is set to 1.
      * @param t 
      */
     public void _overrideToThreshhold(float t) {
         this.thresh = t;
+    }
+    
+    /**
+     * override the default minimum length of 7.
+     * @param length 
+     */
+    public void overrideMinimumLength(int length) {
+        this.minLength = length;
     }
 
     /**

@@ -4,6 +4,7 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.misc.MiscMath;
 import algorithms.util.CorrespondencePlotter;
@@ -34,7 +35,7 @@ public class PartialShapeMatcherTest extends TestCase {
     public PartialShapeMatcherTest() {
     }
 
-    public void estSummedColumnTables() {
+    public void testSummedColumnTables() {
 
         /*
         2 9  2  7     9 11  18
@@ -157,10 +158,70 @@ public class PartialShapeMatcherTest extends TestCase {
         }
     }
     
+    public void testScissorsMatch16_scaled() throws Exception {
+        
+        MiscellaneousCurveHelper curveHelper = 
+            new MiscellaneousCurveHelper();
+        
+        // rotate points p so that start points are
+        // different and assert that wrap around is
+        // handled correctly
+        PairIntArray p = getScissors1();
+        p.rotateLeft(16);
+        p = curveHelper.scaleDown(p, 0.5f);
+        plot(p, 200);
+
+        PairIntArray q = getScissors2();
+        //q = curveHelper.scaleDown(q, 0.5f);
+        plot(q, 201);
+       
+        log.info("p.n=" + p.getN() + " q.n=" + q.getN());
+
+        //q.rotateLeft(q.getN() - 3);
+        PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
+        shapeMatcher.overrideSamplingDistance(1);
+        
+        shapeMatcher.overrideMinimumLength(4);
+        shapeMatcher.setToUseSameNumberOfPoints();
+        //shapeMatcher.setToDebug();
+        
+        // articulated:
+        PartialShapeMatcher.Result result = shapeMatcher.match(p, q);
+
+        assertNotNull(result);
+
+        log.info("RESULTS= scissors offset15: "
+            + result.toString());
+
+        CorrespondencePlotter plotter = new CorrespondencePlotter(p, q);
+
+        for (int ii = 0; ii < result.getNumberOfMatches(); ++ii) {
+            int idx1 = result.getIdx1(ii);
+            int idx2 = result.getIdx2(ii);
+            int x1 = p.getX(idx1);
+            int y1 = p.getY(idx1);
+            int x2 = q.getX(idx2);
+            int y2 = q.getY(idx2);
+            //System.out.println(String.format(
+            //"(%d, %d) <=> (%d, %d)", x1, y1, x2, y2));
+
+            if ((ii % 4) == 0) {
+                plotter.drawLineInAlternatingColors(x1, y1, x2, y2,
+                    0);
+            }
+        }
+        String filePath = plotter.writeImage("_"
+            + "_scissors_offset16_corres");
+
+        if (enableAsserts) {
+            assertTrue(result.getFractionOfWhole() > 0.3);
+        }
+    }
+    
     public void testAndroidGingerbreadSameScale() throws Exception {
 
         //TODO: need tests for same size, for 1st larger than 2nd and for
-        // 3nd larger than 1st
+        // 2nd larger than 1st
         
         /*
         NOTE: andr 01 test is preferentially fitting the large square
@@ -183,9 +244,22 @@ public class PartialShapeMatcherTest extends TestCase {
 
         String fileName1 = "";
 
-        for (int type = 0; type < 1; ++type) {
+        for (int type = 0; type < 2; ++type) {
             for (int i = 0; i < 4; ++i) {
+                
+                int dp = 2;
 
+                PartialShapeMatcher matcher =
+                    new PartialShapeMatcher();
+                //matcher.setToDebug();
+                if (type == 0) {
+                    matcher._overrideToThreshhold(0.2f);
+                } else if (type == 1) {
+                    matcher.setToUseEuclidean();
+                }
+                matcher.overrideSamplingDistance(dp);
+                matcher.setToRemoveOutliers();
+                
                 switch(i) {
                     case 0: {
                         fileName1
@@ -222,18 +296,7 @@ public class PartialShapeMatcherTest extends TestCase {
                 + " to " + fileName1Root + " (" + p.getN()
                 + " points to " + q.getN() + " points");
 
-                int dp = 2;
-
-                PartialShapeMatcher matcher =
-                    new PartialShapeMatcher();
-                //matcher.setToDebug();
-                if (type == 1) {
-                    matcher.setToUseEuclidean();
-                }
-                matcher.overrideSamplingDistance(dp);
-                //matcher._overrideToThreshhold(0.2f);
-                matcher.setToRemoveOutliers();
-                
+               
                 PartialShapeMatcher.Result result = matcher.match(p, q);
 
                 assertNotNull(result);
@@ -261,34 +324,6 @@ public class PartialShapeMatcherTest extends TestCase {
                 }
                 String filePath = plotter.writeImage("_" +
                         fileName1Root + "_corres_" + type);
-
-                int expOffset = 0;
-                float expFrac = 0.4f;
-                switch (i) {
-                    case 0:
-                        expOffset = 217;
-                        break;
-                    case 1:
-                        expOffset = 112;
-                        break;
-                    case 2:
-                        expOffset = 0;
-                        expFrac = 1.0f;
-                        break;
-                    case 3:
-                        expOffset = 173;//168
-                        break;
-                    default:
-                        break;
-                }
-
-                expFrac /= (float)dp;
-
-                System.out.println(" expOffset=" + expOffset); 
-
-                if (enableAsserts) {
-                    assertTrue(result.getFractionOfWhole() >= expFrac);
-                }
             }
         }
     }
@@ -355,7 +390,7 @@ public class PartialShapeMatcherTest extends TestCase {
             matcher.setToUseSameNumberOfPoints();
             matcher.overrideSamplingDistance(dp);
             //matcher._overrideToThreshhold(0.2f);
-            matcher.setToRemoveOutliers();
+            //matcher.setToRemoveOutliers();
             
             PartialShapeMatcher.Result result = matcher.match(p, q);
 
@@ -404,7 +439,7 @@ public class PartialShapeMatcherTest extends TestCase {
         }
     }
     
-    public void estMatchLines() {
+    public void testMatchLines() {
         
         // close to correct, but one set of lines is interpreted as
         // 1 line instead of 2 due to threshold of consecutive points.
