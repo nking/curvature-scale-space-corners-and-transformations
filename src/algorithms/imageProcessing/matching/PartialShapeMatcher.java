@@ -1,6 +1,5 @@
 package algorithms.imageProcessing.matching;
 
-import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.imageProcessing.SummedColumnTable;

@@ -35,14 +35,13 @@ public class PartialShapeMatcherTest extends TestCase {
     public PartialShapeMatcherTest() {
     }
 
+    /*
     public void testSummedColumnTables() {
 
-        /*
-        2 9  2  7     9 11  18
-        1 5  1  2     5  6   8 
-        0 2  3  5     2  5  10 
-          0  1  2
-         */
+        //2 9  2  7     9 11  18
+        //1 5  1  2     5  6   8 
+        //0 2  3  5     2  5  10 
+        //  0  1  2
         float[][] a = new float[3][];
         a[0] = new float[]{2, 3, 5};
         a[1] = new float[]{5, 1, 2};
@@ -56,6 +55,7 @@ public class PartialShapeMatcherTest extends TestCase {
         assertTrue(Arrays.equals(new float[]{9, 11, 18}, a[2]));
 
     }
+    */
 
     public void testScissorsMatch0() throws Exception {
 

@@ -3,6 +3,7 @@ package algorithms.imageProcessing.matching;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.matching.LineFinder.LineResult;
 import algorithms.misc.MiscMath;
@@ -277,6 +278,32 @@ public class LineFinderTest extends TestCase {
             " matched size=" + nMatched);
         
         assertTrue(a.getN() >= nMatched);        
+    }
+    
+    
+    public void testCircle() {
+        
+        // shows that implementing the high resolution options
+        // in LineFinder are needed
+        
+        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
+        PairIntArray a = ch.createContiguousCircle(50, 70, 70);
+     
+        LineFinder matcher = new LineFinder();
+        //matcher.overrideMinimumLineLength(3);
+        //matcher.setToDebug();
+        matcher._overrideToThreshhold(0.01f);
+        LineResult r = matcher.match(a);
+        List<PairInt> lr = r.getLineIndexRanges();
+        
+        System.out.println("number of line found in circle=" + lr.size() + ""
+            + ", circle size=" + a.getN());
+    
+        for (int i = 0; i < lr.size(); ++i) {
+            int x = lr.get(i).getX(); 
+            int y = lr.get(i).getY(); 
+            System.out.println(x + ":" + y + "   " + " segIdx=" + i);
+        }
     }
     
     // TODO: add a circle test (== null test)

@@ -2218,4 +2218,59 @@ public class MiscellaneousCurveHelper {
         return b;
     }
 
+    public PairIntArray createContiguousCircle(float radius) {
+
+        int shift = (int)Math.ceil(radius);
+    
+        return createContiguousCircle(radius, shift, shift);
+    }
+    
+    public PairIntArray createContiguousCircle(float radius, int xShift, 
+        int yShift) {
+        
+        // for a change in y to be at least 1 pixel, theta would be:
+        //   theta = asin(1/r)
+        double theta = Math.asin(1./radius);
+        
+        Set<PairInt> added = new HashSet<PairInt>();
+        
+        PairIntArray circle = new PairIntArray();
+        double t = 0;
+        int x, y;
+        while (t <= Math.PI/2.) {
+            x = xShift + (int)Math.round(radius * Math.cos(t));
+            y = yShift + (int)Math.round(radius * Math.sin(t));
+            PairInt p = new PairInt(x, y);
+            t += theta;
+            if (added.contains(p)) {
+                continue;
+            }
+            circle.add(x, y);
+            added.add(p);
+        }
+        int n90 = circle.getN();
+        for (int i = (n90 - 1); i > -1; --i) {
+            x = xShift -1 * (circle.getX(i) - xShift);
+            y = circle.getY(i);
+            PairInt p = new PairInt(x, y);
+            if (added.contains(p)) {
+                continue;
+            }
+            circle.add(x, y);
+            added.add(p);
+        }
+        int n180 = circle.getN();
+        for (int i = (n180 - 1); i > -1; --i) {
+            x = circle.getX(i);
+            y = yShift -1 * (circle.getY(i) - yShift);
+            PairInt p = new PairInt(x, y);
+            if (added.contains(p)) {
+                continue;
+            }
+            circle.add(x, y);
+            added.add(p);
+        }
+        
+        return circle;
+    }
 }
