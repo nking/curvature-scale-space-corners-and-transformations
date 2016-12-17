@@ -145,6 +145,8 @@ public class PartialShapeMatcher {
 
     private int minLength = 7;//3;
     
+    private int maxLength = -1;
+    
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
     private boolean debug = false;
@@ -179,6 +181,14 @@ public class PartialShapeMatcher {
      */
     public void overrideMinimumLength(int length) {
         this.minLength = length;
+    }
+    
+    /**
+     * override the default maximum length of n1 - 1.
+     * @param length 
+     */
+    public void overrideMaximumLength(int length) {
+        this.maxLength = length;
     }
 
     /**
@@ -589,9 +599,12 @@ public class PartialShapeMatcher {
             OrderedClosedCurveCorrespondence occ = 
                 new OrderedClosedCurveCorrespondence();
         
-            //occ.dbg1 = p;
-            //occ.dbg2 = q;
-            //occ.dp = dp;
+            if (debug) {
+                occ.dbg1 = p;
+                occ.dbg2 = q;
+                occ.dp = dp;
+                occ.setToDebug();
+            }
             
             occ.setMinimumLength(minLength);
 
@@ -713,9 +726,9 @@ public class PartialShapeMatcher {
     }
     
     private double calcSalukDist(double compChord, double maxChord,
-        int length, int maxLength) {
+        int length, int maxMatchable) {
         double d = compChord/maxChord;
-        double f = 1. - ((double)length/(double)maxLength);
+        double f = 1. - ((double)length/(double)maxMatchable);
         return f*f + d*d;
     }
 
@@ -1203,9 +1216,9 @@ public class PartialShapeMatcher {
         }
         
         double calcSalukDist(double compChord, double maxChord,
-            int length, int maxLength) {
+            int length, int maxMatchable) {
             double d = compChord/maxChord;
-            double f = 1. - ((double)length/(double)maxLength);
+            double f = 1. - ((double)length/(double)maxMatchable);
             return f*f + d*d;
         }
     }
@@ -1241,8 +1254,13 @@ public class PartialShapeMatcher {
         
         SummedColumnTable sct = new SummedColumnTable();
         
+        int rUpper = n1 - 1;
+        if (maxLength > -1 && maxLength < (rUpper)) {
+            rUpper = maxLength;
+        }
+        
         // using row major notation of a[row][col]
-        for (int r = (n1 - 1); r >= minLength; --r) {
+        for (int r = rUpper; r >= minLength; --r) {
             for (int row = 0; row < n1; ++row) {
                 for (int col = 0; col < n2; col += r) {
                     stop = col + r;
@@ -1264,8 +1282,8 @@ public class PartialShapeMatcher {
                         continue;
                     }
                     float d = outC[0]/outC[1];
-                    if (debug) {
-                        System.out.println("interval intervals" + d + 
+                    if (debug && ((col % 50) == 0)) {
+                        System.out.println("interval " + d + 
                         " sr=" + col + " : " + stop + " off=" + offset 
                         + " Len=" + (stop - col + 1));
                         //System.out.println(String.format(
@@ -1298,15 +1316,16 @@ public class PartialShapeMatcher {
                 
                     boolean didIns = rangeSearch.putIfLessThan(interval, sr, sr);
 
-                    /*System.out.println("interval: " + d + 
-                        " sr=" + col + " : " + stop 
-                        + " off=" + offset + " row=" + row 
-                        + " Len=" + (stop - col + 1)
-                        + " didIns=" + didIns 
-                        + " (maxCh=" + sr.maxChordSum
-                        + " sd=" + 
-                        sr.calcSalukDist());
-                    */
+                    if (debug) {
+                        System.out.println("interval: " + d + 
+                            " sr=" + col + " : " + stop 
+                            + " off=" + offset + " row=" + row 
+                            + " Len=" + (stop - col + 1)
+                            + " didIns=" + didIns 
+                            + " (maxCh=" + sr.maxChordSum
+                            + " sd=" + 
+                            sr.calcSalukDist());
+                    }
                     
                     added.add(s);
                 }

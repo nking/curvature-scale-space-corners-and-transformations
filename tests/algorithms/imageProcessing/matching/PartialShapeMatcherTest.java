@@ -219,18 +219,15 @@ public class PartialShapeMatcherTest extends TestCase {
     }
     
     public void testAndroidGingerbreadSameScale() throws Exception {
-
-        //TODO: need tests for same size, for 1st larger than 2nd and for
-        // 2nd larger than 1st
-        
         /*
-        NOTE: andr 01 test is preferentially fitting the large square
-        corners which are artifacts of segmentation.
-        The test shows the difficulty of shape matching with
-        under=segmented data (shapes which have merged with objects
-        that are not part of the shape).
+        For same scale and very little noise, the
+        best results are obtained with options:
+            matcher.overrideSamplingDistance(dp);
+            matcher._overrideToThreshhold(0.2f);
+        If there is alot of noise, should add:
+            matcher.setToRemoveOutliers();
         */
-        
+       
         String fileName0
             = "android_statues_03_sz1_mask_small.png";
         int idx = fileName0.lastIndexOf(".");
@@ -330,6 +327,17 @@ public class PartialShapeMatcherTest extends TestCase {
     
     public void testAndroidGingerbreadDiffScale() throws Exception {
 
+        /*
+        for a different scale matching,
+        best results are obtained with:
+            matcher.setToUseSameNumberOfPoints();
+            matcher.overrideSamplingDistance(1);
+            matcher.setToUseEuclidean();
+        */
+        
+         MiscellaneousCurveHelper curveHelper = 
+            new MiscellaneousCurveHelper();
+                
         SIGMA sigma = SIGMA.ONE;
 
         String fileName0
@@ -341,6 +349,7 @@ public class PartialShapeMatcherTest extends TestCase {
         ImageExt img0 = ImageIOHelper.readImageExt(filePath0);
 
         PairIntArray p = extractOrderedBoundary(img0, sigma);
+        //p = curveHelper.scaleDown(p, 0.5f);
         plot(p, 100);
 
         String fileName1 = "";
@@ -384,13 +393,13 @@ public class PartialShapeMatcherTest extends TestCase {
             + " points to " + q.getN() + " points");
 
             int dp = 1;
-            PartialShapeMatcher matcher =
-                new PartialShapeMatcher();
+            PartialShapeMatcher matcher = new PartialShapeMatcher();
             //matcher.setToDebug();
             matcher.setToUseSameNumberOfPoints();
             matcher.overrideSamplingDistance(dp);
             //matcher._overrideToThreshhold(0.2f);
             //matcher.setToRemoveOutliers();
+            matcher.setToUseEuclidean();
             
             PartialShapeMatcher.Result result = matcher.match(p, q);
 

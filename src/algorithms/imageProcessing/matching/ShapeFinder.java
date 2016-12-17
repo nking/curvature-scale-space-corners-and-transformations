@@ -540,9 +540,10 @@ public static int oct2 = -1;
             }
 
             PartialShapeMatcher matcher = new PartialShapeMatcher();
+            matcher._overrideToThreshhold(0.2f);
             matcher.overrideSamplingDistance(dp);
+            matcher.setToRemoveOutliers();
             //matcher.setToDebug();
-            //matcher.setToUseSameNumberOfPoints();
             PartialShapeMatcher.Result r = matcher.match(bounds1, boundsI);
             if (r == null) {
                 continue;

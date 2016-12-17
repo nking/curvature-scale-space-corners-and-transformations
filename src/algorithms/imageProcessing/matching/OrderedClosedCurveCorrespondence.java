@@ -41,6 +41,17 @@ class OrderedClosedCurveCorrespondence {
     
     private boolean doStopAt90Percent = true;
     
+    // begin purely debug variables
+    private boolean debug = false;
+    public PairIntArray dbg1 = null;
+    public PairIntArray dbg2 = null;
+    public int dp = 1;
+    // end purely debug variables
+    
+    public void setToDebug() {
+        debug = true;
+    }
+    
     public void setMinimumLength(int length) {
         minLength = length;
     }
@@ -55,8 +66,10 @@ class OrderedClosedCurveCorrespondence {
         float nMaxMatchable = n1;
         
         for (PartialShapeMatcher.SR sr: intervals) {
-            //System.out.println("cost=" + sr.calcSalukDist() + 
-            //    " sr=" + sr.startIdx1 + " : " + sr.stopIdx1);
+            if (debug) {
+                System.out.println("cost=" + sr.calcSalukDist() + 
+                " sr=" + sr.startIdx1 + " : " + sr.stopIdx1);
+            }
             
             addInterval(sr, n1, n2);
             
@@ -79,24 +92,23 @@ class OrderedClosedCurveCorrespondence {
     }
 
     
-    //public PairIntArray dbg1 = null;
-    //public PairIntArray dbg2 = null;
-    //public int dp = 1;
+   
     private void print(SR sr, String label, int n2) {
-    /*calculateIds2s(sr, n2);
-    System.out.println(label + String.format(
-    "\n    -->add p: %d %d : (%d, %d) : (%d, %d) off=%d\n", 
-        sr.startIdx1, sr.stopIdx1,
-        dp*dbg1.getX(sr.startIdx1), dp*dbg1.getY(sr.startIdx1),
-        dp*dbg1.getX(sr.stopIdx1), dp*dbg1.getY(sr.stopIdx1),
-        sr.offsetIdx2)
-        + String.format(
-    "    idx2s: %d %d : (%d, %d) : (%d, %d) \n", 
-        cachedIdx2[0], cachedIdx2[1],
-        dp*dbg2.getX(cachedIdx2[0]), dp*dbg2.getY(cachedIdx2[0]),
-        dp*dbg2.getX(cachedIdx2[1]), dp*dbg2.getY(cachedIdx2[1]))
-        );
-        */
+        if (debug) {
+            calculateIds2s(sr, n2);
+            System.out.println(label + String.format(
+            "\n    -->add p: %d %d : (%d, %d) : (%d, %d) off=%d\n", 
+            sr.startIdx1, sr.stopIdx1,
+            dp*dbg1.getX(sr.startIdx1), dp*dbg1.getY(sr.startIdx1),
+            dp*dbg1.getX(sr.stopIdx1), dp*dbg1.getY(sr.stopIdx1),
+            sr.offsetIdx2)
+            + String.format(
+        "    idx2s: %d %d : (%d, %d) : (%d, %d) \n", 
+            cachedIdx2[0], cachedIdx2[1],
+            dp*dbg2.getX(cachedIdx2[0]), dp*dbg2.getY(cachedIdx2[0]),
+            dp*dbg2.getX(cachedIdx2[1]), dp*dbg2.getY(cachedIdx2[1]))
+            );
+        }
     }
 
     private void addFirstInterval(SR sr) {
@@ -130,7 +142,9 @@ class OrderedClosedCurveCorrespondence {
 
         if (t1.isEmpty()) {
             addFirstInterval(sr);
-            print(sr, "first : ", n2);
+            if (debug) {
+                print(sr, "first : ", n2);
+            }
             return;
         }
 
@@ -316,7 +330,9 @@ class OrderedClosedCurveCorrespondence {
             Integer k1 = Integer.valueOf(sr.startIdx1);
             t1.put(k1, sr);
             nMatched += sr.mLen;
-            print(sr, "case 0", n2);           
+            if (debug) {
+                print(sr, "case 0", n2);
+            }
             return;
         }
 
@@ -340,7 +356,9 @@ class OrderedClosedCurveCorrespondence {
         sr.stopIdx1 = subsetIdx1s.get(ns - 1);
         sr.mLen = sr.stopIdx1 - sr.startIdx1 + 1;
         sr.setChordSumNeedsUpdate(true);
-        print(sr, "case 0 indiv", n2);
+        if (debug) {
+            print(sr, "case 0 indiv", n2);
+        }
         Integer k1 = Integer.valueOf(sr.startIdx1);
         t1.put(k1, sr);
         nMatched += sr.mLen;
@@ -375,7 +393,9 @@ class OrderedClosedCurveCorrespondence {
             Integer k1 = Integer.valueOf(sr.startIdx1);
             t1.put(k1, sr);
             nMatched += sr.mLen;
-            print(sr, "case 1", n2);         
+            if (debug) {
+                print(sr, "case 1", n2);
+            }
             return;
         }
 
@@ -398,7 +418,9 @@ class OrderedClosedCurveCorrespondence {
         sr.stopIdx1 = subsetIdx1s.get(ns - 1);
         sr.mLen = sr.stopIdx1 - sr.startIdx1 + 1;
         sr.setChordSumNeedsUpdate(true);
-        print(sr, "case 1 indev", n2);
+        if (debug) {
+            print(sr, "case 1 indev", n2);
+        }
         Integer k1 = Integer.valueOf(sr.startIdx1);
         t1.put(k1, sr);
         nMatched += sr.mLen;
@@ -598,7 +620,9 @@ class OrderedClosedCurveCorrespondence {
         sr.stopIdx1 = subsetIdx1s2.get(ns - 1);
         sr.mLen = sr.stopIdx1 - sr.startIdx1 + 1;
         sr.setChordSumNeedsUpdate(true);
-        print(sr, "case 2 indev", n2);
+        if (debug) {
+            print(sr, "case 2 indev", n2);
+        }
         Integer k1 = Integer.valueOf(sr.startIdx1);
         t1.put(k1, sr);
         nMatched += sr.mLen;
