@@ -95,10 +95,8 @@ based upon algorithm in paper
        RANSAC to remove outliers from the best solution.
   
        The runtime complexity for building the integral
-       image is O(m*n) where n and m are the number of sampled
+       image is O(n*m*n) where m and n are the number of sampled
        points on the input shapes.
-       (note:  this is a work in progress, the current runtime has another
-       factor of n in it)
 
        The runtime complexity for the search of the
        integral image of summed differences and analysis
@@ -1261,10 +1259,10 @@ public class PartialShapeMatcher {
         // using row major notation of a[row][col]
         for (int r = rUpper; r >= minLength; --r) {
             for (int row = 0; row < n1; ++row) {
-                for (int col = 0; col < n2; col += r) {
+                for (int col = 0; col < n1; col += r) {
                     stop = col + r;
-                    if (stop > (n2 - 1)) {
-                        stop = n2 - 1;
+                    if (stop > (n1 - 1)) {
+                        stop = n1 - 1;
                     }
                      start = col;
                     if (stop == start) {

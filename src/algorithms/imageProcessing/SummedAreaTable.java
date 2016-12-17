@@ -373,7 +373,7 @@ public class SummedAreaTable {
      * @param stopY coordinate for y stop of window
      * @param output one dimensional array of size 2 in which the
      * sum of the window will be returned and the number of pixels in the 
-     * window.  int[]{sum, nPixels}
+     * window.  float[]{sum, nPixels}
      */
     public void extractWindowFromSummedAreaTable(float[][] imgS, 
         int startX, int stopX, int startY, int stopY, float output[]) {
