@@ -554,13 +554,13 @@ MiscDebug.writeImage(dbg, "_boundaries_" +MiscDebug.getCurrentTimeFormatted());
         int w = img.getWidth();
         int h = img.getHeight();
           
-        boolean drawLines = true;
+        boolean drawLines = false;
              
         // TODO: consider revising this
         int end = 15;
-        if (end > (orderedTRList.size() - 1)) {
+        //if (end > (orderedTRList.size() - 1)) {
             end = orderedTRList.size();
-        }
+        //}
         for (int i = 0; i < end; ++i) {
             
             PairInt tr = orderedTRList.get(i);

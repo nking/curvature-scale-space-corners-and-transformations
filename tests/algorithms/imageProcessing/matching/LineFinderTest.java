@@ -285,6 +285,10 @@ public class LineFinderTest extends TestCase {
         
         // shows that implementing the high resolution options
         // in LineFinder are needed
+        //
+        // will use the new high resolution settings to make sure lines in house.gif
+        // are found and that lines in circle here are not found.
+        
         
         MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
         PairIntArray a = ch.createContiguousCircle(50, 70, 70);
@@ -292,7 +296,8 @@ public class LineFinderTest extends TestCase {
         LineFinder matcher = new LineFinder();
         //matcher.overrideMinimumLineLength(3);
         //matcher.setToDebug();
-        matcher._overrideToThreshhold(0.01f);
+        matcher._overrideToThreshold(0.01f);
+        matcher._overrideToTotalThreshold(0.1f);
         LineResult r = matcher.match(a);
         List<PairInt> lr = r.getLineIndexRanges();
         
@@ -305,9 +310,6 @@ public class LineFinderTest extends TestCase {
             System.out.println(x + ":" + y + "   " + " segIdx=" + i);
         }
     }
-    
-    // TODO: add a circle test (== null test)
-    //       add tests empirically to find reasonable threshold
     
     protected PairIntArray getTriangle() {
         /*

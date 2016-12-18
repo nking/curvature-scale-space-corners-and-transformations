@@ -50,27 +50,22 @@ Also, the summed table of the chord differences is only along columns.
 public class LineFinder {
 
     /**
-     * in sampling the boundaries of the shapes, one can
-     * choose to use the same number for each (which can result
-     * in very different spacings for different sized curves)
-     * or one can choose a set distance between sampling
-     * points.
-     * dp is the set distance between sampling points.
-       The authors of the paper use 3 as an example.
+      dp is the set distance between sampling points.
+      The authors of the paper use 3 as an example.
     */
     protected int dp = 1;
 
     // 10 degrees is 0.1745 radians
     // for a fit to a horizontal or vertical line only, 
     // consider 1E-7
-    private float thresh = 0.3f;      
+    private float thresh = 0.17f;//0.3f;      
     
-    // this one is a rough limi to the total chord diff
+    // this one is a rough limit to the total chord diff
     // sum over a found line segment.
-    private int thresh3 = 10;
+    private float thresh3 = 3;//10;
 
     //NOTE: for staircase roofs like house_color.png has, 
-    //   increasing thresh to 0.4 nd thresh3 to 15 finds the
+    //   increasing thresh to 0.4 and thresh3 to 15 finds the
     //   remaining lines
     
     private int minLength = 10;
@@ -82,10 +77,24 @@ public class LineFinder {
     private int lastCol = -1;
     private int lastRow = -1;
     
+    private boolean useHighResolution = false;
+    
+    /**
+     * this option reduces the thresholds and compares the curves to up
+     * to 46 different line aliasing patterns (depending upon line length).
+     * The threshold and total thresholds are reduced to:
+     * (add changes here)
+     * so if a different threshold is needed, one can re-set those after
+     * invoking this method.
+     */
+    //public void overrideToUseHighResolution() {
+    //    useHighResolution = true;
+    //}
+    
     /**
      * override the threshold for using a chord difference value
      * to this limit for the chord sum diff / number of pixels. 
-     * By default it is set to 0.3f;
+     * By default it is set to 0.17f;
      * Note, to find only horizontal or vertical lines, use a
      * very small threshold such as 1e-7.
       NOTE: for staircase roofs like house_color.png has, 
@@ -93,20 +102,20 @@ public class LineFinder {
       remaining lines
      * @param t
      */
-    public void _overrideToThreshhold(float t) {
+    public void _overrideToThreshold(float t) {
         this.thresh = t;
     }
     
     /**
       change the limit of the total chord difference
       sum over a found line segment.
-      The default is 10.
+      The default is 3.
       NOTE: for staircase roofs like house_color.png has, 
       increasing thresh to 0.4 nd thresh3 to 15 finds the
       remaining lines
      * @param t 
      */
-    public void _overrideToTotalThreshol(int t) {
+    public void _overrideToTotalThreshold(float t) {
         thresh3 = t;
     }
     
@@ -495,8 +504,9 @@ public class LineFinder {
     */
     protected float[][] createDifferenceMatrices(
         float[][] a1, int lineIndex) {
-        
+             
         /*
+        TODO:
         note, this section of the code was designed to create 
         line patterns including spatially aliased lines
         with the global goal being to use a small threshold and precisely
@@ -595,8 +605,7 @@ public class LineFinder {
            to shift to different first point as reference,
            can shift down k-1 rows and left k-1 columns.
     */
-    protected float[][] createDescriptorMatrix(PairIntArray p,
-        int n) {
+    protected float[][] createDescriptorMatrix(PairIntArray p, int n) {
 
         int dp1 = 1;
 
@@ -631,8 +640,9 @@ public class LineFinder {
                 
                 //log.fine("i1=" + i1 + " imid=" + imid + " i2=" + i2);
 
-                double angleA = LinesAndAngles
-                    .calcClockwiseAngle(
+                double 
+                    //angleA = LinesAndAngles.calcClockwiseAngle(
+                    angleA = LinesAndAngles.calcAngle(
                     p.getX(i1), p.getY(i1),
                     p.getX(i2), p.getY(i2),
                     p.getX(imid), p.getY(imid)
@@ -641,17 +651,17 @@ public class LineFinder {
                 // TODO revisit this
                 if (Double.isNaN(angleA)) {
                     if (i2 < i1 && i1 < imid) {
-                        angleA = LinesAndAngles
-                            .calcClockwiseAngle(
+                        //angleA = LinesAndAngles.calcClockwiseAngle(
+                        angleA = LinesAndAngles.calcAngle(    
                             p.getX(i2), p.getY(i2),
                             p.getX(i1), p.getY(i1),
                             p.getX(imid), p.getY(imid));
                         if (Double.isNaN(angleA)) {
-                            angleA = LinesAndAngles
-                            .calcClockwiseAngle(
-                            p.getX(i2), p.getY(i2),
-                            p.getX(i1), p.getY(i1),
-                            p.getX(imid), p.getY(imid));
+                            //angleA = LinesAndAngles.calcClockwiseAngle(
+                            angleA = LinesAndAngles.calcAngle(
+                                p.getX(i2), p.getY(i2),
+                                p.getX(i1), p.getY(i1),
+                                p.getX(imid), p.getY(imid));
                         }
                     } else {
                         System.out.println(

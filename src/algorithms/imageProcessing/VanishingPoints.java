@@ -2,6 +2,7 @@ package algorithms.imageProcessing;
 
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.imageProcessing.matching.LinesFinder;
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.QuadInt;
 import gnu.trove.iterator.TIntObjectIterator;
@@ -47,7 +48,7 @@ public class VanishingPoints {
     public void setToDebug() {
         debug = true;
     }
-    
+public Image dbgImg = null;    
     public void find(List<Set<PairInt>> listOfContigousLabels,
         int imageWidth, int imageHeight) {
         
@@ -62,6 +63,11 @@ public class VanishingPoints {
 
         finder.sortOrderedLists();
         
+        if (dbgImg != null) {
+            finder.debugDraw(dbgImg);
+            MiscDebug.writeImage(dbgImg, "_all_" + MiscDebug.getCurrentTimeFormatted());
+        }
+    
         List<PairInt> orderedTRList = finder.getOrderedTRList();
         List<TIntList> orderedTRXYIndexes = finder.getOrderedTRXYIndexes();
         TIntList xs = finder.getXs();

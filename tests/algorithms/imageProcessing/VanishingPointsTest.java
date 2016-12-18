@@ -39,7 +39,7 @@ public class VanishingPointsTest extends TestCase {
 
         String fileName1 = "";
 
-        //for (int i = 3; i < 4; ++i) {
+        //for (int i = 0; i < 5; ++i) {
         for (int i = 0; i < 38; ++i) {
 System.out.println("index i=" + i);
             switch(i) {
@@ -237,6 +237,7 @@ System.out.println("index i=" + i);
                 
             VanishingPoints vp2 = new VanishingPoints();
             vp2.setToDebug();
+            //vp2.dbgImg = img.copyImage();
             vp2.find(contigSets, img.getWidth(), img.getHeight());
             //vp2.correctLinesWithGradient(products.getGradientXY());            
             //MiscDebug.writeImage(img, "_lines_" + fileName1Root);
