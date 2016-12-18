@@ -975,6 +975,9 @@ public class ORBMatcher {
             assert (resultsList.size() == 1);
             PObject obj = resultsList.get(0);
             int n = obj.r.getNumberOfMatches();
+            if (obj.r.getTransformationParameters() == null) {
+                continue;
+            }
             PairInt[] m1 = new PairInt[n];
             PairInt[] m2 = new PairInt[n];
             float scale1 = obj.scale1;
@@ -989,7 +992,8 @@ public class ORBMatcher {
                 m1[ii] = new PairInt(x1, y1);
                 m2[ii] = new PairInt(x2, y2);
             }
-            CorrespondenceList cor = new CorrespondenceList(obj.r.getTransformationParameters(), m1, m2);
+            CorrespondenceList cor 
+                = new CorrespondenceList(obj.r.getTransformationParameters(), m1, m2);
             topResults.add(cor);
         }
         return topResults;

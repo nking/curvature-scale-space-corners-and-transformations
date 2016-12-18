@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.QuickSort;
+import algorithms.imageProcessing.ATrousWaveletTransform;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
@@ -241,11 +242,6 @@ public class ORB {
     }
     private DescriptorChoice descrChoice = DescriptorChoice.GREYSCALE;
 
-    public static enum DescriptorDithers {
-        NONE, FIFTEEN, TWENTY, FORTY_FIVE, NINETY, ONE_HUNDRED_EIGHTY;
-    }
-    protected DescriptorDithers descrDithers = DescriptorDithers.NONE;
-
     protected boolean doCreate1stDerivKeypoints = false;
 
     protected boolean doCreateCurvatureKeyPoints = false;
@@ -254,6 +250,8 @@ public class ORB {
 
     protected boolean useSmallestPyramid = false;
 
+    protected boolean doCreate1stATrousKeypoints = true;
+    
     /**
      * Still testing the class, there may be bugs present.
      * @param nKeypoints
@@ -295,24 +293,13 @@ public class ORB {
     public void overrideToAlsoCreate1stDerivKeypoints() {
         doCreate1stDerivKeypoints = true;
     }
+    
+    public void overrideToNotCreateATrousKeypoints() {
+        doCreate1stATrousKeypoints = false;
+    }
 
     public void overrideToCreateHSVDescriptors() {
         descrChoice = DescriptorChoice.HSV;
-    }
-
-    /**
-     * when creating descriptors, also create descriptors at degrees of
-     * dithers rotation about the calculated orientation.
-     * The default setting is no offsets from the calculated orientation.
-     *
-     * @param dithers
-     */
-    public void overrideToCreateOffsetsToDescriptors(DescriptorDithers
-        dithers) {
-        if (dithers == null) {
-            return;
-        }
-        descrDithers = dithers;
     }
 
     public void overrideToCreateCurvaturePoints() {
@@ -360,10 +347,6 @@ public class ORB {
 
         System.out.println("nKeypointsTotal=" + nKeyPointsTotal +
             " this.nKeypoints=" + this.nKeypoints);
-
-        // if descrDithers is set to other than none, this increases the
-        // members of instance variables such as keypoint lists too
-        replicateListsForOrientationOffsets();
 
         assert(pyramidImages.size() == keypoints0List.size());
         assert(pyramidImages.size() == keypoints1List.size());
@@ -659,20 +642,6 @@ public class ORB {
         return output2;
     }
 
-    /**
-     * create a greyscale image from the color image
-     * and return it as two dimensional float array, scaled to
-     * range [0.0, 1.0] and placed in format img[row][col].
-     * @param image
-     */
-    private float[][] prepareGrayscaleInput2D(ImageExt image) {
-
-        GreyscaleImage img = image.copyToGreyscale2();
-
-        ImageProcessor imageProcessor = new ImageProcessor();
-        return imageProcessor.multiply(img, 1.f/255.f);
-    }
-
     protected void debugPrint(String label, float[][] a) {
 
         StringBuilder sb = new StringBuilder(label);
@@ -772,6 +741,50 @@ public class ORB {
             assert(pyramidH.get(0).a[0].length == image.getWidth());
         }
 
+        // atrous keypoints if any
+        TIntList atk0 = new TIntArrayList();
+        TIntList atk1 = new TIntArrayList();
+        if (doCreate1stATrousKeypoints) {
+            
+            List<GreyscaleImage> transformed = new ArrayList<GreyscaleImage>();
+            List<GreyscaleImage> coeffs = new ArrayList<GreyscaleImage>();
+            
+            ATrousWaveletTransform at = new ATrousWaveletTransform();
+            at.calculateWithB3SplineScalingFunction(image.copyToGreyscale2(), 
+                transformed, coeffs, 2);
+            
+            if (coeffs.size() >= 2) {
+                
+                ImageProcessor imageProcessor = new ImageProcessor();
+                float[][] rowMajorImg = imageProcessor.copyToRowMajor(
+                    coeffs.get(1));
+                MatrixUtil.multiply(rowMajorImg, 1.f/255.f);
+                
+                float[][] fastResponse = cornerFast(rowMajorImg, fastN, fastThreshold);
+                
+                imageProcessor.peakLocalMax(fastResponse, 1, 0.1f, atk0, atk1);
+     
+                System.out.println("  atrous nKeypoints= " + atk0.size());
+            
+                try {
+                    float factor = 255.f;
+                    Image img2 = image.createWithDimensions();
+                    for (int i = 0; i < atk0.size(); ++i) {
+                        int x = atk1.get(i);
+                        int y = atk0.get(i);
+                        img2.setRGB(x, y, 255, 0, 0);
+                    }
+                    //algorithms.imageProcessing.ImageDisplayer.displayImage("curvature", img2);
+                    MiscDebug.writeImage(img2, "_atrous_" 
+                        + MiscDebug.getCurrentTimeFormatted());
+                    int z = 1;
+                } catch(Exception e) {
+                    System.out.println(e.getMessage());
+                }
+            
+            }
+        }
+        
         float prevScl = 1;
 
         TIntList octavesUsed = new TIntArrayList();
@@ -810,6 +823,11 @@ public class ORB {
 
             System.out.println("  octave " + octave + " nKeypoints="
                 + r.keypoints0.size());
+            
+            if (octave == 0 && !atk0.isEmpty()) {
+                r.keypoints0.addAll(atk0);
+                r.keypoints1.addAll(atk1);
+            }
 
             //mask of length orientations.size() containing a 1 or 0
             // indicating if pixels are within the image (``True``) or in the
@@ -830,10 +848,11 @@ public class ORB {
             octavesScales.add(scale);
             octaveScaleMap.put(scale, octave);
         }
-
+        
         TIntList kpc0s = new TIntArrayList(this.nKeypoints);
         TIntList kpc1s = new TIntArrayList(this.nKeypoints);
         // order by response and filter
+        Set<PairInt> atSet = new HashSet<PairInt>();
         {
             float[][] harrisResponse = hrList.get(0).a;
 
@@ -849,6 +868,19 @@ public class ORB {
                 // do not need to be rescaled
                 scores[count] = harrisResponse[p.getX()][p.getY()];
                 count++;
+            }
+            
+            if (!atk0.isEmpty()) {
+                // NOTE: testing a preference for atrous derived points
+                float max = MiscMath.findMax(scores);
+                for (int j = 0; j < atk0.size(); ++j) {
+                    atSet.add(new PairInt(atk0.get(j), atk1.get(j)));
+                }
+                for (int j = 0; j < points.length; ++j) {
+                    if (atSet.contains(points[j])) {
+                        scores[j] = max;
+                    }
+                }
             }
 
             QuickSort.sortBy1stArg(scores, points);
@@ -874,6 +906,9 @@ public class ORB {
         if (kpc0s.size() > this.nKeypoints) {
             while (kpc0s.size() > this.nKeypoints) {
                 int idx = kpc0s.size() - 1;
+                if (atSet.contains(new PairInt(kpc0s.get(idx), kpc1s.get(idx)))) {
+                    continue;
+                }
                 kpc0s.removeAt(idx);
                 kpc1s.removeAt(idx);
             }
@@ -972,103 +1007,6 @@ public class ORB {
         }
     }
 
-    /**
-     * if descrDithers is not none, replicates lists such as keypoints and
-     * then copies and modifies orientation for offsets setting.
-     */
-    private void replicateListsForOrientationOffsets() {
-
-        if (descrDithers.equals(DescriptorDithers.NONE)) {
-             return;
-        }
-
-        for (int i = 0; i < pyramidImages.size(); ++i) {
-
-            TFloatList scales = new TFloatArrayList(this.scalesList.get(i));
-            TIntList kp0 = new TIntArrayList(this.keypoints0List.get(i));
-            TIntList kp1 = new TIntArrayList(this.keypoints1List.get(i));
-            TDoubleList or = new TDoubleArrayList(this.orientationsList.get(i));
-            TFloatList harrisResp = new TFloatArrayList(this.harrisResponses.get(i));
-
-            int nBefore = kp0.size();
-            int nExpected = kp0.size();
-
-            double[] rotations = null;
-            if (descrDithers.equals(DescriptorDithers.FIFTEEN)) {
-                rotations = new double[]{
-                    Math.PI/12., Math.PI/6., 3.*Math.PI/12.,
-                    4.*Math.PI/12., 5.*Math.PI/12., 6.*Math.PI/12.,
-                    7.*Math.PI/12., 8.*Math.PI/12., 9.*Math.PI/12.,
-                    10.*Math.PI/12., 11.*Math.PI/12., Math.PI,
-                    13.*Math.PI/12., 14.*Math.PI/12., 15.*Math.PI/12.,
-                    16.*Math.PI/12., 17.*Math.PI/12., 18.*Math.PI/12.,
-                    19.*Math.PI/12., 20.*Math.PI/12., 21.*Math.PI/12.,
-                    22.*Math.PI/12., 23.*Math.PI/12.};
-                nExpected *= 24;
-            } else if (descrDithers.equals(DescriptorDithers.TWENTY)) {
-                rotations = new double[]{
-                    Math.PI/9., 2.*Math.PI/9., 3.*Math.PI/9.,
-                    4.*Math.PI/9., 5.*Math.PI/9., 6.*Math.PI/9.,
-                    7.*Math.PI/9., 8.*Math.PI/9., Math.PI,
-                    10.*Math.PI/9., 11.*Math.PI/9., 12.*Math.PI/9.,
-                    13.*Math.PI/9., 14.*Math.PI/9., 15.*Math.PI/9.,
-                    16.*Math.PI/9., 17.*Math.PI/9.
-                };
-                nExpected *= 18;
-            } else if (descrDithers.equals(DescriptorDithers.FORTY_FIVE)) {
-                rotations = new double[]{Math.PI/4., Math.PI/2.,
-                    3.*Math.PI/4., Math.PI, 5.*Math.PI/4.,
-                    6.*Math.PI/4., 7.*Math.PI/4.};
-                nExpected *= 8;
-            } else if (descrDithers.equals(DescriptorDithers.NINETY)) {
-                rotations = new double[]{Math.PI/2., Math.PI, 3.*Math.PI/2.};
-                nExpected *= 4;
-            } else if (descrDithers.equals(DescriptorDithers.ONE_HUNDRED_EIGHTY)) {
-                rotations = new double[]{Math.PI};
-                nExpected *= 2;
-            }
-
-            for (double rotation : rotations) {
-
-                scalesList.get(i).addAll(scales);
-                keypoints0List.get(i).addAll(kp0);
-                keypoints1List.get(i).addAll(kp1);
-                harrisResponses.get(i).addAll(harrisResp);
-
-                TDoubleList orientation = new TDoubleArrayList(or);
-
-                /* orientation needs to stay in this range:
-                    +90
-                135  |  +45
-                     |
-               180---.---- 0
-                     |
-               -135  |   -45
-                    -90
-                */
-                for (int ii = 0; ii < orientation.size(); ++ii) {
-                    double d = orientation.get(ii);
-                    d += rotation;
-                    if (d > Math.PI) {
-                        d -= twoPI;
-                    } else if (d <= -twoPI) {
-                        d += twoPI;
-                    }
-                    assert(d > -180. && d <= 180.);
-                    orientation.set(ii, d);
-                }
-
-                orientationsList.get(i).addAll(orientation);
-            }
-
-            assert(nExpected == scalesList.get(i).size());
-            assert(nExpected == keypoints0List.get(i).size());
-            assert(nExpected == keypoints1List.get(i).size());
-            assert(nExpected == harrisResponses.get(i).size());
-            assert(nExpected == orientationsList.get(i).size());
-        }
-    }
-
     private void extractDescriptors(boolean useDefaultSize) {
 
         if (descrChoice.equals(DescriptorChoice.NONE)) {
@@ -1152,7 +1090,7 @@ public class ORB {
         return out;
     }
 
-    private class Resp {
+    protected class Resp {
         TIntList keypoints0;
         TIntList keypoints1;
         float[][] harrisResponse;
@@ -1182,7 +1120,7 @@ public class ORB {
 
         TIntList keypoints0 = new TIntArrayList();
         TIntList keypoints1 = new TIntArrayList();
-
+ 
         // list of format [row, col, ...] of filtered maxima ordered by intensity
         cornerPeaks(fastResponse, 1, keypoints0, keypoints1);
         if (keypoints0.isEmpty()) {
@@ -1206,27 +1144,30 @@ public class ORB {
 
             imageProcessor.createFirstDerivKeyPoints(
                 tensorComponents, keypoints0, keypoints1, hLimit);
-
-            /*
-            try {
+            
+            /*try {
                 float factor = 255.f;
-                Image img2 = new Image(nRows, nCols);
+                Image img2 = new Image(nCols, nRows);
                 for (int i = 0; i < nRows; ++i) {
                     for (int j = 0; j < nCols; ++j) {
                         int v = Math.round(factor * octaveImage[i][j]);
                         if (v > 255) {
                             v = 255;
+                        } else if (v < 0) {
+                            v = 0;
                         }
-                        img2.setRGB(i, j, v, v, v);
+                        img2.setRGB(j, i, v, v, v);
                     }
                 }
                 for (int i = 0; i < keypoints0.size(); ++i) {
-                    int y = keypoints1.get(i);
-                    int x = keypoints0.get(i);
+                    int x = keypoints1.get(i);
+                    int y = keypoints0.get(i);
                     img2.setRGB(x, y, 255, 0, 0);
                 }
                 System.out.println("nRows=" + nRows + " nCols=" + nCols);
-                algorithms.imageProcessing.ImageDisplayer.displayImage("first deriv", img2);
+                //algorithms.imageProcessing.ImageDisplayer.displayImage("first deriv", img2);
+                MiscDebug.writeImage(img2, "_fr_" 
+                    + MiscDebug.getCurrentTimeFormatted());
                 int z = 1;
             } catch(Exception e) {
                 System.out.println(e.getMessage());
@@ -1251,23 +1192,27 @@ public class ORB {
 
             /*try {
                 float factor = 255.f;
-                Image img2 = new Image(nRows, nCols);
+                Image img2 = new Image(nCols, nRows);
                 for (int i = 0; i < nRows; ++i) {
                     for (int j = 0; j < nCols; ++j) {
                         int v = Math.round(factor * octaveImage[i][j]);
                         if (v > 255) {
                             v = 255;
+                        } else if (v < 0) {
+                            v = 0;
                         }
-                        img2.setRGB(i, j, v, v, v);
+                        img2.setRGB(j, i, v, v, v);
                     }
                 }
                 for (int i = 0; i < keypoints0.size(); ++i) {
-                    int y = keypoints1.get(i);
-                    int x = keypoints0.get(i);
+                    int x = keypoints1.get(i);
+                    int y = keypoints0.get(i);
                     img2.setRGB(x, y, 255, 0, 0);
                 }
                 System.out.println("nRows=" + nRows + " nCols=" + nCols);
-                algorithms.imageProcessing.ImageDisplayer.displayImage("curvature", img2);
+                //algorithms.imageProcessing.ImageDisplayer.displayImage("curvature", img2);
+                MiscDebug.writeImage(img2, "_curve_" 
+                    + MiscDebug.getCurrentTimeFormatted());
                 int z = 1;
             } catch(Exception e) {
                 System.out.println(e.getMessage());
@@ -1294,45 +1239,6 @@ public class ORB {
             }
         }
 
-        /*{//DEBUG
-            GreyscaleImage dbg = new GreyscaleImage(harrisResponse[0].length,
-                harrisResponse.length);
-            float[] tmp = new float[dbg.getNPixels()];
-            for (int i = 0; i < dbg.getNPixels(); ++i) {
-                int x = dbg.getCol(i);
-                int y = dbg.getRow(i);
-                tmp[i] = fastResponse[y][x];
-            }
-            MiscMath.rescale(tmp, 0, 255);
-            for (int i = 0; i < dbg.getNPixels(); ++i) {
-                int x = dbg.getCol(i);
-                int y = dbg.getRow(i);
-                if (tmp[i] > 0) {
-                    dbg.setValue(i, 255);
-                }
-            }
-            MiscDebug.writeImage(dbg, "_fr_" + 
-                MiscDebug.getCurrentTimeFormatted());
-            tmp = new float[dbg.getNPixels()];
-            dbg = new GreyscaleImage(harrisResponse[0].length,
-                harrisResponse.length);
-            for (int i = 0; i < dbg.getNPixels(); ++i) {
-                int x = dbg.getCol(i);
-                int y = dbg.getRow(i);
-                tmp[i] = harrisResponse[y][x];
-            }
-            MiscMath.rescale(tmp, 0, 255);
-            for (int i = 0; i < dbg.getNPixels(); ++i) {
-                int x = dbg.getCol(i);
-                int y = dbg.getRow(i);
-                if (tmp[i] > 0) {
-                    dbg.setValue(i, 255);
-                }
-            }
-            MiscDebug.writeImage(dbg, "_hr_" + 
-                MiscDebug.getCurrentTimeFormatted());
-        }*/
-        
         // --- harris corners from response image ----
         ImageProcessor imageProcessor = new ImageProcessor();
         imageProcessor.peakLocalMax(harrisResponse, 1, 0.1f,
@@ -1342,7 +1248,34 @@ public class ORB {
         r2.keypoints0 = keypoints0;
         r2.keypoints1 = keypoints1;
         r2.harrisResponse = harrisResponse;
-
+        
+        /*
+        {//DEBUG
+            Image dbg = new Image(harrisResponse[0].length,
+                harrisResponse.length);
+            float[] tmp = new float[dbg.getNPixels()];
+            tmp = new float[dbg.getNPixels()];
+            for (int i = 0; i < dbg.getNPixels(); ++i) {
+                int x = dbg.getCol(i);
+                int y = dbg.getRow(i);
+                tmp[i] = harrisResponse[y][x];
+            }
+            MiscMath.rescale(tmp, 0, 255);
+            for (int i = 0; i < dbg.getNPixels(); ++i) {
+                if (tmp[i] > 0) {
+                    dbg.setRGB(i, 255, 255, 255);
+                }
+            }
+            for (int i = 0; i < keypoints0.size(); ++i) {
+                int y = keypoints1.get(i);
+                int x = keypoints0.get(i);
+                dbg.setRGB(y, x, 255, 0, 0);
+            }
+            MiscDebug.writeImage(dbg, "_hr_" + 
+                MiscDebug.getCurrentTimeFormatted());
+        }
+        */
+        
         return r2;
     }
 

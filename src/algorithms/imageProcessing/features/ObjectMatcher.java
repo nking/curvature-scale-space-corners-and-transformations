@@ -1,10 +1,7 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.CIEChromaticity;
-import algorithms.imageProcessing.CannyEdgeFilterAdaptive;
 import algorithms.imageProcessing.ColorHistogram;
-import algorithms.imageProcessing.EdgeFilterProducts;
-import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.GroupPixelCIELUV;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
@@ -29,8 +26,6 @@ import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -273,9 +268,24 @@ public class ObjectMatcher {
         if (orb1.getKeyPoint0List().isEmpty()) {
             return null;
         }
+        
+        if (debug) {   // ----------- segmentation -------
+            Set<PairInt> kpSet = new HashSet<PairInt>();
+            TIntList kp0 = orb1.getKeyPoint0List().get(0);
+            TIntList kp1 = orb1.getKeyPoint1List().get(0);
+            for (int i = 0; i < kp0.size(); ++i) {
+                int x = kp1.get(i);
+                int y = kp0.get(i);
+                kpSet.add(new PairInt(x, y));
+            }
+            ImageExt img11 = img1.createWithDimensions();
+            ImageIOHelper.addCurveToImage(kpSet, img11,
+                1, 255, 0, 0);
+            MiscDebug.writeImage(img11, "_filtered_1_" + ts);
+        }
   
-        float luvDeltaELimit = 10;// between 10 and 20, 25
-                    
+        float luvDeltaELimit = 20;//10;// between 10 and 30
+        
         rmIndexesList = new ArrayList<TIntList>();
 
         // ---- calculate the template CIE LUV colors ----
@@ -305,8 +315,7 @@ public class ObjectMatcher {
             for (int j = 0; j < np; ++j) {
 
                 PairInt p = new PairInt(kp1.get(j), kp0.get(j));
-                Set<PairInt> points = imageProcessor.getNeighbors(
-                    img1, p);
+                Set<PairInt> points = imageProcessor.getNeighbors(img1, p);
                 points.add(p);
 
                 GroupPixelCIELUV luv1 = new GroupPixelCIELUV(points, img1);
@@ -334,6 +343,21 @@ public class ObjectMatcher {
             return null;
         }
         
+        if (debug) {   // ----------- segmentation -------
+            Set<PairInt> kpSet = new HashSet<PairInt>();
+            TIntList kp0 = orb1.getKeyPoint0List().get(0);
+            TIntList kp1 = orb1.getKeyPoint1List().get(0);
+            for (int i = 0; i < kp0.size(); ++i) {
+                int x = kp1.get(i);
+                int y = kp0.get(i);
+                kpSet.add(new PairInt(x, y));
+            }
+            ImageExt img11 = img1.createWithDimensions();
+            ImageIOHelper.addCurveToImage(kpSet, img11,
+                1, 255, 0, 0);
+            MiscDebug.writeImage(img11, "_filtered_2_" + ts);
+        }
+        
         ImageExt img1Cp = img1.copyToImageExt();
         
         //CannyEdgeFilterAdaptive canny
@@ -357,7 +381,7 @@ public class ObjectMatcher {
             = LabelToColorHelper.extractContiguousLabelPoints(img1Cp, labels4);
 
         VanishingPoints vp2 = null;
-        if (settings.isFindVanishingPoints()) {
+        /*if (settings.isFindVanishingPoints()) {
             // vanishing points are used for attempts to account for 
             // foreshortening of object dimensions from euclidean values,
             // and this correction is used at the end of 
@@ -378,14 +402,14 @@ public class ObjectMatcher {
             }
             
             throw new UnsupportedOperationException("not yet implemented");
-        }
+        }*/
         
         boolean useCHist = false;
 
         boolean changed = false;
         
         changed = imageSegmentation.filterByCIECH(imgs0[0],
-            shape0, img1Cp, listOfPointSets2, 0.4f);//0.35f
+            shape0, img1Cp, listOfPointSets2, 0.1f);//0.4f);//0.35f
         /*if (useCHist) {
             // ---- filter segmentation by cie theta histograms
             changed = imageSegmentation.filterByCIETheta(imgs0[0],

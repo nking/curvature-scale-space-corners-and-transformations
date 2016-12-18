@@ -345,8 +345,8 @@ public class AndroidStatuesTest extends TestCase {
         ImageSegmentation imageSegmentation = new ImageSegmentation();
 
         String[] fileNames0 = new String[]{
-            "android_statues_03_sz1",
-        //    "android_statues_03_sz3"
+        //    "android_statues_03_sz1",
+            "android_statues_03_sz3"
         };
 
         /*
@@ -357,8 +357,8 @@ public class AndroidStatuesTest extends TestCase {
         */
         String[] fileNames1 = new String[]{
         //    "android_statues_01.jpg", // no kp remaining
-              "android_statues_02.jpg", // no kp remaining
-        //    "android_statues_04.jpg", // OK: match0, matchSmall works
+        //      "android_statues_02.jpg", // no kp remaining
+            "android_statues_04.jpg", // OK: match0, matchSmall works
         //    "android_statues_03.jpg" // OK: match0, matchSmall works
         };
         
@@ -419,11 +419,11 @@ public class AndroidStatuesTest extends TestCase {
                 settings.setToFindVnishingPoints();
                            
                 ObjectMatcher objMatcher = new ObjectMatcher();
-                //if (fileName1Root.contains("_01")) {
+                if (fileName1Root.contains("_01")) {
                     settings.setToUseLargerPyramid0();
                     settings.setToUseLargerPyramid1();
                     settings.setToUseSmallObjectMethod();
-                //}
+                }
                 objMatcher.setToDebug();
                 CorrespondenceList cor = objMatcher.findObject(imgs0[0], shape0, 
                     img, settings);
@@ -1565,19 +1565,13 @@ public class AndroidStatuesTest extends TestCase {
             yUR = h - 1;
         }
 
-        ORB.DescriptorDithers descrOffsets 
-            = ORB.DescriptorDithers.NONE;
-        //    = ORB.DescriptorDithers.FORTY_FIVE;
-        //    = ORB.DescriptorDithers.FIFTEEN;
-        
         ORBWrapper.extractKeypointsFromSubImage(
             img0, xLL, yLL, xUR, yUR,
             200, templateKP, templateOrientations, 
             templateDescriptors, 
             //0.01f,
             0.001f,
-            true,
-            descrOffsets);
+            true);
         
         for (int i = 0; i < templateKP.size(); ++i) {
             PairInt p = templateKP.get(i);
@@ -1876,7 +1870,6 @@ public class AndroidStatuesTest extends TestCase {
         orb.overrideToCreateHSVDescriptors();
         orb.overrideToAlsoCreate1stDerivKeypoints();
         orb.overrideToCreateCurvaturePoints();
-        //orb.overrideToCreateOffsetsToDescriptors(ORB.DescriptorDithers.FIFTEEN);
         orb.detectAndExtract(img);
 
         List<PairInt> kp = orb.getAllKeyPoints();

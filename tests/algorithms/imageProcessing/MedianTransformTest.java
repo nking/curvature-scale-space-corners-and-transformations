@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.misc.MiscDebug;
 import algorithms.util.ResourceFinder;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +18,10 @@ public class MedianTransformTest extends TestCase {
 
     public void testMedianTransform0() throws Exception {
             
-        String filePath = ResourceFinder.findFileInTestResources("house.gif");
+        String filePath = ResourceFinder.findFileInTestResources(
+            "house.gif");
+        //String filePath = ResourceFinder.findFileInTestResources(
+        //    "android_statues_03.jpg");
         //String filePath = ResourceFinder.findFileInTestResources(
         //    "new-mexico-sunrise_w725_h490.jpg");
         
@@ -62,4 +66,5 @@ public class MedianTransformTest extends TestCase {
         ImageDisplayer.displayImage("exact pyramidal med trans reconstructed ", r2);
         
     }
+    
 }

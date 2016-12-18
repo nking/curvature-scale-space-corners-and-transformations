@@ -1,9 +1,6 @@
 package algorithms.imageProcessing;
 
 import algorithms.misc.Misc;
-import algorithms.misc.MiscDebug;
-import algorithms.misc.MiscMath;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -135,6 +132,66 @@ public class ATrousWaveletTransform {
 
         int nr = (int)(Math.log(imgDimen)/Math.log(2));
 
+        B3SplineFunction scalingFunction = new B3SplineFunction();
+        
+        outputTransformed.add(input.copyToSignedImage());
+        
+        outputCoeff.add(input.createSignedWithDimensions());
+
+        for (int j = 0; j < nr; ++j) {
+            
+            GreyscaleImage cJ = outputTransformed.get(j);
+ 
+            GreyscaleImage cJPlus1 = scalingFunction.calculate(cJ);
+           
+            outputTransformed.add(cJPlus1);
+            
+            // c_(j,k) − c_(j+1,k)
+            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1);
+            
+            outputCoeff.add(wJPlus1);
+        }
+        
+    }
+    
+    /**
+     * The a trous algorithm is a fast implementation of a wavelet transform 
+     * with no downsampling.   It is non-orthogonal, has semi-linear runtime
+     * complexity, is invariant under translation, and the transform is 
+     * isotropic.
+     * Implemented from pseudocode in http://www.multiresolution.com/svbook.pdf
+     * The scaling function used is the higher resolution choice, the 3rd order 
+     * B Spline function.
+     * <pre>
+     * The method uses recursive convolution operations, including previous
+       * result to make next.
+       * Each convolution uses two passes of one dimensional binomial kernels,
+       * starting with the equivalent of sigma=1.
+       * For each step, the equivalent resulting sigma is from 
+       * sigma^2 = sigma_1^2 + sigma_2^2.
+       * 
+       * This method takes an argument stopIter to indicate that only stopIter
+       * number of iterations are needed.  For instance, to retrieve only the
+       * first populated wavelet, use stopIter = 2 (the first is initialization,
+       * and the second is the calculation).
+       * </pre>
+     * @param input
+     * @param outputTransformed
+     * @param outputCoeff
+     * @param stopIter
+     */
+    public void calculateWithB3SplineScalingFunction(GreyscaleImage input,
+        List<GreyscaleImage> outputTransformed, List<GreyscaleImage> outputCoeff,
+        int stopIter) {
+
+        int imgDimen = Math.min(input.getWidth(), input.getHeight());
+
+        int nr = (int)(Math.log(imgDimen)/Math.log(2));
+
+        if (nr > stopIter) {
+            nr = stopIter;
+        }
+        
         B3SplineFunction scalingFunction = new B3SplineFunction();
         
         outputTransformed.add(input.copyToSignedImage());

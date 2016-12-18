@@ -27,8 +27,7 @@ public class ORBWrapper {
         List<PairInt> outputKeypoints,
         TDoubleList outputOrientations,
         Descriptors outputDescriptors,
-        float fastThreshold, boolean create2ndDerivPointsAlso,
-        ORB.DescriptorDithers descrDither) {
+        float fastThreshold, boolean create2ndDerivPointsAlso) {
          
         int buffer = 25;
         
@@ -56,9 +55,6 @@ public class ORBWrapper {
         orb.overrideFastThreshold(fastThreshold);
         if (create2ndDerivPointsAlso) {
             orb.overrideToAlsoCreate1stDerivKeypoints();
-        }
-        if (!descrDither.equals(ORB.DescriptorDithers.NONE)) {
-            orb.overrideToCreateOffsetsToDescriptors(descrDither);
         }
         orb.overrideToCreateCurvaturePoints();
         
