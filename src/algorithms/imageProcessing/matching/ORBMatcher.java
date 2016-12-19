@@ -101,7 +101,7 @@ public class ORBMatcher {
         Set<PairInt> labeledPoints1, List<Set<PairInt>> labeledPoints2) {
         
         /*
-        uses the descriptors given and then makes masks
+        uses the descriptors given and then optionally makes masks
         for them using the labeled points.
         -- visits each octave pair
         -- calculates cost of descriptors
@@ -312,6 +312,7 @@ public class ORBMatcher {
                     ORB.Descriptors[] desc2 = getDescriptors(orb2, j);
                     cost = ORB.calcDescriptorCostMatrix(desc1, desc2);
                 }
+      
                 //combinations of pairs with same labels
                 // storing them all to reduce nesting
                 // quadint is idx1, idx2, idx3, idx4
@@ -559,6 +560,46 @@ public class ORBMatcher {
             topResults.add(cor);
         }
         return topResults;
+    }
+
+    /**
+     * match template image and shape in orb1 and labeledPoints1
+     * with the same object which is somewhere in the
+     * segmented labledPoints2 and orb2.
+     *
+     * this method matches points on a segmented cell basis to calculate
+       the minimum cost correspondence with an objective function 
+       consisting of cost from an outer point chord difference matrix,
+       cost from hsv orb descriptors of keypoints, and an epipolar projection
+       to remove outliers and find matching inner points (and subsequent
+       adition of their costs to the total).
+     
+     * NOT READY FOR USE yet.
+     *
+     * @param orb1
+     * @param orb2
+     * @param labeledPoints1
+     * @param labeledPoints2
+     * @return
+     */
+    public List<CorrespondenceList> match0Epipolar(ORB orb1, ORB orb2, 
+        Set<PairInt> labeledPoints1, List<Set<PairInt>> labeledPoints2) {
+        
+        /*
+        rough outline of this method
+           - chord difference matrix and hsv descriptors
+             to make candidate geometric model
+           - then epipolar w/ ransac to remove outliers.
+           - inner points could be included if they are candidate
+             matches from the epipolar fundamental matrix
+             and nearest neighbor with epipolar lines.
+              - any inner points matched will need calculations
+                of chord difference using correpondence outer points.
+           - then re-calc solution cost from matched points and the 
+              chord matrix and the hsv descriptors and samford distance.
+        */
+        
+        throw new UnsupportedOperationException("not yet implemented");
     }
 
     /**
