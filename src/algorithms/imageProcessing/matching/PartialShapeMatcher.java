@@ -148,6 +148,27 @@ public class PartialShapeMatcher {
     private boolean debug = false;
 
     /**
+     * storing the difference order matrix as pToQ or qToP for re-reading later
+     * if user specifies storeMatrix=true.
+     * also present here are the parameters associated w/ storedMatrix needed to
+     * read it.
+     */
+    private boolean pToQ = true;
+    private boolean storeMatrix = false;
+    private float[][][] storedMatrix = null;
+    private int storePDp = 1;
+    private int storeQDp = 1;
+    private EpipolarTransformationFit storedEpipolarFit = null;
+    
+    /**
+     * set this to store the difference matrix and scale information in order
+     * to read more from the matrix later.
+     */
+    public void overrideToStoreMatrix() {
+        storeMatrix = true;
+    }
+    
+    /**
      * turn on the euclidean transformation to evaluate the best
      * initial answers.
      * NOTE: this needs to be improved.  might need to be combined with
@@ -237,6 +258,7 @@ public class PartialShapeMatcher {
       </pre>
      @param p
      @param q
+     * @return 
     */
     public Result match(PairIntArray p, PairIntArray q) {
 
@@ -252,7 +274,7 @@ public class PartialShapeMatcher {
         if (useSameNumberOfPoints) {
             return matchSameNumber(p, q);
         }
-        
+                
         if (dp == 1) {
             return match0(p, q);
         }
@@ -295,12 +317,9 @@ public class PartialShapeMatcher {
         r.chordDiffSum = rSub.chordDiffSum;
         r.distSum = rSub.distSum;
         
-        if (rSub.articulatedSegment != null) {
-            r.articulatedSegment = new TIntArrayList();
-            for (int i = 0; i < rSub.idx1s.size(); ++i) {
-                int segIdx = rSub.articulatedSegment.get(i);
-                r.articulatedSegment.add(segIdx);
-            }
+        if (storeMatrix) {
+            storePDp = dp;
+            storeQDp = dp;
         }
         
         if (rSub.getTransformationParameters() != null) {
@@ -356,6 +375,11 @@ public class PartialShapeMatcher {
         }
         
         log.fine("pSub.n=" + pSub.getN() + " qSub.n=" + qSub.getN());
+    
+        if (storeMatrix) {
+            storePDp = pDp;
+            storeQDp = qDp;
+        }
         
         Result rSub = match0(pSub, qSub);
         
@@ -379,14 +403,6 @@ public class PartialShapeMatcher {
             r.idx2s.add(idx2);
         }
         r.chordDiffSum = rSub.chordDiffSum;
-        
-        if (rSub.articulatedSegment != null) {
-            r.articulatedSegment = new TIntArrayList();
-            for (int i = 0; i < rSub.idx1s.size(); ++i) {
-                int segIdx = rSub.articulatedSegment.get(i);
-                r.articulatedSegment.add(segIdx);
-            }
-        }
         
         if (rSub.getTransformationParameters() != null) {
             
@@ -469,6 +485,11 @@ public class PartialShapeMatcher {
                 r = r.transpose();
                 assert(assertIndexesWithinBounds(r, p.getN(), q.getN()));
             }
+            pToQ = false;
+        }
+        
+        if (storeMatrix) {
+            storedMatrix = md;
         }
 
         return r;
@@ -1085,11 +1106,10 @@ public class PartialShapeMatcher {
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
             matchedLeftXY, matchedRightXY, outputLeftXY, outputRightXY);
 
-        // consider ways to match the unmatched if can see that projection
-        // effects have led to large unmatched portion.
-        //    foreshortening along an axis... no vanishing lines
-        //    are present in this class for now for that
-
+        if (storeMatrix) {
+            storedEpipolarFit = fit;
+        }
+        
         if (outputLeftXY.getN() < matchedLeftXY.getN()) {
             int nOut = outputLeftXY.getN();
             TIntSet present = new TIntHashSet();
@@ -1106,6 +1126,9 @@ public class PartialShapeMatcher {
                     best.idx2s.removeAt(ii);
                 }
             }
+            
+            //TODO: consider adding nearest neighbor unmatched within bounds
+            
             populateWithChordDiffs(best, md, n1, n2);
         }       
     }
@@ -1717,7 +1740,6 @@ public class PartialShapeMatcher {
         protected TIntList idx2s = new TIntArrayList();
         // if articulated search, this contains a segment number
         //   for each gap filled with contiguous correspondence.
-        protected TIntList articulatedSegment = null;
         protected final int n1;
         protected final int n2;
         protected final int origN1;
@@ -1728,9 +1750,6 @@ public class PartialShapeMatcher {
             this.origN1 = origN1;
         }
         
-        public int getArticulatedSegment(int idx) {
-            return articulatedSegment.get(idx);
-        }
         public void insert(int idx1, int idx2, float dist) {
             idx1s.add(idx1);
             idx2s.add(idx2);
@@ -1863,10 +1882,6 @@ public class PartialShapeMatcher {
             t.data = data;
             
             assert(t.assertIndexesWithinBounds());
-            
-            if (articulatedSegment != null) {
-                t.articulatedSegment = new TIntArrayList(articulatedSegment);
-            }
             
             if (params != null) {
                 MatchedPointsTransformationCalculator tc =
@@ -2166,5 +2181,66 @@ public class PartialShapeMatcher {
             sb.delete(0, sb.length());
         }
     }
+    
+    public EpipolarTransformationFit getEpipolaFit() {
+        
+        if (this.storedEpipolarFit == null) {
+            throw new IllegalStateException(
+                "need to use overrideToStoreMatrix() before match(...) "
+                    + " and do not set to use euclidean");
+        }
+        
+        return storedEpipolarFit;
+    }
 
+    public float readStoredMatrix(int pIdx, int qIdx) {
+        
+        if (storedMatrix == null) {
+            throw new IllegalStateException(
+                "need to use overrideToStoreMatrix() before match(...)");
+        }
+      
+        SummedColumnTable sct = new SummedColumnTable();
+        
+        float[] output = new float[2];
+        int row = 0;
+        int idx1, idx2;
+        
+        if (pToQ) {
+            idx1 = pIdx/storePDp;
+            idx2 = qIdx/storeQDp;
+        } else {
+            idx1 = qIdx/storeQDp;
+            idx2 = pIdx/storePDp;
+        }
+        
+        int n1 = storedMatrix[0].length;
+        
+        int offset = 0;
+   
+        //NOTE: this is not the same as reading a block w.r.t. the original
+        //   offset that was used
+
+        if (idx2 > (n1 - 1)) {
+            // idx2 is outside of the default row 0 of md[0] array, so
+            // need to calculate the offset.
+
+            // if within bounds, will add 4 to the offset to get the pixel
+            // away from bounds
+
+            offset = (idx2 - (n1 - 1)) + 4;
+            idx2 -= offset;
+            if (idx2 < 0) {
+                offset = idx2 - (n1 - 1);
+                idx2 -= offset;
+            }
+        }
+
+        sct.extractWindowInColumn(storedMatrix[offset], idx1, idx2, row, 
+            output);
+
+        float d = output[0]/output[1];
+            
+        return d;
+    }
 }

@@ -572,7 +572,7 @@ public class ORBMatcher {
        consisting of cost from an outer point chord difference matrix,
        cost from hsv orb descriptors of keypoints, and an epipolar projection
        to remove outliers and find matching inner points (and subsequent
-       adition of their costs to the total).
+       addition of the later costs to the total).
      
      * NOT READY FOR USE yet.
      *
@@ -597,7 +597,136 @@ public class ORBMatcher {
                 of chord difference using correpondence outer points.
            - then re-calc solution cost from matched points and the 
               chord matrix and the hsv descriptors and samford distance.
+        -------
+        octave based lists of variables in maps.
+          - if an octave's segmented cell is not similar in size
+            to the template size, it won't be present in the map.
+          variables:
+          - list or maps w/ key=segIdx, value=ordered boundary.
+            the maps can be populated on demand.
+          - 
+          logic:
+          - for each octave1:
+             - create template ordered boundary
+             - for each octave2:
+               - if segmented cell 2 is within range of template size,
+                 fetch or create ordered boundary.
+               - use partial shape matcher on template and cell2.
+                 if too few pts or null, continue.
+                 else, use epipolar ransac to remove outliers
+                 - use the unmatched poles and epipolar projection lines
+                   and nearest neighbor to line within rules
+                   to match the unmatched, including inner points.
+                   - recalc cost: chords, hsv descr, and sampson dist.
+        
         */
+        
+        if (!orb1.getDescrChoice().equals(orb2.getDescrChoice())) {
+            throw new IllegalStateException("orbs must contain same kind of descirptors");
+        }
+        int nBands = 3;
+        if (orb1.getDescrChoice().equals(ORB.DescriptorChoice.HSV)) {
+            if (orb1.getDescriptorsH() == null || orb2.getDescriptorsH() == null) {
+                throw new IllegalStateException("hsv descriptors must be created first");
+            }
+        } else if (orb1.getDescrChoice().equals(ORB.DescriptorChoice.ALT)) {
+            if (orb1.getDescriptorsListAlt() == null || orb2.getDescriptorsListAlt() == null) {
+                throw new IllegalStateException("alt descriptors must be created first");
+            }
+            nBands = 1;
+        } else if (orb1.getDescrChoice().equals(ORB.DescriptorChoice.GREYSCALE)) {
+            if (orb1.getDescriptorsList() == null || orb2.getDescriptorsList() == null) {
+                throw new IllegalStateException("descriptors must be created first");
+            }
+            nBands = 1;
+        }
+
+        TFloatList scales1 = extractScales(orb1.getScalesList());
+        TFloatList scales2 = extractScales(orb2.getScalesList());
+
+        if (Math.abs(scales1.get(0) - 1) > 0.01) {
+            throw new IllegalArgumentException("logic depends upon first scale" + " level being '1'");
+        }
+        if (Math.abs(scales2.get(0) - 1) > 0.01) {
+            throw new IllegalArgumentException("logic depends upon first scale" + " level being '1'");
+        }
+
+        SIGMA sigma = SIGMA.ZEROPOINTFIVE;
+        
+        // --- create ordered bounds1 list
+        List<PairIntArray> bounds1List = createOrderedBounds(orb1, scales1, 
+            labeledPoints1, sigma);
+        
+        // --- creating maps of segmented cell sizes for first octave
+        List<TIntIntMap> sizes2MapsList = new ArrayList<TIntIntMap>();
+        // initialize the first octave
+        sizes2MapsList.add(new TIntIntHashMap());
+        for (int i = 0; i < labeledPoints2.size(); ++i) {
+            int sz = calculateObjectSize(labeledPoints2.get(i));
+            sizes2MapsList.get(0).put(i, sz);
+        }
+        
+        // -- initialize bounds2MapsList
+        // -- and populate remaining octaves in sizes2MapsList
+        List<TIntObjectMap<PairIntArray>> bounds2MapsList = new 
+            ArrayList<TIntObjectMap<PairIntArray>>();
+        for (int octave2 = 0; octave2 < scales2.size(); ++octave2) {
+            bounds2MapsList.add(new TIntObjectHashMap<PairIntArray>());
+            
+            TIntIntMap sizes2Map = new TIntIntHashMap();
+            sizes2MapsList.add(sizes2Map);
+            for (int i = 0; i < labeledPoints2.size(); ++i) {
+                sizes2Map.put(i, calculateObjectSize(labeledPoints2.get(i)));
+            }
+        }
+        
+        for (int octave1 = 0; octave1 < scales1.size(); ++octave1) {
+            
+            PairIntArray bounds1 = bounds1List.get(octave1);
+            
+            int sz1 = calculateObjectSize(bounds1);
+            
+            int n1 = bounds1.getN();
+            
+            for (int octave2 = 0; octave2 < scales2.size(); ++octave2) {
+                
+                TwoDFloatArray img2 = orb2.getPyramidImages().get(octave2);
+                
+                for (int segIdx = 0; segIdx < labeledPoints2.size(); ++segIdx) {
+                    
+                    int sz2 = sizes2MapsList.get(octave2).get(segIdx);
+                    if ((sz1 > sz2 && Math.abs(sz1 / sz2) > 1.15) || 
+                        (sz2 > sz1 && Math.abs(sz2 / sz1) > 1.15)) {
+                        continue;
+                    }
+   
+                    PairIntArray bounds2 = getOrCreateOrderedBounds(img2,
+                        bounds2MapsList.get(octave2), segIdx, labeledPoints2.get(segIdx), 
+                        scales2.get(octave2), sigma);
+                      
+                    PartialShapeMatcher matcher = new PartialShapeMatcher();
+                    matcher.overrideSamplingDistance(1);
+                    matcher._overrideToThreshhold(0.2f);
+                    matcher.setToRemoveOutliers();
+                    PartialShapeMatcher.Result result = matcher.match(
+                        bounds1, bounds2);
+            
+                    // -- fit unmatched inner keypoints using the epipolar fit:
+                    //    -- use the descriptors and the bounds of current
+                    //       correspondence to find nearest neighbor and min cost
+                    //       match.
+                    // -- recalc sums in the result
+                    // -- store the result, the descriptor costs, and the
+                    //     sampson errors
+                    //     for later comparison to find best.  it needs the
+                    //     max value of chord differerences to determine the
+                    //     salukwzde component.
+                    
+                    //paused here
+                }
+            }
+            
+        }
         
         throw new UnsupportedOperationException("not yet implemented");
     }
@@ -2328,6 +2457,59 @@ public class ORBMatcher {
         }
 
         return maxGap;        
+    }
+
+    private List<PairIntArray> createOrderedBounds(ORB orb1, TFloatList scales1, 
+        Set<PairInt> labeledPoints1, SIGMA sigma) {
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        List<PairIntArray> boundsList = new ArrayList<PairIntArray>();
+        
+        for (int octave1 = 0; octave1 < scales1.size(); ++octave1) {
+            
+            float scale1 = scales1.get(octave1);
+            Set<PairInt> set = new HashSet<PairInt>();
+            
+            if (octave1 == 0) {
+                set.addAll(labeledPoints1);
+            } else {
+                for (PairInt p : labeledPoints1) {
+                    int x = Math.round((float) p.getX() / scale1);
+                    int y = Math.round((float) p.getY() / scale1);
+                    PairInt p2 = new PairInt(x, y);
+                    set.add(p2);
+                }
+            }
+            
+            PairIntArray bounds = imageProcessor.extractSmoothedOrderedBoundary(
+                set, sigma, 
+                orb1.getPyramidImages().get(octave1).a[0].length, 
+                orb1.getPyramidImages().get(octave1).a.length);
+            
+            boundsList.add(bounds);
+        }
+        
+        return boundsList;
+    }
+
+    private PairIntArray getOrCreateOrderedBounds(TwoDFloatArray img, 
+        TIntObjectMap<PairIntArray> boundsMap, int segIdx, Set<PairInt> set, 
+        float scale, SIGMA sigma) {
+        
+        PairIntArray bounds = boundsMap.get(segIdx);
+        if (bounds != null) {
+            return bounds;
+        }
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        bounds = imageProcessor.extractSmoothedOrderedBoundary(
+            set, sigma, img.a[0].length, img.a.length);
+        
+        boundsMap.put(segIdx, bounds);
+        
+        return bounds;
     }
 
     private static class PObject {

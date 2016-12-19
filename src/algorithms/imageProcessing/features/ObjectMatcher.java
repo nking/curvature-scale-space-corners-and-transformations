@@ -284,7 +284,7 @@ public class ObjectMatcher {
             MiscDebug.writeImage(img11, "_filtered_1_" + ts);
         }
   
-        float luvDeltaELimit = 20;//10;// between 10 and 30
+        float luvDeltaELimit = 30;//10;// between 10 and 30
         
         rmIndexesList = new ArrayList<TIntList>();
 
