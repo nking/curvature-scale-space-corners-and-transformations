@@ -1524,7 +1524,7 @@ public class EpipolarTransformer {
      * @param tolerance
      * @return
      */
-    PairFloatArray calculateDistancesFromEpipolar(
+    public PairFloatArray calculateDistancesFromEpipolar(
         SimpleMatrix fm, SimpleMatrix matchedLeftPoints,
         SimpleMatrix matchedRightPoints) {
 
@@ -1541,6 +1541,12 @@ public class EpipolarTransformer {
         if (nRows != matchedRightPoints.getMatrix().getNumRows()) {
             throw new IllegalArgumentException("matrices must have same number of rows");
         }
+        
+        /*
+        u_2^T * F * u_1 = 0  where u are the x,y points in images _1 and _2
+        u_1 = (x_1, y_1, 1)^T
+        u_2 = (x_2, y_2, 1)^T
+        */
 
         int n = matchedLeftPoints.numCols();
 
@@ -1550,36 +1556,51 @@ public class EpipolarTransformer {
 
         SimpleMatrix leftEpipolarLines = fm.transpose().mult(matchedRightPoints);
 
+        float[] output = new float[2];
+        
         for (int i = 0; i < matchedLeftPoints.numCols(); i++) {
 
-            double a = rightEpipolarLines.get(0, i);
-            double b = rightEpipolarLines.get(1, i);
-            double c = rightEpipolarLines.get(2, i);
-
-            double aplusb = Math.sqrt((a*a) + (b*b));
-
-            double xL = matchedLeftPoints.get(0, i);
-            double yL = matchedLeftPoints.get(1, i);
-
-            //dist = (a*x + b*y + c)/sqrt(a^2 + b^2)
-
-            double x = matchedRightPoints.get(0, i);
-            double y = matchedRightPoints.get(1, i);
-
-            double d = (a*x + b*y + c)/aplusb;
-
-            // find the reverse distance by projection:
-            double aRev = leftEpipolarLines.get(0, i);
-            double bRev = leftEpipolarLines.get(1, i);
-            double cRev = leftEpipolarLines.get(2, i);
-
-            double dRev = (aRev*xL + bRev*yL + cRev)/
-                Math.sqrt((aRev*aRev + bRev*bRev));
-
-            distances.add((float)dRev, (float)d);
+            calculatePerpDistFromLines(matchedLeftPoints, 
+                matchedRightPoints, rightEpipolarLines, leftEpipolarLines,
+                i, i, output);
+            
+            distances.add(output[0], output[1]);
         }
 
         return distances;
+    }
+    
+    public void calculatePerpDistFromLines(SimpleMatrix leftPoints, 
+        SimpleMatrix rightPoints, SimpleMatrix epipolarLinesFromLeft,
+        SimpleMatrix epipolarLinesFromRight, int leftIdx, int rightIdx,
+        float[] output) {
+        
+        double a = epipolarLinesFromLeft.get(0, leftIdx);
+        double b = epipolarLinesFromLeft.get(1, leftIdx);
+        double c = epipolarLinesFromLeft.get(2, leftIdx);
+
+        double aplusb = Math.sqrt((a*a) + (b*b));
+
+        double xL = leftPoints.get(0, leftIdx);
+        double yL = leftPoints.get(1, leftIdx);
+
+        //dist = (a*x + b*y + c)/sqrt(a^2 + b^2)
+
+        double x = rightPoints.get(0, rightIdx);
+        double y = rightPoints.get(1, rightIdx);
+
+        double d = (a*x + b*y + c)/aplusb;
+
+        // find the reverse distance by projection:
+        double aRev = epipolarLinesFromRight.get(0, rightIdx);
+        double bRev = epipolarLinesFromRight.get(1, rightIdx);
+        double cRev = epipolarLinesFromRight.get(2, rightIdx);
+
+        double dRev = (aRev*xL + bRev*yL + cRev)/
+            Math.sqrt((aRev*aRev + bRev*bRev));
+
+        output[0] = (float)dRev;
+        output[1] = (float)d;
     }
     
     public EpipolarTransformationFit calculateErrorThenFilter(SimpleMatrix fm,
@@ -1653,7 +1674,7 @@ public class EpipolarTransformer {
         
         /*
         geometric error of the final solution or the 7-point sample trial,
-        can be approximated by Sampon's error:
+        can be approximated by Sampson's error:
              (x2_i * F * x1_i^T)^2                 (x2_i * F * x1_i^T)^2
            ---------------------------------  +  ---------------------------
              (F*x1_i^T)_x^2 + (F*x1_i^T)_y^2     (x2_i*F)_x^2 + (x2_i*F)_y^2
@@ -1750,7 +1771,7 @@ public class EpipolarTransformer {
         
         /*
         geometric error of the final solution or the 7-point sample trial,
-        can be approximated by Sampon's error:
+        can be approximated by Sampson's error:
              (x2_i * F * x1_i^T)^2                 (x2_i * F * x1_i^T)^2
            ---------------------------------  +  ---------------------------
              (F*x1_i^T)_x^2 + (F*x1_i^T)_y^2     (x2_i*F)_x^2 + (x2_i*F)_y^2
@@ -1892,9 +1913,6 @@ public class EpipolarTransformer {
     /**
     calculate the 4 possible projection matrices from the essential matrix.
     * Note that the essential matrix is the transformation matrix between points
-    * that are in camera coordinates rather than in pixel coordinates.
-    the method is adapted from: https://github.com/jesolem/PCV
-    Their code is licensed under  BSD license (2-clause "Simplified BSD License").
     */
     /*
     public SimpleMatrix[] calculatePFromEssential(SimpleMatrix essentialMatrix) {

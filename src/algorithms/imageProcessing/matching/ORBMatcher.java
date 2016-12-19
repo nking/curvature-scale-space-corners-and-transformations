@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.matching;
 
+import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.compGeometry.FurthestPair;
 import algorithms.imageProcessing.ColorHistogram;
@@ -15,6 +16,7 @@ import algorithms.imageProcessing.features.ORB;
 import algorithms.imageProcessing.features.ORB.Descriptors;
 import static algorithms.imageProcessing.features.ORB.convertToImage;
 import algorithms.imageProcessing.matching.ShapeFinder.ShapeFinderResult;
+import algorithms.imageProcessing.transform.EpipolarTransformer;
 import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
@@ -23,6 +25,7 @@ import algorithms.misc.MiscDebug;
 import algorithms.search.NearestNeighbor2D;
 import algorithms.util.CorrespondencePlotter;
 import algorithms.util.OneDIntArray;
+import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.QuadInt;
@@ -55,6 +58,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.ejml.simple.SimpleMatrix;
 
 /**
  * a class to hold various methods related to matching
@@ -621,6 +625,8 @@ public class ORBMatcher {
         
         */
         
+        boolean usingHSVDesc = true;
+        
         if (!orb1.getDescrChoice().equals(orb2.getDescrChoice())) {
             throw new IllegalStateException("orbs must contain same kind of descirptors");
         }
@@ -634,11 +640,13 @@ public class ORBMatcher {
                 throw new IllegalStateException("alt descriptors must be created first");
             }
             nBands = 1;
+            usingHSVDesc = false;
         } else if (orb1.getDescrChoice().equals(ORB.DescriptorChoice.GREYSCALE)) {
             if (orb1.getDescriptorsList() == null || orb2.getDescriptorsList() == null) {
                 throw new IllegalStateException("descriptors must be created first");
             }
             nBands = 1;
+            usingHSVDesc = false;
         }
 
         TFloatList scales1 = extractScales(orb1.getScalesList());
@@ -652,6 +660,10 @@ public class ORBMatcher {
         }
 
         SIGMA sigma = SIGMA.ZEROPOINTFIVE;
+        
+        float distTol = 5;
+        
+        EpipolarTransformer eTransformer = new EpipolarTransformer();
         
         // --- create ordered bounds1 list
         List<PairIntArray> bounds1List = createOrderedBounds(orb1, scales1, 
@@ -686,8 +698,11 @@ public class ORBMatcher {
             
             int sz1 = calculateObjectSize(bounds1);
             
-            int n1 = bounds1.getN();
+            int nkp1 = orb1.getKeyPoint0List().get(octave1).size();
+            int nb1 = bounds1.getN();
             
+            float normDesc = nkp1 * nBands * 256;
+                
             for (int octave2 = 0; octave2 < scales2.size(); ++octave2) {
                 
                 TwoDFloatArray img2 = orb2.getPyramidImages().get(octave2);
@@ -701,9 +716,9 @@ public class ORBMatcher {
                     }
    
                     PairIntArray bounds2 = getOrCreateOrderedBounds(img2,
-                        bounds2MapsList.get(octave2), segIdx, labeledPoints2.get(segIdx), 
-                        scales2.get(octave2), sigma);
-                      
+                        bounds2MapsList.get(octave2), segIdx, 
+                        labeledPoints2.get(segIdx), scales2.get(octave2), sigma);
+                    
                     PartialShapeMatcher matcher = new PartialShapeMatcher();
                     matcher.overrideSamplingDistance(1);
                     matcher._overrideToThreshhold(0.2f);
@@ -711,18 +726,115 @@ public class ORBMatcher {
                     PartialShapeMatcher.Result result = matcher.match(
                         bounds1, bounds2);
             
-                    // -- fit unmatched inner keypoints using the epipolar fit:
-                    //    -- use the descriptors and the bounds of current
-                    //       correspondence to find nearest neighbor and min cost
-                    //       match.
-                    // -- recalc sums in the result
-                    // -- store the result, the descriptor costs, and the
-                    //     sampson errors
-                    //     for later comparison to find best.  it needs the
+                    if (result == null || (matcher.getStoredEpipolarFit() == null)) {
+                        continue;
+                    }
+                    
+                    int nr = result.getNumberOfMatches();
+                                        
+                    PairIntArray m1 = new PairIntArray(nr);
+                    PairIntArray m2 = new PairIntArray(nr);
+                    Set<PairInt> matched1 = new HashSet<PairInt>();
+                    Set<PairInt> matched2 = new HashSet<PairInt>();
+                    for (int j = 0; j < nr; ++j) {
+                        int idx1 = result.idx1s.get(j);
+                        int idx2 = result.idx2s.get(j);
+                        int x1 = bounds1.getX(idx1);
+                        int y1 = bounds1.getY(idx1);
+                        int x2 = bounds2.getX(idx2);
+                        int y2 = bounds2.getY(idx2);
+                        m1.add(x1, y1);
+                        m2.add(x2, y2);
+                        matched1.add(new PairInt(x1, y1));
+                        matched2.add(new PairInt(x2, y2));
+                    }
+                    
+                    SimpleMatrix fm = matcher.getStoredEpipolarFit().getFundamentalMatrix();
+                    
+                    SimpleMatrix matchedLeft = 
+                        eTransformer.rewriteInto3ColumnMatrix(m1);
+                    SimpleMatrix matchedRight = 
+                        eTransformer.rewriteInto3ColumnMatrix(m2);
+                    PairFloatArray distances = eTransformer
+                        .calculateDistancesFromEpipolar(fm,
+                        matchedLeft, matchedRight);
+                    
+                    PairIntArray unmatchedKP1 = new PairIntArray(
+                        orb1.getKeyPoint0List().get(octave1).size());
+                    TIntIntMap unmatched1Indexes = new TIntIntHashMap();
+                    for (int j = 0; j < orb1.getKeyPoint0List().get(octave1).size(); 
+                        ++j) {
+                        int x = orb1.getKeyPoint1List().get(octave1).get(j);
+                        int y = orb1.getKeyPoint0List().get(octave1).get(j);
+                        PairInt p = new PairInt(x, y);
+                        if (!matched1.contains(p)) {
+                            unmatched1Indexes.put(unmatchedKP1.getN(), j);
+                            unmatchedKP1.add(x, y);
+                        }
+                    }
+                    SimpleMatrix unmatchedLeft = 
+                        eTransformer.rewriteInto3ColumnMatrix(unmatchedKP1);
+                    
+                    PairIntArray unmatchedKP2 = new PairIntArray(
+                        orb1.getKeyPoint0List().get(octave2).size());
+                    TIntIntMap unmatched2Indexes = new TIntIntHashMap();
+                    for (int j = 0; j < orb2.getKeyPoint0List().get(octave2).size(); 
+                        ++j) {
+                        int x = orb2.getKeyPoint1List().get(octave2).get(j);
+                        int y = orb2.getKeyPoint0List().get(octave2).get(j);
+                        PairInt p = new PairInt(x, y);
+                        if (!matched2.contains(p)) {
+                            unmatched2Indexes.put(unmatchedKP2.getN(), j);
+                            unmatchedKP2.add(x, y);
+                        }
+                    }
+                    SimpleMatrix unmatchedRight = 
+                        eTransformer.rewriteInto3ColumnMatrix(unmatchedKP2);
+                    
+                    SimpleMatrix rightEpipolarLines = fm.mult(unmatchedLeft);
+                    SimpleMatrix leftEpipolarLines = fm.transpose().mult(unmatchedRight);
+
+                    ORB.Descriptors[] desc1 = getDescriptors(orb1, octave1);
+                    ORB.Descriptors[] desc2 = getDescriptors(orb2, octave2);
+                    int[][] costD = ORB.calcDescriptorCostMatrix(desc1, desc2);
+                    
+                    float[] outputDist = new float[2];
+                    int nLeftUnmatched = unmatchedLeft.numCols();
+                    int nRightUnmatched = unmatchedRight.numCols();
+                    float dist, descCost;
+                    float distMax = (float)(Math.sqrt(2) * distTol);
+                    TFloatList totalCost = new TFloatArrayList();
+                    TIntList indexes = new TIntArrayList();
+                    for (int i = 0; i < nLeftUnmatched; ++i) {
+                        for (int j = 0; j < nRightUnmatched; ++j) {
+                            
+                            eTransformer.calculatePerpDistFromLines(unmatchedLeft,
+                                unmatchedRight, rightEpipolarLines,
+                                leftEpipolarLines, i, j, outputDist);
+                            
+                            if (outputDist[0] <= distTol && outputDist[1] <= distTol) {
+                                
+                                dist = ((float)Math.sqrt(outputDist[0] * outputDist[0] +
+                                    outputDist[1] * outputDist[1]))/distMax;
+                                
+                                // normalized descriptor cost
+                                descCost = 1.f - ((nBands * 256.f - 
+                                    costD[unmatched1Indexes.get(i)][unmatched2Indexes.get(j)])
+                                    /normDesc);
+                            
+                                totalCost.add(dist + descCost);
+                                indexes.add((j + nLeftUnmatched) + i);
+                            }
+                        }
+                    }
+                    //QuickSort.sort(totalCost, indexes);
+                    // visit by smallest cost first, then greedily, uniquely assign
+                    //recalc sums and sampson errors and sum the descriptors
+                    
+                    //for later comparison need the
                     //     max value of chord differerences to determine the
                     //     salukwzde component.
-                    
-                    //paused here
+                                        
                 }
             }
             

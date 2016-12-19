@@ -159,7 +159,7 @@ public class PartialShapeMatcher {
     private int storePDp = 1;
     private int storeQDp = 1;
     private EpipolarTransformationFit storedEpipolarFit = null;
-    
+   
     /**
      * set this to store the difference matrix and scale information in order
      * to read more from the matrix later.
@@ -2181,18 +2181,7 @@ public class PartialShapeMatcher {
             sb.delete(0, sb.length());
         }
     }
-    
-    public EpipolarTransformationFit getEpipolaFit() {
-        
-        if (this.storedEpipolarFit == null) {
-            throw new IllegalStateException(
-                "need to use overrideToStoreMatrix() before match(...) "
-                    + " and do not set to use euclidean");
-        }
-        
-        return storedEpipolarFit;
-    }
-
+                    
     public float readStoredMatrix(int pIdx, int qIdx) {
         
         if (storedMatrix == null) {
@@ -2243,4 +2232,14 @@ public class PartialShapeMatcher {
             
         return d;
     }
+    
+    public EpipolarTransformationFit getStoredEpipolarFit() {
+        if (this.storedEpipolarFit == null) {
+            throw new IllegalStateException(
+                "need to use overrideToStoreMatrix() before match(...) "
+                    + " and do not set to use euclidean");
+        }
+        return storedEpipolarFit;
+    }
+    
 }
