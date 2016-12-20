@@ -15,6 +15,7 @@ import algorithms.imageProcessing.features.CorrespondenceList;
 import algorithms.imageProcessing.features.ORB;
 import algorithms.imageProcessing.features.ORB.Descriptors;
 import static algorithms.imageProcessing.features.ORB.convertToImage;
+import algorithms.imageProcessing.matching.PartialShapeMatcher.Result;
 import algorithms.imageProcessing.matching.ShapeFinder.ShapeFinderResult;
 import algorithms.imageProcessing.transform.EpipolarTransformer;
 import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
@@ -691,7 +692,7 @@ public class ORBMatcher {
                 sizes2Map.put(i, calculateObjectSize(labeledPoints2.get(i)));
             }
         }
-        
+                
         for (int octave1 = 0; octave1 < scales1.size(); ++octave1) {
             
             PairIntArray bounds1 = bounds1List.get(octave1);
@@ -702,7 +703,12 @@ public class ORBMatcher {
             int nb1 = bounds1.getN();
             
             float normDesc = nkp1 * nBands * 256;
-                
+            double maxChordAvg = Double.MIN_VALUE;
+            
+            List<Result> results = new ArrayList<Result>();
+            TDoubleList descCosts = new TDoubleArrayList();
+            TDoubleList epCosts = new TDoubleArrayList();
+            
             for (int octave2 = 0; octave2 < scales2.size(); ++octave2) {
                 
                 TwoDFloatArray img2 = orb2.getPyramidImages().get(octave2);
@@ -755,6 +761,8 @@ public class ORBMatcher {
                         eTransformer.rewriteInto3ColumnMatrix(m1);
                     SimpleMatrix matchedRight = 
                         eTransformer.rewriteInto3ColumnMatrix(m2);
+                    
+                    // this goes into total epipolar distances at end of block
                     PairFloatArray distances = eTransformer
                         .calculateDistancesFromEpipolar(fm,
                         matchedLeft, matchedRight);
@@ -776,7 +784,7 @@ public class ORBMatcher {
                         eTransformer.rewriteInto3ColumnMatrix(unmatchedKP1);
                     
                     PairIntArray unmatchedKP2 = new PairIntArray(
-                        orb1.getKeyPoint0List().get(octave2).size());
+                        orb2.getKeyPoint0List().get(octave2).size());
                     TIntIntMap unmatched2Indexes = new TIntIntHashMap();
                     for (int j = 0; j < orb2.getKeyPoint0List().get(octave2).size(); 
                         ++j) {
@@ -805,6 +813,9 @@ public class ORBMatcher {
                     float distMax = (float)(Math.sqrt(2) * distTol);
                     TFloatList totalCost = new TFloatArrayList();
                     TIntList indexes = new TIntArrayList();
+                    TFloatList eDist = new TFloatArrayList();
+                    TIntList idx1s = new TIntArrayList();
+                    TIntList idx2s = new TIntArrayList();
                     for (int i = 0; i < nLeftUnmatched; ++i) {
                         for (int j = 0; j < nRightUnmatched; ++j) {
                             
@@ -821,23 +832,70 @@ public class ORBMatcher {
                                 descCost = 1.f - ((nBands * 256.f - 
                                     costD[unmatched1Indexes.get(i)][unmatched2Indexes.get(j)])
                                     /normDesc);
-                            
+                   
+                                eDist.add(dist);
                                 totalCost.add(dist + descCost);
-                                indexes.add((j + nLeftUnmatched) + i);
+                                indexes.add(indexes.size());
+                                idx1s.add(unmatched1Indexes.get(i));
+                                idx2s.add(unmatched2Indexes.get(j));
                             }
                         }
                     }
-                    //QuickSort.sort(totalCost, indexes);
-                    // visit by smallest cost first, then greedily, uniquely assign
-                    //recalc sums and sampson errors and sum the descriptors
                     
-                    //for later comparison need the
-                    //     max value of chord differerences to determine the
-                    //     salukwzde component.
-                                        
+                    QuickSort.sortBy1stArg(totalCost, indexes);
+                    
+                    // choose 2 reference points from result,
+                    //   preferably 2 that are keypoints w/ lowest descr costs 
+                    //   and are far from each other
+                    
+                    // new matched keypoint indexes
+                    List<PairInt> addedKPIdxs = new ArrayList<PairInt>();
+                    TFloatList addedDistances = new TFloatArrayList();
+                    TFloatList addedChordSums = new TFloatArrayList();
+                    TIntSet added1 = new TIntHashSet();
+                    TIntSet added2 = new TIntHashSet();
+                    for (int j = 0; j < totalCost.size(); ++j) {
+                        int idx = indexes.get(j);
+                        int idx1 = idx1s.get(idx);
+                        int idx2 = idx2s.get(idx);
+                        if (added1.contains(idx1) || added2.contains(idx2)) {
+                            continue;
+                        }
+                        added1.add(idx1);
+                        added2.add(idx2);
+                        addedKPIdxs.add(new PairInt(idx1, idx2));
+                        addedDistances.add(eDist.get(idx));
+                        
+                        // calc chord sums for the new points using 2 reference
+                        // points from result.
+                        /*
+                        double chordDiff = matcher.
+                            calculateAChordDifference(int pXRef1, int pYRef1,
+                            int pXRef2, int pYRef2, int pX, int pY,
+                            int qXRef1, int qYRef1,
+                            int qXRef2, int qYRef2, int qX, int qY);
+                        addedChordSums.add(chordDiff);
+                        */
+                    }
+                    
+                    System.out.println("nAdded inner points=" + addedKPIdxs.size());
+
+                    // -- calc chord sums for these added, presumably inner points
+                    // -- add the new correspondence to result
+                    //    -- add the added chord sums to result
+                    //    -- add the added eDist to epCosts
+                    //    -- add the total descriptor sums to descCosts
+                    // -- update maxChordAvg
+                    
+                    /*
+                    List<Result> results = new ArrayList<Result>();
+                    TDoubleList descCosts = new TDoubleArrayList();
+                    TDoubleList epCosts = new TDoubleArrayList();
+                    */
                 }
-            }
+            }// end loop over octave2
             
+            // TODO: determine best per octave pair
         }
         
         throw new UnsupportedOperationException("not yet implemented");

@@ -2233,6 +2233,52 @@ public class PartialShapeMatcher {
         return d;
     }
     
+    /**
+     * calculate the chord difference between point (pX, pY) and point
+     * (qX, qY) with respect to the corresponding reference points from
+     * their reference frames (where the reference points are matched to
+     * one another, respectively in the other frames).
+     * NOTE: for more accurate results, should pass in a list of 
+     * correspondences in p and q and then calc chord diff of 
+     * (pX, pY) and point (qX, qY) with avg or lin regr and outlier removal.
+     * @param pXRef1
+     * @param pYRef1
+     * @param pXRef2
+     * @param pYRef2
+     * @param pX
+     * @param pY
+     * @param qXRef1
+     * @param qYRef1
+     * @param qXRef2
+     * @param qYRef2
+     * @param qX
+     * @param qY
+     * @return 
+     */
+    public float calculateAChordDifference(int pXRef1, int pYRef1,
+        int pXRef2, int pYRef2, int pX, int pY,
+        int qXRef1, int qYRef1,
+        int qXRef2, int qYRef2, int qX, int qY
+        ) {
+       
+        double angleA1 = LinesAndAngles.calcAngle(
+            pXRef1, pYRef1, pX, pY, pXRef2, pYRef2
+        );
+        assert(!Double.isNaN(angleA1));
+           
+        double angleA2 = LinesAndAngles.calcAngle(
+            qXRef1, qYRef1, qX, qY, qXRef2, qYRef2
+        );
+        assert(!Double.isNaN(angleA2));
+        
+        double v = angleA1 - angleA2;
+        if (v < 0) {
+            v *= -1;
+        }
+        
+        return (float)v;
+    }
+    
     public EpipolarTransformationFit getStoredEpipolarFit() {
         if (this.storedEpipolarFit == null) {
             throw new IllegalStateException(

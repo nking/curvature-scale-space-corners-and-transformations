@@ -4,6 +4,7 @@ import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.util.IntIntDouble;
 import algorithms.util.PairInt;
 import gnu.trove.list.TDoubleList;
+import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 import java.util.List;
 
@@ -194,6 +195,21 @@ public class QuickSort {
         sortBy1stArg(a, b, 0, a.size() - 1);
     }
     
+    public static void sortBy1stArg(TFloatList a, TIntList b) {
+
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (b == null) {
+            throw new IllegalArgumentException("b cannot be null");
+        }
+        if (a.size() != b.size()) {
+            throw new IllegalArgumentException("a and b must be the same length");
+        }
+        
+        sortBy1stArg(a, b, 0, a.size() - 1);
+    }
+    
     public static void sortBy1stArg(TIntList a, TDoubleList b,
         TIntList c) {
         
@@ -303,6 +319,67 @@ public class QuickSort {
             sortBy1stArg(a, b, c, idxLo, idxMid - 1);
 
             sortBy1stArg(a, b, c, idxMid + 1, idxHi);
+        }
+    }
+    /**
+     * sort a from index idxLo to idxHi, inclusive.  Uses the optimized
+     * qsort3 from the book "Programming in Pearls" by Jon Bentley.
+     * @param a
+     * @param b
+     * @param idxLo
+     * @param idxHi 
+     */
+    public static void sortBy1stArg(TFloatList a, TIntList b, 
+        int idxLo, int idxHi) {
+        
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (b == null) {
+            throw new IllegalArgumentException("b cannot be null");
+        }
+        if (a.size() != b.size()) {
+            throw new IllegalArgumentException("a and b must be the same length");
+        }
+        
+        if (a.size() < 2) {
+            return;
+        }
+        
+        if (idxLo < idxHi) {
+
+            float x = a.get(idxLo);
+            int store = idxLo;
+            int idxMid = idxHi + 1;
+
+            while (true) {
+                do {
+                    store++;     
+                } while ((store <= idxHi) && (a.get(store) < x));
+                do {
+                    idxMid--;
+                } while (a.get(idxMid) > x);
+                if (store > idxMid) {
+                    break;
+                }
+                float swap = a.get(store);
+                a.set(store, a.get(idxMid));
+                a.set(idxMid, swap);
+                int swap2 = b.get(store);
+                b.set(store, b.get(idxMid));
+                b.set(idxMid, swap2);
+                
+            }
+            float swap = a.get(idxLo);
+            a.set(idxLo, a.get(idxMid));
+            a.set(idxMid, swap);
+            int bSwap = b.get(idxLo);
+            b.set(idxLo, b.get(idxMid));
+            b.set(idxMid, bSwap);
+         
+            sortBy1stArg(a, b, idxLo, idxMid - 1);
+
+            sortBy1stArg(a, b, idxMid + 1, idxHi);
         }
     }
     
