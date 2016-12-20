@@ -847,7 +847,7 @@ public class ORB {
             octavesUsed.add(octave);
             octavesScales.add(scale);
             octaveScaleMap.put(scale, octave);
-        }
+        } // end loop over octave
         
         TIntList kpc0s = new TIntArrayList(this.nKeypoints);
         TIntList kpc1s = new TIntArrayList(this.nKeypoints);
@@ -929,8 +929,8 @@ public class ORB {
             TIntList kp1s = new TIntArrayList(set.size());
             for (int i = 0; i < kpc0s.size(); ++i) {
                 // reduce to octave coord system
-                int c0 = Math.round(kpc0s.get(i)/scale);
-                int c1 = Math.round(kpc1s.get(i)/scale);
+                int c0 = Math.round((float)kpc0s.get(i)/scale);
+                int c1 = Math.round((float)kpc1s.get(i)/scale);
                 if (c0 > (harrisResponse.length - 1)) {
                     c0 = harrisResponse.length - 1;
                 }
@@ -993,7 +993,7 @@ public class ORB {
                 pyramidImagesS.add(pyramidS.get(octave));
                 pyramidImagesV.add(pyramidV.get(octave));
             }
-        }
+        } // end loop over octave
 
         assert(pyramidImages.size() == keypoints0List.size());
         assert(pyramidImages.size() == keypoints1List.size());
