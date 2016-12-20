@@ -3,6 +3,7 @@ package algorithms.imageProcessing.features;
 import algorithms.QuickSort;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.util.PairInt;
+import algorithms.util.QuadInt;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.array.TDoubleArrayList;
 import java.util.List;
@@ -64,6 +65,25 @@ public class CorrespondenceList {
         for (int i = 0; i < matched1.length; ++i) {
             points1.add(matched1[i]);
             points2.add(matched2[i]);
+        }
+    }
+    
+    public CorrespondenceList(List<QuadInt> matched12) {
+        
+        this.scale = Float.POSITIVE_INFINITY;
+        this.rotationInDegrees = Integer.MIN_VALUE;
+        this.translationX = Integer.MIN_VALUE;
+        this.translationY = Integer.MIN_VALUE;
+        this.rangeRotation = Integer.MAX_VALUE;
+        this.rangeTranslationX = Integer.MAX_VALUE;
+        this.rangeTranslationY = Integer.MAX_VALUE;
+        
+        this.points1 = new ArrayList<PairInt>();
+        this.points2 = new ArrayList<PairInt>();
+        for (int i = 0; i < matched12.size(); ++i) {
+            QuadInt q = matched12.get(i);
+            points1.add(new PairInt(q.getA(), q.getB()));
+            points2.add(new PairInt(q.getC(), q.getD()));
         }
     }
     

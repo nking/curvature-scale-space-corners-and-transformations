@@ -284,7 +284,7 @@ public class ObjectMatcher {
             MiscDebug.writeImage(img11, "_filtered_1_" + ts);
         }
   
-        float luvDeltaELimit = 30;//10;// between 10 and 30
+        float luvDeltaELimit = 40;//10;// between 10 and 30
         
         rmIndexesList = new ArrayList<TIntList>();
 
@@ -549,7 +549,7 @@ public class ObjectMatcher {
         } else {
             orb0.createDescriptorsHSV(imgs0[0]);
             orb1.createDescriptorsHSV(img1);
-            corList = orbMatcher.match0(orb0, orb1,
+            corList = orbMatcher.match0Epipolar(orb0, orb1,
                 shape0, listOfPointSets2);
         }
 
