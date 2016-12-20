@@ -694,11 +694,8 @@ public class ORBMatcher {
             TObjectIntMap<PairInt> keypoints2IndexMap = kp2IdxMapList.get(octave);
             for (int i = 0; i < labeledPoints2.size(); ++i) {
                 for (PairInt p : labeledPoints2.get(i)) {
-                    PairInt p2 = new PairInt(
-                        Math.round(scale2 * p.getX()), Math.round(scale2 * p.getY())
-                    );            
-                    if (keypoints2IndexMap.containsKey(p2)) {
-                        int kp2Idx = keypoints2IndexMap.get(p2);
+                    if (keypoints2IndexMap.containsKey(p)) {
+                        int kp2Idx = keypoints2IndexMap.get(p);
                         TIntSet kpIdxs = labels2KPIdxs.get(i);
                         if (kpIdxs == null) {
                             kpIdxs = new TIntHashSet();
@@ -712,8 +709,8 @@ public class ORBMatcher {
         
         float[] bestCosts = new float[scales1.size()];
         List<List<QuadInt>> bestCorres = new ArrayList<List<QuadInt>>();
-        TFloatList bestScales1 = new TFloatArrayList();
-        TFloatList bestScales2 = new TFloatArrayList();
+        TIntList bestOctaves1 = new TIntArrayList();
+        TIntList bestOctaves2 = new TIntArrayList();
         
         for (int octave1 = 0; octave1 < scales1.size(); ++octave1) {
         //for (int octave1 = 1; octave1 < 2; ++octave1) {
@@ -723,7 +720,7 @@ public class ORBMatcher {
                 continue;
             }
             
-            float scale1 = scales1.get(octave1);
+            //float scale1 = scales1.get(octave1);
             
             TObjectIntMap<PairInt> keypoints1IndexMap = kp1IdxMapList.get(octave1);
            
@@ -745,7 +742,7 @@ public class ORBMatcher {
             //for (int octave2 = 0; octave2 < scales2.size(); ++octave2) {
             for (int octave2 = 0; octave2 < 1; ++octave2) {
            
-                float scale2 = scales2.get(octave2);
+                //float scale2 = scales2.get(octave2);
             
                 TObjectIntMap<PairInt> keypoints2IndexMap = kp2IdxMapList.get(octave2);
                 TIntObjectMap<TIntSet> labels2KPIdxs = 
@@ -918,7 +915,8 @@ public class ORBMatcher {
                     //   and are far from each other
                     // returns results as 2 quadints of paired x1,y1,x2,y2
                     QuadInt[] resultRefs = choose2ReferencePoints(result,
-                        bounds1, bounds2, keypoints1IndexMap, keypoints2IndexMap, costD);
+                        bounds1, bounds2, 
+                        keypoints1IndexMap, keypoints2IndexMap, costD);
              
                     // these will be stored in the octave2 variables outside this block
                     double totalDistance = sumDistances(distances);
@@ -1058,30 +1056,33 @@ public class ORBMatcher {
             
             bestCosts[bestCorres.size()] = (float)bestCost;
             bestCorres.add(best);
-            bestScales2.add(scales2.get(bestOctave2));
-            bestScales1.add(scales1.get(octave1));
+            bestOctaves1.add(octave1);
+            bestOctaves2.add(bestOctave2);
             
             if (true) {
                 //DEBUG
                 for (int k = 0; k < bestCorres.size(); ++k) {
+                    int oct1 = bestOctaves1.get(k);
+                    int oct2 = bestOctaves2.get(k);
+                    float s1 = scales1.get(oct1);
+                    float s2 = scales2.get(oct2);
                     List<QuadInt> cor = bestCorres.get(k);
                     CorrespondencePlotter plotter = new CorrespondencePlotter(
-                        ORB.convertToImage(orb1.getPyramidImages().get(octave1)), 
-                        ORB.convertToImage(orb2.getPyramidImages().get(bestOctave2)));
-                    float scale2 = scales2.get(bestOctave2);
+                        ORB.convertToImage(orb1.getPyramidImages().get(oct1)), 
+                        ORB.convertToImage(orb2.getPyramidImages().get(oct2)));
                     for (int ii = 0; ii < cor.size(); ++ii) {
                         QuadInt q = cor.get(ii);
-                        int x1 = Math.round((float)q.getA()/scale1);
-                        int y1 = Math.round((float)q.getB()/scale1);
-                        int x2 = Math.round((float)q.getC()/scale2);
-                        int y2 = Math.round((float)q.getD()/scale2);
+                        int x1 = Math.round((float)q.getA()/s1);
+                        int y1 = Math.round((float)q.getB()/s1);
+                        int x2 = Math.round((float)q.getC()/s2);
+                        int y2 = Math.round((float)q.getD()/s2);
                         plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 0);
                     }
-                    String str = Integer.toString(octave1);
+                    String str = Integer.toString(oct1);
                     while (str.length() < 3) {
                         str = "0" + str;
                     }
-                    String str2 = Integer.toString(bestOctave2);
+                    String str2 = Integer.toString(oct2);
                     while (str2.length() < 3) {
                         str2 = "0" + str2;
                     }
@@ -1116,11 +1117,9 @@ public class ORBMatcher {
             int idx = indexes[i];
             
             List<QuadInt> qs = bestCorres.get(idx);
-            float scale1 = bestScales1.get(idx);
-            float scale2 = bestScales2.get(idx);
 
             // points are in full reference frame            
-            results.add(new CorrespondenceList(bestCorres.get(i)));
+            results.add(new CorrespondenceList(qs));
         }
         
         return results;
