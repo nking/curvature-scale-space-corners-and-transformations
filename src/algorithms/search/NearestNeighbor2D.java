@@ -24,6 +24,9 @@ import thirdparty.ods.XFastTrieNode;
  * The queries depend upon the maximum of x and
  * maximum of y to be entered.
  * 
+ * At this time, all entries must be non-negative numbers and
+ * so must inquiries.
+ * 
  * A worst case query would be when column 0 is
  * filled with points and no others filled elsewhere, 
  * and the last point in the last row and last 
@@ -77,7 +80,7 @@ public class NearestNeighbor2D {
     
     /**
      * 
-     * @param points
+     * @param points non-negative coordinates
      * @param maxX maximum x value of any data point including
      *    those to be queries
      * @param maxY maximum y value of any data point including
@@ -104,8 +107,24 @@ public class NearestNeighbor2D {
             new XFastTrieNode<Integer>(), it, maxW);
         
         for (PairInt p : points) {
+            
             int x = p.getX();
-            int index = getInternalIndex(p.getX(), p.getY());
+            int y = p.getY();
+            
+            if (x > width || x < 0) {
+                throw new IllegalArgumentException(
+                    "x cannot be larger than "
+                    + " maxX given in constructor " + width
+                    + ". x=" + x);
+            }
+
+            if (y > height || y < 0) {
+                throw new IllegalArgumentException(
+                    "y cannot be larger than "
+                    + " maxY given in constructor " + height + ". y=" + y);
+            }
+            
+            int index = getInternalIndex(x, y);
             xbt.add(Integer.valueOf(index));
         }
     }
@@ -149,8 +168,8 @@ public class NearestNeighbor2D {
      Note: maxW = 1 + Math.ceil(Math.log(maxX * maxY)/Math.log(2));            
      </ore>
     
-     * @param x
-     * @param y
+     * @param x non-negative x coord to query for
+     * @param y non-negative y coord to query for
      */
     public Set<PairInt> findClosest(final int x, final int y) {
         
@@ -164,22 +183,29 @@ public class NearestNeighbor2D {
      * This is meant to be a nearest neighbor method
      * with a tolerance.  
      * TODO: calculate the runtime complexity bounds....
-     * @param x
-     * @param y
+     * @param x non-negative x coord to query for
+     * @param y non-negative y coord to query for
      * @param tolerance
      * @return 
      */
     public Set<PairInt> findClosestWithinTolerance(int x, int y,
         double tolerance) {
         
-        if (x > width) {
-            throw new IllegalArgumentException("x cannot be larger than "
-                + " maxX given in constructor, " + width);
+        if (x > width || x < 0) {
+            //throw new IllegalArgumentException(
+            System.out.println(
+            "x cannot be larger than "
+                + " maxX given in constructor " + width
+                + ". x=" + x);
+            return null;
         }
         
-        if (y > height) {
-            throw new IllegalArgumentException("y cannot be larger than "
-                + " maxY given in constructor, " + height);
+        if (y > height || y < 0) {
+            //throw new IllegalArgumentException(
+            System.out.println(
+                "y cannot be larger than "
+                + " maxY given in constructor " + height + ". y=" + y);
+            return null;
         }
         
         double closestDist = Double.MAX_VALUE;
@@ -475,14 +501,21 @@ public class NearestNeighbor2D {
      */
     public Set<PairInt> findClosest(int x, int y, int dMax) {
         
-        if (x > width) {
-            throw new IllegalArgumentException("x cannot be larger than "
-                + " maxX given in constructor, " + width);
+        if (x > width || x < 0) {
+            //throw new IllegalArgumentException(
+            System.out.println(
+            "x cannot be larger than "
+                + " maxX given in constructor " + width
+                + ". x=" + x);
+            return null;
         }
         
-        if (y > height) {
-            throw new IllegalArgumentException("y cannot be larger than "
-                + " maxY given in constructor, " + height);
+        if (y > height || y < 0) {
+            //throw new IllegalArgumentException(
+            System.out.println(
+                "y cannot be larger than "
+                + " maxY given in constructor " + height + ". y=" + y);
+            return null;
         }
         
         int idx = getInternalIndex(x, y);
