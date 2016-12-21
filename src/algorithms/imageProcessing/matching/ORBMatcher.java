@@ -9,6 +9,7 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.VanishingPoints;
 import algorithms.imageProcessing.features.CorrespondenceList;
@@ -35,6 +36,7 @@ import algorithms.util.TwoDIntArray;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.iterator.TObjectIntIterator;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
@@ -635,9 +637,15 @@ public class ORBMatcher {
         
         EpipolarTransformer eTransformer = new EpipolarTransformer();
         
-        // --- create ordered bounds1 list
-        List<PairIntArray> bounds1List = createOrderedBounds(orb1, scales1, 
-            labeledPoints1, sigma);
+        // --- create ordered bounds1 array.
+        //     NOTE that all octaves use coordinates based in the
+        //     full reference frame, so only one bounds1 is needed for
+        //     all octaves.
+        PairIntArray bounds1 = createOrderedBounds(orb1, labeledPoints1, sigma);
+        if (bounds1.getN() < 7) {
+            throw new IllegalStateException("the boundary of object 1 "
+                + " must have at least 7 points");
+        }
         
         // --- creating maps of segmented cell sizes for first octave
         TIntIntMap sizes2Maps = new TIntIntHashMap();
@@ -647,18 +655,21 @@ public class ORBMatcher {
                 continue;
             }
             int sz = calculateObjectSize(set2);
+            {
+                MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+                double[] xyCen = curveHelper.calculateXYCentroids(set2);
+                System.out.println("set " + i + 
+                    " center=" + (int) xyCen[0] + ","
+                    + (int) xyCen[1] + " size_full=" + sz);
+            }
             sizes2Maps.put(i, sz);
         }
         
         ImageProcessor imageProcessor = new ImageProcessor();
         
-        // -- initialize bounds2MapsList
-        // -- and populate remaining octaves in sizes2MapsList
-        List<TIntObjectMap<PairIntArray>> bounds2MapsList = new 
-            ArrayList<TIntObjectMap<PairIntArray>>();
-        for (int octave2 =1; octave2 < scales2.size(); ++octave2) {
-            bounds2MapsList.add(new TIntObjectHashMap<PairIntArray>());
-        }
+        // -- initialize bounds2MapsList and populte on demand
+        TIntObjectMap<PairIntArray> bounds2Maps 
+            = new TIntObjectHashMap<PairIntArray>();
        
         List<TObjectIntMap<PairInt>> kp1IdxMapList 
             = new ArrayList<TObjectIntMap<PairInt>>();
@@ -707,6 +718,10 @@ public class ORBMatcher {
             }     
         }
         
+        // a cache for partial shape matcher and results
+        TIntObjectMap<List<Object>> psmMap = new
+            TIntObjectHashMap<List<Object>>();
+        
         float[] bestCosts = new float[scales1.size()];
         List<List<QuadInt>> bestCorres = new ArrayList<List<QuadInt>>();
         TIntList bestOctaves1 = new TIntArrayList();
@@ -715,16 +730,11 @@ public class ORBMatcher {
         for (int octave1 = 0; octave1 < scales1.size(); ++octave1) {
         //for (int octave1 = 1; octave1 < 2; ++octave1) {
             
-            PairIntArray bounds1 = bounds1List.get(octave1);
-            if (bounds1 == null || bounds1.getN() < 7) {
-                continue;
-            }
-            
-            //float scale1 = scales1.get(octave1);
+            float scale1 = scales1.get(octave1);
             
             TObjectIntMap<PairInt> keypoints1IndexMap = kp1IdxMapList.get(octave1);
            
-            int sz1 = calculateObjectSize(bounds1);
+            float sz1 = calculateObjectSize(bounds1)/scale1;
             
             int nkp1 = orb1.getKeyPoint0List().get(octave1).size();
             int nb1 = bounds1.getN();
@@ -742,45 +752,63 @@ public class ORBMatcher {
             //for (int octave2 = 0; octave2 < scales2.size(); ++octave2) {
             for (int octave2 = 0; octave2 < 1; ++octave2) {
            
-                //float scale2 = scales2.get(octave2);
+                float scale2 = scales2.get(octave2);
             
                 TObjectIntMap<PairInt> keypoints2IndexMap = kp2IdxMapList.get(octave2);
                 TIntObjectMap<TIntSet> labels2KPIdxs = 
                     labels2KPIdxsList.get(octave2);
                 
                 TwoDFloatArray img2 = orb2.getPyramidImages().get(octave2);
-                                
-                for (int segIdx = 0; segIdx < labeledPoints2.size(); ++segIdx) {
+                
+                TIntObjectIterator<TIntSet> iter2 = labels2KPIdxs.iterator();
+                for (int i2 = 0; i2 < labels2KPIdxs.size(); ++i2) {
+                    iter2.advance();
                     
-                    int sz2 = sizes2Maps.get(segIdx);
+                    int segIdx = iter2.key();
+                    TIntSet kp2Idxs = iter2.value();
+                    
+                    float sz2 = sizes2Maps.get(segIdx)/scale2;
                     if (sz2 == 0) {
                         continue;
                     }
-                    if ((sz1 > sz2 && Math.abs((float)sz1 / (float)sz2) > 1.15) || 
-                        (sz2 > sz1 && Math.abs((float)sz2 / (float)sz1) > 1.15)) {
+ System.out.println("octave1=" + octave1 + " octave2=" + octave2 + 
+   " sz1=" + sz1 + " sz2=" + sz2 + " segIdx=" + segIdx);
+                    if ((sz1 > sz2 && Math.abs(sz1 / sz2) > 1.2) || 
+                        (sz2 > sz1 && Math.abs(sz2 / sz1) > 1.2)) {
                         continue;
                     }
-   System.out.println("octave1=" + octave1 + " octave2=" + octave2 + 
-       " sz1=" + sz1 + " sz2=" + sz2 + " segIdx=" + segIdx);            
    
                     PairIntArray bounds2 = getOrCreateOrderedBounds(img2,
-                        bounds2MapsList.get(octave2), segIdx, 
-                        labeledPoints2.get(segIdx), sigma);
+                        bounds2Maps, segIdx, labeledPoints2.get(segIdx), sigma);
        
                     if (bounds2 == null || bounds2.getN() < 7) {
                         continue;
                     }
-                    
-                    PartialShapeMatcher matcher = new PartialShapeMatcher();
-                    matcher.overrideSamplingDistance(1);
-                    matcher._overrideToThreshhold(0.2f);
-                    matcher.setToRemoveOutliers();
-                    matcher.overrideToStoreMatrix();
-                    PartialShapeMatcher.Result result = matcher.match(
-                        bounds1, bounds2);
-            
-                    if (result == null 
-                        || (matcher.getStoredEpipolarFit() == null) 
+             
+                    List<Object> psmObj = psmMap.get(segIdx);
+                    if (psmObj == null) {
+                        PartialShapeMatcher matcher = new PartialShapeMatcher();
+                        matcher.overrideSamplingDistance(1);
+                        matcher._overrideToThreshhold(0.2f);
+                        matcher.setToRemoveOutliers();
+                        matcher.overrideToStoreMatrix();
+                        PartialShapeMatcher.Result result = matcher.match(
+                            bounds1, bounds2);
+                        psmObj = new ArrayList<Object>();
+                        psmObj.add(matcher);
+                        if (result != null) {
+                            psmObj.add(result);
+                        }
+                        psmMap.put(segIdx, psmObj);
+                    }
+                    if (psmObj.size() == 1) {
+                        continue;
+                    }
+                    PartialShapeMatcher matcher = (PartialShapeMatcher)psmObj.get(0);
+                    PartialShapeMatcher.Result result = 
+                        (PartialShapeMatcher.Result)psmObj.get(1);
+
+                    if ((matcher.getStoredEpipolarFit() == null) 
                         || (result.getNumberOfMatches() < 3)) {
                         continue;
                     }
@@ -816,10 +844,6 @@ public class ORBMatcher {
                         .calculateDistancesFromEpipolar(fm,
                         matchedLeft, matchedRight);
             
-                    TIntSet kp2Idxs = labels2KPIdxs.get(segIdx);
-                    if (kp2Idxs == null) {
-                        continue;
-                    }
                     // key=keypoint in this labeled region, value=kp2Index
                     PairIntArray unmatchedKP2 = new PairIntArray();
                     TObjectIntMap<PairInt> unmatchedKP2Idxs = 
@@ -839,16 +863,50 @@ public class ORBMatcher {
                     PairIntArray unmatchedKP1 = new PairIntArray();
                     TObjectIntMap<PairInt> unmatchedKP1Idxs = 
                         new TObjectIntHashMap<PairInt>();
-                    for (int j = 0; j < orb1.getKeyPoint0List().get(octave1).size();
+              
+                    TObjectIntIterator<PairInt> iter1 = keypoints1IndexMap.iterator();
+                    for (int j = 0; j < keypoints1IndexMap.size();
                         ++j) {
-                        int x = orb1.getKeyPoint1List().get(octave1).get(j);
-                        int y = orb1.getKeyPoint0List().get(octave1).get(j);
-                        PairInt p = new PairInt(x, y);
+                        iter1.advance();
+                        PairInt p = iter1.key();
+                        int kpIdx1 = iter1.value();
                         if (!matched1.contains(p)) {
-                            unmatchedKP1Idxs.put(p, j);
-                            unmatchedKP1.add(x, y);
+                            unmatchedKP1Idxs.put(p, kpIdx1);
+                            unmatchedKP1.add(p.getX(), p.getY());
                         }
-                    }                       
+                    }
+         
+                    {// DEBUG, print bounds1 and unmatchedkp1
+                        Image img1 = ORB.convertToImage(
+                            orb1.getPyramidImages().get(octave1));
+                        for (int ii = 0; ii < m1.getN(); ++ii) {
+                            int x = Math.round((float)m1.getX(ii)/scale1);
+                            int y = Math.round((float)m1.getY(ii)/scale1);
+                            ImageIOHelper.addPointToImage(x, y, img1, 1, 0, 255, 0);
+                        }
+                        for (int ii = 0; ii < unmatchedKP1.getN(); ++ii) {
+                            int x = Math.round((float)unmatchedKP1.getX(ii)/scale1);
+                            int y = Math.round((float)unmatchedKP1.getY(ii)/scale1);
+                            ImageIOHelper.addPointToImage(x, y, img1, 1, 255, 0, 0);
+                        }
+                        MiscDebug.writeImage(img1, "_TMP1_" + octave1 + "_" + 
+                            MiscDebug.getCurrentTimeFormatted());
+                        //====
+                        img1 = ORB.convertToImage(
+                            orb2.getPyramidImages().get(octave2));
+                        for (int ii = 0; ii < m2.getN(); ++ii) {
+                            int x = Math.round((float)m2.getX(ii)/scale2);
+                            int y = Math.round((float)m2.getY(ii)/scale2);
+                            ImageIOHelper.addPointToImage(x, y, img1, 1, 0, 255, 0);
+                        }
+                        for (int ii = 0; ii < unmatchedKP2.getN(); ++ii) {
+                            int x = Math.round((float)unmatchedKP2.getX(ii)/scale2);
+                            int y = Math.round((float)unmatchedKP2.getY(ii)/scale2);
+                            ImageIOHelper.addPointToImage(x, y, img1, 1, 255, 0, 0);
+                        }
+                        MiscDebug.writeImage(img1, "_TMP2_" + octave2 + "_" + 
+                            MiscDebug.getCurrentTimeFormatted());
+                    }
                     
                     SimpleMatrix unmatchedLeft = 
                         eTransformer.rewriteInto3ColumnMatrix(unmatchedKP1);
@@ -2855,43 +2913,25 @@ public class ORBMatcher {
         return maxGap;        
     }
 
-    private List<PairIntArray> createOrderedBounds(ORB orb1, TFloatList scales1, 
+    private PairIntArray createOrderedBounds(ORB orb1, 
         Set<PairInt> labeledPoints1, SIGMA sigma) {
 
         ImageProcessor imageProcessor = new ImageProcessor();
+                
+        Set<PairInt> set = new HashSet<PairInt>();
+        set.addAll(labeledPoints1);
+            
+        PairIntArray bounds = imageProcessor.extractSmoothedOrderedBoundary(
+            set, sigma, 
+            orb1.getPyramidImages().get(0).a[0].length, 
+            orb1.getPyramidImages().get(0).a.length);
         
-        List<PairIntArray> boundsList = new ArrayList<PairIntArray>();
-        
-        for (int octave1 = 0; octave1 < scales1.size(); ++octave1) {
-            
-            float scale1 = scales1.get(octave1);
-            Set<PairInt> set = new HashSet<PairInt>();
-            
-            if (octave1 == 0) {
-                set.addAll(labeledPoints1);
-            } else {
-                for (PairInt p : labeledPoints1) {
-                    int x = Math.round((float) p.getX() / scale1);
-                    int y = Math.round((float) p.getY() / scale1);
-                    PairInt p2 = new PairInt(x, y);
-                    set.add(p2);
-                }
-            }
-            
-            PairIntArray bounds = imageProcessor.extractSmoothedOrderedBoundary(
-                set, sigma, 
-                orb1.getPyramidImages().get(octave1).a[0].length, 
-                orb1.getPyramidImages().get(octave1).a.length);
-            
-            boundsList.add(bounds);
-        }
-        
-        return boundsList;
+        return bounds;
     }
 
     private PairIntArray getOrCreateOrderedBounds(TwoDFloatArray img, 
-        TIntObjectMap<PairIntArray> boundsMap, int segIdx, Set<PairInt> set, 
-        SIGMA sigma) {
+        TIntObjectMap<PairIntArray> boundsMap, int segIdx, 
+        Set<PairInt> set, SIGMA sigma) {
         
         PairIntArray bounds = boundsMap.get(segIdx);
         if (bounds != null) {
@@ -2904,6 +2944,14 @@ public class ORBMatcher {
             set, sigma, img.a[0].length, img.a.length);
         
         boundsMap.put(segIdx, bounds);
+    
+        {
+            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+            double[] xyCen = curveHelper.calculateXYCentroids(bounds);
+            System.out.println("bounds center=" + (int)xyCen[0] + "," + 
+                (int)xyCen[1] + " size_full=" + 
+                calculateObjectSize(bounds));
+        }
         
         return bounds;
     }
