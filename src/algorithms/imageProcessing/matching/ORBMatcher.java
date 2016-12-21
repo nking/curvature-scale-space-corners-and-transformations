@@ -634,6 +634,7 @@ public class ORBMatcher {
         SIGMA sigma = SIGMA.ZEROPOINTFIVE;
         
         float distTol = 5;
+        float distMax = (float)(Math.sqrt(2) * distTol);
         
         EpipolarTransformer eTransformer = new EpipolarTransformer();
         
@@ -722,10 +723,13 @@ public class ORBMatcher {
         TIntObjectMap<List<Object>> psmMap = new
             TIntObjectHashMap<List<Object>>();
         
+        double maxChordAvg = Double.MIN_VALUE;
+        
         float[] bestCosts = new float[scales1.size()];
         List<List<QuadInt>> bestCorres = new ArrayList<List<QuadInt>>();
         TIntList bestOctaves1 = new TIntArrayList();
         TIntList bestOctaves2 = new TIntArrayList();
+        TIntList bestSegIdxs2 = new TIntArrayList();
         
         for (int octave1 = 0; octave1 < scales1.size(); ++octave1) {
         //for (int octave1 = 1; octave1 < 2; ++octave1) {
@@ -740,7 +744,6 @@ public class ORBMatcher {
             int nb1 = bounds1.getN();
             
             float normDesc = nkp1 * nBands * 256;
-            double maxChordAvg = Double.MIN_VALUE;
             
             List<List<QuadInt>> correspondences = new ArrayList<List<QuadInt>>();
             TDoubleList descCosts = new TDoubleArrayList();
@@ -748,6 +751,7 @@ public class ORBMatcher {
             TDoubleList epCosts = new TDoubleArrayList();
             TDoubleList chordCosts = new TDoubleArrayList();
             TIntList octs2 = new TIntArrayList();
+            TIntList segIdxs = new TIntArrayList();
             
             //for (int octave2 = 0; octave2 < scales2.size(); ++octave2) {
             for (int octave2 = 0; octave2 < 1; ++octave2) {
@@ -812,7 +816,7 @@ public class ORBMatcher {
                         || (result.getNumberOfMatches() < 3)) {
                         continue;
                     }
-                    
+      
                     int nr = result.getNumberOfMatches();
                                         
                     PairIntArray m1 = new PairIntArray(nr);
@@ -832,18 +836,22 @@ public class ORBMatcher {
                         matched2.add(new PairInt(x2, y2));
                     }
                     
+     //TODO: the objective function needs to be edited               
+                    
                     SimpleMatrix fm = matcher.getStoredEpipolarFit().getFundamentalMatrix();
                     
                     SimpleMatrix matchedLeft = 
                         eTransformer.rewriteInto3ColumnMatrix(m1);
                     SimpleMatrix matchedRight = 
                         eTransformer.rewriteInto3ColumnMatrix(m2);
-                    
+                           
                     // this goes into total epipolar distances at end of block
+                    // NOTE: this method needs testing.
+                    //      currently no normalization is used internally
                     PairFloatArray distances = eTransformer
                         .calculateDistancesFromEpipolar(fm,
                         matchedLeft, matchedRight);
-            
+                                       
                     // key=keypoint in this labeled region, value=kp2Index
                     PairIntArray unmatchedKP2 = new PairIntArray();
                     TObjectIntMap<PairInt> unmatchedKP2Idxs = 
@@ -925,7 +933,7 @@ public class ORBMatcher {
                     int nLeftUnmatched = unmatchedLeft.numCols();
                     int nRightUnmatched = unmatchedRight.numCols();
                     float dist, descCost;
-                    float distMax = (float)(Math.sqrt(2) * distTol);
+                    
                     TFloatList totalCost = new TFloatArrayList();
                     TIntList indexes = new TIntArrayList();
                     TFloatList eDist = new TFloatArrayList();
@@ -997,7 +1005,7 @@ public class ORBMatcher {
                         added2.add(kpIdx2);
                         addedKPIdxs.add(new PairInt(kpIdx1, kpIdx2));
                         totalDistance += eDist.get(idx);
-                    
+                   
                         float descrCost = totalCost.get(j) - eDist.get(idx);
                         totalDescrSum += descrCost;
                         nDescr++;
@@ -1082,29 +1090,62 @@ public class ORBMatcher {
                     epCosts.add(totalDistance);
                     chordCosts.add(totalChordDiffSum);
                     octs2.add(octave2);
-                }
+                    segIdxs.add(segIdx);
+                    
+                    {
+                        double n = corres.size();
+                        double normalizedChord = (totalChordDiffSum/n)/maxChordAvg;
+                        double normalizedEPDist = (totalDistance/n)/distMax;
+                        int nDesc = nDescr;
+                        double normalizedDescr = 
+                           1.f - ((nBands * 256.f 
+                            - (totalDescrSum/(double)nDesc))
+                           /normDesc);
+                        if (nDesc == 0) {
+                            //TODO: revisit this
+                            normalizedDescr = 1;
+                        }
+                        double totCost = normalizedChord + normalizedEPDist + 
+                           normalizedDescr;
+
+                        System.out.println(String.format(
+ "octave1=%d octave2=%d segIdx=%d nCor=%d ch=%.2f, normch=%.2f normep=%.2f normdesc=%.2f tot=%.2f",
+                        octave1, octave2, segIdx, corres.size(),
+                        (float)totalChordDiffSum,
+                        (float)normalizedChord,
+                        (float)normalizedEPDist, (float)normalizedDescr, 
+                        (float)totCost));
+                    }
+                    }
+                
             }// end loop over octave2
             
             // determine best per octave pair
             double bestCost = Double.MAX_VALUE;
             List<QuadInt> best = null;
             int bestOctave2 = -1;
+            int bestSegIdx2 = -1;
             int nI = correspondences.size();
             for (int i = 0; i < nI; ++i) {
                 double n = correspondences.get(i).size();
                 double normalizedChord = (chordCosts.get(i)/n)/maxChordAvg;
-                double normalizedEPDist = (epCosts.get(i)/n)/distTol;
+                double normalizedEPDist = (epCosts.get(i)/n)/distMax;
                 int nDesc = descCounts.get(i);
                 double normalizedDescr = 
                    1.f - ((nBands * 256.f - (descCosts.get(i)/(double)nDesc))
                    /normDesc);
+                if (nDesc == 0) {
+                    //TODO: revisit this
+                    normalizedDescr = 1;
+                }
                 double totCost = normalizedChord + normalizedEPDist + 
                    normalizedDescr;
-                
+              
                 if (totCost < bestCost) {
                     bestCost = totCost;
                     best = correspondences.get(i);
                     bestOctave2 = octs2.get(i);
+                    bestSegIdx2 = segIdxs.get(i);
                 }
             }
            
@@ -1116,12 +1157,14 @@ public class ORBMatcher {
             bestCorres.add(best);
             bestOctaves1.add(octave1);
             bestOctaves2.add(bestOctave2);
+            bestSegIdxs2.add(bestSegIdx2);
             
             if (true) {
                 //DEBUG
                 for (int k = 0; k < bestCorres.size(); ++k) {
                     int oct1 = bestOctaves1.get(k);
                     int oct2 = bestOctaves2.get(k);
+                    int segIdx = bestSegIdxs2.get(k);
                     float s1 = scales1.get(oct1);
                     float s2 = scales2.get(oct2);
                     List<QuadInt> cor = bestCorres.get(k);
@@ -1144,7 +1187,11 @@ public class ORBMatcher {
                     while (str2.length() < 3) {
                         str2 = "0" + str2;
                     }
-                    str = str + "_" + str2;
+                    String str3 = Integer.toString(segIdx);
+                    while (str3.length() < 3) {
+                        str3 = "0" + str3;
+                    }
+                    str = str + "_" + str2 + "_" + str3;
                     try {
                         plotter.writeImage("_corres3_" + str + "_" + 
                             MiscDebug.getCurrentTimeFormatted());
