@@ -1113,6 +1113,26 @@ public class ORBMatcher {
         if (!orb1.getDescrChoice().equals(orb2.getDescrChoice())) {
             throw new IllegalStateException("orbs must contain same kind of descirptors");
         }
+        
+        SIGMA sigma = SIGMA.ZEROPOINTFIVE;
+        
+        float distTol = 5;
+        float distMax = (float)(Math.sqrt(2) * distTol);
+        
+        PairIntArray bounds1 = createOrderedBounds(orb1, labeledPoints1, sigma);
+        if (bounds1.getN() < 7) {
+            throw new IllegalStateException("the boundary of object 1 "
+                + " must have at least 7 points");
+        }
+        int[] minMaxXYB1 = MiscMath.findMinMaxXY(bounds1);
+        NearestNeighbor2D nnb1 = new NearestNeighbor2D(Misc.convert(bounds1), 
+            minMaxXYB1[1] + (int)Math.ceil(distTol + 1), 
+            minMaxXYB1[3] + (int)Math.ceil(distTol) + 1);
+        TObjectIntMap<PairInt> bounds1IndexMap = new TObjectIntHashMap<PairInt>();
+        for (int i = 0; i < bounds1.getN(); ++i) {
+            bounds1IndexMap.put(new PairInt(bounds1.getX(i), bounds1.getY(i)), i);
+        }
+        
         int nBands = 3;
         if (orb1.getDescrChoice().equals(ORB.DescriptorChoice.HSV)) {
             if (orb1.getDescriptorsH() == null || orb2.getDescriptorsH() == null) {
@@ -1142,11 +1162,6 @@ public class ORBMatcher {
             throw new IllegalArgumentException("logic depends upon first scale" + " level being '1'");
         }
 
-        SIGMA sigma = SIGMA.ZEROPOINTFIVE;
-        
-        float distTol = 5;
-        float distMax = (float)(Math.sqrt(2) * distTol);
-        
         EpipolarTransformer eTransformer = new EpipolarTransformer();
         
         // --- creating maps of segmented cell sizes for first octave
@@ -1216,6 +1231,10 @@ public class ORBMatcher {
             }     
         }
         
+        // -- initialize bounds2MapsList and populte on demand
+        TIntObjectMap<PairIntArray> bounds2Maps 
+            = new TIntObjectHashMap<PairIntArray>();
+        
         // a cache for partial shape matcher and results
         TIntObjectMap<List<Object>> psmMap = new
             TIntObjectHashMap<List<Object>>();
@@ -1259,8 +1278,8 @@ public class ORBMatcher {
                 minMaxXY1[1] + (int)Math.ceil(distTol + 1), 
                 minMaxXY1[3] + (int)Math.ceil(distTol) + 1);
             
-            //for (int octave2 = 0; octave2 < scales2.size(); ++octave2) {
-            for (int octave2 = 0; octave2 < 1; ++octave2) {
+            for (int octave2 = 0; octave2 < scales2.size(); ++octave2) {
+            //for (int octave2 = 0; octave2 < 1; ++octave2) {
            
                 float scale2 = scales2.get(octave2);
             
@@ -1294,6 +1313,19 @@ public class ORBMatcher {
                         continue;
                     }
                     
+                    PairIntArray bounds2 = getOrCreateOrderedBounds(img2,
+                        bounds2Maps, segIdx, labeledPoints2.get(segIdx), sigma);
+       
+                    if (bounds2 == null || bounds2.getN() < 7) {
+                        continue;
+                    }
+                    TObjectIntMap<PairInt> bounds2IdxMap 
+                        = new TObjectIntHashMap<PairInt>(kp2Idxs.size());
+                    for (int j = 0; j < bounds2.getN(); ++j) {
+                        bounds2IdxMap.put(new PairInt(bounds2.getX(j),
+                            bounds2.getY(j)), j);
+                    }
+                    
                     TObjectIntMap<PairInt> rightIdxMap 
                         = new TObjectIntHashMap<PairInt>(kp2Idxs.size());
                     TIntIterator iter = kp2Idxs.iterator();
@@ -1308,10 +1340,7 @@ public class ORBMatcher {
                     
                     ORB.Descriptors[] desc1 = getDescriptors(orb1, octave1);
                     ORB.Descriptors[] desc2 = getDescriptors(orb2, octave2);
-                    int[][] costD = ORB.calcDescriptorCostMatrix(desc1, desc2);
-   
-    //TODO:this one needs to use bounds to evaluate
-    //         the euclidran match
+                    int[][] costD = ORB.calcDescriptorCostMatrix(desc1, desc2);     
                     
                     // optimal matching or sorted greedy ordered by incr descr cost
                     PairIntArray m1 = new PairIntArray();
@@ -1320,12 +1349,42 @@ public class ORBMatcher {
                         leftIdxMap, rightIdxMap, m1, m2,
                         orb1.getPyramidImages().get(0).a[0].length,
                         orb1.getPyramidImages().get(0).a.length, 
-                        Math.round(distTol));
+                        Math.round(distTol),
+                        bounds1, bounds2, nnb1, bounds1IndexMap, bounds2IdxMap);
                                        
                     System.out.println("octave1=" + octave1 + " octave2=" +
-                        octave2 + " m1.n=" + m1.getN() + " segIdx=" + segIdx); 
+                        octave2 + " euclid m1.n=" + m1.getN() + " segIdx=" + segIdx); 
                     if (m1.getN() < 7) {
                         continue;
+                    }
+                    
+                    {// DEBUG
+                        String str3 = Integer.toString(segIdx);
+                        while (str3.length() < 3) {
+                            str3 = "0" + str3;
+                        }
+                        Image img1 = ORB.convertToImage(
+                            orb1.getPyramidImages().get(octave1));
+                        for (int ii = 0; ii < m1.getN(); ++ii) {
+                            int x = Math.round((float)m1.getX(ii)/scale1);
+                            int y = Math.round((float)m1.getY(ii)/scale1);
+                            ImageIOHelper.addPointToImage(x, y, img1, 1, 0, 255, 0);
+                        }
+                        MiscDebug.writeImage(img1, "_TMP1__" 
+                            + octave1 + "_" + octave2 + "_" + str3 + "_" +
+                            MiscDebug.getCurrentTimeFormatted());
+                        //====
+                        img1 = ORB.convertToImage(
+                            orb2.getPyramidImages().get(octave2));
+                        for (int ii = 0; ii < m2.getN(); ++ii) {
+                            int x = Math.round((float)m2.getX(ii)/scale2);
+                            int y = Math.round((float)m2.getY(ii)/scale2);
+                            ImageIOHelper.addPointToImage(x, y, img1, 1, 0, 255, 0);
+                        }
+                       
+                        MiscDebug.writeImage(img1, "_TMP2__" +
+                            octave1 + "_" + octave2 + "_" + 
+                            str3 + "_" + MiscDebug.getCurrentTimeFormatted());
                     }
                     
                     //NOTE: may need to use euclid here for fewer pts
@@ -1354,6 +1413,10 @@ public class ORBMatcher {
                                                               
                     m1 = (PairIntArray)psmObj.get(1);
                     m2 = (PairIntArray)psmObj.get(2);
+                    
+                    System.out.println("octave1=" + octave1 + " octave2=" +
+                        octave2 + " epipolar m1.n=" + m1.getN() + " segIdx=" + segIdx); 
+                    
                     Set<PairInt> matched1 = new HashSet<PairInt>();
                     Set<PairInt> matched2 = new HashSet<PairInt>();
                     for (int j = 0; j < m1.getN(); ++j) {
@@ -1364,9 +1427,7 @@ public class ORBMatcher {
                         matched1.add(new PairInt(x1, y1));
                         matched2.add(new PairInt(x2, y2));
                     }
-                    
- //TODO: correct error in including points outside of segmentation region        
-                                        
+                                                            
                     SimpleMatrix fm = fit.getFundamentalMatrix();
                     //TODO: this method needs to be tested...normalization effects...
                     // sum, avg, max
@@ -1391,6 +1452,8 @@ public class ORBMatcher {
                         }
                     }
                     
+  //TODO: include unmatched boundary points
+  
                     PairIntArray unmatchedKP1 = new PairIntArray();
                     TObjectIntMap<PairInt> unmatchedKP1Idxs = 
                         new TObjectIntHashMap<PairInt>();
@@ -3374,6 +3437,103 @@ public class ORBMatcher {
         
         return new double[]{sumDesc, sumDist, count};
     }
+    
+    /**
+     * match left and right using the right transformed to left and nn1
+     * and return the sum of the descriptor costs, distance differences
+     * and number matched.
+     * NOTE that the each item in a sum has been normalized before adding,
+     * so for example, one item contributes between 0 and 1 to the total sum.
+     * a "+1" or +maxValue was not added for points not matched.
+     * @param a2
+     * @param a2TrTo1
+     * @param nn1
+     * @param p1KPIndexMap
+     * @param p2KPIndexMap
+     * @param img1Width
+     * @param img1Height
+     * @param pixTolerance
+     * @param maxDist
+     * @param m1
+     * @param m2
+     * @return 
+     */
+    private static double[] sumKeypointDescAndDist2To1(
+        PairIntArray a2,
+        PairIntArray a2TrTo1,  
+        NearestNeighbor2D nn1, 
+        TObjectIntMap<PairInt> p1KPIndexMap,
+        TObjectIntMap<PairInt> p2KPIndexMap, 
+        int img1Width, int img1Height, int pixTolerance, 
+        double maxDist, int[] m1, int[] m2) {
+        
+        int n2 = a2TrTo1.getN();
+        
+        int count = 0;
+        
+        float[] costDist = new float[n2];
+        int[] indexes = new int[n2];
+        for (int k = 0; k < n2; ++k) {
+            int x1Tr = a2TrTo1.getX(k);
+            int y1Tr = a2TrTo1.getY(k);
+            
+            if (x1Tr < 0 || y1Tr < 0) {
+                continue;
+            }
+            
+            int kpIdx2 = p2KPIndexMap.get(new PairInt(a2.getX(k), a2.getY(k)));
+            
+            Set<PairInt> nearest = nn1.findClosest(x1Tr, y1Tr, pixTolerance);
+            
+            PairInt minP1 = null;
+            int minIdx1 = 0;
+            if (nearest != null && !nearest.isEmpty()) {
+                minP1 = nearest.iterator().next();
+                minIdx1 = p1KPIndexMap.get(minP1);
+            }
+            if (minP1 != null) {
+                double dist = ORBMatcher.distance(x1Tr, y1Tr, minP1);
+                double distNorm = dist / maxDist;
+                m1[count] = minIdx1;
+                m2[count] = kpIdx2;
+                costDist[count] = (float) distNorm;
+                indexes[count] = count;
+                count++;
+            }
+        }
+        double sumDist = 0;
+        if (count > 1) {
+            if (count < costDist.length) {
+                indexes = Arrays.copyOf(indexes, count);
+                costDist = Arrays.copyOf(costDist, count);
+            }
+            QuickSort.sortBy1stArg(costDist, indexes);
+            TIntSet set1 = new TIntHashSet();
+            TIntSet set2 = new TIntHashSet();
+            PairIntArray matched = new PairIntArray(count);
+            TIntList idxs = new TIntArrayList();
+            for (int i = 0; i < count; ++i) {
+                int idx = indexes[i];
+                int idx1 = m1[idx];
+                int idx2 = m2[idx];
+                if (set1.contains(idx1) || set2.contains(idx2)) {
+                    continue;
+                }
+                idxs.add(idx);
+                matched.add(idx1, idx2);
+                set1.add(idx1);
+                set2.add(idx2);
+                sumDist += costDist[idx];
+            }
+            count = matched.getN();
+            for (int i = 0; i < count; ++i) {
+                m1[i] = matched.getX(i);
+                m2[i] = matched.getY(i);
+            }
+        }
+        
+        return new double[]{sumDist, count};
+    }
 
     private static PairIntArray trimToImageBounds(TwoDFloatArray octaveImg, PairIntArray a) {
         int n0 = octaveImg.a.length;
@@ -3990,7 +4150,10 @@ public class ORBMatcher {
         TObjectIntMap<PairInt> keypoints2IndexMap, 
         PairIntArray outLeft, PairIntArray outRight, 
         int img1Width, int img1Height,
-        int pixTol) {
+        int pixTol,
+        PairIntArray extr1, PairIntArray extr2, NearestNeighbor2D nnExtr1,
+        TObjectIntMap<PairInt> extr1IndexMap, 
+        TObjectIntMap<PairInt> extr2IndexMap) {
         
         // NOTE that all coordinates are in the full reference frame
         //   and remain that way through this method
@@ -4052,7 +4215,10 @@ public class ORBMatcher {
         double bestCost = Double.MAX_VALUE;
         int[] bestMIdx1s = null;
         int[] bestMIdx2s = null;
+        int[] bestMIdxExtr1s = null;
+        int[] bestMIdxExtr2s = null;
         int bestN = -1;
+        int bestExtrN = -1;
         
         for (int i = 0; i < topK; ++i) {
             int idxI1 = indexes[i];
@@ -4110,11 +4276,51 @@ public class ORBMatcher {
                 
                 double tot = sumDescr + sumDist;
             
+                // evaluate the extra points
+                int ne1 = extr1.getN();
+                int ne2 = extr2.getN();
+                    
+                PairIntArray extr2Tr = transformer.applyTransformation(
+                    params, extr2);
+                
+                // since the extra points do not have descriptors,
+                // need to decide between adding a ne1 to sumDescr
+                // or 0 to it (changing the importance of the orid keypoints).
+                
+                int nMatchedExtr = -1;
+                int[] mIdxExtr1s = new int[ne2];
+                int[] mIdxExtr2s = new int[ne2];
+                    
+                if (extr2Tr.getN() == 0) {
+                    // adding a +1 for the distance limits
+                    tot += ne1;
+                } else {
+                    
+                    //sumDist, count
+                    double[] sumsExtr = sumKeypointDescAndDist2To1(
+                        extr2, extr2Tr, nnExtr1,
+                        extr1IndexMap, extr2IndexMap,
+                        img1Width, img1Height,
+                        pixTol, pixTol2, mIdxExtr1s, mIdxExtr2s);
+                
+                    nMatchedExtr = (int)sumsExtr[1];
+                    double sumDistExtr = sumsExtr[0];
+                    
+                    int nUnmatchedExtr = ne1 - nMatchedExtr;
+                    
+                    tot += sumDistExtr;
+                    tot += nUnmatchedExtr;
+                }
+                
                 if (tot < bestCost) {
                     bestCost = tot;
                     bestMIdx1s = mIdx1s;
                     bestMIdx2s = mIdx2s;
                     bestN = nMatched;
+                    
+                    bestMIdxExtr1s = mIdxExtr1s;
+                    bestMIdxExtr2s = mIdxExtr2s;
+                    bestExtrN = nMatchedExtr;
                 }
             }
         }
@@ -4125,6 +4331,12 @@ public class ORBMatcher {
                 int kpIdx2 = bestMIdx2s[i];
                 outLeft.add(left.getX(kpIdx1), left.getY(kpIdx1));
                 outRight.add(right.getX(kpIdx2), right.getY(kpIdx2));
+            }
+            for (int i = 0; i < bestExtrN; ++i) {
+                int idx1 = bestMIdxExtr1s[i];
+                int idx2 = bestMIdxExtr2s[i];
+                outLeft.add(extr1.getX(idx1), extr1.getY(idx1));
+                outRight.add(extr2.getX(idx2), extr2.getY(idx2));
             }
         }        
     }
