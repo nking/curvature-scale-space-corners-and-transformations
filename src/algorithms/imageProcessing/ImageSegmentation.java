@@ -11138,9 +11138,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             // for each pixel, find the adjacent pixel whose label != label
             // and which is closest in color.
             for (PairInt p : set) {
-          if (p.getX()==45 && p.getY()==53) {
-               int z = 0;
-          }
+          
                 int pixIdx = img.getInternalIndex(p);
                 
                 Color.RGBtoHSB(img.getR(pixIdx), img.getG(pixIdx), 
