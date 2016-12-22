@@ -1113,7 +1113,7 @@ public class ORBMatcher {
         if (!orb1.getDescrChoice().equals(orb2.getDescrChoice())) {
             throw new IllegalStateException("orbs must contain same kind of descirptors");
         }
-        
+               
         SIGMA sigma = SIGMA.ZEROPOINTFIVE;
         
         float distTol = 5;
@@ -1386,9 +1386,7 @@ public class ORBMatcher {
                             octave1 + "_" + octave2 + "_" + 
                             str3 + "_" + MiscDebug.getCurrentTimeFormatted());
                     }
-                    
-                    //NOTE: may need to use euclid here for fewer pts
-                    
+                                        
                     List<Object> psmObj = psmMap.get(segIdx);
                     if (psmObj == null) {
                         PairIntArray outLeft = new PairIntArray(left.getN());
@@ -1670,6 +1668,54 @@ public class ORBMatcher {
 
             // points are in full reference frame            
             results.add(new CorrespondenceList(qs));
+        }
+       
+        {// DEBUG   a look at the bounds and keypoints tested by octave
+            for (int i = 0; i < scales2.size(); ++i) {
+                float scale2 = scales2.get(i);
+                Image img1 = ORB.convertToImage(orb2.getPyramidImages().get(i));
+                // plot keypoints 
+                TIntObjectMap<TIntSet> labelKP2IndexMap = 
+                    labels2KPIdxsList.get(i);
+                TIntObjectIterator<TIntSet> iter1 = labelKP2IndexMap.iterator();
+                for (int ii = 0; ii < labelKP2IndexMap.size(); ++ii) {
+                    iter1.advance();
+                    int[] clr = ImageIOHelper.getNextRGB(ii);
+                    int segIdx = iter1.key();
+                    TIntSet kpIdxs = iter1.value();
+                    TIntIterator iter2 = kpIdxs.iterator();
+                    while (iter2.hasNext()) {
+                        int kpIdx = iter2.next();
+                        int x = Math.round((float) 
+                            orb2.getKeyPoint1List().get(i).get(kpIdx)/ scale2);
+                        int y = Math.round((float) 
+                            orb2.getKeyPoint0List().get(i).get(kpIdx)/ scale2);
+                        ImageIOHelper.addPointToImage(x, y, img1, 1, 
+                            clr[0], clr[1], clr[2]);
+                    }                    
+                }
+                MiscDebug.writeImage(img1, "_TMP3__" + i + "_" 
+                    + MiscDebug.getCurrentTimeFormatted());
+                
+                // plot bounds
+                img1 = ORB.convertToImage(orb2.getPyramidImages().get(i));
+                //TIntObjectMap<PairIntArray> bounds2Maps
+                TIntObjectIterator<PairIntArray> iter3 = bounds2Maps.iterator();
+                for (int ii = 0; ii < bounds2Maps.size(); ++ii) {
+                    iter3.advance();
+                    int[] clr = ImageIOHelper.getNextRGB(ii);
+                    int segIdx = iter1.key();
+                    PairIntArray bounds2 = iter3.value();
+                    for (int idx = 0; idx < bounds2.getN(); ++idx) {
+                        int x = Math.round((float) bounds2.getX(idx)/ scale2);
+                        int y = Math.round((float) bounds2.getY(idx)/ scale2);
+                        ImageIOHelper.addPointToImage(x, y, img1, 0, 
+                            clr[0], clr[1], clr[2]);
+                    }                    
+                }
+                MiscDebug.writeImage(img1, "_TMP4__" 
+                    + MiscDebug.getCurrentTimeFormatted());
+            }
         }
         
         return results;

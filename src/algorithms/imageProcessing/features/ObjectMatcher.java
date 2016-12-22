@@ -407,7 +407,7 @@ public class ObjectMatcher {
         boolean useCHist = false;
 
         boolean changed = false;
-        
+
         changed = imageSegmentation.filterByCIECH(imgs0[0],
             shape0, img1Cp, listOfPointSets2, 0.1f);//0.4f);//0.35f
         /*if (useCHist) {
