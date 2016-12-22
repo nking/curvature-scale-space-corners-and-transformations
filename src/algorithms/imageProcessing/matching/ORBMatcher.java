@@ -997,7 +997,11 @@ public class ORBMatcher {
                     // 3 = nDescr
                     double[] output = new double[4];
 
- //paused here to test FM error methods                   
+ //paused here to test FM error methods  
+ // TODO: when done testing error method, consider using the
+ // keypoint fm epipolar distances instead of the
+ // euclidean transformation distances for the first part of
+ // the total sums.
                     
                     List<PairInt> addedKPIdxs = matchUsingFM(orb1, orb2, costD,
                         octave1, octave2,
