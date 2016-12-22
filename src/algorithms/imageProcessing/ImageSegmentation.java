@@ -11055,77 +11055,182 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         List<Set<PairInt>> contigSets, Image img, 
         int[] labels) {
         
+        // key = label, value = removed pixels.
+        TIntObjectMap<Set<PairInt>> a = new
+            TIntObjectHashMap<Set<PairInt>>();
+        
+        // pixels in a will be merged with an adjacent region that is not label
+        // ...choosing by closest in hsv color.
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
         /*
-        - ind labeled points which only have 2 neighbors
-          and use a DFS serach to chain them.
+        - find labeled points which only have 2 neighbors
+          and use a recursive neighbor search to find all w neighbors <=3
           -- chains longer than 3 are separated.
         */
-        TIntObjectMap<List<Set<PairInt>>> a = new
-            TIntObjectHashMap<List<Set<PairInt>>>();
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
-        for (int i = 0; i < contigSets.size(); ++i) {
-            List<Set<PairInt>> b = new ArrayList<Set<PairInt>>();
-            Set<PairInt> set = contigSets.get(i);
+        for (int label = 0; label < contigSets.size(); ++label) {
+            
             Stack<PairInt> stack = new Stack<PairInt>();
-            stack.addAll(set);
+            stack.addAll(contigSets.get(label));
                 
             Set<PairInt> visited = new HashSet<PairInt>();
-            Set<PairInt> c = new HashSet<PairInt>();
+                        
             while (!stack.isEmpty()) {
                 PairInt p = stack.pop();
                 if (visited.contains(p)) {
                     continue;
                 }
-                int nn = 0;
+                
+                Set<PairInt> nbrs = new HashSet<PairInt>();
                 for (int k = 0; k < dxs.length; k++) {
                     int x2 = p.getX() + dxs[k];
                     int y2 = p.getY() + dys[k];
+                    if (x2 < 0 || y2 < 0 || (x2 > (w - 1)) || (y2 > (h - 1))) {
+                        continue;
+                    }
                     PairInt p2 = new PairInt(x2, y2);
-                    if (set.contains(p2)) {
-                        nn++;
+                    int pixIdx2 = img.getInternalIndex(p2);
+                    if (labels[pixIdx2] == label) {
+                        nbrs.add(p2);
                     }
                 }
-                if (nn < 3) {
-                    c.add(p);
-                    stack.add(p);
-                } else if (c.size() > 2) {
-                    b.add(c);
-                    c = new HashSet<PairInt>();
-                } else {
-                    c.clear();
+           
+                if (nbrs.size() < 3) {
+                    
+                    nbrs.clear();
+                    
+                    recursiveNeighborSearch(p.getX(), p.getY(), visited,
+                        nbrs, 3, w, h, labels);
+                    
+                    stack.addAll(nbrs);
+                    
+                    visited.add(p);
+                    
+                    Set<PairInt> aSet = a.get(label);
+                    if (aSet == null) {
+                        aSet = new HashSet<PairInt>();
+                        a.put(label, aSet);
+                    }
+                    aSet.add(p);
+                    aSet.addAll(nbrs);
                 }
-                visited.add(p);
-            }
-            if (!b.isEmpty()) {
-                a.put(i, b);
-            }
-        }
-        TIntObjectIterator<List<Set<PairInt>>> iter = 
-            a.iterator();
-        for (int i = 0; i < a.size(); ++i) {
-            
-            iter.advance();
-            
-            int segIdx = iter.key();
-            List<Set<PairInt>> sets = iter.value();
-            
-            for (Set<PairInt> set : sets) {
-                contigSets.get(segIdx).removeAll(set);
-                contigSets.add(set);
             }
         }
         
-        if (a.size() == 0) {
+        if (a.isEmpty()) {
             return false;
         }
-        for (int i = 0; i < contigSets.size(); ++i) {
-            for (PairInt p : contigSets.get(i)) {
+      
+        float[] hsv1 = new float[3];
+        float[] hsv2 = new float[3];
+        
+        TIntObjectIterator<Set<PairInt>> iter = a.iterator();
+        for (int i = 0; i < a.size(); ++i) {
+            iter.advance();
+            
+            int label = iter.key();
+            Set<PairInt> set = iter.value();
+            
+            // for each pixel, find the adjacent pixel whose label != label
+            // and which is closest in color.
+            for (PairInt p : set) {
+          if (p.getX()==45 && p.getY()==53) {
+               int z = 0;
+          }
                 int pixIdx = img.getInternalIndex(p);
-                labels[pixIdx] = i;
+                
+                Color.RGBtoHSB(img.getR(pixIdx), img.getG(pixIdx), 
+                    img.getB(pixIdx), hsv1);
+                
+                PairInt pClosest = null;
+                float minDiff = Float.MAX_VALUE;
+                
+                for (int k = 0; k < dxs.length; k++) {
+                    int x2 = p.getX() + dxs[k];
+                    int y2 = p.getY() + dys[k];
+                    if (x2 < 0 || y2 < 0 || (x2 > (w - 1)) || (y2 > (h - 1))) {
+                        continue;
+                    }
+                    PairInt p2 = new PairInt(x2, y2);
+                    int label2 = labels[img.getInternalIndex(p2)];
+                    if (label2 == label) {
+                        continue;
+                    }
+                    Color.RGBtoHSB(img.getR(p2), img.getG(p2), img.getB(p2), hsv2);
+                    float hd = hsv1[0] - hsv2[0];
+                    float sd = hsv1[1] - hsv2[1];
+                    float vd = hsv1[2] - hsv2[2];
+                    float diff = hd*hd + sd*sd + vd*vd;
+                    if (diff < minDiff) {
+                        pClosest = p2;
+                        minDiff = diff;
+                    }
+                }
+      
+                assert(pClosest != null);
+                int pixIdx2 = img.getInternalIndex(pClosest);
+                int label2 = labels[pixIdx2];
+                assert(label2 != label);
+                contigSets.get(label2).add(p);
+                labels[pixIdx] = label2; 
             }
         }
+                
         return true;
+    }
+    
+    /** search for neighbors w/ same label, and if nNbrs lte 3, add all
+     * neighbors to new recursive search.
+     * @param x
+     * @param y
+     * @param visited
+     * @param addTo
+     * @param nLimit
+     * @param w
+     * @param h
+     * @param labels 
+     */
+    private void recursiveNeighborSearch(int x, int y, Set<PairInt> visited,
+        Set<PairInt> addTo, int nLimit, int w, int h, int[] labels) {
+        
+        PairInt p = new PairInt(x, y);
+        if (visited.contains(p)) {
+            return;
+        }
+        visited.add(p);
+        
+        int pixIdx = (p.getY() * w) + p.getX();
+        int label = labels[pixIdx];
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        Set<PairInt> nbrs = new HashSet<PairInt>();
+        for (int k = 0; k < dxs.length; ++k) {
+            int x2 = x + dxs[k];
+            int y2 = y + dys[k];
+            if (x2 < 0 || y2 < 0 || (x2 > (w - 1)) || (y2 > (h - 1))) {
+                continue;
+            }
+            int pixIdx2 = (y2 * w) + x2;
+            int label2 = labels[pixIdx2];
+            if (label2 == label) {
+                nbrs.add(new PairInt(x2, y2));
+            }
+        }
+        
+        if (nbrs.size() <= nLimit) {
+            addTo.add(p);
+            for (PairInt p2 : nbrs) {
+                if (!visited.contains(p2)) {
+                    recursiveNeighborSearch(p2.getX(), p2.getY(), 
+                        visited, addTo, nLimit, w, h, labels);
+                }
+            }
+        }
     }
 
     public static class BoundingRegions {
@@ -13881,8 +13986,9 @@ int z = 1;
         imgCp = img.copyToImageExt();
         // a safe limit for HSV is 0.025 to not overrun object bounds
         labels = mergeByColor(imgCp, contigSets, ColorSpace.HSV, 0.095f);//0.1f);
+        
         mergeSmallSegments(imgCp, labels, sizeLimit, ColorSpace.HSV);
-
+        
         // ----- looking at fast marching methods and level sets
         //       and/or region based active contours
         contigSets = LabelToColorHelper
@@ -13904,7 +14010,7 @@ int z = 1;
         // break single pixel chains
         boolean didChange = separateSinglePixelChains(contigSets,
             img, labels);
-        
+       
         if (didChange) {
             contigSets = LabelToColorHelper
                 .extractContiguousLabelPoints(img, labels);
