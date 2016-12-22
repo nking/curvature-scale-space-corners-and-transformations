@@ -559,8 +559,8 @@ public class SLICSuperPixels {
         int h = img.getHeight();
         int n = img.getNPixels();
         
-        int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;
+        int[] dxs = Misc.dx4;
+        int[] dys = Misc.dy4;
         
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
