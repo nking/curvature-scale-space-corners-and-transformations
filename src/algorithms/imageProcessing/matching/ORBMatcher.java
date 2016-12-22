@@ -583,531 +583,7 @@ public class ORBMatcher {
         return topResults;
     }
 
-    /**
-     * match template image and shape in orb1 and labeledPoints1
-     * with the same object which is somewhere in the
-     * segmented labledPoints2 and orb2.
-     *
-     * this method matches points on a segmented cell basis to calculate
-       the minimum cost correspondence with an objective function
-       consisting of cost from an outer point chord difference matrix,
-       cost from hsv orb descriptors of keypoints, and an epipolar projection
-       to remove outliers and find matching inner points (and subsequent
-       addition of the later costs to the total).
-
-     * NOT READY FOR USE yet.
-     *
-     * @param orb1
-     * @param orb2
-     * @param labeledPoints1
-     * @param labeledPoints2
-     * @return
-     */
-    public List<CorrespondenceList> match0Epipolar(ORB orb1, ORB orb2,
-        Set<PairInt> labeledPoints1, List<Set<PairInt>> labeledPoints2) {
-
-        if (!orb1.getDescrChoice().equals(orb2.getDescrChoice())) {
-            throw new IllegalStateException("orbs must contain same kind of descirptors");
-        }
-        int nBands = 3;
-        if (orb1.getDescrChoice().equals(ORB.DescriptorChoice.HSV)) {
-            if (orb1.getDescriptorsH() == null || orb2.getDescriptorsH() == null) {
-                throw new IllegalStateException("hsv descriptors must be created first");
-            }
-        } else if (orb1.getDescrChoice().equals(ORB.DescriptorChoice.ALT)) {
-            if (orb1.getDescriptorsListAlt() == null || orb2.getDescriptorsListAlt() == null) {
-                throw new IllegalStateException("alt descriptors must be created first");
-            }
-            nBands = 1;
-        } else if (orb1.getDescrChoice().equals(ORB.DescriptorChoice.GREYSCALE)) {
-            if (orb1.getDescriptorsList() == null || orb2.getDescriptorsList() == null) {
-                throw new IllegalStateException("descriptors must be created first");
-            }
-            nBands = 1;
-        }
-
-        // NOTE: keeping coords in full size reference frames
-
-        TFloatList scales1 = extractScales(orb1.getScalesList());
-        TFloatList scales2 = extractScales(orb2.getScalesList());
-
-        if (Math.abs(scales1.get(0) - 1) > 0.01) {
-            throw new IllegalArgumentException("logic depends upon first scale" + " level being '1'");
-        }
-        if (Math.abs(scales2.get(0) - 1) > 0.01) {
-            throw new IllegalArgumentException("logic depends upon first scale" + " level being '1'");
-        }
-
-        SIGMA sigma = SIGMA.ZEROPOINTFIVE;
-
-        float distTol = 5;
-        float distMax = (float)(Math.sqrt(2) * distTol);
-
-        EpipolarTransformer eTransformer = new EpipolarTransformer();
-
-        // --- create ordered bounds1 array.
-        //     NOTE that all octaves use coordinates based in the
-        //     full reference frame, so only one bounds1 is needed for
-        //     all octaves.
-        PairIntArray bounds1 = createOrderedBounds(orb1, labeledPoints1, sigma);
-        if (bounds1.getN() < 7) {
-            throw new IllegalStateException("the boundary of object 1 "
-                + " must have at least 7 points");
-        }
-
-        // --- creating maps of segmented cell sizes for first octave
-        TIntIntMap sizes2Maps = new TIntIntHashMap();
-        for (int i = 0; i < labeledPoints2.size(); ++i) {
-            Set<PairInt> set2 = labeledPoints2.get(i);
-            if (set2.size() < 7) {
-                continue;
-            }
-            int sz = calculateObjectSize(set2);
-            {
-                MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-                double[] xyCen = curveHelper.calculateXYCentroids(set2);
-                System.out.println("set " + i +
-                    " center=" + (int) xyCen[0] + ","
-                    + (int) xyCen[1] + " size_full=" + sz);
-            }
-            sizes2Maps.put(i, sz);
-        }
-
-        ImageProcessor imageProcessor = new ImageProcessor();
-
-        // -- initialize bounds2MapsList and populte on demand
-        TIntObjectMap<PairIntArray> bounds2Maps
-            = new TIntObjectHashMap<PairIntArray>();
-
-        List<TObjectIntMap<PairInt>> kp1IdxMapList
-            = new ArrayList<TObjectIntMap<PairInt>>();
-        for (int octave = 0; octave < scales1.size(); ++octave) {
-            TObjectIntMap<PairInt> keypoints1IndexMap = new TObjectIntHashMap<PairInt>();
-            for (int i = 0; i < orb1.getKeyPoint1List().get(octave).size(); ++i) {
-                int x = orb1.getKeyPoint1List().get(octave).get(i);
-                int y = orb1.getKeyPoint0List().get(octave).get(i);
-                keypoints1IndexMap.put(new PairInt(x, y), i);
-            }
-            kp1IdxMapList.add(keypoints1IndexMap);
-        }
-
-        List<TObjectIntMap<PairInt>> kp2IdxMapList
-            = new ArrayList<TObjectIntMap<PairInt>>();
-        for (int octave = 0; octave < scales2.size(); ++octave) {
-            TObjectIntMap<PairInt> keypoints2IndexMap = new TObjectIntHashMap<PairInt>();
-            for (int i = 0; i < orb2.getKeyPoint1List().get(octave).size(); ++i) {
-                int x = orb2.getKeyPoint1List().get(octave).get(i);
-                int y = orb2.getKeyPoint0List().get(octave).get(i);
-                keypoints2IndexMap.put(new PairInt(x, y), i);
-            }
-            kp2IdxMapList.add(keypoints2IndexMap);
-        }
-
-        // making a lookup map for keypoint indexes in points2 labeled sets
-        List<TIntObjectMap<TIntSet>> labels2KPIdxsList =
-            new ArrayList<TIntObjectMap<TIntSet>>();
-        for (int octave = 0; octave < scales2.size(); ++octave) {
-            TIntObjectMap<TIntSet> labels2KPIdxs = new TIntObjectHashMap<TIntSet>();
-            labels2KPIdxsList.add(labels2KPIdxs);
-            TObjectIntMap<PairInt> keypoints2IndexMap = kp2IdxMapList.get(octave);
-            for (int i = 0; i < labeledPoints2.size(); ++i) {
-                for (PairInt p : labeledPoints2.get(i)) {
-                    if (keypoints2IndexMap.containsKey(p)) {
-                        int kp2Idx = keypoints2IndexMap.get(p);
-                        TIntSet kpIdxs = labels2KPIdxs.get(i);
-                        if (kpIdxs == null) {
-                            kpIdxs = new TIntHashSet();
-                            labels2KPIdxs.put(i, kpIdxs);
-                        }
-                        kpIdxs.add(kp2Idx);
-                    }
-                }
-            }
-        }
-
-        // a cache for partial shape matcher and results
-        TIntObjectMap<List<Object>> psmMap = new
-            TIntObjectHashMap<List<Object>>();
-
-        double maxChordAvg = Double.MIN_VALUE;
-
-        double maxAvgDist = Double.MIN_VALUE;
-
-        List<List<QuadInt>> correspondences = new ArrayList<List<QuadInt>>();
-        TIntList nLabelKP2s = new TIntArrayList();
-        TDoubleList descCosts = new TDoubleArrayList();
-        TIntList nDesc = new TIntArrayList();
-        TFloatList descNormalizations = new TFloatArrayList();
-        TDoubleList epCosts = new TDoubleArrayList();
-        TDoubleList chordCosts = new TDoubleArrayList();
-        TIntList octs1 = new TIntArrayList();
-        TIntList octs2 = new TIntArrayList();
-        TIntList segIdxs = new TIntArrayList();
-
-        for (int octave1 = 0; octave1 < scales1.size(); ++octave1) {
-        //for (int octave1 = 1; octave1 < 2; ++octave1) {
-
-            float scale1 = scales1.get(octave1);
-
-            TObjectIntMap<PairInt> keypoints1IndexMap = kp1IdxMapList.get(octave1);
-
-            float sz1 = calculateObjectSize(bounds1)/scale1;
-
-            int nkp1 = orb1.getKeyPoint0List().get(octave1).size();
-            int nb1 = bounds1.getN();
-
-            float normDesc = nkp1 * nBands * 256;
-
-            for (int octave2 = 0; octave2 < scales2.size(); ++octave2) {
-            //for (int octave2 = 0; octave2 < 1; ++octave2) {
-
-                float scale2 = scales2.get(octave2);
-
-                TObjectIntMap<PairInt> keypoints2IndexMap = kp2IdxMapList.get(octave2);
-                TIntObjectMap<TIntSet> labels2KPIdxs =
-                    labels2KPIdxsList.get(octave2);
-
-                TwoDFloatArray img2 = orb2.getPyramidImages().get(octave2);
-
-                TIntObjectIterator<TIntSet> iter2 = labels2KPIdxs.iterator();
-                for (int i2 = 0; i2 < labels2KPIdxs.size(); ++i2) {
-                    iter2.advance();
-
-                    int segIdx = iter2.key();
-                    TIntSet kp2Idxs = iter2.value();
-
-                    float sz2 = sizes2Maps.get(segIdx)/scale2;
-                    if (sz2 == 0) {
-                        continue;
-                    }
- System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
-   " sz1=" + sz1 + " sz2=" + sz2 + " segIdx=" + segIdx);
-                    if ((sz1 > sz2 && Math.abs(sz1 / sz2) > 1.2) ||
-                        (sz2 > sz1 && Math.abs(sz2 / sz1) > 1.2)) {
-                        continue;
-                    }
-
-                    PairIntArray bounds2 = getOrCreateOrderedBounds(img2,
-                        bounds2Maps, segIdx, labeledPoints2.get(segIdx), sigma);
-
-                    if (bounds2 == null || bounds2.getN() < 7) {
-                        continue;
-                    }
-
-                    List<Object> psmObj = psmMap.get(segIdx);
-                    if (psmObj == null) {
-                        PartialShapeMatcher matcher = new PartialShapeMatcher();
-                        matcher.overrideSamplingDistance(1);
-                        matcher._overrideToThreshhold(0.2f);
-                        matcher.setToRemoveOutliers();
-                        matcher.overrideToStoreMatrix();
-                        PartialShapeMatcher.Result result = matcher.match(
-                            bounds1, bounds2);
-                        psmObj = new ArrayList<Object>();
-                        psmObj.add(matcher);
-                        if (result != null) {
-                            psmObj.add(result);
-                        }
-                        psmMap.put(segIdx, psmObj);
-                    }
-                    if (psmObj.size() == 1) {
-                        continue;
-                    }
-                    PartialShapeMatcher matcher = (PartialShapeMatcher)psmObj.get(0);
-                    PartialShapeMatcher.Result result =
-                        (PartialShapeMatcher.Result)psmObj.get(1);
-
-                    if ((matcher.getStoredEpipolarFit() == null)
-                        || (result.getNumberOfMatches() < 3)) {
-                        continue;
-                    }
-
-                    int nr = result.getNumberOfMatches();
-
-                    PairIntArray m1 = new PairIntArray(nr);
-                    PairIntArray m2 = new PairIntArray(nr);
-                    Set<PairInt> matched1 = new HashSet<PairInt>();
-                    Set<PairInt> matched2 = new HashSet<PairInt>();
-                    for (int j = 0; j < nr; ++j) {
-                        int idx1 = result.idx1s.get(j);
-                        int idx2 = result.idx2s.get(j);
-                        int x1 = bounds1.getX(idx1);
-                        int y1 = bounds1.getY(idx1);
-                        int x2 = bounds2.getX(idx2);
-                        int y2 = bounds2.getY(idx2);
-                        m1.add(x1, y1);
-                        m2.add(x2, y2);
-                        matched1.add(new PairInt(x1, y1));
-                        matched2.add(new PairInt(x2, y2));
-                    }
-
- //TODO: correct error in including points outside of segmentation region
-
-                    SimpleMatrix fm = matcher.getStoredEpipolarFit().getFundamentalMatrix();
-
-                    //TODO: this method needs to be tested...normalization effects...
-                    // sum, avg, max
-                    double[] avgAndMaxDist = sumAndMaxEPDist(fm, m1, m2);
-                    if (avgAndMaxDist[2] > maxAvgDist) {
-                        maxAvgDist = avgAndMaxDist[2];
-                    }
-
-                    // key=keypoint in this labeled region, value=kp2Index
-                    PairIntArray unmatchedKP2 = new PairIntArray();
-                    TObjectIntMap<PairInt> unmatchedKP2Idxs =
-                        new TObjectIntHashMap<PairInt>();
-                    TIntIterator iter = kp2Idxs.iterator();
-                    while (iter.hasNext()) {
-                        int kp2Idx = iter.next();
-                        int x = orb2.getKeyPoint1List().get(octave2).get(kp2Idx);
-                        int y = orb2.getKeyPoint0List().get(octave2).get(kp2Idx);
-                        PairInt p = new PairInt(x, y);
-                        if (!matched2.contains(p)) {
-                            unmatchedKP2Idxs.put(p, kp2Idx);
-                            unmatchedKP2.add(x, y);
-                        }
-                    }
-
-                    PairIntArray unmatchedKP1 = new PairIntArray();
-                    TObjectIntMap<PairInt> unmatchedKP1Idxs =
-                        new TObjectIntHashMap<PairInt>();
-
-                    TObjectIntIterator<PairInt> iter1 = keypoints1IndexMap.iterator();
-                    for (int j = 0; j < keypoints1IndexMap.size(); ++j) {
-                        iter1.advance();
-                        PairInt p = iter1.key();
-                        int kpIdx1 = iter1.value();
-                        if (!matched1.contains(p)) {
-                            unmatchedKP1Idxs.put(p, kpIdx1);
-                            unmatchedKP1.add(p.getX(), p.getY());
-                        }
-                    }
-
-                    {// DEBUG, print bounds1 and unmatchedkp1
-                        String str3 = Integer.toString(segIdx);
-                        while (str3.length() < 3) {
-                            str3 = "0" + str3;
-                        }
-                        Image img1 = ORB.convertToImage(
-                            orb1.getPyramidImages().get(octave1));
-                        for (int ii = 0; ii < m1.getN(); ++ii) {
-                            int x = Math.round((float)m1.getX(ii)/scale1);
-                            int y = Math.round((float)m1.getY(ii)/scale1);
-                            ImageIOHelper.addPointToImage(x, y, img1, 1, 0, 255, 0);
-                        }
-                        for (int ii = 0; ii < unmatchedKP1.getN(); ++ii) {
-                            int x = Math.round((float)unmatchedKP1.getX(ii)/scale1);
-                            int y = Math.round((float)unmatchedKP1.getY(ii)/scale1);
-                            ImageIOHelper.addPointToImage(x, y, img1, 1, 255, 0, 0);
-                        }
-                        MiscDebug.writeImage(img1, "_TMP1_"
-                            + octave1 + "_" + octave2 + "_" + str3 + "_" +
-                            MiscDebug.getCurrentTimeFormatted());
-                        //====
-                        img1 = ORB.convertToImage(
-                            orb2.getPyramidImages().get(octave2));
-                        for (int ii = 0; ii < m2.getN(); ++ii) {
-                            int x = Math.round((float)m2.getX(ii)/scale2);
-                            int y = Math.round((float)m2.getY(ii)/scale2);
-                            ImageIOHelper.addPointToImage(x, y, img1, 1, 0, 255, 0);
-                        }
-                        for (int ii = 0; ii < unmatchedKP2.getN(); ++ii) {
-                            int x = Math.round((float)unmatchedKP2.getX(ii)/scale2);
-                            int y = Math.round((float)unmatchedKP2.getY(ii)/scale2);
-                            ImageIOHelper.addPointToImage(x, y, img1, 1, 255, 0, 0);
-                        }
-
-                        MiscDebug.writeImage(img1, "_TMP2_" +
-                            octave1 + "_" + octave2 + "_" +
-                            str3 + "_" + MiscDebug.getCurrentTimeFormatted());
-                    }
-
-                    ORB.Descriptors[] desc1 = getDescriptors(orb1, octave1);
-                    ORB.Descriptors[] desc2 = getDescriptors(orb2, octave2);
-                    int[][] costD = ORB.calcDescriptorCostMatrix(desc1, desc2);
-
-                    // -- use epipolar fundamental matrix to add unmatched
-                    //       points from the segmented cell's keypoints
-
-                    // output variable to hold sums and count
-                    // 0 = totalChordDiffSum
-                    // 1 = max avg chord diff
-                    // 2 = totalDistance
-                    // 3 = max avg total dist
-                    // 4 = totalDescrSum
-                    // 5 = nDescr
-                    double[] output = new double[6];
-
-                    List<PairInt> addedKPIdxs = matchUsingFM(orb1, orb2, costD,
-                        octave1, octave2, bounds1, bounds2, matcher, result,
-                        keypoints1IndexMap, keypoints2IndexMap,
-                        fm, unmatchedKP1, unmatchedKP2,
-                        unmatchedKP1Idxs, unmatchedKP2Idxs,
-                        nBands, normDesc, distTol, output);
-
-                    if (output[1] > maxChordAvg) {
-                        maxChordAvg = output[1];
-                    }
-                    if (output[3] > maxAvgDist) {
-                        maxAvgDist = output[3];
-                    }
-
-                    // add the boundary matching epipolar dist sum:
-                    output[2] += avgAndMaxDist[0];
-
-                    System.out.println("nAdded inner points=" + addedKPIdxs.size());
-
-                    // --- build combined correspondence and sums
-
-                    int nTot = result.getNumberOfMatches() + addedKPIdxs.size();
-                    List<QuadInt> corres = new ArrayList<QuadInt>(nTot);
-                    // for any point in result that is a keypoint,
-                    //    add the descriptor cost to totalDescrSum
-                    for (int j = 0; j < result.getNumberOfMatches(); ++j) {
-                        int idx1 = result.idx1s.get(j);
-                        int idx2 = result.idx2s.get(j);
-
-                        int x1 = bounds1.getX(idx1);
-                        int y1 = bounds1.getY(idx1);
-                        PairInt p1 = new PairInt(x1, y1);
-
-                        int x2 = bounds2.getX(idx2);
-                        int y2 = bounds2.getY(idx2);
-                        PairInt p2 = new PairInt(x2, y2);
-
-                        if (keypoints1IndexMap.containsKey(p1) &&
-                            keypoints2IndexMap.containsKey(p2)) {
-                            int kpIdx1 = keypoints1IndexMap.get(p1);
-                            int kpIdx2 = keypoints2IndexMap.get(p2);
-                            float c = costD[kpIdx1][kpIdx2];
-                            output[4] += c;
-                            output[5]++;
-                        }
-
-                        // coords are in full reference frame
-                        corres.add(new QuadInt(p1, p2));
-                    }
-
-                    for (int j = 0; j < addedKPIdxs.size(); ++j) {
-
-                        int kpIdx1 = addedKPIdxs.get(j).getX();
-                        int kpIdx2 = addedKPIdxs.get(j).getY();
-
-                        int x1 = orb1.getKeyPoint1List().get(octave1).get(kpIdx1);
-                        int y1 = orb1.getKeyPoint0List().get(octave1).get(kpIdx1);
-
-                        int x2 = orb2.getKeyPoint1List().get(octave2).get(kpIdx2);
-                        int y2 = orb2.getKeyPoint0List().get(octave2).get(kpIdx2);
-
-                        corres.add(new QuadInt(x1, y1, x2, y2));
-                    }
-                    assert(corres.size() == nTot);
-
-                    // output variable to hold sums and count
-                    // 0 = totalChordDiffSum
-                    // 1 = max avg chord diff
-                    // 2 = totalDistance
-                    // 3 = max avg total dist
-                    // 4 = totalDescrSum
-                    // 5 = nDescr
-
-                    correspondences.add(corres);
-                    descCosts.add(output[4]);
-                    nDesc.add((int)output[5]);
-                    nLabelKP2s.add(kp2Idxs.size());
-                    epCosts.add(output[2]);
-                    chordCosts.add(output[0]);
-                    octs1.add(octave1);
-                    octs2.add(octave2);
-                    segIdxs.add(segIdx);
-                    descNormalizations.add(normDesc);
-
-                }// end loop over octave2's segIdx
-            }// end loop over octave2
-        }  // end loop over octave1
-
-
-        int nC = correspondences.size();
-
-        /*
-        "salukwzde distance" separate for
-        descriptor cost, chords cost, and the opipolar dist from
-        model then add them
-           -- descr component max matchable number is nLabelKP2s
-           -- ep distances component max matchable number is
-                bounds1.getN() + nLabelKP2s (note: should remove overlapping)
-           -- chords component max matchable number is
-                bounds1.getN() + nLabelKP2s (note: should remove overlapping)
-        */
-        int[] indexes = new int[nC];
-        float[] costs = new float[nC];
-        for (int i = 0; i < nC; ++i) {
-
-            int octave1 = octs1.get(i);
-            int octave2 = octs2.get(i);
-
-            // calculate "fraction of whole" for hsv keypoint descriptors
-            int nKP2 = nLabelKP2s.get(i);
-            float f1 = 1.f - ((float)nDesc.get(i)/(float)nKP2);
-
-            //calculate the cost of hsv kp descriptors
-            float d1 = 1.f - ((nBands * 256.f
-                - (float)(descCosts.get(i)/(float)nDesc.get(i)))
-                /descNormalizations.get(i));
-            if (descNormalizations.get(i) == 0) {
-                d1 = 1;
-            }
-
-            float sd1 = f1 * f1 + d1 * d1;
-
-            // ------ chords --------
-
-            float nb1 = bounds1.getN();
-            float n = correspondences.get(i).size();
-            float f2 = 1.f - (n/(nKP2 + nb1));
-
-            float d2 = (float)((chordCosts.get(i)/n)/maxChordAvg);
-
-            float sd2 = f2 * f2 + d2 * d2;
-
-            // ----- epipolar line distances -----
-            float d3 = (float)((epCosts.get(i)/n)/maxAvgDist);
-
-            float sd3 = f2 * f2 + d3 * d3;
-
-            // add in quadrature or linearly...
-            double tot = sd1*sd1 + sd2*sd2 + sd3*sd3;
-
-             System.out.println(String.format(
- "octave1=%d octave2=%d segIdx=%d nCor=%d ch=%.2f, normch=%.2f normep=%.2f normdesc=%.2f sd1=%.2f sd2=%.2f sd3=%.2f nd=%d nKP2=%d tot=%.2f",
-                octave1, octave2, segIdxs.get(i), (int)n,
-                (float)chordCosts.get(i),
-                (float)d2,
-                (float)d3, (float)d1,
-                sd1, sd2, sd3,
-                nDesc.get(i), nKP2,
-                (float)tot));
-
-            indexes[i] = i;
-            costs[i] = (float)tot;
-        }
-
-        QuickSort.sortBy1stArg(costs, indexes);
-
-        List<CorrespondenceList> results = new ArrayList<CorrespondenceList>();
-        for (int i = 0; i < costs.length; ++i) {
-
-            int idx = indexes[i];
-
-            List<QuadInt> qs = correspondences.get(idx);
-
-            // points are in full reference frame
-            results.add(new CorrespondenceList(qs));
-        }
-
-        return results;
-    }
-
+    // method in progress to replace match0
     public List<CorrespondenceList> match0Epipolar2(ORB orb1, ORB orb2,
         Set<PairInt> labeledPoints1, List<Set<PairInt>> labeledPoints2) {
 
@@ -1246,10 +722,8 @@ public class ORBMatcher {
         int bestCostSegIdx0 = -1;
         
         List<List<QuadInt>> correspondences = new ArrayList<List<QuadInt>>();
-        TIntList nLabelKP2s = new TIntArrayList();
         TDoubleList descCosts = new TDoubleArrayList();
         TIntList nDesc = new TIntArrayList();
-        TFloatList descNormalizations = new TFloatArrayList();
         TDoubleList epCosts = new TDoubleArrayList();
         TIntList octs1 = new TIntArrayList();
         TIntList octs2 = new TIntArrayList();
@@ -1265,8 +739,6 @@ public class ORBMatcher {
             float sz1 = calculateObjectSize(labeledPoints1)/scale1;
 
             int nkp1 = orb1.getKeyPoint0List().get(octave1).size();
-
-            float normDesc = nkp1 * nBands * 256;
 
             TObjectIntMap<PairInt> leftIdxMap = new TObjectIntHashMap<PairInt>();
             PairIntArray left = new PairIntArray(nkp1);
@@ -1346,10 +818,16 @@ public class ORBMatcher {
                     ORB.Descriptors[] desc2 = getDescriptors(orb2, octave2);
                     int[][] costD = ORB.calcDescriptorCostMatrix(desc1, desc2);
 
+                    // 0 = the salukwzde distance, that is the normalized tot cost
+                    // 1 = sum of normalized keypoint descriptors
+                    // 2 = sum of normalized keypoint distances from transformations
+                    // 3 = number of keypoint matches (not incl boundary that aren't
+                    double[] normalizedCost = new double[4];
+                    
                     // sorted greedy ordered by incr descr cost
                     PairIntArray m1 = new PairIntArray();
                     PairIntArray m2 = new PairIntArray();
-                    double[] normalizedCost = new double[1];
+                    
                     TransformationParameters params = matchGreedy(segIdx,
                         left, right, nBands, costD, nn1,
                         leftIdxMap, rightIdxMap, m1, m2,
@@ -1453,49 +931,34 @@ public class ORBMatcher {
                         maxAvgDist = avgAndMaxDist[2];
                     }
 
-                    // key=keypoint in this labeled region, value=kp2Index
-                    PairIntArray unmatchedKP2 = new PairIntArray();
-                    TObjectIntMap<PairInt> unmatchedKP2Idxs =
-                        new TObjectIntHashMap<PairInt>();
-                    iter = kp2Idxs.iterator();
-                    while (iter.hasNext()) {
-                        int kp2Idx = iter.next();
-                        int x = orb2.getKeyPoint1List().get(octave2).get(kp2Idx);
-                        int y = orb2.getKeyPoint0List().get(octave2).get(kp2Idx);
-                        PairInt p = new PairInt(x, y);
-                        if (!matched2.contains(p)) {
-                            unmatchedKP2Idxs.put(p, kp2Idx);
-                            unmatchedKP2.add(x, y);
-                        }
-                    }
-
-  //TODO: for unmatched left and right, need to include all of
-  //  the octave's keypoints, not just those in the
-  //  labeled region.
-  //  Then, will re-calculate the cost just as is done in 
-  //  matchGreedy.
-  //  the matched boundary points will have a separate cost
-  //  calculated just for logging, but the comparison
-  //  of solutions will only use the keypoint descriptors
-  //  and distances.
-  //  the later needs testing of the epipolar sampson error
-  //  method distances before this...
-
                     PairIntArray unmatchedKP1 = new PairIntArray();
                     TObjectIntMap<PairInt> unmatchedKP1Idxs =
                         new TObjectIntHashMap<PairInt>();
-
-                    TObjectIntIterator<PairInt> iter1 = keypoints1IndexMap.iterator();
-                    for (int j = 0; j < keypoints1IndexMap.size(); ++j) {
-                        iter1.advance();
-                        PairInt p = iter1.key();
-                        int kpIdx1 = iter1.value();
+                    for (int kpIdx1 = 0; kpIdx1 < 
+                        orb1.getKeyPoint1List().get(octave1).size(); ++kpIdx1) {
+                        int x = orb1.getKeyPoint1List().get(octave1).get(kpIdx1);
+                        int y = orb1.getKeyPoint0List().get(octave1).get(kpIdx1);
+                        PairInt p = new PairInt(x, y);
                         if (!matched1.contains(p)) {
                             unmatchedKP1Idxs.put(p, kpIdx1);
                             unmatchedKP1.add(p.getX(), p.getY());
                         }
                     }
 
+                    PairIntArray unmatchedKP2 = new PairIntArray();
+                    TObjectIntMap<PairInt> unmatchedKP2Idxs =
+                        new TObjectIntHashMap<PairInt>();
+                    for (int kpIdx2 = 0; kpIdx2 < 
+                        orb2.getKeyPoint1List().get(octave2).size(); ++kpIdx2) {
+                        int x = orb2.getKeyPoint1List().get(octave2).get(kpIdx2);
+                        int y = orb2.getKeyPoint0List().get(octave2).get(kpIdx2);
+                        PairInt p = new PairInt(x, y);
+                        if (!matched2.contains(p)) {
+                            unmatchedKP2Idxs.put(p, kpIdx2);
+                            unmatchedKP2.add(p.getX(), p.getY());
+                        }
+                    }
+                    
                     {// DEBUG, print matched in green and unmatched in red
                         String str3 = Integer.toString(segIdx);
                         while (str3.length() < 3) {
@@ -1508,11 +971,6 @@ public class ORBMatcher {
                             int y = Math.round((float)m1.getY(ii)/scale1);
                             ImageIOHelper.addPointToImage(x, y, img1, 1, 0, 255, 0);
                         }
-                        for (int ii = 0; ii < unmatchedKP1.getN(); ++ii) {
-                            int x = Math.round((float)unmatchedKP1.getX(ii)/scale1);
-                            int y = Math.round((float)unmatchedKP1.getY(ii)/scale1);
-                            ImageIOHelper.addPointToImage(x, y, img1, 1, 255, 0, 0);
-                        }
                         MiscDebug.writeImage(img1, "_TMP1_"
                             + octave1 + "_" + octave2 + "_" + str3 + "_" +
                             MiscDebug.getCurrentTimeFormatted());
@@ -1524,12 +982,6 @@ public class ORBMatcher {
                             int y = Math.round((float)m2.getY(ii)/scale2);
                             ImageIOHelper.addPointToImage(x, y, img1, 1, 0, 255, 0);
                         }
-                        for (int ii = 0; ii < unmatchedKP2.getN(); ++ii) {
-                            int x = Math.round((float)unmatchedKP2.getX(ii)/scale2);
-                            int y = Math.round((float)unmatchedKP2.getY(ii)/scale2);
-                            ImageIOHelper.addPointToImage(x, y, img1, 1, 255, 0, 0);
-                        }
-
                         MiscDebug.writeImage(img1, "_TMP2_" +
                             octave1 + "_" + octave2 + "_" +
                             str3 + "_" + MiscDebug.getCurrentTimeFormatted());
@@ -1545,28 +997,28 @@ public class ORBMatcher {
                     // 3 = nDescr
                     double[] output = new double[4];
 
+ //paused here to test FM error methods                   
+                    
                     List<PairInt> addedKPIdxs = matchUsingFM(orb1, orb2, costD,
                         octave1, octave2,
                         keypoints1IndexMap, keypoints2IndexMap,
                         fm, unmatchedKP1, unmatchedKP2,
                         unmatchedKP1Idxs, unmatchedKP2Idxs,
-                        nBands, normDesc, distTol, output);
+                        nBands, distTol, output);
 
                     if (output[1] > maxAvgDist) {
                         maxAvgDist = output[1];
                     }
-
-                    // add the boundary matching epipolar dist sum:
-                    output[0] += avgAndMaxDist[0];
-
+                    double nMatched3 = output[3];
+                    double d3 = output[2]/nMatched3;
+                    double d4 = output[0]/nMatched3;
+                    float f3 = (float)nMatched3
+                        /(float)orb1.getKeyPoint0List().get(octave1).size();
+                    double cost3 = d3*d3 + d4*d4 + 2.*f3*f3;   
+                   
                     System.out.println("nAdded inner points=" + addedKPIdxs.size());
 
                     // --- build combined correspondence and sums
-
-                    // 0 = totalDistance
-                    // 1 = max avg total dist
-                    // 2 = totalDescrSum
-                    // 3 = nDescr
 
                     int nTot = m1.getN() + addedKPIdxs.size();
                     List<QuadInt> corres = new ArrayList<QuadInt>(nTot);
@@ -1581,16 +1033,11 @@ public class ORBMatcher {
                         int y2 = m2.getY(j);
                         PairInt p2 = new PairInt(x2, y2);
 
-                        if (keypoints1IndexMap.containsKey(p1) &&
-                            keypoints2IndexMap.containsKey(p2)) {
-                            int kpIdx1 = keypoints1IndexMap.get(p1);
-                            int kpIdx2 = keypoints2IndexMap.get(p2);
-                            float c = costD[kpIdx1][kpIdx2];
-                            output[2] += c;
-                            output[3]++;                }
-
-                        // coords are in full reference frame
-                        corres.add(new QuadInt(p1, p2));
+                        //if (keypoints1IndexMap.containsKey(p1) &&
+                        //    keypoints2IndexMap.containsKey(p2)) {
+                            // coords are in full reference frame
+                            corres.add(new QuadInt(p1, p2));
+                        //}
                     }
 
                     for (int j = 0; j < addedKPIdxs.size(); ++j) {
@@ -1598,31 +1045,36 @@ public class ORBMatcher {
                         int kpIdx1 = addedKPIdxs.get(j).getX();
                         int kpIdx2 = addedKPIdxs.get(j).getY();
 
-                        int x1 = orb1.getKeyPoint1List().get(octave1).get(kpIdx1);
-                        int y1 = orb1.getKeyPoint0List().get(octave1).get(kpIdx1);
+                        int x1 = unmatchedKP1.getX(kpIdx1);
+                        int y1 = unmatchedKP1.getY(kpIdx1);
 
-                        int x2 = orb2.getKeyPoint1List().get(octave2).get(kpIdx2);
-                        int y2 = orb2.getKeyPoint0List().get(octave2).get(kpIdx2);
+                        int x2 = unmatchedKP2.getX(kpIdx2);
+                        int y2 = unmatchedKP2.getY(kpIdx2);
 
                         corres.add(new QuadInt(x1, y1, x2, y2));
                     }
+                    
                     assert(corres.size() == nTot);
-
+                    
+                    // 0 = the salukwzde distance, that is the normalized tot cost
+                    // 1 = sum of normalized keypoint descriptors
+                    // 2 = sum of normalized keypoint distances from transformations
+                    // 3 = number of keypoint matches (not incl boundary that aren't
+                    //normalizedCost = new double[4];
                     // output variable to hold sums and count
                     // 0 = totalDistance
                     // 1 = max avg total dist
                     // 2 = totalDescrSum
                     // 3 = nDescr
+                    //output                    
 
                     correspondences.add(corres);
-                    descCosts.add(output[2]);
-                    nDesc.add((int)output[3]);
-                    nLabelKP2s.add(kp2Idxs.size());
-                    epCosts.add(output[0]);
+                    descCosts.add(normalizedCost[1] + output[2]);
+                    nDesc.add((int)normalizedCost[3] + (int)output[3]);
+                    epCosts.add(normalizedCost[2] + output[0]);
                     octs1.add(octave1);
                     octs2.add(octave2);
                     segIdxs.add(segIdx);
-                    descNormalizations.add(normDesc);
 
                 }// end loop over octave2's segIdx
             }// end loop over octave2
@@ -1641,45 +1093,40 @@ public class ORBMatcher {
            -- chords component max matchable number is
                 bounds1.getN() + nLabelKP2s (note: should remove overlapping)
         */
+        float maxDesc = nBands * 256.0f;
         int[] indexes = new int[nC];
         float[] costs = new float[nC];
         for (int i = 0; i < nC; ++i) {
 
             int octave1 = octs1.get(i);
             int octave2 = octs2.get(i);
+            
+            float nKP1 = orb1.getKeyPoint0List().get(octave1).size();
 
             // calculate "fraction of whole" for hsv keypoint descriptors
-            int nKP2 = nLabelKP2s.get(i);
-            float f1 = 1.f - ((float)nDesc.get(i)/(float)nKP2);
+            float f1 = 1.f - ((float)nDesc.get(i)/nKP1);
 
             //calculate the cost of hsv kp descriptors
             float d1 = 1.f - ((nBands * 256.f
-                - (float)(descCosts.get(i)/(float)nDesc.get(i)))
-                /descNormalizations.get(i));
-            if (descNormalizations.get(i) == 0) {
-                d1 = 1;
-            }
-
+                - (float)descCosts.get(i))/maxDesc);
+            
             float sd1 = f1 * f1 + d1 * d1;
 
-            // ------ epipolar distances --------
+            //epipolar distances --------
+            float d2 = (float)(epCosts.get(i)/distMax);
+            //float d2 = (float)(epCosts.get(i)/maxAvgDist);
 
-            float n = correspondences.get(i).size();
-            float f2 = 1.f - (n/(float)nKP2);
-
-            float d2 = (float)((epCosts.get(i)/n)/maxAvgDist);
-
-            float sd2 = f2 * f2 + d2 * d2;
+            float sd2 = f1 * f1 + d2 * d2;
 
             // add in quadrature or linearly...
             double tot = sd1*sd1 + sd2*sd2;
 
              System.out.println(String.format(
  "octave1=%d octave2=%d segIdx=%d nCor=%d  normep=%.2f normdesc=%.2f sd1=%.2f sd2=%.2f nd=%d nKP2=%d tot=%.2f",
-                octave1, octave2, segIdxs.get(i), (int)n,
+                octave1, octave2, segIdxs.get(i), correspondences.get(i).size(),
                 (float)d2, (float)d1,
                 sd1, sd2,
-                nDesc.get(i), nKP2,
+                nDesc.get(i), nKP1,
                 (float)tot));
 
             indexes[i] = i;
@@ -3913,177 +3360,18 @@ public class ORBMatcher {
 
     private List<PairInt> matchUsingFM(ORB orb1, ORB orb2, int[][] costD,
         int octave1, int octave2,
-        PairIntArray bounds1, PairIntArray bounds2,
-        PartialShapeMatcher matcher,
-        PartialShapeMatcher.Result result,
         TObjectIntMap<PairInt> keypoints1IndexMap,
         TObjectIntMap<PairInt> keypoints2IndexMap,
         SimpleMatrix fm,
         PairIntArray unmatchedKP1, PairIntArray unmatchedKP2,
         TObjectIntMap<PairInt> unmatchedKP1Idxs,
         TObjectIntMap<PairInt> unmatchedKP2Idxs,
-        int nBands, float normDesc, float distTol, double[] output) {
+        int nBands, float distTol, double[] output) {
 
-        // output variable to hold sums and count
-        // 0 = totalChordDiffSum
-        // 1 = max avg chord diff
-        // 2 = totalDistance
-        // 3 = max avg total dist
-        // 4 = totalDescrSum
-        // 5 = nDescr
-
-        double maxAvgChord = Double.MIN_VALUE;
-        double maxAvgDist = Double.MIN_VALUE;
-
-        List<PairInt> addedKPIdxs = new ArrayList<PairInt>();
-
-        EpipolarTransformer eTransformer = new EpipolarTransformer();
-
-        SimpleMatrix unmatchedLeft =
-            eTransformer.rewriteInto3ColumnMatrix(unmatchedKP1);
-
-        SimpleMatrix unmatchedRight =
-            eTransformer.rewriteInto3ColumnMatrix(unmatchedKP2);
-
-        SimpleMatrix rightEpipolarLines = fm.mult(unmatchedLeft);
-        SimpleMatrix leftEpipolarLines = fm.transpose().mult(unmatchedRight);
-
-        float[] outputDist = new float[2];
-        int nLeftUnmatched = unmatchedLeft.numCols();
-        int nRightUnmatched = unmatchedRight.numCols();
-        float dist, descCost;
-        double d;
-
-        TFloatList totalCost = new TFloatArrayList();
-        TIntList indexes = new TIntArrayList();
-        TFloatList eDist = new TFloatArrayList();
-        TIntList idx1s = new TIntArrayList();
-        TIntList idx2s = new TIntArrayList();
-        for (int i = 0; i < nLeftUnmatched; ++i) {
-
-            PairInt p1 = new PairInt(unmatchedKP1.getX(i),
-                unmatchedKP1.getY(i));
-            int kp1Idx = unmatchedKP1Idxs.get(p1);
-
-            for (int j = 0; j < nRightUnmatched; ++j) {
-
-                PairInt p2 = new PairInt(unmatchedKP2.getX(j),
-                    unmatchedKP2.getY(j));
-                int kp2Idx = unmatchedKP2Idxs.get(p2);
-
-                eTransformer.calculatePerpDistFromLines(unmatchedLeft,
-                    unmatchedRight, rightEpipolarLines,
-                    leftEpipolarLines, i, j, outputDist);
-
-                if (outputDist[0] <= distTol && outputDist[1] <= distTol) {
-
-                    d = Math.sqrt(outputDist[0] * outputDist[0] +
-                        outputDist[1] * outputDist[1]);
-
-                    dist = (float)d;
-
-                    // normalized descriptor cost
-                    descCost = 1.f - ((nBands * 256.f -
-                        costD[kp1Idx][kp2Idx])
-                        /normDesc);
-
-                    eDist.add(dist);
-                    totalCost.add(dist + descCost);
-                    indexes.add(indexes.size());
-                    idx1s.add(kp1Idx);
-                    idx2s.add(kp2Idx);
-                }
-            }
-        }
-
-        QuickSort.sortBy1stArg(totalCost, indexes);
-
-        // choose 2 reference points from result,
-        //   preferably 2 that are keypoints w/ lowest descr costs
-        //   and are far from each other
-        // returns results as 2 quadints of paired x1,y1,x2,y2
-        QuadInt[] resultRefs = choose2ReferencePoints(result,
-            bounds1, bounds2,
-            keypoints1IndexMap, keypoints2IndexMap, costD);
-
-        // new matched keypoint indexes
-        TIntSet added1 = new TIntHashSet();
-        TIntSet added2 = new TIntHashSet();
-        for (int j = 0; j < totalCost.size(); ++j) {
-            int idx = indexes.get(j);
-            int kpIdx1 = idx1s.get(idx);
-            int kpIdx2 = idx2s.get(idx);
-            if (added1.contains(kpIdx1) || added2.contains(kpIdx2)) {
-                continue;
-            }
-            // output:
-            // 0 = totalChordDiffSum
-            // 1 = max avg chord diff
-            // 2 = totalDistance
-            // 3 = max avg total dist
-            // 4 = totalDescrSum
-            // 5 = nDescr
-            added1.add(kpIdx1);
-            added2.add(kpIdx2);
-            addedKPIdxs.add(new PairInt(kpIdx1, kpIdx2));
-            output[2] += eDist.get(idx);
-
-            d = eDist.get(idx);
-            if (d > maxAvgDist) {
-                maxAvgDist = d;
-            }
-
-            float descrCost = totalCost.get(j) - eDist.get(idx);
-            output[4] += descrCost;
-            output[5]++;
-
-            int x1 = orb1.getKeyPoint1List().get(octave1).get(kpIdx1);
-            int y1 = orb1.getKeyPoint0List().get(octave1).get(kpIdx1);
-
-            int x2 = orb2.getKeyPoint1List().get(octave2).get(kpIdx2);
-            int y2 = orb2.getKeyPoint0List().get(octave2).get(kpIdx2);
-
-            // calc chord diff for the new points using 2 reference
-            // points from result.
-            double chordDiff = matcher.
-                calculateAChordDifference(
-                resultRefs[0].getA(), resultRefs[0].getB(),
-                resultRefs[1].getA(), resultRefs[1].getB(),
-                x1, y1,
-                resultRefs[0].getC(), resultRefs[0].getD(),
-                resultRefs[1].getC(), resultRefs[1].getD(),
-                x2, y2
-            );
-            output[0] += chordDiff;
-
-            if (chordDiff > maxAvgChord) {
-                maxAvgChord = chordDiff;
-            }
-        }
-
-        output[1] = maxAvgChord;
-        output[3] = maxAvgDist;
-        // output:
-        // 0 = totalChordDiffSum
-        // 1 = max avg chord diff
-        // 2 = totalDistance
-        // 3 = max avg total dist
-        // 4 = totalDescrSum
-        // 5 = nDescr
-
-        return addedKPIdxs;
-    }
-
-    private List<PairInt> matchUsingFM(ORB orb1, ORB orb2, int[][] costD,
-        int octave1, int octave2,
-        TObjectIntMap<PairInt> keypoints1IndexMap,
-        TObjectIntMap<PairInt> keypoints2IndexMap,
-        SimpleMatrix fm,
-        PairIntArray unmatchedKP1, PairIntArray unmatchedKP2,
-        TObjectIntMap<PairInt> unmatchedKP1Idxs,
-        TObjectIntMap<PairInt> unmatchedKP2Idxs,
-        int nBands, float normDesc, float distTol, double[] output) {
-
+        float maxDesc = nBands * 256.0f;
+        
+        int distTolMax = (int)Math.round(Math.sqrt(2) * distTol);
+        
         // output variable to hold sums and count
         // 0 = totalDistance
         // 1 = max avg total dist
@@ -4114,6 +3402,7 @@ public class ORBMatcher {
         TFloatList totalCost = new TFloatArrayList();
         TIntList indexes = new TIntArrayList();
         TFloatList eDist = new TFloatArrayList();
+        TFloatList dCost = new TFloatArrayList();
         TIntList idx1s = new TIntArrayList();
         TIntList idx2s = new TIntArrayList();
         for (int i = 0; i < nLeftUnmatched; ++i) {
@@ -4131,21 +3420,22 @@ public class ORBMatcher {
                 eTransformer.calculatePerpDistFromLines(unmatchedLeft,
                     unmatchedRight, rightEpipolarLines,
                     leftEpipolarLines, i, j, outputDist);
-
+                
                 if (outputDist[0] <= distTol && outputDist[1] <= distTol) {
 
                     d = Math.sqrt(outputDist[0] * outputDist[0] +
                         outputDist[1] * outputDist[1]);
 
-                    dist = (float)d;
+                    dist = (float)d/distTolMax;
 
                     // normalized descriptor cost
                     descCost = 1.f - ((nBands * 256.f -
                         costD[kp1Idx][kp2Idx])
-                        /normDesc);
+                        /maxDesc);
 
                     eDist.add(dist);
-                    totalCost.add(dist + descCost);
+                    dCost.add(descCost);
+                    totalCost.add((float)Math.sqrt(dist*dist + descCost*descCost));
                     indexes.add(indexes.size());
                     idx1s.add(kp1Idx);
                     idx2s.add(kp2Idx);
@@ -4180,8 +3470,7 @@ public class ORBMatcher {
                 maxAvgDist = d;
             }
 
-            float descrCost = totalCost.get(j) - eDist.get(idx);
-            output[2] += descrCost;
+            output[2] += dCost.get(idx);
             output[3]++;
         }
 
@@ -4484,8 +3773,16 @@ String str = "";
                     
                     bestCost = tot;
                     bestCost2 = d3*d3 + f3*f3;
-                    outputNormalizedCost[0] = bestCost + bestCost2;
-                    
+       
+                    // 0 = the salukwzde distance, that is the normalized tot cost
+                    // 1 = sum of normalized keypoint descriptors
+                    // 2 = sum of normalized keypoint distances from transformations
+                    // 3 = number of keypoint matches (not incl boundary that aren't
+                    outputNormalizedCost[0] = bestCost;
+                    outputNormalizedCost[1] = sumDescr;
+                    outputNormalizedCost[2] = sumDist;
+                    outputNormalizedCost[3] = n1;
+                        
                     bestMIdx1s = mIdx1s;
                     bestMIdx2s = mIdx2s;
                     bestN = nMatched;

@@ -100,6 +100,35 @@ public class RANSACSolverTest extends TestCase {
             
     }
     
+    public void testSampsonErrors() {
+        
+        // in progress...
+        /*
+        PairIntArray outLeft = new PairIntArray(left.getN());
+        PairIntArray outRight = new PairIntArray(left.getN());
+        RANSACSolver solver = new RANSACSolver();
+        EpipolarTransformationFit fit
+            = solver.calculateEpipolarProjection(
+                m1, m2, outLeft, outRight);
+
+        EpipolarTransformer eTransformer = new EpipolarTransformer();
+
+        SimpleMatrix unmatchedLeft =
+            eTransformer.rewriteInto3ColumnMatrix(unmatchedKP1);
+
+        SimpleMatrix unmatchedRight =
+            eTransformer.rewriteInto3ColumnMatrix(unmatchedKP2);
+
+        SimpleMatrix rightEpipolarLines = fm.mult(unmatchedLeft);
+        SimpleMatrix leftEpipolarLines = fm.transpose().mult(unmatchedRight);
+
+eTransformer.calculatePerpDistFromLines(unmatchedLeft,
+                    unmatchedRight, rightEpipolarLines,
+                    leftEpipolarLines, i, j, outputDist);
+
+        */
+    }
+    
     protected void getMertonCollege10TrueMatches(PairIntArray left, 
         PairIntArray right) {
         
