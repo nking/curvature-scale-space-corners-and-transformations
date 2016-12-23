@@ -26,7 +26,7 @@ public class RANSACSolverTest extends TestCase {
     public RANSACSolverTest() {
     }
 
-    public void testRANSAC() throws Exception {
+    public void estRANSAC() throws Exception {
     
         //TODO: add the reference for this data here.
         
@@ -100,33 +100,114 @@ public class RANSACSolverTest extends TestCase {
             
     }
     
-    public void testSampsonErrors() {
+    public void testSampsonErrors_stereo_01() {
+
+        // TODO: needs corrections for normalization
+        
+        // 1024 X 768
+        String fileName1 = "merton_college_I_001.jpg";
+        String fileName2 = "merton_college_I_002.jpg";
+        
+        PairIntArray m1 = new PairIntArray(7);
+        PairIntArray m2 = new PairIntArray(7);
+        populateWithMertonMatches7(m1, m2);
         
         // in progress...
-        /*
-        PairIntArray outLeft = new PairIntArray(left.getN());
-        PairIntArray outRight = new PairIntArray(left.getN());
+        
+        PairIntArray out1 = new PairIntArray(m1.getN());
+        PairIntArray out2 = new PairIntArray(m1.getN());
         RANSACSolver solver = new RANSACSolver();
         EpipolarTransformationFit fit
-            = solver.calculateEpipolarProjection(
-                m1, m2, outLeft, outRight);
+            = solver.calculateEpipolarProjection(m1, m2, out1, out2);
 
+        assertEquals(m1.getN(), out1.getN());
+        assertEquals(m2.getN(), out2.getN());
+        
+        SimpleMatrix fm = fit.getFundamentalMatrix();
+        
         EpipolarTransformer eTransformer = new EpipolarTransformer();
+        
+        SimpleMatrix m1m = eTransformer.rewriteInto3ColumnMatrix(m1);
+        SimpleMatrix m2m = eTransformer.rewriteInto3ColumnMatrix(m2);
+        
+        SimpleMatrix m2EpipolarLines = fm.mult(m1m);
+        SimpleMatrix m1EpipolarLines = fm.transpose().mult(m2m);
 
-        SimpleMatrix unmatchedLeft =
-            eTransformer.rewriteInto3ColumnMatrix(unmatchedKP1);
-
-        SimpleMatrix unmatchedRight =
-            eTransformer.rewriteInto3ColumnMatrix(unmatchedKP2);
-
-        SimpleMatrix rightEpipolarLines = fm.mult(unmatchedLeft);
-        SimpleMatrix leftEpipolarLines = fm.transpose().mult(unmatchedRight);
-
-eTransformer.calculatePerpDistFromLines(unmatchedLeft,
-                    unmatchedRight, rightEpipolarLines,
-                    leftEpipolarLines, i, j, outputDist);
-
+        // the 2 distances:
+        float[] outputDist = new float[2];
+        for (int i = 0; i < m1.getN(); ++i) {
+            int j = i;
+            
+            eTransformer.calculatePerpDistFromLines(
+                m1m, m2m, 
+                m2EpipolarLines, m1EpipolarLines, 
+                i, j, outputDist);
+                        
+            System.out.println(String.format(
+                "fm dists=(%.2f)  unnorm dists=(%.2f, %.2f)", 
+                fit.getErrors().get(i).floatValue(), outputDist[0], outputDist[1]));
+        
+            assertTrue(Math.abs(fit.getErrors().get(i).doubleValue()) < 0.001);
+            assertTrue(Math.abs(outputDist[0]) < 0.001);
+            assertTrue(Math.abs(outputDist[1]) < 0.001);
+        }
+        
+        // some points which are matches, but aren't in the
+        // 7 points list:
+        /*
+        58, 39    31, 26
+        325, 43   281, 40
+        577, 68   561, 76
+        655, 426  665, 462
         */
+        PairIntArray points1 = new PairIntArray(4);
+        PairIntArray points2 = new PairIntArray(4);
+        points1.add(58, 39);    points2.add(31, 26);
+        points1.add(325, 43);   points2.add(281, 40);
+        points1.add(577, 68);   points2.add(561, 76);
+        points1.add(655, 426);  points2.add(665, 462);
+        
+        SimpleMatrix p1m = eTransformer.rewriteInto3ColumnMatrix(points1);
+        SimpleMatrix p2m = eTransformer.rewriteInto3ColumnMatrix(points2);
+        
+        SimpleMatrix p2EpipolarLines = fm.mult(p1m);
+        SimpleMatrix p1EpipolarLines = fm.transpose().mult(p2m);
+        
+        for (int i = 0; i < points1.getN(); ++i) {
+            int j = i;
+            
+            eTransformer.calculatePerpDistFromLines(
+                p1m, p2m, 
+                p2EpipolarLines, p1EpipolarLines, 
+                i, j, outputDist);
+                        
+            System.out.println(String.format(
+                "fm p unnorm dists=(%.2f, %.2f)", 
+                outputDist[0], outputDist[1]));
+        
+            //assertTrue(Math.abs(outputDist[0]) < 0.001);
+            //assertTrue(Math.abs(outputDist[1]) < 0.001);
+        }
+    }
+    
+    private void populateWithMertonMatches7(PairIntArray xy1,
+        PairIntArray xy2) {
+        /*
+        104, 275   83, 300
+        525, 221   516, 238
+        509, 234   500, 252
+        843, 80    876, 102
+        870, 484   944, 536
+        520, 481   533, 524
+        88, 504    65, 564
+        */
+        xy1.add(104, 275);  xy2.add(83, 300);
+        xy1.add(525, 221);  xy2.add(516, 238);
+        xy1.add(509, 234);  xy2.add(500, 252);
+        xy1.add(843, 80);  xy2.add(876, 102);
+        xy1.add(870, 484);  xy2.add(944, 536);
+        xy1.add(520, 481);  xy2.add(533, 524);
+        xy1.add(88, 504);  xy2.add(65, 564);
     }
     
     protected void getMertonCollege10TrueMatches(PairIntArray left, 
