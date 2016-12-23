@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 import org.ejml.simple.SimpleMatrix;
-import static org.junit.Assert.*;
 
 /**
  *
@@ -97,7 +96,7 @@ public class RANSACSolverTest extends TestCase {
         for (double error : errors) {
             assertTrue(error < 3);
         }
-            
+        
     }
     
     public void testSampsonErrors_stereo_01() {
@@ -125,6 +124,17 @@ public class RANSACSolverTest extends TestCase {
         
         SimpleMatrix fm = fit.getFundamentalMatrix();
         
+        System.out.print("fm.errors=");
+        for (Double d : fit.getErrors()) {
+            System.out.println(" " + d);
+        }
+        System.out.println("");
+        System.out.println("fm effective tolerance = " 
+            + fit.getEffectiveTolerance() + " stdv=" +
+            fit.getEffectiveToleranceStandardDeviation());
+        
+        float tolOffset = fit.getEffectiveTolerance();
+        
         EpipolarTransformer eTransformer = new EpipolarTransformer();
         
         SimpleMatrix m1m = eTransformer.rewriteInto3ColumnMatrix(m1);
@@ -147,11 +157,12 @@ public class RANSACSolverTest extends TestCase {
                 "fm dists=(%.2f)  unnorm dists=(%.2f, %.2f)", 
                 fit.getErrors().get(i).floatValue(), outputDist[0], outputDist[1]));
         
-            assertTrue(Math.abs(fit.getErrors().get(i).doubleValue()) < 0.001);
+            assertTrue(Math.abs(fit.getErrors().get(i).doubleValue()) 
+                < 0.001);
             assertTrue(Math.abs(outputDist[0]) < 0.001);
             assertTrue(Math.abs(outputDist[1]) < 0.001);
         }
-        
+                
         // some points which are matches, but aren't in the
         // 7 points list:
         /*
@@ -160,12 +171,22 @@ public class RANSACSolverTest extends TestCase {
         577, 68   561, 76
         655, 426  665, 462
         */
+        
         PairIntArray points1 = new PairIntArray(4);
         PairIntArray points2 = new PairIntArray(4);
         points1.add(58, 39);    points2.add(31, 26);
         points1.add(325, 43);   points2.add(281, 40);
         points1.add(577, 68);   points2.add(561, 76);
         points1.add(655, 426);  points2.add(665, 462);
+        // add a few bad matches
+        points1.add(58, 39);    points2.add(31, 26 + 10);
+        points1.add(325, 43);   points2.add(281, 40 + 10);
+        points1.add(577, 68);   points2.add(561, 76 + 10);
+        points1.add(655, 426);  points2.add(665, 462 + 10);
+        points1.add(58, 39);    points2.add(31, 26 + 100);
+        points1.add(325, 43);   points2.add(281, 40 + 100);
+        points1.add(577, 68);   points2.add(561, 76 + 100);
+        points1.add(655, 426);  points2.add(665, 462 + 100);
         
         SimpleMatrix p1m = eTransformer.rewriteInto3ColumnMatrix(points1);
         SimpleMatrix p2m = eTransformer.rewriteInto3ColumnMatrix(points2);
@@ -182,12 +203,13 @@ public class RANSACSolverTest extends TestCase {
                 i, j, outputDist);
                         
             System.out.println(String.format(
-                "fm p unnorm dists=(%.2f, %.2f)", 
+                "extr: fm p unnorm dists=(%.2f, %.2f)", 
                 outputDist[0], outputDist[1]));
         
             //assertTrue(Math.abs(outputDist[0]) < 0.001);
             //assertTrue(Math.abs(outputDist[1]) < 0.001);
         }
+        
     }
     
     private void populateWithMertonMatches7(PairIntArray xy1,
