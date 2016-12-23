@@ -25,7 +25,7 @@ public class RANSACSolverTest extends TestCase {
     public RANSACSolverTest() {
     }
 
-    public void estRANSAC() throws Exception {
+    public void testRANSAC() throws Exception {
     
         //TODO: add the reference for this data here.
         
@@ -430,6 +430,133 @@ public class RANSACSolverTest extends TestCase {
             }
         }
         
+    }
+    
+    public void testSampsonErrors_moderateProjection_02() {
+        
+        // scaled versions of android 04 and 02
+        
+        PairIntArray m1 = new PairIntArray(7);
+        PairIntArray m2 = new PairIntArray(7);
+        populateWithAndroid0402SmallMatches7(m1, m2);
+                
+        PairIntArray out1 = new PairIntArray(m1.getN());
+        PairIntArray out2 = new PairIntArray(m1.getN());
+        RANSACSolver solver = new RANSACSolver();
+        EpipolarTransformationFit fit
+            = solver.calculateEpipolarProjection(m1, m2, out1, out2);
+
+        assertEquals(m1.getN(), out1.getN());
+        assertEquals(m2.getN(), out2.getN());
+        
+        SimpleMatrix fm = fit.getFundamentalMatrix();
+        
+        System.out.print("fm.errors=");
+        for (Double d : fit.getErrors()) {
+            System.out.println(" " + d);
+        }
+        System.out.println("");
+        System.out.println("fm effective tolerance = " 
+            + fit.getEffectiveTolerance() + " stdv=" +
+            fit.getEffectiveToleranceStandardDeviation());
+        
+        float effTol = fit.getEffectiveTolerance();
+        
+        EpipolarTransformer eTransformer = new EpipolarTransformer();
+        
+        SimpleMatrix m1m = eTransformer.rewriteInto3ColumnMatrix(m1);
+        SimpleMatrix m2m = eTransformer.rewriteInto3ColumnMatrix(m2);
+        
+        SimpleMatrix m2EpipolarLines = fm.mult(m1m);
+        SimpleMatrix m1EpipolarLines = fm.transpose().mult(m2m);
+
+        // the 2 distances:
+        float[] outputDist = new float[2];
+        for (int i = 0; i < m1.getN(); ++i) {
+            int j = i;
+            
+            eTransformer.calculatePerpDistFromLines(
+                m1m, m2m, 
+                m2EpipolarLines, m1EpipolarLines, 
+                i, j, outputDist);
+                        
+            System.out.println(String.format(
+                "fm dists=(%.2f)  unnorm dists=(%.2f, %.2f)", 
+                fit.getErrors().get(i).floatValue(), outputDist[0], outputDist[1]));
+        
+            assertTrue(Math.abs(fit.getErrors().get(i).doubleValue()) 
+                < 0.001);
+            assertTrue(Math.abs(outputDist[0]) < 0.001);
+            assertTrue(Math.abs(outputDist[1]) < 0.001);
+        }
+                
+        // some points which are matches, but aren't in the
+        // 7 points list:
+        /*
+        34, 130   166, 54 
+        91, 129   186, 57
+        */
+        
+        PairIntArray points1 = new PairIntArray(4);
+        PairIntArray points2 = new PairIntArray(4);
+        points1.add(34, 130);   points2.add(166, 54);
+        points1.add(91, 129);   points2.add(186, 57);
+        // add a few bad matches
+        points1.add(34, 130);   points2.add(166, 54 + 10);
+        points1.add(91, 129);   points2.add(186, 57 + 10);
+        points1.add(34, 130);   points2.add(166, 54 + 100);
+        points1.add(91, 129);   points2.add(186, 57 + 100);
+        
+        SimpleMatrix p1m = eTransformer.rewriteInto3ColumnMatrix(points1);
+        SimpleMatrix p2m = eTransformer.rewriteInto3ColumnMatrix(points2);
+        
+        SimpleMatrix p2EpipolarLines = fm.mult(p1m);
+        SimpleMatrix p1EpipolarLines = fm.transpose().mult(p2m);
+        
+        for (int i = 0; i < points1.getN(); ++i) {
+            int j = i;
+            
+            eTransformer.calculatePerpDistFromLines(
+                p1m, p2m, 
+                p2EpipolarLines, p1EpipolarLines, 
+                i, j, outputDist);
+            
+            float dist = (Math.abs(outputDist[0]) + 
+                Math.abs(outputDist[1]))/2.f;
+            
+            System.out.println(String.format(
+                "extr: fm p unnorm dists=(%.2f, %.2f) ==> %.3f", 
+                outputDist[0], outputDist[1], dist));
+            
+            if (i < 2) {
+             //   assertTrue(dist < 2*effTol);
+            } else if (i < 4) {
+           //     assertTrue(dist < 2*effTol);
+            } else {
+          //      assertFalse(dist < 2*effTol);
+            }
+        }
+        
+    }
+    
+    public void populateWithAndroid0402SmallMatches7(PairIntArray xy1,
+        PairIntArray xy2) {
+        /*
+        46, 165  167, 77
+        84, 162  181, 81
+        63, 149  173, 68
+        37, 122  166, 49
+        88, 123  183, 52
+        54, 93   171, 30
+        67, 93   175, 30
+        */
+        xy1.add(46, 165);  xy2.add(167, 77);
+        xy1.add(84, 162);  xy2.add(181, 81);
+        xy1.add(63, 149);  xy2.add(173, 68);
+        xy1.add(37, 122);  xy2.add(166, 49);
+        xy1.add(88, 123);  xy2.add(183, 52);
+        xy1.add(54, 93);  xy2.add(171, 30);
+        xy1.add(67, 93);  xy2.add(175, 30);
     }
     
     private void populateWithMertonMatches7(PairIntArray xy1,
