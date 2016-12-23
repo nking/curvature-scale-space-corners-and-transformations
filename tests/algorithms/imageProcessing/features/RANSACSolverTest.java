@@ -133,7 +133,7 @@ public class RANSACSolverTest extends TestCase {
             + fit.getEffectiveTolerance() + " stdv=" +
             fit.getEffectiveToleranceStandardDeviation());
         
-        float tolOffset = fit.getEffectiveTolerance();
+        float effTol = fit.getEffectiveTolerance();
         
         EpipolarTransformer eTransformer = new EpipolarTransformer();
         
@@ -168,7 +168,7 @@ public class RANSACSolverTest extends TestCase {
         /*
         58, 39    31, 26
         325, 43   281, 40
-        577, 68   561, 76
+        577, 68   560, 75
         655, 426  665, 462
         */
         
@@ -176,7 +176,7 @@ public class RANSACSolverTest extends TestCase {
         PairIntArray points2 = new PairIntArray(4);
         points1.add(58, 39);    points2.add(31, 26);
         points1.add(325, 43);   points2.add(281, 40);
-        points1.add(577, 68);   points2.add(561, 76);
+        points1.add(577, 68);   points2.add(560, 75);
         points1.add(655, 426);  points2.add(665, 462);
         // add a few bad matches
         points1.add(58, 39);    points2.add(31, 26 + 10);
@@ -201,13 +201,18 @@ public class RANSACSolverTest extends TestCase {
                 p1m, p2m, 
                 p2EpipolarLines, p1EpipolarLines, 
                 i, j, outputDist);
-                        
+            
+            float dist = (outputDist[0] + outputDist[1])/2.f;
+            
             System.out.println(String.format(
-                "extr: fm p unnorm dists=(%.2f, %.2f)", 
-                outputDist[0], outputDist[1]));
-        
-            //assertTrue(Math.abs(outputDist[0]) < 0.001);
-            //assertTrue(Math.abs(outputDist[1]) < 0.001);
+                "extr: fm p unnorm dists=(%.2f, %.2f) ==> %.3f", 
+                outputDist[0], outputDist[1], dist));
+            
+            if (i < 4) {
+                assertTrue(dist < 2*effTol);
+            } else {
+                assertFalse(dist < 2*effTol);
+            }
         }
         
     }
