@@ -624,6 +624,19 @@ public class MatrixUtil {
         return c;
     }
     
+    public static double[][] convertToRowMajor(SimpleMatrix a) {
+        int nc = a.numCols();
+        int nr = a.numRows();
+        double[][] out = new double[nr][];
+        for (int i = 0; i < nr; ++i) {
+            out[i] = new double[nc];
+            for (int j = 0; j < nc; ++j) {
+                out[i][j] = a.get(i, j);
+            }
+        }
+        return out;
+    }
+    
     public static double[][] dot(SimpleMatrix m1, SimpleMatrix m2) {
         
         if (m1 == null) {
