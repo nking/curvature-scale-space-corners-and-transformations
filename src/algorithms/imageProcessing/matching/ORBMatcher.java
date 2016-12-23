@@ -2,6 +2,7 @@ package algorithms.imageProcessing.matching;
 
 import algorithms.QuickSort;
 import algorithms.compGeometry.FurthestPair;
+import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.ColorHistogram;
 import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.Image;
@@ -86,521 +87,29 @@ public class ORBMatcher {
         vp2 = vp;
     }
 
-    /**
-     * match template image and shape in orb1 and labeledPoints1
-     * with the same object which is somewhere in the
-     * segmented labledPoints2 and orb2.
-     *
-     * NOTE that if the template or the true object match in dataset2
-     * are smaller than 32 pixels across, the method may not find the
-     * object very well so alternative methods should be used in that case
-     * or pre-processing to correct that.
-     *
-     * NOTE also that if precise correspondence is needed, this method should
-     * probably be followed by partial shape matcher to get better transformation
-     * and then add transformed matching keypoints to that correspondence.
-     *
-     * NOT READY FOR USE yet.
-     *
-     * @param orb1
-     * @param orb2
-     * @param labeledPoints1
-     * @param labeledPoints2
-     * @return
-     */
+    // method in progress to replace match0
     public List<CorrespondenceList> match0(ORB orb1, ORB orb2,
         Set<PairInt> labeledPoints1, List<Set<PairInt>> labeledPoints2) {
 
         /*
-        uses the descriptors given and then optionally makes masks
-        for them using the labeled points.
-        -- visits each octave pair
-        -- calculates cost of descriptors
-        -- uses the segmentation to calculate every
-        permutation of 2 pairs of points.
-        -- filter out high cost pairs.
-        -- filters out 2 pair combinations with transformation scales not near 1
-        -- keeps only the top 10 percent cost of items
-        from the 2 pair list.
-        -- evaluates the transformation using the transformed
-        keypoints cost difference, distance from nearest
-        neighbor and number of matches
-        -- keeps the best of each j
-        -- further compares bestJs with SSDs of intersecting
-        transformed point sets of the matching keypoints
-        -- top of those best is the returned result
-         */
+        NOTE: bounds are not smoothed within this method, so if
+        a partial shape matching is ever appended to it,
+        one will need to make separate smoothed bounds for it.
+        */
         if (!orb1.getDescrChoice().equals(orb2.getDescrChoice())) {
             throw new IllegalStateException("orbs must contain same kind of descirptors");
         }
-        int nBands = 3;
-        if (orb1.getDescrChoice().equals(ORB.DescriptorChoice.HSV)) {
-            if (orb1.getDescriptorsH() == null || orb2.getDescriptorsH() == null) {
-                throw new IllegalStateException("hsv descriptors must be created first");
-            }
-        } else if (orb1.getDescrChoice().equals(ORB.DescriptorChoice.ALT)) {
-            if (orb1.getDescriptorsListAlt() == null || orb2.getDescriptorsListAlt() == null) {
-                throw new IllegalStateException("alt descriptors must be created first");
-            }
-            nBands = 1;
-        } else if (orb1.getDescrChoice().equals(ORB.DescriptorChoice.GREYSCALE)) {
-            if (orb1.getDescriptorsList() == null || orb2.getDescriptorsList() == null) {
-                throw new IllegalStateException("descriptors must be created first");
-            }
-            nBands = 1;
-        }
-
-        boolean useMasks = false;
-        if (useMasks) {
-            // initialize the masks, but discard the maps
-            TObjectIntMap<PairInt> pointLabels1 = new TObjectIntHashMap<PairInt>();
-            Set<PairInt> set = labeledPoints1;
-            for (PairInt p : set) {
-                pointLabels1.put(p, 0);
-            }
-            TObjectIntMap<PairInt> pointLabels2 = new TObjectIntHashMap<PairInt>();
-            for (int i = 0; i < labeledPoints2.size(); ++i) {
-                set = labeledPoints2.get(i);
-                for (PairInt p : set) {
-                    pointLabels2.put(p, i);
-                }
-            }
-            orb1.createDescriptorMasks(pointLabels1);
-            orb2.createDescriptorMasks(pointLabels2);
-        }
-
-        //TODO: may need to revise this or allow it as a method argument:
-        int pixTolerance = 10;
-        MatchedPointsTransformationCalculator tc = new MatchedPointsTransformationCalculator();
-        Transformer transformer = new Transformer();
-
-        TFloatList scales1 = extractScales(orb1.getScalesList());
-        TFloatList scales2 = extractScales(orb2.getScalesList());
-
-        if (Math.abs(scales1.get(0) - 1) > 0.01) {
-            throw new IllegalArgumentException("logic depends upon first scale" + " level being '1'");
-        }
-        if (Math.abs(scales2.get(0) - 1) > 0.01) {
-            throw new IllegalArgumentException("logic depends upon first scale" + " level being '1'");
-        }
-
-        // a rough estimate of maximum number of matchable points in any
-        //     scale dataset comparison
-        final int nMaxMatchable = Math.round(0.5F * calculateNMaxMatchable(orb1.getKeyPoint1List(), orb2.getKeyPoint1List()));
-        //TODO: allow a factor to be passed in
-        System.out.println("nMaxMatchable=" + nMaxMatchable);
-        int nMax1 = maxSize(orb1.getKeyPoint1List());
-        int nMax2 = maxSize(orb2.getKeyPoint1List());
-        int nMax = nMax1 * nMax2;
-        // --- best cost data ----
-        double minCostTotal = Double.MAX_VALUE;
-        double minCost1 = Double.MAX_VALUE;
-        double minCost2 = Double.MAX_VALUE;
-        double minCost3 = Double.MAX_VALUE;
-        float minCostTScale = Float.MAX_VALUE;
-        //runtime complexity of this vector depends upon the number of items
-        // it is currently holding, so can set the capacity high and fill vector only
-        // with items within bitTolerance of best, but too high might affect jvm
-        // performance.
-        // (note, can optimize this for very large results by occassionally ejecting
-        // all values with cost > best + bitTolerance.)
-        // TODO: a safe size is to set capacity to the number of unique
-        // transformation parameter sets, but since that isn't known
-        // until later without refactoring here, will make an assumption for now,
-        // that size 100 is generous for number of top solutions.
-        FixedSizeSortedVector<CObject3> minVec = new FixedSizeSortedVector<CObject3>(1, CObject3.class);
-        int templateSize = calculateObjectSize(labeledPoints1);
-        // populated on demand
-        TObjectIntMap<OneDIntArray> labeledPointsSizes2 =
-            new TObjectIntHashMap<OneDIntArray>();
-        for (int i = 0; i < scales1.size(); ++i) {
-            //for (int i = 2; i < 3; ++i) {
-            float scale1 = scales1.get(i);
-            // coords are in ref frame of scale=1 of their pyramids
-            TIntList kpX1 = orb1.getKeyPoint1List().get(i);
-            TIntList kpY1 = orb1.getKeyPoint0List().get(i);
-            int n1 = kpX1.size();
-            TwoDFloatArray octaveImg1 = orb1.getPyramidImages().get(i);
-            float diag1 = (float) Math.sqrt(octaveImg1.a.length * octaveImg1.a[0].length);
-            final double maxDist = diag1;
-            // create data structures in scaled reference frame
-            TObjectIntMap<PairInt> p1KPIndexMap = new TObjectIntHashMap<PairInt>();
-            TIntList kpX1_2 = new TIntArrayList(n1);
-            TIntList kpY1_2 = new TIntArrayList(n1);
-            for (int i3 = 0; i3 < n1; ++i3) {
-                int x = Math.round((float) kpX1.get(i3) / scale1);
-                int y = Math.round((float) kpY1.get(i3) / scale1);
-                kpX1_2.add(x);
-                kpY1_2.add(y);
-                p1KPIndexMap.put(new PairInt(x, y), i3);
-            }
-            List<TIntList> pointIndexLists1 = new ArrayList<TIntList>();
-            int ns = 1;
-            for (int i3 = 0; i3 < ns; ++i3) {
-                pointIndexLists1.add(new TIntArrayList());
-            }
-            TObjectIntMap<PairInt> pointLabels1 = new TObjectIntHashMap<PairInt>();
-            Set<PairInt> set = labeledPoints1;
-            Set<PairInt> setScaled = new HashSet<PairInt>();
-            TIntList list = pointIndexLists1.get(0);
-            assert (list != null);
-            for (PairInt p : set) {
-                int x = Math.round((float) p.getX() / scale1);
-                int y = Math.round((float) p.getY() / scale1);
-                PairInt p2 = new PairInt(x, y);
-                pointLabels1.put(p2, 0);
-                int idx = p1KPIndexMap.get(p2);
-                list.add(idx);
-                setScaled.add(p2);
-            }
-            Set<PairInt> shape = new HashSet<PairInt>(setScaled);
-            int objDimension = (int) Math.round((float) templateSize / (float) scale1);
-            int limit = Math.round(1.15F * objDimension);
-            int limitSq = limit * limit;
-            PairIntArray a1 = new PairIntArray(kpX1_2.size());
-            TIntList a1Indexes = new TIntArrayList(kpX1_2.size());
-            for (int ii = 0; ii < kpX1.size(); ++ii) {
-                int x = kpX1.get(ii);
-                int y = kpY1.get(ii);
-                a1.add(x, y);
-                a1Indexes.add(ii);
-            }
-            for (int j = 0; j < scales2.size(); ++j) {
-                //for (int j = 0; j < 1; ++j) {
-                float scale2 = scales2.get(j);
-                // coords are in ref frame of scale=1 of their pyramids
-                TIntList kpX2 = orb2.getKeyPoint1List().get(j);
-                TIntList kpY2 = orb2.getKeyPoint0List().get(j);
-                int n2 = kpX2.size();
-                // create data structures in scaled reference frame
-                TObjectIntMap<PairInt> p2KPIndexMap = new TObjectIntHashMap<PairInt>();
-                TObjectIntMap<PairInt> p2KPIndexMap_2 = new TObjectIntHashMap<PairInt>();
-                TIntList kpX2_2 = new TIntArrayList(n2);
-                TIntList kpY2_2 = new TIntArrayList(n2);
-                for (int j3 = 0; j3 < n2; ++j3) {
-                    int x = Math.round((float) kpX2.get(j3) / scale2);
-                    int y = Math.round((float) kpY2.get(j3) / scale2);
-                    kpX2_2.add(x);
-                    kpY2_2.add(y);
-                    p2KPIndexMap_2.put(new PairInt(x, y), j3);
-                    p2KPIndexMap.put(new PairInt(kpX2.get(j3), kpY2.get(j3)), j3);
-                }
-                List<TIntList> pointIndexLists2 = new ArrayList<TIntList>();
-                int ns2 = labeledPoints2.size();
-                for (int j3 = 0; j3 < ns2; ++j3) {
-                    pointIndexLists2.add(new TIntArrayList());
-                }
-                TObjectIntMap<PairInt> pointLabels2 = new TObjectIntHashMap<PairInt>();
-                for (int j3 = 0; j3 < ns2; ++j3) {
-                    Set<PairInt> set2 = labeledPoints2.get(j3);
-                    TIntList list2 = pointIndexLists2.get(j3);
-                    assert (list2 != null);
-                    for (PairInt p : set2) {
-                        int x = Math.round((float) p.getX() / scale2);
-                        int y = Math.round((float) p.getY() / scale2);
-                        PairInt p2 = new PairInt(x, y);
-                        pointLabels2.put(p2, j3);
-                        int idx = p2KPIndexMap_2.get(p2);
-                        list2.add(idx);
-                    }
-                }
-                TwoDFloatArray octaveImg2 = orb2.getPyramidImages().get(j);
-                debugPrint(octaveImg1, octaveImg2, kpX1_2, kpY1_2, kpX2_2, kpY2_2, i, j);
-                int maxX2 = orb2.getPyramidImages().get(0).a[0].length;
-                int maxY2 = orb2.getPyramidImages().get(0).a.length;
-                int maxX2_2 = octaveImg2.a[0].length;
-                int maxY2_2 = octaveImg2.a.length;
-                NearestNeighbor2D nn2 = new NearestNeighbor2D(makeSet(kpX2, kpY2), maxX2 + limit, maxY2 + limit);
-                int nTot = n1 * n2;
-                //use descriptors with params here to reduce paramsList
-                int[][] cost = null;
-                if (useMasks) {
-                    ORB.Descriptors[] desc1 = getDescriptors(orb1, i);
-                    ORB.Descriptors[] desc2 = getDescriptors(orb2, j);
-                    cost = ORB.calcMaskedDescriptorCostMatrixes(desc1, desc2, orb1.getDescriptorsMaskList().get(i), orb2.getDescriptorsMaskList().get(j))[1].a;
-                } else {
-                    ORB.Descriptors[] desc1 = getDescriptors(orb1, i);
-                    ORB.Descriptors[] desc2 = getDescriptors(orb2, j);
-                    cost = ORB.calcDescriptorCostMatrix(desc1, desc2);
-                }
-
-                //combinations of pairs with same labels
-                // storing them all to reduce nesting
-                // quadint is idx1, idx2, idx3, idx4
-                //TODO: can use the cost to more quickly filter the
-                // pairs at creation time
-                List<QuadInt> pairIndexes = createPairLabelIndexes(cost, nBands, pointIndexLists1, kpX1_2, kpY1_2, pointIndexLists2, kpX2_2, kpY2_2);
-                System.out.println("i=" + i + " j=" + j + " nPairs=" + pairIndexes.size());
-                FixedSizeSortedVector<CObject4> vecP = new FixedSizeSortedVector<CObject4>(100, //Math.round(0.1f * pairIndexes.size()),
-                //Math.round(0.01f * pairIndexes.size()),
-                CObject4.class);
-                for (int ipi = 0; ipi < pairIndexes.size(); ++ipi) {
-                    QuadInt q = pairIndexes.get(ipi);
-                    int t1X = kpX1_2.get(q.getA());
-                    int t1Y = kpY1_2.get(q.getA());
-                    int t2X = kpX1_2.get(q.getB());
-                    int t2Y = kpY1_2.get(q.getB());
-                    int s1X = kpX2_2.get(q.getC());
-                    int s1Y = kpY2_2.get(q.getC());
-                    int s2X = kpX2_2.get(q.getD());
-                    int s2Y = kpY2_2.get(q.getD());
-                    // transform dataset 1 into frame 2
-                    TransformationParameters params = tc.calulateEuclidean(t1X, t1Y, t2X, t2Y, s1X, s1Y, s2X, s2Y, 0, 0);
-                    float tScale = params.getScale();
-                    if (Math.abs(tScale - 1.0) > 0.15) {
-                        continue;
-                    }
-                    int idx1_1 = p1KPIndexMap.get(new PairInt(t1X, t1Y));
-                    int idx1_2 = p1KPIndexMap.get(new PairInt(t2X, t2Y));
-                    int idx2_1 = p2KPIndexMap_2.get(new PairInt(s1X, s1Y));
-                    int idx2_2 = p2KPIndexMap_2.get(new PairInt(s2X, s2Y));
-                    // a filter for objects too large to be the template object in
-                    //    dataset 1.
-                    // caveat is that cannot use partial shape matcher on all
-                    //    results in same manner if filter this one out, but it's
-                    //    the right logic if not oversegmented or blended into
-                    //    other objects.
-                    int label2 = pointLabels2.get(new PairInt(kpX2.get(q.getC()), kpY2.get(q.getC())));
-                    if (labeledPoints2.get(label2).size() < 2) {
-                        continue;
-                    }
-                    OneDIntArray key = new OneDIntArray(new int[]{label2});
-                    if (!labeledPointsSizes2.containsKey(key)) {
-                        Set<PairInt> set2 = labeledPoints2.get(label2);
-                        if (set2.size() < 2) {
-                            continue;
-                        }
-                        int sz = calculateObjectSize(set2);
-                        labeledPointsSizes2.put(key, sz);
-                    }
-                    int regionSize = labeledPointsSizes2.get(key);
-                    if (regionSize > (1.5 * templateSize)) {
-                        continue;
-                    }
-                    int sum = cost[idx1_1][idx2_1] + cost[idx1_2][idx2_2];
-                    CObject4 cObj = new CObject4(sum, params, q);
-                    boolean added = vecP.add(cObj);
-                }
-                System.out.println("for i=" + i + " j=" + j + " filtered nPairs=" + vecP.getNumberOfItems());
-                double minCostJTotal = Double.MAX_VALUE;
-                double minCostJ1 = Double.MAX_VALUE;
-                double minCostJ2 = Double.MAX_VALUE;
-                double minCostJ3 = Double.MAX_VALUE;
-                float minCostJTScale = Float.MAX_VALUE;
-                FixedSizeSortedVector<CObject3> vecJ = new FixedSizeSortedVector<CObject3>(1, CObject3.class);
-                // --- evaluate cost of all keypoints, transformed
-                for (int ipi = 0; ipi < vecP.getNumberOfItems(); ++ipi) {
-                    CObject4 c = vecP.getArray()[ipi];
-                    TransformationParameters params = c.params;
-                    float tScale = params.getScale();
-                    QuadInt q = c.q;
-                    int t1X = kpX1_2.get(q.getA());
-                    int t1Y = kpY1_2.get(q.getA());
-                    int t2X = kpX1_2.get(q.getB());
-                    int t2Y = kpY1_2.get(q.getB());
-                    int s1X = kpX2_2.get(q.getC());
-                    int s1Y = kpY2_2.get(q.getC());
-                    int s2X = kpX2_2.get(q.getD());
-                    int s2Y = kpY2_2.get(q.getD());
-                    // ----- transform keypoints and sum the distance differences ----
-                    PairIntArray tr1 = transformer.applyTransformation(params, a1);
-                    // trim to image dimensions
-                    tr1 = trimToImageBounds(octaveImg2, tr1);
-                    if (tr1.getN() == 0) {
-                        continue;
-                    }
-                    //the matched kpx1,kpy1 kpx2,kpy2 coordinate pairs
-                    int[] mp1 = new int[kpX1.size()];
-                    int[] mp2 = new int[kpX1.size()];
-                    double[] distAndCount = sumKeypointDescAndDist(
-                        cost, 3, a1Indexes, tr1, kpX1, kpY1, nn2,
-                        p2KPIndexMap, maxX2, maxY2, pixTolerance, maxDist,
-                        mp1, mp2);
-                    double sumDesc = distAndCount[0];
-                    double sumDist = distAndCount[1];
-                    int np = (int) distAndCount[2];
-                    int count = np;
-                    if (count < 2) {
-                        continue;
-                    }
-                    if (count == 2 && (nMaxMatchable > 2 * count)) {
-                        // TODO: may want to revise this while still discarding
-                        //    false positives
-                        continue;
-                    }
-                    if (np < mp1.length) {
-                        mp1 = Arrays.copyOf(mp1, np);
-                        mp2 = Arrays.copyOf(mp2, np);
-                    }
-                    if (count > nMaxMatchable) {
-                        count = nMaxMatchable;
-                    }
-                    double cf = count;
-                    if (cf > nMaxMatchable) {
-                        cf = nMaxMatchable;
-                    }
-                    cf /= nMaxMatchable;
-                    double sum3 = 1.0 - cf;
-                    //sumDesc /= (double)count;
-                    //sumDist /= (double)count;
-                    sumDesc /= distAndCount[2];
-                    sumDist /= distAndCount[2];
-                    double sum = sumDesc + sumDist + sum3;
-                    // if vecJ is filled and sum is not better than last item,
-                    // continue
-                    if (vecJ.getNumberOfItems() == vecJ.getFixedCapacity()) {
-                        if (sum < vecJ.getArray()[vecJ.getNumberOfItems() - 1].cost) {
-                            continue;
-                        }
-                    }
-                    TIntSet labels2 = new TIntHashSet();
-                    PairInt[] m1 = new PairInt[np];
-                    PairInt[] m2 = new PairInt[mp1.length];
-                    for (int j3 = 0; j3 < m1.length; ++j3) {
-                        int idx1 = mp1[j3];
-                        int idx2 = mp2[j3];
-                        assert (idx1 < kpX1.size() && idx1 > -1);
-                        assert (idx2 < kpX2.size() && idx2 > -1);
-                        m1[j3] = new PairInt(kpX1.get(idx1), kpY1.get(idx1));
-                        m2[j3] = new PairInt(kpX2.get(idx2), kpY2.get(idx2));
-                        assert (labeledPoints1.contains(m1[j3]));
-                        assert (p1KPIndexMap.get(new PairInt(kpX1_2.get(idx1), kpY1_2.get(idx1))) == idx1);
-                        assert (p2KPIndexMap_2.get(new PairInt(kpX2_2.get(idx2), kpY2_2.get(idx2))) == idx2);
-                        labels2.add(pointLabels2.get(m2[j3]));
-                    }
-                    // apply a size filter
-                    OneDIntArray keys = new OneDIntArray(
-                        labels2.toArray(new int[labels2.size()]));
-                    Arrays.sort(keys.a);
-                    if (!labeledPointsSizes2.containsKey(keys)) {
-                        Set<PairInt> combined = new HashSet<PairInt>();
-                        for (int k = 0; k < keys.a.length; ++k) {
-                            combined.addAll(labeledPoints2.get(keys.a[k]));
-                        }
-                        if (combined.size() < 2) {
-                            continue;
-                        }
-                        int sz = calculateObjectSize(combined);
-                        labeledPointsSizes2.put(keys, sz);
-                    }
-                    int regionSize = labeledPointsSizes2.get(keys);
-                    if (regionSize > (1.5 * templateSize)) {
-                        continue;
-                    }
-                    CObject2 cObj2 = new CObject2(ipi, sum, sumDesc, sumDist, sum3, m1, m2);
-                    CObject3 cObj = new CObject3(cObj2, sum, 0, params);
-                    cObj.keypointCount = count;
-                    boolean added = vecJ.add(cObj);
-                    if (added) {
-                        minCostJTotal = sum;
-                        minCostJ1 = sumDesc;
-                        minCostJ2 = sumDist;
-                        minCostJ3 = sum3;
-                        minCostJTScale = tScale;
-                        System.out.println(String.format("i=%d j=%d ipi=%d ts=%.2f  c=%.2f c1=%.2f c2=%.2f c3=%.2f count=%d", i, j, ipi, tScale, (float) sum, (float) sumDesc, (float) sumDist, (float) sum3, count));
-                        if (true) {
-                            CorrespondencePlotter plotter = new CorrespondencePlotter(ORB.convertToImage(orb1.getPyramidImages().get(i)), ORB.convertToImage(orb2.getPyramidImages().get(j)));
-                            for (int ii = 0; ii < cObj.m1.length; ++ii) {
-                                PairInt p1 = cObj.m1[ii];
-                                PairInt p2 = cObj.m2[ii];
-                                int x1 = Math.round((float) p1.getX() / scale1);
-                                int y1 = Math.round((float) p1.getY() / scale1);
-                                int x2 = Math.round((float) p2.getX() / scale2);
-                                int y2 = Math.round((float) p2.getY() / scale2);
-                                plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 0);
-                            }
-                            String str = Integer.toString(i);
-                            while (str.length() < 3) {
-                                str = "0" + str;
-                            }
-                            String str2 = Integer.toString(j);
-                            while (str2.length() < 3) {
-                                str2 = "0" + str2;
-                            }
-                            str = str + "_" + str2;
-                            try {
-                                plotter.writeImage("_indiv_masked_corres2_" + str + "_" + ipi);
-                            } catch (IOException ex) {
-                                Logger.getLogger(ORB.class.getName()).log(Level.SEVERE, null, ex);
-                            }
-                        }
-                    }
-                } // end loop over paramsList
-                if (vecJ.getNumberOfItems() == 0) {
-                    continue;
-                }
-                if (false) {
-                    //DEBUG
-                    for (int k = 0; k < vecJ.getNumberOfItems(); ++k) {
-                        CObject3 cobj = vecJ.getArray()[k];
-                        CorrespondencePlotter plotter = new CorrespondencePlotter(ORB.convertToImage(orb1.getPyramidImages().get(i)), ORB.convertToImage(orb2.getPyramidImages().get(j)));
-                        for (int ii = 0; ii < cobj.m1.length; ++ii) {
-                            PairInt p1 = cobj.m1[ii];
-                            PairInt p2 = cobj.m2[ii];
-                            int x1 = Math.round((float) p1.getX() / scale1);
-                            int y1 = Math.round((float) p1.getY() / scale1);
-                            int x2 = Math.round((float) p2.getX() / scale2);
-                            int y2 = Math.round((float) p2.getY() / scale2);
-                            plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 0);
-                        }
-                        String str = Integer.toString(i);
-                        while (str.length() < 3) {
-                            str = "0" + str;
-                        }
-                        String str2 = Integer.toString(j);
-                        while (str2.length() < 3) {
-                            str2 = "0" + str2;
-                        }
-                        str = str + "_" + str2;
-                        try {
-                            plotter.writeImage("_mindiv_masked_corres3_" + str + "_" + MiscDebug.getCurrentTimeFormatted());
-                        } catch (IOException ex) {
-                            Logger.getLogger(ORB.class.getName()).log(Level.SEVERE, null, ex);
-                        }
-                        System.out.println(String.format("* %d %d ts=%.2f  c=%.2f c1=%.2f c2=%.2f c3=%.2f", i, j, cobj.params.getScale(), (float) cobj.cost, (float) cobj.costDesc, (float) cobj.costDist, (float) cobj.costCount));
-                    }
-                }
-                if (vecJ.getNumberOfItems() == 0) {
-                    System.out.println("no matches for i=" + i + " j=" + j);
-                    continue;
-                }
-                // if expand capacity of minVec, add up to capacity here
-                minVec.add(vecJ.getArray()[0]);
-            } // end loop over image j
-        }
-        if (minVec.getNumberOfItems() == 0) {
-            return null;
-        }
-        List<CorrespondenceList> topResults = new ArrayList<CorrespondenceList>();
-        for (int i = 0; i < minVec.getNumberOfItems(); ++i) {
-            CObject3 a = minVec.getArray()[i];
-            if (a.cost > minCostTotal) {
-                break;
-            }
-            CorrespondenceList cor = new CorrespondenceList(a.params, a.m1, a.m2);
-            topResults.add(cor);
-        }
-        return topResults;
-    }
-
-    // method in progress to replace match0
-    public List<CorrespondenceList> match0Epipolar2(ORB orb1, ORB orb2,
-        Set<PairInt> labeledPoints1, List<Set<PairInt>> labeledPoints2) {
-
-        if (!orb1.getDescrChoice().equals(orb2.getDescrChoice())) {
-            throw new IllegalStateException("orbs must contain same kind of descirptors");
-        }
-
-        SIGMA sigma = SIGMA.ZEROPOINTFIVE;
 
         float distTol = 5;
         float distMax = (float)(Math.sqrt(2) * distTol);
 
-        PairIntArray bounds1 = createOrderedBounds(orb1, labeledPoints1, sigma);
+        PairIntArray bounds1 = createOrderedBoundsSansSmoothing(orb1, 
+            labeledPoints1);
         if (bounds1.getN() < 7) {
             throw new IllegalStateException("the boundary of object 1 "
                 + " must have at least 7 points");
         }
+       
         int[] minMaxXYB1 = MiscMath.findMinMaxXY(bounds1);
         NearestNeighbor2D nnb1 = new NearestNeighbor2D(Misc.convert(bounds1),
             minMaxXYB1[1] + (int)Math.ceil(distTol + 1),
@@ -716,9 +225,6 @@ public class ORBMatcher {
         TIntObjectMap<List<Object>> psmMap = new
             TIntObjectHashMap<List<Object>>();
 
-        double bestCost0 = Double.MAX_VALUE;
-        int bestCostSegIdx0 = -1;
-        
         List<List<QuadInt>> correspondences = new ArrayList<List<QuadInt>>();
         TDoubleList descCosts = new TDoubleArrayList();
         TIntList nDesc = new TIntArrayList();
@@ -788,7 +294,7 @@ public class ORBMatcher {
                     }
 
                     PairIntArray bounds2 = getOrCreateOrderedBounds(img2,
-                        bounds2Maps, segIdx, labeledPoints2.get(segIdx), sigma);
+                        bounds2Maps, segIdx, labeledPoints2.get(segIdx));
 
                     if (bounds2 == null || bounds2.getN() < 7) {
                         continue;
@@ -846,16 +352,7 @@ public class ORBMatcher {
                     // of more than 10 pixels are within tolerance, so
                     // it is not easy to distinguish between true and
                     // false matches.
-                    //
-                    // If another descriptor is needed here to further 
-                    // distinguish among the best,
-                    // the shape should be used, but that requires
-                    // a method to be written in PartialShapeMatcher
-                    // which is given a
-                    // euclidean transformation as a constraint
-                    // and then finds the best offsets and intervals
-                    // within the partial shape matrix...
-                    
+                   
                     
                     System.out.println("octave1=" + octave1 + " octave2=" +
                         octave2 + " euclid m1.n=" + m1.getN()
@@ -867,11 +364,6 @@ public class ORBMatcher {
                     if (segIdx == 39) {
                         System.out.println("segIdx=" + segIdx +
                             " " + params.toString());
-                    }
-                    
-                    if (normalizedCost[0] < bestCost0) {
-                        bestCost0 = normalizedCost[0];
-                        bestCostSegIdx0 = segIdx;
                     }
 
                     {// DEBUG
@@ -1041,7 +533,7 @@ public class ORBMatcher {
             float nKP1 = orb1.getKeyPoint0List().get(octave1).size();
 
             // calculate "fraction of whole" for hsv keypoint descriptors
-            float f1 = 1.f - ((float)nDesc.get(i)/nKP1);
+            final float f1 = 1.f - ((float)nDesc.get(i)/nKP1);
 
             //calculate the cost of hsv kp descriptors
             float d1 = 1.f - ((nBands * 256.f
@@ -1056,10 +548,10 @@ public class ORBMatcher {
             double tot = sd1*sd1 + f3*f3;
 
             System.out.println(String.format(
- "octave1=%d octave2=%d segIdx=%d nCor=%d normdesc=%.2f sd1=%.2f frac=%.2f nd=%d nKP1=%d tot=%.2f",
+ "octave1=%d octave2=%d segIdx=%d nCor=%d normdesc=%.2f f1=%.2f sd1=%.2f frac=%.2f nd=%d nKP1=%d tot=%.2f",
                 octave1, octave2, segIdxs.get(i), 
                 correspondences.get(i).size(),
-                (float)d1,
+                (float)d1, f1,
                 sd1, f3,
                 nDesc.get(i), (int)nKP1,
                 (float)tot));
@@ -1070,6 +562,13 @@ public class ORBMatcher {
 
         QuickSort.sortBy1stArg(costs, indexes);
 
+        /*
+        if the best has a close 2nd best, might need to use an aggregated
+        partial shape matcher, that uses the euclidean transform as a
+        constraint (reuires new method in PartialShapeMatcher.java).
+        
+        */
+        
         List<CorrespondenceList> results = new ArrayList<CorrespondenceList>();
         for (int i = 0; i < costs.length; ++i) {
 
@@ -1081,7 +580,7 @@ public class ORBMatcher {
             results.add(new CorrespondenceList(qs));
         }
 
-        /*{// DEBUG   a look at the bounds and keypoints tested by octave
+        {// DEBUG   a look at the bounds and keypoints tested by octave
             for (int i = 0; i < scales2.size(); ++i) {
                 float scale2 = scales2.get(i);
                 Image img1 = ORB.convertToImage(orb2.getPyramidImages().get(i));
@@ -1127,11 +626,8 @@ public class ORBMatcher {
                 MiscDebug.writeImage(img1, "_TMP4__"
                     + MiscDebug.getCurrentTimeFormatted());
             }
-        }*/
+        }
 
-        System.out.println("BESTCOST=" + bestCost0 + " segIdx=" +
-            bestCostSegIdx0);
-        
         return results;
     }
 
@@ -3110,11 +2606,26 @@ public class ORBMatcher {
         set.addAll(labeledPoints1);
 
         PairIntArray bounds = imageProcessor.extractSmoothedOrderedBoundary(
-            new HashSet<PairInt>(set), sigma,
+            set, sigma,
             orb1.getPyramidImages().get(0).a[0].length,
             orb1.getPyramidImages().get(0).a.length);
 
         return bounds;
+    }
+    
+    private PairIntArray createOrderedBoundsSansSmoothing(ORB orb1,
+        Set<PairInt> labeledPoints1) {
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+
+        Set<PairInt> set = new HashSet<PairInt>();
+        set.addAll(labeledPoints1);
+
+        PerimeterFinder2 finder = new PerimeterFinder2();
+        PairIntArray ordered = finder.extractOrderedBorder(
+            set);
+        
+        return ordered;
     }
 
     private PairIntArray getOrCreateOrderedBounds(TwoDFloatArray img,
@@ -3134,11 +2645,43 @@ public class ORBMatcher {
         boundsMap.put(segIdx, bounds);
 
         {
-            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-            double[] xyCen = curveHelper.calculateXYCentroids(bounds);
-            System.out.println("bounds center=" + (int)xyCen[0] + "," +
-                (int)xyCen[1] + " size_full=" +
-                calculateObjectSize(bounds));
+            if (bounds.getN() > 1) {
+                MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+                double[] xyCen = curveHelper.calculateXYCentroids(bounds);
+                System.out.println("bounds center=" + (int)xyCen[0] + "," +
+                    (int)xyCen[1] + " size_full=" +
+                    calculateObjectSize(bounds));
+            }
+        }
+
+        return bounds;
+    }
+
+    private PairIntArray getOrCreateOrderedBounds(TwoDFloatArray img,
+        TIntObjectMap<PairIntArray> boundsMap, int segIdx,
+        Set<PairInt> set) {
+
+        PairIntArray bounds = boundsMap.get(segIdx);
+        if (bounds != null) {
+            return bounds;
+        }
+
+        Set<PairInt> set2 = new HashSet<PairInt>();
+        set2.addAll(set);
+
+        PerimeterFinder2 finder = new PerimeterFinder2();
+        bounds = finder.extractOrderedBorder(set2);
+
+        boundsMap.put(segIdx, bounds);
+
+        {
+            if (bounds.getN() > 1) {
+                MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+                double[] xyCen = curveHelper.calculateXYCentroids(bounds);
+                System.out.println("bounds center=" + (int)xyCen[0] + "," +
+                    (int)xyCen[1] + " size_full=" +
+                    calculateObjectSize(bounds));
+            }
         }
 
         return bounds;

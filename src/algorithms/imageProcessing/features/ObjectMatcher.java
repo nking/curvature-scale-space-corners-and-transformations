@@ -549,7 +549,7 @@ public class ObjectMatcher {
         } else {
             orb0.createDescriptorsHSV(imgs0[0]);
             orb1.createDescriptorsHSV(img1);
-            corList = orbMatcher.match0Epipolar2(orb0, orb1,
+            corList = orbMatcher.match0(orb0, orb1,
                 shape0, listOfPointSets2);
         }
 

@@ -13338,12 +13338,12 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         return output;
     }
 
-    protected void replaceSinglePixelLabels(int[] labels,
+    public void replaceSinglePixelLabelsCIELAB(int[] labels,
         ImageExt img) {
 
         // ----- replace single pixels w/ adjacent nearest in color -----
-        int[] dx2 = Misc.dx8;
-        int[] dy2 = Misc.dy8;
+        int[] dx2 = Misc.dx4;
+        int[] dy2 = Misc.dy4;
         // single pixels should join closest,,,
         for (int i = 0; i < img.getWidth(); ++i) {
             for (int j = 0; j < img.getHeight(); ++j) {
@@ -13366,10 +13366,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     }
                 }
                 if (!oneIsSame) {
-                    int r = img.getR(pixIdx);
-                    int g = img.getG(pixIdx);
-                    int b = img.getB(pixIdx);
-                    int minDiffRGB = Integer.MAX_VALUE;
+                    float[] lab = img.getCIELAB(pixIdx);
+                    double minDiff = Double.MAX_VALUE;
                     int minIdx = -1;
                     for (int z = 0; z < dx2.length; ++z) {
                         int x2 = i + dx2[z];
@@ -13379,13 +13377,16 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                             continue;
                         }
                         int pixIdx2 = img.getInternalIndex(x2, y2);
-                        int diffR = r - img.getR(pixIdx2);
-                        int diffG = g - img.getG(pixIdx2);
-                        int diffB = b - img.getB(pixIdx2);
-                        int diff = (diffR * diffR + diffG * diffG +
-                            diffB * diffB);
-                        if (diff < minDiffRGB) {
-                            minDiffRGB = diff;
+                        float[] lab2 = img.getCIELAB(pixIdx2);
+                        
+                        double dClrSq = 0;
+                        for (int i2 = 0; i2 < 3; ++i2) {
+                            float diff = lab[i2] - lab2[i2];
+                            dClrSq += (diff * diff);
+                        }
+                        
+                        if (dClrSq < minDiff) {
+                            minDiff = dClrSq;
                             minIdx = pixIdx2;
                         }
                     }
@@ -14010,8 +14011,8 @@ int z = 1;
             img, labels);
        
         if (didChange) {
-            contigSets = LabelToColorHelper
-                .extractContiguousLabelPoints(img, labels);
+            mergeSmallSegments(imgCp, labels, sizeLimit, 
+                ColorSpace.CIELAB);
         }
         
         return labels;
