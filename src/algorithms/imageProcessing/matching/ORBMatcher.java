@@ -716,8 +716,6 @@ public class ORBMatcher {
         TIntObjectMap<List<Object>> psmMap = new
             TIntObjectHashMap<List<Object>>();
 
-        double maxAvgDist = Double.MIN_VALUE;
-
         double bestCost0 = Double.MAX_VALUE;
         int bestCostSegIdx0 = -1;
         
@@ -837,6 +835,28 @@ public class ORBMatcher {
                         bounds1, bounds2, nnb1, bounds1IndexMap, bounds2IdxMap,
                         scale1, scale2, normalizedCost);
 
+                    //NOTE: below here, have decided not to use epipolar
+                    // fit and projections to find the missed high 
+                    // projection points,
+                    // because the distances from epipolar lines are not
+                    // precise enough in some projections to distinguish
+                    // nearest neighbors...there are work arounds, but
+                    // one can see from the epipolar line distance
+                    // tests for android 04 to android 02 that offsets
+                    // of more than 10 pixels are within tolerance, so
+                    // it is not easy to distinguish between true and
+                    // false matches.
+                    //
+                    // If another descriptor is needed here to further 
+                    // distinguish among the best,
+                    // the shape should be used, but that requires
+                    // a method to be written in PartialShapeMatcher
+                    // which is given a
+                    // euclidean transformation as a constraint
+                    // and then finds the best offsets and intervals
+                    // within the partial shape matrix...
+                    
+                    
                     System.out.println("octave1=" + octave1 + " octave2=" +
                         octave2 + " euclid m1.n=" + m1.getN()
                         + " segIdx=" + segIdx + " c=" + normalizedCost[0]);
@@ -924,40 +944,6 @@ public class ORBMatcher {
                     }
 
                     SimpleMatrix fm = fit.getFundamentalMatrix();
-                    //TODO: this method needs to be tested...normalization effects...
-                    // sum, avg, max
-                    double[] avgAndMaxDist = sumAndMaxEPDist(fm, m1, m2);
-                    if (avgAndMaxDist[2] > maxAvgDist) {
-                        maxAvgDist = avgAndMaxDist[2];
-                    }
-
-                    PairIntArray unmatchedKP1 = new PairIntArray();
-                    TObjectIntMap<PairInt> unmatchedKP1Idxs =
-                        new TObjectIntHashMap<PairInt>();
-                    for (int kpIdx1 = 0; kpIdx1 < 
-                        orb1.getKeyPoint1List().get(octave1).size(); ++kpIdx1) {
-                        int x = orb1.getKeyPoint1List().get(octave1).get(kpIdx1);
-                        int y = orb1.getKeyPoint0List().get(octave1).get(kpIdx1);
-                        PairInt p = new PairInt(x, y);
-                        if (!matched1.contains(p)) {
-                            unmatchedKP1Idxs.put(p, kpIdx1);
-                            unmatchedKP1.add(p.getX(), p.getY());
-                        }
-                    }
-
-                    PairIntArray unmatchedKP2 = new PairIntArray();
-                    TObjectIntMap<PairInt> unmatchedKP2Idxs =
-                        new TObjectIntHashMap<PairInt>();
-                    for (int kpIdx2 = 0; kpIdx2 < 
-                        orb2.getKeyPoint1List().get(octave2).size(); ++kpIdx2) {
-                        int x = orb2.getKeyPoint1List().get(octave2).get(kpIdx2);
-                        int y = orb2.getKeyPoint0List().get(octave2).get(kpIdx2);
-                        PairInt p = new PairInt(x, y);
-                        if (!matched2.contains(p)) {
-                            unmatchedKP2Idxs.put(p, kpIdx2);
-                            unmatchedKP2.add(p.getX(), p.getY());
-                        }
-                    }
                     
                     {// DEBUG, print matched in green and unmatched in red
                         String str3 = Integer.toString(segIdx);
@@ -987,44 +973,9 @@ public class ORBMatcher {
                             str3 + "_" + MiscDebug.getCurrentTimeFormatted());
                     }
 
-                    // -- use epipolar fundamental matrix to add unmatched
-                    //       points from the segmented cell's keypoints
-
-                    // output variable to hold sums and count
-                    // 0 = totalDistance
-                    // 1 = max avg total dist
-                    // 2 = totalDescrSum
-                    // 3 = nDescr
-                    double[] output = new double[4];
-
- //paused here to test FM error methods  
- // TODO: when done testing error method, consider using the
- // keypoint fm epipolar distances instead of the
- // euclidean transformation distances for the first part of
- // the total sums.
-                    
-                    List<PairInt> addedKPIdxs = matchUsingFM(orb1, orb2, costD,
-                        octave1, octave2,
-                        keypoints1IndexMap, keypoints2IndexMap,
-                        fm, unmatchedKP1, unmatchedKP2,
-                        unmatchedKP1Idxs, unmatchedKP2Idxs,
-                        nBands, distTol, output);
-
-                    if (output[1] > maxAvgDist) {
-                        maxAvgDist = output[1];
-                    }
-                    double nMatched3 = output[3];
-                    double d3 = output[2]/nMatched3;
-                    double d4 = output[0]/nMatched3;
-                    float f3 = (float)nMatched3
-                        /(float)orb1.getKeyPoint0List().get(octave1).size();
-                    double cost3 = d3*d3 + d4*d4 + 2.*f3*f3;   
-                   
-                    System.out.println("nAdded inner points=" + addedKPIdxs.size());
-
                     // --- build combined correspondence and sums
 
-                    int nTot = m1.getN() + addedKPIdxs.size();
+                    int nTot = m1.getN() ;//+ addedKPIdxs.size();
                     List<QuadInt> corres = new ArrayList<QuadInt>(nTot);
                     // for any point in result that is a keypoint,
                     //    add the descriptor cost to totalDescrSum
@@ -1037,27 +988,9 @@ public class ORBMatcher {
                         int y2 = m2.getY(j);
                         PairInt p2 = new PairInt(x2, y2);
 
-                        //if (keypoints1IndexMap.containsKey(p1) &&
-                        //    keypoints2IndexMap.containsKey(p2)) {
-                            // coords are in full reference frame
-                            corres.add(new QuadInt(p1, p2));
-                        //}
+                        corres.add(new QuadInt(p1, p2));
                     }
 
-                    for (int j = 0; j < addedKPIdxs.size(); ++j) {
-
-                        int kpIdx1 = addedKPIdxs.get(j).getX();
-                        int kpIdx2 = addedKPIdxs.get(j).getY();
-
-                        int x1 = unmatchedKP1.getX(kpIdx1);
-                        int y1 = unmatchedKP1.getY(kpIdx1);
-
-                        int x2 = unmatchedKP2.getX(kpIdx2);
-                        int y2 = unmatchedKP2.getY(kpIdx2);
-
-                        corres.add(new QuadInt(x1, y1, x2, y2));
-                    }
-                    
                     assert(corres.size() == nTot);
                     
                     // 0 = the salukwzde distance, that is the normalized tot cost
@@ -1073,9 +1006,9 @@ public class ORBMatcher {
                     //output                    
 
                     correspondences.add(corres);
-                    descCosts.add(normalizedCost[1] + output[2]);
-                    nDesc.add((int)normalizedCost[3] + (int)output[3]);
-                    epCosts.add(normalizedCost[2] + output[0]);
+                    descCosts.add(normalizedCost[1]);// + output[2]);
+                    nDesc.add((int)normalizedCost[3]);// + (int)output[3]);
+                    epCosts.add(normalizedCost[2]);// + output[0]);
                     octs1.add(octave1);
                     octs2.add(octave2);
                     segIdxs.add(segIdx);
@@ -1116,21 +1049,19 @@ public class ORBMatcher {
             
             float sd1 = f1 * f1 + d1 * d1;
 
-            //epipolar distances --------
-            float d2 = (float)(epCosts.get(i)/distMax);
-            //float d2 = (float)(epCosts.get(i)/maxAvgDist);
+            // -- a fraction of whole for boundary matching
+            float f3 = 1.f - ((float)correspondences.get(i).size()
+                / (float)bounds1.getN());
 
-            float sd2 = f1 * f1 + d2 * d2;
+            double tot = sd1*sd1 + f3*f3;
 
-            // add in quadrature or linearly...
-            double tot = sd1*sd1 + sd2*sd2;
-
-             System.out.println(String.format(
- "octave1=%d octave2=%d segIdx=%d nCor=%d  normep=%.2f normdesc=%.2f sd1=%.2f sd2=%.2f nd=%d nKP2=%d tot=%.2f",
-                octave1, octave2, segIdxs.get(i), correspondences.get(i).size(),
-                (float)d2, (float)d1,
-                sd1, sd2,
-                nDesc.get(i), nKP1,
+            System.out.println(String.format(
+ "octave1=%d octave2=%d segIdx=%d nCor=%d normdesc=%.2f sd1=%.2f frac=%.2f nd=%d nKP1=%d tot=%.2f",
+                octave1, octave2, segIdxs.get(i), 
+                correspondences.get(i).size(),
+                (float)d1,
+                sd1, f3,
+                nDesc.get(i), (int)nKP1,
                 (float)tot));
 
             indexes[i] = i;
