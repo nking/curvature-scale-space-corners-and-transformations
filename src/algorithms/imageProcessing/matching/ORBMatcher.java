@@ -344,9 +344,18 @@ public class ORBMatcher {
                     PairIntArray m1 = new PairIntArray();
                     PairIntArray m2 = new PairIntArray();
                     
+                    // using only the keypoints contained within the current 
+                    // labeled region, combinations of point pairs are used to
+                    // find the best euclidean transformation.
+                    // the transformation is applied to the bounds to pick
+                    // up other points used later in the total cost.
+                   
                     TransformationParameters params = matchGreedy(segIdx,
                         left, right, nBands, costD, nn1,
-                        leftIdxMap, rightIdxMap, m1, m2,
+                        leftIdxMap, 
+                        //rightIdxMap, 
+                        keypoints2IndexMap,
+                        m1, m2,
                         orb1.getPyramidImages().get(0).a[0].length,
                         orb1.getPyramidImages().get(0).a.length,
                         Math.round(distTol),
@@ -439,17 +448,6 @@ public class ORBMatcher {
                         octave2 + " epipolar m1.n=" + m1.getN()
                         + " segIdx=" + segIdx);
 
-                    Set<PairInt> matched1 = new HashSet<PairInt>();
-                    Set<PairInt> matched2 = new HashSet<PairInt>();
-                    for (int j = 0; j < m1.getN(); ++j) {
-                        int x1 = m1.getX(j);
-                        int y1 = m1.getY(j);
-                        int x2 = m2.getX(j);
-                        int y2 = m2.getY(j);
-                        matched1.add(new PairInt(x1, y1));
-                        matched2.add(new PairInt(x2, y2));
-                    }
-
                     SimpleMatrix fm = fit.getFundamentalMatrix();
                     
                     {// DEBUG, print matched in green and unmatched in red
@@ -480,11 +478,20 @@ public class ORBMatcher {
                             str3 + "_" + MiscDebug.getCurrentTimeFormatted());
                     }
                     
-                    // -- apply the euclidean transformation to all keypoints
-                    //    to be able to also include adjacent keypoints and
-                    //    keypoints in associated oversegmented regions.
-       //paused here
-
+                    // apply the euclidean transformation to all keypoints
+                    // to be able to also include adjacent keypoints and
+                    // keypoints in associated oversegmented regions.
+                /*    double[] additionalCosts = addUnmatchedKeypoints(
+                        params, m1, m1,
+                        nBands, costD, 
+                        left, nn1, leftIdxMap,
+                        keypoints2IndexMap,
+                        orb1.getPyramidImages().get(0).a[0].length,
+                        orb1.getPyramidImages().get(0).a.length,
+                        Math.round(distTol),
+                        scale1, scale2
+                    );
+                  */  
                     // --- build combined correspondence and sums
 
                     int nTot = m1.getN() ;//+ addedKPIdxs.size();
@@ -510,13 +517,7 @@ public class ORBMatcher {
                     // 2 = sum of normalized keypoint distances from transformations
                     // 3 = number of keypoint matches (not incl boundary that aren't
                     //normalizedCost = new double[4];
-                    // output variable to hold sums and count
-                    // 0 = totalDistance
-                    // 1 = max avg total dist
-                    // 2 = totalDescrSum
-                    // 3 = nDescr
-                    //output                    
-
+                    
                     correspondences.add(corres);
                     descCosts.add(normalizedCost[1]);// + output[2]);
                     nDesc.add((int)normalizedCost[3]);// + (int)output[3]);
@@ -2309,8 +2310,14 @@ public class ORBMatcher {
      * @param a2
      * @param a2TrTo1
      * @param nn1
-     * @param p1KPIndexMap
-     * @param p2KPIndexMap
+     * @param p1KPIndexMap point indexes lookup w.r.t. entire keypoints1 list
+     *    which has same indexes as costD first dimension.  note that the
+     *    template object dataset, a.k.a. left or a1 includes all points of
+     *    keypoints1...no segmentation dividing the points into more than one
+     *    array list. nn1 contains all keypoints1 points.
+     * @param p2KPIndexMap point indexes lookup w.r.t. entire keypoints2 list
+     *     which has same indexes as costD second dimension.  these indexes are not the same
+     *     indexes as a2 indexes.
      * @param img1Width
      * @param img1Height
      * @param pixTolerance
@@ -2325,8 +2332,7 @@ public class ORBMatcher {
         PairIntArray a2TrTo1,
         NearestNeighbor2D nn1,
         TObjectIntMap<PairInt> p1KPIndexMap,
-        TObjectIntMap<PairInt> p2KPIndexMap,
-        int img1Width, int img1Height, int pixTolerance,
+        TObjectIntMap<PairInt> p2KPIndexMap, int pixTolerance,
         double maxDist, int[] m1, int[] m2) {
 
         int n2 = a2TrTo1.getN();
@@ -2372,7 +2378,7 @@ public class ORBMatcher {
                 double dist = ORBMatcher.distance(x1Tr, y1Tr, minCP1);
                 double distNorm = dist / maxDist;
                 m1[count] = minCIdx1;
-                m2[count] = kpIdx2;
+                m2[count] = k;// index of a2 array
                 costA[count] = (float) (costNorm + distNorm);
                 costDesc[count] = (float) costNorm;
                 costDist[count] = (float) distNorm;
@@ -3013,8 +3019,38 @@ public class ORBMatcher {
         return new double[]{sum, avg, max};
     }
 
-    // assumptions such as transformation being near the
-    // expected scale of scale1/scale2 are made
+    /**
+     assumptions such as transformation being near the
+     expected scale of scale1/scale2 are made
+     * @param segIdx
+     * @param left
+     * @param right
+     * @param nBands
+     * @param costD
+     * @param nn1
+     * @param keypoints1IndexMap point indexes lookup w.r.t. entire keypoints1 list
+     *    which has same indexes as costD first dimension.  note that the
+     *    template object dataset, a.k.a. left or a1 includes all points of
+     *    keypoints1...no segmentation dividing the points into more than one
+     *    array list. nn1 contains all keypoints1 points.
+     * @param keypoints2IndexMap point indexes lookup w.r.t. entire keypoints2 list
+     *     which has same indexes as costD second dimension.  these indexes are not the same
+     *     indexes as a2 indexes.
+     * @param outLeft
+     * @param outRight
+     * @param img1Width
+     * @param img1Height
+     * @param pixTol
+     * @param extr1
+     * @param extr2
+     * @param nnExtr1
+     * @param extr1IndexMap
+     * @param extr2IndexMap
+     * @param scale1
+     * @param scale2
+     * @param outputNormalizedCost
+     * @return 
+     */
     private TransformationParameters matchGreedy(int segIdx,
         PairIntArray left, PairIntArray right,
         int nBands, int[][] costD, NearestNeighbor2D nn1,
@@ -3071,7 +3107,7 @@ public class ORBMatcher {
                     bestIdx2 = j;
                 }
             }
-            b[i] = bestIdx2;
+            b[i] = bestIdx2; // index w.r.t. right array
             indexes[i] = i;
             costs[i] = (float)bestCost;
         }
@@ -3195,7 +3231,6 @@ String str = "";
                     costD, nBands,
                     right, rightTr, nn1,
                     keypoints1IndexMap, keypoints2IndexMap,
-                    img1Width, img1Height,
                     pixTol, pixTol2, mIdx1s, mIdx2s);
 
                 int nMatched = (int)sums[2];
@@ -3250,7 +3285,7 @@ String str = "";
                 double d3 = 0;
                 double f3 = 1;
                 if (extr2Tr.getN() > 0) {
-
+          
                     //sumDist, count
                     double[] sumsExtr = sumKeypointDescAndDist2To1(
                         extr2, extr2Tr, nnExtr1,
