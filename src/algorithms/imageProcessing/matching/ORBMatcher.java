@@ -507,11 +507,94 @@ public class ORBMatcher {
 
         //calculate "salukwzde distances" as costs to rank results
         
+        // the objective function OR the logic above
+        //    needs to be edited for scale effects on number of keypoints.
+        //    the normalizations are different due to differing
+        //    numbers of keypoints at an octave.
+        //
+        //    For example, one smaller set of octaves has a total
+        //       lower cost even though it has fewer matched points
+        //       and is the false match compared to the true match
+        //       in lrger set of images.  the smaller f1 is significant.
+        // So need to consider a normalization change for this.
+        // instead of area, might use the ratio of number of keypoints
+        // that are maximally matchable compared to the full size
+        // octave... a factor to be applied to increase the total
+        //     cost (cost component) of the smaller image set...
+        // Or, create an ambiguous set of results because of that
+        // scale factor, that then need to be further searched
+        // using the aggregated ShapeMatcher for example...
+        
+        // There is also the observation that if these results contain
+        //    an object match of the same segIdx at different octaves,
+        //    only the one with the largest number of matched descriptors
+        //    should be kept to reduce scale effects and if they have
+        //    same number, the smallest octave pair (== largest images)
+        //    should be kept.
+        
+        // --- filter for unique segIdx among results. ---
+        // key = segIdx, value = index of corres to keep
+        TIntIntMap labelIdxMap = new TIntIntHashMap();
+        TIntSet skipIdx = new TIntHashSet();
+        for (int i = 0; i < nC; ++i) {
+            int segIdx = segIdxs.get(i);
+            if (labelIdxMap.containsKey(segIdx)) {
+                int cIdx = labelIdxMap.get(segIdx);
+                int prevND = nDesc.get(cIdx);
+                int nd = nDesc.get(i);
+                if (nd < prevND) {
+                    skipIdx.add(i);
+                    continue;
+                } else if (nd == prevND) {
+                    double prevDesc = descCosts.get(cIdx);
+                    double desc = descCosts.get(i);
+                    if (prevDesc < desc) {
+                        skipIdx.add(i);
+                        continue;
+                    } else if (prevDesc > desc) {
+                        skipIdx.add(cIdx);
+                        labelIdxMap.put(segIdx, i);
+                        continue;
+                    }
+                    // else, both nDesc and desc are same so keep largest
+                    //    image set
+                    int prevOct1 = octs1.get(cIdx);
+                    int oct1 = octs1.get(i);
+                    if (prevOct1 < oct1) {
+                        skipIdx.add(i);
+                        continue;
+                    } else if (prevOct1 > oct1) {
+                        skipIdx.add(cIdx);
+                        labelIdxMap.put(segIdx, i);
+                        continue;
+                    }
+                    int prevOct2 = octs2.get(cIdx);
+                    int oct2 = octs2.get(i);
+                    if (prevOct2 < oct2) {
+                        skipIdx.add(i);
+                        continue;
+                    } else if (prevOct2 > oct2) {
+                        skipIdx.add(cIdx);
+                        labelIdxMap.put(segIdx, i);
+                        continue;
+                    }
+                    throw new IllegalStateException("cannot have same "
+                        + " octaves and segIdx in results");
+                }
+            } else {
+                labelIdxMap.put(segIdx, i);
+            }
+        }
+        
         float maxDesc = nBands * 256.0f;
-        int[] indexes = new int[nC];
-        float[] costs = new float[nC];
+        TIntList indexes = new TIntArrayList(nC);
+        TFloatList costs = new TFloatArrayList(nC);
         for (int i = 0; i < nC; ++i) {
 
+            if (skipIdx.contains(i)) {
+                continue;
+            }
+            
             int octave1 = octs1.get(i);
             int octave2 = octs2.get(i);
             
@@ -544,16 +627,17 @@ public class ORBMatcher {
 
             float tot = sd1 + sd2 + f3*f3;
 
-            indexes[i] = i;
-            costs[i] = tot;
+            indexes.add(i);
+            costs.add(tot);
             
-            String str1 = String.format("octave1=%d octave2=%d segIdx=%d nCor=%d",
+            String str1 = String.format(
+                "octave1=%d octave2=%d segIdx=%d nCor=%d nDesc=%d",
                 octave1, octave2, segIdxs.get(i), 
-                correspondences.get(i).size());
+                correspondences.get(i).size(), (int)nd);
             
             String str2 = String.format(
-                "i=%d descCost=%.2f f1=%.2f distCost=%.2f f2=%.2f f3=%.2f tot=%f",
-                i, descCost,        f1, distCost,         f1,     f3, tot);
+                "i=%d descCost=%.2f f1=%.2f distCost=%.2f sd1=%.2f f2=%.2f f3=%.2f tot=%f",
+                i, descCost,        f1, sd1, distCost,         f1,     f3, tot);
             
             System.out.println(str1 + " " + str2);
         }
@@ -563,9 +647,9 @@ public class ORBMatcher {
         //System.out.println("costs: " + Arrays.toString(costs));
         //System.out.println("indexes: " + Arrays.toString(costs));
         
-        System.out.println("final results=" + costs.length
-            + " bestCost=" + costs[0] 
-            + " segIdx=" + segIdxs.get(indexes[0]));
+        System.out.println("final results=" + costs.size()
+            + " bestCost=" + costs.get(0) 
+            + " segIdx=" + segIdxs.get(indexes.get(0)));
         
         /*
         if the best has a close 2nd best, might need to use an aggregated
@@ -574,9 +658,9 @@ public class ORBMatcher {
         */
         
         List<CorrespondenceList> results = new ArrayList<CorrespondenceList>();
-        for (int i = 0; i < costs.length; ++i) {
+        for (int i = 0; i < costs.size(); ++i) {
 
-            int idx = indexes[i];
+            int idx = indexes.get(i);
 
             List<QuadInt> qs = correspondences.get(idx);
 
