@@ -3367,6 +3367,9 @@ if (segIdx == 39) {
             return new double[]{0, 0, 0, 0};
         }
         
+        float maxDesc = nBands * 256.0f;
+        float distMax = (float)Math.sqrt(2)*distTol;
+        
         // find all transformed keypoints2 that are unmatched, and match
         // a left unmatched point within distTol.
         // then sort those by total cost and assign uniquely.
@@ -3415,7 +3418,7 @@ if (segIdx == 39) {
         Transformer transformer = new Transformer();
         
         // visit all keypoint2 and if not matched, transform point
-        //    and find nearest unmatched neighbor
+        //    and find nearest unmatched1 neighbor
         TObjectIntIterator<PairInt> iter2 = keypoints2IndexMap.iterator();
         for (int i = 0; i < keypoints2IndexMap.size(); ++i) {
             iter2.advance();
@@ -3440,13 +3443,44 @@ if (segIdx == 39) {
                 continue;
             }
             
+            int kpIdx2 = keypoints2IndexMap.get(p2);
+            
             PairInt p1Closest = null;
             if (nearest.size() == 1) {
                 p1Closest = nearest.iterator().next();
             } else {
                 // find closest in terms of descriptor
-                
+                float minCost = Float.MAX_VALUE;
+                PairInt minCostP = null;
+                int minCostIdx1 = -1;
+                for (PairInt p3 : nearest) {
+                    int kpIdx1 = keypoints1IndexMap.get(p3);
+                    float c = costD[kpIdx1][kpIdx2];
+                    if (c < minCost) {
+                        minCost = c;
+                        minCostIdx1 = kpIdx1;
+                        minCostP = p3;
+                    }
+                }
+                assert(minCostP != null);
+                p1Closest = minCostP;
             }
+            
+            assert(p1Closest != null);
+            
+            int kpIdx1 = keypoints1IndexMap.get(p1Closest);
+            float c = costD[kpIdx1][kpIdx2];
+            float dist = distance(p2, p1Closest);
+            
+            float costNorm = 1.f - ((nBands * 256 - c) / maxDesc);
+            float distNorm = dist / distMax;
+            
+            added1.add(p1Closest);
+            added2.add(p2);
+            descCosts.add(costNorm);
+            distances.add(distNorm);
+            totalCosts.add(costNorm + distNorm);
+            indexes.add(indexes.size());
         }
         
         throw new UnsupportedOperationException(
