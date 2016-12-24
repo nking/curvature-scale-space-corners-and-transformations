@@ -493,6 +493,7 @@ public class ORBMatcher {
                         Math.round(distTol),
                         scale1, scale2
                     );
+                  
                     // --- build combined correspondence and sums
 
                     int nTot = m1.getN() ;//+ addedKPIdxs.size();
@@ -3352,6 +3353,104 @@ if (segIdx == 39) {
         }
 
         return bestParams;
+    }
+
+    private double[] addUnmatchedKeypoints(TransformationParameters params, 
+        PairIntArray m1, PairIntArray m2, int nBands, int[][] costD, 
+        PairIntArray keypoints1, TObjectIntMap<PairInt> keypoints1IndexMap, 
+        TObjectIntMap<PairInt> keypoints2IndexMap, 
+        int imageWidth, int imageHeight, int distTol, 
+        float scale1, float scale2) {
+        
+        if (m1.getN() == keypoints1.getN()) {
+            // all keypoints have been matched
+            return new double[]{0, 0, 0, 0};
+        }
+        
+        // find all transformed keypoints2 that are unmatched, and match
+        // a left unmatched point within distTol.
+        // then sort those by total cost and assign uniquely.
+        // then add results to m1, m2 and
+        // put the costs in return array.
+        
+        /*
+        output:
+        // 0 = the salukwzde distance, that is the normalized tot cost
+        // 1 = sum of normalized keypoint descriptors
+        // 2 = sum of normalized keypoint distances from transformations
+        // 3 = number of keypoint matches added
+        */
+    
+        // find unmatched keypoints1 and put in a nearest neighbor instance
+        Set<PairInt> matched1 = new HashSet<PairInt>();
+        Set<PairInt> matched2 = new HashSet<PairInt>();
+        for (int j = 0; j < m1.getN(); ++j) {
+            int x1 = m1.getX(j);
+            int y1 = m1.getY(j);
+            int x2 = m2.getX(j);
+            int y2 = m2.getY(j);
+            matched1.add(new PairInt(x1, y1));
+            matched2.add(new PairInt(x2, y2));
+        }
+        PairIntArray unmatched1 = new PairIntArray(keypoints1.getN() - m1.getN());
+        for (int j = 0; j < keypoints1.getN(); ++j) {
+            PairInt p = new PairInt(keypoints1.getX(j), keypoints1.getY(j));
+            if (!matched1.contains(p)) {
+                unmatched1.add(p.getX(), p.getY());
+            }
+        }
+        
+        int[] minMaxXY1 = MiscMath.findMinMaxXY(unmatched1);
+        NearestNeighbor2D nn1 = new NearestNeighbor2D(Misc.convert(unmatched1),
+            minMaxXY1[1] + (int)Math.ceil(distTol + 1),
+            minMaxXY1[3] + (int)Math.ceil(distTol) + 1);
+        
+        List<PairInt> added1 = new ArrayList<PairInt>();
+        List<PairInt> added2 = new ArrayList<PairInt>();
+        TFloatList descCosts = new TFloatArrayList();
+        TFloatList distances = new TFloatArrayList();
+        TFloatList totalCosts = new TFloatArrayList();
+        TIntList indexes = new TIntArrayList();
+
+        Transformer transformer = new Transformer();
+        
+        // visit all keypoint2 and if not matched, transform point
+        //    and find nearest unmatched neighbor
+        TObjectIntIterator<PairInt> iter2 = keypoints2IndexMap.iterator();
+        for (int i = 0; i < keypoints2IndexMap.size(); ++i) {
+            iter2.advance();
+            PairInt p2 = iter2.key();
+            if (matched2.contains(p2)) {
+                continue;
+            }
+            double[] tr = transformer.applyTransformation(params, p2.getX(), 
+                p2.getY());
+            int x2Tr = (int) Math.round(tr[0]);
+            int y2Tr = (int) Math.round(tr[1]);
+            if (x2Tr < 0 || y2Tr < 0 || (x2Tr > (imageWidth - 1)) ||
+                (y2Tr > (imageHeight - 1))) {
+                continue;
+            }
+            PairInt p2Tr = new PairInt(x2Tr, y2Tr);
+            
+            Set<PairInt> nearest = nn1.findClosestWithinTolerance(
+                x2Tr, y2Tr, distTol);
+            
+            if (nearest == null || nearest.isEmpty()) {
+                continue;
+            }
+            
+            PairInt p1Closest = null;
+            if (nearest.size() == 1) {
+                p1Closest = nearest.iterator().next();
+            } else {
+                // find closest in terms of descriptor
+                
+            }
+        }
+        
+        throw new UnsupportedOperationException(
+            "Not supported yet.");    
     }
 
     private static class PObject {
