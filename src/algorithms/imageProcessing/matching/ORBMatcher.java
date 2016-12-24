@@ -361,7 +361,8 @@ public class ORBMatcher {
                         Math.round(distTol),
                         bounds1, bounds2, nnb1, bounds1IndexMap, bounds2IdxMap,
                         scale1, scale2, normalizedCost);
-
+                    assert(normalizedCost[3] <= nkp1);
+                    
                     //NOTE: below here, have decided not to use epipolar
                     // fit and projections to find the missed high 
                     // projection points,
@@ -494,7 +495,10 @@ public class ORBMatcher {
                         Math.round(distTol),
                         scale1, scale2
                     );
-                  
+                    
+                    assert(additionalCosts[2] <= nkp1);
+                    assert((normalizedCost[3] + additionalCosts[2]) <= nkp1);
+                    
                     // --- build combined correspondence and sums
 
                     int nTot = m1.getN() ;//+ addedKPIdxs.size();
@@ -565,7 +569,8 @@ public class ORBMatcher {
             final float f1 = 1.f - ((float)nDesc.get(i)/nKP1);
             
             // -- a fraction of whole for boundary matching
-            float f3 = 1.f - ((float)correspondences.get(i).size() / nb1);
+            float f3 = 1.f - ((float)correspondences.get(i).size() / 
+                (nb1 + nKP1));
             
             //calculate the cost of kp descriptors
             float d1 = 1.f - ((nBands * 256.f - descCost)/maxDesc);
@@ -580,22 +585,29 @@ public class ORBMatcher {
 
             float tot = sd1 + sd2 + f3*f3;
 
+            indexes[i] = i;
+            costs[i] = tot;
+            
             String str1 = String.format("octave1=%d octave2=%d segIdx=%d nCor=%d",
                 octave1, octave2, segIdxs.get(i), 
                 correspondences.get(i).size());
             
             String str2 = String.format(
-                "descCost=%.2f f1=%.2f distCost f2=%.2f f3=%.2f tot=%.2f",
-                descCost, f1, distCost, f1, f3, (float)tot);
+                "i=%d descCost=%.2f f1=%.2f distCost=%.2f f2=%.2f f3=%.2f tot=%f",
+                i, descCost,        f1, distCost,         f1,     f3, tot);
             
             System.out.println(str1 + " " + str2);
-
-            indexes[i] = i;
-            costs[i] = tot;
         }
 
         QuickSort.sortBy1stArg(costs, indexes);
 
+        //System.out.println("costs: " + Arrays.toString(costs));
+        //System.out.println("indexes: " + Arrays.toString(costs));
+        
+        System.out.println("final results=" + costs.length
+            + " bestCost=" + costs[0] 
+            + " segIdx=" + segIdxs.get(indexes[0]));
+        
         /*
         if the best has a close 2nd best, might need to use an aggregated
         partial shape matcher, that uses the euclidean transform as a
@@ -3080,7 +3092,11 @@ public class ORBMatcher {
         //   and remain that way through this method
 
         float expectedScale = scale1/scale2;
-
+        
+        float maxDesc = nBands * 256.0f;
+        
+        int distTolMax = (int)Math.round(Math.sqrt(2) * pixTol);
+        
         /*
         -- finds best 20 matches of descriptors
         -- from the best 20,
@@ -3212,19 +3228,7 @@ public class ORBMatcher {
                 }
 
                 float scale = params.getScale();
-String str = "";
- if (segIdx == 39 &&
- Math.abs(AngleUtil.getAngleDifference(0, params.getRotationInDegrees())) < 10) {
-     str = "-->";
-     double r1 = scale/expectedScale;
-     double r2 = expectedScale/scale;
- System.out.println("-->SEGIDX=" + segIdx 
-     + " da=" + 
-     Math.abs(AngleUtil.getAngleDifference(0, params.getRotationInDegrees()))
-     + " r1=" + r1 + " r2=" + r2
-     + " params=" + params);
-     int z = 0;
- }
+
                 if (((scale >= expectedScale)
                     && (scale/expectedScale) > 1.2) ||
                     ((scale < expectedScale)
@@ -3246,7 +3250,7 @@ String str = "";
                     pixTol, pixTol2, mIdx1s, mIdx2s);
 
                 int nMatched = (int)sums[2];
-                
+               
                 //TODO: may need to revise this.  essentially, need at least
                 // one extra pair to get a distance term
                 if (nMatched < 3) {
@@ -3255,30 +3259,15 @@ String str = "";
                 
                 double sumDescr = sums[0];
                 double sumDist = sums[1];
+                
+                float descCost = (float)sumDescr/(float)n1;
+                float distCost = (float)sumDist/(float)n1;
+                float d1 = 1.f - ((nBands * 256.f - descCost)/maxDesc);
+                float d2 = distCost/distTolMax;
+                final float f1 = 1.f - ((float)nMatched/(float)n1);
 
-                int nUnmatched = n1 - nMatched;
-                sumDescr += nUnmatched;
-                sumDist += nUnmatched;
-
-                double d1 = sumDescr/(double)n1;
-                double d2 = sumDist/(double)n1;
-                double f1 = (double)nMatched/(double)n1;
-                double tot = d1*d1 + d2*d2 + 2.*f1*f1;
-
- if (segIdx == 39 
- //&& Math.abs(AngleUtil.getAngleDifference(0, params.getRotationInDegrees())) < 10
- ) {
-     double r1 = scale/expectedScale;
-     double r2 = expectedScale/scale;
- System.out.println(str + "**SEGIDX=" + segIdx +
-     " c1=" + tot + " desc=(" + sums[0] + "," + sumDescr + ") "
-     + " dist=(" + sums[1] + "," + sumDist + ") "
-     + " nm=" + nMatched + " nmp=" + (2*n1)
-     + " params=" + params
-     + " r1=" + r1 + " r2=" + r2);
-     int z = 0;
- }
-
+                float tot = d1*d1 + d2*d2 + 2.f * f1;
+                
                 // evaluate the extra points
                 int ne1 = extr1.getN();
                 int ne2 = extr2.getN();
@@ -3326,7 +3315,7 @@ String str = "";
                     outputNormalizedCost[0] = bestCost;
                     outputNormalizedCost[1] = sumDescr;
                     outputNormalizedCost[2] = sumDist;
-                    outputNormalizedCost[3] = n1;
+                    outputNormalizedCost[3] = nMatched;
                         
                     bestMIdx1s = mIdx1s;
                     bestMIdx2s = mIdx2s;
@@ -3340,12 +3329,6 @@ String str = "";
                 }
             }
         }
-if (segIdx == 39) {
- System.out.println("best SEGIDX=" + segIdx +
-     " bestCost=" + bestCost + " bestCost2=" + bestCost2
-     + " nm=" + bestN + " params=" + bestParams);
-     int z = 0;
-}
 
         if (bestMIdx1s != null) {
             for (int i = 0; i < bestN; ++i) {
@@ -3484,6 +3467,9 @@ if (segIdx == 39) {
             
             float costNorm = 1.f - ((nBands * 256 - c) / maxDesc);
             float distNorm = dist / distMax;
+        
+            assert(!matched1.contains(p1Closest));
+            assert(!matched2.contains(p2));
             
             mc1.add(p1Closest);
             mc2.add(p2);
