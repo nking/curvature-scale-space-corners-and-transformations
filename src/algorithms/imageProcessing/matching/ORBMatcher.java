@@ -352,9 +352,7 @@ public class ORBMatcher {
                    
                     TransformationParameters params = matchGreedy(segIdx,
                         left, right, nBands, costD, nn1,
-                        leftIdxMap, 
-                        //rightIdxMap, 
-                        keypoints2IndexMap,
+                        leftIdxMap, keypoints2IndexMap,
                         m1, m2,
                         orb1.getPyramidImages().get(0).a[0].length,
                         orb1.getPyramidImages().get(0).a.length,
@@ -481,17 +479,20 @@ public class ORBMatcher {
                     // apply the euclidean transformation to all keypoints
                     // to be able to also include adjacent keypoints and
                     // keypoints in associated oversegmented regions.
-                /*    double[] additionalCosts = addUnmatchedKeypoints(
-                        params, m1, m1,
-                        nBands, costD, 
-                        left, nn1, leftIdxMap,
+                    //output:
+                    // 0 = the salukwzde distance, that is the normalized tot cost
+                    // 1 = sum of normalized keypoint descriptors
+                    // 2 = sum of normalized keypoint distances from transformations
+                    // 3 = number of keypoint matches added
+                    double[] additionalCosts = addUnmatchedKeypoints(
+                        params, m1, m2,
+                        nBands, costD, left, leftIdxMap,
                         keypoints2IndexMap,
                         orb1.getPyramidImages().get(0).a[0].length,
                         orb1.getPyramidImages().get(0).a.length,
                         Math.round(distTol),
                         scale1, scale2
                     );
-                  */  
                     // --- build combined correspondence and sums
 
                     int nTot = m1.getN() ;//+ addedKPIdxs.size();
