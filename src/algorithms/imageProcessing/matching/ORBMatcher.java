@@ -240,7 +240,7 @@ public class ORBMatcher {
         List<List<QuadInt>> correspondences = new ArrayList<List<QuadInt>>();
         TDoubleList descCosts = new TDoubleArrayList();
         TIntList nDesc = new TIntArrayList();
-        TDoubleList epCosts = new TDoubleArrayList();
+        TDoubleList distCosts = new TDoubleArrayList();
         TIntList octs1 = new TIntArrayList();
         TIntList octs2 = new TIntArrayList();
         TIntList segIdxs = new TIntArrayList();
@@ -336,7 +336,9 @@ public class ORBMatcher {
 
                     // 0 = the salukwzde distance, that is the normalized tot cost
                     // 1 = sum of normalized keypoint descriptors
+                    //     (not yet normalized by total number possible to match)
                     // 2 = sum of normalized keypoint distances from transformations
+                    //     (not yet normalized by total number possible to match)
                     // 3 = number of keypoint matches (not incl boundary that aren't
                     double[] normalizedCost = new double[4];
                     
@@ -479,11 +481,10 @@ public class ORBMatcher {
                     // apply the euclidean transformation to all keypoints
                     // to be able to also include adjacent keypoints and
                     // keypoints in associated oversegmented regions.
-                    //output:
-                    // 0 = the salukwzde distance, that is the normalized tot cost
-                    // 1 = sum of normalized keypoint descriptors
-                    // 2 = sum of normalized keypoint distances from transformations
-                    // 3 = number of keypoint matches added
+                    //output additionalCosts:
+                    // 0 = sum of normalized keypoint descriptors
+                    // 1 = sum of normalized keypoint distances from transformations
+                    // 2 = number of keypoint matches added
                     double[] additionalCosts = addUnmatchedKeypoints(
                         params, m1, m2,
                         nBands, costD, left, leftIdxMap,
@@ -514,16 +515,24 @@ public class ORBMatcher {
 
                     assert(corres.size() == nTot);
                     
+                    //normalizedCost:
                     // 0 = the salukwzde distance, that is the normalized tot cost
                     // 1 = sum of normalized keypoint descriptors
+                    //     (not yet normalized by total number possible to match)
                     // 2 = sum of normalized keypoint distances from transformations
+                    //     (not yet normalized by total number possible to match)
                     // 3 = number of keypoint matches (not incl boundary that aren't
-                    //normalizedCost = new double[4];
+                    //additionalCosts:
+                    // 0 = sum of normalized keypoint descriptors
+                    //     (not yet normalized by total number possible to match)
+                    // 1 = sum of normalized keypoint distances from transformations
+                    //     (not yet normalized by total number possible to match)
+                    // 2 = number of keypoint matches added
                     
                     correspondences.add(corres);
-                    descCosts.add(normalizedCost[1]);// + output[2]);
-                    nDesc.add((int)normalizedCost[3]);// + (int)output[3]);
-                    epCosts.add(normalizedCost[2]);// + output[0]);
+                    descCosts.add(normalizedCost[1] + additionalCosts[0]);
+                    nDesc.add((int)normalizedCost[3] + (int)additionalCosts[2]);
+                    distCosts.add(normalizedCost[2] + additionalCosts[1]);
                     octs1.add(octave1);
                     octs2.add(octave2);
                     segIdxs.add(segIdx);
@@ -535,16 +544,8 @@ public class ORBMatcher {
 
         int nC = correspondences.size();
 
-        /*
-        "salukwzde distance" separate for
-        descriptor cost, and the opipolar dist from
-        model then add them
-           -- descr component max matchable number is nLabelKP2s
-           -- ep distances component max matchable number is
-                bounds1.getN() + nLabelKP2s (note: should remove overlapping)
-           -- chords component max matchable number is
-                bounds1.getN() + nLabelKP2s (note: should remove overlapping)
-        */
+        //calculate "salukwzde distances" as costs to rank results
+        
         float maxDesc = nBands * 256.0f;
         int[] indexes = new int[nC];
         float[] costs = new float[nC];
@@ -554,33 +555,43 @@ public class ORBMatcher {
             int octave2 = octs2.get(i);
             
             float nKP1 = orb1.getKeyPoint0List().get(octave1).size();
-
-            // calculate "fraction of whole" for hsv keypoint descriptors
+            
+            float nb1 = (float)bounds1.getN();
+            
+            float descCost = (float)descCosts.get(i)/nKP1;
+            float distCost = (float)distCosts.get(i)/nKP1;
+        
+            // calculate "fraction of whole" for keypoint descriptors
             final float f1 = 1.f - ((float)nDesc.get(i)/nKP1);
-
-            //calculate the cost of hsv kp descriptors
-            float d1 = 1.f - ((nBands * 256.f
-                - (float)descCosts.get(i))/maxDesc);
+            
+            // -- a fraction of whole for boundary matching
+            float f3 = 1.f - ((float)correspondences.get(i).size() / nb1);
+            
+            //calculate the cost of kp descriptors
+            float d1 = 1.f - ((nBands * 256.f - descCost)/maxDesc);
+            
+            float d2 = distCost/distMax;
+            
+            //TODO: revisit these totals
             
             float sd1 = f1 * f1 + d1 * d1;
+            
+            float sd2 = f1 * f1 + d2 * d2;
 
-            // -- a fraction of whole for boundary matching
-            float f3 = 1.f - ((float)correspondences.get(i).size()
-                / (float)bounds1.getN());
+            float tot = sd1 + sd2 + f3*f3;
 
-            double tot = sd1*sd1 + f3*f3;
-
-            System.out.println(String.format(
- "octave1=%d octave2=%d segIdx=%d nCor=%d normdesc=%.2f f1=%.2f sd1=%.2f frac=%.2f nd=%d nKP1=%d tot=%.2f",
+            String str1 = String.format("octave1=%d octave2=%d segIdx=%d nCor=%d",
                 octave1, octave2, segIdxs.get(i), 
-                correspondences.get(i).size(),
-                (float)d1, f1,
-                sd1, f3,
-                nDesc.get(i), (int)nKP1,
-                (float)tot));
+                correspondences.get(i).size());
+            
+            String str2 = String.format(
+                "descCost=%.2f f1=%.2f distCost f2=%.2f f3=%.2f tot=%.2f",
+                descCost, f1, distCost, f1, f3, (float)tot);
+            
+            System.out.println(str1 + " " + str2);
 
             indexes[i] = i;
-            costs[i] = (float)tot;
+            costs[i] = tot;
         }
 
         QuickSort.sortBy1stArg(costs, indexes);
@@ -589,7 +600,6 @@ public class ORBMatcher {
         if the best has a close 2nd best, might need to use an aggregated
         partial shape matcher, that uses the euclidean transform as a
         constraint (requires new method in PartialShapeMatcher.java).
-        
         */
         
         List<CorrespondenceList> results = new ArrayList<CorrespondenceList>();
@@ -1969,7 +1979,7 @@ public class ORBMatcher {
                         }
                     }
                     if (minCP2 != null) {
-                        double scoreNorm = (3 * 256 - minC) / maxCost;
+                        double scoreNorm = (nBands * 256 - minC) / maxCost;
                         double costNorm = 1.0 - scoreNorm;
                         sum1 += costNorm;
                         double dist = ORBMatcher.distance(xTr, yTr, minCP2);
@@ -3364,7 +3374,7 @@ if (segIdx == 39) {
         
         if (m1.getN() == keypoints1.getN()) {
             // all keypoints have been matched
-            return new double[]{0, 0, 0, 0};
+            return new double[]{0, 0, 0};
         }
         
         float maxDesc = nBands * 256.0f;
@@ -3378,16 +3388,16 @@ if (segIdx == 39) {
         
         /*
         output:
-        // 0 = the salukwzde distance, that is the normalized tot cost
-        // 1 = sum of normalized keypoint descriptors
-        // 2 = sum of normalized keypoint distances from transformations
-        // 3 = number of keypoint matches added
+        // 0 = sum of normalized keypoint descriptors
+        // 1 = sum of normalized keypoint distances from transformations
+        // 2 = number of keypoint matches added
         */
     
         // find unmatched keypoints1 and put in a nearest neighbor instance
         Set<PairInt> matched1 = new HashSet<PairInt>();
         Set<PairInt> matched2 = new HashSet<PairInt>();
         for (int j = 0; j < m1.getN(); ++j) {
+            // NOTE: m1,m2 are keypoints and boundary points
             int x1 = m1.getX(j);
             int y1 = m1.getY(j);
             int x2 = m2.getX(j);
@@ -3395,7 +3405,7 @@ if (segIdx == 39) {
             matched1.add(new PairInt(x1, y1));
             matched2.add(new PairInt(x2, y2));
         }
-        PairIntArray unmatched1 = new PairIntArray(keypoints1.getN() - m1.getN());
+        PairIntArray unmatched1 = new PairIntArray();
         for (int j = 0; j < keypoints1.getN(); ++j) {
             PairInt p = new PairInt(keypoints1.getX(j), keypoints1.getY(j));
             if (!matched1.contains(p)) {
@@ -3408,8 +3418,8 @@ if (segIdx == 39) {
             minMaxXY1[1] + (int)Math.ceil(distTol + 1),
             minMaxXY1[3] + (int)Math.ceil(distTol) + 1);
         
-        List<PairInt> added1 = new ArrayList<PairInt>();
-        List<PairInt> added2 = new ArrayList<PairInt>();
+        List<PairInt> mc1 = new ArrayList<PairInt>();
+        List<PairInt> mc2 = new ArrayList<PairInt>();
         TFloatList descCosts = new TFloatArrayList();
         TFloatList distances = new TFloatArrayList();
         TFloatList totalCosts = new TFloatArrayList();
@@ -3475,16 +3485,43 @@ if (segIdx == 39) {
             float costNorm = 1.f - ((nBands * 256 - c) / maxDesc);
             float distNorm = dist / distMax;
             
-            added1.add(p1Closest);
-            added2.add(p2);
+            mc1.add(p1Closest);
+            mc2.add(p2);
             descCosts.add(costNorm);
             distances.add(distNorm);
+            // could square these, but not necessary for this comparison:
             totalCosts.add(costNorm + distNorm);
             indexes.add(indexes.size());
         }
         
-        throw new UnsupportedOperationException(
-            "Not supported yet.");    
+        QuickSort.sortBy1stArg(totalCosts, indexes);
+        
+        Set<PairInt> added1 = new HashSet<PairInt>();
+        Set<PairInt> added2 = new HashSet<PairInt>();
+        double sumDist = 0;
+        double sumDesc = 0;
+        int nAdded = 0;
+        
+        // adding directly to m1 and m2, uniquely
+        for (int i = 0; i < indexes.size(); ++i) {
+            int idx = indexes.get(i);
+            PairInt p1 = mc1.get(idx);
+            PairInt p2 = mc2.get(idx);
+            if (added1.contains(p1) || added2.contains(p2)) {
+                continue;
+            }
+            added1.add(p1);
+            added2.add(p2);
+            
+            m1.add(p1.getX(), p1.getY());
+            m2.add(p2.getX(), p2.getY());
+            
+            sumDesc += descCosts.get(idx);
+            sumDist += distances.get(idx);
+            nAdded++;
+        }
+        
+        return new double[] {sumDesc, sumDist, nAdded};
     }
 
     private static class PObject {
