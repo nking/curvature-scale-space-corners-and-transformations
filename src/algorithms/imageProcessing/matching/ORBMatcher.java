@@ -181,7 +181,7 @@ public class ORBMatcher {
             }
             kp1IdxMapList.add(keypoints1IndexMap);
         }
-
+        
         List<TObjectIntMap<PairInt>> kp2IdxMapList
             = new ArrayList<TObjectIntMap<PairInt>>();
         for (int octave = 0; octave < scales2.size(); ++octave) {
@@ -193,6 +193,18 @@ public class ORBMatcher {
             }
             kp2IdxMapList.add(keypoints2IndexMap);
         }
+        
+        // NOTE: some points are on the boundaries of a labeled region
+        // and may actually belong to another or both regions.
+        // In the search by labeled region below, the transformation is
+        // found using only the labeled region keypoints, but then is
+        // applied to all keypoints, so the boundary keypoints are still
+        // findable at a later stage.
+        //  -- for some cases, it might be necessary to consider changing
+        //     the keypoint2 maps to hold more than one labeled region for them,
+        //     increasing the keypoints2 in the adjacent regions when they
+        //     have too few (<3) to be found.
+        
 
         // making a lookup map for keypoint indexes in points2 labeled sets
         List<TIntObjectMap<TIntSet>> labels2KPIdxsList =
@@ -221,7 +233,7 @@ public class ORBMatcher {
         TIntObjectMap<PairIntArray> bounds2Maps
             = new TIntObjectHashMap<PairIntArray>();
 
-        // a cache for partial shape matcher and results
+        // a cache for results
         TIntObjectMap<List<Object>> psmMap = new
             TIntObjectHashMap<List<Object>>();
 
@@ -395,6 +407,9 @@ public class ORBMatcher {
                             str3 + "_" + MiscDebug.getCurrentTimeFormatted());
                     }
 
+                    //TODO: consider whether this is necessary...removes outliers,
+                    //     but the euclidean transformation distTol constraint has already
+                    //     done that
                     List<Object> psmObj = psmMap.get(segIdx);
                     if (psmObj == null) {
                         PairIntArray outLeft = new PairIntArray(left.getN());
@@ -464,6 +479,11 @@ public class ORBMatcher {
                             octave1 + "_" + octave2 + "_" +
                             str3 + "_" + MiscDebug.getCurrentTimeFormatted());
                     }
+                    
+                    // -- apply the euclidean transformation to all keypoints
+                    //    to be able to also include adjacent keypoints and
+                    //    keypoints in associated oversegmented regions.
+       //paused here
 
                     // --- build combined correspondence and sums
 
@@ -565,7 +585,7 @@ public class ORBMatcher {
         /*
         if the best has a close 2nd best, might need to use an aggregated
         partial shape matcher, that uses the euclidean transform as a
-        constraint (reuires new method in PartialShapeMatcher.java).
+        constraint (requires new method in PartialShapeMatcher.java).
         
         */
         
