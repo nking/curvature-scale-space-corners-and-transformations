@@ -508,7 +508,7 @@ public class ORBMatcher {
         //calculate "salukwzde distances" as costs to rank results
         
         // the objective function OR the logic above
-        //    needs to be edited for scale effects on number of keypoints.
+        //    needs to be edited for scale effects from number of keypoints.
         //    the normalizations are different due to differing
         //    numbers of keypoints at an octave.
         //
