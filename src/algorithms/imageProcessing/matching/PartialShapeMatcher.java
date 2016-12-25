@@ -1967,7 +1967,7 @@ public class PartialShapeMatcher {
         
         for (int i = 0; i < result.getNumberOfMatches(); ++i) {
             
-            // reding 1 pixel at a time...not ideal compared to the smaller
+            // reading 1 pixel at a time...not ideal compared to the smaller
             //  cost over the best interval that it was extracted from
             
             idx1 = result.getIdx1(i);
@@ -1981,8 +1981,12 @@ public class PartialShapeMatcher {
                 
                 // if within bounds, will add 4 to the offset to get the pixel
                 // away from bounds
-                
-                offset = (idx2 - (n1 - 1)) + 4;
+                                
+                if (((idx2 - (n1 - 2)) + 4) < (n1 - 2)) {
+                    offset = (idx2 - (n1 - 1)) + 4;
+                } else {
+                    offset = (idx2 - (n1 - 1));
+                }
                 idx2 -= offset;
                 if (idx2 < 0) {
                     offset = idx2 - (n1 - 1);

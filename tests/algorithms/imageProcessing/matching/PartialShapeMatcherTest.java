@@ -72,7 +72,7 @@ public class PartialShapeMatcherTest extends TestCase {
         //q.rotateLeft(q.getN() - 3);
         PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
         shapeMatcher.overrideSamplingDistance(1);
-        shapeMatcher.setToDebug();
+        //shapeMatcher.setToDebug();
 
         PartialShapeMatcher.Result result = shapeMatcher.match(p, q);
 
