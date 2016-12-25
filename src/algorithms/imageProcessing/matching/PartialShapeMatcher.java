@@ -474,14 +474,18 @@ public class PartialShapeMatcher {
             md = createDifferenceMatrices(p, q);
             r = match0(md, p, q);
             if (r != null) {
-                System.out.println("not transposed");
+                if (debug) {
+                    System.out.println("not transposed");
+                }
                 assert(assertIndexesWithinBounds(r, p.getN(), q.getN()));
             }
         } else {
             md = createDifferenceMatrices(q, p);
             r = match0(md, q, p);
             if (r != null) {
-                System.out.println("transpose");
+                if (debug) {
+                    System.out.println("transpose");
+                }
                 r = r.transpose();
                 assert(assertIndexesWithinBounds(r, p.getN(), q.getN()));
             }
@@ -546,7 +550,7 @@ public class PartialShapeMatcher {
         
         minima = minima.subList(0, topK);
 
-        if (minima == null) {
+        if (minima == null || minima.isEmpty()) {
             return null;
         }
       
@@ -563,7 +567,7 @@ public class PartialShapeMatcher {
             List<Result> results = transformAndEvaluate(minima, p, q,
                 md, pixTolerance, topK, addedPoints);
 
-            if (results == null) {
+            if (results == null || results.isEmpty()) {
                 return null;
             }
             
@@ -647,7 +651,9 @@ public class PartialShapeMatcher {
             }
             
             if (useRANSAC) {
-                improveWithRANSAC(best, p, q, md, n1, n2);
+                if (best != null && best.idx1s.size() >= 7) {
+                    improveWithRANSAC(best, p, q, md, n1, n2);
+                }
             }
 
             return best;
@@ -674,9 +680,7 @@ public class PartialShapeMatcher {
         double maxChordSum = Double.MIN_VALUE;
         float[] outC = new float[2];
         double ds1, ds2;
-        
-        SummedColumnTable sct = new SummedColumnTable();
-        
+                
         /*
             MXM              NXN
                          30 31 32 33
@@ -736,8 +740,10 @@ public class PartialShapeMatcher {
         // sort by salukwzde distance
         Collections.sort(allResults, new SRComparator());
         
-        System.out.println("nIntervals to proces=" + allResults.size());
-       
+        if (debug) {
+            System.out.println("nIntervals to proces=" + allResults.size());
+        }
+        
         return allResults;
         
     }
@@ -1560,8 +1566,8 @@ public class PartialShapeMatcher {
                                 p.getX(imid), p.getY(imid));
                         }
                     } else {
-                        System.out.println(
-                        "SKIP i1=" + i1 + " imid=" + imid + " i2=" + i2);
+                       // System.out.println(
+                       // "SKIP i1=" + i1 + " imid=" + imid + " i2=" + i2);
                         continue;
                     }
                 }
@@ -1780,46 +1786,6 @@ public class PartialShapeMatcher {
             return chordDiffSum;
         }
 
-        /**
-         * The Salukwdze distance is the metric used as a
-         * cost in comparisons and this returns the square of
-         * that (sqrt operation not performed).
-         * (note that
-         * the maximum chord sum that was used to determine
-         * a best solution is not always stored, because the
-         * Result correspondence lists grow afterwards depending
-         * upon options).
-         * @param maxChordSum
-         * @return
-         */
-        public float calculateSalukwdzeDistanceSquared(double maxChordSum) {
-            float f = 1.f - getFractionOfWhole();
-            double d = getNormalizedChordDiff(maxChordSum);
-            float s = (float)(f * f + d * d);
-            return s;
-        }
-        
-        /**
-         * The Salukwdze distance is the metric used as a
-         * cost in comparisons and this returns the square of
-         * that (sqrt operation not performed).
-         * (note that
-         * the maximum chord sum that was used to determine
-         * a best solution is not always stored, because the
-         * Result correspondence lists grow afterwards depending
-         * upon options)
-         * @param maxChordSum
-         * @return
-         */
-        public float calculateSalukwdzeDistanceSquared(double maxChordSum,
-            int maxNumberOfMatchable) {
-            float f = 1.f - ((float)getNumberOfMatches()/
-                (float)maxNumberOfMatchable);
-            double d = getNormalizedChordDiff(maxChordSum);
-            float s = (float)(f * f + d * d);
-            return s;
-        }
-
         void addToChordDifferenceSum(float diff) {
             chordDiffSum += diff;
         }
@@ -1941,7 +1907,7 @@ public class PartialShapeMatcher {
             
             SR sr = intervals.get(i);
             
-            System.out.println("srLen=" + sr.mLen);
+            //System.out.println("srLen=" + sr.mLen);
             
             PairIntArray added = new PairIntArray();
             Result result = null;
@@ -1980,7 +1946,7 @@ public class PartialShapeMatcher {
      */
     private void populateWithChordDiffs(Result result,
         float[][][] md, int n1, int n2) {
-
+       
         assert(md[0][0].length == n1);
         
         //md[0:n2-1][0:n1-1][0:n1-1]
@@ -2001,15 +1967,15 @@ public class PartialShapeMatcher {
         
         for (int i = 0; i < result.getNumberOfMatches(); ++i) {
             
+            // reding 1 pixel at a time...not ideal compared to the smaller
+            //  cost over the best interval that it was extracted from
+            
             idx1 = result.getIdx1(i);
             idx2 = result.getIdx2(i);
-            
+ 
             offset = 0;
-            
-            //NOTE: this is not the same as reading a block w.r.t. the original
-            //   offset that was used
-            
-            if (idx2 > (n1 - 1)) {
+
+            if (idx2 > (n1 - 2)) {
                 // idx2 is outside of the default row 0 of md[0] array, so
                 // need to calculate the offset.
                 
@@ -2023,11 +1989,11 @@ public class PartialShapeMatcher {
                     idx2 -= offset;
                 }
             }
-
-            sct.extractWindowInColumn(md[offset], idx1, idx2, row, output);
+           
+            sct.extractWindowInColumn(md[offset], idx2, idx2 + 1, idx1, output);
             
             float d = output[0]/output[1];
-            
+          
             result.chordDiffSum += d;
         }
         
