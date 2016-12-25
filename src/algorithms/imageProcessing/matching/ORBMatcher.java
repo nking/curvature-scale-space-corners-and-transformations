@@ -515,7 +515,7 @@ public class ORBMatcher {
         //    For example, one smaller set of octaves has a total
         //       lower cost even though it has fewer matched points
         //       and is the false match compared to the true match
-        //       in lrger set of images.  the smaller f1 is significant.
+        //       in larger set of images.  the smaller f1 is significant.
         // So need to consider a normalization change for this.
         // instead of area, might use the ratio of number of keypoints
         // that are maximally matchable compared to the full size
@@ -586,6 +586,24 @@ public class ORBMatcher {
             }
         }
         
+        // find the smallest octave1 in the set.  this is then the
+        // used in normalizing f1
+        int minOctave1 = Integer.MAX_VALUE;
+        for (int i = 0; i < nC; ++i) {
+            if (skipIdx.contains(i)) {
+                continue;
+            }   
+            int octave1 = octs1.get(i);
+            if (octave1 < minOctave1) {
+                minOctave1 = octave1;
+            }
+        }
+        
+        TIntObjectMap<ShapeFinder2.ShapeFinderResult> shapeResults 
+            = aggregatedShapeMatch(orb1, orb2,
+            labeledPoints1, labeledPoints2,
+            octs1, octs2, segIdxs, scales1, scales2);
+        
         float maxDesc = nBands * 256.0f;
         TIntList indexes = new TIntArrayList(nC);
         TFloatList costs = new TFloatArrayList(nC);
@@ -598,6 +616,7 @@ public class ORBMatcher {
             int octave1 = octs1.get(i);
             int octave2 = octs2.get(i);
             
+            float nKP1Min = orb1.getKeyPoint0List().get(minOctave1).size();
             float nKP1 = orb1.getKeyPoint0List().get(octave1).size();
             
             float nb1 = (float)bounds1.getN();
@@ -625,7 +644,7 @@ public class ORBMatcher {
             
             float sd2 = f1 * f1 + d2 * d2;
 
-            float tot = sd1 + sd2 + f3*f3;
+            float tot = f1 * f1 + d1 * d1 + d2 * d2 + f3*f3;
 
             indexes.add(i);
             costs.add(tot);
@@ -3574,6 +3593,70 @@ public class ORBMatcher {
         }
         
         return new double[] {sumDesc, sumDist, nAdded};
+    }
+
+    private TIntObjectMap<ShapeFinder2.ShapeFinderResult> aggregatedShapeMatch(
+        ORB orb1, ORB orb2,
+        Set<PairInt> labeledPoints1, List<Set<PairInt>> labeledPoints2, 
+        TIntList octs1, TIntList octs2, TIntList segIdxs, 
+        TFloatList scales1, TFloatList scales2) {
+
+        TIntObjectMap<ShapeFinder2.ShapeFinderResult> resultMap = new
+            TIntObjectHashMap<ShapeFinder2.ShapeFinderResult>();
+        
+        TIntObjectMap<Set<PairInt>> octave1ScaledSets =
+            createSetsForOctaves(octs1, labeledPoints1, scales1);
+        
+        TIntObjectMap<PairIntArray> octave1ScaledBounds = 
+            createBounds(octave1ScaledSets);
+        
+        TIntObjectMap<TIntObjectMap<Set<PairInt>>> octave2ScaledSets =
+            createSetsForOctaves(octs2, labeledPoints2, scales2);
+        
+        TIntObjectMap<Map<OneDIntArray, PairIntArray>> keybounds2Maps
+            = initializeMaps(octs2);
+        
+        int n = octs1.size();
+        
+        for (int i = 0; i < n; ++i) {
+            int octave1 = octs1.get(i);
+            int octave2 = octs2.get(i);
+            int segIdx = segIdxs.get(i);
+            float scale1 = scales1.get(octave1);
+            float scale2 = scales2.get(octave2);
+            
+            PairIntArray bounds1 = octave1ScaledBounds.get(octave1);
+            
+            float sz1 = calculateObjectSize(bounds1);
+            
+            TIntObjectMap<Set<PairInt>> mapOfBounds2 = new
+                TIntObjectHashMap<Set<PairInt>>(octave2ScaledSets.get(octave2));
+           
+            removeSetsByCombinedSize(bounds1, mapOfBounds2);
+            
+            removeSetsNotConnected(segIdx, segIdx, mapOfBounds2);
+            
+            Map<OneDIntArray, PairIntArray> keyBoundsMap2 = 
+                keybounds2Maps.get(octave2);
+            
+            int xMax1 = orb1.getPyramidImages().get(octave1).a[0].length -1;
+            int yMax1 = orb1.getPyramidImages().get(octave1).a.length - 1;
+            
+            int xMax2 = orb2.getPyramidImages().get(octave2).a[0].length -1;
+            int yMax2 = orb2.getPyramidImages().get(octave2).a.length - 1;
+            
+            ShapeFinder2 shapeFinder = new ShapeFinder2(bounds1, scale1, sz1, 
+                xMax1, yMax1, mapOfBounds2, scale2, 
+                keyBoundsMap2, xMax2, yMax2);
+           
+            ShapeFinder2.ShapeFinderResult result = shapeFinder.findAggregated();
+        
+            if (result != null) {
+                resultMap.put(i, result);
+            }
+        }
+        
+        return resultMap;
     }
 
     private static class PObject {
