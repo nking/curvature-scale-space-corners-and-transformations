@@ -1142,6 +1142,7 @@ System.out.println("min: cost=" + minCost + " count=" + np +
         int lGap = maxNumberOfGaps(r.bounds1, r)/dp;
         float gCountComp = (float)lGap/(float)nb1;
 
+        // these should be squared
         double sd = chordComp + countComp + gCountComp + distComp
             + r.intersection;
         

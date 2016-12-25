@@ -8,6 +8,7 @@ import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Logger;
 import thirdparty.ods.Integerizer;
 import thirdparty.ods.XFastTrie;
 import thirdparty.ods.XFastTrieNode;
@@ -77,6 +78,8 @@ public class NearestNeighbor2D {
     
     private TIntIntMap pCache = new TIntIntHashMap();
     private TIntIntMap sCache = new TIntIntHashMap();
+    
+    private Logger log = Logger.getLogger(this.getClass().getName());
     
     /**
      * 
@@ -193,7 +196,7 @@ public class NearestNeighbor2D {
         
         if (x > width || x < 0) {
             //throw new IllegalArgumentException(
-            System.out.println(
+            log.fine(
             "x cannot be larger than "
                 + " maxX given in constructor " + width
                 + ". x=" + x);
@@ -202,7 +205,7 @@ public class NearestNeighbor2D {
         
         if (y > height || y < 0) {
             //throw new IllegalArgumentException(
-            System.out.println(
+            log.fine(
                 "y cannot be larger than "
                 + " maxY given in constructor " + height + ". y=" + y);
             return null;
@@ -503,7 +506,7 @@ public class NearestNeighbor2D {
         
         if (x > width || x < 0) {
             //throw new IllegalArgumentException(
-            System.out.println(
+            log.fine(
             "x cannot be larger than "
                 + " maxX given in constructor " + width
                 + ". x=" + x);
@@ -512,7 +515,7 @@ public class NearestNeighbor2D {
         
         if (y > height || y < 0) {
             //throw new IllegalArgumentException(
-            System.out.println(
+            log.fine(
                 "y cannot be larger than "
                 + " maxY given in constructor " + height + ". y=" + y);
             return null;

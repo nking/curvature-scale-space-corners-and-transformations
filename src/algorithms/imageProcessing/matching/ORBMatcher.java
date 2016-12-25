@@ -64,6 +64,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.ejml.simple.SimpleMatrix;
@@ -401,7 +402,7 @@ public class ORBMatcher {
                             str3 + "_" + MiscDebug.getCurrentTimeFormatted());
                     }
                     
-                    {// DEBUG, print matched in green and unmatched in red
+                    {// DEBUG, print matched in green
                         String str3 = Integer.toString(segIdx);
                         while (str3.length() < 3) {
                             str3 = "0" + str3;
@@ -603,6 +604,8 @@ public class ORBMatcher {
             = aggregatedShapeMatch(orb1, orb2,
             labeledPoints1, labeledPoints2,
             octs1, octs2, segIdxs, scales1, scales2);
+        
+        System.out.println("nShapes=" + shapeResults.size());
         
         float maxDesc = nBands * 256.0f;
         TIntList indexes = new TIntArrayList(nC);
@@ -3601,6 +3604,8 @@ public class ORBMatcher {
         TIntList octs1, TIntList octs2, TIntList segIdxs, 
         TFloatList scales1, TFloatList scales2) {
 
+        System.out.println("aggregatedShapeMatch");
+        
         TIntObjectMap<ShapeFinder2.ShapeFinderResult> resultMap = new
             TIntObjectHashMap<ShapeFinder2.ShapeFinderResult>();
         
@@ -3608,7 +3613,9 @@ public class ORBMatcher {
             createSetsForOctaves(octs1, labeledPoints1, scales1);
         
         TIntObjectMap<PairIntArray> octave1ScaledBounds = 
-            createBounds(octave1ScaledSets);
+            createBounds(octave1ScaledSets, 
+                orb1.getPyramidImages().get(0).a[0].length,
+                orb1.getPyramidImages().get(0).a.length);
         
         TIntObjectMap<TIntObjectMap<Set<PairInt>>> octave2ScaledSets =
             createSetsForOctaves(octs2, labeledPoints2, scales2);
@@ -3629,12 +3636,14 @@ public class ORBMatcher {
             
             float sz1 = calculateObjectSize(bounds1);
             
-            TIntObjectMap<Set<PairInt>> mapOfBounds2 = new
+            TIntObjectMap<Set<PairInt>> mapOfSets2 = new
                 TIntObjectHashMap<Set<PairInt>>(octave2ScaledSets.get(octave2));
-           
-            removeSetsByCombinedSize(bounds1, mapOfBounds2);
+        
+            // removing any set that, when combined with set for segIdx,
+            // has dimensions larger than twice the size of bounds1
+            removeSetsByCombinedSize(bounds1, segIdx, mapOfSets2);
             
-            removeSetsNotConnected(segIdx, segIdx, mapOfBounds2);
+            removeSetsNotConnected(segIdx, mapOfSets2);
             
             Map<OneDIntArray, PairIntArray> keyBoundsMap2 = 
                 keybounds2Maps.get(octave2);
@@ -3645,18 +3654,266 @@ public class ORBMatcher {
             int xMax2 = orb2.getPyramidImages().get(octave2).a[0].length -1;
             int yMax2 = orb2.getPyramidImages().get(octave2).a.length - 1;
             
+            System.out.println("start shape search for octave1=" + octave1 + 
+                " octave2=" + octave2 + " segIdx=" + segIdx);
+            
+   //TODO: this needs improvements and the
+   //    costs updated for use here
+            
             ShapeFinder2 shapeFinder = new ShapeFinder2(bounds1, scale1, sz1, 
-                xMax1, yMax1, mapOfBounds2, scale2, 
+                xMax1, yMax1, mapOfSets2, scale2, 
                 keyBoundsMap2, xMax2, yMax2);
-           
+            
             ShapeFinder2.ShapeFinderResult result = shapeFinder.findAggregated();
         
-            if (result != null) {
-                resultMap.put(i, result);
+            if (result == null) {
+                continue;
+            }
+            
+            System.out.println("shapeFinder result for segIdx=" + 
+                + segIdx + " " + result.toString());
+            
+            resultMap.put(i, result);
+            
+            {//DEBUG
+                ShapeFinder2.ShapeFinderResult r = result;
+                Image img1 = ORB.convertToImage(
+                    orb1.getPyramidImages().get(octave1));
+                Image img2 = ORB.convertToImage(
+                    orb2.getPyramidImages().get(octave2));
+                try {
+                    CorrespondencePlotter plotter = new CorrespondencePlotter(
+                        r.bounds1, r.bounds2);
+                        //img1, img2);
+                    for (int ii = 0; ii < r.getNumberOfMatches(); ++ii) {
+                        int idx1 = r.getIdx1(ii);
+                        int idx2 = r.getIdx2(ii);
+                        int x1 = r.bounds1.getX(idx1);
+                        int y1 = r.bounds1.getY(idx1);
+                        int x2 = r.bounds2.getX(idx2);
+                        int y2 = r.bounds2.getY(idx2);
+                        if ((ii % 4) == 0) {
+                            plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 0);
+                        }
+                    }
+                    
+                    String str = octave1 + "_" + octave2 + "_" + segIdx 
+                        + MiscDebug.getCurrentTimeFormatted();
+                    
+                    String filePath = plotter.writeImage("_shape_" + str);
+                    
+                } catch (Throwable t) {
+                    System.err.println(t.getMessage());
+                }
             }
         }
         
         return resultMap;
+    }
+
+    private TIntObjectMap<Set<PairInt>> createSetsForOctaves(TIntList octaves, 
+        Set<PairInt> labeledPoints, TFloatList scales) {
+
+        TIntObjectMap<Set<PairInt>> output = new TIntObjectHashMap<Set<PairInt>>();
+    
+        for (int i = 0; i < octaves.size(); ++i) {
+            int octave = octaves.get(i);
+            if (output.containsKey(octave)) {
+                continue;
+            }
+            float scale = scales.get(octave);
+            
+            Set<PairInt> set2 = new HashSet<PairInt>();
+            for (PairInt p : labeledPoints) {
+                int x = Math.round((float)p.getX()/scale);
+                int y = Math.round((float)p.getY()/scale);
+                set2.add(new PairInt(x, y));
+            }
+            output.put(octave, set2);
+        }
+        
+        return output;
+    }
+
+    private TIntObjectMap<TIntObjectMap<Set<PairInt>>> createSetsForOctaves(
+        TIntList octaves, List<Set<PairInt>> labeledPoints, TFloatList scales) {
+
+        TIntObjectMap<TIntObjectMap<Set<PairInt>>> output = new 
+            TIntObjectHashMap<TIntObjectMap<Set<PairInt>>>();
+        
+        for (int i = 0; i < octaves.size(); ++i) {
+            int octave = octaves.get(i);
+            if (output.containsKey(octave)) {
+                continue;
+            }
+            float scale = scales.get(octave);
+        
+            TIntObjectMap<Set<PairInt>> labeledOctaveMap = new 
+                TIntObjectHashMap<Set<PairInt>>();
+            
+            int n = labeledPoints.size();
+            for (int segIdx = 0; segIdx < n; ++segIdx) {
+                Set<PairInt> set = labeledPoints.get(segIdx);
+                Set<PairInt> set2 = new HashSet<PairInt>();
+                for (PairInt p : set) {
+                    int x = Math.round((float)p.getX()/scale);
+                    int y = Math.round((float)p.getY()/scale);
+                    set2.add(new PairInt(x, y));
+                }
+                labeledOctaveMap.put(segIdx, set2);
+            }
+            
+            output.put(octave, labeledOctaveMap);
+        }
+        
+        return output;
+    }
+
+    private TIntObjectMap<PairIntArray> createBounds(
+        TIntObjectMap<Set<PairInt>> octaveScaledSets, int imgWidth, int imgHeight) {
+        
+        TIntObjectMap<PairIntArray> output = new TIntObjectHashMap<PairIntArray>();
+        
+        SIGMA sigma = SIGMA.ZEROPOINTFIVE;
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        TIntObjectIterator<Set<PairInt>> iter = octaveScaledSets.iterator();
+        for (int i = 0; i < octaveScaledSets.size(); ++i) {
+            iter.advance();
+            int segIdx = iter.key();
+            Set<PairInt> set = iter.value();
+            
+            PairIntArray bounds = imageProcessor.extractSmoothedOrderedBoundary(
+                new HashSet<PairInt>(set), sigma, imgWidth, imgHeight);
+        
+            output.put(segIdx, bounds);
+        }
+    
+        return output;
+    }
+
+    private TIntObjectMap<Map<OneDIntArray, PairIntArray>> initializeMaps(
+        TIntList octaves) {
+        
+        TIntObjectMap<Map<OneDIntArray, PairIntArray>> output = new
+             TIntObjectHashMap<Map<OneDIntArray, PairIntArray>>();
+    
+        for (int i = 0; i < octaves.size(); ++i) {
+            int octave = octaves.get(i);
+            output.put(octave, new HashMap<OneDIntArray, PairIntArray>());
+        }
+        
+        return output;
+    }
+
+    private void removeSetsByCombinedSize(PairIntArray bounds1, 
+        int segIdx2, TIntObjectMap<Set<PairInt>> mapOfBounds2) {
+
+        float sz1 = calculateObjectSize(bounds1);
+        
+        TIntSet rm = new TIntHashSet();
+        
+        Set<PairInt> set2 = mapOfBounds2.get(segIdx2);
+        
+        TIntObjectIterator<Set<PairInt>> iter = mapOfBounds2.iterator();
+        for (int i = 0; i < mapOfBounds2.size(); ++i) {
+            iter.advance();
+            int segIdx3 = iter.key();
+            Set<PairInt> set3 = iter.value();
+            Set<PairInt> combined = new HashSet<PairInt>(set2);
+            combined.addAll(set3);
+            
+            float sz2 = calculateObjectSize(combined);
+            
+            if (sz2 > 2.* sz1) {
+                rm.add(segIdx3);
+            }
+        }
+        
+        TIntIterator iter2 = rm.iterator();
+        while (iter2.hasNext()) {
+            int rmIdx = iter2.next();
+            mapOfBounds2.remove(rmIdx);
+        }        
+    }
+
+    private void removeSetsNotConnected(int segIdx, 
+        TIntObjectMap<Set<PairInt>> mapOfSets) {
+        
+        TObjectIntMap<PairInt> pointIndexMap = new TObjectIntHashMap<PairInt>();
+        TIntObjectIterator<Set<PairInt>> iter = mapOfSets.iterator();
+        for (int i = 0; i < mapOfSets.size(); ++i) {
+            iter.advance();
+            int idx = iter.key();
+            for (PairInt p : iter.value()) {
+                pointIndexMap.put(p, idx);
+            }
+        }
+        
+        TIntSet connected = new TIntHashSet();
+
+        Stack<Integer> stack = new Stack<Integer>();
+        stack.add(Integer.valueOf(segIdx));
+        
+        int[] dxs = Misc.dx4;
+        int[] dys = Misc.dy4;
+        
+        TIntSet addedToStack = new TIntHashSet();
+        TIntSet visited = new TIntHashSet();
+        
+        while (!stack.isEmpty()) {
+            
+            int idx = stack.pop().intValue();
+            
+            if (visited.contains(idx)) {
+                continue;
+            }
+            
+            connected.add(idx);
+            
+            Set<PairInt> set = mapOfSets.get(idx);
+            
+            for (PairInt p : set) {
+                int x = p.getX();
+                int y = p.getY();
+                for (int k = 0; k < dxs.length; ++k) {
+                    int x2 = x + dxs[k];
+                    int y2 = y + dys[k];
+                    PairInt p2 = new PairInt(x2, y2);
+                    if (pointIndexMap.containsKey(p2)) {
+                        
+                        int idx2 = pointIndexMap.get(p2);
+                        
+                        if (!addedToStack.contains(idx2) && !visited.contains(idx2)) {
+                            addedToStack.add(idx2);
+                            stack.add(Integer.valueOf(idx2));
+                        }
+                    }
+                }
+            }
+            
+            visited.add(idx);
+        }
+        
+        /*
+        // looks like this removes the item, but just in case the
+        //    values are left in the heap, will remove singly
+        //    until can test for it.
+        int n = mapOfSets.size();
+        TIntSet keys = mapOfSets.keySet();
+        keys.removeAll(connected);
+        int n2 = mapOfSets.size();
+        */
+        
+        TIntSet rm = new TIntHashSet(mapOfSets.keySet());
+        rm.removeAll(connected);
+        
+        TIntIterator iter2 = rm.iterator();
+        while (iter2.hasNext()) {
+            int rmIdx = iter2.next();
+            mapOfSets.remove(rmIdx);
+        }
     }
 
     private static class PObject {

@@ -775,6 +775,8 @@ public class LineFinder {
     private double calcSalukDist(double compChord, double maxChord,
         int length, int maxLength) {
 
+        //NOTE: compChord is the (chordSum/length)
+        
         double d = compChord/maxChord;
         double f = 1. - ((double)length/(double)maxLength);
         return f*f + d*d;
