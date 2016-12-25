@@ -113,9 +113,6 @@ Still testing the class, there may be bugs present.
 public class ORB {
    
     /*
-    TODO: -- consider making other high quality keypoints from atrous
-             wavelet transform coefficients or the wavelet median transform
-             coefficents
     TODO:
        -- considering adding alternative pyramid building methods
           such as Laplacian pyramids or
@@ -760,9 +757,13 @@ public class ORB {
                     coeffs.get(1));
                 MatrixUtil.multiply(rowMajorImg, 1.f/255.f);
                 
-                float[][] fastResponse = cornerFast(rowMajorImg, fastN, fastThreshold);
-                
-                imageProcessor.peakLocalMax(fastResponse, 1, 0.1f, atk0, atk1);
+                // lowering this results in more keypoints
+                float ff = 0.08f;
+
+                float[][] fastResponse = cornerFast(rowMajorImg, fastN, ff);
+
+                float f = 0.1f;    
+                imageProcessor.peakLocalMax(fastResponse, 1, f, atk0, atk1);
      
                 System.out.println("  atrous nKeypoints= " + atk0.size());
             

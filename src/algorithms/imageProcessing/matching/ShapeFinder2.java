@@ -1,26 +1,23 @@
 package algorithms.imageProcessing.matching;
 
-import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.SIGMA;
-import algorithms.imageProcessing.features.ORB;
 import static algorithms.imageProcessing.matching.ORBMatcher.maxNumberOfGaps;
 import algorithms.util.PairIntArray;
 import gnu.trove.map.TIntObjectMap;
 import java.util.List;
 import algorithms.imageProcessing.matching.PartialShapeMatcher.Result;
 import algorithms.misc.Misc;
-import algorithms.misc.MiscDebug;
-import algorithms.misc.MiscMath;
-import algorithms.util.CorrespondencePlotter;
 import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
-import algorithms.util.QuadInt;
-import algorithms.util.TwoDFloatArray;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.map.TIntDoubleMap;
+import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TIntDoubleHashMap;
+import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.TIntSet;
@@ -63,8 +60,6 @@ public class ShapeFinder2 {
 
     private final TObjectIntMap<PairInt> pointIndexes2Map;
     private final TIntObjectMap<TIntSet> adj2Map;
-    private final List<PairInt> xyCen2List;
-    private final List<QuadInt> xyMinMax2List;
 
     private final int xMax1;
     private final int yMax1;
@@ -123,8 +118,6 @@ public class ShapeFinder2 {
 
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 
-        this.xyMinMax2List = new ArrayList<QuadInt>();
-        this.xyCen2List = new ArrayList<PairInt>();
         this.pointIndexes2Map = new TObjectIntHashMap<PairInt>();
         
         TIntObjectIterator<Set<PairInt>> iter = mapOfSets2.iterator();
@@ -135,12 +128,6 @@ public class ShapeFinder2 {
             for (PairInt p : set) {
                 pointIndexes2Map.put(p, segIdx);
             }
-            double[] xyCen = curveHelper.calculateXYCentroids(set);
-            xyCen2List.add(new PairInt(
-                (int)Math.round(xyCen[0]), (int)Math.round(xyCen[1])));
-            int[] minMaxXY = MiscMath.findMinMaxXY(set);
-            xyMinMax2List.add(new QuadInt(minMaxXY[0], minMaxXY[1], minMaxXY[2],
-                minMaxXY[3]));
         }
 
         int[] dxs = Misc.dx8;
@@ -182,6 +169,11 @@ public class ShapeFinder2 {
      * group of adjacent segmented cells
      * to a template shape.
      *
+     * Editing this now... the code no longer checks for a restricted 
+     * distance or size in aggregating the labeled regions - it's up
+     * to the user to filter the input sets given to this instance
+     * themselves for those purposes.
+     * 
      * The runtime is dependent upon which of the 3 search
      * patterns is kept in the end, so that will be
      * filled in here after implementation and testing.
@@ -189,88 +181,10 @@ public class ShapeFinder2 {
      * @return
      */
     public ShapeFinderResult findAggregated() {
-
-        /*
-        some notes that will be updated when return to the search
-        task.
-
-        basically, have a global grid search,
-        wrapping local FloydWarshall searches where search
-            is the best fitting bounds of aggregated labels sets and
-            their color histograms
-
-        step (1) O(N_cells) + O(N_cells_in_bin * log_2(N_cells_in_bin)):
-           - 2D bins, that is x and y of size sz1.
-           - sort the cells within each bin by x centroid and ties by y centroid
-        step (2) local search pattern
-            The bigger picture is a sliding window of the 2D bin
-            where the core of the search and aggregation is done
-            within the 2D bin, but the aggregation can continue
-            into the next bin to the right, next bin above,
-            or above and to the right.
-
-           this is the part that is changing.
-           -- made an impl of Floyd Warshals all pairs.
-           -- will impl a dijkstra's for every source
-               but with the path constrained to be within
-               an association distance of the template object size
-
-        */
-
+       
         ShapeFinderResult sr = multiSourceBFS();
 
         return sr;
-    }
-
-    private int findSmallestXYCentroid(List<Integer> indexes,
-        List<PairInt> xyCenList) {
-
-        int minX = Integer.MAX_VALUE;
-        int minX_Y = Integer.MAX_VALUE;
-        int minIdx = -1;
-
-        for (int i = 0; i < indexes.size(); ++i) {
-            int idx = indexes.get(i);
-            int x = xyCenList.get(idx).getX();
-            int y = xyCenList.get(idx).getY();
-            if (x < minX) {
-                minX = x;
-                minX_Y = y;
-                minIdx = idx;
-            } else if (x == minX) {
-                if (y < minX_Y) {
-                    minX_Y = y;
-                    minIdx = idx;
-                }
-            }
-        }
-
-        assert(minIdx > -1);
-
-        return minIdx;
-    }
-
-    private int minMaxXY(QuadInt srchXYMinMax, QuadInt otherXYMinMax) {
-        int diffX = Math.max(
-            Math.abs(srchXYMinMax.getA() - otherXYMinMax.getB()),
-            Math.abs(srchXYMinMax.getB() - otherXYMinMax.getA()));
-
-        int diffY = Math.max(
-            Math.abs(srchXYMinMax.getC() - otherXYMinMax.getD()),
-            Math.abs(srchXYMinMax.getD() - otherXYMinMax.getC()));
-
-        // consider taking the diagonal here
-        return Math.max(diffX, diffY);
-    }
-
-    private int minMaxXY(QuadInt xyMinMax) {
-
-        int diffX = Math.abs(xyMinMax.getA() - xyMinMax.getB());
-
-        int diffY = Math.abs(xyMinMax.getC() - xyMinMax.getD());
-
-        // consider taking the diagonal here
-        return Math.max(diffX, diffY);
     }
 
     private ShapeFinderResult aggregateAndMatch(ShapeFinderResult rIK,
@@ -334,16 +248,11 @@ public class ShapeFinder2 {
             keyBoundsMap.put(keysI, boundsI);
         }
 
-        int sz2 = ORBMatcher.calculateObjectSize(boundsI);
-
-        if (sz2 > 1.15 * sz1) {
-            return null;
-        }
-
         PartialShapeMatcher matcher = new PartialShapeMatcher();
         matcher.overrideSamplingDistance(dp);
+        matcher._overrideToThreshhold(0.2f);
+        matcher.setToRemoveOutliers();
         //matcher.setToDebug();
-        //matcher.setToUseSameNumberOfPoints();
         PartialShapeMatcher.Result r = matcher.match(bounds1, boundsI);
 
         if (r == null) {
@@ -358,16 +267,23 @@ public class ShapeFinder2 {
 
     private ShapeFinderResult multiSourceBFS() {
 
-        // -- make a cache of search results
-        //    to resuse
+        // -- make a cache of search results to resuse
         // -- launch a BFS search from each label2 set.
 
+        System.out.println("searching " + mapOfSets2.size() + " labeled regions");
+        
         Map<OneDIntArray, ShapeFinderResult> cacheResults
             = new HashMap<OneDIntArray, ShapeFinderResult>();
 
         TIntSet idxs = new TIntHashSet();
 
-        double[] maxChordAndDiff = matchSingly(cacheResults, idxs);
+        long t0 = System.currentTimeMillis();
+        
+        double[] maxChordAvgDiff = new double[]{matchSingly(cacheResults, idxs)};
+        
+        long t1 = System.currentTimeMillis();
+        
+        System.out.println("matchSingly took " + ((t1 - t0)/1000) + " seconds");
         
         TIntIterator iter = idxs.iterator();
 
@@ -375,11 +291,16 @@ public class ShapeFinder2 {
 
         while (iter.hasNext()) {
 
-            int i = iter.next();
+            int label = iter.next();
 
-            ShapeFinderResult sr = bfs(i, cacheResults, idxs,
-                maxChordAndDiff);
+            t0 = System.currentTimeMillis();
+            
+            ShapeFinderResult sr = bfs(label, cacheResults, idxs, maxChordAvgDiff);
 
+            t1 = System.currentTimeMillis();
+        
+            System.out.println("a single bfs took " + ((t1 - t0)/1000) + " seconds");
+        
             if (sr != null) {
                 results.add(sr);               
             }
@@ -387,15 +308,13 @@ public class ShapeFinder2 {
 
         ShapeFinderResult minCostR = null;
         double minCost = Double.MAX_VALUE;
-        
-        for (int i = 0; i < results.size(); ++i) {
-            
-            ShapeFinderResult r = results.get(i);
-            
+       
+        for (ShapeFinderResult r : results) {
+                        
             if (r == null) {
                 continue;
             }
-            double sd = calcCost(r, maxChordAndDiff[0], maxChordAndDiff[1]);
+            double sd = calcCost(r, maxChordAvgDiff[0]);
         
             if (sd < minCost) {
                 minCost = sd;
@@ -406,24 +325,23 @@ public class ShapeFinder2 {
         return minCostR;
     }
 
-    // match the label2 sets that are near size sz1 and cache the
-    // results and return the maximum chord diff avg and maximum
-    // dist avg
-    private double[] matchSingly(Map<OneDIntArray, ShapeFinderResult> 
+    // run partial shape matcher on individual sets, store the labels and 
+    // results and return the maximum chord diff avg 
+    private double matchSingly(Map<OneDIntArray, ShapeFinderResult> 
         cacheResults, TIntSet outIdxs) {
 
-        // once though to find max diff chord sum and max dist
         double maxAvgDiffChord = Double.MIN_VALUE;
-        double maxAvgDist = Double.MIN_VALUE;
 
         ImageProcessor imageProcessor = new ImageProcessor();
         
         TIntObjectIterator<Set<PairInt>> iter = mapOfSets2.iterator();
         for (int i = 0; i < mapOfSets2.size(); ++i) {
+            
             iter.advance();
-            int segIdx = iter.key();
+            
+            int label = iter.key();
 
-            OneDIntArray keysI = new OneDIntArray(new int[]{segIdx});
+            OneDIntArray keysI = new OneDIntArray(new int[]{label});
             PairIntArray boundsI;
             if (keyBoundsMap.containsKey(keysI)) {
                 boundsI = keyBoundsMap.get(keysI);
@@ -433,77 +351,74 @@ public class ShapeFinder2 {
                     new HashSet(set1), sigma, xMax2 + 1, yMax2 + 1);
                 keyBoundsMap.put(keysI, boundsI);
             }
-
-            int sz2 = ORBMatcher.calculateObjectSize(boundsI);
-       
-            if (sz2 > 1.15 * sz1) {                
-                continue;
-            }
-
+            
             PartialShapeMatcher matcher = new PartialShapeMatcher();
             matcher.overrideSamplingDistance(dp);
+            matcher._overrideToThreshhold(0.2f);
+            matcher.setToRemoveOutliers();
             //matcher.setToDebug();
-            //matcher.setToUseSameNumberOfPoints();
             PartialShapeMatcher.Result r = matcher.match(bounds1, boundsI);
             if (r == null) {                
                 continue;
             }
             
-            outIdxs.add(i);
+            outIdxs.add(label);
 
             double avgCD = r.getChordDiffSum() / (double) r.getNumberOfMatches();
             if (avgCD > maxAvgDiffChord) {
                 maxAvgDiffChord = avgCD;
             }
-            double avgDist = r.getDistSum() / (double) r.getNumberOfMatches();
-            if (avgDist > maxAvgDist) {
-                maxAvgDist = avgDist;
-            }
+            
             ShapeFinderResult sr = new ShapeFinderResult(r, bounds1, boundsI,
                 keysI.a);
             
             cacheResults.put(keysI, sr);
         }
 
-        return new double[]{maxAvgDiffChord, maxAvgDist};
+        return maxAvgDiffChord;
     }
 
-    private ShapeFinderResult bfs(int srcIdx, 
-        Map<OneDIntArray, ShapeFinderResult> cacheResults, TIntSet idxs,
-        double[] maxChordAndDiff) {
+    private ShapeFinderResult bfs(int srcIdx, Map<OneDIntArray, 
+        ShapeFinderResult> cacheResults, TIntSet idxs, 
+        double[] maxChordAvgDiff) {
 
         OneDIntArray srcKeys = new OneDIntArray(new int[]{srcIdx});
         if (!cacheResults.containsKey(srcKeys)) {
             return null;
         }
 
-        // only searching within radius of sz1
-
-        // TODO: re-map the indexes to 0 to idxs.size
-        
         int n = mapOfSets2.size();
-        double[] dist = new double[n];
-        ShapeFinderResult[] results = new ShapeFinderResult[n];
+        
+        // key = label (a.k.a. segIdx), value = cost
+        TIntDoubleMap dist = new TIntDoubleHashMap(n);
+        TIntObjectIterator<Set<PairInt>> iter0 = mapOfSets2.iterator();
+        for (int i = 0; i < n; ++i) {
+            iter0.advance();;
+            dist.put(iter0.key(), Double.MAX_VALUE);
+        }
+        
+        // key = label (a.k.a. segIdx), value = state of visit
         // 0 = white, 1 = grey, 2 = visited
-        int[] visited = new int[n];
-        Arrays.fill(dist, Double.MAX_VALUE);
-
-        visited[srcIdx] = 1;
-        results[srcIdx] = cacheResults.get(srcKeys);
-        dist[srcIdx] = calcCost(results[srcIdx], 
-            maxChordAndDiff[0],
-            maxChordAndDiff[1]);
-
+        TIntIntMap visited = new TIntIntHashMap(n);
+        visited.put(srcIdx, 1);
+        
+        TIntObjectMap<ShapeFinderResult> results = new 
+            TIntObjectHashMap<ShapeFinderResult>(n);
+        
+        results.put(srcIdx, cacheResults.get(srcKeys));
+        dist.put(srcIdx, calcCost(results.get(srcIdx), maxChordAvgDiff[0]));
+           
         // make a FIFO queue.
         ArrayDeque<Integer> queue = new ArrayDeque<Integer>();
 
         queue.add(Integer.valueOf(srcIdx));
 
-        double mc = maxChordAndDiff[0];
-        double md = maxChordAndDiff[1];
-        
-        QuadInt srcMinMax2 = xyMinMax2List.get(srcIdx);
-        
+        double mc = maxChordAvgDiff[0];
+
+double sumDeltaT = 0;
+int nDeltaT = 0;
+long t = System.currentTimeMillis();
+
         while (!queue.isEmpty()) {
 
             Integer uIndex = queue.pop();
@@ -514,6 +429,9 @@ public class ShapeFinder2 {
             if (adjSet == null) {
                 continue;
             }
+            
+            System.out.println("  => pop " + uIdx + " which has key=" +
+                Arrays.toString(results.get(uIdx).labels2));
 
             TIntIterator iter = adjSet.iterator();
             while (iter.hasNext()) {
@@ -522,26 +440,34 @@ public class ShapeFinder2 {
                 if (!idxs.contains(vIdx)) {
                     continue;
                 }
-                if (visited[vIdx] == 2) {
+                if (visited.containsKey(vIdx) && visited.get(vIdx) == 2) {
                     continue;
                 }
-                if (results[vIdx] != null && 
-                    (Arrays.binarySearch(results[vIdx].labels2,
-                        uIdx) > -1)) {
+                if (results.containsKey(vIdx) && 
+                    (Arrays.binarySearch(results.get(vIdx).labels2, uIdx) > -1)
+                    ) {
                     continue;
                 }
            
-                assert(results[uIdx] != null);
+                assert(results.containsKey(uIdx));
                 
-                ShapeFinderResult rV = results[vIdx];
-                double sdV = dist[vIdx];
+                ShapeFinderResult rV = results.get(vIdx);
+                double sdV = dist.get(vIdx);
+                if (Double.isNaN(sdV)) {
+                    continue;
+                }
+                
                 if (rV == null) {
                     OneDIntArray vKeys = new OneDIntArray(new int[]{vIdx});
                     rV = cacheResults.get(vKeys);
                 }
                
-                ShapeFinderResult uPlusV = aggregateAndMatch(results[uIdx], rV);
-           
+                System.out.println("  => agg  u with v=" + vIdx 
+                    + " which has key=" +
+                    Arrays.toString(rV.labels2));
+                
+                ShapeFinderResult uPlusV = aggregateAndMatch(results.get(uIdx), rV);
+
                 if (uPlusV == null) {
                     continue;
                 }
@@ -551,21 +477,20 @@ public class ShapeFinder2 {
                     Arrays.copyOf(uPlusV.labels2, uPlusV.labels2.length));
                 cacheResults.put(uvKeys, uPlusV);
                 
-                int sz2 = ORBMatcher.calculateObjectSize(uPlusV.bounds2);
-
-                if (sz2 > 1.15 * sz1) {
+                double sdUPlusV = calcCost(uPlusV, maxChordAvgDiff[0]);
+        
+                if (Double.isNaN(sdUPlusV)) {
                     continue;
                 }
-
-                double sdUPlusV = calcCost(uPlusV, maxChordAndDiff[0],
-                    maxChordAndDiff[1]);
-        
+                
+                System.out.println("  => sdUPlusV=" + sdUPlusV + " sdV=" + sdV);
+                    
                 //visited[vIdx] = 1;
                 if (sdUPlusV < sdV) {
                     
-                    dist[vIdx] = sdUPlusV;
-                    results[vIdx] = uPlusV;
-                    queue.add(vIdx);
+                    dist.put(vIdx, sdUPlusV);
+                    results.put(vIdx, uPlusV);
+                    queue.add(Integer.valueOf(vIdx));
                     
                     // update the maxes 
                     double avgCD = uPlusV.getChordDiffSum() / 
@@ -573,39 +498,45 @@ public class ShapeFinder2 {
                     if (avgCD > mc) {
                         mc = avgCD;
                     }
-                    double avgDist = uPlusV.getDistSum() /
-                        (double) uPlusV.getNumberOfMatches();
-                    if (avgDist > md) {
-                        md = avgDist;
-                    }
                 }
             }
+        
+            visited.put(uIdx, 2);
             
-            visited[uIdx] = 2;
+long t2 = System.currentTimeMillis();
+nDeltaT++;
+sumDeltaT += ((double)t2 - (double)t) / 1000.;
+t = t2;
         }
         
-        // re-do costs, and update max vars
-        maxChordAndDiff[0] = mc;
-        maxChordAndDiff[1] = md;
+System.out.println("avg loop iteration = " + (sumDeltaT/nDeltaT) + " sec");        
+
+        // re-do costs, and update max var
+        maxChordAvgDiff[0] = mc;
 
         ShapeFinderResult minCostR = null;
         double minCost = Double.MAX_VALUE;
         
-        for (int i = 0; i < results.length; ++i) {
-            
-            ShapeFinderResult r = results[i];
+        TIntObjectIterator<ShapeFinderResult> iter2 = results.iterator();
+        for (int i = 0; i < results.size(); ++i) {
+            iter2.advance();
+            ShapeFinderResult r = iter2.value();
            
             if (r == null) {
                 continue;
             }
-            double sd = calcCost(r, maxChordAndDiff[0], maxChordAndDiff[1]);
+            double sd = calcCost(r, maxChordAvgDiff[0]);
        
+            if (Double.isNaN(sd)) {
+                continue;
+            }
+            
             if (sd < minCost) {
                 minCost = sd;
                 minCostR = r;
             }
         }
-{
+if (minCostR != null) {
 ShapeFinderResult r = minCostR;
 int nb1 = Math.round((float) r.bounds1.getN() / (float) dp);
 float np = r.getNumberOfMatches();
@@ -614,14 +545,12 @@ float gCountComp = (float)lGap/(float)nb1;
 
 System.out.println("min: cost=" + minCost + " count=" + np + 
 " chordAvg=" + ((float) r.getChordDiffSum() / np) +
-" distAvg=" + (float)(r.getDistSum() / np) +
 " gapAvg=" + gCountComp);
 }
         return minCostR;
     }
 
-    private double calcCost(ShapeFinderResult r, double maxAvgDiffChord, 
-        double maxAvgDist) {
+    private double calcCost(ShapeFinderResult r, double maxAvgDiffChord) {
         
         int nb1 = Math.round((float) r.bounds1.getN() / (float) dp);
 
@@ -629,14 +558,18 @@ System.out.println("min: cost=" + minCost + " count=" + np +
 
         float countComp = 1.0F - (np / (float) nb1);
         double chordComp = ((float) r.getChordDiffSum() / np) / maxAvgDiffChord;
-        double avgDist = r.getDistSum() / np;
-        double distComp = avgDist / maxAvgDist;
 
         int lGap = maxNumberOfGaps(r.bounds1, r)/dp;
         float gCountComp = (float)lGap/(float)nb1;
 
         // these should be squared
-        double sd = chordComp + countComp + gCountComp + distComp;
+        double sd = chordComp*chordComp + countComp*countComp + gCountComp*gCountComp;
+        
+        if (Double.isNaN(sd)) {
+            System.out.println("NaN: nb1=" + nb1 + " np=" + np
+                + " chordsum=" + r.getChordDiffSum() + 
+                " countComp=" + countComp + " gCountComp=" + gCountComp);
+        }
         
         return sd;
     }
@@ -645,6 +578,11 @@ System.out.println("min: cost=" + minCost + " count=" + np +
 
         protected final PairIntArray bounds1;
         protected final PairIntArray bounds2;
+        
+        /**
+         * a list of sorted labels, bounds2 is the boundary of the combined 
+         * regions in labels2
+         */
         protected final int[] labels2;
 
         public ShapeFinderResult(Result r, PairIntArray bounds1,
@@ -655,7 +593,6 @@ System.out.println("min: cost=" + minCost + " count=" + np +
             this.bounds1 = bounds1;
             this.bounds2 = bounds2;
             this.chordDiffSum = r.chordDiffSum;
-            this.distSum = r.distSum;
             this.chordsNeedUpdates = r.chordsNeedUpdates;
             this.idx1s = r.idx1s;
             this.idx2s = r.idx2s;

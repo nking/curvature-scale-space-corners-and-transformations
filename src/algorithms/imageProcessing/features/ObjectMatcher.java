@@ -194,7 +194,7 @@ public class ObjectMatcher {
             sTempList.add(orb0.getScalesList().get(i).get(0));
         }
 
-        ORB orb1 = new ORB(500);
+        ORB orb1 = new ORB(500);//ORB(500);
         orb1.overrideToNotCreateDescriptors();
         if (!settings.isUseLargerPyramid1()) {
             orb1.overrideToUseSmallestPyramid();

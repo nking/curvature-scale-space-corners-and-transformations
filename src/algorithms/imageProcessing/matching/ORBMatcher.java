@@ -600,13 +600,6 @@ public class ORBMatcher {
             }
         }
         
-        TIntObjectMap<ShapeFinder2.ShapeFinderResult> shapeResults 
-            = aggregatedShapeMatch(orb1, orb2,
-            labeledPoints1, labeledPoints2,
-            octs1, octs2, segIdxs, scales1, scales2);
-        
-        System.out.println("nShapes=" + shapeResults.size());
-        
         float maxDesc = nBands * 256.0f;
         TIntList indexes = new TIntArrayList(nC);
         TFloatList costs = new TFloatArrayList(nC);
@@ -738,6 +731,15 @@ public class ORBMatcher {
             }
         }
 
+        
+        TIntObjectMap<ShapeFinder2.ShapeFinderResult> shapeResults 
+            = aggregatedShapeMatch(orb1, orb2,
+            labeledPoints1, labeledPoints2,
+            octs1, octs2, segIdxs, scales1, scales2);
+        
+        System.out.println("nShapes=" + shapeResults.size());
+        
+        
         return results;
     }
 
@@ -3604,7 +3606,7 @@ public class ORBMatcher {
         TIntList octs1, TIntList octs2, TIntList segIdxs, 
         TFloatList scales1, TFloatList scales2) {
 
-        System.out.println("aggregatedShapeMatch");
+        System.out.println("aggregatedShapeMatch for " + octs1.size() + " results");
         
         TIntObjectMap<ShapeFinder2.ShapeFinderResult> resultMap = new
             TIntObjectHashMap<ShapeFinder2.ShapeFinderResult>();
@@ -3631,6 +3633,10 @@ public class ORBMatcher {
             int segIdx = segIdxs.get(i);
             float scale1 = scales1.get(octave1);
             float scale2 = scales2.get(octave2);
+        
+if (segIdx != 4) {
+    continue;
+}
             
             PairIntArray bounds1 = octave1ScaledBounds.get(octave1);
             
@@ -3698,7 +3704,7 @@ public class ORBMatcher {
                     }
                     
                     String str = octave1 + "_" + octave2 + "_" + segIdx 
-                        + MiscDebug.getCurrentTimeFormatted();
+                        + "_" + MiscDebug.getCurrentTimeFormatted();
                     
                     String filePath = plotter.writeImage("_shape_" + str);
                     
