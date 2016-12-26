@@ -1983,13 +1983,13 @@ public class PartialShapeMatcher {
                 // away from bounds
                                 
                 if (((idx2 - (n1 - 2)) + 4) < (n1 - 2)) {
-                    offset = (idx2 - (n1 - 1)) + 4;
+                    offset = (idx2 - (n1 - 2)) + 4;
                 } else {
-                    offset = (idx2 - (n1 - 1));
+                    offset = (idx2 - (n1 - 2));
                 }
                 idx2 -= offset;
                 if (idx2 < 0) {
-                    offset = idx2 - (n1 - 1);
+                    offset = idx2 - (n1 - 2);
                     idx2 -= offset;
                 }
             }

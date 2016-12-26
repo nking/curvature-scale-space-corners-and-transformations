@@ -187,6 +187,46 @@ public class ShapeFinder2 {
         return sr;
     }
 
+    /**
+     * NOT READY FOR USE.
+     * uses PartialShapeMatcher and search patterns to
+     * find the best fitting match between a
+     * group of adjacent segmented cells
+     * to a template shape.
+     *
+     * Editing this now... the code no longer checks for a restricted 
+     * distance or size in aggregating the labeled regions - it's up
+     * to the user to filter the input sets given to this instance
+     * themselves for those purposes.
+     * 
+     * The runtime is dependent upon which of the 3 search
+     * patterns is kept in the end, so that will be
+     * filled in here after implementation and testing.
+     *
+     * @return
+     */
+    public ShapeFinderResult findAggregated(int srcIdx) {
+       
+        System.out.println("searching " + mapOfSets2.size() + " labeled regions");
+        
+        Map<OneDIntArray, ShapeFinderResult> cacheResults
+            = new HashMap<OneDIntArray, ShapeFinderResult>();
+
+        TIntSet idxs = new TIntHashSet();
+
+        long t0 = System.currentTimeMillis();
+        
+        double[] maxChordAvgDiff = new double[]{matchSingly(cacheResults, idxs)};
+        
+        ShapeFinderResult sr = bfs(srcIdx, cacheResults, idxs, maxChordAvgDiff);
+
+        long t1 = System.currentTimeMillis();
+        
+        System.out.println("a single bfs took " + ((t1 - t0)/1000) + " seconds");
+        
+        return sr;
+    }
+
     private ShapeFinderResult aggregateAndMatch(ShapeFinderResult rIK,
         ShapeFinderResult rKJ) {
 
@@ -418,6 +458,8 @@ public class ShapeFinder2 {
 double sumDeltaT = 0;
 int nDeltaT = 0;
 long t = System.currentTimeMillis();
+double sumDeltaT2 = 0;
+int nDeltaT2 = 0;
 
         while (!queue.isEmpty()) {
 
@@ -465,9 +507,16 @@ long t = System.currentTimeMillis();
                 System.out.println("  => agg  u with v=" + vIdx 
                     + " which has key=" +
                     Arrays.toString(rV.labels2));
+               
+long t2 = System.currentTimeMillis();                
                 
                 ShapeFinderResult uPlusV = aggregateAndMatch(results.get(uIdx), rV);
-
+                
+long t2_2 = System.currentTimeMillis();
+nDeltaT2++;
+sumDeltaT2 += ((double)t2_2 - (double)t2) / 1000.;
+t = t2_2;
+                
                 if (uPlusV == null) {
                     continue;
                 }
@@ -503,13 +552,15 @@ long t = System.currentTimeMillis();
         
             visited.put(uIdx, 2);
             
-long t2 = System.currentTimeMillis();
+long t_2 = System.currentTimeMillis();
 nDeltaT++;
-sumDeltaT += ((double)t2 - (double)t) / 1000.;
-t = t2;
+sumDeltaT += ((double)t_2 - (double)t) / 1000.;
+t = t_2;
         }
         
-System.out.println("avg loop iteration = " + (sumDeltaT/nDeltaT) + " sec");        
+System.out.println("avg loop iteration = " + (sumDeltaT/nDeltaT) + " sec");
+
+System.out.println("avg agg srch within loop iteration = " + (sumDeltaT2/nDeltaT2) + " sec");
 
         // re-do costs, and update max var
         maxChordAvgDiff[0] = mc;
@@ -571,6 +622,8 @@ System.out.println("min: cost=" + minCost + " count=" + np +
                 " countComp=" + countComp + " gCountComp=" + gCountComp);
         }
         
+        r.contextCost = sd;
+        
         return sd;
     }
 
@@ -578,6 +631,15 @@ System.out.println("min: cost=" + minCost + " count=" + np +
 
         protected final PairIntArray bounds1;
         protected final PairIntArray bounds2;
+        
+        /**
+         * cost calculated in the result's context of max chord diff avg and
+         * max number of matchable.
+         * Note that this value may be the square sum and not
+         * the square root of the square sums (that's the case for
+         * use throughout ShapeFinder2.java)
+         */
+        protected double contextCost = Double.MAX_VALUE;
         
         /**
          * a list of sorted labels, bounds2 is the boundary of the combined 
@@ -621,6 +683,19 @@ System.out.println("min: cost=" + minCost + " count=" + np +
             this.bounds2 = bounds2;
             this.labels2 = keys;
         }
+        
+        public double getContextCost() {
+            return contextCost;
+        }
+
+        @Override
+        public String toString() {
+            String str = super.toString();
+            str = str + " contextCost=" + contextCost;
+            return str;
+        }
+        
+        
     }
 
     // sorted so that all X of same Y are first, then all X of larger Y

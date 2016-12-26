@@ -15,17 +15,12 @@ import algorithms.imageProcessing.features.CorrespondenceList;
 import algorithms.imageProcessing.features.ORB;
 import algorithms.imageProcessing.features.ORB.Descriptors;
 import static algorithms.imageProcessing.features.ORB.convertToImage;
-import algorithms.imageProcessing.features.RANSACEuclideanSolver;
-import algorithms.imageProcessing.features.RANSACSolver;
 import algorithms.imageProcessing.matching.PartialShapeMatcher.Result;
 import algorithms.imageProcessing.matching.ShapeFinder.ShapeFinderResult;
-import algorithms.imageProcessing.transform.EpipolarTransformationFit;
 import algorithms.imageProcessing.transform.EpipolarTransformer;
-import algorithms.imageProcessing.transform.EuclideanTransformationFit;
 import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
-import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
@@ -56,7 +51,6 @@ import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -65,8 +59,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.ejml.simple.SimpleMatrix;
 
 /**
@@ -90,7 +82,8 @@ public class ORBMatcher {
 
     // method in progress to replace match0
     public List<CorrespondenceList> match0(ORB orb1, ORB orb2,
-        Set<PairInt> labeledPoints1, List<Set<PairInt>> labeledPoints2) {
+        Set<PairInt> labeledPoints1, List<Set<PairInt>> labeledPoints2,
+        boolean followWithShapeSearch) {
 
         /*
         NOTE: bounds are not smoothed within this method, so if
@@ -503,31 +496,28 @@ public class ORBMatcher {
             }// end loop over octave2
         }  // end loop over octave1
 
-
         int nC = correspondences.size();
 
-        //calculate "salukwzde distances" as costs to rank results
+        //calculate "salukvazde distances" as costs to rank results
+
+        /*
+        looking at which cost components can be compared across octaves:
         
-        // the objective function OR the logic above
-        //    needs to be edited for scale effects from number of keypoints.
-        //    the normalizations are different due to differing
-        //    numbers of keypoints at an octave.
-        //
-        //    For example, one smaller set of octaves has a total
-        //       lower cost even though it has fewer matched points
-        //       and is the false match compared to the true match
-        //       in larger set of images.  the smaller f1 is significant.
-        // So need to consider a normalization change for this.
-        // instead of area, might use the ratio of number of keypoints
-        // that are maximally matchable compared to the full size
-        // octave... a factor to be applied to increase the total
-        //     cost (cost component) of the smaller image set...
-        // Or, create an ambiguous set of results because of that
-        // scale factor, that then need to be further searched
-        // using the aggregated ShapeMatcher for example...
-        
-        // There is also the observation that if these results contain
-        //    an object match of the same segIdx at different octaves,
+        -- the fraction of whole for the boundaries of shape do not need to be
+            re-normalized for scale.  the parameter is the adjustment for that.
+        -- the descriptor costs do not need to be "re-normalized" for scale.
+        -- the distances of points from transformed location
+            does depend upon scale, but that is scaled and normalized before
+            distSum;
+        -- * the number of descriptors does depend upon scale and this is
+            normalized,
+            but needs to looked at more carefully...
+        */
+            
+        //NOTE: need to review this... the comments above should be addressing
+        //      this more correctly...
+        // Also There is the observation that if these results contain
+        //    an object match of the same segIdx label at different octaves,
         //    only the one with the largest number of matched descriptors
         //    should be kept to reduce scale effects and if they have
         //    same number, the smallest octave pair (== largest images)
@@ -537,6 +527,7 @@ public class ORBMatcher {
         // key = segIdx, value = index of corres to keep
         TIntIntMap labelIdxMap = new TIntIntHashMap();
         TIntSet skipIdx = new TIntHashSet();
+        /*
         for (int i = 0; i < nC; ++i) {
             int segIdx = segIdxs.get(i);
             if (labelIdxMap.containsKey(segIdx)) {
@@ -586,19 +577,7 @@ public class ORBMatcher {
                 labelIdxMap.put(segIdx, i);
             }
         }
-        
-        // find the smallest octave1 in the set.  this is then the
-        // used in normalizing f1
-        int minOctave1 = Integer.MAX_VALUE;
-        for (int i = 0; i < nC; ++i) {
-            if (skipIdx.contains(i)) {
-                continue;
-            }   
-            int octave1 = octs1.get(i);
-            if (octave1 < minOctave1) {
-                minOctave1 = octave1;
-            }
-        }
+        */
         
         float maxDesc = nBands * 256.0f;
         TIntList indexes = new TIntArrayList(nC);
@@ -612,7 +591,6 @@ public class ORBMatcher {
             int octave1 = octs1.get(i);
             int octave2 = octs2.get(i);
             
-            float nKP1Min = orb1.getKeyPoint0List().get(minOctave1).size();
             float nKP1 = orb1.getKeyPoint0List().get(octave1).size();
             
             float nb1 = (float)bounds1.getN();
@@ -624,22 +602,14 @@ public class ORBMatcher {
         
             // calculate "fraction of whole" for keypoint descriptors
             final float f1 = 1.f - (nd/nKP1);
-            
+                   
             // -- a fraction of whole for boundary matching
-            float f3 = 1.f - ((float)correspondences.get(i).size() / 
-                (nb1 + nKP1));
+            float nBoundsMatched = correspondences.get(i).size() - nd;
+            float f3 = 1.f - (nBoundsMatched / nb1);
             
-            //calculate the cost of kp descriptors
-            float d1 = 1.f - ((nBands * 256.f - descCost)/maxDesc);
-            
+            float d1 = descCost;
             float d2 = distCost;
             
-            //TODO: revisit these totals
-            
-            float sd1 = f1 * f1 + d1 * d1;
-            
-            float sd2 = f1 * f1 + d2 * d2;
-
             float tot = f1 * f1 + d1 * d1 + d2 * d2 + f3*f3;
 
             indexes.add(i);
@@ -651,8 +621,8 @@ public class ORBMatcher {
                 correspondences.get(i).size(), (int)nd);
             
             String str2 = String.format(
-                "i=%d descCost=%.2f f1=%.2f distCost=%.2f sd1=%.2f f2=%.2f f3=%.2f tot=%f",
-                i, descCost,        f1, sd1, distCost,         f1,     f3, tot);
+                "i=%d descCost=%.2f f1=%.2f distCost=%.2f f2=%.2f f3=%.2f tot=%f",
+                i, d1,        f1, d2,         f1,     f3, tot);
             
             System.out.println(str1 + " " + str2);
         }
@@ -667,9 +637,9 @@ public class ORBMatcher {
             + " segIdx=" + segIdxs.get(indexes.get(0)));
         
         /*
-        if the best has a close 2nd best, might need to use an aggregated
-        partial shape matcher, that uses the euclidean transform as a
-        constraint (requires new method in PartialShapeMatcher.java).
+        if the best has a close 2nd best, might need to use ShapeFinder2,
+            but that currently has a long runtime so is only used if
+            the method argument has been set.
         */
         
         List<CorrespondenceList> results = new ArrayList<CorrespondenceList>();
@@ -731,14 +701,15 @@ public class ORBMatcher {
             }
         }
 
+        if (followWithShapeSearch) {
         
-        TIntObjectMap<ShapeFinder2.ShapeFinderResult> shapeResults 
-            = aggregatedShapeMatch(orb1, orb2,
-            labeledPoints1, labeledPoints2,
-            octs1, octs2, segIdxs, scales1, scales2);
+            TIntObjectMap<ShapeFinder2.ShapeFinderResult> shapeResults 
+                = aggregatedShapeMatch(orb1, orb2,
+                labeledPoints1, labeledPoints2,
+                octs1, octs2, segIdxs, scales1, scales2);
         
-        System.out.println("nShapes=" + shapeResults.size());
-        
+            System.out.println("nShapes=" + shapeResults.size());
+        }
         
         return results;
     }
@@ -947,7 +918,8 @@ public class ORBMatcher {
                     PartialShapeMatcher matcher = new PartialShapeMatcher();
                     matcher.overrideSamplingDistance(dp);
                     //matcher.setToDebug();
-                    //matcher.setToUseSameNumberOfPoints();
+                    matcher._overrideToThreshhold(0.2f);
+                    matcher.setToRemoveOutliers();
                     PartialShapeMatcher.Result r = matcher.match(bounds1, bounds2);
                     if (r == null) {
                         continue;
@@ -1192,6 +1164,7 @@ public class ORBMatcher {
      * fitting shape and color object where template is
      * dataset 1 and the searchable is dataset 2.
      *
+     * 
      * @param orb1
      * @param orb2
      * @param labeledPoints1
@@ -1202,6 +1175,8 @@ public class ORBMatcher {
         ORB orb1, ORB orb2, Set<PairInt> labeledPoints1,
         List<Set<PairInt>> labeledPoints2) {
 
+  //TODO: revisit and edit for changes present in match0      
+        
         TFloatList scales1 = extractScales(orb1.getScalesList());
         TFloatList scales2 = extractScales(orb2.getScalesList());
 
@@ -1318,10 +1293,20 @@ public class ORBMatcher {
         //    aggregated search of adjacent labeled cells to compare their combined
         //       properties of color histogram and shape to the template.
         //
+        // the differences in chords for true match shapes should not change
+        // with scale (excepting due to resolution affecting the shapes), 
+        // so the maximum difference in the avg chord can be
+        // used on all of the results when re-normalizing and re-calculating dist.
+        // The number of matches possible for each scale does change with scale
+        // and that is handled in the "fraction of whole term" already.
+        // so a "re-normalization" to calculate new salukvazde costs just needs
+        // to use the maximum avg chord sum diff for all.
+        //
         // delaying evaluation of results until end in order to get the
         // maximum chord differerence sum, needed for Salukwzde distance.
         // for each i, list of Results, chordDiffSums, bounds1, bounds2
         //             bundling Results and bounds into an object
+          
         TIntObjectMap<List<PObject>> resultsMap = new TIntObjectHashMap<List<PObject>>();
         TIntObjectMap<TDoubleList> chordDiffSumsMap = new TIntObjectHashMap<TDoubleList>();
         TIntObjectMap<TFloatList> intersectionsMap = new TIntObjectHashMap<TFloatList>();
@@ -3167,7 +3152,6 @@ public class ORBMatcher {
         
         float maxDesc = nBands * 256.0f;
                 
-        float distMax = (float)Math.sqrt(2) * distTol;
         /*
         -- finds best 20 matches of descriptors
         -- from the best 20,
@@ -3310,6 +3294,13 @@ public class ORBMatcher {
                     continue;
                 }
 
+                // distTol is w.r.t. scale1=1, so if scale1 > 1, need to adjust
+                // NOTE that distTol is applied to pixels in dataset1 reference frame.
+                int distTol2 = Math.round((float)distTol/scale1);
+                if (distTol2 < 1) {
+                    distTol2 = 1;
+                }
+                
                 PairIntArray rightTr = transformer.applyTransformation(
                     params, right);
 
@@ -3325,7 +3316,7 @@ public class ORBMatcher {
                 double[] sums = sumKeypointDescAndDist2To1(costD, nBands,
                     right, rightTr, nn1,
                     keypoints1IndexMap, keypoints2IndexMap,
-                    distTol, mIdx1s, mIdx2s);
+                    distTol2, mIdx1s, mIdx2s);
 
                 final int nMatched = (int)sums[2];
                
@@ -3370,7 +3361,7 @@ public class ORBMatcher {
                         extr2, extr2Tr, nnExtr1,
                         extr1IndexMap, extr2IndexMap,
                         img1Width, img1Height,
-                        distTol, mIdxExtr1s, mIdxExtr2s);
+                        distTol2, mIdxExtr1s, mIdxExtr2s);
 
                     nMatchedExtr = (int)sumsExtr[1];
                     double distCostExtr = sumsExtr[0]/(float)nMatchedExtr;
@@ -3627,17 +3618,32 @@ public class ORBMatcher {
         
         int n = octs1.size();
         
+        // store each ShapeFinder2.ShapeFinderResult result
+        // need to compare results from different octaves
+        //    diff chord sum
+        //    number matched
+        //    max matchable for octave pair (==n1)
+        //    max avg chord diff for octave pair
+        //
+        
+        // the differences in chords for true match shapes should not change
+        // with scale (excepting due to resolution affecting the shapes), 
+        // so the maximum difference in the avg chord can be
+        // used on all of the results when re-normalizing and re-calculating dist.
+        // The number of matches possible for each scale does change with scale
+        // and that is handled in the "fraction of whole term" already.
+        // so a "re-normalization" to calculate new salukvazde costs just needs
+        // to use the maximum avg chord sum diff for all.
+        
+    //paused here: TODO: store costs and sort
+        
         for (int i = 0; i < n; ++i) {
             int octave1 = octs1.get(i);
             int octave2 = octs2.get(i);
             int segIdx = segIdxs.get(i);
             float scale1 = scales1.get(octave1);
             float scale2 = scales2.get(octave2);
-        
-if (segIdx != 4) {
-    continue;
-}
-            
+           
             PairIntArray bounds1 = octave1ScaledBounds.get(octave1);
             
             float sz1 = calculateObjectSize(bounds1);
@@ -3645,9 +3651,10 @@ if (segIdx != 4) {
             TIntObjectMap<Set<PairInt>> mapOfSets2 = new
                 TIntObjectHashMap<Set<PairInt>>(octave2ScaledSets.get(octave2));
         
+            float factor = 2.f;
             // removing any set that, when combined with set for segIdx,
             // has dimensions larger than twice the size of bounds1
-            removeSetsByCombinedSize(bounds1, segIdx, mapOfSets2);
+            removeSetsByCombinedSize(bounds1, segIdx, mapOfSets2, factor);
             
             removeSetsNotConnected(segIdx, mapOfSets2);
             
@@ -3662,20 +3669,17 @@ if (segIdx != 4) {
             
             System.out.println("start shape search for octave1=" + octave1 + 
                 " octave2=" + octave2 + " segIdx=" + segIdx);
-            
-   //TODO: this needs improvements and the
-   //    costs updated for use here
-            
+    
             ShapeFinder2 shapeFinder = new ShapeFinder2(bounds1, scale1, sz1, 
                 xMax1, yMax1, mapOfSets2, scale2, 
                 keyBoundsMap2, xMax2, yMax2);
             
-            ShapeFinder2.ShapeFinderResult result = shapeFinder.findAggregated();
+            ShapeFinder2.ShapeFinderResult result = shapeFinder.findAggregated(segIdx);
         
             if (result == null) {
                 continue;
             }
-            
+    
             System.out.println("shapeFinder result for segIdx=" + 
                 + segIdx + " " + result.toString());
             
@@ -3814,7 +3818,7 @@ if (segIdx != 4) {
     }
 
     private void removeSetsByCombinedSize(PairIntArray bounds1, 
-        int segIdx2, TIntObjectMap<Set<PairInt>> mapOfBounds2) {
+        int segIdx2, TIntObjectMap<Set<PairInt>> mapOfBounds2, float factor) {
 
         float sz1 = calculateObjectSize(bounds1);
         
@@ -3832,7 +3836,7 @@ if (segIdx != 4) {
             
             float sz2 = calculateObjectSize(combined);
             
-            if (sz2 > 2.* sz1) {
+            if (sz2 > factor * sz1) {
                 rm.add(segIdx3);
             }
         }
