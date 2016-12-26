@@ -508,10 +508,13 @@ public class ORBMatcher {
         -- the descriptor costs do not need to be "re-normalized" for scale.
         -- the distances of points from transformed location
             does depend upon scale, but that is scaled and normalized before
-            distSum;
+            distSum
         -- * the number of descriptors does depend upon scale and this is
-            normalized,
-            but needs to looked at more carefully...
+            normalized.
+            the number of descriptors is small in number and 
+            geometric compression to fewer numbers can have a large effect.  
+            ideally the descriptor cost shows that, but this may need to be 
+            looked at more carefully...
         */
             
         //NOTE: need to review this... the comments above should be addressing
