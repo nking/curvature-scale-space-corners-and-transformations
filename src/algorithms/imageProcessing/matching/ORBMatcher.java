@@ -519,7 +519,7 @@ public class ORBMatcher {
             
         //NOTE: need to review this... the comments above should be addressing
         //      this more correctly...
-        // Also There is the observation that if these results contain
+        // There is the observation that if these results contain
         //    an object match of the same segIdx label at different octaves,
         //    only the one with the largest number of matched descriptors
         //    should be kept to reduce scale effects and if they have
@@ -580,6 +580,22 @@ public class ORBMatcher {
                 labelIdxMap.put(segIdx, i);
             }
         }
+        */
+       
+        /*
+        TODO: create a method in PartialShapeMatcher that 
+            accepts bounds1, bounds2, the m1, m2
+            indexes, and will calculate the chord diff sum
+            for the match
+            -- add the chord costs to the costs below
+            this should help distinguish between objects like the wall framing
+            a window having more matches to an object like the gingerbread man
+            which is elongated along an axis...the shape should help 
+            distinguish where the few keypoint hsv descrptors did not 
+            (the euclidean distances did not lead to correct answer).
+        NOTE: there is also a current bug in boundary extraction that is present
+            but is affecting the labeled regions which are not true matches
+            in current test.
         */
         
         float maxDesc = nBands * 256.0f;
@@ -685,7 +701,6 @@ public class ORBMatcher {
 
                 // plot bounds
                 img1 = ORB.convertToImage(orb2.getPyramidImages().get(i));
-                //TIntObjectMap<PairIntArray> bounds2Maps
                 TIntObjectIterator<PairIntArray> iter3 = bounds2Maps.iterator();
                 for (int ii = 0; ii < bounds2Maps.size(); ++ii) {
                     iter3.advance();
@@ -706,12 +721,11 @@ public class ORBMatcher {
 
         if (followWithShapeSearch) {
         
-            TIntObjectMap<ShapeFinder2.ShapeFinderResult> shapeResults 
-                = aggregatedShapeMatch(orb1, orb2,
+            results = aggregatedShapeMatch(orb1, orb2, nBands,
                 labeledPoints1, labeledPoints2,
                 octs1, octs2, segIdxs, scales1, scales2);
         
-            System.out.println("nShapes=" + shapeResults.size());
+            System.out.println("nShapes=" + results.size());
         }
         
         return results;
@@ -2046,8 +2060,7 @@ public class ORBMatcher {
                         }
                     }
                     if (minCP2 != null) {
-                        double scoreNorm = (nBands * 256 - minC) / maxCost;
-                        double costNorm = 1.0 - scoreNorm;
+                        double costNorm = minC / maxCost;
                         sum1 += costNorm;
                         double dist = ORBMatcher.distance(xTr, yTr, minCP2);
                         double distNorm = dist / maxDist;
@@ -2265,8 +2278,7 @@ public class ORBMatcher {
                 }
             }
             if (minCP2 != null) {
-                double scoreNorm = (nBands * 256 - minC) / maxDesc;
-                double costNorm = 1.0 - scoreNorm;
+                double costNorm = minC / maxDesc;
                 sumDesc += costNorm;
                 double dist = ORBMatcher.distance(x1Tr, y1Tr, minCP2);
                 double distNorm = dist / maxDist;
@@ -2320,8 +2332,7 @@ public class ORBMatcher {
                 }
             }
             if (minCP2 != null) {
-                double scoreNorm = (nBands * 256 - minC) / maxDesc;
-                double costNorm = 1.0 - scoreNorm;
+                double costNorm = minC / maxDesc;
                 sumDesc += costNorm;
                 double dist = ORBMatcher.distance(x1Tr, y1Tr, minCP2);
                 double distNorm = dist / maxDist;
@@ -2454,8 +2465,7 @@ public class ORBMatcher {
                 }
             }
             if (minCP1 != null) {
-                double scoreNorm = (nBands * 256 - minC) / maxDesc;
-                double costNorm = 1.0 - scoreNorm;
+                double costNorm = minC / maxDesc;
                 double dist = ORBMatcher.distance(x1Tr, y1Tr, minCP1);
                 assert(dist <= distMax);
                 double distNorm = dist / distMax;
@@ -3594,16 +3604,13 @@ public class ORBMatcher {
         return new double[] {sumDesc, sumDist, nAdded};
     }
 
-    private TIntObjectMap<ShapeFinder2.ShapeFinderResult> aggregatedShapeMatch(
-        ORB orb1, ORB orb2,
+    private List<CorrespondenceList> aggregatedShapeMatch(
+        ORB orb1, ORB orb2, int nBands,
         Set<PairInt> labeledPoints1, List<Set<PairInt>> labeledPoints2, 
         TIntList octs1, TIntList octs2, TIntList segIdxs, 
         TFloatList scales1, TFloatList scales2) {
 
         System.out.println("aggregatedShapeMatch for " + octs1.size() + " results");
-        
-        TIntObjectMap<ShapeFinder2.ShapeFinderResult> resultMap = new
-            TIntObjectHashMap<ShapeFinder2.ShapeFinderResult>();
         
         TIntObjectMap<Set<PairInt>> octave1ScaledSets =
             createSetsForOctaves(octs1, labeledPoints1, scales1);
@@ -3627,8 +3634,7 @@ public class ORBMatcher {
         //    number matched
         //    max matchable for octave pair (==n1)
         //    max avg chord diff for octave pair
-        //
-        
+                
         // the differences in chords for true match shapes should not change
         // with scale (excepting due to resolution affecting the shapes), 
         // so the maximum difference in the avg chord can be
@@ -3638,7 +3644,11 @@ public class ORBMatcher {
         // so a "re-normalization" to calculate new salukvazde costs just needs
         // to use the maximum avg chord sum diff for all.
         
-    //paused here: TODO: store costs and sort
+        TIntList shapeResultIdxs = new TIntArrayList();
+        List<ShapeFinder2.ShapeFinderResult> shapeResults = new 
+            ArrayList<ShapeFinder2.ShapeFinderResult>();
+    
+        double maxChordDiff = Double.MIN_VALUE;
         
         for (int i = 0; i < n; ++i) {
             int octave1 = octs1.get(i);
@@ -3686,7 +3696,13 @@ public class ORBMatcher {
             System.out.println("shapeFinder result for segIdx=" + 
                 + segIdx + " " + result.toString());
             
-            resultMap.put(i, result);
+            shapeResultIdxs.add(i);
+            shapeResults.add(result);
+            
+            double cda = result.getChordDiffSum()/(double)result.getNumberOfMatches();
+            if (cda > maxChordDiff) {
+                maxChordDiff = cda;
+            }
             
             {//DEBUG
                 ShapeFinder2.ShapeFinderResult r = result;
@@ -3720,8 +3736,82 @@ public class ORBMatcher {
                 }
             }
         }
+       
+        float maxDesc = nBands * 256.0f;
         
-        return resultMap;
+        // sort the results by cost
+        TFloatList shapeCosts = new TFloatArrayList(shapeResultIdxs.size());
+        TIntList shapeCostIdxs = new TIntArrayList();
+        
+        for (int i = 0; i < shapeResultIdxs.size(); ++i) {
+            
+            int idx = shapeResultIdxs.get(i);
+            
+            ShapeFinder2.ShapeFinderResult shapeResult = 
+                shapeResults.get(i);
+            
+            int octave1 = octs1.get(idx);
+            int octave2 = octs2.get(idx);
+            //int segIdx = segIdxs.get(idx);
+            //float scale1 = scales1.get(octave1);
+            //float scale2 = scales2.get(octave2);
+                       
+            float nb1 = shapeResult.bounds1.getN();
+
+            float nMatched = shapeResult.getNumberOfMatches();
+            
+            double chordDiff = shapeResult.getChordDiffSum()/nMatched;
+            double d1 = (chordDiff / maxDesc);
+            
+            double f1 = 1.f - (nMatched/nb1);
+            
+            double sd = d1 * d1 + f1 * f1;
+            
+            shapeCosts.add((float)sd);
+            shapeCostIdxs.add(i);
+        }
+        
+        QuickSort.sortBy1stArg(shapeCosts, shapeCostIdxs);
+        
+        List<CorrespondenceList> results = new ArrayList<CorrespondenceList>();
+        for (int i = 0; i < shapeCostIdxs.size(); ++i) {
+
+            int idx0 = shapeCostIdxs.get(i);
+
+            int idx = shapeResultIdxs.get(idx0);
+            
+            ShapeFinder2.ShapeFinderResult shapeResult = 
+                shapeResults.get(idx0);
+            
+            int np = shapeResult.getNumberOfMatches();
+            
+            int octave1 = octs1.get(idx);
+            int octave2 = octs2.get(idx);
+            //int segIdx = segIdxs.get(idx);
+            float scale1 = scales1.get(octave1);
+            float scale2 = scales2.get(octave2);
+           
+            PairIntArray bounds1 = shapeResult.bounds1;
+            PairIntArray bounds2 = shapeResult.bounds2;
+            
+            // shapeResult points need to be scaled back up to full reference
+            // frame
+            List<QuadInt> qs = new ArrayList<QuadInt>();
+            for (int j = 0; j < np; ++j) {
+                int idx1 = shapeResult.idx1s.get(j);
+                int idx2 = shapeResult.idx2s.get(j);
+                int x1 = Math.round((float)bounds1.getX(idx1) * scale1);
+                int y1 = Math.round((float)bounds1.getY(idx1) * scale1);
+                int x2 = Math.round((float)bounds2.getX(idx2) * scale2);
+                int y2 = Math.round((float)bounds2.getY(idx2) * scale2);
+                qs.add(new QuadInt(x1, y1, x2, y2));
+            }
+
+            // points are in full reference frame
+            results.add(new CorrespondenceList(qs));
+        }
+            
+        return results;
     }
 
     private TIntObjectMap<Set<PairInt>> createSetsForOctaves(TIntList octaves, 
