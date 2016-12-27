@@ -14005,16 +14005,7 @@ int z = 1;
 
         contigSets = LabelToColorHelper
             .extractContiguousLabelPoints(img, labels);
-        
-        // break single pixel chains
-        boolean didChange = separateSinglePixelChains(contigSets,
-            img, labels);
        
-        if (didChange) {
-            mergeSmallSegments(imgCp, labels, sizeLimit, 
-                ColorSpace.CIELAB);
-        }
-        
         return labels;
     }
 

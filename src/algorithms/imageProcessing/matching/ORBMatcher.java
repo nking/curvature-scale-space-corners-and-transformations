@@ -273,7 +273,7 @@ public class ORBMatcher {
                     int segIdx = iter2.key();
 
                     TIntSet kp2Idxs = iter2.value();
-
+   
                     float sz2 = sizes2Maps.get(segIdx)/scale2;
 
                     if (sz2 == 0 || kp2Idxs.size() < 2) {
@@ -2800,7 +2800,7 @@ public class ORBMatcher {
                 double[] xyCen = curveHelper.calculateXYCentroids(bounds);
                 System.out.println("bounds center=" + (int)xyCen[0] + "," +
                     (int)xyCen[1] + " size_full=" +
-                    calculateObjectSize(bounds));
+                    calculateObjectSize(bounds) + " segIdx=" + segIdx);
             }
         }
 

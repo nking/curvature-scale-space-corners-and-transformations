@@ -374,7 +374,7 @@ public class ObjectMatcher {
             ImageExt img11 = img1.copyToImageExt();
             ImageIOHelper.addAlternatingColorLabelsToRegion(
                 img11, labels4);
-            MiscDebug.writeImage(img11, "_segmented_v_" + ts);
+            MiscDebug.writeImage(img11, "_segmented_3_" + ts);
         }
 
         List<Set<PairInt>> listOfPointSets2
