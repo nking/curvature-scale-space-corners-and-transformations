@@ -533,7 +533,8 @@ public class PerimeterFinder2 {
                 for (int nbrIdx : nbrs) {
                     nbrsSet.add(boundaryList.get(nbrIdx));
                 }
-                // add junction between first of it's neighbors it finds
+                
+                // add junction after first of it's neighbors it finds
                 boolean found = false;
                 for (int ii = 0; ii < orderedOutput.getN(); ++ii) {
                     

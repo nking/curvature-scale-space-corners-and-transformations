@@ -94,7 +94,7 @@ public class ORBMatcher {
             throw new IllegalStateException("orbs must contain same kind of descirptors");
         }
 
-        int distTol = 5;
+        int distTol = 5;//15;
 
         PairIntArray bounds1 = createOrderedBoundsSansSmoothing(orb1, 
             labeledPoints1);
@@ -439,6 +439,14 @@ public class ORBMatcher {
                         distTol,
                         scale1, scale2
                     );
+                    
+              //TODO: for the new keypoints2 which were just added,
+              // need to match their labeled region boundaries too.
+              // -- would need to revise the above to gather all keypoint2
+              //    labeled regions into a set before any bounds matching,
+              //    then make a new boundary for the combined label regions
+              //    and match the combined bounds with bounds1 within tolerance
+              
   
                     if((normalizedCost[3] + additionalCosts[2]) > nkp1) {
                         System.out.println("normalizedCost[3]=" +
@@ -3454,6 +3462,10 @@ public class ORBMatcher {
             // all keypoints have been matched
             return new double[]{0, 0, 0};
         }
+        
+        //TODO:  could improve this by reducing the unmatched2 points
+        //  to only those within sz1 trnsformed size of center of
+        //  the labeled region.
         
         float maxDesc = nBands * 256.0f;
     
