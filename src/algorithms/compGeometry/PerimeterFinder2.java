@@ -11,17 +11,27 @@ import algorithms.search.NearestNeighbor2D;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
+import algorithms.util.VeryLongBitString;
+import gnu.trove.iterator.TIntIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 import java.util.logging.Logger;
+import org.aspectj.org.eclipse.jdt.internal.compiler.util.Messages;
 
 /**
  * class to hold some of the newer methods
@@ -220,10 +230,6 @@ public class PerimeterFinder2 {
             }
         }
         
-        Set<PairInt> removedBoundaryPoints = new HashSet<PairInt>();
-        thinTheBoundary(outputBoundary, removedBoundaryPoints,
-            contiguousPoints);
-        
         /*try {
 
             int[] xPolygon = null;
@@ -375,37 +381,57 @@ public class PerimeterFinder2 {
         }
         
         /*
-        the algorithm finds the leftmost and smallest y point, then
-        traverses its unadded boundary neighbors to find the neighbor 
+        the algorithm finds the leftmost and smallest xy point in the boundary, 
+        then traverses its unadded boundary neighbors to find the neighbor 
         with the smallest clockwise angle from it and previous point.
         For the case that an immediate unadded boundary neighbor is not present
         as is the case at the end of a single pixel wide spike, for example,
         the algorithm walks back up the output list looking for a point which
         has an unadded boundary neighbor and continues from there.
         
+        note also, the junctions are found ahead of time and removed
+        from the junctionSet as they are added to the output array.
+        corners are a subset of junctions and they are excluded by the small
+        clockwise angle ordering, but if they are not added on a closed
+        curve return to that region, they are added later.
+        
         NOTE: for best results, the user might want to have pre-processed the
         points to remove such features.
         */
+        
+        //using a list so can use bit vectors for quick set intersections
+        List<PairInt> boundaryList = new ArrayList<PairInt>(boundary);
+        
+        TObjectIntMap<PairInt> pointIndexes = new TObjectIntHashMap<PairInt>();
+        for (int i = 0; i < boundaryList.size(); ++i) {
+            pointIndexes.put(boundaryList.get(i), i);
+        }
+        
+        // index = index of boundaryList, item = bitstring with neighbors set
+        VeryLongBitString[] pointNeighbors = createPointNeighborArray(
+            boundaryList, pointIndexes);
+        
+        // corner junctions
+        TIntSet junctions = findJunctions(pointNeighbors);
        
         PairIntArray orderedOutput = new PairIntArray(boundary.size());
         
         Set<PairInt> remaining = new HashSet<PairInt>(boundary);
-        
+                
         PairInt curr = findSmallestXY(remaining);
         remaining.remove(curr);
         orderedOutput.add(curr.getX(), curr.getY());
+        junctions.remove(pointIndexes.get(curr));
         
         // fake point for angle calc refs.  since curr is smallest x, should be
         // safe to make a point to left of it.
         PairInt prev = new PairInt(curr.getX() - 1, curr.getY());
         
+        // idx w.r.t. orderedOutput.  used for walking back up array
         int outIdx = -1;
         
-        int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;
-        
         while (!remaining.isEmpty()) {
-            
+       
             // among the neighbors of curr that are in remaining, chose
             // the one which has the smallest clockwise angle w/ prev and curr
             
@@ -417,16 +443,16 @@ public class PerimeterFinder2 {
             int xPrev = prev.getX();
             int yPrev = prev.getY();
             
-            for (int k = 0; k < dxs.length; ++k) {
-                int x2 = x + dxs[k];
-                int y2 = y + dys[k];
-                PairInt p2 = new PairInt(x2, y2);
+            int[] currNbrs = pointNeighbors[pointIndexes.get(curr)].getSetBits();
+            
+            for (int nbrIdx : currNbrs) {
+                PairInt p2 = boundaryList.get(nbrIdx);
                 if (!remaining.contains(p2)) {
                     continue;
                 }
                 assert(!prev.equals(p2));
                 double angle = LinesAndAngles.calcClockwiseAngle(
-                    xPrev, yPrev, x2, y2, x, y);
+                    xPrev, yPrev, p2.getX(), p2.getY(), x, y);
                 if (Double.isNaN(angle)) {
                     // can occur is prev==p or p2==p
                     throw new IllegalStateException("error: unexpected NaN, "
@@ -438,13 +464,37 @@ public class PerimeterFinder2 {
                     minP = p2;
                 }
             }
+            
             if (minP == null) {
+                
+                // when remaining.size is >= (bounds.size - junctions.size)
+                //   start checking for whether have reached the starting
+                //   point, and look for whether the remaining points are
+                //   junctions that need to be inserted in their 90 degree 
+                //   positions.
+                if (remaining.size() <= (boundaryList.size() - junctions.size())) {
+                    if (isAdjacent(curr, orderedOutput.getX(0), 
+                        orderedOutput.getY(0))) {
+                        
+                        TIntSet remIdxs = new TIntHashSet();
+                        for (PairInt p : remaining) {
+                            remIdxs.add(pointIndexes.get(p));
+                        }
+                        remIdxs.removeAll(junctions);
+                        if (remIdxs.isEmpty()) {
+                            break;
+                        }
+                    }
+                }
                 
                 // walk back up the output to try previous points, looking for
                 //   one w/ an unassigned neighbor
                 outIdx--;
                 
                 if (outIdx < 1) {
+                    int nj = junctions.size();
+                    int nb = boundaryList.size();
+                    debug(contiguousPoints, boundary, orderedOutput);
                     throw new IllegalStateException("Error in closed curve shape.");
                 }
                 
@@ -453,11 +503,10 @@ public class PerimeterFinder2 {
                 
                 prev = new PairInt(orderedOutput.getX(outIdx - 1), 
                     orderedOutput.getY(outIdx - 1));
-                
-                debug(contiguousPoints, orderedOutput);
-                
+                                
                 continue;
             }
+            
             assert(minP != null);
             
             prev = curr;
@@ -467,6 +516,55 @@ public class PerimeterFinder2 {
             
             remaining.remove(curr);
             orderedOutput.add(curr.getX(), curr.getY());
+            junctions.remove(pointIndexes.get(curr));
+        }
+        
+        if (!junctions.isEmpty()) {
+            //insert between junction neigbhors
+            //TODO: this could be improved, but for now, will use
+            //  a pattern that has worse case runtime near
+            //  O(junctions.size * output.size)
+            TIntIterator iter = junctions.iterator();
+            while (iter.hasNext()) {
+                int jIdx = iter.next();
+                PairInt p = boundaryList.get(jIdx);
+                int[] nbrs = pointNeighbors[jIdx].getSetBits();
+                Set<PairInt> nbrsSet = new HashSet<PairInt>();
+                for (int nbrIdx : nbrs) {
+                    nbrsSet.add(boundaryList.get(nbrIdx));
+                }
+                // add junction between first of it's neighbors it finds
+                boolean found = false;
+                for (int ii = 0; ii < orderedOutput.getN(); ++ii) {
+                    
+                    PairInt nbr = new PairInt(orderedOutput.getX(ii),
+                        orderedOutput.getY(ii));
+                    
+                    if (nbrsSet.contains(nbr)) {
+                        // this cannot be last point, because other neighbor
+                        // would have been found before, so can assume
+                        // the next point is one of the other neighbors
+                        assert(ii < (orderedOutput.getN() - 1));
+                    
+                        int x2 = orderedOutput.getX(ii + 1);
+                        int y2 = orderedOutput.getY(ii + 1);
+                        
+                        int diffX = Math.abs(x2 - nbr.getX());
+                        int diffY = Math.abs(y2 - nbr.getY());
+                        assert((diffX == 0 && diffY == 1) || 
+                            (diffX == 1 && diffY == 0));
+                        PairInt p2 = new PairInt(x2, y2);
+                        
+                        assert(nbrsSet.contains(p2));
+                        
+                        orderedOutput.insert(ii, nbr.getX(), nbr.getY());
+                        
+                        found = true;
+                        break;
+                    }
+                }
+                assert(found);
+            }
         }
 
         return orderedOutput;    
@@ -823,6 +921,63 @@ public class PerimeterFinder2 {
         }
     }
 
+    private void debug(Set<PairInt> contiguousShapePoints,
+        Set<PairInt> boundary, PairIntArray output) {
+        try {
+
+            int[] xPolygon = null;
+            int[] yPolygon = null;
+            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+            int[] xminmxyminmiac = MiscMath.findMinMaxXY(
+                contiguousShapePoints);
+            int[] xp, yp;
+            int n, count;
+
+            n = output.getN();
+            xp = new int[n];
+            yp = new int[n];
+            for (int i = 0; i < output.getN(); ++i) {
+                xp[i] = output.getX(i);
+                yp[i] = output.getY(i);
+            }
+            plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],
+                xminmxyminmiac[2], xminmxyminmiac[3],
+                xp, yp, xPolygon, yPolygon, "ordered bounds");
+            
+            n = boundary.size();
+            xp = new int[n];
+            yp = new int[n];
+            int i = 0;
+            for (PairInt p : boundary) {
+                xp[i] = p.getX();
+                yp[i] = p.getY();
+                i++;
+            }
+            plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],
+                xminmxyminmiac[2], xminmxyminmiac[3],
+                xp, yp, xPolygon, yPolygon, "boundary");
+            
+            n = contiguousShapePoints.size();
+            xp = new int[n];
+            yp = new int[n];
+            i = 0;
+            for (PairInt p : contiguousShapePoints) {
+                xp[i] = p.getX();
+                yp[i] = p.getY();
+                i++;
+            }
+            plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],
+                xminmxyminmiac[2], xminmxyminmiac[3],
+                xp, yp, xPolygon, yPolygon, "filled shape");
+            
+            plotter.writeFile2();
+
+            System.out.println("output=" + output.toString());
+        } catch (Throwable t) {
+
+        }
+    }
+
     private void debugPrint(PairIntArray ob1, PairIntArray ob2, 
         PairIntArray output) {
         
@@ -1021,5 +1176,94 @@ public class PerimeterFinder2 {
         }
         
         return minP;
+    }
+
+    private VeryLongBitString[] createPointNeighborArray(
+        List<PairInt> points, TObjectIntMap<PairInt> pointIndexes) {
+        
+        int n = points.size();
+        
+        VeryLongBitString[] out = new VeryLongBitString[n];
+                
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        for (int i = 0; i < n; ++i) {
+            
+            PairInt p = points.get(i);
+            
+            out[i] = new VeryLongBitString(n);
+                        
+            int x = p.getX();
+            int y = p.getY();
+                        
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                PairInt p2 = new PairInt(x2, y2);
+                if (pointIndexes.containsKey(p2)) {
+                    out[i].setBit(pointIndexes.get(p2));
+                }
+            }
+        }
+        
+        return out;
+    }
+
+    private TIntSet findJunctions(VeryLongBitString[] pointNeighbors) {
+
+        /*
+        looking for corner junctions.
+        
+        p4
+           p3 p2
+           p1
+              p0
+        p3 map has p1, p2, p4
+        p1 map has p0, p2, p3
+        the intersection of the 2 contains p2 which is the corner junction
+        
+        p4
+           p3 p2
+              p1
+              p0
+        p3 map has p1, p2, p4
+        p1 map has p0, p2, p3
+        the intersection contains p2 which is the corner junction
+        
+        */
+        
+        TIntSet out = new TIntHashSet();
+        
+        int n = pointNeighbors.length;
+        for (int i = 0; i < n; ++i) {
+            VeryLongBitString bs1 = pointNeighbors[i];
+            for (int j = (i + 1); j < n; ++j) {
+                VeryLongBitString bs2 = pointNeighbors[j];
+                
+                VeryLongBitString intersection = bs1.and(bs2);
+                
+                int[] setBits = intersection.getSetBits();
+            
+                if (setBits.length > 0) {
+                    //System.out.println("i=" + i + " j=" + j +
+                    //    " intersection=" + Arrays.toString(setBits));
+                    out.addAll(setBits);
+                }
+            }
+        }
+        
+        return out;
+    }
+
+    private boolean isAdjacent(PairInt p, int x, int y) {
+
+        int diffX = Math.abs(p.getX() - x);
+        int diffY = Math.abs(p.getY() - y);
+        if ((diffX == 1 && diffY <= 1) || (diffY == 1 && diffX <= 1)) {
+            return true;
+        } 
+        
+        return false;
     }
 }
