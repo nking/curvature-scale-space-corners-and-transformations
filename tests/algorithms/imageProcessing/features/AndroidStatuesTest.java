@@ -345,7 +345,7 @@ public class AndroidStatuesTest extends TestCase {
         ImageSegmentation imageSegmentation = new ImageSegmentation();
 
         String[] fileNames0 = new String[]{
-        //    "android_statues_03_sz1",
+            "android_statues_03_sz1",
             "android_statues_03_sz3"
         };
 
@@ -358,7 +358,7 @@ public class AndroidStatuesTest extends TestCase {
         String[] fileNames1 = new String[]{
         //    "android_statues_01.jpg", // no kp remaining
         //      "android_statues_02.jpg", // no kp remaining
-        //    "android_statues_04.jpg", // OK: match0, matchSmall works
+            "android_statues_04.jpg", // OK: match0, matchSmall works
             "android_statues_03.jpg" // OK: match0, matchSmall works
         };
         
@@ -436,7 +436,7 @@ public class AndroidStatuesTest extends TestCase {
                 }
                 
                 CorrespondencePlotter plotter = new CorrespondencePlotter(
-                    imgs0[1], img.copyImage());            
+                    imgs0[1].copyImage(), img.copyImage());            
                 for (int ii = 0; ii < cor.getPoints1().size(); ++ii) {
                     PairInt p1 = cor.getPoints1().get(ii);
                     PairInt p2 = cor.getPoints2().get(ii);
