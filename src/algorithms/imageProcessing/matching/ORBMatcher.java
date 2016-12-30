@@ -104,6 +104,15 @@ public class ORBMatcher {
             throw new IllegalStateException("the boundary of object 1 "
                 + " must have at least 7 points");
         }
+        
+        //TODO: this needs a setting that allows a filter to be made to
+        //   prefer keypoints furthest from the outer bounds (==inner points).
+        //   This is helpful for matching objects which have different
+        //   backgrounds or foregrounds because they have changed location
+        //   or pose.
+        //   -- all keypoints can be used for the geometric model,
+        //      but for costs in the last results, might need to restrict
+        //      the costs to inner descriptors.
 
         int[] minMaxXYB1 = MiscMath.findMinMaxXY(bounds1);
         NearestNeighbor2D nnb1 = new NearestNeighbor2D(Misc.convert(bounds1),
@@ -458,14 +467,9 @@ public class ORBMatcher {
             looked at more carefully...
         */
 
-        /*
-        TODO:
-          the android statues test w/ moderate projection, andr02,
-          shows that the shape cost is necessary.
-          -- transform the bounds here and use a method
-          (not yet implemented) in PartialShapeMatcher to
-          calculate a shape cost and include it below.
-        */
+        //TODO: the hsv keypoint descriptor costs need to be limited to
+        //   inner keypoints if user has specified.
+       
 
         int[] minMaxXY1 = MiscMath.findMinMaxXY(bounds1);
         NearestNeighbor2D nnB1 = new NearestNeighbor2D(Misc.convert(bounds1),
@@ -575,6 +579,7 @@ public class ORBMatcher {
                 System.out.println("ERROR: scale difference too large:" +
                     " oct1=" + octave1 + " oct2=" + octave2 +
                     " segIdx=" + segIdx);
+                correspondences.get(i).clear();
                 bounds2s.add(bounds2);
                 boundsMatched.add(new PairIntArray());
                 bDistCost.add(Double.MAX_VALUE);
@@ -720,24 +725,62 @@ public class ORBMatcher {
 
             int idx = indexes.get(i);
 
-            System.out.println("i=" + i + " segIdx=" + segIdxs.get(idx) +
-                " oct1=" + octs1.get(idx) + " oct2=" + octs2.get(idx)
-                + " rot=" + 
-                transformations.get(idx).getRotationInDegrees() + 
-                " scl=" + 
-                transformations.get(idx).getScale());
+            int segIdx = segIdxs.get(idx);
             
             List<QuadInt> qs = correspondences.get(idx);
 
             PairIntArray p = bounds1;
             PairIntArray q = bounds2s.get(idx);
             
-            PairIntArray matchedIndexes = extractMatchedIndexes(qs, p, q);
+            PairIntArray matchedIndexes = boundsMatched.get(idx);
             
             PartialShapeMatcher matcher = new PartialShapeMatcher();
             matcher.overrideSamplingDistance(1);
-            double chordDiffSum = matcher.calculateChordDiffSums(p, q, 
+            TDoubleList chordDiffs = matcher.calculateChordDiffs(p, q, 
                 matchedIndexes);
+            
+            if (segIdx == 0 || segIdx == 2) {
+                double[] diffs = chordDiffs.toArray(new double[chordDiffs.size()]);
+                System.out.println("segIdx=" + segIdx + "  cds=" + Arrays.toString(diffs));
+            }
+            
+            TIntList rm = new TIntArrayList();
+            double thresh = 1;
+            double chordDiffSum = 0;
+            for (int j = 0; j < chordDiffs.size(); ++j) {
+                // filter out points > thresh
+                double d = chordDiffs.get(j);
+                if (d > thresh) {
+                    rm.add(j);
+                } else {
+                    chordDiffSum += chordDiffs.get(j);
+                }
+            }
+            
+            for (int j = (rm.size() - 1); j > -1; --j) {
+                
+                int rmIdx = rm.get(j);
+                
+                int idx1 = matchedIndexes.getX(rmIdx);
+                int idx2 = matchedIndexes.getY(rmIdx);
+                PairInt p1 = new PairInt(p.getX(idx1), p.getY(idx1));
+                PairInt p2 = new PairInt(q.getX(idx2), q.getY(idx2));
+                
+                //TODO: improve this w/ index map when have finished changes
+                for (int k = 0; k < qs.size(); ++k) {
+                    QuadInt q0 = qs.get(k);
+                    PairInt p1c = new PairInt(q0.getA(), q0.getB());
+                    PairInt p2c = new PairInt(q0.getC(), q0.getD());
+                    if (p1.equals(p1c) && p2.equals(p2c)) {
+                        qs.remove(k);
+                        break;
+                    }
+                }                
+                matchedIndexes.removeRange(rmIdx, rmIdx);
+                chordDiffs.removeAt(rmIdx);
+            }
+            
+            // should correct the correpondence distances too
             
             double chordAvg = chordDiffSum/(double)matchedIndexes.getN();
             
@@ -758,23 +801,52 @@ public class ORBMatcher {
         for (int i = 0; i < topK; ++i) {
 
             int idx = indexes.get(i);
+            
+            int octave1 = octs1.get(idx);
+            int octave2 = octs2.get(idx);
 
-            int nCorr = results.get(i).getPoints1().size();
+            int nBMatched = boundsMatched.get(idx).getN();
             
             int nb1 = nBounds1.get(idx);
             
-            double d1 = chordDiffAvgs.get(i)/maxChordAvg;
-            double f1 = 1. - ((double)nCorr/(double)nb1);
-            double sd1 = d1*d1 + f1*f1;
+            float d5 = (float)(chordDiffAvgs.get(i)/maxChordAvg);
+            float f5 = 1.f - ((float)nBMatched/(float)nb1);
             
-            System.out.println("i=" + i + " segIdx=" + segIdxs.get(idx) +
-                " oct1=" + octs1.get(idx) + " oct2=" + octs2.get(idx)
-                + " rot=" + 
-                transformations.get(idx).getRotationInDegrees() + 
-                " scl=" + 
-                transformations.get(idx).getScale()
-                + " d1=" + d1 + " f1=" + f1 + " sd1=" + sd1
-            );
+            float nKP1 = orb1.getKeyPoint0List().get(octave1).size();
+            float nd = nDesc.get(idx);
+            float descCost = (float)descCosts.get(idx)/nd;
+            float distCost = (float)distCosts.get(idx)/nd;
+
+            // calculate "fraction of whole" for keypoint descriptors
+            final float f1 = 1.f - (nd/nKP1);
+            float d1 = descCost;
+            float d2 = distCost;
+
+            float boundaryDistCost = (float)bDistCost.get(idx)/nBMatched;
+
+            // -- fraction of whole for boundary matching
+            float f3 = 1.f - (nBMatched / (float)nBounds1.get(idx));
+            float d3 = boundaryDistCost;
+
+            float tot = 2.f*f1 * f1 + d1 * d1 + d2 * d2 + d3 * d3 + f3 * f3;
+            tot = f1 * f1 + d1 * d1 + d2 * d2
+                + d3 * d3 + f3 * f3
+                + d5 * d5 + f5 * f5;
+            //tot = f1 * f1 + d1 * d1;
+
+            String str1 = String.format(
+                "** oct1=%d oct2=%d segIdx=%d (rot=%d, s=%.2f) nCor=%d nDesc=%d nB=%d",
+                octave1, octave2, segIdxs.get(idx),
+                Math.round(transformations.get(idx).getRotationInDegrees()),
+                transformations.get(idx).getScale(),
+                correspondences.get(idx).size(), (int)nd, nb1);
+
+            String str2 = String.format(
+                "\n  i=%d d1(desc)=%.2f f1=%.2f d2(dist)=%.2f d3(bDist)=%.2f f3=%.2f d5=%.2f f5=%.2f tot=%f",
+                i, d1,        f1, d2,           d3, f3, 
+                d5, f5, tot);
+
+            System.out.println(str1 + " " + str2);
             
         }
         
@@ -4236,34 +4308,6 @@ public class ORBMatcher {
         }
 
         return output;
-    }
-
-    private PairIntArray extractMatchedIndexes(List<QuadInt> qs, 
-        PairIntArray p, PairIntArray q) {
-
-        TObjectIntMap<PairInt> pPointIndexes = new TObjectIntHashMap<PairInt>();
-        for (int i = 0; i < p.getN(); ++i) {
-            pPointIndexes.put(new PairInt(p.getX(i), p.getY(i)), i);
-        }
-
-        TObjectIntMap<PairInt> qPointIndexes = new TObjectIntHashMap<PairInt>();
-        for (int i = 0; i < q.getN(); ++i) {
-            qPointIndexes.put(new PairInt(q.getX(i), q.getY(i)), i);
-        }        
-        
-        PairIntArray matchedIndexes = new PairIntArray(qs.size());
-        
-        for (int i = 0; i < qs.size(); ++i) {
-            PairInt pP = new PairInt(qs.get(i).getA(), qs.get(i).getB());
-            int pIdx = pPointIndexes.get(pP);
-            
-            PairInt qP = new PairInt(qs.get(i).getC(), qs.get(i).getD());
-            int qIdx = qPointIndexes.get(qP);
-        
-            matchedIndexes.add(pIdx, qIdx);
-        }
-        
-        return matchedIndexes;
     }
 
     private static class PObject {
