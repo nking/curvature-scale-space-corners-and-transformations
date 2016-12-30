@@ -286,76 +286,79 @@ public class ObjectMatcher {
   
         float luvDeltaELimit = 40;//10;// between 10 and 30
         
-        rmIndexesList = new ArrayList<TIntList>();
+        boolean filterForCIE = false;
+        if (filterForCIE) {
+            rmIndexesList = new ArrayList<TIntList>();
 
-        // ---- calculate the template CIE LUV colors ----
-        //      -- also calculate separately, the colors of the 
-        //         entire shape to compare results when using the
-        //         colors as filters.
-        Set<PairInt> set0 = new HashSet<PairInt>();
-        for (PairInt p : orb0.getKeyPointListColMaj(0)) {
-            Set<PairInt> points = imageProcessor.getNeighbors(img0, p);
-            set0.add(p);
-            set0.addAll(points);
-        }
-        GroupPixelCIELUV meanLUVKeypoints = new GroupPixelCIELUV(set0, img0);
-        meanLUVKeypoints.calculateColors(set0, img0, 0, 0);
-
-        CIEChromaticity cieC = new CIEChromaticity();
-
-        ns = orb1.getScalesList().size();
-        for (int i = 0; i < ns; ++i) {
-            TIntList kp0 = orb1.getKeyPoint0List().get(i);
-            TIntList kp1 = orb1.getKeyPoint1List().get(i);
-            TDoubleList or = orb1.getOrientationsList().get(i);
-            TFloatList s = orb1.getScalesList().get(i);
-
-            int np = kp0.size();
-            TIntList rm = new TIntArrayList();
-            for (int j = 0; j < np; ++j) {
-
-                PairInt p = new PairInt(kp1.get(j), kp0.get(j));
-                Set<PairInt> points = imageProcessor.getNeighbors(img1, p);
-                points.add(p);
-
-                GroupPixelCIELUV luv1 = new GroupPixelCIELUV(points, img1);
-                luv1.calculateColors(points, img1, 0, 0);
-
-                // -- for LUV, a deltaE limit of 9?
-                double deltaE = cieC.calcDeltaECIE2000(
-                    meanLUVKeypoints.getAvgL(),
-                    meanLUVKeypoints.getAvgU(),
-                    meanLUVKeypoints.getAvgV(),
-                    luv1.getAvgL(),
-                    luv1.getAvgU(),
-                    luv1.getAvgV());
-
-                if (Math.abs(deltaE) > luvDeltaELimit) {
-                    rm.add(j);
-                }
-            }           
-            rmIndexesList.add(rm);
-        }
-
-        orb1.removeAtIndexes(rmIndexesList);
-
-        if (orb1.getKeyPoint0List().isEmpty()) {
-            return null;
-        }
-        
-        if (debug) {   // ----------- segmentation -------
-            Set<PairInt> kpSet = new HashSet<PairInt>();
-            TIntList kp0 = orb1.getKeyPoint0List().get(0);
-            TIntList kp1 = orb1.getKeyPoint1List().get(0);
-            for (int i = 0; i < kp0.size(); ++i) {
-                int x = kp1.get(i);
-                int y = kp0.get(i);
-                kpSet.add(new PairInt(x, y));
+            // ---- calculate the template CIE LUV colors ----
+            //      -- also calculate separately, the colors of the 
+            //         entire shape to compare results when using the
+            //         colors as filters.
+            Set<PairInt> set0 = new HashSet<PairInt>();
+            for (PairInt p : orb0.getKeyPointListColMaj(0)) {
+                Set<PairInt> points = imageProcessor.getNeighbors(img0, p);
+                set0.add(p);
+                set0.addAll(points);
             }
-            ImageExt img11 = img1.createWithDimensions();
-            ImageIOHelper.addCurveToImage(kpSet, img11,
-                1, 255, 0, 0);
-            MiscDebug.writeImage(img11, "_filtered_2_" + ts);
+            GroupPixelCIELUV meanLUVKeypoints = new GroupPixelCIELUV(set0, img0);
+            meanLUVKeypoints.calculateColors(set0, img0, 0, 0);
+
+            CIEChromaticity cieC = new CIEChromaticity();
+
+            ns = orb1.getScalesList().size();
+            for (int i = 0; i < ns; ++i) {
+                TIntList kp0 = orb1.getKeyPoint0List().get(i);
+                TIntList kp1 = orb1.getKeyPoint1List().get(i);
+                TDoubleList or = orb1.getOrientationsList().get(i);
+                TFloatList s = orb1.getScalesList().get(i);
+
+                int np = kp0.size();
+                TIntList rm = new TIntArrayList();
+                for (int j = 0; j < np; ++j) {
+
+                    PairInt p = new PairInt(kp1.get(j), kp0.get(j));
+                    Set<PairInt> points = imageProcessor.getNeighbors(img1, p);
+                    points.add(p);
+
+                    GroupPixelCIELUV luv1 = new GroupPixelCIELUV(points, img1);
+                    luv1.calculateColors(points, img1, 0, 0);
+
+                    // -- for LUV, a deltaE limit of 9?
+                    double deltaE = cieC.calcDeltaECIE2000(
+                        meanLUVKeypoints.getAvgL(),
+                        meanLUVKeypoints.getAvgU(),
+                        meanLUVKeypoints.getAvgV(),
+                        luv1.getAvgL(),
+                        luv1.getAvgU(),
+                        luv1.getAvgV());
+
+                    if (Math.abs(deltaE) > luvDeltaELimit) {
+                        rm.add(j);
+                    }
+                }           
+                rmIndexesList.add(rm);
+            }
+
+            orb1.removeAtIndexes(rmIndexesList);
+
+            if (orb1.getKeyPoint0List().isEmpty()) {
+                return null;
+            }
+        
+            if (debug) {   // ----------- segmentation -------
+                Set<PairInt> kpSet = new HashSet<PairInt>();
+                TIntList kp0 = orb1.getKeyPoint0List().get(0);
+                TIntList kp1 = orb1.getKeyPoint1List().get(0);
+                for (int i = 0; i < kp0.size(); ++i) {
+                    int x = kp1.get(i);
+                    int y = kp0.get(i);
+                    kpSet.add(new PairInt(x, y));
+                }
+                ImageExt img11 = img1.createWithDimensions();
+                ImageIOHelper.addCurveToImage(kpSet, img11,
+                    1, 255, 0, 0);
+                MiscDebug.writeImage(img11, "_filtered_2_" + ts);
+            }
         }
         
         ImageExt img1Cp = img1.copyToImageExt();

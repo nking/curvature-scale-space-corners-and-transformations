@@ -18,7 +18,9 @@ import algorithms.util.PairFloat;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import gnu.trove.iterator.TObjectFloatIterator;
+import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TObjectFloatMap;
 import gnu.trove.map.TObjectIntMap;
@@ -99,7 +101,14 @@ based upon algorithm in paper
 
        The runtime complexity for the search of the
        integral image of summed differences and analysis
-       will be added here:
+       will be added here.  A change has been made to the algorithm,
+       specifically, instead of creating a summed area table as suggested 
+       by the authors which
+       reduces a runtime complexity factor from n to sqrt(n), 
+       the algorithm here uses a summed
+       column table which results in  more precise interval sums
+       by excluding the row component and that change was found necessary
+       for the best articulated results (see the scissors tests).
  </pre>
  <em>NOTE: You may need to pre-process the shape points
      for example, smooth the boundary.</em>
@@ -125,10 +134,7 @@ public class PartialShapeMatcher {
     protected int dp = 3;
 
     private boolean useSameNumberOfPoints = false;
-
-    // this helps to remove points far from
-    // euclidean transformations using RANSAC.
-    // it should probably always be true.
+    
     private boolean performEuclidTrans = false;
 
     private boolean useRANSAC = false;
@@ -349,6 +355,51 @@ public class PartialShapeMatcher {
         return r;
     }
 
+    private TDoubleList calculateChordDiffsSameNumber(PairIntArray p, 
+        PairIntArray q, PairIntArray matchedIndexes) {
+        
+        log.fine("p.n=" + p.getN() + " q.n=" + q.getN());
+
+        if (p.getN() < 2 || q.getN() < 2) {
+            throw new IllegalArgumentException("p and q must "
+            + " have at least dp*2 points = " + (dp * 2));
+        }
+
+        int nSampl = Math.min(p.getN(), q.getN())/dp;
+
+        PairIntArray pSub = new PairIntArray(nSampl);
+        PairIntArray qSub = new PairIntArray(nSampl);
+        PairIntArray idxsSub = new PairIntArray(nSampl);
+        
+        int pDp = p.getN()/nSampl;
+        int qDp = q.getN()/nSampl;
+    
+        for (int i = 0; i < p.getN(); i += pDp) {
+            pSub.add(p.getX(i), p.getY(i));
+        }
+        
+        for (int i = 0; i < q.getN(); i += qDp) {
+            qSub.add(q.getX(i), q.getY(i));
+        }
+        
+        for (int i = 0; i < idxsSub.getN(); ++i) {
+            int idx1 = matchedIndexes.getX(i)/pDp;
+            int idx2 = matchedIndexes.getY(i)/qDp;
+            idxsSub.add(idx1, idx2);
+        }
+        
+        log.fine("pSub.n=" + pSub.getN() + " qSub.n=" + qSub.getN());
+    
+        if (storeMatrix) {
+            storePDp = pDp;
+            storeQDp = qDp;
+        }
+        
+        TDoubleList chordDiffs = calculateChordDiffs0(pSub, qSub, idxsSub);
+        
+        return chordDiffs;
+    }
+    
     private Result matchSameNumber(PairIntArray p, PairIntArray q) {
 
         log.fine("p.n=" + p.getN() + " q.n=" + q.getN());
@@ -453,6 +504,43 @@ public class PartialShapeMatcher {
         return r;
     }
     
+    private TDoubleList calculateChordDiffs0(PairIntArray p, PairIntArray q,
+        PairIntArray matchedIndexes) {
+        
+        if (p == null || p.getN() < 2) {
+            throw new IllegalArgumentException("p must have at "
+                + "least 2 points");
+        }
+        
+        if (q == null || q.getN() < 2) {
+            throw new IllegalArgumentException("q must have at "
+                + "least 2 points");
+        }
+        
+        // --- make difference matrices ---
+
+        //md[0:n2-1][0:n1-1][0:n1-1]
+        float[][][] md;
+        TDoubleList chordDiffs;
+        if (p.getN() <= q.getN()) {
+            md = createDifferenceMatrices(p, q);
+            chordDiffs = extractChordDiffs(md, p.getN(), q.getN(),
+                matchedIndexes);
+        } else {
+            md = createDifferenceMatrices(q, p);
+            PairIntArray revMatchedIndexes = reverseXY(matchedIndexes);
+            chordDiffs = extractChordDiffs(md, q.getN(), p.getN(),
+                revMatchedIndexes);
+            pToQ = false;
+        }
+        
+        if (storeMatrix) {
+            storedMatrix = md;
+        }
+
+        return chordDiffs;
+    }
+    
     private Result match0(PairIntArray p, PairIntArray q) {
 
         if (p == null || p.getN() < 2) {
@@ -472,6 +560,7 @@ public class PartialShapeMatcher {
         Result r;
         if (p.getN() <= q.getN()) {
             md = createDifferenceMatrices(p, q);
+            applySummedColumnTableConversion(md);
             r = match0(md, p, q);
             if (r != null) {
                 if (debug) {
@@ -481,6 +570,7 @@ public class PartialShapeMatcher {
             }
         } else {
             md = createDifferenceMatrices(q, p);
+            applySummedColumnTableConversion(md);
             r = match0(md, q, p);
             if (r != null) {
                 if (debug) {
@@ -658,6 +748,83 @@ public class PartialShapeMatcher {
 
             return best;
         }        
+    }
+    
+    /**
+     * as an alternative to finding the best correspondence between two
+     * shapes, instead, given the correspondence, sum the chord differences.
+     * The same instance variables such as the point spacing are used here
+     * too.
+     * @param p
+     * @param q
+     * @param matchedIndexes
+     * @return 
+     */
+    public double calculateChordDiffSums(PairIntArray p, PairIntArray q,
+        PairIntArray matchedIndexes) {
+       
+        TDoubleList diffs = calculateChordDiffs(p, q, matchedIndexes);
+        
+        double sum = 0;
+        
+        for (int i = 0; i < diffs.size(); ++i) {
+            sum += diffs.get(i);
+        }
+       
+        return sum;
+    }
+    
+    /**
+     * as an alternative to finding the best correspondence between two
+     * shapes, instead, given the correspondence, sum the chord differences.
+     * The same instance variables such as the point spacing are used here
+     * too.
+     * @param p
+     * @param q
+     * @param matchedIndexes
+     * @return 
+     */
+    public TDoubleList calculateChordDiffs(PairIntArray p, PairIntArray q,
+        PairIntArray matchedIndexes) {
+       
+        log.info("p.n=" + p.getN() + " q.n=" + q.getN()
+            + " useSameNumberOfPoints=" + useSameNumberOfPoints
+            + " dp=" + dp);
+
+        if (p.getN() < 2 || q.getN() < 2) {
+            throw new IllegalArgumentException("p and q must "
+            + " have at least dp*2 points = " + (dp * 2));
+        }
+
+        if (useSameNumberOfPoints) {
+            return calculateChordDiffsSameNumber(p, q, matchedIndexes);
+        }
+                
+        if (dp == 1) {
+            return calculateChordDiffs0(p, q, matchedIndexes);
+        }
+     
+        PairIntArray pSub = new PairIntArray(p.getN()/dp);
+        PairIntArray qSub = new PairIntArray(q.getN()/dp);
+        PairIntArray idxsSub = new PairIntArray(pSub.getN());
+        
+        for (int i = 0; i < p.getN(); i += dp) {
+            pSub.add(p.getX(i), p.getY(i));
+        }
+        
+        for (int i = 0; i < q.getN(); i += dp) {
+            qSub.add(q.getX(i), q.getY(i));
+        }
+        
+        for (int i = 0; i < matchedIndexes.getN(); ++i) {
+            int idx1 = matchedIndexes.getX(i)/dp;
+            int idx2 = matchedIndexes.getY(i)/dp;
+            idxsSub.add(idx1, idx2);
+        }
+        
+        log.info("pSub.n=" + pSub.getN() + " qSub.n=" + qSub.getN());
+        
+        return calculateChordDiffs0(pSub, qSub, idxsSub);
     }
 
     private List<SR> findMinima(float[][][] md, int n1, int n2) {
@@ -1138,6 +1305,20 @@ public class PartialShapeMatcher {
             populateWithChordDiffs(best, md, n1, n2);
         }       
     }
+
+    private PairIntArray reverseXY(PairIntArray matchedIndexes) {
+
+        int n = matchedIndexes.getN();
+        
+        PairIntArray r = new PairIntArray(n);
+        
+        for (int i = 0; i < n; ++i) {
+            r.add(matchedIndexes.getY(i),
+                matchedIndexes.getX(i));
+        }
+        
+        return r;
+    }
     
     public static class SRComparator implements Comparator<SR> {
 
@@ -1395,46 +1576,13 @@ public class PartialShapeMatcher {
         float[][] a2 = createDescriptorMatrix(q, q.getN());
 
         /*
-        - find rxr sized blocks similar to one another
-          by starting at main diagonal element
-          A_1(s,s) and A_2(m,m)
-          which have a small angular difference value
-
-          //s range 0 to M-1
-          //m range 0 to M-1, M<=N
-          //r range 2 to sqrt(min(N, M))
-
-          - to calculate all D_a(s,m,r)
-               uses concept of "integral image"
-                   by Viola and Jones
-               (for their data, I(x,y)=i(x,y)+I(x-1,y)+I(x,y-1)-I(x-1,y-1))
-             - N integral images int_1...int_N of size MXM
-               are built for N descriptor
-               difference matrices M_D^n
-               where the number of sampled points on the two
-               shapes is N and M, respectively
-
-               where M_D^n
-                   = A_1(1:M,1:M) - A_2(n:n+M-1,n:n+M-1)
-
-               then, all matching triplets {s,m,r} which
-               provide a difference value D_a(s,m,r) below
-               a fixed threshold are calculated.
-        ---------------------------
-
-        (1) make difference matrices.
+         make difference matrices.
             there will be N A_2 matrices in which each
             is shifted left and up by 1 (or some other value).
 
             M_D^n = A_1(1:M,1:M) - A_2(n:n+M-1,n:n+M-1)
                 shifting A_2 by 0 through N covering all
                 orientation angles.
-        (2) make Summary Area Tables of the N M_D^m matrices.
-        (3) search: starting on the diagonals of the integral images
-            made from the N M_D^n matrices,
-            D_α(s, m, r) can be calculated for every block of any
-            size starting at any point on the diagonal in
-            constant time.
         */
 
         /*
@@ -1483,11 +1631,6 @@ public class PartialShapeMatcher {
         }
        
         //print("differences:", md);
-
-        // ---- make summary area table for md-----
-        for (int i = 0; i < md.length; ++i) {
-            applySummedColumnTableConversion(md[i]);
-        }
 
         return md;
     }
@@ -1678,6 +1821,12 @@ public class PartialShapeMatcher {
         }
 
         return output;
+    }
+    
+    protected void applySummedColumnTableConversion(float[][][] md) {
+        for (int i = 0; i < md.length; ++i) {
+            applySummedColumnTableConversion(md[i]);
+        }
     }
 
     protected void applySummedColumnTableConversion(float[][] mdI) {
@@ -2002,6 +2151,87 @@ public class PartialShapeMatcher {
         }
         
         result.chordsNeedUpdates = false;
+    }
+
+    /**
+     * given a chord difference matrix which does not use summed columns
+     * nor summed area, extract the chord differences of the matched indexes.
+     * @param md
+     * @param n1
+     * @param n2 
+     * @param matchedIndexes
+     */
+    private TDoubleList extractChordDiffs(float[][][] md, int n1, int n2,
+        PairIntArray matchedIndexes) {
+       
+        assert(md[0][0].length == n1);
+        assert(md.length == n2);
+        assert(md[0].length == n1);
+        
+        //md[0:n2-1][0:n1-1][0:n1-1]
+        
+        TDoubleList chordDiffs = new TDoubleArrayList();
+        
+        int offset = 0;
+        int idx1, idx2;
+        
+        /*
+            MXM              NXN
+                         30 31 32 33
+         20 21 22        20 21 22 23
+         10 11 12        10 11 12 13
+         00 01 02        00 01 02 03   p_i_j - q_i_j
+
+                         01 02 03 00
+         20 21 22        31 32 33 30
+         10 11 12        21 22 23 20
+         00 01 02        11 12 13 10  p_i_j - q_(i+1)_(j+1)
+
+                         12 13 10 11
+         20 21 22        02 03 00 01
+         10 11 12        32 33 30 31
+         00 01 02        22 23 20 21  p_i_j - q_(i+2)_(j+2)
+
+                         23 20 21 22
+         20 21 22        13 10 11 12
+         10 11 12        03 00 01 02
+         00 01 02        33 30 31 32  p_i_j - q_(i+3)_(j+3)
+        */
+
+        for (int i = 0; i < matchedIndexes.getN(); ++i) {
+            
+            idx1 = matchedIndexes.getX(i);
+            idx2 = matchedIndexes.getY(i);
+ 
+            // idx2 is at column 0 when offset=idx2.
+            // since n2 >= n1, offset should be within bounds for tht offset.
+            // but the diagonals are 0, so choosing a position
+            // at least a few pixels away from bounds.
+            offset = 0;
+
+            if (idx2 > (n1 - 2)) {
+                // idx2 is outside of the default row 0 of md[0] array, so
+                // need to calculate the offset.
+                
+                // if within bounds, will add 4 to the offset to get the pixel
+                // away from bounds
+                                
+                if (((idx2 - (n1 - 2)) + 4) < (n1 - 2)) {
+                    offset = (idx2 - (n1 - 2)) + 4;
+                } else {
+                    offset = (idx2 - (n1 - 2));
+                }
+                idx2 -= offset;
+                if (idx2 < 0) {
+                    offset = idx2 - (n1 - 2);
+                    idx2 -= offset;
+                }
+            }
+                        
+            chordDiffs.add(md[offset][idx1][idx2]);
+        }
+        
+        return chordDiffs;
     }
 
     protected void populatePointArrays(SR sr, PairIntArray p, PairIntArray q,

@@ -14000,8 +14000,11 @@ int z = 1;
         labels = mergeByColor(imgCp, contigSets, 
             ColorSpace.CIELUV_NORMALIZED, 0.0475f);//0.06 is slightly too much
         
-        mergeSmallSegments(imgCp, labels, sizeLimit, 
-            ColorSpace.CIELAB);
+        sizeLimit = 24;
+        if (img.getNPixels() < 100) {
+            sizeLimit = 10;
+        }
+        mergeSmallSegments(imgCp, labels, sizeLimit, ColorSpace.CIELAB);
 
         contigSets = LabelToColorHelper
             .extractContiguousLabelPoints(img, labels);
