@@ -11,15 +11,20 @@ import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.VanishingPoints;
 import algorithms.imageProcessing.matching.ORBMatcher;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
+import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
+import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
+import com.climbwithyourfeet.clustering.DTClusterFinder;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
@@ -46,7 +51,7 @@ public class ObjectMatcher {
     public void setToDebug() {
         debug = true;
     }
-    
+
     public static class Settings {
         private boolean useLargerPyramid0 = false;
         private boolean useLargerPyramid1 = false;
@@ -511,6 +516,14 @@ public class ObjectMatcher {
             MiscDebug.writeImage(img11,
                 "_filtered_segmentation_2_" + ts);
         }
+        
+        // filter extremes of number density to try to remove
+        //   labeled regions that are pure vegetation for example,
+        //   when the object is not.  the large number of matches
+        //   from features like vegetation points tends to result
+        //   in high fraction terms, random good matches to shape,
+        //   and roughly equiv matches in hsv descriptors so is often lowest cost
+        filterBySurfaceDensity(orb0, orb1, listOfPointSets2);
 
         sList = new TFloatArrayList(orb1.getScalesList().size());
         for (int i = 0; i < orb1.getScalesList().size(); ++i) {
@@ -701,5 +714,109 @@ public class ObjectMatcher {
         
         return orb;
     }
-
+    
+    private int[] getKeypointsMinMaxXY(ORB orb, int octave) {
+        int[] minMaxXY1 = new int[4];
+        minMaxXY1[0] = Integer.MAX_VALUE;
+        minMaxXY1[2] = Integer.MAX_VALUE;
+        minMaxXY1[1] = Integer.MIN_VALUE;
+        minMaxXY1[3] = Integer.MIN_VALUE;
+        for (int i = 0; i < orb.getKeyPoint0List().get(octave).size(); ++i) {
+            int x = orb.getKeyPoint1List().get(octave).get(i);
+            int y = orb.getKeyPoint0List().get(octave).get(i);
+            if (x < minMaxXY1[0]) {
+                minMaxXY1[0] = x;
+            }
+            if (x > minMaxXY1[1]) {
+                minMaxXY1[1] = x;
+            }
+            if (y < minMaxXY1[2]) {
+                minMaxXY1[2] = x;
+            }
+            if (y > minMaxXY1[3]) {
+                minMaxXY1[3] = y;
+            }
+        }
+        
+        return minMaxXY1;
+    }
+    
+    private void filterBySurfaceDensity(ORB orb0, ORB orb1, 
+        List<Set<PairInt>> listOfPointSets2) {
+        
+        Set<PairIntWithIndex> points1 = new HashSet<PairIntWithIndex>();
+        int[] minMaxXY1 = getKeypointsMinMaxXY(orb0, 0);
+        
+        for (int i = 0; i < orb0.getKeyPoint0List().get(0).size(); ++i) {
+            int x = orb0.getKeyPoint1List().get(0).get(i) - minMaxXY1[0];
+            int y = orb0.getKeyPoint0List().get(0).get(i) - minMaxXY1[2];
+            points1.add(new PairIntWithIndex(x, y, i));
+        }
+        
+        DTClusterFinder<PairIntWithIndex> cFinder 
+            = new DTClusterFinder<PairIntWithIndex>(points1, 
+                minMaxXY1[1] - minMaxXY1[0] + 1, 
+                minMaxXY1[3] - minMaxXY1[2] + 1);
+        cFinder.calculateCriticalDensity();
+        cFinder.findClusters();
+        int n = cFinder.getNumberOfClusters();
+        float cd = cFinder.getCriticalDensity();
+       
+        double sz1 = Math.max(minMaxXY1[1] - minMaxXY1[0] + 1, 
+            minMaxXY1[3] - minMaxXY1[2] + 1);
+        
+        TIntObjectMap<OneDIntArray> labelMinMaxXY = new 
+            TIntObjectHashMap<OneDIntArray>();
+        TObjectIntMap<PairInt> pointLabelMap = new TObjectIntHashMap<PairInt>();
+        for (int i = 0; i < listOfPointSets2.size(); ++i) {
+            Set<PairInt> set2 = listOfPointSets2.get(i);
+            for (PairInt p2 : set2) {
+                pointLabelMap.put(p2, i);
+            }
+            int[] minMaxXY = MiscMath.findMinMaxXY(set2);
+            labelMinMaxXY.put(i, new OneDIntArray(minMaxXY));
+        }
+        
+        TIntObjectMap<Set<PairIntWithIndex>> kpLabelsMap = 
+            new TIntObjectHashMap<Set<PairIntWithIndex>>();
+        for (int i = 0; i < orb1.getKeyPoint0List().get(0).size(); ++i) {
+            int x = orb1.getKeyPoint1List().get(0).get(i);
+            int y = orb1.getKeyPoint0List().get(0).get(i);
+            PairInt p0 = new PairInt(x, y);
+            if (pointLabelMap.containsKey(p0)) {
+                continue;
+            }
+            int label2 = pointLabelMap.get(p0);
+            OneDIntArray minMaxXY2 = labelMinMaxXY.get(label2);
+            
+            x -= minMaxXY2.a[0];
+            y -= minMaxXY2.a[2];
+            
+            PairIntWithIndex p = new PairIntWithIndex(x, y, i);
+            
+            Set<PairIntWithIndex> set2 = kpLabelsMap.get(label2);
+            if (set2 == null) {
+                set2 = new HashSet<PairIntWithIndex>();
+                kpLabelsMap.put(label2, set2);
+            }
+            set2.add(p);
+        }
+        
+        TIntList rm = new TIntArrayList();
+        for (int label2 = 0; label2 < listOfPointSets2.size(); ++label2) {
+           
+            OneDIntArray minMaxXY2 = labelMinMaxXY.get(label2);
+            
+            Set<PairIntWithIndex> set2 = kpLabelsMap.get(label2);
+            double sz2 = Math.max(minMaxXY2.a[1] - minMaxXY2.a[0] + 1,
+                minMaxXY2.a[3] - minMaxXY2.a[2] + 1);
+        
+            //edit cd to regerence frame sz2
+            // find clusters in set2
+            // add those with significantly higher density to rm
+            
+            //PAUSED HERE
+        }
+    }
+    
 }

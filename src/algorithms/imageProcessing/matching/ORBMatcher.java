@@ -236,7 +236,7 @@ public class ORBMatcher {
         // index = index of labeledPoints, item = bitstring with neighbors set
         TIntObjectMap<VeryLongBitString> label2AdjacencyMap
             = createAdjacencyMap(labeledPoints2);
-
+        
         List<List<QuadInt>> correspondences = new ArrayList<List<QuadInt>>();
         List<TransformationParameters> transformations = new ArrayList<TransformationParameters>();
         TDoubleList descCosts = new TDoubleArrayList();
@@ -467,18 +467,10 @@ public class ORBMatcher {
             looked at more carefully...
         */
 
-        //TODO: the hsv keypoint descriptor costs need to be limited to
-        //   inner keypoints if user has specified.
-       
-
-        int[] minMaxXY1 = MiscMath.findMinMaxXY(bounds1);
-        NearestNeighbor2D nnB1 = new NearestNeighbor2D(Misc.convert(bounds1),
-            minMaxXY1[1] + distTol + 1,
-            minMaxXY1[3] + distTol + 1);
         int img1Width = orb1.getPyramidImages().get(0).a[0].length;
         int img1Height = orb1.getPyramidImages().get(0).a.length;
         float sz1_0 = calculateObjectSize(bounds1);
-            
+        
         Transformer transformer = new Transformer();
 
         TIntList nBounds1 = new TIntArrayList();
@@ -595,7 +587,7 @@ public class ORBMatcher {
 
             //sumsExtr = []{sumDist, count}
             double[] sumsExtr = sumKeypointDescAndDist2To1(
-                bounds2, bounds2Tr, nnB1,
+                bounds2, bounds2Tr, nnb1,
                 bounds1IndexMap, bounds2IndexMap,
                 img1Width, img1Height,
                 distTol2, boundsMatchingIndexes);
@@ -745,7 +737,7 @@ public class ORBMatcher {
             }
             
             TIntList rm = new TIntArrayList();
-            double thresh = 1;
+            double thresh = .3;
             double chordDiffSum = 0;
             for (int j = 0; j < chordDiffs.size(); ++j) {
                 // filter out points > thresh
@@ -753,7 +745,7 @@ public class ORBMatcher {
                 if (d > thresh) {
                     rm.add(j);
                 } else {
-                    chordDiffSum += chordDiffs.get(j);
+                    chordDiffSum += d;
                 }
             }
             
