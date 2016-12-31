@@ -342,16 +342,25 @@ public class MultiArrayMergeSort {
     private static void mergeBy1stArgThen2nd(float[] a1, float[] a2, int idxLo, 
         int idxMid, int idxHi) {
 
-        float[] a1Left = Arrays.copyOfRange(a1, idxLo, idxMid + 2);
-        float[] a2Left = Arrays.copyOfRange(a2, idxLo, idxMid + 2);
+        int nLeft = idxMid - idxLo + 1;
+        int nRight = idxHi - idxMid;
+
+        float[] a2Left = new float[nLeft + 1];
+        float[] a1Left = new float[nLeft + 1];
+
+        float[] a2Right = new float[nRight + 1];
+        float[] a1Right = new float[nRight + 1];
+
+        System.arraycopy(a1, idxLo, a1Left, 0, nLeft);
+        System.arraycopy(a2, idxLo, a2Left, 0, nLeft);
         
-        float[] a1Right = Arrays.copyOfRange(a1, idxMid + 1, idxHi + 2);
-        float[] a2Right = Arrays.copyOfRange(a2, idxMid + 1, idxHi + 2);
+        System.arraycopy(a1, idxMid + 1, a1Right, 0, nRight);
+        System.arraycopy(a2, idxMid + 1, a2Right, 0, nRight);
         
-        a1Left[a1Left.length - 1] = Float.MAX_VALUE;
-        a2Left[a2Left.length - 1] = Float.MAX_VALUE;
-        a1Right[a1Right.length - 1] = Float.MAX_VALUE;
-        a2Right[a2Right.length - 1] = Float.MAX_VALUE;
+        a2Left[nLeft] = Float.MAX_VALUE;
+        a1Left[nLeft] = Float.MAX_VALUE;
+        a2Right[nRight] = Float.MAX_VALUE;
+        a1Right[nRight] = Float.MAX_VALUE;
 
         int leftPos = 0;
         int rightPos = 0;
@@ -388,16 +397,25 @@ public class MultiArrayMergeSort {
     private static void mergeBy1stArg(float[] a1, float[] a2, int idxLo, 
         int idxMid, int idxHi) {
 
-        float[] a1Left = Arrays.copyOfRange(a1, idxLo, idxMid + 2);
-        float[] a2Left = Arrays.copyOfRange(a2, idxLo, idxMid + 2);
+        int nLeft = idxMid - idxLo + 1;
+        int nRight = idxHi - idxMid;
+
+        float[] a2Left = new float[nLeft + 1];
+        float[] a1Left = new float[nLeft + 1];
+
+        float[] a2Right = new float[nRight + 1];
+        float[] a1Right = new float[nRight + 1];
+
+        System.arraycopy(a1, idxLo, a1Left, 0, nLeft);
+        System.arraycopy(a2, idxLo, a2Left, 0, nLeft);
         
-        float[] a1Right = Arrays.copyOfRange(a1, idxMid + 1, idxHi + 2);
-        float[] a2Right = Arrays.copyOfRange(a2, idxMid + 1, idxHi + 2);
+        System.arraycopy(a1, idxMid + 1, a1Right, 0, nRight);
+        System.arraycopy(a2, idxMid + 1, a2Right, 0, nRight);
         
-        a1Left[a1Left.length - 1] = Float.MAX_VALUE;
-        a2Left[a2Left.length - 1] = Float.MAX_VALUE;
-        a1Right[a1Right.length - 1] = Float.MAX_VALUE;
-        a2Right[a2Right.length - 1] = Float.MAX_VALUE;
+        a2Left[nLeft] = Float.MAX_VALUE;
+        a1Left[nLeft] = Float.MAX_VALUE;
+        a2Right[nRight] = Float.MAX_VALUE;
+        a1Right[nRight] = Float.MAX_VALUE;
 
         int leftPos = 0;
         int rightPos = 0;
@@ -421,16 +439,26 @@ public class MultiArrayMergeSort {
     private static void mergeBy1stArgThen2nd(int[] a1, int[] a2, int idxLo, 
         int idxMid, int idxHi) {
 
-        int[] a1Left = Arrays.copyOfRange(a1, idxLo, idxMid + 2);
-        int[] a2Left = Arrays.copyOfRange(a2, idxLo, idxMid + 2);
+        int nLeft = idxMid - idxLo + 1;
+        int nRight = idxHi - idxMid;
+
+        int[] a2Left = new int[nLeft + 1];
+        int[] a1Left = new int[nLeft + 1];
+
+        int[] a2Right = new int[nRight + 1];
+        int[] a1Right = new int[nRight + 1];
+
+        System.arraycopy(a1, idxLo, a1Left, 0, nLeft);
+        System.arraycopy(a2, idxLo, a2Left, 0, nLeft);
         
-        int[] a1Right = Arrays.copyOfRange(a1, idxMid + 1, idxHi + 2);
-        int[] a2Right = Arrays.copyOfRange(a2, idxMid + 1, idxHi + 2);
+        System.arraycopy(a1, idxMid + 1, a1Right, 0, nRight);
+        System.arraycopy(a2, idxMid + 1, a2Right, 0, nRight);
         
-        a1Left[a1Left.length - 1] = Integer.MAX_VALUE;
-        a2Left[a2Left.length - 1] = Integer.MAX_VALUE;
-        a1Right[a1Right.length - 1] = Integer.MAX_VALUE;
-        a2Right[a2Right.length - 1] = Integer.MAX_VALUE;
+        int sentinel = Integer.MAX_VALUE;
+        a2Left[nLeft] = sentinel;
+        a1Left[nLeft] = sentinel;
+        a2Right[nRight] = sentinel;
+        a1Right[nRight] = sentinel;
 
         int leftPos = 0;
         int rightPos = 0;
@@ -467,20 +495,32 @@ public class MultiArrayMergeSort {
     private static void mergeBy1stArgThen2nd(int[] a1, int[] a2, int[] a3, 
         int idxLo, int idxMid, int idxHi) {
 
-        int[] a1Left = Arrays.copyOfRange(a1, idxLo, idxMid + 2);
-        int[] a2Left = Arrays.copyOfRange(a2, idxLo, idxMid + 2);
-        int[] a3Left = Arrays.copyOfRange(a3, idxLo, idxMid + 2);
+        int nLeft = idxMid - idxLo + 1;
+        int nRight = idxHi - idxMid;
+
+        int[] a2Left = new int[nLeft + 1];
+        int[] a1Left = new int[nLeft + 1];
+        int[] a3Left = new int[nLeft + 1];
+
+        int[] a2Right = new int[nRight + 1];
+        int[] a1Right = new int[nRight + 1];
+        int[] a3Right = new int[nRight + 1];
+
+        System.arraycopy(a1, idxLo, a1Left, 0, nLeft);
+        System.arraycopy(a2, idxLo, a2Left, 0, nLeft);
+        System.arraycopy(a3, idxLo, a3Left, 0, nLeft);
         
-        int[] a1Right = Arrays.copyOfRange(a1, idxMid + 1, idxHi + 2);
-        int[] a2Right = Arrays.copyOfRange(a2, idxMid + 1, idxHi + 2);
-        int[] a3Right = Arrays.copyOfRange(a3, idxMid + 1, idxHi + 2);
+        System.arraycopy(a1, idxMid + 1, a1Right, 0, nRight);
+        System.arraycopy(a2, idxMid + 1, a2Right, 0, nRight);
+        System.arraycopy(a3, idxMid + 1, a3Right, 0, nRight);
         
-        a1Left[a1Left.length - 1] = Integer.MAX_VALUE;
-        a2Left[a2Left.length - 1] = Integer.MAX_VALUE;
-        a3Left[a3Left.length - 1] = Integer.MAX_VALUE;
-        a1Right[a1Right.length - 1] = Integer.MAX_VALUE;
-        a2Right[a2Right.length - 1] = Integer.MAX_VALUE;
-        a3Right[a3Right.length - 1] = Integer.MAX_VALUE;
+        int sentinel = Integer.MAX_VALUE;
+        a2Left[nLeft] = sentinel;
+        a3Left[nLeft] = sentinel;
+        a1Left[nLeft] = sentinel;
+        a2Right[nRight] = sentinel;
+        a3Right[nRight] = sentinel;
+        a1Right[nRight] = sentinel;
 
         int leftPos = 0;
         int rightPos = 0;
@@ -521,20 +561,33 @@ public class MultiArrayMergeSort {
     private static void mergeBy1stArgThen2nd(float[] a1, float[] a2, int[] a3, 
         int idxLo, int idxMid, int idxHi) {
 
-        float[] a1Left = Arrays.copyOfRange(a1, idxLo, idxMid + 2);
-        float[] a2Left = Arrays.copyOfRange(a2, idxLo, idxMid + 2);
-        int[] a3Left = Arrays.copyOfRange(a3, idxLo, idxMid + 2);
+        int nLeft = idxMid - idxLo + 1;
+        int nRight = idxHi - idxMid;
+
+        float[] a2Left = new float[nLeft + 1];
+        float[] a1Left = new float[nLeft + 1];
+        int[] a3Left = new int[nLeft + 1];
+
+        float[] a2Right = new float[nRight + 1];
+        float[] a1Right = new float[nRight + 1];
+        int[] a3Right = new int[nRight + 1];
+
+        System.arraycopy(a1, idxLo, a1Left, 0, nLeft);
+        System.arraycopy(a2, idxLo, a2Left, 0, nLeft);
+        System.arraycopy(a3, idxLo, a3Left, 0, nLeft);
         
-        float[] a1Right = Arrays.copyOfRange(a1, idxMid + 1, idxHi + 2);
-        float[] a2Right = Arrays.copyOfRange(a2, idxMid + 1, idxHi + 2);
-        int[] a3Right = Arrays.copyOfRange(a3, idxMid + 1, idxHi + 2);
+        System.arraycopy(a1, idxMid + 1, a1Right, 0, nRight);
+        System.arraycopy(a2, idxMid + 1, a2Right, 0, nRight);
+        System.arraycopy(a3, idxMid + 1, a3Right, 0, nRight);
         
-        a1Left[a1Left.length - 1] = Float.MAX_VALUE;
-        a2Left[a2Left.length - 1] = Float.MAX_VALUE;
-        a3Left[a3Left.length - 1] = Integer.MAX_VALUE;
-        a1Right[a1Right.length - 1] = Float.MAX_VALUE;
-        a2Right[a2Right.length - 1] = Float.MAX_VALUE;
-        a3Right[a3Right.length - 1] = Integer.MAX_VALUE;
+        float sentinel = Float.MAX_VALUE;
+        int sentinel2 = Integer.MAX_VALUE;
+        a2Left[nLeft] = sentinel;
+        a3Left[nLeft] = sentinel2;
+        a1Left[nLeft] = sentinel;
+        a2Right[nRight] = sentinel;
+        a3Right[nRight] = sentinel2;
+        a1Right[nRight] = sentinel;
 
         int leftPos = 0;
         int rightPos = 0;
@@ -574,18 +627,28 @@ public class MultiArrayMergeSort {
     
     private static void mergeByYThenX(PairIntArray xy, int idxLo, 
         int idxMid, int idxHi) {
+ 
+        int nLeft = idxMid - idxLo + 1;
+        int nRight = idxHi - idxMid;
 
-        int[] yLeft = Arrays.copyOfRange(xy.getY(), idxLo, idxMid + 2);
-        int[] xLeft = Arrays.copyOfRange(xy.getX(), idxLo, idxMid + 2);
-        
-        int[] yRight = Arrays.copyOfRange(xy.getY(), idxMid + 1, idxHi + 2);
-        int[] xRight = Arrays.copyOfRange(xy.getX(), idxMid + 1, idxHi + 2);
-        
-        yLeft[yLeft.length - 1] = Integer.MAX_VALUE;
-        xLeft[xLeft.length - 1] = Integer.MAX_VALUE;
-        yRight[yRight.length - 1] = Integer.MAX_VALUE;
-        xRight[xRight.length - 1] = Integer.MAX_VALUE;
+        int[] yLeft = new int[nLeft + 1];
+        int[] xLeft = new int[nLeft + 1];
 
+        int[] yRight = new int[nRight + 1];
+        int[] xRight = new int[nRight + 1];
+
+        System.arraycopy(xy.getX(), idxLo, xLeft, 0, nLeft);
+        System.arraycopy(xy.getY(), idxLo, yLeft, 0, nLeft);
+        
+        System.arraycopy(xy.getX(), idxMid + 1, xRight, 0, nRight);
+        System.arraycopy(xy.getY(), idxMid + 1, yRight, 0, nRight);
+        
+        int sentinel = Integer.MAX_VALUE;
+        yLeft[nLeft] = sentinel;
+        xLeft[nLeft] = sentinel;
+        yRight[nRight] = sentinel;
+        xRight[nRight] = sentinel;
+        
         int leftPos = 0;
         int rightPos = 0;
 
@@ -764,16 +827,26 @@ public class MultiArrayMergeSort {
     private static void mergeByDecr(int[] a1, int[] a2, int idxLo, 
         int idxMid, int idxHi) {
 
-        int[] a1Left = Arrays.copyOfRange(a1, idxLo, idxMid + 2);
-        int[] a2Left = Arrays.copyOfRange(a2, idxLo, idxMid + 2);
+        int nLeft = idxMid - idxLo + 1;
+        int nRight = idxHi - idxMid;
+
+        int[] a2Left = new int[nLeft + 1];
+        int[] a1Left = new int[nLeft + 1];
+
+        int[] a2Right = new int[nRight + 1];
+        int[] a1Right = new int[nRight + 1];
+
+        System.arraycopy(a1, idxLo, a1Left, 0, nLeft);
+        System.arraycopy(a2, idxLo, a2Left, 0, nLeft);
         
-        int[] a1Right = Arrays.copyOfRange(a1, idxMid + 1, idxHi + 2);
-        int[] a2Right = Arrays.copyOfRange(a2, idxMid + 1, idxHi + 2);
+        System.arraycopy(a1, idxMid + 1, a1Right, 0, nRight);
+        System.arraycopy(a2, idxMid + 1, a2Right, 0, nRight);
         
-        a1Left[a1Left.length - 1] = Integer.MIN_VALUE;
-        a2Left[a2Left.length - 1] = Integer.MIN_VALUE;
-        a1Right[a1Right.length - 1] = Integer.MIN_VALUE;
-        a2Right[a2Right.length - 1] = Integer.MIN_VALUE;
+        int sentinel = Integer.MIN_VALUE;
+        a2Left[nLeft] = sentinel;
+        a1Left[nLeft] = sentinel;
+        a2Right[nRight] = sentinel;
+        a1Right[nRight] = sentinel;
         
         int leftPos = 0;
         int rightPos = 0;
@@ -781,7 +854,7 @@ public class MultiArrayMergeSort {
         for (int k = idxLo; k <= idxHi; k++) {
             int l = a1Left[leftPos];
             int r = a1Right[rightPos];
-            if (l > r) {
+            if (l >= r) {
                 a2[k] = a2Left[leftPos];
                 a1[k] = a1Left[leftPos];
                 leftPos++;
@@ -796,24 +869,35 @@ public class MultiArrayMergeSort {
     private static void mergeByDecr(Double[] a1, Float[] a2, int idxLo, 
         int idxMid, int idxHi) {
 
-        Double[] a1Left = Arrays.copyOfRange(a1, idxLo, idxMid + 2);
-        Float[] a2Left = Arrays.copyOfRange(a2, idxLo, idxMid + 2);
+        int nLeft = idxMid - idxLo + 1;
+        int nRight = idxHi - idxMid;
+
+        Float[] a2Left = new Float[nLeft + 1];
+        Double[] a1Left = new Double[nLeft + 1];
+
+        Float[] a2Right = new Float[nRight + 1];
+        Double[] a1Right = new Double[nRight + 1];
+
+        System.arraycopy(a1, idxLo, a1Left, 0, nLeft);
+        System.arraycopy(a2, idxLo, a2Left, 0, nLeft);
         
-        Double[] a1Right = Arrays.copyOfRange(a1, idxMid + 1, idxHi + 2);
-        Float[] a2Right = Arrays.copyOfRange(a2, idxMid + 1, idxHi + 2);
+        System.arraycopy(a1, idxMid + 1, a1Right, 0, nRight);
+        System.arraycopy(a2, idxMid + 1, a2Right, 0, nRight);
         
-        a1Left[a1Left.length - 1] = Double.MIN_VALUE;
-        a2Left[a2Left.length - 1] = Float.MIN_VALUE;
-        a1Right[a1Right.length - 1] = Double.MIN_VALUE;
-        a2Right[a2Right.length - 1] = Float.MIN_VALUE;
-        
+        float sentinel = Float.NEGATIVE_INFINITY;
+        double sentinel2 = Double.NEGATIVE_INFINITY;
+        a2Left[nLeft] = sentinel;
+        a1Left[nLeft] = sentinel2;
+        a2Right[nRight] = sentinel;
+        a1Right[nRight] = sentinel2;
+
         int leftPos = 0;
         int rightPos = 0;
 
         for (int k = idxLo; k <= idxHi; k++) {
             Double l = a1Left[leftPos];
             Double r = a1Right[rightPos];
-            if (l > r) {
+            if (l >= r) {
                 a2[k] = a2Left[leftPos];
                 a1[k] = a1Left[leftPos];
                 leftPos++;
@@ -828,16 +912,27 @@ public class MultiArrayMergeSort {
     private static void mergeByDecr(float[] a1, int[] a2, int idxLo, 
         int idxMid, int idxHi) {
 
-        float[] a1Left = Arrays.copyOfRange(a1, idxLo, idxMid + 2);
-        int[] a2Left = Arrays.copyOfRange(a2, idxLo, idxMid + 2);
+        int nLeft = idxMid - idxLo + 1;
+        int nRight = idxHi - idxMid;
+
+        int[] a2Left = new int[nLeft + 1];
+        float[] a1Left = new float[nLeft + 1];
+
+        int[] a2Right = new int[nRight + 1];
+        float[] a1Right = new float[nRight + 1];
+
+        System.arraycopy(a1, idxLo, a1Left, 0, nLeft);
+        System.arraycopy(a2, idxLo, a2Left, 0, nLeft);
         
-        float[] a1Right = Arrays.copyOfRange(a1, idxMid + 1, idxHi + 2);
-        int[] a2Right = Arrays.copyOfRange(a2, idxMid + 1, idxHi + 2);
+        System.arraycopy(a1, idxMid + 1, a1Right, 0, nRight);
+        System.arraycopy(a2, idxMid + 1, a2Right, 0, nRight);
         
-        a1Left[a1Left.length - 1] = Integer.MIN_VALUE;
-        a2Left[a2Left.length - 1] = Integer.MIN_VALUE;
-        a1Right[a1Right.length - 1] = Integer.MIN_VALUE;
-        a2Right[a2Right.length - 1] = Integer.MIN_VALUE;
+        float sentinel = Float.NEGATIVE_INFINITY;
+        int sentinel2 = Integer.MIN_VALUE;
+        a2Left[nLeft] = sentinel2;
+        a1Left[nLeft] = sentinel;
+        a2Right[nRight] = sentinel2;
+        a1Right[nRight] = sentinel;
         
         int leftPos = 0;
         int rightPos = 0;
@@ -845,7 +940,7 @@ public class MultiArrayMergeSort {
         for (int k = idxLo; k <= idxHi; k++) {
             double l = a1Left[leftPos];
             double r = a1Right[rightPos];
-            if (l > r) {
+            if (l >= r) {
                 a2[k] = a2Left[leftPos];
                 a1[k] = a1Left[leftPos];
                 leftPos++;
@@ -860,16 +955,27 @@ public class MultiArrayMergeSort {
     private static void mergeByDecr(double[] a1, int[] a2, int idxLo, 
         int idxMid, int idxHi) {
 
-        double[] a1Left = Arrays.copyOfRange(a1, idxLo, idxMid + 2);
-        int[] a2Left = Arrays.copyOfRange(a2, idxLo, idxMid + 2);
+        int nLeft = idxMid - idxLo + 1;
+        int nRight = idxHi - idxMid;
+
+        int[] a2Left = new int[nLeft + 1];
+        double[] a1Left = new double[nLeft + 1];
+
+        int[] a2Right = new int[nRight + 1];
+        double[] a1Right = new double[nRight + 1];
+
+        System.arraycopy(a1, idxLo, a1Left, 0, nLeft);
+        System.arraycopy(a2, idxLo, a2Left, 0, nLeft);
         
-        double[] a1Right = Arrays.copyOfRange(a1, idxMid + 1, idxHi + 2);
-        int[] a2Right = Arrays.copyOfRange(a2, idxMid + 1, idxHi + 2);
+        System.arraycopy(a1, idxMid + 1, a1Right, 0, nRight);
+        System.arraycopy(a2, idxMid + 1, a2Right, 0, nRight);
         
-        a1Left[a1Left.length - 1] = Integer.MIN_VALUE;
-        a2Left[a2Left.length - 1] = Integer.MIN_VALUE;
-        a1Right[a1Right.length - 1] = Integer.MIN_VALUE;
-        a2Right[a2Right.length - 1] = Integer.MIN_VALUE;
+        double sentinel = Double.NEGATIVE_INFINITY;
+        int sentinel2 = Integer.MIN_VALUE;
+        a2Left[nLeft] = sentinel2;
+        a1Left[nLeft] = sentinel;
+        a2Right[nRight] = sentinel2;
+        a1Right[nRight] = sentinel;
         
         int leftPos = 0;
         int rightPos = 0;
@@ -877,7 +983,7 @@ public class MultiArrayMergeSort {
         for (int k = idxLo; k <= idxHi; k++) {
             double l = a1Left[leftPos];
             double r = a1Right[rightPos];
-            if (l > r) {
+            if (l >= r) {
                 a2[k] = a2Left[leftPos];
                 a1[k] = a1Left[leftPos];
                 leftPos++;
@@ -1008,21 +1114,33 @@ public class MultiArrayMergeSort {
     private static void mergeBy1stDescThen2ndAsc(int[] a, double[] b, 
         int[] c, int idxLo, int idxMid, int idxHi) {
         
-        int[] aLeft = Arrays.copyOfRange(a, idxLo, idxMid + 2);
-        double[] bLeft = Arrays.copyOfRange(b, idxLo, idxMid + 2);
-        int[] cLeft = Arrays.copyOfRange(c, idxLo, idxMid + 2);
+        int nLeft = idxMid - idxLo + 1;
+        int nRight = idxHi - idxMid;
+
+        int[] aLeft = new int[nLeft + 1];
+        double[] bLeft = new double[nLeft + 1];
+        int[] cLeft = new int[nLeft + 1];
         
-        int[] aRight = Arrays.copyOfRange(a, idxMid + 1, idxHi + 2);
-        double[] bRight = Arrays.copyOfRange(b, idxMid + 1, idxHi + 2);
-        int[] cRight = Arrays.copyOfRange(c, idxMid + 1, idxHi + 2);
+        int[] aRight = new int[nRight + 1];
+        double[] bRight = new double[nRight + 1];
+        int[] cRight = new int[nRight + 1];
         
-        aLeft[aLeft.length - 1] = Integer.MIN_VALUE;
-        bLeft[bLeft.length - 1] = Double.MIN_VALUE;
-        cLeft[cLeft.length - 1] = Integer.MIN_VALUE;
+        System.arraycopy(a, idxLo, aLeft, 0, nLeft);
+        System.arraycopy(b, idxLo, bLeft, 0, nLeft);
+        System.arraycopy(c, idxLo, cLeft, 0, nLeft);
         
-        aRight[aRight.length - 1] = Integer.MIN_VALUE;
-        bRight[bRight.length - 1] = Double.MIN_VALUE;
-        cRight[cRight.length - 1] = Integer.MIN_VALUE;
+        System.arraycopy(a, idxMid + 1, aRight, 0, nRight);
+        System.arraycopy(b, idxMid + 1, bRight, 0, nRight);
+        System.arraycopy(c, idxMid + 1, cRight, 0, nRight);
+        
+        int sentinel = Integer.MIN_VALUE;
+        double sentinel2 = Double.NEGATIVE_INFINITY;
+        bLeft[nLeft] = sentinel2;
+        aLeft[nLeft] = sentinel;
+        cLeft[nLeft] = sentinel;
+        bRight[nRight] = sentinel2;
+        aRight[nRight] = sentinel;
+        cRight[nRight] = sentinel;
         
         int leftPos = 0;
         int rightPos = 0;
