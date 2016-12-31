@@ -243,6 +243,7 @@
             <formatter type="plain" usefile="true"/>
             <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
             <jvmarg value="-XX:-UseSplitVerifier" />
+            <jvmarg value="-enableassertions" />
             <batchtest fork="yes" todir="${tests.out.dir}">
                 <fileset dir="${tests.out.dir}">
                     <include name="**/*Test*.class"/>
@@ -299,6 +300,9 @@
         </fail>
         <copy file="${resources.dir}/logging.properties" todir="${src.out.dir}" />
         <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes" haltonerror="true" haltonfailure="true">
+            <assertions enablesystemassertions="true">
+                <enable/>
+            </assertions>
             <classpath>
                 <pathelement location="${tests.out.dir}"/>
                 <path refid="test.classpath"/>
@@ -357,6 +361,7 @@
             </classpath>
             <formatter type="plain" usefile="true"/>
             <jvmarg value="-XX:-UseSplitVerifier" />
+            <jvmarg value="-enableassertions" />
             <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
             <batchtest fork="yes" todir="${tests.large.out.dir}">
                 <fileset dir="${tests.large.out.dir}">
@@ -376,6 +381,7 @@
             <!--<jvmarg value="-ea"/>-->
             <formatter type="plain" usefile="true"/>
             <jvmarg value="-XX:-UseSplitVerifier" />
+            <jvmarg value="-enableassertions" />
             <sysproperty key="java.util.logging.config.file" value="${basedir}/src/main/resources/logging.properties"/>
             <classpath>
                 <pathelement location="${tests.large.out.dir}"/>
@@ -400,6 +406,7 @@
             </classpath>
             <formatter type="plain" usefile="true"/>
             <jvmarg value="-XX:-UseSplitVerifier" />
+            <jvmarg value="-enableassertions" />
             <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
             <batchtest fork="yes" todir="${tests.out.dir}">
                 <fileset dir="${tests.out.dir}">
@@ -423,7 +430,7 @@
             </assertions>
 
             <jvmarg line="-enableassertions -Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y -XX:-UseSplitVerifier"/>
-
+ 
             <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
             
             <classpath>
@@ -485,13 +492,14 @@
         <copy file="${classes.dir}/two-point-correlation_${TS}.jar" tofile="dist/two-point-correlation.jar" />
     </target>
     
-    <target name="package2" depends="compile">
+    <target name="package2" depends="compileTests">
         <record name="${logfile}" append="yes" loglevel="debug"/>
         <echo message="making jar file of class files, output is in ${classes.dir}/com.climbwithyourfeet.clustering.jar" />
         <tstamp>
             <format property="TS" pattern="yyyy-MM-dd" locale="en,US"/>
         </tstamp>
         <jar destfile="${classes.dir}/com.climbwithyourfeet.clustering_${TS}.jar" manifest="${jar2.mf}">
+            <fileset dir="${src.out.dir}" includes="algorithms/sorting/**"/>
             <fileset dir="${src.out.dir}" includes="com/climbwithyourfeet/clustering/**"/>
             <fileset dir="${basedir}" includes="LICENSE.txt"/>
             <fileset dir="${basedir}" includes="README2.txt"/>
