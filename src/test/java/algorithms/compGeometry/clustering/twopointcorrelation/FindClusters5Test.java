@@ -55,7 +55,8 @@ public class FindClusters5Test extends BaseTwoPointTest {
                 roughly nGroups is less than or equal to (0.2*N)
          */
         
-        int[] numberOfBackgroundPoints = new int[]{100,450,900,4500,9000,14500,19000,24500,29000};
+        int[] numberOfBackgroundPoints = new int[]{100,450,900,4500,9000,14500,
+            19000,24500,29000};
         
         int[] nGroupsFound = new int[numberOfBackgroundPoints.length];
         float[] expectedLinearDensities = new float[nGroupsFound.length];

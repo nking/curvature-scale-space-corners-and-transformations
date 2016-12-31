@@ -195,45 +195,6 @@ public class MiscMath {
     }
     
     /**
-     * find peaks of the values in the freqMap and return the keys of the peaks.
-     * The list returned is ordered in same manner as the freqMap.
-     * @param freqMap
-     * @return 
-     */
-    public static List<Integer> findPeaksInFreqMap(TreeMap<Integer, Integer> freqMap) {
-        
-        List<Integer> keys = new ArrayList<Integer>();
-        
-        int lastValue = -1;
-        boolean isIncr = false;
-        int nIter = 0;
-        for (Entry<Integer, Integer> entry : freqMap.entrySet()) {
-            int value = entry.getValue().intValue();
-            if (nIter == 1) {
-                if (value > lastValue) {
-                    isIncr = true;
-                }
-            } else if (nIter != 0) {
-                if (isIncr) {
-                    if (value < lastValue) {
-                        keys.add(entry.getKey());
-                        isIncr = false;
-                    }
-                } else {
-                    if (value > lastValue) {
-                        keys.add(entry.getKey());
-                        isIncr = true;
-                    }
-                }
-            }
-            lastValue = value;
-            nIter++;
-        }
-        
-        return keys;
-    }
-    
-    /**
      *
      * @param a
      * @return

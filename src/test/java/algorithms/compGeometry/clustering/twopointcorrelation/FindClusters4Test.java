@@ -175,7 +175,7 @@ public class FindClusters4Test extends BaseTwoPointTest {
             float[] yg5 = null;
             
             for (int i = 0; i < nSwitches; i++) {
-                                
+                
                 switch(i) {
                     
                     case 0: {
@@ -386,12 +386,18 @@ public class FindClusters4Test extends BaseTwoPointTest {
                     int n0 = twoPtC.getGroup(0).getX().length;
                     assertTrue(n0 >= 100 && (n0 <= 105));
                 } else if (i == 3) {
-                    //assertTrue(twoPtC.getNumberOfGroups() == 2);
+                    assertTrue(twoPtC.getNumberOfGroups() > 0 &&
+                        twoPtC.getNumberOfGroups() <=2);
                     ArrayPair hull;
-                    if (twoPtC.getGroup(0).getX().length > twoPtC.getGroup(1).getX().length) {
+                    if (twoPtC.getNumberOfGroups() == 1) {
                         hull = twoPtC.getGroupHull(0);
                     } else {
-                        hull = twoPtC.getGroupHull(1);
+                        if (twoPtC.getGroup(0).getX().length 
+                            > twoPtC.getGroup(1).getX().length) {
+                            hull = twoPtC.getGroupHull(0);
+                        } else {
+                            hull = twoPtC.getGroupHull(1);
+                        }
                     }
                     float[] areaAndCenter = twoPtC.calculateAreaAndCentroidOfHull(hull.getX(), hull.getY());
                     assertNotNull(areaAndCenter);

@@ -179,8 +179,14 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
     public void testFindClustersOtherData() throws Exception {
         
         String[] fileNames = {
-            "Aggregation.txt", "Compound.txt", "Pathbased.txt" , "Spiral.txt",
-            "D31.txt", "R15.txt" , "Jain.txt", "Flame.txt",
+            "Aggregation.txt", 
+            "Compound.txt", 
+           "Pathbased.txt" , 
+            "Spiral.txt",
+            "D31.txt", 
+           "R15.txt" , 
+            "Jain.txt", 
+            "Flame.txt",
             //"a1.txt", "a2.txt", "a3.txt"
             /*,
             "s1.txt", "s2.txt", "s3.txt", "s4.txt",
@@ -211,6 +217,7 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
             DTClusterFinder<PairInt> clusterFinder = 
                 new DTClusterFinder<PairInt>(points, width, height);
 
+            clusterFinder.setToDebug();
             clusterFinder.calculateCriticalDensity();
             clusterFinder.findClusters();
             //clusterFinder.setCriticalDensity(dens);

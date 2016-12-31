@@ -262,4 +262,66 @@ public class Histogram {
         return dy;
     }
 
+    /**
+     *
+     * @param hist
+     * @return
+     */
+    public static int findFirstPeakIndex(HistogramHolder hist) {
+        
+        float yPeak = Float.MIN_VALUE;
+        int yPeakIdx = -1;
+        
+        // specific to use here, find max within first half of histogram
+        for (int i = 0; i < hist.getXHist().length >> 1; i++) {
+            
+            float y = hist.getYHistFloat()[i];
+            
+            if (y > yPeak) {
+                yPeak = y;
+                yPeakIdx = i;
+            } else if (yPeakIdx > -1) {
+                break;
+            }
+        }
+        
+        return yPeakIdx;
+    }
+
+    /**
+     *
+     * @param hist
+     * @param yPeakIdx
+     * @return
+     */
+    public static int findFirstMinimaFollowingPeak(HistogramHolder hist, 
+        int yPeakIdx) {
+    
+        //TODO:  could be improved to smooth over noise to find true minimum
+        
+        // find min within first half of histogram, after peak
+        int n = (int)(0.5f * hist.getXHist().length);
+        
+        if ((n - yPeakIdx) < 3) {
+            n = hist.getXHist().length;
+        }
+        
+        float yPrev = hist.getYHistFloat()[yPeakIdx];
+        
+        int yMinimaIdx = yPeakIdx;
+        
+        for (int i = (yPeakIdx + 1); i < n; i++) {
+            
+            float y = hist.getYHistFloat()[i];
+            
+            if (y < yPrev) {
+                yPrev = y;
+                yMinimaIdx = i;
+            } else {
+                break;
+            }
+        }
+        
+        return yMinimaIdx;
+    }
 }

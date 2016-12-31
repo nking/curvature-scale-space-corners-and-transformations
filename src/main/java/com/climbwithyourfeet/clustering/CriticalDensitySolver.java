@@ -1,9 +1,11 @@
 package com.climbwithyourfeet.clustering;
 
+import algorithms.sorting.MultiArrayMergeSort;
 import com.climbwithyourfeet.clustering.util.Histogram;
 import com.climbwithyourfeet.clustering.util.HistogramHolder;
 import com.climbwithyourfeet.clustering.util.MiscMath;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -61,178 +63,94 @@ public class CriticalDensitySolver {
      * @return 
      */
     protected float findCriticalDensity(float[] values) {
-         
+        
+        if (values == null || values.length < 10) {
+            throw new IllegalArgumentException("values length must be 10 or more");
+        }
+        
+        /*
+        the goal of this method is to form a histogram comparable to the
+        GeneralizedExtremeValue function to find the critical density
+        (which is near the peak).
+        
+        TODO: This method needs improvements, especially for small numbers.
+        */
+        
         float[] vErrors = Histogram.populateYErrorsBySqrt(values);
-
-        List<HistogramHolder> histList = new ArrayList<HistogramHolder>();
 
         float xl = MiscMath.findMax(values);
         int nb = 40;
-        
-        /*
-        steps xl down as needed and changes nb to 20 when small
-        */
-        
-        int hc = 0;
-        
-        int maxHC = 5;
-        
-        boolean breakOnNext = false;
-        
-        while (hc < maxHC) {
-                        
-            HistogramHolder hist = Histogram.createSimpleHistogram(
-                0, xl, nb, values, vErrors);
-        
-            if (debug) {
-                String outFileSuffix = "_cluster_" + hc;
-                hist.plotHistogram("clstr", outFileSuffix);
+        if (nb > values.length) {
+            nb = values.length/4;
+            if (nb == 0) {
+                nb = 1;
             }
-            
-            if (hist == null || hist.getXHist() == null || hist.getXHist().length == 0) {
-                break;
-            }
-            
-            histList.add(hist);
-            
-            if (breakOnNext) {
-                break;
-            }
-            
-            int len = hist.getXHist().length;
-            
-            double areaH0 = MiscMath.calculateArea(hist, 0, (len/2) - 1);
-            double areaH1 = MiscMath.calculateArea(hist, (len/2), len - 1);
-                        
-            if ((areaH1/areaH0) > 0.75) {
-                // decrease the number of bins
-                if (nb <= 10) {
-                    break;
-                }
-                nb /= 2;
-                hc++;
-                continue;
-            }
-            
-            int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());
-                        
-            int yMax = hist.getYHist()[yMaxIdx];
-            int yLast = hist.getYHist()[len - 1];
-            
-            int yLimit = yMax/10;
-                        
-            if (hc > 0) {
-                yLimit = yMax/15;
-            }
-            
-            int yLimitIdx = -1;
-                        
-            if (yLast < yLimit) {
-                // shorten xmax and try again
-                for (int i = (len - 1); i > -1; --i) {
-                    int y = hist.getYHist()[i];
-                    if (y >= yLimit) {
-                        yLimitIdx = i;
-                        break;
-                    }
-                }
-                if (nb == 40) {
-                    nb = 20;
-                }
-                float halfBin =  0.5f*(hist.getXHist()[1] -  hist.getXHist()[0]);
-                if (yLimitIdx > -1) {
-                    // a work around to next getting stuck at same size:
-                    if ((len - yLimitIdx) < 5) {
-                        yLimitIdx = len - 5;
-                    }
-                    float tmp = hist.getXHist()[yLimitIdx] - halfBin;
-                    if ((xl/tmp) > 15) {
-                        // extreme zoom-in of high peak near idx=0
-                        if (yLimitIdx == 0) {
-                            xl = hist.getXHist()[1] - halfBin;
-                        } else {
-                            xl = tmp;
-                        }
-                        breakOnNext = true;
-                    } else if (tmp < halfBin) {
-                        // extreme zoom-in of high peak near idx=0
-                        xl = halfBin;
-                        breakOnNext = true;
-                    } else if (tmp < xl) {
-                        xl = tmp;
-                    }
-                } else {
-                    xl = hist.getXHist()[1] - halfBin;
-                }
-            } else {
-                break;
-            }
-            
-            hc++;
         }
+                
+        HistogramHolder hist = Histogram.createSimpleHistogram(
+            0, xl, nb, values, vErrors);
         
-        if (histList.isEmpty()) {
-            // should default null result be density such that there are no clusters (~0)
-            // or every point is its own cluster (infinity)
-            return 0;
+        if (debug) {
+            String outFileSuffix = "_cluster_";
+            hist.plotHistogram("clstr", outFileSuffix);
         }
-        
-        HistogramHolder hist = histList.get(histList.size() - 1);
+
         int len = hist.getXHist().length;
         
-        // find area of first peak, start search after first bin which
-        // sometimes has a delta function.
-        //TODO: this may need to be revised
-        int firstNonZeroIdx = -1;
-        int firstZeroAfterPeakIdx = len - 1;
-        
-        for (int i = 1; i < len; ++i) {
-            
-            int y = hist.getYHist()[i];
-            
-            if (firstNonZeroIdx == -1) {
-                if (y > 0) {
-                    firstNonZeroIdx = i;
-                }
-            } else {
-                // the start of the first peak has been found so look for the end
-                if (y == 0) {
-                    firstZeroAfterPeakIdx = i;
-                    break;
-                }
-            }
-        }
+        int yFirstPeakIdx = Histogram.findFirstPeakIndex(hist);
                 
-        if (firstNonZeroIdx == -1) {
+        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());
+
+        //System.out.println("y1=" + yFirstPeakIdx + " ymx=" +
+        //    yMaxIdx + " len=" + len);
+        
+        if (yMaxIdx > yFirstPeakIdx && (yMaxIdx > (len/2))) {
+            
+            nb = 8;
+            hist = Histogram.createSimpleHistogram(
+                0, xl, nb, values, vErrors);
+            
+            if (hist == null) {
+                throw new IllegalStateException("error in algorithm");
+            }
+
+            if (debug) {
+                String outFileSuffix = "_cluster_2_";
+                hist.plotHistogram("clstr", outFileSuffix);
+            }
+        
+            yFirstPeakIdx = Histogram.findFirstPeakIndex(hist);
+            
+            yMaxIdx = Histogram.findFirstMinimaFollowingPeak(hist, yFirstPeakIdx);
+
+        } else {
+                    
+            // calculate the y quartiles above zero
+            float[] quartiles = calcXQuartilesAboveZero(hist);
+
+            if (debug) {
+                System.out.println("quartiles=" + Arrays.toString(quartiles));
+            }
+            
+            xl = Math.max(quartiles[0], quartiles[1]);
+
+            nb /= 2;
+            if (nb == 0) {
+                nb = 1;
+            }
+
+            // make another histogram w/ x range being the 2nd quartile
+            hist = Histogram.createSimpleHistogram(
+                0, xl, nb, values, vErrors);
+        
+            yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());
+        }
+        
+        if (yMaxIdx == -1) {
             return 0;
         }
         
-        // find weighted x from firstNonZeroIdx to firstZeroAfterPeakIdx
-        float yPeakSum = 0;
-        for (int i = firstNonZeroIdx; i < firstZeroAfterPeakIdx; ++i) {
-            yPeakSum += hist.getYHist()[i];
-        }
-        
-        float weightedX = 0;
-        for (int i = firstNonZeroIdx; i < firstZeroAfterPeakIdx; ++i) {
-            float w = hist.getYHistFloat()[i]/yPeakSum;
-            weightedX += (w * hist.getXHist()[i]);
-        }
-                
-        //wanting an answer that is a little higher 
-        // than the weghted center but still within the bounds of the peak.
-        /*int nh = (firstZeroAfterPeakIdx - firstNonZeroIdx)/2;
-        double areaH0 = MiscMath.calculateArea(hist, firstNonZeroIdx, nh);
-        double areaH1 = MiscMath.calculateArea(hist, nh + 1, firstZeroAfterPeakIdx);
-        */
-        float frac9 = (0.9f * hist.getXHist()[firstZeroAfterPeakIdx] )
-            + (0.1f * hist.getXHist()[firstNonZeroIdx]);
-        
-        if (weightedX < frac9) {
-            weightedX = 0.5f * (weightedX + frac9);
-        }
-        
-        return weightedX;
+        return 1.1f * hist.getXHist()[yMaxIdx];
     }
 
     private float findCriticalDensity(int[][] distTrans) {
@@ -251,6 +169,34 @@ public class CriticalDensitySolver {
         }
 
         return findCriticalDensity(values);
+    }
+
+    private float[] calcXQuartilesAboveZero(HistogramHolder hist) {
+
+        int n = hist.getXHist().length;
+        float[] ys = new float[n];
+        float[] xs = new float[n];
+        int count = 0;
+        for (int i = 0; i < n; ++i) {
+            if (hist.getYHist()[i] > 0) {
+                xs[count] = hist.getXHist()[i];
+                ys[count] = hist.getYHist()[i];
+                count++;
+            }
+        }
+        if (count < n) {
+            xs = Arrays.copyOf(xs, count);
+            ys = Arrays.copyOf(ys, count);
+        }
+        MultiArrayMergeSort.sortByDecr1stArg(ys, xs);
+       
+        int medianIdx = count >> 1;
+        
+        int q12Idx = (medianIdx - 1) >> 1;
+        
+        int q34Idx = (count + (medianIdx + 1))/2;
+                
+        return new float[]{xs[q12Idx], xs[medianIdx], xs[q34Idx], xs[count - 1]};
     }
 
 }
