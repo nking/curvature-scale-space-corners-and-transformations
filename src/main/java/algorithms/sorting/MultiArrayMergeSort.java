@@ -38,6 +38,26 @@ public class MultiArrayMergeSort {
         }
         sortBy1stArg(a1, a2, 0, a1.length - 1);
     }
+    
+    /**
+     * sort by increasing value a1 and apply same changes to a2.
+     * runtime is O(N * log_2(N))
+     *
+     * @param a1 array of points to be sorted
+     * @param a2 array of points to apply a1 sorting to also
+     */
+    public static void sortByDecr1stArg(float[] a1, float[] a2) {
+        if (a1 == null) {
+        	throw new IllegalArgumentException("a1 cannot be null");
+        }
+        if (a2 == null) {
+        	throw new IllegalArgumentException("a2 cannot be null");
+        }
+        if (a1.length != a2.length) {
+        	throw new IllegalArgumentException("number of items in a1 must be the same as in a2");
+        }
+        sortByDecr1stArg(a1, a2, 0, a1.length - 1);
+    }
 
     /**
      * sort by increasing value a1 and apply same changes to a2 and a3.
@@ -84,6 +104,29 @@ public class MultiArrayMergeSort {
             sortBy1stArg(a1, a2, idxLo, idxMid);
             sortBy1stArg(a1, a2, idxMid + 1, idxHi);
             merge(a1, a2, idxLo, idxMid, idxHi);
+        }
+    }
+
+    /**
+     * sort by increasing value a1 and apply same changes to a2 and a3.
+     * runtime is O(N * log_2(N))
+     *
+     * @param a1 array of points to be sorted
+     * @param a2 array of points to apply a1 sorting to also
+     * @param idxLo starting index of sorting of a1, inclusive
+     * @param idxHi stopping index of sorting of a1, inclusive
+     */
+    public static void sortByDecr1stArg(float[] a1, float[] a2, int idxLo, int idxHi) {
+
+        int idxMid = -1;
+
+        if (idxLo < idxHi) {
+
+            idxMid = (idxLo + idxHi) >> 1;
+
+            sortByDecr1stArg(a1, a2, idxLo, idxMid);
+            sortByDecr1stArg(a1, a2, idxMid + 1, idxHi);
+            mergeDecr(a1, a2, idxLo, idxMid, idxHi);
         }
     }
 
@@ -173,29 +216,73 @@ public class MultiArrayMergeSort {
         float[] a2Right = new float[nRight + 1];
         float[] a1Right = new float[nRight + 1];
 
-        int i, j, index;
-
-        for (i = 0; i < nLeft; i++) {
-            index = idxLo + i;
-            a2Left[i] = a2[index];
-            a1Left[i] = a1[index];
-        }
-        for (j = 0; j < nRight; j++) {
-            index = idxMid + j + 1;
-            a2Right[j] = a2[index];
-            a1Right[j] = a1[index];
-        }
-
+        System.arraycopy(a1, idxLo, a1Left, 0, nLeft);
+        System.arraycopy(a2, idxLo, a2Left, 0, nLeft);
+        
+        System.arraycopy(a1, idxMid + 1, a1Right, 0, nRight);
+        System.arraycopy(a2, idxMid + 1, a2Right, 0, nRight);
+        
         a2Left[nLeft] = Float.MAX_VALUE;
         a1Left[nLeft] = Float.MAX_VALUE;
         a2Right[nRight] = Float.MAX_VALUE;
         a1Right[nRight] = Float.MAX_VALUE;
 
-        i = 0;
-        j = 0;
+        int i = 0;
+        int j = 0;
 
         for (int k = idxLo; k <= idxHi; k++) {
             if (a1Left[i] <= a1Right[j]) {
+                a2[k] = a2Left[i];
+                a1[k] = a1Left[i];
+                i += 1;
+            } else {
+                a2[k] = a2Right[j];
+                a1[k] = a1Right[j];
+                j += 1;
+            }
+        }
+    }
+
+    /**
+     * merge array
+     *
+     * @param a1 array of points to be sorted and merged
+     * @param a2 array of points to apply a1 changes to also
+     * @param idxLo starting index of merging of a1, inclusive
+     * @param idxMid mid point index of merging of a1, inclusive
+     * @param idxHi stopping index of merging of a1, inclusive
+     */
+    private static void mergeDecr(float[] a1, float[] a2, int idxLo, int idxMid, int idxHi) {
+        
+        int nLeft = idxMid - idxLo + 1;
+        int nRight = idxHi - idxMid;
+
+        float[] a2Left = new float[nLeft + 1];
+        float[] a1Left = new float[nLeft + 1];
+
+        float[] a2Right = new float[nRight + 1];
+        float[] a1Right = new float[nRight + 1];
+
+        System.arraycopy(a1, idxLo, a1Left, 0, nLeft);
+        System.arraycopy(a2, idxLo, a2Left, 0, nLeft);
+        
+        System.arraycopy(a1, idxMid + 1, a1Right, 0, nRight);
+        System.arraycopy(a2, idxMid + 1, a2Right, 0, nRight);
+        
+        float sentinel = Float.NEGATIVE_INFINITY;
+        a2Left[nLeft] = sentinel;
+        a1Left[nLeft] = sentinel;
+        a2Right[nRight] = sentinel;
+        a1Right[nRight] = sentinel;
+
+        assert((idxHi - idxLo + 1) == 
+            (a1Left.length + a1Right.length - 2));
+        
+        int i = 0;
+        int j = 0;
+
+        for (int k = idxLo; k <= idxHi; k++) {
+            if (a1Left[i] >= a1Right[j]) {
                 a2[k] = a2Left[i];
                 a1[k] = a1Left[i];
                 i += 1;

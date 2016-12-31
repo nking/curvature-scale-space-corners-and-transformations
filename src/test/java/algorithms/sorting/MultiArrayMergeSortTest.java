@@ -2,9 +2,6 @@ package algorithms.sorting;
 
 import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.logging.Logger;
-
-import algorithms.compGeometry.convexHull.PolarAngleMergeSort;
 import static junit.framework.Assert.assertTrue;
 import junit.framework.Test;
 import junit.framework.TestSuite;
@@ -36,7 +33,7 @@ public class MultiArrayMergeSortTest extends TestCase {
      *
      * @throws Exception
      */
-    public void testSortByY() throws Exception {
+    public void estSortByY() throws Exception {
 
         int nPoints = 1000;
     	float[] x = new float[nPoints];
@@ -174,6 +171,65 @@ public class MultiArrayMergeSortTest extends TestCase {
         
     }
 
+    /**
+     *
+     * @throws Exception
+     */
+    public void testSortDecr() throws Exception {
+
+        int nPoints = 1000;
+    	float[] x = new float[nPoints];
+    	float[] y = new float[nPoints];
+
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        sr.setSeed( System.currentTimeMillis() );
+
+        for (int i = 0; i < nPoints; i++) {
+            x[i] = sr.nextInt()*sr.nextFloat();
+            y[i] = sr.nextInt()*sr.nextFloat();
+        }
+        
+    	MultiArrayMergeSort.sortByDecr1stArg(y, x);
+    	assertTrue(x.length == nPoints);
+
+        //System.out.println("decr sort y=" + Arrays.toString(y));
+        
+        float previousX = x[0];
+        float previousY = y[0];
+    	for (int i=1; i < x.length; i++) {
+            assertTrue(y[i] <= previousY);
+            previousX = x[i];
+            previousY = y[i];
+        }
+    	
+    	// ===   test   exceptions ====
+    	boolean caughtException = true;
+    	try {
+    	    MultiArrayMergeSort.sortByDecr1stArg(null, x);
+    	} catch (Throwable t) {
+    	    caughtException = true;
+    	}
+    	assertTrue(caughtException);
+    	
+    	caughtException = true;
+        try {
+            MultiArrayMergeSort.sortByDecr1stArg(y, null);
+        } catch (Throwable t) {
+            caughtException = true;
+        }
+        assertTrue(caughtException);
+        
+        caughtException = true;
+        try {
+            MultiArrayMergeSort.sortByDecr1stArg(y, Arrays.copyOf(x, x.length - 3));
+        } catch (Throwable t) {
+            caughtException = true;
+        }
+        assertTrue(caughtException);
+        
+       
+    }
+    
     /**
      *
      */
