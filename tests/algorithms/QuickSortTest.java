@@ -4,8 +4,10 @@ import algorithms.imageProcessing.util.PairIntWithIndex0;
 import algorithms.util.PairInt;
 import algorithms.util.IntIntDouble;
 import gnu.trove.list.TDoubleList;
+import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TDoubleArrayList;
+import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -443,6 +445,27 @@ public class QuickSortTest extends TestCase {
         for (int i = 0; i < 10; ++i) {
             assertEquals(i, a.get(i));
             assertEquals((double)i, b.get(i));
+            assertEquals(i, c.get(i));
+        }
+    }
+    
+    public void testSortBy1stArg1() {
+        
+        TFloatList a = new TFloatArrayList();
+        TIntList b = new TIntArrayList();
+        TIntList c = new TIntArrayList();
+        
+        for (int i = 0; i < 10; ++i) {
+            a.add(9 - i);
+            b.add(9 - i);
+            c.add(9 - i);
+        }
+        
+        QuickSort.sortBy1stArg(a, b, c);
+        
+        for (int i = 0; i < 10; ++i) {
+            assertEquals((float)i, a.get(i));
+            assertEquals(i, b.get(i));
             assertEquals(i, c.get(i));
         }
     }

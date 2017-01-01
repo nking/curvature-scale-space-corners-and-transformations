@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.features;
 
+import algorithms.compGeometry.FurthestPair;
 import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.ColorHistogram;
 import algorithms.imageProcessing.GroupPixelCIELUV;
@@ -8,6 +9,7 @@ import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.VanishingPoints;
 import algorithms.imageProcessing.matching.ORBMatcher;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
@@ -17,6 +19,7 @@ import algorithms.misc.MiscMath;
 import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
 import com.climbwithyourfeet.clustering.DTClusterFinder;
+import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
@@ -468,8 +471,8 @@ public class ObjectMatcher {
                     }
                 }               
                 rmIndexesList.add(rm);
-                System.out.println("rm at scale " + i + " n=" +
-                    rm.size());
+                //System.out.println("rm at scale " + i + " n=" +
+                //    rm.size());
             }
             orb1.removeAtIndexes(rmIndexesList);
         }
@@ -523,7 +526,13 @@ public class ObjectMatcher {
         //   from features like vegetation points tends to result
         //   in high fraction terms, random good matches to shape,
         //   and roughly equiv matches in hsv descriptors so is often lowest cost
-        filterBySurfaceDensity(orb0, orb1, listOfPointSets2);
+        //TODO: a sigma factor of 2.5 or larger is more safely above
+        // effects of resolution and noise,
+        // but this is set lower while testing.
+        // this factor needs to be revisited one day or the method
+        //    replaced with the texture filter which includes other
+        //    information such as color too.
+        filterBySurfaceDensity(orb0, orb1, listOfPointSets2, 1.25f);
 
         sList = new TFloatArrayList(orb1.getScalesList().size());
         for (int i = 0; i < orb1.getScalesList().size(); ++i) {
@@ -537,15 +546,40 @@ public class ObjectMatcher {
         tempListOfPointSets.add(shape0);
 
         if (debug) {
-            ImageExt img11 = img1.copyToImageExt();
+            Set<PairInt> kpSet = new HashSet<PairInt>();
             TIntList kp0 = orb1.getKeyPoint0List().get(0);
             TIntList kp1 = orb1.getKeyPoint1List().get(0);
-            for (int i = 0; i < kp1.size(); ++i) {
+            for (int i = 0; i < kp0.size(); ++i) {
                 int x = kp1.get(i);
                 int y = kp0.get(i);
-                ImageIOHelper.addPointToImage(x, y, img11, 1, 255, 0, 0);
+                kpSet.add(new PairInt(x, y));
             }
-            MiscDebug.writeImage(img11,"_kp_2_" + ts);
+
+            ImageExt img11 = img1.createWithDimensions();
+            ImageIOHelper.addAlternatingColorPointSetsToImage(
+                listOfPointSets2, 0, 0, 1, img11);
+            ImageIOHelper.addCurveToImage(kpSet, img11,
+                1, 255, 0, 0);
+            MiscDebug.writeImage(img11,
+                "_filtered_segmentation_3_" + ts);
+
+            // plot the segmentation in black and white
+            // and then the sets in alternating color
+            img11 = img11.copyToGreyscale2().copyToColorGreyscaleExt();
+            TObjectIntMap<PairInt> pointLabels2
+                = new TObjectIntHashMap<PairInt>();
+            for (int i = 0; i < listOfPointSets2.size(); ++i) {
+                int clr = ImageIOHelper.getNextColorRGB(i);
+                Set<PairInt> set = listOfPointSets2.get(i);
+                for (PairInt p : kpSet) {
+                    if (set.contains(p)) {
+                        ImageIOHelper.addPointToImage(p.getX(), p.getY(),
+                            img11, 1, clr);
+                    }
+                }
+            }
+            MiscDebug.writeImage(img11,
+                "_filtered_segmentation_4_" + ts);
         }
 
         //TODO: might need to revise intersection limit in
@@ -741,82 +775,321 @@ public class ObjectMatcher {
         return minMaxXY1;
     }
     
-    private void filterBySurfaceDensity(ORB orb0, ORB orb1, 
-        List<Set<PairInt>> listOfPointSets2) {
+    private void filterBySurfaceDensity(ORB orb1, ORB orb2, 
+        List<Set<PairInt>> listOfPointSets2, float sigmaFactorAboveMean) {
         
         Set<PairIntWithIndex> points1 = new HashSet<PairIntWithIndex>();
-        int[] minMaxXY1 = getKeypointsMinMaxXY(orb0, 0);
+        int[] minMaxXY1 = getKeypointsMinMaxXY(orb1, 0);
         
-        for (int i = 0; i < orb0.getKeyPoint0List().get(0).size(); ++i) {
-            int x = orb0.getKeyPoint1List().get(0).get(i) - minMaxXY1[0];
-            int y = orb0.getKeyPoint0List().get(0).get(i) - minMaxXY1[2];
+        for (int i = 0; i < orb1.getKeyPoint0List().get(0).size(); ++i) {
+            int x = orb1.getKeyPoint1List().get(0).get(i) - minMaxXY1[0];
+            int y = orb1.getKeyPoint0List().get(0).get(i) - minMaxXY1[2];
             points1.add(new PairIntWithIndex(x, y, i));
         }
         
         DTClusterFinder<PairIntWithIndex> cFinder 
             = new DTClusterFinder<PairIntWithIndex>(points1, 
-                minMaxXY1[1] - minMaxXY1[0] + 1, 
-                minMaxXY1[3] - minMaxXY1[2] + 1);
+            minMaxXY1[1] - minMaxXY1[0] + 1, 
+            minMaxXY1[3] - minMaxXY1[2] + 1);
+        //cFinder.setToDebug();
         cFinder.calculateCriticalDensity();
         cFinder.findClusters();
         int n = cFinder.getNumberOfClusters();
         float cd = cFinder.getCriticalDensity();
+        
+        //StringBuilder sb = new StringBuilder();
+        //sb.append(String.format("template cd=%.2f n=%d\n", cd, n));
+        TFloatList densities1 = new TFloatArrayList();
+        TIntList nInGroup = new TIntArrayList();
+        for (int i = 0; i < n; ++i) {
+            
+            Set<PairIntWithIndex> cluster = cFinder.getCluster(i);
+            
+            assert(cluster.size() >= 3);
+            
+            double dist = separationOfFurthestPair(cluster);
+            float dens = (float)((float)cluster.size()/(dist*dist));
+            densities1.add(dens);
+            nInGroup.add(cluster.size());
+            
+        //    sb.append(String.format("  n[%d]=%d dens=%.2f", i, cluster.size(), dens));
+        }
+        //System.out.println(sb.toString());
        
+        // average, stdDv, min, max
+        float[] densityStats = calcStats(densities1, nInGroup);
+        //System.out.printf("  dens avg=%.4f, stdv=%.4f, min=%.2f, max=%.2f\n",
+        //    densityStats[0], densityStats[1], densityStats[2],
+        //    densityStats[3]);
+        
         double sz1 = Math.max(minMaxXY1[1] - minMaxXY1[0] + 1, 
             minMaxXY1[3] - minMaxXY1[2] + 1);
-        
-        TIntObjectMap<OneDIntArray> labelMinMaxXY = new 
-            TIntObjectHashMap<OneDIntArray>();
+       
         TObjectIntMap<PairInt> pointLabelMap = new TObjectIntHashMap<PairInt>();
         for (int i = 0; i < listOfPointSets2.size(); ++i) {
             Set<PairInt> set2 = listOfPointSets2.get(i);
             for (PairInt p2 : set2) {
                 pointLabelMap.put(p2, i);
             }
-            int[] minMaxXY = MiscMath.findMinMaxXY(set2);
-            labelMinMaxXY.put(i, new OneDIntArray(minMaxXY));
         }
         
-        TIntObjectMap<Set<PairIntWithIndex>> kpLabelsMap = 
-            new TIntObjectHashMap<Set<PairIntWithIndex>>();
-        for (int i = 0; i < orb1.getKeyPoint0List().get(0).size(); ++i) {
-            int x = orb1.getKeyPoint1List().get(0).get(i);
-            int y = orb1.getKeyPoint0List().get(0).get(i);
+        TIntObjectMap<Set<PairInt>> _labelKeypointsMap = 
+            new TIntObjectHashMap<Set<PairInt>>();
+        for (int i = 0; i < orb2.getKeyPoint0List().get(0).size(); ++i) {
+            int x = orb2.getKeyPoint1List().get(0).get(i);
+            int y = orb2.getKeyPoint0List().get(0).get(i);
             PairInt p0 = new PairInt(x, y);
-            if (pointLabelMap.containsKey(p0)) {
+            if (!pointLabelMap.containsKey(p0)) {
                 continue;
             }
             int label2 = pointLabelMap.get(p0);
-            OneDIntArray minMaxXY2 = labelMinMaxXY.get(label2);
-            
-            x -= minMaxXY2.a[0];
-            y -= minMaxXY2.a[2];
-            
-            PairIntWithIndex p = new PairIntWithIndex(x, y, i);
-            
-            Set<PairIntWithIndex> set2 = kpLabelsMap.get(label2);
+            Set<PairInt> set2 = _labelKeypointsMap.get(label2);
             if (set2 == null) {
-                set2 = new HashSet<PairIntWithIndex>();
-                kpLabelsMap.put(label2, set2);
+                set2 = new HashSet<PairInt>();
+                _labelKeypointsMap.put(label2, set2);
             }
-            set2.add(p);
+            set2.add(p0);
+        }
+         
+        TIntObjectMap<OneDIntArray> labelMinMaxXY = new 
+            TIntObjectHashMap<OneDIntArray>();
+        TIntObjectMap<Set<PairIntWithIndex>> labelKeypoints2Map = 
+            new TIntObjectHashMap<Set<PairIntWithIndex>>();
+        TIntObjectIterator<Set<PairInt>> iter = _labelKeypointsMap.iterator();
+        for (int i = 0; i < _labelKeypointsMap.size(); ++i) {
+            iter.advance();
+            int label2 = iter.key();
+            Set<PairInt> set = iter.value();
+            
+            OneDIntArray minMaxXY = new OneDIntArray(MiscMath.findMinMaxXY(set));
+            labelMinMaxXY.put(label2, minMaxXY);
+            
+            Set<PairIntWithIndex> set2 = new HashSet<PairIntWithIndex>();
+            for (PairInt p : set) {
+                int x = p.getX() - minMaxXY.a[0];
+                int y = p.getY() - minMaxXY.a[2];
+                PairIntWithIndex p2 = new PairIntWithIndex(x, y, i);
+                set2.add(p2);
+            }
+            labelKeypoints2Map.put(label2, set2);
         }
         
         TIntList rm = new TIntArrayList();
         for (int label2 = 0; label2 < listOfPointSets2.size(); ++label2) {
            
+            Set<PairIntWithIndex> set2 = labelKeypoints2Map.get(label2);
+            if (set2 == null || set2.size() < 10) {
+                continue;
+            }
+            
             OneDIntArray minMaxXY2 = labelMinMaxXY.get(label2);
             
-            Set<PairIntWithIndex> set2 = kpLabelsMap.get(label2);
             double sz2 = Math.max(minMaxXY2.a[1] - minMaxXY2.a[0] + 1,
                 minMaxXY2.a[3] - minMaxXY2.a[2] + 1);
         
-            //edit cd to regerence frame sz2
+            // edit cd to reference frame sz2
             // find clusters in set2
             // add those with significantly higher density to rm
             
-            //PAUSED HERE
+            float cd2;
+            int type;
+            if (sz1 > sz2 && ((sz1/sz2) > 1.2)) {
+                // decrease the critical separation by increasing
+                // critical density by factor
+                
+                // if the surface density is significantly larger,
+                //   the region should be removed
+                
+                type = 0;
+                cd2 = cd * (float)(sz1/sz2);
+                                
+            } else if (sz2 > sz1 && ((sz2/sz1) > 1.2)) {
+                // increase the critical separation by decreasing
+                // critical density by factor
+                
+                //NOTE:
+                // dataset "2" may have higher resolution, so removing the
+                // region because of larger density might not be the correct
+                
+                type = 1;
+                cd2 = cd / (float)(sz2/sz1);
+                    
+            } else {
+                // these are roughly equiv sized regions, so a direct
+                // comparison of densities is needed.
+                
+                // if the density of 2 is significantly larger, the region
+                // should be removed.
+                
+                type = 2;
+                cd2 = cd;
+                    
+            }
+            
+            DTClusterFinder<PairIntWithIndex> cFinder2
+                = new DTClusterFinder<PairIntWithIndex>(set2, 
+                minMaxXY2.a[1] - minMaxXY2.a[0] + 1, 
+                minMaxXY2.a[3] - minMaxXY2.a[2] + 1);
+            cFinder2.setCriticalDensity(cd2);
+            cFinder2.findClusters();
+            int n2 = cFinder2.getNumberOfClusters();
+
+            TFloatList densities2 = new TFloatArrayList();
+            TIntList nInGroups2 = new TIntArrayList();
+            
+            //sb = new StringBuilder();
+            //sb.append(String.format("label2=%d cd2=%.2f n2=%d\n", label2, cd2, n2));
+            for (int i = 0; i < n2; ++i) {
+                
+                Set<PairIntWithIndex> cluster2 = cFinder2.getCluster(i);
+                
+                double dist = separationOfFurthestPair(cluster2);
+                
+                if (type == 0 || type == 1) {
+                    dist *= (sz2/sz1);
+                }
+                float dens = (float) ((float) cluster2.size() / (dist * dist));
+                densities2.add(dens);
+                nInGroups2.add(cluster2.size());
+                
+                //sb.append(String.format("  n2[%d]=%d dens=%.2f", 
+                //    i, cluster2.size(), dens));
+            }
+            //System.out.println(sb.toString());
+       
+            if (n2 > 0) {
+                // average, stdDv, min, max
+                float[] densityStats2 = calcStats(densities2, nInGroups2);
+                //System.out.printf("  dens2 avg=%.4f, stdv=%.4f, min=%.2f, max=%.2f\n",
+                //    densityStats2[0], densityStats2[1], densityStats2[2],
+                //    densityStats2[3]);
+
+                if (densityStats2[0] > densityStats[0]) {
+                    float diff = densityStats2[0] - densityStats[0];
+                    float sigmaFactor = diff/densityStats[1];
+
+                    if (sigmaFactor > sigmaFactorAboveMean) {
+                        
+                        rm.add(label2);
+
+                        if (debug) {
+                            MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
+                            PairInt xyCen = ch.calculateXYCentroids2(
+                                listOfPointSets2.get(label2));
+                            System.out.format(
+                                "removing label2=%d which is %.2f sigma above mean.  coords=%s\n", 
+                                label2, sigmaFactor, xyCen.toString());
+                        }
+                    }
+                }
+            }
         }
+        
+        if (rm.isEmpty()) {
+            return;
+        }
+        
+        // remove keypoints in label2
+        // and remove label2 from the point set list
+
+        // a list of all points to search each octave2's keypoints for presence
+        //    and remove that keypoints data if present
+        Set<PairInt> rmAllPoints = new HashSet<PairInt>();
+        for (int i = 0; i < rm.size(); ++i) {
+            rmAllPoints.addAll(listOfPointSets2.get(rm.get(i)));
+        }
+        
+        List<TIntList> rmList = new ArrayList<TIntList>();
+        for (int octave2 = 0; octave2 < orb2.getKeyPoint1List().size(); 
+            ++ octave2) {
+            
+            TIntList kp1 = orb2.getKeyPoint1List().get(octave2);
+            TIntList kp0 = orb2.getKeyPoint0List().get(octave2);
+        
+            TIntList rm2 = new TIntArrayList();
+            rmList.add(rm2);
+            for (int i = 0; i < kp1.size(); ++i) {
+                PairInt p = new PairInt(kp1.get(i), kp0.get(i));
+                if (rmAllPoints.contains(p)) {
+                    rm2.add(i);
+                }
+            }
+        }
+        orb2.removeAtIndexes(rmList);
+
+        rm.sort();
+        
+        for (int i = (rm.size() - 1); i > -1; --i) {
+            int rmIdx = rm.get(i);
+            listOfPointSets2.remove(rmIdx);
+        }
+        
     }
     
+    private double separationOfFurthestPair(Set<PairIntWithIndex> points) {
+
+        if (points == null || points.size() < 2) {
+            throw new IllegalArgumentException("points must have at least "
+                + " 2 points");
+        }
+        
+        FurthestPair fp = new FurthestPair();
+        
+        Set<PairInt> set = new HashSet<PairInt>(points.size());
+        for (PairIntWithIndex p : points) {
+            set.add(new PairInt(p.getX(), p.getY()));
+        }
+        
+        PairInt[] furthest = fp.find(set);
+        
+        assert(furthest != null);
+        assert(furthest.length > 1);
+    
+        int diffX = furthest[0].getX() - furthest[1].getX();
+        int diffY = furthest[0].getY() - furthest[1].getY();
+    
+        double dist = Math.sqrt(diffX * diffX + diffY * diffY);
+        
+        return dist;
+    }
+
+    private float[] calcStats(TFloatList densities, TIntList nInGroup) {
+        
+        //average, stdDv, min, max
+        
+        // using the number in group to form weights
+        float nSum = 0;
+        for (int i = 0; i < densities.size(); ++i) {
+            nSum += nInGroup.get(i);
+        }
+        
+        TFloatList weights = new TFloatArrayList();
+        float totW = 0;
+        for (int i = 0; i < densities.size(); ++i) {
+            float w = (float)nInGroup.get(i)/nSum;
+            //System.out.println(" w=" + w + " n=" + nInGroup.get(i));
+            weights.add(w);
+            totW += w;
+        }
+        //System.out.println("totW=" + totW);
+        assert(Math.abs(totW - 1.f) < 0.01f);
+        
+        double avgDens = 0;
+        for (int i = 0; i < densities.size(); ++i) {
+            float d = densities.get(i) * weights.get(i);
+            avgDens += d;
+        }
+        
+        double stDev = 0;
+        for (int i = 0; i < densities.size(); ++i) {
+            double diff = densities.get(i) - avgDens;
+            stDev += (diff * diff);
+        }
+        stDev = Math.sqrt(stDev/((float) densities.size() - 1));
+        
+        //average, stdDv, min, max
+        return new float[]{(float)avgDens, (float)stDev, densities.min(),
+            densities.max()};
+    }
+
 }
