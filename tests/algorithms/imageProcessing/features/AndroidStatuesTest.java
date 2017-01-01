@@ -419,7 +419,10 @@ public class AndroidStatuesTest extends TestCase {
                 settings.setToFindVnishingPoints();
                            
                 ObjectMatcher objMatcher = new ObjectMatcher();
-                if (fileName1Root.contains("_01")) {
+                if (fileName1Root.contains("_02")) {
+                    settings.setToUseLargerPyramid0();
+                    settings.setToUseLargerPyramid1();
+                } else if (fileName1Root.contains("_01")) {
                     settings.setToUseLargerPyramid0();
                     settings.setToUseLargerPyramid1();
                     settings.setToUseSmallObjectMethod();
