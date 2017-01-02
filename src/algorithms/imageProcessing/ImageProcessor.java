@@ -6906,18 +6906,6 @@ if (sum > 511) {
     }
     
     /**
-     * NOTE: modifies input by the blur step.
-     * @param contiguousPoints
-     * @return 
-     */
-    public PairIntArray extractSmoothedOrderedBoundary(
-        Set<PairInt> contiguousPoints, int imgWidth, int imgHeight) {
-        
-        return extractSmoothedOrderedBoundary(contiguousPoints, SIGMA.ONE, 
-            imgWidth, imgHeight);
-    }
-    
-    /**
      * blur the points by sigma and trim any extending beyond image bounds.
      * @param points
      * @param sigma
@@ -6957,29 +6945,6 @@ if (sum > 511) {
         PerimeterFinder2 finder = new PerimeterFinder2();
         PairIntArray ordered = finder.extractOrderedBorder(
             contiguousPoints);
-    
-        return ordered;
-    }
-    
-    /**
-     * NOTE: modifies input by the blur step.
-     * @param contiguousPoints
-     * @param sigma
-     * @param imgWidth
-     * @param imgHeight
-     * @param outputMedialAxis - this variable is filled with medial axis points
-     * if not null
-     * @return 
-     */
-    public PairIntArray extractSmoothedOrderedBoundary(
-        Set<PairInt> contiguousPoints, SIGMA sigma, int imgWidth, 
-        int imgHeight, Set<PairInt> outputMedialAxis) {
-                
-        blurAndTrim(contiguousPoints, sigma, imgWidth, imgHeight);
-        
-        PerimeterFinder2 finder = new PerimeterFinder2();
-        PairIntArray ordered = finder.extractOrderedBorder(
-            contiguousPoints, outputMedialAxis);
     
         return ordered;
     }

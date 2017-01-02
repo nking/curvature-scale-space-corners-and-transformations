@@ -66,6 +66,9 @@ public class PerimeterFinder2Test extends TestCase {
             assertTrue(expectedSet.remove(p));
         }
         assertEquals(0, expectedSet.size());
+        
+        //System.out.println("UNORDERED n=" + resultUnordered.size() 
+        //    + " => " + Misc.convertWithoutOrder(resultUnordered));
 
         // --- test medial azis points -- 
         expectedSet = new HashSet<PairInt>();
@@ -90,20 +93,43 @@ public class PerimeterFinder2Test extends TestCase {
         PairIntArray results = finder.extractOrderedBorder(
             contiguousPoints);
         
+        /*
+            0 1 2 3 4 5 6 7 8 9
+        12                @
+        11              @ @
+        10            @ @
+         9  @ @ @ @ @ @ @ @ @ @
+         8  @ * * @ @ @ @ @ * @ 
+         7  @ * @ @       @ * @ 
+         6  @ @ @         @ @ @
+         5  @ @             @ @
+         4  @               @ @
+         3  @               @ @
+         2                  @ @
+         1                    @
+         0                    @
+
+            0 1 2 3 4 5 6 7 8 9
+        */
         System.out.println("results=" + results.toString());
         
         expected = new PairIntArray();
         expected.add(0, 3); expected.add(0, 4); expected.add(0, 5); 
         expected.add(0, 6); expected.add(0, 7); expected.add(0, 8);
         expected.add(0, 9); expected.add(1, 9); expected.add(2, 9);
-        expected.add(3, 8); expected.add(4, 8); expected.add(5, 8); 
-        expected.add(6, 9); expected.add(7, 9); expected.add(8, 9);
+        expected.add(3, 9); expected.add(4, 9); 
+        expected.add(5, 10); expected.add(6, 11); expected.add(7, 12); 
+        expected.add(7, 11); expected.add(6, 10);
+        expected.add(7, 9); expected.add(8, 9); expected.add(9, 9);
         expected.add(9, 8); expected.add(9, 7); 
         expected.add(9, 6); expected.add(9, 5); 
         expected.add(9, 4); expected.add(9, 3); expected.add(9, 2);
         expected.add(9, 1); expected.add(9, 0); 
-        expected.add(8, 6); expected.add(7, 7); expected.add(7, 8); 
-        expected.add(3, 7); expected.add(2, 6); expected.add(1, 6);
+        expected.add(8, 2); expected.add(8, 3); expected.add(8, 4);
+        expected.add(8, 5);
+        expected.add(7, 6); expected.add(7, 7); 
+        expected.add(6, 8); expected.add(5, 8); expected.add(4, 8); 
+        expected.add(3, 7); expected.add(2, 6); expected.add(1, 5);
 
         assertEquals(expected.getN(), results.getN());
         
@@ -300,7 +326,7 @@ public class PerimeterFinder2Test extends TestCase {
        PerimeterFinder2 finder = new PerimeterFinder2();
         
         PairIntArray results = finder.extractOrderedBorder(
-            boundary, medialAxis, shapePoints);
+            shapePoints);
         
         assertEquals(expected.getN(), results.getN());
         
@@ -310,148 +336,6 @@ public class PerimeterFinder2Test extends TestCase {
             assertEquals(expected.getX(i), results.getX(i));
             assertEquals(expected.getY(i), results.getY(i));
         }
-    }
-    
-    public void testOrdered2() {
-        Set<PairInt> shapePoints = new HashSet<PairInt>();
-        for (int i = 1; i < 7; ++i) {
-            for (int j = 1; j < 4; ++j) {
-                shapePoints.add(new PairInt(i, j));
-            }
-        }
-        for (int i = 1; i < 4; ++i) {
-            for (int j = 4; j < 7; ++j) {
-                shapePoints.add(new PairInt(i, j));
-            }
-        }
-        
-        /*
-        test w/ a concave section
-        
-        6  *  *  *
-        5  *  .  *
-        4  *  .  *
-        3  *  .  *  *  *  *
-        2  *  .  .  .  .  *
-        1  *  *  *  *  *  *
-        0  1  2  3  4  5  6
-        
-
-         5    35 36 3738 39 40 41
-         4    28 29 3031 32 33 34
-         3    21 22 2324 25 26 27
-         2    14 15 1617 18 19 20 
-         1    7  8  9 10 11 12 13
-         0    0  1  2  3  4  5  6
-        */
-        
-        Set<PairInt> medialAxis = new HashSet<PairInt>();
-        for (int i = 5; i >= 2; --i) {
-            medialAxis.add(new PairInt(2, i));
-        }
-        for (int i = 3; i <= 5; ++i) {
-            medialAxis.add(new PairInt(i, 2));
-        }
-        
-        Set<PairInt> boundary = new HashSet<PairInt>();
-        for (int i = 1; i <= 3; ++i) {
-            for (int j = 1; j <= 6; ++j) {
-                boundary.add(new PairInt(i, j));
-            }
-        }
-        for (int i = 4; i <= 6; ++i) {
-            for (int j = 1; j <= 3; ++j) {
-                boundary.add(new PairInt(i, j));
-            }
-        }
-        boundary.removeAll(medialAxis);
-        
-        PairIntArray expected = new PairIntArray(boundary.size());
-        for (int i = 1; i <= 6; ++i) {
-            expected.add(1, i);
-        }
-        expected.add(2, 6);
-        for (int i = 6; i >= 3; --i) {
-            expected.add(3, i);
-        }
-        for (int i = 4; i <= 6; ++i) {
-            expected.add(i, 3);
-        }
-        expected.add(6, 2);
-        for (int i = 6; i >= 2; --i) {
-            expected.add(i, 1);
-        }
-        
-        PerimeterFinder2 finder = new PerimeterFinder2();
-        
-        PairIntArray results = finder.extractOrderedBorder(
-            boundary, medialAxis, shapePoints);
-        
-        assertEquals(expected.getN(), results.getN());
-        
-        for (int i = 0; i < expected.getN(); ++i) {
-            //System.out.println("i=" + i + " " +
-            //expected.getX(i) + " " + expected.getY(i));
-            assertEquals(expected.getX(i), results.getX(i));
-            assertEquals(expected.getY(i), results.getY(i));
-        }
-    }
-
-    private TIntObjectMap<Set<PairInt>> createCostAdjacencyMap(
-        List<PairInt> points) {
-        
-        TIntObjectMap<Set<PairInt>> map = 
-            new TIntObjectHashMap<Set<PairInt>>();
-        
-        TObjectIntMap<PairInt> pointIndexMap
-             = new TObjectIntHashMap<PairInt>();
-        for (int i = 0; i < points.size(); ++i) {
-            PairInt p = points.get(i);
-            pointIndexMap.put(p, i);
-        }
-                
-        int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;
-        
-        for (PairInt p : points) {
-            
-            int x = p.getX();
-            int y = p.getY();
-            
-            int idx1 = pointIndexMap.get(p);
-            PairInt p1 = new PairInt(idx1, 1);
-            
-            Set<PairInt> set1 = map.get(idx1);
-            if (set1 == null) {
-                set1 = new HashSet<PairInt>();
-                map.put(idx1, set1);
-            }
-            
-            for (int k = 0; k < dxs.length; ++k) {
-                int x2 = x + dxs[k];
-                int y2 = y + dys[k];
-                PairInt p2 = new PairInt(x2, y2);
-                if (!pointIndexMap.containsKey(p2)) {
-                    continue;
-                }
-                int idx2 = pointIndexMap.get(p2);
-                
-                Set<PairInt> set2 = map.get(idx2);
-                if (set2 == null) {
-                    set2 = new HashSet<PairInt>();
-                    map.put(idx2, set2);
-                }
-                
-                PairInt p3 = new PairInt(idx2, 1);
-                
-                set1.add(p3);
-                set2.add(p1);
-            }
-        }
-        
-        assertEquals(points.size(), map.size());
-        
-        return map;
     }
     
     public void testMergeAdjacentOrderedBorders() {
