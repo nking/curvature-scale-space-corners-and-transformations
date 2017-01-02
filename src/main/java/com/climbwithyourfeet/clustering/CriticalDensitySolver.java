@@ -173,30 +173,51 @@ public class CriticalDensitySolver {
 
     private float[] calcXQuartilesAboveZero(HistogramHolder hist) {
 
+        // making a cumulative array of y.
+        
         int n = hist.getXHist().length;
-        float[] ys = new float[n];
-        float[] xs = new float[n];
+        double[] ys = new double[n];
         int count = 0;
-        for (int i = 0; i < n; ++i) {
-            if (hist.getYHist()[i] > 0) {
-                xs[count] = hist.getXHist()[i];
-                ys[count] = hist.getYHist()[i];
-                count++;
-            }
+        ys[0] = hist.getYHist()[0];
+        for (int i = 1; i < n; ++i) {
+            ys[i] = hist.getYHist()[i] + ys[count - 1];
         }
-        if (count < n) {
-            xs = Arrays.copyOf(xs, count);
-            ys = Arrays.copyOf(ys, count);
+        
+        double yTot = ys[n - 1];
+        
+        // where y cumulative is yTot/2
+        int medianIdx = Arrays.binarySearch(ys, yTot/2);
+        if (medianIdx < 0) {
+            // idx = -*idx2 - 1
+            medianIdx = -1*(medianIdx + 1);
         }
-        MultiArrayMergeSort.sortByDecr1stArg(ys, xs);
-       
-        int medianIdx = count >> 1;
+        if (medianIdx > (n - 1)) {
+            medianIdx = n - 1;
+        }
         
-        int q12Idx = (medianIdx - 1) >> 1;
+        // where y curmulative is yTot/4
+        int q12Idx = Arrays.binarySearch(ys, yTot/2);
+        if (q12Idx < 0) {
+            // idx = -*idx2 - 1
+            q12Idx = -1*(q12Idx + 1);
+        }
+        if (q12Idx > (n - 1)) {
+            q12Idx = n - 1;
+        }
         
-        int q34Idx = (count + (medianIdx + 1))/2;
-                
-        return new float[]{xs[q12Idx], xs[medianIdx], xs[q34Idx], xs[count - 1]};
+        // where y curmulative is 3*yTot/4
+        int q34Idx = Arrays.binarySearch(ys, 3.*yTot/4.);
+        if (q34Idx < 0) {
+            // idx = -*idx2 - 1
+            q34Idx = -1*(q34Idx + 1);
+        }
+        if (q34Idx > (n - 1)) {
+            q34Idx = n - 1;
+        }
+        
+        float[] xs = hist.getXHist();        
+        
+        return new float[]{xs[q12Idx], xs[medianIdx], xs[q34Idx], xs[n - 1]};
     }
 
 }
