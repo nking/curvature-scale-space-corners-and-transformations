@@ -600,4 +600,27 @@ public class QuickSortTest extends TestCase {
             d));
     }
     
+    public void testSortByFirstArg_3() {
+        
+        TFloatList a = new TFloatArrayList();
+        a.add(3); a.add(7); a.add(1); a.add(5);
+        
+        List b = new ArrayList();
+        b.add("3"); b.add("7"); b.add("1"); b.add("5");
+        
+        QuickSort.sortBy1stArg(a, b);
+        
+        assertEquals(1.f, a.get(0));
+        assertEquals("1", (String)b.get(0));
+        
+        assertEquals(3.f, a.get(1));
+        assertEquals("3", (String)b.get(1));
+        
+        assertEquals(5.f, a.get(2));
+        assertEquals("5", (String)b.get(2));
+        
+        assertEquals(7.f, a.get(3));
+        assertEquals("7", (String)b.get(3));
+        
+    }
 }

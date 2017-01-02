@@ -84,8 +84,7 @@ public class ORBMatcher {
 
     // method in progress to replace match0
     public List<CorrespondenceList> match0(ORB orb1, ORB orb2,
-        Set<PairInt> labeledPoints1, List<Set<PairInt>> labeledPoints2,
-        boolean followWithShapeSearch) {
+        Set<PairInt> labeledPoints1, List<Set<PairInt>> labeledPoints2) {
 
         /*
         NOTE: bounds are not smoothed within this method, so if
@@ -963,23 +962,27 @@ public class ORBMatcher {
             return results;
         }
         
-        System.out.println("best cost=" + resultCosts.get(0) + 
+        float c0 = resultCosts.get(0);
+        float c1 = resultCosts.get(1);
+        float f = (c1 - c0)/c0;
+        
+        System.out.println("best cost=" + c0 + 
             " nCorr=" + results.get(0).getPoints1().size());
         System.out.println("2nd best cost=" + resultCosts.get(1) + 
             " nCorr=" + results.get(1).getPoints1().size());
 
-        if ((resultCosts.get(1) - resultCosts.get(0)) > 
-            0.1 * resultCosts.get(0)) {
+        if (f < 0.1) {
             
-            //refineCostsWithColor(
-            //   resultCosts, resultCosts,
-            //   dataIndexes, orb1, orb2, octs1, octs2, 
-            //   segIdxs, labeledPoints1, labeledPoints2,
-            //   bounds1, bounds2s,
-            //   sortedKeysMap, transformations,
-            //   );
+            refineCostsWithColor(results,
+               resultCosts,
+               dataIndexes, orb1, orb2, octs1, octs2, 
+               segIdxs, labeledPoints1, labeledPoints2,
+               bounds1, bounds2s,
+               sortedKeysMap, transformations);
+            
         }
         
+        /*
         if (followWithShapeSearch) {
 
             results = aggregatedShapeMatch(orb1, orb2, nBands,
@@ -987,7 +990,7 @@ public class ORBMatcher {
                 octs1, octs2, segIdxs, scales1, scales2);
 
             System.out.println("nShapes=" + results.size());
-        }
+        }*/
 
         return results;
     }
@@ -4389,6 +4392,200 @@ public class ORBMatcher {
         }
 
         return output;
+    }
+
+    private void refineCostsWithColor(
+        List<CorrespondenceList> results, TFloatList resultCosts, 
+        TIntList dataIndexes, 
+        ORB orb1, ORB orb2, 
+        TIntList octs1, TIntList octs2, 
+        TIntList segIdxs, 
+        Set<PairInt> labeledPoints1, List<Set<PairInt>> labeledPoints2, 
+        PairIntArray bounds1, List<PairIntArray> bounds2s, 
+        Map<TrioInt, OneDIntArray> sortedKeysMap, 
+        List<TransformationParameters> transformations) {
+
+        TFloatList costs2 = new TFloatArrayList();
+        
+        List<CorrespondenceList> results2 = new ArrayList<CorrespondenceList>();
+        
+        // coordinates are in the reference frame of the full size octave 0 images
+        // row major format:
+        TwoDFloatArray imgH1 = orb1.getPyramidImagesH().get(0);
+        TwoDFloatArray imgS1 = orb1.getPyramidImagesS().get(0);
+        TwoDFloatArray imgV1 = orb1.getPyramidImagesV().get(0);
+
+        // row major format:
+        TwoDFloatArray imgH2 = orb2.getPyramidImagesH().get(0);
+        TwoDFloatArray imgS2 = orb2.getPyramidImagesS().get(0);
+        TwoDFloatArray imgV2 = orb2.getPyramidImagesV().get(0);
+
+        Transformer transformer = new Transformer();
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        float limitCost = 1.1f * resultCosts.get(0);
+        
+        for (int i = 0; i < results.size(); ++i) {
+            if (resultCosts.get(i) > limitCost) {
+                break;
+            }
+            int idx = dataIndexes.get(i);
+            
+            int octave1 = octs1.get(idx);
+            int octave2 = octs2.get(idx);
+            int segIdx = segIdxs.get(idx);
+            
+            OneDIntArray sortedKeys = sortedKeysMap.get(
+                new TrioInt(octave1, octave2, segIdx));
+
+            TransformationParameters params = transformations.get(idx);
+            
+            PairIntArray bounds2 = bounds2s.get(idx);
+            
+            // bounds1
+            // labeledPoints1
+
+            Set<PairInt> combinedSet2 = new HashSet<PairInt>();
+            for (int label2 : sortedKeys.a) {
+                combinedSet2.addAll(labeledPoints2.get(label2));
+            }
+            
+            // NOTE, because of possibility of projection and the
+            //    resulting foreshortening along an axis, may need to consider
+            //    a more time consuming epipolar solution, then
+            //    transformation and nearest neighbor consistent
+            //    with bounds along epipolar lines (similar to methods
+            //    used in registration).
+            // NOTE also: whichever method is used, it would be faster
+            //   to transform the entire combinedSet once
+            //   instead of several times for overlapping descrptor
+            //   points below.
+            
+            // transform each point in label2 and sum the 8 neighbors
+            // -- compare to the same within bounds in other.
+            // note: nIn12, nIn2
+            int n12 = 0;
+            double patchSums = 0;
+
+            float[] h1s = new float[8];
+            float[] s1s = new float[8];
+            float[] v1s = new float[8];
+            float[] h2s = new float[8];
+            float[] s2s = new float[8];
+            float[] v2s = new float[8];
+            
+            for (PairInt p2 : combinedSet2) {
+                
+                // transform the 8 neighbor region into reference frame
+                // of image 1 and store for normalization
+                
+                int count = 0;
+                double sum = 0;
+                
+                // to speed this up, could use the rotation matrix
+                //   use in features package
+                
+                for (int k = 0; k < dxs.length; ++k) {
+                    int x3 = p2.getX() + dxs[k];
+                    int y3 = p2.getY() + dys[k];
+                    PairInt p3 = new PairInt(x3, y3);
+                    if (!combinedSet2.contains(p3)) {
+                        continue;
+                    }
+                    
+                    double[] tr = transformer.applyTransformation(params,
+                        x3, y3);
+
+                    int xTr = (int) Math.round(tr[0]);
+                    int yTr = (int) Math.round(tr[1]);
+
+                    PairInt pTr = new PairInt(xTr, yTr);
+                    if (!labeledPoints1.contains(pTr)) {
+                        continue;
+                    }
+                    h1s[count] = imgH1.a[yTr][xTr];
+                    h2s[count] = imgH2.a[y3][x3];
+                    s1s[count] = imgS1.a[yTr][xTr];
+                    s2s[count] = imgS2.a[y3][x3];
+                    v1s[count] = imgV1.a[yTr][xTr];
+                    v2s[count] = imgV2.a[y3][x3];
+                    
+                    count++;
+                }
+                
+                if (count == 0) {
+                    continue;
+                }
+                                
+                // calc mean and substr it for the brighness arrays?
+                calcMeanAndSubtr(v1s, count);
+                calcMeanAndSubtr(v2s, count);
+                
+                double hSum = 0;
+                double sSum = 0;
+                double vSum = 0;
+                for (int j = 0; j < count; ++j) {
+                    float diffH = h1s[j] - h2s[j];
+                    float diffS = s1s[j] - s2s[j];
+                    float diffV = v1s[j] - v2s[j];
+                    hSum += (diffH * diffH);
+                    sSum += (diffS * diffS);
+                    vSum += (diffV * diffV);
+                }
+                hSum /= (double)count;
+                sSum /= (double)count;
+                vSum /= (double)count;
+            
+                patchSums += ((hSum + sSum + vSum)/3.);
+            
+                n12++;
+            }
+            
+            // each h,s,v image is scaled to values from 0 to 1.
+            // so max difference possible is "1".
+            // then the normalization is count * 1
+            
+            patchSums /= (double)n12;
+            
+            //TODO: stats w.r.t. projected area should be corrected here
+            
+            float d6 = (float)patchSums;
+            float f6 = 1.f - ((float)n12/(float)labeledPoints1.size());
+            
+            float tot2 = d6 * d6 + f6 * f6;
+            
+            System.out.format(
+                "segIdx=%d oct1=%d oct2=%d d6=%.2f f6=%.2f sd6=%.2f (rot=%.2f, s=%.2f)\n", 
+                segIdx, octave1, octave2, d6, f6, tot2, 
+                params.getRotationInDegrees(), 
+                params.getScale());
+            
+            costs2.add(tot2);
+        }
+        
+        int n = costs2.size();
+        for (int i = (results.size() - 1); i > (n - 1); --i) {
+            results.remove(i);
+        }
+        assert(n == results.size());
+        
+        QuickSort.sortBy1stArg(costs2, results);
+    }
+
+    private void calcMeanAndSubtr(float[] a, int count) {
+        
+        double sum = 0;
+        for (int i = 0; i < count; ++i) {
+            sum += a[i];
+        }
+        
+        float avg = (float)sum/(float)count;
+        
+        for (int i = 0; i < count; ++i) {
+            a[i] -= avg;
+        }
     }
 
     private static class PObject {

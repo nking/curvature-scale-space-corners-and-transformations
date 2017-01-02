@@ -603,7 +603,7 @@ public class ObjectMatcher {
             boolean followWithShapeSearch = false;
             
             corList = orbMatcher.match0(orb0, orb1,
-                shape0, listOfPointSets2, followWithShapeSearch);
+                shape0, listOfPointSets2);
         }
 
         if (corList == null || corList.isEmpty()) {
