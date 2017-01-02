@@ -180,7 +180,7 @@ public class CriticalDensitySolver {
         int count = 0;
         ys[0] = hist.getYHist()[0];
         for (int i = 1; i < n; ++i) {
-            ys[i] = hist.getYHist()[i] + ys[count - 1];
+            ys[i] = hist.getYHist()[i] + ys[i - 1];
         }
         
         double yTot = ys[n - 1];
