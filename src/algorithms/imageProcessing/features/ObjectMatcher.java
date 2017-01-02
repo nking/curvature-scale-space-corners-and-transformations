@@ -791,10 +791,15 @@ public class ObjectMatcher {
             = new DTClusterFinder<PairIntWithIndex>(points1, 
             minMaxXY1[1] - minMaxXY1[0] + 1, 
             minMaxXY1[3] - minMaxXY1[2] + 1);
-        //cFinder.setToDebug();
+        cFinder.setToDebug();
         cFinder.calculateCriticalDensity();
         cFinder.findClusters();
         int n = cFinder.getNumberOfClusters();
+        
+        if (n == 0) {
+            return;
+        }
+        
         float cd = cFinder.getCriticalDensity();
         
         //StringBuilder sb = new StringBuilder();
