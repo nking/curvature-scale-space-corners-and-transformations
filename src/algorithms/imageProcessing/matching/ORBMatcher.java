@@ -235,6 +235,9 @@ public class ORBMatcher {
         // index = index of labeledPoints, item = bitstring with neighbors set
         TIntObjectMap<VeryLongBitString> label2AdjacencyMap
             = createAdjacencyMap(labeledPoints2);
+       
+        //key = ordered pair of adjacent label2s, value=size of combined regions
+        TObjectIntMap<PairInt> label2PairSizes = new TObjectIntHashMap<PairInt>();
         
         List<List<QuadInt>> correspondences = new ArrayList<List<QuadInt>>();
         List<TransformationParameters> transformations = new ArrayList<TransformationParameters>();
@@ -248,7 +251,7 @@ public class ORBMatcher {
         TIntList segIdxs = new TIntArrayList();
 
         for (int octave1 = 0; octave1 < scales1.size(); ++octave1) {
-        //for (int octave1 = 1; octave1 < 2; ++octave1) {
+        //for (int octave1 = 0; octave1 < 1; ++octave1) {
 
             float scale1 = scales1.get(octave1);
 
@@ -272,7 +275,7 @@ public class ORBMatcher {
                 minMaxXY1[3] + distTol + 1);
 
             for (int octave2 = 0; octave2 < scales2.size(); ++octave2) {
-            //for (int octave2 = 0; octave2 < 1; ++octave2) {
+            //for (int octave2 = 2; octave2 < 3; ++octave2) {
 
                 float scale2 = scales2.get(octave2);
 
@@ -320,14 +323,14 @@ public class ORBMatcher {
                         continue;
                     }
 
-                    if ((sz1 > sz2 && Math.abs(sz1 / sz2) > 1.2) ||
-                        (sz2 > sz1 && Math.abs(sz2 / sz1) > 1.2)) {
+                    //NOTE: not removing small sz2
+                    if ((sz2 > sz1 && Math.abs(sz2 / sz1) > 1.2)) {
                         continue;
                     }
 
- System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
+System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
    " sz1=" + sz1 + " sz2=" + sz2 + " segIdx=" + segIdx +
-     " nKP2=" + kp2Idxs.size());
+     " nKP2=" + kp2Idxs.size()); 
 
                     TObjectIntMap<PairInt> rightIdxMap
                         = new TObjectIntHashMap<PairInt>(kp2Idxs.size());
@@ -378,7 +381,9 @@ public class ORBMatcher {
                         distTol,
                         bounds1,
                         keypoints2LabelMap,
-                        scale1, scale2, xyCen2, normalizedCost);
+                        scale1, scale2, xyCen2, 
+                        label2PairSizes, labeledPoints2,
+                        normalizedCost);
 
 //assert(normalizedCost[3] <= nkp1);
 
@@ -572,11 +577,16 @@ public class ORBMatcher {
             nBounds1.add(ne1);
             
             float sz2Tr = calculateObjectSize(bounds2Tr);
-            if ((sz1_0 > sz2Tr && ((sz1_0/sz2Tr) > 1.2)) || 
-                (sz2Tr > sz1_0 && ((sz2Tr/sz1_0) > 1.2))) {
-                System.out.println("ERROR: scale difference too large:" +
+            if ((sz1_0 > sz2Tr && ((sz1_0/sz2Tr) > 1.5)) || 
+                (sz2Tr > sz1_0 && ((sz2Tr/sz1_0) > 1.5))) {
+                System.out.print("ERROR: scale difference too large:" +
                     " oct1=" + octave1 + " oct2=" + octave2 +
                     " segIdx=" + segIdx);
+                if (sz1_0 > sz2Tr) {
+                    System.out.println(" ratio=" + (sz1_0/sz2Tr));
+                } else {
+                    System.out.println(" ratio=" + (sz2Tr/sz1_0));
+                }
                 correspondences.get(i).clear();
                 bounds2s.add(bounds2);
                 boundsMatched.add(new PairIntArray());
@@ -719,17 +729,26 @@ public class ORBMatcher {
         //System.out.println("costs: " + Arrays.toString(costs));
         //System.out.println("indexes: " + Arrays.toString(costs));
 
-        System.out.println("final results=" + costs.size()
-            + " bestCost=" + costs.get(0)
-            + " segIdx=" + segIdxs.get(indexes.get(0)));
+        // trim to the top results within 1.12 * best
+        int lastIdx = -1;
 
+        float limit = 1.12f * costs.get(0);
+        for (int j = 0; j < costs.size(); ++j) {
+            if (costs.get(j) > limit) {
+                break;
+            }
+            lastIdx = j;
+            System.out.format(
+                "final results==%d %d segIdx=%d cost=%.2f (rot=%.2f)\n",
+                costs.size(), j, segIdxs.get(indexes.get(j)),
+                costs.get(j), 
+                transformations.get(indexes.get(j)).getRotationInDegrees());
+        } 
+        indexes = indexes.subList(0, lastIdx + 1);
+        costs = costs.subList(0, lastIdx + 1);
+        
         // a look at the chord differences
         
-        int topK = 30;
-        if (topK > costs.size()) {
-            topK = costs.size();
-        }
-
         double maxChordAvg = Double.MIN_VALUE;
         TDoubleList chordDiffAvgs = new TDoubleArrayList();
         // could rewrite indexes here or just increase the new list
@@ -738,8 +757,10 @@ public class ORBMatcher {
             chordDiffAvgs.add(Double.MAX_VALUE);
         }
        
+        TIntList nb1s = new TIntArrayList();
+        TIntList nb2s = new TIntArrayList();
         List<CorrespondenceList> results = new ArrayList<CorrespondenceList>();
-        for (int i = 0; i < topK; ++i) {
+        for (int i = 0; i < indexes.size(); ++i) {
 
             if (Float.isInfinite(costs.get(i))) {
                 break;
@@ -748,13 +769,24 @@ public class ORBMatcher {
             int idx = indexes.get(i);
 
             int segIdx = segIdxs.get(idx);
+            int octave1 = octs1.get(idx);
+            int octave2 = octs2.get(idx);
+            float scale1 = orb1.getScalesList().get(octave1).get(0);
+            float scale2 = orb2.getScalesList().get(octave2).get(0);
             
             List<QuadInt> qs = correspondences.get(idx);
 
-            PairIntArray p = bounds1;
-            PairIntArray q = bounds2s.get(idx);
+            // the curves have to be nearly the same scale
+            PairIntArray p = reduceBounds(bounds1, scale1);
+            PairIntArray q = reduceBounds(bounds2s.get(idx), scale2);
             
             PairIntArray matchedIndexes = boundsMatched.get(idx);
+            PairIntArray mIdxs = new PairIntArray(matchedIndexes.getN());
+            for (int j = 0; j < matchedIndexes.getN(); ++j) {
+                int idx1 = Math.round((float)matchedIndexes.getX(j)/scale1);
+                int idx2 = Math.round((float)matchedIndexes.getY(j)/scale2);
+                mIdxs.add(idx1, idx2);
+            }
             
             //large voundaries needs larger dp for better runtime
             int dp = 1;
@@ -766,7 +798,7 @@ public class ORBMatcher {
             PartialShapeMatcher matcher = new PartialShapeMatcher();
             matcher.overrideSamplingDistance(dp);
             TDoubleList chordDiffs = matcher.calculateChordDiffs(p, q, 
-                matchedIndexes);
+                mIdxs);
             
             /* {
                 if (segIdx == 0 || segIdx == 2) {
@@ -793,11 +825,11 @@ public class ORBMatcher {
                 
                 int rmIdx = rm.get(j);
                 
-                int idx1 = matchedIndexes.getX(rmIdx);
-                int idx2 = matchedIndexes.getY(rmIdx);
+                int idx1 = mIdxs.getX(rmIdx);
+                int idx2 = mIdxs.getY(rmIdx);
                 PairInt p1 = new PairInt(p.getX(idx1), p.getY(idx1));
                 PairInt p2 = new PairInt(q.getX(idx2), q.getY(idx2));
-                
+                                
                 //TODO: improve this w/ index map when have finished changes
                 for (int k = 0; k < qs.size(); ++k) {
                     QuadInt q0 = qs.get(k);
@@ -826,6 +858,8 @@ public class ORBMatcher {
             
             // points are in full reference frame
             results.add(new CorrespondenceList(qs));
+            nb1s.add(p.getN());
+            nb2s.add(q.getN());
         }
        
         // re-calculate the costs to include the shape component
@@ -833,7 +867,7 @@ public class ORBMatcher {
         TFloatList resultCosts = new TFloatArrayList();
         TIntList resultIndexes = new TIntArrayList();
         TIntList dataIndexes = new TIntArrayList();
-        for (int i = 0; i < topK; ++i) {
+        for (int i = 0; i < indexes.size(); ++i) {
 
             if (Float.isInfinite(costs.get(i))) {
                 break;
@@ -844,12 +878,15 @@ public class ORBMatcher {
             int octave1 = octs1.get(idx);
             int octave2 = octs2.get(idx);
 
-            int nBMatched = boundsMatched.get(idx).getN();
+            float scale1 = orb1.getScalesList().get(octave1).get(0);
             
-            int nb1 = nBounds1.get(idx);
+            PairIntArray matchedIndexes = boundsMatched.get(idx);
+            int nBMatched = matchedIndexes.getN();
+            
+            float nb1 = nb1s.get(i);
             
             float d5 = (float)(chordDiffAvgs.get(idx)/maxChordAvg);
-            float f5 = 1.f - ((float)nBMatched/(float)nb1);
+            float f5 = 1.f - ((float)nBMatched/nb1);
             
             float nKP1 = orb1.getKeyPoint0List().get(octave1).size();
             float nd = nDesc.get(idx);
@@ -886,7 +923,7 @@ public class ORBMatcher {
                 octave1, octave2, segIdxs.get(idx),
                 Math.round(transformations.get(idx).getRotationInDegrees()),
                 transformations.get(idx).getScale(),
-                correspondences.get(idx).size(), (int)nd, nb1);
+                correspondences.get(idx).size(), (int)nd, (int)nb1);
 
             String str2 = String.format(
                 "\n  i=%d d1(desc)=%.2f f1=%.2f d2(dist)=%.2f d3(bDist)=%.2f f3=%.2f d5=%.2f f5=%.2f tot=%f",
@@ -942,6 +979,7 @@ public class ORBMatcher {
                 for (Entry<OneDIntArray, PairIntArray> entry :
                     keyBounds2Map.entrySet()) {
 
+                    
                     int[] clr = ImageIOHelper.getNextRGB(count);
 
                     PairIntArray bounds2 = entry.getValue();
@@ -951,10 +989,11 @@ public class ORBMatcher {
                         ImageIOHelper.addPointToImage(x, y, img1, 0,
                             clr[0], clr[1], clr[2]);
                     }
-                    count++;
+                    
                 }
-                MiscDebug.writeImage(img1, "_TMP4__"
+               MiscDebug.writeImage(img1, "_TMP4_" +count + "_"
                     + MiscDebug.getCurrentTimeFormatted());
+                    count++;
             }
         }
         
@@ -969,16 +1008,19 @@ public class ORBMatcher {
         System.out.println("best cost=" + c0 + 
             " nCorr=" + results.get(0).getPoints1().size());
         System.out.println("2nd best cost=" + resultCosts.get(1) + 
-            " nCorr=" + results.get(1).getPoints1().size());
+            " nCorr=" + results.get(1).getPoints1().size()
+            + " (diff is " + f + " frac of best)");
 
-        if (f < 0.1) {
-            
+        float limitFactor = 0.2f;
+        
+        if (f < limitFactor) {
+           
             refineCostsWithColor(results,
                resultCosts,
                dataIndexes, orb1, orb2, octs1, octs2, 
                segIdxs, labeledPoints1, labeledPoints2,
                bounds1, bounds2s,
-               sortedKeysMap, transformations);
+               sortedKeysMap, transformations, limitFactor);
             
         }
         
@@ -3427,6 +3469,8 @@ public class ORBMatcher {
         PairIntArray bounds1,
         TObjectIntMap<PairInt> keypoints2LabelMap,
         float scale1, float scale2, double[] xyCenlabeled2,
+        TObjectIntMap<PairInt> label2PairSizes,
+        List<Set<PairInt>> label2Sets,
         double[] outputNormalizedCost) {
 
         // NOTE that all coordinates are in the full reference frame
@@ -3438,8 +3482,10 @@ public class ORBMatcher {
 
         int n1 = left.getN();
         int n2 = right.getN();
+        
+        int sz1 = calculateObjectSize(left);
 
-        int sz1LimitSq = Math.round(1.3f * calculateObjectSize(left));
+        int sz1LimitSq = Math.round(1.3f * sz1);
         sz1LimitSq *= sz1LimitSq;
         
         /*
@@ -3599,6 +3645,31 @@ public class ORBMatcher {
                     double d = diffX * diffX + diffY * diffY;
                     if (d > sz1LimitSq) {
                         skip.add(jj);
+                    } else {
+                        // check if adding these 2 labeled regions is too large
+                        int label2 = keypoints2LabelMap.get(
+                            new PairInt(keypoints2.getX(jj), keypoints2.getY(jj)));
+                        if (label2 == segIdx) {
+                            continue;
+                        }
+                        PairInt labels = (segIdx < label2) ? new PairInt(segIdx, label2) :
+                            new PairInt(label2, segIdx);
+                       
+                        int sz2;
+                        if (label2PairSizes.containsKey(labels)) {
+                            sz2 = label2PairSizes.get(labels);
+                        } else {
+                            Set<PairInt> comb = new HashSet<PairInt>(
+                                label2Sets.get(segIdx));
+                            comb.addAll(label2Sets.get(label2));
+                            sz2 = calculateObjectSize(comb);
+                            label2PairSizes.put(labels, sz2);
+                        }
+                        sz2 *= params.getScale();
+                        
+                        if ((sz2 * sz2) > sz1LimitSq) {
+                            skip.add(jj);
+                        }
                     }
                 }
 
@@ -3684,21 +3755,6 @@ public class ORBMatcher {
                 outLeft.add(pLeft.getX(), pLeft.getY());
                 outRight.add(pRight.getX(), pRight.getY());
             }
-            /*
-            for (int i = 0; i < bestExtrN; ++i) {
-                int idx1 = bestMIdxExtr1s[i];
-                int idx2 = bestMIdxExtr2s[i];
-                PairInt pLeft = new PairInt(bounds1.getX(idx1), bounds1.getY(idx1));
-                PairInt pRight = new PairInt(bestBounds2.getX(idx2), bestBounds2.getY(idx2));
-                if (addedLeft.contains(pLeft) || addedRight.contains(pRight)) {
-                    continue;
-                }
-                addedLeft.add(pLeft);
-                addedRight.add(pRight);
-                outLeft.add(pLeft.getX(), pLeft.getY());
-                outRight.add(pRight.getX(), pRight.getY());
-            }
-            */
         }
 
         return bestParams;
@@ -4403,7 +4459,7 @@ public class ORBMatcher {
         Set<PairInt> labeledPoints1, List<Set<PairInt>> labeledPoints2, 
         PairIntArray bounds1, List<PairIntArray> bounds2s, 
         Map<TrioInt, OneDIntArray> sortedKeysMap, 
-        List<TransformationParameters> transformations) {
+        List<TransformationParameters> transformations, float limitFactor) {
 
         TFloatList costs2 = new TFloatArrayList();
         
@@ -4425,7 +4481,7 @@ public class ORBMatcher {
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
         
-        float limitCost = 1.1f * resultCosts.get(0);
+        float limitCost = (1.f + limitFactor) * resultCosts.get(0);
         
         for (int i = 0; i < results.size(); ++i) {
             if (resultCosts.get(i) > limitCost) {
@@ -4436,7 +4492,7 @@ public class ORBMatcher {
             int octave1 = octs1.get(idx);
             int octave2 = octs2.get(idx);
             int segIdx = segIdxs.get(idx);
-            
+                    
             OneDIntArray sortedKeys = sortedKeysMap.get(
                 new TrioInt(octave1, octave2, segIdx));
 
@@ -4444,9 +4500,6 @@ public class ORBMatcher {
             
             PairIntArray bounds2 = bounds2s.get(idx);
             
-            // bounds1
-            // labeledPoints1
-
             Set<PairInt> combinedSet2 = new HashSet<PairInt>();
             for (int label2 : sortedKeys.a) {
                 combinedSet2.addAll(labeledPoints2.get(label2));
@@ -4548,11 +4601,12 @@ public class ORBMatcher {
             // then the normalization is count * 1
             
             patchSums /= (double)n12;
-            
-            //TODO: stats w.r.t. projected area should be corrected here
-            
+                        
+            float nb1 = labeledPoints1.size();
+            int nMaxMatchable = (int)(nb1/orb1.getScalesList().get(octave1).get(0));
+                        
             float d6 = (float)patchSums;
-            float f6 = 1.f - ((float)n12/(float)labeledPoints1.size());
+            float f6 = 1.f - ((float)n12/nMaxMatchable);
             
             float tot2 = d6 * d6 + f6 * f6;
             
