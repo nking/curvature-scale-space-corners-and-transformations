@@ -415,7 +415,7 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
                     System.out.println("octave1=" + octave1 + " octave2=" +
                         octave2 + " euclid m1.n=" + m1.getN()
                         + " segIdx=" + segIdx + " c=" + normalizedCost[0]);
-                    if (params == null || m1.getN() < 7) {
+                    if (params == null || m1.getN() < 4) {
                         continue;
                     }
 
@@ -1128,7 +1128,13 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
         float limitFactor = 0.2f;
         
         if (f < limitFactor) {
-                       
+            
+            //TODO:  this patch based comparison may need to be
+            //      edited to use epipolar projection and to match
+            //      along lines between bounds (similar to steps in
+            //      registration).
+            //      other edits such as a texture filter may be needed
+            
             List<CorrespondenceList> output = 
                refineCostsWithColor(
                    results, resultCosts,
@@ -3795,9 +3801,9 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
                     if (d > szSq) {
                         skip.add(jj);
                     } else {
-                      //  labels2Set.add(points2LabelMap.get(
-                      //      new PairInt(keypoints2.getX(jj),
-                      //      keypoints2.getY(jj))));
+                  //      labels2Set.add(points2LabelMap.get(
+                  //          new PairInt(keypoints2.getX(jj),
+                  //          keypoints2.getY(jj))));
                     }
                 }
 
@@ -4723,6 +4729,8 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
             float[] s2s = new float[8];
             float[] v2s = new float[8];
             
+            Set<PairInt> visited = new HashSet<PairInt>();
+            
             for (PairInt p2 : combinedSet2) {
                 
                 // transform the 8 neighbor region into reference frame
@@ -4749,9 +4757,12 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
                     int yTr = (int) Math.round(tr[1]);
 
                     PairInt pTr = new PairInt(xTr, yTr);
-                    if (!labeledPoints1.contains(pTr)) {
+                    if (!labeledPoints1.contains(pTr) || visited.contains(pTr)) {
                         continue;
                     }
+                    
+                    visited.add(pTr);
+                    
                     h1s[count] = imgH1.a[yTr][xTr];
                     h2s[count] = imgH2.a[y3][x3];
                     s1s[count] = imgS1.a[yTr][xTr];
