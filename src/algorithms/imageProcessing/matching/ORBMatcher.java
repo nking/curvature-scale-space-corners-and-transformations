@@ -95,7 +95,7 @@ public class ORBMatcher {
             throw new IllegalStateException("orbs must contain same kind of descirptors");
         }
 
-        int distTol = 20;//15;//5
+        int distTol = 10;//20;//15;//5
 
         PairIntArray bounds1 = createOrderedBoundsSansSmoothing(
             labeledPoints1);
@@ -592,6 +592,20 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
                 } else {
                     System.out.println(" ratio=" + (sz2Tr/sz1_0));
                 }
+                {// DEBUG: temporarily writing out error images
+                    float scale2 = scales2.get(octave2);
+                    Image img2 = ORB.convertToImage(
+                        orb2.getPyramidImages().get(octave2));
+                    for (int ii = 0; ii < bounds2.getN(); ++ii) {
+                        int x = Math.round((float)bounds2.getX(ii)/scale2);
+                        int y = Math.round((float)bounds2.getY(ii)/scale2);
+                        ImageIOHelper.addPointToImage(x, y, img2, 1, 0, 255, 0);
+                    }
+                    MiscDebug.writeImage(img2, "_ERR_"
+                        + octave1 + "_" + octave2 + "_" + segIdx + "_" +
+                        MiscDebug.getCurrentTimeFormatted());
+                }
+                
                 correspondences.get(i).clear();
                 bounds2s.put(i, bounds2);
                 boundsMatched.put(i, new PairIntArray());
@@ -3665,6 +3679,26 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
                 
                 double[] xyCenTr = transformer.applyTransformation(params, 
                     xyCenlabeled2[0], xyCenlabeled2[1]);
+                
+                // --- while adding key points that are the nearest matching  
+                //     to transformed points within tolerance,
+                //     need to filter out points that are further from
+                //     a factor times object distance from the center of 
+                //     the current index for the fast first size filter.
+                //     -- because the transformation is now known, more than
+                //        the maximum dimension can be used.
+                //        -- after keypoints of adjacent labeled regions are
+                //           added,
+                //           can inspect the number and distribution of 
+                //           key points in the implied added labeled regions
+                //           and if the matched keypoints are only present 
+                //           at the adjacent border and not the other borders,
+                //           can determine that that additional region and
+                //           it's keypoints should not be added to this
+                //           set of maches for segIdx.
+                //  TODO: implement this later portion.
+             
+                
                 
                 // filter out keypoints further than 2*sz1 or so
                 // from the center of segIdx region.
