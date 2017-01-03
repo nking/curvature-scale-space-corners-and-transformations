@@ -357,9 +357,9 @@ public class AndroidStatuesTest extends TestCase {
         */
         String[] fileNames1 = new String[]{
         //    "android_statues_01.jpg", // no kp remaining
-        //      "android_statues_02.jpg", // no kp remaining
+        //      "android_statues_02.jpg", // needs larger pyramid
             "android_statues_04.jpg", // OK: match0, matchSmall works
-            "android_statues_03.jpg" // OK: match0, matchSmall works
+           "android_statues_03.jpg" // OK: match0, matchSmall works
         };
         
         int fn0 = 0;
@@ -417,7 +417,10 @@ public class AndroidStatuesTest extends TestCase {
                  
                 Settings settings = new Settings();
                 settings.setToFindVnishingPoints();
-                           
+                
+                //settings.setToUseLargerPyramid0();
+                //settings.setToUseLargerPyramid1();
+                
                 ObjectMatcher objMatcher = new ObjectMatcher();
                 if (fileName1Root.contains("_02")) {
                     settings.setToUseLargerPyramid0();
