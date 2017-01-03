@@ -239,16 +239,20 @@ public class ORBMatcher {
         //key = ordered pair of adjacent label2s, value=size of combined regions
         TObjectIntMap<PairInt> label2PairSizes = new TObjectIntHashMap<PairInt>();
         
-        List<List<QuadInt>> correspondences = new ArrayList<List<QuadInt>>();
-        List<TransformationParameters> transformations = new ArrayList<TransformationParameters>();
-        TDoubleList descCosts = new TDoubleArrayList();
-        TIntList nDesc = new TIntArrayList();
-        TDoubleList distCosts = new TDoubleArrayList();
-        TIntList nBounds = new TIntArrayList();
-        TDoubleList boundsDistCosts = new TDoubleArrayList();
-        TIntList octs1 = new TIntArrayList();
-        TIntList octs2 = new TIntArrayList();
-        TIntList segIdxs = new TIntArrayList();
+        // keys for these data are dataCount
+        int dataCount = 0;
+        TIntObjectMap<List<QuadInt>> correspondences = new 
+            TIntObjectHashMap<List<QuadInt>>();
+        TIntObjectMap<TransformationParameters> transformations = new 
+            TIntObjectHashMap<TransformationParameters>();
+        TIntObjectMap<Double> descCosts = new TIntObjectHashMap<Double>();
+        TIntIntMap nDesc = new TIntIntHashMap();
+        TIntObjectMap<Double> distCosts = new TIntObjectHashMap<Double>();
+        TIntIntMap nBounds = new TIntIntHashMap();
+        TIntObjectMap<Double> boundsDistCosts = new TIntObjectHashMap<Double>();
+        TIntIntMap octs1 = new TIntIntHashMap();
+        TIntIntMap octs2 = new TIntIntHashMap();
+        TIntIntMap segIdxs = new TIntIntHashMap();
 
         for (int octave1 = 0; octave1 < scales1.size(); ++octave1) {
         //for (int octave1 = 0; octave1 < 1; ++octave1) {
@@ -435,23 +439,24 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
                     // 4 = sum of normalized bounds distances from transformations
                     // 5 = number of normalized bounds matches
 
-                    correspondences.add(corres);
-                    transformations.add(params);
-                    descCosts.add(normalizedCost[1]);
-                    nDesc.add((int)normalizedCost[3]);
-                    distCosts.add(normalizedCost[2]);
-                    boundsDistCosts.add(normalizedCost[4]);
-                    nBounds.add((int)normalizedCost[5]);
-                    octs1.add(octave1);
-                    octs2.add(octave2);
-                    segIdxs.add(segIdx);
-
+                    correspondences.put(dataCount, corres);
+                    transformations.put(dataCount, params);
+                    descCosts.put(dataCount, normalizedCost[1]);
+                    nDesc.put(dataCount, (int)normalizedCost[3]);
+                    distCosts.put(dataCount, normalizedCost[2]);
+                    boundsDistCosts.put(dataCount, normalizedCost[4]);
+                    nBounds.put(dataCount, (int)normalizedCost[5]);
+                    octs1.put(dataCount, octave1);
+                    octs2.put(dataCount, octave2);
+                    segIdxs.put(dataCount, segIdx);
+                    dataCount++;
+                    
                 }// end loop over octave2's segIdx
             }// end loop over octave2
         }  // end loop over octave1
 
-        int nC = correspondences.size();
-
+        assert(correspondences.size() == dataCount);
+        
         //calculate "salukvazde distances" as costs to rank results
 
         /*
@@ -481,11 +486,11 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
         Map<TrioInt, OneDIntArray> sortedKeysMap = new
             HashMap<TrioInt, OneDIntArray>();
         
-        TIntList nBounds1 = new TIntArrayList();
-        List<PairIntArray> bounds2s = new ArrayList<PairIntArray>();
-        List<PairIntArray> boundsMatched = new ArrayList<PairIntArray>();
-        TDoubleList bDistCost = new TDoubleArrayList();
-        for (int i = 0; i < nC; ++i) {
+        TIntIntMap nBounds1 = new TIntIntHashMap();
+        TIntObjectMap<PairIntArray> bounds2s = new TIntObjectHashMap<PairIntArray>();
+        TIntObjectMap<PairIntArray> boundsMatched = new TIntObjectHashMap<PairIntArray>();
+        TIntObjectMap<Double> bDistCost = new TIntObjectHashMap<Double>();
+        for (int i = 0; i < dataCount; ++i) {
             int octave1 = octs1.get(i);
             int octave2 = octs2.get(i);
             int segIdx = segIdxs.get(i);
@@ -574,7 +579,7 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
             ne1 = unique.size();
             */
             
-            nBounds1.add(ne1);
+            nBounds1.put(i, ne1);
             
             float sz2Tr = calculateObjectSize(bounds2Tr);
             if ((sz1_0 > sz2Tr && ((sz1_0/sz2Tr) > 1.5)) || 
@@ -588,9 +593,9 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
                     System.out.println(" ratio=" + (sz2Tr/sz1_0));
                 }
                 correspondences.get(i).clear();
-                bounds2s.add(bounds2);
-                boundsMatched.add(new PairIntArray());
-                bDistCost.add(Double.MAX_VALUE);
+                bounds2s.put(i, bounds2);
+                boundsMatched.put(i, new PairIntArray());
+                bDistCost.put(i, Double.MAX_VALUE);
                 continue;
             }
             
@@ -610,9 +615,9 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
 
             int nBMatched = (int)sumsExtr[1];
 
-            bounds2s.add(bounds2);
-            boundsMatched.add(boundsMatchingIndexes);
-            bDistCost.add(sumsExtr[0]);
+            bounds2s.put(i, bounds2);
+            boundsMatched.put(i, boundsMatchingIndexes);
+            bDistCost.put(i, sumsExtr[0]);
 
             for (int ii = 0; ii < boundsMatchingIndexes.getN(); ++ii) {
                 int idx1 = boundsMatchingIndexes.getX(ii);
@@ -626,16 +631,16 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
             }
         }
         
-        assert(nC == nBounds1.size());
-        assert(nC == bounds2s.size());
-        assert(nC == boundsMatched.size());
-        assert(nC == bDistCost.size());
-        assert(nC == transformations.size());
+        assert(dataCount == nBounds1.size());
+        assert(dataCount == bounds2s.size());
+        assert(dataCount == boundsMatched.size());
+        assert(dataCount == bDistCost.size());
+        assert(dataCount == transformations.size());
        
         float maxDesc = nBands * 256.0f;
-        TIntList indexes = new TIntArrayList(nC);
-        TFloatList costs = new TFloatArrayList(nC);
-        for (int i = 0; i < nC; ++i) {
+        TIntList indexes = new TIntArrayList(dataCount);
+        TFloatList costs = new TFloatArrayList(dataCount);
+        for (int i = 0; i < dataCount; ++i) {
 
             int octave1 = octs1.get(i);
             int octave2 = octs2.get(i);
@@ -646,8 +651,8 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
 
             float nd = nDesc.get(i);
 
-            float descCost = (float)descCosts.get(i)/nd;
-            float distCost = (float)distCosts.get(i)/nd;
+            float descCost = descCosts.get(i).floatValue()/nd;
+            float distCost = distCosts.get(i).floatValue()/nd;
 
             // calculate "fraction of whole" for keypoint descriptors
             final float f1 = 1.f - (nd/nKP1);
@@ -656,7 +661,7 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
             float d2 = distCost;
 
             float nBMatched = boundsMatched.get(i).getN();
-            float boundaryDistCost = (float)bDistCost.get(i)/nBMatched;
+            float boundaryDistCost = bDistCost.get(i).floatValue()/nBMatched;
 
             // -- fraction of whole for boundary matching
             float f3 = 1.f - (nBMatched / (float)nBounds1.get(i));
@@ -717,12 +722,12 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
             }
         }
 
-        assert(nC == nBounds1.size());
-        assert(nC == bounds2s.size());
-        assert(nC == boundsMatched.size());
-        assert(nC == bDistCost.size());
-        assert(nC == indexes.size());
-        assert(nC == costs.size());
+        assert(dataCount == nBounds1.size());
+        assert(dataCount == bounds2s.size());
+        assert(dataCount == boundsMatched.size());
+        assert(dataCount == bDistCost.size());
+        assert(dataCount == indexes.size());
+        assert(dataCount == costs.size());
        
         QuickSort.sortBy1stArg(costs, indexes);
 
@@ -743,23 +748,45 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
                 costs.size(), j, segIdxs.get(indexes.get(j)),
                 costs.get(j), 
                 transformations.get(indexes.get(j)).getRotationInDegrees());
-        } 
+        }
+        
+        // remove keys beyond lastIdx
+        for (int i = (lastIdx + 1); i < dataCount; ++i) {
+            int key = indexes.get(i);
+            correspondences.remove(key);
+            transformations.remove(key);
+            descCosts.remove(key);
+            nDesc.remove(key);
+            distCosts.remove(key);
+            boundsDistCosts.remove(key);
+            nBounds.remove(key);
+            octs1.remove(key);
+            octs2.remove(key);
+            segIdxs.remove(key);
+            nBounds1.remove(key);
+            bounds2s.remove(key);
+            boundsMatched.remove(key);
+            bDistCost.remove(key);
+        }
         indexes = indexes.subList(0, lastIdx + 1);
         costs = costs.subList(0, lastIdx + 1);
+        dataCount = lastIdx;
+        assert(indexes.size() == correspondences.size());
         
         // a look at the chord differences
         
         double maxChordAvg = Double.MIN_VALUE;
-        TDoubleList chordDiffAvgs = new TDoubleArrayList();
+        TIntObjectMap<Double> chordDiffAvgs = new TIntObjectHashMap<Double>();
         // could rewrite indexes here or just increase the new list
         // to same size as others and use "idx" to set a field
-        for (int i = 0; i < nC; ++i) {
-            chordDiffAvgs.add(Double.MAX_VALUE);
+        for (int i = 0; i < indexes.size(); ++i) {
+            int key = indexes.get(i);
+            chordDiffAvgs.put(key, Double.MAX_VALUE);
         }
        
-        TIntList nb1s = new TIntArrayList();
-        TIntList nb2s = new TIntArrayList();
-        List<CorrespondenceList> results = new ArrayList<CorrespondenceList>();
+        TIntIntMap nb1s = new TIntIntHashMap();
+        TIntIntMap nb2s = new TIntIntHashMap();
+        TIntObjectMap<CorrespondenceList> results = new TIntObjectHashMap<CorrespondenceList>();
         for (int i = 0; i < indexes.size(); ++i) {
 
             if (Float.isInfinite(costs.get(i))) {
@@ -853,19 +880,18 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
             }
             
             if (matchedIndexes.getN() > 0) {
-                chordDiffAvgs.set(idx, chordAvg);
+                chordDiffAvgs.put(idx, chordAvg);
             }
             
             // points are in full reference frame
-            results.add(new CorrespondenceList(qs));
-            nb1s.add(p.getN());
-            nb2s.add(q.getN());
+            results.put(idx, new CorrespondenceList(qs));
+            nb1s.put(idx, p.getN());
+            nb2s.put(idx, q.getN());
         }
        
         // re-calculate the costs to include the shape component
-        
+               
         TFloatList resultCosts = new TFloatArrayList();
-        TIntList resultIndexes = new TIntArrayList();
         TIntList dataIndexes = new TIntArrayList();
         for (int i = 0; i < indexes.size(); ++i) {
 
@@ -877,28 +903,26 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
             
             int octave1 = octs1.get(idx);
             int octave2 = octs2.get(idx);
-
-            float scale1 = orb1.getScalesList().get(octave1).get(0);
             
             PairIntArray matchedIndexes = boundsMatched.get(idx);
             int nBMatched = matchedIndexes.getN();
             
-            float nb1 = nb1s.get(i);
+            float nb1 = nb1s.get(idx);
             
             float d5 = (float)(chordDiffAvgs.get(idx)/maxChordAvg);
             float f5 = 1.f - ((float)nBMatched/nb1);
             
             float nKP1 = orb1.getKeyPoint0List().get(octave1).size();
             float nd = nDesc.get(idx);
-            float descCost = (float)descCosts.get(idx)/nd;
-            float distCost = (float)distCosts.get(idx)/nd;
+            float descCost = descCosts.get(idx).floatValue()/nd;
+            float distCost = distCosts.get(idx).floatValue()/nd;
 
             // calculate "fraction of whole" for keypoint descriptors
             final float f1 = 1.f - (nd/nKP1);
             float d1 = descCost;
             float d2 = distCost;
 
-            float boundaryDistCost = (float)bDistCost.get(idx)/nBMatched;
+            float boundaryDistCost = bDistCost.get(idx).floatValue()/nBMatched;
 
             // -- fraction of whole for boundary matching
             float f3 = 1.f - (nBMatched / (float)nBounds1.get(idx));
@@ -915,7 +939,6 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
             }
             
             resultCosts.add(tot);
-            resultIndexes.add(i);
             dataIndexes.add(idx);
             
             String str1 = String.format(
@@ -934,17 +957,9 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
             
         }
         
-        assert(resultCosts.size() == resultIndexes.size());
+        assert(resultCosts.size() == dataIndexes.size());
       
-        QuickSort.sortBy1stArg(resultCosts, resultIndexes, dataIndexes);
-        CorrespondenceList[] b = results.toArray(
-            new CorrespondenceList[results.size()]);
-
-        results = new ArrayList<CorrespondenceList>();
-        for (int i = 0; i < resultIndexes.size(); ++i) {
-            int idx = resultIndexes.get(i);
-            results.add(b[idx]);
-        }
+        QuickSort.sortBy1stArg(resultCosts, dataIndexes);
         
         {// DEBUG   a look at the bounds and keypoints tested by octave
             for (int i = 0; i < scales2.size(); ++i) {
@@ -998,7 +1013,15 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
         }
         
         if (results.size() < 2) {
-            return results;
+            
+            List<CorrespondenceList> out = new ArrayList<CorrespondenceList>(
+                results.size());
+            
+            for (int i = 0; i < dataIndexes.size(); ++i) {
+                out.add(results.get(dataIndexes.get(i)));
+            }
+            
+            return out;
         }
         
         float c0 = resultCosts.get(0);
@@ -1006,22 +1029,24 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
         float f = (c1 - c0)/c0;
         
         System.out.println("best cost=" + c0 + 
-            " nCorr=" + results.get(0).getPoints1().size());
+            " nCorr=" + results.get(dataIndexes.get(0)).getPoints1().size());
         System.out.println("2nd best cost=" + resultCosts.get(1) + 
-            " nCorr=" + results.get(1).getPoints1().size()
+            " nCorr=" + results.get(dataIndexes.get(1)).getPoints1().size()
             + " (diff is " + f + " frac of best)");
 
         float limitFactor = 0.2f;
         
         if (f < limitFactor) {
-           
-            refineCostsWithColor(results,
-               resultCosts,
-               dataIndexes, orb1, orb2, octs1, octs2, 
-               segIdxs, labeledPoints1, labeledPoints2,
-               bounds1, bounds2s,
-               sortedKeysMap, transformations, limitFactor);
+                       
+            List<CorrespondenceList> output = 
+               refineCostsWithColor(
+                   results, resultCosts,
+                   dataIndexes, orb1, orb2, octs1, octs2, 
+                   segIdxs, labeledPoints1, labeledPoints2,
+                   bounds1, nb1s, bounds2s,
+                   sortedKeysMap, transformations, limitFactor);
             
+            return output;
         }
         
         /*
@@ -1034,7 +1059,13 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
             System.out.println("nShapes=" + results.size());
         }*/
 
-        return results;
+        List<CorrespondenceList> output = new ArrayList<CorrespondenceList>(
+            results.size());
+        for (int i = 0; i < dataIndexes.size(); ++i) {
+            output.add(results.get(dataIndexes.get(i)));
+        }
+        
+        return output;
     }
 
     /**
@@ -4450,21 +4481,42 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
         return output;
     }
 
-    private void refineCostsWithColor(
-        List<CorrespondenceList> results, TFloatList resultCosts, 
-        TIntList dataIndexes, 
+    /**
+     * calculate patch SSD costs, add to some subset of previous cost terms,
+     * and trim and re-sort the given results.
+     * 
+     * @param results
+     * @param resultCosts
+     * @param dataIndexes
+     * @param orb1
+     * @param orb2
+     * @param octs1
+     * @param octs2
+     * @param segIdxs
+     * @param labeledPoints1
+     * @param labeledPoints2
+     * @param bounds1
+     * @param bounds2s
+     * @param sortedKeysMap
+     * @param transformations
+     * @param limitFactor
+     * @return 
+     */
+    private List<CorrespondenceList> refineCostsWithColor(
+        TIntObjectMap<CorrespondenceList> results, 
+        TFloatList resultCosts, 
+        TIntList sortedDataIndexes, 
         ORB orb1, ORB orb2, 
-        TIntList octs1, TIntList octs2, 
-        TIntList segIdxs, 
+        TIntIntMap octs1, TIntIntMap octs2, 
+        TIntIntMap segIdxs, 
         Set<PairInt> labeledPoints1, List<Set<PairInt>> labeledPoints2, 
-        PairIntArray bounds1, List<PairIntArray> bounds2s, 
+        PairIntArray bounds1, TIntIntMap nb1s,
+        TIntObjectMap<PairIntArray> bounds2s, 
         Map<TrioInt, OneDIntArray> sortedKeysMap, 
-        List<TransformationParameters> transformations, float limitFactor) {
+        TIntObjectMap<TransformationParameters> transformations, float limitFactor) {
 
         TFloatList costs2 = new TFloatArrayList();
-        
-        List<CorrespondenceList> results2 = new ArrayList<CorrespondenceList>();
-        
+                
         // coordinates are in the reference frame of the full size octave 0 images
         // row major format:
         TwoDFloatArray imgH1 = orb1.getPyramidImagesH().get(0);
@@ -4483,15 +4535,23 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
         
         float limitCost = (1.f + limitFactor) * resultCosts.get(0);
         
-        for (int i = 0; i < results.size(); ++i) {
+        for (int i = 0; i < sortedDataIndexes.size(); ++i) {
             if (resultCosts.get(i) > limitCost) {
+                // remove remaining results and data indexes
+                int n2 = sortedDataIndexes.size();
+                for (int j = (n2 - 1); j >= i; --j) {
+                    int idx = sortedDataIndexes.get(j);
+                    results.remove(idx);
+                    sortedDataIndexes.removeAt(j);
+                }
                 break;
             }
-            int idx = dataIndexes.get(i);
+            int idx = sortedDataIndexes.get(i);
             
             int octave1 = octs1.get(idx);
             int octave2 = octs2.get(idx);
             int segIdx = segIdxs.get(idx);
+            float scale1 = orb1.getScalesList().get(octave1).get(0);
                     
             OneDIntArray sortedKeys = sortedKeysMap.get(
                 new TrioInt(octave1, octave2, segIdx));
@@ -4602,8 +4662,11 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
             
             patchSums /= (double)n12;
                         
+            //everything is scaled to reference frame of octave1=0
+            // but when object matches a larger octave1, the area matchable is
+            // decreased
             float nb1 = labeledPoints1.size();
-            int nMaxMatchable = (int)(nb1/orb1.getScalesList().get(octave1).get(0));
+            int nMaxMatchable = Math.round(nb1/(float)(scale1 * scale1));
                         
             float d6 = (float)patchSums;
             float f6 = 1.f - ((float)n12/nMaxMatchable);
@@ -4620,12 +4683,18 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
         }
         
         int n = costs2.size();
-        for (int i = (results.size() - 1); i > (n - 1); --i) {
-            results.remove(i);
-        }
+        
         assert(n == results.size());
         
-        QuickSort.sortBy1stArg(costs2, results);
+        QuickSort.sortBy1stArg(costs2, sortedDataIndexes);
+        
+        List<CorrespondenceList> output = new ArrayList<CorrespondenceList>();
+        for (int i = 0; i < sortedDataIndexes.size(); ++i) {
+            int key = sortedDataIndexes.get(i);
+            output.add(results.get(key));
+        }
+        
+        return output;
     }
 
     private void calcMeanAndSubtr(float[] a, int count) {
