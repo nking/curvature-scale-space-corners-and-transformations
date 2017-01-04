@@ -394,7 +394,8 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
                         bounds1, keyBounds2Map,
                         point2LabelMap,
                         scale1, scale2, xyCen2, 
-                        label2PairSizes, labeledPoints2,
+                        label2PairSizes, labeledPoints1, labeledPoints2,
+                        label2AdjacencyMap,
                         normalizedCost);
 
 //assert(normalizedCost[3] <= nkp1);
@@ -415,7 +416,8 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
                     System.out.println("octave1=" + octave1 + " octave2=" +
                         octave2 + " euclid m1.n=" + m1.getN()
                         + " segIdx=" + segIdx + " c=" + normalizedCost[0]);
-                    if (params == null || m1.getN() < 4) {
+                    //TODO: may need to revise this limit
+                    if (params == null || m1.getN() < 3) {
                         continue;
                     }
 
@@ -495,13 +497,18 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
                 Set<PairInt> set2 = labeledPoints2.get(label2);
                 Set<PairInt> set2Tr = transformer.applyTransformation2(params,
                     set2);
+                Set<PairInt> uniqueSet2Tr = new HashSet<PairInt>();
                 int nIn = 0;
                 for (PairInt p3 : set2Tr) {
+                    if (uniqueSet2Tr.contains(p3)) {
+                        continue;
+                    }
+                    uniqueSet2Tr.add(p3);
                     if (labeledPoints1.contains(p3)) {
                         nIn++;
                     }
                 }
-                float f = (float) nIn / (float) set2Tr.size();
+                float f = (float) nIn / (float) uniqueSet2Tr.size();
                 System.out.format(
                     "filter: segIdx=%d oct1=%d oct2=%d lbl2=%d rot=%d f=%.2f\n",
                     segIdx, octave1, octave2, label2, 
@@ -3602,7 +3609,9 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
         TObjectIntMap<PairInt> points2LabelMap,
         float scale1, float scale2, double[] xyCenlabeled2,
         TObjectIntMap<PairInt> label2PairSizes,
+        Set<PairInt> label1Set,
         List<Set<PairInt>> label2Sets,
+        TIntObjectMap<VeryLongBitString> label2AdjacencyMap,
         double[] outputNormalizedCost) {
 
         // NOTE that all coordinates are in the full reference frame
@@ -3765,8 +3774,11 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
                     distTol2 = 1;
                 }
                 int szSq = (sz1/2) + distTol2;
+                //szSq *= 1.2;
                 szSq *= szSq;
 
+                Set<PairInt> set1Intersection = new HashSet<PairInt>();
+                
                 // ----- transform all keypoints2 and match
                 PairIntArray keypoints2Tr = transformer.applyTransformation(
                     params, keypoints2);
@@ -3774,25 +3786,22 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
                 // --- while adding key points that are the nearest matching  
                 //     to transformed points within tolerance,
                 //     need to filter out points that are further from
-                //     a factor times object distance from the center of 
+                //     a object distance from the center of 
                 //     the current index for the fast first size filter.
                 //     -- because the transformation is now known, more than
                 //        the maximum dimension can be used.
                 //        -- after keypoints of adjacent labeled regions are
-                //           added,
-                //           can inspect the number and distribution of 
-                //           key points in the implied added labeled regions
-                //           and if the matched keypoints are only present 
-                //           at the adjacent border and not the other borders,
-                //           can determine that that additional region and
-                //           it's keypoints should not be added to this
-                //           set of maches for segIdx.             
-                
+                //           added, can look at the fraction of the region
+                //           that intersects with the region for set1 (the template
+                //           object) and remove those regions with small fractions
+                //        -- NOTE that in the process, there is now information
+                //           to make a total area fraction component for the
+                //           cost
                 
                 // filter out keypoints further than sz1/2 or so
                 // from the center of segIdx region.
                 // to keep indexes correcting, making a skip set instead
-                //TIntSet labels2Set = new TIntHashSet();
+                TIntSet labels2Set = new TIntHashSet();
                 TIntSet skip = new TIntHashSet();
                 for (int jj = 0; jj < keypoints2Tr.getN(); ++jj) {
                     double diffX = keypoints2Tr.getX(jj) - xyCen1[0];
@@ -3801,40 +3810,77 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
                     if (d > szSq) {
                         skip.add(jj);
                     } else {
-                  //      labels2Set.add(points2LabelMap.get(
-                  //          new PairInt(keypoints2.getX(jj),
-                  //          keypoints2.getY(jj))));
+                        PairInt p3 = new PairInt(keypoints2.getX(jj),
+                            keypoints2.getY(jj));
+                        if (!points2LabelMap.containsKey(p3)) {
+                            skip.add(jj);
+                        } else {
+                            int label2 = points2LabelMap.get(p3);
+                            labels2Set.add(label2);
+                        }
                     }
                 }
 
-                /*
-                TIntSet visited = new TIntHashSet();
+                TIntSet labels2Contiguous = new TIntHashSet(
+                    extractContiguousFromLabels(
+                    segIdx, label2AdjacencyMap, labels2Set));
+                
+                // if present in labels2Set, but not in labels2Contiguous, remove
+                for (int jj = 0; jj < keypoints2Tr.getN(); ++jj) {
+                    if (skip.contains(jj)) {
+                        continue;
+                    }
+                    PairInt p3 = new PairInt(keypoints2.getX(jj),
+                        keypoints2.getY(jj));
+                    int label2 = points2LabelMap.get(p3);
+                    if (!labels2Contiguous.contains(label2)) {
+                        skip.add(jj);
+                    }
+                }
+                
+                
                 TIntSet rmLabel2 = new TIntHashSet();
+                TIntSet visited = new TIntHashSet();
                 TIntIterator iter = labels2Set.iterator();
                 while (iter.hasNext()) {
                     int label2 = iter.next();
                     if (label2 == segIdx || visited.contains(label2)) {
                         continue;
                     }
+                    visited.add(label2);
+                    
                     Set<PairInt> set2 = label2Sets.get(label2);
                     Set<PairInt> set2Tr = transformer.applyTransformation2(
                         params, set2);
                     
+                    Set<PairInt> uniqueSet2Tr = new HashSet<PairInt>();
                     int nIn = 0;
                     for (PairInt p3 : set2Tr) {
-                        int x2Tr = p3.getX();
-                        int y2Tr = p3.getY();
-                        PairInt p2Tr = new PairInt(x2Tr, y2Tr);
-                        if (leftSet.contains(p2Tr)) {
+                        if (uniqueSet2Tr.contains(p3)) {
+                            continue;
+                        }
+                        uniqueSet2Tr.add(p3);
+                        if (label1Set.contains(p3)) {
                             nIn++;
                         }
                     }
                    
-                    float f = (float)nIn/(float)set2Tr.size();
+                    float f = (float)nIn/(float)uniqueSet2Tr.size();
+             if (segIdx == 3) {
+             //    System.out.println("s1=" + scale1 + " s2=" + scale2 +
+             //       " rot=" + Math.round(params.getRotationInDegrees()) 
+             //       + " lbl2=" + label2 + " f=" + f);
+             }
                     if (f < 0.7) {
                         rmLabel2.add(label2);
+                    } else {
+                        // add the intersection to the total
+                        for (PairInt p3 : set2Tr) {
+                            if (label1Set.contains(p3)) {
+                                set1Intersection.add(p3);
+                            }
+                        }
                     }
-                    visited.add(label2);
                 }
                 
                 // add keypoints w/ labels in rmLabels2 to skip
@@ -3842,13 +3888,21 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
                     if (skip.contains(jj)) {
                         continue;
                     }
-                    int label2 = points2LabelMap.get(
-                        new PairInt(keypoints2.getX(jj), keypoints2.getY(jj)));
+                    PairInt p3 = new PairInt(keypoints2.getX(jj),
+                        keypoints2.getY(jj));
+                    int label2 = points2LabelMap.get(p3);
                     if (rmLabel2.contains(label2)) {
                         skip.add(jj);
                     }
-                }*/
+                }
                 
+                float areaFraction = (float)set1Intersection.size()/
+                    ((float)label1Set.size()/(scale1*scale1));
+                
+    if (segIdx == 3) {
+    //    System.out.println("kp.n=" + keypoints2.getN() + 
+    //        " skip.n=" + skip.size() + " areaFraction=" + areaFraction);
+    }            
                 // filled with indexes w.r.t left and right arrays
                 int[] mIdx1s = new int[keypoints2LabelMap.size()];
                 int[] mIdx2s = new int[keypoints2LabelMap.size()];
@@ -3878,8 +3932,9 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
                 float distCost = (float)sumDist/(float)nMatched;
                 float d1 = descCost;
                 float d2 = distCost;
-                final float f1 = 1.f - ((float)nMatched/(float)n1);
-
+                //final float f1 = 1.f - ((float)nMatched/(float)n1);
+                final float f1 = 1.f - areaFraction;
+                
                 float tot = d1*d1 + d2*d2 + f1 * f1;
                 //tot = d1 * d1 + f1 * f1;
 
@@ -4533,6 +4588,20 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
             labelSet.add(label2);
         }
 
+        TIntList labelList = extractContiguousFromLabels(segIdx,
+            label2AdjacencyMap, labelSet);
+
+        labelList.sort();
+        
+        int[] labels = labelList.toArray(new int[labelList.size()]);
+
+        return labels;
+    }
+
+    private TIntList extractContiguousFromLabels(int segIdx,
+        TIntObjectMap<VeryLongBitString> label2AdjacencyMap,
+        TIntSet labelSet) {
+
         //NOTE: this may change: for now, starting with src=segIdx, making a
         //   DFS traversal of neighbors within labelSet to keep labelList
         //   contiguous.
@@ -4566,13 +4635,9 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
             visited.add(label);
         }
 
-        labelList.sort();
-
-        int[] labels = labelList.toArray(new int[labelList.size()]);
-
-        return labels;
+        return labelList;
     }
-
+    
     private PairIntArray extractKeypoints(ORB orb, int octave) {
 
         int n = orb.getKeyPoint0List().get(octave).size();
