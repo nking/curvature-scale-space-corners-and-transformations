@@ -36,6 +36,7 @@ import algorithms.util.TrioInt;
 import algorithms.util.TwoDFloatArray;
 import algorithms.util.TwoDIntArray;
 import algorithms.util.VeryLongBitString;
+import gnu.trove.iterator.TIntFloatIterator;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.iterator.TObjectIntIterator;
@@ -258,8 +259,7 @@ public class ORBMatcher {
         TIntObjectMap<Double> descCosts = new TIntObjectHashMap<Double>();
         TIntIntMap nDesc = new TIntIntHashMap();
         TIntObjectMap<Double> distCosts = new TIntObjectHashMap<Double>();
-        TIntIntMap nBounds = new TIntIntHashMap();
-        TIntObjectMap<Double> boundsDistCosts = new TIntObjectHashMap<Double>();
+        TIntFloatMap areaFraction = new TIntFloatHashMap();
         TIntIntMap octs1 = new TIntIntHashMap();
         TIntIntMap octs2 = new TIntIntHashMap();
         TIntIntMap segIdxs = new TIntIntHashMap();
@@ -380,10 +380,9 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
                     // 0 = the salukwzde distance, that is the normalized tot cost
                     // 1 = sum of normalized keypoint descriptors
                     // 2 = sum of normalized keypoint distances from transformations
-                    // 3 = number of keypoint matches (not incl boundary that aren't
-                    // 4 = sum of normalized bounds distances from transformations
-                    // 5 = number of normalized bounds matches
-                    double[] normalizedCost = new double[6];
+                    // 3 = the "fraction of whole" for transformed area matching
+                    // 4 = number of keypoint matches
+                    double[] normalizedCost = new double[5];
                     TransformationParameters params = matchGreedy(
                         segIdx, left, right, nBands, costD, nn1,
                         leftIdxMap, keypoints2IndexMap, keypoints2LabelMap,
@@ -446,17 +445,15 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
                     // 0 = the salukwzde distance, that is the normalized tot cost
                     // 1 = sum of normalized keypoint descriptors
                     // 2 = sum of normalized keypoint distances from transformations
-                    // 3 = number of keypoint matches (not incl boundary that aren't
-                    // 4 = sum of normalized bounds distances from transformations
-                    // 5 = number of normalized bounds matches
+                    // 3 = the "fraction of whole" for transformed area matching
+                    // 4 = number of keypoint matches
                     
                     correspondences.put(dataCount, corres);
                     transformations.put(dataCount, params);
                     descCosts.put(dataCount, normalizedCost[1]);
-                    nDesc.put(dataCount, (int)normalizedCost[3]);
+                    nDesc.put(dataCount, (int)normalizedCost[4]);
+                    areaFraction.put(dataCount, (float)normalizedCost[3]);
                     distCosts.put(dataCount, normalizedCost[2]);
-                    boundsDistCosts.put(dataCount, normalizedCost[4]);
-                    nBounds.put(dataCount, (int)normalizedCost[5]);
                     octs1.put(dataCount, octave1);
                     octs2.put(dataCount, octave2);
                     segIdxs.put(dataCount, segIdx);
@@ -484,7 +481,7 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
         // key = octave1, octave2, label2, value = OneDIntArray sortedkeys2
         Map<TrioInt, OneDIntArray> sortedKeysMap = new
             HashMap<TrioInt, OneDIntArray>();
-                
+ 
         TIntIntMap nBounds1 = new TIntIntHashMap();
         TIntObjectMap<PairIntArray> bounds2s = new TIntObjectHashMap<PairIntArray>();
         TIntObjectMap<PairIntArray> boundsMatched = new TIntObjectHashMap<PairIntArray>();
@@ -668,7 +665,8 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
             float distCost = distCosts.get(i).floatValue()/nd;
 
             // calculate "fraction of whole" for keypoint descriptors
-            final float f1 = 1.f - (nd/nKP1);
+            //final float f1 = 1.f - (nd/nKP1);
+            final float f1 = areaFraction.get(i);
 
             float d1 = descCost;
             float d2 = distCost;
@@ -774,8 +772,7 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
                 descCosts.remove(key);
                 nDesc.remove(key);
                 distCosts.remove(key);
-                boundsDistCosts.remove(key);
-                nBounds.remove(key);
+                areaFraction.remove(key);
                 octs1.remove(key);
                 octs2.remove(key);
                 segIdxs.remove(key);
@@ -903,6 +900,7 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
         // re-calculate the costs to include the shape component
                
         TFloatList resultCosts = new TFloatArrayList();
+        TFloatList d5s = new TFloatArrayList();
         TIntList dataIndexes = new TIntArrayList();
         for (int i = 0; i < indexes.size(); ++i) {
 
@@ -923,13 +921,16 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
             float d5 = (float)(chordDiffAvgs.get(idx)/maxChordAvg);
             float f5 = 1.f - ((float)nBMatched/nb1);
             
+            d5s.add(d5);
+            
             float nKP1 = orb1.getKeyPoint0List().get(octave1).size();
             float nd = nDesc.get(idx);
             float descCost = descCosts.get(idx).floatValue()/nd;
             float distCost = distCosts.get(idx).floatValue()/nd;
 
             // calculate "fraction of whole" for keypoint descriptors
-            final float f1 = 1.f - (nd/nKP1);
+            //final float f1 = 1.f - (nd/nKP1);
+            final float f1 = areaFraction.get(idx);
             float d1 = descCost;
             float d2 = distCost;
 
@@ -970,7 +971,7 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
         
         assert(resultCosts.size() == dataIndexes.size());
       
-        QuickSort.sortBy1stArg(resultCosts, dataIndexes);
+        QuickSort.sortBy1stThen2nd(resultCosts, d5s, dataIndexes);
         
         {// DEBUG   a look at the bounds and keypoints tested by octave
             for (int i = 0; i < scales2.size(); ++i) {
@@ -1040,7 +1041,8 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
         float f = (c1 - c0)/c0;
         
         System.out.println("best cost=" + c0 + 
-            " nCorr=" + results.get(dataIndexes.get(0)).getPoints1().size());
+            " nCorr=" + results.get(dataIndexes.get(0)).getPoints1().size()
+            + " segIdx=" + segIdxs.get(dataIndexes.get(0)));
         System.out.println("2nd best cost=" + resultCosts.get(1) + 
             " nCorr=" + results.get(dataIndexes.get(1)).getPoints1().size()
             + " (diff is " + f + " frac of best)");
@@ -1049,19 +1051,73 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
         
         if (f < limitFactor) {
             
+            System.out.println("calculating patch diff sums");
+            
             //TODO:  this patch based comparison may need to be
             //      edited to use epipolar projection and to match
             //      along lines between bounds (similar to steps in
             //      registration).
             //      other edits such as a texture filter may be needed
             
-            List<CorrespondenceList> output = 
-               refineCostsWithColor(
-                   results, resultCosts,
-                   dataIndexes, orb1, orb2, octs1, octs2, 
-                   segIdxs, labeledPoints1, labeledPoints2,
-                   bounds1, nb1s, bounds2s,
-                   sortedKeysMap, transformations, limitFactor);
+            TIntFloatMap patchSSDMap = calcCostsOfPatchSums(
+               results, resultCosts,
+               dataIndexes, orb1, orb2, octs1, octs2, 
+               segIdxs, labeledPoints1, labeledPoints2,
+               bounds1, nb1s, bounds2s,
+               sortedKeysMap, transformations, 
+               limitFactor);
+           
+            TFloatList costs3 = new TFloatArrayList();
+            TFloatList patchSSDs = new TFloatArrayList();
+            TIntList dataIndexes4 = new TIntArrayList();
+            
+            TIntFloatIterator iter3 = patchSSDMap.iterator();
+            for (int i = 0; i < patchSSDMap.size(); ++i) {
+                iter3.advance();
+                int idx = iter3.key();
+                float patchSSD = iter3.value();
+                
+                float nd = nDesc.get(idx);
+                float descCost = descCosts.get(idx).floatValue()/nd;
+                float d1 = descCost;
+                
+                float f1 = areaFraction.get(idx);
+            
+                PairIntArray matchedIndexes = boundsMatched.get(idx);
+                int nBMatched = matchedIndexes.getN();
+                float f3 = 1.f - (nBMatched / (float)nBounds1.get(idx));
+
+                float d5 = (float)(chordDiffAvgs.get(idx)/maxChordAvg);
+           
+                float tot = d1*d1 + f1*f1 + f3*f3 + d5*d5 + patchSSD*patchSSD;
+                
+                costs3.add(tot);
+                patchSSDs.add(patchSSD);
+                dataIndexes4.add(idx);
+            }
+            
+            QuickSort.sortBy1stThen2nd(costs3, patchSSDs, dataIndexes4);
+           
+            List<CorrespondenceList> output = new ArrayList<CorrespondenceList>(
+                dataIndexes4.size());
+            
+            for (int i = 0; i < dataIndexes4.size(); ++i) {
+                
+                int idx = dataIndexes4.get(i);
+                
+                output.add(results.get(idx));    
+            
+                {//DEBUG
+                    TransformationParameters params = 
+                        transformations.get(idx);
+                    
+                    System.out.format(
+                        "segIdx=%d (rot=%d, s=%.2f) tot=%.3f\n",
+                        segIdxs.get(idx),
+                        Math.round(params.getRotationInDegrees()),
+                        params.getScale(), costs3.get(i));
+                }
+            }
             
             return output;
         }
@@ -3923,7 +3979,7 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
                 
                 //TODO: consider whether d2 should be included in tot
                 float tot = d1*d1 + d2*d2 + f1 * f1;
-                //tot = d1 * d1 + f1 * f1;
+                tot = d1 * d1 + f1 * f1;
                 
 if (segIdx==3) {
 String str1 = String.format(
@@ -3951,13 +4007,13 @@ System.out.println(str1 + str2);
                     // 0 = the salukwzde distance, that is the normalized tot cost
                     // 1 = sum of normalized keypoint descriptors
                     // 2 = sum of normalized keypoint distances from transformations
-                    // 3 = number of keypoint matches (not incl boundary that aren't
-                    // 4 = sum of normalized bounds distances from transformations
-                    // 5 = number of normalized bounds matches
+                    // 3 = the "fraction of whole" for transformed area matching
+                    // 4 = number of keypoint matches
                     outputNormalizedCost[0] = bestCost;
                     outputNormalizedCost[1] = sumDescr;
                     outputNormalizedCost[2] = sumDist;
-                    outputNormalizedCost[3] = nMatched;
+                    outputNormalizedCost[3] = f1;
+                    outputNormalizedCost[4] = nMatched;
 
                     bestMIdx1s = mIdx1s;
                     bestMIdx2s = mIdx2s;
@@ -3987,6 +4043,9 @@ System.out.println(str1 + str2);
             }
             outLabels2.clear();
             outLabels2.addAll(bestLabels2);
+        } else {
+            Arrays.fill(outputNormalizedCost, Double.MAX_VALUE);
+            outputNormalizedCost[outputNormalizedCost.length - 1] = 0;
         }
 
         return bestParams;
@@ -4706,7 +4765,7 @@ System.out.println(str1 + str2);
      * @param limitFactor
      * @return 
      */
-    private List<CorrespondenceList> refineCostsWithColor(
+    private TIntFloatMap calcCostsOfPatchSums(
         TIntObjectMap<CorrespondenceList> results, 
         TFloatList resultCosts, 
         TIntList sortedDataIndexes, 
@@ -4717,10 +4776,9 @@ System.out.println(str1 + str2);
         PairIntArray bounds1, TIntIntMap nb1s,
         TIntObjectMap<PairIntArray> bounds2s, 
         Map<TrioInt, OneDIntArray> sortedKeysMap, 
-        TIntObjectMap<TransformationParameters> transformations, float limitFactor) {
+        TIntObjectMap<TransformationParameters> transformations, 
+        float limitFactor) {
 
-        TFloatList costs2 = new TFloatArrayList();
-                
         // coordinates are in the reference frame of the full size octave 0 images
         // row major format:
         TwoDFloatArray imgH1 = orb1.getPyramidImagesH().get(0);
@@ -4739,15 +4797,10 @@ System.out.println(str1 + str2);
         
         float limitCost = (1.f + limitFactor) * resultCosts.get(0);
         
+        TIntFloatMap ssdMap = new TIntFloatHashMap();
+        
         for (int i = 0; i < sortedDataIndexes.size(); ++i) {
             if (resultCosts.get(i) > limitCost) {
-                // remove remaining results and data indexes
-                int n2 = sortedDataIndexes.size();
-                for (int j = (n2 - 1); j >= i; --j) {
-                    int idx = sortedDataIndexes.get(j);
-                    results.remove(idx);
-                    sortedDataIndexes.removeAt(j);
-                }
                 break;
             }
             int idx = sortedDataIndexes.get(i);
@@ -4759,9 +4812,9 @@ System.out.println(str1 + str2);
             float scale2 = orb2.getScalesList().get(octave2).get(0);
    
             // factors to correct pixel counts for image scales
-            float area1 = 1.f / (scale1 * scale1);
-            float area2 = 1.f / (scale2 * scale2);
-            float set1Area = (float) labeledPoints1.size() * area1 * area2;
+            //float area1 = 1.f / (scale1 * scale1);
+            //float area2 = 1.f / (scale2 * scale2);
+            //float set1Area = (float) labeledPoints1.size() * area1 * area2;
             
             OneDIntArray sortedKeys = sortedKeysMap.get(
                 new TrioInt(octave1, octave2, segIdx));
@@ -4876,38 +4929,13 @@ System.out.println(str1 + str2);
             // then the normalization is count * 1
             
             patchSums /= (double)n12;
-                        
-            //everything is scaled to reference frame of octave1=0
-            // but when object matches a larger octave1, the area matchable is
-            // decreased
             
             float d6 = (float)patchSums;
-            float f6 = 1.f - ((float)n12/set1Area);
             
-            float tot2 = d6 * d6 + f6 * f6;
-            
-            System.out.format(
-                "segIdx=%d oct1=%d oct2=%d d6=%.2f f6=%.2f sd6=%.2f (rot=%.2f, s=%.2f)\n", 
-                segIdx, octave1, octave2, d6, f6, tot2, 
-                params.getRotationInDegrees(), 
-                params.getScale());
-            
-            costs2.add(tot2);
+            ssdMap.put(idx, d6);
         }
         
-        int n = costs2.size();
-        
-        assert(n == results.size());
-        
-        QuickSort.sortBy1stArg(costs2, sortedDataIndexes);
-        
-        List<CorrespondenceList> output = new ArrayList<CorrespondenceList>();
-        for (int i = 0; i < sortedDataIndexes.size(); ++i) {
-            int key = sortedDataIndexes.get(i);
-            output.add(results.get(key));
-        }
-        
-        return output;
+        return ssdMap;
     }
 
     private void calcMeanAndSubtr(float[] a, int count) {

@@ -1635,6 +1635,33 @@ public class QuickSort {
         return store;
     }
    
+      
+    private static void sortBy1stThen2nd(TFloatList a, TFloatList b, 
+        TIntList c, int idxLo, int idxHi) {
+        
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (b == null) {
+            throw new IllegalArgumentException("b cannot be null");
+        }
+        if (c == null) {
+            throw new IllegalArgumentException("c cannot be null");
+        }
+        if (a.size() != b.size()) {
+            throw new IllegalArgumentException("a and b must be the same length");
+        }
+        if (a.size() != c.size()) {
+            throw new IllegalArgumentException("a and c must be the same length");
+        }
+       
+        if (idxLo < idxHi) {
+            int idxMid = partitionBy1stThen2nd(a, b, c, idxLo, idxHi);
+            sortBy1stThen2nd(a, b, c, idxLo, idxMid - 1);
+            sortBy1stThen2nd(a, b, c, idxMid + 1, idxHi);
+        }
+    }
+    
     public static void sortBy1stThen2ndThen3rd(float[] a, float[] b, 
         float[] c, int[] d) {
     
@@ -1717,6 +1744,51 @@ public class QuickSort {
         int swap3 = d[store];
         d[store] = d[idxHi];
         d[idxHi] = swap3;
+        
+        return store;
+    }
+    
+    private static int partitionBy1stThen2nd(
+        TFloatList a, TFloatList b, TIntList c, int idxLo, int idxHi) {
+        
+        float x = a.get(idxHi);
+        int store = idxLo - 1;
+        
+        for (int i = idxLo; i < idxHi; i++) {
+            boolean doSwap = false;
+            if (a.get(i) < x) {
+                doSwap = true;
+            } else if (a.get(i) == x) {
+                if (b.get(i) <= b.get(idxHi)) {
+                    doSwap = true;
+                }
+            }
+            if (doSwap) {
+                store++;
+                float swap = a.get(store);
+                a.set(store, a.get(i));
+                a.set(i, swap);
+                swap = b.get(store);
+                b.set(store, b.get(i));
+                b.set(i, swap);
+                int swap2 = c.get(store);
+                c.set(store, c.get(i));
+                c.set(i, swap2);
+            }
+        }
+        store++;
+        
+        float swap = a.get(store);
+        a.set(store, a.get(idxHi));
+        a.set(idxHi, swap);
+        
+        swap = b.get(store);
+        b.set(store, b.get(idxHi));
+        b.set(idxHi, swap);
+        
+        int swap2 = c.get(store);
+        c.set(store, c.get(idxHi));
+        c.set(idxHi, swap2);
         
         return store;
     }
@@ -1962,6 +2034,22 @@ public class QuickSort {
             sortBy1stThen2nd(a, b, idxLo, idxMid - 1);
             sortBy1stThen2nd(a, b, idxMid + 1, idxHi);
         }
+    }
+    
+    public static void sortBy1stThen2nd(TFloatList a, TFloatList b, 
+        TIntList c) {
+        
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (b == null) {
+            throw new IllegalArgumentException("b cannot be null");
+        }
+        if (a.size() != b.size() || a.size() != c.size()) {
+            throw new IllegalArgumentException("a and b and c must be the same length");
+        }
+        
+        sortBy1stThen2nd(a, b, c, 0, a.size() - 1);
     }
     
     /**
