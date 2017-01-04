@@ -1087,9 +1087,14 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
                 int nBMatched = matchedIndexes.getN();
                 float f3 = 1.f - (nBMatched / (float)nBounds1.get(idx));
 
+                //TODO: revisit extracting indexes as single pixels.
+                //      looks like need to extract longest possible 
+                //      intervals
                 float d5 = (float)(chordDiffAvgs.get(idx)/maxChordAvg);
            
-                float tot = d1*d1 + f1*f1 + f3*f3 + d5*d5 + patchSSD*patchSSD;
+                float tot = d1*d1 + f1*f1 + f3*f3 + 
+                    //d5*d5 + 
+                    patchSSD*patchSSD;
                 
                 costs3.add(tot);
                 patchSSDs.add(patchSSD);
