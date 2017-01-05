@@ -328,7 +328,7 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void testORBMatcher_gingerbreadman() throws Exception {
+    public void estORBMatcher_gingerbreadman() throws Exception {
 
         /*        
         this demonstrates ORB
@@ -416,7 +416,7 @@ public class AndroidStatuesTest extends TestCase {
                     + nnn);*/
                  
                 Settings settings = new Settings();
-                settings.setToFindVnishingPoints();
+                //settings.setToFindVnishingPoints();
                 
                 //settings.setToUseLargerPyramid0();
                 //settings.setToUseLargerPyramid1();
@@ -463,17 +463,15 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void estORBMatcher_cupcake() throws Exception {
+    public void testORBMatcher_cupcake() throws Exception {
         
-        // TODO: this one either needs more keypoints across the cupcake in
-        //       android statues 02 image,
-        //    or it needs an algorithm similar to matchSmall which does not
-        //    use descriptors, but instead uses color histograms and partial
-        //    shape matching, but with the addition of aggregated shape
-        //    comparisons (== the unfinished ShapeFinder)
-        //
-        //   and as always, improved segmentation would help, but the cupcake is
-        //   in partly shaded locations.
+        // NOTE:  the cupcake keypoints are all boundary points and 
+        //        therefore are less stable when the object background has
+        //        changed.
+        //        -- looking at MSER boundaries and writing 
+        //           a matching method for them for these tests
+        //           (different object locations, poses, and lighting).
+       
         
         int maxDimension = 256;//512;
         SIGMA sigma = SIGMA.ZEROPOINTFIVE;//SIGMA.ONE;
@@ -487,9 +485,9 @@ public class AndroidStatuesTest extends TestCase {
         };
 
         String[] fileNames1 = new String[]{
-             "android_statues_01.jpg",   // needs aggregated shape matching
-             "android_statues_02.jpg", // needs aggregated shape matching 
-             "android_statues_04.jpg", // descr are fine
+        //     "android_statues_01.jpg",   // 
+             "android_statues_02.jpg", //  
+        //     "android_statues_04.jpg", // 
         };
 
         for (String fileName1 : fileNames1) {               
@@ -538,7 +536,7 @@ public class AndroidStatuesTest extends TestCase {
             //MiscDebug.writeImage(theta1, fileName1Root + "_theta_1");
         
             Settings settings = new Settings();
-            settings.setToFindVnishingPoints();
+          //  settings.setToFindVnishingPoints();
             
             ObjectMatcher objMatcher = new ObjectMatcher();
           //  if (
