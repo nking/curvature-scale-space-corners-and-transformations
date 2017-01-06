@@ -51,9 +51,6 @@ public class MSER {
     private double maxVariation_;
     private double minDiversity_;
     private boolean eight_;
-
-    private Region[] pool_;
-	private int poolIndex_;
     
     private List<Region> regionStack = new ArrayList<Region>();
 
@@ -133,9 +130,7 @@ public class MSER {
         this.maxArea_ = maxArea;
         this.maxVariation_ = maxVariation;
         this.minDiversity_ = minDiversity;
-        
-        this.pool_ = new Region[256];
-        
+                
         // Parameter check
         assert(delta > 0);
         assert(minArea >= 0.0);
@@ -176,9 +171,7 @@ public class MSER {
         int priority = 256;
         List<Region> regionStack = new ArrayList<Region>();
 
-        //regionStack.push_back(new (&pool_[poolIndex_++]) Region);
         Region tmp = new Region();
-        pool_[poolIndex_++] = tmp;
         regionStack.add(tmp);
 
         // 2. Make the source pixel (with its first edge) the current pixel, mark it as accessible and
@@ -190,15 +183,9 @@ public class MSER {
 
         // 3. Push an empty component with current level onto the component stack.
         //step_3:
-        //regionStack.push_back(new (&pool_[poolIndex_++]) Region(curLevel, curPixel));
 
         tmp = new Region(curLevel, curPixel);
-        pool_[poolIndex_++] = tmp;
         regionStack.add(tmp);
-
-        if (poolIndex_ == pool_.length) {
-            doublePool(regionStack);
-        }
 
         // 4. Explore the remaining edges to the neighbors of the current pixel, in order, as follows:
         // For each neighbor, check if the neighbor is already accessible. If it is not, mark it as
@@ -269,12 +256,7 @@ public class MSER {
             if (s3) {
 
                 tmp = new Region(curLevel, curPixel);
-                pool_[poolIndex_++] = tmp;
                 regionStack.add(tmp);
-
-                if (poolIndex_ == pool_.length) {
-                    doublePool(regionStack);
-                }
 
                 continue;
             }
@@ -292,7 +274,6 @@ public class MSER {
                         (int) Math.round(maxArea_ * width * height),
                         maxVariation_, minDiversity_, regions);
 
-                poolIndex_ = 0;
                 return;
             }
 
@@ -341,13 +322,8 @@ public class MSER {
                 regionStack.get(regionStack.size() - 1).level_) {
 
                 Region tmp = new Region(newPixelGreyLevel, pixel);
-                pool_[poolIndex_++] = tmp;
                 regionStack.add(tmp);
             
-                if (poolIndex_ == pool_.length) {
-			        doublePool(regionStack);
-                }
-                
                 regionStack.get(regionStack.size() - 1).merge(top);
 
                 return;
@@ -426,22 +402,6 @@ public class MSER {
 
         return regions;
     }
-
-    private int doublePool(List<Region> regionStack) {
-        
-	    assert(poolIndex_ > 0); // Cannot double the size of an empty pool
-	
-        Region[] newPool = new Region[pool_.length * 2];
-        
-        for (int i = 0; i < poolIndex_; ++i) {
-            newPool[i] = pool_[i];
-        }
-        
-	    pool_ = newPool;
-	
-	    return 0;
-    }
-
 }
 
 //--------------------------------------------------------------------------------------------------
