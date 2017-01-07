@@ -199,8 +199,7 @@ class Region {
 
         int minParentArea = 0;
         if (stable_) {
-            minParentArea = (int) Math.round(
-                area_ / (1.0 - minDiversity) + 0.5);
+            minParentArea = (int)(area_ / (1.0 - minDiversity) + 0.5);
         }
 
         Region parent = this;
@@ -218,8 +217,7 @@ class Region {
         }
 
         if (stable_) {
-            int maxChildArea = (int) Math.round(
-                area_ * (1.0 - minDiversity) + 0.5);
+            int maxChildArea = (int)(area_ * (1.0 - minDiversity) + 0.5);
 
             if (!check(variation_, maxChildArea)) {
                 stable_ = false;
