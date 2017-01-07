@@ -20,21 +20,30 @@ import java.awt.Color;
 import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorConvertOp;
+import java.awt.image.ColorModel;
 import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Logger;
+import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.stream.FileImageInputStream;
+import javax.imageio.stream.ImageInputStream;
 
 /**
  *
@@ -54,6 +63,17 @@ public class ImageIOHelper {
                 throw new IllegalStateException(filePath + " does not exist");
             }
             
+            String lstPth = null;
+            Iterator<Path> iter0 = file.toPath().iterator();
+            while (iter0.hasNext()) {
+                lstPth = iter0.next().toString();
+            }
+            
+            if (lstPth.endsWith("jpg") || lstPth.endsWith("jpeg") 
+                || lstPth.endsWith("jPG") || lstPth.endsWith("JPEG")) {
+                return readJPEGImage(filePath);
+            }
+            
             BufferedImage img = ImageIO.read(file);
             
             //System.out.println("imageType=" + img.getType());
@@ -71,6 +91,93 @@ public class ImageIOHelper {
         }
         
         return null;
+    }
+    
+    public static Image readJPEGImage(String filePath) throws IOException {
+     
+        if (filePath == null) {
+            throw new IllegalStateException("filePath cannot be null");
+        }
+                
+        File file = null;
+        
+        FileImageInputStream in = null;
+        
+        try {
+            file = new File(filePath);
+            if (!file.exists()) {
+                throw new IllegalStateException(filePath + " does not exist");
+            }
+            
+            String lstPth = null;
+            Iterator<Path> iter0 = file.toPath().iterator();
+            while (iter0.hasNext()) {
+                lstPth = iter0.next().toString();
+            }
+            
+            assert(lstPth.endsWith("jpg") || lstPth.endsWith("jpeg") 
+                || lstPth.endsWith("jPG") || lstPth.endsWith("JPEG"));
+            
+            in = new FileImageInputStream(file);
+            
+            Iterator<ImageReader> iter = 
+                ImageIO.getImageReadersByMIMEType("image/jpeg");
+                    
+            Image output = null;
+            
+            while (iter.hasNext()) {
+                
+                ImageReader rdr = iter.next();
+                System.out.println("jpegreader instance " + 
+                    rdr.getClass().getName());
+                
+                rdr.setInput(in);
+                
+                ImageReadParam rdrParam = rdr.getDefaultReadParam();
+               
+                int nImages = rdr.getNumImages(true);
+                
+                System.out.println("nJPEG bands=" + nImages);
+                
+                assert(nImages >= 1);
+                                
+                int w = rdr.getWidth(0);
+                int h = rdr.getHeight(0);
+                                
+                output = new Image(w, h);
+                
+                BufferedImage im = rdr.read(0, rdrParam);
+                
+                int[] col = new int[w];
+                int offset = 0;
+                for (int y = 0; y < h; ++y) {
+                    im.getRGB(0, y, w, 1, col, offset, 1);
+                    for (int x = 0; x < w; ++x) {
+                        int rgb = col[x];
+                        
+                        int r = (rgb >> 16) & 0xFF;
+                        int g = (rgb >> 8) & 0xFF;
+                        int b = rgb & 0xFF;
+
+                        output.setRGB(x, y, r, g, b);
+                    }
+                }
+               
+                return output;
+            }
+          
+            return output;
+            
+        } catch (IOException e) {
+      
+            System.err.println(e.getMessage());
+            
+            if (in != null) {
+                in.close();
+            }
+        }
+
+        return null;        
     }
     
     public static GreyscaleImage readImageAsGreyscaleFullRange(String filePath) 
@@ -168,7 +275,7 @@ public class ImageIOHelper {
         for (int i = 0; i < w; i++) {
             for (int j = 0; j < h; j++) {
 
-                //TYPE_INT_ARGB) and default sRGB colorspace
+                //TYPE_INT_RGB) and default sRGB colorspace
                 int rgb = fromImage.getRGB(i, j);
 
                 int r = (rgb >> 16) & 0xFF;
@@ -369,7 +476,7 @@ public class ImageIOHelper {
      * 
      * @param filePath
      * @return
-     * @throws Exception 
+     * @throws IOException 
      */
     public static Image readImageAsGrayScale(String filePath) 
         throws IOException {

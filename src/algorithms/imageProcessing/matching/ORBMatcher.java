@@ -86,7 +86,16 @@ public class ORBMatcher {
         vp2 = vp;
     }
 
-    // method in progress to replace match0
+    /**
+     * object matching method that is instructive in different attributes
+     * usable for matching.
+
+     * @param orb1
+     * @param orb2
+     * @param labeledPoints1
+     * @param labeledPoints2
+     * @return 
+     */
     public List<CorrespondenceList> match0(ORB orb1, ORB orb2,
         Set<PairInt> labeledPoints1, List<Set<PairInt>> labeledPoints2) {
 

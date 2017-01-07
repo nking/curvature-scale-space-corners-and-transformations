@@ -247,11 +247,14 @@ class Region {
         }
         
         for (int i = 0; i < regions.get(0).size(); ++i) {
-            regions.get(0).get(i).drawEllipse(img, nExtraDot, 127, 127, 127);
+            regions.get(0).get(i).drawEllipse(img, nExtraDot, 
+                //127, 127, 127);
+                255, 255, 255);
         }
         
         for (int i = 0; i < regions.get(1).size(); ++i) {
-            regions.get(1).get(i).drawEllipse(img, nExtraDot, 255, 255, 255);
+            regions.get(1).get(i).drawEllipse(img, nExtraDot, 
+                255, 255, 255);
         }
     }
     

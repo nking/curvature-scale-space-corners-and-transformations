@@ -130,16 +130,28 @@ public class MSER {
         this.maxArea_ = maxArea;
         this.maxVariation_ = maxVariation;
         this.minDiversity_ = minDiversity;
-                
-        // Parameter check
-        assert(delta > 0);
-        assert(minArea >= 0.0);
-        assert(maxArea <= 1.0);
-        assert(minArea < maxArea);
-        assert(maxVariation > 0.0);
-        assert(minDiversity >= 0.0);
-        assert(minDiversity < 1.0);
-
+       
+        if (delta <= 0) {
+            throw new IllegalArgumentException("delta must be > 0");
+        }
+        if (minArea < 0.0) {
+            throw new IllegalArgumentException("minArea must be >= 0");
+        }
+        if (maxArea > 1.0) {
+            throw new IllegalArgumentException("maxArea must be <= 1");
+        }
+        if (minArea >= maxArea) {
+            throw new IllegalArgumentException("minArea must be < maxArea");
+        }
+        if (maxVariation <= 0.0) {
+            throw new IllegalArgumentException("maxVariation must be > 0");
+        }
+        if (minDiversity < 0.0) {
+            throw new IllegalArgumentException("minDiversity must be < 0");
+        }
+        if (minDiversity >= 1) {
+            throw new IllegalArgumentException("minDiversity must be < 1");
+        }
     }
 
     /**
@@ -270,8 +282,8 @@ public class MSER {
             if (priority == 256) {
 
                 regionStack.get(regionStack.size() - 1)
-                    .detect(delta_, (int) Math.round(minArea_ * width * height),
-                        (int) Math.round(maxArea_ * width * height),
+                    .detect(delta_, (int)(minArea_ * width * height),
+                        (int)(maxArea_ * width * height),
                         maxVariation_, minDiversity_, regions);
 
                 return;
@@ -374,11 +386,19 @@ public class MSER {
     public List<List<Region>> findRegions(int[] greyscale, int width,
         int height) {
 
+        int delta = 2;
+        double minArea = 0.0005;
+        double maxArea = 0.1;
+        double maxVariation = 0.5;
+        double minDiversity = 0.5;
+        
         // Extract MSER
         long start = System.currentTimeMillis();
 
-        MSER mser8 = new MSER(2, 0.0005, 0.1, 0.5, 0.5, true);
-        MSER mser4 = new MSER(2, 0.0005, 0.1, 0.5, 0.5, false);
+        MSER mser8 = new MSER(delta, minArea, maxArea, maxVariation, 
+            minDiversity, true);
+        MSER mser4 = new MSER(delta, minArea, maxArea, maxVariation, 
+            minDiversity, false);
 
         List<List<Region>> regions = new ArrayList<List<Region>>(2);
         regions.add(new ArrayList<Region>());
@@ -388,7 +408,10 @@ public class MSER {
 
         // Invert the pixel values
         for (int i = 0; i < width * height; ++i) {
-            greyscale[i] = 255 - greyscale[i];
+            greyscale[i] = ~greyscale[i];
+            if (greyscale[i] < 0) {
+                greyscale[i] += 256;
+            }
         }
 
         mser4.operator(greyscale, width, height, regions.get(1));

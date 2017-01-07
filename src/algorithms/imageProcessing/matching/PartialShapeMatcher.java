@@ -775,6 +775,8 @@ public class PartialShapeMatcher {
     }
     
     /**
+     * NOT READY FOR USE
+     * 
      * as an alternative to finding the best correspondence between two
      * shapes, instead, given the correspondence, sum the chord differences.
      * The same instance variables such as the point spacing are used here
@@ -787,6 +789,12 @@ public class PartialShapeMatcher {
     public TDoubleList calculateChordDiffs(PairIntArray p, PairIntArray q,
         PairIntArray matchedIndexes) {
        
+        //TODO: edit method to find sequential intervals
+        //  in matchedIndexes
+        //  then extract that sum from the chord diff matrix.
+        //  NOTE: chord diff matrix needs to be changed to
+        //  use summed columns or summed area
+        
         log.info("p.n=" + p.getN() + " q.n=" + q.getN()
             + " useSameNumberOfPoints=" + useSameNumberOfPoints
             + " dp=" + dp);
