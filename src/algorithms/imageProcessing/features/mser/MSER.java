@@ -183,8 +183,7 @@ public class MSER {
         int priority = 256;
         List<Region> regionStack = new ArrayList<Region>();
 
-        Region tmp = new Region();
-        regionStack.add(tmp);
+        regionStack.add(new Region());
 
         // 2. Make the source pixel (with its first edge) the current pixel, mark it as accessible and
         // store the grey-level of it in the variable current level.
@@ -195,9 +194,7 @@ public class MSER {
 
         // 3. Push an empty component with current level onto the component stack.
         //step_3:
-
-        tmp = new Region(curLevel, curPixel);
-        regionStack.add(tmp);
+        regionStack.add(new Region(curLevel, curPixel));
 
         // 4. Explore the remaining edges to the neighbors of the current pixel, in order, as follows:
         // For each neighbor, check if the neighbor is already accessible. If it is not, mark it as
@@ -267,8 +264,7 @@ public class MSER {
 
             if (s3) {
 
-                tmp = new Region(curLevel, curPixel);
-                regionStack.add(tmp);
+                regionStack.add(new Region(curLevel, curPixel));
 
                 continue;
             }
@@ -289,12 +285,10 @@ public class MSER {
                 return;
             }
 
-            curPixel = boundaryPixels[priority]
-                .get(boundaryPixels[priority].size() - 1) >> 4;
-            curEdge = boundaryPixels[priority]
-                .get(boundaryPixels[priority].size() - 1) & 15;
-
             int sz = boundaryPixels[priority].size();
+            curPixel = boundaryPixels[priority].get(sz - 1) >> 4;
+            curEdge = boundaryPixels[priority].get(sz - 1) & 15;
+
             boundaryPixels[priority].removeAt(sz - 1);
 
             while ((priority < 256) && boundaryPixels[priority].isEmpty()) {
@@ -333,8 +327,7 @@ public class MSER {
             if (newPixelGreyLevel < 
                 regionStack.get(regionStack.size() - 1).level_) {
 
-                Region tmp = new Region(newPixelGreyLevel, pixel);
-                regionStack.add(tmp);
+                regionStack.add(new Region(newPixelGreyLevel, pixel));
             
                 regionStack.get(regionStack.size() - 1).merge(top);
 

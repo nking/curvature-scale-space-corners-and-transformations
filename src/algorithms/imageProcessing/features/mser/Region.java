@@ -62,7 +62,6 @@ class Region {
      * MSER variation.
      */
     double variation_;
-
     /**
      * Flag indicating if the region is stable
      */
@@ -152,7 +151,7 @@ class Region {
         }
 
         // Calculate variation
-        variation_ = (parent.area_ - area_) / area_;
+        variation_ = (double)(parent.area_ - area_) / (double)area_;
 
         // Whether or not the region *could* be stable
         boolean stable
@@ -225,7 +224,7 @@ class Region {
         }
 
         if (stable_) {
-            regions.add(this);
+            regions.add(this.copy());
             Region last = regions.get(regions.size() - 1);
             last.parent_ = null;
             last.child_ = null;
@@ -233,7 +232,7 @@ class Region {
         }
 
         for (Region child = child_; child != null; child  = child.next_) {
-		    child.save(minDiversity, regions);
+            child.save(minDiversity, regions);
         }
     }
     
@@ -315,6 +314,18 @@ class Region {
                     nExtraDot, rClr, gClr, bClr);
             }
         }
+    }
+
+    public Region copy() {
+        Region region = new Region(this.level_, this.pixel_);
+        region.area_ = this.area_;
+        System.arraycopy(moments_, 0,region. moments_, 0, moments_.length);
+        region.variation_ = this.variation_;
+        region.stable_ = this.stable_;
+        region.parent_ = this.parent_;
+        region.child_ = this.child_;
+        region.next_ = this.next_;
+        return region;
     }
     
     @Override
