@@ -40,11 +40,25 @@ public class MSERTest extends TestCase {
            
             List<List<Region>> regions = mser.findRegions(img.copyToGreyscale2());
             
-            Image img2 = ImageIOHelper.readImage(fl.getPath());
+            Image img1 = ImageIOHelper.readImage(fl.getPath());
             
-            Region.drawEllipses(img2, regions, 0);
+            Image img2 = img1.copyImage();
             
-            MiscDebug.writeImage(img2, file + "_out_");
+            int nExtraDot = 0;
+                        
+            for (int i = 0; i < regions.get(0).size(); ++i) {
+                regions.get(0).get(i).drawEllipse(img1, nExtraDot, 
+                    255, 255, 255);
+            }
+
+            for (int i = 0; i < regions.get(1).size(); ++i) {
+                regions.get(1).get(i).drawEllipse(img2, nExtraDot, 
+                    255, 255, 255);
+            }
+            
+            MiscDebug.writeImage(img1, file + "_out_0_");
+            
+            MiscDebug.writeImage(img2, file + "_out_1_");
         
             System.out.println("num extracted regions=" +
                 (regions.get(0).size() + regions.get(1).size()));
@@ -90,6 +104,7 @@ public class MSERTest extends TestCase {
         MiscDebug.writeImage(img2, file + "_out_txt_");
     
         int nR = regions.get(0).size() + regions.get(1).size();
+        
         System.out.println("num extracted regions=" + nR);
     
         assertEquals(317, nR);
