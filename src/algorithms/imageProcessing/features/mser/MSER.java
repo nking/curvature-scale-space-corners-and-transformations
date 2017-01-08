@@ -42,6 +42,22 @@ from a grayscale (8 bits) image.
 note The MSER class is not reentrant, so if you want to
 extract regions in parallel, each
 thread needs to have its own MSER class instance.
+* 
+* The java port of the C++ code just quoted is from this project is
+* by author nichole.
+* 
+* NOTE that tests are in progress to look at the use of the resulting
+* regions in object identification.  That requires canonicalization
+* of the regions.
+* 
+* Note that because the regions are intensity dependent,
+* one should attempt to correct for the effects of extreme lighting
+* conditions in pre-processing stages if possible.  For example,
+* an object illuminated by the sun may have 3d brightness effects that
+* are different from the same object illuminated by isotropic diffuse 
+* lighting (which doesn't usually happen)...this method may be sensitive
+* to an illumination source function...
+* 
 */
 public class MSER {
 
