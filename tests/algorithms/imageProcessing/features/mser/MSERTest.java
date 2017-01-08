@@ -20,31 +20,34 @@ import static org.junit.Assert.*;
  */
 public class MSERTest extends TestCase {
     
-    public void est0() throws IOException {
+    public void test0() throws IOException {
         
         String[] files = new String[] {
-            //"android_statues_01_sz1.jpg",
+            "android_statues_01_sz1.jpg",
             "android_statues_02.jpg",
-           // "android_statues_03_sz3.jpg",
-           // "android_statues_04_sz1.jpg"
+            "android_statues_03_sz3.jpg",
+            "android_statues_04_sz1.jpg"
         };
             
         for (String file : files) {
         
             File fl = ResourceFinder.findFileInTmpData(file);
         
-            GreyscaleImage img = 
-                ImageIOHelper.readImageAsGrayScaleAvgRGB(fl.getPath());
+            Image img = 
+                ImageIOHelper.readImage(fl.getPath());
             
             MSER mser = new MSER();
            
-            List<List<Region>> regions = mser.findRegions(img);
+            List<List<Region>> regions = mser.findRegions(img.copyToGreyscale2());
             
             Image img2 = ImageIOHelper.readImage(fl.getPath());
             
-            Region.drawEllipses(img2, regions, 1);
+            Region.drawEllipses(img2, regions, 0);
             
             MiscDebug.writeImage(img2, file + "_out_");
+        
+            System.out.println("num extracted regions=" +
+                (regions.get(0).size() + regions.get(1).size()));
         }
     }
     
@@ -84,7 +87,12 @@ public class MSERTest extends TestCase {
 
         Region.drawEllipses(img2, regions, 1);
 
-        MiscDebug.writeImage(img2, file + "_out_");
+        MiscDebug.writeImage(img2, file + "_out_txt_");
+    
+        int nR = regions.get(0).size() + regions.get(1).size();
+        System.out.println("num extracted regions=" + nR);
+    
+        assertEquals(317, nR);
     }
     
 }
