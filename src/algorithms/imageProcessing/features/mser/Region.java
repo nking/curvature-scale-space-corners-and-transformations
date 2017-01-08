@@ -517,8 +517,29 @@ class Region {
         double b = moments_[3] / area_ - x * y;
         double c = moments_[4] / area_ - y * y;
 
-        // where is this summary from?  quadratic solution of a long equation...        
+        /*
+        where is the summary below from?  many different ways to find
+        eigenvalues.        
         
+        covariance matrix as a real 2X2 matrix 
+        xx  xy
+        yx  yy
+        
+        from Strang "Linear Algebra", chap 10, have for real 2X2 matrix:
+        
+        | xx-eigenv   xy        |
+        | yx          yy-eigenv | = eigenv^2 - (xx + yy)*eigenv 
+                                      + ((xx yy) - (yx xy)) = 0 
+        
+        can solve for the zeroes with quardratice equation to
+        get 2 eigenvalues:
+        
+        eigenv = (xx + yy +- sqrt( (xx + yy)^2 -4*(xx yy - xy yx) )) / 2
+               = (d +- sqrt(d*d - 4*b*b))/2
+        
+        Looks like Dubout below uses orthogonal axes so instead of
+        (xx, yy) have (yy, -xx).
+        */
         // Eigenvalues of the covariance matrix
         double d  = a + c; // xx + yy
         double e  = a - c; // xx - yy
