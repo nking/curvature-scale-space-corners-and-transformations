@@ -4,6 +4,7 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.misc.MiscDebug;
+import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import java.io.BufferedReader;
 import java.io.File;
@@ -62,10 +63,44 @@ public class MSERTest extends TestCase {
         
             System.out.println("num extracted regions=" +
                 (regions.get(0).size() + regions.get(1).size()));
+        
+            //---------- looking at centroids ----
+            nExtraDot = 1;
+            Canonicalizer cr = new Canonicalizer();
+
+            GreyscaleImage gs1 = img1.copyToGreyscale2();
+            int width = gs1.getWidth();
+            int height = gs1.getHeight();
+            int[] data = new int[width * height];
+            for (int i = 0; i < gs1.getNPixels(); ++i) {
+                data[i] = gs1.getValue(i);
+            }
+            
+            Image img_1 = img2.copyImage();
+            
+            PairIntArray xyCens = cr.extractRegionXYCenters(regions.get(1), 
+                data, img2.getWidth(), img2.getHeight());
+
+            ImageIOHelper.addCurveToImage(xyCens, img_1, 
+                nExtraDot, 255, 0, 0);
+
+            MiscDebug.writeImage(img_1, file + "_out_xy1_");
+
+
+            Image img_2 = img2.copyImage();
+
+            xyCens = cr.calculateIntensityCentroids(regions.get(1), 
+                data, img2.getWidth(), img2.getHeight());
+
+            ImageIOHelper.addCurveToImage(xyCens, img_2, 
+                nExtraDot, 255, 0, 0);
+
+            MiscDebug.writeImage(img_2, file + "_out_xy2_");
+
         }
     }
     
-    public void test1() throws IOException {
+    public void est1() throws IOException {
         
         int width = 256;
         int height = 171;
@@ -99,7 +134,7 @@ public class MSERTest extends TestCase {
             
         Image img2 = ImageIOHelper.readImage(fl.getPath());
 
-        Region.drawEllipses(img2, regions, 1);
+        Region.drawEllipses(img2, regions, 0);
 
         MiscDebug.writeImage(img2, file + "_out_txt_");
     
@@ -108,6 +143,7 @@ public class MSERTest extends TestCase {
         System.out.println("num extracted regions=" + nR);
     
         assertEquals(317, nR);
+        
     }
     
 }

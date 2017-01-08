@@ -1,13 +1,21 @@
 package algorithms.imageProcessing.features.mser;
 
+import algorithms.QuickSort;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.util.PairInt;
+import algorithms.util.TrioInt;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.set.hash.TIntHashSet;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
-this package, mser, and its contents are java ports of the C++ MSER
-implementation by 
+MSER.java and Region.java are java ports of the C++ MSER
+implementation of MSER by Charles Dubout <charles.dubout@idiap.ch>
 downloaded from https://github.com/idiap/mser
 
 The C++ code has copyright:
@@ -35,6 +43,10 @@ The functionality is similar to that of VLFeat MSER feature detector
 MSER is a blob detector, like the Laplacian of Gaussian used by the SIFT
 algorithm. It extracts stable connected regions of some level sets from an
 image, and optionally fits ellipses to them.
+* 
+* ------
+* author nichole ported the C++ code quoted above to java and added
+* methods used in canonicalization (in progress).
 */
 class Region {
 
@@ -49,7 +61,8 @@ class Region {
     int pixel_;
 
     /**
-     * Area of the region (moment zero).
+     * Area of the region (moment zero), that is, the number of
+     * pixels in this region.
      */
     int area_;
 
@@ -62,10 +75,12 @@ class Region {
      * MSER variation.
      */
     double variation_;
+
     /**
      * Flag indicating if the region is stable
      */
     private boolean stable_;
+
     private Region parent_ = null;
     private Region child_ = null;
     private Region next_ = null;
@@ -255,21 +270,258 @@ class Region {
         }
     }
     
-    public void drawEllipse(Image img, int nExtraDot,
-        int rClr, int gClr, int bClr) {
-
+    /**
+     * calculate the x,y centroid of the pixels within
+     * this region.
+     * @param greyscale
+     * @param imageWidth
+     * @param imageHeight
+     * @param outputXY 
+     */
+    void calculateXYCentroid(int[] greyscale, int imageWidth, 
+        int imageHeight, int[] outputXY) {
+                    
+        outputXY[0] = (int)Math.round(moments_[0]/area_);
+        outputXY[1] = (int)Math.round(moments_[1]/area_);
+    }
+    
+    /**
+     * calculate the intensity weighted centroid of the pixels within
+     * this region.
+     * @param greyscale
+     * @param imageWidth
+     * @param imageHeight
+     * @param outputXY 
+     */
+    void calculateIntensityCentroid(int[] greyscale, int imageWidth, 
+        int imageHeight, int[] outputXY) {
+        
+        TrioInt[] yXRanges = getEllipseRange(imageWidth, imageHeight);
+        
+        double iSum = 0;
+        
+        Set<PairInt> visited = new HashSet<PairInt>();
+        
+        for (TrioInt yXminMax : yXRanges) {
+            int y = yXminMax.getX();
+            for (int x = yXminMax.getY(); x <= yXminMax.getZ(); ++x) {
+                PairInt p = new PairInt(x, y);
+                if (visited.contains(p)) {
+                    continue;
+                }
+                visited.add(p);
+                int idx = (y * imageWidth) + x;
+                int intensity = greyscale[idx];
+                iSum += intensity;
+            }
+        }
+        
+        double xSum = 0;
+        double ySum = 0;
+        
+        // for debugging only, assert sum of weights
+        double wSum = 0;
+        
+        visited.clear();
+        
+        for (TrioInt yXminMax : yXRanges) {
+            
+            int y = yXminMax.getX();
+            
+            for (int x = yXminMax.getY(); x <= yXminMax.getZ(); ++x) {
+                
+                PairInt p = new PairInt(x, y);
+                if (visited.contains(p)) {
+                    continue;
+                }
+                visited.add(p);
+                
+                int idx = (y * imageWidth) + x;
+                
+                double intensity = greyscale[idx];
+                double w = (intensity/iSum);
+                
+                xSum += (x * w);
+                ySum += (y * w);
+                
+                wSum += w;
+            }
+        }
+        assert(Math.abs(wSum - 1) < 0.01);
+                
+        outputXY[0] = (int)Math.round(xSum);
+        outputXY[1] = (int)Math.round(ySum);
+    }
+    
+    /**
+     * calculate the intensity weighted centroid of pixels within
+     * radius distance of center of region.
+     * 
+     * @param greyscale
+     * @param imageWidth
+     * @param imageHeight
+     * @param outputXY
+     * @param radius 
+     */
+    void calculateIntensityCentroid(int[] greyscale, int imageWidth, 
+        int imageHeight, int[] outputXY, int radius) {
+      
+        int xC = (int)Math.round(moments_[0]/area_);
+        int yC = (int)Math.round(moments_[1]/area_);
+        
+        double[] coeffs = calcParamTransCoeff();
+        
+        // semi-major and semi-minor axes:
+        int a = Math.abs((int)Math.round(2. * Math.max(coeffs[0], coeffs[1])));
+        int b = Math.abs((int)Math.round(2. * Math.min(coeffs[2], coeffs[3])));
+       
+        if (radius > a) {
+            radius = a; 
+        }
+        if (radius > b) {
+            radius = b; 
+        }
+        
+        int yStart = yC - radius;
+        if (yStart < 0) {
+            yStart = 0;
+        }
+        int yStop = yC + radius;
+        if (yStop >= imageHeight) {
+            yStop = imageHeight - 1;
+        }
+        
+        /*
+        x^2 + y^2 = radius^2
+        x^2 =  radius^2 - y^2
+        (x - xC) = sqrt(radius^2 - (y - yc)^2)
+        */
+        double rSq = radius * radius;
+        
+        double iSum = 0;
+        
+        // for uniqueness
+        Set<PairInt> visited = new HashSet<PairInt>();
+        
+        for (int y = yStart; y <= yStop; ++y) {
+            
+            double ySq = y - yC;
+            ySq *= ySq;
+            
+            double xH = Math.sqrt(rSq - ySq);
+            
+            int xStart = (int)Math.round(xC - xH);
+            if (xStart < 0) {
+                xStart = 0;
+            }
+            int xStop = (int)Math.round(xC + xH);
+            if (xStop >= imageWidth) {
+                xStop = imageWidth - 1;
+            }
+            
+            for (int x = xStart; x <= xStop; ++x) {
+                
+                PairInt p = new PairInt(x, y);
+                if (visited.contains(p)) {
+                    continue;
+                }
+                visited.add(p);
+                
+                int idx = (y * imageWidth) + x;
+                iSum += greyscale[idx];
+            }
+        }
+        
+        double xSum = 0;
+        double ySum = 0;
+        
+        // for debugging only, assert sum of weights
+        double wSum = 0;
+        
+        visited.clear();
+        
+        for (int y = yStart; y <= yStop; ++y) {
+            
+            double ySq = y - yC;
+            ySq *= ySq;
+            
+            double xH = Math.sqrt(rSq - ySq);
+            
+            int xStart = (int)Math.round(xC - xH);
+            if (xStart < 0) {
+                xStart = 0;
+            }
+            int xStop = (int)Math.round(xC + xH);
+            if (xStop >= imageWidth) {
+                xStop = imageWidth - 1;
+            }
+            
+            for (int x = xStart; x <= xStop; ++x) {
+                
+                PairInt p = new PairInt(x, y);
+                if (visited.contains(p)) {
+                    continue;
+                }
+                visited.add(p);
+                
+                int idx = (y * imageWidth) + x;
+                double intensity = greyscale[idx];
+                double w = (intensity/iSum);
+                
+                xSum += (x * w);
+                ySum += (y * w);
+                
+                wSum += w;
+            }
+        }
+        assert(Math.abs(wSum - 1) < 0.01);
+                
+        outputXY[0] = (int)Math.round(xSum);
+        outputXY[1] = (int)Math.round(ySum);
+    }
+    
+    /**
+     * using the region moments and area, calculates parameters needed
+     * for a bounding ellipse.
+     * 
+       The equation for rotation of an ellipse by angle alpha:
+        x(t) = xCenter + aParam*cos(alpha)*cos(t) − bParam*sin(alpha)*sin(t)
+        y(t) = yCenter + aParam*sin(alpha)*cos(t) + bParam*cos(alpha)*sin(t)
+        
+        returns 
+        v0x = aParam * cos(alpha);
+        v1x = bParam * sin(alpha);
+        v0y = aParam * sin(alpha);
+        v1y = bParam * cos(alpha);
+     
+     * @return 
+     */
+    public double[] calcParamTransCoeff() {
+        
+        /*
+        moments_[0]  x;
+        moments_[1]  y;
+        moments_[2]  x * x;
+        moments_[3]  x * y;
+        moments_[4]  y * y;
+        */
+        
         // Centroid (mean)
         double x = moments_[0] / area_;
         double y = moments_[1] / area_;
-
+        
+        // a*x^2 + b*x*y + c*y^2 + d*x + e*y + f = 0
+        
         // Covariance matrix [a b; b c]
         double a = moments_[2] / area_ - x * x;
         double b = moments_[3] / area_ - x * y;
         double c = moments_[4] / area_ - y * y;
 
+        // where is this summary from?  quadratic solution of a long equation...        
+        
         // Eigenvalues of the covariance matrix
-        double d  = a + c;
-        double e  = a - c;
+        double d  = a + c; // xx + yy
+        double e  = a - c; // xx - yy
         double f  = Math.sqrt(4.0 * b * b + e * e);
         double e0 = (d + f) / 2.0; // First eigenvalue
         double e1 = (d - f) / 2.0; // Second eigenvalue
@@ -277,7 +529,7 @@ class Region {
         // Desired norm of the eigenvectors
         double e0sq = Math.sqrt(e0);
         double e1sq = Math.sqrt(e1);
-
+ 
         // Eigenvectors
         double v0x = e0sq;
         double v0y = 0.0;
@@ -299,7 +551,121 @@ class Region {
             v1x *= n1;
             v1y *= n1;
         }
+        
+        /*
+        rotation transformed ellipse:
+        
+        x(t) = xCenter + aParam*cos(alpha)*cos(t) − bParam*sin(alpha)*sin(t)
+        y(t) = yCenter + aParam*sin(alpha)*cos(t) + bParam*cos(alpha)*sin(t)
+        
+        v0x = aParam * cos(alpha);
+        v1x = bParam * sin(alpha);
+        v0y = aParam * sin(alpha);
+        v1y = bParam * cos(alpha);
+        
+        so the semi-major axis length = 2 * Math.max(v0x, v1x)
+        
+        and the semi-minor axis length = 2 * Math.min(v0y, v1y)
+        */
+        
+        return new double[]{v0x, v1x, v0y, v1y};
+    }
+    
+    /**
+     * following the creation of an ellipse from the moments and
+     * area (see drawEllipse), this method orders the ellipse points by
+     * y, then x then aggregates the x to form the range xmin, xmax
+     * per row of y.  The return is the ranges ordered by increasing
+     * y in formation [y, xmin for row y, xmax for row y]
+     * @return 
+     */
+    public TrioInt[] getEllipseRange(int imageWidth, int imageHeight) {
+        
+        TIntList xs = new TIntArrayList();
+        TIntList ys = new TIntArrayList();
+    
+        // Centroid (mean)
+        double x = moments_[0] / area_;
+        double y = moments_[1] / area_;
+        
+        double[] coeffs = calcParamTransCoeff();
+        
+        double v0x = coeffs[0];
+        double v0y = coeffs[1];
+        double v1x = coeffs[2];
+        double v1y = coeffs[3];
 
+        Set<PairInt> visited = new HashSet<PairInt>();
+
+        for (double t = 0.0; t < 2.0 * Math.PI; t += 0.001) {
+            
+            int x2 = (int)Math.round(x + 
+                (Math.cos(t) * v0x + Math.sin(t) * v1x) * 2.0 + 0.5);
+            int y2 = (int)Math.round(y + (Math.cos(t) * v0y 
+                + Math.sin(t) * v1y) * 2.0 + 0.5);
+
+            if ((x2 >= 0) && (x2 < imageWidth) 
+                && (y2 >= 0) && (y2 < imageHeight)) {
+                
+                PairInt pt = new PairInt(x2, y2);
+                if (visited.contains(pt)) {
+                    continue;
+                }
+                visited.add(pt);
+                
+                xs.add(x2);
+                ys.add(y2);
+            }
+        }
+        
+        int[] x2s = xs.toArray(new int[xs.size()]);
+        int[] y2s = ys.toArray(new int[xs.size()]);
+        
+        QuickSort.sortBy1stThen2nd(y2s, x2s);
+        
+        int n = (new TIntHashSet(ys)).size();
+        
+        TrioInt[] output = new TrioInt[n];
+        int count = 0;
+        int idx = 0;
+        for (idx = 0; idx < x2s.length; ++idx) {
+            int yC = y2s[idx];
+            int minX = Integer.MAX_VALUE;
+            int maxX = Integer.MIN_VALUE;
+            int idx2 = idx;
+            for (idx2 = idx; idx2 < x2s.length; ++idx2) {
+                if (y2s[idx2] > yC) {
+                    idx2--;
+                    break;
+                }
+                if (minX == Integer.MAX_VALUE) {
+                    minX = x2s[idx2];
+                }
+                maxX = x2s[idx2];
+            }
+            idx = idx2;
+            output[count] = new TrioInt(yC, minX, maxX);
+            count++;
+        }
+        assert(count == n);
+        
+        return output;
+    }
+    
+    public void drawEllipse(Image img, int nExtraDot,
+        int rClr, int gClr, int bClr) {
+
+        // Centroid (mean)
+        double x = moments_[0] / area_;
+        double y = moments_[1] / area_;
+        
+        double[] coeffs = calcParamTransCoeff();
+        
+        double v0x = coeffs[0];
+        double v0y = coeffs[1];
+        double v1x = coeffs[2];
+        double v1y = coeffs[3];
+        
         for (double t = 0.0; t < 2.0 * Math.PI; t += 0.001) {
             
             int x2 = (int)Math.round(x + 

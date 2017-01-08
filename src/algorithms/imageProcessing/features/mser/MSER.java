@@ -7,8 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
-this package, mser, and its contents are java ports of the C++ MSER
-implementation by Charles Dubout <charles.dubout@idiap.ch>
+MSER.java and Region.java are java ports of the C++ MSER
+implementation of MSER by Charles Dubout <charles.dubout@idiap.ch>
 downloaded from https://github.com/idiap/mser
 
 The C++ code has copyright:
@@ -107,26 +107,26 @@ public class MSER {
     }
 
     /**
-    @param[in] delta DELTA parameter of the MSER algorithm.
+    @param delta DELTA parameter of the MSER algorithm.
                Roughly speaking, the stability of a
 	       region is the relative variation of the region
                area when the intensity is changed by delta.
                (default delta = 2.0)
-    @param[in] minArea Minimum area of any stable region
+    @param minArea Minimum area of any stable region
                relative to the image domain area.
                (double minArea = 0.0001)
-    @param[in] maxArea Maximum area of any stable region
+    @param maxArea Maximum area of any stable region
                relative to the image domain area.
                (double maxArea = 0.5)
-    @param[in] maxVariation Maximum variation (absolute
+    @param maxVariation Maximum variation (absolute
                stability score) of the regions.
                (double maxVariation = 0.5)
-    @param[in] minDiversity Minimum diversity of the regions.
+    @param minDiversity Minimum diversity of the regions.
                When the relative area of two
 	       nested regions is below this threshold,
                then only the most stable one is selected.
                (double minDiversity = 0.33)
-    @param[in] eight Use 8-connected pixels instead of 4-connected.
+    @param eight Use 8-connected pixels instead of 4-connected.
     */
     public MSER(int delta, double minArea, double maxArea,
         double maxVariation, double minDiversity,
@@ -172,13 +172,11 @@ public class MSER {
 
     /**
       Extracts maximally stable extremal regions from a
-      grayscale (8 bits) image.
-      @param[in] bits Pointer to the first scanline of the image.
-      @param[in] width Width of the image.
-      @param[in] height Height of the image.
-      @param[out] regions Detected MSER.
-      //public void operator()(const uint8_t * bits,
-      //int width, int height, std::vector<Region> & regions);
+      greyscale (8 bits) image.
+      @param bits Pointer to the first scanline of the image.
+      @param width Width of the image.
+      @param height Height of the image.
+      @param regions output Detected MSER.
       */
     public void operator(int[] bits, int width, int height,
         List<Region> regions) {
@@ -323,7 +321,7 @@ public class MSER {
                 // Then go to 4.
                 processStack(newPixelGreyLevel, curPixel, regionStack);
             }
-        }// end outer no arg for loop
+        }// end outer while loop
     }
 
     private void processStack(int newPixelGreyLevel, int pixel,
@@ -389,7 +387,10 @@ public class MSER {
     
     /**
      * given 8 bit image, calculate the MSER regions.
-     * @param img
+     * @param greyscale greyscale intensities of the image written so
+     * that the array index is (row * imageWidth) + col.
+     * @param width image width
+     * @param height image height
      * @return 
      */
     public List<List<Region>> findRegions(int[] greyscale, int width,
