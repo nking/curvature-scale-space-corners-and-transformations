@@ -1649,7 +1649,7 @@ public class ORB {
      *    orientations : (N, 1) array
                Orientations of corners in the range [-pi, pi].
      */
-    protected TDoubleList cornerOrientations(float[][] octaveImage,
+    public TDoubleList cornerOrientations(float[][] octaveImage,
         TIntList keypoints0, TIntList keypoints1) {
 
         //same as mask, same 0's and 1's:

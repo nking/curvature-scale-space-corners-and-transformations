@@ -94,6 +94,36 @@ public class QuickSortTest extends TestCase {
         assertTrue(a[3] == 4); assertTrue(b[3] == 6);
     }
     
+    public void testSortBy1stThen2nd_3() throws Exception {
+        
+        /*  a  b  c
+            4  5  6
+            4  6  7
+            4  3  1
+            1  2  3
+        */
+        TFloatList a = new TFloatArrayList(new float[]{4, 4, 4, 1});
+        TFloatList b = new TFloatArrayList(new float[]{5, 6, 3, 2});
+        TIntList c = new TIntArrayList(new int[]{2, 3, 1, 0});
+        
+        QuickSort.sortBy1stThen2nd(a, b, c);
+        
+        assertEquals(1.f, a.get(0));
+        assertEquals(4.f, a.get(1));
+        assertEquals(4.f, a.get(2));
+        assertEquals(4.f, a.get(3));
+        
+        assertEquals(2.f, b.get(0));
+        assertEquals(3.f, b.get(1));
+        assertEquals(5.f, b.get(2));
+        assertEquals(6.f, b.get(3));
+        
+        assertEquals(0, c.get(0));
+        assertEquals(1, c.get(1));
+        assertEquals(2, c.get(2));
+        assertEquals(3, c.get(3));
+    }
+    
     public void testSortBy1stThen2nd() throws Exception {
         
         /*  a  b  c

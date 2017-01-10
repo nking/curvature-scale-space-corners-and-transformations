@@ -369,17 +369,17 @@ class Region {
         int xC = (int)Math.round(moments_[0]/area_);
         int yC = (int)Math.round(moments_[1]/area_);
         
-        double[] coeffs = calcParamTransCoeff();
+        double[] m = calcParamTransCoeff();
         
         // semi-major and semi-minor axes:
-        int a = Math.abs((int)Math.round(2. * Math.max(coeffs[0], coeffs[1])));
-        int b = Math.abs((int)Math.round(2. * Math.min(coeffs[2], coeffs[3])));
-       
-        if (radius > a) {
-            radius = a; 
+        double major = 2. * Math.max(Math.abs(m[0]), Math.abs(m[1]));
+        double minor = 2. * Math.min(Math.abs(m[2]), Math.abs(m[3]));
+            
+        if (radius > major) {
+            radius = (int)major; 
         }
-        if (radius > b) {
-            radius = b; 
+        if (radius > minor) {
+            radius = (int)minor; 
         }
         
         int yStart = yC - radius;
@@ -531,14 +531,14 @@ class Region {
         | yx          yy-eigenv | = eigenv^2 - (xx + yy)*eigenv 
                                       + ((xx yy) - (yx xy)) = 0 
         
-        can solve for the zeroes with quardratice equation to
+        can solve for the zeroes with quardratic equation to
         get 2 eigenvalues:
         
         eigenv = (xx + yy +- sqrt( (xx + yy)^2 -4*(xx yy - xy yx) )) / 2
                = (d +- sqrt(d*d - 4*b*b))/2
         
-        Looks like Dubout below uses orthogonal axes so instead of
-        (xx, yy) have (yy, -xx).
+        Looks like Dubout below uses orthogonal axes, replacing
+        (xx, yy) with (yy, -xx).
         */
         // Eigenvalues of the covariance matrix
         double d  = a + c; // xx + yy
@@ -579,7 +579,7 @@ class Region {
         x(t) = xCenter + aParam*cos(alpha)*cos(t) − bParam*sin(alpha)*sin(t)
         y(t) = yCenter + aParam*sin(alpha)*cos(t) + bParam*cos(alpha)*sin(t)
         
-        v0x = aParam * cos(alpha);
+        v0x = aParam * cos(alpha);  alpha = atan(v0x/v0y)
         v1x = bParam * sin(alpha);
         v0y = aParam * sin(alpha);
         v1y = bParam * cos(alpha);

@@ -15,6 +15,17 @@ public class PairInt {
         x = xPoint;
         y = yPoint;
     }
+    
+    /**
+     * constructor which rounds to the nearest integer
+     * @param xPoint
+     * @param yPoint 
+     */
+    public PairInt(double xPoint, double yPoint) {
+        x = (int)Math.round(xPoint);
+        y = (int)Math.round(yPoint);
+    }
+    
     public void setX(int xPoint) {
         x = xPoint;
     }
