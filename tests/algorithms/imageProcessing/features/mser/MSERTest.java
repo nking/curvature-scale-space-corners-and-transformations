@@ -355,7 +355,13 @@ public class MSERTest extends TestCase {
 
         // compare descriptors
         // may want to filter out size rations different from "1"
-        
+       
+    }
+    
+    public void est000() throws IOException {
+         
+        // write a test similar to test00, but for HSV and normalizes the
+        // btightness vector
     }
     
     public void est1() throws IOException {
