@@ -2,6 +2,8 @@ package algorithms.imageProcessing.features.mser;
 
 import algorithms.QuickSort;
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
 import algorithms.imageProcessing.util.AngleUtil;
@@ -9,8 +11,11 @@ import algorithms.util.PairInt;
 import java.util.List;
 import algorithms.util.PairIntArray;
 import algorithms.util.TrioInt;
+import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -64,6 +69,47 @@ public class Canonicalizer {
          * value = coordinate in the original untransformed reference frame.
          */
         public Map<PairInt, PairInt> offsetsToOrigCoords;
+    
+        public void draw(Image img, int nExtraDot, int rClr, int gClr, int bClr) {
+        
+            //void drawLineInImage(int x1, int y1, int x2, int y2, 
+            //  Image input, int nExtraForDot, int rClr, int gClr, int bClr)
+
+            double mc = Math.cos(orientation - Math.PI/2.);
+            double ms = Math.sin(orientation - Math.PI/2.);
+            int x1 = (int)Math.round(xC - major * mc);
+            int y1 = (int)Math.round(yC - major * ms);
+            int x2 = (int)Math.round(xC + major * mc);
+            int y2 = (int)Math.round(yC + major * ms);
+            if (x1 < 0) { x1 = 0;}
+            if (y1 < 0) { y1 = 0;}
+            if (x2 < 0) { x2 = 0;}
+            if (y2 < 0) { y2 = 0;}
+            if (x1 >= img.getWidth()) { x1 = img.getWidth() - 1;}
+            if (y1 >= img.getHeight()) { y1 = img.getHeight() - 1;}
+            if (x2 >= img.getWidth()) { x2 = img.getWidth() - 1;}
+            if (y2 >= img.getHeight()) { y2 = img.getHeight() - 1;}
+            
+            ImageIOHelper.drawLineInImage(x1, y1, x2, y2, img, nExtraDot, 
+                rClr, gClr, bClr);
+            
+            x1 = (int)Math.round(xC - minor * mc);
+            y1 = (int)Math.round(yC - minor * ms);
+            x2 = (int)Math.round(xC + minor * mc);
+            y2 = (int)Math.round(yC + minor * ms);
+            if (x1 < 0) { x1 = 0;}
+            if (y1 < 0) { y1 = 0;}
+            if (x2 < 0) { x2 = 0;}
+            if (y2 < 0) { y2 = 0;}
+            if (x1 >= img.getWidth()) { x1 = img.getWidth() - 1;}
+            if (y1 >= img.getHeight()) { y1 = img.getHeight() - 1;}
+            if (x2 >= img.getWidth()) { x2 = img.getWidth() - 1;}
+            if (y2 >= img.getHeight()) { y2 = img.getHeight() - 1;}
+            
+            ImageIOHelper.drawLineInImage(x1, y1, x2, y2, img, nExtraDot, 
+                rClr, gClr, bClr);
+            
+        }
         
         @Override
         public String toString() {
@@ -89,13 +135,13 @@ public class Canonicalizer {
        
      * @return 
      */
-    public List<CRegion> canonicalizeRegions(List<Region> regions,
+    public TIntObjectMap<CRegion> canonicalizeRegions(List<Region> regions,
         GreyscaleImage meanWindowedImg) {
         
         int imageWidth = meanWindowedImg.getWidth(); 
         int imageHeight = meanWindowedImg.getHeight();
-            
-        List<CRegion> output = new ArrayList<CRegion>();
+       
+        TIntObjectMap<CRegion> output = new TIntObjectHashMap<CRegion>();
        
         Transformer transformer = new Transformer();
         
@@ -236,9 +282,132 @@ public class Canonicalizer {
             cRegion.nTrEllipsePixels = visited.size();
             cRegion.autocorrel = Math.sqrt(autocorSum)/255.;
             
-            output.add(cRegion);
+            output.put(i, cRegion);
         }
         
+        return output;
+    }
+    
+    /**
+     * create canonicalized regions containing coordinate maps that can be used
+     * to make descriptors.  Note that for best results, the pyramidImgs
+     * should have been pre-processed so that a pixel contains the mean of
+     * itself and its neighboring pixels.
+     * @param regions
+     * @param pyramidImgs
+     * @return 
+     */
+    public List<TIntObjectMap<CRegion>> canonicalizeRegions(
+        List<Region> regions, List<GreyscaleImage> pyramidImgs) {
+        
+        List<TIntObjectMap<CRegion>> output = new ArrayList<TIntObjectMap<CRegion>>();
+        
+        TIntObjectMap<CRegion> crMap0 = canonicalizeRegions(regions, pyramidImgs.get(0));
+        
+        output.add(crMap0);
+        
+        Transformer transformer = new Transformer();
+        
+        TIntObjectIterator<CRegion> iter0;
+        GreyscaleImage mImg0 = pyramidImgs.get(0);
+        
+        for (int imgIdx = 1; imgIdx < pyramidImgs.size(); ++imgIdx) {
+       
+            TIntObjectMap<CRegion> crMap = new TIntObjectHashMap<CRegion>();
+            output.add(crMap);
+            
+            GreyscaleImage mImg = pyramidImgs.get(imgIdx);
+            float scale = ((float)mImg0.getWidth()/(float)mImg.getWidth()) +
+                ((float)mImg0.getHeight()/(float)mImg.getHeight());
+            scale /= 2.f;
+
+            iter0 = crMap0.iterator();
+            for (int i = 0; i < crMap0.size(); ++i) {
+                iter0.advance();
+                
+                int idx = iter0.key();
+                CRegion cr = iter0.value();
+                
+                int xc2 = Math.round(cr.xC/scale);
+                int yc2 = Math.round(cr.yC/scale);
+                
+                if (xc2 < 0 || yc2 < 0 || xc2 >= mImg.getWidth() ||
+                    yc2 >= mImg.getHeight()) {
+                    continue;
+                }
+                
+                // transform the elliptical range so that angle2 is pointing
+                // up in the image, that is angle2 = Math.PI/2
+                // pi/2 = deltaR + angle --> deltaR = (pi/2) - angle
+                TransformationParameters params = new TransformationParameters();
+                params.setOriginX(xc2);
+                params.setOriginY(yc2);
+                params.setScale(1.0f);
+                params.setTranslationX(0);
+                params.setTranslationY(0);
+                params.setRotationInDegrees(AngleUtil.getAngleDifference(90.f, 
+                    (float)(cr.orientation*180./Math.PI)));
+
+                // copy and reduce structure in size by scale factor
+                Map<PairInt, PairInt> offsetMap = new HashMap<PairInt, PairInt>();
+                
+                int vc = mImg.getValue(xc2, yc2);
+                int nc = 0;
+                double autocorSum = 0;
+
+                for (Map.Entry<PairInt, PairInt> entry : cr.offsetsToOrigCoords.entrySet()) {
+                    
+                    PairInt pOrig = entry.getValue();
+                    
+                    PairInt pOrigScaled = new PairInt(
+                        (float)pOrig.getX()/scale, (float)pOrig.getY()/scale);
+                    
+                    // TODO: review this...should be the same as entry.getKey/scale
+                    // but slightly better integer rounding results
+                    double[] xyETr = transformer.applyTransformation(params, 
+                        pOrigScaled.getX(), pOrigScaled.getY());
+                    
+                    int xETr = (int)Math.round(xyETr[0]);
+                    int yETr = (int)Math.round(xyETr[1]);
+                    
+                    if ((xETr >= 0) && (xETr < mImg.getWidth()) 
+                        && (yETr >= 0) && (yETr < mImg.getHeight())) {
+                    
+                        PairInt pTrOffset = new PairInt(xETr - xc2, yETr - yc2);
+
+                        if (!offsetMap.containsKey(pTrOffset)) {
+                            
+                            offsetMap.put(pTrOffset, pOrigScaled);
+                            
+                            int diff = mImg.getValue(xETr, yETr) - vc;
+
+                            autocorSum += (diff * diff);
+                            nc++;
+                        }
+                    }
+                }
+                autocorSum /= (double)nc;
+
+                double major = cr.major/scale;
+                double minor = cr.minor/scale;
+
+                double ecc = Math.sqrt(major * major - minor * minor)/major;
+                
+                CRegion cRegion = new CRegion();
+                cRegion.eccentricity = ecc;
+                cRegion.offsetsToOrigCoords = offsetMap;
+                cRegion.major = major;
+                cRegion.minor = minor;
+                cRegion.orientation = cr.orientation;
+                cRegion.xC = xc2;
+                cRegion.yC = yc2;
+                cRegion.nTrEllipsePixels = offsetMap.size();
+                cRegion.autocorrel = Math.sqrt(autocorSum)/255.;
+            
+                crMap.put(idx, cRegion);
+            }
+        }
+                
         return output;
     }
     

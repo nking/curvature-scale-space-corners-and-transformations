@@ -428,10 +428,10 @@ public class MSER {
 
         long stop = System.currentTimeMillis();
 
-        System.out.println(
-            "Extracted " + (regions.get(0).size() + regions.get(1).size())
-            + " regions  (" + width + 'x' + height + ") in "
-            + ((stop - start) / 1000) + "s.");
+        //System.out.println(
+        //    "Extracted " + (regions.get(0).size() + regions.get(1).size())
+        //    + " regions  (" + width + 'x' + height + ") in "
+        //    + ((stop - start) / 1000) + "s.");
 
         return regions;
     }
