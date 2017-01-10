@@ -6,11 +6,17 @@ import algorithms.imageProcessing.features.CorrespondenceList;
 import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
 import algorithms.util.PairInt;
+import algorithms.util.TrioInt;
 import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.map.TIntFloatMap;
 import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntFloatHashMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  *
@@ -61,10 +67,14 @@ public class MSERMatcher {
             nImg1 != cRegionsList11.size()) {
             throw new IllegalArgumentException("reference frame 1 lists"
                 + " must be the same length");
-        }  
+        } 
         
-        List<FixedSizeSortedVector<Obj>> bestPerOctave 
-            = new ArrayList<FixedSizeSortedVector<Obj>>();
+        // key=(imgIdx1, imgIdx2), value=map w/ key=idx1, value=FixedSizeSortedVector
+        Map<PairInt, TIntObjectMap<FixedSizeSortedVector<Obj>>> bestPerOctave
+            = new HashMap<PairInt, TIntObjectMap<FixedSizeSortedVector<Obj>>>();
+        
+        TIntFloatMap img0Scales = new TIntFloatHashMap();
+        TIntFloatMap img1Scales = new TIntFloatHashMap();
         
         for (int imgIdx0 = 0; imgIdx0 < nImg0; ++imgIdx0) {
             GreyscaleImage mImg0 = pyr0.get(imgIdx0);
@@ -72,20 +82,40 @@ public class MSERMatcher {
                 
             int np0 = cMap0.size();
             
+            float scale0 = ((float)mImg0.getWidth()
+                /(float)pyr0.get(imgIdx0).getWidth()) +
+                ((float)mImg0.getHeight()
+                /(float)pyr0.get(imgIdx0).getHeight());
+            scale0 /= 2.f;
+            img0Scales.put(imgIdx0, scale0);
+            
             for (int imgIdx1 = 0; imgIdx1 < nImg1; ++imgIdx1) {
                 GreyscaleImage mImg1 = pyr1.get(imgIdx1);
                 TIntObjectMap<CRegion> cMap1 = cRegionsList10.get(imgIdx1);
                 
                 int np1 = cMap1.size();
                 
-                FixedSizeSortedVector<Obj> best01 = new 
-                    FixedSizeSortedVector<Obj>(np0, Obj.class);
-                bestPerOctave.add(best01);
-               
+                float scale1 = ((float) mImg1.getWidth()
+                    / (float) pyr1.get(imgIdx1).getWidth())
+                    + ((float) mImg1.getHeight()
+                    / (float) pyr1.get(imgIdx1).getHeight());
+                scale1 /= 2.f;
+                img1Scales.put(imgIdx1, scale1);
+                
+                PairInt imgKey = new PairInt(imgIdx0, imgIdx1);
+                bestPerOctave.put(imgKey, 
+                    new TIntObjectHashMap<FixedSizeSortedVector<Obj>>());
+                
                 TIntObjectIterator<CRegion> iteri0 = cMap0.iterator();
                 for (int i0 = 0; i0 < cMap0.size(); ++i0) {
                     iteri0.advance();
+                    
+                    int idx0 = iteri0.key();
 
+                    FixedSizeSortedVector<Obj> best01 = new 
+                        FixedSizeSortedVector<Obj>(np0, Obj.class);
+                    bestPerOctave.get(imgKey).put(idx0, best01);
+                    
                     CRegion cr0 = iteri0.value();
                     int n0 = cr0.nTrEllipsePixels;
 
@@ -163,13 +193,40 @@ public class MSERMatcher {
             } // end loop over imgIdx1
         } // end loop over imgIdx0
         
-        // process List<FixedSizeSortedVector<Obj>> bestPerOctave
-    
         /*
+        process results map
+        
+        // key=(imgIdx1, imgIdx2), value=map w/ key=idx1, value=FixedSizeSortedVector
+        Map<PairInt, TIntObjectMap<FixedSizeSortedVector<Obj>>> bestPerOctave
+                    
         expecting that octave image pair with the 
             largest number of best costs for cregions is the matched
             image scales.
         */
+        
+        for (Entry<PairInt, TIntObjectMap<FixedSizeSortedVector<Obj>>> entry :
+            bestPerOctave.entrySet()) {
+            
+            PairInt imgIndexes = entry.getKey();
+            
+            TIntObjectMap<FixedSizeSortedVector<Obj>> bestPerRegion = 
+                entry.getValue();
+            
+            /*
+            presumably, each idx1 has a best matching idx2
+                and that cost is minimum for the same img indexes for all
+                true matches of idx1
+            
+            -- extract x,y, cost, img1, img2 from each
+            -- transform x and y to coords of full scale image
+            
+            if the true matches are present but not clearly the
+               1st best matches,
+               the numbers should be small enough that pairs and euclidean
+                 transforms for evaluation should be fast.
+            
+            */
+        }
         
         throw new UnsupportedOperationException("not yet implemented");
     }
