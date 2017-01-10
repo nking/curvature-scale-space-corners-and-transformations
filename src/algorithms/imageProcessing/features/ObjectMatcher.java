@@ -18,6 +18,7 @@ import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
 import algorithms.imageProcessing.features.mser.MSER;
 import algorithms.imageProcessing.features.mser.Region;
+import algorithms.imageProcessing.matching.MSERMatcher;
 import algorithms.imageProcessing.matching.ORBMatcher;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.imageProcessing.util.PairIntWithIndex;
@@ -42,6 +43,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import static jdk.nashorn.internal.objects.Global.print;
 
 /**
  * a class that finds a template object in another image where the 
@@ -60,6 +62,34 @@ public class ObjectMatcher {
     
     public void setToDebug() {
         debug = true;
+    }
+
+    private void debugPrint(List<TIntObjectMap<CRegion>> cRegionsList, 
+        List<GreyscaleImage> pyr, String label) {
+        
+        for (int j = 0; j < pyr.size(); ++j) {
+
+            Image img1 = pyr.get(j).copyToColorGreyscale();
+
+            TIntObjectMap<CRegion> crMap = cRegionsList.get(j);
+            TIntObjectIterator<CRegion> iter = crMap.iterator();
+
+            int nExtraDot = 0;
+
+            for (int ii = 0; ii < crMap.size(); ++ii) {
+                iter.advance();
+
+                int idx = iter.key();
+
+                CRegion cr = iter.value();
+
+                int[] clr = ImageIOHelper.getNextRGB(ii);
+
+                cr.draw(img1, nExtraDot, clr[0], clr[1], clr[2]);
+            }
+
+            MiscDebug.writeImage(img1, label + "_" + j + "_crs_");
+        }
     }
 
     public static class Settings {
@@ -747,15 +777,32 @@ public class ObjectMatcher {
         List<TIntObjectMap<CRegion>> cRegionsList11 =
             canonicalizer.canonicalizeRegions(regions1.get(1), pyr1);
         
-            
+        if (debug) {
+            debugPrint(cRegionsList00, pyr0, "_0_0_");
+            debugPrint(cRegionsList01, pyr0, "_0_1_");
+            debugPrint(cRegionsList10, pyr1, "_1_0_");
+            debugPrint(cRegionsList11, pyr1, "_1_1_");
+        }
+        
         /*
         TODO: consider filtering for the mser cregions for image 1
         -- hsv histogram intersection filtering
            -- cielab histogram intersection filtering
         -- filtering by ciech
         */
-      
-        throw new UnsupportedOperationException("not yet implemented");        
+        
+        MSERMatcher matcher = new MSERMatcher();
+        
+        if (debug) {
+            matcher.setToDebug();
+        }
+        
+        CorrespondenceList corList = matcher.matchObject(
+            pyr0, pyr1, 
+            cRegionsList00, cRegionsList01,
+            cRegionsList10, cRegionsList11);
+       
+        return corList;        
     }
     
     // handles the binning to smaller size automatically
