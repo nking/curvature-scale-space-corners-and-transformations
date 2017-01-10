@@ -151,9 +151,11 @@ public class Canonicalizer {
          
             Region r = regions.get(i);
             
-            r.calculateXYCentroid(xyCen, imageWidth, imageHeight, xyCen);
+            r.calculateXYCentroid(xyCen, imageWidth, imageHeight);
             int x = xyCen[0];
             int y = xyCen[1];
+            assert(x >= 0 && x < imageWidth);
+            assert(y >= 0 && y < imageHeight);
 
             //v0x, v1x, v0y, v1y
             double[] m = r.calcParamTransCoeff();
@@ -246,12 +248,12 @@ public class Canonicalizer {
                 for (int xE = xMin; xE <= xMax; ++xE) {
                     
                     double[] xyETr = transformer.applyTransformation(params, xE, yE);
+       
+                    int xETr = (int)Math.round(xyETr[0]);
+                    int yETr = (int)Math.round(xyETr[1]);
                     
-                    if ((xyETr[0] >= 0) && (xyETr[0] < imageWidth) 
-                        && (xyETr[1] >= 0) && (xyETr[1] < imageHeight)) {
-
-                        int xETr = (int)Math.round(xyETr[0]);
-                        int yETr = (int)Math.round(xyETr[1]);
+                    if ((xETr >= 0) && (xETr < imageWidth) 
+                        && (yETr >= 0) && (yETr < imageHeight)) {
                     
                         PairInt pt = new PairInt(xETr, yETr);
                         if (visited.contains(pt)) {
@@ -359,13 +361,26 @@ public class Canonicalizer {
                     
                     PairInt pOrig = entry.getValue();
                     
-                    PairInt pOrigScaled = new PairInt(
-                        (float)pOrig.getX()/scale, (float)pOrig.getY()/scale);
+                    int xScaled = Math.round((float)pOrig.getX()/scale);
+                    int yScaled = Math.round((float)pOrig.getY()/scale);
+                    if (xScaled == -1) {
+                        xScaled = 0;
+                    }
+                    if (yScaled == -1) {
+                        yScaled = 0;
+                    }
+                    if (xScaled == mImg.getWidth()) {
+                        xScaled = mImg.getWidth() - 1;
+                    }
+                    if (yScaled == mImg.getHeight()) {
+                        yScaled = mImg.getHeight() - 1;
+                    }
+                    PairInt pOrigScaled = new PairInt(xScaled, yScaled);
                     
                     // TODO: review this...should be the same as entry.getKey/scale
                     // but slightly better integer rounding results
                     double[] xyETr = transformer.applyTransformation(params, 
-                        pOrigScaled.getX(), pOrigScaled.getY());
+                        xScaled, yScaled);
                     
                     int xETr = (int)Math.round(xyETr[0]);
                     int yETr = (int)Math.round(xyETr[1]);
@@ -417,12 +432,11 @@ public class Canonicalizer {
         //return calculateIntensityCentroids(regions,
         //    greyscale, imageWidth, imageHeight);
         
-        return extractRegionXYCenters(regions,
-            greyscale, imageWidth, imageHeight);
+        return extractRegionXYCenters(regions, imageWidth, imageHeight);
     }
     
     PairIntArray extractRegionXYCenters(List<Region> regions,
-        int[] greyscale, int imageWidth, int imageHeight) {
+        int imageWidth, int imageHeight) {
         
         int[] xyCen = new int[2];
         
@@ -430,8 +444,7 @@ public class Canonicalizer {
         
         for (int i = 0; i < regions.size(); ++i) {
             Region r = regions.get(i);
-            r.calculateXYCentroid(greyscale, imageWidth, imageHeight, 
-                xyCen);
+            r.calculateXYCentroid(xyCen, imageWidth, imageHeight);
      
             output.add(xyCen[0], xyCen[1]);
         }

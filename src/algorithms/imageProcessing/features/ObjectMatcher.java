@@ -3,14 +3,21 @@ package algorithms.imageProcessing.features;
 import algorithms.compGeometry.FurthestPair;
 import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.ColorHistogram;
+import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.GroupPixelCIELUV;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
+import algorithms.imageProcessing.MedianTransform;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.imageProcessing.SummedAreaTable;
 import algorithms.imageProcessing.VanishingPoints;
+import algorithms.imageProcessing.features.mser.Canonicalizer;
+import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
+import algorithms.imageProcessing.features.mser.MSER;
+import algorithms.imageProcessing.features.mser.Region;
 import algorithms.imageProcessing.matching.ORBMatcher;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.imageProcessing.util.PairIntWithIndex;
@@ -611,6 +618,144 @@ public class ObjectMatcher {
         }
 
         return corList.get(0);        
+    }
+    
+            
+    /**
+     * given an object in image img0 which is defined by shape0, find the same 
+     * object in img1.
+     * This method was created to handle a range of lighting changes, poses,
+     * and different background and foregrounds, that is, cases where the
+     * number of true matching keypoints in img1 is small compared to the
+     * total number of keypoints in img1, making the standard best matching
+     * descriptors and RANSAC to remove outliers infeasible.
+     * 
+     * This method uses the blob detector MSER and matches descriptors for the
+     * regions.
+     * 
+     * @param img0
+     * @param shape0
+     * @param img1
+     * @param settings for the method
+     * @return 
+     */
+    public CorrespondenceList findObject10(ImageExt img0, Set<PairInt> shape0,
+        ImageExt img1, Settings settings) {
+    
+        long ts = 0;
+        if (debug) {
+            ts = MiscDebug.getCurrentTimeFormatted();
+        }
+        
+        Canonicalizer canonicalizer = new Canonicalizer();
+        
+        GreyscaleImage gsImg0 = img0.copyToGreyscale2();
+        
+        // ----- create the cRegions for a masked image pyramid of img 0 ====
+        MSER mser = new MSER();
+           
+        List<List<Region>> regions0 = mser.findRegions(gsImg0);
+        
+        int[] xy = new int[2];
+        //remove all regions with centers outside of shape0 points
+        for (int rIdx = 0; rIdx < 2; rIdx++) {
+            java.util.List<Region> rList = regions0.get(rIdx);
+            for (int i = (rList.size() - 1); i > -1; --i) {
+                Region r = rList.get(i);
+                r.calculateXYCentroid(xy, gsImg0.getWidth(), gsImg0.getHeight());
+                PairInt p = new PairInt(xy[0], xy[1]);
+                if (!shape0.contains(p)) {
+                    rList.remove(i);
+                }
+            }
+        }
+       
+        // mask the image, though not necessary
+        for (int i = 0; i < gsImg0.getNPixels(); ++i) {
+            PairInt p = new PairInt(gsImg0.getCol(i), gsImg0.getRow(i));
+            if (!shape0.contains(p)) {
+                gsImg0.setValue(i, 0);
+            }
+        }
+            
+        // create image0 pyramid and windowing
+        MedianTransform mt = new MedianTransform();
+        SummedAreaTable sumTable = new SummedAreaTable();
+        int halfDimension = 1;
+        
+        List<GreyscaleImage> pyr0;
+        if (settings.useLargerPyramid0) {
+            pyr0 = new ArrayList<GreyscaleImage>();
+            mt.multiscalePyramidalMedianTransform2(gsImg0, pyr0, 32);
+        } else {
+            ImageProcessor imageProcessor = new ImageProcessor();
+            pyr0 = imageProcessor.buildPyramid2(gsImg0, 32);
+        }
+        
+        for (int i = 0; i < pyr0.size(); ++i) {
+            GreyscaleImage imgM = pyr0.get(i);
+            imgM = sumTable.createAbsoluteSummedAreaTable(imgM);
+            imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM,
+                2 * halfDimension + 1);
+            pyr0.set(i, imgM);
+        }
+        
+        // list item for each octave.  item is for each region
+        
+        //regions[0) are found from the image, 
+        // while regions[1) are found from the inverted image. 
+        // they're kept separate for now to test matching them separately.
+        List<TIntObjectMap<CRegion>> cRegionsList00 =
+            canonicalizer.canonicalizeRegions(regions0.get(0), pyr0);
+        
+        List<TIntObjectMap<CRegion>> cRegionsList01 =
+            canonicalizer.canonicalizeRegions(regions0.get(1), pyr0);
+        
+        // ---- create the cregion lists for image 1 ------
+        GreyscaleImage gsImg1 = img1.copyToGreyscale2();
+                   
+        List<List<Region>> regions1 = mser.findRegions(gsImg1);
+        
+        // mask the image, though not necessary
+        for (int i = 0; i < gsImg0.getNPixels(); ++i) {
+            PairInt p = new PairInt(gsImg0.getCol(i), gsImg0.getRow(i));
+            if (!shape0.contains(p)) {
+                gsImg0.setValue(i, 0);
+            }
+        }
+        
+        List<GreyscaleImage> pyr1;
+        if (settings.useLargerPyramid0) {
+            pyr1 = new ArrayList<GreyscaleImage>();
+            mt.multiscalePyramidalMedianTransform2(gsImg1, pyr1, 32);
+        } else {
+            ImageProcessor imageProcessor = new ImageProcessor();
+            pyr1 = imageProcessor.buildPyramid2(gsImg1, 32);
+        }
+        
+        for (int i = 0; i < pyr1.size(); ++i) {
+            GreyscaleImage imgM = pyr1.get(i);
+            imgM = sumTable.createAbsoluteSummedAreaTable(imgM);
+            imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM,
+                2 * halfDimension + 1);
+            pyr1.set(i, imgM);
+        }
+                
+        List<TIntObjectMap<CRegion>> cRegionsList10 =
+            canonicalizer.canonicalizeRegions(regions1.get(0), pyr1);
+        
+        List<TIntObjectMap<CRegion>> cRegionsList11 =
+            canonicalizer.canonicalizeRegions(regions1.get(1), pyr1);
+        
+            
+        /*
+        TODO: consider filtering for the mser cregions for image 1
+        -- hsv histogram intersection filtering
+           -- cielab histogram intersection filtering
+        -- filtering by ciech
+        */
+      
+        throw new UnsupportedOperationException("not yet implemented");        
     }
     
     // handles the binning to smaller size automatically

@@ -261,7 +261,7 @@ public class MSERTest extends TestCase {
             "android_statues_03_sz3.jpg",
             "android_statues_04_sz1.jpg"
         };
-                
+        
         /*
         gbman height for scale reference
            28
@@ -284,16 +284,12 @@ public class MSERTest extends TestCase {
             File fl = ResourceFinder.findFileInTmpData(file);
             
             Image img = ImageIOHelper.readImage(fl.getPath());
-        
             GreyscaleImage gsImg = img.copyToGreyscale2();
-            
             mImgs0.add(gsImg);
             
             List<GreyscaleImage> pyr = new ArrayList<GreyscaleImage>();
-
             MedianTransform mt = new MedianTransform();
                 mt.multiscalePyramidalMedianTransform2(gsImg, pyr, 32);
-
             mImgs.add(pyr);
             
             for (int i = 0; i < pyr.size(); ++i) {
@@ -327,8 +323,8 @@ public class MSERTest extends TestCase {
             cRegions1List.add(cregions);
             
             // --- print out the ellipses and centers for images ----
-            //for (int j = 0; j < pyr.size(); ++j) {
-            for (int j = 0; j < 1; ++j) {
+            for (int j = 0; j < pyr.size(); ++j) {
+            //for (int j = 0; j < 1; ++j) {
                 
                 Image img1 = pyr.get(j).copyToColorGreyscale();
 
@@ -355,24 +351,46 @@ public class MSERTest extends TestCase {
 
         // compare descriptors
         // may want to filter out size ratios different from "1"
-        /*               
+                      
         //for (int imgIdx = 0; imgIdx < cRegions1List.size(); ++imgIdx) {
         for (int imgIdx = 0; imgIdx < 1; ++imgIdx) {
             for (int pyrIdx = 0; pyrIdx < cRegions1List.get(imgIdx).size(); ++pyrIdx) {
                 GreyscaleImage mImg = mImgs.get(imgIdx).get(pyrIdx);
-                List<CRegion> cList = cRegions1List.get(imgIdx).get(pyrIdx);
+                TIntObjectMap<CRegion> cMap = cRegions1List.get(imgIdx).get(pyrIdx);
+                
+                /* 
+                for stereo image matching, would want to store the top few
+                matches per octave and only keep the best if the 2nd best
+                is larger by 10% or some other error value.
+                
+                for object finding rather than stereo imaging, would want to
+                store the top k matches at each octave where k is the number
+                of mser regions in the template object.
+                storing the top k should help for objects such as the gbman 
+                where there is summetry in the pattern and the best match
+                for pose and lighting, etc might be another gbman point
+                (false match, but correct object).
+                */
                 
                 for (int imgIdx2 = 0; imgIdx2 < cRegions1List.size(); ++imgIdx2) {
                     for (int pyrIdx2 = 0; pyrIdx2 < cRegions1List.get(imgIdx2).size(); ++pyrIdx2) {
                         GreyscaleImage mImg2 = mImgs.get(imgIdx2).get(pyrIdx2);
-                        List<CRegion> cList2 = cRegions1List.get(imgIdx2).get(pyrIdx2);
+                        TIntObjectMap<CRegion> cMap2 = cRegions1List.get(imgIdx2).get(pyrIdx2);
                     
-                        for (int i1 = 0; i1 < cList.size(); ++i1) {
+                        TIntObjectIterator<CRegion> iteri1 = cMap.iterator();
+                        for (int i1 = 0; i1 < cMap.size(); ++i1) {
+                            iteri1.advance();
                             
-                            CRegion cr1 = cList.get(i1);
+                            int idx1 = iteri1.key();
+                            CRegion cr1 = iteri1.value();
                             int n1 = cr1.nTrEllipsePixels;
-                            for (int i2 = 0; i2 < cList2.size(); ++i2) {
-                                CRegion cr2 = cList2.get(i2);
+                            
+                            TIntObjectIterator<CRegion> iteri2 = cMap2.iterator();
+                            for (int i2 = 0; i2 < cMap2.size(); ++i2) {
+                                iteri2.advance();
+                               
+                                int idx2 = iteri2.key();
+                                CRegion cr2 = iteri2.value();
                                 int n2 = cr2.nTrEllipsePixels;
                                 
                                 int maxMatchable = Math.min(n1, n2);
@@ -409,24 +427,27 @@ public class MSERTest extends TestCase {
 
                                 double f = 1. - ((double) ssdCount / (double) maxMatchable);
 
-                                String str1 = String.format(
-                                    "im1Idx=%d im2Idx=%d pyr1=%d pyr2=%d",
-                                    imgIdx, imgIdx2, pyrIdx, pyrIdx2);
-                                String str2 = String.format(
-                                    " (%d,%d) (%d,%d) ssd=%.2f autoc=%.2f,%.2f f=%.3f ssd.n=%d",
-                                    cr1.xC, cr1.yC, cr2.xC, cr2.yC, 
-                                    (float) ssdSum,
-                                    (float) cr1.autocorrel, (float) cr2.autocorrel,
-                                    (float) f, ssdCount);
-                                System.out.println(str1 + str2);
+                                double err = Math.max(cr1.autocorrel, cr2.autocorrel);
+                                
+                                if (ssdSum <= 1.1 * err) {
+                                    String str1 = String.format(
+                                        "im1Idx=%d im2Idx=%d pyr1=%d pyr2=%d",
+                                        imgIdx, imgIdx2, pyrIdx, pyrIdx2);
+                                    String str2 = String.format(
+                                        " (%d,%d) (%d,%d) ssd=%.2f autoc=%.2f,%.2f f=%.3f ssd.n=%d",
+                                        cr1.xC, cr1.yC, cr2.xC, cr2.yC, 
+                                        (float) ssdSum,
+                                        (float) cr1.autocorrel, (float) cr2.autocorrel,
+                                        (float) f, ssdCount);
+                                    System.out.println(str1 + str2);
+                                }
                             }
                         }
                         System.out.println("");
                     }
                 }
             }
-        }
-       */  
+        }  
     }
     
     public void est000() throws IOException {

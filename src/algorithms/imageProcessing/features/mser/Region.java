@@ -48,7 +48,7 @@ image, and optionally fits ellipses to them.
 * author nichole ported the C++ code quoted above to java and added
 * methods used in canonicalization (in progress).
 */
-class Region {
+public class Region {
 
     /**
      * Level at which the region is processed.
@@ -86,8 +86,7 @@ class Region {
     private Region next_ = null;
 
     /**
-     * @param level Level at which the region is processed (default level = 256)
-     * @param pixel Index of the initial pixel (y * width + x). (int pixel = 0)
+     * constructor with default level = 256 and pixel=0
      */
     public Region() {
         int level = 256;
@@ -273,16 +272,26 @@ class Region {
     /**
      * calculate the x,y centroid of the pixels within
      * this region.
-     * @param greyscale
      * @param imageWidth
      * @param imageHeight
      * @param outputXY 
      */
-    void calculateXYCentroid(int[] greyscale, int imageWidth, 
-        int imageHeight, int[] outputXY) {
+    public void calculateXYCentroid(int[] outputXY, int imageWidth, int imageHeight) {
                     
         outputXY[0] = (int)Math.round(moments_[0]/area_);
         outputXY[1] = (int)Math.round(moments_[1]/area_);
+        if (outputXY[0] == -1) {
+            outputXY[0] = 0;
+        }
+        if (outputXY[1] == -1) {
+            outputXY[1] = 0;
+        }
+        if (outputXY[0] == imageWidth) {
+            outputXY[0] = imageWidth - 1;
+        }
+        if (outputXY[1] == imageHeight) {
+            outputXY[1] = imageHeight - 1;
+        }
     }
     
     /**
