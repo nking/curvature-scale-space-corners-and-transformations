@@ -46,9 +46,24 @@ public class Canonicalizer {
 
     so the semi-major axis length = 2 * Math.max(v0x, v1x)
     and the semi-minor axis length = 2 * Math.min(v0y, v1y)
-
-    then the radius of the circle, before scaling would
     
+    NOTE, the canonicalization currently preserves the
+    ellipse shape, but transforms the coordinates to
+    an orientation of 90 degrees for comparison in 
+    matching algorithms.
+    
+    The matching algorithm is still in progress, but can see
+    -- might need canonicalization to be circular areas
+       after all.  the radius would be the minor axis length.
+       -- for the regions where minor axis length < 16
+          should use a radius of 16.
+    -- if the canoicalization into circular areas is successful
+       at finding best true matches,
+       will try to reduce them all to radius of 16 and if that
+       is successful, then should be able to use the ORB descriptors
+       in plae of these.  
+       the ORB descriptors are binary...comparisons
+       are very fast.
     */
     
     public static class CRegion {
