@@ -746,6 +746,53 @@ public class ObjectMatcher {
                    
         List<List<Region>> regions1 = mser.findRegions(gsImg1);
         
+        if (debug) {
+            int[] xyCen = new int[2];
+            Image im0Cp, im1Cp;
+            im0Cp = img0.copyImage();
+            for (int i = 0; i < regions0.get(0).size(); ++i) {
+                Region r = regions0.get(0).get(i);
+                int[] clr = ImageIOHelper.getNextRGB(i);
+                r.drawEllipse(im0Cp, 0, clr[0], clr[1], clr[2]);
+                r.calculateXYCentroid(xyCen, im0Cp.getWidth(), im0Cp.getHeight());
+                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im0Cp, 
+                    1, 255, 0, 0);
+            }
+            MiscDebug.writeImage(im0Cp, "regions_0_0");
+            im0Cp = img0.copyImage();
+            for (int i = 0; i < regions0.get(1).size(); ++i) {
+                Region r = regions0.get(1).get(i);
+                int[] clr = ImageIOHelper.getNextRGB(i);
+                r.drawEllipse(im0Cp, 0, clr[0], clr[1], clr[2]);
+                r.calculateXYCentroid(xyCen, im0Cp.getWidth(), im0Cp.getHeight());
+                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im0Cp, 
+                    1, 255, 0, 0);
+            }
+            MiscDebug.writeImage(im0Cp, "regions_0_1");
+            
+            im1Cp = img1.copyImage();
+            for (int i = 0; i < regions1.get(0).size(); ++i) {
+                Region r = regions1.get(0).get(i);
+                int[] clr = ImageIOHelper.getNextRGB(i);
+                r.drawEllipse(im1Cp, 0, clr[0], clr[1], clr[2]);
+                r.calculateXYCentroid(xyCen, im1Cp.getWidth(), im1Cp.getHeight());
+                ImageIOHelper.addPointToImage(
+                    xyCen[0], xyCen[1], im1Cp, 
+                    1, 255, 0, 0);
+            }
+            MiscDebug.writeImage(im1Cp, "regions_1_0");
+            im1Cp = img1.copyImage();
+            for (int i = 0; i < regions1.get(1).size(); ++i) {
+                Region r = regions1.get(1).get(i);
+                int[] clr = ImageIOHelper.getNextRGB(i);
+                r.drawEllipse(im1Cp, 0, clr[0], clr[1], clr[2]);
+                r.calculateXYCentroid(xyCen, im1Cp.getWidth(), im1Cp.getHeight());
+                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im1Cp, 
+                    1, 255, 0, 0);
+            }
+            MiscDebug.writeImage(im1Cp, "regions_1_1");
+        }
+        
         // mask the image, though not necessary
         for (int i = 0; i < gsImg0.getNPixels(); ++i) {
             PairInt p = new PairInt(gsImg0.getCol(i), gsImg0.getRow(i));
@@ -777,7 +824,7 @@ public class ObjectMatcher {
         List<TIntObjectMap<CRegion>> cRegionsList11 =
             canonicalizer.canonicalizeRegions(regions1.get(1), pyr1);
         
-        if (debug) {
+        if (false && debug) {
             debugPrint(cRegionsList00, pyr0, "_0_0_");
             debugPrint(cRegionsList01, pyr0, "_0_1_");
             debugPrint(cRegionsList10, pyr1, "_1_0_");

@@ -77,10 +77,14 @@ public class MSERMatcher {
         
         TIntFloatMap img0Scales = new TIntFloatHashMap();
         TIntFloatMap img1Scales = new TIntFloatHashMap();
+       
+        //TODO: edit this to handle results for
+        //    the cregions inverted list separate from the not-inverted
+        //    and combine results.
         
         for (int imgIdx0 = 0; imgIdx0 < nImg0; ++imgIdx0) {
             GreyscaleImage mImg0 = pyr0.get(imgIdx0);
-            TIntObjectMap<CRegion> cMap0 = cRegionsList00.get(imgIdx0);
+            TIntObjectMap<CRegion> cMap0 = cRegionsList01.get(imgIdx0);
                 
             int np0 = cMap0.size();
             
@@ -93,7 +97,7 @@ public class MSERMatcher {
             
             for (int imgIdx1 = 0; imgIdx1 < nImg1; ++imgIdx1) {
                 GreyscaleImage mImg1 = pyr1.get(imgIdx1);
-                TIntObjectMap<CRegion> cMap1 = cRegionsList10.get(imgIdx1);
+                TIntObjectMap<CRegion> cMap1 = cRegionsList11.get(imgIdx1);
                 
                 int np1 = cMap1.size();
                 

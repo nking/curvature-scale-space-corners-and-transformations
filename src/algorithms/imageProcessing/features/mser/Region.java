@@ -66,10 +66,6 @@ public class Region {
      */
     int area_;
     
-    // storing each pixel for a look at detailed matching
-    private TIntList xs = null;
-    private TIntList ys = null;
-
     /**
      * First and second moments of the region (x, y, x^2, xy, y^2).
      */
@@ -120,8 +116,6 @@ public class Region {
         this.child_ = null;
         this.next_ = null;
         
-        xs = new TIntArrayList();
-        ys = new TIntArrayList();
     }
 
     public void accumulate(int x, int y) {
@@ -132,8 +126,6 @@ public class Region {
         moments_[3] += x * y;
         moments_[4] += y * y;
         
-        xs.add(x);
-        ys.add(y);
     }
 
     public void merge(Region child) {
@@ -729,18 +721,6 @@ public class Region {
         }
     }
 
-    public void drawPoints(Image img, int nExtraDot,
-        int rClr, int gClr, int bClr) {
-        
-        for (int i = 0; i < xs.size(); ++i) {
-            int x = xs.get(i);
-            int y = ys.get(i);
-            
-            ImageIOHelper.addPointToImage(x, y, img, 
-                nExtraDot, rClr, gClr, bClr);
-        }
-    }
-
     public Region copy() {
         Region region = new Region(this.level_, this.pixel_);
         region.area_ = this.area_;
@@ -750,8 +730,6 @@ public class Region {
         region.parent_ = this.parent_;
         region.child_ = this.child_;
         region.next_ = this.next_;
-        region.xs.addAll(xs);
-        region.ys.addAll(ys);
         return region;
     }
     

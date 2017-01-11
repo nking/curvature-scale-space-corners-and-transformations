@@ -110,7 +110,7 @@ public class Canonicalizer {
                 rClr, gClr, bClr);
             
         }
-        
+       
         @Override
         public String toString() {
             
