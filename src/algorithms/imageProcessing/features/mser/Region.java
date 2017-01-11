@@ -65,6 +65,10 @@ public class Region {
      * pixels in this region.
      */
     int area_;
+    
+    // storing each pixel for a look at detailed matching
+    private TIntList xs = null;
+    private TIntList ys = null;
 
     /**
      * First and second moments of the region (x, y, x^2, xy, y^2).
@@ -115,6 +119,9 @@ public class Region {
         this.parent_ = null;
         this.child_ = null;
         this.next_ = null;
+        
+        xs = new TIntArrayList();
+        ys = new TIntArrayList();
     }
 
     public void accumulate(int x, int y) {
@@ -124,6 +131,9 @@ public class Region {
         moments_[2] += x * x;
         moments_[3] += x * y;
         moments_[4] += y * y;
+        
+        xs.add(x);
+        ys.add(y);
     }
 
     public void merge(Region child) {
@@ -378,6 +388,7 @@ public class Region {
         int xC = (int)Math.round(moments_[0]/area_);
         int yC = (int)Math.round(moments_[1]/area_);
         
+        //v0x, v1x, v0y, v1y
         double[] m = calcParamTransCoeff();
         
         // semi-major and semi-minor axes:
@@ -516,15 +527,15 @@ public class Region {
         */
         
         // Centroid (mean)
-        double x = moments_[0] / area_;
-        double y = moments_[1] / area_;
+        double x = moments_[0] / (double)area_;
+        double y = moments_[1] / (double)area_;
         
         // a*x^2 + b*x*y + c*y^2 + d*x + e*y + f = 0
         
         // Covariance matrix [a b; b c]
-        double a = moments_[2] / area_ - x * x;
-        double b = moments_[3] / area_ - x * y;
-        double c = moments_[4] / area_ - y * y;
+        double a = moments_[2] / (double)area_ - x * x;
+        double b = moments_[3] / (double)area_ - x * y;
+        double c = moments_[4] / (double)area_ - y * y;
 
         /*
         where is the summary below from?  many different ways to find
@@ -618,21 +629,25 @@ public class Region {
         double x = moments_[0] / area_;
         double y = moments_[1] / area_;
         
+        //v0x, v1x, v0y, v1y
         double[] coeffs = calcParamTransCoeff();
         
         double v0x = coeffs[0];
-        double v0y = coeffs[1];
-        double v1x = coeffs[2];
+        double v1x = coeffs[1];
+        double v0y = coeffs[2];
         double v1y = coeffs[3];
 
         Set<PairInt> visited = new HashSet<PairInt>();
 
         for (double t = 0.0; t < 2.0 * Math.PI; t += 0.001) {
             
+            double mc = Math.cos(t);
+            double ms = Math.sin(t);
+            
             int x2 = (int)Math.round(x + 
-                (Math.cos(t) * v0x + Math.sin(t) * v1x) * 2.0 + 0.5);
-            int y2 = (int)Math.round(y + (Math.cos(t) * v0y 
-                + Math.sin(t) * v1y) * 2.0 + 0.5);
+                (mc * v0x + ms * v1x) * 2.0 + 0.5);
+            int y2 = (int)Math.round(y + (mc * v0y 
+                + ms * v1y) * 2.0 + 0.5);
 
             if ((x2 >= 0) && (x2 < imageWidth) 
                 && (y2 >= 0) && (y2 < imageHeight)) {
@@ -686,22 +701,24 @@ public class Region {
         int rClr, int gClr, int bClr) {
 
         // Centroid (mean)
-        double x = moments_[0] / area_;
-        double y = moments_[1] / area_;
+        double x = moments_[0] / (double)area_;
+        double y = moments_[1] / (double)area_;
         
+        //v0x, v1x, v0y, v1y
         double[] coeffs = calcParamTransCoeff();
         
         double v0x = coeffs[0];
-        double v0y = coeffs[1];
-        double v1x = coeffs[2];
+        double v1x = coeffs[1];
+        double v0y = coeffs[2];
         double v1y = coeffs[3];
         
         for (double t = 0.0; t < 2.0 * Math.PI; t += 0.001) {
             
-            int x2 = (int)Math.round(x + 
-                (Math.cos(t) * v0x + Math.sin(t) * v1x) * 2.0 + 0.5);
-            int y2 = (int)Math.round(y + (Math.cos(t) * v0y 
-                + Math.sin(t) * v1y) * 2.0 + 0.5);
+            double mc = Math.cos(t);
+            double ms = Math.sin(t);
+            
+            int x2 = (int)Math.round(x + (mc * v0x + ms * v1x) * 2.0 + 0.5);
+            int y2 = (int)Math.round(y + (mc * v0y + ms * v1y) * 2.0 + 0.5);
 
             if ((x2 >= 0) && (x2 < img.getWidth()) 
                 && (y2 >= 0) && (y2 < img.getHeight())) {
@@ -709,6 +726,18 @@ public class Region {
                 ImageIOHelper.addPointToImage(x2, y2, img, 
                     nExtraDot, rClr, gClr, bClr);
             }
+        }
+    }
+
+    public void drawPoints(Image img, int nExtraDot,
+        int rClr, int gClr, int bClr) {
+        
+        for (int i = 0; i < xs.size(); ++i) {
+            int x = xs.get(i);
+            int y = ys.get(i);
+            
+            ImageIOHelper.addPointToImage(x, y, img, 
+                nExtraDot, rClr, gClr, bClr);
         }
     }
 
@@ -721,6 +750,8 @@ public class Region {
         region.parent_ = this.parent_;
         region.child_ = this.child_;
         region.next_ = this.next_;
+        region.xs.addAll(xs);
+        region.ys.addAll(ys);
         return region;
     }
     
