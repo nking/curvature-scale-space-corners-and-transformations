@@ -1,5 +1,7 @@
 package algorithms.imageProcessing.matching;
 
+import algorithms.MultiArrayMergeSort;
+import algorithms.QuickSort;
 import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.features.CorrespondenceList;
@@ -175,7 +177,7 @@ public class MSERMatcher {
                             
                             boolean added = best01.add(obj);
                             
-                            if (debug) {
+                            if (false && debug) {
                                 String str1 = String.format(
                                     "im1Idx=%d im2Idx=%d (%d,%d) (%d,%d) ",
                                     imgIdx0, imgIdx1,
@@ -204,29 +206,103 @@ public class MSERMatcher {
             image scales.
         */
         
+        // once thru to count members
+        int count = 0;
+        for (Entry<PairInt, TIntObjectMap<FixedSizeSortedVector<Obj>>> entry :
+            bestPerOctave.entrySet()) {
+                        
+            TIntObjectMap<FixedSizeSortedVector<Obj>> map12 = 
+                entry.getValue();
+            
+            TIntObjectIterator<FixedSizeSortedVector<Obj>> iter12 =
+                map12.iterator();
+            
+            for (int ii = 0; ii < map12.size(); ++ii) {
+                iter12.advance();
+                FixedSizeSortedVector<Obj> vector = iter12.value();
+                int n = vector.getNumberOfItems();
+                count += n;
+            }
+        }
+        
+        // to more easily see matches, sorting by
+        // imgidx0, imgidx1, cost
+        int[] img0Idxs = new int[count];
+        int[] img1Idxs = new int[count];
+        float[] costs = new float[count];
+        int[] idxs = new int[count];
+        Obj[] objs = new Obj[count];
+        
+        count = 0;
         for (Entry<PairInt, TIntObjectMap<FixedSizeSortedVector<Obj>>> entry :
             bestPerOctave.entrySet()) {
             
             PairInt imgIndexes = entry.getKey();
             
-            TIntObjectMap<FixedSizeSortedVector<Obj>> bestPerRegion = 
+            TIntObjectMap<FixedSizeSortedVector<Obj>> map12 = 
                 entry.getValue();
             
-            /*
-            presumably, each idx1 has a best matching idx2
-                and that cost is minimum for the same img indexes for all
-                true matches of idx1
+            TIntObjectIterator<FixedSizeSortedVector<Obj>> iter12 =
+                map12.iterator();
             
-            -- extract x,y, cost, img1, img2 from each
-            -- transform x and y to coords of full scale image
-            
-            if the true matches are present but not clearly the
-               1st best matches,
-               the numbers should be small enough that pairs and euclidean
-                 transforms for evaluation should be fast.
-            
-            */
+            for (int ii = 0; ii < map12.size(); ++ii) {
+                iter12.advance();
+                int idx = iter12.key();
+                FixedSizeSortedVector<Obj> vector = iter12.value();
+                int n = vector.getNumberOfItems();
+                for (int j = 0; j < n; ++j) {
+                    Obj obj = vector.getArray()[j];
+                    img0Idxs[count] = obj.imgIdx0;
+                    img1Idxs[count] = obj.imgIdx1;
+                    costs[count] = (float)obj.cost;
+                    idxs[count] = count;
+                    objs[count] = obj;
+                    count++;
+                    
+                    assert(imgIndexes.getX() == obj.imgIdx0);
+                    assert(imgIndexes.getY() == obj.imgIdx1);
+                }       
+            }
         }
+        assert(count == objs.length);
+            
+        MultiArrayMergeSort.sortBy1stThen2ndThen3rd(img0Idxs, img1Idxs, 
+            costs, idxs);
+
+        for (int j = 0; j < count; ++j) {
+            int idx = idxs[j];
+            Obj obj = objs[idx];
+            int x0 = Math.round(
+                (float)obj.cr0.xC * img0Scales.get(obj.imgIdx0));
+            int y0 = Math.round(
+                (float)obj.cr0.yC * img0Scales.get(obj.imgIdx0));
+            int x1 = Math.round(
+                (float)obj.cr1.xC * img1Scales.get(obj.imgIdx1));
+            int y1 = Math.round(
+                (float)obj.cr1.yC * img1Scales.get(obj.imgIdx1));
+
+            System.out.format(
+                "pyr0=%d pyr1=%d (%d, %d) (%d, %d) c=%.3f\n", 
+                obj.imgIdx0, obj.imgIdx1, x0, y0, x1, y1, (float)obj.cost);
+        }
+            
+        /*
+        presumably, each idx1 has a best matching idx2
+            and that cost is minimum for the same img indexes for all
+            true matches of idx1
+
+        -- extract x,y, cost, img1, img2 from each
+        -- transform x and y to coords of full scale image
+
+        if the true matches are present but not clearly the
+           1st best matches,
+           the numbers should be small enough that pairs and euclidean
+             transforms for evaluation should be fast.
+
+        in order to include both region lists (including inverted), might
+        be best to compare both, especially if the euclidean is performed.
+
+        */
         
         throw new UnsupportedOperationException("not yet implemented");
     }

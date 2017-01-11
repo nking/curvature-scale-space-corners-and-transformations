@@ -1025,6 +1025,38 @@ public class MultiArrayMergeSort {
         }
     }
     
+    public static void sortBy1stThen2ndThen3rd(int[] a1, int[] a2, float[] a3, 
+        int[] a4) {
+        
+        if (a1 == null) {
+            throw new IllegalArgumentException("a1 cannot be null");
+        }
+        if (a2 == null) {
+            throw new IllegalArgumentException("a2 cannot be null");
+        }
+        if (a1.length != a2.length) {
+            throw new IllegalArgumentException(
+            "number of items in a1 must be the same as in a2");
+        }
+        
+        sortBy1stThen2ndThen3rd(a1, a2, a3, a4, 0, a1.length - 1);
+    }
+    
+    public static void sortBy1stThen2ndThen3rd(int[] a1, int[] a2, float[] a3, 
+        int[] a4, int idxLo, int idxHi) {
+        
+        if (idxLo < idxHi) {
+
+            int idxMid = (idxLo + idxHi) >> 1;
+            
+            sortBy1stThen2ndThen3rd(a1, a2, a3, a4, idxLo, idxMid);
+            
+            sortBy1stThen2ndThen3rd(a1, a2, a3, a4, idxMid + 1, idxHi);
+            
+            mergeBy1stThen2ndThen3rd(a1, a2, a3, a4, idxLo, idxMid, idxHi);
+        }
+    }
+    
     public static void sortBy1stAscThen2ndDesc(double[] a1, int[] a2, 
         Integer[][] a3, int[] a4, int idxLo, int idxHi) {
         
@@ -1111,6 +1143,88 @@ public class MultiArrayMergeSort {
         
     }
 
+    private static void mergeBy1stThen2ndThen3rd(int[] a, int[] b, float[] c, 
+        int[] d, int idxLo, int idxMid, int idxHi) {
+        
+        int nLeft = idxMid - idxLo + 1;
+        int nRight = idxHi - idxMid;
+
+        int[] aLeft = new int[nLeft + 1];
+        int[] bLeft = new int[nLeft + 1];
+        float[] cLeft = new float[nLeft + 1];
+        int[] dLeft = new int[nLeft + 1];
+        
+        int[] aRight = new int[nRight + 1];
+        int[] bRight = new int[nRight + 1];
+        float[] cRight = new float[nRight + 1];
+        int[] dRight = new int[nRight + 1];
+        
+        System.arraycopy(a, idxLo, aLeft, 0, nLeft);
+        System.arraycopy(b, idxLo, bLeft, 0, nLeft);
+        System.arraycopy(c, idxLo, cLeft, 0, nLeft);
+        System.arraycopy(d, idxLo, dLeft, 0, nLeft);
+        
+        System.arraycopy(a, idxMid + 1, aRight, 0, nRight);
+        System.arraycopy(b, idxMid + 1, bRight, 0, nRight);
+        System.arraycopy(c, idxMid + 1, cRight, 0, nRight);
+        System.arraycopy(d, idxMid + 1, dRight, 0, nRight);
+        
+        int sentinel = Integer.MAX_VALUE;
+        aLeft[nLeft] = sentinel;
+        bLeft[nLeft] = sentinel;
+        cLeft[nLeft] = Float.MAX_VALUE;
+        dLeft[nLeft] = sentinel;
+        aRight[nRight] = sentinel;
+        bRight[nRight] = sentinel;
+        cRight[nRight] = Float.MAX_VALUE;
+        dRight[nRight] = sentinel;
+        
+        int leftPos = 0;
+        int rightPos = 0;
+        boolean ml;
+        int l, r;
+        float lf, rf;
+        for (int k = idxLo; k <= idxHi; k++) {
+            l = aLeft[leftPos];
+            r = aRight[rightPos];
+            if (l < r) {  
+                ml = true;
+            } else if (l == r) {
+                l = bLeft[leftPos];
+                r = bRight[rightPos];
+                if (l < r) {  
+                    ml = true;
+                } else if (l == r) {
+                    lf = cLeft[leftPos];
+                    rf = cRight[rightPos];
+                    if (lf <= rf) {
+                        ml = true;
+                    } else {
+                        ml = false;
+                    }
+                } else {
+                    ml = false;
+                }
+            } else {
+                ml = false;
+            }
+            
+            if (ml) {
+                a[k] = aLeft[leftPos];
+                b[k] = bLeft[leftPos];
+                c[k] = cLeft[leftPos];
+                d[k] = dLeft[leftPos];
+                leftPos++;
+            } else {
+                a[k] = aRight[rightPos];
+                b[k] = bRight[rightPos];
+                c[k] = cRight[rightPos];
+                d[k] = dRight[rightPos];                         
+                rightPos++;
+            }
+        }
+    }
+    
     private static void mergeBy1stDescThen2ndAsc(int[] a, double[] b, 
         int[] c, int idxLo, int idxMid, int idxHi) {
         

@@ -715,11 +715,11 @@ public class ObjectMatcher {
         
         List<GreyscaleImage> pyr0;
         if (settings.useLargerPyramid0) {
-            pyr0 = new ArrayList<GreyscaleImage>();
-            mt.multiscalePyramidalMedianTransform2(gsImg0, pyr0, 32);
-        } else {
             ImageProcessor imageProcessor = new ImageProcessor();
             pyr0 = imageProcessor.buildPyramid2(gsImg0, 32);
+        } else {
+            pyr0 = new ArrayList<GreyscaleImage>();
+            mt.multiscalePyramidalMedianTransform2(gsImg0, pyr0, 32);
         }
         
         for (int i = 0; i < pyr0.size(); ++i) {
@@ -756,11 +756,11 @@ public class ObjectMatcher {
         
         List<GreyscaleImage> pyr1;
         if (settings.useLargerPyramid0) {
-            pyr1 = new ArrayList<GreyscaleImage>();
-            mt.multiscalePyramidalMedianTransform2(gsImg1, pyr1, 32);
-        } else {
             ImageProcessor imageProcessor = new ImageProcessor();
             pyr1 = imageProcessor.buildPyramid2(gsImg1, 32);
+        } else {
+            pyr1 = new ArrayList<GreyscaleImage>();
+            mt.multiscalePyramidalMedianTransform2(gsImg1, pyr1, 32);
         }
         
         for (int i = 0; i < pyr1.size(); ++i) {

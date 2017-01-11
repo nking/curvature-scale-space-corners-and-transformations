@@ -328,7 +328,7 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void estORBMatcher_gingerbreadman() throws Exception {
+    public void testORBMatcher_gingerbreadman() throws Exception {
 
         /*        
         this demonstrates ORB
@@ -346,7 +346,7 @@ public class AndroidStatuesTest extends TestCase {
 
         String[] fileNames0 = new String[]{
             "android_statues_03_sz1",
-            "android_statues_03_sz3"
+        //    "android_statues_03_sz3"
         };
 
         /*
@@ -357,8 +357,8 @@ public class AndroidStatuesTest extends TestCase {
         */
         String[] fileNames1 = new String[]{
         //    "android_statues_01.jpg", // no kp remaining
-              "android_statues_02.jpg", // OK: match0,
-            "android_statues_04.jpg", // OK: match0, 
+        //      "android_statues_02.jpg", // OK: match0,
+        //    "android_statues_04.jpg", // OK: match0, 
            "android_statues_03.jpg" // OK: match0, 
         };
         
@@ -431,8 +431,10 @@ public class AndroidStatuesTest extends TestCase {
                     settings.setToUseSmallObjectMethod();
                 }
                 objMatcher.setToDebug();
-                CorrespondenceList cor = objMatcher.findObject(imgs0[0], shape0, 
-                    img, settings);
+                CorrespondenceList cor 
+                    //= objMatcher.findObject(
+                    = objMatcher.findObject10(
+                        imgs0[0], shape0, img, settings);
                 
                 long t1 = System.currentTimeMillis();
                 System.out.println("matching took " + ((t1 - t0)/1000.) + " sec");
@@ -463,7 +465,7 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void testORBMatcher_cupcake() throws Exception {
+    public void estORBMatcher_cupcake() throws Exception {
         
         // NOTE:  the cupcake keypoints are all boundary points and 
         //        therefore are less stable when the object background has

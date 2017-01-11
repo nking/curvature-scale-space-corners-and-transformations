@@ -1700,6 +1700,8 @@ public class QuickSort {
         float[] c, int[] d, int idxLo, int idxHi) {
         
         float x = a[idxHi];
+        float x2 = b[idxHi];
+        float x3 = c[idxHi];
         int store = idxLo - 1;
         
         for (int i = idxLo; i < idxHi; i++) {
@@ -1707,10 +1709,10 @@ public class QuickSort {
             if (a[i] < x) {
                 doSwap = true;
             } else if (a[i] == x) {
-                if (b[i] < b[idxHi]) {
+                if (b[i] < x2) {
                     doSwap = true;
-                } else if (b[i] == b[idxHi]) {
-                    if (c[i] <= c[idxHi]) {
+                } else if (b[i] == x2) {
+                    if (c[i] <= x3) {
                         doSwap = true;
                     }
                 }
@@ -1720,12 +1722,12 @@ public class QuickSort {
                 float swap = a[store];
                 a[store] = a[i];
                 a[i] = swap;
-                float swap2 = b[store];
+                swap = b[store];
                 b[store] = b[i];
-                b[i] = swap2;
-                swap2 = c[store];
+                b[i] = swap;
+                swap = c[store];
                 c[store] = c[i];
-                c[i] = swap2;
+                c[i] = swap;
                 int swap3 = d[store];
                 d[store] = d[i];
                 d[i] = swap3;
@@ -1735,12 +1737,12 @@ public class QuickSort {
         float swap = a[store];
         a[store] = a[idxHi];
         a[idxHi] = swap;
-        float swap2 = b[store];
+        swap = b[store];
         b[store] = b[idxHi];
-        b[idxHi] = swap2;
-        swap2 = c[store];
+        b[idxHi] = swap;
+        swap = c[store];
         c[store] = c[idxHi];
-        c[idxHi] = swap2;
+        c[idxHi] = swap;
         int swap3 = d[store];
         d[store] = d[idxHi];
         d[idxHi] = swap3;

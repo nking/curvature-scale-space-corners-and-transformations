@@ -603,6 +603,33 @@ public class MultiArrayMergeSortTest extends TestCase {
         assertTrue(Arrays.equals(expectedA, a));
         assertTrue(Arrays.equals(expectedB, b));
     }
+    
+    public void testSortBy1stThen2ndThen3rd() {
+                
+        int[] a = new int[]{     3,   1,    1,    1,    3 };
+        int[] b = new int[]{     0,   0,    0,    2,    3};
+        float[] c = new float[]{0.1f, 0.1f, 0.4f, 0.1f, 0.1f};
+        int[] d = new int[]{    0,    1,    2,    3,    4};
+                
+        MultiArrayMergeSort.sortBy1stThen2ndThen3rd(a, b, c, d);
+                
+        assertEquals(1, d[0]); 
+        assertEquals(0.1f, c[0]); 
+        assertEquals(0, b[0]); 
+        assertEquals(1, a[0]);
+        
+        assertEquals(2, d[1]); assertEquals(0.4f, c[1]); 
+        assertEquals(0, b[1]); assertEquals(1, a[1]);
+        
+        assertEquals(3, d[2]); assertEquals(0.1f, c[2]); 
+        assertEquals(2, b[2]); assertEquals(1, a[2]);
+        
+        assertEquals(0, d[3]); assertEquals(0.1f, c[3]); 
+        assertEquals(0, b[3]); assertEquals(3, a[3]);
+        
+        assertEquals(4, d[4]); assertEquals(0.1f, c[4]); 
+        assertEquals(3, b[4]); assertEquals(3, a[4]);
+    }
    
     /**
      * Test suite
