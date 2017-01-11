@@ -18,6 +18,7 @@ import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -180,26 +181,50 @@ public class Canonicalizer {
                 angle += Math.PI;
             }
 
-            double major = 2. * Math.max(Math.abs(m[0]), Math.abs(m[1]));
-            double minor = 2. * Math.min(Math.abs(m[2]), Math.abs(m[3]));
+            double major = 2. * m[4];
+            double minor = 2. * m[5];
 
-            double ecc = Math.sqrt(major * major - minor * minor)/major;
-        
+            double ecc = Math.sqrt(major * major - minor * minor)/major;         
+            assert(!Double.isNaN(ecc));
+            
             TIntList xs = new TIntArrayList();
             TIntList ys = new TIntArrayList();
     
-            // find the ranges of the untransformed ellipse first
-            for (double t = 0.0; t < 2.0 * Math.PI; t += 0.001) {
-                int xE = (int)Math.round(x + 
-                    (Math.cos(t) * m[0] + Math.sin(t) * m[1]) * 2.0 + 0.5);
-                int yE = (int)Math.round(y + (Math.cos(t) * m[2] 
-                    + Math.sin(t) * m[3]) * 2.0 + 0.5);
-                if ((xE >= 0) && (xE < imageWidth) && 
-                    (yE >= 0) && (yE < imageHeight)) {
-                    xs.add(xE);
-                    ys.add(yE);
+            boolean createEllipse = true;
+            double radius = minor;
+            if (radius < 4) {
+                radius = 4;
+                createEllipse = false;
+            }
+            
+            if (createEllipse) {
+                // elliptical bounds
+                // find the ranges of the untransformed ellipse first
+                for (double t = 0.0; t < 2.0 * Math.PI; t += 0.001) {
+                    int xE = (int)Math.round(x + 
+                        (Math.cos(t) * m[0] + Math.sin(t) * m[1]) * 2.0 + 0.5);
+                    int yE = (int)Math.round(y + (Math.cos(t) * m[2] 
+                        + Math.sin(t) * m[3]) * 2.0 + 0.5);
+                    if ((xE >= 0) && (xE < imageWidth) && 
+                        (yE >= 0) && (yE < imageHeight)) {
+                        xs.add(xE);
+                        ys.add(yE);
+                    }
+                }
+            } else {
+                for (double t = 0.0; t < 2.0 * Math.PI; t += 0.001) {
+                    double mc = Math.cos(t);
+                    double ms = Math.sin(t);
+                    int xE = (int)Math.round(x + (mc * radius));
+                    int yE = (int)Math.round(y + (ms * radius));
+                    if ((xE >= 0) && (xE < imageWidth) && 
+                        (yE >= 0) && (yE < imageHeight)) {
+                        xs.add(xE);
+                        ys.add(yE);
+                    }
                 }
             }
+            
             int[] x2s = xs.toArray(new int[xs.size()]);
             int[] y2s = ys.toArray(new int[xs.size()]);
 
@@ -422,6 +447,7 @@ public class Canonicalizer {
                 double minor = cr.minor/scale;
 
                 double ecc = Math.sqrt(major * major - minor * minor)/major;
+                assert(!Double.isNaN(ecc));
                 
                 CRegion cRegion = new CRegion();
                 cRegion.eccentricity = ecc;
@@ -440,7 +466,7 @@ public class Canonicalizer {
                 
         return output;
     }
-    
+   
     public PairIntArray calculateCentroids(List<Region> regions,
         int[] greyscale, int imageWidth, int imageHeight) {
         

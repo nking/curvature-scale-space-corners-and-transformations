@@ -4,21 +4,29 @@ import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.features.CorrespondenceList;
 import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
 import algorithms.util.PairInt;
 import algorithms.util.TrioInt;
 import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.list.TFloatList;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TFloatArrayList;
+import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntFloatMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntFloatHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 /**
  *
@@ -49,8 +57,8 @@ public class MSERMatcher {
      *    the inverted images images of pyr1.
      * @return 
      */
-    public CorrespondenceList matchObject(List<GreyscaleImage> pyr0,
-        List<GreyscaleImage> pyr1, 
+    public CorrespondenceList matchObject(List<List<GreyscaleImage>> pyr0,
+        List<List<GreyscaleImage>> pyr1, 
         List<TIntObjectMap<CRegion>> cRegionsList00,
         List<TIntObjectMap<CRegion>> cRegionsList01,
         List<TIntObjectMap<CRegion>> cRegionsList10,
@@ -82,29 +90,41 @@ public class MSERMatcher {
         //    the cregions inverted list separate from the not-inverted
         //    and combine results.
         
+        // collect hsv to normalize v afterwards
+        TIntList h_0 = new TIntArrayList();
+        TIntList s_0 = new TIntArrayList();
+        TIntList v_0 = new TIntArrayList();
+        TIntList h_1 = new TIntArrayList();
+        TIntList s_1 = new TIntArrayList();
+        TIntList v_1 = new TIntArrayList();
+        
+        float[] hsv = new float[3];
+        
         for (int imgIdx0 = 0; imgIdx0 < nImg0; ++imgIdx0) {
-            GreyscaleImage mImg0 = pyr0.get(imgIdx0);
+            List<GreyscaleImage> rgb0 = pyr0.get(imgIdx0);
             TIntObjectMap<CRegion> cMap0 = cRegionsList01.get(imgIdx0);
-                
+            
+            int w0 = rgb0.get(0).getWidth();
+            int h0 = rgb0.get(0).getHeight();
+            
             int np0 = cMap0.size();
             
-            float scale0 = ((float)mImg0.getWidth()
-                /(float)pyr0.get(imgIdx0).getWidth()) +
-                ((float)mImg0.getHeight()
-                /(float)pyr0.get(imgIdx0).getHeight());
+            float scale0 = ((float)pyr0.get(0).get(0).getWidth()/(float)w0) 
+                + ((float)pyr0.get(0).get(0).getHeight()/(float)h0);
             scale0 /= 2.f;
             img0Scales.put(imgIdx0, scale0);
             
             for (int imgIdx1 = 0; imgIdx1 < nImg1; ++imgIdx1) {
-                GreyscaleImage mImg1 = pyr1.get(imgIdx1);
+                List<GreyscaleImage> rgb1 = pyr1.get(imgIdx1);
                 TIntObjectMap<CRegion> cMap1 = cRegionsList11.get(imgIdx1);
-                
+            
+                int w1 = rgb1.get(0).getWidth();
+                int h1 = rgb1.get(0).getHeight();
+            
                 int np1 = cMap1.size();
                 
-                float scale1 = ((float) mImg1.getWidth()
-                    / (float) pyr1.get(imgIdx1).getWidth())
-                    + ((float) mImg1.getHeight()
-                    / (float) pyr1.get(imgIdx1).getHeight());
+                float scale1 = ((float)pyr1.get(0).get(0).getWidth()/(float)w1) 
+                    + ((float)pyr1.get(0).get(0).getHeight()/(float)h1);
                 scale1 /= 2.f;
                 img1Scales.put(imgIdx1, scale1);
                 
@@ -130,6 +150,27 @@ public class MSERMatcher {
                         iteri1.advance();
 
                         CRegion cr1 = iteri1.value();
+                        
+                        //TODO: revisit this.  size filter which
+                        //   will be the wrong thing to use if occlusion
+                        //   is present...
+                        if (true) {
+                            double t1, t2;
+                            if (cr0.minor > cr1.minor) {
+                                t1 = cr0.minor/cr1.minor;
+                            } else {
+                                t1 = cr1.minor/cr0.minor;
+                            }
+                            if (cr0.major > cr1.major) {
+                                t2 = cr0.major/cr1.major;
+                            } else {
+                                t2 = cr1.major/cr0.major;
+                            }
+                            if (t1 > 1.5 || t2 > 1.5) {
+                                continue;
+                            }
+                        }
+                        
                         int n1 = cr1.nTrEllipsePixels;
 
                         int maxMatchable = Math.min(n0, n1);
@@ -137,6 +178,13 @@ public class MSERMatcher {
                         double ssdSum = 0;
                         int ssdCount = 0;
 
+                        h_0.clear();
+                        s_0.clear();
+                        v_0.clear();
+                        h_1.clear();
+                        s_1.clear();
+                        v_1.clear();
+                        
                         for (Map.Entry<PairInt, PairInt> entry
                             : cr0.offsetsToOrigCoords.entrySet()) {
 
@@ -147,28 +195,60 @@ public class MSERMatcher {
                             if (xy2 == null) {
                                 continue;
                             }
-                            int v1 = mImg1.getValue(xy2);
-
-                            int v0 = mImg0.getValue(xy);
-
-                            int diff = v0 - v1;
-
-                            ssdSum += (diff * diff);
-                            ssdCount++;
+                   
+                            Color.RGBtoHSB(rgb0.get(0).getValue(xy), 
+                                rgb0.get(1).getValue(xy), 
+                                rgb0.get(2).getValue(xy), hsv);
+                            
+                            h_0.add(Math.round(hsv[0]*255.f));
+                            s_0.add(Math.round(hsv[1]*255.f));
+                            v_0.add(Math.round(hsv[2]*255.f));
+                            
+                            Color.RGBtoHSB(rgb1.get(0).getValue(xy2), 
+                                rgb1.get(1).getValue(xy2), 
+                                rgb1.get(2).getValue(xy2), hsv);
+                            
+                            h_1.add(Math.round(hsv[0]*255.f));
+                            s_1.add(Math.round(hsv[1]*255.f));
+                            v_1.add(Math.round(hsv[2]*255.f));
                         }
-                        if (ssdCount == 0) {
+                        if (v_1.isEmpty()) {
                             continue;
                         }
-
+                        
+                        // average vs
+                        long v0Avg = 0;
+                        long v1Avg = 0;
+                        for (int jj = 0; jj < v_0.size(); ++jj) {
+                            v0Avg += v_0.get(jj);
+                            v1Avg += v_1.get(jj);
+                        }
+                        v0Avg /= v_0.size();
+                        v1Avg /= v_1.size();
+                        
+                        for (int jj = 0; jj < v_0.size(); ++jj) {
+                            int hDiff = h_0.get(jj) - h_1.get(jj);
+                            int sDiff = s_0.get(jj) - s_1.get(jj);
+                            int vDiff = (v_0.get(jj) - (int)v0Avg) - 
+                                (v_1.get(jj) - (int)v1Avg);
+                            //int vDiff = v_0.get(jj) - v_1.get(jj);
+                            
+                            ssdSum += (hDiff * hDiff + sDiff * sDiff + vDiff * vDiff);
+                        }
+                        ssdCount = v_0.size();
+                       
                         ssdSum /= (double) ssdCount;
                         ssdSum = Math.sqrt(ssdSum);
-                        ssdSum /= 255.;
+                        //ssdSum /= (255. * 3.);
+                        ssdSum /= (255. * 2.);
 
                         double f = 1. - ((double) ssdCount / (double) maxMatchable);
 
+                        // TODO: correct this if end up using it.
+                        //  it's based upon green only
                         double err = Math.max(cr0.autocorrel, cr1.autocorrel);
 
-                        if (ssdSum <= 1.1 * err) {
+                        if (ssdSum <= 3 * err) {
                             
                             Obj obj = new Obj();
                             obj.cr0 = cr0;
@@ -181,17 +261,24 @@ public class MSERMatcher {
                             
                             boolean added = best01.add(obj);
                             
-                            if (false && debug) {
+                            if (debug) {
                                 String str1 = String.format(
-                                    "im1Idx=%d im2Idx=%d (%d,%d) (%d,%d) ",
+                                    "im1=%d im2=%d (%d,%d) (%d,%d) or1=%d or2=%d\n",
                                     imgIdx0, imgIdx1,
-                                    cr0.xC, cr0.yC, cr1.xC, cr1.yC);
+                                    cr0.xC, cr0.yC, cr1.xC, cr1.yC,
+                                    (int)(cr0.orientation*180./Math.PI),
+                                    (int)(cr1.orientation*180./Math.PI));
                                 String str2 = String.format(
-                                    " ssd=%.2f autoc=%.2f,%.2f f=%.3f ssd.n=%d added=%b",
+                                    "   ecc0=%.2f ecc1=%.2f min0=%.2f min1=%.2f maj0=%.2f maj1=%.2f\n",
+                                    (float) cr0.eccentricity, (float) cr1.eccentricity,
+                                    (float) cr0.minor, (float) cr1.minor,
+                                    (float) cr0.major, (float) cr1.major);
+                                String str3 = String.format(
+                                    "   ssd=%.2f autoc=%.2f,%.2f f=%.3f ssd.n=%d added=%b",
                                     (float) ssdSum,
                                     (float) cr0.autocorrel, (float) cr1.autocorrel,
                                     (float) f, ssdCount, added);
-                                System.out.println(str1 + str2);
+                                System.out.println(str1 + str2 + str3);
                             }
                         }
                     }
@@ -249,6 +336,8 @@ public class MSERMatcher {
             TIntObjectIterator<FixedSizeSortedVector<Obj>> iter12 =
                 map12.iterator();
             
+            Set<PairInt> uniquePt0s = new HashSet<PairInt>();
+            
             for (int ii = 0; ii < map12.size(); ++ii) {
                 iter12.advance();
                 int idx = iter12.key();
@@ -265,8 +354,12 @@ public class MSERMatcher {
                     
                     assert(imgIndexes.getX() == obj.imgIdx0);
                     assert(imgIndexes.getY() == obj.imgIdx1);
+                
+                    uniquePt0s.add(new PairInt(obj.cr0.xC, obj.cr0.yC));
                 }       
             }
+            System.out.println("for indexes " + imgIndexes.toString() + ""
+                + " there are " + uniquePt0s.size() + " unique 0 coords");
         }
         assert(count == objs.length);
             
@@ -285,10 +378,35 @@ public class MSERMatcher {
             int y1 = Math.round(
                 (float)obj.cr1.yC * img1Scales.get(obj.imgIdx1));
 
-            System.out.format(
+            String str1 = String.format(
                 "pyr0=%d pyr1=%d (%d, %d) (%d, %d) c=%.3f\n", 
                 obj.imgIdx0, obj.imgIdx1, x0, y0, x1, y1, (float)obj.cost);
+        
+            String str2 = String.format(
+                "   ecc0=%.2f ecc1=%.2f min0=%.2f min1=%.2f maj0=%.2f maj1=%.2f",
+                (float) obj.cr0.eccentricity, (float) obj.cr1.eccentricity,
+                (float) obj.cr0.minor, (float) obj.cr1.minor,
+                (float) obj.cr0.major, (float) obj.cr1.major);
+            
+            System.out.println(str1 + str2);
         }
+        /*
+        NOTE: for one of the more difficult tests,
+          that is, matching a template gbman from andriod statues 03
+          to find within android statues 02 image the same template
+          object, the true solution is possible, but
+          marginally so.
+          in the 16 pairs of octaves, there are 8 or less unique 
+             regions from the template object,
+             there are at least 2 true matches in octave0=2 and
+             octave1=2, so euclidean pairwise template matches of all unique
+             template coords within an octave pair could find the correct 
+             solution, but only marginally so.
+        
+        will create an ObjectMatcher pre-processing method that uses
+        segmentation and color filters to reduce some of the false 
+        matches 
+        */
             
         /*
         presumably, each idx1 has a best matching idx2

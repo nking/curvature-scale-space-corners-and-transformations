@@ -65,11 +65,11 @@ public class ObjectMatcher {
     }
 
     private void debugPrint(List<TIntObjectMap<CRegion>> cRegionsList, 
-        List<GreyscaleImage> pyr, String label) {
+        List<List<GreyscaleImage>> pyr, String label) {
         
         for (int j = 0; j < pyr.size(); ++j) {
 
-            Image img1 = pyr.get(j).copyToColorGreyscale();
+            Image img1 = pyr.get(j).get(0).copyToColorGreyscale();
 
             TIntObjectMap<CRegion> crMap = cRegionsList.get(j);
             TIntObjectIterator<CRegion> iter = crMap.iterator();
@@ -90,6 +90,57 @@ public class ObjectMatcher {
 
             MiscDebug.writeImage(img1, label + "_" + j + "_crs_");
         }
+    }
+
+    private List<List<GreyscaleImage>> buildColorPyramid(Image img, boolean makeLargerPyramid0) {
+        
+        List<List<GreyscaleImage>> pyr = new ArrayList<List<GreyscaleImage>>();
+        
+        GreyscaleImage r = img.copyRedToGreyscale();
+        GreyscaleImage g = img.copyGreenToGreyscale();
+        GreyscaleImage b = img.copyBlueToGreyscale();
+        List<GreyscaleImage> gsR;
+        List<GreyscaleImage> gsG;
+        List<GreyscaleImage> gsB;
+            
+        if (makeLargerPyramid0) {
+            
+            ImageProcessor imageProcessor = new ImageProcessor();
+            
+            gsR = imageProcessor.buildPyramid2(r, 32);
+            gsG = imageProcessor.buildPyramid2(g, 32);
+            gsB = imageProcessor.buildPyramid2(b, 32);
+            
+        } else {
+            
+            MedianTransform mt = new MedianTransform();
+            
+            gsR = new ArrayList<GreyscaleImage>();
+            gsG = new ArrayList<GreyscaleImage>();
+            gsB = new ArrayList<GreyscaleImage>();
+            
+            mt.multiscalePyramidalMedianTransform2(r, gsR, 32);
+            mt.multiscalePyramidalMedianTransform2(g, gsG, 32);
+            mt.multiscalePyramidalMedianTransform2(b, gsB, 32);
+        }
+        
+        assert(gsR.size() == gsG.size());
+        assert(gsR.size() == gsB.size());
+
+        for (int i = 0; i < gsR.size(); ++i) {
+            GreyscaleImage r2 = gsR.get(i);
+            GreyscaleImage g2 = gsG.get(i);
+            GreyscaleImage b2 = gsB.get(i);
+
+            List<GreyscaleImage> rgb = new ArrayList<GreyscaleImage>();
+            rgb.add(r2);
+            rgb.add(g2);
+            rgb.add(b2);
+            
+            pyr.add(rgb);
+        }
+        
+        return pyr;
     }
 
     public static class Settings {
@@ -709,25 +760,27 @@ public class ObjectMatcher {
         }
             
         // create image0 pyramid and windowing
-        MedianTransform mt = new MedianTransform();
         SummedAreaTable sumTable = new SummedAreaTable();
         int halfDimension = 1;
-        
-        List<GreyscaleImage> pyr0;
-        if (settings.useLargerPyramid0) {
-            ImageProcessor imageProcessor = new ImageProcessor();
-            pyr0 = imageProcessor.buildPyramid2(gsImg0, 32);
-        } else {
-            pyr0 = new ArrayList<GreyscaleImage>();
-            mt.multiscalePyramidalMedianTransform2(gsImg0, pyr0, 32);
-        }
+       
+        // octaves of RGB images
+        List<List<GreyscaleImage>> pyr0 = buildColorPyramid(img0,
+            settings.useLargerPyramid0);
         
         for (int i = 0; i < pyr0.size(); ++i) {
-            GreyscaleImage imgM = pyr0.get(i);
-            imgM = sumTable.createAbsoluteSummedAreaTable(imgM);
-            imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM,
-                2 * halfDimension + 1);
-            pyr0.set(i, imgM);
+            List<GreyscaleImage> imgMs = pyr0.get(i);
+            for (int j = 0; j < imgMs.size(); ++j) {
+                GreyscaleImage imgM = imgMs.get(j);
+                imgM = sumTable.createAbsoluteSummedAreaTable(imgM);
+                imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM,
+                    2 * halfDimension + 1);
+                imgMs.set(j, imgM);
+            }
+        }
+        
+        List<GreyscaleImage> green0 = new ArrayList<GreyscaleImage>();
+        for (List<GreyscaleImage> rgb : pyr0) {
+            green0.add(rgb.get(1));
         }
         
         // list item for each octave.  item is for each region
@@ -736,10 +789,10 @@ public class ObjectMatcher {
         // while regions[1) are found from the inverted image. 
         // they're kept separate for now to test matching them separately.
         List<TIntObjectMap<CRegion>> cRegionsList00 =
-            canonicalizer.canonicalizeRegions(regions0.get(0), pyr0);
+            canonicalizer.canonicalizeRegions(regions0.get(0), green0);
         
         List<TIntObjectMap<CRegion>> cRegionsList01 =
-            canonicalizer.canonicalizeRegions(regions0.get(1), pyr0);
+            canonicalizer.canonicalizeRegions(regions0.get(1), green0);
         
         // ---- create the cregion lists for image 1 ------
         GreyscaleImage gsImg1 = img1.copyToGreyscale2();
@@ -801,28 +854,31 @@ public class ObjectMatcher {
             }
         }
         
-        List<GreyscaleImage> pyr1;
-        if (settings.useLargerPyramid0) {
-            ImageProcessor imageProcessor = new ImageProcessor();
-            pyr1 = imageProcessor.buildPyramid2(gsImg1, 32);
-        } else {
-            pyr1 = new ArrayList<GreyscaleImage>();
-            mt.multiscalePyramidalMedianTransform2(gsImg1, pyr1, 32);
-        }
+        // octaves of RGB images
+        List<List<GreyscaleImage>> pyr1 = buildColorPyramid(img1,
+            settings.useLargerPyramid0);
         
         for (int i = 0; i < pyr1.size(); ++i) {
-            GreyscaleImage imgM = pyr1.get(i);
-            imgM = sumTable.createAbsoluteSummedAreaTable(imgM);
-            imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM,
-                2 * halfDimension + 1);
-            pyr1.set(i, imgM);
+            List<GreyscaleImage> imgMs = pyr1.get(i);
+            for (int j = 0; j < imgMs.size(); ++j) {
+                GreyscaleImage imgM = imgMs.get(j);
+                imgM = sumTable.createAbsoluteSummedAreaTable(imgM);
+                imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM,
+                    2 * halfDimension + 1);
+                imgMs.set(j, imgM);
+            }
+        }
+        
+        List<GreyscaleImage> green1 = new ArrayList<GreyscaleImage>();
+        for (List<GreyscaleImage> rgb : pyr1) {
+            green1.add(rgb.get(1));
         }
                 
         List<TIntObjectMap<CRegion>> cRegionsList10 =
-            canonicalizer.canonicalizeRegions(regions1.get(0), pyr1);
+            canonicalizer.canonicalizeRegions(regions1.get(0), green1);
         
         List<TIntObjectMap<CRegion>> cRegionsList11 =
-            canonicalizer.canonicalizeRegions(regions1.get(1), pyr1);
+            canonicalizer.canonicalizeRegions(regions1.get(1), green1);
         
         if (false && debug) {
             debugPrint(cRegionsList00, pyr0, "_0_0_");

@@ -84,7 +84,7 @@ public class Region {
     private Region parent_ = null;
     private Region child_ = null;
     private Region next_ = null;
-
+    
     /**
      * constructor with default level = 256 and pixel=0
      */
@@ -139,7 +139,7 @@ public class Region {
         moments_[2] += child.moments_[2];
         moments_[3] += child.moments_[3];
         moments_[4] += child.moments_[4];
-
+        
         child.next_ = child_;
         child_ = child;
         child.parent_ = this;
@@ -280,8 +280,8 @@ public class Region {
      */
     public void calculateXYCentroid(int[] outputXY, int imageWidth, int imageHeight) {
                     
-        outputXY[0] = (int)Math.round(moments_[0]/area_);
-        outputXY[1] = (int)Math.round(moments_[1]/area_);
+        outputXY[0] = (int)Math.round(moments_[0]/(double)area_);
+        outputXY[1] = (int)Math.round(moments_[1]/(double)area_);
         if (outputXY[0] == -1) {
             outputXY[0] = 0;
         }
@@ -377,15 +377,15 @@ public class Region {
     void calculateIntensityCentroid(int[] greyscale, int imageWidth, 
         int imageHeight, int[] outputXY, int radius) {
       
-        int xC = (int)Math.round(moments_[0]/area_);
-        int yC = (int)Math.round(moments_[1]/area_);
+        int xC = (int)Math.round(moments_[0]/(double)area_);
+        int yC = (int)Math.round(moments_[1]/(double)area_);
         
         //v0x, v1x, v0y, v1y
         double[] m = calcParamTransCoeff();
         
         // semi-major and semi-minor axes:
-        double major = 2. * Math.max(Math.abs(m[0]), Math.abs(m[1]));
-        double minor = 2. * Math.min(Math.abs(m[2]), Math.abs(m[3]));
+        double major = 2. * m[4];
+        double minor = 2. * m[5];
             
         if (radius > major) {
             radius = (int)major; 
@@ -505,7 +505,8 @@ public class Region {
         v1x = bParam * sin(alpha);
         v0y = aParam * sin(alpha);
         v1y = bParam * cos(alpha);
-     
+        e0 = first eigenvalue
+        e1 = 2nd eigenvalue
      * @return 
      */
     public double[] calcParamTransCoeff() {
@@ -530,8 +531,6 @@ public class Region {
         double c = moments_[4] / (double)area_ - y * y;
 
         /*
-        where is the summary below from?  many different ways to find
-        eigenvalues.        
         
         covariance matrix as a real 2X2 matrix 
         xx  xy
@@ -601,7 +600,7 @@ public class Region {
         and the semi-minor axis length = 2 * Math.min(v0y, v1y)
         */
         
-        return new double[]{v0x, v1x, v0y, v1y};
+        return new double[]{v0x, v1x, v0y, v1y, e0sq, e1sq};
     }
     
     /**
@@ -618,8 +617,8 @@ public class Region {
         TIntList ys = new TIntArrayList();
     
         // Centroid (mean)
-        double x = moments_[0] / area_;
-        double y = moments_[1] / area_;
+        double x = moments_[0] / (double)area_;
+        double y = moments_[1] / (double)area_;
         
         //v0x, v1x, v0y, v1y
         double[] coeffs = calcParamTransCoeff();
@@ -721,6 +720,40 @@ public class Region {
         }
     }
 
+    public void drawCircle(Image img, int nExtraDot,
+        int rClr, int gClr, int bClr) {
+
+        // Centroid (mean)
+        double x = moments_[0] / (double)area_;
+        double y = moments_[1] / (double)area_;
+        
+        //v0x, v1x, v0y, v1y
+        double[] m = calcParamTransCoeff();
+        
+        double major = 2. * m[4];
+        double minor = 2. * m[5];
+        double radius = minor;
+        if (radius < 4) {
+            radius = 4;
+        }
+            
+        for (double t = 0.0; t < 2.0 * Math.PI; t += 0.001) {
+            
+            double mc = Math.cos(t);
+            double ms = Math.sin(t);
+            
+            int x2 = (int)Math.round(x + (mc * radius));
+            int y2 = (int)Math.round(y + (ms * radius));
+
+            if ((x2 >= 0) && (x2 < img.getWidth()) 
+                && (y2 >= 0) && (y2 < img.getHeight())) {
+                
+                ImageIOHelper.addPointToImage(x2, y2, img, 
+                    nExtraDot, rClr, gClr, bClr);
+            }
+        }
+    }
+    
     public Region copy() {
         Region region = new Region(this.level_, this.pixel_);
         region.area_ = this.area_;
