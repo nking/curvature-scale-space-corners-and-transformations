@@ -391,7 +391,8 @@ public class MSER {
      * that the array index is (row * imageWidth) + col.
      * @param width image width
      * @param height image height
-     * @return 
+     * @return 2 lists of mser regions, one created from a non-inverted
+     * image and the other created from an inverted image.
      */
     public List<List<Region>> findRegions(int[] greyscale, int width,
         int height) {

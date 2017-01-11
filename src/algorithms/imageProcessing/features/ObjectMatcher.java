@@ -758,6 +758,17 @@ public class ObjectMatcher {
                 gsImg0.setValue(i, 0);
             }
         }
+        
+        // find regions in dataset 1
+        GreyscaleImage gsImg1 = img1.copyToGreyscale2();
+                   
+        List<List<Region>> regions1 = mser.findRegions(gsImg1);
+        
+        // filter regions by segmentation
+        if (true) {
+            List<Set<PairInt>> labeledSets = filterBySegmentation(img0, shape0,
+                img1, regions1, settings);
+        }
             
         // create image0 pyramid and windowing
         SummedAreaTable sumTable = new SummedAreaTable();
@@ -795,9 +806,6 @@ public class ObjectMatcher {
             canonicalizer.canonicalizeRegions(regions0.get(1), green0);
         
         // ---- create the cregion lists for image 1 ------
-        GreyscaleImage gsImg1 = img1.copyToGreyscale2();
-                   
-        List<List<Region>> regions1 = mser.findRegions(gsImg1);
         
         if (debug) {
             int[] xyCen = new int[2];
@@ -1391,5 +1399,248 @@ public class ObjectMatcher {
         return new float[]{(float)avgDens, (float)stDev, densities.min(),
             densities.max()};
     }
+   
+    private List<Set<PairInt>> filterBySegmentation(
+        ImageExt img0, Set<PairInt> shape0,
+        ImageExt img1, List<List<Region>> regionsList, Settings settings) {
+    
+        int[] xy = new int[2];
+        Set<PairInt> keypoints1 = new HashSet<PairInt>();
+        for (int i = 0; i < regionsList.size(); ++i) {
+            List<Region> regions = regionsList.get(i);
+            for (int j = 0; j < regions.size(); ++j) {
+                Region r = regions.get(j);
+                r.calculateXYCentroid(xy, img1.getWidth(), img1.getHeight());
+                keypoints1.add(new PairInt(xy[0], xy[1]));
+            }
+        }
+        
+        int n = keypoints1.size();
+        
+        List<Set<PairInt>> setLists = filterBySegmentation(img0, shape0, img1, keypoints1, settings);
+        
+        if (keypoints1.size() == n) {
+            return setLists;
+        }
+        
+        for (int i = 0; i < regionsList.size(); ++i) {
+            TIntList rm = new TIntArrayList();
+            List<Region> regions = regionsList.get(i);
+            for (int j = 0; j < regions.size(); ++j) {
+                Region r = regions.get(j);
+                r.calculateXYCentroid(xy, img1.getWidth(), img1.getHeight());
+                PairInt p = new PairInt(xy[0], xy[1]);
+                if (!keypoints1.contains(p)) {
+                    rm.add(j);
+                }
+            }
+            for (int j = (rm.size() - 1); j > -1; --j) {
+                regions.remove(rm.get(j));
+            }
+        }
+        
+        return setLists;
+    }
 
+    private List<Set<PairInt>> filterBySegmentation(
+        ImageExt img0, Set<PairInt> shape0,
+        ImageExt img1, Set<PairInt> keypoints1, Settings settings) {
+    
+        //TODO: consider returning the keypoints from the full frames
+        
+        
+        //TODO: since the ORBs are not kept, can revise this to
+        // work on a single image instead of a pyramid.
+        
+        long ts = 0;
+        if (debug) {
+            ts = MiscDebug.getCurrentTimeFormatted();
+        }
+        
+        ImageExt[] imgs0 = maskImage(img0, shape0);
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
+        
+        int nKeypoints = 200;//200;
+        ORB orb0 = extractTemplateORBKeypoints(imgs0[0], shape0,
+            nKeypoints, !settings.isUseLargerPyramid0(), ts);
+
+        TFloatList sTempList = new TFloatArrayList(
+            orb0.getScalesList().size());
+        for (int i = 0; i < orb0.getScalesList().size(); ++i) {
+            sTempList.add(orb0.getScalesList().get(i).get(0));
+        }
+
+        ORB orb1 = new ORB(500);//ORB(500);
+        orb1.overrideToNotCreateDescriptors();
+        if (!settings.isUseLargerPyramid1()) {
+            orb1.overrideToUseSmallestPyramid();
+        }
+        orb1.detectAndExtract(img1);
+
+        TFloatList sList = new TFloatArrayList(orb1.getScalesList().size());
+        for (int i = 0; i < orb1.getScalesList().size(); ++i) {
+            sList.add(orb1.getScalesList().get(i).get(0));
+        }
+        
+        int ns = sList.size();
+        List<TIntList> rmIndexesList = new ArrayList<TIntList>();
+        
+        ColorHistogram clrHist = new ColorHistogram();
+
+        // make the template histograms from the first scale only
+        int[][] template_ch_HSV = null;
+        int[][] template_ch_LAB = null;
+        {
+            List<TIntList> kp0TempList = orb0.getKeyPoint0List();
+            List<TIntList> kp1TempList = orb0.getKeyPoint1List();
+            Set<PairInt> points0 = new HashSet<PairInt>();
+            for (int i = 0; i < kp0TempList.get(0).size(); ++i) {
+                int y = kp0TempList.get(0).get(i);
+                int x = kp1TempList.get(0).get(i);
+                PairInt p = new PairInt(x, y);
+                Set<PairInt> points = imageProcessor.getNeighbors(
+                    imgs0[0], p);
+                points.add(p);
+                points0.addAll(points);
+            }
+            template_ch_HSV = clrHist.histogramHSV(imgs0[1], points0);
+            template_ch_LAB = clrHist.histogramCIELAB(imgs0[1], points0);
+        }
+
+        // --- filter out key points at each scale, then associated data ----
+        ns = orb1.getScalesList().size();
+        for (int i = 0; i < ns; ++i) {
+            TIntList kp0 = orb1.getKeyPoint0List().get(i);
+            TIntList kp1 = orb1.getKeyPoint1List().get(i);
+            TDoubleList or = orb1.getOrientationsList().get(i);
+            TFloatList s = orb1.getScalesList().get(i);
+
+            int np = kp0.size();
+            TIntList rm = new TIntArrayList();
+            for (int j = 0; j < np; ++j) {
+                PairInt p = new PairInt(kp1.get(j), kp0.get(j));
+                Set<PairInt> points = imageProcessor.getNeighbors(
+                    img1, p);
+                points.add(p);
+                int[][] ch = clrHist.histogramHSV(img1, points);
+                float intersection = clrHist.intersection(
+                    template_ch_HSV, ch);
+
+                if (intersection < 0.2) {
+                    rm.add(j);
+                } else {
+                    ch = clrHist.histogramCIELAB(img1, points);
+                    intersection = clrHist.intersection(
+                        template_ch_LAB, ch);
+                    if (intersection < 0.2) {
+                        rm.add(j);
+                    }
+                }
+            }           
+            rmIndexesList.add(rm);
+        }
+        orb1.removeAtIndexes(rmIndexesList);
+        
+        // --- filter keypoints1
+        Set<PairInt> rm2 = new HashSet<PairInt>();
+        for (PairInt p : keypoints1) {
+            Set<PairInt> points = imageProcessor.getNeighbors(img1, p);
+            points.add(p);
+            int[][] ch = clrHist.histogramHSV(img1, points);
+            float intersection = clrHist.intersection(
+                template_ch_HSV, ch);
+
+            if (intersection < 0.2) {
+                rm2.add(p);
+            } else {
+                ch = clrHist.histogramCIELAB(img1, points);
+                intersection = clrHist.intersection(
+                    template_ch_LAB, ch);
+                if (intersection < 0.2) {
+                    rm2.add(p);
+                }
+            }
+        }
+        keypoints1.removeAll(rm2);
+        
+        if (orb1.getKeyPoint0List().isEmpty()) {
+            return null;
+        }
+        
+        float luvDeltaELimit = 40;//10;// between 10 and 30
+        
+        ImageExt img1Cp = img1.copyToImageExt();
+        
+        int[] labels4 = imageSegmentation.objectSegmentation(img1Cp);
+        
+        if (debug) {
+            ImageExt img11 = img1.copyToImageExt();
+            ImageIOHelper.addAlternatingColorLabelsToRegion(
+                img11, labels4);
+            MiscDebug.writeImage(img11, "_segmented_3_" + ts);
+        }
+
+        List<Set<PairInt>> listOfPointSets2
+            = LabelToColorHelper.extractContiguousLabelPoints(img1Cp, labels4);
+
+        boolean changed = imageSegmentation.filterByCIECH(imgs0[0],
+            shape0, img1Cp, listOfPointSets2, 0.1f);//0.4f);//0.35f
+        
+        if (debug) {
+            ImageExt img11 = img1.copyToImageExt();
+            ImageIOHelper.addAlternatingColorCurvesToImage0(listOfPointSets2, 
+                img11, 1);
+            //ImageIOHelper.addAlternatingColorLabelsToRegion(
+            //    img11, labels4);
+            MiscDebug.writeImage(img11, "_segmented_2_" + ts);
+        }
+        
+        // ---- remove keypoints if not in segmented cells
+        if (changed && !settings.isUseSmallObjectMethod()
+            && !settings.isUseShapeFinder()) {
+            TObjectIntMap<PairInt> pointIdxMap
+                = new TObjectIntHashMap<PairInt>();
+            for (int j = 0; j < listOfPointSets2.size(); ++j) {
+                Set<PairInt> set = listOfPointSets2.get(j);
+                for (PairInt p : set) {
+                    pointIdxMap.put(p, j);
+                }
+            }
+            
+            ns = orb1.getScalesList().size();
+            rmIndexesList = new ArrayList<TIntList>();
+            for (int i = 0; i < ns; ++i) {
+                TIntList kp0 = orb1.getKeyPoint0List().get(i);
+                TIntList kp1 = orb1.getKeyPoint1List().get(i);
+                TDoubleList or = orb1.getOrientationsList().get(i);
+                TFloatList s = orb1.getScalesList().get(i);
+
+                int np = kp0.size();
+                TIntList rm = new TIntArrayList();
+                for (int j = 0; j < np; ++j) {
+                    PairInt p = new PairInt(kp1.get(j), kp0.get(j));
+                    if (!pointIdxMap.containsKey(p)) {
+                        rm.add(j);
+                    }
+                }               
+                rmIndexesList.add(rm);
+                //System.out.println("rm at scale " + i + " n=" +
+                //    rm.size());
+            }
+            orb1.removeAtIndexes(rmIndexesList);
+            
+            // --- filter out keypoints1
+            rm2.clear();
+            for (PairInt p : keypoints1) {
+                if (!pointIdxMap.containsKey(p)) {
+                    rm2.add(p);
+                }               
+            }
+            keypoints1.removeAll(rm2);
+        }
+        
+        return listOfPointSets2;
+    }
 }

@@ -101,8 +101,10 @@ public class MSERMatcher {
         float[] hsv = new float[3];
         
         for (int imgIdx0 = 0; imgIdx0 < nImg0; ++imgIdx0) {
+            
             List<GreyscaleImage> rgb0 = pyr0.get(imgIdx0);
-            TIntObjectMap<CRegion> cMap0 = cRegionsList01.get(imgIdx0);
+            
+            TIntObjectMap<CRegion> cMap0 = cRegionsList00.get(imgIdx0);
             
             int w0 = rgb0.get(0).getWidth();
             int h0 = rgb0.get(0).getHeight();
@@ -115,9 +117,16 @@ public class MSERMatcher {
             img0Scales.put(imgIdx0, scale0);
             
             for (int imgIdx1 = 0; imgIdx1 < nImg1; ++imgIdx1) {
-                List<GreyscaleImage> rgb1 = pyr1.get(imgIdx1);
-                TIntObjectMap<CRegion> cMap1 = cRegionsList11.get(imgIdx1);
             
+                List<GreyscaleImage> rgb1 = pyr1.get(imgIdx1);
+                
+                TIntObjectMap<CRegion> cMap1 = cRegionsList10.get(imgIdx1);
+            
+                if (imgIdx0 == imgIdx1 && imgIdx0 > 0) {
+                    // same comparison as 0,0 but lower resolution
+               //     continue;
+                }
+                
                 int w1 = rgb1.get(0).getWidth();
                 int h1 = rgb1.get(0).getHeight();
             
@@ -286,17 +295,6 @@ public class MSERMatcher {
             } // end loop over imgIdx1
         } // end loop over imgIdx0
         
-        /*
-        process results map
-        
-        // key=(imgIdx1, imgIdx2), value=map w/ key=idx1, value=FixedSizeSortedVector
-        Map<PairInt, TIntObjectMap<FixedSizeSortedVector<Obj>>> bestPerOctave
-                    
-        expecting that octave image pair with the 
-            largest number of best costs for cregions is the matched
-            image scales.
-        */
-        
         // once thru to count members
         int count = 0;
         for (Entry<PairInt, TIntObjectMap<FixedSizeSortedVector<Obj>>> entry :
@@ -398,33 +396,18 @@ public class MSERMatcher {
           marginally so.
           in the 16 pairs of octaves, there are 8 or less unique 
              regions from the template object,
-             there are at least 2 true matches in octave0=2 and
-             octave1=2, so euclidean pairwise template matches of all unique
+             there are at least 2 true matches in 2 ovtave pairs,
+             so euclidean pairwise template matches of all unique
              template coords within an octave pair could find the correct 
              solution, but only marginally so.
         
         will create an ObjectMatcher pre-processing method that uses
         segmentation and color filters to reduce some of the false 
-        matches 
+        matches.
+        NOTE: the keypoints in the full frame ORBs in that method
+        could be brought here to improve evaluation.
         */
-            
-        /*
-        presumably, each idx1 has a best matching idx2
-            and that cost is minimum for the same img indexes for all
-            true matches of idx1
-
-        -- extract x,y, cost, img1, img2 from each
-        -- transform x and y to coords of full scale image
-
-        if the true matches are present but not clearly the
-           1st best matches,
-           the numbers should be small enough that pairs and euclidean
-             transforms for evaluation should be fast.
-
-        in order to include both region lists (including inverted), might
-        be best to compare both, especially if the euclidean is performed.
-
-        */
+       
         
         throw new UnsupportedOperationException("not yet implemented");
     }
