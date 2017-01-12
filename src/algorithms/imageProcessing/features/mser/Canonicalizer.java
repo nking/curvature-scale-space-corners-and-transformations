@@ -88,15 +88,12 @@ public class Canonicalizer {
     
         public void draw(Image img, int nExtraDot, int rClr, int gClr, int bClr) {
         
-            //void drawLineInImage(int x1, int y1, int x2, int y2, 
-            //  Image input, int nExtraForDot, int rClr, int gClr, int bClr)
-
             double mc = Math.cos(orientation - Math.PI/2.);
             double ms = Math.sin(orientation - Math.PI/2.);
             int x1 = (int)Math.round(xC - major * mc);
-            int y1 = (int)Math.round(yC - major * ms);
+            int y1 = (int)Math.round(yC + major * ms);
             int x2 = (int)Math.round(xC + major * mc);
-            int y2 = (int)Math.round(yC + major * ms);
+            int y2 = (int)Math.round(yC - major * ms);
             if (x1 < 0) { x1 = 0;}
             if (y1 < 0) { y1 = 0;}
             if (x2 < 0) { x2 = 0;}
@@ -109,9 +106,11 @@ public class Canonicalizer {
             ImageIOHelper.drawLineInImage(x1, y1, x2, y2, img, nExtraDot, 
                 rClr, gClr, bClr);
             
-            x1 = (int)Math.round(xC - minor * mc);
+            mc = Math.cos(orientation);
+            ms = Math.sin(orientation);
+            x1 = (int)Math.round(xC + minor * mc);
             y1 = (int)Math.round(yC - minor * ms);
-            x2 = (int)Math.round(xC + minor * mc);
+            x2 = (int)Math.round(xC - minor * mc);
             y2 = (int)Math.round(yC + minor * ms);
             if (x1 < 0) { x1 = 0;}
             if (y1 < 0) { y1 = 0;}
