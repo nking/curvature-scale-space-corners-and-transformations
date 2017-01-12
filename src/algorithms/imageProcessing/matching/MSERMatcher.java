@@ -127,11 +127,6 @@ public class MSERMatcher {
                 
                 TIntObjectMap<CRegion> cMap1 = cRegionsList11.get(imgIdx1);
             
-                if (imgIdx0 == imgIdx1 && imgIdx0 > 0) {
-                    // same comparison as 0,0 but lower resolution
-               //     continue;
-                }
-                
                 int w1 = rgb1.get(0).getWidth();
                 int h1 = rgb1.get(0).getHeight();
             
@@ -153,11 +148,12 @@ public class MSERMatcher {
                     int idx0 = iteri0.key();
 
                     FixedSizeSortedVector<Obj> best01 = new 
-                        FixedSizeSortedVector<Obj>(np0, Obj.class);
+                        FixedSizeSortedVector<Obj>(
+                        Math.round(1.5f*np0), Obj.class);
                     bestPerOctave.get(imgKey).put(idx0, best01);
                     
                     CRegion cr0 = iteri0.value();
-                    int n0 = cr0.nTrEllipsePixels;
+                    int n0 = cr0.offsetsToOrigCoords.size();
 
                     TIntObjectIterator<CRegion> iteri1 = cMap1.iterator();
                     for (int i1 = 0; i1 < cMap1.size(); ++i1) {
@@ -168,6 +164,7 @@ public class MSERMatcher {
                         //TODO: revisit this.  size filter which
                         //   will be the wrong thing to use if occlusion
                         //   is present...
+                        float factor = 2;
                         if (true) {
                             double t1, t2;
                             if (cr0.minor > cr1.minor) {
@@ -180,12 +177,15 @@ public class MSERMatcher {
                             } else {
                                 t2 = cr1.major/cr0.major;
                             }
-                            if (t1 > 1.5 || t2 > 1.5) {
+                            if (t1 > factor || t2 > factor) {
                                 continue;
                             }
                         }
                         
-                        int n1 = cr1.nTrEllipsePixels;
+                        //TODO: consider cached color histogram intersections
+                        //  here
+                        
+                        int n1 = cr1.offsetsToOrigCoords.size();
 
                         int maxMatchable = Math.min(n0, n1);
 
@@ -256,13 +256,15 @@ public class MSERMatcher {
                         //ssdSum /= (255. * 3.);
                         ssdSum /= (255. * 2.);
 
-                        double f = 1. - ((double) ssdCount / (double) maxMatchable);
+                        double f = 1. - ((double) ssdCount / 
+                            (double) maxMatchable);
 
                         // TODO: correct this if end up using it.
-                        //  it's based upon green only
+                        //  it's based u//////////////////////pon green only
                         double err = Math.max(cr0.autocorrel, cr1.autocorrel);
 
-                        if (ssdSum <= 3 * err) {
+                        if (ssdSum <= 2 * err) {
+                        //if (ssdSum <= 3 * err) {
                             
                             Obj obj = new Obj();
                             obj.cr0 = cr0;
@@ -276,10 +278,14 @@ public class MSERMatcher {
                             boolean added = best01.add(obj);
                             
                             if (debug) {
+                                
                                 String str1 = String.format(
                                     "im1=%d im2=%d (%d,%d) (%d,%d) or1=%d or2=%d\n",
                                     imgIdx0, imgIdx1,
-                                    cr0.xC, cr0.yC, cr1.xC, cr1.yC,
+                                    Math.round((float)cr0.xC*scale0), 
+                                    Math.round((float)cr0.yC*scale0),
+                                    Math.round((float)cr1.xC*scale1),
+                                    Math.round((float)cr1.yC*scale1),
                                     (int)(cr0.orientation*180./Math.PI),
                                     (int)(cr1.orientation*180./Math.PI));
                                 String str2 = String.format(
@@ -288,10 +294,10 @@ public class MSERMatcher {
                                     (float) cr0.minor, (float) cr1.minor,
                                     (float) cr0.major, (float) cr1.major);
                                 String str3 = String.format(
-                                    "   ssd=%.2f autoc=%.2f,%.2f f=%.3f ssd.n=%d added=%b",
+                                    "   ssd=%.2f autoc=%.2f,%.2f f=%.3f c=%.3f ssd.n=%d added=%b",
                                     (float) ssdSum,
                                     (float) cr0.autocorrel, (float) cr1.autocorrel,
-                                    (float) f, ssdCount, added);
+                                    (float) f, (float)obj.cost, ssdCount, added);
                                 System.out.println(str1 + str2 + str3);
                             }
                         }
@@ -300,7 +306,8 @@ public class MSERMatcher {
             } // end loop over imgIdx1
         } // end loop over imgIdx0
         
-        /*
+        /*  
+        // start debug print
         // once thru to count members
         int count = 0;
         for (Entry<PairInt, TIntObjectMap<FixedSizeSortedVector<Obj>>> entry :
@@ -394,7 +401,9 @@ public class MSERMatcher {
             
             System.out.println(str1 + str2);
         }
-        */
+        // end DEBUG print
+       */
+        
         /*
         NOTE: for one of the more difficult tests,
           that is, matching a template gbman from andriod statues 03
@@ -542,6 +551,17 @@ public class MSERMatcher {
                             if (p2_1.equals(p3_1)) {
                                 continue;
                             }
+                            
+                            // pair length restriction.
+                            // since using the pyramid structure to compare
+                            // objects of similar size, need a filter here
+                            double sep0 = distance(p2_0, p3_0);
+                            double sep1 = distance(p2_1, p3_1);
+                            if ((sep0 > sep1 && ((sep0/sep1) > 1.3)) ||
+                                (sep1 > sep0 && ((sep1/sep0) > 1.3))) {
+                                continue;
+                            }
+                            
                             TransformationParameters params 
                                 = tc.calulateEuclidean(
                                 p2_0.getX(), p2_0.getY(), 
@@ -565,15 +585,24 @@ public class MSERMatcher {
                                 cr00Map, cr01Map, cr10Map, cr11Map, m0, m1);
                                                     
                             float f2 = 1.f - ((float)m0.getN()/
-                                ((float)points0Scale0.getN()/scale0));
+                                ((float)points0Scale0.getN()));
                             
                             double c = summedCost + (f2 * f2);
             
-                            if (debug) {
+                            if (false && debug) {
                                 System.out.format(
-                                "___im0=%d im1=%d desc=%.3f c=%.3f n=%d nmaxm=%d\n",
-                                imgIdx0, imgIdx1, (float) summedCost,
-                                (float)c, m0.getN(), points0Scale0.getN());
+                                "___im0=%d im1=%d (%d,%d):(%d,%d) (%d,%d):(%d,%d)  desc=%.3f c=%.3f n=%d nmaxm=%d\n",
+                                imgIdx0, imgIdx1, 
+                                Math.round((float)p2_0.getX()*scale0), 
+                                Math.round((float)p2_0.getY()*scale0), 
+                                Math.round((float)p2_1.getX()*scale1), 
+                                Math.round((float)p2_1.getY()*scale1),
+                                Math.round((float)p3_0.getX()*scale0), 
+                                Math.round((float)p3_0.getY()*scale0),
+                                Math.round((float)p3_1.getX()*scale1), 
+                                Math.round((float)p3_1.getY()*scale1),
+                                (float) summedCost,
+                                (float)c, m0.getN(), points0Scale0.getN());                               
                             }
                             
                             if (c < bestCost) {
@@ -582,6 +611,22 @@ public class MSERMatcher {
                                 bestCost = c;
                                 bestC = summedCost;
                                 bestNMaxMatchable = points0Scale0.getN();
+                            
+                                if (debug) {
+                                    System.out.format(
+                                    "___im0=%d im1=%d (%d,%d):(%d,%d) (%d,%d):(%d,%d)  desc=%.3f c=%.3f n=%d nmaxm=%d\n",
+                                    imgIdx0, imgIdx1, 
+                                    Math.round((float)p2_0.getX()*scale0), 
+                                    Math.round((float)p2_0.getY()*scale0), 
+                                    Math.round((float)p2_1.getX()*scale1), 
+                                    Math.round((float)p2_1.getY()*scale1),
+                                    Math.round((float)p3_0.getX()*scale0), 
+                                    Math.round((float)p3_0.getY()*scale0),
+                                    Math.round((float)p3_1.getX()*scale1), 
+                                    Math.round((float)p3_1.getY()*scale1),
+                                    (float) summedCost,
+                                    (float)c, m0.getN(), points0Scale0.getN());                               
+                                }
                             }
                         }
                     }    
@@ -900,4 +945,9 @@ public class MSERMatcher {
         }
     }
     
+    public static int distance(PairInt p1, PairInt p2) {
+        int diffX = p1.getX() - p2.getX();
+        int diffY = p1.getY() - p2.getY();
+        return (int) Math.sqrt(diffX * diffX + diffY * diffY);
+    }
 }

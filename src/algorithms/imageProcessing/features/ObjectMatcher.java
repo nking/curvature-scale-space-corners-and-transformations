@@ -143,6 +143,70 @@ public class ObjectMatcher {
         return pyr;
     }
 
+    private double findMinAutoCorrel(TIntObjectMap<CRegion> cRegions) {
+        
+        TIntObjectIterator<CRegion> iter = cRegions.iterator();
+        
+        double min = Double.MAX_VALUE;
+        
+        for (int i = 0; i < cRegions.size(); ++i) {
+            iter.advance();
+            CRegion cr = iter.value();
+            if (cr.autocorrel < min) {
+                min = cr.autocorrel;
+            }
+        }
+        
+        return min;
+    }
+
+    private void removeSmallAutoCorrel(List<TIntObjectMap<CRegion>> 
+        cRegionsList, double minAutoCor, float f) {
+
+        float limit = f * (float)minAutoCor;
+        
+        TIntList rm = new TIntArrayList();
+        
+        TIntObjectMap<CRegion> lgMap = cRegionsList.get(0);
+    
+        TIntObjectIterator<CRegion> iter = lgMap.iterator();
+        for (int i = 0; i < lgMap.size(); ++i) {
+            iter.advance();
+            int idx = iter.key();
+            CRegion cr = iter.value();
+            if (cr.autocorrel < limit) {
+                rm.add(idx);
+            }
+        }
+        
+        // === remove indexes rm from each octave
+        for (int octave = 0; octave < cRegionsList.size(); ++octave) {
+            TIntObjectMap<CRegion> map = cRegionsList.get(octave);
+            for (int i = 0; i < rm.size(); ++i) {
+                int rmIdx = rm.get(i);
+                map.remove(rmIdx);
+            }
+        }
+    }
+
+    private void filterCloseToBounds(List<List<Region>> regions, 
+        int width, int height, int border) {
+        
+        int[] xy = new int[2];
+        for (int rIdx = 0; rIdx < 2; ++rIdx) {
+            List<Region> list = regions.get(rIdx);
+            for (int i = (list.size() - 1); i > -1; --i) {
+                Region r = list.get(i);
+                r.calculateXYCentroid(xy, width, height);
+                if (xy[0] < border || xy[1] < border ||
+                    (xy[0] >= (width - border)) || 
+                    (xy[1] >= (height - border))) {
+                    list.remove(i);
+                }
+            }
+        }
+    }
+
     public static class Settings {
         private boolean useLargerPyramid0 = false;
         private boolean useLargerPyramid1 = false;
@@ -764,10 +828,13 @@ public class ObjectMatcher {
                    
         List<List<Region>> regions1 = mser.findRegions(gsImg1);
         
+        filterCloseToBounds(regions1, gsImg1.getWidth(), gsImg1.getHeight(),
+            10);
+        
         // filter regions by segmentation
         if (true) {
-            List<Set<PairInt>> labeledSets = filterBySegmentation(img0, shape0,
-                img1, regions1, settings);
+              List<Set<PairInt>> labeledSets = filterBySegmentation(img0, shape0,
+                 img1, regions1, settings);
         }
             
         // create image0 pyramid and windowing
@@ -881,14 +948,21 @@ public class ObjectMatcher {
         for (List<GreyscaleImage> rgb : pyr1) {
             green1.add(rgb.get(1));
         }
-                
+
         List<TIntObjectMap<CRegion>> cRegionsList10 =
             canonicalizer.canonicalizeRegions(regions1.get(0), green1);
         
         List<TIntObjectMap<CRegion>> cRegionsList11 =
             canonicalizer.canonicalizeRegions(regions1.get(1), green1);
         
-        if (false && debug) {
+        boolean applyAutoCorrFilter = true;
+        if (applyAutoCorrFilter) {
+            double minAutoCor = findMinAutoCorrel(cRegionsList01.get(0));
+            removeSmallAutoCorrel(cRegionsList11, minAutoCor, 0.75f);
+            removeSmallAutoCorrel(cRegionsList10, minAutoCor, 0.75f);
+        }
+        
+        if (debug) {
             debugPrint(cRegionsList00, pyr0, "_0_0_");
             debugPrint(cRegionsList01, pyr0, "_0_1_");
             debugPrint(cRegionsList10, pyr1, "_1_0_");
@@ -1407,7 +1481,7 @@ public class ObjectMatcher {
                 keypoints1.add(new PairInt(xy[0], xy[1]));
             }
         }
-        
+    
         int n = keypoints1.size();
         
         List<Set<PairInt>> setLists = filterBySegmentation(img0, shape0, img1, keypoints1, settings);
@@ -1545,7 +1619,7 @@ public class ObjectMatcher {
             float intersection = clrHist.intersection(
                 template_ch_HSV, ch);
 
-            if (intersection < 0.2) {
+            if (intersection < 0.1) {
                 rm2.add(p);
             } else {
                 ch = clrHist.histogramCIELAB(img1, points);
@@ -1557,6 +1631,7 @@ public class ObjectMatcher {
             }
         }
         keypoints1.removeAll(rm2);
+        
         
         if (orb1.getKeyPoint0List().isEmpty()) {
             return null;
@@ -1578,8 +1653,11 @@ public class ObjectMatcher {
         List<Set<PairInt>> listOfPointSets2
             = LabelToColorHelper.extractContiguousLabelPoints(img1Cp, labels4);
 
+        //boolean changed = false;
         boolean changed = imageSegmentation.filterByCIECH(imgs0[0],
-            shape0, img1Cp, listOfPointSets2, 0.1f);//0.4f);//0.35f
+            shape0, img1Cp, listOfPointSets2, 
+            0.01f);
+            //0.1f);//0.4f);//0.35f
         
         if (debug) {
             ImageExt img11 = img1.copyToImageExt();
