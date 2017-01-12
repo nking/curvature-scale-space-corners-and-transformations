@@ -3,6 +3,7 @@ package algorithms.util;
 import algorithms.QuickSort;
 import algorithms.Rotate;
 import java.util.Arrays;
+import java.util.Set;
 
 /**
  * class to hold x and y arrays of points
@@ -45,6 +46,16 @@ public class PairIntArray {
         n++;
     }
     
+    public void add(PairInt xy) {
+        
+        expandIfNeeded(n + 1);
+        
+        x[n] = xy.getX();
+        y[n] = xy.getY();
+        
+        n++;
+    }
+    
     public void addAll(PairIntArray other) {
         
         expandIfNeeded(n + other.getN());        
@@ -53,6 +64,15 @@ public class PairIntArray {
         System.arraycopy(other.getY(), 0, y, n, other.getN());
             
         n += other.getN();
+    }
+    
+    public void addAll(Set<PairInt> other) {
+        
+        expandIfNeeded(n + other.size());        
+        
+        for (PairInt p : other) {
+            add(p);
+        }
     }
     
     /**

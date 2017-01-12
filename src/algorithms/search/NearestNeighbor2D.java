@@ -194,7 +194,7 @@ public class NearestNeighbor2D {
     public Set<PairInt> findClosestWithinTolerance(int x, int y,
         double tolerance) {
         
-        if (x > width || x < 0) {
+        if (x >= width || x < 0) {
             //throw new IllegalArgumentException(
             log.fine(
             "x cannot be larger than "
@@ -203,7 +203,7 @@ public class NearestNeighbor2D {
             return null;
         }
         
-        if (y > height || y < 0) {
+        if (y >= height || y < 0) {
             //throw new IllegalArgumentException(
             log.fine(
                 "y cannot be larger than "
@@ -504,7 +504,7 @@ public class NearestNeighbor2D {
      */
     public Set<PairInt> findClosest(int x, int y, int dMax) {
         
-        if (x > width || x < 0) {
+        if (x >= width || x < 0) {
             //throw new IllegalArgumentException(
             log.fine(
             "x cannot be larger than "
@@ -513,7 +513,7 @@ public class NearestNeighbor2D {
             return null;
         }
         
-        if (y > height || y < 0) {
+        if (y >= height || y < 0) {
             //throw new IllegalArgumentException(
             log.fine(
                 "y cannot be larger than "

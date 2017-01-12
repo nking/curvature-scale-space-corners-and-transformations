@@ -894,14 +894,7 @@ public class ObjectMatcher {
             debugPrint(cRegionsList10, pyr1, "_1_0_");
             debugPrint(cRegionsList11, pyr1, "_1_1_");
         }
-        
-        /*
-        TODO: consider filtering for the mser cregions for image 1
-        -- hsv histogram intersection filtering
-           -- cielab histogram intersection filtering
-        -- filtering by ciech
-        */
-        
+      
         MSERMatcher matcher = new MSERMatcher();
         
         if (debug) {
