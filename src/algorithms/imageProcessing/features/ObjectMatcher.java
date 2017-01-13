@@ -963,10 +963,10 @@ public class ObjectMatcher {
         }
         
         if (debug) {
-            debugPrint(cRegionsList00, pyr0, "_0_0_");
-            debugPrint(cRegionsList01, pyr0, "_0_1_");
-            debugPrint(cRegionsList10, pyr1, "_1_0_");
-            debugPrint(cRegionsList11, pyr1, "_1_1_");
+            debugPrint(cRegionsList00, pyr0, "_cr_0_0_");
+            debugPrint(cRegionsList01, pyr0, "_cr_0_1_");
+            debugPrint(cRegionsList10, pyr1, "_cr_1_0_");
+            debugPrint(cRegionsList11, pyr1, "_cr_1_1_");
         }
       
         MSERMatcher matcher = new MSERMatcher();

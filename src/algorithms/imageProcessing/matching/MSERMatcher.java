@@ -13,6 +13,7 @@ import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
 import algorithms.misc.Misc;
 import algorithms.search.NearestNeighbor2D;
+import algorithms.util.CorrespondencePlotter;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.QuadInt;
@@ -27,6 +28,7 @@ import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntFloatHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import java.awt.Color;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,6 +36,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -55,7 +59,8 @@ public class MSERMatcher {
      * @param pyr0 image pyramid for data0 ordered by descending size
      * @param pyr1 image pyramid for data1 ordered by descending size
      * @param cRegionsList00 list of pyramid scaled canonicalized regions for
-     *    the images of pyr0.
+     *    the images of pyr0.  each octave's data is in the reference frame
+     *    of the pyramid image.
      * @param cRegionsList01 list of pyramid scaled canonicalized regions for
      *    the inverted images images of pyr0.
      * @param cRegionsList10 list of pyramid scaled canonicalized regions for
@@ -71,7 +76,7 @@ public class MSERMatcher {
         List<TIntObjectMap<CRegion>> cRegionsList10,
         List<TIntObjectMap<CRegion>> cRegionsList11) {
        
-        int distTol = 10;
+        int distTol = 5;//10;
         
         int nImg0 = pyr0.size();
         int nImg1 = pyr1.size();
@@ -87,6 +92,11 @@ public class MSERMatcher {
             throw new IllegalArgumentException("reference frame 1 lists"
                 + " must be the same length");
         } 
+        
+        float w0_0 = pyr0.get(0).get(0).getWidth();
+        float h0_0 = pyr0.get(0).get(0).getHeight();
+        float w1_0 = pyr1.get(0).get(0).getWidth();
+        float h1_0 = pyr1.get(0).get(0).getHeight();
         
         // key=(imgIdx1, imgIdx2), value=map w/ key=idx1, value=FixedSizeSortedVector
         Map<PairInt, TIntObjectMap<FixedSizeSortedVector<Obj>>> bestPerOctave
@@ -116,9 +126,7 @@ public class MSERMatcher {
             
             int np0 = cMap0.size();
             
-            float scale0 = ((float)pyr0.get(0).get(0).getWidth()/(float)w0) 
-                + ((float)pyr0.get(0).get(0).getHeight()/(float)h0);
-            scale0 /= 2.f;
+            float scale0 = ((w0_0/(float)w0) + (h0_0/(float)h0))/2.f;
             img0Scales.put(imgIdx0, scale0);
             
             for (int imgIdx1 = 0; imgIdx1 < nImg1; ++imgIdx1) {
@@ -132,9 +140,7 @@ public class MSERMatcher {
             
                 int np1 = cMap1.size();
                 
-                float scale1 = ((float)pyr1.get(0).get(0).getWidth()/(float)w1) 
-                    + ((float)pyr1.get(0).get(0).getHeight()/(float)h1);
-                scale1 /= 2.f;
+                float scale1 = ((w1_0/(float)w1) + (h1_0/(float)h1))/2.f;
                 img1Scales.put(imgIdx1, scale1);
                 
                 PairInt imgKey = new PairInt(imgIdx0, imgIdx1);
@@ -146,10 +152,10 @@ public class MSERMatcher {
                     iteri0.advance();
                     
                     int idx0 = iteri0.key();
-
+//DEBUG
                     FixedSizeSortedVector<Obj> best01 = new 
                         FixedSizeSortedVector<Obj>(
-                        Math.round(1.5f*np0), Obj.class);
+                        Math.round(20.5f*np0), Obj.class);
                     bestPerOctave.get(imgKey).put(idx0, best01);
                     
                     CRegion cr0 = iteri0.value();
@@ -424,16 +430,6 @@ public class MSERMatcher {
         could be brought here to improve evaluation.
         */
       
-        PairIntArray points0 = new PairIntArray();
-        PairIntArray points1 = new PairIntArray();
-        populatePointLists(cRegionsList00, cRegionsList01,
-            cRegionsList10, cRegionsList11, points0, points1);
-        
-        int w0 = pyr0.get(0).get(0).getWidth();
-        int h0 = pyr0.get(0).get(0).getHeight();
-        int w1 = pyr1.get(0).get(0).getWidth();
-        int h1 = pyr1.get(0).get(0).getHeight();
-        
         double bestCostOverall = Double.MAX_VALUE;
         PairIntArray bestM0Overall = null;
         PairIntArray bestM1Overall = null;
@@ -443,6 +439,14 @@ public class MSERMatcher {
            
             int imgIdx0 = entry.getKey().getX();
             int imgIdx1 = entry.getKey().getY();
+            
+            float scale0 = img0Scales.get(imgIdx0);
+            float scale1 = img1Scales.get(imgIdx1);
+            
+            //List<Obj> bestPair = new ArrayList<Obj>();
+            double bestCost = Double.MAX_VALUE;
+            PairIntArray bestM0 = null;
+            PairIntArray bestM1 = null;
             
             TIntObjectMap<FixedSizeSortedVector<Obj>> map12 = 
                 entry.getValue();
@@ -484,24 +488,9 @@ public class MSERMatcher {
             MatchedPointsTransformationCalculator tc = 
                 new MatchedPointsTransformationCalculator();
          
-            //List<Obj> bestPair = new ArrayList<Obj>();
-            double bestCost = Double.MAX_VALUE;
-            PairIntArray bestM0 = null;
-            PairIntArray bestM1 = null;
-            double bestC = Double.MAX_VALUE;
-            int bestNMaxMatchable = points0.getN();
-            
             List<GreyscaleImage> rgb0 = pyr0.get(imgIdx0);
             List<GreyscaleImage> rgb1 = pyr1.get(imgIdx1);
-            
-            float scale0 = ((float)w0/(float)rgb0.get(0).getWidth()) 
-                + ((float)h0/(float)rgb0.get(0).getHeight());
-            scale0 /= 2.f;
-                
-            float scale1 = ((float)w1/(float)rgb1.get(0).getWidth()) 
-                + ((float)h1/(float)rgb1.get(0).getHeight());
-            scale1 /= 2.f;
-            
+                        
             int distTol2 = Math.round((float)distTol/scale1);
             if (distTol2 < 1) {
                 distTol2 = 1;
@@ -557,8 +546,8 @@ public class MSERMatcher {
                             // objects of similar size, need a filter here
                             double sep0 = distance(p2_0, p3_0);
                             double sep1 = distance(p2_1, p3_1);
-                            if ((sep0 > sep1 && ((sep0/sep1) > 1.3)) ||
-                                (sep1 > sep0 && ((sep1/sep0) > 1.3))) {
+                            if ((sep0 > sep1 && ((sep0/sep1) > 1.5)) ||
+                                (sep1 > sep0 && ((sep1/sep0) > 1.5))) {
                                 continue;
                             }
                             
@@ -591,7 +580,7 @@ public class MSERMatcher {
             
                             if (false && debug) {
                                 System.out.format(
-                                "___im0=%d im1=%d (%d,%d):(%d,%d) (%d,%d):(%d,%d)  desc=%.3f c=%.3f n=%d nmaxm=%d\n",
+                                "___im0=%d im1=%d (%d,%d):(%d,%d) (%d,%d):(%d,%d)  desc=%.3f c=%.3f n=%d nmaxm=%d s0=%.2f s1=%.2f\n",
                                 imgIdx0, imgIdx1, 
                                 Math.round((float)p2_0.getX()*scale0), 
                                 Math.round((float)p2_0.getY()*scale0), 
@@ -602,19 +591,33 @@ public class MSERMatcher {
                                 Math.round((float)p3_1.getX()*scale1), 
                                 Math.round((float)p3_1.getY()*scale1),
                                 (float) summedCost,
-                                (float)c, m0.getN(), points0Scale0.getN());                               
+                                (float)c, m0.getN(), points0Scale0.getN(),
+                                scale0, scale1);                               
                             }
                             
                             if (c < bestCost) {
                                 bestM0 = m0;
                                 bestM1 = m1;
                                 bestCost = c;
-                                bestC = summedCost;
-                                bestNMaxMatchable = points0Scale0.getN();
                             
+                                // rewrite m0 and m1 to full scale coords
+                                for (int jj = 0; jj < bestM0.getN(); ++jj) {
+                                    int x0 = bestM0.getX(jj);
+                                    int y0 = bestM0.getY(jj);
+                                    x0 = Math.round((float)x0 * scale0);
+                                    y0 = Math.round((float)y0 * scale0);
+                                    bestM0.set(jj, x0, y0);
+
+                                    int x1 = bestM1.getX(jj);
+                                    int y1 = bestM1.getY(jj);
+                                    x1 = Math.round((float)x1 * scale1);
+                                    y1 = Math.round((float)y1 * scale1);
+                                    bestM1.set(jj, x1, y1);
+                                }
+                                
                                 if (debug) {
                                     System.out.format(
-                                    "___im0=%d im1=%d (%d,%d):(%d,%d) (%d,%d):(%d,%d)  desc=%.3f c=%.3f n=%d nmaxm=%d\n",
+    "___im0=%d im1=%d (%d,%d):(%d,%d) (%d,%d):(%d,%d)  desc=%.3f c=%.3f n=%d nmaxm=%d s0=%.2f s1=%.2f\n",
                                     imgIdx0, imgIdx1, 
                                     Math.round((float)p2_0.getX()*scale0), 
                                     Math.round((float)p2_0.getY()*scale0), 
@@ -625,7 +628,29 @@ public class MSERMatcher {
                                     Math.round((float)p3_1.getX()*scale1), 
                                     Math.round((float)p3_1.getY()*scale1),
                                     (float) summedCost,
-                                    (float)c, m0.getN(), points0Scale0.getN());                               
+                                    (float)c, m0.getN(), points0Scale0.getN(),
+                                    scale0, scale1);
+                                    
+                                    /*
+                                    CorrespondencePlotter plotter = new CorrespondencePlotter(
+                                        pyr0.get(0).get(0).copyToColorGreyscale(), 
+                                        pyr1.get(0).get(0).copyToColorGreyscale());
+                                        //rgb0.get(0).copyToColorGreyscale(), 
+                                        //rgb1.get(0).copyToColorGreyscale());
+                                    for (int ii = 0; ii < bestM0.getN(); ++ii) {
+                                        int x0 = bestM0.getX(ii);
+                                        int y0 = bestM0.getY(ii);
+                                        int x1 = bestM1.getX(ii);
+                                        int y1 = bestM1.getY(ii);
+
+                                        plotter.drawLineInAlternatingColors(x0, y0,
+                                            x1, y1, 0);
+                                    }
+                                    try {
+                                        plotter.writeImage("_DBG_" + imgIdx0 + "_" + imgIdx1);
+                                    } catch (IOException ex) {
+                                        Logger.getLogger(MSERMatcher.class.getName()).log(Level.SEVERE, null, ex);
+                                    }*/
                                 }
                             }
                         }
@@ -636,30 +661,33 @@ public class MSERMatcher {
             if (bestM0 != null) {
                 
                 System.out.format(
-                    "im0=%d im1=%d c=%.3f d=%.3f n=%d nmaxm=%d\n",
+                    "im0=%d im1=%d c=%.3f n=%d\n",
                     imgIdx0, imgIdx1, (float)bestCost,
-                    (float)bestC, bestM0.getN(), bestNMaxMatchable);
+                    bestM0.getN());
 
                 if (bestCost < bestCostOverall) {
                     bestCostOverall = bestCost;
                     bestM0Overall = bestM0;
-                    bestM1Overall = bestM1;
-                    
-                    // rewrite m0 and m1 to full scale coords
-                    for (int jj = 0; jj < bestM0.getN(); ++jj) {
-                        int x0 = bestM0.getX(jj);
-                        int y0 = bestM0.getY(jj);
-                        x0 = Math.round((float)x0 * scale0);
-                        y0 = Math.round((float)y0 * scale0);
-                        bestM0.set(jj, x0, y0);
-                        
-                        int x1 = bestM1.getX(jj);
-                        int y1 = bestM1.getY(jj);
-                        x1 = Math.round((float)x1 * scale1);
-                        y1 = Math.round((float)y1 * scale1);
-                        bestM1.set(jj, x1, y1);
+                    bestM1Overall = bestM1;                    
+
+                    CorrespondencePlotter plotter = new CorrespondencePlotter(
+                        pyr0.get(0).get(0).copyToColorGreyscale(), 
+                        pyr1.get(0).get(0).copyToColorGreyscale());
+                    for (int ii = 0; ii < bestM0.getN(); ++ii) {
+                        int x0 = bestM0.getX(ii);
+                        int y0 = bestM0.getY(ii);
+                        int x1 = bestM1.getX(ii);
+                        int y1 = bestM1.getY(ii);
+
+                        plotter.drawLineInAlternatingColors(x0, y0,
+                            x1, y1, 0);
                     }
-                }
+                    try {
+                        plotter.writeImage("_DEBUG_" + imgIdx0 + "_" + imgIdx1);
+                    } catch (IOException ex) {
+                        Logger.getLogger(MSERMatcher.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                )
             }
         }
         
@@ -680,40 +708,6 @@ public class MSERMatcher {
         CorrespondenceList cor = new CorrespondenceList(qs);
 
         return cor;        
-    }
-
-    private void populatePointLists(
-        List<TIntObjectMap<CRegion>> cRegionsList00, 
-        List<TIntObjectMap<CRegion>> cRegionsList01, 
-        List<TIntObjectMap<CRegion>> cRegionsList10, 
-        List<TIntObjectMap<CRegion>> cRegionsList11,
-        PairIntArray points0, PairIntArray points1) {
-    
-        populatePointList(cRegionsList00, points0);
-        populatePointList(cRegionsList01, points0);
-        populatePointList(cRegionsList10, points1);
-        populatePointList(cRegionsList11, points1);
-    }
-    
-    private void populatePointList(
-        List<TIntObjectMap<CRegion>> cRegionsList, 
-        PairIntArray points) {
-        
-        Set<PairInt> added = new HashSet<PairInt>();
-        
-        for (TIntObjectMap<CRegion> cRegionMap : cRegionsList) {
-            TIntObjectIterator<CRegion> iter = cRegionMap.iterator();
-            for (int i = 0; i < cRegionMap.size(); ++i) {
-                iter.advance();
-                CRegion cr = iter.value();
-                PairInt p = new PairInt(cr.xC, cr.yC);
-                if (added.contains(p)) {
-                    continue;
-                }
-                added.add(p);
-                points.add(p);
-            }
-        }
     }
 
     private void match(TransformationParameters params, 
