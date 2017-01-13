@@ -107,6 +107,11 @@ public class MSERMatcher {
                     comparison 
                     - one possibility is again, euclidean transformations
                       if can keep the number of combinations small
+                      ... prefer to determine in other manner
+                          because blob like objects like the cupcake
+                          do not have the euclidean transformation as
+                          a possibility unless the cup and cack are
+                          determined to be associated.
            -- can use shape matching if needed, but that would require
               bringing in the segmentation labeled regions also.
         
@@ -120,14 +125,14 @@ public class MSERMatcher {
         relationships between regions still
         needs more information and region growing or a modified
         normalized cuts though.
-        (the current normalized cuts impl in this project needs adjesment
+        (the current normalized cuts impl in this project needs adjustment
         to be able to use adjacency in the process...currently, 
-        labeled regions have a color and all pixels in the image no matter
-        how distant are part of that region).
+        labeled regions have a color and all pixels of that color in the 
+        image no matter how distant are part of that region).
         */
         
-        printNUnique(cRegionsList01.get(0), "dataset0 mser regsions");
-        printNUnique(cRegionsList11.get(0), "dataset1 mser regsions");
+        printNUnique(cRegionsList01.get(0), "dataset0 mser regions");
+        printNUnique(cRegionsList11.get(0), "dataset1 mser regions");
         
         int distTol = 5;//10;
         
