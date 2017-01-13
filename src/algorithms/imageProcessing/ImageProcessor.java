@@ -8958,6 +8958,58 @@ if (sum > 511) {
         return buildPyramid2(input, decimationLimit, nBetween);
     }
     
+    public List<List<GreyscaleImage>> buildColorPyramid(Image img,
+        boolean buildLarger) {
+        
+        List<List<GreyscaleImage>> pyr = new ArrayList<List<GreyscaleImage>>();
+        
+        GreyscaleImage r = img.copyRedToGreyscale();
+        GreyscaleImage g = img.copyGreenToGreyscale();
+        GreyscaleImage b = img.copyBlueToGreyscale();
+        List<GreyscaleImage> gsR;
+        List<GreyscaleImage> gsG;
+        List<GreyscaleImage> gsB;
+        
+        if (buildLarger) {
+            
+            ImageProcessor imageProcessor = new ImageProcessor();
+            
+            gsR = imageProcessor.buildPyramid2(r, 32);
+            gsG = imageProcessor.buildPyramid2(g, 32);
+            gsB = imageProcessor.buildPyramid2(b, 32);
+            
+        } else {
+            
+            MedianTransform mt = new MedianTransform();
+            
+            gsR = new ArrayList<GreyscaleImage>();
+            gsG = new ArrayList<GreyscaleImage>();
+            gsB = new ArrayList<GreyscaleImage>();
+            
+            mt.multiscalePyramidalMedianTransform2(r, gsR, 32);
+            mt.multiscalePyramidalMedianTransform2(g, gsG, 32);
+            mt.multiscalePyramidalMedianTransform2(b, gsB, 32);
+        }
+        
+        assert(gsR.size() == gsG.size());
+        assert(gsR.size() == gsB.size());
+
+        for (int i = 0; i < gsR.size(); ++i) {
+            GreyscaleImage r2 = gsR.get(i);
+            GreyscaleImage g2 = gsG.get(i);
+            GreyscaleImage b2 = gsB.get(i);
+
+            List<GreyscaleImage> rgb = new ArrayList<GreyscaleImage>();
+            rgb.add(r2);
+            rgb.add(g2);
+            rgb.add(b2);
+            
+            pyr.add(rgb);
+        }
+        
+        return pyr;
+    }
+    
     /**
      * given an input image, creates a decimation pyramid with 
      * median smoothing followed by either integer or bilinear
