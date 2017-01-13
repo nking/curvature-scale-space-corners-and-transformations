@@ -634,7 +634,7 @@ public class MSERMatcher {
                             float f2 = 1.f - ((float)m0.getN()/
                                 ((float)points0Scale0.getN()));
                             
-                            double c = summedCost + (f2 * f2);
+                            double c = summedCost;// + (f2 * f2);
                             
                             if (c < bestCost) {
                                 bestM0 = m0;

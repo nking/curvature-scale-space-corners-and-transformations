@@ -346,7 +346,7 @@ public class AndroidStatuesTest extends TestCase {
 
         String[] fileNames0 = new String[]{
             "android_statues_03_sz1",
-        //    "android_statues_03_sz3"
+            "android_statues_03_sz3"
         };
 
         /*
@@ -357,8 +357,8 @@ public class AndroidStatuesTest extends TestCase {
         */
         String[] fileNames1 = new String[]{
         //    "android_statues_01.jpg", // no kp remaining
-        //      "android_statues_02.jpg", // OK: match0,
-        //    "android_statues_04.jpg", // OK: match0, 
+              "android_statues_02.jpg", // OK: match0,
+            "android_statues_04.jpg", // OK: match0, 
            "android_statues_03.jpg" // OK: match0, 
         };
         
@@ -423,14 +423,15 @@ public class AndroidStatuesTest extends TestCase {
                 
                 ObjectMatcher objMatcher = new ObjectMatcher();
                 if (fileName1Root.contains("_02")) {
-                    settings.setToUseLargerPyramid0();
-                    settings.setToUseLargerPyramid1();
+                 //   settings.setToUseLargerPyramid0();
+                 //   settings.setToUseLargerPyramid1();
                 } else if (fileName1Root.contains("_01")) {
                     settings.setToUseLargerPyramid0();
                     settings.setToUseLargerPyramid1();
                     settings.setToUseSmallObjectMethod();
                 }
                 objMatcher.setToDebug();
+                                
                 CorrespondenceList cor 
                     //= objMatcher.findObject(
                     = objMatcher.findObject10(
