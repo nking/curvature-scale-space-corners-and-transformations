@@ -259,6 +259,13 @@ public class CIEChromaticity {
      */
     public float[] _rgbToXYChromaticity(int r, int g, int b) {
 
+        if ((r == 0) && (g == 0) && (b == 0)) {
+            // not really defined on the diagram since chromaticity is color
+            // without intensity.  since all 0's is the lack of all color
+            // will return 0,0, but it's N/A
+            return new float[]{0, 0};
+        }
+        
         return _rgbToXYChromaticity((float)r/255.f, (float)g/255.f, (float)b/255.f);
     }
 
@@ -361,10 +368,17 @@ public class CIEChromaticity {
      */
     public float[] rgbToCIELAB(int r, int g, int b) {
 
+        if (r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255) {
+            throw new IllegalArgumentException("r, g, and b must be 0 to 255");
+        }
+        if ((r == 0) && (g == 0) && (b == 0)) {
+            return new float[]{0, 0, 0};
+        }
+        
         float[] a = _rgbToCIEXYZ(r, g, b);
 
         a = cieXYZToCIELAB(a);
-
+        
         return a;
     }
 
@@ -386,6 +400,10 @@ public class CIEChromaticity {
      */
     public float[] rgbToCIELAB1931(int r, int g, int b) {
 
+        if ((r == 0) && (g == 0) && (b == 0)) {
+            return new float[]{0, 0, 0};
+        }
+        
         float[] a = _rgbToCIEXYZ2((float)r/255.f, (float)g/255.f, (float)b/255.f);
 
         a = cieXYZToCIELAB(a);
@@ -411,6 +429,10 @@ public class CIEChromaticity {
      */
     public float[] rgbToCIELCH(int r, int g, int b) {
 
+        if ((r == 0) && (g == 0) && (b == 0)) {
+            return new float[]{0, 0, 0};
+        }
+        
         float[] xyz = _rgbToCIEXYZ2((float)r/255.f, (float)g/255.f, (float)b/255.f);
 
         float[] lch = cieXYZToCIELCH(xyz);
@@ -440,6 +462,10 @@ public class CIEChromaticity {
      */
     public float[] rgbToPolarCIELUV(int r, int g, int b) {
 
+        if ((r == 0) && (g == 0) && (b == 0)) {
+            return new float[]{0, 0, 0};
+        }
+        
         float[] xyz = _rgbToCIEXYZ2((float)r/255.f, (float)g/255.f, (float)b/255.f);
 
         float[] luv = cieXYZToCIELUV(xyz);
@@ -480,6 +506,10 @@ public class CIEChromaticity {
     public float[] rgbToPolarCIELUV(int r, int g, int b, float Xn, float Yn,
         float Zn) {
 
+        if ((r == 0) && (g == 0) && (b == 0)) {
+            return new float[]{0, 0, 0};
+        }
+        
         float[] xyz = _rgbToCIEXYZ2((float)r/255.f, (float)g/255.f, (float)b/255.f);
 
         float[] luv = cieXYZToCIELUV(xyz, Xn, Yn, Zn);
@@ -521,6 +551,10 @@ public class CIEChromaticity {
      */
     public float[] rgbToCIELUV(int r, int g, int b) {
 
+        if ((r == 0) && (g == 0) && (b == 0)) {
+            return new float[]{0, 0, 0};
+        }
+        
         float[] a = _rgbToCIEXYZ2((float)r/255.f, (float)g/255.f, (float)b/255.f);
 
         a = cieXYZToCIELUV(a);
@@ -574,6 +608,10 @@ public class CIEChromaticity {
     public float[] rgbToCIELUV(int r, int g, int b,
         float Xn, float Yn, float Zn) {
 
+        if ((r == 0) && (g == 0) && (b == 0)) {
+            return new float[]{0, 0, 0};
+        }
+        
         float[] a = _rgbToCIEXYZ2((float)r/255.f, (float)g/255.f, (float)b/255.f);
 
         a = cieXYZToCIELUV(a, Xn, Yn, Zn);
@@ -629,6 +667,10 @@ public class CIEChromaticity {
      */
     public float[] _rgbToCIEXYZ(int r, int g, int b) {
 
+        if ((r == 0) && (g == 0) && (b == 0)) {
+            return new float[]{0, 0, 0};
+        }
+        
         return _rgbToCIEXYZ((float)r/255.f, (float)g/255.f, (float)b/255.f);
     }
 
@@ -684,6 +726,10 @@ public class CIEChromaticity {
      */
     public float[] _rgbToCIEXYZ2(float r, float g, float b) {
 
+        if ((r == 0) && (g == 0) && (b == 0)) {
+            return new float[]{0, 0, 0};
+        }
+        
         //http://www.easyrgb.com/index.php?X=MATH&H=02#text2
 
         float fR = 0;
@@ -874,6 +920,10 @@ public class CIEChromaticity {
 
         float[] lab = cieXYZToCIELAB(cieXYZ, Xn, Yn, Zn);
 
+        if (lab[0] == 0 && lab[1] == 0 && lab[2] == 0) {
+            return lab;
+        }
+        
         float u = (4.f * cieXYZ[0]) /
             (cieXYZ[0] + (15.f * cieXYZ[1]) + (3.f * cieXYZ[2]));
 
