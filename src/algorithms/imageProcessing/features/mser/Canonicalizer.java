@@ -369,8 +369,8 @@ public class Canonicalizer {
                 int idx = iter0.key();
                 CRegion cr = iter0.value();
                 
-                int xc2 = Math.round(cr.xC/scale);
-                int yc2 = Math.round(cr.yC/scale);
+                int xc2 = Math.round((float)cr.xC/scale);
+                int yc2 = Math.round((float)cr.yC/scale);
                 
                 if (xc2 < 0 || yc2 < 0 || xc2 >= mImg.getWidth() ||
                     yc2 >= mImg.getHeight()) {
@@ -388,7 +388,7 @@ public class Canonicalizer {
                 params.setTranslationY(0);
                 params.setRotationInDegrees(AngleUtil.getAngleDifference(90.f, 
                     (float)(cr.orientation*180./Math.PI)));
-
+       
                 // copy and reduce structure in size by scale factor
                 Map<PairInt, PairInt> offsetMap = new HashMap<PairInt, PairInt>();
                 
