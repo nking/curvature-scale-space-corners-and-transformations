@@ -307,7 +307,7 @@ public class MSERMatcher {
                             
                             ssdSum += (vDiff * vDiff);
                         }
-                        hsDiffSum += ssdSum;
+                        ssdSum += hsDiffSum;
                         ssdCount = v_0.size();
                        
                         ssdSum /= (double) ssdCount;
@@ -319,7 +319,7 @@ public class MSERMatcher {
                             (double) maxMatchable);
 
                         // TODO: correct this if end up using it.
-                        //  it's based u//////////////////////pon green only
+                        //  it's based upon green only
                         double err = Math.max(cr0.autocorrel, cr1.autocorrel);
 
                         if (ssdSum <= 2 * err) {
