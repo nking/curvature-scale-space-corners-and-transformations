@@ -76,6 +76,59 @@ public class MSERMatcher {
         List<TIntObjectMap<CRegion>> cRegionsList10,
         List<TIntObjectMap<CRegion>> cRegionsList11) {
        
+        /*
+        NOTE: object matcher filters have reduced the number of regions
+        to a very small number.
+        
+        here, looking at ways to match the remaining mser regions between
+        the 2 datasets robustly.
+        the number of regions is very very small, so results so far are
+        marginal.
+        
+        looking at the success of these in more detail:
+        -- mser elliptical descriptors
+           -- currently using hsv but should change to cielab and deltaE
+              for better illumination correction
+        -- euclidean transformation and evaluations.
+           (brief look suggests that the larger number of points in
+            the tree vegetation is dominating evaluation of a 
+            transformation, for example)
+        
+        if details of the mser descriptors and eucl transformation show
+           that a robust match is not always possible,
+           -- will try to bring in the segmentation labeled regions
+              used in filtering in ObjectMatcher.
+              -- the mser centers which are in the same labeled region
+                 imply that one can make a larger descriptor that 
+                 includes the entire labeled region for it.
+                 -- the combined points as a single region would then
+                    be the descriptors to compare.
+                 -- need a robust way to determine orientation for that
+                    comparison 
+                    - one possibility is again, euclidean transformations
+                      if can keep the number of combinations small
+           -- can use shape matching if needed, but that would require
+              bringing in the segmentation labeled regions also.
+        
+        Note that the above hasn't been tested on a range of data nor objects
+        yet so the filtering may change.
+        
+        Also note that the very fast MSER region finding and the fast
+        superpixels algorithm suggest that a fast segmentation
+        algorithm might be possible using both... superpixels to refine
+        the mser level set boundaries (currently drawn as ellipses).  
+        relationships between regions still
+        needs more information and region growing or a modified
+        normalized cuts though.
+        (the current normalized cuts impl in this project needs adjesment
+        to be able to use adjacency in the process...currently, 
+        labeled regions have a color and all pixels in the image no matter
+        how distant are part of that region).
+        */
+        
+        printNUnique(cRegionsList01.get(0), "dataset0 mser regsions");
+        printNUnique(cRegionsList11.get(0), "dataset1 mser regsions");
+        
         int distTol = 5;//10;
         
         int nImg0 = pyr0.size();
@@ -577,23 +630,6 @@ public class MSERMatcher {
                                 ((float)points0Scale0.getN()));
                             
                             double c = summedCost + (f2 * f2);
-            
-                            if (false && debug) {
-                                System.out.format(
-                                "___im0=%d im1=%d (%d,%d):(%d,%d) (%d,%d):(%d,%d)  desc=%.3f c=%.3f n=%d nmaxm=%d s0=%.2f s1=%.2f\n",
-                                imgIdx0, imgIdx1, 
-                                Math.round((float)p2_0.getX()*scale0), 
-                                Math.round((float)p2_0.getY()*scale0), 
-                                Math.round((float)p2_1.getX()*scale1), 
-                                Math.round((float)p2_1.getY()*scale1),
-                                Math.round((float)p3_0.getX()*scale0), 
-                                Math.round((float)p3_0.getY()*scale0),
-                                Math.round((float)p3_1.getX()*scale1), 
-                                Math.round((float)p3_1.getY()*scale1),
-                                (float) summedCost,
-                                (float)c, m0.getN(), points0Scale0.getN(),
-                                scale0, scale1);                               
-                            }
                             
                             if (c < bestCost) {
                                 bestM0 = m0;
@@ -630,50 +666,23 @@ public class MSERMatcher {
                                     (float) summedCost,
                                     (float)c, m0.getN(), points0Scale0.getN(),
                                     scale0, scale1);
-                                    
-                                    /*
-                                    CorrespondencePlotter plotter = new CorrespondencePlotter(
-                                        pyr0.get(0).get(0).copyToColorGreyscale(), 
-                                        pyr1.get(0).get(0).copyToColorGreyscale());
-                                        //rgb0.get(0).copyToColorGreyscale(), 
-                                        //rgb1.get(0).copyToColorGreyscale());
-                                    for (int ii = 0; ii < bestM0.getN(); ++ii) {
-                                        int x0 = bestM0.getX(ii);
-                                        int y0 = bestM0.getY(ii);
-                                        int x1 = bestM1.getX(ii);
-                                        int y1 = bestM1.getY(ii);
-
-                                        plotter.drawLineInAlternatingColors(x0, y0,
-                                            x1, y1, 0);
-                                    }
-                                    try {
-                                        plotter.writeImage("_DBG_" + imgIdx0 + "_" + imgIdx1);
-                                    } catch (IOException ex) {
-                                        Logger.getLogger(MSERMatcher.class.getName()).log(Level.SEVERE, null, ex);
-                                    }*/
                                 }
                             }
                         }
                     }    
                 }
-            }
+            } // end loop over unique p0 within an octave pair
            
             if (bestM0 != null) {
-                
-                System.out.format(
-                    "im0=%d im1=%d c=%.3f n=%d\n",
-                    imgIdx0, imgIdx1, (float)bestCost,
-                    bestM0.getN());
-
                 if (bestCost < bestCostOverall) {
                     bestCostOverall = bestCost;
                     bestM0Overall = bestM0;
                     bestM1Overall = bestM1;                    
 
-                    CorrespondencePlotter plotter = new CorrespondencePlotter(
-                        pyr0.get(0).get(0).copyToColorGreyscale(), 
-                        pyr1.get(0).get(0).copyToColorGreyscale());
-                    for (int ii = 0; ii < bestM0.getN(); ++ii) {
+                    //CorrespondencePlotter plotter = new CorrespondencePlotter(
+                    //    pyr0.get(0).get(0).copyToColorGreyscale(), 
+                    //    pyr1.get(0).get(0).copyToColorGreyscale());
+                    /*for (int ii = 0; ii < bestM0.getN(); ++ii) {
                         int x0 = bestM0.getX(ii);
                         int y0 = bestM0.getY(ii);
                         int x1 = bestM1.getX(ii);
@@ -681,15 +690,15 @@ public class MSERMatcher {
 
                         plotter.drawLineInAlternatingColors(x0, y0,
                             x1, y1, 0);
-                    }
-                    try {
+                    }*/
+                    /*try {
                         plotter.writeImage("_DEBUG_" + imgIdx0 + "_" + imgIdx1);
                     } catch (IOException ex) {
                         Logger.getLogger(MSERMatcher.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                )
+                    }*/
+                }
             }
-        }
+        } // end loop over each octave pair
         
         if (bestM0Overall == null) {
             return null;
@@ -917,6 +926,21 @@ public class MSERMatcher {
         }
         
         return out;
+    }
+
+    private void printNUnique(TIntObjectMap<CRegion> cRegions, String label) {
+        
+        Set<PairInt> unique = new HashSet<PairInt>();
+                
+        TIntObjectIterator<CRegion> iter = cRegions.iterator();
+        for (int i = 0; i < cRegions.size(); ++i) {
+            iter.advance();
+            CRegion cr = iter.value();
+            PairInt p = new PairInt(cr.xC, cr.yC);
+            unique.add(p);
+        }
+        
+        System.out.println(label + " nUnique=" + unique.size());
     }
     
     private class Obj implements Comparable<Obj>{
