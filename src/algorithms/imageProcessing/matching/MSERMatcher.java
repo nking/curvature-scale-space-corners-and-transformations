@@ -213,7 +213,7 @@ public class MSERMatcher {
 //DEBUG
                     FixedSizeSortedVector<Obj> best01 = new 
                         FixedSizeSortedVector<Obj>(
-                        Math.round(20.5f*np0), Obj.class);
+                        Math.round(1.f*np1), Obj.class);
                     bestPerOctave.get(imgKey).put(idx0, best01);
                     
                     CRegion cr0 = iteri0.value();
@@ -228,7 +228,7 @@ public class MSERMatcher {
                         //TODO: revisit this.  size filter which
                         //   will be the wrong thing to use if occlusion
                         //   is present...
-                        float factor = 2;
+                        float factor = 4;
                         if (true) {
                             double t1, t2;
                             if (cr0.minor > cr1.minor) {
@@ -242,6 +242,17 @@ public class MSERMatcher {
                                 t2 = cr1.major/cr0.major;
                             }
                             if (t1 > factor || t2 > factor) {
+                                /*
+                                String str1 = String.format(
+   "RMVD pyr0=%d pyr1=%d (%d,%d) (%d,%d) t1=%.3f t2=%.3f\n",
+                                    imgIdx0, imgIdx1,
+                                    Math.round((float)cr0.xC*scale0), 
+                                    Math.round((float)cr0.yC*scale0),
+                                    Math.round((float)cr1.xC*scale1),
+                                    Math.round((float)cr1.yC*scale1),
+                                    (float)t1, (float)t2);
+                                System.out.println(str1);
+                                */
                                 continue;
                             }
                         }
@@ -344,7 +355,7 @@ public class MSERMatcher {
                             if (debug) {
                                 
                                 String str1 = String.format(
-                                    "im1=%d im2=%d (%d,%d) (%d,%d) or1=%d or2=%d\n",
+                                    "im0=%d im1=%d (%d,%d) (%d,%d) or1=%d or2=%d\n",
                                     imgIdx0, imgIdx1,
                                     Math.round((float)cr0.xC*scale0), 
                                     Math.round((float)cr0.yC*scale0),
@@ -370,7 +381,7 @@ public class MSERMatcher {
             } // end loop over imgIdx1
         } // end loop over imgIdx0
         
-        /*  
+        /*
         // start debug print
         // once thru to count members
         int count = 0;
@@ -454,7 +465,7 @@ public class MSERMatcher {
                 (float)obj.cr1.yC * img1Scales.get(obj.imgIdx1));
 
             String str1 = String.format(
-                "pyr0=%d pyr1=%d (%d, %d) (%d, %d) c=%.3f\n", 
+                "pyr0=%d pyr1=%d (%d,%d) (%d,%d) c=%.3f\n", 
                 obj.imgIdx0, obj.imgIdx1, x0, y0, x1, y1, (float)obj.cost);
         
             String str2 = String.format(
@@ -466,7 +477,7 @@ public class MSERMatcher {
             System.out.println(str1 + str2);
         }
         // end DEBUG print
-       */
+        */
         
         /*
         NOTE: for one of the more difficult tests,
@@ -559,17 +570,30 @@ public class MSERMatcher {
             Map<PairInt, CRegion> cr10Map = makePointCRMap(cRegionsList10.get(imgIdx1));
             Map<PairInt, CRegion> cr11Map = makePointCRMap(cRegionsList11.get(imgIdx1));
             
+            // keeping the 2 regions separate.
+            // NOTE: there may be conditions in one image that are inverted
+            //    from the template image (=dataset 0) in which one would want
+            //    to combine all of the mser regions or match with the opposite
+            //    so this may need to be revisited one day.
             PairIntArray points0Scale0 = new PairIntArray();
             PairIntArray points1Scale1 = new PairIntArray();
-            points0Scale0.addAll(cr00Map.keySet());
+            PairIntArray points0Scale0_0 = new PairIntArray();
+            PairIntArray points1Scale1_0 = new PairIntArray();
+            points0Scale0_0.addAll(cr00Map.keySet());
             points0Scale0.addAll(cr01Map.keySet());
-            points1Scale1.addAll(cr10Map.keySet());
+            points1Scale1_0.addAll(cr10Map.keySet());
             points1Scale1.addAll(cr11Map.keySet());
         
             TIntObjectMap<PairInt> indexPoint0Map = new TIntObjectHashMap<PairInt>();
             for (int i = 0; i < points0Scale0.getN(); ++i) {
                 PairInt p = new PairInt(points0Scale0.getX(i), points0Scale0.getY(i));
                 indexPoint0Map.put(i, p);
+            }
+            
+            TIntObjectMap<PairInt> indexPoint0Map_0 = new TIntObjectHashMap<PairInt>();
+            for (int i = 0; i < points0Scale0_0.getN(); ++i) {
+                PairInt p = new PairInt(points0Scale0_0.getX(i), points0Scale0_0.getY(i));
+                indexPoint0Map_0.put(i, p);
             }
         
             // combinations of unique0
@@ -619,10 +643,13 @@ public class MSERMatcher {
  
                             PairIntArray m0 = new PairIntArray(points0Scale0.getN());
                             PairIntArray m1 = new PairIntArray(points0Scale0.getN());
-                                                        
                             match(params, 
                                 points0Scale0, points1Scale1, 
                                 m0, m1, indexPoint0Map, 
+                                rgb1.get(0).getWidth(), rgb1.get(0).getHeight(), distTol2);
+                            match(params, 
+                                points0Scale0_0, points1Scale1_0, 
+                                m0, m1, indexPoint0Map_0, 
                                 rgb1.get(0).getWidth(), rgb1.get(0).getHeight(), distTol2);
                          
                             // this has been corrected for area size nnd
@@ -632,9 +659,10 @@ public class MSERMatcher {
                                 cr00Map, cr01Map, cr10Map, cr11Map, m0, m1);
                                                     
                             float f2 = 1.f - ((float)m0.getN()/
-                                ((float)points0Scale0.getN()));
+                                ((float)points0Scale0.getN()/scale0));
                             
-                            double c = summedCost;// + (f2 * f2);
+                            //NOTE: problem here possibly
+                            double c = summedCost + (f2 * f2);
                             
                             if (c < bestCost) {
                                 bestM0 = m0;
@@ -658,7 +686,7 @@ public class MSERMatcher {
                                 
                                 if (debug) {
                                     System.out.format(
-    "___im0=%d im1=%d (%d,%d):(%d,%d) (%d,%d):(%d,%d)  desc=%.3f c=%.3f n=%d nmaxm=%d s0=%.2f s1=%.2f\n",
+    "___im0=%d im1=%d (%d,%d):(%d,%d) (%d,%d):(%d,%d)  desc=%.3f c=%.3f n=%d nmaxm=%d \n",
                                     imgIdx0, imgIdx1, 
                                     Math.round((float)p2_0.getX()*scale0), 
                                     Math.round((float)p2_0.getY()*scale0), 
@@ -669,9 +697,22 @@ public class MSERMatcher {
                                     Math.round((float)p3_1.getX()*scale1), 
                                     Math.round((float)p3_1.getY()*scale1),
                                     (float) summedCost,
-                                    (float)c, m0.getN(), points0Scale0.getN(),
-                                    scale0, scale1);
+                                    (float)c, m0.getN(), points0Scale0.getN());
                                 }
+                            } else {
+                                System.out.format(
+    "NOTBEST im0=%d im1=%d (%d,%d):(%d,%d) (%d,%d):(%d,%d)  desc=%.3f c=%.3f n=%d nmaxm=%d \n",
+                                    imgIdx0, imgIdx1, 
+                                    Math.round((float)p2_0.getX()*scale0), 
+                                    Math.round((float)p2_0.getY()*scale0), 
+                                    Math.round((float)p2_1.getX()*scale1), 
+                                    Math.round((float)p2_1.getY()*scale1),
+                                    Math.round((float)p3_0.getX()*scale0), 
+                                    Math.round((float)p3_0.getY()*scale0),
+                                    Math.round((float)p3_1.getX()*scale1), 
+                                    Math.round((float)p3_1.getY()*scale1),
+                                    (float) summedCost,
+                                    (float)c, m0.getN(), points0Scale0.getN());
                             }
                         }
                     }    
@@ -764,6 +805,7 @@ public class MSERMatcher {
             }
             
             PairInt p0 = indexPoint0Map.get(i);
+            assert(p0 != null);
             outputM0.add(p0); 
             outputM1.add(p1);
             added1.add(p1);

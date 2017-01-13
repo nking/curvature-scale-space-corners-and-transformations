@@ -357,9 +357,9 @@ public class AndroidStatuesTest extends TestCase {
         */
         String[] fileNames1 = new String[]{
         //    "android_statues_01.jpg", // no kp remaining
-              "android_statues_02.jpg", // OK: match0,
-            "android_statues_04.jpg", // OK: match0, 
-           "android_statues_03.jpg" // OK: match0, 
+            "android_statues_02.jpg", // OK:
+            "android_statues_04.jpg", // OK:
+            "android_statues_03.jpg"  // OK:
         };
         
         int fn0 = 0;
