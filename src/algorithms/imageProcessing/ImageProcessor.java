@@ -19,6 +19,7 @@ import algorithms.misc.MiscDebug;
 import algorithms.misc.StatsInSlidingWindow;
 import algorithms.util.ResourceFinder;
 import algorithms.util.TwoDFloatArray;
+import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TFloatList;
@@ -26,6 +27,7 @@ import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
@@ -9587,6 +9589,43 @@ if (sum > 511) {
         
         return theta;
     }
+    
+    public TIntObjectMap<VeryLongBitString> createAdjacencyMap(
+        TObjectIntMap<PairInt> pointIndexMap, List<Set<PairInt>> labeledPoints) {
+
+        int n = labeledPoints.size();
+
+        TIntObjectMap<VeryLongBitString> output
+            = new TIntObjectHashMap<VeryLongBitString>();
+
+        int[] dxs = Misc.dx4;
+        int[] dys = Misc.dy4;
+
+        for (int label = 0; label < n; ++label) {
+            Set<PairInt> set = labeledPoints.get(label);
+            VeryLongBitString nbrs = new VeryLongBitString(n);
+            output.put(label, nbrs);
+
+            for (PairInt p : set) {
+                int x = p.getX();
+                int y = p.getY();
+                for (int k = 0; k < dxs.length; ++k) {
+                    int x2 = x + dxs[k];
+                    int y2 = y + dys[k];
+                    PairInt p2 = new PairInt(x2, y2);
+                    if (pointIndexMap.containsKey(p2)) {
+                        int label2 = pointIndexMap.get(p2);
+                        if (label2 != label) {
+                            nbrs.setBit(label2);
+                        }
+                    }
+                }
+            }
+        }
+
+        return output;
+    }
+
     
     // TODO: implement the methods in 
     // http://www.merl.com/publications/docs/TR2008-030.pdf

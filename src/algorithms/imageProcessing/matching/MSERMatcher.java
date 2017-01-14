@@ -6,6 +6,8 @@ import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.features.CorrespondenceList;
 import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
@@ -22,6 +24,7 @@ import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.QuadInt;
 import algorithms.util.TrioInt;
+import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
@@ -792,6 +795,14 @@ public class MSERMatcher {
         TObjectIntMap<PairInt> pointLabelMap0 = createPointLabelMap(labeledSets0);
         
         TObjectIntMap<PairInt> pointLabelMap1 = createPointLabelMap(labeledSets1);
+        
+        ImageProcessor imageProcessor = new ImageProcessor();        
+        
+        TIntObjectMap<VeryLongBitString> adjMap0 = imageProcessor.createAdjacencyMap(
+            pointLabelMap0, labeledSets0);
+        
+        TIntObjectMap<VeryLongBitString> adjMap1 = imageProcessor.createAdjacencyMap(
+            pointLabelMap1, labeledSets1);
         
         Canonicalizer canonicalizer = new Canonicalizer();
         

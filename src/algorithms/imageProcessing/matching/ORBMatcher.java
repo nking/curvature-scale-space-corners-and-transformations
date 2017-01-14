@@ -247,13 +247,15 @@ public class ORBMatcher {
             }
         }
 
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
         // -- initialize bounds2MapsList and populte on demand
         Map<OneDIntArray, PairIntArray> keyBounds2Map =
             new HashMap<OneDIntArray, PairIntArray>();
 
         // index = index of labeledPoints, item = bitstring with neighbors set
         TIntObjectMap<VeryLongBitString> label2AdjacencyMap
-            = createAdjacencyMap(point2LabelMap, labeledPoints2);
+            = imageProcessor.createAdjacencyMap(point2LabelMap, labeledPoints2);
        
         //key = ordered pair of adjacent label2s, value=size of combined regions
         TObjectIntMap<PairInt> label2PairSizes = new TObjectIntHashMap<PairInt>();
@@ -4720,42 +4722,6 @@ System.out.println(str1 + str2);
         }
 
         return out;
-    }
-
-    private TIntObjectMap<VeryLongBitString> createAdjacencyMap(
-        TObjectIntMap<PairInt> pointIndexMap, List<Set<PairInt>> labeledPoints) {
-
-        int n = labeledPoints.size();
-
-        TIntObjectMap<VeryLongBitString> output
-            = new TIntObjectHashMap<VeryLongBitString>();
-
-        int[] dxs = Misc.dx4;
-        int[] dys = Misc.dy4;
-
-        for (int label = 0; label < n; ++label) {
-            Set<PairInt> set = labeledPoints.get(label);
-            VeryLongBitString nbrs = new VeryLongBitString(n);
-            output.put(label, nbrs);
-
-            for (PairInt p : set) {
-                int x = p.getX();
-                int y = p.getY();
-                for (int k = 0; k < dxs.length; ++k) {
-                    int x2 = x + dxs[k];
-                    int y2 = y + dys[k];
-                    PairInt p2 = new PairInt(x2, y2);
-                    if (pointIndexMap.containsKey(p2)) {
-                        int label2 = pointIndexMap.get(p2);
-                        if (label2 != label) {
-                            nbrs.setBit(label2);
-                        }
-                    }
-                }
-            }
-        }
-
-        return output;
     }
 
     /**
