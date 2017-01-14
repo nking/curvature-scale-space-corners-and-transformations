@@ -9604,8 +9604,9 @@ if (sum > 511) {
         for (int label = 0; label < n; ++label) {
             Set<PairInt> set = labeledPoints.get(label);
             VeryLongBitString nbrs = new VeryLongBitString(n);
-            output.put(label, nbrs);
-
+            
+            boolean aloSet = false;
+            
             for (PairInt p : set) {
                 int x = p.getX();
                 int y = p.getY();
@@ -9617,9 +9618,13 @@ if (sum > 511) {
                         int label2 = pointIndexMap.get(p2);
                         if (label2 != label) {
                             nbrs.setBit(label2);
+                            aloSet = true;
                         }
                     }
                 }
+            }
+            if (aloSet) {
+                output.put(label, nbrs);
             }
         }
 

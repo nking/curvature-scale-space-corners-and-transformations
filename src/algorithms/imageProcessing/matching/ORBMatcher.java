@@ -4698,12 +4698,15 @@ System.out.println(str1 + str2);
                 continue;
             }
 
-            int[] nbrLabels = label2AdjacencyMap.get(label).getSetBits();
-            for (int label2 : nbrLabels) {
-                if (!added.contains(label2) && labelSet.contains(label2)) {
-                    labelList.add(label2);
-                    stack.add(Integer.valueOf(label2));
-                    added.add(label2);
+            VeryLongBitString nbrBS = label2AdjacencyMap.get(label);
+            if (nbrBS != null) {
+                int[] nbrLabels = nbrBS.getSetBits();
+                for (int label2 : nbrLabels) {
+                    if (!added.contains(label2) && labelSet.contains(label2)) {
+                        labelList.add(label2);
+                        stack.add(Integer.valueOf(label2));
+                        added.add(label2);
+                    }
                 }
             }
             visited.add(label);
