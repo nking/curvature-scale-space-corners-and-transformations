@@ -100,15 +100,19 @@ based upon algorithm in paper
        points on the input shapes.
 
        The runtime complexity for the search of the
-       integral image of summed differences and analysis
-       will be added here.  A change has been made to the algorithm,
-       specifically, instead of creating a summed area table as suggested 
-       by the authors which
-       reduces a runtime complexity factor from n to sqrt(n), 
-       the algorithm here uses a summed
-       column table which results in  more precise interval sums
-       by excluding the row component and that change was found necessary
-       for the best articulated results (see the scissors tests).
+       integral image of summed differences and analysis,
+       if a summed area table were used, would be
+       O(m * n), because the reads of the last two dimensions
+       are along the diagonal (sqrt(2) * n for the smallest block
+       size read, and smaller by factor of the block size for
+       a specific block size read).
+       The code here uses a summed column table instead for higher
+       accuracy needed for more precise articulated matches
+       (see the scissors tests).
+       The code here, therefore has a search and analysis runtime
+       complexity of O(m*n*n).
+       (NOTE: will probably copy this code and change that copy back
+       to the summed area and diagonal reads for faster searches...)
  </pre>
  <em>NOTE: You may need to pre-process the shape points
      for example, smooth the boundary.</em>
