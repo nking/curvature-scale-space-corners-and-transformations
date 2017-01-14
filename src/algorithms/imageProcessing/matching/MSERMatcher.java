@@ -5,13 +5,17 @@ import algorithms.QuickSort;
 import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.features.CorrespondenceList;
 import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
+import algorithms.imageProcessing.features.mser.Canonicalizer.CSRegion;
+import algorithms.imageProcessing.features.mser.Region;
 import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
 import algorithms.misc.Misc;
+import algorithms.misc.MiscDebug;
 import algorithms.search.NearestNeighbor2D;
 import algorithms.util.CorrespondencePlotter;
 import algorithms.util.PairInt;
@@ -25,8 +29,10 @@ import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntFloatMap;
 import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TIntFloatHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import java.awt.Color;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -77,6 +83,11 @@ public class MSERMatcher {
         List<TIntObjectMap<CRegion>> cRegionsList11) {
        
         /*
+        TODO: consider returning all best results for the 
+           octave by octave comparisons instead ofjust the best of all
+        */
+        
+        /*
         NOTE: object matcher filters have reduced the number of regions
         to a very small number.
         
@@ -98,6 +109,7 @@ public class MSERMatcher {
            that a robust match is not always possible,
            -- will try to bring in the segmentation labeled regions
               used in filtering in ObjectMatcher.
+              (see matchObject2 in progress)
               -- the mser centers which are in the same labeled region
                  imply that one can make a larger descriptor that 
                  includes the entire labeled region for it.
@@ -765,6 +777,228 @@ public class MSERMatcher {
         return cor;        
     }
 
+    public List<CorrespondenceList> matchObject2(
+        List<List<GreyscaleImage>> pyr0, List<List<GreyscaleImage>> pyr1, 
+        List<Set<PairInt>> labeledSets0, List<Set<PairInt>> labeledSets1,
+        TIntObjectMap<CRegion> cRegions00, TIntObjectMap<CRegion> cRegions01,
+        TIntObjectMap<CRegion> cRegions10, TIntObjectMap<CRegion> cRegions11) {
+       
+        int distTol = 5;//10;
+        
+        GreyscaleImage rgb0 = combineImages(pyr0.get(0));
+        
+        GreyscaleImage rgb1 = combineImages(pyr1.get(0));
+        
+        TObjectIntMap<PairInt> pointLabelMap0 = createPointLabelMap(labeledSets0);
+        
+        TObjectIntMap<PairInt> pointLabelMap1 = createPointLabelMap(labeledSets1);
+        
+        Canonicalizer canonicalizer = new Canonicalizer();
+        
+        TIntObjectMap<CSRegion> csRegions11 = canonicalizer.
+            selectSets(cRegions11, labeledSets1, pointLabelMap1, rgb1);
+        
+        TIntObjectMap<CSRegion> csRegions01 = canonicalizer.
+            selectSets(cRegions01, labeledSets0, pointLabelMap0, rgb0);
+                
+        TIntObjectMap<CSRegion> csRegions10 = canonicalizer.
+            selectSets(cRegions10, labeledSets1, pointLabelMap1, rgb1);
+        
+        TIntObjectMap<CSRegion> csRegions00 = canonicalizer.
+            selectSets(cRegions00, labeledSets0, pointLabelMap0, rgb0);
+
+        if (debug) {
+            debugPrint2(csRegions00, pyr0.get(0), "_csr_0_0_");
+            debugPrint2(csRegions01, pyr0.get(0), "_csr_0_1_");
+            debugPrint2(csRegions10, pyr1.get(0), "_csr_1_0_");
+            debugPrint2(csRegions11, pyr1.get(0), "_csr_1_1_");
+        }
+       
+        int n0 = pyr0.size();
+        int n1 = pyr1.size();
+ 
+        // populated on demand, some are skipped for large size differenes
+       
+        TIntObjectMap<TIntObjectMap<CSRegion>> csr11 
+            = new TIntObjectHashMap<TIntObjectMap<CSRegion>>(); 
+        csr11.put(0, csRegions11);
+        
+        TIntObjectMap<TIntObjectMap<CSRegion>> csr01 
+            = new TIntObjectHashMap<TIntObjectMap<CSRegion>>(); 
+        csr01.put(0, csRegions01);
+        
+        TIntObjectMap<TIntObjectMap<CSRegion>> csr10 
+            = new TIntObjectHashMap<TIntObjectMap<CSRegion>>(); 
+        csr10.put(0, csRegions10);
+        
+        TIntObjectMap<TIntObjectMap<CSRegion>> csr00 
+            = new TIntObjectHashMap<TIntObjectMap<CSRegion>>(); 
+        csr00.put(0, csRegions00);
+        
+        // until include a better way to determine orientation,
+        // need to keep a large number of best to keep true matches
+        // whose orientations are off
+        int top = 50*csRegions00.size();
+        if (top < 5) {
+            top = 5;
+        }
+        
+        int w0 = pyr0.get(0).get(0).getWidth();
+        int h0 = pyr0.get(0).get(0).getHeight();
+        int w1 = pyr1.get(0).get(0).getWidth();
+        int h1 = pyr1.get(0).get(0).getHeight();
+        
+        for (int imgIdx0 = 0; imgIdx0 < n0; ++imgIdx0) {
+            
+            int w0_i = pyr0.get(imgIdx0).get(0).getWidth();
+            int h0_i = pyr0.get(imgIdx0).get(0).getHeight();
+            float scale0 = (((float)w0/(float)w0_i) +
+                ((float)h0/(float)h0_i))/2.f;
+            
+            GreyscaleImage gs0 = combineImages(pyr0.get(imgIdx0));
+            
+            FixedSizeSortedVector<Obj> bestR0 = new 
+                FixedSizeSortedVector<Obj>(top, Obj.class);
+            
+            FixedSizeSortedVector<Obj> bestR1 = new 
+                FixedSizeSortedVector<Obj>(top, Obj.class);
+            
+            for (int imgIdx1 = 0; imgIdx1 < n1; ++imgIdx1) {
+                
+                int w1_i = pyr1.get(imgIdx1).get(0).getWidth();
+                int h1_i = pyr1.get(imgIdx1).get(0).getHeight();
+                float scale1 = (((float)w1/(float)w1_i) +
+                    ((float)h1/(float)h1_i))/2.f;
+                
+                GreyscaleImage gs1 = combineImages(pyr1.get(imgIdx1));
+
+                //NOTE: orientation due to different segmentation 
+                //   can be a weakness in search method
+                                
+                /*
+                search(getOrCreate(csr00, imgIdx0, gs0, scale0), 
+                    getOrCreate(csr10, imgIdx1, gs1, scale1), 
+                    pyr0.get(imgIdx0), pyr1.get(imgIdx1),
+                    scale0, scale1, imgIdx0, imgIdx1, bestR0);
+                */
+                search(getOrCreate(csr01, imgIdx0, gs0, scale0), 
+                    getOrCreate(csr11, imgIdx1, gs1, scale1), 
+                    pyr0.get(imgIdx0), pyr1.get(imgIdx1),
+                    scale0, scale1, imgIdx0, imgIdx1, bestR1);
+                
+                // paused here
+                
+                // TODO: create adjacency lists for the segmentation labeled
+                // regions.
+                // -- if the object in dataset0 has adj relationships,
+                //    can find pairs of adjacent labels in bestR1 results,
+                //    and then, if size is consistent with scale near 1 for the
+                //    octave pair,
+                //    can do a shape search to filter the results to best.
+                //    caveat is that occlusion could be hiding a part of the 
+                //    object and then the search might fail.
+                //    NOTE that since there are only 50 or so labeled regions in
+                //    dataset1 to search, this adjacency check could be performed 
+                //    before patch comparison.
+                // -- else, if the object in dataset0 is a single region,
+                //    can use the shape search singly.
+            }
+            
+            int n3 = bestR1.getNumberOfItems();
+            for (int k = 0; k < n3; ++k) {
+                Obj obj = bestR1.getArray()[k];
+                int w1_i = pyr1.get(obj.imgIdx1).get(0).getWidth();
+                int h1_i = pyr1.get(obj.imgIdx1).get(0).getHeight();
+                float scale1 = (((float)w1/(float)w1_i) +
+                    ((float)h1/(float)h1_i))/2.f;
+                System.out.format(
+                    "I (%d,%d) (%d,%d) im0=%d im1=%d c=%.3f n=%d\n",
+                    Math.round(scale0 * obj.cr0.xC), 
+                    Math.round(scale0 * obj.cr0.yC), 
+                    Math.round(scale1 * obj.cr1.xC), 
+                    Math.round(scale1 * obj.cr1.yC),
+                    obj.imgIdx0, obj.imgIdx1, (float)obj.cost,
+                    obj.nMatched);
+            }
+        }
+         
+        throw new UnsupportedOperationException("not yet implmented");
+    }
+    
+    private TIntObjectMap<CSRegion> getOrCreate(
+        TIntObjectMap<TIntObjectMap<CSRegion>> csrs, 
+        int imgIdx, GreyscaleImage rgb, float scale) {
+        
+        TIntObjectMap<CSRegion> csrMap = csrs.get(imgIdx);
+        if (csrMap != null) {
+            return csrMap;
+        }
+        csrMap = new TIntObjectHashMap<CSRegion>();
+        csrs.put(imgIdx, csrMap);
+        
+        TIntObjectMap<CSRegion> csrMap0 = csrs.get(0);
+        
+        int w = rgb.getWidth();
+        int h = rgb.getHeight();
+        
+        TIntObjectIterator<CSRegion> iter = csrMap0.iterator();
+        for (int i = 0; i < csrMap0.size(); ++i) {
+            iter.advance();
+            int idx = iter.key();
+            CSRegion csr = iter.value();
+            
+            Set<PairInt> scaledSet = extractScaledPts(csr, w, h, scale);
+            
+            TIntList xs = new TIntArrayList();
+            TIntList ys = new TIntArrayList();
+
+            Region r = new Region();
+            for (PairInt pl : scaledSet) {
+                r.accumulate(pl.getX(), pl.getY());
+                xs.add(pl.getX());
+                ys.add(pl.getY());
+            }
+
+            int[] xy = new int[2];
+            r.calculateXYCentroid(xy, w, h);
+            int x = xy[0];
+            int y = xy[1];
+            assert(x >= 0 && x < w);
+            assert(y >= 0 && y < h);
+            double[] m = r.calcParamTransCoeff();
+
+            double angle = Math.atan(m[0]/m[2]);
+            if (angle < 0) {
+                angle += Math.PI;
+            }
+
+            double major = 2. * m[4];
+            double minor = 2. * m[5];
+
+            double ecc = Math.sqrt(major * major - minor * minor)/major;
+            assert(!Double.isNaN(ecc));
+
+            Map<PairInt, PairInt> offsetMap = Canonicalizer.createOffsetToOrigMap(
+                x, y, xs, ys, w, h, angle);
+            
+            double autocorrel = Canonicalizer.calcAutoCorrel(rgb, x, y, offsetMap);
+            
+            CSRegion csRegion = new CSRegion();
+            csRegion.orientation = angle;
+            csRegion.eccentricity = ecc;
+            csRegion.major = major;
+            csRegion.minor = minor;
+            csRegion.xC = x;
+            csRegion.yC = y;
+            csRegion.offsetsToOrigCoords = offsetMap;
+            csRegion.autocorrel = Math.sqrt(autocorrel)/255.;
+            
+            csrMap.put(idx, csRegion);
+        }
+        
+        return csrMap;
+    }
+    
     private void match(TransformationParameters params, 
         PairIntArray points0, PairIntArray points1, 
         PairIntArray outputM0, PairIntArray outputM1,
@@ -989,6 +1223,245 @@ public class MSERMatcher {
         
         System.out.println(label + " nUnique=" + unique.size());
     }
+
+    private GreyscaleImage combineImages(List<GreyscaleImage> rgb) {
+
+        GreyscaleImage r = rgb.get(0);
+        GreyscaleImage g = rgb.get(1);
+        GreyscaleImage b = rgb.get(2);
+        
+        if (r.getWidth() != g.getWidth() || r.getWidth() != b.getWidth() ||
+            r.getHeight() != g.getHeight() || r.getHeight() != b.getHeight()) {
+            throw new IllegalArgumentException("r, g, and b must have same"
+                + " width and height");
+        }
+        
+        int w = r.getWidth();
+        int h = r.getHeight();
+        
+        GreyscaleImage comb = new GreyscaleImage(w, h, r.getType());
+        
+        for (int i = 0; i < r.getNPixels(); ++i) {
+            float v0 = r.getValue(i);
+            float v1 = g.getValue(i);
+            float v2 = b.getValue(i);
+            float avg = (v0 + v1 + v2)/3.f;
+            
+            comb.setValue(i, Math.round(avg));
+        }
+        
+        return comb;
+    }
+
+    private TObjectIntMap<PairInt> createPointLabelMap(
+        List<Set<PairInt>> labeledSets) {
+
+        TObjectIntMap<PairInt> pointLabelMap = new TObjectIntHashMap<PairInt>();
+        
+        for (int label = 0; label < labeledSets.size(); ++label) {
+            Set<PairInt> set = labeledSets.get(label);
+            for (PairInt p : set) {
+                pointLabelMap.put(p, label);
+            }
+        }
+        
+        return pointLabelMap;
+    }
+
+    private void search(TIntObjectMap<CSRegion> csr0, TIntObjectMap<CSRegion> csr1, 
+        List<GreyscaleImage> rgb0, List<GreyscaleImage> rgb1, 
+        float scale0, float scale1, int imgIdx0, int imgIdx1,
+        FixedSizeSortedVector<Obj> best) {
+    
+        TIntObjectIterator<CSRegion> iter0 = csr0.iterator();
+        for (int i = 0; i < csr0.size(); ++i) {
+        
+            iter0.advance();
+            
+            CSRegion csrA = iter0.value();
+            double majA = csrA.major;
+            
+            TIntObjectIterator<CSRegion> iter1 = csr1.iterator();
+            for (int j = 0; j < csr1.size(); ++j) {
+                
+                iter1.advance();
+                
+                CSRegion csrB = iter1.value();
+           
+                // this method is used in pyramid scaled comparisons,
+                // so we expect that similar objects have similar size.
+                // NOTE: this filter may need adjustment.
+                double majB = csrB.major;
+                if ((majA > majB && (majA/majB) > 2) ||
+                    (majB > majA && (majB/majA) > 2)) {
+                    
+                    System.out.format(
+                        "RMVD (%d,%d) (%d,%d) im0=%d im1=%d maj0=%.3f, maj1=%.2f\n\n",
+                        csrA.xC, csrA.yC, csrB.xC, csrB.yC,
+                        imgIdx0, imgIdx1, (float)csrA.major, (float)csrB.major);
+                    
+                    continue;
+                }
+                
+                //TODO: consider whether to return the matched pixels
+                // [ssdSum, f, err, ssdCount, costTot]
+                double[] costs = matchRegion(csrA, csrB, rgb0, rgb1, scale0,
+                    scale1);
+                
+                Obj obj = new Obj();
+                obj.cr0 = csrA;
+                obj.cr1 = csrB;
+                obj.imgIdx0 = imgIdx0;
+                obj.imgIdx1 = imgIdx1;
+                obj.ssd = costs[0];
+                obj.nMatched = (int)costs[3];
+                obj.cost = costs[4];
+
+                boolean added = best.add(obj);
+                
+                System.out.format(
+                    "(%d,%d) (%d,%d) im0=%d im1=%d c=%.3f (%.3f,%.3f) added=%b\n",
+                    csrA.xC, csrA.yC, csrB.xC, csrB.yC,
+                    imgIdx0, imgIdx1, (float)obj.cost,
+                    (float)costs[0], (float)costs[1], added);
+            }
+        }
+    }
+
+    private Set<PairInt> extractScaledPts(CSRegion csr, int w, int h, 
+        float scale) {
+        
+        Set<PairInt> scaledSet = new HashSet<PairInt>();
+        for (Entry<PairInt, PairInt> entry : csr.offsetsToOrigCoords.entrySet()) {
+            
+            PairInt p = entry.getValue();
+            
+            int xScaled = Math.round((float) p.getX() / scale);
+            int yScaled = Math.round((float) p.getY() / scale);
+            if (xScaled == -1) {
+                xScaled = 0;
+            }
+            if (yScaled == -1) {
+                yScaled = 0;
+            }
+            if (xScaled == w) {
+                xScaled = w - 1;
+            }
+            if (yScaled == h) {
+                yScaled = h - 1;
+            }
+            PairInt pOrigScaled = new PairInt(xScaled, yScaled);
+
+            scaledSet.add(pOrigScaled);
+        }
+        
+        return scaledSet;
+    }
+
+    /**
+     * 
+     * @param csr0
+     * @param csr1
+     * @param rgb0
+     * @param rgb1
+     * @param scale0
+     * @param scale1
+     * @return [ssdSum, f, err, ssdCount, costTot]
+     */
+    private double[] matchRegion(CSRegion csr0, CSRegion csr1, 
+        List<GreyscaleImage> rgb0, List<GreyscaleImage> rgb1, 
+        float scale0, float scale1) {
+       
+        float[] hsv = new float[3];
+        TIntList v_0 = new TIntArrayList();
+        TIntList v_1 = new TIntArrayList();
+        
+        Map<PairInt, PairInt> offsetMap1 = csr1.offsetsToOrigCoords;
+        
+        int maxMatchable = Math.min(csr0.offsetsToOrigCoords.size(), 
+            offsetMap1.size());
+        
+        long hsDiffSum = 0;
+        double ssdSum = 0;
+        int ssdCount = 0;
+        int n = 0;
+        
+        // key = transformed offsets, value = coords in image ref frame,
+        // so, can compare dataset0 and dataset1 points with same 
+        //  keys
+        for (Entry<PairInt, PairInt> entry0 : csr0.offsetsToOrigCoords.entrySet()) {
+
+            PairInt pOffset0 = entry0.getKey();
+            
+            PairInt xy1 = offsetMap1.get(pOffset0);
+            
+            if (xy1 == null) {
+                continue;
+            }
+            
+            PairInt xy0 = entry0.getValue();
+            
+            Color.RGBtoHSB(rgb0.get(0).getValue(xy0), 
+                rgb0.get(1).getValue(xy0), 
+                rgb0.get(2).getValue(xy0), hsv);
+
+            int h_0 = Math.round(hsv[0]*255.f);
+            int s_0 = Math.round(hsv[1]*255.f);
+            v_0.add(Math.round(hsv[2]*255.f));
+
+            Color.RGBtoHSB(rgb1.get(0).getValue(xy1), 
+                rgb1.get(1).getValue(xy1), 
+                rgb1.get(2).getValue(xy1), hsv);
+
+            int h_1 = Math.round(hsv[0]*255.f);
+            int s_1 = Math.round(hsv[1]*255.f);
+            v_1.add(Math.round(hsv[2]*255.f));
+
+            int hDiff = h_0 - h_1;
+            int sDiff = s_0 - s_1;
+            hsDiffSum += (hDiff * hDiff + sDiff * sDiff);
+        
+            n++;
+        }
+        if (v_1.isEmpty()) {
+            return null;
+        }
+
+        // average vs
+        long v0Avg = 0;
+        long v1Avg = 0;
+        for (int jj = 0; jj < v_0.size(); ++jj) {
+            v0Avg += v_0.get(jj);
+            v1Avg += v_1.get(jj);
+        }
+        v0Avg /= v_0.size();
+        v1Avg /= v_1.size();
+
+        for (int jj = 0; jj < v_0.size(); ++jj) {
+            int vDiff = (v_0.get(jj) - (int)v0Avg) - 
+                (v_1.get(jj) - (int)v1Avg);
+            //int vDiff = v_0.get(jj) - v_1.get(jj);
+
+            ssdSum += (vDiff * vDiff);
+        }
+        ssdSum += hsDiffSum;
+        ssdCount = v_0.size();
+
+        ssdSum /= (double) ssdCount;
+        ssdSum = Math.sqrt(ssdSum);
+        //ssdSum /= (255. * 3.);
+        ssdSum /= (255. * 2.);
+
+        double f = 1. - ((double) ssdCount / (double) maxMatchable);
+
+        // TODO: correct this if end up using it.
+        //  it's based upon green only
+        double err = Math.max(csr0.autocorrel, csr1.autocorrel);
+
+        double costTot = ssdSum * ssdSum + f * f;
+        
+        return new double[]{ssdSum, f, err, ssdCount, costTot};
+    }
     
     private class Obj implements Comparable<Obj>{
         CRegion cr0;
@@ -1015,4 +1488,31 @@ public class MSERMatcher {
         int diffY = p1.getY() - p2.getY();
         return (int) Math.sqrt(diffX * diffX + diffY * diffY);
     }
+    
+    private void debugPrint2(TIntObjectMap<CSRegion> cRegions, 
+        List<GreyscaleImage> rgb, String label) {
+        
+        Image img1 = rgb.get(1).copyToColorGreyscale();
+
+        TIntObjectIterator<CSRegion> iter = cRegions.iterator();
+
+        int nExtraDot = 0;
+
+        for (int ii = 0; ii < cRegions.size(); ++ii) {
+            iter.advance();
+
+            int idx = iter.key();
+
+            CRegion cr = iter.value();
+
+            int[] clr = ImageIOHelper.getNextRGB(ii);
+
+            cr.draw(img1, nExtraDot, clr[0], clr[1], clr[2]);
+        }
+
+        MiscDebug.writeImage(img1, label + "_" + "_csrs_");
+    
+        System.out.println(cRegions.size() + " labeled regions for " + label);
+    }
+
 }
