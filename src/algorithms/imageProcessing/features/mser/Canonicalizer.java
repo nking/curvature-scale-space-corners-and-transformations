@@ -149,7 +149,7 @@ public class Canonicalizer {
      * the use of canonicalized mser region
      */
     public static class CSRegion extends CRegion {
-
+        int label;
     }
 
     /**
@@ -572,6 +572,7 @@ public class Canonicalizer {
             double autocorrel = calcAutoCorrel(img, x, y, offsetMap);
             
             CSRegion csRegion = new CSRegion();
+            csRegion.label = label;
             csRegion.orientation = angle;
             csRegion.eccentricity = ecc;
             csRegion.major = major;

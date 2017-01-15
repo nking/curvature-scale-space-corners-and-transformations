@@ -18,6 +18,7 @@ import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
 import algorithms.search.NearestNeighbor2D;
 import algorithms.util.CorrespondencePlotter;
 import algorithms.util.PairInt;
@@ -39,6 +40,7 @@ import gnu.trove.map.hash.TObjectIntHashMap;
 import java.awt.Color;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -804,6 +806,10 @@ public class MSERMatcher {
         TIntObjectMap<VeryLongBitString> adjMap1 = imageProcessor.createAdjacencyMap(
             pointLabelMap1, labeledSets1);
         
+        NearestNeighbor2D nn0 = createNN(labeledSets0);
+        
+        NearestNeighbor2D nn1 = createNN(labeledSets1);
+        
         Canonicalizer canonicalizer = new Canonicalizer();
         
         TIntObjectMap<CSRegion> csRegions11 = canonicalizer.
@@ -885,22 +891,44 @@ public class MSERMatcher {
 
                 //NOTE: orientation due to different segmentation 
                 //   can be a weakness in search method
-                                
+            
+                int top2 = top/n1;
+                if (top2 < csRegions00.size()) {
+                    top2 = csRegions00.size();
+                }
+            
+                FixedSizeSortedVector<Obj> bR0 = new 
+                    FixedSizeSortedVector<Obj>(top2, Obj.class);
+            
+                FixedSizeSortedVector<Obj> bR1 = new 
+                    FixedSizeSortedVector<Obj>(top2, Obj.class);                
+                
                 /*
                 search(getOrCreate(csr00, imgIdx0, gs0, scale0), 
                     getOrCreate(csr10, imgIdx1, gs1, scale1), 
                     pyr0.get(imgIdx0), pyr1.get(imgIdx1),
-                    scale0, scale1, imgIdx0, imgIdx1, bestR0);
+                    scale0, scale1, imgIdx0, imgIdx1, bR0);
                 */
                 search(getOrCreate(csr01, imgIdx0, gs0, scale0), 
                     getOrCreate(csr11, imgIdx1, gs1, scale1), 
                     pyr0.get(imgIdx0), pyr1.get(imgIdx1),
-                    scale0, scale1, imgIdx0, imgIdx1, bestR1);
+                    scale0, scale1, imgIdx0, imgIdx1, bR1);
                 
-                // paused here
-                
-                // TODO: create adjacency lists for the segmentation labeled
-                // regions.
+                if (adjMap0.size() > 1) {
+                    
+                    // if there is occlusion, this can possibly remove a true match
+                    
+                    // lists of matches consistent with adjacency and scale
+                    List<List<Obj>> sortedFilteredBestR1 = filterForAdjacency(
+                        bR1, 
+                        pointLabelMap0, pointLabelMap1, adjMap0, adjMap1, nn0, nn1,
+                        scale0, scale1, imgIdx0, imgIdx1, distTol);
+                        
+                    //TODO: add to bestR0 and bestR1
+                } else {
+                    //TODO: add to bestR0 and bestR1
+                }
+                                
                 // -- if the object in dataset0 has adj relationships,
                 //    can find pairs of adjacent labels in bestR1 results,
                 //    and then, if size is consistent with scale near 1 for the
@@ -958,6 +986,7 @@ public class MSERMatcher {
             int idx = iter.key();
             CSRegion csr = iter.value();
             
+            // these are in scale of individual octave (not full reference frame)
             Set<PairInt> scaledSet = extractScaledPts(csr, w, h, scale);
             
             TIntList xs = new TIntArrayList();
@@ -1284,6 +1313,8 @@ public class MSERMatcher {
         float scale0, float scale1, int imgIdx0, int imgIdx1,
         FixedSizeSortedVector<Obj> best) {
     
+        // coords are in the individual octave reference frames
+        
         TIntObjectIterator<CSRegion> iter0 = csr0.iterator();
         for (int i = 0; i < csr0.size(); ++i) {
         
@@ -1313,7 +1344,15 @@ public class MSERMatcher {
                     
                     continue;
                 }
-                
+  //(54,25)  108,51 
+  if (imgIdx1 == 1) {
+      if (csrB.xC == 54 && csrB.yC == 25) {
+          int z = 0;
+      }
+      if (csrB.xC == 108 && csrB.yC == 51) {
+          int z = 0;
+      }
+  }
                 //TODO: consider whether to return the matched pixels
                 // [ssdSum, f, err, ssdCount, costTot]
                 double[] costs = matchRegion(csrA, csrB, rgb0, rgb1, scale0,
@@ -1335,6 +1374,14 @@ public class MSERMatcher {
                     csrA.xC, csrA.yC, csrB.xC, csrB.yC,
                     imgIdx0, imgIdx1, (float)obj.cost,
                     (float)costs[0], (float)costs[1], added);
+  if (added && imgIdx1 == 1) {
+      if (csrB.xC == 54 && csrB.yC == 25) {
+          int z = 0;
+      }
+      if (csrB.xC == 108 && csrB.yC == 51) {
+          int z = 0;
+      }
+  } 
             }
         }
     }
@@ -1473,6 +1520,225 @@ public class MSERMatcher {
         
         return new double[]{ssdSum, f, err, ssdCount, costTot};
     }
+
+    /**
+     * given the adjacency maps of the template, dataset 0, and the searchable
+     * image, dataset 1, this looks for consistent adjacency and distance
+     * between pairings in bestR and returns those.
+     * 
+     * @param bestR
+     * @param adjMap0
+     * @param adjMap1
+     * @param scale0
+     * @param scale1
+     * @param imgIdx0
+     * @param imgIdx1
+     * @return 
+     */
+    private List<List<Obj>> filterForAdjacency(FixedSizeSortedVector<Obj> bestR, 
+        TObjectIntMap<PairInt> pointLabelMap0,
+        TObjectIntMap<PairInt> pointLabelMap1,
+        TIntObjectMap<VeryLongBitString> adjMap0,
+        TIntObjectMap<VeryLongBitString> adjMap1,
+        NearestNeighbor2D nn0, NearestNeighbor2D nn1,
+        float scale0, float scale1, int imgIdx0, int imgIdx1,
+        int distTol) {
+        
+        if (bestR.getNumberOfItems() == 0) {
+            return null;
+        } else if (bestR.getNumberOfItems() == 1) {
+            List<List<Obj>> out = new ArrayList<List<Obj>>();
+            List<Obj> out2 = new ArrayList<Obj>();
+            out.add(out2);
+            out2.add(bestR.getArray()[0]);
+            return out;
+        }
+
+        // ---- create lists of pairs from bestR that are consistent with
+        //      adjacency and with separation in reference frames being 
+        //      approximately the same
+        
+        // these are in octave coord frames
+        
+        //key = unique xyCen0, value = index in lists
+        TObjectIntMap<PairInt> xyCen0Indexes = new TObjectIntHashMap<PairInt>();
+        List<List<Obj>> xyCen0Objs = new ArrayList<List<Obj>>();
+        List<PairInt> xyCen0s = new ArrayList<PairInt>();
+        int n = bestR.getNumberOfItems();
+        for (int i = 0; i < n; ++i) {
+            Obj obj = bestR.getArray()[i];
+            PairInt p = new PairInt(obj.cr0.xC, obj.cr0.yC);
+            if (!xyCen0Indexes.containsKey(p)) {
+                int sz = xyCen0Indexes.size();
+                xyCen0s.add(p);
+                xyCen0Objs.add(new ArrayList<Obj>());
+                xyCen0Indexes.put(p, sz);
+            }
+            int idx = xyCen0Indexes.get(p);
+            xyCen0Objs.get(idx).add(obj);
+        }
+        
+        assert(xyCen0Indexes.size() == xyCen0Objs.size());
+        assert(xyCen0Indexes.size() == xyCen0s.size());
+        
+        List<List<Obj>> filtered = new ArrayList<List<Obj>>();
+    
+        int distTol2 = Math.round((float)distTol/scale1);
+        if (distTol2 < 1) {
+            distTol2 = 1;
+        }
+
+        Set<PairInt> uniqueFiltered0 = new HashSet<PairInt>();
+        
+        int dMax = 2;
+        
+        float factor = 1.3f;
+        
+        for (int i = 0; i < xyCen0Objs.size(); ++i) {
+            
+            List<Obj> listI = xyCen0Objs.get(i);
+            
+            for (int ii = 0; ii < listI.size(); ++ii) {
+            
+                Obj objI = listI.get(ii);
+                assert(objI.imgIdx0 == imgIdx0);
+                assert(objI.imgIdx1 == imgIdx1);
+                
+                // the only vars in octave frame are the obj instances
+                Set<PairInt> nearestI = nn0.findClosest(
+                    Math.round(scale0 * objI.cr0.xC), 
+                    Math.round(scale0 * objI.cr0.yC), dMax);
+                assert(nearestI != null && !nearestI.isEmpty());
+                PairInt pI = nearestI.iterator().next();
+                int labelI = pointLabelMap0.get(pI);
+                VeryLongBitString adjI = adjMap0.get(labelI);
+      
+                Set<PairInt> nearestI_1 = nn1.findClosest(
+                    Math.round(scale1 * objI.cr1.xC), 
+                    Math.round(scale1 * objI.cr1.yC), dMax);
+                assert(nearestI_1 != null && !nearestI_1.isEmpty());
+                PairInt pI_1 = nearestI_1.iterator().next();
+                int labelI_1 = pointLabelMap1.get(pI_1);
+                VeryLongBitString adjI_1 = adjMap1.get(labelI_1);
+                
+                // for each pairing in listI, find pairings in the other lists
+                //    that are consistent with adjacent and distance
+                for (int j = (i + 1); j < xyCen0Objs.size(); ++j) {
+
+                    List<Obj> listJ = xyCen0Objs.get(j);
+
+                    for (int jj = 0; jj < listJ.size(); ++jj) {
+                        
+                        Obj objJ = listJ.get(jj);
+                        
+                        Set<PairInt> nearestJ = nn0.findClosest(
+                            Math.round(scale0 * objJ.cr0.xC),
+                            Math.round(scale0 * objJ.cr0.yC), dMax);
+                        assert (nearestJ != null);
+                        PairInt pJ = nearestJ.iterator().next();
+                        int labelJ = pointLabelMap0.get(pJ);
+                        if (adjI.isNotSet(labelJ)) {
+                            continue;
+                        }
+                
+                        Set<PairInt> nearestJ_1 = nn1.findClosest(
+                            Math.round(scale1 * objJ.cr1.xC),
+                            Math.round(scale1 * objJ.cr1.yC), dMax);
+                        assert (nearestJ_1 != null);
+                        PairInt pJ_1 = nearestJ_1.iterator().next();
+                        int labelJ_1 = pointLabelMap1.get(pJ_1);
+                        if (adjI_1.isNotSet(labelJ_1)) {
+                            continue;
+                        }
+                        
+                        double d0 = distance(objI.cr0.xC, objI.cr0.yC,
+                            objJ.cr0.xC, objJ.cr0.yC);
+                        
+                        double d1 = distance(objI.cr1.xC, objI.cr1.yC,
+                            objJ.cr1.xC, objJ.cr1.yC);
+                    
+                        if ((d0 > d1 && (d0/d1) > factor) ||
+                            (d1 > d0 && (d1/d0) > factor)) {
+                            continue;
+                        }
+                        
+                        List<Obj> out = new ArrayList<Obj>();
+                        out.add(objI);
+                        out.add(objJ);
+                        
+                        filtered.add(out);
+                    }
+                }
+            }
+        }
+        
+        TFloatList sumCosts = new TFloatArrayList();
+        
+        for (int i = 0; i < filtered.size(); ++i) {
+            
+            List<Obj> list = filtered.get(i);
+            
+            float sumCost = 0;
+            
+            for (int j = 0; j < list.size(); ++j) {                
+                Obj obj = list.get(j);
+                sumCost += (float)obj.cost; 
+                int x0 = Math.round(scale0 * obj.cr0.xC);
+                int y0 = Math.round(scale0 * obj.cr0.yC);
+                uniqueFiltered0.add(new PairInt(x0, y0));
+            }
+            sumCosts.add(sumCost);            
+        }
+       
+        QuickSort.sortBy1stArg(sumCosts, filtered);
+
+        { // DEBUG        
+            for (int i = 0; i < filtered.size(); ++i) {
+                List<Obj> list = filtered.get(i);
+                StringBuilder sb = new StringBuilder("filter ");
+                for (int j = 0; j < list.size(); ++j) {
+                    Obj obj = list.get(j);                
+                    int x0 = Math.round(scale0 * obj.cr0.xC);
+                    int y0 = Math.round(scale0 * obj.cr0.yC);
+                    int x1 = Math.round(scale1 * obj.cr1.xC);
+                    int y1 = Math.round(scale1 * obj.cr1.yC);
+                    sb.append(String.format(" (%d,%d):(%d,%d) ", x0, y0, x1, y1));
+                }
+                for (int j = 0; j < list.size(); ++j) {
+                    Obj obj = list.get(j);
+                    sb.append(String.format(" c=%.3f ", obj.cost));
+                }
+                System.out.println(sb.toString());
+            }
+        }
+       
+        System.out.println("n unique ref0 in filtered=" + uniqueFiltered0.size());
+       
+        if (uniqueFiltered0.size() > 2) {
+            // -- merge the consistent lists in filtered ---
+            // -- transform unique points0 to reference frame 1 and find nearest
+           
+        }
+        
+        //paused here
+        
+        return filtered;
+    }
+
+    private NearestNeighbor2D createNN(List<Set<PairInt>> labeledSets) {
+
+        Set<PairInt> allPoints = new HashSet<PairInt>();
+        for (Set<PairInt> set : labeledSets) {
+            allPoints.addAll(set);
+        }
+        
+        int[] xyMinMax = MiscMath.findMinMaxXY(allPoints);
+        
+        NearestNeighbor2D nn = new NearestNeighbor2D(allPoints, 
+            xyMinMax[1] + 10, xyMinMax[3] + 10);
+        
+        return nn;
+    }
     
     private class Obj implements Comparable<Obj>{
         CRegion cr0;
@@ -1497,6 +1763,12 @@ public class MSERMatcher {
     public static int distance(PairInt p1, PairInt p2) {
         int diffX = p1.getX() - p2.getX();
         int diffY = p1.getY() - p2.getY();
+        return (int) Math.sqrt(diffX * diffX + diffY * diffY);
+    }
+    
+    public static int distance(int x0, int y0, int x1, int y1) {
+        int diffX = x0 - x1;
+        int diffY = y0 - y1;
         return (int) Math.sqrt(diffX * diffX + diffY * diffY);
     }
     
