@@ -37,6 +37,8 @@ import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TIntFloatHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.awt.Color;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -913,8 +915,8 @@ public class MSERMatcher {
                     getOrCreate(csr11, imgIdx1, gs1, scale1), 
                     pyr0.get(imgIdx0), pyr1.get(imgIdx1),
                     scale0, scale1, imgIdx0, imgIdx1, bR1);
-                
-                if (adjMap0.size() > 1) {
+
+                if (adjMap0.size() > 1 && bR1.getNumberOfItems() > 0) {
                     
                     // if there is occlusion, this can possibly remove a true match
                     
@@ -923,7 +925,29 @@ public class MSERMatcher {
                         bR1, 
                         pointLabelMap0, pointLabelMap1, adjMap0, adjMap1, nn0, nn1,
                         scale0, scale1, imgIdx0, imgIdx1, distTol);
-                        
+                    
+                    if (sortedFilteredBestR1 == null) {
+                        continue;
+                    }
+                    
+                    // TODO: if the top items in sortedFilteredBestR1 
+                    //  have sizes of 1, that
+                    //  is, only one region matched, and if adjMap0.size is
+                    //  larger than 1, look for the missing regions in the
+                    //  adjacent regions of the top sortedFilteredBestR1 item and
+                    //  if those adjacent labeled regions are not searched mser
+                    //  regions, then create mser regions and match and 
+                    //  calc costs and resort sortedFilteredBestR1
+                    
+                    // for others, more information is still needed to determine
+                    // best cost OR there is an error in computing one of the
+                    // terms of the objective function (the term measuring
+                    // the number matched out of number possible).
+                    // if the objective function is fine,
+                    //    then, should combine the matched segmented cell regions
+                    //    and repeat the ssd match.
+                    //    then, might also need the shape matching.
+                    
                     //TODO: add to bestR0 and bestR1
                 } else {
                     //TODO: add to bestR0 and bestR1
@@ -985,9 +1009,17 @@ public class MSERMatcher {
             iter.advance();
             int idx = iter.key();
             CSRegion csr = iter.value();
+         
+            if (csr.offsetsToOrigCoords.size() < 9) {
+                continue;
+            }
             
             // these are in scale of individual octave (not full reference frame)
             Set<PairInt> scaledSet = extractScaledPts(csr, w, h, scale);
+            
+            if (scaledSet.size() < 9) {
+                continue;
+            }
             
             TIntList xs = new TIntArrayList();
             TIntList ys = new TIntArrayList();
@@ -1315,12 +1347,19 @@ public class MSERMatcher {
     
         // coords are in the individual octave reference frames
         
+        float factor = 2.5f;
+        
         TIntObjectIterator<CSRegion> iter0 = csr0.iterator();
         for (int i = 0; i < csr0.size(); ++i) {
         
             iter0.advance();
             
             CSRegion csrA = iter0.value();
+            
+            if (csrA.offsetsToOrigCoords.size() < 9) {
+                continue;
+            }
+            
             double majA = csrA.major;
             
             TIntObjectIterator<CSRegion> iter1 = csr1.iterator();
@@ -1329,13 +1368,17 @@ public class MSERMatcher {
                 iter1.advance();
                 
                 CSRegion csrB = iter1.value();
-           
+             
+                if (csrB.offsetsToOrigCoords.size() < 9) {
+                    continue;
+                }
+                
                 // this method is used in pyramid scaled comparisons,
                 // so we expect that similar objects have similar size.
                 // NOTE: this filter may need adjustment.
                 double majB = csrB.major;
-                if ((majA > majB && (majA/majB) > 2) ||
-                    (majB > majA && (majB/majA) > 2)) {
+                if ((majA > majB && (majA/majB) > factor) ||
+                    (majB > majA && (majB/majA) > factor)) {
                     
                     System.out.format(
                         "RMVD (%d,%d) (%d,%d) im0=%d im1=%d maj0=%.3f, maj1=%.2f\n\n",
@@ -1343,16 +1386,13 @@ public class MSERMatcher {
                         imgIdx0, imgIdx1, (float)csrA.major, (float)csrB.major);
                     
                     continue;
-                }
-  //(54,25)  108,51 
-  if (imgIdx1 == 1) {
-      if (csrB.xC == 54 && csrB.yC == 25) {
-          int z = 0;
-      }
-      if (csrB.xC == 108 && csrB.yC == 51) {
-          int z = 0;
-      }
-  }
+                } /*else {
+                    System.out.format(
+                        "KEPT (%d,%d) (%d,%d) im0=%d im1=%d maj0=%.3f, maj1=%.2f\n\n",
+                        csrA.xC, csrA.yC, csrB.xC, csrB.yC,
+                        imgIdx0, imgIdx1, (float)csrA.major, (float)csrB.major);
+                }*/
+
                 //TODO: consider whether to return the matched pixels
                 // [ssdSum, f, err, ssdCount, costTot]
                 double[] costs = matchRegion(csrA, csrB, rgb0, rgb1, scale0,
@@ -1373,15 +1413,7 @@ public class MSERMatcher {
                     "(%d,%d) (%d,%d) im0=%d im1=%d c=%.3f (%.3f,%.3f) added=%b\n",
                     csrA.xC, csrA.yC, csrB.xC, csrB.yC,
                     imgIdx0, imgIdx1, (float)obj.cost,
-                    (float)costs[0], (float)costs[1], added);
-  if (added && imgIdx1 == 1) {
-      if (csrB.xC == 54 && csrB.yC == 25) {
-          int z = 0;
-      }
-      if (csrB.xC == 108 && csrB.yC == 51) {
-          int z = 0;
-      }
-  } 
+                    (float)costs[0], (float)costs[1], added); 
             }
         }
     }
@@ -1555,11 +1587,10 @@ public class MSERMatcher {
         }
 
         // ---- create lists of pairs from bestR that are consistent with
-        //      adjacency and with separation in reference frames being 
-        //      approximately the same
+        //      adjacency and with separation being 
+        //      approximately the same in the right image scales
         
         // these are in octave coord frames
-        
         //key = unique xyCen0, value = index in lists
         TObjectIntMap<PairInt> xyCen0Indexes = new TObjectIntHashMap<PairInt>();
         List<List<Obj>> xyCen0Objs = new ArrayList<List<Obj>>();
@@ -1588,6 +1619,8 @@ public class MSERMatcher {
             distTol2 = 1;
         }
 
+        System.out.println("xyCen0Objs.size()=" + xyCen0Objs.size());
+        
         Set<PairInt> uniqueFiltered0 = new HashSet<PairInt>();
         
         int dMax = 2;
@@ -1630,7 +1663,7 @@ public class MSERMatcher {
                     for (int jj = 0; jj < listJ.size(); ++jj) {
                         
                         Obj objJ = listJ.get(jj);
-                        
+           
                         Set<PairInt> nearestJ = nn0.findClosest(
                             Math.round(scale0 * objJ.cr0.xC),
                             Math.round(scale0 * objJ.cr0.yC), dMax);
@@ -1667,9 +1700,129 @@ public class MSERMatcher {
                         out.add(objJ);
                         
                         filtered.add(out);
+     
+                        uniqueFiltered0.add(pI);
+                        uniqueFiltered0.add(pJ);       
                     }
                 }
             }
+        }
+        
+        System.out.println("n unique ref0 in filtered=" + uniqueFiltered0.size());
+       
+        if (uniqueFiltered0.size() == 2) {
+            // include the single best instances too
+            //NOTE: this might need revision
+            int nr = bestR.getNumberOfItems();
+            if (nr > 20) {
+                nr = 20;
+            }
+            for (int i = 0; i < nr; ++i) {
+                List<Obj> list = new ArrayList<Obj>();
+                list.add(bestR.getArray()[i]);
+                filtered.add(list);
+            }
+        } else if (uniqueFiltered0.size() > 4 && adjMap0.size() > 2) {
+            
+            // -- merge the consistent lists in filtered ---
+        
+            PairIntArray points0 = new PairIntArray();
+            populateWithUniquePoints(filtered, points0);
+                    
+            TObjectIntMap<PairInt> pIdxMap0 = new TObjectIntHashMap<PairInt>();
+            for (int i = 0; i < points0.getN(); ++i) {
+                PairInt p = new PairInt(points0.getX(i), points0.getY(i));
+                pIdxMap0.put(p, i);
+            }
+            
+            MatchedPointsTransformationCalculator tc = 
+                new MatchedPointsTransformationCalculator();
+            
+            Transformer transformer = new Transformer();
+            
+            TIntSet skip = new TIntHashSet();
+            for (int i = 0; i < filtered.size(); ++i) {
+                if (skip.contains(i)) {
+                    continue;
+                }
+                List<Obj> listI = filtered.get(i);
+                Set<QuadInt> idxsI = new HashSet<QuadInt>();
+                for (Obj obj : listI) {
+                    idxsI.add(new QuadInt(obj.cr0.xC, obj.cr0.yC,
+                        obj.cr1.xC, obj.cr1.yC));
+                }
+                
+                TransformationParameters params = null;
+                PairIntArray points0Tr = null;
+                
+                for (int j = (i + 1); j < filtered.size(); ++j) {
+                    if (skip.contains(j)) {
+                        continue;
+                    }
+                    List<Obj> listJ = filtered.get(j);
+                    int nIter = 0;
+                    for (Obj obj : listJ) {
+                        QuadInt q = new QuadInt(obj.cr0.xC, obj.cr0.yC,
+                            obj.cr1.xC, obj.cr1.yC);
+                        if (idxsI.contains(q)) {
+                            nIter++;
+                        }
+                    }
+                    if (nIter == 0) {
+                        continue;
+                    }
+                    if (params == null) {
+                        Obj obj0 = listI.get(0);
+                        Obj obj1 = listI.get(1);
+                        params = tc.calulateEuclidean(
+                            obj0.cr0.xC, obj0.cr0.yC, obj1.cr0.xC, obj1.cr0.yC,
+                            obj0.cr1.xC, obj0.cr1.yC, obj1.cr1.xC, obj1.cr1.yC,
+                            0, 0);
+                        points0Tr = transformer.applyTransformation(
+                            params, points0);
+                    }
+                    /*
+                    if the listJ points transformed are
+                       consistent with transformation,
+                       merge them.
+                    */
+                    boolean isConsistent = true;
+                    for (Obj obj : listJ) {
+                        PairInt p0 = new PairInt(obj.cr0.xC, obj.cr0.yC);
+                        PairInt p1 = new PairInt(obj.cr1.xC, obj.cr1.yC);
+                        
+                        int p0Idx = pIdxMap0.get(p0);
+                        int xTr0 = points0Tr.getX(p0Idx);
+                        int yTr0 = points0Tr.getY(p0Idx);
+                       
+                        double dist = distance(xTr0, yTr0, p1.getX(), p1.getY());
+                        if (dist > distTol2) {
+                            isConsistent = false;
+                            break;
+                        }
+                    }
+                    if (isConsistent) {
+                        // merge
+                        for (Obj obj : listJ) {
+                            QuadInt q = new QuadInt(obj.cr0.xC, obj.cr0.yC,
+                                obj.cr1.xC, obj.cr1.yC);
+                            if (!idxsI.contains(q)) {
+                                listI.add(obj);
+                            }
+                        }
+                        skip.add(j);
+                    }
+                }                
+            }
+           
+            if (!skip.isEmpty()) {
+                TIntList rm = new TIntArrayList(skip);
+                rm.sort();
+                for (int i = (rm.size() - 1); i > -1; --i) {
+                    int rmIdx = rm.get(i);
+                    filtered.remove(rmIdx);
+                }
+            }            
         }
         
         TFloatList sumCosts = new TFloatArrayList();
@@ -1685,7 +1838,6 @@ public class MSERMatcher {
                 sumCost += (float)obj.cost; 
                 int x0 = Math.round(scale0 * obj.cr0.xC);
                 int y0 = Math.round(scale0 * obj.cr0.yC);
-                uniqueFiltered0.add(new PairInt(x0, y0));
             }
             sumCosts.add(sumCost);            
         }
@@ -1711,17 +1863,7 @@ public class MSERMatcher {
                 System.out.println(sb.toString());
             }
         }
-       
-        System.out.println("n unique ref0 in filtered=" + uniqueFiltered0.size());
-       
-        if (uniqueFiltered0.size() > 2) {
-            // -- merge the consistent lists in filtered ---
-            // -- transform unique points0 to reference frame 1 and find nearest
-           
-        }
-        
-        //paused here
-        
+          
         return filtered;
     }
 
@@ -1738,6 +1880,23 @@ public class MSERMatcher {
             xyMinMax[1] + 10, xyMinMax[3] + 10);
         
         return nn;
+    }
+
+    private void populateWithUniquePoints(List<List<Obj>> pairs,
+        PairIntArray out0) {
+        
+        Set<PairInt> set0 = new HashSet<PairInt>();
+        for (int i = 0; i < pairs.size(); ++i) {
+            List<Obj> list = pairs.get(i);
+            for (Obj obj : list) {
+                PairInt p0 = new PairInt(obj.cr0.xC, obj.cr0.yC);
+                PairInt p1 = new PairInt(obj.cr1.xC, obj.cr1.yC);
+                if (!set0.contains(p0)) {
+                    set0.add(p0);
+                    out0.add(p0);
+                }
+            }
+        }
     }
     
     private class Obj implements Comparable<Obj>{

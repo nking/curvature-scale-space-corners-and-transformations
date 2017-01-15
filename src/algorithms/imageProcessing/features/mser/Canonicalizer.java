@@ -8,6 +8,7 @@ import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
 import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import java.util.List;
 import algorithms.util.PairIntArray;
@@ -149,7 +150,8 @@ public class Canonicalizer {
      * the use of canonicalized mser region
      */
     public static class CSRegion extends CRegion {
-        int label;
+        // the segmented cell label index
+        public int label;
     }
 
     /**

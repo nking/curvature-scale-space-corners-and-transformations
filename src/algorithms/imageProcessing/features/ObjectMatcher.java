@@ -1244,7 +1244,7 @@ public class ObjectMatcher {
         TIntObjectMap<CRegion> cRegions11 =
             canonicalizer.canonicalizeRegions(regions1.get(1), 
                 pyr1.get(0).get(1));
-        
+     
         boolean applyAutoCorrFilter = true;
         if (applyAutoCorrFilter) {
             double minAutoCor = findMinAutoCorrel(cRegions01);
