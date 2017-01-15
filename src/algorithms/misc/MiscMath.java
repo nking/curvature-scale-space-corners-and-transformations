@@ -2,9 +2,11 @@ package algorithms.misc;
 
 import algorithms.CountingSort;
 import algorithms.MultiArrayMergeSort;
+import algorithms.compGeometry.FurthestPair;
 import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceContour;
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.matching.ORBMatcher;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
@@ -2720,4 +2722,30 @@ System.out.println("value 0 is rescaled to value=" + (-minV*scale)
         return new float[]{avgAndStdv[0], avgAndStdv[1], sq};
     }
     
+    /**
+     * calculate the distance between furthest points as object
+     * size.
+     * @param points
+     * @return 
+     */
+    public static int calculateObjectSize(Set<PairInt> points) {
+        // O(N*lg_2(N))
+        FurthestPair furthestPair = new FurthestPair();
+        PairInt[] fp = furthestPair.find(points);
+        if (fp == null || fp.length < 2) {            
+            throw new IllegalArgumentException("did not find a furthest pair" + " in points");
+        }
+        double dist = ORBMatcher.distance(fp[0], fp[1]);
+        return (int) Math.round(dist);
+    }
+    
+    /**
+     * calculate the distance between furthest points as object
+     * size.
+     * @param points
+     * @return 
+     */
+    public static int calculateObjectSize(PairIntArray points) {
+        return calculateObjectSize(Misc.convert(points));
+    }
 }

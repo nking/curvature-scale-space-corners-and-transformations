@@ -178,7 +178,7 @@ public class ORBMatcher {
             if (set2.size() < 7) {
                 continue;
             }
-            int sz = calculateObjectSize(set2);
+            int sz = MiscMath.calculateObjectSize(set2);
             {
                 MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
                 double[] xyCen = curveHelper.calculateXYCentroids(set2);
@@ -280,7 +280,7 @@ public class ORBMatcher {
 
             float scale1 = scales1.get(octave1);
 
-            float sz1 = calculateObjectSize(labeledPoints1)/scale1;
+            float sz1 = MiscMath.calculateObjectSize(labeledPoints1)/scale1;
 
             int nkp1 = orb1.getKeyPoint0List().get(octave1).size();
 
@@ -487,7 +487,7 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
               
         int img1Width = orb1.getPyramidImages().get(0).a[0].length;
         int img1Height = orb1.getPyramidImages().get(0).a.length;
-        float sz1_0 = calculateObjectSize(bounds1);
+        float sz1_0 = MiscMath.calculateObjectSize(bounds1);
         
         // key = octave1, octave2, label2, value = OneDIntArray sortedkeys2
         Map<TrioInt, OneDIntArray> sortedKeysMap = new
@@ -588,7 +588,7 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
             
             nBounds1.put(i, ne1);
             
-            float sz2Tr = calculateObjectSize(bounds2Tr);
+            float sz2Tr = MiscMath.calculateObjectSize(bounds2Tr);
             if ((sz1_0 > sz2Tr && ((sz1_0/sz2Tr) > 1.5)) || 
                 (sz2Tr > sz1_0 && ((sz2Tr/sz1_0) > 1.5))) {
                 System.out.print("ERROR: scale difference too large:" +
@@ -1182,7 +1182,7 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
 
         ColorHistogram cHist = new ColorHistogram();
 
-        int templateSize = calculateObjectSize(labeledPoints1);
+        int templateSize = MiscMath.calculateObjectSize(labeledPoints1);
 
         TIntObjectMap<Set<PairInt>> labeledPoints1Lists = new TIntObjectHashMap<Set<PairInt>>();
 
@@ -1311,7 +1311,7 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
             int[][] ch1 = ch1s.get(i).a;
             //Set<PairInt> templateSet = labeledPoints1Lists.get(i);
             PairIntArray bounds1 = labeledBoundaries1.get(i);
-            float sz1 = calculateObjectSize(bounds1);
+            float sz1 = MiscMath.calculateObjectSize(bounds1);
 
             List<PObject> results = new ArrayList<PObject>();
             TDoubleList chordDiffSums = new TDoubleArrayList();
@@ -1338,7 +1338,7 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
                     if (size2Map.containsKey(octLabelKey)) {
                         sz2 = size2Map.get(octLabelKey);
                     } else {
-                        sz2 = calculateObjectSize(bounds2);
+                        sz2 = MiscMath.calculateObjectSize(bounds2);
                     }
                     if (sz2 == 0) {
                         continue;
@@ -1637,7 +1637,7 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
 
         ColorHistogram cHist = new ColorHistogram();
 
-        int templateSize = calculateObjectSize(labeledPoints1);
+        int templateSize = MiscMath.calculateObjectSize(labeledPoints1);
 
         TIntObjectMap<Set<PairInt>> labeledPoints1Lists = new TIntObjectHashMap<Set<PairInt>>();
 
@@ -1776,7 +1776,7 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
             int[][] ch1 = ch1s.get(i).a;
             //Set<PairInt> templateSet = labeledPoints1Lists.get(i);
             PairIntArray bounds1 = labeledBoundaries1.get(i);
-            float sz1 = calculateObjectSize(bounds1);
+            float sz1 = MiscMath.calculateObjectSize(bounds1);
 
             List<PObject> results = new ArrayList<PObject>();
             TDoubleList chordDiffSums = new TDoubleArrayList();
@@ -2323,21 +2323,6 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
             }
         }
         return pairIndexes;
-    }
-
-    public static int calculateObjectSize(Set<PairInt> points) {
-        // O(N*lg_2(N))
-        FurthestPair furthestPair = new FurthestPair();
-        PairInt[] fp = furthestPair.find(points);
-        if (fp == null || fp.length < 2) {
-            throw new IllegalArgumentException("did not find a furthest pair" + " in points");
-        }
-        double dist = ORBMatcher.distance(fp[0], fp[1]);
-        return (int) Math.round(dist);
-    }
-
-    public static int calculateObjectSize(PairIntArray points) {
-        return calculateObjectSize(Misc.convert(points));
     }
 
     private static float calculateDiagonal(List<TIntList> keypointsX1, List<TIntList> keypointsY1, int idx) {
@@ -3204,7 +3189,7 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
                 double[] xyCen = curveHelper.calculateXYCentroids(bounds);
                 System.out.println("bounds center=" + (int)xyCen[0] + "," +
                     (int)xyCen[1] + " size_full=" +
-                    calculateObjectSize(bounds));
+                    MiscMath.calculateObjectSize(bounds));
             }
         }
 
@@ -3234,7 +3219,7 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
                 double[] xyCen = curveHelper.calculateXYCentroids(bounds);
                 System.out.println("bounds center=" + (int)xyCen[0] + "," +
                     (int)xyCen[1] + " size_full=" +
-                    calculateObjectSize(bounds) + " segIdx=" + segIdx);
+                    MiscMath.calculateObjectSize(bounds) + " segIdx=" + segIdx);
             }
         }
 
@@ -3609,7 +3594,7 @@ System.out.println("octave1=" + octave1 + " octave2=" + octave2 +
         int n1 = left.getN();
         int n2 = right.getN();
         
-        int sz1 = calculateObjectSize(left);
+        int sz1 = MiscMath.calculateObjectSize(left);
 
         // factors to correct pixel counts for image scales
         float area1 = 1.f/(scale1 * scale1);
@@ -4287,7 +4272,7 @@ System.out.println(str1 + str2);
 
             PairIntArray bounds1 = octave1ScaledBounds.get(octave1);
 
-            float sz1 = calculateObjectSize(bounds1);
+            float sz1 = MiscMath.calculateObjectSize(bounds1);
 
             TIntObjectMap<Set<PairInt>> mapOfSets2 = new
                 TIntObjectHashMap<Set<PairInt>>(octave2ScaledSets.get(octave2));
@@ -4541,7 +4526,7 @@ System.out.println(str1 + str2);
     private void removeSetsByCombinedSize(PairIntArray bounds1,
         int segIdx2, TIntObjectMap<Set<PairInt>> mapOfBounds2, float factor) {
 
-        float sz1 = calculateObjectSize(bounds1);
+        float sz1 = MiscMath.calculateObjectSize(bounds1);
 
         TIntSet rm = new TIntHashSet();
 
@@ -4555,7 +4540,7 @@ System.out.println(str1 + str2);
             Set<PairInt> combined = new HashSet<PairInt>(set2);
             combined.addAll(set3);
 
-            float sz2 = calculateObjectSize(combined);
+            float sz2 = MiscMath.calculateObjectSize(combined);
 
             if (sz2 > factor * sz1) {
                 rm.add(segIdx3);

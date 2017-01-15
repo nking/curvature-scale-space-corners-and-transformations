@@ -384,7 +384,7 @@ public static int oct2 = -1;
                 continue;
             }
 
-            int sz2 = ORBMatcher.calculateObjectSize(r.bounds2);
+            int sz2 = MiscMath.calculateObjectSize(r.bounds2);
 
             //if ((sz1 > sz2 && Math.abs(sz1 / sz2) > 1.4) ||
             //    (sz2 > sz1 && Math.abs(sz2 / sz1) > 1.4)) {
@@ -533,7 +533,7 @@ public static int oct2 = -1;
                 keyBoundsMap.put(keysI, boundsI);
             }
 
-            int sz2 = ORBMatcher.calculateObjectSize(boundsI);
+            int sz2 = MiscMath.calculateObjectSize(boundsI);
 
             if (sz2 > 1.15 * sz1) {
                 continue;
@@ -835,7 +835,7 @@ public static int oct2 = -1;
             keyBoundsMap.put(keysI, boundsI);
         }
 
-        int sz2 = ORBMatcher.calculateObjectSize(boundsI);
+        int sz2 = MiscMath.calculateObjectSize(boundsI);
 
         if (sz2 > 1.15 * sz1) {
             return null;
@@ -940,7 +940,7 @@ public static int oct2 = -1;
                 keyBoundsMap.put(keysI, boundsI);
             }
 
-            int sz2 = ORBMatcher.calculateObjectSize(boundsI);
+            int sz2 = MiscMath.calculateObjectSize(boundsI);
        
             if (sz2 > 1.15 * sz1) {                
                 continue;
@@ -1058,7 +1058,7 @@ public static int oct2 = -1;
                     Arrays.copyOf(uPlusV.labels2, uPlusV.labels2.length));
                 cacheResults.put(uvKeys, uPlusV);
                 
-                int sz2 = ORBMatcher.calculateObjectSize(uPlusV.bounds2);
+                int sz2 = MiscMath.calculateObjectSize(uPlusV.bounds2);
 
                 if (sz2 > 1.15 * sz1) {
                     continue;

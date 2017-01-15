@@ -4,6 +4,7 @@ import algorithms.compGeometry.FurthestPair;
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.imageProcessing.SummedColumnTable;
 import algorithms.misc.Misc;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.TwoDFloatArray;
@@ -249,7 +250,7 @@ public class LineFinder {
         //md[0:n1-1][0:n1-1]
         int n1 = p.getN();
         
-        int sz = calculateObjectSize(p);
+        int sz = MiscMath.calculateObjectSize(p);
         
         // ---- read the difference matrix to find minimum cost assignments ----
         
@@ -891,18 +892,4 @@ public class LineFinder {
         }
     }
     
-    public static int calculateObjectSize(Set<PairInt> points) {
-        // O(N*lg_2(N))
-        FurthestPair furthestPair = new FurthestPair();
-        PairInt[] fp = furthestPair.find(points);
-        if (fp == null || fp.length < 2) {            
-            throw new IllegalArgumentException("did not find a furthest pair" + " in points");
-        }
-        double dist = ORBMatcher.distance(fp[0], fp[1]);
-        return (int) Math.round(dist);
-    }
-    
-    public static int calculateObjectSize(PairIntArray points) {
-        return calculateObjectSize(Misc.convert(points));
-    }
 }
