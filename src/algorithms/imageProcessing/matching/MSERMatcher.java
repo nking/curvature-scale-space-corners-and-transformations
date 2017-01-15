@@ -1710,7 +1710,7 @@ public class MSERMatcher {
         
         System.out.println("n unique ref0 in filtered=" + uniqueFiltered0.size());
        
-        if (uniqueFiltered0.size() == 2) {
+        if (uniqueFiltered0.size() == 1) {
             // include the single best instances too
             //NOTE: this might need revision
             int nr = bestR.getNumberOfItems();
@@ -1824,6 +1824,10 @@ public class MSERMatcher {
                 }
             }            
         }
+        
+        // TODO: if filtered.size is small, add some amount of the
+        // top single size lists into this.
+        // (see test for andr 04 to 02 cupcake test)
         
         TFloatList sumCosts = new TFloatArrayList();
         
