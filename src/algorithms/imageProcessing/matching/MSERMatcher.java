@@ -787,8 +787,7 @@ public class MSERMatcher {
     public List<CorrespondenceList> matchObject2(
         List<List<GreyscaleImage>> pyr0, List<List<GreyscaleImage>> pyr1, 
         List<Set<PairInt>> labeledSets0, List<Set<PairInt>> labeledSets1,
-        TIntObjectMap<CRegion> cRegions00, TIntObjectMap<CRegion> cRegions01,
-        TIntObjectMap<CRegion> cRegions10, TIntObjectMap<CRegion> cRegions11) {
+        TIntObjectMap<CRegion> cRegions0, TIntObjectMap<CRegion> cRegions1) {
        
         int distTol = 5;//10;
         
@@ -814,23 +813,15 @@ public class MSERMatcher {
         
         Canonicalizer canonicalizer = new Canonicalizer();
         
-        TIntObjectMap<CSRegion> csRegions11 = canonicalizer.
-            selectSets(cRegions11, labeledSets1, pointLabelMap1, rgb1);
-        
-        TIntObjectMap<CSRegion> csRegions01 = canonicalizer.
-            selectSets(cRegions01, labeledSets0, pointLabelMap0, rgb0);
-                
-        TIntObjectMap<CSRegion> csRegions10 = canonicalizer.
-            selectSets(cRegions10, labeledSets1, pointLabelMap1, rgb1);
-        
-        TIntObjectMap<CSRegion> csRegions00 = canonicalizer.
-            selectSets(cRegions00, labeledSets0, pointLabelMap0, rgb0);
+        TIntObjectMap<CSRegion> csRegions1 = canonicalizer.
+            selectSets(cRegions1, labeledSets1, pointLabelMap1, rgb1);
+                                
+        TIntObjectMap<CSRegion> csRegions0 = canonicalizer.
+            selectSets(cRegions0, labeledSets0, pointLabelMap0, rgb0);
 
         if (debug) {
-            debugPrint2(csRegions00, pyr0.get(0), "_csr_0_0_");
-            debugPrint2(csRegions01, pyr0.get(0), "_csr_0_1_");
-            debugPrint2(csRegions10, pyr1.get(0), "_csr_1_0_");
-            debugPrint2(csRegions11, pyr1.get(0), "_csr_1_1_");
+            debugPrint2(csRegions0, pyr0.get(0), "_csr_0_");
+            debugPrint2(csRegions1, pyr1.get(0), "_csr_1_");
         }
        
         int n0 = pyr0.size();
@@ -838,26 +829,18 @@ public class MSERMatcher {
  
         // populated on demand, some are skipped for large size differenes
        
-        TIntObjectMap<TIntObjectMap<CSRegion>> csr11 
+        TIntObjectMap<TIntObjectMap<CSRegion>> csr1 
             = new TIntObjectHashMap<TIntObjectMap<CSRegion>>(); 
-        csr11.put(0, csRegions11);
+        csr1.put(0, csRegions1);
         
-        TIntObjectMap<TIntObjectMap<CSRegion>> csr01 
+        TIntObjectMap<TIntObjectMap<CSRegion>> csr0
             = new TIntObjectHashMap<TIntObjectMap<CSRegion>>(); 
-        csr01.put(0, csRegions01);
-        
-        TIntObjectMap<TIntObjectMap<CSRegion>> csr10 
-            = new TIntObjectHashMap<TIntObjectMap<CSRegion>>(); 
-        csr10.put(0, csRegions10);
-        
-        TIntObjectMap<TIntObjectMap<CSRegion>> csr00 
-            = new TIntObjectHashMap<TIntObjectMap<CSRegion>>(); 
-        csr00.put(0, csRegions00);
+        csr0.put(0, csRegions0);
         
         // until include a better way to determine orientation,
         // need to keep a large number of best to keep true matches
         // whose orientations are off
-        int top = 50*csRegions00.size();
+        int top = 50*csRegions0.size();
         if (top < 5) {
             top = 5;
         }
@@ -876,10 +859,7 @@ public class MSERMatcher {
             
             GreyscaleImage gs0 = combineImages(pyr0.get(imgIdx0));
             
-            FixedSizeSortedVector<Obj> bestR0 = new 
-                FixedSizeSortedVector<Obj>(top, Obj.class);
-            
-            FixedSizeSortedVector<Obj> bestR1 = new 
+            FixedSizeSortedVector<Obj> bestR = new 
                 FixedSizeSortedVector<Obj>(top, Obj.class);
             
             for (int imgIdx1 = 0; imgIdx1 < n1; ++imgIdx1) {
@@ -895,34 +875,25 @@ public class MSERMatcher {
                 //   can be a weakness in search method
             
                 int top2 = top/n1;
-                if (top2 < csRegions00.size()) {
-                    top2 = csRegions00.size();
+                if (top2 < csRegions0.size()) {
+                    top2 = csRegions0.size();
                 }
             
-                FixedSizeSortedVector<Obj> bR0 = new 
+                FixedSizeSortedVector<Obj> bR = new 
                     FixedSizeSortedVector<Obj>(top2, Obj.class);
             
-                FixedSizeSortedVector<Obj> bR1 = new 
-                    FixedSizeSortedVector<Obj>(top2, Obj.class);                
-                
-                /*
-                search(getOrCreate(csr00, imgIdx0, gs0, scale0), 
-                    getOrCreate(csr10, imgIdx1, gs1, scale1), 
+                search(getOrCreate(csr0, imgIdx0, gs0, scale0), 
+                    getOrCreate(csr1, imgIdx1, gs1, scale1), 
                     pyr0.get(imgIdx0), pyr1.get(imgIdx1),
-                    scale0, scale1, imgIdx0, imgIdx1, bR0);
-                */
-                search(getOrCreate(csr01, imgIdx0, gs0, scale0), 
-                    getOrCreate(csr11, imgIdx1, gs1, scale1), 
-                    pyr0.get(imgIdx0), pyr1.get(imgIdx1),
-                    scale0, scale1, imgIdx0, imgIdx1, bR1);
+                    scale0, scale1, imgIdx0, imgIdx1, bR);
 
-                if (adjMap0.size() > 1 && bR1.getNumberOfItems() > 0) {
+                if (adjMap0.size() > 1 && bR.getNumberOfItems() > 0) {
                     
                     // if there is occlusion, this can possibly remove a true match
                     
                     // lists of matches consistent with adjacency and scale
                     List<List<Obj>> sortedFilteredBestR1 = filterForAdjacency(
-                        bR1, 
+                        bR, 
                         pointLabelMap0, pointLabelMap1, adjMap0, adjMap1, nn0, nn1,
                         scale0, scale1, imgIdx0, imgIdx1, distTol);
                     
@@ -967,9 +938,9 @@ public class MSERMatcher {
                 //    can use the shape search singly.
             }
             
-            int n3 = bestR1.getNumberOfItems();
+            int n3 = bestR.getNumberOfItems();
             for (int k = 0; k < n3; ++k) {
-                Obj obj = bestR1.getArray()[k];
+                Obj obj = bestR.getArray()[k];
                 int w1_i = pyr1.get(obj.imgIdx1).get(0).getWidth();
                 int h1_i = pyr1.get(obj.imgIdx1).get(0).getHeight();
                 float scale1 = (((float)w1/(float)w1_i) +

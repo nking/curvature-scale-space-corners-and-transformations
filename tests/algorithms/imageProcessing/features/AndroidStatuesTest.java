@@ -328,7 +328,7 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void estORBMSERMatcher_gingerbreadman() throws Exception {
+    public void testORBMSERMatcher_gingerbreadman() throws Exception {
 
         int maxDimension = 256;//512;
         SIGMA sigma = SIGMA.ZEROPOINTFIVE;//SIGMA.ONE;
@@ -338,13 +338,13 @@ public class AndroidStatuesTest extends TestCase {
 
         String[] fileNames0 = new String[]{
             "android_statues_03_sz1",
-            "android_statues_03_sz3"
+        //    "android_statues_03_sz3"
         };
 
         String[] fileNames1 = new String[]{
-            "android_statues_01.jpg", // no kp remaining
-            "android_statues_02.jpg", // OK:
-            "android_statues_04.jpg", // OK:
+        //    "android_statues_01.jpg", // no kp remaining
+        //    "android_statues_02.jpg", // OK:
+        //    "android_statues_04.jpg", // OK:
             "android_statues_03.jpg"  // OK:
         };
         
@@ -461,9 +461,9 @@ public class AndroidStatuesTest extends TestCase {
             "android_statues_04.jpg", "android_statues_04_cupcake_mask.png"};
 
         String[] fileNames1 = new String[]{
-        // "android_statues_01.jpg",   // 
-        //     "android_statues_02.jpg", //  
-             "android_statues_04.jpg", // 
+         "android_statues_01.jpg",   // 
+        //   "android_statues_02.jpg", //  
+        //     "android_statues_04.jpg", // 
         };
 
         for (String fileName1 : fileNames1) {               
@@ -557,7 +557,7 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void testORBMSERMatcher_icecream() throws Exception {
+    public void estORBMSERMatcher_icecream() throws Exception {
 
         // TODO: needs better segmentation for the icecream in status 01 and 02
         //    AND/OR a different light source for polar theta CIE LAB
@@ -587,8 +587,8 @@ public class AndroidStatuesTest extends TestCase {
         //paused here.  handle 02 first.  orientation problem!
 
         String[] fileNames1 = new String[]{
-        //    "android_statues_01.jpg",  
-          "android_statues_02.jpg",
+            "android_statues_01.jpg",  
+        //  "android_statues_02.jpg",
         //  "android_statues_04.jpg", // descr are fine
         };
 

@@ -186,6 +186,21 @@ public class ObjectMatcher {
         }
     }
 
+    private void filterCloseToBounds2(List<Region> regions, 
+        int width, int height, int border) {
+        
+        int[] xy = new int[2];
+        for (int i = (regions.size() - 1); i > -1; --i) {
+            Region r = regions.get(i);
+            r.calculateXYCentroid(xy, width, height);
+            if (xy[0] < border || xy[1] < border ||
+                (xy[0] >= (width - border)) || 
+                (xy[1] >= (height - border))) {
+                regions.remove(i);
+            }
+        }
+    }
+    
     private void filterCloseToBounds(List<List<Region>> regions, 
         int width, int height, int border) {
         
@@ -265,6 +280,30 @@ public class ObjectMatcher {
         }
        
         return labeledSets;
+    }
+
+    private List<Region> combine(List<List<Region>> regions, int w, int h) {
+
+        int[] xy = new int[2];
+        
+        Set<PairInt> centers = new HashSet<PairInt>();
+    
+        List<Region> combined = new ArrayList<Region>();
+        for (List<Region> list : regions) {
+            for (Region r : list) {
+                r.calculateXYCentroid(xy, w, h);
+                PairInt p = new PairInt((int)Math.round(xy[0]),
+                    (int)Math.round(xy[1]));
+                if (centers.contains(p)) {
+                    continue;
+                }
+                centers.add(p);
+                combined.add(r);
+            }
+        }
+        
+        //TODO: consider a filter for a minimum separation
+        return combined;
     }
 
     public static class Settings {
@@ -1091,10 +1130,12 @@ public class ObjectMatcher {
             shape0Trimmed.add(p2);
         }
         
-        mask(img0Trim.getTrimmed(), shape0Trimmed);
-       
         ImageExt img0Trimmed = (ImageExt)img0Trim.getTrimmed();
         
+        // ----- create the cRegions for a masked image pyramid of img 0 ====
+        
+        mask(img0Trimmed, shape0Trimmed);
+               
         if (debug) {
             MiscDebug.writeImage(img0Trimmed, "_shape0_mask_");
         }
@@ -1141,23 +1182,23 @@ public class ObjectMatcher {
         Canonicalizer canonicalizer = new Canonicalizer();
         
         GreyscaleImage gsImg0 = img0Trimmed.copyToGreyscale2();
-       
+        
         // ----- create the cRegions for a masked image pyramid of img 0 ====
         MSER mser = new MSER();
            
         List<List<Region>> regions0 = mser.findRegions(gsImg0);
         
+        List<Region> regionsComb0 = combine(regions0, gsImg0.getWidth(),
+            gsImg0.getHeight());
+        
         int[] xy = new int[2];
         //remove all regions with centers outside of shape0 points
-        for (int rIdx = 0; rIdx < 2; rIdx++) {
-            java.util.List<Region> rList = regions0.get(rIdx);
-            for (int i = (rList.size() - 1); i > -1; --i) {
-                Region r = rList.get(i);
-                r.calculateXYCentroid(xy, gsImg0.getWidth(), gsImg0.getHeight());
-                PairInt p = new PairInt(xy[0], xy[1]);
-                if (!shape0Trimmed.contains(p)) {
-                    rList.remove(i);
-                }
+        for (int i = (regionsComb0.size() - 1); i > -1; --i) {
+            Region r = regionsComb0.get(i);
+            r.calculateXYCentroid(xy, gsImg0.getWidth(), gsImg0.getHeight());
+            PairInt p = new PairInt(xy[0], xy[1]);
+            if (!shape0Trimmed.contains(p)) {
+                regionsComb0.remove(i);
             }
         }
         
@@ -1166,7 +1207,10 @@ public class ObjectMatcher {
                    
         List<List<Region>> regions1 = mser.findRegions(gsImg1);
         
-        filterCloseToBounds(regions1, gsImg1.getWidth(), gsImg1.getHeight(), 10);
+        List<Region> regionsComb1 = combine(regions1, gsImg1.getWidth(),
+            gsImg1.getHeight());
+        
+        filterCloseToBounds2(regionsComb1, gsImg1.getWidth(), gsImg1.getHeight(), 10);
         
         //TODO: add filter here for patterns in the MSER regions that
         // are strong, and if present in reference frame1, then
@@ -1174,36 +1218,26 @@ public class ObjectMatcher {
         // use of this feature should be a Setting option.
         
         // filter regions by segmentation
-        List<Set<PairInt>> labeledSets1 = filterBySegmentation(
-            img0Trimmed, shape0Trimmed, img1, regions1, settings);
+        List<Set<PairInt>> labeledSets1 = filterBySegmentation2(
+            img0Trimmed, shape0Trimmed, img1, regionsComb1, settings);
     
         if (debug) {
             int[] xyCen = new int[2];
             Image im0Cp, im1Cp;
             im0Cp = img0Trimmed.copyImage();
-            for (int i = 0; i < regions0.get(0).size(); ++i) {
-                Region r = regions0.get(0).get(i);
+            for (int i = 0; i < regionsComb0.size(); ++i) {
+                Region r = regionsComb0.get(i);
                 int[] clr = ImageIOHelper.getNextRGB(i);
                 r.drawEllipse(im0Cp, 0, clr[0], clr[1], clr[2]);
                 r.calculateXYCentroid(xyCen, im0Cp.getWidth(), im0Cp.getHeight());
                 ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im0Cp, 
                     1, 255, 0, 0);
             }
-            MiscDebug.writeImage(im0Cp, "regions_0_0");
-            im0Cp = img0Trimmed.copyImage();
-            for (int i = 0; i < regions0.get(1).size(); ++i) {
-                Region r = regions0.get(1).get(i);
-                int[] clr = ImageIOHelper.getNextRGB(i);
-                r.drawEllipse(im0Cp, 0, clr[0], clr[1], clr[2]);
-                r.calculateXYCentroid(xyCen, im0Cp.getWidth(), im0Cp.getHeight());
-                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im0Cp, 
-                    1, 255, 0, 0);
-            }
-            MiscDebug.writeImage(im0Cp, "regions_0_1");
+            MiscDebug.writeImage(im0Cp, "regions_0_");
             
             im1Cp = img1.copyImage();
-            for (int i = 0; i < regions1.get(0).size(); ++i) {
-                Region r = regions1.get(0).get(i);
+            for (int i = 0; i < regionsComb1.size(); ++i) {
+                Region r = regionsComb1.get(i);
                 int[] clr = ImageIOHelper.getNextRGB(i);
                 r.drawEllipse(im1Cp, 0, clr[0], clr[1], clr[2]);
                 r.calculateXYCentroid(xyCen, im1Cp.getWidth(), im1Cp.getHeight());
@@ -1211,17 +1245,7 @@ public class ObjectMatcher {
                     xyCen[0], xyCen[1], im1Cp, 
                     1, 255, 0, 0);
             }
-            MiscDebug.writeImage(im1Cp, "regions_1_0");
-            im1Cp = img1.copyImage();
-            for (int i = 0; i < regions1.get(1).size(); ++i) {
-                Region r = regions1.get(1).get(i);
-                int[] clr = ImageIOHelper.getNextRGB(i);
-                r.drawEllipse(im1Cp, 0, clr[0], clr[1], clr[2]);
-                r.calculateXYCentroid(xyCen, im1Cp.getWidth(), im1Cp.getHeight());
-                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im1Cp, 
-                    1, 255, 0, 0);
-            }
-            MiscDebug.writeImage(im1Cp, "regions_1_1");
+            MiscDebug.writeImage(im1Cp, "regions_1_");
         }
        
         // list item for each octave.  item is for each region
@@ -1229,34 +1253,23 @@ public class ObjectMatcher {
         //regions[0) are found from the image, 
         // while regions[1) are found from the inverted image. 
         // they're kept separate for now to test matching them separately.
-        TIntObjectMap<CRegion> cRegions00 =
-            canonicalizer.canonicalizeRegions(regions0.get(0), 
+        TIntObjectMap<CRegion> cRegions0 =
+            canonicalizer.canonicalizeRegions(regionsComb0, 
                 pyr0.get(0).get(1));
       
-        TIntObjectMap<CRegion> cRegions01 =
-            canonicalizer.canonicalizeRegions(regions0.get(1), 
-                pyr0.get(0).get(1));
-
-        TIntObjectMap<CRegion> cRegions10 =
-            canonicalizer.canonicalizeRegions(regions1.get(0), 
+        TIntObjectMap<CRegion> cRegions1 =
+            canonicalizer.canonicalizeRegions(regionsComb1, 
                 pyr1.get(0).get(1));
         
-        TIntObjectMap<CRegion> cRegions11 =
-            canonicalizer.canonicalizeRegions(regions1.get(1), 
-                pyr1.get(0).get(1));
-     
         boolean applyAutoCorrFilter = true;
         if (applyAutoCorrFilter) {
-            double minAutoCor = findMinAutoCorrel(cRegions01);
-            removeSmallAutoCorrel2(cRegions11, minAutoCor, 0.75f);
-            removeSmallAutoCorrel2(cRegions10, minAutoCor, 0.75f);
+            double minAutoCor = findMinAutoCorrel(cRegions0);
+            removeSmallAutoCorrel2(cRegions1, minAutoCor, 0.75f);
         }
         
         if (debug) {
-            debugPrint2(cRegions00, pyr0.get(0), "_cr_0_0_");
-            debugPrint2(cRegions01, pyr0.get(0), "_cr_0_1_");
-            debugPrint2(cRegions10, pyr1.get(0), "_cr_1_0_");
-            debugPrint2(cRegions11, pyr1.get(0), "_cr_1_1_");
+            debugPrint2(cRegions0, pyr0.get(0), "_cr_0_");
+            debugPrint2(cRegions1, pyr1.get(0), "_cr_1_");
         }
       
         MSERMatcher matcher = new MSERMatcher();
@@ -1274,8 +1287,7 @@ public class ObjectMatcher {
         
         List<CorrespondenceList> corList = matcher.matchObject2(
             pyr0, pyr1, labeledSets0List, labeledSets1,
-            cRegions00, cRegions01,
-            cRegions10, cRegions11);
+            cRegions0, cRegions1);
        
         return corList.get(0);        
     }
@@ -1762,6 +1774,17 @@ public class ObjectMatcher {
         //average, stdDv, min, max
         return new float[]{(float)avgDens, (float)stDev, densities.min(),
             densities.max()};
+    }
+    
+    private List<Set<PairInt>> filterBySegmentation2(
+        ImageExt img0, Set<PairInt> shape0,
+        ImageExt img1, List<Region> regionsList, Settings settings) {
+    
+        // creating a fake 2nd item to be able to use existing method
+        List<List<Region>> list = new ArrayList<List<Region>>();
+        list.add(regionsList);
+        
+        return filterBySegmentation(img0, shape0, img1, list, settings);
     }
    
     private List<Set<PairInt>> filterBySegmentation(
