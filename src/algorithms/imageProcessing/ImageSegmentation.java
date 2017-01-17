@@ -14035,9 +14035,10 @@ int z = 1;
 
         ImageProcessor imageProcessor = new ImageProcessor();
         GreyscaleImage theta1 = imageProcessor.createCIELUVTheta(img, 255);
-        //MiscDebug.writeImage(theta1,  "_theta_" + ts);
+        imageProcessor.singlePixelFilter(theta1);
+        MiscDebug.writeImage(theta1,  "_theta_" + ts);
         
-       /* {
+       /*{
             GreyscaleImage tmp = theta1.copyImage();
             CannyEdgeFilterAdaptive canny = new CannyEdgeFilterAdaptive();
             canny.overrideToUseAdaptiveThreshold();
@@ -14097,7 +14098,7 @@ int z = 1;
         log.info("  n1=" + n10 + "," + n11);
         int nc = (n10+n11)/2;
         
-        int[] norms = new int[]{1/*, 5, 10*/};
+        int[] norms = new int[]{5/*1, 5, 10*/};
         int[][] sLabels = new int[norms.length][];
         
         for (int i0 = 0; i0 < norms.length; ++i0) {

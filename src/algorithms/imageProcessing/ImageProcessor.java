@@ -845,7 +845,7 @@ if (sum > 511) {
         for (int i = 0; i < input.getWidth(); i++) {
             for (int j = 0; j < input.getHeight(); j++) {
 
-                long value = 0;
+                double value = 0;
 
                 // apply the kernel to pixels centered in (i, j)
 
@@ -883,16 +883,17 @@ if (sum > 511) {
                         value += k * pixel;
                     }
                 }
-
                 value *= normFactor;
+                                
+                int v = (int)value;
 
-                if (value < 0) {
-                    value = 0;
+                if (v < 0) {
+                    v = 0;
                 }
-                if (value > 255) {
-                    value = 255;
+                if (v > 255) {
+                    v = 255;
                 }
-                output.setValue(i, j, (int)value);
+                output.setValue(i, j, v);
             }
         }
 
@@ -9630,13 +9631,112 @@ if (sum > 511) {
 
         return output;
     }
-
     
+    public void applyUnsharpMask(GreyscaleImage img) {
+        
+        //NOTE: if make a color version of this, should use a color
+        // space such as CIE LAB or LUV and operate on the L only to
+        // preserve color (or B of HSB).
+        
+        // NOTE: useful in looking at the general concept of
+        //  original, blurred and threshold comparison was code copyrighted by
+        //  Romain Guy available here:
+        //  http://www.java2s.com/Code/Java/Advanced-Graphics/UnsharpMaskDemo.htm
+        //  might need to place the copytight here for derivative of.
+        
+        float amount = 0.2f;
+        int radius = 50;
+        float threshold = 0;
+        
+        applyUnsharpMask(img, amount, radius, threshold);
+        
+    }
+    
+    /**
+     * if a single pixel differs from its neighbors by more than 
+     * 2o or 2 sigma, the value gets set to the neighbors
+     * @param img 
+     */
+    public void singlePixelFilter(GreyscaleImage img) {
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        int n = img.getNPixels();
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        for (int i = 0; i < n; ++i) {
+            
+            int x = img.getCol(i);
+            int y = img.getRow(i);
+            
+            float diff;
+            float avg = 0;
+            int ns = 0;
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                if (x2 < 0 || y2 < 0 || x2 >= w || y2 >= h) {
+                    continue;
+                }
+                avg += img.getValue(x2, y2);
+                ns++;
+            }
+            avg /= (float)ns;
+            if (ns == 0) {
+                continue;
+            }
+            
+            float stdv = 0;
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                if (x2 < 0 || y2 < 0 || x2 >= w || y2 >= h) {
+                    continue;
+                }
+                diff = img.getValue(x2, y2) - avg;
+                stdv += (diff * diff);
+            }
+            stdv = (float)Math.sqrt(stdv/((float)ns - 1.0f));
+        
+            diff = Math.abs(img.getValue(x, y) - avg);
+            if (diff > (2.*stdv)) {
+                img.setValue(x, y, (int)avg);
+            }
+        }
+    }
+    
+    public void applyUnsharpMask(GreyscaleImage img, float percentage,
+        int radius, float threshold) {
+   
+        MedianSmooth ms = new MedianSmooth();
+        GreyscaleImage blurred = ms.calculate(img, 3, 3);
+        
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            int v = img.getValue(i);
+            int blur = blurred.getValue(i);
+            
+            int diff = v - blur;
+            if (Math.abs(diff) >= threshold) {
+                v = (int) (percentage * diff + v);
+                if (v < 0) {
+                    v = 0;
+                } else if (v > 255) {
+                    v = 255;
+                }
+                img.setValue(i, v);
+            }
+        }
+    }
+
     // TODO: implement the methods in 
     // http://www.merl.com/publications/docs/TR2008-030.pdf
     // for an O(n) filter.
     // "Constant Time O(1) Bilateral Filtering" by Porikli
     //public void applyBiLateralFilter(Image img) {
     //}
+    
+    // and trilateral filter by Tumblin et al. 2003
     
 }
