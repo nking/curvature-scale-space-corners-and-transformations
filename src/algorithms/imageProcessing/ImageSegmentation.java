@@ -11234,6 +11234,17 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
     }
 
+    private double calcPolarTheta(float[] clr) {
+        double t = Math.atan2(clr[2], clr[1]);
+        t *= (180. / Math.PI);
+        if (t < 0) {
+            t += 360;
+        } else if (t > 359) {
+            t -= 360;
+        }
+        return t;
+    }
+
     public static class BoundingRegions {
         private final List<PairIntArray> perimeterList;
         private final BlobMedialAxes bma;
@@ -13975,40 +13986,39 @@ int z = 1;
         str = (str.length() < 3) ? "0" + str : str;
         MiscDebug.writeImage(img3, "_slic_" + ts + "_" + str);
         
-                    
-        //int[] labels = objectSegmentation3(img, edgeProducts, 4);
-        
         List<Set<PairInt>> contigSets = LabelToColorHelper
             .extractContiguousLabelPoints(img, labels);
-
+        
         int sizeLimit = 16;//31;
         if (img.getNPixels() < 100) {
             sizeLimit = 5;
         }
         imgCp = img.copyToImageExt();
         // a safe limit for HSV is 0.025 to not overrun object bounds
-        labels = mergeByColor(imgCp, contigSets, ColorSpace.HSV, 0.095f);//0.1f);
-        
+        labels = mergeByColor(imgCp, contigSets, ColorSpace.HSV, 
+            0.095f);//0.1f);
+       
         mergeSmallSegments(imgCp, labels, sizeLimit, ColorSpace.HSV);
         
         // ----- looking at fast marching methods and level sets
         //       and/or region based active contours
         contigSets = LabelToColorHelper
             .extractContiguousLabelPoints(img, labels);
-        
-        //TODO and NOTE:  for landscapes having snow and cloud boundaries,
-        //   or other ceutral tone boundaries, may want to
-        //   set the CIE LUV limit to a lower value such as 0.035
+                
+        labels = mergeByColor(imgCp, contigSets, 
+            ColorSpace.CIELUV_NORMALIZED, 
+            0.01f);
         
         labels = mergeByColor(imgCp, contigSets, 
-            ColorSpace.CIELUV_NORMALIZED, 0.0475f);//0.06 is slightly too much
+            ColorSpace.POLAR_CIELUV, 
+            1.f);// in degrees
         
         sizeLimit = 24;
         if (img.getNPixels() < 100) {
             sizeLimit = 10;
         }
         mergeSmallSegments(imgCp, labels, sizeLimit, ColorSpace.CIELAB);
-
+       
         contigSets = LabelToColorHelper
             .extractContiguousLabelPoints(img, labels);
        
@@ -14590,6 +14600,15 @@ int z = 1;
         List<Set<PairInt>> contigSets,
         ColorSpace clrSpace, float threshold) {
 
+        if (!clrSpace.equals(ColorSpace.HSV) &&
+            !clrSpace.equals(ColorSpace.CIELAB) &&
+            !clrSpace.equals(ColorSpace.POLAR_CIELUV) &&
+            !clrSpace.equals(ColorSpace.CIELUV_NORMALIZED) &&
+            !clrSpace.equals(ColorSpace.RGB)) {
+            throw new IllegalArgumentException("need to write the"
+                + " blocks for " + clrSpace);
+        }
+        
         sortByDecrSize(contigSets);
 
         // key = index of contigSets, value = list of indexes
@@ -14605,6 +14624,7 @@ int z = 1;
         if (ColorSpace.HSV.equals(clrSpace) 
             || ColorSpace.CIELAB.equals(clrSpace)
             || ColorSpace.CIELUV_NORMALIZED.equals(clrSpace)
+            || ColorSpace.POLAR_CIELUV.equals(clrSpace)
             ) {
             indexColorMap = new TIntObjectHashMap<Colors>();
             cieC = new CIEChromaticity();
@@ -14627,7 +14647,8 @@ int z = 1;
                 float[] lab = cieC.rgbToCIELAB(
                     Math.round(r), Math.round(g), Math.round(b));
                 indexColorMap.put(i, new Colors(lab));
-            } else if (ColorSpace.CIELUV_NORMALIZED.equals(clrSpace)) {
+            } else if (ColorSpace.CIELUV_NORMALIZED.equals(clrSpace) ||
+                ColorSpace.POLAR_CIELUV.equals(clrSpace)) {
                 float[] luv = cieC.rgbToCIELUV(
                     Math.round(r), Math.round(g), Math.round(b));
                 indexColorMap.put(i, new Colors(luv));
@@ -14699,11 +14720,22 @@ int z = 1;
                 } else if (ColorSpace.CIELUV_NORMALIZED.equals(clrSpace)) {
                     Colors clr1 = indexColorMap.get(lIdx1);
                     Colors clr2 = indexColorMap.get(lIdx2);
-                    // hsv 3 components each have range 0 to 1
                     float diff = cieC.calcNormalizedDifferenceLUV(
                         clr1.getColors()[0], clr1.getColors()[1], clr1.getColors()[2], 
                         clr2.getColors()[0], clr2.getColors()[1], clr2.getColors()[2]);
                     if (diff > threshold) {
+                        continue;
+                    }
+                } else if (ColorSpace.POLAR_CIELUV.equals(clrSpace)) {
+                    Colors clr1 = indexColorMap.get(lIdx1);
+                    Colors clr2 = indexColorMap.get(lIdx2);
+                    // TODO: may need to revise this.
+                    double t1 = calcPolarTheta(clr1.getColors());
+                    double t2 = calcPolarTheta(clr2.getColors());
+                    double tDiff = AngleUtil.getAngleDifference(
+                        (float)Math.round(t1 * 180.f/Math.PI),
+                        (float)Math.round(t2 * 180.f/Math.PI));
+                    if (Math.abs(tDiff) > threshold) {
                         continue;
                     }
                 } else if (ColorSpace.RGB.equals(clrSpace)) {
@@ -14742,7 +14774,8 @@ int z = 1;
                     System.arraycopy(lab, 0, lab1.getColors(),
                         0, lab.length);
                     indexColorMap.remove(lIdx2);
-                } else if (ColorSpace.CIELUV_NORMALIZED.equals(clrSpace)) {
+                } else if (ColorSpace.CIELUV_NORMALIZED.equals(clrSpace) ||
+                    ColorSpace.POLAR_CIELUV.equals(clrSpace)) {
                     Colors luv1 = indexColorMap.get(lIdx1);
                     float[] luv = cieC.rgbToCIELUV(r, g, b);
                     System.arraycopy(luv, 0, luv1.getColors(),

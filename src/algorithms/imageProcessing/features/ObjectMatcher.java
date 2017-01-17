@@ -1956,12 +1956,11 @@ public class ObjectMatcher {
         }
         keypoints1.removeAll(rm2);
         
-        
         if (orb1.getKeyPoint0List().isEmpty()) {
             return null;
         }
         
-        float luvDeltaELimit = 40;//10;// between 10 and 30
+        //float luvDeltaELimit = 40;//10;// between 10 and 30
         
         ImageExt img1Cp = img1.copyToImageExt();
         
