@@ -1,14 +1,10 @@
 package algorithms.imageProcessing;
 
-import algorithms.compGeometry.HoughTransform;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
-import algorithms.misc.MiscMath;
 import java.util.logging.Logger;
 import java.util.HashSet;
 import algorithms.util.PairInt;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -163,7 +159,7 @@ public class CannyEdgeFilterAdaptiveDeltaE2000 {
         if (input.getWidth() < 3 || input.getHeight() < 3) {
             throw new IllegalArgumentException("images should be >= 3x3 in size");
         }
-        
+               
         SIGMA sigma = SIGMA.ZEROPOINTFIVE;
         ImageProcessor imageProcessor = new ImageProcessor();
         imageProcessor.blur(input, sigma, 0, 255);

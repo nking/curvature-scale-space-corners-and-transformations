@@ -18,10 +18,13 @@ import algorithms.imageProcessing.features.IntensityClrFeatures;
 import algorithms.imageProcessing.features.PhaseCongruencyDetector;
 import algorithms.imageProcessing.features.UnsupervisedTextureFinder;
 import algorithms.imageProcessing.features.UnsupervisedTextureFinder.TexturePatchesAndResponse;
+import algorithms.imageProcessing.features.mser.MSER;
+import algorithms.imageProcessing.features.mser.Region;
 import algorithms.imageProcessing.segmentation.ColorSpace;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.imageProcessing.segmentation.NormalizedCuts;
 import algorithms.imageProcessing.segmentation.SLICSuperPixels;
+import algorithms.imageProcessing.segmentation.SLICSuperPixelsGS;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.MiscStats;
 import algorithms.imageProcessing.util.PairIntWithIndex;
@@ -14010,6 +14013,157 @@ int z = 1;
             .extractContiguousLabelPoints(img, labels);
        
         return labels;
+    }
+
+    /**
+     * a segmentation method that uses super pixels and a few
+     * color merging methods to result in an image which is
+     * still over-segmented, but a result which is searchable
+     * for shapes.  NOTE that this is tailored for images
+     * binned to near size 256 on a side.
+     * 
+     * TODO: need an argument to allow  lower threshold in merging when user
+     * knows that there are large neutral tone landscape boundaries.
+     * 
+     * @param img
+     * @param edgeProducts
+     * @return
+     */
+    public int[] objectSegmentationLUV(Image img, final EdgeFilterProducts edgeProducts) {
+
+        long ts = MiscDebug.getCurrentTimeFormatted();
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+        GreyscaleImage theta1 = imageProcessor.createCIELUVTheta(img, 255);
+        //MiscDebug.writeImage(theta1,  "_theta_" + ts);
+        
+       /* {
+            GreyscaleImage tmp = theta1.copyImage();
+            CannyEdgeFilterAdaptive canny = new CannyEdgeFilterAdaptive();
+            canny.overrideToUseAdaptiveThreshold();
+            canny.applyFilter(tmp);
+            GreyscaleImage tmpGradXY = canny.getFilterProducts().getGradientXY();
+            for (int i = 0; i < tmpGradXY.getNPixels(); ++i) {
+                if (tmpGradXY.getValue(i) > 0) {
+                    tmpGradXY.setValue(i, 255);
+                } 
+            }
+            MiscDebug.writeImage(tmpGradXY,  "_theta_grad_" + ts);
+            tmp = theta1.copyImage();
+            MSER mser = new MSER();
+            List<List<Region>> regions = mser.findRegions(tmp);
+            
+            int[] xyCen = new int[2];
+            Image imCp = tmp.copyToColorGreyscale();
+            for (int i = 0; i < regions.get(0).size(); ++i) {
+                Region r = regions.get(0).get(i);
+                int[] clr = ImageIOHelper.getNextRGB(i);
+                r.drawEllipse(imCp, 0, clr[0], clr[1], clr[2]);
+                r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
+                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], imCp, 
+                    1, 255, 0, 0);
+            }
+            MiscDebug.writeImage(imCp, "_theta_regions_0_" + ts);
+            imCp = tmp.copyToColorGreyscale();
+            for (int i = 0; i < regions.get(1).size(); ++i) {
+                Region r = regions.get(1).get(i);
+                int[] clr = ImageIOHelper.getNextRGB(i);
+                r.drawEllipse(imCp, 0, clr[0], clr[1], clr[2]);
+                r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
+                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], imCp, 
+                    1, 255, 0, 0);
+            }
+            MiscDebug.writeImage(imCp, "_theta_regions_1_" + ts);
+        }*/
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        // extrapolate boundaries at nclusters=x1
+        //   NOTE: this method is tailored for images
+        //   binned to size near 256 on a side, so will
+        //   need to add comments and maybe a wrapper to
+        //   make sure that is true
+        float nPix = theta1.getNPixels();
+        int x1 = 17;//11; 17
+        float f10 = (float)w/(float)x1;
+        f10 *= f10;
+        float f11 = (float)h/(float)x1;
+        f11 *= f11;
+        int n10 = Math.round(nPix/f10);
+        int n11 = Math.round(nPix/f11);
+        //==> nClusters = nPix/((w/x0)^2)
+        //==> nClusters = nPix/((h/x0)^2)
+        log.info("  n1=" + n10 + "," + n11);
+        int nc = (n10+n11)/2;
+        
+        int[] norms = new int[]{1/*, 5, 10*/};
+        int[][] sLabels = new int[norms.length][];
+        
+        for (int i0 = 0; i0 < norms.length; ++i0) {
+        
+            SLICSuperPixelsGS slic = new SLICSuperPixelsGS(theta1, nc,
+                norms[i0]); 
+            slic.setGradient(edgeProducts.getGradientXY());
+            slic.calculate();
+            int[] labels = slic.getLabels();
+
+            Image img3 = img.createWithDimensions();
+            ImageIOHelper.addAlternatingColorLabelsToRegion(img3, labels);
+            String str = Integer.toString(nc);
+            str = (str.length() < 3) ? "0" + str : str;
+            MiscDebug.writeImage(img3, "_slic_" + ts + "_" + str + "_" + i0);
+
+            ImageExt imgCp = img.copyToImageExt();
+            LabelToColorHelper.applyLabels(imgCp, labels);
+        
+            List<Set<PairInt>> contigSets = LabelToColorHelper
+                .extractContiguousLabelPoints(imgCp, labels);
+
+            int sizeLimit = 16;//31;
+            if (img.getNPixels() < 100) {
+                sizeLimit = 5;
+            }
+            imgCp = img.copyToImageExt();
+            // a safe limit for HSV is 0.025 to not overrun object bounds
+            labels = mergeByColor(imgCp, contigSets, ColorSpace.HSV, 
+                0.05f);//HSV
+                //0.075f);//HSV
+
+            mergeSmallSegments(imgCp, labels, sizeLimit, ColorSpace.HSV);
+
+            // ----- looking at fast marching methods and level sets
+            //       and/or region based active contours
+            contigSets = LabelToColorHelper
+                .extractContiguousLabelPoints(img, labels);
+
+            //TODO and NOTE:  for landscapes having snow and cloud boundaries,
+            //   or other ceutral tone boundaries, may want to
+            //   set the CIE LUV limit to a lower value such as 0.035
+
+            labels = mergeByColor(imgCp, contigSets, 
+                ColorSpace.CIELUV_NORMALIZED, 
+                0.035f);//0.0475f);//0.06 is slightly too much
+
+            sizeLimit = 24;
+            if (img.getNPixels() < 100) {
+                sizeLimit = 10;
+            }
+            mergeSmallSegments(imgCp, labels, sizeLimit, ColorSpace.CIELAB);
+
+            contigSets = LabelToColorHelper
+                .extractContiguousLabelPoints(imgCp, labels);
+            
+            sLabels[i0] = labels;
+            
+            {//DEBUG
+                ImageIOHelper.addAlternatingColorLabelsToRegion(
+                    imgCp, labels);
+                MiscDebug.writeImage(imgCp, "_segm_" + ts + "_" + i0 + "_" );
+            }
+        }
+        
+        return sLabels[0];
     }
 
     // NOT READY FOR USE YET

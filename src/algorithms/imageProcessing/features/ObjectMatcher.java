@@ -12,6 +12,7 @@ import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.MedianTransform;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.imageProcessing.PeriodicFFT;
 import algorithms.imageProcessing.SummedAreaTable;
 import algorithms.imageProcessing.TrimmedImage;
 import algorithms.imageProcessing.VanishingPoints;
@@ -23,6 +24,7 @@ import algorithms.imageProcessing.matching.MSERMatcher;
 import algorithms.imageProcessing.matching.ORBMatcher;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.imageProcessing.util.PairIntWithIndex;
+import algorithms.misc.Complex;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.OneDIntArray;
@@ -43,6 +45,7 @@ import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Set;
 import static jdk.nashorn.internal.objects.Global.print;
 
@@ -1212,6 +1215,7 @@ public class ObjectMatcher {
         
         filterCloseToBounds2(regionsComb1, gsImg1.getWidth(), gsImg1.getHeight(), 10);
         
+                
         //TODO: add filter here for patterns in the MSER regions that
         // are strong, and if present in reference frame1, then
         // anything without it should be removed.

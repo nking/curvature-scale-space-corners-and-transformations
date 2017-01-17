@@ -8,7 +8,7 @@ import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
 import algorithms.imageProcessing.util.AngleUtil;
-import algorithms.misc.MiscMath;
+import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import java.util.List;
 import algorithms.util.PairIntArray;
@@ -23,7 +23,6 @@ import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -132,6 +131,17 @@ public class Canonicalizer {
 
         }
 
+        public void drawEachPixel(Image img, int nExtraDot, int rClr, int gClr, int bClr) {
+
+            for (Entry<PairInt, PairInt> entry : offsetsToOrigCoords.entrySet()) {
+            
+                PairInt p = entry.getValue();
+                
+                ImageIOHelper.addPointToImage(p.getX(), p.getY(), img, nExtraDot,
+                    rClr, gClr, bClr);
+            }
+        }
+        
         @Override
         public String toString() {
 
@@ -201,8 +211,7 @@ public class Canonicalizer {
             double ecc = Math.sqrt(major * major - minor * minor)/major;
             assert(!Double.isNaN(ecc));
 
-            TIntList xs = new TIntArrayList();
-            TIntList ys = new TIntArrayList();
+            PairIntArray xy = new PairIntArray();
 
             boolean createEllipse = true;
             double radius = minor;
@@ -221,8 +230,7 @@ public class Canonicalizer {
                         + Math.sin(t) * m[3]) * 2.0 + 0.5);
                     if ((xE >= 0) && (xE < imageWidth) &&
                         (yE >= 0) && (yE < imageHeight)) {
-                        xs.add(xE);
-                        ys.add(yE);
+                        xy.add(xE, yE);
                     }
                 }
             } else {
@@ -233,14 +241,13 @@ public class Canonicalizer {
                     int yE = (int)Math.round(y + (ms * radius));
                     if ((xE >= 0) && (xE < imageWidth) &&
                         (yE >= 0) && (yE < imageHeight)) {
-                        xs.add(xE);
-                        ys.add(yE);
+                        xy.add(xE, yE);
                     }
                 }
             }
 
             Map<PairInt, PairInt> offsetToOrigMap = createOffsetToOrigMap(x, y,
-                xs, ys, meanWindowedImg.getWidth(), 
+                xy, meanWindowedImg.getWidth(), 
                 meanWindowedImg.getHeight(), angle);
 
             double autocorrel = calcAutoCorrel(meanWindowedImg, x, y, 
@@ -534,21 +541,19 @@ public class Canonicalizer {
             // create a Region to use the accumulate method
             // and compare results
 
-            TIntList xs = new TIntArrayList();
-            TIntList ys = new TIntArrayList();
+            PairIntArray xy = new PairIntArray();
 
             Set<PairInt> labeledSet = labeledSets.get(label);
             Region r = new Region();
             for (PairInt pl : labeledSet) {
                 r.accumulate(pl.getX(), pl.getY());
-                xs.add(pl.getX());
-                ys.add(pl.getY());
+                xy.add(pl.getX(), pl.getY());
             }
 
-            int[] xy = new int[2];
-             r.calculateXYCentroid(xy, imgWidth, imgWidth);
-            int x = xy[0];
-            int y = xy[1];
+            int[] xyCen = new int[2];
+             r.calculateXYCentroid(xyCen, imgWidth, imgWidth);
+            int x = xyCen[0];
+            int y = xyCen[1];
             assert(x >= 0 && x < imgWidth);
             assert(y >= 0 && y < imgWidth);
             double[] m = r.calcParamTransCoeff();
@@ -569,7 +574,7 @@ public class Canonicalizer {
                 + angle + " (" + x + "," + y + ")");
 
             Map<PairInt, PairInt> offsetMap = createOffsetToOrigMap(x, y,
-                xs, ys, imgWidth, imgHeight, angle);
+                xy, imgWidth, imgHeight, angle);
             
             double autocorrel = calcAutoCorrel(img, x, y, offsetMap);
             
@@ -591,42 +596,8 @@ public class Canonicalizer {
     }
 
     public static Map<PairInt, PairInt> createOffsetToOrigMap(
-        int x, int y, TIntList xs, TIntList ys, int imgWidth, int imgHeight,
+        int x, int y, PairIntArray xy, int imgWidth, int imgHeight,
         double orientation) {
-
-        // calc content for offsetsToOrigCoords
-        int[] x2s = xs.toArray(new int[xs.size()]);
-        int[] y2s = ys.toArray(new int[xs.size()]);
-
-        QuickSort.sortBy1stThen2nd(y2s, x2s);
-
-        int n = (new TIntHashSet(ys)).size();
-
-        TrioInt[] ranges = new TrioInt[n];
-        int count = 0;
-        int idx = 0;
-        for (idx = 0; idx < x2s.length; ++idx) {
-            int yC = y2s[idx];
-            int minX = Integer.MAX_VALUE;
-            int maxX = Integer.MIN_VALUE;
-            int idx2 = idx;
-            for (idx2 = idx; idx2 < x2s.length; ++idx2) {
-                if (y2s[idx2] > yC) {
-                    idx2--;
-                    break;
-                }
-                if (minX == Integer.MAX_VALUE) {
-                    minX = x2s[idx2];
-                }
-                maxX = x2s[idx2];
-            }
-            idx = idx2;
-
-            // subtract (xc,yc) from ranges
-            ranges[count] = new TrioInt(yC, minX, maxX);
-            count++;
-        }
-        assert(count == n);
 
         Set<PairInt> visited = new HashSet<PairInt>();
 
@@ -645,36 +616,46 @@ public class Canonicalizer {
         Map<PairInt, PairInt> offsetToOrigMap = new HashMap<PairInt, PairInt>();
 
         Transformer transformer = new Transformer();
+        
+        PairIntArray xyTr = transformer.applyTransformation(params, xy);
 
         // visit all points in region and transform them
         // also determine the auto-correlation
 
         int nc = 0;
-        for (int j = 0; j < ranges.length; ++j) {
-            int yE = ranges[j].getX();
-            int xMin = ranges[j].getY();
-            int xMax = ranges[j].getZ();
-            for (int xE = xMin; xE <= xMax; ++xE) {
-
-                double[] xyETr = transformer.applyTransformation(params, xE, yE);
-
-                int xETr = (int)Math.round(xyETr[0]);
-                int yETr = (int)Math.round(xyETr[1]);
-
-                if ((xETr >= 0) && (xETr < imgWidth)
-                    && (yETr >= 0) && (yETr < imgHeight)) {
-
-                    PairInt pt = new PairInt(xETr, yETr);
-                    if (visited.contains(pt)) {
-                        continue;
-                    }
-                    visited.add(pt);
-
-                    PairInt pOffsets = new PairInt(xETr - x, yETr - y);
-                    offsetToOrigMap.put(pOffsets, new PairInt(xE, yE));
-                    nc++;
-                }
+        for (int j = 0; j < xy.getN(); ++j) {
+            
+            int xp = xy.getX(j);
+            int yp = xy.getY(j);
+            
+            int xpTr = xyTr.getX(j);
+            int ypTr = xyTr.getY(j);
+            
+            if (xpTr == -1) {
+                xpTr = 0;
             }
+            if (ypTr == -1) {
+                ypTr = 0;
+            }
+            if (xpTr == imgWidth) {
+                xpTr--;
+            }
+            if (ypTr == imgHeight) {
+                ypTr--;
+            }
+            if (xpTr < 0 || ypTr < 0 || xpTr >= imgWidth || ypTr >= imgHeight) {
+                continue;
+            }
+            
+            PairInt pt = new PairInt(xpTr, ypTr);
+            if (visited.contains(pt)) {
+                continue;
+            }
+            visited.add(pt);
+
+            PairInt pOffsets = new PairInt(xpTr - x, ypTr - y);
+            offsetToOrigMap.put(pOffsets, new PairInt(xp, yp));
+            nc++;
         }
 
         return offsetToOrigMap;
@@ -696,11 +677,11 @@ public class Canonicalizer {
         
         for (Entry<PairInt, PairInt> entry : offsetMap.entrySet()) {
             
-            PairInt pOffset = entry.getKey();
+            PairInt p = entry.getValue();
             
-            int x2 = pOffset.getX() + x;
+            int x2 = p.getX();
             
-            int y2 = pOffset.getY() + y;
+            int y2 = p.getY();
             
             if (x2 == w) {
                 x2--;
