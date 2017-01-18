@@ -371,9 +371,9 @@ public class MSER {
             if (newPixelGreyLevel < 
                 regionStack.get(regionStack.size() - 1).level_) {
 
-                // NOTE, this step is slightly different than the paper suggests,
-                // and is a change by Charles Dubout. this change produces
-                // better results in a brief look at test results
+                // NOTE, this slight change in methods used by Charles Dubout results
+                // in the history of top being added to new node correclty
+                // without additional logic
                 regionStack.add(new Region(newPixelGreyLevel, pixel));
             
                 regionStack.get(regionStack.size() - 1).merge(top);
