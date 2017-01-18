@@ -260,6 +260,18 @@ public class ObjectMatcher {
             }
         }
     }
+    
+    private void mask(GreyscaleImage img, Set<PairInt> shape0) {
+                
+        for (int i = 0; i < img.getWidth(); ++i) {
+            for (int j = 0; j < img.getHeight(); ++j) {
+                PairInt p = new PairInt(i, j);
+                if (!shape0.contains(p)) {
+                    img.setValue(i, j, 0);
+                }
+            }
+        }
+    }
 
     private TIntObjectMap<Set<PairInt>> segment(ImageExt img, 
         Set<PairInt> shape) {
@@ -1134,16 +1146,22 @@ public class ObjectMatcher {
         }
         
         ImageExt img0Trimmed = (ImageExt)img0Trim.getTrimmed();
+       
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        GreyscaleImage luvTheta0 = imageProcessor.createCIELUVTheta(img0Trimmed, 255);
+        GreyscaleImage luvTheta1 = imageProcessor.createCIELUVTheta(img1, 255);        
+        imageProcessor.singlePixelFilter(luvTheta0);
+        imageProcessor.singlePixelFilter(luvTheta1);
         
         // ----- create the cRegions for a masked image pyramid of img 0 ====
         
         mask(img0Trimmed, shape0Trimmed);
+        mask(luvTheta0, shape0Trimmed);
                
         if (debug) {
             MiscDebug.writeImage(img0Trimmed, "_shape0_mask_");
         }
-        
-        ImageProcessor imageProcessor = new ImageProcessor();
         
         // these are in the trimmed reference frame
         TIntObjectMap<Set<PairInt>> labeledSets0 = segment(img0Trimmed, shape0Trimmed);
@@ -1183,15 +1201,27 @@ public class ObjectMatcher {
         }
         
         Canonicalizer canonicalizer = new Canonicalizer();
+       
+        //TODO: use cie luv polar theta for regions.
+        // TODO: also use the intensity images for the other mser
+        // matching the polar theta should use the polar theta images
+        //    and canonicalized ellipse patches.
+        // matching the intensity image should
+        //    probably use the polar theta and the hsv
         
         GreyscaleImage gsImg0 = img0Trimmed.copyToGreyscale2();
         
         // ----- create the cRegions for a masked image pyramid of img 0 ====
         MSER mser = new MSER();
            
-        List<List<Region>> regions0 = mser.findRegions(gsImg0);
+        List<List<Region>> regions0 = mser.findRegions(gsImg0, true);
         
         List<Region> regionsComb0 = combine(regions0, gsImg0.getWidth(),
+            gsImg0.getHeight());
+        
+        List<List<Region>> regionsT0 = mser.findRegions(luvTheta0);
+        
+        List<Region> regionsCombT0 = combine(regionsT0, gsImg0.getWidth(),
             gsImg0.getHeight());
         
         int[] xy = new int[2];
@@ -1204,17 +1234,31 @@ public class ObjectMatcher {
                 regionsComb0.remove(i);
             }
         }
+        for (int i = (regionsCombT0.size() - 1); i > -1; --i) {
+            Region r = regionsCombT0.get(i);
+            r.calculateXYCentroid(xy, gsImg0.getWidth(), gsImg0.getHeight());
+            PairInt p = new PairInt(xy[0], xy[1]);
+            if (!shape0Trimmed.contains(p)) {
+                regionsCombT0.remove(i);
+            }
+        }
         
         // find regions in dataset 1
         GreyscaleImage gsImg1 = img1.copyToGreyscale2();
                    
-        List<List<Region>> regions1 = mser.findRegions(gsImg1);
+        List<List<Region>> regions1 = mser.findRegions(gsImg1, true);
         
         List<Region> regionsComb1 = combine(regions1, gsImg1.getWidth(),
             gsImg1.getHeight());
         
+        List<List<Region>> regionsT1 = mser.findRegions(luvTheta1);
+        
+        List<Region> regionsCombT1 = combine(regionsT1, gsImg1.getWidth(),
+            gsImg1.getHeight());
+        
         filterCloseToBounds2(regionsComb1, gsImg1.getWidth(), gsImg1.getHeight(), 10);
         
+        filterCloseToBounds2(regionsCombT1, gsImg1.getWidth(), gsImg1.getHeight(), 10);
                 
         //TODO: add filter here for patterns in the MSER regions that
         // are strong, and if present in reference frame1, then
@@ -1239,6 +1283,17 @@ public class ObjectMatcher {
             }
             MiscDebug.writeImage(im0Cp, "regions_0_");
             
+            im0Cp = luvTheta0.copyToColorGreyscale();
+            for (int i = 0; i < regionsCombT0.size(); ++i) {
+                Region r = regionsCombT0.get(i);
+                int[] clr = ImageIOHelper.getNextRGB(i);
+                r.drawEllipse(im0Cp, 0, clr[0], clr[1], clr[2]);
+                r.calculateXYCentroid(xyCen, im0Cp.getWidth(), im0Cp.getHeight());
+                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im0Cp, 
+                    1, 255, 0, 0);
+            }
+            MiscDebug.writeImage(im0Cp, "regions_0_T_");
+            
             im1Cp = img1.copyImage();
             for (int i = 0; i < regionsComb1.size(); ++i) {
                 Region r = regionsComb1.get(i);
@@ -1250,6 +1305,18 @@ public class ObjectMatcher {
                     1, 255, 0, 0);
             }
             MiscDebug.writeImage(im1Cp, "regions_1_");
+            
+            im1Cp = luvTheta1.copyToColorGreyscale();
+            for (int i = 0; i < regionsCombT1.size(); ++i) {
+                Region r = regionsCombT1.get(i);
+                int[] clr = ImageIOHelper.getNextRGB(i);
+                r.drawEllipse(im1Cp, 0, clr[0], clr[1], clr[2]);
+                r.calculateXYCentroid(xyCen, im1Cp.getWidth(), im1Cp.getHeight());
+                ImageIOHelper.addPointToImage(
+                    xyCen[0], xyCen[1], im1Cp, 
+                    1, 255, 0, 0);
+            }
+            MiscDebug.writeImage(im1Cp, "regions_1_T_");
         }
        
         // list item for each octave.  item is for each region

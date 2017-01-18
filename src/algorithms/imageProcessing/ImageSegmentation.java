@@ -13497,7 +13497,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
      * @param set
      * @param nPix
      */
-    public void erode(Set<PairInt> set, int nPix) {
+    public Set<PairInt> erode(Set<PairInt> set, int nPix) {
 
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
@@ -13523,13 +13523,25 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
             set.removeAll(rmvd);
         }
+        
+        return rmvd;
     }
 
     /**
      * grow set by 1 pixel in every direction
      * @param set
      */
-    public void growByOne(Set<PairInt> set, int w, int h) {
+    public Set<PairInt> growByOne(Set<PairInt> set, int w, int h) {
+    
+        Set<PairInt> exclude = new HashSet<PairInt>();
+        return growByOne(set, w, h, exclude);
+    }
+    
+    /**
+     * grow set by 1 pixel in every direction
+     * @param set
+     */
+    public Set<PairInt> growByOne(Set<PairInt> set, int w, int h, Set<PairInt> exclude) {
 
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
@@ -13545,10 +13557,14 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     continue;
                 }
                 PairInt p2 = new PairInt(x2, y2);
-                add.add(p2);
+                if (!exclude.contains(p2)) {
+                    add.add(p2);
+                }
             }
         }
         set.addAll(add);
+        
+        return add;
     }
 
     /**
@@ -14018,7 +14034,7 @@ int z = 1;
             sizeLimit = 10;
         }
         mergeSmallSegments(imgCp, labels, sizeLimit, ColorSpace.CIELAB);
-       
+        
         contigSets = LabelToColorHelper
             .extractContiguousLabelPoints(img, labels);
        

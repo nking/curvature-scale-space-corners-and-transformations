@@ -387,6 +387,31 @@ public class MSER {
     
     /**
      * given 8 bit image, calculate the MSER regions.
+     * @param img
+     * @return 
+     */
+    public List<List<Region>> findRegions(GreyscaleImage img, boolean 
+        lessSensitive) {
+
+        int width = img.getWidth();
+        int height = img.getHeight();
+
+        int[] greyscale = new int[width * height];
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            greyscale[i] = img.getValue(i);
+        }
+    
+        return findRegions(greyscale, width, height, lessSensitive);
+    }
+    
+    public List<List<Region>> findRegions(int[] greyscale, int width,
+        int height) {
+        boolean lessSensistive = false;
+        return findRegions(greyscale, width, height, lessSensistive);
+    }
+    
+    /**
+     * given 8 bit image, calculate the MSER regions.
      * @param greyscale greyscale intensities of the image written so
      * that the array index is (row * imageWidth) + col.
      * @param width image width
@@ -395,11 +420,11 @@ public class MSER {
      * image and the other created from an inverted image.
      */
     public List<List<Region>> findRegions(int[] greyscale, int width,
-        int height) {
+        int height, boolean lessSensistive) {
 
         int delta = 2;
-        double minArea = 0.0005;
-        double maxArea = 0.1;
+        double minArea = lessSensistive ? 0.001 : 0.0005;// smaller here results in more points
+        double maxArea = 0.25;//0.1;
         double maxVariation = 0.5;
         double minDiversity = 0.5;
         
