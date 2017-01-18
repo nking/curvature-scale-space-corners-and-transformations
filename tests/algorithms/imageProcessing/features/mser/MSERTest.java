@@ -253,7 +253,7 @@ public class MSERTest extends TestCase {
         }
     }
     
-    public void test00() throws IOException {
+    public void est00() throws IOException {
         
         String[] files = new String[] {
             "android_statues_01_sz1.jpg",
@@ -456,7 +456,7 @@ public class MSERTest extends TestCase {
         // btightness vector
     }
     
-    public void est1() throws IOException {
+    public void test1() throws IOException {
         
         int width = 256;
         int height = 171;
@@ -478,15 +478,28 @@ public class MSERTest extends TestCase {
                 count++;
                 line = in.readLine();
             }
+        } catch (IOException e) {
+            throw new IOException(e);
         } finally {
             if (in != null) {
                 in.close();
             }
         }
         
+        /*
+        MSER mser8(2, 0.0005, 0.1, 0.5, 0.5, true);
+        MSER mser4(2, 0.0005, 0.1, 0.5, 0.5, false);
+        */
+        int delta = 2;
+        double minArea = 0.0005; 
+        double maxArea = 0.1;
+        double maxVariation = 0.5;
+        double minDiversity = 0.5;
+        
         MSER mser = new MSER();
         
-        List<List<Region>> regions = mser.findRegions(data, width, height);
+        List<List<Region>> regions = mser.findRegions(
+            data, width, height, delta, minArea, maxArea, maxVariation, minDiversity);
             
         Image img2 = ImageIOHelper.readImage(fl.getPath());
 

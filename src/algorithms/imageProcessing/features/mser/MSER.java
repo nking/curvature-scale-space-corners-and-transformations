@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.features.mser;
 
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.util.VeryLongBitString;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import java.util.ArrayList;
@@ -46,17 +47,14 @@ thread needs to have its own MSER class instance.
 * The java port of the C++ code just quoted is from this project is
 * by author nichole.
 * 
-* NOTE that tests are in progress to look at the use of the resulting
-* regions in object identification.  That requires canonicalization
-* of the regions.
+* ---------
+* details of the Nistér and H. Stewénius version of the MSER algorithm.
 * 
-* Note that because the regions are intensity dependent,
-* one should attempt to correct for the effects of extreme lighting
-* conditions in pre-processing stages if possible.  For example,
-* an object illuminated by the sun may have 3d brightness effects that
-* are different from the same object illuminated by isotropic diffuse 
-* lighting (which doesn't usually happen)...this method may be sensitive
-* to an illumination source function...
+* The authors use the following data structures and a flood fill style 
+* traversal rather than a watershed to result in fewer computations and
+* a shorter stack (max size being 256 rather than nPixels, excepting the 
+* input itself).
+* 
 * 
 */
 public class MSER {
@@ -186,10 +184,8 @@ public class MSER {
         //    the component stack. Push
         //    a dummy-component onto the stack, with grey-level
         //    higher than any allowed in the image.
-        TIntList accessible = new TIntArrayList(width * height);
-        for (int i = 0; i < width * height; ++i) {
-            accessible.add(0);
-        }
+        VeryLongBitString accessible = new VeryLongBitString(width * height);
+        
         TIntList[] boundaryPixels = new TIntArrayList[256];
         for (int i = 0; i < 256; ++i) {
             boundaryPixels[i] = new TIntArrayList();
@@ -199,12 +195,14 @@ public class MSER {
 
         regionStack.add(new Region());
 
-        // 2. Make the source pixel (with its first edge) the current pixel, mark it as accessible and
-        // store the grey-level of it in the variable current level.
+        // 2. Make the source pixel (with its first edge) the current pixel, 
+        //    mark it as accessible and
+        //    store the grey-level of it in the variable current level.
         int curPixel = 0;
         int curEdge = 0;
         int curLevel = bits[0];
-        accessible.set(0, 1);
+        // set bit 0
+        accessible.setBit(0);
 
         // 3. Push an empty component with current level onto the component stack.
         //step_3:
@@ -248,10 +246,10 @@ public class MSER {
                 }
 
                 if (neighborPixel != curPixel
-                    && accessible.get(neighborPixel) == 0) {
+                    && accessible.isNotSet(neighborPixel)) {
 
                     int neighborLevel = bits[neighborPixel];
-                    accessible.set(neighborPixel, 1);
+                    accessible.setBit(neighborPixel);
                     
                     if (neighborLevel >= curLevel) {
 
@@ -390,6 +388,27 @@ public class MSER {
      * @param img
      * @return 
      */
+    public List<List<Region>> findRegions(GreyscaleImage img,
+        int delta, double minArea, double maxArea, double maxVariation,
+        double minDiversity) {
+
+        int width = img.getWidth();
+        int height = img.getHeight();
+
+        int[] greyscale = new int[width * height];
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            greyscale[i] = img.getValue(i);
+        }
+    
+        return findRegions(greyscale, width, height, delta, minArea, maxArea, 
+            maxVariation, minDiversity);
+    }
+    
+    /**
+     * given 8 bit image, calculate the MSER regions.
+     * @param img
+     * @return 
+     */
     public List<List<Region>> findRegions(GreyscaleImage img, boolean 
         lessSensitive) {
 
@@ -410,7 +429,7 @@ public class MSER {
         return findRegions(greyscale, width, height, lessSensistive);
     }
     
-    /**
+     /**
      * given 8 bit image, calculate the MSER regions.
      * @param greyscale greyscale intensities of the image written so
      * that the array index is (row * imageWidth) + col.
@@ -421,13 +440,50 @@ public class MSER {
      */
     public List<List<Region>> findRegions(int[] greyscale, int width,
         int height, boolean lessSensistive) {
-
+        
         int delta = 2;
         double minArea = lessSensistive ? 0.001 : 0.0005;// smaller here results in more points
         double maxArea = 0.25;//0.1;
         double maxVariation = 0.5;
         double minDiversity = 0.5;
+
+        return findRegions(greyscale, width, height, delta, minArea, maxArea, 
+            maxVariation, minDiversity);
         
+    }
+    
+    /**
+     * given 8 bit image, calculate the MSER regions.
+     * @param greyscale greyscale intensities of the image written so
+     * that the array index is (row * imageWidth) + col.
+     * @param width image width
+     * @param height image height
+     * @param delta DELTA parameter of the MSER algorithm.
+               Roughly speaking, the stability of a
+	       region is the relative variation of the region
+               area when the intensity is changed by delta.
+               (default delta = 2.0)
+    @param minArea Minimum area of any stable region
+               relative to the image domain area.
+               (double minArea = 0.0001)
+    @param maxArea Maximum area of any stable region
+               relative to the image domain area.
+               (double maxArea = 0.5)
+    @param maxVariation Maximum variation (absolute
+               stability score) of the regions.
+               (double maxVariation = 0.5)
+    @param minDiversity Minimum diversity of the regions.
+               When the relative area of two
+	       nested regions is below this threshold,
+               then only the most stable one is selected.
+               (double minDiversity = 0.33)
+     * @return 2 lists of mser regions, one created from a non-inverted
+     * image and the other created from an inverted image.
+     */
+    public List<List<Region>> findRegions(int[] greyscale, int width,
+        int height, int delta, double minArea, double maxArea, double maxVariation,
+        double minDiversity) {
+
         // Extract MSER
         long start = System.currentTimeMillis();
 
