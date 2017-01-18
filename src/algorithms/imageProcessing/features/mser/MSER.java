@@ -171,14 +171,25 @@ public class MSER {
     /**
       Extracts maximally stable extremal regions from a
       greyscale (8 bits) image.
-      @param bits Pointer to the first scanline of the image.
-      @param width Width of the image.
+      @param bits array of 8 bit greyscale image values.  the maximum size
+      of the array is currently 2^27 -1, due to
+      internal data structures and encoding, but this may change.
+          
+      * @param width Width of the image.
       @param height Height of the image.
       @param regions output Detected MSER.
       */
     public void operator(int[] bits, int width, int height,
         List<Region> regions) {
 
+        if (bits.length > ((1 << 27) - 1)) {
+            //
+            throw new IllegalArgumentException("bits.length must be less than "
+                + " 27 bits currently.  just need to edit a variable to"
+                + " use long instead.  upper limit to bits.length would then"
+                + " be 31 bits - 1, limited by java language array length limit");
+        }
+        
         // 1. Clear the accessible pixel mask,
         //    the heap of boundary pixels and
         //    the component stack. Push
@@ -186,13 +197,15 @@ public class MSER {
         //    higher than any allowed in the image.
         VeryLongBitString accessible = new VeryLongBitString(width * height);
         
+        // priority queue of boundary pixels, priority = -greylevel
         TIntList[] boundaryPixels = new TIntArrayList[256];
         for (int i = 0; i < 256; ++i) {
             boundaryPixels[i] = new TIntArrayList();
         }
         int priority = 256;
-        List<Region> regionStack = new ArrayList<Region>();
-
+        
+        // stack of components (max size is number of grey levels, 256)
+        List<Region> regionStack = new ArrayList<Region>(256);
         regionStack.add(new Region());
 
         // 2. Make the source pixel (with its first edge) the current pixel, 
@@ -208,12 +221,16 @@ public class MSER {
         //step_3:
         regionStack.add(new Region(curLevel, curPixel));
 
-        // 4. Explore the remaining edges to the neighbors of the current pixel, in order, as follows:
-        // For each neighbor, check if the neighbor is already accessible. If it is not, mark it as
-        // accessible and retrieve its grey-level. If the grey-level is not lower than the current one,
-        // push it onto the heap of boundary pixels. If on the other hand the grey-level is lower than
-        // the current one, enter the current pixel back into the queue of boundary pixels for later
-        // processing (with the next edge number), consider the new pixel and its grey-level and go to 3.
+        // 4. Explore the remaining edges to the neighbors of the current pixel, 
+        // in order, as follows:
+        // For each neighbor, check if the neighbor is already accessible. 
+        //   If it is not, mark it as accessible and retrieve its grey-level. 
+        //     If the grey-level is not lower than the current one,
+        //       push it onto the heap of boundary pixels. 
+        //     else If the grey-level is lower than the current one, 
+        //       enter the current pixel back into the queue of boundary pixels 
+        //       for later processing (with the next edge number), 
+        //       consider the new pixel and its grey-level and go to 3.
         while (true) {
 
             int x = curPixel % width;
@@ -226,6 +243,7 @@ public class MSER {
                 int neighborPixel = curPixel;
 
                 if (eight_) {
+                    //pix = row * w + col
                     switch (curEdge) {
                         case 0: if (x < width - 1) neighborPixel = curPixel + 1; break;
                         case 1: if ((x < width - 1) && (y > 0)) neighborPixel = curPixel - width + 1; break;
@@ -252,12 +270,18 @@ public class MSER {
                     accessible.setBit(neighborPixel);
                     
                     if (neighborLevel >= curLevel) {
-
+             
+                        // implicitly '|' with curEdge=-1, then implicity read
+                        //   as next being 0
                         boundaryPixels[neighborLevel].add(neighborPixel << 4);
                         if (neighborLevel < priority) {
+                            // always handle a smaller grey level next
                             priority = neighborLevel;
                         }
                     } else {
+                        
+                        // always handle a smaller grey level next,
+                        // so process neighbor and put current level as priority
 
                         boundaryPixels[curLevel].add((curPixel << 4) | (curEdge + 1));
                         if (curLevel < priority) {
@@ -285,8 +309,10 @@ public class MSER {
             // saturates the current pixel).
             regionStack.get(regionStack.size() - 1).accumulate(x, y);
 
-            // 6. Pop the heap of boundary pixels. If the heap is empty, we are done. If the returned
-            // pixel is at the same grey-level as the previous, go to 4.
+            // 6. Pop the heap of boundary pixels. If the heap is empty, 
+            //    we are done. 
+            //    If the returned pixel is at the same grey-level as the 
+            //    previous, go to 4.
             if (priority == 256) {
 
                 regionStack.get(regionStack.size() - 1)
@@ -298,11 +324,14 @@ public class MSER {
             }
 
             int sz = boundaryPixels[priority].size();
-            curPixel = boundaryPixels[priority].get(sz - 1) >> 4;
-            curEdge = boundaryPixels[priority].get(sz - 1) & 15;
+            int highestPriorityBP = boundaryPixels[priority].removeAt(sz - 1);
+            curPixel = highestPriorityBP >> 4;
+            curEdge = highestPriorityBP & 15;
 
-            boundaryPixels[priority].removeAt(sz - 1);
-
+            //TODO: could store the indexes holding pixels in boundaryPixels
+            //   at any given time in a bitstring and keep it updated,
+            //   to improve this step since there is never an unproessed
+            //   lower priority.  then can replace 2nd half here with "lowest one bit set"
             while ((priority < 256) && boundaryPixels[priority].isEmpty()) {
                 ++priority;
             }
@@ -313,9 +342,10 @@ public class MSER {
 
                 curLevel = newPixelGreyLevel;
                 
-                // 7. The returned pixel is at a higher grey-level, so we must now process
-                // all components on the component stack until we reach the higher
-                // grey-level. This is done with the processStack sub-routine, see below.
+                // 7. The returned pixel is at a higher grey-level, so we must 
+                // now process all components on the component stack until we 
+                // reach the higher grey-level. This is done with the 
+                //processStack sub-routine, see below.
                 // Then go to 4.
                 processStack(newPixelGreyLevel, curPixel, regionStack);
             }

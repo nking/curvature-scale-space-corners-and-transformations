@@ -86,7 +86,9 @@ public class Region {
     private Region next_ = null;
     
     /**
-     * constructor with default level = 256 and pixel=0
+     * constructor with default level = 256 and pixel=0.  255 is the maximum
+     * values of any pixel used in MSER.  the default level is used when
+     * instantiating MSER to start with a high component level.
      */
     public Region() {
         int level = 256;
@@ -167,7 +169,7 @@ public class Region {
         }
 
         // Calculate variation
-        variation_ = (double)(parent.area_ - area_) / (double)area_;
+        variation_ = ((double)(parent.area_ - area_)) / (double)area_;
 
         // Whether or not the region *could* be stable
         boolean stable
