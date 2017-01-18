@@ -345,7 +345,7 @@ public class MSER {
                 // 7. The returned pixel is at a higher grey-level, so we must 
                 // now process all components on the component stack until we 
                 // reach the higher grey-level. This is done with the 
-                //processStack sub-routine, see below.
+                // processStack sub-routine, see below.
                 // Then go to 4.
                 processStack(newPixelGreyLevel, curPixel, regionStack);
             }
@@ -362,13 +362,18 @@ public class MSER {
             
             Region top = regionStack.remove(regionStack.size() - 1);
 
-            // 2. If newPixelGreyLevel is smaller than the grey-level on the second component on the
-            // stack, set the top of stack grey-level to newPixelGreyLevel and return from sub-routine
-            // (This occurs when the new pixel is at a grey-level for which there is not yet a component
-            // instantiated, so we let the top of stack be that level by just changing its grey-level.
+            // 2. If newPixelGreyLevel is smaller than the grey-level on the 
+            //    second component on the stack, set the top of stack 
+            //    grey-level to newPixelGreyLevel and return from sub-routine
+            //    (This occurs when the new pixel is at a grey-level for which 
+            //    there is not yet a component instantiated, so we let the top 
+            //    of stack be that level by just changing its grey-level.
             if (newPixelGreyLevel < 
                 regionStack.get(regionStack.size() - 1).level_) {
 
+                // NOTE, this step is slightly different than the paper suggests,
+                // and is a change by Charles Dubout. this change produces
+                // better results in a brief look at test results
                 regionStack.add(new Region(newPixelGreyLevel, pixel));
             
                 regionStack.get(regionStack.size() - 1).merge(top);
