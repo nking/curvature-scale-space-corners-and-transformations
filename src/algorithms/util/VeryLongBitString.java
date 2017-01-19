@@ -7,9 +7,9 @@ import java.util.Arrays;
  * creating a modifiable holder for a very long bit string of fixed size nbits. 
  * the internal array type is long which means each item is a 64 bit holder
  * (128 bits on the stack of a 64 bit platform).  
- * the number of items in an array is limited to 32 bits, so that's a capacity
- * of bits in the billions, if the JVM has enough memory for the maximum size
- * of the long array.  
+ * the number of items in the internal long array is limited to 31 bits
+ * (positive portion of signed 32 bit integer), 
+ * so that's a capacity of 64 * 31 bits, if the jvm has enough memory for that.
  * 
  * @author nichole
  */
@@ -302,6 +302,8 @@ public final class VeryLongBitString {
            object overhead
            sum of each item in the long array
         */
+        
+        //TODO: should update this one day soon...
         
         long sumBits = 3*(nbits*2) + 32;
         
