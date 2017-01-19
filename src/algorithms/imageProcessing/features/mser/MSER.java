@@ -361,7 +361,7 @@ public class MSER {
                 priority = boundaryPixelsIdx.nextHighestBitSet(priority - 1);
 
                 if (priority == -1) {
-                    if (accessible.getNSetBits() == bits.length || prev == 255) {
+                    if (prev == 255 || accessible.getNSetBits() == bits.length) {
                         priority = 256;
                     } else {
                         priority = 255;
