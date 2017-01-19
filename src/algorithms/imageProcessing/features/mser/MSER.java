@@ -51,12 +51,28 @@ thread needs to have its own MSER class instance.
 * ---------
 * details of the Nistér and H. Stewénius version of the MSER algorithm.
 * 
-* The authors use the following data structures and a flood fill style 
-* traversal rather than a watershed to result in fewer computations and
+* The authors use a flood fill style 
+* traversal rather than a watershed (watershed is the pattern used by
+* the original MSER authors, Matas et al.) to result in fewer computations and
 * a shorter stack (max size being 256 rather than nPixels, excepting the 
 * input itself).
+* From any starting pixel, a region is created and the adjacent pixels are explored.
+* Any adjacent pixel with a lower intensity gets immediate priority in processing
+* while the current gets put onto a queue.
+* No pixels are processed more than once and the exploration stops when
+* the greyscale level increases to pass the maximum value of 255.
 * 
+* processing involves comparison of an accumulated region to 
+* it's parent and child where the comparison is the fractional 
+* difference in the areas (to determine whether the current
+* region is a minimum in a small sample of the growth rate).
 * 
+* The worse case runtime complexity is
+      O((n + e) log(m))
+      where n is the number of pixels, 
+      m the number of grey-levels, 
+      and e is the number of edges in the image graph 
+      (where e ≈ 2n for four-connected images). 
 */
 public class MSER {
 
@@ -101,8 +117,7 @@ public class MSER {
         double minDiversity = 0.33;
         boolean eight = false;
 
-        init(delta, minArea, maxArea, maxVariation, minDiversity,
-            eight);
+        init(delta, minArea, maxArea, maxVariation, minDiversity, eight);
     }
 
     /**
@@ -128,11 +143,9 @@ public class MSER {
     @param eight Use 8-connected pixels instead of 4-connected.
     */
     public MSER(int delta, double minArea, double maxArea,
-        double maxVariation, double minDiversity,
-        boolean eight) {
+        double maxVariation, double minDiversity, boolean eight) {
 
-        init(delta, minArea, maxArea, maxVariation, minDiversity,
-            eight);
+        init(delta, minArea, maxArea, maxVariation, minDiversity, eight);
     }
 
     private void init(int delta, double minArea, double maxArea,
@@ -184,7 +197,7 @@ public class MSER {
         List<Region> regions) {
 
         if (bits.length > ((1 << 27) - 1)) {
-            //
+            
             throw new IllegalArgumentException("bits.length must be less than "
                 + " 27 bits currently.  just need to edit a variable to"
                 + " use long instead.  upper limit to bits.length would then"
