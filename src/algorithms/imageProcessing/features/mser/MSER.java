@@ -73,6 +73,11 @@ thread needs to have its own MSER class instance.
       m the number of grey-levels, 
       and e is the number of edges in the image graph 
       (where e ≈ 2n for four-connected images). 
+
+* ------
+* author nichole ported the C++ code of Charles Dubout to java 
+* and added the use of bit vectors as 
+* recommended by Nister and Stewénius.
 */
 public class MSER {
 

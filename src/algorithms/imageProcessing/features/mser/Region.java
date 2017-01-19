@@ -45,8 +45,8 @@ algorithm. It extracts stable connected regions of some level sets from an
 image, and optionally fits ellipses to them.
 * 
 * ------
-* author nichole ported the C++ code quoted above to java and added
-* methods used in canonicalization (in progress).
+* author nichole ported the C++ code of Charles Dubout to java and added
+* methods used in canonicalization (in progress) 
 */
 public class Region {
 
