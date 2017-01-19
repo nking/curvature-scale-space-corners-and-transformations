@@ -4,7 +4,6 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -70,7 +69,7 @@ thread needs to have its own MSER class instance.
 * The worse case runtime complexity is
       O((n + e) log(m))
       where n is the number of pixels, 
-      m the number of grey-levels, 
+      m the number of grey-levels == 256, 
       and e is the number of edges in the image graph 
       (where e ≈ 2n for four-connected images). 
 
@@ -349,7 +348,7 @@ public class MSER {
                 return;
             }
 
-            int sz = boundaryPixels[priority].size();
+            int sz = boundaryPixels[priority].size();  
             int highestPriorityBP = boundaryPixels[priority].removeAt(sz - 1);
             if (boundaryPixels[priority].isEmpty()) {
                 boundaryPixelsIdx.clearBit(priority);
@@ -360,13 +359,14 @@ public class MSER {
             if (priority < 256 && boundaryPixels[priority].isEmpty()) {
                 int prev = priority;
                 priority = boundaryPixelsIdx.nextHighestBitSet(priority - 1);
+
                 if (priority == -1) {
-                    if (prev == 255) {
+                    if (accessible.getNSetBits() == bits.length || prev == 255) {
                         priority = 256;
                     } else {
                         priority = 255;
                     }
-                }
+                }             
             }
            
             int newPixelGreyLevel = bits[curPixel];
