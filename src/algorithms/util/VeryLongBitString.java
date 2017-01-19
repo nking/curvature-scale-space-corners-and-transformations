@@ -68,12 +68,15 @@ public final class VeryLongBitString {
         
         int bitIdx = getBitIdx(nthBit, idx);
         
-        // test bit
+        assert(bitIdx < 64);
+        assert(bitIdx >= 0);
+        
+        // test bit is not set
         if ((bitstring[idx] & (1L << bitIdx)) == 0) {
-            
+          
             // set bit
             bitstring[idx] |= (1L << bitIdx);
-            
+                        
             nSetBits++;
         }
     }
@@ -89,7 +92,7 @@ public final class VeryLongBitString {
         
             // clear bit
             bitstring[idx] &= ~(1L << bitIdx);
-            
+                        
             nSetBits--;
         }
     }
@@ -529,5 +532,104 @@ public final class VeryLongBitString {
         out.recountNSetBits();
         
         return out;
+    }
+
+    public int nextHighestBitSet(int nthBit) {
+        
+        if (nthBit > nBits) {
+            throw new IllegalArgumentException("bit must be < " + nBits);
+        }
+        
+        int idx = getRowNumber(nthBit);
+        
+        int bitIdx = getBitIdx(nthBit, idx);
+        
+        // nthBit is last item on idx array, increment idx
+        // to start at 0
+        if (nthBit == (((idx + 1) * itemBitLength) - 1)) {
+            idx++;
+        }
+        
+        for (int i = idx; i < bitstring.length; ++i) {
+            
+            long b = bitstring[i];
+            
+            if (i == idx) {                
+                long shift = bitIdx + 1;
+                b >>= shift;
+                b <<= shift;
+            }
+
+            // same as v & -v, but might be using native method:
+            long l = Long.lowestOneBit(b);
+            
+            if (l != 0) { 
+                
+                int bn = 63 - Long.numberOfLeadingZeros(l);
+                
+                // bn is bit position within row i
+                //bn = (int)(nthBit - (i * itemBitLength));
+                
+                return (int)((i * itemBitLength) + bn);                  
+            }
+        }
+        
+        return -1;
+        
+    }
+    
+    /**
+     * returns the index of the lowest bit set ("rightmost), else -1 if no bits are set.
+     * @return 
+     */
+    public int leastBitSet() {
+        
+        for (int i = 0; i < bitstring.length; ++i) {
+            long b = bitstring[i];
+                
+            // same as v & -v, but might be using native method:
+            long l = Long.lowestOneBit(b);
+               
+            if (l > 0) {
+                
+                int bn = 63 - Long.numberOfLeadingZeros(l);
+                
+                // bn is bit position within row i
+                //bn = (int)(nthBit - (i * itemBitLength));
+                
+                int bitIdx = (int)((i * itemBitLength) + bn);
+                
+                return bitIdx;
+            }
+        }
+        
+        return -1;
+    }
+    
+    /**
+     * returns the index of the highest bit set ("leftmost"), else -1 if no bits are set.
+     * @return 
+     */
+    public int highestBitSet() {
+        
+        for (int i = (bitstring.length - 1); i > -1; --i) {
+            long b = bitstring[i];
+                
+            long l = Long.highestOneBit(b);
+               
+            if (l > 0) {
+             
+                int bn = 63 - Long.numberOfLeadingZeros(l);
+                
+                // bn is bit position within row i
+                //bn = (int)(nthBit - (i * itemBitLength));
+                
+                int bitIdx = (int)((i * itemBitLength) + bn);
+                
+                return bitIdx;
+            }
+        }
+        
+        return -1;
     }
 }

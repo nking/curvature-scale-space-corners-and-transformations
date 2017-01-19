@@ -470,4 +470,107 @@ public class VeryLongBitStringTest extends TestCase {
         r = bs2.difference(bs1);
         assertEquals(bs4, r);
     }
+    
+    public void testNextHighestBitSet() {
+        
+        // 0 1 0 1 1 0
+        VeryLongBitString bs = new VeryLongBitString(256);
+        bs.setBit(1);
+        bs.setBit(2);
+        bs.setBit(4);
+        bs.setBit(34);
+        bs.setBit(37);
+        
+        int b = bs.nextHighestBitSet(1);
+        //System.out.println("b=" + b);
+        assertEquals(2, b);
+        
+        b = bs.nextHighestBitSet(34);
+        //System.out.println("b=" + b);
+        assertEquals(37, b);
+    }
+    
+    public void testLeastBitSet() {
+        
+        VeryLongBitString bs = new VeryLongBitString(256);
+        bs.setBit(2);
+        bs.setBit(3);
+        long lb = bs.leastBitSet();
+        //System.out.println("leastBitSet=" + lb);
+        assertEquals(2, lb);
+        
+        bs = new VeryLongBitString(256);
+        bs.setBit(5);
+        bs.setBit(7);
+        lb = bs.leastBitSet();
+        //System.out.println("leastBitSet=" + lb);
+        assertEquals(5, lb);
+    }
+    
+    public void testHighestBitSet() {
+        
+        VeryLongBitString bs = new VeryLongBitString(256);
+        bs.setBit(2);
+        bs.setBit(3);
+        long lb = bs.highestBitSet();
+        //System.out.println("leastBitSet=" + lb);
+        assertEquals(3, lb);
+        
+        bs = new VeryLongBitString(256);
+        bs.setBit(5);
+        bs.setBit(7);
+        lb = bs.highestBitSet();
+        //System.out.println("leastBitSet=" + lb);
+        assertEquals(7, lb);
+    }
+    
+    public void testNextHighestBitSet_2() {
+        
+        // 0 1 0 1 1 0
+        VeryLongBitString bs = new VeryLongBitString(256);
+        bs.setBit(201);
+        bs.setBit(82);
+        bs.setBit(67);
+        bs.setBit(73);
+        bs.setBit(62);
+        bs.setBit(59);
+        bs.clearBit(59);
+        
+        int b = bs.nextHighestBitSet(59);
+        //System.out.println("b=" + b);
+        assertEquals(62, b);
+        
+        bs.setBit(63);
+        bs.setBit(59);
+        bs.clearBit(59);
+        
+        b = bs.nextHighestBitSet(59);
+        //System.out.println("b=" + b);
+        assertEquals(62, b);
+    
+        bs = new VeryLongBitString(256);
+        bs.setBit(61);
+        bs.setBit(63);
+        bs.setBit(64);
+        bs.setBit(65);
+        b = bs.nextHighestBitSet(62);
+        assertEquals(63, b);
+        b = bs.nextHighestBitSet(64);
+        assertEquals(65, b);
+        b = bs.nextHighestBitSet(63);
+        System.out.println("b=" + b);
+        assertEquals(64, b);
+        
+        bs.setBit(61 + 64);
+        bs.setBit(63 + 64);
+        bs.setBit(64 + 64);
+        bs.setBit(65 + 64);
+        b = bs.nextHighestBitSet(62 + 64);
+        assertEquals(63 + 64, b);
+        b = bs.nextHighestBitSet(64 + 64);
+        assertEquals(65 + 64, b);
+        b = bs.nextHighestBitSet(63 + 64);
+        System.out.println("b=" + b);
+        assertEquals(64 + 64, b);
+    }
 }

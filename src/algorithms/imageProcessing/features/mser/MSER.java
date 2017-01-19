@@ -4,6 +4,7 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -202,6 +203,8 @@ public class MSER {
         for (int i = 0; i < 256; ++i) {
             boundaryPixels[i] = new TIntArrayList();
         }
+        VeryLongBitString boundaryPixelsIdx = new VeryLongBitString(256);
+        
         int priority = 256;
         
         // stack of components (max size is number of grey levels, 256)
@@ -274,6 +277,8 @@ public class MSER {
                         // implicitly '|' with curEdge=-1, then implicity read
                         //   as next being 0
                         boundaryPixels[neighborLevel].add(neighborPixel << 4);
+                        boundaryPixelsIdx.setBit(neighborLevel);
+               
                         if (neighborLevel < priority) {
                             // always handle a smaller grey level next
                             priority = neighborLevel;
@@ -284,6 +289,8 @@ public class MSER {
                         // so process neighbor and put current level as priority
 
                         boundaryPixels[curLevel].add((curPixel << 4) | (curEdge + 1));
+                        boundaryPixelsIdx.setBit(curLevel);
+    
                         if (curLevel < priority) {
                             priority = curLevel;
                         }
@@ -293,6 +300,7 @@ public class MSER {
 
                         //continue step_3;
                         s3 = true;
+                        
                         break;
                     }
                 }
@@ -324,24 +332,34 @@ public class MSER {
             }
 
             int sz = boundaryPixels[priority].size();
+            if (sz == 0) {
+                System.out.println("ERROR: " + priority);
+            }
             int highestPriorityBP = boundaryPixels[priority].removeAt(sz - 1);
+            if (boundaryPixels[priority].isEmpty()) {
+                boundaryPixelsIdx.clearBit(priority);
+            }
             curPixel = highestPriorityBP >> 4;
             curEdge = highestPriorityBP & 15;
-
-            //TODO: could store the indexes holding pixels in boundaryPixels
-            //   at any given time in a bitstring and keep it updated,
-            //   to improve this step since there is never an unproessed
-            //   lower priority.  then can replace 2nd half here with "lowest one bit set"
-            while ((priority < 256) && boundaryPixels[priority].isEmpty()) {
-                ++priority;
+           
+            if (priority < 256 && boundaryPixels[priority].isEmpty()) {
+                int prev = priority;
+                priority = boundaryPixelsIdx.nextHighestBitSet(priority - 1);
+                if (priority == -1) {
+                    if (prev == 255) {
+                        priority = 256;
+                    } else {
+                        priority = 255;
+                    }
+                }
             }
-
+           
             int newPixelGreyLevel = bits[curPixel];
 
             if (newPixelGreyLevel != curLevel) {
 
                 curLevel = newPixelGreyLevel;
-                
+ 
                 // 7. The returned pixel is at a higher grey-level, so we must 
                 // now process all components on the component stack until we 
                 // reach the higher grey-level. This is done with the 
@@ -533,6 +551,8 @@ public class MSER {
 
         mser8.operator(greyscale, width, height, regions.get(0));
 
+   System.out.println("inverse");
+   
         // Invert the pixel values
         for (int i = 0; i < width * height; ++i) {
             greyscale[i] = ~greyscale[i];
