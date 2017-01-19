@@ -332,9 +332,6 @@ public class MSER {
             }
 
             int sz = boundaryPixels[priority].size();
-            if (sz == 0) {
-                System.out.println("ERROR: " + priority);
-            }
             int highestPriorityBP = boundaryPixels[priority].removeAt(sz - 1);
             if (boundaryPixels[priority].isEmpty()) {
                 boundaryPixelsIdx.clearBit(priority);

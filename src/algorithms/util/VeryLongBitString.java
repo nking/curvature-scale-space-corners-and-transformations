@@ -545,7 +545,6 @@ public final class VeryLongBitString {
         int bitIdx = getBitIdx(nthBit, idx);
         
         // nthBit is last item on idx array, increment idx
-        // to start at 0
         if (nthBit == (((idx + 1) * itemBitLength) - 1)) {
             idx++;
         }
@@ -568,7 +567,6 @@ public final class VeryLongBitString {
                 int bn = 63 - Long.numberOfLeadingZeros(l);
                 
                 // bn is bit position within row i
-                //bn = (int)(nthBit - (i * itemBitLength));
                 
                 return (int)((i * itemBitLength) + bn);                  
             }
