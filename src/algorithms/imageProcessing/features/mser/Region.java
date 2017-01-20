@@ -104,6 +104,10 @@ public class Region {
         init(level, pixel);
     }
 
+    public double getVariation() {
+        return variation_;
+    }
+    
     private void init(int level, int pixel) {
         this.level_ = level;
         this.pixel_ = pixel;

@@ -9009,6 +9009,31 @@ if (sum > 511) {
         return pyr;
     }
     
+    public List<GreyscaleImage> buildPyramid(GreyscaleImage img,
+        boolean buildLarger) {
+                
+        GreyscaleImage cp = img.copyImage();
+        
+        List<GreyscaleImage> out;
+        
+        if (buildLarger) {
+            
+            ImageProcessor imageProcessor = new ImageProcessor();
+            
+            out = imageProcessor.buildPyramid2(cp, 32);
+            
+        } else {
+            
+            MedianTransform mt = new MedianTransform();
+            
+            out = new ArrayList<GreyscaleImage>();
+            
+            mt.multiscalePyramidalMedianTransform2(cp, out, 32);
+        }
+        
+        return out;
+    }
+    
     /**
      * given an input image, creates a decimation pyramid with 
      * median smoothing followed by either integer or bilinear

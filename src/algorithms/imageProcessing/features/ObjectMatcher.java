@@ -1,5 +1,7 @@
 package algorithms.imageProcessing.features;
 
+import algorithms.MultiArrayMergeSort;
+import algorithms.QuickSort;
 import algorithms.compGeometry.FurthestPair;
 import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.ColorHistogram;
@@ -10,9 +12,7 @@ import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
-import algorithms.imageProcessing.MedianTransform;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
-import algorithms.imageProcessing.PeriodicFFT;
 import algorithms.imageProcessing.SummedAreaTable;
 import algorithms.imageProcessing.TrimmedImage;
 import algorithms.imageProcessing.VanishingPoints;
@@ -24,7 +24,6 @@ import algorithms.imageProcessing.matching.MSERMatcher;
 import algorithms.imageProcessing.matching.ORBMatcher;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.imageProcessing.util.PairIntWithIndex;
-import algorithms.misc.Complex;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.OneDIntArray;
@@ -45,32 +44,30 @@ import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Set;
-import static jdk.nashorn.internal.objects.Global.print;
 
 /**
- * a class that finds a template object in another image where the 
+ * a class that finds a template object in another image where the
  * object may have changed poses, may have different lighting, or
  * may have different foreground or background.
- * 
+ *
  * NOTE that future options might include ability to choose between
  * 3 or more different light sources and the ability to use an
  * articulated search for small object matches.
- * 
+ *
  * @author nichole
  */
 public class ObjectMatcher {
-    
+
     private boolean debug = false;
-    
+
     public void setToDebug() {
         debug = true;
     }
 
-    private void debugPrint(List<TIntObjectMap<CRegion>> cRegionsList, 
+    private void debugPrint(List<TIntObjectMap<CRegion>> cRegionsList,
         List<List<GreyscaleImage>> pyr, String label) {
-        
+
         for (int j = 0; j < pyr.size(); ++j) {
 
             Image img1 = pyr.get(j).get(0).copyToColorGreyscale();
@@ -95,10 +92,10 @@ public class ObjectMatcher {
             MiscDebug.writeImage(img1, label + "_" + j + "_crs_");
         }
     }
-    
-    private void debugPrint2(TIntObjectMap<CRegion> cRegions, 
+
+    private void debugPrint2(TIntObjectMap<CRegion> cRegions,
         List<GreyscaleImage> rgb, String label) {
-        
+
         Image img1 = rgb.get(1).copyToColorGreyscale();
 
         TIntObjectIterator<CRegion> iter = cRegions.iterator();
@@ -121,11 +118,11 @@ public class ObjectMatcher {
     }
 
     private double findMinAutoCorrel(TIntObjectMap<CRegion> cRegions) {
-        
+
         TIntObjectIterator<CRegion> iter = cRegions.iterator();
-        
+
         double min = Double.MAX_VALUE;
-        
+
         for (int i = 0; i < cRegions.size(); ++i) {
             iter.advance();
             CRegion cr = iter.value();
@@ -133,19 +130,19 @@ public class ObjectMatcher {
                 min = cr.autocorrel;
             }
         }
-        
+
         return min;
     }
 
-    private void removeSmallAutoCorrel(List<TIntObjectMap<CRegion>> 
+    private void removeSmallAutoCorrel(List<TIntObjectMap<CRegion>>
         cRegionsList, double minAutoCor, float f) {
 
         float limit = f * (float)minAutoCor;
-        
+
         TIntList rm = new TIntArrayList();
-        
+
         TIntObjectMap<CRegion> lgMap = cRegionsList.get(0);
-    
+
         TIntObjectIterator<CRegion> iter = lgMap.iterator();
         for (int i = 0; i < lgMap.size(); ++i) {
             iter.advance();
@@ -155,7 +152,7 @@ public class ObjectMatcher {
                 rm.add(idx);
             }
         }
-        
+
         // === remove indexes rm from each octave
         for (int octave = 0; octave < cRegionsList.size(); ++octave) {
             TIntObjectMap<CRegion> map = cRegionsList.get(octave);
@@ -166,13 +163,13 @@ public class ObjectMatcher {
         }
     }
 
-    private void removeSmallAutoCorrel2(TIntObjectMap<CRegion> 
+    private void removeSmallAutoCorrel2(TIntObjectMap<CRegion>
         cRegionsMap, double minAutoCor, float f) {
 
         float limit = f * (float)minAutoCor;
-        
+
         TIntList rm = new TIntArrayList();
-            
+
         TIntObjectIterator<CRegion> iter = cRegionsMap.iterator();
         for (int i = 0; i < cRegionsMap.size(); ++i) {
             iter.advance();
@@ -182,31 +179,31 @@ public class ObjectMatcher {
                 rm.add(idx);
             }
         }
-        
+
         for (int i = 0; i < rm.size(); ++i) {
             int rmIdx = rm.get(i);
             cRegionsMap.remove(rmIdx);
         }
     }
 
-    private void filterCloseToBounds2(List<Region> regions, 
+    private void filterCloseToBounds2(List<Region> regions,
         int width, int height, int border) {
-        
+
         int[] xy = new int[2];
         for (int i = (regions.size() - 1); i > -1; --i) {
             Region r = regions.get(i);
             r.calculateXYCentroid(xy, width, height);
             if (xy[0] < border || xy[1] < border ||
-                (xy[0] >= (width - border)) || 
+                (xy[0] >= (width - border)) ||
                 (xy[1] >= (height - border))) {
                 regions.remove(i);
             }
         }
     }
-    
-    private void filterCloseToBounds(List<List<Region>> regions, 
+
+    private void filterCloseToBounds(List<List<Region>> regions,
         int width, int height, int border) {
-        
+
         int[] xy = new int[2];
         for (int rIdx = 0; rIdx < 2; ++rIdx) {
             List<Region> list = regions.get(rIdx);
@@ -214,7 +211,7 @@ public class ObjectMatcher {
                 Region r = list.get(i);
                 r.calculateXYCentroid(xy, width, height);
                 if (xy[0] < border || xy[1] < border ||
-                    (xy[0] >= (width - border)) || 
+                    (xy[0] >= (width - border)) ||
                     (xy[1] >= (height - border))) {
                     list.remove(i);
                 }
@@ -222,9 +219,9 @@ public class ObjectMatcher {
         }
     }
 
-    private TrimmedImage trim(ImageExt img, Set<PairInt> shape, 
+    private TrimmedImage trim(ImageExt img, Set<PairInt> shape,
         int buffer) {
-                
+
         int[] minMaxXY = MiscMath.findMinMaxXY(shape);
 
         int x0 = minMaxXY[0] - buffer;
@@ -243,14 +240,14 @@ public class ObjectMatcher {
         if (y1 >= img.getHeight()) {
             y1 = img.getHeight() - 1;
         }
-        
+
         TrimmedImage trImg = new TrimmedImage(img, x0, x1, y0, y1);
-        
+
         return trImg;
     }
 
     private void mask(Image img, Set<PairInt> shape0) {
-                
+
         for (int i = 0; i < img.getWidth(); ++i) {
             for (int j = 0; j < img.getHeight(); ++j) {
                 PairInt p = new PairInt(i, j);
@@ -260,9 +257,9 @@ public class ObjectMatcher {
             }
         }
     }
-    
+
     private void mask(GreyscaleImage img, Set<PairInt> shape0) {
-                
+
         for (int i = 0; i < img.getWidth(); ++i) {
             for (int j = 0; j < img.getHeight(); ++j) {
                 PairInt p = new PairInt(i, j);
@@ -273,36 +270,36 @@ public class ObjectMatcher {
         }
     }
 
-    private TIntObjectMap<Set<PairInt>> segment(ImageExt img, 
+    private TIntObjectMap<Set<PairInt>> segment(ImageExt img,
         Set<PairInt> shape) {
-                
+
         ImageSegmentation imageSegmentation = new ImageSegmentation();
-        
+
         int[] labels = imageSegmentation.objectSegmentation(img);
-        
+
         TIntObjectMap<Set<PairInt>> labeledSets =
             LabelToColorHelper.extractLabelPoints(img, labels);
-        
+
         for (int i = 0; i < labels.length; ++i) {
             int x = img.getCol(i);
             int y = img.getRow(i);
-            
+
             PairInt p = new PairInt(x, y);
             if (!shape.contains(p)) {
                 int label = labels[i];
                 labeledSets.remove(label);
             }
         }
-       
+
         return labeledSets;
     }
 
     private List<Region> combine(List<List<Region>> regions, int w, int h) {
 
         int[] xy = new int[2];
-        
+
         Set<PairInt> centers = new HashSet<PairInt>();
-    
+
         List<Region> combined = new ArrayList<Region>();
         for (List<Region> list : regions) {
             for (Region r : list) {
@@ -316,32 +313,104 @@ public class ObjectMatcher {
                 combined.add(r);
             }
         }
-        
+
         //TODO: consider a filter for a minimum separation
         return combined;
+    }
+
+    private List<Region> createCombinedMSERRegions(GreyscaleImage gsImg,
+        GreyscaleImage luvTheta) {
+
+        MSER mser = new MSER();
+
+        List<List<Region>> regions = mser.findRegions(gsImg, true);
+
+        List<List<Region>> regionsT = mser.findRegions(luvTheta);
+
+        List<Region> combined = new ArrayList<Region>();
+        for (int i = 0; i < regions.size(); ++i) {
+            for (Region r : regions.get(i)) {
+                combined.add(r);
+            }
+        }
+        for (int i = 0; i < regionsT.size(); ++i) {
+            for (Region r : regionsT.get(i)) {
+                combined.add(r);
+            }
+        }
+
+        filterCloseToBounds2(combined, gsImg.getWidth(), gsImg.getHeight(), 10);
+
+        return combined;
+    }
+
+    private void mergeRegionsAndSegmentation(List<Set<PairInt>> labeledSets, 
+        List<Region> regions, GreyscaleImage gsImg, GreyscaleImage luvTheta) {
+
+        /*
+        for any region need to look at the segmented labels within in:
+          label a: n within region, n outside of region
+        
+        looking at 2 patterns:
+          (1) regions to discard. 
+              when region is largely componsed
+              of a label, but that label is mostly outside of the region.
+              for example, a large region which is 60% filled by
+              label A, but labelA percentage within the region
+              is less than 50% (and label A is large).
+              this region should be discarded.
+          (2) regions to merge into one and same for internal labels.
+              regions which contain only labeled regions which are
+              almost completely embedded in the region,
+              and the region does not have any that are largely outside,
+              nor a large number of unassigned points (points that have
+              been filtered out of the labeled sets)
+              -- can merge all internal labels
+              -- can merge or remove (probably remove) all internal regions.
+              * one caveat is regions like the region enclosing the gbman.
+                 a smaller circular ellipse intersects it holding background points.
+                 this background region is roughly half outside the
+                 gbman and half inside the elliptical boundary enclosing
+                 the gbman, that is the background is in the concave area
+                 of neck and underarms.
+                 --> so the basic rules above require better boundaries
+                 for the Region ellipses.  could alter the bounds by
+                 the nearest segmented labeled points internal to the 
+                 ellipse bounds.
+                   might need the 2d range search here and storage
+                   of the region bounds as rectangles
+        
+        -- create unordered bounds of labeled sets
+        -- create a nearest neighbors for those boundary points
+        -- create a map with key = region center, value = region index
+        -- create a skipSet for Regions, to mark when have been merged
+        -- create a skipSet for labeledSets which have been merged.
+        
+        */
+                
     }
 
     public static class Settings {
         private boolean useLargerPyramid0 = false;
         private boolean useLargerPyramid1 = false;
-        
+
         //TODO: refactor to use an enum to avoid inconsistent state
         private boolean useSmallObjectMethod = false;
         private boolean useShapeFinder = false;
-        
+
         private boolean findVanishingPoints = false;
-        
+
         /**
          * @return the useLargerPyramid0
          */
         public boolean isUseLargerPyramid0() {
             return useLargerPyramid0;
         }
-        
+
         /**
          if this is set, the default number of pyramid
          image 0 images separated by a factor of 2 in scale is increased
-         in number to include finer scales, allowing better descriptor 
+         in number to include finer scales, allowing better descriptor
          * matches at the cost of increased runtime.
          */
         public void setToUseLargerPyramid0() {
@@ -358,11 +427,11 @@ public class ObjectMatcher {
         public void setToFindVnishingPoints() {
             this.findVanishingPoints = true;
         }
-        
+
         /**
          if this is set, the default number of pyramid
          image 1 images separated by a factor of 2 in scale is increased
-         in number to include finer scales, allowing better descriptor 
+         in number to include finer scales, allowing better descriptor
          * matches at the cost of increased runtime.
          */
         public void setToUseLargerPyramid1() {
@@ -379,7 +448,7 @@ public class ObjectMatcher {
         public boolean isUseShapeFinder() {
             return useShapeFinder;
         }
-        
+
         public void setToUseShapeFinderMethod() {
             useShapeFinder = true;
         }
@@ -389,7 +458,7 @@ public class ObjectMatcher {
          * uses a shape matcher and color histograms.
          * This should only be used on images where the object to find
          * is thought to be small (16 or so pixels for example in width
-         * and height)...the shape matching needs the segmentation to 
+         * and height)...the shape matching needs the segmentation to
          * contain the object shape in one labeled region rather than in
          * more than one over segmented regions.
          */
@@ -400,64 +469,64 @@ public class ObjectMatcher {
         private boolean isFindVanishingPoints() {
             return findVanishingPoints;
         }
-        
+
     }
-        
+
     /**
-     * given an object in image img0 which is defined by shape0, find the same 
+     * given an object in image img0 which is defined by shape0, find the same
      * object in img1.
      * This method was created to handle a range of lighting changes, poses,
      * and different background and foregrounds, that is, cases where the
      * number of true matching keypoints in img1 is small compared to the
      * total number of keypoints in img1, making the standard best matching
      * descriptors and RANSAC to remove outliers infeasible.
-     * 
+     *
      * This method in detail creates a segmented img1, removes the labeled regions
      * which have small color histogram intersections with the template,
      * and then compares descriptors scale by scale.
      * Pairs of points are created from same labeled regions and each pair
      * that passes a descriptor cost filter is added to a list of
-     * pairs of points.  Those pairs of points are used to calculate 
+     * pairs of points.  Those pairs of points are used to calculate
      * transformations between the keypoints.  Transformations close to "1"
      * are further evaluated for descriptor cost, number of matching points,
      * and the distance between transformed points and nearest matching
      * points.  The lowest cost solution is returned as a correspondence list.
-     * Note that the smallest number of pyramid images are used by default, 
-     * which locates the object, but precise correspondence is better 
-     * achieved by setting the flag to use larger number of pyramid images 
+     * Note that the smallest number of pyramid images are used by default,
+     * which locates the object, but precise correspondence is better
+     * achieved by setting the flag to use larger number of pyramid images
      * to true at the expense of runtime or by refining the results
      * with another method (such as an aggregated partial shape matching
      * as in the unfinished ShapeFinder.java).
-     * 
+     *
      * Note that if the object in img1 is expected to be smaller than 16 or so
      * pixels wide and high, there will not be enough keypoints, so the user
      * should use setting useSmallObjectMethod.
-     * 
+     *
      * NOTE: in the future, might provide a method that accepts the labeled
      * regions from the user to allow external segmentation to be used.
-     * 
+     *
      * For best use,images should be binned down to sizes where a dimension
      * is near 256 pixels or less (findObject2 does that automatically).
-     * 
+     *
      * @param img0
      * @param shape0
      * @param img1
      * @param settings for the method
-     * @return 
+     * @return
      */
     public CorrespondenceList findObject(ImageExt img0, Set<PairInt> shape0,
         ImageExt img1, Settings settings) {
-    
+
         long ts = 0;
         if (debug) {
             ts = MiscDebug.getCurrentTimeFormatted();
         }
-        
+
         ImageExt[] imgs0 = maskImage(img0, shape0);
-        
+
         ImageProcessor imageProcessor = new ImageProcessor();
         ImageSegmentation imageSegmentation = new ImageSegmentation();
-        
+
         int nKeypoints = 200;//200;
         ORB orb0 = extractTemplateORBKeypoints(imgs0[0], shape0,
             nKeypoints, !settings.isUseLargerPyramid0(), ts);
@@ -479,10 +548,10 @@ public class ObjectMatcher {
         for (int i = 0; i < orb1.getScalesList().size(); ++i) {
             sList.add(orb1.getScalesList().get(i).get(0));
         }
-        
+
         int ns = sList.size();
         List<TIntList> rmIndexesList = new ArrayList<TIntList>();
-        
+
         ColorHistogram clrHist = new ColorHistogram();
 
         // make the template histograms from the first scale only
@@ -534,15 +603,15 @@ public class ObjectMatcher {
                         rm.add(j);
                     }
                 }
-            }           
+            }
             rmIndexesList.add(rm);
         }
         orb1.removeAtIndexes(rmIndexesList);
-        
+
         if (orb1.getKeyPoint0List().isEmpty()) {
             return null;
         }
-        
+
         if (debug) {   // ----------- segmentation -------
             Set<PairInt> kpSet = new HashSet<PairInt>();
             TIntList kp0 = orb1.getKeyPoint0List().get(0);
@@ -557,15 +626,15 @@ public class ObjectMatcher {
                 1, 255, 0, 0);
             MiscDebug.writeImage(img11, "_filtered_1_" + ts);
         }
-  
+
         float luvDeltaELimit = 40;//10;// between 10 and 30
-        
+
         boolean filterForCIE = false;
         if (filterForCIE) {
             rmIndexesList = new ArrayList<TIntList>();
 
             // ---- calculate the template CIE LUV colors ----
-            //      -- also calculate separately, the colors of the 
+            //      -- also calculate separately, the colors of the
             //         entire shape to compare results when using the
             //         colors as filters.
             Set<PairInt> set0 = new HashSet<PairInt>();
@@ -609,7 +678,7 @@ public class ObjectMatcher {
                     if (Math.abs(deltaE) > luvDeltaELimit) {
                         rm.add(j);
                     }
-                }           
+                }
                 rmIndexesList.add(rm);
             }
 
@@ -618,7 +687,7 @@ public class ObjectMatcher {
             if (orb1.getKeyPoint0List().isEmpty()) {
                 return null;
             }
-        
+
             if (debug) {   // ----------- segmentation -------
                 Set<PairInt> kpSet = new HashSet<PairInt>();
                 TIntList kp0 = orb1.getKeyPoint0List().get(0);
@@ -634,9 +703,9 @@ public class ObjectMatcher {
                 MiscDebug.writeImage(img11, "_filtered_2_" + ts);
             }
         }
-        
+
         ImageExt img1Cp = img1.copyToImageExt();
-        
+
         //CannyEdgeFilterAdaptive canny
         //    = new CannyEdgeFilterAdaptive();
         //canny.overrideToUseAdaptiveThreshold();
@@ -644,9 +713,9 @@ public class ObjectMatcher {
         //EdgeFilterProducts edgeProduct = canny.getFilterProducts();
         //int[] labels4 = imageSegmentation.objectSegmentation(
         //    img1Cp, edgeProduct);
-        
+
         int[] labels4 = imageSegmentation.objectSegmentation(img1Cp);
-        
+
         if (debug) {
             ImageExt img11 = img1.copyToImageExt();
             ImageIOHelper.addAlternatingColorLabelsToRegion(
@@ -659,16 +728,16 @@ public class ObjectMatcher {
 
         VanishingPoints vp2 = null;
         /*if (settings.isFindVanishingPoints()) {
-            // vanishing points are used for attempts to account for 
+            // vanishing points are used for attempts to account for
             // foreshortening of object dimensions from euclidean values,
-            // and this correction is used at the end of 
+            // and this correction is used at the end of
             // partial shape matching
-            
+
             //NOTE that the segmentation is good for removing noise and vegetation,
             // etc, but sometimes also has blended in office windows to the
             // building by this point, so may need to use segmentation
             // before filtering
-            
+
             vp2 = new VanishingPoints();
             //vp2.setToDebug();
             vp2.find(listOfPointSets2, img1.getWidth(),
@@ -677,10 +746,10 @@ public class ObjectMatcher {
                 Image img11 = img1.copyImage();
                 MiscDebug.writeImage(img11, "_lines_");
             }
-            
+
             throw new UnsupportedOperationException("not yet implemented");
         }*/
-        
+
         boolean useCHist = false;
 
         boolean changed = false;
@@ -698,16 +767,16 @@ public class ObjectMatcher {
             changed = imageSegmentation.filterByLUVDeltaE(imgs0[0],
                 shape0, img1Cp, listOfPointSets2, luvDeltaELimit);
         }*/
-        
+
         if (debug) {
             ImageExt img11 = img1.copyToImageExt();
-            ImageIOHelper.addAlternatingColorCurvesToImage0(listOfPointSets2, 
+            ImageIOHelper.addAlternatingColorCurvesToImage0(listOfPointSets2,
                 img11, 1);
             //ImageIOHelper.addAlternatingColorLabelsToRegion(
             //    img11, labels4);
             MiscDebug.writeImage(img11, "_segmented_2_" + ts);
         }
-        
+
         // ---- remove keypoints if not in segmented cells
         if (changed && !settings.isUseSmallObjectMethod()
             && !settings.isUseShapeFinder()) {
@@ -719,7 +788,7 @@ public class ObjectMatcher {
                     pointIdxMap.put(p, j);
                 }
             }
-            
+
             ns = orb1.getScalesList().size();
             rmIndexesList = new ArrayList<TIntList>();
             for (int i = 0; i < ns; ++i) {
@@ -735,16 +804,16 @@ public class ObjectMatcher {
                     if (!pointIdxMap.containsKey(p)) {
                         rm.add(j);
                     }
-                }               
+                }
                 rmIndexesList.add(rm);
                 //System.out.println("rm at scale " + i + " n=" +
                 //    rm.size());
             }
             orb1.removeAtIndexes(rmIndexesList);
         }
-        
+
         // TODO: if point sets size < 3 or so, remove it
-        
+
         if (orb1.getKeyPoint0List().isEmpty()) {
             return null;
         }
@@ -785,7 +854,7 @@ public class ObjectMatcher {
             MiscDebug.writeImage(img11,
                 "_filtered_segmentation_2_" + ts);
         }
-        
+
         // filter extremes of number density to try to remove
         //   labeled regions that are pure vegetation for example,
         //   when the object is not.  the large number of matches
@@ -850,12 +919,12 @@ public class ObjectMatcher {
 
         //TODO: might need to revise intersection limit in
         // these matching methods ... untested changes
-   
+
         ORBMatcher orbMatcher = new ORBMatcher();
         if (vp2 != null) {
             orbMatcher.setVanishingPointsForSet2(vp2);
         }
-        
+
         if (settings.isUseSmallObjectMethod()) {
             corList = orbMatcher.matchSmall(orb0, orb1,
                 shape0, listOfPointSets2);
@@ -865,9 +934,9 @@ public class ObjectMatcher {
         } else {
             orb0.createDescriptorsHSV(imgs0[0]);
             orb1.createDescriptorsHSV(img1);
-            
+
             boolean followWithShapeSearch = false;
-            
+
             corList = orbMatcher.match0(orb0, orb1,
                 shape0, listOfPointSets2);
         }
@@ -876,44 +945,44 @@ public class ObjectMatcher {
             return null;
         }
 
-        return corList.get(0);        
+        return corList.get(0);
     }
-            
+
     /**
-     * given an object in image img0 which is defined by shape0, find the same 
+     * given an object in image img0 which is defined by shape0, find the same
      * object in img1.
      * This method was created to handle a range of lighting changes, poses,
      * and different background and foregrounds, that is, cases where the
      * number of true matching keypoints in img1 is small compared to the
      * total number of keypoints in img1, making the standard best matching
      * descriptors and RANSAC to remove outliers infeasible.
-     * 
+     *
      * This method uses the blob detector MSER and matches descriptors for the
      * regions.
-     * 
+     *
      * @param img0
      * @param shape0
      * @param img1
      * @param settings for the method
-     * @return 
+     * @return
      */
     public CorrespondenceList findObject10(ImageExt img0, Set<PairInt> shape0,
         ImageExt img1, Settings settings) {
-    
+
         long ts = 0;
         if (debug) {
             ts = MiscDebug.getCurrentTimeFormatted();
         }
-        
+
         Canonicalizer canonicalizer = new Canonicalizer();
-        
+
         GreyscaleImage gsImg0 = img0.copyToGreyscale2();
-        
+
         // ----- create the cRegions for a masked image pyramid of img 0 ====
         MSER mser = new MSER();
-           
+
         List<List<Region>> regions0 = mser.findRegions(gsImg0);
-        
+
         int[] xy = new int[2];
         //remove all regions with centers outside of shape0 points
         for (int rIdx = 0; rIdx < 2; rIdx++) {
@@ -927,7 +996,7 @@ public class ObjectMatcher {
                 }
             }
         }
-       
+
         // mask the image, though not necessary
         for (int i = 0; i < gsImg0.getNPixels(); ++i) {
             PairInt p = new PairInt(gsImg0.getCol(i), gsImg0.getRow(i));
@@ -935,40 +1004,40 @@ public class ObjectMatcher {
                 gsImg0.setValue(i, 0);
             }
         }
-        
+
         // find regions in dataset 1
         GreyscaleImage gsImg1 = img1.copyToGreyscale2();
-                   
+
         List<List<Region>> regions1 = mser.findRegions(gsImg1);
-        
+
         filterCloseToBounds(regions1, gsImg1.getWidth(), gsImg1.getHeight(),
             10);
-        
+
         //TODO: add filter here for patterns in the MSER regions that
         // are strong, and if present in reference frame1, then
         // anything without it should be removed.
         // use of this feature should be a Setting option.
-        
+
         // filter regions by segmentation
         if (true) {
               List<Set<PairInt>> labeledSets = filterBySegmentation(img0, shape0,
                  img1, regions1, settings);
         }
-        
+
         ImageProcessor imageProcessor = new ImageProcessor();
-            
+
         List<List<GreyscaleImage>> pyr0 = imageProcessor
             .buildColorPyramid(img0,
             settings.useLargerPyramid0);
-        
+
         List<List<GreyscaleImage>> pyr1 = imageProcessor
             .buildColorPyramid(img1,
             settings.useLargerPyramid0);
-        
+
         // create image0 pyramid and windowing
         SummedAreaTable sumTable = new SummedAreaTable();
         int halfDimension = 1;
-       
+
         for (int i = 0; i < pyr0.size(); ++i) {
             List<GreyscaleImage> imgMs = pyr0.get(i);
             for (int j = 0; j < imgMs.size(); ++j) {
@@ -979,7 +1048,7 @@ public class ObjectMatcher {
                 imgMs.set(j, imgM);
             }
         }
-         
+
         for (int i = 0; i < pyr1.size(); ++i) {
             List<GreyscaleImage> imgMs = pyr1.get(i);
             for (int j = 0; j < imgMs.size(); ++j) {
@@ -990,25 +1059,25 @@ public class ObjectMatcher {
                 imgMs.set(j, imgM);
             }
         }
-        
+
         List<GreyscaleImage> green0 = new ArrayList<GreyscaleImage>();
         for (List<GreyscaleImage> rgb : pyr0) {
             green0.add(rgb.get(1));
         }
-        
+
         // list item for each octave.  item is for each region
-        
-        //regions[0) are found from the image, 
-        // while regions[1) are found from the inverted image. 
+
+        //regions[0) are found from the image,
+        // while regions[1) are found from the inverted image.
         // they're kept separate for now to test matching them separately.
         List<TIntObjectMap<CRegion>> cRegionsList00 =
             canonicalizer.canonicalizeRegions(regions0.get(0), green0);
-        
+
         List<TIntObjectMap<CRegion>> cRegionsList01 =
             canonicalizer.canonicalizeRegions(regions0.get(1), green0);
-        
+
         // ---- create the cregion lists for image 1 ------
-        
+
         if (debug) {
             int[] xyCen = new int[2];
             Image im0Cp, im1Cp;
@@ -1018,7 +1087,7 @@ public class ObjectMatcher {
                 int[] clr = ImageIOHelper.getNextRGB(i);
                 r.drawEllipse(im0Cp, 0, clr[0], clr[1], clr[2]);
                 r.calculateXYCentroid(xyCen, im0Cp.getWidth(), im0Cp.getHeight());
-                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im0Cp, 
+                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im0Cp,
                     1, 255, 0, 0);
             }
             MiscDebug.writeImage(im0Cp, "regions_0_0");
@@ -1028,11 +1097,11 @@ public class ObjectMatcher {
                 int[] clr = ImageIOHelper.getNextRGB(i);
                 r.drawEllipse(im0Cp, 0, clr[0], clr[1], clr[2]);
                 r.calculateXYCentroid(xyCen, im0Cp.getWidth(), im0Cp.getHeight());
-                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im0Cp, 
+                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im0Cp,
                     1, 255, 0, 0);
             }
             MiscDebug.writeImage(im0Cp, "regions_0_1");
-            
+
             im1Cp = img1.copyImage();
             for (int i = 0; i < regions1.get(0).size(); ++i) {
                 Region r = regions1.get(0).get(i);
@@ -1040,7 +1109,7 @@ public class ObjectMatcher {
                 r.drawEllipse(im1Cp, 0, clr[0], clr[1], clr[2]);
                 r.calculateXYCentroid(xyCen, im1Cp.getWidth(), im1Cp.getHeight());
                 ImageIOHelper.addPointToImage(
-                    xyCen[0], xyCen[1], im1Cp, 
+                    xyCen[0], xyCen[1], im1Cp,
                     1, 255, 0, 0);
             }
             MiscDebug.writeImage(im1Cp, "regions_1_0");
@@ -1050,12 +1119,12 @@ public class ObjectMatcher {
                 int[] clr = ImageIOHelper.getNextRGB(i);
                 r.drawEllipse(im1Cp, 0, clr[0], clr[1], clr[2]);
                 r.calculateXYCentroid(xyCen, im1Cp.getWidth(), im1Cp.getHeight());
-                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im1Cp, 
+                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im1Cp,
                     1, 255, 0, 0);
             }
             MiscDebug.writeImage(im1Cp, "regions_1_1");
         }
-        
+
         // mask the image, though not necessary
         for (int i = 0; i < gsImg0.getNPixels(); ++i) {
             PairInt p = new PairInt(gsImg0.getCol(i), gsImg0.getRow(i));
@@ -1063,7 +1132,7 @@ public class ObjectMatcher {
                 gsImg0.setValue(i, 0);
             }
         }
-       
+
         List<GreyscaleImage> green1 = new ArrayList<GreyscaleImage>();
         for (List<GreyscaleImage> rgb : pyr1) {
             green1.add(rgb.get(1));
@@ -1071,350 +1140,279 @@ public class ObjectMatcher {
 
         List<TIntObjectMap<CRegion>> cRegionsList10 =
             canonicalizer.canonicalizeRegions(regions1.get(0), green1);
-        
+
         List<TIntObjectMap<CRegion>> cRegionsList11 =
             canonicalizer.canonicalizeRegions(regions1.get(1), green1);
-        
+
         boolean applyAutoCorrFilter = true;
         if (applyAutoCorrFilter) {
             double minAutoCor = findMinAutoCorrel(cRegionsList01.get(0));
             removeSmallAutoCorrel(cRegionsList11, minAutoCor, 0.75f);
             removeSmallAutoCorrel(cRegionsList10, minAutoCor, 0.75f);
         }
-        
+
         if (debug) {
             debugPrint(cRegionsList00, pyr0, "_cr_0_0_");
             debugPrint(cRegionsList01, pyr0, "_cr_0_1_");
             debugPrint(cRegionsList10, pyr1, "_cr_1_0_");
             debugPrint(cRegionsList11, pyr1, "_cr_1_1_");
         }
-      
+
         MSERMatcher matcher = new MSERMatcher();
-        
+
         if (debug) {
             matcher.setToDebug();
         }
-        
+
         CorrespondenceList corList = matcher.matchObject(
-            pyr0, pyr1, 
+            pyr0, pyr1,
             cRegionsList00, cRegionsList01,
             cRegionsList10, cRegionsList11);
-       
-        return corList;        
+
+        return corList;
     }
-    
+
     /**
-     * given an object in image img0 which is defined by shape0, find the same 
+     * given an object in image img0 which is defined by shape0, find the same
      * object in img1.
      * This method was created to handle a range of lighting changes, poses,
      * and different background and foregrounds, that is, cases where the
      * number of true matching keypoints in img1 is small compared to the
      * total number of keypoints in img1, making the standard best matching
      * descriptors and RANSAC to remove outliers infeasible.
-     * 
+     *
      * This method uses the blob detector MSER and matches descriptors for the
      * regions.
-     * 
+     *
      * It is different from findObject10 in several ways:
-     * -- instead of providing MSERMatcher with only the 
+     * -- instead of providing MSERMatcher with only the
      * filtered canonicalized regions and image pyramids,
-     * it also creates segmentation for the shape0 
+     * it also creates segmentation for the shape0
      * and passes both the labeled segmentation sets to the
      * MSERMatcher.
-     * 
+     *
      * @param img0
      * @param shape0
      * @param img1
      * @param settings for the method
-     * @return 
+     * @return
      */
     public CorrespondenceList findObject11(ImageExt img0, Set<PairInt> shape0,
         ImageExt img1, Settings settings) {
-    
+
         long ts = 0;
         if (debug) {
             ts = MiscDebug.getCurrentTimeFormatted();
         }
-     
+
         TrimmedImage img0Trim = trim(img0, shape0, 20);
-       
+
         Set<PairInt> shape0Trimmed = new HashSet<PairInt>();
         for (PairInt p : shape0) {
             PairInt p2 = new PairInt(p.getX() - img0Trim.getXOffset(),
                 p.getY() - img0Trim.getYOffset());
             shape0Trimmed.add(p2);
         }
-        
+
         ImageExt img0Trimmed = (ImageExt)img0Trim.getTrimmed();
-       
+
         ImageProcessor imageProcessor = new ImageProcessor();
-        
+
         GreyscaleImage luvTheta0 = imageProcessor.createCIELUVTheta(img0Trimmed, 255);
-        GreyscaleImage luvTheta1 = imageProcessor.createCIELUVTheta(img1, 255);        
+        GreyscaleImage luvTheta1 = imageProcessor.createCIELUVTheta(img1, 255);
         imageProcessor.singlePixelFilter(luvTheta0);
         imageProcessor.singlePixelFilter(luvTheta1);
-        
+
+        GreyscaleImage gsImg0 = img0Trimmed.copyToGreyscale2();
+        GreyscaleImage gsImg1 = img1.copyToGreyscale2();
+
         // ----- create the cRegions for a masked image pyramid of img 0 ====
-        
+
+        // build combined list of regions
+        List<Region> regionsComb0 = createCombinedMSERRegions(gsImg0, luvTheta0);
+
         mask(img0Trimmed, shape0Trimmed);
         mask(luvTheta0, shape0Trimmed);
-               
-        if (debug) {
-            MiscDebug.writeImage(img0Trimmed, "_shape0_mask_");
-        }
-        
-        // these are in the trimmed reference frame
-        TIntObjectMap<Set<PairInt>> labeledSets0 = segment(img0Trimmed, shape0Trimmed);
-        
-        List<List<GreyscaleImage>> pyr0 = imageProcessor
-            .buildColorPyramid(img0Trimmed,
-            settings.useLargerPyramid0);
-        
-        List<List<GreyscaleImage>> pyr1 = imageProcessor
-            .buildColorPyramid(img1,
-            settings.useLargerPyramid0);
-      
-        // create image0 pyramid and windowing
-        SummedAreaTable sumTable = new SummedAreaTable();
-        int halfDimension = 1;
-       
-        for (int i = 0; i < pyr0.size(); ++i) {
-            List<GreyscaleImage> imgMs = pyr0.get(i);
-            for (int j = 0; j < imgMs.size(); ++j) {
-                GreyscaleImage imgM = imgMs.get(j);
-                imgM = sumTable.createAbsoluteSummedAreaTable(imgM);
-                imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM,
-                    2 * halfDimension + 1);
-                imgMs.set(j, imgM);
-            }
-        }
-         
-        for (int i = 0; i < pyr1.size(); ++i) {
-            List<GreyscaleImage> imgMs = pyr1.get(i);
-            for (int j = 0; j < imgMs.size(); ++j) {
-                GreyscaleImage imgM = imgMs.get(j);
-                imgM = sumTable.createAbsoluteSummedAreaTable(imgM);
-                imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM,
-                    2 * halfDimension + 1);
-                imgMs.set(j, imgM);
-            }
-        }
-        
-        Canonicalizer canonicalizer = new Canonicalizer();
-       
-        //TODO: use cie luv polar theta for regions.
-        // TODO: also use the intensity images for the other mser
-        // matching the polar theta should use the polar theta images
-        //    and canonicalized ellipse patches.
-        // matching the intensity image should
-        //    probably use the polar theta and the hsv
-        
-        GreyscaleImage gsImg0 = img0Trimmed.copyToGreyscale2();
-        
-        // ----- create the cRegions for a masked image pyramid of img 0 ====
-        MSER mser = new MSER();
-           
-        List<List<Region>> regions0 = mser.findRegions(gsImg0, true);
-        
-        List<Region> regionsComb0 = combine(regions0, gsImg0.getWidth(),
-            gsImg0.getHeight());
-        
-        List<List<Region>> regionsT0 = mser.findRegions(luvTheta0);
-        
-        List<Region> regionsCombT0 = combine(regionsT0, gsImg0.getWidth(),
-            gsImg0.getHeight());
-        
+
         int[] xy = new int[2];
         //remove all regions with centers outside of shape0 points
         for (int i = (regionsComb0.size() - 1); i > -1; --i) {
             Region r = regionsComb0.get(i);
-            r.calculateXYCentroid(xy, gsImg0.getWidth(), gsImg0.getHeight());
+            r.calculateXYCentroid(xy, img0Trimmed.getWidth(), img0Trimmed.getHeight());
             PairInt p = new PairInt(xy[0], xy[1]);
             if (!shape0Trimmed.contains(p)) {
                 regionsComb0.remove(i);
             }
         }
-        for (int i = (regionsCombT0.size() - 1); i > -1; --i) {
-            Region r = regionsCombT0.get(i);
-            r.calculateXYCentroid(xy, gsImg0.getWidth(), gsImg0.getHeight());
-            PairInt p = new PairInt(xy[0], xy[1]);
-            if (!shape0Trimmed.contains(p)) {
-                regionsCombT0.remove(i);
-            }
+
+        if (debug) {
+            MiscDebug.writeImage(img0Trimmed, "_shape0_mask_");
         }
-        
-        // find regions in dataset 1
-        GreyscaleImage gsImg1 = img1.copyToGreyscale2();
-                   
-        List<List<Region>> regions1 = mser.findRegions(gsImg1, true);
-        
-        List<Region> regionsComb1 = combine(regions1, gsImg1.getWidth(),
-            gsImg1.getHeight());
-        
-        List<List<Region>> regionsT1 = mser.findRegions(luvTheta1);
-        
-        List<Region> regionsCombT1 = combine(regionsT1, gsImg1.getWidth(),
-            gsImg1.getHeight());
-        
-        filterCloseToBounds2(regionsComb1, gsImg1.getWidth(), gsImg1.getHeight(), 10);
-        
-        filterCloseToBounds2(regionsCombT1, gsImg1.getWidth(), gsImg1.getHeight(), 10);
+
+        List<Region> regionsComb1 = createCombinedMSERRegions(gsImg1, luvTheta1);
+
+        // these are in the trimmed reference frame
+        TIntObjectMap<Set<PairInt>> labeledSets0 = segment(img0Trimmed, shape0Trimmed);
+
+        // filter regions by segmentation
+        List<Set<PairInt>> labeledSets1 = filterBySegmentation2(
+            img0Trimmed, shape0Trimmed, img1, regionsComb1, settings);
+
+        mergeRegionsAndSegmentation(labeledSets1, regionsComb1, gsImg1, luvTheta1);
                 
+        List<List<GreyscaleImage>> pyrRGB0 = imageProcessor
+            .buildColorPyramid(img0Trimmed,
+            settings.useLargerPyramid0);
+        
+        List<GreyscaleImage> pyrPT0 = imageProcessor
+            .buildPyramid(luvTheta0, settings.useLargerPyramid0);
+
+        List<List<GreyscaleImage>> pyrRGB1 = imageProcessor
+            .buildColorPyramid(img1,
+            settings.useLargerPyramid0);
+
+        List<GreyscaleImage> pyrPT1 = imageProcessor
+            .buildPyramid(luvTheta1, settings.useLargerPyramid0);
+       
+        Canonicalizer canonicalizer = new Canonicalizer();
+
+        // ----- create the cRegions for a masked image pyramid of img 0 ====
+
         //TODO: add filter here for patterns in the MSER regions that
         // are strong, and if present in reference frame1, then
         // anything without it should be removed.
         // use of this feature should be a Setting option.
-        
-        // filter regions by segmentation
-        List<Set<PairInt>> labeledSets1 = filterBySegmentation2(
-            img0Trimmed, shape0Trimmed, img1, regionsComb1, settings);
-    
+
         if (debug) {
             int[] xyCen = new int[2];
             Image im0Cp, im1Cp;
             im0Cp = img0Trimmed.copyImage();
-            for (int i = 0; i < regionsComb0.size(); ++i) {
+            int n9 = regionsComb0.size();
+            if (n9 > 10) {
+            //    n9 = 10;
+            }
+            for (int i = 0; i < n9; ++i) {
                 Region r = regionsComb0.get(i);
                 int[] clr = ImageIOHelper.getNextRGB(i);
                 r.drawEllipse(im0Cp, 0, clr[0], clr[1], clr[2]);
                 r.calculateXYCentroid(xyCen, im0Cp.getWidth(), im0Cp.getHeight());
-                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im0Cp, 
+                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im0Cp,
                     1, 255, 0, 0);
             }
             MiscDebug.writeImage(im0Cp, "regions_0_");
-            
-            im0Cp = luvTheta0.copyToColorGreyscale();
-            for (int i = 0; i < regionsCombT0.size(); ++i) {
-                Region r = regionsCombT0.get(i);
-                int[] clr = ImageIOHelper.getNextRGB(i);
-                r.drawEllipse(im0Cp, 0, clr[0], clr[1], clr[2]);
-                r.calculateXYCentroid(xyCen, im0Cp.getWidth(), im0Cp.getHeight());
-                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im0Cp, 
-                    1, 255, 0, 0);
-            }
-            MiscDebug.writeImage(im0Cp, "regions_0_T_");
-            
+
             im1Cp = img1.copyImage();
-            for (int i = 0; i < regionsComb1.size(); ++i) {
+            n9 = regionsComb1.size();
+            if (n9 > 10) {
+            //    n9 = 10;
+            }
+            for (int i = 0; i < n9; ++i) {
                 Region r = regionsComb1.get(i);
                 int[] clr = ImageIOHelper.getNextRGB(i);
                 r.drawEllipse(im1Cp, 0, clr[0], clr[1], clr[2]);
                 r.calculateXYCentroid(xyCen, im1Cp.getWidth(), im1Cp.getHeight());
                 ImageIOHelper.addPointToImage(
-                    xyCen[0], xyCen[1], im1Cp, 
+                    xyCen[0], xyCen[1], im1Cp,
                     1, 255, 0, 0);
             }
             MiscDebug.writeImage(im1Cp, "regions_1_");
-            
-            im1Cp = luvTheta1.copyToColorGreyscale();
-            for (int i = 0; i < regionsCombT1.size(); ++i) {
-                Region r = regionsCombT1.get(i);
-                int[] clr = ImageIOHelper.getNextRGB(i);
-                r.drawEllipse(im1Cp, 0, clr[0], clr[1], clr[2]);
-                r.calculateXYCentroid(xyCen, im1Cp.getWidth(), im1Cp.getHeight());
-                ImageIOHelper.addPointToImage(
-                    xyCen[0], xyCen[1], im1Cp, 
-                    1, 255, 0, 0);
-            }
-            MiscDebug.writeImage(im1Cp, "regions_1_T_");
         }
-       
-        // list item for each octave.  item is for each region
-        
-        //regions[0) are found from the image, 
-        // while regions[1) are found from the inverted image. 
+
+        //regions[0) are found from the image,
+        // while regions[1) are found from the inverted image.
         // they're kept separate for now to test matching them separately.
         TIntObjectMap<CRegion> cRegions0 =
-            canonicalizer.canonicalizeRegions(regionsComb0, 
-                pyr0.get(0).get(1));
-      
+            canonicalizer.canonicalizeRegions(regionsComb0,
+                pyrRGB0.get(0).get(1));
+
         TIntObjectMap<CRegion> cRegions1 =
-            canonicalizer.canonicalizeRegions(regionsComb1, 
-                pyr1.get(0).get(1));
-        
+            canonicalizer.canonicalizeRegions(regionsComb1,
+                pyrRGB1.get(0).get(1));
+
         boolean applyAutoCorrFilter = true;
         if (applyAutoCorrFilter) {
             double minAutoCor = findMinAutoCorrel(cRegions0);
             removeSmallAutoCorrel2(cRegions1, minAutoCor, 0.75f);
         }
-        
+
         if (debug) {
-            debugPrint2(cRegions0, pyr0.get(0), "_cr_0_");
-            debugPrint2(cRegions1, pyr1.get(0), "_cr_1_");
+            debugPrint2(cRegions0, pyrRGB0.get(0), "_cr_0_");
+            debugPrint2(cRegions1, pyrRGB1.get(0), "_cr_1_");
         }
-      
-        MSERMatcher matcher = new MSERMatcher();
         
+        MSERMatcher matcher = new MSERMatcher();
+
         if (debug) {
             matcher.setToDebug();
         }
-        
+
+        // change from map to list
         List<Set<PairInt>> labeledSets0List = new ArrayList<Set<PairInt>>();
         TIntObjectIterator<Set<PairInt>> iter = labeledSets0.iterator();
         for (int i = 0; i < labeledSets0.size(); ++i) {
             iter.advance();
             labeledSets0List.add(iter.value());
         }
-        
+
         List<CorrespondenceList> corList = matcher.matchObject2(
-            pyr0, pyr1, labeledSets0List, labeledSets1,
-            cRegions0, cRegions1);
-       
-        return corList.get(0);        
+            pyrRGB0, pyrPT0, cRegions0, labeledSets0List,
+            pyrRGB1,  pyrPT1, cRegions1, labeledSets1);
+
+        return corList.get(0);
     }
-    
+
     // handles the binning to smaller size automatically
     public CorrespondenceList findObject2(ImageExt img0, Set<PairInt> shape0,
         ImageExt img1, Settings settings) {
-    
+
         int maxDimension = 256;
-        
+
         int w0 = img0.getWidth();
         int h0 = img0.getHeight();
-        
+
         int binFactor0 = (int) Math.ceil(Math.max((float) w0 / maxDimension,
             (float) h0 / maxDimension));
-             
+
         int w1 = img1.getWidth();
         int h1 = img1.getHeight();
-        
+
         int binFactor1 = (int) Math.ceil(Math.max((float) w1 / maxDimension,
             (float) h1 / maxDimension));
-        
+
         ImageProcessor imageProcessor = new ImageProcessor();
         Set<PairInt> shape0_2 = imageProcessor.binPoints(shape0, binFactor0);
         ImageExt img0_2 = imageProcessor.binImage(img0, binFactor0);
-        
+
         ImageExt img1_2 = imageProcessor.binImage(img1, binFactor1);
-        
+
         CorrespondenceList cor = findObject(img0_2, shape0_2, img1_2,
             settings);
-        
+
         // --- TODO: transform results back to full scale
-        
+
         throw new UnsupportedOperationException("not yet implemented");
     }
 
     private ImageExt[] maskImage(ImageExt img, Set<PairInt> shape) {
 
         ImageExt imgMasked = img.createWithDimensions();
-        
+
         for (PairInt p : shape) {
             imgMasked.setRGB(p.getX(), p.getY(), img.getRGB(p.getX(), p.getY()));
         }
-        
+
         return new ImageExt[]{img, imgMasked};
     }
-      
+
     private ORB extractTemplateORBKeypoints(ImageExt img,
-        Set<PairInt> shape0, int nKeypoints, 
+        Set<PairInt> shape0, int nKeypoints,
         boolean useSmallPyramid, long debugTs) {
 
         int[] minMaxXY = MiscMath.findMinMaxXY(shape0);
 
         int w = img.getWidth();
         int h = img.getHeight();
-        
+
         int buffer = 20;
 
         int xLL = minMaxXY[0] - buffer;
@@ -1433,21 +1431,21 @@ public class ObjectMatcher {
         if (yUR > (h - 1)) {
             yUR = h - 1;
         }
-                
+
         ORB orb = ORBWrapper.extractKeypointsFromSubImage(
             img, xLL, yLL, xUR, yUR, nKeypoints, useSmallPyramid);
-                        
+
         // trim orb data that is outside of shape
         int ns = orb.getKeyPoint0List().size();
-        
+
         for (int i = 0; i < ns; ++i) {
             TIntList kp0 = orb.getKeyPoint0List().get(i);
             TIntList kp1 = orb.getKeyPoint1List().get(i);
             TDoubleList or = orb.getOrientationsList().get(i);
             TFloatList s = orb.getScalesList().get(i);
-            
+
             int n0 = kp0.size();
-            
+
             TIntList rm = new TIntArrayList();
             for (int j = 0; j < n0; ++j) {
                 PairInt p = new PairInt(kp1.get(j), kp0.get(j));
@@ -1457,7 +1455,7 @@ public class ObjectMatcher {
             }
             if (!rm.isEmpty()) {
                 int nb = n0 - rm.size();
-                
+
                 TIntSet rmSet = new TIntHashSet(rm);
                 for (int j = (rm.size() - 1); j > -1; --j) {
                     int idx = rm.get(j);
@@ -1476,7 +1474,7 @@ public class ObjectMatcher {
                 assert(count == nb);
             }
         }
-        
+
         if (debug) {// DEBUG print each pyramid to see if has matchable points
             // might need to change the ORb response filter to scale by scale level
             for (int i0 = 0; i0 < orb.getKeyPoint0List().size(); ++i0) {
@@ -1485,7 +1483,7 @@ public class ObjectMatcher {
                 for (int i = 0; i < orb.getKeyPoint0List().get(i0).size(); ++i) {
                     int y = orb.getKeyPoint0List().get(i0).get(i);
                     int x = orb.getKeyPoint1List().get(i0).get(i);
-                    ImageIOHelper.addPointToImage(x, y, img0Cp, 
+                    ImageIOHelper.addPointToImage(x, y, img0Cp,
                         1, 255, 0, 0);
                 }
                 String str = Integer.toString(i0);
@@ -1495,10 +1493,10 @@ public class ObjectMatcher {
                 MiscDebug.writeImage(img0Cp, "_template_orb" + str + "_" + debugTs);
             }
         }
-        
+
         return orb;
     }
-    
+
     private int[] getKeypointsMinMaxXY(ORB orb, int octave) {
         int[] minMaxXY1 = new int[4];
         minMaxXY1[0] = Integer.MAX_VALUE;
@@ -1521,65 +1519,65 @@ public class ObjectMatcher {
                 minMaxXY1[3] = y;
             }
         }
-        
+
         return minMaxXY1;
     }
-    
-    private void filterBySurfaceDensity(ORB orb1, ORB orb2, 
+
+    private void filterBySurfaceDensity(ORB orb1, ORB orb2,
         List<Set<PairInt>> listOfPointSets2, float sigmaFactorAboveMean) {
-        
+
         Set<PairIntWithIndex> points1 = new HashSet<PairIntWithIndex>();
         int[] minMaxXY1 = getKeypointsMinMaxXY(orb1, 0);
-        
+
         for (int i = 0; i < orb1.getKeyPoint0List().get(0).size(); ++i) {
             int x = orb1.getKeyPoint1List().get(0).get(i) - minMaxXY1[0];
             int y = orb1.getKeyPoint0List().get(0).get(i) - minMaxXY1[2];
             points1.add(new PairIntWithIndex(x, y, i));
         }
-        
-        DTClusterFinder<PairIntWithIndex> cFinder 
-            = new DTClusterFinder<PairIntWithIndex>(points1, 
-            minMaxXY1[1] - minMaxXY1[0] + 1, 
+
+        DTClusterFinder<PairIntWithIndex> cFinder
+            = new DTClusterFinder<PairIntWithIndex>(points1,
+            minMaxXY1[1] - minMaxXY1[0] + 1,
             minMaxXY1[3] - minMaxXY1[2] + 1);
         cFinder.setToDebug();
         cFinder.calculateCriticalDensity();
         cFinder.findClusters();
         int n = cFinder.getNumberOfClusters();
-        
+
         if (n == 0) {
             return;
         }
-        
+
         float cd = cFinder.getCriticalDensity();
-        
+
         //StringBuilder sb = new StringBuilder();
         //sb.append(String.format("template cd=%.2f n=%d\n", cd, n));
         TFloatList densities1 = new TFloatArrayList();
         TIntList nInGroup = new TIntArrayList();
         for (int i = 0; i < n; ++i) {
-            
+
             Set<PairIntWithIndex> cluster = cFinder.getCluster(i);
-            
+
             assert(cluster.size() >= 3);
-            
+
             double dist = separationOfFurthestPair(cluster);
             float dens = (float)((float)cluster.size()/(dist*dist));
             densities1.add(dens);
             nInGroup.add(cluster.size());
-            
+
         //    sb.append(String.format("  n[%d]=%d dens=%.2f", i, cluster.size(), dens));
         }
         //System.out.println(sb.toString());
-       
+
         // average, stdDv, min, max
         float[] densityStats = calcStats(densities1, nInGroup);
         //System.out.printf("  dens avg=%.4f, stdv=%.4f, min=%.2f, max=%.2f\n",
         //    densityStats[0], densityStats[1], densityStats[2],
         //    densityStats[3]);
-        
-        double sz1 = Math.max(minMaxXY1[1] - minMaxXY1[0] + 1, 
+
+        double sz1 = Math.max(minMaxXY1[1] - minMaxXY1[0] + 1,
             minMaxXY1[3] - minMaxXY1[2] + 1);
-       
+
         TObjectIntMap<PairInt> pointLabelMap = new TObjectIntHashMap<PairInt>();
         for (int i = 0; i < listOfPointSets2.size(); ++i) {
             Set<PairInt> set2 = listOfPointSets2.get(i);
@@ -1587,8 +1585,8 @@ public class ObjectMatcher {
                 pointLabelMap.put(p2, i);
             }
         }
-        
-        TIntObjectMap<Set<PairInt>> _labelKeypointsMap = 
+
+        TIntObjectMap<Set<PairInt>> _labelKeypointsMap =
             new TIntObjectHashMap<Set<PairInt>>();
         for (int i = 0; i < orb2.getKeyPoint0List().get(0).size(); ++i) {
             int x = orb2.getKeyPoint1List().get(0).get(i);
@@ -1605,20 +1603,20 @@ public class ObjectMatcher {
             }
             set2.add(p0);
         }
-         
-        TIntObjectMap<OneDIntArray> labelMinMaxXY = new 
+
+        TIntObjectMap<OneDIntArray> labelMinMaxXY = new
             TIntObjectHashMap<OneDIntArray>();
-        TIntObjectMap<Set<PairIntWithIndex>> labelKeypoints2Map = 
+        TIntObjectMap<Set<PairIntWithIndex>> labelKeypoints2Map =
             new TIntObjectHashMap<Set<PairIntWithIndex>>();
         TIntObjectIterator<Set<PairInt>> iter = _labelKeypointsMap.iterator();
         for (int i = 0; i < _labelKeypointsMap.size(); ++i) {
             iter.advance();
             int label2 = iter.key();
             Set<PairInt> set = iter.value();
-            
+
             OneDIntArray minMaxXY = new OneDIntArray(MiscMath.findMinMaxXY(set));
             labelMinMaxXY.put(label2, minMaxXY);
-            
+
             Set<PairIntWithIndex> set2 = new HashSet<PairIntWithIndex>();
             for (PairInt p : set) {
                 int x = p.getX() - minMaxXY.a[0];
@@ -1628,62 +1626,62 @@ public class ObjectMatcher {
             }
             labelKeypoints2Map.put(label2, set2);
         }
-        
+
         TIntList rm = new TIntArrayList();
         for (int label2 = 0; label2 < listOfPointSets2.size(); ++label2) {
-           
+
             Set<PairIntWithIndex> set2 = labelKeypoints2Map.get(label2);
             if (set2 == null || set2.size() < 10) {
                 continue;
             }
-            
+
             OneDIntArray minMaxXY2 = labelMinMaxXY.get(label2);
-            
+
             double sz2 = Math.max(minMaxXY2.a[1] - minMaxXY2.a[0] + 1,
                 minMaxXY2.a[3] - minMaxXY2.a[2] + 1);
-        
+
             // edit cd to reference frame sz2
             // find clusters in set2
             // add those with significantly higher density to rm
-            
+
             float cd2;
             int type;
             if (sz1 > sz2 && ((sz1/sz2) > 1.2)) {
                 // decrease the critical separation by increasing
                 // critical density by factor
-                
+
                 // if the surface density is significantly larger,
                 //   the region should be removed
-                
+
                 type = 0;
                 cd2 = cd * (float)(sz1/sz2);
-                                
+
             } else if (sz2 > sz1 && ((sz2/sz1) > 1.2)) {
                 // increase the critical separation by decreasing
                 // critical density by factor
-                
+
                 //NOTE:
                 // dataset "2" may have higher resolution, so removing the
                 // region because of larger density might not be the correct
-                
+
                 type = 1;
                 cd2 = cd / (float)(sz2/sz1);
-                    
+
             } else {
                 // these are roughly equiv sized regions, so a direct
                 // comparison of densities is needed.
-                
+
                 // if the density of 2 is significantly larger, the region
                 // should be removed.
-                
+
                 type = 2;
                 cd2 = cd;
-                    
+
             }
-            
+
             DTClusterFinder<PairIntWithIndex> cFinder2
-                = new DTClusterFinder<PairIntWithIndex>(set2, 
-                minMaxXY2.a[1] - minMaxXY2.a[0] + 1, 
+                = new DTClusterFinder<PairIntWithIndex>(set2,
+                minMaxXY2.a[1] - minMaxXY2.a[0] + 1,
                 minMaxXY2.a[3] - minMaxXY2.a[2] + 1);
             cFinder2.setCriticalDensity(cd2);
             cFinder2.findClusters();
@@ -1691,27 +1689,27 @@ public class ObjectMatcher {
 
             TFloatList densities2 = new TFloatArrayList();
             TIntList nInGroups2 = new TIntArrayList();
-            
+
             //sb = new StringBuilder();
             //sb.append(String.format("label2=%d cd2=%.2f n2=%d\n", label2, cd2, n2));
             for (int i = 0; i < n2; ++i) {
-                
+
                 Set<PairIntWithIndex> cluster2 = cFinder2.getCluster(i);
-                
+
                 double dist = separationOfFurthestPair(cluster2);
-                
+
                 if (type == 0 || type == 1) {
                     dist *= (sz2/sz1);
                 }
                 float dens = (float) ((float) cluster2.size() / (dist * dist));
                 densities2.add(dens);
                 nInGroups2.add(cluster2.size());
-                
-                //sb.append(String.format("  n2[%d]=%d dens=%.2f", 
+
+                //sb.append(String.format("  n2[%d]=%d dens=%.2f",
                 //    i, cluster2.size(), dens));
             }
             //System.out.println(sb.toString());
-       
+
             if (n2 > 0) {
                 // average, stdDv, min, max
                 float[] densityStats2 = calcStats(densities2, nInGroups2);
@@ -1724,7 +1722,7 @@ public class ObjectMatcher {
                     float sigmaFactor = diff/densityStats[1];
 
                     if (sigmaFactor > sigmaFactorAboveMean) {
-                        
+
                         rm.add(label2);
 
                         if (debug) {
@@ -1732,18 +1730,18 @@ public class ObjectMatcher {
                             PairInt xyCen = ch.calculateXYCentroids2(
                                 listOfPointSets2.get(label2));
                             System.out.format(
-                                "removing label2=%d which is %.2f sigma above mean.  coords=%s\n", 
+                                "removing label2=%d which is %.2f sigma above mean.  coords=%s\n",
                                 label2, sigmaFactor, xyCen.toString());
                         }
                     }
                 }
             }
         }
-        
+
         if (rm.isEmpty()) {
             return;
         }
-        
+
         // remove keypoints in label2
         // and remove label2 from the point set list
 
@@ -1753,14 +1751,14 @@ public class ObjectMatcher {
         for (int i = 0; i < rm.size(); ++i) {
             rmAllPoints.addAll(listOfPointSets2.get(rm.get(i)));
         }
-        
+
         List<TIntList> rmList = new ArrayList<TIntList>();
-        for (int octave2 = 0; octave2 < orb2.getKeyPoint1List().size(); 
+        for (int octave2 = 0; octave2 < orb2.getKeyPoint1List().size();
             ++ octave2) {
-            
+
             TIntList kp1 = orb2.getKeyPoint1List().get(octave2);
             TIntList kp0 = orb2.getKeyPoint0List().get(octave2);
-        
+
             TIntList rm2 = new TIntArrayList();
             rmList.add(rm2);
             for (int i = 0; i < kp1.size(); ++i) {
@@ -1773,51 +1771,51 @@ public class ObjectMatcher {
         orb2.removeAtIndexes(rmList);
 
         rm.sort();
-        
+
         for (int i = (rm.size() - 1); i > -1; --i) {
             int rmIdx = rm.get(i);
             listOfPointSets2.remove(rmIdx);
         }
-        
+
     }
-    
+
     private double separationOfFurthestPair(Set<PairIntWithIndex> points) {
 
         if (points == null || points.size() < 2) {
             throw new IllegalArgumentException("points must have at least "
                 + " 2 points");
         }
-        
+
         FurthestPair fp = new FurthestPair();
-        
+
         Set<PairInt> set = new HashSet<PairInt>(points.size());
         for (PairIntWithIndex p : points) {
             set.add(new PairInt(p.getX(), p.getY()));
         }
-        
+
         PairInt[] furthest = fp.find(set);
-        
+
         assert(furthest != null);
         assert(furthest.length > 1);
-    
+
         int diffX = furthest[0].getX() - furthest[1].getX();
         int diffY = furthest[0].getY() - furthest[1].getY();
-    
+
         double dist = Math.sqrt(diffX * diffX + diffY * diffY);
-        
+
         return dist;
     }
 
     private float[] calcStats(TFloatList densities, TIntList nInGroup) {
-        
+
         //average, stdDv, min, max
-        
+
         // using the number in group to form weights
         float nSum = 0;
         for (int i = 0; i < densities.size(); ++i) {
             nSum += nInGroup.get(i);
         }
-        
+
         TFloatList weights = new TFloatArrayList();
         float totW = 0;
         for (int i = 0; i < densities.size(); ++i) {
@@ -1828,40 +1826,40 @@ public class ObjectMatcher {
         }
         //System.out.println("totW=" + totW);
         assert(Math.abs(totW - 1.f) < 0.01f);
-        
+
         double avgDens = 0;
         for (int i = 0; i < densities.size(); ++i) {
             float d = densities.get(i) * weights.get(i);
             avgDens += d;
         }
-        
+
         double stDev = 0;
         for (int i = 0; i < densities.size(); ++i) {
             double diff = densities.get(i) - avgDens;
             stDev += (diff * diff);
         }
         stDev = Math.sqrt(stDev/((float) densities.size() - 1));
-        
+
         //average, stdDv, min, max
         return new float[]{(float)avgDens, (float)stDev, densities.min(),
             densities.max()};
     }
-    
+
     private List<Set<PairInt>> filterBySegmentation2(
         ImageExt img0, Set<PairInt> shape0,
         ImageExt img1, List<Region> regionsList, Settings settings) {
-    
+
         // creating a fake 2nd item to be able to use existing method
         List<List<Region>> list = new ArrayList<List<Region>>();
         list.add(regionsList);
-        
+
         return filterBySegmentation(img0, shape0, img1, list, settings);
     }
-   
+
     private List<Set<PairInt>> filterBySegmentation(
         ImageExt img0, Set<PairInt> shape0,
         ImageExt img1, List<List<Region>> regionsList, Settings settings) {
-    
+
         int[] xy = new int[2];
         Set<PairInt> keypoints1 = new HashSet<PairInt>();
         for (int i = 0; i < regionsList.size(); ++i) {
@@ -1872,15 +1870,15 @@ public class ObjectMatcher {
                 keypoints1.add(new PairInt(xy[0], xy[1]));
             }
         }
-    
+
         int n = keypoints1.size();
-        
+
         List<Set<PairInt>> setLists = filterBySegmentation(img0, shape0, img1, keypoints1, settings);
-        
+
         if (keypoints1.size() == n) {
             return setLists;
         }
-        
+
         for (int i = 0; i < regionsList.size(); ++i) {
             TIntList rm = new TIntArrayList();
             List<Region> regions = regionsList.get(i);
@@ -1896,30 +1894,30 @@ public class ObjectMatcher {
                 regions.remove(rm.get(j));
             }
         }
-        
+
         return setLists;
     }
 
     private List<Set<PairInt>> filterBySegmentation(
         ImageExt img0, Set<PairInt> shape0,
         ImageExt img1, Set<PairInt> keypoints1, Settings settings) {
-    
+
         //TODO: consider returning the keypoints from the full frames
-        
-        
+
+
         //TODO: since the ORBs are not kept, can revise this to
         // work on a single image instead of a pyramid.
-        
+
         long ts = 0;
         if (debug) {
             ts = MiscDebug.getCurrentTimeFormatted();
         }
-        
+
         ImageExt[] imgs0 = maskImage(img0, shape0);
-        
+
         ImageProcessor imageProcessor = new ImageProcessor();
         ImageSegmentation imageSegmentation = new ImageSegmentation();
-        
+
         int nKeypoints = 200;//200;
         ORB orb0 = extractTemplateORBKeypoints(imgs0[0], shape0,
             nKeypoints, !settings.isUseLargerPyramid0(), ts);
@@ -1941,10 +1939,10 @@ public class ObjectMatcher {
         for (int i = 0; i < orb1.getScalesList().size(); ++i) {
             sList.add(orb1.getScalesList().get(i).get(0));
         }
-        
+
         int ns = sList.size();
         List<TIntList> rmIndexesList = new ArrayList<TIntList>();
-        
+
         ColorHistogram clrHist = new ColorHistogram();
 
         // make the template histograms from the first scale only
@@ -1996,11 +1994,11 @@ public class ObjectMatcher {
                         rm.add(j);
                     }
                 }
-            }           
+            }
             rmIndexesList.add(rm);
         }
         orb1.removeAtIndexes(rmIndexesList);
-        
+
         // --- filter keypoints1
         Set<PairInt> rm2 = new HashSet<PairInt>();
         for (PairInt p : keypoints1) {
@@ -2022,17 +2020,17 @@ public class ObjectMatcher {
             }
         }
         keypoints1.removeAll(rm2);
-        
+
         if (orb1.getKeyPoint0List().isEmpty()) {
             return null;
         }
-        
+
         //float luvDeltaELimit = 40;//10;// between 10 and 30
-        
+
         ImageExt img1Cp = img1.copyToImageExt();
-        
+
         int[] labels4 = imageSegmentation.objectSegmentation(img1Cp);
-        
+
         if (debug) {
             ImageExt img11 = img1.copyToImageExt();
             ImageIOHelper.addAlternatingColorLabelsToRegion(
@@ -2045,19 +2043,19 @@ public class ObjectMatcher {
 
         //boolean changed = false;
         boolean changed = imageSegmentation.filterByCIECH(imgs0[0],
-            shape0, img1Cp, listOfPointSets2, 
+            shape0, img1Cp, listOfPointSets2,
             0.01f);
             //0.1f);//0.4f);//0.35f
-        
+
         if (debug) {
             ImageExt img11 = img1.copyToImageExt();
-            ImageIOHelper.addAlternatingColorCurvesToImage0(listOfPointSets2, 
+            ImageIOHelper.addAlternatingColorCurvesToImage0(listOfPointSets2,
                 img11, 1);
             //ImageIOHelper.addAlternatingColorLabelsToRegion(
             //    img11, labels4);
             MiscDebug.writeImage(img11, "_segmented_2_" + ts);
         }
-        
+
         // ---- remove keypoints if not in segmented cells
         if (changed && !settings.isUseSmallObjectMethod()
             && !settings.isUseShapeFinder()) {
@@ -2069,7 +2067,7 @@ public class ObjectMatcher {
                     pointIdxMap.put(p, j);
                 }
             }
-            
+
             ns = orb1.getScalesList().size();
             rmIndexesList = new ArrayList<TIntList>();
             for (int i = 0; i < ns; ++i) {
@@ -2085,23 +2083,23 @@ public class ObjectMatcher {
                     if (!pointIdxMap.containsKey(p)) {
                         rm.add(j);
                     }
-                }               
+                }
                 rmIndexesList.add(rm);
                 //System.out.println("rm at scale " + i + " n=" +
                 //    rm.size());
             }
             orb1.removeAtIndexes(rmIndexesList);
-            
+
             // --- filter out keypoints1
             rm2.clear();
             for (PairInt p : keypoints1) {
                 if (!pointIdxMap.containsKey(p)) {
                     rm2.add(p);
-                }               
+                }
             }
             keypoints1.removeAll(rm2);
         }
-        
+
         return listOfPointSets2;
     }
 }
