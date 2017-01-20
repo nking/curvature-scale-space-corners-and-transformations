@@ -183,8 +183,6 @@ public class Canonicalizer {
 
         TIntObjectMap<CRegion> output = new TIntObjectHashMap<CRegion>();
 
-        Transformer transformer = new Transformer();
-
         int[] xyCen = new int[2];
     
         for (int i = 0; i < regions.size(); ++i) {
@@ -598,6 +596,8 @@ public class Canonicalizer {
     public static Map<PairInt, PairInt> createOffsetToOrigMap(
         int x, int y, PairIntArray xy, int imgWidth, int imgHeight,
         double orientation) {
+        
+        fillInEllipse(xy);
 
         Set<PairInt> visited = new HashSet<PairInt>();
 
@@ -616,7 +616,10 @@ public class Canonicalizer {
         Map<PairInt, PairInt> offsetToOrigMap = new HashMap<PairInt, PairInt>();
 
         Transformer transformer = new Transformer();
-        
+    
+        // ellipse, rotated by orientation to create
+        //   x and y offsets from center that are comparable to
+        //   the same for CRegions in other dataset.
         PairIntArray xyTr = transformer.applyTransformation(params, xy);
 
         // visit all points in region and transform them
@@ -708,6 +711,69 @@ public class Canonicalizer {
         autocorSum /= (double)nc;
         
         return autocorSum;
+    }
+    
+    private static void fillInEllipse(PairIntArray xy) {
+
+        // key = row number, value = start and stop x range
+        TIntObjectMap<PairInt> rowColRange = new TIntObjectHashMap<PairInt>();
+        
+        int minRow = Integer.MAX_VALUE;
+        int maxRow = Integer.MIN_VALUE;
+        
+        for (int i = 0; i < xy.getN(); ++i) {
+            
+            int row = xy.getY(i);
+            int col = xy.getX(i);
+            
+            PairInt xMinMax = rowColRange.get(row);
+            if (xMinMax == null) {
+                xMinMax = new PairInt(col, col);
+                rowColRange.put(row, xMinMax);
+            } else {
+                if (col < xMinMax.getX()) {
+                    xMinMax.setX(col);
+                } else if (col > xMinMax.getY()) {
+                    xMinMax.setY(col);
+                }
+            }
+            
+            if (row < minRow) {
+                minRow = row;
+            }
+            if (row > maxRow) {
+                maxRow = row;
+            }
+        }
+    
+        for (int i = minRow; i <= maxRow; ++i) {
+            PairInt xMinMax = rowColRange.get(i);
+            int x0, x1;
+            if (xMinMax == null) {
+                PairInt prev = null;
+                int off = 0;
+                while (prev == null) {
+                    off--;
+                    prev = rowColRange.get(i + off);
+                }
+                PairInt next = null;
+                off = 0;
+                while (next == null) {
+                    off++;
+                    next = rowColRange.get(i + off);
+                }
+                assert(prev != null);
+                assert(next != null);
+                x0 = Math.round(((float)prev.getX() + (float)next.getX())/2.f);
+                x1 = Math.round(((float)prev.getY() + (float)next.getY())/2.f);
+            } else {
+                x0 = xMinMax.getX();
+                x1 = xMinMax.getY();
+            }
+            for (int x = (x0 + 1); x < x1; ++x) {
+                xy.add(x, i);
+            }
+        }
     }
 
 }
