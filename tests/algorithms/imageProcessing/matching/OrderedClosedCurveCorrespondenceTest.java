@@ -1,6 +1,5 @@
 package algorithms.imageProcessing.matching;
 
-import algorithms.imageProcessing.matching.PartialShapeMatcher.SR;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.List;

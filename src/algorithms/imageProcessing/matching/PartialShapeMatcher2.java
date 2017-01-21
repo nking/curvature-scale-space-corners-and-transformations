@@ -2,7 +2,7 @@ package algorithms.imageProcessing.matching;
 
 import algorithms.QuickSort;
 import algorithms.compGeometry.LinesAndAngles;
-import algorithms.imageProcessing.SummedColumnTable;
+import algorithms.imageProcessing.SummedAreaTable;
 import algorithms.imageProcessing.features.RANSACEuclideanSolver;
 import algorithms.imageProcessing.features.RANSACSolver;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
@@ -41,6 +41,8 @@ import thirdparty.edu.princeton.cs.algs4.Interval;
 import thirdparty.edu.princeton.cs.algs4.IntervalRangeSearch;
 
 /**
+ NOTE: NOT READY FOR USE YET... still testing.
+
 <pre>
 based upon algorithm in paper
  "Efficient Partial Shape Matching
@@ -88,10 +90,10 @@ based upon algorithm in paper
                    overrideSamplingDistance(dp)
                unit test using dp of 1 and 2 work well
 
-       Note: in the code here I use summed columns instead of summed areas.
-       Also note that I've added options for euclidean transformations
-       as evaluation for best solution and have added the ability to use
-       RANSAC to remove outliers from the best solution.
+       NThis version of the code follows the paper algorithm in that
+       it uses summed area table instead of summed column table
+       as PartialShapeMatcher.java does.
+       This very has a faster runtime, but is less precise.
   
        The runtime complexity for building the integral
        image is O(n*m*n) where m and n are the number of sampled
@@ -99,18 +101,11 @@ based upon algorithm in paper
 
        The runtime complexity for the search of the
        integral image of summed differences and analysis,
-       are longer than the paper algorithm because n1 reads of
-       the n1Xn1 chord differenve matrix are made,
-       resulting in a total runtime complexity of
-       n2 * O(n1^3).  The increase in accuracy here is useful for articulated
-       matches (see scissors test).
+       is O(m * n), because the reads of the last two dimensions
+       are along the diagonal (sqrt(2) * n for the smallest block
+       size read, and smaller by factor of the block size for
+       a specific block size read).
        
-       Note that <em>PartialShapeMatcher2.java</em> is the version of the code
-       which uses the summed area table as suggested by the paper,
-       instead of summed area columns for speed at cost of some accuracy,
-       resulting in a runtime complexity of
-       n2 * (O(n1 * n1) + O(n1 * lg2(n1)), but the number or reads could be
-       reduced to result in a runtime of n2 * (O(n1 * lg2(n1))).
  </pre>
  <em>NOTE: You may need to pre-process the shape points
      for example, smooth the boundary.</em>
@@ -122,7 +117,7 @@ based upon algorithm in paper
   </pre>
   @author nichole
  */
-public class PartialShapeMatcher {
+public class PartialShapeMatcher2 {
 
     /**
      * in sampling the boundaries of the shapes, one can
@@ -560,7 +555,7 @@ public class PartialShapeMatcher {
         Result r;
         if (p.getN() <= q.getN()) {
             md = createDifferenceMatrices(p, q);
-            applySummedColumnTableConversion(md);
+            applySummedAreaTableConversion(md);
             r = match0(md, p, q);
             if (r != null) {
                 if (debug) {
@@ -570,7 +565,7 @@ public class PartialShapeMatcher {
             }
         } else {
             md = createDifferenceMatrices(q, p);
-            applySummedColumnTableConversion(md);
+            applySummedAreaTableConversion(md);
             r = match0(md, q, p);
             if (r != null) {
                 if (debug) {
@@ -630,7 +625,7 @@ public class PartialShapeMatcher {
         of the whole to calculate the Salukwdze distance 
         of the Paretto frontier.
         */
-        
+    
         List<SR> minima = findMinima(md, n1, n2);
         
         int topK = 100;
@@ -775,6 +770,8 @@ public class PartialShapeMatcher {
     }
     
     /**
+     * NOT READY FOR USE
+     * 
      * as an alternative to finding the best correspondence between two
      * shapes, instead, given the correspondence, sum the chord differences.
      * The same instance variables such as the point spacing are used here
@@ -836,7 +833,16 @@ public class PartialShapeMatcher {
     private List<SR> findMinima(float[][][] md, int n1, int n2) {
 
         //q.n is >= p.n, that is n2 >= n1
-            
+        
+        //md[0:n2-1][0:n1-1][0:n1-1]
+        if (md.length != n2 || md[0].length != n1) {
+            throw new IllegalArgumentException("error in algorithm arguments:"
+                + " revise to set n1 and n2 from md");
+        }
+        if (n2 < n1) {
+            throw new IllegalArgumentException("n2 must be >= n1");
+        }        
+        
         // reading over a range of window sizes to keep the 
         // sum/nPix below thresh and keeping the mincost solutions.
 
@@ -875,9 +881,16 @@ public class PartialShapeMatcher {
          20 21 22        13 10 11 12
          10 11 12        03 00 01 02
          00 01 02        33 30 31 32  p_i_j - q_(i+3)_(j+3)
+        
+        md[0:n2-1][0:n1-1][0:n1-1]
         */
            
-        // runtime complexity is n2 * O(n1^3)
+        // n2 * (O(n1 * n1) + O(n1 * lg2(n1)),
+        // but this could be reduced to 
+        // n2 * (O(r * lg2(n1)) + O(n1 * lg2(n1)) where r is a selection of
+        //    sub intervals of n1, 
+        //    could choose r=1 to lg2(n1) for example or n1-lg2(n1) to n1, etc,
+        //    to make the runtime complexity n2 * (O(n1 * lg2(n1))
         for (int offset = 0; offset < md.length; offset++) {
             
             float[][] a = md[offset];
@@ -885,7 +898,8 @@ public class PartialShapeMatcher {
             List<Interval<Integer>> outputIntervals = new ArrayList<Interval<Integer>>();
             List<SR> outputValues = new ArrayList<SR>();
             
-            // runtime complexity is O(n^3)
+            // runtime complexity is approx O(n1 * n1) but the first n1 could be
+            //    reduced to specific read sizes instead of each interval in n1
             search(a, outputIntervals, outputValues, offset);
             
             if (outputValues.isEmpty()) {
@@ -912,7 +926,7 @@ public class PartialShapeMatcher {
             sr.maxChordSum = maxChordSum;
         }
         
-        // sort by salukwzde distance
+        // sort by salukwzde distance.  O(n1 * lg2(n1))
         Collections.sort(allResults, new SRComparator());
         
         if (debug) {
@@ -1328,6 +1342,22 @@ public class PartialShapeMatcher {
         return r;
     }
     
+    public static class SRComparator implements Comparator<SR> {
+
+        @Override
+        public int compare(SR o1, SR o2) {
+            double d1 = o1.calcSalukDist();
+            double d2 = o2.calcSalukDist();
+            if (d1 < d2) {
+                return -1;
+            } else if (d1 > d2) {
+                return 1;
+            }
+            return 0;
+        }
+    
+    }
+
     private double findMaxDiffChordSum(List<SR> list) {
         double max = Double.MIN_VALUE;
         for (SR sr : list) {
@@ -1338,12 +1368,16 @@ public class PartialShapeMatcher {
         }
         return max;
     }
-
+    
     /**
      * search the difference chord sum matrix a for minimum Salukwzde cost
      * and put results in outputIntervals and the sum of the chord differences
      * in outputValues.
-     * runtime complexity is currently O(n1^3).
+     * 
+     * r reads is approx n1, but can be reduced.
+     runtime complexity is then n1 reads * sqrt(2) * n1 diagonal, 
+     ~ n1 * n1.
+        
      * @param a
      * @param outputIntervals
      * @param outputValues 
@@ -1369,84 +1403,95 @@ public class PartialShapeMatcher {
         float[] outC = new float[2];
         int stop, start;
         
-        SummedColumnTable sct = new SummedColumnTable();
+        SummedAreaTable st = new SummedAreaTable();
         
         int rUpper = n1 - 1;
         if (maxLength > -1 && maxLength < (rUpper)) {
             rUpper = maxLength;
         }
         
+        // r reads is approx n1, but can be reduced
+        // runtime complexity is n1 reads * sqrt(2) * n1 diagonal, ~ n1 * n1.
+        // NOTE that because of a sort operation in the invoker of this
+        // method, the larger algorithm could do no better than
+        //  n1 * lg2(n1) so r should not be reduced to smaller than
+        //  total number of reads of log_2(n1) here.
+        
+        // reducing r range to be sqrt(n1) in total could be done
+        // by changing the delta r or by visiting only
+        // 0 to sqrt(n1) and relying on later merging to find long intervals.
+        // etc
+        
         // using row major notation of a[row][col]
         for (int r = rUpper; r >= minLength; --r) {
-            for (int row = 0; row < n1; ++row) {
-                for (int col = 0; col < n1; col += r) {
-                    stop = col + r;
-                    if (stop > (n1 - 1)) {
-                        stop = n1 - 1;
-                    }
-                     start = col;
-                    if (stop == start) {
-                        // do not store single index matches
-                        continue;
-                    }
-
-                    int ni = stop - start + 1;
-                    if (ni < minLength) {
-                        continue;
-                    }
-                    sct.extractWindowInColumn(a, col, stop, row, outC);
-                    if (outC[1] < 1) {
-                        continue;
-                    }
-                    float d = outC[0]/outC[1];
-                    if (debug && ((col % 50) == 0)) {
-                        System.out.println("interval " + d + 
-                        " sr=" + col + " : " + stop + " off=" + offset 
-                        + " Len=" + (stop - col + 1));
-                        //System.out.println(String.format(
-                        //"len=%d i=%d d=%.2f", (stop - j + 1), i, d));
-                    }
-                    if (d > thresh) {
-                        continue;
-                    }
-                    if (d > maxChordSum) {
-                        maxChordSum = d;
-                    }
-
-                    interval =  new Interval<Integer>(start, stop);
-                    PairInt s = new PairInt(start, stop);
-                    if (added.contains(s)) {
-                        continue;
-                    }
-
-                    //a, col, stop, row, outC
-                    SR sr = new SR();
-                    sr.startIdx1 = col;
-                    sr.stopIdx1 = stop;
-                    sr.offsetIdx2 = offset;
-                    sr.row = row;
-                    sr.diffChordSum = d;
-                    sr.setChordSumNeedsUpdate(false);
-                    sr.maxChordSum = maxChordSum;
-                    sr.mLen = ni;
-                    sr.nMax = n1; // n1 <= n2
-                
-                    boolean didIns = rangeSearch.putIfLessThan(interval, sr, sr);
-
-                    if (debug) {
-                        System.out.println("interval: " + d + 
-                            " sr=" + col + " : " + stop 
-                            + " off=" + offset + " row=" + row 
-                            + " Len=" + (stop - col + 1)
-                            + " didIns=" + didIns 
-                            + " (maxCh=" + sr.maxChordSum
-                            + " sd=" + 
-                            sr.calcSalukDist());
-                    }
-                    
-                    added.add(s);
+            
+            // row and col are both iDiag
+            for (int iDiag = 0; iDiag < n1; ++iDiag) {
+                stop = iDiag + r;
+                if (stop > (n1 - 1)) {
+                    stop = n1 - 1;
                 }
-            } // end loop j
+                start = iDiag;
+                if (stop == start) {
+                    // do not store single index matches
+                    continue;
+                }
+
+                int ni = stop - start + 1;
+                if (ni < minLength) {
+                    continue;
+                }
+                st.extractWindowFromSummedAreaTable(a, start, stop, start, stop, outC);
+                if (outC[1] < 1) {
+                    continue;
+                }
+                float d = outC[0]/outC[1];
+                if (debug && ((iDiag % 50) == 0)) {
+                    System.out.println("interval " + d + 
+                    " sr=" + iDiag + " : " + stop + " off=" + offset 
+                    + " Len=" + (stop - iDiag + 1));
+                    //System.out.println(String.format(
+                    //"len=%d i=%d d=%.2f", (stop - j + 1), i, d));
+                }
+                if (d > thresh) {
+                    continue;
+                }
+                if (d > maxChordSum) {
+                    maxChordSum = d;
+                }
+
+                interval =  new Interval<Integer>(start, stop);
+                PairInt s = new PairInt(start, stop);
+                if (added.contains(s)) {
+                    continue;
+                }
+
+                //a, col, stop, row, outC
+                SR sr = new SR();
+                sr.startIdx1 = iDiag;
+                sr.stopIdx1 = stop;
+                sr.offsetIdx2 = offset;
+                sr.row = iDiag;
+                sr.diffChordSum = d;
+                sr.setChordSumNeedsUpdate(false);
+                sr.maxChordSum = maxChordSum;
+                sr.mLen = ni;
+                sr.nMax = n1; // n1 <= n2
+
+                boolean didIns = rangeSearch.putIfLessThan(interval, sr, sr);
+
+                if (debug) {
+                    System.out.println("interval: " + d + 
+                        " sr=" + iDiag + " : " + stop 
+                        + " off=" + offset + " row=" + iDiag 
+                        + " Len=" + (stop - iDiag + 1)
+                        + " didIns=" + didIns 
+                        + " (maxCh=" + sr.maxChordSum
+                        + " sd=" + 
+                        sr.calcSalukDist());
+                }
+                added.add(s);
+            } // end loop iDiag
         } // end r
                 
         rangeSearch.getAllIntervals(outputIntervals, outputValues);
@@ -1734,13 +1779,13 @@ public class PartialShapeMatcher {
         return output;
     }
     
-    protected void applySummedColumnTableConversion(float[][][] md) {
+    protected void applySummedAreaTableConversion(float[][][] md) {
         for (int i = 0; i < md.length; ++i) {
-            applySummedColumnTableConversion(md[i]);
+            applySummedAreaTableConversion(md[i]);
         }
     }
 
-    protected void applySummedColumnTableConversion(float[][] mdI) {
+    protected void applySummedAreaTableConversion(float[][] mdI) {
 
         int w = mdI.length;
         int h = mdI[0].length;
@@ -1748,7 +1793,12 @@ public class PartialShapeMatcher {
         // sum along columns, that is a[i][*]
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
-                if (j > 0) {
+                if (i > 0 && j > 0) {
+                    mdI[i][j] += (mdI[i - 1][j] + mdI[i][j - 1]
+                        - mdI[i - 1][j - 1]);
+                } else if (i > 0) {
+                    mdI[i][j] += mdI[i - 1][j];
+                } else if (j > 0) {
                     mdI[i][j] += mdI[i][j - 1];
                 }
             }
@@ -2019,7 +2069,7 @@ public class PartialShapeMatcher {
 
         result.chordDiffSum = 0;
         
-        SummedColumnTable sct = new SummedColumnTable();
+        SummedAreaTable st = new SummedAreaTable();
         float[] output = new float[2];
         int row = 0;
         int offset = 0;
@@ -2054,7 +2104,8 @@ public class PartialShapeMatcher {
                 }
             }
            
-            sct.extractWindowInColumn(md[offset], idx2, idx2 + 1, idx1, output);
+            st.extractWindowFromSummedAreaTable(md[offset], 
+                idx2, idx2 + 1, idx2, idx2 + 1, output);
             
             float d = output[0]/output[1];
           
@@ -2300,7 +2351,7 @@ public class PartialShapeMatcher {
                 "need to use overrideToStoreMatrix() before match(...)");
         }
       
-        SummedColumnTable sct = new SummedColumnTable();
+        SummedAreaTable st = new SummedAreaTable();
         
         float[] output = new float[2];
         int row = 0;
@@ -2336,8 +2387,8 @@ public class PartialShapeMatcher {
             }
         }
 
-        sct.extractWindowInColumn(storedMatrix[offset], idx1, idx2, row, 
-            output);
+        st.extractWindowFromSummedAreaTable(
+            storedMatrix[offset], idx1, idx2, idx1, idx2, output);
 
         float d = output[0]/output[1];
             

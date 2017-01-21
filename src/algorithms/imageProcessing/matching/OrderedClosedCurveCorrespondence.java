@@ -1,6 +1,5 @@
 package algorithms.imageProcessing.matching;
 
-import algorithms.imageProcessing.matching.PartialShapeMatcher.SR;
 import algorithms.util.PairIntArray;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
@@ -30,7 +29,7 @@ class OrderedClosedCurveCorrespondence {
 
     // visit each interval in order of smallest cost,
     // and only add the clockwise consistent intervals to a combined output
-    protected TreeMap<Integer, PartialShapeMatcher.SR> t1 = new TreeMap<Integer, PartialShapeMatcher.SR>();
+    protected TreeMap<Integer, SR> t1 = new TreeMap<Integer, SR>();
 
     private int minLength = 3;
 
@@ -65,7 +64,7 @@ class OrderedClosedCurveCorrespondence {
         // rule from PartialShapeMatcher is n1 <= n2.
         float nMaxMatchable = n1;
         
-        for (PartialShapeMatcher.SR sr: intervals) {
+        for (SR sr: intervals) {
             if (debug) {
                 System.out.println("cost=" + sr.calcSalukDist() + 
                 " sr=" + sr.startIdx1 + " : " + sr.stopIdx1);
