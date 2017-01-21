@@ -41,8 +41,6 @@ import thirdparty.edu.princeton.cs.algs4.Interval;
 import thirdparty.edu.princeton.cs.algs4.IntervalRangeSearch;
 
 /**
- NOTE: NOT READY FOR USE YET... still testing.
-
 <pre>
 based upon algorithm in paper
  "Efficient Partial Shape Matching
@@ -101,18 +99,18 @@ based upon algorithm in paper
 
        The runtime complexity for the search of the
        integral image of summed differences and analysis,
-       if a summed area table were used, would be
-       O(m * n), because the reads of the last two dimensions
-       are along the diagonal (sqrt(2) * n for the smallest block
-       size read, and smaller by factor of the block size for
-       a specific block size read).
-       The code here uses a summed column table instead for higher
-       accuracy needed for more precise articulated matches
-       (see the scissors tests).
-       The code here, therefore has a search and analysis runtime
-       complexity of O(m*n*n).
-       (NOTE: will probably copy this code and change that copy back
-       to the summed area and diagonal reads for faster searches...)
+       are longer than the paper algorithm because n1 reads of
+       the n1Xn1 chord differenve matrix are made,
+       resulting in a total runtime complexity of
+       n2 * O(n1^3).  The increase in accuracy here is useful for articulated
+       matches.
+       
+       Note that <em>PartialShapeMatcher2.java</em> is the version of the code
+       which uses the summed area table as suggested by the paper,
+       instead of summed area columns for speed at cost of some accuracy,
+       resulting in a runtime complexity of
+       n2 * (O(n1 * n1) + O(n1 * lg2(n1)), but the number or reads could be
+       reduced to result in a runtime of n2 * (O(n1 * lg2(n1))).
  </pre>
  <em>NOTE: You may need to pre-process the shape points
      for example, smooth the boundary.</em>
@@ -246,8 +244,6 @@ public class PartialShapeMatcher {
     }
 
     /**
-      NOT READY FOR USE... still testing...
-
       A shape is defined as the clockwise ordered sequence
       of points P_1...P_N
       and the shape to match has points Q_1...Q_N.
@@ -779,8 +775,6 @@ public class PartialShapeMatcher {
     }
     
     /**
-     * NOT READY FOR USE
-     * 
      * as an alternative to finding the best correspondence between two
      * shapes, instead, given the correspondence, sum the chord differences.
      * The same instance variables such as the point spacing are used here
@@ -883,6 +877,7 @@ public class PartialShapeMatcher {
          00 01 02        33 30 31 32  p_i_j - q_(i+3)_(j+3)
         */
            
+        // runtime complexity is n2 * O(n1^3)
         for (int offset = 0; offset < md.length; offset++) {
             
             float[][] a = md[offset];
@@ -890,6 +885,7 @@ public class PartialShapeMatcher {
             List<Interval<Integer>> outputIntervals = new ArrayList<Interval<Integer>>();
             List<SR> outputValues = new ArrayList<SR>();
             
+            // runtime complexity is O(n^3)
             search(a, outputIntervals, outputValues, offset);
             
             if (outputValues.isEmpty()) {
@@ -1445,6 +1441,7 @@ public class PartialShapeMatcher {
      * search the difference chord sum matrix a for minimum Salukwzde cost
      * and put results in outputIntervals and the sum of the chord differences
      * in outputValues.
+     * runtime complexity is currently O(n1^3).
      * @param a
      * @param outputIntervals
      * @param outputValues 
