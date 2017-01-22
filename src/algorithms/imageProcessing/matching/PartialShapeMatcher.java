@@ -109,8 +109,7 @@ based upon algorithm in paper
        which uses the summed area table as suggested by the paper,
        instead of summed area columns for speed at cost of some accuracy,
        resulting in a runtime complexity of
-       n2 * (O(n1 * n1) + O(n1 * lg2(n1)), but the number or reads could be
-       reduced to result in a runtime of n2 * (O(n1 * lg2(n1))).
+       n2 * (O(n1 * lg2(n1)).
  </pre>
  <em>NOTE: You may need to pre-process the shape points
      for example, smooth the boundary.</em>

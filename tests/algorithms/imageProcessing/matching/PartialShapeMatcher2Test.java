@@ -51,7 +51,8 @@ public class PartialShapeMatcher2Test extends TestCase {
         PartialShapeMatcher2 shapeMatcher = new PartialShapeMatcher2();
         shapeMatcher.overrideSamplingDistance(1);
         //shapeMatcher.setToDebug();
-
+        shapeMatcher.setToUseEuclidean();
+        
         PartialShapeMatcher2.Result result = shapeMatcher.match(p, q);
 
         assertNotNull(result);
@@ -102,6 +103,7 @@ public class PartialShapeMatcher2Test extends TestCase {
         PartialShapeMatcher2 shapeMatcher = new PartialShapeMatcher2();
         shapeMatcher.overrideSamplingDistance(1);
         //shapeMatcher.setToDebug();
+        shapeMatcher.setToUseEuclidean();
         
         // articulated:
         PartialShapeMatcher2.Result result = shapeMatcher.match(p, q);
@@ -158,6 +160,8 @@ public class PartialShapeMatcher2Test extends TestCase {
         //q.rotateLeft(q.getN() - 3);
         PartialShapeMatcher2 shapeMatcher = new PartialShapeMatcher2();
         shapeMatcher.overrideSamplingDistance(1);
+        
+        shapeMatcher.setToUseEuclidean();
         
         shapeMatcher.overrideMinimumLength(4);
         shapeMatcher.setToUseSameNumberOfPoints();

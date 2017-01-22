@@ -101,14 +101,16 @@ based upon algorithm in paper
 
        The runtime complexity for the search of the
        integral image of summed differences and analysis,
-       is O(m * n), because the reads of the last two dimensions
-       are along the diagonal (sqrt(2) * n for the smallest block
-       size read, and smaller by factor of the block size for
-       a specific block size read).
+       is n2 * (O(n1 * lg2(n1)).
        
  </pre>
  <em>NOTE: You may need to pre-process the shape points
      for example, smooth the boundary.</em>
+    
+ <em>NOTE: You may want to use the Euclidean setting to avoid some
+     of the ambiguities of the articulated search using this faster but less
+     precise search.</em>
+     
  <pre>
      This method:  
         PairIntArray p = imageProcessor
@@ -143,9 +145,7 @@ public class PartialShapeMatcher2 {
     private float thresh = 1.f;//(float)(Math.PI/180.) * 10.f;
 
     private int minLength = 7;//3;
-    
-    private int maxLength = -1;
-    
+        
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
     private boolean debug = false;
@@ -203,14 +203,6 @@ public class PartialShapeMatcher2 {
         this.minLength = length;
     }
     
-    /**
-     * override the default maximum length of n1 - 1.
-     * @param length 
-     */
-    public void overrideMaximumLength(int length) {
-        this.maxLength = length;
-    }
-
     /**
     if this is set, the same number of points
     are used to sample both shapes.
@@ -898,8 +890,7 @@ public class PartialShapeMatcher2 {
             List<Interval<Integer>> outputIntervals = new ArrayList<Interval<Integer>>();
             List<SR> outputValues = new ArrayList<SR>();
             
-            // runtime complexity is approx O(n1 * n1) but the first n1 could be
-            //    reduced to specific read sizes instead of each interval in n1
+            // runtime complexity is approx O(n1 * lg2(n1).
             search(a, outputIntervals, outputValues, offset);
             
             if (outputValues.isEmpty()) {
@@ -1374,9 +1365,8 @@ public class PartialShapeMatcher2 {
      * and put results in outputIntervals and the sum of the chord differences
      * in outputValues.
      * 
-     * r reads is approx n1, but can be reduced.
-     runtime complexity is then n1 reads * sqrt(2) * n1 diagonal, 
-     ~ n1 * n1.
+     * r reads is approx log_2(n1), so
+     * runtime complexity is ~ log_2(n1) * n1.
         
      * @param a
      * @param outputIntervals
@@ -1405,25 +1395,21 @@ public class PartialShapeMatcher2 {
         
         SummedAreaTable st = new SummedAreaTable();
         
-        int rUpper = n1 - 1;
-        if (maxLength > -1 && maxLength < (rUpper)) {
-            rUpper = maxLength;
-        }
-        
-        // r reads is approx n1, but can be reduced
-        // runtime complexity is n1 reads * sqrt(2) * n1 diagonal, ~ n1 * n1.
         // NOTE that because of a sort operation in the invoker of this
         // method, the larger algorithm could do no better than
         //  n1 * lg2(n1) so r should not be reduced to smaller than
         //  total number of reads of log_2(n1) here.
         
-        // reducing r range to be sqrt(n1) in total could be done
-        // by changing the delta r or by visiting only
-        // 0 to sqrt(n1) and relying on later merging to find long intervals.
-        // etc
+        // wanting the total number of r reads to be log_2(n1).
+        // choosing evenly spaced intervals:
+        int nIntervals = (int)Math.ceil(Math.log(n1)/Math.log(2));
+        int dr = (n1 - minLength)/nIntervals;
+        int rUpper = n1 - 1;//(rStop - 1)*dr;
+                    
+        // runtime complexity is ~ log_2(n1) * n1.
         
         // using row major notation of a[row][col]
-        for (int r = rUpper; r >= minLength; --r) {
+        for (int r = rUpper; r >= minLength; r -= dr) {
             
             // row and col are both iDiag
             for (int iDiag = 0; iDiag < n1; ++iDiag) {
