@@ -72,17 +72,33 @@ public class Canonicalizer {
        are very fast.
     */
 
-    public static class CRegion {
+    public static class RegionGeometry {
         public int xC;
         public int yC;
         public double orientation;// determined from ellipse alpha
         public double eccentricity;
         public double minor;
         public double major;
-        public double autocorrel;
+    }
+    
+    public static class RegionPoints {
+        
+        public RegionGeometry ellipseParams;
+        
+        // NOTE: this could probably be stored more efficiently
+        /**
+         * key = transformed xOffset, yOffset,
+         * value = coordinate in the original untransformed reference frame.
+         */
+        public Set<PairInt> points;
 
-        // number of pixels in the transformed ellipse
-        public int nTrEllipsePixels;
+    }
+
+    public static class CRegion {
+        
+        public RegionGeometry ellipseParams = new RegionGeometry();
+
+        public double autocorrel;
 
         // NOTE: this could probably be stored more efficiently
         /**
@@ -93,12 +109,12 @@ public class Canonicalizer {
 
         public void draw(Image img, int nExtraDot, int rClr, int gClr, int bClr) {
 
-            double mc = Math.cos(orientation - Math.PI/2.);
-            double ms = Math.sin(orientation - Math.PI/2.);
-            int x1 = (int)Math.round(xC - major * mc);
-            int y1 = (int)Math.round(yC + major * ms);
-            int x2 = (int)Math.round(xC + major * mc);
-            int y2 = (int)Math.round(yC - major * ms);
+            double mc = Math.cos(ellipseParams.orientation - Math.PI/2.);
+            double ms = Math.sin(ellipseParams.orientation - Math.PI/2.);
+            int x1 = (int)Math.round(ellipseParams.xC - ellipseParams.major * mc);
+            int y1 = (int)Math.round(ellipseParams.yC + ellipseParams.major * ms);
+            int x2 = (int)Math.round(ellipseParams.xC + ellipseParams.major * mc);
+            int y2 = (int)Math.round(ellipseParams.yC - ellipseParams.major * ms);
             if (x1 < 0) { x1 = 0;}
             if (y1 < 0) { y1 = 0;}
             if (x2 < 0) { x2 = 0;}
@@ -111,12 +127,12 @@ public class Canonicalizer {
             ImageIOHelper.drawLineInImage(x1, y1, x2, y2, img, nExtraDot,
                 rClr, gClr, bClr);
 
-            mc = Math.cos(orientation);
-            ms = Math.sin(orientation);
-            x1 = (int)Math.round(xC + minor * mc);
-            y1 = (int)Math.round(yC - minor * ms);
-            x2 = (int)Math.round(xC - minor * mc);
-            y2 = (int)Math.round(yC + minor * ms);
+            mc = Math.cos(ellipseParams.orientation);
+            ms = Math.sin(ellipseParams.orientation);
+            x1 = (int)Math.round(ellipseParams.xC + ellipseParams.minor * mc);
+            y1 = (int)Math.round(ellipseParams.yC - ellipseParams.minor * ms);
+            x2 = (int)Math.round(ellipseParams.xC - ellipseParams.minor * mc);
+            y2 = (int)Math.round(ellipseParams.yC + ellipseParams.minor * ms);
             if (x1 < 0) { x1 = 0;}
             if (y1 < 0) { y1 = 0;}
             if (x2 < 0) { x2 = 0;}
@@ -147,9 +163,11 @@ public class Canonicalizer {
 
             String str = String.format(
                 "(%d, %d) ecc=%.3f angle=%.3f major=%d minor=%d area=%d",
-                xC, yC, (float)eccentricity, (float)orientation,
-                (int)Math.round(major), (int)Math.round(minor),
-                nTrEllipsePixels);
+                ellipseParams.xC, ellipseParams.yC, 
+                (float)ellipseParams.eccentricity, (float)ellipseParams.orientation,
+                (int)Math.round(ellipseParams.major), 
+                (int)Math.round(ellipseParams.minor),
+                offsetsToOrigCoords.size());
 
             return str;
         }
@@ -163,7 +181,7 @@ public class Canonicalizer {
         // the segmented cell label index
         public int label;
     }
-
+    
     /**
      * NOTE, for best use, invoker should use this descriptor with
      * an image processed to create a window average for each pixel.
@@ -178,9 +196,6 @@ public class Canonicalizer {
     public TIntObjectMap<CRegion> canonicalizeRegions(List<Region> regions,
         GreyscaleImage meanWindowedImg) {
 
-        int imageWidth = meanWindowedImg.getWidth();
-        int imageHeight = meanWindowedImg.getHeight();
-
         TIntObjectMap<CRegion> output = new TIntObjectHashMap<CRegion>();
 
         int[] xyCen = new int[2];
@@ -188,84 +203,290 @@ public class Canonicalizer {
         for (int i = 0; i < regions.size(); ++i) {
 
             Region r = regions.get(i);
-
-            r.calculateXYCentroid(xyCen, imageWidth, imageHeight);
-            int x = xyCen[0];
-            int y = xyCen[1];
-            assert(x >= 0 && x < imageWidth);
-            assert(y >= 0 && y < imageHeight);
-
-            //v0x, v1x, v0y, v1y
-            double[] m = r.calcParamTransCoeff();
-
-            double angle = Math.atan(m[0]/m[2]);
-            if (angle < 0) {
-                angle += Math.PI;
-            }
-
-            double major = 2. * m[4];
-            double minor = 2. * m[5];
-
-            double ecc = Math.sqrt(major * major - minor * minor)/major;
-            assert(!Double.isNaN(ecc));
-
-            PairIntArray xy = new PairIntArray();
-
-            boolean createEllipse = true;
-            double radius = minor;
-            if (radius < 4) {
-                radius = 4;
-                createEllipse = false;
-            }
-
-            if (createEllipse) {
-                // elliptical bounds
-                // find the ranges of the untransformed ellipse first
-                for (double t = 0.0; t < 2.0 * Math.PI; t += 0.001) {
-                    int xE = (int)Math.round(x +
-                        (Math.cos(t) * m[0] + Math.sin(t) * m[1]) * 2.0 + 0.5);
-                    int yE = (int)Math.round(y + (Math.cos(t) * m[2]
-                        + Math.sin(t) * m[3]) * 2.0 + 0.5);
-                    if ((xE >= 0) && (xE < imageWidth) &&
-                        (yE >= 0) && (yE < imageHeight)) {
-                        xy.add(xE, yE);
-                    }
-                }
-            } else {
-                for (double t = 0.0; t < 2.0 * Math.PI; t += 0.001) {
-                    double mc = Math.cos(t);
-                    double ms = Math.sin(t);
-                    int xE = (int)Math.round(x + (mc * radius));
-                    int yE = (int)Math.round(y + (ms * radius));
-                    if ((xE >= 0) && (xE < imageWidth) &&
-                        (yE >= 0) && (yE < imageHeight)) {
-                        xy.add(xE, yE);
-                    }
-                }
-            }
-
-            Map<PairInt, PairInt> offsetToOrigMap = createOffsetToOrigMap(x, y,
-                xy, meanWindowedImg.getWidth(), 
-                meanWindowedImg.getHeight(), angle);
-
-            double autocorrel = calcAutoCorrel(meanWindowedImg, x, y, 
-                offsetToOrigMap);
-                        
-            CRegion cRegion = new CRegion();
-            cRegion.eccentricity = ecc;
-            cRegion.offsetsToOrigCoords = offsetToOrigMap;
-            cRegion.major = major;
-            cRegion.minor = minor;
-            cRegion.orientation = angle;
-            cRegion.xC = x;
-            cRegion.yC = y;
-            cRegion.nTrEllipsePixels = offsetToOrigMap.size();
-            cRegion.autocorrel = Math.sqrt(autocorrel)/255.;
-
+            
+            CRegion cRegion = canonicalizeRegion(r, meanWindowedImg);
+            
             output.put(i, cRegion);
         }
 
         return output;
+    }
+
+    /**
+     * NOTE, for best use, invoker should use this descriptor with
+     * an image processed to create a window average for each pixel.
+       For example:
+       SummedAreaTable sumTable = new SummedAreaTable();
+       GreyscaleImage imgM = sumTable.createAbsoluteSummedAreaTable(img);
+       imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM,
+            2*halfDimension + 1);
+
+     * @return
+     */
+    public TIntObjectMap<CRegion> canonicalizeRegions3(
+        TIntObjectMap<RegionPoints> regions, GreyscaleImage img) {
+
+        TIntObjectMap<CRegion> output = new TIntObjectHashMap<CRegion>();
+
+        int[] xyCen = new int[2];
+    
+        TIntObjectIterator<RegionPoints> iter = regions.iterator();
+        for (int i = 0; i < regions.size(); ++i) {
+            iter.advance();
+            int label = iter.key();
+            RegionPoints r = iter.value();
+            
+            Map<PairInt, PairInt> offsetToOrigMap = createOffsetToOrigMap(
+                r.ellipseParams.xC, r.ellipseParams.yC,
+                Misc.convertWithoutOrder(r.points), img.getWidth(), img.getHeight(), 
+                r.ellipseParams.orientation);
+
+            CRegion cRegion = new CRegion();
+            cRegion.ellipseParams = r.ellipseParams;
+            cRegion.offsetsToOrigCoords = offsetToOrigMap;
+            
+            output.put(label, cRegion);
+        }
+
+        return output;
+    }
+    
+    /**
+     * NOTE, for best use, invoker should use this descriptor with
+     * an image processed to create a window average for each pixel.
+       For example:
+       SummedAreaTable sumTable = new SummedAreaTable();
+       GreyscaleImage imgM = sumTable.createAbsoluteSummedAreaTable(img);
+       imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM,
+            2*halfDimension + 1);
+
+     * @return
+     */
+    public TIntObjectMap<RegionPoints> canonicalizeRegions2(List<Region> regions,
+        GreyscaleImage meanWindowedImg) {
+
+        TIntObjectMap<RegionPoints> output = new TIntObjectHashMap<RegionPoints>();
+
+        int[] xyCen = new int[2];
+    
+        for (int i = 0; i < regions.size(); ++i) {
+
+            Region r = regions.get(i);
+            
+            RegionPoints cRegion = canonicalizeRegion2(r, 
+                meanWindowedImg.getWidth(), meanWindowedImg.getHeight());
+            
+            output.put(i, cRegion);
+        }
+
+        return output;
+    }
+    
+    /**
+     * NOTE, for best use, invoker should use this descriptor with
+     * an image processed to create a window average for each pixel.
+       For example:
+       SummedAreaTable sumTable = new SummedAreaTable();
+       GreyscaleImage imgM = sumTable.createAbsoluteSummedAreaTable(img);
+       imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM,
+            2*halfDimension + 1);
+
+     * @return
+     */
+    public CRegion canonicalizeRegion(Region r, GreyscaleImage meanWindowedImg) {
+
+        int imageWidth = meanWindowedImg.getWidth();
+        int imageHeight = meanWindowedImg.getHeight();
+
+        CRegion cRegion = canonicalizeRegion(r, imageWidth, imageHeight);
+
+        double autocorrel = calcAutoCorrel(meanWindowedImg, 
+            cRegion.ellipseParams.xC, cRegion.ellipseParams.yC, 
+            cRegion.offsetsToOrigCoords);
+
+        cRegion.autocorrel = Math.sqrt(autocorrel)/255.;
+
+        return cRegion;
+    }
+    
+    /**
+     * NOTE, for best use, invoker should use this descriptor with
+     * an image processed to create a window average for each pixel.
+       For example:
+       SummedAreaTable sumTable = new SummedAreaTable();
+       GreyscaleImage imgM = sumTable.createAbsoluteSummedAreaTable(img);
+       imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM,
+            2*halfDimension + 1);
+     * @param r
+     * @param imageWidth
+     * @param imageHeight
+     * @return
+     */
+    public RegionPoints canonicalizeRegion2(Region r, int imageWidth, 
+        int imageHeight) {
+
+        int[] xyCen = new int[2];
+    
+        r.calculateXYCentroid(xyCen, imageWidth, imageHeight);
+        int x = xyCen[0];
+        int y = xyCen[1];
+        assert(x >= 0 && x < imageWidth);
+        assert(y >= 0 && y < imageHeight);
+
+        //v0x, v1x, v0y, v1y
+        double[] m = r.calcParamTransCoeff();
+
+        double angle = Math.atan(m[0]/m[2]);
+        if (angle < 0) {
+            angle += Math.PI;
+        }
+
+        double major = 2. * m[4];
+        double minor = 2. * m[5];
+
+        double ecc = Math.sqrt(major * major - minor * minor)/major;
+        assert(!Double.isNaN(ecc));
+
+        PairIntArray xy = new PairIntArray();
+
+        boolean createEllipse = true;
+        double radius = minor;
+        if (radius < 4) {
+            radius = 4;
+            createEllipse = false;
+        }
+
+        if (createEllipse) {
+            // elliptical bounds
+            // find the ranges of the untransformed ellipse first
+            for (double t = 0.0; t < 2.0 * Math.PI; t += 0.001) {
+                int xE = (int)Math.round(x +
+                    (Math.cos(t) * m[0] + Math.sin(t) * m[1]) * 2.0 + 0.5);
+                int yE = (int)Math.round(y + (Math.cos(t) * m[2]
+                    + Math.sin(t) * m[3]) * 2.0 + 0.5);
+                if ((xE >= 0) && (xE < imageWidth) &&
+                    (yE >= 0) && (yE < imageHeight)) {
+                    xy.add(xE, yE);
+                }
+            }
+        } else {
+            for (double t = 0.0; t < 2.0 * Math.PI; t += 0.001) {
+                double mc = Math.cos(t);
+                double ms = Math.sin(t);
+                int xE = (int)Math.round(x + (mc * radius));
+                int yE = (int)Math.round(y + (ms * radius));
+                if ((xE >= 0) && (xE < imageWidth) &&
+                    (yE >= 0) && (yE < imageHeight)) {
+                    xy.add(xE, yE);
+                }
+            }
+        }
+        
+        fillInEllipse(xy);
+        
+        RegionGeometry rg = new RegionGeometry();
+        rg.eccentricity = ecc;
+        rg.major = major;
+        rg.minor = minor;
+        rg.orientation = angle;
+        rg.xC = x;
+        rg.yC = y;
+
+        RegionPoints regionPoints = new RegionPoints();
+        regionPoints.ellipseParams = rg;
+        regionPoints.points = Misc.convert(xy);
+        
+        return regionPoints;
+    }
+    
+    /**
+     * NOTE, for best use, invoker should use this descriptor with
+     * an image processed to create a window average for each pixel.
+       For example:
+       SummedAreaTable sumTable = new SummedAreaTable();
+       GreyscaleImage imgM = sumTable.createAbsoluteSummedAreaTable(img);
+       imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM,
+            2*halfDimension + 1);
+
+       NOTE the field utocorrelation is not clculated here and my be removed.
+    
+     * @return
+     */
+    public CRegion canonicalizeRegion(Region r, int imageWidth, int imageHeight) {
+
+        int[] xyCen = new int[2];
+    
+        r.calculateXYCentroid(xyCen, imageWidth, imageHeight);
+        int x = xyCen[0];
+        int y = xyCen[1];
+        assert(x >= 0 && x < imageWidth);
+        assert(y >= 0 && y < imageHeight);
+
+        //v0x, v1x, v0y, v1y
+        double[] m = r.calcParamTransCoeff();
+
+        double angle = Math.atan(m[0]/m[2]);
+        if (angle < 0) {
+            angle += Math.PI;
+        }
+
+        double major = 2. * m[4];
+        double minor = 2. * m[5];
+
+        double ecc = Math.sqrt(major * major - minor * minor)/major;
+        assert(!Double.isNaN(ecc));
+
+        PairIntArray xy = new PairIntArray();
+
+        boolean createEllipse = true;
+        double radius = minor;
+        if (radius < 4) {
+            radius = 4;
+            createEllipse = false;
+        }
+
+        if (createEllipse) {
+            // elliptical bounds
+            // find the ranges of the untransformed ellipse first
+            for (double t = 0.0; t < 2.0 * Math.PI; t += 0.001) {
+                int xE = (int)Math.round(x +
+                    (Math.cos(t) * m[0] + Math.sin(t) * m[1]) * 2.0 + 0.5);
+                int yE = (int)Math.round(y + (Math.cos(t) * m[2]
+                    + Math.sin(t) * m[3]) * 2.0 + 0.5);
+                if ((xE >= 0) && (xE < imageWidth) &&
+                    (yE >= 0) && (yE < imageHeight)) {
+                    xy.add(xE, yE);
+                }
+            }
+        } else {
+            for (double t = 0.0; t < 2.0 * Math.PI; t += 0.001) {
+                double mc = Math.cos(t);
+                double ms = Math.sin(t);
+                int xE = (int)Math.round(x + (mc * radius));
+                int yE = (int)Math.round(y + (ms * radius));
+                if ((xE >= 0) && (xE < imageWidth) &&
+                    (yE >= 0) && (yE < imageHeight)) {
+                    xy.add(xE, yE);
+                }
+            }
+        }
+
+        Map<PairInt, PairInt> offsetToOrigMap = createOffsetToOrigMap(x, y,
+            xy, imageWidth, imageHeight, angle);
+
+        RegionGeometry rg = new RegionGeometry();
+        rg.eccentricity = ecc;
+        rg.major = major;
+        rg.minor = minor;
+        rg.orientation = angle;
+        rg.xC = x;
+        rg.yC = y;
+
+        CRegion cRegion = new CRegion();
+        cRegion.ellipseParams = rg;
+        cRegion.offsetsToOrigCoords = offsetToOrigMap;
+
+        return cRegion;
     }
 
     /**
@@ -308,8 +529,8 @@ public class Canonicalizer {
                 int idx = iter0.key();
                 CRegion cr = iter0.value();
 
-                int xc2 = Math.round((float)cr.xC/scale);
-                int yc2 = Math.round((float)cr.yC/scale);
+                int xc2 = Math.round((float)cr.ellipseParams.xC/scale);
+                int yc2 = Math.round((float)cr.ellipseParams.yC/scale);
 
                 if (xc2 < 0 || yc2 < 0 || xc2 >= mImg.getWidth() ||
                     yc2 >= mImg.getHeight()) {
@@ -326,7 +547,7 @@ public class Canonicalizer {
                 params.setTranslationX(0);
                 params.setTranslationY(0);
                 params.setRotationInDegrees(AngleUtil.getAngleDifference(90.f,
-                    (float)(cr.orientation*180./Math.PI)));
+                    (float)(cr.ellipseParams.orientation*180./Math.PI)));
 
                 // copy and reduce structure in size by scale factor
                 Map<PairInt, PairInt> offsetMap = new HashMap<PairInt, PairInt>();
@@ -381,21 +602,23 @@ public class Canonicalizer {
                 }
                 autocorSum /= (double)nc;
 
-                double major = cr.major/scale;
-                double minor = cr.minor/scale;
+                double major = cr.ellipseParams.major/scale;
+                double minor = cr.ellipseParams.minor/scale;
 
                 double ecc = Math.sqrt(major * major - minor * minor)/major;
                 assert(!Double.isNaN(ecc));
 
+                RegionGeometry rg = new RegionGeometry();
+                rg.eccentricity = ecc;
+                rg.major = major;
+                rg.minor = minor;
+                rg.orientation = cr.ellipseParams.orientation;
+                rg.xC = xc2;
+                rg.yC = yc2;
+        
                 CRegion cRegion = new CRegion();
-                cRegion.eccentricity = ecc;
+                cRegion.ellipseParams = rg;
                 cRegion.offsetsToOrigCoords = offsetMap;
-                cRegion.major = major;
-                cRegion.minor = minor;
-                cRegion.orientation = cr.orientation;
-                cRegion.xC = xc2;
-                cRegion.yC = yc2;
-                cRegion.nTrEllipsePixels = offsetMap.size();
                 cRegion.autocorrel = Math.sqrt(autocorSum)/255.;
 
                 crMap.put(idx, cRegion);
@@ -488,7 +711,7 @@ public class Canonicalizer {
             iter.advance();
             int rIdx = iter.key();
             CRegion cr = iter.value();
-            PairInt p = new PairInt(cr.xC, cr.yC);
+            PairInt p = new PairInt(cr.ellipseParams.xC, cr.ellipseParams.yC);
             assert(pointLabelMap.containsKey(p));
             int label = pointLabelMap.get(p);
 
@@ -533,7 +756,7 @@ public class Canonicalizer {
 
                 double w = (double)n/(double)nTotal;
 
-                avgOrientation += (w * cr.orientation);
+                avgOrientation += (w * cr.ellipseParams.orientation);
             }
 
             // create a Region to use the accumulate method
@@ -575,15 +798,18 @@ public class Canonicalizer {
                 xy, imgWidth, imgHeight, angle);
             
             double autocorrel = calcAutoCorrel(img, x, y, offsetMap);
-            
+           
+            RegionGeometry rg = new RegionGeometry();
+            rg.eccentricity = ecc;
+            rg.major = major;
+            rg.minor = minor;
+            rg.orientation = angle;
+            rg.xC = x;
+            rg.yC = y;
+                
             CSRegion csRegion = new CSRegion();
             csRegion.label = label;
-            csRegion.orientation = angle;
-            csRegion.eccentricity = ecc;
-            csRegion.major = major;
-            csRegion.minor = minor;
-            csRegion.xC = x;
-            csRegion.yC = y;
+            csRegion.ellipseParams = rg;
             csRegion.offsetsToOrigCoords = offsetMap;
             csRegion.autocorrel = Math.sqrt(autocorrel)/255.;
             

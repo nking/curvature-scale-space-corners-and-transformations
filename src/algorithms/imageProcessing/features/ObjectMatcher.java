@@ -1,7 +1,5 @@
 package algorithms.imageProcessing.features;
 
-import algorithms.MultiArrayMergeSort;
-import algorithms.QuickSort;
 import algorithms.compGeometry.FurthestPair;
 import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.ColorHistogram;
@@ -18,6 +16,7 @@ import algorithms.imageProcessing.TrimmedImage;
 import algorithms.imageProcessing.VanishingPoints;
 import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
+import algorithms.imageProcessing.features.mser.Canonicalizer.RegionPoints;
 import algorithms.imageProcessing.features.mser.MSER;
 import algorithms.imageProcessing.features.mser.Region;
 import algorithms.imageProcessing.matching.MSERMatcher;
@@ -374,7 +373,8 @@ public class ObjectMatcher {
     }
 
     private void mergeRegionsAndSegmentation(List<Set<PairInt>> labeledSets, 
-        TIntObjectMap<CRegion> cRegions, GreyscaleImage gsImg, GreyscaleImage luvTheta) {
+        TIntObjectMap<RegionPoints> cRegions, GreyscaleImage gsImg, 
+        GreyscaleImage luvTheta, boolean replaceWithLabels) {
 
         TObjectIntMap<PairInt> pointLabelMap = new TObjectIntHashMap<PairInt>();
         for (int i = 0; i < labeledSets.size(); ++i) {
@@ -387,49 +387,45 @@ public class ObjectMatcher {
         
         TIntSet skipRegions = new TIntHashSet();
         
-        TIntObjectIterator<CRegion> iter = cRegions.iterator();
+        TIntObjectIterator<RegionPoints> iter = cRegions.iterator();
         for (int i = 0; i < cRegions.size(); ++i) {
             iter.advance();
             
             int rIdx = iter.key();
-            CRegion cr = iter.value();
+            RegionPoints cr = iter.value();
             
             int nLabeled = 0;
            
             // for the purpose of removing a labeled region that does not
-            // belong in the offsets, need to store the offset keys
+            // belong in the points, need to store the points keys
             // associated w/ a label for each cRegion in order to remove them
-            TIntObjectMap<Set<PairInt>> labelOffsetKeys 
+            TIntObjectMap<Set<PairInt>> labelPointKeys 
                 = new TIntObjectHashMap<Set<PairInt>>();
+            
+            // only used if replace is true
+            TIntSet rmLabel = new TIntHashSet();
             
             //key=label, nPoints in label
             TIntIntMap labelInRegion = new TIntIntHashMap();
-            for (Entry<PairInt, PairInt> entry : 
-                cr.offsetsToOrigCoords.entrySet()) {
+            for (PairInt p : cr.points) {
                 
-                // points in the region, rotated by orientation.
-                // NOTE that if the orientation is as extreme as 45 degrees,
-                // there may be "holes" in every other point due to rotation
-                // and overlapping
-                PairInt trXY = entry.getValue();
-            
-                if (!pointLabelMap.containsKey(trXY)) {
+                if (!pointLabelMap.containsKey(p)) {
                     continue;
                 }
                 
-                int label = pointLabelMap.get(trXY);
+                int label = pointLabelMap.get(p);
                 if (labelInRegion.containsKey(label)) {
                     labelInRegion.put(label, labelInRegion.get(label) + 1);
                 } else {
                     labelInRegion.put(label, 1);
                 }
                 
-                Set<PairInt> offsetKeys = labelOffsetKeys.get(label);
-                if (offsetKeys == null) {
-                    offsetKeys = new HashSet<PairInt>();
-                    labelOffsetKeys.put(label, offsetKeys);
+                Set<PairInt> pointKeys = labelPointKeys.get(label);
+                if (pointKeys == null) {
+                    pointKeys = new HashSet<PairInt>();
+                    labelPointKeys.put(label, pointKeys);
                 }
-                offsetKeys.add(entry.getKey());
+                pointKeys.add(p);
                 
                 nLabeled++;
             }
@@ -438,14 +434,14 @@ public class ObjectMatcher {
             //   and percentage of label inside cr
             //   and percentage of cr unassigned.
         
-            float nInRegion = cr.offsetsToOrigCoords.size();
+            float nInRegion = cr.points.size();
             
             float fUnassigned = (nInRegion - (float)nLabeled)/nInRegion;
             if (fUnassigned > 0.3333) {
                 // missing a labeled region which was removed
                 System.out.println("fraction unassigned=" + fUnassigned);
                 skipRegions.add(rIdx);
-                continue;
+                break;
             }
             
             //Image tmp = gsImg.copyToColorGreyscale();
@@ -479,45 +475,55 @@ public class ObjectMatcher {
                 //int[] clr = ImageIOHelper.getNextRGB(j);
                 //Set<PairInt> set = labeledSets.get(label);
                 //ImageIOHelper.addCurveToImage(set, tmp, 0, clr[0], clr[1], clr[2]);
-                
-                // if the labeled segmentation is relatively complete for
-                // the object but the mser regions are oversegmented,
-                // this can lead to removing a region that should be kept
-                /*if ((fRegion > 0.3) && (fOutside > 0.4)) {
-                    System.out.println("removing region" + " cr.x,y=" + cr.xC + "," + cr.yC);
-                    skipRegions.add(rIdx);
-                    continue;
-                }*/
-                
+               
                 //TODO: this needs revision...it is resolution (and scale) sensitive
                 if ((nInRegion < 100 && fOutside > 0.45) || 
                     (nInRegion >= 100 && fOutside > 0.16)) {
                     System.out.println("removing label cen=" + labelXY);
                     // remove the offset points from the cRegion's offsets
-                    for (PairInt rm : labelOffsetKeys.get(label)) {
-                        cr.offsetsToOrigCoords.remove(rm);
+                    for (PairInt rm : labelPointKeys.get(label)) {
+                        cr.points.remove(rm);
                     }
+                    rmLabel.add(label);
                 } else {
                    // int[] clr = ImageIOHelper.getNextRGB(j);
                    // Set<PairInt> set = labeledSets.get(label);
                    // ImageIOHelper.addCurveToImage(set, tmp, 0, clr[0], clr[1], clr[2]);
                 }
                 
-                //TODO: consider moving boundary inward to nearest egmentation
+                //TODO: if not replacing, consider moving boundary inward to nearest segmentation
                 //   bounds and then trimming labels external to the new
                 //   moved boundary
                 
-                if (cr.offsetsToOrigCoords.isEmpty()) {
-                    //System.out.println("removing empty region " + rIdx);
-                    skipRegions.add(rIdx);
-                }
             }
+            
+            if (cr.points.isEmpty()) {
+                //System.out.println("removing empty region " + rIdx);
+                skipRegions.add(rIdx);
+                continue;
+            }
+            
+            if (replaceWithLabels) {
+                cr.points.clear();
+                iter2 = labelInRegion.iterator();
+                for (int j = 0; j < labelInRegion.size(); ++j) {
+                    iter2.advance();
+                    int label = iter2.key();
+                    if (rmLabel.contains(label)) {
+                        continue;
+                    }
+                    cr.points.addAll(labeledSets.get(label));
+                }
+                //TODO: consider re-doing x,y center
+            }
+            
             /*
             String lbl = Integer.toString(rIdx);
             if (lbl.length() < 4) {
                 lbl = "0" + lbl;
             } 
-            MiscDebug.writeImage(tmp, "_" + lbl);*/
+            MiscDebug.writeImage(tmp, "_" + lbl);
+            */
             
         } // end loop over regions
         
@@ -529,10 +535,36 @@ public class ObjectMatcher {
         while (iter2.hasNext()) {
             int rmIdx = iter2.next();
             cRegions.remove(rmIdx);
-        } 
-       
-        //TODO: consider merging the labels within a cRegion if ellipse boundary
-        //  was moved to match inner segmentation boundaries.
+        }        
+    }
+
+    private void applyWindowedMean(List<List<GreyscaleImage>> pyr, int halfDimension) {
+
+        SummedAreaTable sumTable = new SummedAreaTable();
+        
+        for (int i = 0; i < pyr.size(); ++i) {
+            List<GreyscaleImage> imgMs = pyr.get(i);
+            for (int j = 0; j < imgMs.size(); ++j) {
+                GreyscaleImage imgM = imgMs.get(j);
+                imgM = sumTable.createAbsoluteSummedAreaTable(imgM);
+                imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM,
+                    2 * halfDimension + 1);
+                imgMs.set(j, imgM);
+            }
+        }
+    }
+    
+    private void applyWindowedMean2(List<GreyscaleImage> pyr, int halfDimension) {
+
+        SummedAreaTable sumTable = new SummedAreaTable();
+        
+        for (int i = 0; i < pyr.size(); ++i) {
+            GreyscaleImage imgM = pyr.get(i);
+            imgM = sumTable.createAbsoluteSummedAreaTable(imgM);
+            imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM,
+                2 * halfDimension + 1);
+            pyr.set(i, imgM);
+        }
     }
 
     public static class Settings {
@@ -1397,7 +1429,16 @@ public class ObjectMatcher {
         List<Region> regionsComb1 = createCombinedMSERRegions(gsImg1, luvTheta1);
 
         // these are in the trimmed reference frame
+        //NOTE: need segmentation for shape0 in order to find partial
+        //   object when composed of very different parts, such as the
+        //   cupcake cup and frosting, so don't condense to 1 label composed of shape0
         TIntObjectMap<Set<PairInt>> labeledSets0 = segment(img0Trimmed, shape0Trimmed);
+        List<Set<PairInt>> labeledSets0List = new ArrayList<Set<PairInt>>();
+        TIntObjectIterator<Set<PairInt>> iter = labeledSets0.iterator();
+        for (int i = 0; i < labeledSets0.size(); ++i) {
+            iter.advance();
+            labeledSets0List.add(iter.value());
+        }
 
         // filter regions by segmentation
         List<Set<PairInt>> labeledSets1 = filterBySegmentation2(
@@ -1417,6 +1458,11 @@ public class ObjectMatcher {
         List<GreyscaleImage> pyrPT1 = imageProcessor
             .buildPyramid(luvTheta1, settings.useLargerPyramid0);
        
+        applyWindowedMean(pyrRGB0, 1);
+        applyWindowedMean(pyrRGB1, 1);
+        applyWindowedMean2(pyrPT0, 1);
+        applyWindowedMean2(pyrPT1, 1);
+        
         Canonicalizer canonicalizer = new Canonicalizer();
 
         // ----- create the cRegions for a masked image pyramid of img 0 ====
@@ -1464,22 +1510,26 @@ public class ObjectMatcher {
         //regions[0) are found from the image,
         // while regions[1) are found from the inverted image.
         // they're kept separate for now to test matching them separately.
-        TIntObjectMap<CRegion> cRegions0 =
-            canonicalizer.canonicalizeRegions(regionsComb0,
-                pyrRGB0.get(0).get(1));
+        TIntObjectMap<RegionPoints> regionPoints0 =
+            canonicalizer.canonicalizeRegions2(regionsComb0, pyrRGB0.get(0).get(1));
 
-        TIntObjectMap<CRegion> cRegions1 =
-            canonicalizer.canonicalizeRegions(regionsComb1,
-                pyrRGB1.get(0).get(1));
-
-        mergeRegionsAndSegmentation(labeledSets1, cRegions1, gsImg1, luvTheta1);
-
-        //boolean applyAutoCorrFilter = true;
-        //if (applyAutoCorrFilter) {
-        //    double minAutoCor = findMinAutoCorrel(cRegions0);
-        //    removeSmallAutoCorrel2(cRegions1, minAutoCor, 0.75f);
-        //}
-
+        TIntObjectMap<RegionPoints> regionPoints1 =
+            canonicalizer.canonicalizeRegions2(regionsComb1, pyrRGB1.get(0).get(1));
+   
+        // these have been filtered to remove excess labeled points where possible.
+        // and if last variable is true, the points have been 
+        // replaced with filtered segmented label points instead of the ellipse
+        mergeRegionsAndSegmentation(labeledSets0List, regionPoints0, gsImg0, luvTheta0,
+            true);
+        
+        mergeRegionsAndSegmentation(labeledSets1, regionPoints1, gsImg1, luvTheta1, true);
+        
+        TIntObjectMap<CRegion> cRegions0 = canonicalizer.canonicalizeRegions3(
+            regionPoints0, pyrRGB0.get(0).get(1));
+        
+        TIntObjectMap<CRegion> cRegions1 = canonicalizer.canonicalizeRegions3(
+            regionPoints1, pyrRGB1.get(0).get(1));
+      
         if (debug) {
             debugPrint2(cRegions0, pyrRGB0.get(0), "_cr_0_");
             //debugPrint2(cRegions1, pyrRGB1.get(0), "_cr_1_");
@@ -1491,14 +1541,6 @@ public class ObjectMatcher {
 
         if (debug) {
             matcher.setToDebug();
-        }
-
-        // change from map to list
-        List<Set<PairInt>> labeledSets0List = new ArrayList<Set<PairInt>>();
-        TIntObjectIterator<Set<PairInt>> iter = labeledSets0.iterator();
-        for (int i = 0; i < labeledSets0.size(); ++i) {
-            iter.advance();
-            labeledSets0List.add(iter.value());
         }
 
         List<CorrespondenceList> corList = matcher.matchObject2(

@@ -41,8 +41,6 @@ import thirdparty.edu.princeton.cs.algs4.Interval;
 import thirdparty.edu.princeton.cs.algs4.IntervalRangeSearch;
 
 /**
- NOTE: NOT READY FOR USE YET... still testing.
-
 <pre>
 based upon algorithm in paper
  "Efficient Partial Shape Matching
@@ -102,8 +100,8 @@ based upon algorithm in paper
        The runtime complexity for the search of the
        integral image of summed differences and analysis,
        is n2 * (O(n1 * lg2(n1)).
-       
  </pre>
+ 
  <em>NOTE: You may need to pre-process the shape points
      for example, smooth the boundary.</em>
     
@@ -129,7 +127,7 @@ public class PartialShapeMatcher2 {
      * points.
      * dp is the set distance between sampling points.
        The authors of the paper use 3 as an example.
-     */
+    */
     protected int dp = 3;
 
     private boolean useSameNumberOfPoints = false;
@@ -762,7 +760,6 @@ public class PartialShapeMatcher2 {
     }
     
     /**
-     * NOT READY FOR USE
      * 
      * as an alternative to finding the best correspondence between two
      * shapes, instead, given the correspondence, sum the chord differences.

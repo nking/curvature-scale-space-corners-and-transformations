@@ -1,13 +1,13 @@
 package algorithms.imageProcessing.matching;
 
-import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
+import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.ImageSegmentation;
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.features.CorrespondenceList;
 import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
@@ -20,11 +20,9 @@ import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.search.NearestNeighbor2D;
-import algorithms.util.CorrespondencePlotter;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.QuadInt;
-import algorithms.util.TrioInt;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TFloatList;
@@ -32,25 +30,23 @@ import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntFloatMap;
+import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TIntFloatHashMap;
+import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.awt.Color;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
@@ -250,15 +246,15 @@ public class MSERMatcher {
                         float factor = 4;
                         if (true) {
                             double t1, t2;
-                            if (cr0.minor > cr1.minor) {
-                                t1 = cr0.minor/cr1.minor;
+                            if (cr0.ellipseParams.minor > cr1.ellipseParams.minor) {
+                                t1 = cr0.ellipseParams.minor/cr1.ellipseParams.minor;
                             } else {
-                                t1 = cr1.minor/cr0.minor;
+                                t1 = cr1.ellipseParams.minor/cr0.ellipseParams.minor;
                             }
-                            if (cr0.major > cr1.major) {
-                                t2 = cr0.major/cr1.major;
+                            if (cr0.ellipseParams.major > cr1.ellipseParams.major) {
+                                t2 = cr0.ellipseParams.major/cr1.ellipseParams.major;
                             } else {
-                                t2 = cr1.major/cr0.major;
+                                t2 = cr1.ellipseParams.major/cr0.ellipseParams.major;
                             }
                             if (t1 > factor || t2 > factor) {
                                 /*
@@ -376,17 +372,20 @@ public class MSERMatcher {
                                 String str1 = String.format(
                                     "im0=%d im1=%d (%d,%d) (%d,%d) or1=%d or2=%d\n",
                                     imgIdx0, imgIdx1,
-                                    Math.round((float)cr0.xC*scale0),
-                                    Math.round((float)cr0.yC*scale0),
-                                    Math.round((float)cr1.xC*scale1),
-                                    Math.round((float)cr1.yC*scale1),
-                                    (int)(cr0.orientation*180./Math.PI),
-                                    (int)(cr1.orientation*180./Math.PI));
+                                    Math.round((float)cr0.ellipseParams.xC*scale0),
+                                    Math.round((float)cr0.ellipseParams.yC*scale0),
+                                    Math.round((float)cr1.ellipseParams.xC*scale1),
+                                    Math.round((float)cr1.ellipseParams.yC*scale1),
+                                    (int)(cr0.ellipseParams.orientation*180./Math.PI),
+                                    (int)(cr1.ellipseParams.orientation*180./Math.PI));
                                 String str2 = String.format(
                                     "   ecc0=%.2f ecc1=%.2f min0=%.2f min1=%.2f maj0=%.2f maj1=%.2f\n",
-                                    (float) cr0.eccentricity, (float) cr1.eccentricity,
-                                    (float) cr0.minor, (float) cr1.minor,
-                                    (float) cr0.major, (float) cr1.major);
+                                    (float) cr0.ellipseParams.eccentricity, 
+                                    (float) cr1.ellipseParams.eccentricity,
+                                    (float) cr0.ellipseParams.minor, 
+                                    (float) cr1.ellipseParams.minor,
+                                    (float) cr0.ellipseParams.major, 
+                                    (float) cr1.ellipseParams.major);
                                 String str3 = String.format(
                                     "   ssd=%.2f autoc=%.2f,%.2f f=%.3f c=%.3f ssd.n=%d added=%b",
                                     (float) ssdSum,
@@ -558,8 +557,10 @@ public class MSERMatcher {
                 int n = vector.getNumberOfItems();
                 for (int jj = 0; jj < n; ++jj) {
                     Obj obj = vector.getArray()[jj];
-                    PairInt p0 = new PairInt(obj.cr0.xC, obj.cr0.yC);
-                    PairInt p1 = new PairInt(obj.cr1.xC, obj.cr1.yC);
+                    PairInt p0 = new PairInt(obj.cr0.ellipseParams.xC, 
+                        obj.cr0.ellipseParams.yC);
+                    PairInt p1 = new PairInt(obj.cr1.ellipseParams.xC, 
+                        obj.cr1.ellipseParams.yC);
 
                     assert(obj.imgIdx0 == imgIdx0);
                     assert(obj.imgIdx1 == imgIdx1);
@@ -789,7 +790,7 @@ public class MSERMatcher {
         TIntObjectMap<CRegion> cRegions0, List<Set<PairInt>> labeledSets0,
         List<List<GreyscaleImage>> pyrRGB1, List<GreyscaleImage> pyrPT1,
         TIntObjectMap<CRegion> cRegions1, List<Set<PairInt>> labeledSets1) {
-
+        
         int distTol = 5;//10;
 
         GreyscaleImage rgb0 = combineImages(pyrRGB0.get(0));
@@ -816,6 +817,11 @@ public class MSERMatcher {
 
         NearestNeighbor2D nn1 = createNN(labeledSets1);
 
+        TIntObjectMap<PairInt> xyCenLabel0 = createCentroidMap(labeledSets0);
+        TIntObjectMap<PairInt> xyCenLabel1 = createCentroidMap(labeledSets1);
+        TIntIntMap labelSizes0 = calculateLabelSizes(labeledSets0);
+        TIntIntMap labelSizes1 = calculateLabelSizes(labeledSets1);
+        
         Canonicalizer canonicalizer = new Canonicalizer();
 
         // NOTE auto correlation is based on rgb rather than polar theta cie luv
@@ -856,6 +862,11 @@ public class MSERMatcher {
         int w1 = pyrPT1.get(0).getWidth();
         int h1 = pyrPT1.get(0).getHeight();
 
+        int dMax = 3;
+        
+        // octave to octave comparisons
+        List<List<Obj>> results = new ArrayList<List<Obj>>();
+        
         for (int imgIdx0 = 0; imgIdx0 < n0; ++imgIdx0) {
 
             GreyscaleImage gsI0 = combineImages(pyrRGB0.get(imgIdx0));
@@ -888,54 +899,51 @@ public class MSERMatcher {
                 }
 
                 // cost is ssd rgb + ssd ptcieluv + fract^2
-                FixedSizeSortedVector<Obj> bA = new
-                    FixedSizeSortedVector<Obj>(top2, Obj.class);
-
-                // cost is ssd rgb + ssd ptcieluv
-                FixedSizeSortedVector<Obj> bB = new
+                FixedSizeSortedVector<Obj> b = new
                     FixedSizeSortedVector<Obj>(top2, Obj.class);
 
                 search(getOrCreate(csr0, imgIdx0, gsI0, scale0),
                     gsI0, ptI0, scale0, imgIdx0,
                     getOrCreate(csr1, imgIdx1, gsI1, scale1),
-                    gsI1, ptI1, scale1, imgIdx1,
-                    bA, bB);
+                    gsI1, ptI1, scale1, imgIdx1, b);
 
+                // NOTE: this possibly needs revision.
+                // looking for expected adjacent matches to a point whether
+                //   in another obj point or in the segmentation boundaries.
+                //   if not one adjacent is found in either, the point is not kept.                
+                
+                // lists of matches consistent with adjacency and scale
+                /*List<List<Obj>> sortedFilteredBestR = filterForAdjacency(
+                    b, pointLabelMap0, pointLabelMap1, 
+                    labeledSets0, labeledSets1,
+                    adjMap0, adjMap1,
+                    nn0, nn1,
+                    xyCenLabel0, xyCenLabel1,
+                    labelSizes0, labelSizes1,
+                    gsI0, gsI1, ptI0, ptI1,
+                    scale0, scale1, imgIdx0, imgIdx1, distTol);
+                
+                if (sortedFilteredBestR == null) {
+                    continue;
+                }*/
+                
+                //results.add(sortedFilteredBestR);
+                               
                 /*
-                for some of the tests, only one mser (though sometimes a large
-                mser) is present for the true matched object in ddtaset2,
-                so cannot require a geometric evaluation here which helps to
-                filter the list to smaller numbers.
-                -- as an alternate list, will proceed with this.
-                   assuming that there are at least 2 adjacent mser
-                   regions, only keep if the separation in dataset1 and
-                   dataset2 are the same.
-                -- all lists may need a shape comparison as another cost to
-                   add to the total cost
+                -- if needed, for the remaining, a partial shape match 
+                    can be added to the cost
                 */
-
-                for (int ij = 0; ij < 2; ++ij) {
-                    FixedSizeSortedVector<Obj> b;
-                    String lbl;
-                    if (ij == 0) {
-                        b = bA;
-                        lbl = "bA";
-                    } else {
-                        b = bB;
-                        lbl = "bB";
-                    }
-                    int n3 = b.getNumberOfItems();
-                    for (int k = 0; k < n3; ++k) {
-                        Obj obj = b.getArray()[k];
-                        System.out.format(
-                            "I (%d,%d) (%d,%d) im0=%d im1=%d c=%.3f n=%d\n",
-                            Math.round(scale0 * obj.cr0.xC),
-                            Math.round(scale0 * obj.cr0.yC),
-                            Math.round(scale1 * obj.cr1.xC),
-                            Math.round(scale1 * obj.cr1.yC),
-                            obj.imgIdx0, obj.imgIdx1, (float)obj.cost,
-                            obj.nMatched);
-                    }
+                
+                for (int k = 0; k < b.getNumberOfItems(); ++k) {
+                    Obj obj = b.getArray()[k];
+                    System.out.format(
+                        "I (%d,%d) (%d,%d) im0=%d im1=%d c=%.3f n=%d\n",
+                        Math.round(scale0 * obj.cr0.ellipseParams.xC),
+                        Math.round(scale0 * obj.cr0.ellipseParams.yC),
+                        Math.round(scale1 * obj.cr1.ellipseParams.xC),
+                        Math.round(scale1 * obj.cr1.ellipseParams.yC),
+                        obj.imgIdx0, obj.imgIdx1, (float)obj.cost,
+                        obj.nMatched);
                 }
             }
 
@@ -1011,12 +1019,12 @@ public class MSERMatcher {
             double autocorrel = Canonicalizer.calcAutoCorrel(rgb, x, y, offsetMap);
 
             CSRegion csRegion = new CSRegion();
-            csRegion.orientation = angle;
-            csRegion.eccentricity = ecc;
-            csRegion.major = major;
-            csRegion.minor = minor;
-            csRegion.xC = x;
-            csRegion.yC = y;
+            csRegion.ellipseParams.orientation = angle;
+            csRegion.ellipseParams.eccentricity = ecc;
+            csRegion.ellipseParams.major = major;
+            csRegion.ellipseParams.minor = minor;
+            csRegion.ellipseParams.xC = x;
+            csRegion.ellipseParams.yC = y;
             csRegion.offsetsToOrigCoords = offsetMap;
             csRegion.autocorrel = Math.sqrt(autocorrel)/255.;
 
@@ -1081,7 +1089,7 @@ public class MSERMatcher {
         for (int i = 0; i < crMap.size(); ++i) {
             iter.advance();
             CRegion cr = iter.value();
-            output.put(new PairInt(cr.xC, cr.yC), cr);
+            output.put(new PairInt(cr.ellipseParams.xC, cr.ellipseParams.yC), cr);
         }
 
         return output;
@@ -1120,8 +1128,8 @@ public class MSERMatcher {
                 int z = 0;
             }
 
-            int n0 = cr0.nTrEllipsePixels;
-            int n1 = cr1.nTrEllipsePixels;
+            int n0 = cr0.offsetsToOrigCoords.size();
+            int n1 = cr1.offsetsToOrigCoords.size();
 
             int maxMatchable = Math.min(n0, n1);
 
@@ -1244,7 +1252,7 @@ public class MSERMatcher {
         for (int i = 0; i < cRegions.size(); ++i) {
             iter.advance();
             CRegion cr = iter.value();
-            PairInt p = new PairInt(cr.xC, cr.yC);
+            PairInt p = new PairInt(cr.ellipseParams.xC, cr.ellipseParams.yC);
             unique.add(p);
         }
 
@@ -1299,7 +1307,7 @@ public class MSERMatcher {
         GreyscaleImage rgb0, GreyscaleImage pt0, float scale0, int imgIdx0,
         TIntObjectMap<CSRegion> csr1,
         GreyscaleImage rgb1, GreyscaleImage pt1, float scale1, int imgIdx1,
-        FixedSizeSortedVector<Obj> bA, FixedSizeSortedVector<Obj> bB) {
+        FixedSizeSortedVector<Obj> b) {
 
         // coords are in the individual octave reference frames
 
@@ -1318,7 +1326,7 @@ public class MSERMatcher {
                 continue;
             }
 
-            double majA = csrA.major;
+            double majA = csrA.ellipseParams.major;
 
             TIntObjectIterator<CSRegion> iter1 = csr1.iterator();
             for (int j = 0; j < csr1.size(); ++j) {
@@ -1334,14 +1342,16 @@ public class MSERMatcher {
                 // this method is used in pyramid scaled comparisons,
                 // so we expect that similar objects have similar size.
                 // NOTE: this filter may need adjustment.
-                double majB = csrB.major;
+                double majB = csrB.ellipseParams.major;
                 if ((majA > majB && (majA/majB) > factor) ||
                     (majB > majA && (majB/majA) > factor)) {
 
                     System.out.format(
                         "RMVD (%d,%d) (%d,%d) im0=%d im1=%d maj0=%.3f, maj1=%.2f\n\n",
-                        csrA.xC, csrA.yC, csrB.xC, csrB.yC,
-                        imgIdx0, imgIdx1, (float)csrA.major, (float)csrB.major);
+                        csrA.ellipseParams.xC, csrA.ellipseParams.yC, 
+                        csrB.ellipseParams.xC, csrB.ellipseParams.yC,
+                        imgIdx0, imgIdx1, (float)csrA.ellipseParams.major, 
+                        (float)csrB.ellipseParams.major);
 
                     continue;
                 } /*else {
@@ -1374,7 +1384,7 @@ public class MSERMatcher {
                 obj.ssd = costs[0] + costs[1];
                 obj.nMatched = (int)costs[4];
                 obj.cost = costs[0] + costs[1] + costs[2];
-                boolean addedA = bA.add(obj);
+                boolean addedA = b.add(obj);
 
                 if (addedA) {
                     if (costs[4] > maxArea) {
@@ -1382,21 +1392,12 @@ public class MSERMatcher {
                     }
                 }
 
-                obj = new Obj();
-                obj.cr0 = csrA;
-                obj.cr1 = csrB;
-                obj.imgIdx0 = imgIdx0;
-                obj.imgIdx1 = imgIdx1;
-                obj.ssd = costs[0] + costs[1];
-                obj.nMatched = (int)costs[4];
-                obj.cost = costs[0] + costs[1];
-                boolean addedB = bB.add(obj);
-
                 System.out.format(
-                    "(%d,%d) (%d,%d) im0=%d im1=%d c=%.3f (%.3f,%.3f) added=%b,%b\n",
-                    csrA.xC, csrA.yC, csrB.xC, csrB.yC,
+                    "(%d,%d) (%d,%d) im0=%d im1=%d c=%.3f (%.3f,%.3f) added=%b\n",
+                    csrA.ellipseParams.xC, csrA.ellipseParams.yC, 
+                    csrB.ellipseParams.xC, csrB.ellipseParams.yC,
                     imgIdx0, imgIdx1, (float)obj.cost,
-                    (float)costs[0], (float)costs[1], addedA, addedB);
+                    (float)costs[0], (float)costs[1], addedA);
             }
         }
 
@@ -1404,11 +1405,11 @@ public class MSERMatcher {
         //  entries with new ordered list
         
         FixedSizeSortedVector<Obj> bA2 
-            = new FixedSizeSortedVector<Obj>(bA.getFixedCapacity(), Obj.class);
+            = new FixedSizeSortedVector<Obj>(b.getFixedCapacity(), Obj.class);
         
-        int n = bA.getNumberOfItems(); 
+        int n = b.getNumberOfItems(); 
         for (int i = 0; i < n; ++i) {
-            Obj obj = bA.getArray()[i];
+            Obj obj = b.getArray()[i];
             double ssd2 = obj.cost - obj.ssd;
             float f = 1.f - ((float)obj.nMatched/maxArea);
             obj.cost = ssd2 + f;
@@ -1416,7 +1417,7 @@ public class MSERMatcher {
         }
         
         for (int i = 0; i < n; ++i) {
-            bA.getArray()[i] = bA2.getArray()[i];
+            b.getArray()[i] = bA2.getArray()[i];
         }
         
     }
@@ -1550,29 +1551,41 @@ public class MSERMatcher {
      * @param imgIdx1
      * @return
      */
-    private List<List<Obj>> filterForAdjacency(FixedSizeSortedVector<Obj> bestR,
-        TObjectIntMap<PairInt> pointLabelMap0,
-        TObjectIntMap<PairInt> pointLabelMap1,
-        TIntObjectMap<VeryLongBitString> adjMap0,
-        TIntObjectMap<VeryLongBitString> adjMap1,
+    private List<List<Obj>> filterForAdjacency(
+        FixedSizeSortedVector<Obj> bestR,
+        TObjectIntMap<PairInt> pointLabelMap0, TObjectIntMap<PairInt> pointLabelMap1,
+        List<Set<PairInt>> labelSets0, List<Set<PairInt>> labelSets1,
+        TIntObjectMap<VeryLongBitString> adjMap0, TIntObjectMap<VeryLongBitString> adjMap1,
         NearestNeighbor2D nn0, NearestNeighbor2D nn1,
-        float scale0, float scale1, int imgIdx0, int imgIdx1,
-        int distTol) {
-
+        TIntObjectMap<PairInt> xyCenLabel0, TIntObjectMap<PairInt> xyCenLabel1,
+        TIntIntMap labelSizes0, TIntIntMap labelSizes1,
+        GreyscaleImage rgb0, GreyscaleImage rgb1,
+        GreyscaleImage pt0, GreyscaleImage pt1,
+        float scale0, float scale1, 
+        int imgIdx0, int imgIdx1, int distTol) {
+        
+//TODO: edit this...the CRegions now hold multiple labels
+// in them
+        
         if (bestR.getNumberOfItems() == 0) {
             return null;
-        } else if (bestR.getNumberOfItems() == 1) {
-            List<List<Obj>> out = new ArrayList<List<Obj>>();
-            List<Obj> out2 = new ArrayList<Obj>();
-            out.add(out2);
-            out2.add(bestR.getArray()[0]);
-            return out;
         }
-
-        // ---- create lists of pairs from bestR that are consistent with
-        //      adjacency and with separation being
-        //      approximately the same in the right image scales
-
+        
+        if (adjMap0.size() == 1) {
+            List<Obj> out = new ArrayList<Obj>();
+            for (int i = 0; i < bestR.getArray().length; ++i) {
+                out.add(bestR.getArray()[i]);
+            }
+            List<List<Obj>> out2 = new ArrayList<List<Obj>>();
+            out2.add(out);
+            return out2;
+        }
+        
+        int imgWidth0 = rgb0.getWidth();
+        int imgHeight0 = rgb0.getHeight();
+        int imgWidth1 = rgb1.getWidth();
+        int imgHeight1 = rgb1.getHeight();
+        
         // these are in octave coord frames
         //key = unique xyCen0, value = index in lists
         TObjectIntMap<PairInt> xyCen0Indexes = new TObjectIntHashMap<PairInt>();
@@ -1581,7 +1594,7 @@ public class MSERMatcher {
         int n = bestR.getNumberOfItems();
         for (int i = 0; i < n; ++i) {
             Obj obj = bestR.getArray()[i];
-            PairInt p = new PairInt(obj.cr0.xC, obj.cr0.yC);
+            PairInt p = new PairInt(obj.cr0.ellipseParams.xC, obj.cr0.ellipseParams.yC);
             if (!xyCen0Indexes.containsKey(p)) {
                 int sz = xyCen0Indexes.size();
                 xyCen0s.add(p);
@@ -1609,7 +1622,7 @@ public class MSERMatcher {
         int dMax = 2;
 
         float factor = 1.3f;
-
+        
         // List<List<Obj>> xyCen0Objs, index=unique first, item=list of
         //      first mapped to a dataset1 point
 
@@ -1619,105 +1632,71 @@ public class MSERMatcher {
 
             for (int j = (i + 1); j < xyCen0Objs.size(); ++j) {
 
-                List<Obj> listJ = xyCen0Objs.get(j);
-
                 for (int ii = 0; ii < listI.size(); ++ii) {
 
                     Obj objI = listI.get(ii);
-                    assert(objI.imgIdx0 == imgIdx0);
-                    assert(objI.imgIdx1 == imgIdx1);
+                    assert (objI.imgIdx0 == imgIdx0);
+                    assert (objI.imgIdx1 == imgIdx1);
 
-                    int xsI0 = Math.round(scale0 * objI.cr0.xC);
-                    int ysI0 = Math.round(scale0 * objI.cr0.yC);
+                    int xsI0 = Math.round(scale0 * objI.cr0.ellipseParams.xC);
+                    int ysI0 = Math.round(scale0 * objI.cr0.ellipseParams.yC);
                     // the only vars in octave frame are the obj instances
                     Set<PairInt> nearestI = nn0.findClosest(xsI0, ysI0, dMax);
-                    assert(nearestI != null && !nearestI.isEmpty());
+                    assert (nearestI != null && !nearestI.isEmpty());
                     PairInt pI = nearestI.iterator().next();
                     int labelI = pointLabelMap0.get(pI);
                     VeryLongBitString adjI = adjMap0.get(labelI);
 
-                    int xsI1 = Math.round(scale1 * objI.cr1.xC);
-                    int ysI1 = Math.round(scale1 * objI.cr1.yC);
+                    int xsI1 = Math.round(scale1 * objI.cr1.ellipseParams.xC);
+                    int ysI1 = Math.round(scale1 * objI.cr1.ellipseParams.yC);
                     Set<PairInt> nearestI_1 = nn1.findClosest(xsI1, ysI1, dMax);
-                    assert(nearestI_1 != null && !nearestI_1.isEmpty());
+                    assert (nearestI_1 != null && !nearestI_1.isEmpty());
                     PairInt pI_1 = nearestI_1.iterator().next();
                     int labelI_1 = pointLabelMap1.get(pI_1);
                     VeryLongBitString adjI_1 = adjMap1.get(labelI_1);
+
+                    boolean foundI = false;
+                    
+                    List<Obj> listJ = xyCen0Objs.get(j);
 
                     for (int jj = 0; jj < listJ.size(); ++jj) {
 
                         Obj objJ = listJ.get(jj);
 
-                        int xsJ0 = Math.round(scale0 * objJ.cr0.xC);
-                        int ysJ0 = Math.round(scale0 * objJ.cr0.yC);
+                        int xsJ0 = Math.round(scale0 * objJ.cr0.ellipseParams.xC);
+                        int ysJ0 = Math.round(scale0 * objJ.cr0.ellipseParams.yC);
                         Set<PairInt> nearestJ = nn0.findClosest(xsJ0, ysJ0, dMax);
                         assert (nearestJ != null);
                         PairInt pJ = nearestJ.iterator().next();
-    boolean dbg = false;
-    //14,40 (16,72)
-    if ((Math.abs(xsI0) - 14 < 4) && (Math.abs(ysI0) - 40 < 4) &&
-    (Math.abs(xsI1) - 16 < 4) && (Math.abs(ysI1) - 72 < 4)) {
-        //(32,40) (35,71)
-        //(44,60) (52,96)
-        //(18,38) (22,70)
-        if ((Math.abs(xsJ0) - 32 < 4) && (Math.abs(ysJ0) - 40 < 4)) {
-            dbg = true;
-        } else if ((Math.abs(xsJ0) - 44 < 4) && (Math.abs(ysJ0) - 60 < 4)) {
-            dbg = true;
-        } else if ((Math.abs(xsJ0) - 18 < 4) && (Math.abs(ysJ0) - 38 < 4)) {
-            dbg = true;
-        }
-    }
-
+    
                         int labelJ = pointLabelMap0.get(pJ);
                         if (adjI.isNotSet(labelJ)) {
-      if (dbg) {
-          System.out.println("<-- I0 not adjacent for " +
-          String.format("(%d,%d)(%d,%d)", xsI0, ysI0, xsJ0, ysJ0));
-      }
                             continue;
                         }
 
-                        int xsJ1 = Math.round(scale1 * objJ.cr1.xC);
-                        int ysJ1 = Math.round(scale1 * objJ.cr1.yC);
+                        int xsJ1 = Math.round(scale1 * objJ.cr1.ellipseParams.xC);
+                        int ysJ1 = Math.round(scale1 * objJ.cr1.ellipseParams.yC);
                         Set<PairInt> nearestJ_1 = nn1.findClosest(xsJ1, ysJ1, dMax);
                         assert (nearestJ_1 != null);
                         PairInt pJ_1 = nearestJ_1.iterator().next();
                         int labelJ_1 = pointLabelMap1.get(pJ_1);
 
-dbg = false;
-    //14,40 (16,72)
-    if ((Math.abs(xsI0) - 14 < 4) && (Math.abs(ysI0) - 40 < 4) &&
-    (Math.abs(xsI1) - 16 < 4) && (Math.abs(ysI1) - 72 < 4)) {
-        //(32,40) (35,71)
-        //(44,60) (52,96)
-        //(18,38) (22,70)
-        if ((Math.abs(xsJ0) - 32 < 4) && (Math.abs(ysJ0) - 40 < 4) &&
-        (Math.abs(xsJ1) - 35 < 4) && (Math.abs(ysJ1) - 71 < 4)) {
-            dbg = true;
-        } else if ((Math.abs(xsJ0) - 44 < 4) && (Math.abs(ysJ0) - 60 < 4) &&
-        (Math.abs(xsJ1) - 52 < 4) && (Math.abs(ysJ1) - 96 < 4)) {
-            dbg = true;
-        } else if ((Math.abs(xsJ0) - 18 < 4) && (Math.abs(ysJ0) - 38 < 4) &&
-        (Math.abs(xsJ1) - 22 < 4) && (Math.abs(ysJ1) - 70 < 4)) {
-            dbg = true;
-        }
-    }
-
                         if (adjI_1.isNotSet(labelJ_1)) {
-    if (dbg) {
-          System.out.println("<-- J1 not adjacent for " +
-          String.format("(%d,%d)(%d,%d)", xsI1, ysI1, xsJ1, ysJ1));
-      }
                             continue;
                         }
 
-                        double d0 = distance(objI.cr0.xC, objI.cr0.yC,
-                            objJ.cr0.xC, objJ.cr0.yC);
+                        double d0 = distance(objI.cr0.ellipseParams.xC, 
+                            objI.cr0.ellipseParams.yC,
+                            objJ.cr0.ellipseParams.xC, objJ.cr0.ellipseParams.yC);
 
-                        double d1 = distance(objI.cr1.xC, objI.cr1.yC,
-                            objJ.cr1.xC, objJ.cr1.yC);
+                        double d1 = distance(objI.cr1.ellipseParams.xC, 
+                            objI.cr1.ellipseParams.yC,
+                            objJ.cr1.ellipseParams.xC, objJ.cr1.ellipseParams.yC);
 
+                        //NOTE: caveat is that with occlusion, this dould
+                        // remove a real match and that is important for
+                        // case of matching a single object within images
+                        // of all else being unmatchable, different scenes
                         if ((d0 > d1 && (d0/d1) > factor) ||
                             (d1 > d0 && (d1/d0) > factor)) {
                             continue;
@@ -1731,6 +1710,128 @@ dbg = false;
 
                         uniqueFiltered0.add(pI);
                         uniqueFiltered0.add(pJ);
+                    
+                        foundI = true;
+                    }
+                    
+                    if (foundI) {
+                        continue;
+                    }
+                   
+                    //search the segmentation list, just for adjacent segmentation
+                    // distances and sizes.
+                    // euclidean transformations are done in the next block
+                    
+                    // dataset 0 ref frame
+                    int[] adjIdxsI = adjI.getSetBits();
+                    
+                    // dataset 1 ref frame
+                    int[] adjIdxsI_1 = adjI_1.getSetBits();
+                                        
+                    for (int iii = 0; iii < adjIdxsI.length; ++iii) {
+                        int label0B = adjIdxsI[iii];
+                        PairInt xyCen0B = xyCenLabel0.get(label0B);
+                        float size0B = labelSizes0.get(label0B)/scale0;
+                        double d0 = distance(objI.cr0.ellipseParams.xC, 
+                            objI.cr0.ellipseParams.yC,
+                            (float)xyCen0B.getX()/scale0, 
+                            (float)xyCen0B.getY()/scale0);
+                        for (int jjj = 0; jjj < adjIdxsI_1.length; ++jjj) {
+                            int label1B = adjIdxsI_1[jjj];
+                            PairInt xyCen1B = xyCenLabel1.get(label1B);
+                            double d1 = distance(objI.cr1.ellipseParams.xC, 
+                                objI.cr0.ellipseParams.yC,
+                                (float)xyCen1B.getX()/scale1, 
+                                (float)xyCen1B.getY()/scale1);
+                            
+     boolean dbg=false;
+     if ((Math.abs(xyCen0B.getX() - 53) < 5) &&
+         (Math.abs(xyCen0B.getY() - 61) < 5) &&
+         (Math.abs(xyCen1B.getX() - 15) < 5) &&
+         (Math.abs(xyCen1B.getY() - 55) < 5)
+         ) {
+         dbg = true;
+     }
+                            
+                            //NOTE: caveat is that with occlusion, this dould
+                            // remove a real match and that is important for
+                            // case of matching a single object within images
+                            // of all else being unmatchable, different scenes
+                            if ((d0 > d1 && (d0/d1) > factor) ||
+                                (d1 > d0 && (d1/d0) > factor)) {
+                                
+                                if (dbg)
+                                System.out.format(
+                                    "* RMVD (%d,%d)to(%d,%d) (%d,%d)to(%d,%d) d0=%.1f d1=%.1f\n",
+                                    Math.round(scale0 * objI.cr0.ellipseParams.xC),
+                                    Math.round(scale0 * objI.cr0.ellipseParams.yC),
+                                    xyCen0B.getX(), xyCen0B.getY(),
+                                    Math.round(scale1 * objI.cr1.ellipseParams.xC),
+                                    Math.round(scale1 * objI.cr1.ellipseParams.yC),
+                                    xyCen1B.getX(), xyCen1B.getY(),
+                                    (float)d0, (float)d1); 
+                                
+                                continue;
+                            }
+                            
+                            float size1B = labelSizes1.get(label1B)/scale1;
+                            
+                            if ((size0B > size1B && ((size0B/size1B) > 1.2)) ||
+                                (size1B > size0B && ((size1B/size0B) > 1.2))) {
+                                
+                                if (dbg)
+                                System.out.format(
+                                    "* RMVD (%d,%d) (%d,%d) sz0B=%.1f sz0B=%.1f\n",
+                                    xyCen0B.getX(), xyCen0B.getY(),
+                                    xyCen1B.getX(), xyCen1B.getY(),
+                                    size0B, size1B); 
+                                
+                                continue;
+                            }
+                           
+                            //add an obj for the segmentation
+                            //   if keep this step, this can be cached
+                            CSRegion cr0B = createScaledCRegion(labelSets0.get(label0B),
+                                imgWidth0, imgHeight0, scale0);
+                             
+                            CSRegion cr1B = createScaledCRegion(labelSets1.get(label1B),
+                                imgWidth1, imgHeight1, scale1);
+
+                            // [ssdSumRGB, ssdSumPTCIELUV, f, err, ssdCount]
+                            double[] costs = matchRegion(
+                                cr0B, rgb0, pt0, scale0, 
+                                cr1B, rgb1, pt1, scale1);                           
+                            
+                            Obj objI2 = new Obj();
+                            objI2.cr0 = cr0B;
+                            objI2.cr1 = cr1B;
+                            objI2.imgIdx0 = imgIdx0;
+                            objI2.imgIdx1 = imgIdx1;
+                            objI2.nMatched = (int)costs[4];
+                            objI2.ssd = costs[0] + costs[1];
+                            objI2.cost = costs[0] + costs[1] + costs[2];
+                            
+                            List<Obj> out = new ArrayList<Obj>();
+                            out.add(objI);
+                            out.add(objI2);
+
+                            filtered.add(out);
+                        
+                            {//DEBUG
+                                System.out.format(
+                                    "LPAIR (%d,%d):(%d,%d) (%d,%d):(%d,%d) im0=%d im1=%d c=%.3f n=%d\n",
+                                    Math.round(scale0 * objI.cr0.ellipseParams.xC),
+                                    Math.round(scale0 * objI.cr0.ellipseParams.yC),
+                                    Math.round(scale1 * objI.cr1.ellipseParams.xC),
+                                    Math.round(scale1 * objI.cr1.ellipseParams.yC),
+                                    Math.round(scale0 * objI2.cr0.ellipseParams.xC),
+                                    Math.round(scale0 * objI2.cr0.ellipseParams.yC),
+                                    Math.round(scale1 * objI2.cr1.ellipseParams.xC),
+                                    Math.round(scale1 * objI2.cr1.ellipseParams.yC),
+                                    imgIdx0, imgIdx1, (float) objI2.cost,
+                                    objI2.nMatched);    
+                            }
+                        }
                     }
                 }
             }
@@ -1739,124 +1840,116 @@ dbg = false;
         System.out.println("n unique ref0 in filtered=" + uniqueFiltered0.size()
             + " filtered.size=" + filtered.size());
 
-        if (uniqueFiltered0.size() == 1) {
-            // include the single best instances too
-            //NOTE: this might need revision
-            int nr = bestR.getNumberOfItems();
-            if (nr > 20) {
-                nr = 20;
+        // -- merge the consistent lists in filtered ---
+
+        PairIntArray points0 = new PairIntArray();
+        populateWithUniquePoints(filtered, points0);
+
+        TObjectIntMap<PairInt> pIdxMap0 = new TObjectIntHashMap<PairInt>();
+        for (int i = 0; i < points0.getN(); ++i) {
+            PairInt p = new PairInt(points0.getX(i), points0.getY(i));
+            pIdxMap0.put(p, i);
+        }
+
+        MatchedPointsTransformationCalculator tc =
+            new MatchedPointsTransformationCalculator();
+
+        Transformer transformer = new Transformer();
+
+        TIntSet skip = new TIntHashSet();
+        for (int i = 0; i < filtered.size(); ++i) {
+            if (skip.contains(i)) {
+                continue;
             }
-            for (int i = 0; i < nr; ++i) {
-                List<Obj> list = new ArrayList<Obj>();
-                list.add(bestR.getArray()[i]);
-                filtered.add(list);
-            }
-        } else if (uniqueFiltered0.size() > 4 && adjMap0.size() > 2) {
-
-            // -- merge the consistent lists in filtered ---
-
-            PairIntArray points0 = new PairIntArray();
-            populateWithUniquePoints(filtered, points0);
-
-            TObjectIntMap<PairInt> pIdxMap0 = new TObjectIntHashMap<PairInt>();
-            for (int i = 0; i < points0.getN(); ++i) {
-                PairInt p = new PairInt(points0.getX(i), points0.getY(i));
-                pIdxMap0.put(p, i);
+            List<Obj> listI = filtered.get(i);
+            Set<QuadInt> idxsI = new HashSet<QuadInt>();
+            for (Obj obj : listI) {
+                idxsI.add(new QuadInt(obj.cr0.ellipseParams.xC, 
+                    obj.cr0.ellipseParams.yC,
+                    obj.cr1.ellipseParams.xC, obj.cr1.ellipseParams.yC));
             }
 
-            MatchedPointsTransformationCalculator tc =
-                new MatchedPointsTransformationCalculator();
+            TransformationParameters params = null;
+            PairIntArray points0Tr = null;
 
-            Transformer transformer = new Transformer();
-
-            TIntSet skip = new TIntHashSet();
-            for (int i = 0; i < filtered.size(); ++i) {
-                if (skip.contains(i)) {
+            for (int j = (i + 1); j < filtered.size(); ++j) {
+                if (skip.contains(j)) {
                     continue;
                 }
-                List<Obj> listI = filtered.get(i);
-                Set<QuadInt> idxsI = new HashSet<QuadInt>();
-                for (Obj obj : listI) {
-                    idxsI.add(new QuadInt(obj.cr0.xC, obj.cr0.yC,
-                        obj.cr1.xC, obj.cr1.yC));
+                List<Obj> listJ = filtered.get(j);
+                int nIter = 0;
+                for (Obj obj : listJ) {
+                    QuadInt q = new QuadInt(obj.cr0.ellipseParams.xC, 
+                        obj.cr0.ellipseParams.yC,
+                        obj.cr1.ellipseParams.xC, obj.cr1.ellipseParams.yC);
+                    if (idxsI.contains(q)) {
+                        nIter++;
+                    }
                 }
-
-                TransformationParameters params = null;
-                PairIntArray points0Tr = null;
-
-                for (int j = (i + 1); j < filtered.size(); ++j) {
-                    if (skip.contains(j)) {
-                        continue;
-                    }
-                    List<Obj> listJ = filtered.get(j);
-                    int nIter = 0;
-                    for (Obj obj : listJ) {
-                        QuadInt q = new QuadInt(obj.cr0.xC, obj.cr0.yC,
-                            obj.cr1.xC, obj.cr1.yC);
-                        if (idxsI.contains(q)) {
-                            nIter++;
-                        }
-                    }
-                    if (nIter == 0) {
-                        continue;
-                    }
+                if (nIter == 0) {
+                    continue;
+                }
+                if (params == null) {
+                    Obj obj0 = listI.get(0);
+                    Obj obj1 = listI.get(1);
+                    params = tc.calulateEuclidean(
+                        obj0.cr0.ellipseParams.xC, 
+                        obj0.cr0.ellipseParams.yC, 
+                        obj1.cr0.ellipseParams.xC, obj1.cr0.ellipseParams.yC,
+                        obj0.cr1.ellipseParams.xC, obj0.cr1.ellipseParams.yC, 
+                        obj1.cr1.ellipseParams.xC, obj1.cr1.ellipseParams.yC,
+                        0, 0);
                     if (params == null) {
-                        Obj obj0 = listI.get(0);
-                        Obj obj1 = listI.get(1);
-                        params = tc.calulateEuclidean(
-                            obj0.cr0.xC, obj0.cr0.yC, obj1.cr0.xC, obj1.cr0.yC,
-                            obj0.cr1.xC, obj0.cr1.yC, obj1.cr1.xC, obj1.cr1.yC,
-                            0, 0);
-                        points0Tr = transformer.applyTransformation(
-                            params, points0);
+                        continue;
                     }
-                    /*
-                    if the listJ points transformed are
-                       consistent with transformation,
-                       merge them.
-                    */
-                    boolean isConsistent = true;
-                    for (Obj obj : listJ) {
-                        PairInt p0 = new PairInt(obj.cr0.xC, obj.cr0.yC);
-                        PairInt p1 = new PairInt(obj.cr1.xC, obj.cr1.yC);
+                    points0Tr = transformer.applyTransformation(
+                        params, points0);
+                }
+                /*
+                if the listJ points transformed are
+                   consistent with transformation,
+                   merge them.
+                */
+                boolean isConsistent = true;
+                for (Obj obj : listJ) {
+                    PairInt p0 = new PairInt(obj.cr0.ellipseParams.xC, 
+                        obj.cr0.ellipseParams.yC);
+                    PairInt p1 = new PairInt(obj.cr1.ellipseParams.xC, 
+                        obj.cr1.ellipseParams.yC);
 
-                        int p0Idx = pIdxMap0.get(p0);
-                        int xTr0 = points0Tr.getX(p0Idx);
-                        int yTr0 = points0Tr.getY(p0Idx);
+                    int p0Idx = pIdxMap0.get(p0);
+                    int xTr0 = points0Tr.getX(p0Idx);
+                    int yTr0 = points0Tr.getY(p0Idx);
 
-                        double dist = distance(xTr0, yTr0, p1.getX(), p1.getY());
-                        if (dist > distTol2) {
-                            isConsistent = false;
-                            break;
-                        }
-                    }
-                    if (isConsistent) {
-                        // merge
-                        for (Obj obj : listJ) {
-                            QuadInt q = new QuadInt(obj.cr0.xC, obj.cr0.yC,
-                                obj.cr1.xC, obj.cr1.yC);
-                            if (!idxsI.contains(q)) {
-                                listI.add(obj);
-                            }
-                        }
-                        skip.add(j);
+                    double dist = distance(xTr0, yTr0, p1.getX(), p1.getY());
+                    if (dist > distTol2) {
+                        isConsistent = false;
+                        break;
                     }
                 }
-            }
-
-            if (!skip.isEmpty()) {
-                TIntList rm = new TIntArrayList(skip);
-                rm.sort();
-                for (int i = (rm.size() - 1); i > -1; --i) {
-                    int rmIdx = rm.get(i);
-                    filtered.remove(rmIdx);
+                if (isConsistent) {
+                    // merge
+                    for (Obj obj : listJ) {
+                        QuadInt q = new QuadInt(obj.cr0.ellipseParams.xC, 
+                            obj.cr0.ellipseParams.yC,
+                            obj.cr1.ellipseParams.xC, obj.cr1.ellipseParams.yC);
+                        if (!idxsI.contains(q)) {
+                            listI.add(obj);
+                        }
+                    }
+                    skip.add(j);
                 }
             }
         }
 
-        // TODO: if filtered.size is small, add some amount of the
-        // top single size lists into this.
-        // (see test for andr 04 to 02 cupcake test)
+        if (!skip.isEmpty()) {
+            TIntList rm = new TIntArrayList(skip);
+            rm.sort();
+            for (int i = (rm.size() - 1); i > -1; --i) {
+                int rmIdx = rm.get(i);
+                filtered.remove(rmIdx);
+            }
+        }
 
         TFloatList sumCosts = new TFloatArrayList();
 
@@ -1869,8 +1962,8 @@ dbg = false;
             for (int j = 0; j < list.size(); ++j) {
                 Obj obj = list.get(j);
                 sumCost += (float)obj.cost;
-                int x0 = Math.round(scale0 * obj.cr0.xC);
-                int y0 = Math.round(scale0 * obj.cr0.yC);
+                int x0 = Math.round(scale0 * obj.cr0.ellipseParams.xC);
+                int y0 = Math.round(scale0 * obj.cr0.ellipseParams.yC);
             }
             sumCosts.add(sumCost);
         }
@@ -1883,10 +1976,10 @@ dbg = false;
                 StringBuilder sb = new StringBuilder("filter ");
                 for (int j = 0; j < list.size(); ++j) {
                     Obj obj = list.get(j);
-                    int x0 = Math.round(scale0 * obj.cr0.xC);
-                    int y0 = Math.round(scale0 * obj.cr0.yC);
-                    int x1 = Math.round(scale1 * obj.cr1.xC);
-                    int y1 = Math.round(scale1 * obj.cr1.yC);
+                    int x0 = Math.round(scale0 * obj.cr0.ellipseParams.xC);
+                    int y0 = Math.round(scale0 * obj.cr0.ellipseParams.yC);
+                    int x1 = Math.round(scale1 * obj.cr1.ellipseParams.xC);
+                    int y1 = Math.round(scale1 * obj.cr1.ellipseParams.yC);
                     sb.append(String.format(" (%d,%d):(%d,%d) ", x0, y0, x1, y1));
                 }
                 for (int j = 0; j < list.size(); ++j) {
@@ -1914,6 +2007,18 @@ dbg = false;
 
         return nn;
     }
+    
+    private List<Set<PairInt>> extractUnorderedBounds(List<Set<PairInt>> list) {
+        
+        PerimeterFinder2 finder = new PerimeterFinder2();
+        
+        List<Set<PairInt>> bounds = new ArrayList<Set<PairInt>>();
+        for (Set<PairInt> set : list) {
+            bounds.add(finder.extractOuterBorder(set));
+        }
+        
+        return bounds;
+    }    
 
     private void populateWithUniquePoints(List<List<Obj>> pairs,
         PairIntArray out0) {
@@ -1922,14 +2027,77 @@ dbg = false;
         for (int i = 0; i < pairs.size(); ++i) {
             List<Obj> list = pairs.get(i);
             for (Obj obj : list) {
-                PairInt p0 = new PairInt(obj.cr0.xC, obj.cr0.yC);
-                PairInt p1 = new PairInt(obj.cr1.xC, obj.cr1.yC);
+                PairInt p0 = new PairInt(obj.cr0.ellipseParams.xC, 
+                    obj.cr0.ellipseParams.yC);
+                PairInt p1 = new PairInt(obj.cr1.ellipseParams.xC, 
+                    obj.cr1.ellipseParams.yC);
                 if (!set0.contains(p0)) {
                     set0.add(p0);
                     out0.add(p0);
                 }
             }
         }
+    }
+
+    private CSRegion createScaledCRegion(Set<PairInt> labeledSet, 
+        int imgWidth, int imgHeight, float scale) {
+        
+        Region r = new Region();
+        
+        for (PairInt p : labeledSet) {
+            int x = (int)Math.round((float)p.getX()/scale);
+            int y = (int)Math.round((float)p.getY()/scale);
+            if (x == -1) {
+                x = 0;
+            }
+            if (x == imgWidth) {
+                x = imgWidth - 1;
+            }
+            if (y == -1) {
+                y = 0;
+            }
+            if (y == imgHeight) {
+                y = imgHeight - 1;
+            }
+            r.accumulate(x, y);
+        }
+        
+        Canonicalizer c = new Canonicalizer();
+        
+        CRegion cr = c.canonicalizeRegion(r, imgWidth, imgHeight);
+        CSRegion csr = new CSRegion();
+        csr.ellipseParams.eccentricity = cr.ellipseParams.eccentricity;
+        csr.ellipseParams.major = cr.ellipseParams.major;
+        csr.ellipseParams.minor = cr.ellipseParams.minor;
+        csr.offsetsToOrigCoords = cr.offsetsToOrigCoords;
+        csr.ellipseParams.orientation = cr.ellipseParams.orientation;
+        csr.ellipseParams.xC = cr.ellipseParams.xC;
+        csr.ellipseParams.yC = cr.ellipseParams.yC;
+        
+        return csr;
+    }
+
+    private TIntObjectMap<PairInt> createCentroidMap(List<Set<PairInt>> sets) {
+
+        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
+        
+        TIntObjectMap<PairInt> map = new TIntObjectHashMap<PairInt>();
+        for (int i = 0; i < sets.size(); ++i) {
+            int[] xy = ch.calculateRoundedXYCentroids(sets.get(i));
+            map.put(i, new PairInt(xy[0], xy[1]));
+        }
+        
+        return map;
+    }
+
+    private TIntIntMap calculateLabelSizes(List<Set<PairInt>> sets) {
+    
+        TIntIntMap map = new TIntIntHashMap();
+        for (int i = 0; i < sets.size(); ++i) {
+            int sz = MiscMath.calculateObjectSize(sets.get(i));
+            map.put(i, sz);
+        }
+        return map;
     }
 
     private class Obj implements Comparable<Obj>{
@@ -1958,9 +2126,9 @@ dbg = false;
         return (int) Math.sqrt(diffX * diffX + diffY * diffY);
     }
 
-    public static int distance(int x0, int y0, int x1, int y1) {
-        int diffX = x0 - x1;
-        int diffY = y0 - y1;
+    public static int distance(float x0, float y0, float x1, float y1) {
+        float diffX = x0 - x1;
+        float diffY = y0 - y1;
         return (int) Math.sqrt(diffX * diffX + diffY * diffY);
     }
 
