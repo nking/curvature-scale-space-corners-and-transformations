@@ -97,9 +97,17 @@ based upon algorithm in paper
        image is O(n*m*n) where m and n are the number of sampled
        points on the input shapes.
 
-       The runtime complexity for the search of the
+       <emph>The runtime complexity for the search of the
        integral image of summed differences and analysis,
-       is n2 * (O(n1 * lg2(n1)).
+       is n2 * (O(n1 * lg2(n1)).</emph>
+        
+       The algorithm runtime complexity could be reduced more, but with
+       more loss in accuracy by selecting a discrete number of diagonal read 
+       block sizes.
+       For instance, if wanted to read only a single block size of
+       n1/10, the total runtime complexity would be n2 * n1/10.
+       (and in this case, could build the summed difference chord matrix
+       smaller and more quickly than O(n2 * n1 * n1) before that.)
  </pre>
  
  <em>NOTE: You may need to pre-process the shape points
