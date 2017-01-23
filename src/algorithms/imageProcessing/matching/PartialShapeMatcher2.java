@@ -887,7 +887,7 @@ public class PartialShapeMatcher2 {
             List<Interval<Integer>> outputIntervals = new ArrayList<Interval<Integer>>();
             List<SR> outputValues = new ArrayList<SR>();
             
-            // runtime complexity is approx O(n1 * lg2(n1).
+            // runtime complexity is approx O(n1 * lg2(n1)).
             search(a, outputIntervals, outputValues, offset);
             
             if (outputValues.isEmpty()) {
@@ -903,7 +903,7 @@ public class PartialShapeMatcher2 {
                         
             allResults.addAll(outputValues);
         }
-        
+               
         for (SR sr: allResults) {
             if (sr.maxChordSum > maxChordSum) {
                 maxChordSum = sr.maxChordSum;
@@ -1356,7 +1356,7 @@ public class PartialShapeMatcher2 {
         }
         return max;
     }
-    
+ 
     /**
      * search the difference chord sum matrix a for minimum Salukwzde cost
      * and put results in outputIntervals and the sum of the chord differences
@@ -1402,14 +1402,14 @@ public class PartialShapeMatcher2 {
         int nIntervals = (int)Math.ceil(Math.log(n1)/Math.log(2));
         int dr = (n1 - minLength)/nIntervals;
         int rUpper = n1 - 1;//(rStop - 1)*dr;
-                    
+         
         // runtime complexity is ~ log_2(n1) * n1.
         
         // using row major notation of a[row][col]
         for (int r = rUpper; r >= minLength; r -= dr) {
-            
+    
             // row and col are both iDiag
-            for (int iDiag = 0; iDiag < n1; ++iDiag) {
+            for (int iDiag = 0; iDiag < n1; iDiag += r) {
                 stop = iDiag + r;
                 if (stop > (n1 - 1)) {
                     stop = n1 - 1;
@@ -1476,7 +1476,7 @@ public class PartialShapeMatcher2 {
                 added.add(s);
             } // end loop iDiag
         } // end r
-                
+        
         rangeSearch.getAllIntervals(outputIntervals, outputValues);
     
         assert(outputIntervals.size() == outputValues.size());
