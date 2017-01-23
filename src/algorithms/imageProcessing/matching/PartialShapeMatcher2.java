@@ -88,7 +88,7 @@ based upon algorithm in paper
                    overrideSamplingDistance(dp)
                unit test using dp of 1 and 2 work well
 
-       NThis version of the code follows the paper algorithm in that
+       This version of the code follows the paper algorithm in that
        it uses summed area table instead of summed column table
        as PartialShapeMatcher.java does.
        This very has a faster runtime, but is less precise.
@@ -100,14 +100,20 @@ based upon algorithm in paper
        <emph>The runtime complexity for the search of the
        integral image of summed differences and analysis,
        is n2 * (O(n1 * lg2(n1)).</emph>
-        
+       
        The algorithm runtime complexity could be reduced more, but with
        more loss in accuracy by selecting a discrete number of diagonal read 
        block sizes.
        For instance, if wanted to read only a single block size of
-       n1/10, the total runtime complexity would be n2 * n1/10.
+       n1/10, the total runtime complexity would be approx n2 * n1/10.
        (and in this case, could build the summed difference chord matrix
-       smaller and more quickly than O(n2 * n1 * n1) before that.)
+       smaller and more quickly than O(n2 * n1 * n1) before that.
+       Essentially, would use summed column table and the rows would
+       only be offsets of n1/10 so the total runtime complexity for building
+       would be O(n1*(n1/10)) and reads would be smaller...it's effectively
+       the result of comparing the 2 curves at offets of n1/10 intervals which
+       would give fast but very rough results that would not handle articultion 
+       well if at all.)
  </pre>
  
  <em>NOTE: You may need to pre-process the shape points
