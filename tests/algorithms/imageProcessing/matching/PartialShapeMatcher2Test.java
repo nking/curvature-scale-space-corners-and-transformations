@@ -51,6 +51,7 @@ public class PartialShapeMatcher2Test extends TestCase {
         PartialShapeMatcher2 shapeMatcher = new PartialShapeMatcher2();
         shapeMatcher.overrideSamplingDistance(1);
         //shapeMatcher.setToDebug();
+        shapeMatcher.overrideMinimumLength(4);
         shapeMatcher.setToUseEuclidean();
         
         PartialShapeMatcher2.Result result = shapeMatcher.match(p, q);
@@ -103,6 +104,7 @@ public class PartialShapeMatcher2Test extends TestCase {
         PartialShapeMatcher2 shapeMatcher = new PartialShapeMatcher2();
         shapeMatcher.overrideSamplingDistance(1);
         //shapeMatcher.setToDebug();
+        shapeMatcher.overrideMinimumLength(4);
         shapeMatcher.setToUseEuclidean();
         
         // articulated:
@@ -317,7 +319,7 @@ public class PartialShapeMatcher2Test extends TestCase {
             matcher.setToUseEuclidean();
         */
         
-         MiscellaneousCurveHelper curveHelper = 
+        MiscellaneousCurveHelper curveHelper = 
             new MiscellaneousCurveHelper();
                 
         SIGMA sigma = SIGMA.ONE;
@@ -382,6 +384,8 @@ public class PartialShapeMatcher2Test extends TestCase {
             //matcher._overrideToThreshhold(0.2f);
             //matcher.setToRemoveOutliers();
             matcher.setToUseEuclidean();
+            
+            matcher.overrideMinimumLength(3);
             
             PartialShapeMatcher2.Result result = matcher.match(p, q);
 
