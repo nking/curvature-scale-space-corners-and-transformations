@@ -16,6 +16,7 @@ import algorithms.imageProcessing.TrimmedImage;
 import algorithms.imageProcessing.VanishingPoints;
 import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
+import algorithms.imageProcessing.features.mser.Canonicalizer.RegionGeometry;
 import algorithms.imageProcessing.features.mser.Canonicalizer.RegionPoints;
 import algorithms.imageProcessing.features.mser.MSER;
 import algorithms.imageProcessing.features.mser.Region;
@@ -23,10 +24,12 @@ import algorithms.imageProcessing.matching.MSERMatcher;
 import algorithms.imageProcessing.matching.ORBMatcher;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.imageProcessing.util.PairIntWithIndex;
+import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
 import com.climbwithyourfeet.clustering.DTClusterFinder;
 import gnu.trove.iterator.TIntIntIterator;
 import gnu.trove.iterator.TIntIterator;
@@ -485,7 +488,8 @@ public class ObjectMatcher {
                 //TODO: this needs revision...it is resolution (and scale) sensitive
                 if ((nInRegion < 100 && fOutside > 0.45) || 
                     (nInRegion >= 100 && fOutside > 0.16)) {
-                    System.out.println("removing label cen=" + labelXY);
+                    System.out.println("removing label cen=" + labelXY + 
+                        " nInRegion=" + nInRegion + " fOutside=" + fOutside);
                     // remove the offset points from the cRegion's offsets
                     for (PairInt rm : labelPointKeys.get(label)) {
                         cr.points.remove(rm);
@@ -509,18 +513,24 @@ public class ObjectMatcher {
                 continue;
             }
             
+            if (!rmLabel.isEmpty()) {
+                TIntIterator iter0 = rmLabel.iterator();
+                while (iter0.hasNext()) {
+                    int label = iter0.next();
+                    Set<PairInt> pts = labelPointKeys.get(label);
+                    cr.points.removeAll(pts);
+                    labelInRegion.remove(label);
+                }
+            }
+            
             if (replaceWithLabels) {
                 cr.points.clear();
                 iter2 = labelInRegion.iterator();
                 for (int j = 0; j < labelInRegion.size(); ++j) {
                     iter2.advance();
                     int label = iter2.key();
-                    if (rmLabel.contains(label)) {
-                        continue;
-                    }
                     cr.points.addAll(labeledSets.get(label));
                 }
-                //TODO: consider re-doing x,y center
             }
             
             /*
@@ -570,6 +580,108 @@ public class ObjectMatcher {
             imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM,
                 2 * halfDimension + 1);
             pyr.set(i, imgM);
+        }
+    }
+
+    private RegionPoints createARegion(Set<PairInt> points, int w, int h) {
+        
+        Region r = new Region();
+        for (PairInt pl : points) {
+            r.accumulate(pl.getX(), pl.getY());
+        }
+
+        int[] xyCen = new int[2];
+        r.calculateXYCentroid(xyCen, w, h);
+        int x = xyCen[0];
+        int y = xyCen[1];
+        assert (x >= 0 && x < w);
+        assert (y >= 0 && y < h);
+        double[] m = r.calcParamTransCoeff();
+
+        double angle = Math.atan(m[0] / m[2]);
+        if (angle < 0) {
+            angle += Math.PI;
+        }
+
+        double major = 2. * m[4];
+        double minor = 2. * m[5];
+
+        double ecc = Math.sqrt(major * major - minor * minor) / major;
+        assert (!Double.isNaN(ecc));
+
+        Canonicalizer.RegionGeometry rg = new Canonicalizer.RegionGeometry();
+        rg.eccentricity = ecc;
+        rg.major = major;
+        rg.minor = minor;
+        rg.orientation = angle;
+        rg.xC = x;
+        rg.yC = y;
+
+        RegionPoints rp = new RegionPoints();
+        rp.ellipseParams = rg;
+        rp.points = new HashSet<PairInt>(points);
+        
+        return rp;
+    }
+    
+    private void createAWholeRegion(TIntObjectMap<RegionPoints> regionPoints, 
+        Set<PairInt> shape, GreyscaleImage rgb) {
+        
+        int n = regionPoints.size();
+        
+        RegionPoints rp = createARegion(shape, rgb.getWidth(), rgb.getHeight());
+      
+        regionPoints.put(n, rp);
+    }
+
+    private void createForLabels(List<Set<PairInt>> labeledSets, 
+        TIntObjectMap<CRegion> regions, int imageWidth, int imageHeight) {
+
+        int ns = labeledSets.size();
+        TIntSet labels = new TIntHashSet();
+        for (int i = 0; i < ns; ++i) {
+            labels.add(i);
+        }
+        
+        int idxMax = Integer.MIN_VALUE;
+        TIntObjectIterator<CRegion> iter = regions.iterator();
+        for (int i = 0; i < regions.size(); ++i) {
+            iter.advance();
+            int rIdx = iter.key();
+            CRegion r = iter.value();
+        
+            if (rIdx > idxMax) {
+                idxMax = rIdx;
+            }
+            
+            if (r.labels.size() == 1) {
+                labels.remove(r.labels.iterator().next());
+            }
+        }
+        
+        // for labels, make CRegion structures and add to map
+        TIntIterator iter2 = labels.iterator();
+        while (iter2.hasNext()) {
+            int label = iter2.next();
+            
+            Set<PairInt> set = labeledSets.get(label);
+            
+            RegionPoints rp = createARegion(set, imageWidth, imageHeight);
+            
+            RegionGeometry ep = rp.ellipseParams;
+            
+            Map<PairInt, PairInt> offsetToOrigMap = 
+                Canonicalizer.createOffsetToOrigMap(
+                ep.xC, ep.yC, Misc.convertWithoutOrder(set), 
+                imageWidth, imageHeight, ep.orientation);
+
+            CRegion cRegion = new CRegion();
+            cRegion.ellipseParams = ep;
+            cRegion.offsetsToOrigCoords = offsetToOrigMap;
+               
+            idxMax++;
+            
+            regions.put(idxMax, cRegion);
         }
     }
 
@@ -1364,15 +1476,15 @@ public class ObjectMatcher {
      * total number of keypoints in img1, making the standard best matching
      * descriptors and RANSAC to remove outliers infeasible.
      *
-     * This method uses the blob detector MSER and matches descriptors for the
-     * regions.
-     *
+     * The method uses segmentation and the mser blob detector to
+     * to create regions of patches to compare.
+     * The patch matches are then aggregated with consistent 
+     * other matches in terms of separation and size within the
+     * octave scales.
+     * 
+     * 
      * It is different from findObject10 in several ways:
-     * -- instead of providing MSERMatcher with only the
-     * filtered canonicalized regions and image pyramids,
-     * it also creates segmentation for the shape0
-     * and passes both the labeled segmentation sets to the
-     * MSERMatcher.
+     *
      *
      * @param img0
      * @param shape0
@@ -1434,7 +1546,7 @@ public class ObjectMatcher {
         }
 
         List<Region> regionsComb1 = createCombinedMSERRegions(gsImg1, luvTheta1);
-
+        
         // these are in the trimmed reference frame
         //NOTE: need segmentation for shape0 in order to find partial
         //   object when composed of very different parts, such as the
@@ -1519,13 +1631,15 @@ public class ObjectMatcher {
         TIntObjectMap<RegionPoints> regionPoints0 =
             canonicalizer.canonicalizeRegions2(regionsComb0, pyrRGB0.get(0).get(1));
 
+        createAWholeRegion(regionPoints0, shape0Trimmed, pyrRGB0.get(0).get(1));
+        
         TIntObjectMap<RegionPoints> regionPoints1 =
             canonicalizer.canonicalizeRegions2(regionsComb1, pyrRGB1.get(0).get(1));
    
         // these have been filtered to remove excess labeled points where possible.
         // and if last variable is true, the points have been 
         // replaced with filtered segmented label points instead of the ellipse.
-        // MOTE: the geompetry variable that include orientation is not changed from the
+        // MOTE: the geometry variable that include orientation is not changed from the
         // original ellipse and that may need to be.
         mergeRegionsAndSegmentation(labeledSets0List, regionPoints0, gsImg0, luvTheta0,
             true);
@@ -1537,7 +1651,11 @@ public class ObjectMatcher {
         
         TIntObjectMap<CRegion> cRegions1 = canonicalizer.canonicalizeRegions3(
             regionPoints1, pyrRGB1.get(0).get(1));
-      
+        
+        // add a fake mser for each labeled region not present singly in regionPoints1
+        createForLabels(labeledSets0List, cRegions0, gsImg0.getWidth(), gsImg0.getHeight());
+        createForLabels(labeledSets1, cRegions1, gsImg1.getWidth(), gsImg1.getHeight());
+        
         TObjectIntMap<PairInt> pointLabelMap0 = createPointLabelMap(labeledSets0List);
 
         TObjectIntMap<PairInt> pointLabelMap1 = createPointLabelMap(labeledSets1);
@@ -2404,6 +2522,7 @@ public class ObjectMatcher {
         }
     }
     
+    // has the side effect of removing unlabeled points also
     private void populateLabels(TIntObjectMap<CRegion> cRegions, 
         TObjectIntMap<PairInt> pointLabelMap) {
         
@@ -2412,15 +2531,19 @@ public class ObjectMatcher {
             iter.advance();
             CRegion cr = iter.value();
             cr.labels.clear();
+            Set<PairInt> rm = new HashSet<PairInt>();
             for (Entry<PairInt, PairInt> entry : cr.offsetsToOrigCoords.entrySet()) {
                 PairInt xy = entry.getValue();
                 if (!pointLabelMap.containsKey(xy)) {
+                    rm.add(entry.getKey());
                     //System.out.println("missing for cr[" + iter.key() + "] " + xy);
                     continue;
                 }        
-                assert(pointLabelMap.containsKey(xy));
                 int label = pointLabelMap.get(xy);
                 cr.labels.add(label);
+            }
+            for (PairInt p : rm) {
+                cr.offsetsToOrigCoords.remove(p);
             }
         }
     }
