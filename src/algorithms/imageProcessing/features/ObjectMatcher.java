@@ -45,8 +45,10 @@ import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -405,11 +407,14 @@ public class ObjectMatcher {
             // only used if replace is true
             TIntSet rmLabel = new TIntHashSet();
             
+            Set<PairInt> rmPoints = new HashSet<PairInt>();
+            
             //key=label, nPoints in label
             TIntIntMap labelInRegion = new TIntIntHashMap();
             for (PairInt p : cr.points) {
                 
                 if (!pointLabelMap.containsKey(p)) {
+                    rmPoints.add(p);
                     continue;
                 }
                 
@@ -429,6 +434,7 @@ public class ObjectMatcher {
                 
                 nLabeled++;
             }
+            cr.points.removeAll(rmPoints);
             
             // calculate percentage of cr covered by label
             //   and percentage of label inside cr
@@ -1424,6 +1430,7 @@ public class ObjectMatcher {
 
         if (debug) {
             MiscDebug.writeImage(img0Trimmed, "_shape0_mask_");
+            MiscDebug.writeImage(luvTheta0, "_luv_mask_");
         }
 
         List<Region> regionsComb1 = createCombinedMSERRegions(gsImg1, luvTheta1);
@@ -1502,14 +1509,13 @@ public class ObjectMatcher {
                 r.calculateXYCentroid(xyCen, im1Cp.getWidth(), im1Cp.getHeight());
                 ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im1Cp,
                     1, 255, 0, 0);
-                System.out.println("regIdx1=" + i + " x="+xyCen[0] + " y=" + xyCen[1]);
+            //    System.out.println("regIdx1=" + i + " x="+xyCen[0] + " y=" + xyCen[1]);
             }
             MiscDebug.writeImage(im1Cp, "regions_1_");
         }
 
         //regions[0) are found from the image,
         // while regions[1) are found from the inverted image.
-        // they're kept separate for now to test matching them separately.
         TIntObjectMap<RegionPoints> regionPoints0 =
             canonicalizer.canonicalizeRegions2(regionsComb0, pyrRGB0.get(0).get(1));
 
@@ -1518,25 +1524,37 @@ public class ObjectMatcher {
    
         // these have been filtered to remove excess labeled points where possible.
         // and if last variable is true, the points have been 
-        // replaced with filtered segmented label points instead of the ellipse
+        // replaced with filtered segmented label points instead of the ellipse.
+        // MOTE: the geompetry variable that include orientation is not changed from the
+        // original ellipse and that may need to be.
         mergeRegionsAndSegmentation(labeledSets0List, regionPoints0, gsImg0, luvTheta0,
             true);
         
         mergeRegionsAndSegmentation(labeledSets1, regionPoints1, gsImg1, luvTheta1, true);
-        
+      
         TIntObjectMap<CRegion> cRegions0 = canonicalizer.canonicalizeRegions3(
             regionPoints0, pyrRGB0.get(0).get(1));
         
         TIntObjectMap<CRegion> cRegions1 = canonicalizer.canonicalizeRegions3(
             regionPoints1, pyrRGB1.get(0).get(1));
       
+        TObjectIntMap<PairInt> pointLabelMap0 = createPointLabelMap(labeledSets0List);
+
+        TObjectIntMap<PairInt> pointLabelMap1 = createPointLabelMap(labeledSets1);
+        
+        populateLabels(cRegions0, pointLabelMap0);
+        populateLabels(cRegions1, pointLabelMap1);
+        
+        reduceToUnique(cRegions0);
+        reduceToUnique(cRegions1);
+        
         if (debug) {
             debugPrint2(cRegions0, pyrRGB0.get(0), "_cr_0_");
             //debugPrint2(cRegions1, pyrRGB1.get(0), "_cr_1_");
             debugPrint2(cRegions1, luvTheta1, "_cr_1_");
             MiscDebug.writeImage(luvTheta1, "_polar_cieluv_");
         }
-        
+                
         MSERMatcher matcher = new MSERMatcher();
 
         if (debug) {
@@ -1544,8 +1562,8 @@ public class ObjectMatcher {
         }
 
         List<CorrespondenceList> corList = matcher.matchObject2(
-            pyrRGB0, pyrPT0, cRegions0, labeledSets0List,
-            pyrRGB1,  pyrPT1, cRegions1, labeledSets1);
+            pyrRGB0, pyrPT0, cRegions0, labeledSets0List, pointLabelMap0,
+            pyrRGB1,  pyrPT1, cRegions1, labeledSets1, pointLabelMap1);
 
         return corList.get(0);
     }
@@ -2291,4 +2309,120 @@ public class ObjectMatcher {
 
         return listOfPointSets2;
     }
+    
+    private TObjectIntMap<PairInt> createPointLabelMap(
+        List<Set<PairInt>> labeledSets) {
+
+        TObjectIntMap<PairInt> pointLabelMap = new TObjectIntHashMap<PairInt>();
+
+        for (int label = 0; label < labeledSets.size(); ++label) {
+            Set<PairInt> set = labeledSets.get(label);
+            for (PairInt p : set) {
+                pointLabelMap.put(p, label);
+            }
+        }
+
+        return pointLabelMap;
+    }
+    
+    private TIntObjectMap<TIntSet> populateLabeLs(
+        TIntObjectMap<CRegion> csRegions, TObjectIntMap<PairInt> pointLabelMap) {
+
+        TIntObjectMap<TIntSet> map = new TIntObjectHashMap<TIntSet>();
+        
+        TIntObjectIterator<CRegion> iter = csRegions.iterator();
+        for (int i = 0; i < csRegions.size(); ++i) {
+            iter.advance();
+            CRegion csr = iter.value();
+            int rIdx = iter.key();
+            
+            for (Entry<PairInt, PairInt> entry : csr.offsetsToOrigCoords.entrySet()) {
+                PairInt trXY = entry.getValue();
+                int label = pointLabelMap.get(trXY);
+                assert(pointLabelMap.containsKey(trXY));
+                
+                TIntSet set = map.get(rIdx);
+                if (set == null) {
+                    set = new TIntHashSet();
+                    map.put(rIdx, set);
+                }
+                set.add(label);
+            }
+        }
+        
+        return map;
+    }
+    
+    
+    
+    private void reduceToUnique(TIntObjectMap<CRegion> regions) {
+
+        Map<OneDIntArray, Integer> labelsMap = new HashMap<OneDIntArray, Integer>();
+        
+        TIntObjectIterator<CRegion> iter = regions.iterator();
+        for (int i = 0; i < regions.size(); ++i) {
+            iter.advance();
+            
+            int rIdx = iter.key();
+            CRegion r = iter.value();
+        
+            TIntList a = new TIntArrayList(r.labels);
+            a.sort();
+            OneDIntArray b = new OneDIntArray(a.toArray(new int[a.size()]));
+            
+            int n = r.offsetsToOrigCoords.size();
+            
+            Integer existingRIdx = labelsMap.get(b);
+            if (existingRIdx == null) {
+                labelsMap.put(b, Integer.valueOf(rIdx));
+            } else {
+                int count = regions.get(
+                    existingRIdx.intValue()).offsetsToOrigCoords.size();
+                if (count < n) {
+                    labelsMap.put(b, Integer.valueOf(rIdx));
+                }
+            }
+        }
+
+        TIntObjectMap<CRegion> map = new TIntObjectHashMap<CRegion>();
+        
+        for (Entry<OneDIntArray, Integer> entry : labelsMap.entrySet()) {
+            Integer rIndex = entry.getValue();
+            int rIdx = rIndex.intValue();
+            map.put(rIdx, regions.get(rIdx));
+        }
+        regions.clear();
+        
+        iter = map.iterator();
+        for (int i = 0; i < map.size(); ++i) {
+            iter.advance();
+            
+            int rIdx = iter.key();
+            CRegion r = iter.value();
+            
+            regions.put(rIdx, r);
+        }
+    }
+    
+    private void populateLabels(TIntObjectMap<CRegion> cRegions, 
+        TObjectIntMap<PairInt> pointLabelMap) {
+        
+        TIntObjectIterator<CRegion> iter = cRegions.iterator();
+        for (int i = 0; i < cRegions.size(); ++i) {
+            iter.advance();
+            CRegion cr = iter.value();
+            cr.labels.clear();
+            for (Entry<PairInt, PairInt> entry : cr.offsetsToOrigCoords.entrySet()) {
+                PairInt xy = entry.getValue();
+                if (!pointLabelMap.containsKey(xy)) {
+                    //System.out.println("missing for cr[" + iter.key() + "] " + xy);
+                    continue;
+                }        
+                assert(pointLabelMap.containsKey(xy));
+                int label = pointLabelMap.get(xy);
+                cr.labels.add(label);
+            }
+        }
+    }
+
 }

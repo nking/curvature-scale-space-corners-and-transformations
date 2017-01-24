@@ -107,6 +107,11 @@ public class Canonicalizer {
          */
         public Map<PairInt, PairInt> offsetsToOrigCoords;
 
+        /**
+         * when not empty, this holds label of segmented regions
+         */
+        public TIntSet labels = new TIntHashSet();
+        
         public void draw(Image img, int nExtraDot, int rClr, int gClr, int bClr) {
 
             double mc = Math.cos(ellipseParams.orientation - Math.PI/2.);
@@ -174,15 +179,6 @@ public class Canonicalizer {
     }
 
     /**
-     * class composed of labeled segmented regions reformed to fit
-     * the use of canonicalized mser region
-     */
-    public static class CSRegion extends CRegion {
-        // the segmented cell label index
-        public int label;
-    }
-    
-    /**
      * NOTE, for best use, invoker should use this descriptor with
      * an image processed to create a window average for each pixel.
        For example:
@@ -206,7 +202,9 @@ public class Canonicalizer {
             
             CRegion cRegion = canonicalizeRegion(r, meanWindowedImg);
             
-            output.put(i, cRegion);
+            if (cRegion != null) {
+                output.put(i, cRegion);
+            }
         }
 
         return output;
@@ -300,6 +298,10 @@ public class Canonicalizer {
 
         CRegion cRegion = canonicalizeRegion(r, imageWidth, imageHeight);
 
+        if (cRegion == null) {
+            return null;
+        }
+        
         double autocorrel = calcAutoCorrel(meanWindowedImg, 
             cRegion.ellipseParams.xC, cRegion.ellipseParams.yC, 
             cRegion.offsetsToOrigCoords);
@@ -434,7 +436,9 @@ public class Canonicalizer {
         double minor = 2. * m[5];
 
         double ecc = Math.sqrt(major * major - minor * minor)/major;
-        assert(!Double.isNaN(ecc));
+        if (Double.isNaN(ecc)) {
+            return null;
+        }
 
         PairIntArray xy = new PairIntArray();
 
@@ -696,127 +700,6 @@ public class Canonicalizer {
         }
 
         return output;
-    }
-
-    public TIntObjectMap<CSRegion> selectSets(TIntObjectMap<CRegion> cRegions,
-        List<Set<PairInt>> labeledSets, TObjectIntMap<PairInt> pointLabelMap,
-        GreyscaleImage img) {
-
-        int imgWidth = img.getWidth();
-        int imgHeight = img.getHeight();
-        
-        TIntObjectMap<TIntSet> labelRegionsMap = new TIntObjectHashMap<TIntSet>();
-        TIntObjectIterator<CRegion> iter = cRegions.iterator();
-        for (int i = 0; i < cRegions.size(); ++i) {
-            iter.advance();
-            int rIdx = iter.key();
-            CRegion cr = iter.value();
-            PairInt p = new PairInt(cr.ellipseParams.xC, cr.ellipseParams.yC);
-            assert(pointLabelMap.containsKey(p));
-            int label = pointLabelMap.get(p);
-
-            TIntSet rSet = labelRegionsMap.get(label);
-            if (rSet == null) {
-                rSet = new TIntHashSet();
-                labelRegionsMap.put(label, rSet);
-            }
-            rSet.add(rIdx);
-        }
-
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-
-        Transformer transformer = new Transformer();
-
-        // for each key in labelRegionsMap, make a combined cregion
-        TIntObjectMap<CSRegion> csrMap = new TIntObjectHashMap<CSRegion>();
-
-        TIntObjectIterator<TIntSet> iter2 = labelRegionsMap.iterator();
-        for (int i = 0; i < labelRegionsMap.size(); ++i) {
-            iter2.advance();
-            int label = iter2.key();
-            TIntSet rIdxs = iter2.value();
-
-            TIntIterator iter3 = rIdxs.iterator();
-            int nTotal = 0;
-            while (iter3.hasNext()) {
-                int rIdx = iter3.next();
-                CRegion cr = cRegions.get(rIdx);
-                nTotal += cr.offsetsToOrigCoords.size();
-            }
-
-            double avgOrientation = 0;
-
-            iter3 = rIdxs.iterator();
-            while (iter3.hasNext()) {
-                int rIdx = iter3.next();
-
-                CRegion cr = cRegions.get(rIdx);
-
-                int n = cr.offsetsToOrigCoords.size();
-
-                double w = (double)n/(double)nTotal;
-
-                avgOrientation += (w * cr.ellipseParams.orientation);
-            }
-
-            // create a Region to use the accumulate method
-            // and compare results
-
-            PairIntArray xy = new PairIntArray();
-
-            Set<PairInt> labeledSet = labeledSets.get(label);
-            Region r = new Region();
-            for (PairInt pl : labeledSet) {
-                r.accumulate(pl.getX(), pl.getY());
-                xy.add(pl.getX(), pl.getY());
-            }
-
-            int[] xyCen = new int[2];
-             r.calculateXYCentroid(xyCen, imgWidth, imgWidth);
-            int x = xyCen[0];
-            int y = xyCen[1];
-            assert(x >= 0 && x < imgWidth);
-            assert(y >= 0 && y < imgWidth);
-            double[] m = r.calcParamTransCoeff();
-
-            double angle = Math.atan(m[0]/m[2]);
-            if (angle < 0) {
-                angle += Math.PI;
-            }
-
-            double major = 2. * m[4];
-            double minor = 2. * m[5];
-
-            double ecc = Math.sqrt(major * major - minor * minor)/major;
-            assert(!Double.isNaN(ecc));
-
-            System.out.println("avg or=" +
-                avgOrientation + " tensor orn="
-                + angle + " (" + x + "," + y + ")");
-
-            Map<PairInt, PairInt> offsetMap = createOffsetToOrigMap(x, y,
-                xy, imgWidth, imgHeight, angle);
-            
-            double autocorrel = calcAutoCorrel(img, x, y, offsetMap);
-           
-            RegionGeometry rg = new RegionGeometry();
-            rg.eccentricity = ecc;
-            rg.major = major;
-            rg.minor = minor;
-            rg.orientation = angle;
-            rg.xC = x;
-            rg.yC = y;
-                
-            CSRegion csRegion = new CSRegion();
-            csRegion.label = label;
-            csRegion.ellipseParams = rg;
-            csRegion.offsetsToOrigCoords = offsetMap;
-            csRegion.autocorrel = Math.sqrt(autocorrel)/255.;
-            
-            csrMap.put(label, csRegion);
-        }
-
-        return csrMap;
     }
 
     public static Map<PairInt, PairInt> createOffsetToOrigMap(
