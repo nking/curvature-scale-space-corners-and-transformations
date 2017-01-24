@@ -939,9 +939,12 @@ public class MSERMatcher {
                     continue;
                 }
                 
+                // tunning tests to look at sorted results thus far.
+                // correct answer ranks: 5, 38, 
+                
                 // TODO: partial shape matching of top 5
-                if (sortedFilteredBestR.size() > 5) {
-                    sortedFilteredBestR = sortedFilteredBestR.subList(0, 5);
+                if (sortedFilteredBestR.size() > 10) {
+                    sortedFilteredBestR = sortedFilteredBestR.subList(0, 10);
                 }
                 
                 debugPrint3(sortedFilteredBestR, gsI0, gsI1, scale0, scale1,
@@ -1661,14 +1664,14 @@ public class MSERMatcher {
                 //      similar sizes to one another
 
                 TIntSet rIdxsI_0 = regionAdjacencyMap0.get(objI.r0Idx);
-    
+boolean dbg = false;
+/*    
 System.out.println(" objI (" + objI.cr0.ellipseParams.xC + "," +
 objI.cr0.ellipseParams.yC + ") " + 
 " (" + objI.cr1.ellipseParams.xC + "," + objI.cr1.ellipseParams.yC
 );
 //(13,15)  (15,55      // ridx 109 302
 //(14,9) and (16,48)  // ridx 45 61
-boolean dbg = false;
 if (imgIdx0==2 && imgIdx1==0 &&
     (Math.abs(objI.cr0.ellipseParams.xC - 12) < 2) &&
     (Math.abs(objI.cr0.ellipseParams.yC - 15) < 2) &&
@@ -1681,7 +1684,7 @@ if (imgIdx0==2 && imgIdx1==0 &&
     // error in the region adjacency maps
     dbg = true;
 }
-
+*/
                 if (rIdxsI_0 == null) {
                     continue;
                 }
@@ -2081,7 +2084,8 @@ if (dbg) {
             int[] xy = ch.calculateRoundedXYCentroids(sets.get(i));
             PairInt p = new PairInt(xy[0], xy[1]);
             map.put(i, p);
-        System.out.println("label " + i + "  xycen=" + p);
+        System.out.println("label " + i + "  xycen=" + p + 
+            " n=" + sets.get(i).size());
         }
         
         return map;
@@ -2177,6 +2181,8 @@ if (dbg) {
             }
         }
         
+        // now have labelRegions w/ key = label, value = region indexes
+        
         iter = cRegions.iterator();
         for (int i = 0; i < cRegions.size(); ++i) {
             iter.advance();
@@ -2184,9 +2190,8 @@ if (dbg) {
             int rIdx = iter.key();
             CRegion cr = iter.value();
             TIntSet labels = cr.labels;
-            
+                        
             TIntSet adjLabels = new TIntHashSet();
-            
             TIntIterator iter2 = labels.iterator();
             while (iter2.hasNext()) {
                 int label = iter2.next();
@@ -2195,9 +2200,11 @@ if (dbg) {
                     adjLabels.addAll(bs.getSetBits());
                 }
             }
-            
             adjLabels.removeAll(labels);
             
+            // find the adjacent regions.
+            // then keep the adjacent regions which do not have an 
+            // intersection with cr
             iter2 = adjLabels.iterator();
             while (iter2.hasNext()) {
                 int adjLabel = iter2.next();
@@ -2212,13 +2219,22 @@ if (dbg) {
                     if (r2Idx == rIdx) {
                         continue;
                     }
+                    
                     CRegion cr2 = cRegions.get(r2Idx);
+
                     int n2 = cr2.labels.size();
-                    // if the intersection of cr2.labels and labels is null,
-                    //   can add this to region adjacency map
+                    
                     TIntSet cr2Labels = new TIntHashSet(cr2.labels);
                     cr2Labels.removeAll(labels);
-                    if (n2 == cr2Labels.size()) {
+                    
+                    //NOTE: this might need revision.
+                    //  would prefer to only add an association if the intersection
+                    //  is null, but can see that it's necessary to add one
+                    //  when they are mostly not intersecting too.
+                    //    might need to look at the fraction of intersection
+                    //      over total
+                    
+                    if ((n2 - cr2Labels.size()) < 2) {
                         
                         //TODO: may need to improve this.  double checking that
                         // there are adjacenct points in cr and cr2
@@ -2231,7 +2247,7 @@ if (dbg) {
                             set = new TIntHashSet();
                             out.put(rIdx, set);
                         }
-                        set.add(r2Idx);
+                        set.add(r2Idx);                        
                     }
                 }
             } 

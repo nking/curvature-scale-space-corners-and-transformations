@@ -9058,50 +9058,19 @@ if (sum > 511) {
         MedianTransform mt = new MedianTransform();
         mt.multiscalePyramidalMedianTransform2(input, output, decimationLimit);
 
-        TFloatList scales = calculateImageScales(output);
-        
-        // --- build filler scale images ----
-        TFloatList scalesToBuild = new TFloatArrayList(scales.size() + 2);
-        scalesToBuild.add(1.125f);
-        scalesToBuild.add(1.25f);
-        scalesToBuild.add(1.5f);
-        scalesToBuild.add(1.75f);
-        
-        float f = 1.f/(nBetween + 1);
-        
-        int start = 1;
-        if (nBetween > 4) {
-            start = 0;
+        if (output.size() == 1) {
+            return output;
         }
+
+        List<GreyscaleImage> output2 = new ArrayList<GreyscaleImage>();
         
-        for (int i = start; i < scales.size() - 1; ++i) {
-            float si = scales.get(i);
-            float d = f * (scales.get(i + 1) - si);
-            for (int j = 0; j < (nBetween + 1); ++j) {
-                float b = si + d * (j + 1);
-                scalesToBuild.add(b);
-            }
+        // add an image in between each after output[2]
+        for (int i = 0; i < output.size() - 1; ++i) {
+            output2.add(mt.decimateImage(output.get(i), 1.5f, 0, 255));
         }
-        
-        /*
-        System.out.println("scalesToBuild=" 
-            + Arrays.toString(
-                scalesToBuild.toArray(new float[scalesToBuild.size()]))
-            + " scales-"
-            + Arrays.toString(
-                scales.toArray(new float[scales.size()]))
-        );*/
-        
-        for (int i = 0; i < scalesToBuild.size(); ++i) {
-            
-            float scale = scalesToBuild.get(i);
-            
-            GreyscaleImage out = mt.decimateImage(input,
-                scale, 0, 255);
-            
-            output.add(out);
-        }
-      
+       
+        output.addAll(output2);
+       
         Collections.sort(output, new DecreasingSizeComparator());
 
         return output;

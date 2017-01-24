@@ -23,6 +23,7 @@ import algorithms.imageProcessing.features.mser.Region;
 import algorithms.imageProcessing.matching.MSERMatcher;
 import algorithms.imageProcessing.matching.ORBMatcher;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
+import algorithms.imageProcessing.util.GroupAverageColors;
 import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
@@ -352,7 +353,7 @@ public class ObjectMatcher {
     }
 
     private List<Region> createCombinedMSERRegions(GreyscaleImage gsImg,
-        GreyscaleImage luvTheta) {
+        GreyscaleImage luvTheta, CMODE mode) {
 
         MSER mser = new MSER();
 
@@ -361,12 +362,21 @@ public class ObjectMatcher {
         List<List<Region>> regionsT = mser.findRegions(luvTheta);
 
         List<Region> combined = new ArrayList<Region>();
-        for (int i = 0; i < regions.size(); ++i) {
+        
+        int start = 0;
+        int stop = 2;
+        if (mode.equals(CMODE.WHITE)) {
+            start = 1;
+        } else if (mode.equals(CMODE.BLACK)) {
+            stop = 1;
+        }
+        
+        for (int i = start; i < stop; ++i) {
             for (Region r : regions.get(i)) {
                 combined.add(r);
             }
         }
-        for (int i = 0; i < regionsT.size(); ++i) {
+        for (int i = start; i < stop; ++i) {
             for (Region r : regionsT.get(i)) {
                 combined.add(r);
             }
@@ -682,6 +692,23 @@ public class ObjectMatcher {
             idxMax++;
             
             regions.put(idxMax, cRegion);
+        }
+    }
+
+    private CMODE determineColorMode(ImageExt img, Set<PairInt> set) {
+
+        GroupAverageColors clrs = new GroupAverageColors(img, set);
+        
+        int limit1 = 150;
+        int limit2 = 55;
+        if (clrs.getR() >= limit1 && clrs.getG() >= limit1 &&
+            clrs.getB() >= limit1) {
+            return CMODE.WHITE;
+        } else if (clrs.getR() <= limit2 && clrs.getG() <= limit2 &&
+            clrs.getB() <= limit2) {
+            return CMODE.BLACK;
+        } else {
+            return CMODE.OTHER;
         }
     }
 
@@ -1468,6 +1495,15 @@ public class ObjectMatcher {
     }
 
     /**
+     * descriptions black, white, or other used in describing the template
+     * shape color.  the extremes black and white can be used to limit
+     * the regions created.
+     */
+    private enum CMODE {
+        WHITE, BLACK, OTHER
+    }
+    
+    /**
      * given an object in image img0 which is defined by shape0, find the same
      * object in img1.
      * This method was created to handle a range of lighting changes, poses,
@@ -1521,10 +1557,13 @@ public class ObjectMatcher {
         GreyscaleImage gsImg0 = img0Trimmed.copyToGreyscale2();
         GreyscaleImage gsImg1 = img1.copyToGreyscale2();
 
+        CMODE mode0 = determineColorMode(img0Trimmed, shape0Trimmed);
+        //(41,59):(50,63)
         // ----- create the cRegions for a masked image pyramid of img 0 ====
 
         // build combined list of regions
-        List<Region> regionsComb0 = createCombinedMSERRegions(gsImg0, luvTheta0);
+        List<Region> regionsComb0 = createCombinedMSERRegions(gsImg0, 
+            luvTheta0, mode0);
 
         mask(img0Trimmed, shape0Trimmed);
         mask(luvTheta0, shape0Trimmed);
@@ -1545,7 +1584,8 @@ public class ObjectMatcher {
             MiscDebug.writeImage(luvTheta0, "_luv_mask_");
         }
 
-        List<Region> regionsComb1 = createCombinedMSERRegions(gsImg1, luvTheta1);
+        List<Region> regionsComb1 = createCombinedMSERRegions(gsImg1, 
+            luvTheta1, mode0);
         
         // these are in the trimmed reference frame
         //NOTE: need segmentation for shape0 in order to find partial
