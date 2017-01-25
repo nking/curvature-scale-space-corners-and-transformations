@@ -909,7 +909,18 @@ public class MSERMatcher {
                     getOrCreate(csr1, imgIdx1, gsI1, scale1),
                     gsI1, ptI1, scale1, imgIdx1, b);
 
-                /*
+                // rank of true matches in b in tests:
+                //     52
+                //     17
+                //     18, 22
+                //     9
+                //     3
+                //     18
+                //     12
+                //     3
+                //     9
+                //     3
+                
                 for (int k = 0; k < b.getNumberOfItems(); ++k) {
                     Obj obj = b.getArray()[k];
                     System.out.format(
@@ -920,8 +931,8 @@ public class MSERMatcher {
                         Math.round(scale1 * obj.cr1.ellipseParams.yC),
                         obj.imgIdx0, obj.imgIdx1, (float)obj.cost,
                         obj.nMatched);
-                }*/
-                                  
+                }
+                /*                 
                 // lists of matches consistent with adjacency and scale
                 List<List<Obj>> sortedFilteredBestR = filterForAdjacency(
                     b, pointLabelMap0, pointLabelMap1, 
@@ -949,7 +960,7 @@ public class MSERMatcher {
                 
                 debugPrint3(sortedFilteredBestR, gsI0, gsI1, scale0, scale1,
                     "_filtered_" + imgIdx0 + "_" + imgIdx1 + "_");
-                
+                */
                 //TODO: plot the top 5.  need to reduce the
                 //number of steps in filterForAdjacency
                 

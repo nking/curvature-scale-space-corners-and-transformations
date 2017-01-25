@@ -1783,9 +1783,14 @@ public class ObjectMatcher {
         
         if (debug) {
             debugPrint2(cRegions0, pyrRGB0.get(0), "_cr_0_");
-            //debugPrint2(cRegions1, pyrRGB1.get(0), "_cr_1_");
-            debugPrint2(cRegions1, luvTheta1, "_cr_1_");
+            debugPrint2(cRegions1, pyrRGB1.get(0), "_cr_1_");
+            //debugPrint2(cRegions1, luvTheta1, "_cr_1_");
             MiscDebug.writeImage(luvTheta1, "_polar_cieluv_");
+        // 53,34 16,48
+        // (13,8) (16,48)
+        // 53,32
+            System.out.println("0: " + cRegions0.size());
+            System.out.println("1: " + cRegions1.size());
         }
                 
         MSERMatcher matcher = new MSERMatcher();
