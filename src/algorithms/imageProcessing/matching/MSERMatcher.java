@@ -894,11 +894,7 @@ public class MSERMatcher {
                 //NOTE: orientation due to different segmentation
                 //   can be a weakness in this search method
                 
-                //int top2 = top/n1;
-                //if (top2 < cRegions1.size()) {
-                //    top2 = cRegions1.size();
-                //}
-                int top2 = 100 * cRegions1.size();
+                int top2 = 100;
 
                 // cost is ssd rgb + ssd ptcieluv + fract^2
                 FixedSizeSortedVector<Obj> b = new
@@ -920,6 +916,14 @@ public class MSERMatcher {
                 //     3
                 //     9
                 //     3
+
+                // TODO:
+                //   trying 2 things:
+                //      (1) adding a HOG or PHOG cost to or after search 
+                //          - like the patch based ssd, needs ability to
+                //            fill a region (pixel based...considering
+                //            details of windowed mean on hogs)
+                //      (2) adding shape to the cost here on items in b
                 
                 for (int k = 0; k < b.getNumberOfItems(); ++k) {
                     Obj obj = b.getArray()[k];

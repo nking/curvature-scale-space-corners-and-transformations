@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.compGeometry.FurthestPair;
+import algorithms.imageProcessing.AdaptiveThresholding;
 import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.ColorHistogram;
 import algorithms.imageProcessing.GreyscaleImage;
@@ -1636,10 +1637,17 @@ public class ObjectMatcher {
         GreyscaleImage gsImg1 = img1.copyToGreyscale2();
         
         boolean fewerMSER = true;
+       
+        GreyscaleImage tmp00 = gsImg0.copyImage();
+        imageProcessor.enhanceContrast(tmp00, 4);
+        GreyscaleImage tmp01 = luvTheta0.copyImage();
+        imageProcessor.enhanceContrast(tmp01, 4);
         
         // build combined list of regions
-        List<Region> regionsComb0 = createCombinedMSERRegions(gsImg0, 
-            luvTheta0, clrMode, ptMode, fewerMSER);
+        List<Region> regionsComb0 = createCombinedMSERRegions(
+            tmp00, tmp01,
+            //gsImg0, luvTheta0, 
+            clrMode, ptMode, fewerMSER);
 
         int[] xy = new int[2];
         //remove all regions with centers outside of shape0 points
@@ -1652,15 +1660,27 @@ public class ObjectMatcher {
             }
         }
 
+        fewerMSER = false;
+        
+        GreyscaleImage tmp10 = gsImg1.copyImage();
+        imageProcessor.enhanceContrast(tmp10, 4);
+        GreyscaleImage tmp11 = luvTheta1.copyImage();
+        imageProcessor.enhanceContrast(tmp11, 4);
+        
         if (debug) {
             MiscDebug.writeImage(img0Trimmed, "_shape0_mask_");
             MiscDebug.writeImage(luvTheta0, "_luv_mask_");
+            
+            MiscDebug.writeImage(tmp00, "_gs_enhanced_0_");
+            MiscDebug.writeImage(tmp01, "_luv_enhanced_0_");
+            MiscDebug.writeImage(tmp10, "_gs_enhanced_1_");
+            MiscDebug.writeImage(tmp11, "_luv_enhanced_1_");
         }
-
-        fewerMSER = false;
         
-        List<Region> regionsComb1 = createCombinedMSERRegions(gsImg1, 
-            luvTheta1, clrMode, ptMode, fewerMSER);
+        List<Region> regionsComb1 = createCombinedMSERRegions(
+            tmp10, tmp11,
+            //gsImg1, luvTheta1, 
+            clrMode, ptMode, fewerMSER);
         
         // these are in the trimmed reference frame
         //NOTE: need segmentation for shape0 in order to find partial
@@ -1786,9 +1806,7 @@ public class ObjectMatcher {
             debugPrint2(cRegions1, pyrRGB1.get(0), "_cr_1_");
             //debugPrint2(cRegions1, luvTheta1, "_cr_1_");
             MiscDebug.writeImage(luvTheta1, "_polar_cieluv_");
-        // 53,34 16,48
-        // (13,8) (16,48)
-        // 53,32
+        
             System.out.println("0: " + cRegions0.size());
             System.out.println("1: " + cRegions1.size());
         }

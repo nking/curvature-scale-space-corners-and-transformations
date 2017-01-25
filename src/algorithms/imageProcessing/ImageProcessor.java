@@ -9719,6 +9719,55 @@ if (sum > 511) {
             }
         }
     }
+    
+    /**
+     * use an adaptive threshold with window size w to add the threshold
+     * to the image where binarization would have created a "1".
+     * This enhances shadows and dark edges to an extreme that might not
+     * be desirabe for all uses.
+     * 
+     * @param img 
+     */
+    public void enhanceContrast(GreyscaleImage img, int window) {
+       
+        GreyscaleImage inImg = img;
+        double[][] outImg;
+        
+        int w = inImg.getWidth();
+        int h = inImg.getHeight();
+        
+        double[][] sTable = new double[w][];
+        for (int i = 0; i < w; ++i) {
+            sTable[i] = new double[h];
+            for (int j = 0; j < h; ++j) {
+                sTable[i][j] = inImg.getValue(i, j);
+            }
+        }
+        AdaptiveThresholding th =
+            new AdaptiveThresholding();
+        outImg = th.createAdaptiveThresholdImage(sTable, window, 0.2);
+        double v;
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                double t = outImg[i][j];
+                v = inImg.getValue(i, j);
+                if (v > t) {
+                    // adding threshold back to emphasize contrast
+                    // instead of binarization:
+                    v += t;                    
+                }
+                outImg[i][j] = v;
+            }
+        }
+        
+        MiscMath.applyRescale(outImg, 0, 255);
+        
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                inImg.setValue(i, j, (int)outImg[i][j]);
+            }
+        }
+    }
 
     // TODO: implement the methods in 
     // http://www.merl.com/publications/docs/TR2008-030.pdf
