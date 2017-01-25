@@ -472,13 +472,17 @@ public class MSER {
             maxVariation, minDiversity);
     }
     
+    public enum Threshold {
+        LEAST_SENSITIVE, LESS_SENSITIVE, SLIGHTLY_LESS_SENSITIVE, DEFAULT
+    }
+    
     /**
      * given 8 bit image, calculate the MSER regions.
      * @param img
      * @return 
      */
-    public List<List<Region>> findRegions(GreyscaleImage img, boolean 
-        lessSensitive) {
+    public List<List<Region>> findRegions(GreyscaleImage img, Threshold 
+        threshold) {
 
         int width = img.getWidth();
         int height = img.getHeight();
@@ -488,13 +492,13 @@ public class MSER {
             greyscale[i] = img.getValue(i);
         }
     
-        return findRegions(greyscale, width, height, lessSensitive);
+        return findRegions(greyscale, width, height, threshold);
     }
     
     public List<List<Region>> findRegions(int[] greyscale, int width,
         int height) {
-        boolean lessSensistive = false;
-        return findRegions(greyscale, width, height, lessSensistive);
+        return findRegions(greyscale, width, height, 
+            Threshold.DEFAULT);
     }
     
      /**
@@ -507,13 +511,22 @@ public class MSER {
      * image and the other created from an inverted image.
      */
     public List<List<Region>> findRegions(int[] greyscale, int width,
-        int height, boolean lessSensistive) {
+        int height, Threshold threshold) {
         
         int delta = 2;
-        double minArea = lessSensistive ? 0.001 : 0.0005;// smaller here results in more points
+        double minArea;
         double maxArea = 0.25;//0.1;
         double maxVariation = 0.5;
         double minDiversity = 0.5;
+        if (threshold.equals(Threshold.LEAST_SENSITIVE)) {
+            minArea = 0.1;
+        } else if (threshold.equals(Threshold.LESS_SENSITIVE)) {
+            minArea = 0.01;
+        } else if (threshold.equals(Threshold.SLIGHTLY_LESS_SENSITIVE)) {
+            minArea = 0.001;
+        } else {
+            minArea = 0.0005;
+        }
 
         return findRegions(greyscale, width, height, delta, minArea, maxArea, 
             maxVariation, minDiversity);

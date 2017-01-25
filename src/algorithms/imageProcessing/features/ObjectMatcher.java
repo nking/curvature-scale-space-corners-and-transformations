@@ -19,6 +19,7 @@ import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
 import algorithms.imageProcessing.features.mser.Canonicalizer.RegionGeometry;
 import algorithms.imageProcessing.features.mser.Canonicalizer.RegionPoints;
 import algorithms.imageProcessing.features.mser.MSER;
+import algorithms.imageProcessing.features.mser.MSER.Threshold;
 import algorithms.imageProcessing.features.mser.Region;
 import algorithms.imageProcessing.matching.MSERMatcher;
 import algorithms.imageProcessing.matching.ORBMatcher;
@@ -353,21 +354,61 @@ public class ObjectMatcher {
     }
 
     private List<Region> createCombinedMSERRegions(GreyscaleImage gsImg,
-        GreyscaleImage luvTheta, CMODE mode) {
+        GreyscaleImage luvTheta, CMODE clrMode, CMODE ptMode,
+        boolean fewerMSER) {
 
         MSER mser = new MSER();
 
-        List<List<Region>> regions = mser.findRegions(gsImg, true);
+        List<List<Region>> regionsT = null;
+        List<List<Region>> regions = null;
+        if (fewerMSER) {
+            regions = mser.findRegions(gsImg, Threshold.LEAST_SENSITIVE);
+            regionsT = mser.findRegions(luvTheta, Threshold.LESS_SENSITIVE);
+        } else {
+            regions = mser.findRegions(gsImg, Threshold.SLIGHTLY_LESS_SENSITIVE);
+            regionsT = mser.findRegions(luvTheta);
+        }
 
-        List<List<Region>> regionsT = mser.findRegions(luvTheta);
-
+        if (debug){
+            long ts = MiscDebug.getCurrentTimeFormatted();
+            int[] xyCen = new int[2];
+            Image imCp;
+            for (int type = 0; type < 2; ++type) {
+                imCp = gsImg.copyToColorGreyscale();
+                int n9 = regions.get(type).size();
+                for (int i = 0; i < n9; ++i) {
+                    Region r = regions.get(type).get(i);
+                    int[] clr = ImageIOHelper.getNextRGB(i);
+                    r.drawEllipse(imCp, 0, clr[0], clr[1], clr[2]);
+                    r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
+                    ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], imCp,
+                        1, 255, 0, 0);
+                }
+                MiscDebug.writeImage(imCp, "regions_gs_"+ type + "_" + ts);
+            }
+            
+            for (int type = 0; type < 2; ++type) {
+                imCp = luvTheta.copyToColorGreyscale();
+                int n9 = regionsT.get(type).size();
+                for (int i = 0; i < n9; ++i) {
+                    Region r = regionsT.get(type).get(i);
+                    int[] clr = ImageIOHelper.getNextRGB(i);
+                    r.drawEllipse(imCp, 0, clr[0], clr[1], clr[2]);
+                    r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
+                    ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], imCp,
+                        1, 255, 0, 0);
+                }
+                MiscDebug.writeImage(imCp, "regions_pt_"+ type + "_" + ts);
+            }
+        }
+        
         List<Region> combined = new ArrayList<Region>();
         
         int start = 0;
         int stop = 2;
-        if (mode.equals(CMODE.WHITE)) {
+        if (clrMode.equals(CMODE.WHITE)) {
             start = 1;
-        } else if (mode.equals(CMODE.BLACK)) {
+        } else if (clrMode.equals(CMODE.BLACK)) {
             stop = 1;
         }
         
@@ -375,6 +416,14 @@ public class ObjectMatcher {
             for (Region r : regions.get(i)) {
                 combined.add(r);
             }
+        }
+        
+        start = 0;
+        stop = 2;
+        if (ptMode.equals(CMODE.WHITE)) {
+            start = 1;
+        } else if (ptMode.equals(CMODE.BLACK)) {
+            stop = 1;
         }
         for (int i = start; i < stop; ++i) {
             for (Region r : regionsT.get(i)) {
@@ -516,7 +565,7 @@ public class ObjectMatcher {
                 //   moved boundary
                 
             }
-            
+                    
             if (cr.points.isEmpty()) {
                 //System.out.println("removing empty region " + rIdx);
                 skipRegions.add(rIdx);
@@ -706,6 +755,26 @@ public class ObjectMatcher {
             return CMODE.WHITE;
         } else if (clrs.getR() <= limit2 && clrs.getG() <= limit2 &&
             clrs.getB() <= limit2) {
+            return CMODE.BLACK;
+        } else {
+            return CMODE.OTHER;
+        }
+    }
+
+    private CMODE determinePolarThetaMode(GreyscaleImage luvTheta, 
+        Set<PairInt> points) {
+    
+        double avg = 0;
+        for (PairInt p : points) {
+            avg += luvTheta.getValue(p);
+        }
+        avg /= (double)points.size();
+        
+        int limit1 = 220;
+        int limit2 = 25;
+        if (avg >= limit1) {
+            return CMODE.WHITE;
+        } else if (avg <= limit2) {
             return CMODE.BLACK;
         } else {
             return CMODE.OTHER;
@@ -1554,19 +1623,23 @@ public class ObjectMatcher {
         imageProcessor.singlePixelFilter(luvTheta0);
         imageProcessor.singlePixelFilter(luvTheta1);
 
-        GreyscaleImage gsImg0 = img0Trimmed.copyToGreyscale2();
-        GreyscaleImage gsImg1 = img1.copyToGreyscale2();
-
-        CMODE mode0 = determineColorMode(img0Trimmed, shape0Trimmed);
-        //(41,59):(50,63)
-        // ----- create the cRegions for a masked image pyramid of img 0 ====
-
-        // build combined list of regions
-        List<Region> regionsComb0 = createCombinedMSERRegions(gsImg0, 
-            luvTheta0, mode0);
-
         mask(img0Trimmed, shape0Trimmed);
         mask(luvTheta0, shape0Trimmed);
+
+        CMODE clrMode = determineColorMode(img0Trimmed, shape0Trimmed);
+        
+        CMODE ptMode = determinePolarThetaMode(luvTheta0, shape0Trimmed);
+        
+        // ----- create the cRegions for a masked image pyramid of img 0 ====
+        
+        GreyscaleImage gsImg0 = img0Trimmed.copyToGreyscale2();
+        GreyscaleImage gsImg1 = img1.copyToGreyscale2();
+        
+        boolean fewerMSER = true;
+        
+        // build combined list of regions
+        List<Region> regionsComb0 = createCombinedMSERRegions(gsImg0, 
+            luvTheta0, clrMode, ptMode, fewerMSER);
 
         int[] xy = new int[2];
         //remove all regions with centers outside of shape0 points
@@ -1584,8 +1657,10 @@ public class ObjectMatcher {
             MiscDebug.writeImage(luvTheta0, "_luv_mask_");
         }
 
+        fewerMSER = false;
+        
         List<Region> regionsComb1 = createCombinedMSERRegions(gsImg1, 
-            luvTheta1, mode0);
+            luvTheta1, clrMode, ptMode, fewerMSER);
         
         // these are in the trimmed reference frame
         //NOTE: need segmentation for shape0 in order to find partial
@@ -1693,8 +1768,8 @@ public class ObjectMatcher {
             regionPoints1, pyrRGB1.get(0).get(1));
         
         // add a fake mser for each labeled region not present singly in regionPoints1
-        createForLabels(labeledSets0List, cRegions0, gsImg0.getWidth(), gsImg0.getHeight());
-        createForLabels(labeledSets1, cRegions1, gsImg1.getWidth(), gsImg1.getHeight());
+        //createForLabels(labeledSets0List, cRegions0, gsImg0.getWidth(), gsImg0.getHeight());
+        //createForLabels(labeledSets1, cRegions1, gsImg1.getWidth(), gsImg1.getHeight());
         
         TObjectIntMap<PairInt> pointLabelMap0 = createPointLabelMap(labeledSets0List);
 
