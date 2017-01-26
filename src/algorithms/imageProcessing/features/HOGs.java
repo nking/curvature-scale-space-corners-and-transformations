@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.ImageProcessor;
 import algorithms.util.OneDIntArray;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -65,8 +66,8 @@ import java.util.List;
    Note that a shift is needed for identifying the bin that is the
    canonical angle 0, that is a shift specific to a 
    dominant angle correction for the histogram.
-   That shift will be applied during the addition stage to produce a
-   canonicalized descriptor in reference frame w.r.t. rotation correction.
+   That shift will be applied during the intersection stage to produce a
+   canonicalized feature in a rotation corrected reference frame.
    (Note that for the use case here, the reference frame orientation will
    be supplied to the method. it's learned from the mser ellipse in one
    use case for example. so the application of a dominant orientation
@@ -74,7 +75,7 @@ import java.util.List;
    though that could be added as a method later...not necessary for
    current requirements).
 
-   Comparison of block descriptors is then a histogram intersection,
+   Comparison of block feature is then a histogram intersection,
    where normally 0 is no intersection, hence maximally different,
    and an intersection equal to the max value is maximally similar.
    (see the method ColorHistogram.intersection, but here, the normalization
@@ -126,7 +127,18 @@ public class HOGs {
     
     private GradientIntegralHistograms init(GreyscaleImage rgb) {
         
-        throw new UnsupportedOperationException("not yet implemented");
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        GreyscaleImage[] gXgY = imageProcessor.createSobelGradients(rgb);
+        
+        GreyscaleImage theta = imageProcessor.computeTheta180(gXgY[0], gXgY[1]);
+        
+        GreyscaleImage gXY = imageProcessor.combineConvolvedImages(gXgY[0], gXgY[1]);
+        
+        GradientIntegralHistograms gh = new GradientIntegralHistograms(gXY,
+            theta, nAngleBins);
+
+        return gh;
     }
     
     private GradientIntegralHistograms init(GreyscaleImage gradientXY, 
