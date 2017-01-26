@@ -270,7 +270,7 @@ public class HOGs {
      * been normalized to the same scale.
      * A result of 0 is maximally dissimilar and a result of 1 is maximally similar.
      * 
-     * The orientations are needed to compare the correct rotated bin.
+     * The orientations are needed to compare the correct rotated bins to one another.
      * Internally, orientation of 90 leads to no shift for rotation,
      * and orientation near 0 results in rotation of nBins/2, etc...
      * 
@@ -300,10 +300,13 @@ public class HOGs {
             orientationB = 0;
         }
         
-        //TODO: handle the shift due to orientation.
-        if (true) {
-            throw new UnsupportedOperationException("not yet finished");
-        }
+        int nBins = histA.length;
+        
+        int binWidth = 180/nBins;
+        
+        int shiftA = (orientationA - 90)/binWidth;
+        int shiftB = (orientationB - 90)/binWidth;
+        
         /*
         histograms are already normalized
         
@@ -316,9 +319,24 @@ public class HOGs {
         float sum = 0;
         float sumA = 0;
         float sumB = 0;
-        for (int j = 0; j < histA.length; ++j) {
-            float yA = histA[j];
-            float yB = histB[j];
+        for (int j = 0; j < nBins; ++j) {
+            
+            int idxA = j + shiftA;
+            if (idxA < 0) {
+                idxA += nBins;
+            } else if (idxA > (nBins - 1 )) {
+                idxA -= nBins;
+            }
+            
+            int idxB = j + shiftB;
+            if (idxB < 0) {
+                idxB += nBins;
+            } else if (idxB > (nBins - 1 )) {
+                idxB -= nBins;
+            }
+            
+            float yA = histA[idxA];
+            float yB = histB[idxB];
             
             sum += Math.min(yA, yB);
             sumA += yA;
