@@ -18,8 +18,8 @@ package algorithms.imageProcessing.features;
  * between regions within different images as a feature descriptor.
  * The feature is defined over several pixels surrounding the central
  * keypoint in a pattern to improve the measurement.
- * 
- * The IntegralHistogram is used to store histograms of values that
+   
+   The IntegralHistogram is used to store histograms of values that
    that are counts defined by gradient magnitudes in bins of
    orientation.
    
@@ -63,13 +63,18 @@ package algorithms.imageProcessing.features;
    correction for the histogram.
    That shift will be applied during the addition stage to produce a
    canonicalized descriptor in reference frame w.r.t. rotation.
+   (Note that for the use case here, the reference frame orientation will
+   be supplied to the method. it's learned from the mser ellipse in one
+   use case for example. so the application of a dominant orientation
+   will be the same, but the calculation will not be performed for it.
+   though that could be added as a method later...not necessary for
+   current requirements).
 
    Comparison of block descriptors is then a histogram intersection,
    where normally 0 is no intersection, hence maximally different,
    and an intersection equal to the max value is maximally similar.
    (see the method ColorHistogram.intersection, but here, the normalization
    will already have been applied instead of determined in the method).
-   Note that 
   
   Other details are in converting the intersection to a cost or score
   and specialized methods for that specific to this project will be
