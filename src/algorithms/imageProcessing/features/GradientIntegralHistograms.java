@@ -33,7 +33,7 @@ public class GradientIntegralHistograms {
      * Note that the values in gradient are expected to be in range 0 to 255,
      * inclusive.
      * 
-     * runtime complexity is O(N_pixels * nBins).
+     * runtime complexity is O(N_pixels).
      * 
      * @param gradient values in range 0 to 255, inclusive.
      * @param theta angle of gradient in range 0 to 180.
@@ -49,7 +49,7 @@ public class GradientIntegralHistograms {
     }
         
     /**
-     * runtime complexity is O(N_pixels * nBins).
+     * runtime complexity is O(N_pixels).
      * 
      * @param gradient
      * @param theta
@@ -134,6 +134,8 @@ public class GradientIntegralHistograms {
     
     /**
      * NOT READY FOR USE. 
+     * 
+     * runtime complexity is O(nBins)
      * 
      * @param startX
      * @param stopX
