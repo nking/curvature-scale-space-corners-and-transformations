@@ -58,11 +58,18 @@ package algorithms.imageProcessing.features;
    max possible value for a block being, 
    for example (2X2)*(6X6)*(255) = 36720.
 
+   Note that a shift is needed for identifying the bin that is equivalent
+   the angle 0 for example, that is a shift specific to a dominant angle
+   correction for the histogram.
+   That shift will be applied during the addition stage to produce a
+   canonicalized descriptor in reference frame w.r.t. rotation.
+
    Comparison of block descriptors is then a histogram intersection,
    where normally 0 is no intersection, hence maximally different,
    and an intersection equal to the max value is maximally similar.
    (see the method ColorHistogram.intersection, but here, the normalization
    will already have been applied instead of determined in the method).
+   Note that 
   
   Other details are in converting the intersection to a cost or score
   and specialized methods for that specific to this project will be
