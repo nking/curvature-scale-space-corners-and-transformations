@@ -78,6 +78,25 @@ public class ImageProcessor {
 
         applyKernels(input, kernelX, kernelY, normX, normY);
     }
+    
+    /**
+     * use a sobel (first deriv gaussian sigma=0.5, binomial [-1, 0,1]
+     * and return gradients in X and y. note the image may contain
+     * negative values.
+     * @param input
+     * @return 
+     */
+    public GreyscaleImage[] createSobelGradients(GreyscaleImage input) {
+    
+        float[] kernel = Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive();
+        
+        GreyscaleImage gX = input.copyToFullRangeIntImage();
+        GreyscaleImage gY = input.copyToFullRangeIntImage();
+        applyKernel1D(gX, kernel, true);
+        applyKernel1D(gY, kernel, false);
+        
+        return new GreyscaleImage[]{gX, gY};
+    }
 
     public void applySobelKernel(GreyscaleImage input) {
 
@@ -270,6 +289,17 @@ public class ImageProcessor {
     protected void applyKernels(GreyscaleImage input, Kernel kernelX, Kernel kernelY,
         float normFactorX, float normFactorY) {
 
+        GreyscaleImage[] gXgY = convolveWithKernels(input, kernelX, kernelY, normFactorX,
+            normFactorY);
+
+        GreyscaleImage img2 = combineConvolvedImages(gXgY[0], gXgY[1]);
+
+        input.resetTo(img2);
+    }
+    
+    protected GreyscaleImage[] convolveWithKernels(GreyscaleImage input, Kernel kernelX, Kernel kernelY,
+        float normFactorX, float normFactorY) {
+
         /*
         assumes that kernelX is applied to a copy of the img
         and kernelY is applied to a separate copy of the img and
@@ -284,9 +314,7 @@ public class ImageProcessor {
 
         applyKernel(imgY, kernelY, normFactorY);
 
-        GreyscaleImage img2 = combineConvolvedImages(imgX, imgY);
-
-        input.resetTo(img2);
+        return new GreyscaleImage[]{imgX, imgY};
     }
 
     protected Map<PairInt, Integer> applyKernel(GreyscaleImage input, 
@@ -9721,10 +9749,10 @@ if (sum > 511) {
     }
     
     /**
-     * use an adaptive threshold with window size w to add the threshold
+     * use an adaptive threshold with window size to add the threshold
      * to the image where binarization would have created a "1".
      * This enhances shadows and dark edges to an extreme that might not
-     * be desirabe for all uses.
+     * be desirable for all uses.
      * 
      * @param img 
      */
@@ -9743,9 +9771,11 @@ if (sum > 511) {
                 sTable[i][j] = inImg.getValue(i, j);
             }
         }
+        
         AdaptiveThresholding th =
             new AdaptiveThresholding();
         outImg = th.createAdaptiveThresholdImage(sTable, window, 0.2);
+        
         double v;
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {

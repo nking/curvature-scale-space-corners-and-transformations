@@ -103,10 +103,12 @@ public class HOGs {
     private final int w;
     private final int h;
     
+    private boolean debug = true;
+    
     public HOGs(GreyscaleImage rgb) {
         
         nAngleBins = 9;
-        N_PIX_PER_CELL_DIM = 6;
+        N_PIX_PER_CELL_DIM = 4;
         N_CELLS_PER_BLOCK_DIM = 2;
         w = rgb.getWidth();
         h = rgb.getHeight();
@@ -117,12 +119,16 @@ public class HOGs {
     public HOGs(GreyscaleImage gradientXY, GreyscaleImage theta) {
         
         nAngleBins = 9;
-        N_PIX_PER_CELL_DIM = 6;
+        N_PIX_PER_CELL_DIM = 4;
         N_CELLS_PER_BLOCK_DIM = 2;
         w = gradientXY.getWidth();
         h = gradientXY.getHeight();
         
         gHists = init(gradientXY, theta);
+    }
+    
+    public void setToDebug() {
+        debug = true;
     }
     
     private GradientIntegralHistograms init(GreyscaleImage rgb) {
@@ -134,6 +140,13 @@ public class HOGs {
         GreyscaleImage theta = imageProcessor.computeTheta180(gXgY[0], gXgY[1]);
         
         GreyscaleImage gXY = imageProcessor.combineConvolvedImages(gXgY[0], gXgY[1]);
+        
+        if (debug) {
+            algorithms.misc.MiscDebug.writeImage(gXgY[0], "_gX_");
+            algorithms.misc.MiscDebug.writeImage(gXgY[1], "_gY_");
+            algorithms.misc.MiscDebug.writeImage(gXY, "_gXY_");
+            algorithms.misc.MiscDebug.writeImage(theta, "_theta_");
+        }
         
         GradientIntegralHistograms gh = new GradientIntegralHistograms(gXY,
             theta, nAngleBins);
@@ -150,6 +163,11 @@ public class HOGs {
         
         if (w != theta.getWidth() || h != theta.getHeight()) {
             throw new IllegalArgumentException("gradient and theta must be same size");
+        }
+        
+        if (debug) {
+            algorithms.misc.MiscDebug.writeImage(gradientXY, "_gXY_");
+            algorithms.misc.MiscDebug.writeImage(theta, "_theta_");
         }
         
         GradientIntegralHistograms gh = new GradientIntegralHistograms(gradientXY,
