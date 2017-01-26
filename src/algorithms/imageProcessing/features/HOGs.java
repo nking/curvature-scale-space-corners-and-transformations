@@ -167,8 +167,8 @@ public class HOGs {
         }
         
         // uses the block normalization recomended by Dalal & Triggs,
-        //   the summarizes histogram counts over all cells
-        //   and normalizas each cell by that sum.
+        //   the summary of histogram counts over all cells
+        //   is used to normaliza each cell by that sum.
         
         int nH = N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM;
 
