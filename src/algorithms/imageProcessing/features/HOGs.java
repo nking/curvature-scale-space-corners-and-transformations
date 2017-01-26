@@ -103,7 +103,7 @@ public class HOGs {
     private final int w;
     private final int h;
     
-    private boolean debug = true;
+    private boolean debug = false;
     
     public HOGs(GreyscaleImage rgb) {
         
