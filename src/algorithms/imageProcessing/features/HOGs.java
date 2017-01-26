@@ -59,8 +59,8 @@ package algorithms.imageProcessing.features;
    for example (2X2)*(6X6)*(255) = 36720.
 
    Note that a shift is needed for identifying the bin that is equivalent
-   the angle 0 for example, that is a shift specific to a dominant angle
-   correction for the histogram.
+   the canonical angle 0 for example, that is a shift specific to a 
+   dominant angle correction for the histogram.
    That shift will be applied during the addition stage to produce a
    canonicalized descriptor in reference frame w.r.t. rotation.
    (Note that for the use case here, the reference frame orientation will
@@ -79,7 +79,16 @@ package algorithms.imageProcessing.features;
   Other details are in converting the intersection to a cost or score
   and specialized methods for that specific to this project will be
   present in this class.
-   
+  
+  NOTEs about color spaces:
+     The normalization above assumes that the greyscale image is generated
+     from RGB.
+     For the CIE LIV polar theta greyscale, one would not want to normalize
+     the histograms because the illumination has already been handled in 
+     the polar angle of the chromaticity conversion to greyscale.
+     so a method is needed to extract unnormalized histograms
+     for a block too.
+     
   
  * @author nichole
  */
