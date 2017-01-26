@@ -13,7 +13,6 @@ public class GradientIntegralHistogramsTest extends TestCase {
     }
     
     /*
-    
           10      220   100   10
        0  1  2  3  4  5  6  7  8 
     */
