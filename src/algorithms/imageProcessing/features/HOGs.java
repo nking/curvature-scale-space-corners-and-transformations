@@ -116,6 +116,17 @@ public class HOGs {
         gHists = init(rgb);
     }
     
+    public HOGs(GreyscaleImage rgb, int nPixPerCellDim) {
+        
+        nAngleBins = 9;
+        N_PIX_PER_CELL_DIM = nPixPerCellDim;
+        N_CELLS_PER_BLOCK_DIM = 2;
+        w = rgb.getWidth();
+        h = rgb.getHeight();
+        
+        gHists = init(rgb);
+    }
+    
     public HOGs(GreyscaleImage gradientXY, GreyscaleImage theta) {
         
         nAngleBins = 9;
@@ -371,6 +382,8 @@ public class HOGs {
             sum += Math.min(yA, yB);
             sumA += yA;
             sumB += yB;
+            
+            //System.out.println(" " + yA + " -- " + yB + " sum="+sum + ", " + sumA + "," + sumB);
         }
         
         float sim = sum / ((float)Math.min(sumA, sumB));

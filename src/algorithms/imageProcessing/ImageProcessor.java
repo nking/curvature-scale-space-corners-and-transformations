@@ -967,7 +967,7 @@ if (sum > 511) {
                     gY *= -1;
                 }
 
-                double radians = MiscMath.calculatePolarTheta(gX, gY);
+                double radians = Math.atan2(gY, gX);
              
                 int theta = (int)(radians * 180./Math.PI);
                 if (theta == 180) {
