@@ -147,6 +147,8 @@ public class HOGs {
     }
     
     /**
+     * NOT YET TESTED
+     * 
      * extract the block surrounding the feature.
      * the number of pixels in a cell and the number of cells in block were set during
      * construction.
@@ -258,9 +260,74 @@ public class HOGs {
            0        0        0        0
           -9 -8 -7 -6 -5 -4 -3 -2 -1  *  1  2  3  4  5  6  7  9
                                       *
-        */
+        */        
+    }
+    
+    /**
+     * NOT READY FOR USE.
+     * 
+     * calculate the intersection of histA and histB which have already
+     * been normalized to the same scale.
+     * A result of 0 is maximally dissimilar and a result of 1 is maximally similar.
+     * 
+     * The orientations are needed to compare the correct rotated bin.
+     * Internally, orientation of 90 leads to no shift for rotation,
+     * and orientation near 0 results in rotation of nBins/2, etc...
+     * 
+     * @param histA
+     * @param orientationA
+     * @param histB
+     * @param orientationB
+     * @return 
+     */
+    public float intersection(int[] histA, int orientationA, int[] histB, 
+        int orientationB) {
         
-        throw new UnsupportedOperationException("not yet implemented");
+        if ((histA.length != histB.length)) {
+            throw new IllegalArgumentException(
+                "histA and histB must be same dimensions");
+        }
+        
+        if (orientationA < 0 || orientationA > 180 || orientationB < 0 ||
+            orientationB > 180) {
+            throw new IllegalArgumentException("orientations must be in range 0 to 180,"
+                + "  inclusixe");
+        }
+        if (orientationA == 180) {
+            orientationA = 0;
+        }
+        if (orientationB == 180) {
+            orientationB = 0;
+        }
+        
+        //TODO: handle the shift due to orientation.
+        if (true) {
+            throw new UnsupportedOperationException("not yet finished");
+        }
+        /*
+        histograms are already normalized
+        
+        K(a,b) = 
+            (summation_over_i_from_1_to_n( min(a_i, b_i))
+             /
+            (min(summation_over_i(a_i), summation_over_i(b_i))
+        */
+            
+        float sum = 0;
+        float sumA = 0;
+        float sumB = 0;
+        for (int j = 0; j < histA.length; ++j) {
+            float yA = histA[j];
+            float yB = histB[j];
+            
+            sum += Math.min(yA, yB);
+            sumA += yA;
+            sumB += yB;
+        }
+        
+        float sim = sum / ((float)Math.min(sumA, sumB));
+        
+        return sim;
     }
 
     private int sumCounts(int[] hist) {
