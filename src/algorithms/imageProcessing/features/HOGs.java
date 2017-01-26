@@ -2,6 +2,7 @@ package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageProcessor;
+import algorithms.misc.MiscMath;
 import algorithms.util.OneDIntArray;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -103,7 +104,7 @@ public class HOGs {
     private final int w;
     private final int h;
     
-    private boolean debug = false;
+    private boolean debug = true;
     
     public HOGs(GreyscaleImage rgb) {
         
@@ -389,6 +390,69 @@ public class HOGs {
         float sim = sum / ((float)Math.min(sumA, sumB));
         
         return sim;
+    }
+    
+    public float ssd(int[] histA, int orientationA, int[] histB, 
+        int orientationB) {
+        
+        if ((histA.length != histB.length)) {
+            throw new IllegalArgumentException(
+                "histA and histB must be same dimensions");
+        }
+        
+        if (orientationA < 0 || orientationA > 180 || orientationB < 0 ||
+            orientationB > 180) {
+            throw new IllegalArgumentException("orientations must be in range 0 to 180,"
+                + "  inclusixe");
+        }
+        if (orientationA == 180) {
+            orientationA = 0;
+        }
+        if (orientationB == 180) {
+            orientationB = 0;
+        }
+        
+        double sumDiff = 0;
+        
+        int nBins = histA.length;
+        
+        int binWidth = 180/nBins;
+        
+        int shiftA = (orientationA - 90)/binWidth;
+        int shiftB = (orientationB - 90)/binWidth;
+       
+        for (int j = 0; j < nBins; ++j) {
+            
+            int idxA = j + shiftA;
+            if (idxA < 0) {
+                idxA += nBins;
+            } else if (idxA > (nBins - 1 )) {
+                idxA -= nBins;
+            }
+            
+            int idxB = j + shiftB;
+            if (idxB < 0) {
+                idxB += nBins;
+            } else if (idxB > (nBins - 1 )) {
+                idxB -= nBins;
+            }
+            
+            float yA = histA[idxA];
+            float yB = histB[idxB];
+            
+            float diff = yA - yB;
+            
+            sumDiff += (diff * diff);            
+        }
+        
+        sumDiff /= (double)nBins;
+        
+        float maxValue = Math.max(MiscMath.findMax(histA), 
+            MiscMath.findMax(histB));
+        
+        sumDiff = Math.sqrt(sumDiff)/maxValue;
+        
+        return (float)sumDiff;
     }
 
     private int sumCounts(int[] hist) {
