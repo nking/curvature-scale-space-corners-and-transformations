@@ -7,7 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- NOT READY FOR USE.  in design stage...
+ NOT READY FOR USE.
  
  An implementation of Histograms of Oriented Gradients
  constructed from reading the following papers:
@@ -232,6 +232,12 @@ public class HOGs {
             (N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM) * 255,f;
    
         norm *= maxBlock;
+        
+        //NOTE: this may need to be revised:
+        // one more term to the normalization needed in case the number of
+        //  cells is fewer than nH (due to the point being near the image edge).
+        //  will scale the results by the ratio.
+        norm *= (double)nH/(double)cells.size();
         
         Arrays.fill(outHist, 0, outHist.length, 0);
         
