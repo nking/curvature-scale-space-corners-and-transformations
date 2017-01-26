@@ -80,17 +80,6 @@ package algorithms.imageProcessing.features;
   and specialized methods for that specific to this project will be
   present in this class.
   
-  NOTEs about color spaces:
-     The normalization above assumes that the greyscale image is generated
-     from RGB.
-     For the CIE LUV polar theta greyscale image, one would not want to 
-     normalize the histograms because the illumination has already been 
-     handled in the polar angle of the chromaticity conversion to greyscale.
-     so a method is needed to extract unnormalized histograms
-     for a block too and the intersection calculation then is different
-     also...havne't thought this through yet.
-     
-  
  * @author nichole
  */
 public class HOGs {
