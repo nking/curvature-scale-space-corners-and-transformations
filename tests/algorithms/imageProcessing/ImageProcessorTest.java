@@ -59,58 +59,6 @@ public class ImageProcessorTest extends TestCase {
         assertTrue(Arrays.equals(img2.b, img.b));
     }
    
-    public void testApplySobelKernel() throws Exception {
-            
-        String filePath = ResourceFinder.findFileInTestResources("tajmahal.png");
-        
-        Image img = ImageIOHelper.readImage(filePath);
-                        
-        ImageProcessor ImageProcessor = new ImageProcessor();
-        
-        if (displayImages)
-        ImageDisplayer.displayImage("", img);
-        
-        ImageProcessor.applySobelKernel(img);
-        
-        if (displayImages)
-        ImageDisplayer.displayImage("sobel", img);
-                
-    }
-    
-    public void testApplySobelKernel2() throws Exception {
-                        
-        //valve_gaussian.png
-        
-        String filePath = ResourceFinder.findFileInTestResources("lena.jpg");
-        
-        ImageProcessor ImageProcessor = new ImageProcessor();
-        
-        Image imgX = ImageIOHelper.readImage(filePath);
-        if (displayImages)
-        ImageDisplayer.displayImage("", imgX);
-        SobelX s0 = new SobelX();
-        Kernel kernelX = s0.getKernel();
-        float norm0 = s0.getNormalizationFactor();
-        ImageProcessor.applyKernel(imgX, kernelX, norm0);
-        if (displayImages)
-        ImageDisplayer.displayImage("Sobel X", imgX);
-        
-        Image imgY = ImageIOHelper.readImage(filePath);
-        SobelY s1 = new SobelY();
-        Kernel kernelY = s1.getKernel();
-        norm0 = s1.getNormalizationFactor();
-        ImageProcessor.applyKernel(imgY, kernelY, norm0);
-        if (displayImages)
-        ImageDisplayer.displayImage("Sobel Y", imgY);
-        
-        Image img = ImageIOHelper.readImage(filePath);
-        ImageProcessor.applySobelKernel(img);
-           
-        if (displayImages)
-        ImageDisplayer.displayImage("Sobel", img);
-        
-    }
-    
     /*     -45    90    45          y/x
                 -  |  +
             0 -----|----- 0

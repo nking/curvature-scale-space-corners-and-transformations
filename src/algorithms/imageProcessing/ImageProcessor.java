@@ -57,29 +57,6 @@ public class ImageProcessor {
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
     /**
-     * <pre>
-     * [1, 0, -1]
-     * this is the n=2 binomial filter for 
-     * a Gaussian first derivative w/ sigma=0.5,
-       </pre>
-     * @param input
-     */
-    public void applySobelKernel(Image input) {
-
-        IKernel kernel = new SobelX();
-        Kernel kernelX = kernel.getKernel();
-
-        float normX = kernel.getNormalizationFactor();
-
-        kernel = new SobelY();
-        Kernel kernelY = kernel.getKernel();
-
-        float normY = kernel.getNormalizationFactor();
-
-        applyKernels(input, kernelX, kernelY, normX, normY);
-    }
-    
-    /**
      * use a sobel (first deriv gaussian sigma=0.5, binomial [-1, 0,1]
      * and return gradients in X and y. note the image may contain
      * negative values.
@@ -100,37 +77,30 @@ public class ImageProcessor {
 
     public void applySobelKernel(GreyscaleImage input) {
 
-        IKernel kernel = new SobelX();
-        Kernel kernelX = kernel.getKernel();
+        float[] kernel = Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive();
+        
+        GreyscaleImage gX = input.copyToFullRangeIntImage();
+        GreyscaleImage gY = input.copyToFullRangeIntImage();
+        applyKernel1D(gX, kernel, true);
+        applyKernel1D(gY, kernel, false);
+        
+        GreyscaleImage img2 = combineConvolvedImages(gX, gY);
 
-        float normX = kernel.getNormalizationFactor();
-
-        kernel = new SobelY();
-        Kernel kernelY = kernel.getKernel();
-
-        float normY = kernel.getNormalizationFactor();
-
-        applyKernels(input, kernelX, kernelY, normX, normY);
+        input.resetTo(img2);
     }
     
     public void applySobelX(float[][] input) {
 
-        IKernel kernel = new SobelX();
-        Kernel kernelX = kernel.getKernel();
-
-        float normX = kernel.getNormalizationFactor();
-
-        applyKernel(input, kernelX, normX);
+        float[] kernel = Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive();
+        
+        applyKernel1D(input, kernel, true);
     }
     
     public void applySobelY(float[][] input) {
 
-        IKernel kernel = new SobelY();
-        Kernel kernelY = kernel.getKernel();
-
-        float normY = kernel.getNormalizationFactor();
-
-        applyKernel(input, kernelY, normY);
+        float[] kernel = Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive();
+        
+        applyKernel1D(input, kernel, false);
     }
     
     public Map<PairInt, Integer> applySobelKernel(GreyscaleImage input, 
@@ -143,7 +113,7 @@ public class ImageProcessor {
     }
         
     /**
-     * calculate the sobel graident of the color image using CIELAB DeltaE 2000
+     * calculate the sobel gradient of the color image using CIELAB DeltaE 2000
      * and return gX, gY, and gXY with array indices being pixel
      * indexes of the image.
      * @param img
