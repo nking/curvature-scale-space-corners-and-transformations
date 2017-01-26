@@ -1,5 +1,6 @@
-package algorithms.imageProcessing;
+package algorithms.imageProcessing.features;
 
+import algorithms.imageProcessing.*;
 import java.util.Arrays;
 
 /**
@@ -16,76 +17,217 @@ import java.util.Arrays;
  
  * @author nichole
  */
-public class IntegralHistograms {
-        
-    /**
-     * for a default range in values of 0 to 255, inclusive, and a default
-     * bin size of 16, calculate the integral histograms.
-     * 
-     * @return output two dimensional array with first dimension being 
-     * the pixel index and the second being the histogram at that pixel.
-     */
-    public int[][] create(GreyscaleImage img) {
-     
-        return create(img, 0, 255, 16);
-    }
+public class GradientIntegralHistograms {
+    
+    private final int[][] histograms;
+    
+    private final int w;
+    private final int h;
     
     /**
-     * NOT TESTED YET
+     * assumes a theta range of 0 to 180 and creates a histogram image
+     * with nThetaBins and using a frequency unit calculated as the
+     * gradient value, that is a gradient of 124 adds a count of 124
+     * to the histogram bin for theta value for its pixel.
      * 
-     * for a default range in values of 0 to 255, inclusive, and a default
-     * bin size of 16, calculate the integral histograms.
+     * Note that the values in gradient are expected to be in range 0 to 255,
+     * inclusive.
      * 
-     * @param img
-     * @param minValue
-     * @param maxValue
-     * @param binWidth
-     * @return output two dimensional array with first dimension being 
-     * the pixel index and the second being the histogram at that pixel.
+     * runtime complexity is O(N_pixels * nBins).
+     * 
+     * @param gradient values in range 0 to 255, inclusive.
+     * @param theta angle of gradient in range 0 to 180.
+     * @param nThetaBins
      */
-    public int[][] create(GreyscaleImage img, int minValue, int maxValue,
-        int binWidth) {
-
-        //NOTE: because there is little change between the data in one pixel
-        // and the next, it should be possible encode and compress this
-        // data structure significantly.
+    public GradientIntegralHistograms(GreyscaleImage gradient,  GreyscaleImage theta,
+        int nThetaBins) {
         
-        int w = img.getWidth();
-        int h = img.getHeight();
-        int nPix = img.getNPixels();
-        int nBins = (maxValue - minValue + 1)/binWidth;
+        this.histograms = createHistograms(gradient, theta, nThetaBins);
+    
+        this.w = gradient.getWidth();
+        this.h = gradient.getHeight();
+    }
+        
+    /**
+     * runtime complexity is O(N_pixels * nBins).
+     * 
+     * @param gradient
+     * @param theta
+     * @param nBins
+     * @return 
+     */
+    private int[][] createHistograms(GreyscaleImage gradient,  
+        GreyscaleImage theta, int nBins) {
+
+        int w = gradient.getWidth();
+        int h = gradient.getHeight();
+        
+        if (w != theta.getWidth() || h != theta.getHeight()) {
+            throw new IllegalArgumentException("gradient and theta must be same size");
+        }
+        
+        int nPix = gradient.getNPixels();
+        
+        int binWidth = 180/nBins;
         
         int[][] out = new int[nPix][];
         
         for (int x = 0; x < w; ++x) {
             for (int y = 0; y < h; ++y) {
-                int pixIdx = img.getInternalIndex(x, y);
-                int bin = (img.getValue(pixIdx) - minValue)/binWidth;
+                
+                int pixIdx = gradient.getInternalIndex(x, y);
+                
+                int t = theta.getValue(pixIdx);
+                 
+                if (t < 0 || t > 180) {
+                    throw new IllegalArgumentException("theta values muse be "
+                        + "between 1 and 179, inclusive");
+                }
+                if (t == 180) {
+                    t = 0;
+                }
+                
+                int bin = t/binWidth;
+                
+                int v = gradient.getValue(pixIdx);
+               
                 if (pixIdx == 0) {
+                    
                     out[pixIdx] = new int[nBins];
-                    out[pixIdx][bin]++;
+                    
+                    out[pixIdx][bin] += v;
+                    
                 } else if (x > 0 && y > 0) {
-                    int pixIdxL = img.getInternalIndex(x - 1, y);
-                    int pixIdxB = img.getInternalIndex(x, y - 1);
-                    int pixIdxLB = img.getInternalIndex(x - 1, y - 1);
+                    
+                    int pixIdxL = gradient.getInternalIndex(x - 1, y);
+                    int pixIdxB = gradient.getInternalIndex(x, y - 1);
+                    int pixIdxLB = gradient.getInternalIndex(x - 1, y - 1);
+                    
                     out[pixIdx] = Arrays.copyOf(out[pixIdxL], nBins);
-                    out[pixIdx][bin]++;
+                                        
+                    out[pixIdx][bin] += v;
+                    
                     // add bin, add pixIdxB and subtract pixIdxLB
                     add(out[pixIdx], out[pixIdxB]);
                     subtract(out[pixIdx], out[pixIdxLB]);
+                    
                 } else if (x > 0) {
-                    int pixIdxL = img.getInternalIndex(x - 1, y);
+                    
+                    int pixIdxL = gradient.getInternalIndex(x - 1, y);
+                                   
                     out[pixIdx] = Arrays.copyOf(out[pixIdxL], nBins);
-                    out[pixIdx][bin]++;
+                    out[pixIdx][bin] += v;
+                
                 } else if (y > 0) {
-                    int pixIdxB = img.getInternalIndex(x, y - 1);
+                
+                    int pixIdxB = gradient.getInternalIndex(x, y - 1);
+                                    
                     out[pixIdx] = Arrays.copyOf(out[pixIdxB], nBins);
-                    out[pixIdx][bin]++;
+                    
+                    out[pixIdx][bin] += v;
                 }
             }
         }
 
         return out;
+    }
+    
+    /**
+     * NOT READY FOR USE. 
+     * 
+     * @param startX
+     * @param stopX
+     * @param startY
+     * @param stopY
+     * @param output
+     * @param outputN 
+     */
+    public void extractWindow(int startX, int stopX, int startY, int stopY, 
+        int output[], int[] outputN) {
+        
+        int dx, dy;
+        if (startX > -1) {
+            dx = stopX - startX;
+        } else {
+            dx = stopX;
+        }
+        if (startY > -1) {
+            dy = stopY - startY;
+        } else {
+            dy = stopY;
+        }
+        
+        if (dx > 0 && dy > 0) {
+            if ((startX > 0) && (stopX < w) && (startY > 0) && (stopY < h)) {
+                int nPix = (dx + 1) * (dy + 1);
+                outputN[0] = nPix;
+                add(output, histograms[getPixIdx(stopX, stopY)]);
+                subtract(output, histograms[getPixIdx(startX - 1, stopY)]);
+                subtract(output, histograms[getPixIdx(stopX, startY - 1)]);
+                add(output, histograms[getPixIdx(startX - 1, startY - 1)]);
+                return;
+            }
+        }
+        
+        if (dx == 0 && dy == 0) {
+            if (stopX == 0) {
+                if (stopY == 0) {
+                    outputN[0] = 1;
+                    add(output, histograms[getPixIdx(stopX, stopY)]);
+                    return;
+                }
+                outputN[0] = 1;
+                add(output, histograms[getPixIdx(stopX, stopY)]);
+                subtract(output, histograms[getPixIdx(stopX, stopY - 1)]);
+                return;
+            } else if (stopY == 0) {
+                //stopX == 0 && stopY == 0 has been handles in previous block
+                outputN[0] = 1;
+                add(output, histograms[getPixIdx(stopX, stopY)]);
+                subtract(output, histograms[getPixIdx(stopX - 1, stopY)]);
+                return;
+            } else {
+                // stopX > 0
+                outputN[0] = 1;
+                add(output, histograms[getPixIdx(stopX, stopY)]);
+                subtract(output, histograms[getPixIdx(startX - 1, stopY)]);
+                subtract(output, histograms[getPixIdx(stopX, startY - 1)]);
+                add(output, histograms[getPixIdx(startX - 1, startY - 1)]);
+                return;
+            }
+            //System.out.println(" --> startX=" + startX +
+            //    " stopX=" + stopX + " startY=" + startY + " stopY=" + stopY);            
+        }
+        
+        if (startX > 0 && startY > 0) {
+            int nPix = (dx + 1) * (dy + 1);
+            outputN[0] = nPix;
+            add(output, histograms[getPixIdx(stopX, stopY)]);
+            subtract(output, histograms[getPixIdx(startX, stopY)]);
+            subtract(output, histograms[getPixIdx(stopX, startY)]);
+            add(output, histograms[getPixIdx(startX, startY)]);
+            return;
+        } else if (startX > 0) {
+            // startY is < 0
+            int nPix = (dx + 1) * (stopY + 1);
+            outputN[0] = nPix;
+            add(output, histograms[getPixIdx(stopX, stopY)]);
+            subtract(output, histograms[getPixIdx(startX - 1, stopY)]);
+            return;
+        } else if (startY > 0) {
+            // startX < 0
+            int nPix = (stopX + 1) * (dy + 1);
+            outputN[0] = nPix;
+            add(output, histograms[getPixIdx(stopX, stopY)]);
+            subtract(output, histograms[getPixIdx(stopX, startY - 1)]);
+            return;
+        } else {
+            // startX < 0 && startY < 0
+            int nPix = (stopX + 1) * (stopY + 1);
+            outputN[0] = nPix;
+            add(output, histograms[getPixIdx(stopX, stopY)]);
+            return;
+        }
     }
     
     /**
@@ -109,7 +251,7 @@ public class IntegralHistograms {
      * size extends beyond the borders of the "image", this number will be
      * smaller than d * d.
      */
-    public void extractWindowFromIntegralHistograms(int[][] integralHistograms, 
+    /*public void extractWindowFromIntegralHistograms(int[][] integralHistograms, 
         int width, int height, int x, int y, int d, int output[], int[] outputN) {
      
         //TODO: rewrite using simpler pattern used in SummedAreaTable
@@ -172,12 +314,12 @@ public class IntegralHistograms {
         //    " stopX=" + stopX + " startY=" + startY + " stopY=" + stopY);
        
         // when r == 0, bounds need another edit or immediate return
-        /*
-         2            2           2           2           2       *
-         1            1 *         1           1    *      1
-         0 *          0           0    *      0           0
-           0  1  2      0  1  2     0  1  2     0  1  2     0  1  2
-        */
+        //
+        //2            2           2           2           2       *
+        //1            1 *         1           1    *      1
+        //0 *          0           0    *      0           0
+        //  0  1  2      0  1  2     0  1  2     0  1  2     0  1  2
+        //
         if (r == 0) {
             if (stopX == 0) {
                 if (stopY == 0) {
@@ -236,10 +378,9 @@ public class IntegralHistograms {
             add(output, integralHistograms[getPixIdx(stopX, stopY, width)]);
             return;
         }
-               
     }
-    
-
+    */
+   
     protected void add(int[] addTo, int[] addFrom) {
         for (int i = 0; i < addTo.length; ++i) {
             addTo[i] += addFrom[i];
@@ -252,7 +393,8 @@ public class IntegralHistograms {
         }
     }
     
-    protected int getPixIdx(int col, int row, int width) {
-        return (row * width) + col;
+    protected int getPixIdx(int col, int row) {
+        return (row * w) + col;
     }
+    
 }
