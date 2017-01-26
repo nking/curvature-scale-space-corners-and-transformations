@@ -58,11 +58,11 @@ package algorithms.imageProcessing.features;
    max possible value for a block being, 
    for example (2X2)*(6X6)*(255) = 36720.
 
-   Note that a shift is needed for identifying the bin that is equivalent
-   the canonical angle 0 for example, that is a shift specific to a 
+   Note that a shift is needed for identifying the bin that is the
+   canonical angle 0, that is a shift specific to a 
    dominant angle correction for the histogram.
    That shift will be applied during the addition stage to produce a
-   canonicalized descriptor in reference frame w.r.t. rotation.
+   canonicalized descriptor in reference frame w.r.t. rotation correction.
    (Note that for the use case here, the reference frame orientation will
    be supplied to the method. it's learned from the mser ellipse in one
    use case for example. so the application of a dominant orientation
@@ -80,7 +80,7 @@ package algorithms.imageProcessing.features;
   and specialized methods for that specific to this project will be
   present in this class.
   
- * @author nichole
+  @author nichole
  */
 public class HOGs {
     
