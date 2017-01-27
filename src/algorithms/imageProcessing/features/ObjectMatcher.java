@@ -1,7 +1,6 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.compGeometry.FurthestPair;
-import algorithms.imageProcessing.AdaptiveThresholding;
 import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.ColorHistogram;
 import algorithms.imageProcessing.GreyscaleImage;
@@ -32,7 +31,6 @@ import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
-import algorithms.util.PairIntArray;
 import com.climbwithyourfeet.clustering.DTClusterFinder;
 import gnu.trove.iterator.TIntIntIterator;
 import gnu.trove.iterator.TIntIterator;
@@ -1671,10 +1669,10 @@ public class ObjectMatcher {
             MiscDebug.writeImage(img0Trimmed, "_shape0_mask_");
             MiscDebug.writeImage(luvTheta0, "_luv_mask_");
             
-            MiscDebug.writeImage(tmp00, "_gs_enhanced_0_");
-            MiscDebug.writeImage(tmp01, "_luv_enhanced_0_");
-            MiscDebug.writeImage(tmp10, "_gs_enhanced_1_");
-            MiscDebug.writeImage(tmp11, "_luv_enhanced_1_");
+            //MiscDebug.writeImage(tmp00, "_gs_enhanced_0_");
+            //MiscDebug.writeImage(tmp01, "_luv_enhanced_0_");
+            //MiscDebug.writeImage(tmp10, "_gs_enhanced_1_");
+            //MiscDebug.writeImage(tmp11, "_luv_enhanced_1_");
         }
         
         List<Region> regionsComb1 = createCombinedMSERRegions(

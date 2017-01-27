@@ -1415,6 +1415,9 @@ public class PartialShapeMatcher2 {
         // choosing evenly spaced intervals:
         int nIntervals = (int)Math.ceil(Math.log(n1)/Math.log(2));
         int dr = (n1 - minLength)/nIntervals;
+        if (dr == 0) {
+            dr = 1;
+        }
         int rUpper = n1 - 1;//(rStop - 1)*dr;
          
         // runtime complexity is ~ log_2(n1) * n1.

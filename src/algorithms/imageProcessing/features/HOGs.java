@@ -99,7 +99,7 @@ public class HOGs {
     // 2x2 or 3x3 is recommended
     private final int N_CELLS_PER_BLOCK_DIM;
     
-    // histogrm integral images with a sindowed sum of N_PIX_PER_CELL_DIM
+    // histogrm integral images with a windowed sum of N_PIX_PER_CELL_DIM
     private final int[][] gHists;
     
     private final int w;
@@ -483,5 +483,9 @@ public class HOGs {
         for (int i = 0; i < addTo.length; ++i) {
             addTo[i] += addFrom[i];
         }
+    }
+    
+    public int getNumberOfBins() {
+        return nAngleBins;
     }
 }

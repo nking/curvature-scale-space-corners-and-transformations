@@ -2,6 +2,7 @@ package algorithms.imageProcessing.matching;
 
 import algorithms.QuickSort;
 import algorithms.compGeometry.PerimeterFinder2;
+import algorithms.imageProcessing.DFSConnectedGroupsFinder;
 import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
@@ -9,6 +10,7 @@ import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.features.CorrespondenceList;
+import algorithms.imageProcessing.features.HOGs;
 import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
 import algorithms.imageProcessing.features.mser.Region;
@@ -19,15 +21,16 @@ import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.search.NearestNeighbor2D;
-import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.QuadInt;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntFloatMap;
@@ -42,7 +45,6 @@ import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.awt.Color;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -878,6 +880,8 @@ public class MSERMatcher {
             float scale0 = (((float)w0/(float)w0_i) +
                 ((float)h0/(float)h0_i))/2.f;
 
+            //HOGs hogs0 = new HOGs(gsI0, 1, 3);
+            
             FixedSizeSortedVector<Obj> bestR = new
                 FixedSizeSortedVector<Obj>(top, Obj.class);
 
@@ -891,6 +895,8 @@ public class MSERMatcher {
                 float scale1 = (((float)w1/(float)w1_i) +
                     ((float)h1/(float)h1_i))/2.f;
 
+                //HOGs hogs1 = new HOGs(gsI1, 1, 3);
+                
                 //NOTE: orientation due to different segmentation
                 //   can be a weakness in this search method
                 
@@ -924,18 +930,84 @@ public class MSERMatcher {
                 //            fill a region (pixel based...considering
                 //            details of windowed mean on hogs)
                 //      (2) adding shape to the cost here on items in b
-                
+                //          (shape contains only the outer boundary as information)
+
+                double maxAvgChordDiff = Double.MIN_VALUE;
+                double[] chords = new double[b.getNumberOfItems()];
+                int[] nMs = new int[b.getNumberOfItems()];
+                int[] nBs = new int[b.getNumberOfItems()];
                 for (int k = 0; k < b.getNumberOfItems(); ++k) {
                     Obj obj = b.getArray()[k];
+                    // if partial shape matching is enough to distinguish,
+                    // will make this more efficient later
+                    // [chordDiffSum, nMatched, nBounds]
+                    double[] psmCost = partialShapeCost(obj,
+                        scale0, scale1, labeledSets0, labeledSets1,
+                        gsI0, gsI1); 
+                    
+                    double avgCD = psmCost[0] / psmCost[1];
+                    chords[k] = avgCD;
+                    nMs[k] = (int)psmCost[1];
+                    nBs[k] = (int)psmCost[2];
+                    
+                    if (avgCD > maxAvgChordDiff) {
+                        maxAvgChordDiff = avgCD;
+                    }
+                }
+                
+                //NOTE: a look at the results here suggest
+                // a much faster approach for another method,
+                // matchObject12.
+                // the target list of objects at start of this
+                // method is small, and visually, one can see
+                // that color, intensity and shape should find a match
+                // right away, so will start a new method
+                // that makes one pass comparisons with the
+                //   target objects and scales for each.
+                
+                
+                for (int k = 0; k < b.getNumberOfItems(); ++k) {
+                    
+                    Obj obj = b.getArray()[k];
+
+    {
+        Image im0 = gsI0.copyToColorGreyscale();
+        int[] clr = ImageIOHelper.getNextRGB(k);
+        obj.cr0.drawEachPixel(im0, 0, clr[0], clr[1], clr[2]);
+        obj.cr0.draw(im0, 0, 255, 0, 0);
+        MiscDebug.writeImage(im0, "_"  + imgIdx0 + "_" + 
+            "_"  + imgIdx1 + "____" + k + "_");
+        Image im1 = gsI1.copyToColorGreyscale();
+        obj.cr1.drawEachPixel(im1, 0, clr[0], clr[1], clr[2]);
+        obj.cr1.draw(im1, 0, 255, 0, 0);
+        MiscDebug.writeImage(im1, "_"  + imgIdx0 + "_" + 
+            "_"  + imgIdx1 + "____" + k + "_");
+    }
+                       
+                    float np = nMs[k];
+                    float nb = nBs[k];
+                    float countComp = 1.0F - (np / (float) nb);    
+                    //double chordComp = ((float) chords[k] / np) 
+                    //    / maxAvgChordDiff;
+                    double chordComp = (float) chords[k] / maxAvgChordDiff;
+                    double sd = countComp * countComp + chordComp * chordComp;
+
+                    //[intersectionSum, f, err, count]
+                    //double[] hogCosts = sumHOGCost(
+                    //    hogs0, obj.cr0, scale0,
+                    //    hogs1, obj.cr1, scale1);
+        
                     System.out.format(
-                        "I (%d,%d) (%d,%d) im0=%d im1=%d c=%.3f n=%d\n",
+  "%.1f %.1f %d I (%d,%d) (%d,%d) im0=%d im1=%d c=%.3f sd=%.4f n=%d\n",
+                        scale0, scale1, k,
                         Math.round(scale0 * obj.cr0.ellipseParams.xC),
                         Math.round(scale0 * obj.cr0.ellipseParams.yC),
                         Math.round(scale1 * obj.cr1.ellipseParams.xC),
                         Math.round(scale1 * obj.cr1.ellipseParams.yC),
                         obj.imgIdx0, obj.imgIdx1, (float)obj.cost,
-                        obj.nMatched);
+                        (float)sd, obj.nMatched);
                 }
+                
                 /*                 
                 // lists of matches consistent with adjacency and scale
                 List<List<Obj>> sortedFilteredBestR = filterForAdjacency(
@@ -1558,6 +1630,74 @@ public class MSERMatcher {
         return new double[]{ssdSumGS, ssdSumPT, f, err, ssdCount};
     }
 
+    /**
+     *
+     * @return [intersectionSum, f, err, ssdCount]
+     */
+    private double[] sumHOGCost(
+        HOGs hogs0, CRegion csr0, float scale0,
+        HOGs hogs1, CRegion csr1, float scale1) {
+
+        Map<PairInt, PairInt> offsetMap1 = csr1.offsetsToOrigCoords;
+
+        int maxMatchable = Math.min(csr0.offsetsToOrigCoords.size(),
+            offsetMap1.size());
+
+        double sum = 0;
+        int count = 0;
+        
+        int orientation0 = (int)Math.round(csr0.ellipseParams.orientation
+            * 180./Math.PI);
+        
+        int orientation1 = (int)Math.round(csr1.ellipseParams.orientation
+            * 180./Math.PI);
+        
+        int[] h0 = new int[hogs0.getNumberOfBins()];
+        int[] h1 = new int[h0.length];
+        
+        // key = transformed offsets, value = coords in image ref frame,
+        // so, can compare dataset0 and dataset1 points with same
+        //  keys
+        for (Entry<PairInt, PairInt> entry0 : csr0.offsetsToOrigCoords.entrySet()) {
+
+            PairInt pOffset0 = entry0.getKey();
+
+            PairInt xy1 = offsetMap1.get(pOffset0);
+
+            if (xy1 == null) {
+                continue;
+            }
+
+            PairInt xy0 = entry0.getValue();
+
+            hogs0.extractFeature(xy0.getX(), xy0.getY(), h0);
+
+            hogs1.extractFeature(xy1.getX(), xy1.getY(), h1);
+
+            float intersection = hogs0.intersection(h0, orientation0, 
+                h1, orientation1);
+            
+            sum += (intersection * intersection);
+
+            count++;
+        }
+        if (count == 0) {
+            return null;
+        }
+
+        sum /= (double)count;
+
+        sum = Math.sqrt(sum);
+
+        double f = 1. - ((double) count / (double) maxMatchable);
+
+        // TODO: correct this if end up using it.
+        //  it's based upon green only
+        double err = Math.max(csr0.autocorrel, csr1.autocorrel);
+
+        return new double[]{sum, f, err, count};
+    }
+    
     /**
      * given the adjacency maps of the template, dataset 0, and the searchable
      * image, dataset 1, this looks for consistent adjacency and distance
@@ -2333,6 +2473,78 @@ if (dbg) {
         }
         
         return false;
+    }
+
+    private double[] partialShapeCost(Obj obj, 
+        float scale0, float scale1, 
+        List<Set<PairInt>> labeledSets0, 
+        List<Set<PairInt>> labeledSets1, 
+        GreyscaleImage gsI0, GreyscaleImage gsI1) {
+        
+        // TODO: use caching if keep this method
+        Set<PairInt> set0 = new HashSet<PairInt>();
+        TIntIterator iter = obj.cr0.labels.iterator();
+        while (iter.hasNext()) {
+            int label = iter.next();
+            Set<PairInt> s0 = labeledSets0.get(label);
+            for (PairInt p : s0) {
+                int x = Math.round((float)p.getX() / scale0);
+                int y = Math.round((float)p.getY() / scale0);
+                set0.add(new PairInt(x, y));
+            }
+        }
+        
+        set0 = reduceToContiguous(set0);
+        
+        Set<PairInt> set1 = new HashSet<PairInt>();
+        iter = obj.cr1.labels.iterator();
+        while (iter.hasNext()) {
+            int label = iter.next();
+            Set<PairInt> s0 = labeledSets1.get(label);
+            for (PairInt p : s0) {
+                int x = Math.round((float)p.getX() / scale1);
+                int y = Math.round((float)p.getY() / scale1);
+                set1.add(new PairInt(x, y));
+            }
+        }
+        
+        set1 = reduceToContiguous(set1);
+        
+        PerimeterFinder2 finder = new PerimeterFinder2();
+        PairIntArray p = finder.extractOrderedBorder(set0);
+        PairIntArray q = finder.extractOrderedBorder(set1);
+        
+        PartialShapeMatcher2 matcher = new PartialShapeMatcher2();
+        matcher.overrideSamplingDistance(1);
+        matcher.setToRemoveOutliers();
+        PartialShapeMatcher2.Result result = matcher.match(p, q);
+
+        double[] out = new double[] {
+            result.chordDiffSum, result.getNumberOfMatches(), p.getN()
+        };
+
+        return out;        
+    }
+
+    private Set<PairInt> reduceToContiguous(Set<PairInt> set) {
+        
+        DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
+        finder.setMinimumNumberInCluster(1);
+        finder.findConnectedPointGroups(set);
+        if (finder.getNumberOfGroups() == 1) {
+            return new HashSet<PairInt>(set);
+        }
+        
+        int maxIdx = -1;
+        int nMax = Integer.MIN_VALUE;
+        for (int i = 0; i < finder.getNumberOfGroups(); ++i) {
+            int n = finder.getNumberofGroupMembers(i);
+            if (n > nMax) {
+                nMax = n;
+                maxIdx = i;
+            }
+        }
+        return finder.getXY(maxIdx);
     }
 
     private class Obj implements Comparable<Obj>{
