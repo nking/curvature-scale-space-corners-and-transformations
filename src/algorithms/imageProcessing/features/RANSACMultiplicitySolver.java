@@ -107,7 +107,7 @@ public class RANSACMultiplicitySolver {
                 
         SecureRandom sr = Misc.getSecureRandom();
         long seed = System.currentTimeMillis();
-        log.info("SEED=" + seed + " nPoints=" + nPoints);
+        log.fine("SEED=" + seed + " nPoints=" + nPoints);
         sr.setSeed(seed);
         
         int nAllMultiplicity = 0;
@@ -308,9 +308,9 @@ public class RANSACMultiplicitySolver {
                 (int)Math.round(inliersRightXY.get(1, idx)));
         }
         
-        log.info("nIter=" + nIter);
+        log.fine("nIter=" + nIter);
 
-        log.info("final fit: " + consensusFit.toString());
+        log.fine("final fit: " + consensusFit.toString());
 
         return consensusFit;
     }

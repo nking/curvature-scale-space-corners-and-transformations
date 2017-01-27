@@ -135,7 +135,7 @@ public class RANSACSolver {
             
         SecureRandom sr = Misc.getSecureRandom();
         long seed = System.currentTimeMillis();
-        log.info("SEED=" + seed + " nPoints=" + nPoints);
+        log.fine("SEED=" + seed + " nPoints=" + nPoints);
         sr.setSeed(seed);
 
         int tolerance = 5;
@@ -315,9 +315,9 @@ public class RANSACSolver {
         consensusFit.setTolerance(toleranceErrors[0],
             toleranceErrors[1]);
         
-        log.info("nIter=" + nIter);
+        log.fine("nIter=" + nIter);
 
-        log.info("final fit: " + consensusFit.toString());
+        log.fine("final fit: " + consensusFit.toString());
 
         return consensusFit;
     }

@@ -176,7 +176,7 @@ public class RANSACEpipolarWithFeaturesSolver {
             
         SecureRandom sr = Misc.getSecureRandom();
         long seed = System.currentTimeMillis();
-        log.info("SEED=" + seed + " nPoints=" + nPoints);
+        log.fine("SEED=" + seed + " nPoints=" + nPoints);
         sr.setSeed(seed);
 
         int tolerance = 3;
