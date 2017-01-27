@@ -45,6 +45,7 @@ import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -790,6 +791,34 @@ public class MSERMatcher {
         return cor;
     }
     
+    public List<CorrespondenceList> matchObject3(
+        List<List<GreyscaleImage>> pyrRGB0, List<GreyscaleImage> pyrPT0,
+        TIntObjectMap<CRegion> cRegions0, List<Set<PairInt>> labeledSets0,
+        TObjectIntMap<PairInt> pointLabelMap0,
+        List<List<GreyscaleImage>> pyrRGB1, List<GreyscaleImage> pyrPT1,
+        TIntObjectMap<CRegion> cRegions1, List<Set<PairInt>> labeledSets1,
+        TObjectIntMap<PairInt> pointLabelMap1) {
+        
+        if (debug) {
+            debugPrint2(cRegions0, pyrRGB0.get(0), "_csr_0_");
+            debugPrint2(cRegions1, pyrRGB1.get(0), "_csr_1_");
+            System.out.println("cr0.n=" + cRegions0.size() + " cr1.n=" +
+                cRegions1.size());
+        }
+        
+        // a quick pass through with PHOGs to see if any of the remaining
+        //     regions which could be false matches can be filtered out.
+        //     (for example, if it removes the leaves effectively in any
+        //     of the test images, then will move this stage to
+        //     object matcher as a filter)
+        
+        // partial shape matcher next, but not over octaves.
+        //   will let the mtcher re-sample the curves uniformly if
+        //   the areas are within a reasonable scale range.
+        
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+    
     public List<CorrespondenceList> matchObject2(
         List<List<GreyscaleImage>> pyrRGB0, List<GreyscaleImage> pyrPT0,
         TIntObjectMap<CRegion> cRegions0, List<Set<PairInt>> labeledSets0,
@@ -830,7 +859,7 @@ public class MSERMatcher {
             debugPrint2(cRegions0, pyrRGB0.get(0), "_csr_0_");
             debugPrint2(cRegions1, pyrRGB1.get(0), "_csr_1_");
         }
-        
+       
         // populated on demand, some are skipped for large size differences
 
         TIntObjectMap<TIntObjectMap<CRegion>> csr1
@@ -880,7 +909,7 @@ public class MSERMatcher {
             float scale0 = (((float)w0/(float)w0_i) +
                 ((float)h0/(float)h0_i))/2.f;
 
-            //HOGs hogs0 = new HOGs(gsI0, 1, 3);
+            //HOGs hogs0 = new HOGs(gsI0, 1, 16);
             
             FixedSizeSortedVector<Obj> bestR = new
                 FixedSizeSortedVector<Obj>(top, Obj.class);
@@ -895,12 +924,12 @@ public class MSERMatcher {
                 float scale1 = (((float)w1/(float)w1_i) +
                     ((float)h1/(float)h1_i))/2.f;
 
-                //HOGs hogs1 = new HOGs(gsI1, 1, 3);
+                //HOGs hogs1 = new HOGs(gsI1, 1, 16);
                 
                 //NOTE: orientation due to different segmentation
                 //   can be a weakness in this search method
                 
-                int top2 = 100;
+                int top2 = 15;//100;
 
                 // cost is ssd rgb + ssd ptcieluv + fract^2
                 FixedSizeSortedVector<Obj> b = new
@@ -909,8 +938,10 @@ public class MSERMatcher {
                 search(getOrCreate(csr0, imgIdx0, gsI0, scale0),
                     gsI0, ptI0, scale0, imgIdx0,
                     getOrCreate(csr1, imgIdx1, gsI1, scale1),
-                    gsI1, ptI1, scale1, imgIdx1, b);
-
+                    gsI1, ptI1, scale1, imgIdx1,
+                    pyrRGB0.get(imgIdx0), pyrRGB1.get(imgIdx1),
+                    b);
+                
                 // rank of true matches in b in tests:
                 //     52
                 //     17
@@ -932,6 +963,7 @@ public class MSERMatcher {
                 //      (2) adding shape to the cost here on items in b
                 //          (shape contains only the outer boundary as information)
 
+                
                 double maxAvgChordDiff = Double.MIN_VALUE;
                 double[] chords = new double[b.getNumberOfItems()];
                 int[] nMs = new int[b.getNumberOfItems()];
@@ -955,6 +987,7 @@ public class MSERMatcher {
                     }
                 }
                 
+                
                 //NOTE: a look at the results here suggest
                 // a much faster approach for another method,
                 // matchObject12.
@@ -970,7 +1003,7 @@ public class MSERMatcher {
                     
                     Obj obj = b.getArray()[k];
 
-    {
+    /*{
         Image im0 = gsI0.copyToColorGreyscale();
         int[] clr = ImageIOHelper.getNextRGB(k);
         obj.cr0.drawEachPixel(im0, 0, clr[0], clr[1], clr[2]);
@@ -982,8 +1015,9 @@ public class MSERMatcher {
         obj.cr1.draw(im1, 0, 255, 0, 0);
         MiscDebug.writeImage(im1, "_"  + imgIdx0 + "_" + 
             "_"  + imgIdx1 + "____" + k + "_");
-    }
-                       
+    }*/
+                
+                    
                     float np = nMs[k];
                     float nb = nBs[k];
                     float countComp = 1.0F - (np / (float) nb);    
@@ -991,21 +1025,35 @@ public class MSERMatcher {
                     //    / maxAvgChordDiff;
                     double chordComp = (float) chords[k] / maxAvgChordDiff;
                     double sd = countComp * countComp + chordComp * chordComp;
-
+                    
+                    //NOTE: if keep the partial shape matcher,
+                    // then should consider that if the orientation from
+                    // the shape matching is very different from
+                    // the mser orientations, that should re-do the
+                    // patch matching.
+                    //    might be able to limit that to top 10
+                    
+                    
                     //[intersectionSum, f, err, count]
                     //double[] hogCosts = sumHOGCost(
                     //    hogs0, obj.cr0, scale0,
                     //    hogs1, obj.cr1, scale1);
-        
+                    
                     System.out.format(
-  "%.1f %.1f %d I (%d,%d) (%d,%d) im0=%d im1=%d c=%.3f sd=%.4f n=%d\n",
+  "%.1f %.1f %d I (%d,%d) (%d,%d) im0=%d im1=%d c=%.3f n=%d or=%d,%d sd=%.3f\n",
                         scale0, scale1, k,
                         Math.round(scale0 * obj.cr0.ellipseParams.xC),
                         Math.round(scale0 * obj.cr0.ellipseParams.yC),
                         Math.round(scale1 * obj.cr1.ellipseParams.xC),
                         Math.round(scale1 * obj.cr1.ellipseParams.yC),
                         obj.imgIdx0, obj.imgIdx1, (float)obj.cost,
-                        (float)sd, obj.nMatched);
+                        obj.nMatched, 
+                        (int)Math.round(obj.cr0.ellipseParams.orientation *
+                            180./Math.PI),
+                        (int)Math.round(obj.cr1.ellipseParams.orientation *
+                            180./Math.PI),
+                            sd
+                    );
                 }
                 
                 /*                 
@@ -1386,11 +1434,15 @@ public class MSERMatcher {
     }
 
     private void search(TIntObjectMap<CRegion> csr0,
-        GreyscaleImage rgb0, GreyscaleImage pt0, float scale0, int imgIdx0,
+        GreyscaleImage gs0, GreyscaleImage pt0, float scale0, int imgIdx0,
         TIntObjectMap<CRegion> csr1,
-        GreyscaleImage rgb1, GreyscaleImage pt1, float scale1, int imgIdx1,
+        GreyscaleImage gs1, GreyscaleImage pt1, float scale1, int imgIdx1,
+        List<GreyscaleImage> rgb0, List<GreyscaleImage> rgb1, 
         FixedSizeSortedVector<Obj> b) {
 
+        System.out.println("img0=" + imgIdx0 + " img1=" + imgIdx1 + " csr0.n=" +
+            csr0.size() + " csr1.n=" + csr1.size());
+        
         // coords are in the individual octave reference frames
 
         float factor = 2.5f;
@@ -1432,13 +1484,15 @@ public class MSERMatcher {
                 if ((majA > majB && (majA/majB) > factor) ||
                     (majB > majA && (majB/majA) > factor)) {
 
-                    System.out.format(
+                    /*System.out.format(
                         "RMVD (%d,%d) (%d,%d) im0=%d im1=%d maj0=%.3f, maj1=%.2f\n\n",
-                        csrA.ellipseParams.xC, csrA.ellipseParams.yC, 
-                        csrB.ellipseParams.xC, csrB.ellipseParams.yC,
+                        Math.round(scale0 * csrA.ellipseParams.xC), 
+                        Math.round(scale0 * csrA.ellipseParams.yC), 
+                        Math.round(scale1 * csrB.ellipseParams.xC), 
+                        Math.round(scale1 * csrB.ellipseParams.yC),
                         imgIdx0, imgIdx1, (float)csrA.ellipseParams.major, 
                         (float)csrB.ellipseParams.major);
-
+                     */
                     continue;
                 } /*else {
                     System.out.format(
@@ -1452,11 +1506,18 @@ public class MSERMatcher {
                     csrB.offsetsToOrigCoords.size());
 
                 //TODO: consider whether to return the matched pixels
-                // [ssdSumRGB, ssdSumPTCIELUV, f, err, ssdCount]
+                // [ssdSumRGB, ssdSumPTCIELUV, ssdHSV, f, err, ssdCount]
                 double[] costs = matchRegion(
-                    csrA, rgb0, pt0, scale0, csrB, rgb1, pt1, scale1);
+                    csrA, rgb0, gs0, pt0, scale0, 
+                    csrB, rgb1, gs1, pt1, scale1);
 
                 if (costs == null) {
+                    continue;
+                }
+                                
+                //TODO: may need to revise. trying to filter out false
+                //   matches to keep the maxArea smaller
+                if (costs[0] > 0.5 || costs[1] > 0.5) {
                     continue;
                 }
                 
@@ -1473,30 +1534,34 @@ public class MSERMatcher {
                 obj.r1Idx = rBIdx;
                 obj.imgIdx0 = imgIdx0;
                 obj.imgIdx1 = imgIdx1;
-                obj.ssd = costs[0] + costs[1];
-                obj.nMatched = (int)costs[4];
-                obj.cost = costs[0] + costs[1] + costs[2];
+                obj.ssd = costs[0] + costs[1] + costs[2];
+                obj.nMatched = (int)costs[5];
+                obj.cost = costs[0] + costs[1] + costs[2];// + costs[3];
                 boolean addedA = b.add(obj);
 
+                // [ssdSumRGB, ssdSumPTCIELUV, ssdHSV, f, err, ssdCount]
+                
                 if (addedA) {
                     if (costs[4] > maxArea) {
-                        maxArea = (float)costs[4];
+                        maxArea = (float)costs[5];
                     }
                 }
 
                 System.out.format(
-                    "(%d,%d) (%d,%d) im0=%d im1=%d c=%.3f (%.3f,%.3f) rs=(%d,%d) added=%b\n",
-                    csrA.ellipseParams.xC, csrA.ellipseParams.yC, 
-                    csrB.ellipseParams.xC, csrB.ellipseParams.yC,
+                    "(%d,%d) (%d,%d) im0=%d im1=%d c=%.3f (%.3f,%.3f, %.3f) rs=(%d,%d) added=%b\n",
+                    Math.round(scale0 * csrA.ellipseParams.xC), 
+                    Math.round(scale0 * csrA.ellipseParams.yC), 
+                    Math.round(scale1 * csrB.ellipseParams.xC), 
+                    Math.round(scale1 * csrB.ellipseParams.yC),
                     imgIdx0, imgIdx1, (float)obj.cost,
-                    (float)costs[0], (float)costs[1], 
+                    (float)costs[0], (float)costs[1],  (float)costs[2],
                     rAIdx, rBIdx, addedA);
             }
         }
 
         // re-calculate the fraction of whole for bA and replace the
         //  entries with new ordered list
-        
+        /*
         FixedSizeSortedVector<Obj> bA2 
             = new FixedSizeSortedVector<Obj>(b.getFixedCapacity(), Obj.class);
         
@@ -1512,7 +1577,7 @@ public class MSERMatcher {
         for (int i = 0; i < n; ++i) {
             b.getArray()[i] = bA2.getArray()[i];
         }
-        
+        */
     }
 
     private Set<PairInt> extractScaledPts(CRegion csr, int w, int h,
@@ -1547,11 +1612,13 @@ public class MSERMatcher {
 
     /**
      *
-     * @return [ssdSumRGB, ssdSumPTCIELUV, f, err, ssdCount]
+     * @return [ssdSumRGB, ssdSumPTCIELUV, ssdSumHSV, f, err, ssdCount]
      */
     private double[] matchRegion(
-        CRegion csr0, GreyscaleImage rgb0, GreyscaleImage pt0, float scale0,
-        CRegion csr1, GreyscaleImage rgb1, GreyscaleImage pt1, float scale1) {
+        CRegion csr0, List<GreyscaleImage> rgb0, GreyscaleImage gs0, 
+        GreyscaleImage pt0, float scale0,
+        CRegion csr1, List<GreyscaleImage> rgb1, GreyscaleImage gs1, 
+        GreyscaleImage pt1, float scale1) {
 
         Map<PairInt, PairInt> offsetMap1 = csr1.offsetsToOrigCoords;
 
@@ -1560,8 +1627,12 @@ public class MSERMatcher {
 
         double ssdSumGS = 0;
         double ssdSumPT = 0;
+        double ssdSumHSV = 0;
         int ssdCount = 0;
 
+        float[] hsv0 = new float[3];
+        float[] hsv1 = new float[3];
+        
         // key = transformed offsets, value = coords in image ref frame,
         // so, can compare dataset0 and dataset1 points with same
         //  keys
@@ -1577,11 +1648,11 @@ public class MSERMatcher {
 
             PairInt xy0 = entry0.getValue();
 
-            int vRGB0 = rgb0.getValue(xy0);
+            int vRGB0 = gs0.getValue(xy0);
 
             int vPT0 = pt0.getValue(xy0);
 
-            int vRGB1 = rgb1.getValue(xy1);
+            int vRGB1 = gs1.getValue(xy1);
 
             int vPT1 = pt1.getValue(xy1);
 
@@ -1603,10 +1674,21 @@ public class MSERMatcher {
             }
             int diffPT = vPT0 - vPT1;
 
+            Color.RGBtoHSB(rgb0.get(0).getValue(xy0), 
+                rgb0.get(1).getValue(xy0), 
+                rgb0.get(2).getValue(xy0), hsv0);
+            Color.RGBtoHSB(rgb1.get(0).getValue(xy1), 
+                rgb1.get(1).getValue(xy1), 
+                rgb1.get(2).getValue(xy1), hsv1);
+
+            double diffHSV = diffHSV(hsv0, hsv1);
+            
             ssdSumGS += (diffRGB * diffRGB);
 
             ssdSumPT += (diffPT * diffPT);
 
+            ssdSumHSV += (diffHSV * diffHSV);
+            
             ssdCount++;
         }
         if (ssdCount == 0) {
@@ -1617,17 +1699,21 @@ public class MSERMatcher {
 
         ssdSumPT /= (double)ssdCount;
 
+        ssdSumHSV /= (double)ssdCount;
+        
         ssdSumGS = Math.sqrt(ssdSumGS)/255.;
 
         ssdSumPT = Math.sqrt(ssdSumPT)/255.;
 
+        ssdSumHSV = Math.sqrt(ssdSumHSV);
+        
         double f = 1. - ((double) ssdCount / (double) maxMatchable);
 
         // TODO: correct this if end up using it.
         //  it's based upon green only
         double err = Math.max(csr0.autocorrel, csr1.autocorrel);
 
-        return new double[]{ssdSumGS, ssdSumPT, f, err, ssdCount};
+        return new double[]{ssdSumGS, ssdSumPT, ssdSumHSV, f, err, ssdCount};
     }
 
     /**
@@ -2513,9 +2599,15 @@ if (dbg) {
         PerimeterFinder2 finder = new PerimeterFinder2();
         PairIntArray p = finder.extractOrderedBorder(set0);
         PairIntArray q = finder.extractOrderedBorder(set1);
+    
+        int dp = 1;
+        if (p.getN() > 500 || q.getN() > 500) {
+            int dn = Math.max(p.getN(), q.getN());
+            dp += Math.ceil((float)dn/500.f);
+        }
         
         PartialShapeMatcher2 matcher = new PartialShapeMatcher2();
-        matcher.overrideSamplingDistance(1);
+        matcher.overrideSamplingDistance(dp);
         matcher.setToRemoveOutliers();
         PartialShapeMatcher2.Result result = matcher.match(p, q);
 
@@ -2547,6 +2639,14 @@ if (dbg) {
         return finder.getXY(maxIdx);
     }
 
+    private double diffHSV(float[] hsv0, float[] hsv1) {
+        double sum = 0;
+        for (int i = 0; i < 3; ++i) {
+            sum += Math.abs(hsv0[i] - hsv1[i]);
+        }
+        return sum/3.;
+    }
+
     private class Obj implements Comparable<Obj>{
         CRegion cr0;
         CRegion cr1;
@@ -2554,7 +2654,7 @@ if (dbg) {
         int imgIdx1;
         double ssd;
         int nMatched;
-        double cost;
+        double cost = Double.MAX_VALUE;
         
         // might not be populatated:
         int r0Idx = -1;

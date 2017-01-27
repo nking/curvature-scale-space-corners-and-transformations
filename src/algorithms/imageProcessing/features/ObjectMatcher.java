@@ -546,8 +546,8 @@ public class ObjectMatcher {
                 //TODO: this needs revision...it is resolution (and scale) sensitive
                 if ((nInRegion < 100 && fOutside > 0.45) || 
                     (nInRegion >= 100 && fOutside > 0.16)) {
-                    System.out.println("removing label cen=" + labelXY + 
-                        " nInRegion=" + nInRegion + " fOutside=" + fOutside);
+                    //System.out.println("removing label cen=" + labelXY + 
+                    //    " nInRegion=" + nInRegion + " fOutside=" + fOutside);
                     // remove the offset points from the cRegion's offsets
                     for (PairInt rm : labelPointKeys.get(label)) {
                         cr.points.remove(rm);
@@ -2190,9 +2190,9 @@ public class ObjectMatcher {
                             MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
                             PairInt xyCen = ch.calculateXYCentroids2(
                                 listOfPointSets2.get(label2));
-                            System.out.format(
-                                "removing label2=%d which is %.2f sigma above mean.  coords=%s\n",
-                                label2, sigmaFactor, xyCen.toString());
+                            //System.out.format(
+                            //    "removing label2=%d which is %.2f sigma above mean.  coords=%s\n",
+                            //    label2, sigmaFactor, xyCen.toString());
                         }
                     }
                 }

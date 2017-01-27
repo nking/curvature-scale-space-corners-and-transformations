@@ -76,7 +76,7 @@ public class AndroidStatuesTest extends TestCase {
 
         String fileName1 = "";
 
-        //for (int i = 15; i < 16; ++i) {
+        //for (int i = 0; i < 6; ++i) {
         for (int i = 0; i < 37; ++i) {
 
             switch(i) {
@@ -247,15 +247,19 @@ public class AndroidStatuesTest extends TestCase {
                 (float) h1 / maxDimension));
 
             img = imageProcessor.binImage(img, binFactor1);
-
+            MiscDebug.writeImage(img, "_"  + fileName1Root);
+                
             CannyEdgeFilterAdaptiveDeltaE2000 canny =
                 new CannyEdgeFilterAdaptiveDeltaE2000();
             //canny.overrideToUseAdaptiveThreshold();
             //canny.setToDebug();
             canny.applyFilter(img.copyToImageExt());
             EdgeFilterProducts products = canny.getFilterProducts();        
+            MiscDebug.writeImage(products.getGradientXY(), "_gradient_" 
+                + fileName1Root);
             
-            int[] labels4 = imageSegmentation.objectSegmentation(img, products);
+            int[] labels4 = imageSegmentation.objectSegmentation(img, 
+                products);
 
             ImageExt img11 = img.createWithDimensions();
             ImageIOHelper.addAlternatingColorLabelsToRegion(
@@ -328,7 +332,7 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void testORBMSERMatcher_gingerbreadman() throws Exception {
+    public void estORBMSERMatcher_gingerbreadman() throws Exception {
 
         int maxDimension = 256;//512;
         SIGMA sigma = SIGMA.ZEROPOINTFIVE;//SIGMA.ONE;
@@ -337,14 +341,45 @@ public class AndroidStatuesTest extends TestCase {
         ImageSegmentation imageSegmentation = new ImageSegmentation();
 
         String[] fileNames0 = new String[]{
-            "android_statues_03_sz1",
-        //    "android_statues_03_sz3"
+        //    "android_statues_03_sz1",
+            "android_statues_03_sz3"
         };
+        
+        /*  
+        NOTE for gbman, centers are off and sometimes orientation,
+        so more precise centering is needed
+        (center of segmentation maybe or from shape matching
+        and orientation from hogs or shape matching)
+        
+        ROUGH COORDS
+        gbman template sz3    
+            center
+              60. 72  (sz1 has center 32,45)
+        
+        andr01 (scale 95/23 = 4.1   5:0
+              78, 52
+        
+        andr02 (scale 95/70 = 1.35  1:0
+            181, 57
+            (seg: 175, 57)
+        
+        andr03 (scale 95/61 = 1.6   1:0
+           38, 76  
+           BUT ORIENTAATION 
+           is off by 45 degrees 
+           (needs shape or 
+           hog orientation)
+        
+        
+        andr04 (scale 95/46 = 2.1   2:0
+           196, 87
+           
+        */
 
         String[] fileNames1 = new String[]{
-        //    "android_statues_01.jpg", // no kp remaining
-        //    "android_statues_02.jpg", // OK:
-        //    "android_statues_04.jpg", // OK:
+        //  "android_statues_01.jpg", // no kp remaining
+        //   "android_statues_02.jpg", // OK:
+        //   "android_statues_04.jpg", // OK:
             "android_statues_03.jpg"  // OK:
         };
         
@@ -400,12 +435,17 @@ public class AndroidStatuesTest extends TestCase {
                     300, 7, 20./300.);
                 System.out.println("99 percent nIter for RANSAC=" 
                     + nnn);*/
-                 
+        
+                GreyscaleImage theta1 = imageProcessor.createCIELUVTheta(imgs0[0], 255);
+                MiscDebug.writeImage(theta1, fileName1Root + "_theta_0");
+                theta1 = imageProcessor.createCIELUVTheta(img, 255);
+                MiscDebug.writeImage(theta1, fileName1Root + "_theta_1");
+        
                 Settings settings = new Settings();
                 //settings.setToFindVnishingPoints();
                 
-                //settings.setToUseLargerPyramid0();
-                //settings.setToUseLargerPyramid1();
+                settings.setToUseLargerPyramid0();
+                settings.setToUseLargerPyramid1();
                 
                 ObjectMatcher objMatcher = new ObjectMatcher();
                 if (fileName1Root.contains("_01")) {
@@ -413,8 +453,8 @@ public class AndroidStatuesTest extends TestCase {
                //     settings.setToUseLargerPyramid1();
                //     settings.setToUseSmallObjectMethod();
                 }
-                objMatcher.setToDebug();
-                                
+                objMatcher.setToDebug();          
+                
                 CorrespondenceList cor 
                     //= objMatcher.findObject(
                     = objMatcher.findObject11(
@@ -458,13 +498,32 @@ public class AndroidStatuesTest extends TestCase {
         ImageSegmentation imageSegmentation = new ImageSegmentation();
 
         String[] fileNames0 = new String[]{
-            "android_statues_04.jpg", "android_statues_04_cupcake_mask.png"};
+            "android_statues_04.jpg", 
+            "android_statues_04_cupcake_mask.png"};
 
         String[] fileNames1 = new String[]{
-         "android_statues_01.jpg",   // 
+            "android_statues_01.jpg",   // 
         //   "android_statues_02.jpg", //  
-        //     "android_statues_04.jpg", // 
+        //     "android_statues_04.jpg", // <-- segmentation needs a little more 
+                                       //     metging OR bin the image more...
         };
+        
+        /*  ROUGH COORDS
+        cupcake template
+            top      bottom    approx center
+          48, 32    44, 59         51, 54
+        
+        andr01  (scale 61/14 = 4.35  5:0
+          15,48 
+        (seg: 14, 56)
+        
+        andr02  (scale 61/27 = 2.25  2:0
+            52, 50                     
+        (seg: 58, 60)
+        
+        andr04  (scale 61/58  = 1   0:0
+         92, 74                   91, 103                
+        */
 
         for (String fileName1 : fileNames1) {               
 
@@ -513,7 +572,9 @@ public class AndroidStatuesTest extends TestCase {
         
             Settings settings = new Settings();
           //  settings.setToFindVnishingPoints();
-            
+            settings.setToUseLargerPyramid0();
+            settings.setToUseLargerPyramid1();
+          
             ObjectMatcher objMatcher = new ObjectMatcher();
           //  if (
           //      fileName1Root.contains("_01") ||
@@ -557,11 +618,8 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void estORBMSERMatcher_icecream() throws Exception {
+    public void testORBMSERMatcher_icecream() throws Exception {
 
-        // TODO: needs better segmentation for the icecream in status 01 and 02
-        //    AND/OR a different light source for polar theta CIE LAB
-        
         int maxDimension = 256;//512;
         SIGMA sigma = SIGMA.ZEROPOINTFIVE;//SIGMA.ONE;
 
@@ -583,6 +641,22 @@ public class AndroidStatuesTest extends TestCase {
             "android_statues_04.jpg",
             "android_statues_04_icecream_mask.png",
         };
+        
+        /*  ROUGH COORDS
+        icecream template
+            top      bottom    approx center
+           40, 40    38, 60       41, 51
+           37,38
+        
+        andr01  (scale 53/17 = 3.1    3:0
+                                  49, 53
+        
+        andr02  (scale 53/36 = 1.5    1:0
+                                 108, 55
+        
+        andr04  (scale 53/50 = 1      0:0
+                                 153, 96
+        */
         
         //paused here.  handle 02 first.  orientation problem!
 
@@ -638,7 +712,8 @@ public class AndroidStatuesTest extends TestCase {
             MiscDebug.writeImage(theta1, fileName1Root + "_theta_1");
         
             Settings settings = new Settings();
-            settings.setToFindVnishingPoints();
+            settings.setToUseLargerPyramid0();
+            settings.setToUseLargerPyramid1();
             
             ObjectMatcher objMatcher = new ObjectMatcher();
             //if (
