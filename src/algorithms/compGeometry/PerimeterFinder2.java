@@ -492,9 +492,17 @@ public class PerimeterFinder2 {
                 outIdx--;
                 
                 if (outIdx < 1) {
+                    
                     int nj = junctions.size();
                     int nb = boundaryList.size();
+                    
                     debug(contiguousPoints, boundary, orderedOutput);
+                    
+                    System.out.println("output.n=" 
+                        + orderedOutput.getN() 
+                        + " rem.n=" + remaining.size() + " " + 
+                        boundary.size());
+                    
                     throw new IllegalStateException("Error in closed curve shape.");
                 }
                 
