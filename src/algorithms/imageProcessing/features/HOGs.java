@@ -105,7 +105,7 @@ public class HOGs {
     private final int w;
     private final int h;
     
-    private boolean debug = true;
+    private boolean debug = false;
     
     //TODO: calculate the limits in nPixels this can handle due to
     //   using integers instead of long for storage.
@@ -194,7 +194,7 @@ public class HOGs {
     }
 
     /**
-     * NOT YET TESTED
+     * CAVEAT: small amount of testing done, not yet throughly tested.
      * 
      * extract the block surrounding the feature.
      * the number of pixels in a cell and the number of cells in block were set during
@@ -303,7 +303,7 @@ public class HOGs {
     }
     
     /**
-     * NOT READY FOR USE.
+     * CAVEAT: small amount of testing done, not yet throughly tested.
      * 
      * calculate the intersection of histA and histB which have already
      * been normalized to the same scale.
