@@ -275,6 +275,11 @@ public class PartialShapeMatcher2 {
             throw new IllegalArgumentException("p and q must "
             + " have at least dp*2 points = " + (dp * 2));
         }
+        
+        if ((p.getN()/dp) > 500 || (q.getN()/dp) > 500) {
+            log.warning("warning, q.n/dp or q.n/dp is large and requires alot of"
+                + " memory");
+        }
 
         if (useSameNumberOfPoints) {
             return matchSameNumber(p, q);
