@@ -99,12 +99,17 @@ public class HOGs {
     // 2x2 or 3x3 is recommended
     private final int N_CELLS_PER_BLOCK_DIM;
     
-    private final GradientIntegralHistograms gHists;
+    // histogrm integral images with a sindowed sum of N_PIX_PER_CELL_DIM
+    private final int[][] gHists;
     
     private final int w;
     private final int h;
     
     private boolean debug = true;
+    
+    //TODO: calculate the limits in nPixels this can handle due to
+    //   using integers instead of long for storage.
+    //  8.4 million pix, roughly 2900 X 2900
     
     public HOGs(GreyscaleImage rgb) {
         
@@ -117,11 +122,11 @@ public class HOGs {
         gHists = init(rgb);
     }
     
-    public HOGs(GreyscaleImage rgb, int nPixPerCellDim) {
+    public HOGs(GreyscaleImage rgb, int nCellsPerDim, int nPixPerCellDim) {
         
         nAngleBins = 9;
         N_PIX_PER_CELL_DIM = nPixPerCellDim;
-        N_CELLS_PER_BLOCK_DIM = 2;
+        N_CELLS_PER_BLOCK_DIM = nCellsPerDim;
         w = rgb.getWidth();
         h = rgb.getHeight();
         
@@ -143,7 +148,7 @@ public class HOGs {
         debug = true;
     }
     
-    private GradientIntegralHistograms init(GreyscaleImage rgb) {
+    private int[][] init(GreyscaleImage rgb) {
         
         ImageProcessor imageProcessor = new ImageProcessor();
         
@@ -160,14 +165,10 @@ public class HOGs {
             algorithms.misc.MiscDebug.writeImage(theta, "_theta_");
         }
         
-        GradientIntegralHistograms gh = new GradientIntegralHistograms(gXY,
-            theta, nAngleBins);
-
-        return gh;
+        return init(gXY, theta);
     }
     
-    private GradientIntegralHistograms init(GreyscaleImage gradientXY, 
-        GreyscaleImage theta) {
+    private int[][] init(GreyscaleImage gradientXY, GreyscaleImage theta) {
         
         if (w != gradientXY.getWidth() || h != gradientXY.getHeight()) {
             throw new IllegalArgumentException("gradient and theta must be same size");
@@ -182,12 +183,16 @@ public class HOGs {
             algorithms.misc.MiscDebug.writeImage(theta, "_theta_");
         }
         
-        GradientIntegralHistograms gh = new GradientIntegralHistograms(gradientXY,
-            theta, nAngleBins);
+        GradientIntegralHistograms gh = new GradientIntegralHistograms();
+        
+        int[][] histograms = gh.createHistograms(gradientXY, theta, nAngleBins);
 
-        return gh;        
+        //apply a windowed sum across the integral image
+        gh.applyWindowedSum(histograms, w, h, N_PIX_PER_CELL_DIM);
+        
+        return histograms;        
     }
-    
+
     /**
      * NOT YET TESTED
      * 
@@ -200,7 +205,7 @@ public class HOGs {
      * @param outHist 
      */
     public void extractFeature(int x, int y, int[] outHist) {
-
+                
         if (outHist.length != nAngleBins) {
             throw new IllegalArgumentException("outHist.length != nAngleBins");
         }
@@ -217,15 +222,12 @@ public class HOGs {
         int nH = N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM;
 
         double blockTotal = 0;        
-        
-        int cXOff = -(N_CELLS_PER_BLOCK_DIM/2);
-        int[] outN = new int[1];
-        
+                
         List<OneDIntArray> cells = new ArrayList<OneDIntArray>(nH);
         
         for (int cX = 0; cX < N_CELLS_PER_BLOCK_DIM; ++cX) {
             
-            int cYOff = -(N_CELLS_PER_BLOCK_DIM/2);
+            int cXOff = -(N_CELLS_PER_BLOCK_DIM/2) + cX;
         
             int x2 = x + (cXOff * N_PIX_PER_CELL_DIM);
             
@@ -236,13 +238,11 @@ public class HOGs {
             } else if (x2 >= w) {
                 break;
             }
-            int x3 = x2 + N_PIX_PER_CELL_DIM - 1;
-            if (x3 > (w - 1)) {
-               x3 = w - 1;
-            }
             
             for (int cY = 0; cY < N_CELLS_PER_BLOCK_DIM; ++cY) {
                     
+                int cYOff = -(N_CELLS_PER_BLOCK_DIM/2) + cY;
+                
                 int y2 = y + (cYOff * N_PIX_PER_CELL_DIM);
 
                 if ((y2 + N_PIX_PER_CELL_DIM - 1) < 0) {
@@ -252,14 +252,10 @@ public class HOGs {
                 } else if (y2 >= h) {
                     break;
                 }
-                int y3 = y2 + N_PIX_PER_CELL_DIM - 1;
-                if (y3 > (h - 1)) {
-                    y3 = h - 1;
-                }
-
-                int[] out = new int[nAngleBins];
-
-                gHists.extractWindow(x2, x3, y2, y3, out, outN);
+                                
+                int pixIdx = (y2 * w) + x2;
+                
+                int[] out = Arrays.copyOf(gHists[pixIdx], gHists[pixIdx].length);
 
                 cells.add(new OneDIntArray(out));
             
@@ -267,8 +263,9 @@ public class HOGs {
                 
                 blockTotal += (t * t);
             }
-            cYOff++;
         }
+        
+        blockTotal /= (double)cells.size();
         
         double norm = 1./Math.sqrt(blockTotal + 0.0001);
                 
@@ -281,7 +278,7 @@ public class HOGs {
         // one more term to the normalization needed in case the number of
         //  cells is fewer than nH (due to the point being near the image edge).
         //  will scale the results by the ratio.
-        norm *= (double)nH/(double)cells.size();
+        //norm *= (double)nH/(double)cells.size();
         
         Arrays.fill(outHist, 0, outHist.length, 0);
         

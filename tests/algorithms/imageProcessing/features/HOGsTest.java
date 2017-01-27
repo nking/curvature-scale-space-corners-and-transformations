@@ -1,16 +1,13 @@
 package algorithms.imageProcessing.features;
 
-import algorithms.imageProcessing.EdgeFilterProducts;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageIOHelper;
-import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.misc.MiscDebug;
 import algorithms.util.ResourceFinder;
-import com.climbwithyourfeet.clustering.util.MiscMath;
+import algorithms.misc.MiscMath;
 import java.io.IOException;
 import java.util.Arrays;
 import junit.framework.TestCase;
-import org.junit.Test;
 
 /**
  *
@@ -30,7 +27,7 @@ public class HOGsTest extends TestCase {
         
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath);
         
-        HOGs hogs = new HOGs(img, 1);
+        HOGs hogs = new HOGs(img, 1, 1);
         //hogs.setToDebug();
          
          // end of swirl
@@ -39,7 +36,7 @@ public class HOGsTest extends TestCase {
         
         // diagonal edge of swirl
         int[] feature1 = new int[nBins];
-        hogs.extractFeature(114, 116, feature1);
+        hogs.extractFeature(106, 48, feature1);
     
         // middle of swirl
         int[] feature2 = new int[nBins];
@@ -53,87 +50,95 @@ public class HOGsTest extends TestCase {
         int[] feature4 = new int[nBins];
         hogs.extractFeature(72, 54, feature4);
       
-        System.out.println("0=" + Arrays.toString(feature0));
-        System.out.println("1=" + Arrays.toString(feature1));
-        System.out.println("2=" + Arrays.toString(feature2));
-        System.out.println("3=" + Arrays.toString(feature3));
-        System.out.println("4=" + Arrays.toString(feature4));
+        //System.out.println("0=" + Arrays.toString(feature0));
+        //System.out.println("1=" + Arrays.toString(feature1));
+        //System.out.println("2=" + Arrays.toString(feature2));
+        //System.out.println("3=" + Arrays.toString(feature3));
+        //System.out.println("4=" + Arrays.toString(feature4));
         
-        /* with cell size=6X6:
-            0=[73440, 0, 0, 0, 0, 0, 0, 0, 0]       // end of swirl
-    [junit] 1=[0, 0, 0, 0, 73440, 0, 0, 0, 0]       // diagonal
-    [junit] 2=[48404, 220, 0, 0, 24816, 0, 0, 0, 0] // middle
-    [junit] 3=[73440, 0, 0, 0, 0, 0, 0, 0, 0]       // flat
-    [junit] 4=[0, 0, 0, 0, 73440, 0, 0, 0, 0]       // in between arms
+        /* with cell size=1X1
+             20  40   60   80  100  120 140  160  180
+          0=[0,   0,  0,   0,   0,   0,  0,   255, 0]
+          1=[0,   0,  0,   0,   0,   0,  255, 0,   0]
+          2=[255, 0,  0,   0,   0,   0,  0,   0,   0]
+          3=[0,   0,  0,   0,   255, 0,  0,   0,   0]
+          4=[0,   0,  0,   0,   0,   0,  0,   0,   0]
         
-           with cell size=4X4
-            0=[6076, 0, 0, 0, 7200, 5084, 0, 0, 0]
-    [junit] 1=[9180, 9180, 0, 0, 0, 0, 0, 0, 0]
-    [junit] 2=[3032, 10524, 4808, 0, 0, 0, 0, 0, 0]
-    [junit] 3=[0, 0, 0, 0, 18360, 0, 0, 0, 0]
-    [junit] 4=[0, 0, 0, 13504, 4856, 0, 0, 0, 0]
-    [junit] intersection 0:1=0.39215687
-    [junit] intersection 1:3=0.0
-        
-           with cell size=1X1
-           0=[0, 0, 0, 0, 0, 2040, 0, 0, 0]
-    [junit] 1=[0, 2040, 0, 0, 0, 0, 0, 0, 0]
-    [junit] 2=[0, 2040, 0, 0, 0, 0, 0, 0, 0]
-    [junit] 3=[0, 0, 0, 0, 2040, 0, 0, 0, 0]
-    [junit] 4=[0, 0, 0, 0, 0, 0, 0, 0, 0]
-        
+        with cell size=3X3
+              20    40   60  80   100   120  140   160  180
+          0=[0,     0,   0,   0,  613,  858, 395,  429,  0]
+          1=[42,    0,   0,   0,   0,   0,  1294,  959,  0]
+          2=[715,   0,   0, 377,  356,  0,    86,  453,  309]
+          3=[0,     0,   0,   0, 2295,  0,    0,    0,   0]
+          4=[0,     0,   0,   0,    0,  0,    0,    0,   0]
         */
+        // 0=end of swirl.  1=diagonal edge. 2=middle.  3=flat edge. 4=between arms
+
+        int orientation0 = 155;  // shift seen is +3
+        int orientation1 = 135;  // shift seen is +2
+        int orientation3 = 90;   // shift is 0
         
-        int orientation0 = 90 + 20;  // shift seen is +1
-        int orientation1 = 30;       // shift seen is -3
-        int orientation3 = 90;       // shift is 0
-        
-        int expectedPeak0 = 4 + 1;
-        int expectedPeak1 = 4 - 3;
+        int expectedPeak0 = 4 + 3;
+        int expectedPeak1 = 4 + 2;
         int expectedPeak3 = 4;
         
         assertEquals(expectedPeak0, MiscMath.findYMaxIndex(feature0));
         assertEquals(expectedPeak1, MiscMath.findYMaxIndex(feature1));
         assertEquals(expectedPeak3, MiscMath.findYMaxIndex(feature3));
-        
-        // --- redo for a more typical cell size ----
-        hogs = new HOGs(img, 6);
+
+        hogs = new HOGs(img, 1, 3);
         hogs.extractFeature(65, 122, feature0);
-        hogs.extractFeature(114, 116, feature1);
-        hogs.extractFeature(72, 68, feature2);
-        hogs.extractFeature(75, 35, feature3);        
+        hogs.extractFeature(106, 48, feature1);
+        hogs.extractFeature(74, 68, feature2);
+        hogs.extractFeature(75, 35, feature3);
         hogs.extractFeature(72, 54, feature4);
-        
+        /*
         System.out.println("0=" + Arrays.toString(feature0));
         System.out.println("1=" + Arrays.toString(feature1));
         System.out.println("2=" + Arrays.toString(feature2));
         System.out.println("3=" + Arrays.toString(feature3));
         System.out.println("4=" + Arrays.toString(feature4));
+        */
         
-        int orientation2 = 30;
-      
-        // diagonal=1, flat edge=3
-        // middle=2, point at end=0
-   
+        // 0=end of swirl.  1=diagonal edge. 2=middle.  3=flat edge. 4=between arms
+        
+        float intersection03 = hogs.intersection(feature0, orientation0, 
+            feature3, orientation3);
+        
         float intersection13 = hogs.intersection(feature1, orientation1, 
             feature3, orientation3);
         
-        float intersection23 = hogs.intersection(feature2, orientation2, 
-            feature3, orientation3);
+        int[] a = new int[nBins];
+        float[] values = new float[img.getNPixels()];
+        for (int i = 0; i < img.getWidth(); ++i) {
+            for (int j = 0; j < img.getHeight(); ++j) {
+                hogs.extractFeature(i, j, a);
+                int v = a[MiscMath.findYMaxIndex(a)];
+                values[img.getInternalIndex(i, j)] = v;
+            }
+        }
+        MiscMath.rescale(values, 0, 255);
         
+        GreyscaleImage img2 = img.createFullRangeIntWithDimensions();
+        for (int i = 0; i < img2.getWidth(); ++i) {
+            for (int j = 0; j < img2.getHeight(); ++j) {
+                img2.setValue(i, j, (int)values[img2.getInternalIndex(i, j)]);
+            }
+        }
+        MiscDebug.writeImage(img2, "_hog_0_+");
+        
+        System.out.println("intersection 0:3=" + intersection03);
         System.out.println("intersection 1:3=" + intersection13);
-        System.out.println("intersection 2:3=" + intersection23);
+        
+        // 0 and 3 should be different
+        assertTrue(intersection03 < 0.4);
         
         // 1 and 3 should be similar
-        assertTrue(intersection13 >= 0.5);
+        assertTrue(intersection13 > 0.5);
         
-        // 2 and 3 should be different
-        assertTrue(intersection23 < 0.4);
-        
-        // needs test w/ non-solid image and features
     }
     
-    public void test1() throws IOException {
+    public void est1() throws IOException {
         
         //TODO: need to add a test for summing costs over a window
         //  of features
@@ -146,7 +151,7 @@ public class HOGsTest extends TestCase {
         
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath);
         
-        HOGs hogs = new HOGs(img, 6);
+        HOGs hogs = new HOGs(img, 2, 6);
         hogs.setToDebug();
          
         // middle of cupcake top
