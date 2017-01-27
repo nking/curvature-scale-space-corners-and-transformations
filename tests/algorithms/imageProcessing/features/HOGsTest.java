@@ -127,8 +127,8 @@ public class HOGsTest extends TestCase {
         }
         MiscDebug.writeImage(img2, "_hog_0_+");
         
-        System.out.println("intersection 0:3=" + intersection03);
-        System.out.println("intersection 1:3=" + intersection13);
+        //System.out.println("intersection 0:3=" + intersection03);
+        //System.out.println("intersection 1:3=" + intersection13);
         
         // 0 and 3 should be different
         assertTrue(intersection03 < 0.4);
@@ -138,20 +138,19 @@ public class HOGsTest extends TestCase {
         
     }
     
-    public void est1() throws IOException {
+    public void test1() throws IOException {
         
         //TODO: need to add a test for summing costs over a window
         //  of features
         
         int nBins = 9;
         
-        // make a test with spiral.png
         String filePath = ResourceFinder.findFileInTestResources(
             "android_statues_01_sz1.jpg");
         
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath);
         
-        HOGs hogs = new HOGs(img, 2, 6);
+        HOGs hogs = new HOGs(img, 1, 3);
         hogs.setToDebug();
          
         // middle of cupcake top
@@ -161,8 +160,8 @@ public class HOGsTest extends TestCase {
         int[] feature1 = new int[nBins];
         hogs.extractFeature(378, 94, feature1);
         
-        System.out.println("0=" + Arrays.toString(feature0));
-        System.out.println("1=" + Arrays.toString(feature1));
+        //System.out.println("0=" + Arrays.toString(feature0));
+        //System.out.println("1=" + Arrays.toString(feature1));
         
         int orientation0 = 110; 
         int orientation1 = 90;       // shift seen is -3
@@ -174,11 +173,14 @@ public class HOGsTest extends TestCase {
             feature1, orientation1);
         
         // ssd should be large for higher difference
-        System.out.println("intersection 0:1=" + intersection01 + " ssd=" +
-            ssd01);
+        //System.out.println("intersection 0:1=" + intersection01 + " ssd=" +
+        //    ssd01);
         
         // 0 and 1 should be different, that is, small intrsection
-        //assertTrue(intersection01 < 0.4);
+        assertTrue(intersection01 < 0.4);
+        
+        // 0 and 1 ssd should be high
+        assertTrue(ssd01 > 0.5);
         
     }
 }
