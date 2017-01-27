@@ -9,7 +9,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- NOT READY FOR USE.
+ CAVEAT: small amount of testing done, not yet throughly tested.
  
  An implementation of Histograms of Oriented Gradients
  constructed from reading the following papers:
@@ -274,12 +274,6 @@ public class HOGs {
    
         norm *= maxBlock;
         
-        //NOTE: this may need to be revised:
-        // one more term to the normalization needed in case the number of
-        //  cells is fewer than nH (due to the point being near the image edge).
-        //  will scale the results by the ratio.
-        //norm *= (double)nH/(double)cells.size();
-        
         Arrays.fill(outHist, 0, outHist.length, 0);
         
         for (int i = 0; i < cells.size(); ++i) {
@@ -312,6 +306,9 @@ public class HOGs {
      * The orientations are needed to compare the correct rotated bins to one another.
      * Internally, orientation of 90 leads to no shift for rotation,
      * and orientation near 0 results in rotation of nBins/2, etc...
+     * 
+     * Note that an orientation of 90 is a unit vector from x,y=0,0 to
+     * x,y=0,1.
      * 
      * @param histA
      * @param orientationA
@@ -389,6 +386,26 @@ public class HOGs {
         return sim;
     }
     
+    /**
+     * CAVEAT: small amount of testing done, not yet throughly tested.
+     * 
+     * calculate the intersection of histA and histB which have already
+     * been normalized to the same scale.
+     * A result of 0 is maximally dissimilar and a result of 1 is maximally similar.
+     * 
+     * The orientations are needed to compare the correct rotated bins to one another.
+     * Internally, orientation of 90 leads to no shift for rotation,
+     * and orientation near 0 results in rotation of nBins/2, etc...
+     * 
+     * Note that an orientation of 90 is a unit vector from x,y=0,0 to
+     * x,y=0,1.
+     * 
+     * @param histA
+     * @param orientationA
+     * @param histB
+     * @param orientationB
+     * @return 
+     */
     public float ssd(int[] histA, int orientationA, int[] histB, 
         int orientationB) {
         
