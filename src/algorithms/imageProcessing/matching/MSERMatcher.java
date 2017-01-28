@@ -923,11 +923,6 @@ public class MSERMatcher {
                             + costs[0]*costs[0]
                         );
                         
-                        //NOTE: comparing costs between octaves
-                        //  results in the smallest images having the
-                        //  best matches,
-                        //  an area correction is possibly needed
-                        
                         Obj obj = new Obj();
                         obj.cr0 = cr0;
                         obj.cr1 = cr1;
