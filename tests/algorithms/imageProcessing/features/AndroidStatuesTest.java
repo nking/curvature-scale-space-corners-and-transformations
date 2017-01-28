@@ -370,17 +370,15 @@ public class AndroidStatuesTest extends TestCase {
            (needs shape or 
            hog orientation)
         
-        
         andr04 (scale 95/46 = 2.1   2:0
            196, 87
-           
         */
 
         String[] fileNames1 = new String[]{
-        //  "android_statues_01.jpg", // no kp remaining
+        //    "android_statues_01.jpg", // no kp remaining
         //   "android_statues_02.jpg", // OK:
-        //   "android_statues_04.jpg", // OK:
-            "android_statues_03.jpg"  // OK:
+        //  "android_statues_04.jpg", // OK:
+             "android_statues_03.jpg"  // OK:
         };
         
         int fn0 = 0;
@@ -661,9 +659,9 @@ public class AndroidStatuesTest extends TestCase {
         //paused here.  handle 02 first.  orientation problem!
 
         String[] fileNames1 = new String[]{
-            "android_statues_01.jpg",  
+        //   "android_statues_01.jpg",  
         //  "android_statues_02.jpg",
-        //  "android_statues_04.jpg", // descr are fine
+            "android_statues_04.jpg", // descr are fine
         };
 
         for (String fileName1 : fileNames1) {               

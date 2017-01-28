@@ -14009,18 +14009,39 @@ int z = 1;
         if (img.getNPixels() < 100) {
             sizeLimit = 5;
         }
-        imgCp = img.copyToImageExt();
-        // a safe limit for HSV is 0.025 to not overrun object bounds
-        labels = mergeByColor(imgCp, contigSets, ColorSpace.HSV, 
-            0.095f);//0.1f);
-       
-        mergeSmallSegments(imgCp, labels, sizeLimit, ColorSpace.HSV);
         
-        // ----- looking at fast marching methods and level sets
-        //       and/or region based active contours
-        contigSets = LabelToColorHelper
-            .extractContiguousLabelPoints(img, labels);
-                
+        //TODO: revisit this.  it's a fixed setting for test images
+        // near size 250X250 and smaller.
+        // aiming for a total of 150 contigSets
+        
+        int nMaxIter = 10;
+        int nIter = 0;
+        float hsvLimit = 0.095f;
+        while ((nIter == 0) || (nIter < nMaxIter)) {
+            
+            imgCp = img.copyToImageExt();
+            // a safe limit for HSV is 0.025 to not overrun object bounds
+            labels = mergeByColor(imgCp, contigSets, ColorSpace.HSV, 
+                hsvLimit);//0.1f);
+
+            mergeSmallSegments(imgCp, labels, sizeLimit, ColorSpace.HSV);
+
+            // ----- looking at fast marching methods and level sets
+            //       and/or region based active contours
+            contigSets = LabelToColorHelper
+                .extractContiguousLabelPoints(img, labels);
+
+            //System.out.println("segmentation n=" + contigSets.size() + 
+            //    " nIter=" + nIter);
+            
+            nIter++;
+            if (contigSets.size() > 150) {
+                hsvLimit += 0.05f;
+            } else {
+                break;
+            }
+        }
+        
         labels = mergeByColor(imgCp, contigSets, 
             ColorSpace.CIELUV_NORMALIZED, 
             0.01f);

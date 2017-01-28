@@ -457,6 +457,9 @@ public class ObjectMatcher {
             int rIdx = iter.key();
             RegionPoints cr = iter.value();
             
+            //System.out.println("cr xy=" + cr.ellipseParams.xC + "," + 
+            //    cr.ellipseParams.yC + ")");
+            
             int nLabeled = 0;
            
             // for the purpose of removing a labeled region that does not
@@ -535,7 +538,7 @@ public class ObjectMatcher {
                     " frcLblOut=" + fOutside +
                     " frcUnasnd=" + fUnassigned + 
                     " n=" + (int)nInRegion +
-                    " cr.x,y=" + cr.xC + "," + cr.yC + 
+                    " cr.x,y=" + cr.ellipseParams.xC + "," + cr.ellipseParams.yC + 
                     " lbl.xy=" + labelXY + " rIdx=" + rIdx);
                 */
                 
@@ -544,11 +547,13 @@ public class ObjectMatcher {
                 //ImageIOHelper.addCurveToImage(set, tmp, 0, clr[0], clr[1], clr[2]);
                
                 //TODO: this needs revision...it is resolution (and scale) sensitive
-                if ((nInRegion < 100 && fOutside > 0.45) || 
+                if (//(nInRegion < 100 && fOutside > 0.45) || 
                     (nInRegion >= 100 && fOutside > 0.16)) {
                     //System.out.println("removing label cen=" + labelXY + 
-                    //    " nInRegion=" + nInRegion + " fOutside=" + fOutside);
-                    // remove the offset points from the cRegion's offsets
+                    //    " nInRegion=" + nInRegion + " fOutside=" + fOutside + 
+                    //    " from region(" + cr.ellipseParams.xC + "," +
+                    //    cr.ellipseParams.yC + ")");
+                    //// remove the offset points from the cRegion's offsets
                     for (PairInt rm : labelPointKeys.get(label)) {
                         cr.points.remove(rm);
                     }
@@ -598,7 +603,7 @@ public class ObjectMatcher {
             } 
             MiscDebug.writeImage(tmp, "_" + lbl);
             */
-            
+        
         } // end loop over regions
         
         System.out.println("nRegions=" + cRegions.size() + " removing=" +
@@ -1704,11 +1709,10 @@ public class ObjectMatcher {
             .buildPyramid(luvTheta0, settings.useLargerPyramid0);
 
         List<List<GreyscaleImage>> pyrRGB1 = imageProcessor
-            .buildColorPyramid(img1,
-            settings.useLargerPyramid0);
+            .buildColorPyramid(img1, settings.useLargerPyramid1);
 
         List<GreyscaleImage> pyrPT1 = imageProcessor
-            .buildPyramid(luvTheta1, settings.useLargerPyramid0);
+            .buildPyramid(luvTheta1, settings.useLargerPyramid1);
        
         applyWindowedMean(pyrRGB0, 1);
         applyWindowedMean(pyrRGB1, 1);
@@ -1758,12 +1762,17 @@ public class ObjectMatcher {
             }
             MiscDebug.writeImage(im1Cp, "regions_1_");
         }
+        
+        //NOTE: temporariliy reducing the template regions to only be a single
+        // region containing all shape points.
 
         //regions[0) are found from the image,
         // while regions[1) are found from the inverted image.
-        TIntObjectMap<RegionPoints> regionPoints0 =
-            canonicalizer.canonicalizeRegions2(regionsComb0, pyrRGB0.get(0).get(1));
+        TIntObjectMap<RegionPoints> regionPoints0 = 
+            new TIntObjectHashMap<RegionPoints>();
+            //canonicalizer.canonicalizeRegions2(regionsComb0, pyrRGB0.get(0).get(1));
 
+        // create a fake mser shape0 size
         createAWholeRegion(regionPoints0, shape0Trimmed, pyrRGB0.get(0).get(1));
         
         TIntObjectMap<RegionPoints> regionPoints1 =
@@ -1774,8 +1783,8 @@ public class ObjectMatcher {
         // replaced with filtered segmented label points instead of the ellipse.
         // MOTE: the geometry variable that include orientation is not changed from the
         // original ellipse and that may need to be.
-        mergeRegionsAndSegmentation(labeledSets0List, regionPoints0, gsImg0, luvTheta0,
-            true);
+        //mergeRegionsAndSegmentation(labeledSets0List, regionPoints0, gsImg0, luvTheta0,
+        //    true);
         
         mergeRegionsAndSegmentation(labeledSets1, regionPoints1, gsImg1, luvTheta1, true);
       
@@ -1815,7 +1824,7 @@ public class ObjectMatcher {
             matcher.setToDebug();
         }
 
-        List<CorrespondenceList> corList = matcher.matchObject2(
+        List<CorrespondenceList> corList = matcher.matchObject3(
             pyrRGB0, pyrPT0, cRegions0, labeledSets0List, pointLabelMap0,
             pyrRGB1,  pyrPT1, cRegions1, labeledSets1, pointLabelMap1);
 

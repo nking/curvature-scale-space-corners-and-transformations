@@ -812,9 +812,267 @@ public class MSERMatcher {
         //     of the test images, then will move this stage to
         //     object matcher as a filter)
         
+        // populated on demand, some are skipped for large size differences
+        TIntObjectMap<TIntObjectMap<CRegion>> csr0
+            = new TIntObjectHashMap<TIntObjectMap<CRegion>>();
+        csr0.put(0, cRegions0);
+        
+        TIntObjectMap<TIntObjectMap<CRegion>> csr1
+            = new TIntObjectHashMap<TIntObjectMap<CRegion>>();
+        csr1.put(0, cRegions1);
+        
+        // key = region index, value = Obj w/ cost being hog intersection
+        TIntObjectMap<FixedSizeSortedVector<Obj>> rIndexHOGMap 
+            = new TIntObjectHashMap<FixedSizeSortedVector<Obj>>();
+        
+        int n0 = pyrPT0.size();
+        int n1 = pyrPT1.size();
+
+        int w0 = pyrPT0.get(0).getWidth();
+        int h0 = pyrPT0.get(0).getHeight();
+        int w1 = pyrPT1.get(0).getWidth();
+        int h1 = pyrPT1.get(0).getHeight();
+        
+        TIntObjectMap<HOGs> hogsMap1 = new TIntObjectHashMap<HOGs>();
+        
+        for (int imgIdx0 = 0; imgIdx0 < n0; ++imgIdx0) {
+
+            GreyscaleImage gsI0 = combineImages(pyrRGB0.get(imgIdx0));
+            GreyscaleImage ptI0 = pyrPT0.get(imgIdx0);
+
+            int w0_i = ptI0.getWidth();
+            int h0_i = ptI0.getHeight();
+            float scale0 = (((float)w0/(float)w0_i) +
+                ((float)h0/(float)h0_i))/2.f;
+
+            HOGs hogs0 = new HOGs(gsI0, 1, 16);
+            
+            TIntObjectMap<CRegion> regions0 = getOrCreate(csr0, imgIdx0, gsI0, 
+                scale0);
+        
+            for (int imgIdx1 = 0; imgIdx1 < n1; ++imgIdx1) {
+
+                GreyscaleImage gsI1 = combineImages(pyrRGB1.get(imgIdx1));
+                GreyscaleImage ptI1 = pyrPT1.get(imgIdx1);
+
+                int w1_i = ptI1.getWidth();
+                int h1_i = ptI1.getHeight();
+                float scale1 = (((float)w1/(float)w1_i) +
+                    ((float)h1/(float)h1_i))/2.f;
+
+                HOGs hogs1 = hogsMap1.get(imgIdx1);
+                if (hogs1 == null) {
+                    hogs1 = new HOGs(gsI1, 1, 16);
+                    hogsMap1.put(imgIdx1, hogs1);
+                }
+                
+                TIntObjectMap<CRegion> regions1 = getOrCreate(csr1, imgIdx1, 
+                    gsI1, scale1);
+                
+                TIntObjectIterator<CRegion> iter0 = regions0.iterator();
+                for (int i0 = 0; i0 < regions0.size(); ++i0) {
+                    iter0.advance();
+                    int rIdx0 = iter0.key();
+                    CRegion cr0 = iter0.value();
+                    
+                    int sz0 = calculateObjectSize(cr0.offsetsToOrigCoords.values());
+                    
+                    TIntObjectIterator<CRegion> iter1 = regions1.iterator();
+                    for (int i1 = 0; i1 < regions1.size(); ++i1) {
+                        iter1.advance();
+                        int rIdx1 = iter1.key();
+                        CRegion cr1 = iter1.value();
+                        
+                        int sz1 = calculateObjectSize(cr1.offsetsToOrigCoords.values());
+                    
+                        // size filter
+                        if ((sz1 > sz0 && ((sz1/sz0) > 1.2)) || 
+                            (sz0 > sz1 && ((sz0/sz1) > 1.2))) {
+                            continue;
+                        }
+                        
+                        FixedSizeSortedVector<Obj> objVec = rIndexHOGMap.get(rIdx1);
+                        if (objVec == null) {
+                            objVec = new FixedSizeSortedVector<Obj>(n0, Obj.class);
+                            rIndexHOGMap.put(rIdx1, objVec);
+                        }
+                
+                        //[intersectionSum, f, err, count]
+                        //double[] hogCosts = sumHOGCost(hogs0, cr0, scale0,
+                        //    hogs1, cr1, scale1);
+                        double[] hogCosts = sumHOGCost2(hogs0, cr0, scale0,
+                            hogs1, cr1, scale1);
+                        
+                        if (hogCosts == null) {
+                            continue;
+                        }
+                                                                        
+                        // [ssdSumRGB, ssdSumPTCIELUV, ssdHSV, f, err, ssdCount]
+                        double[] costs = matchRegion(
+                            cr0, pyrRGB0.get(imgIdx0), 
+                            gsI0, ptI0, scale0,
+                            cr1, pyrRGB1.get(imgIdx1), 
+                            gsI1, ptI1, scale1);
+
+                        // the hogs are intersection values, so cost
+                        // is 1.f - intersection
+                        float cost = 1.f - (float)hogCosts[0];
+                        double f = hogCosts[1];
+                        cost = (float)Math.sqrt(cost*cost + f*f
+                            + costs[1]*costs[1] + costs[2]*costs[2]
+                            + costs[0]*costs[0]
+                        );
+                        
+                        //NOTE: comparing costs between octaves
+                        //  results in the smallest images having the
+                        //  best matches,
+                        //  an area correction is possibly needed
+                        
+                        Obj obj = new Obj();
+                        obj.cr0 = cr0;
+                        obj.cr1 = cr1;
+                        obj.r0Idx = rIdx0;
+                        obj.r1Idx = rIdx1;
+                        obj.imgIdx0 = imgIdx0;
+                        obj.imgIdx1 = imgIdx1;
+                        obj.ssd = 1.f - (float)hogCosts[0];
+                        obj.nMatched = (int)hogCosts[3];
+                        obj.cost = cost;
+                        
+                        boolean added = objVec.add(obj);
+                    }
+                }
+            }
+        }
+        
+        // any  indexes still in map passed the size filter.
+        // further looking at range of intersection values to see if
+        //    can use intersection > 0.5 as a high pass filter.
+        System.out.println("r1 map size = " + cRegions1.size() + 
+            " size filtered = " + rIndexHOGMap.size());
+       
+        // re-ordering the best for each rIdx1:
+        FixedSizeSortedVector<Obj> tmp 
+            = new FixedSizeSortedVector<Obj>(rIndexHOGMap.size(), Obj.class);
+        
+        // printing range of hog values for a region1
+        TIntObjectIterator<FixedSizeSortedVector<Obj>> iter2 
+            = rIndexHOGMap.iterator();
+        for (int i3 = 0; i3 < rIndexHOGMap.size(); ++i3) {
+            
+            iter2.advance();
+            
+            int rIdx = iter2.key();
+            FixedSizeSortedVector<Obj> vec = iter2.value();
+        
+            int n = vec.getNumberOfItems();
+            if (n == 0) {
+                continue;
+            }
+            
+            for (int j = 0; j < n; ++j) {
+                Obj objJ = vec.getArray()[j];
+                int imgIdx0 = objJ.imgIdx0;
+                int imgIdx1 = objJ.imgIdx1;
+
+                GreyscaleImage gsI0 = pyrRGB0.get(imgIdx0).get(1);
+                GreyscaleImage gsI1 = pyrRGB1.get(imgIdx1).get(1);
+
+                float scale00, scale01;
+                {
+                    int w0_i = gsI0.getWidth();
+                    int h0_i = gsI0.getHeight();
+                    scale00 = (((float) w0 / (float) w0_i) + ((float) h0 / (float) h0_i)) / 2.f;
+
+                    int w1_i = gsI1.getWidth();
+                    int h1_i = gsI1.getHeight();
+                    scale01 = (((float) w1 / (float) w1_i) + ((float) h1 / (float) h1_i)) / 2.f;
+                }
+                String lbl = "_" + objJ.imgIdx0 + "_" + objJ.imgIdx1;
+                String str = (j == 0) ? "" : "  ";
+                System.out.format(
+                    "%s ==> %d (%d,%d) best: %.3f (%d,%d) %s\n",
+                    str, i3, Math.round(scale01*objJ.cr1.ellipseParams.xC),
+                    Math.round(scale01*objJ.cr1.ellipseParams.yC),
+                    (float)objJ.cost,
+                    Math.round(scale00*objJ.cr0.ellipseParams.xC),
+                    Math.round(scale00*objJ.cr0.ellipseParams.yC), lbl
+                );
+            }
+            
+            Obj obj0 = vec.getArray()[0];
+            
+            tmp.add(obj0);
+        }
+        
+        for (int i3 = 0; i3 < tmp.getNumberOfItems(); ++i3) {
+            
+            Obj obj0 = tmp.getArray()[i3];
+            
+            int imgIdx0 = obj0.imgIdx0;
+            int imgIdx1 = obj0.imgIdx1;
+            
+            GreyscaleImage gsI0 = pyrRGB0.get(imgIdx0).get(1);
+            GreyscaleImage gsI1 = pyrRGB1.get(imgIdx1).get(1);
+            
+            float scale00, scale01;
+            {
+                int w0_i = gsI0.getWidth();
+                int h0_i = gsI0.getHeight();
+                scale00 = (((float)w0/(float)w0_i) + ((float)h0/(float)h0_i))/2.f;
+                
+                int w1_i = gsI1.getWidth();
+                int h1_i = gsI1.getHeight();
+                scale01 = (((float)w1/(float)w1_i) + ((float)h1/(float)h1_i))/2.f;                
+            }
+            
+            String lbl = "_" + obj0.imgIdx0 + "_" + obj0.imgIdx1 + "_" + 
+                obj0.r0Idx + "_" + obj0.r1Idx;
+            
+            int or0 = (int)Math.round(
+                obj0.cr0.ellipseParams.orientation * 180./Math.PI);
+            
+            int or1 = (int)Math.round(
+                obj0.cr1.ellipseParams.orientation * 180./Math.PI);
+                
+            System.out.format(
+                "==> %d (%d,%d) best: %.3f (%d,%d) %s or=%d,%d\n",
+                i3, Math.round(scale01*obj0.cr1.ellipseParams.xC),
+                Math.round(scale01*obj0.cr1.ellipseParams.yC),
+                (float)obj0.cost,
+                Math.round(scale00*obj0.cr0.ellipseParams.xC),
+                Math.round(scale00*obj0.cr0.ellipseParams.yC), lbl,
+                or0, or1
+            );
+           
+            Image im0 = gsI0.copyToColorGreyscale();
+            Image im1 = gsI1.copyToColorGreyscale();
+            int[] clr = ImageIOHelper.getNextRGB(4);
+            obj0.cr0.drawEachPixel(im0, 0, clr[0], clr[1], clr[2]);
+            obj0.cr1.drawEachPixel(im1, 0, clr[0], clr[1], clr[2]);
+            MiscDebug.writeImage(im0, lbl);
+            MiscDebug.writeImage(im1, lbl);
+        }
+        
+        // looking at ranking of true match within best cost
+        // results for each rIdx1
+        // 5, 5, 4, 20, 4, 0, 
+        //    ~23 out of 49, 18, 34. 12
+        /*
+        for gbman tests, looking at the indiv images to see
+        what is higher ranked.
+           -- small segmented cell of leaves
+              (would be distinguishable from gbman by the adaptive
+               median binarization or a gradient binarization...)
+           -- 
+        */
+        
         // partial shape matcher next, but not over octaves.
         //   will let the mtcher re-sample the curves uniformly if
         //   the areas are within a reasonable scale range.
+        //   the costs when matching is at same scale are < 0.1 for true
+        //   matches so this is a good filter, but does have a larger
+        //   runtime complexity.
         
         throw new UnsupportedOperationException("not yet implemented");
     }
@@ -935,7 +1193,8 @@ public class MSERMatcher {
                 FixedSizeSortedVector<Obj> b = new
                     FixedSizeSortedVector<Obj>(top2, Obj.class);
                 
-                search(getOrCreate(csr0, imgIdx0, gsI0, scale0),
+                search(
+                    getOrCreate(csr0, imgIdx0, gsI0, scale0),
                     gsI0, ptI0, scale0, imgIdx0,
                     getOrCreate(csr1, imgIdx1, gsI1, scale1),
                     gsI1, ptI1, scale1, imgIdx1,
@@ -2645,6 +2904,75 @@ if (dbg) {
             sum += Math.abs(hsv0[i] - hsv1[i]);
         }
         return sum/3.;
+    }
+
+    private double[] sumHOGCost2(HOGs hogs0, CRegion cr0, float scale0, 
+        HOGs hogs1, CRegion cr1, float scale1) {
+        
+        Map<PairInt, PairInt> offsetMap1 = cr1.offsetsToOrigCoords;
+
+        //int maxMatchable = Math.min(cr0.offsetsToOrigCoords.size(),
+        //    offsetMap1.size());
+
+        double sum = 0;
+        int count = 0;
+        
+        int orientation0 = hogs0.calculateDominantOrientation(
+            cr0.offsetsToOrigCoords.values());
+        
+        int orientation1 = hogs1.calculateDominantOrientation(
+            cr1.offsetsToOrigCoords.values());
+        
+        int[] h0 = new int[hogs0.getNumberOfBins()];
+        int[] h1 = new int[h0.length];
+        
+        // key = transformed offsets, value = coords in image ref frame,
+        // so, can compare dataset0 and dataset1 points with same
+        //  keys
+        for (Entry<PairInt, PairInt> entry0 : cr0.offsetsToOrigCoords.entrySet()) {
+
+            PairInt pOffset0 = entry0.getKey();
+
+            PairInt xy1 = offsetMap1.get(pOffset0);
+
+            if (xy1 == null) {
+                continue;
+            }
+
+            PairInt xy0 = entry0.getValue();
+
+            hogs0.extractFeature(xy0.getX(), xy0.getY(), h0);
+
+            hogs1.extractFeature(xy1.getX(), xy1.getY(), h1);
+
+            float intersection = hogs0.intersection(h0, orientation0, 
+                h1, orientation1);
+            
+            sum += (intersection * intersection);
+
+            count++;
+        }
+        if (count == 0) {
+            return null;
+        }
+
+        sum /= (double)count;
+
+        sum = Math.sqrt(sum);
+        
+        //NOTE: this may need revision.  now assuming that all invoker's 
+        // have one object in cRegions0, hence, need to scale fraction
+        // of whole so all are in same reference frame
+        double area = cr0.offsetsToOrigCoords.size();
+        area /= (scale1 * scale1);
+        
+        double f = 1. - ((double) count / area);
+
+        // TODO: correct this if end up using it.
+        //  it's based upon green only
+        double err = Math.max(cr0.autocorrel, cr1.autocorrel);
+
+        return new double[]{sum, f, err, count};
     }
 
     private class Obj implements Comparable<Obj>{

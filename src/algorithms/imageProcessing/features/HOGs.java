@@ -4,8 +4,14 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.misc.MiscMath;
 import algorithms.util.OneDIntArray;
+import algorithms.util.PairInt;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -485,7 +491,87 @@ public class HOGs {
         }
     }
     
+    private void add(long[] addTo, int[] addFrom) {
+        for (int i = 0; i < addTo.length; ++i) {
+            addTo[i] += addFrom[i];
+        }
+    }
+    
     public int getNumberOfBins() {
         return nAngleBins;
+    }
+
+    /**
+     * NOT READY FOR USE.  
+     * 
+     * @param xy
+     * @return 
+     */
+    public int calculateDominantOrientation(Collection<PairInt> xy) {
+
+        long[] combined = new long[nAngleBins];
+
+        for (PairInt p : xy) {
+            int pixIdx = (p.getY() * w) + p.getY();
+            add(combined, gHists[pixIdx]);
+        }
+
+        TIntList maxIdxs = new TIntArrayList();
+        long maxValue = Long.MIN_VALUE;
+        for (int i = 0; i < combined.length; ++i) {
+            long v = combined[i];
+            if (v > maxValue) {
+                maxIdxs.clear();
+                maxIdxs.add(i);
+                maxValue = v;
+            } else if (v == maxValue) {
+                maxIdxs.add(i);
+            }
+        }
+
+        int binWidth = 180 / nAngleBins;
+
+        //TODO: revise to fit max peak using neighboring bins
+        if (maxIdxs.size() == 1) {
+            return Math.round((maxIdxs.get(0) + 0.5f) * binWidth);
+        }
+
+        //TODO: revise this
+        if (maxIdxs.size() == 2) {
+
+            // min of average with and without a wraparound phase
+            float ang0 = (maxIdxs.get(0) + 0.5f) * binWidth;
+            float ang1 = (maxIdxs.get(1) + 0.5f) * binWidth;
+
+            if (ang0 < ang1) {
+                float diff0 = 360 + ang0 - ang1;
+                float diff1 = ang1 - ang0;
+                if (diff0 < diff1) {
+                    return Math.round(0.5f * (360 + ang0 + ang1));
+                }
+
+                return Math.round(0.5f * (ang0 + ang1));
+            } 
+                
+            float diff0 = 360 + ang1 - ang0;
+            float diff1 = ang0 - ang1;
+            if (diff0 < diff1) {
+                return Math.round(0.5f * (360 + ang1 + ang0));
+            }
+
+            return Math.round(0.5f * (ang0 + ang1));
+
+        } else {
+            // average of all indexes
+            //  there's a method in angle util to calc this with consideration
+            //  for wraparound.  TODO: replace this
+            float avg = 0;
+            for (int i = 0; i < maxIdxs.size(); ++i) {
+                avg += ((maxIdxs.get(i) + 0.5f) * binWidth);
+            }
+            avg /= (float) maxIdxs.size();
+
+            return Math.round(avg);
+        }
     }
 }
