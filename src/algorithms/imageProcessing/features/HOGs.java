@@ -2,6 +2,7 @@ package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.MiscMath;
 import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
@@ -562,16 +563,19 @@ public class HOGs {
             return Math.round(0.5f * (ang0 + ang1));
 
         } else {
+            
             // average of all indexes
-            //  there's a method in angle util to calc this with consideration
-            //  for wraparound.  TODO: replace this
-            float avg = 0;
-            for (int i = 0; i < maxIdxs.size(); ++i) {
-                avg += ((maxIdxs.get(i) + 0.5f) * binWidth);
-            }
-            avg /= (float) maxIdxs.size();
-
-            return Math.round(avg);
+            
+             double[] angles = new double[maxIdxs.size()];
+             for (int i = 0; i < maxIdxs.size(); ++i) {
+                 angles[i] = ((maxIdxs.get(i) + 0.5f) * binWidth);
+             }
+            
+             double angleAvg = 
+                 AngleUtil.calculateAverageWithQuadrantCorrections(
+                     angles, false);
+             
+            return (int)Math.round(angleAvg);
         }
     }
 }

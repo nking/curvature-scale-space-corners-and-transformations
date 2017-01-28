@@ -992,7 +992,7 @@ public class ObjectMatcher {
             MiscDebug.writeImage(im1Cp, "regions_1_");
         }
         
-        //NOTE: temporariliy reducing the template regions to only be a single
+        //NOTE: temporarily reducing the template regions to only be a single
         // region containing all shape points.
 
         //regions[0) are found from the image,
