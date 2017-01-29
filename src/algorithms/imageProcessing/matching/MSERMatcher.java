@@ -849,7 +849,7 @@ public class MSERMatcher {
             
             TIntObjectMap<CRegion> regions0 = getOrCreate(csr0, imgIdx0, gsI0, 
                 scale0);
-        
+                    
             for (int imgIdx1 = 0; imgIdx1 < n1; ++imgIdx1) {
 
                 GreyscaleImage gsI1 = combineImages(pyrRGB1.get(imgIdx1));
@@ -859,15 +859,15 @@ public class MSERMatcher {
                 int h1_i = ptI1.getHeight();
                 float scale1 = (((float)w1/(float)w1_i) +
                     ((float)h1/(float)h1_i))/2.f;
-
-                HOGs hogs1 = hogsMap1.get(imgIdx1);
-                if (hogs1 == null) {
-                    hogs1 = new HOGs(gsI1, 1, 16);
-                    hogsMap1.put(imgIdx1, hogs1);
-                }
                 
                 TIntObjectMap<CRegion> regions1 = getOrCreate(csr1, imgIdx1, 
                     gsI1, scale1);
+                
+                HOGs hogs1 = hogsMap1.get(imgIdx1);
+                if (hogs1 == null) {
+                    hogs1 = new HOGs(gsI1, 1, 16);
+                    hogsMap1.put(imgIdx1, hogs1);                    
+                }
                 
                 TIntObjectIterator<CRegion> iter0 = regions0.iterator();
                 for (int i0 = 0; i0 < regions0.size(); ++i0) {
@@ -898,10 +898,9 @@ public class MSERMatcher {
                         }
                 
                         //[intersectionSum, f, err, count]
-                        //double[] hogCosts = sumHOGCost(hogs0, cr0, scale0,
-                        //    hogs1, cr1, scale1);
                         double[] hogCosts = sumHOGCost2(hogs0, cr0, scale0,
-                            hogs1, cr1, scale1);
+                            hogs1, cr1, scale1
+                        );
                         
                         if (hogCosts == null) {
                             continue;
@@ -948,7 +947,10 @@ public class MSERMatcher {
        
         // re-ordering the best for each rIdx1:
         FixedSizeSortedVector<Obj> tmp 
-            = new FixedSizeSortedVector<Obj>(rIndexHOGMap.size(), Obj.class);
+            = new FixedSizeSortedVector<Obj>(
+                //rIndexHOGMap.size(), 
+                5,
+                Obj.class);
         
         // printing range of hog values for a region1
         TIntObjectIterator<FixedSizeSortedVector<Obj>> iter2 
@@ -964,7 +966,7 @@ public class MSERMatcher {
             if (n == 0) {
                 continue;
             }
-            
+            /*
             for (int j = 0; j < n; ++j) {
                 Obj objJ = vec.getArray()[j];
                 int imgIdx0 = objJ.imgIdx0;
@@ -994,7 +996,7 @@ public class MSERMatcher {
                     Math.round(scale00*objJ.cr0.ellipseParams.yC), lbl
                 );
             }
-            
+            */
             Obj obj0 = vec.getArray()[0];
             
             tmp.add(obj0);
@@ -1029,15 +1031,17 @@ public class MSERMatcher {
             
             int or1 = (int)Math.round(
                 obj0.cr1.ellipseParams.orientation * 180./Math.PI);
-                
+            
             System.out.format(
-                "==> %d (%d,%d) best: %.3f (%d,%d) %s or=%d,%d\n",
+"> %d (%d,%d) best: %.3f (%d,%d) %s or=%d,%d ec=%.4f,%.4f\n",
                 i3, Math.round(scale01*obj0.cr1.ellipseParams.xC),
                 Math.round(scale01*obj0.cr1.ellipseParams.yC),
                 (float)obj0.cost,
                 Math.round(scale00*obj0.cr0.ellipseParams.xC),
                 Math.round(scale00*obj0.cr0.ellipseParams.yC), lbl,
-                or0, or1
+                or0, or1, 
+                (float)obj0.cr0.ellipseParams.eccentricity,
+                (float)obj0.cr1.ellipseParams.eccentricity
             );
            
             Image im0 = gsI0.copyToColorGreyscale();
@@ -1049,25 +1053,27 @@ public class MSERMatcher {
             MiscDebug.writeImage(im1, lbl);
         }
         
-        // looking at ranking of true match within best cost
-        // results for each rIdx1
-        // 5, 5, 4, 20, 4, 0, 
-        //    ~23 out of 49, 18, 34. 12
         /*
-        for gbman tests, looking at the indiv images to see
-        what is higher ranked.
-           -- small segmented cell of leaves
-              (would be distinguishable from gbman by the adaptive
-               median binarization or a gradient binarization...)
-           -- 
+        TODO:
+        -- need ability to tell that the search failed due to true match being
+              a small object and it being a fraction of the template object.
+              that is, the template in dataset0 is currently all of the shape0,
+              but for cupcake test where the mser only finds the small cupcake
+              top, the search against just the template cupcake top has to be made.
+              might wrap the invoker and this within a method that allows
+              the 2nd search to be made, with the current decider of that unknown.
+        -- the remaining results either have the true match as the top result
+           or within the top 3.
+           there are a few characteristics to try to distinguish among those.
+        -- NOTE that in the process, saw that the HOGs was successful when
+           dominant orientation was used instead of mser region orientation
+           and that the HOG cell size of 16 works well.
+           THIS suggests that the patch matching of color and polar cie theta
+           could be improved by adding such leniency in location.
+           note that the size 16 is roughly half the size of the ORB descriptor,
+           so patches of ORB descriptors for the rgb and polar theta
+           might work very well here and not add too much to the runtime.
         */
-        
-        // partial shape matcher next, but not over octaves.
-        //   will let the mtcher re-sample the curves uniformly if
-        //   the areas are within a reasonable scale range.
-        //   the costs when matching is at same scale are < 0.1 for true
-        //   matches so this is a good filter, but does have a larger
-        //   runtime complexity.
         
         throw new UnsupportedOperationException("not yet implemented");
     }
@@ -1971,74 +1977,6 @@ public class MSERMatcher {
     }
 
     /**
-     *
-     * @return [intersectionSum, f, err, ssdCount]
-     */
-    private double[] sumHOGCost(
-        HOGs hogs0, CRegion csr0, float scale0,
-        HOGs hogs1, CRegion csr1, float scale1) {
-
-        Map<PairInt, PairInt> offsetMap1 = csr1.offsetsToOrigCoords;
-
-        int maxMatchable = Math.min(csr0.offsetsToOrigCoords.size(),
-            offsetMap1.size());
-
-        double sum = 0;
-        int count = 0;
-        
-        int orientation0 = (int)Math.round(csr0.ellipseParams.orientation
-            * 180./Math.PI);
-        
-        int orientation1 = (int)Math.round(csr1.ellipseParams.orientation
-            * 180./Math.PI);
-        
-        int[] h0 = new int[hogs0.getNumberOfBins()];
-        int[] h1 = new int[h0.length];
-        
-        // key = transformed offsets, value = coords in image ref frame,
-        // so, can compare dataset0 and dataset1 points with same
-        //  keys
-        for (Entry<PairInt, PairInt> entry0 : csr0.offsetsToOrigCoords.entrySet()) {
-
-            PairInt pOffset0 = entry0.getKey();
-
-            PairInt xy1 = offsetMap1.get(pOffset0);
-
-            if (xy1 == null) {
-                continue;
-            }
-
-            PairInt xy0 = entry0.getValue();
-
-            hogs0.extractFeature(xy0.getX(), xy0.getY(), h0);
-
-            hogs1.extractFeature(xy1.getX(), xy1.getY(), h1);
-
-            float intersection = hogs0.intersection(h0, orientation0, 
-                h1, orientation1);
-            
-            sum += (intersection * intersection);
-
-            count++;
-        }
-        if (count == 0) {
-            return null;
-        }
-
-        sum /= (double)count;
-
-        sum = Math.sqrt(sum);
-
-        double f = 1. - ((double) count / (double) maxMatchable);
-
-        // TODO: correct this if end up using it.
-        //  it's based upon green only
-        double err = Math.max(csr0.autocorrel, csr1.autocorrel);
-
-        return new double[]{sum, f, err, count};
-    }
-    
-    /**
      * given the adjacency maps of the template, dataset 0, and the searchable
      * image, dataset 1, this looks for consistent adjacency and distance
      * between pairings in bestR and returns those.
@@ -2815,6 +2753,7 @@ if (dbg) {
         return false;
     }
 
+    //chordDiffSum, nMatches, p.n
     private double[] partialShapeCost(Obj obj, 
         float scale0, float scale1, 
         List<Set<PairInt>> labeledSets0, 
@@ -2862,6 +2801,7 @@ if (dbg) {
         
         PartialShapeMatcher2 matcher = new PartialShapeMatcher2();
         matcher.overrideSamplingDistance(dp);
+        matcher.setToUseEuclidean();
         matcher.setToRemoveOutliers();
         PartialShapeMatcher2.Result result = matcher.match(p, q);
 
@@ -2904,19 +2844,23 @@ if (dbg) {
     private double[] sumHOGCost2(HOGs hogs0, CRegion cr0, float scale0, 
         HOGs hogs1, CRegion cr1, float scale1) {
         
-        Map<PairInt, PairInt> offsetMap1 = cr1.offsetsToOrigCoords;
-
-        //int maxMatchable = Math.min(cr0.offsetsToOrigCoords.size(),
-        //    offsetMap1.size());
-
-        double sum = 0;
-        int count = 0;
+        //NOTE: the icecream tests show calculating dominant orientation
+        // is necessary.
+        // that suggests centering and orientation are not precise enough
+        //    for strict comparisons.  Note that recalculating the 
+        //    center and orientation w/ labeled segmentation only 
+        //    at an earlier stage did not improve results.
         
         int orientation0 = hogs0.calculateDominantOrientation(
             cr0.offsetsToOrigCoords.values());
         
         int orientation1 = hogs1.calculateDominantOrientation(
             cr1.offsetsToOrigCoords.values());
+        
+        Map<PairInt, PairInt> offsetMap1 = cr1.offsetsToOrigCoords;
+
+        double sum = 0;
+        int count = 0;
         
         int[] h0 = new int[hogs0.getNumberOfBins()];
         int[] h1 = new int[h0.length];
@@ -2969,6 +2913,43 @@ if (dbg) {
 
         return new double[]{sum, f, err, count};
     }
+
+    /* NOTE: recalculating this worsens the solutions.
+    Using the MSER originally determined ellipse parameters has better
+    results for the small number of tests here
+    private void recalcOrientationAndTrans(HOGs hogs, 
+        TIntObjectMap<CRegion> regions, GreyscaleImage gsImg, float scale) {
+        
+        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
+        
+        TIntObjectIterator<CRegion> iter = regions.iterator();
+        for (int i = 0; i < regions.size(); ++i) {
+            iter.advance();
+            int rIdx = iter.key();
+            CRegion cr = iter.value();
+            
+            int orientation = hogs.calculateDominantOrientation(
+                cr.offsetsToOrigCoords.values());
+
+            Collection<PairInt> xyp = cr.offsetsToOrigCoords.values();
+            
+            PairIntArray xy = Misc.convertWithoutOrder(xyp);
+            
+            PairInt xyCen = ch.calculateXYCentroids2(xyp);
+            
+            cr.ellipseParams.orientation = Math.PI * orientation/180.;
+            cr.ellipseParams.xC = xyCen.getX();
+            cr.ellipseParams.yC = xyCen.getY();
+            
+            Map<PairInt, PairInt> offsetToOrigMap = 
+                Canonicalizer.createOffsetToOrigMap(
+                xyCen.getX(), xyCen.getY(), 
+                xy, gsImg.getWidth(), gsImg.getHeight(), orientation);
+        
+            cr.offsetsToOrigCoords = offsetToOrigMap;
+        }
+    }
+    */  
 
     private class Obj implements Comparable<Obj>{
         CRegion cr0;

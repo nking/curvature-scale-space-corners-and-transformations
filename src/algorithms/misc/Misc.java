@@ -21,6 +21,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -43,7 +44,7 @@ public class Misc {
     public static final int[] dx4 = new int[]{-1,  0, 1, 0};
     public static final int[] dy4 = new int[]{ 0, -1, 0, 1};
 
-    public static PairIntArray convertWithoutOrder(Set<PairInt> points) {
+    public static PairIntArray convertWithoutOrder(Collection<PairInt> points) {
         PairIntArray out = new PairIntArray(points.size());
         for (PairInt p : points) {
             out.add(p.getX(), p.getY());

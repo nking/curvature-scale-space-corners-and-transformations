@@ -492,6 +492,43 @@ public class Canonicalizer {
 
         return cRegion;
     }
+    
+    public static RegionGeometry calculateEllipseParams(Region r, int imageWidth, int imageHeight) {
+
+        int[] xyCen = new int[2];
+    
+        r.calculateXYCentroid(xyCen, imageWidth, imageHeight);
+        int x = xyCen[0];
+        int y = xyCen[1];
+        assert(x >= 0 && x < imageWidth);
+        assert(y >= 0 && y < imageHeight);
+
+        //v0x, v1x, v0y, v1y
+        double[] m = r.calcParamTransCoeff();
+
+        double angle = Math.atan(m[0]/m[2]);
+        if (angle < 0) {
+            angle += Math.PI;
+        }
+
+        double major = 2. * m[4];
+        double minor = 2. * m[5];
+
+        double ecc = Math.sqrt(major * major - minor * minor)/major;
+        if (Double.isNaN(ecc)) {
+            return null;
+        }
+
+        RegionGeometry rg = new RegionGeometry();
+        rg.eccentricity = ecc;
+        rg.major = major;
+        rg.minor = minor;
+        rg.orientation = angle;
+        rg.xC = x;
+        rg.yC = y;
+
+        return rg;
+    }
 
     /**
      * create canonicalized regions containing coordinate maps that can be used

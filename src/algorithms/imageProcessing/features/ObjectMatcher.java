@@ -15,6 +15,7 @@ import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
 import algorithms.imageProcessing.features.mser.Canonicalizer.RegionGeometry;
 import algorithms.imageProcessing.features.mser.Canonicalizer.RegionPoints;
+import static algorithms.imageProcessing.features.mser.Canonicalizer.calculateEllipseParams;
 import algorithms.imageProcessing.features.mser.MSER;
 import algorithms.imageProcessing.features.mser.MSER.Threshold;
 import algorithms.imageProcessing.features.mser.Region;
@@ -521,6 +522,16 @@ public class ObjectMatcher {
                     int label = iter2.key();
                     cr.points.addAll(labeledSets.get(label));
                 }
+                // re-calc center and orientation.  tests show this does not
+                //  improve final matches
+                /*
+                Region tmp = new Region();
+                for (PairInt pt : cr.points) {
+                    tmp.accumulate(pt.getX(), pt.getY());
+                }
+                cr.ellipseParams = Canonicalizer.calculateEllipseParams(tmp,
+                    gsImg.getWidth(), gsImg.getHeight());
+                */
             }
             
             /*
