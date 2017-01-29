@@ -3,37 +3,22 @@ package algorithms.imageProcessing.features.mser;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
-import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MedianTransform;
 import algorithms.imageProcessing.SummedAreaTable;
-import algorithms.imageProcessing.features.ORB;
 import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
-import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
-import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
-import algorithms.util.TwoDFloatArray;
 import gnu.trove.iterator.TIntObjectIterator;
-import gnu.trove.list.TDoubleList;
-import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TDoubleArrayList;
-import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import junit.framework.TestCase;
-import org.junit.Test;
-import static org.junit.Assert.*;
 
 /**
  *
@@ -105,90 +90,6 @@ public class MSERTest extends TestCase {
             System.out.println("num extracted regions=" +
                 (regions.get(0).size() + regions.get(1).size()));
         
-            //---------- making descriptors ----
-            nExtraDot = 1;
-            Canonicalizer cr = new Canonicalizer();
-
-            GreyscaleImage gs1 = img1.copyToGreyscale2();
-            int width = gs1.getWidth();
-            int height = gs1.getHeight();
-            int[] data = new int[width * height];
-            for (int i = 0; i < gs1.getNPixels(); ++i) {
-                data[i] = gs1.getValue(i);
-            }
-            
-            Image img_1 = img2.copyImage();
-            
-            //PairIntArray xyCens = cr.extractRegionXYCenters(regions.get(1), 
-            //    data, img2.getWidth(), img2.getHeight());
-
-            //ImageIOHelper.addCurveToImage(xyCens, img_1, 
-            //    nExtraDot, 255, 0, 0);
-
-            //MiscDebug.writeImage(img_1, file + "_out_xy1_");
-
-            // use a small window for averaging pixels,
-            int halfDimension = 1;
-            
-            // create an image for use with the descriptors
-            SummedAreaTable sumTable = new SummedAreaTable();
-            GreyscaleImage imgM = sumTable.createAbsoluteSummedAreaTable(
-                gs1);
-            imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM,
-                2 * halfDimension + 1);
-       
-            mImgs.add(imgM);
-            
-            //List<Canonicalizer.CRegion> descr0 = 
-            //    canonicalizer.canonicalizeRegions(regions.get(0),
-            //    img2.getWidth(), img2.getHeight());
-    
-            TIntObjectMap<CRegion> descr1 = 
-                canonicalizer.canonicalizeRegions(regions.get(1),
-                    imgM);
-            
-            cRegions1List.add(descr1);
-            
-            specFeatureIdx[fIdx] = new int[2];
-            
-            for (int i = 0; i < descr1.size(); ++i) {
-                CRegion r = descr1.get(i);
-                
-                switch (fIdx) {
-                    case 0: {
-                        if (95 == r.xC && 59 == r.yC) {
-                            specFeatureIdx[fIdx][0] = i;
-                        } else if (100 == r.xC && 59 == r.yC) {
-                            specFeatureIdx[fIdx][1] = i;
-                        }
-                        break;
-                    }
-                    case 1: {
-                        if (210 == r.xC && 58 == r.yC) {
-                            specFeatureIdx[fIdx][0] = i;
-                        } else if (220 == r.xC && 59 == r.yC) {
-                            specFeatureIdx[fIdx][1] = i;
-                        }
-                        break;
-                    }
-                    case 2: {
-                        if (37 == r.xC && 70 == r.yC) {
-                            specFeatureIdx[fIdx][0] = i;
-                        } else if (53 == r.xC && 70 == r.yC) {
-                            specFeatureIdx[fIdx][1] = i;
-                        }
-                        break;
-                    }
-                    default: {
-                        if (206 == r.xC && 89 == r.yC) {
-                            specFeatureIdx[fIdx][0] = i;
-                        } else if (220 == r.xC && 88 == r.yC) {
-                            specFeatureIdx[fIdx][1] = i;
-                        }
-                        break;
-                    }
-                }
-            }
             fIdx++;
         } 
         
@@ -246,8 +147,8 @@ public class MSERTest extends TestCase {
                     
                     System.out.format(
   "(%d,%d) i=%d j=%d ssd=%.2f autoc=%.2f f=%.3f ssd.n=%d\n", 
-                        r.xC, r.yC, i, ii, (float)ssdSum, 
-                        (float)r.autocorrel, (float)f, ssdCount);
+                        r.ellipseParams.xC, r.ellipseParams.yC, i, ii, 
+                        (float)ssdSum, (float)r.autocorrel, (float)f, ssdCount);
                 }
             }
         }
@@ -383,7 +284,7 @@ public class MSERTest extends TestCase {
                             
                             int idx1 = iteri1.key();
                             CRegion cr1 = iteri1.value();
-                            int n1 = cr1.nTrEllipsePixels;
+                            int n1 = cr1.offsetsToOrigCoords.size();
                             
                             TIntObjectIterator<CRegion> iteri2 = cMap2.iterator();
                             for (int i2 = 0; i2 < cMap2.size(); ++i2) {
@@ -391,7 +292,7 @@ public class MSERTest extends TestCase {
                                
                                 int idx2 = iteri2.key();
                                 CRegion cr2 = iteri2.value();
-                                int n2 = cr2.nTrEllipsePixels;
+                                int n2 = cr2.offsetsToOrigCoords.size();
                                 
                                 int maxMatchable = Math.min(n1, n2);
 
@@ -435,7 +336,8 @@ public class MSERTest extends TestCase {
                                         imgIdx, imgIdx2, pyrIdx, pyrIdx2);
                                     String str2 = String.format(
                                         " (%d,%d) (%d,%d) ssd=%.2f autoc=%.2f,%.2f f=%.3f ssd.n=%d",
-                                        cr1.xC, cr1.yC, cr2.xC, cr2.yC, 
+                                        cr1.ellipseParams.xC, cr1.ellipseParams.yC, 
+                                        cr2.ellipseParams.xC, cr2.ellipseParams.yC, 
                                         (float) ssdSum,
                                         (float) cr1.autocorrel, (float) cr2.autocorrel,
                                         (float) f, ssdCount);

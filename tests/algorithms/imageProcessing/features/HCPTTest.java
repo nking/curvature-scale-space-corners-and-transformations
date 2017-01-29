@@ -22,6 +22,7 @@ public class HCPTTest extends TestCase {
 
     public void test0() throws IOException {
         
+        int cellSize = 16;
         int nBins = 12;
         int maxDimension = 256;
         
@@ -53,9 +54,9 @@ public class HCPTTest extends TestCase {
         
         //MiscDebug.writeImage(pt1, "_lab1_");
         
-        HCPT hgs0 = new HCPT(pt0, 1, nBins);
+        HCPT hgs0 = new HCPT(pt0, 1, cellSize, nBins);
         
-        HCPT hgs1 = new HCPT(pt1, 1, nBins);
+        HCPT hgs1 = new HCPT(pt1, 1, cellSize, nBins);
          
         int[] feature0 = new int[nBins];
         hgs0.extractFeature(93, 110, feature0);
@@ -78,7 +79,26 @@ public class HCPTTest extends TestCase {
         hgs1.extractFeature(177, 59, feature1);
         intersection01 = hgs0.intersection(feature0, feature1);
         System.out.println("intersection 0:1=" + intersection01);
-        assertTrue(intersection01 < 0.3);
+        assertTrue(intersection01 < 0.2);
+        
+        //-----
+        
+        feature0 = new int[nBins];
+        hgs0.extractFeature(153, 91, feature0);
+        
+        feature1 = new int[nBins];
+        hgs1.extractFeature(110, 55, feature1);
+        intersection01 = hgs0.intersection(feature0, feature1);
+        System.out.println("intersection 0:1=" + intersection01);
+        
+        feature0 = new int[nBins];
+        hgs0.extractFeature(158, 107, feature0);
+        
+        feature1 = new int[nBins];
+        hgs1.extractFeature(118, 71, feature1);
+        intersection01 = hgs0.intersection(feature0, feature1);
+        System.out.println("intersection 0:1=" + intersection01);
+        
     }
     
 }

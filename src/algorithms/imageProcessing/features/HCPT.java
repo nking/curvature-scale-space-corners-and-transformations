@@ -49,10 +49,11 @@ public class HCPT {
         gHists = init(img);
     }
     
-    public HCPT(GreyscaleImage img, int nCellsPerDim, int nPixPerCellDim) {
+    public HCPT(GreyscaleImage img, int nCellsPerDim, int nPixPerCellDim,
+        int nBins) {
         
         // binWidth of 16
-        nBins = nPixPerCellDim;
+        this.nBins = nBins;
         N_PIX_PER_CELL_DIM = nPixPerCellDim;
         N_CELLS_PER_BLOCK_DIM = nCellsPerDim;
         w = img.getWidth();
