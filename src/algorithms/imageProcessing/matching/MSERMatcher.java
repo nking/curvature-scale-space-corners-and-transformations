@@ -10,6 +10,7 @@ import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.features.CorrespondenceList;
+import algorithms.imageProcessing.features.HCPT;
 import algorithms.imageProcessing.features.HOGs;
 import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
@@ -1068,7 +1069,7 @@ public class MSERMatcher {
         -- NOTE that in the process, saw that the HOGs was successful when
            dominant orientation was used instead of mser region orientation
            and that the HOG cell size of 16 works well.
-           THIS suggests that the patch matching of color and polar cie theta
+           THIS suggests that the patch matching of greyscale and polar cie theta
            could be improved by adding such leniency in location.
            note that the size 16 is roughly half the size of the ORB descriptor,
            so patches of ORB descriptors for the rgb and polar theta

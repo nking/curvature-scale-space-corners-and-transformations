@@ -6,7 +6,6 @@ import algorithms.misc.MiscDebug;
 import algorithms.util.ResourceFinder;
 import algorithms.misc.MiscMath;
 import java.io.IOException;
-import java.util.Arrays;
 import junit.framework.TestCase;
 
 /**

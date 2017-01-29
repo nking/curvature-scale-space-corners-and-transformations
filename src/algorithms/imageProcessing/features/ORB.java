@@ -570,8 +570,7 @@ public class ORB {
 
         ImageProcessor imageProcessor = new ImageProcessor();
 
-        GreyscaleImage imageAlt = imageProcessor.
-            createCIELABTheta(image, 255);
+        GreyscaleImage imageAlt = imageProcessor.createCIELAB1931Theta(image, 255);
 
         List<GreyscaleImage> outputAlt;
 

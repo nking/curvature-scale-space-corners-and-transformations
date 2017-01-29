@@ -14268,7 +14268,7 @@ int z = 1;
             sizeLimit = 5;
         }
         
-        GreyscaleImage polarTheta = imageProcessor.createCIELABTheta(img, 255);
+        GreyscaleImage polarTheta = imageProcessor.createCIELAB1931Theta(img, 255);
 
         //TODO: use a small first threshold,
         //     then onsider different merge methods

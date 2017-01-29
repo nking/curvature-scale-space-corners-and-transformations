@@ -910,7 +910,7 @@ public class ObjectMatcher {
         GreyscaleImage tmp11 = luvTheta1.copyImage();
         imageProcessor.enhanceContrast(tmp11, 4);
         
-        if (debug) {
+        if (debug) {            
             MiscDebug.writeImage(img0Trimmed, "_shape0_mask_");
             MiscDebug.writeImage(luvTheta0, "_luv_mask_");
             

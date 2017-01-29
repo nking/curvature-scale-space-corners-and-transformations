@@ -9420,9 +9420,9 @@ if (sum > 511) {
      * @param maxV
      * @return 
      */
-    public GreyscaleImage createCIELABTheta(Image img, int maxV) {
+    public GreyscaleImage createCIELAB1931Theta(Image img, int maxV) {
         
-        return createCIELABTheta(img, maxV, 0);
+        return createCIELAB1931Theta(img, maxV, 0);
     }
     
     /**
@@ -9438,7 +9438,7 @@ if (sum > 511) {
      * at the wrap around point for 360 to 0
      * @return 
      */
-    public GreyscaleImage createCIELABTheta(Image img, int maxV, 
+    public GreyscaleImage createCIELAB1931Theta(Image img, int maxV, 
         int offset) {
         
         int w = img.getWidth();
@@ -9569,6 +9569,61 @@ if (sum > 511) {
                 float[] lma = cieC.rgbToPolarCIELUV(r, g, b);
              
                 double t = lma[2];
+                t *= ts;
+                v = (int)t;
+                
+                theta.setValue(i, j, v);
+            }
+        }
+        
+        return theta;
+    }
+    
+    /**
+     * convert the image to cie lab and then calculate polar angle of u and v
+     * around 0 in degrees.
+     * If maxV of 360, returns full value image, 
+     * else if is 255, scales the values to max value of 255, etc.
+     * @param img
+     * @param maxV
+     * @return 
+     */
+    public GreyscaleImage createCIELABTheta(Image img, int maxV) {
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        GreyscaleImage theta = null;
+        if (maxV < 256) {
+            theta = new GreyscaleImage(w, h);
+        } else {
+            theta = new GreyscaleImage(w, h, 
+                GreyscaleImage.Type.Bits32FullRangeInt);
+        }
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        double ts = (double)maxV/(double)359;
+        
+        int n = img.getNPixels();
+        int v;
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                
+                int r = img.getR(i, j);
+                int g = img.getG(i, j);
+                int b = img.getB(i, j);
+                
+                float[] lab = cieC.rgbToCIELAB(r, g, b);
+             
+                double t = Math.atan2(lab[2], lab[1]);
+                t *= (180. / Math.PI);
+                if (t < 0) {
+                    t += 360;
+                } else if (t > 359) {
+                    t -= 360;
+                }
+
                 t *= ts;
                 v = (int)t;
                 
