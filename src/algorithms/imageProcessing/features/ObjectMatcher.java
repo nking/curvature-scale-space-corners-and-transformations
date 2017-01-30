@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.compGeometry.FurthestPair;
+import algorithms.compGeometry.NearestPoints;
 import algorithms.imageProcessing.ColorHistogram;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
@@ -552,7 +553,64 @@ public class ObjectMatcher {
         while (iter2.hasNext()) {
             int rmIdx = iter2.next();
             cRegions.remove(rmIdx);
-        }        
+        }
+
+        //when multiple regions are centered within a spatial limit,
+        //  choose one and remove the others
+        if (false) {
+            float critDens = 2.f/15.f;
+            
+            System.out.println("before removing near mser, cRegions.n=" + 
+                cRegions.size());
+            
+            Set<PairIntWithIndex> points2
+                = new HashSet<PairIntWithIndex>();
+            
+            iter = cRegions.iterator();
+            for (int i = 0; i < cRegions.size(); ++i) {
+                iter.advance();
+                int rIdx = iter.key();
+                RegionPoints cr = iter.value();
+                PairIntWithIndex pii = new PairIntWithIndex(
+                    cr.ellipseParams.xC, cr.ellipseParams.yC, rIdx);
+                points2.add(pii);
+            }
+            
+            DTClusterFinder<PairIntWithIndex> cFinder
+                = new DTClusterFinder<PairIntWithIndex>(points2,
+                gsImg.getWidth() + 1, gsImg.getHeight() + 1);
+            cFinder.setMinimumNumberInCluster(2);
+            cFinder.setCriticalDensity(critDens);
+            cFinder.findClusters();
+
+            //NOTE: may need to revise how to choose best region to keep.
+            for (int i = 0; i < cFinder.getNumberOfClusters(); ++i) {
+                Set<PairIntWithIndex> set = cFinder.getCluster(i);
+                int maxSz = Integer.MIN_VALUE;
+                int maxSzIdx = -1;
+                
+                for (PairIntWithIndex pii : set) {
+                    int rIdx = pii.getPixIndex();
+                    int sz = calculateObjectSize(cRegions.get(rIdx));
+                    if (sz > maxSz) {
+                        maxSz = sz;
+                        maxSzIdx = rIdx;
+                    }
+                }
+                assert(maxSzIdx > -1);
+                for (PairIntWithIndex pii : set) {
+                    int rIdx = pii.getPixIndex();
+                    if (rIdx == maxSzIdx) {
+                        continue;
+                    }
+                    cRegions.remove(rIdx);
+                }
+            }
+            
+            System.out.println("after removing near mser, cRegions.n=" + 
+                cRegions.size());
+        }
+        
     }
 
     private void applyWindowedMean(List<List<GreyscaleImage>> pyr, int halfDimension) {
@@ -721,6 +779,15 @@ public class ObjectMatcher {
         } else {
             return CMODE.OTHER;
         }
+    }
+
+    private int calculateObjectSize(RegionPoints region) {
+        int[] minMaxXY = MiscMath.findMinMaxXY(region.points);
+        int diffX = minMaxXY[1] - minMaxXY[0];
+        int diffY = minMaxXY[3] - minMaxXY[2];
+        double xy = Math.sqrt(diffX * diffX + diffY * diffY);
+        
+        return (int)Math.round(xy);
     }
 
     public static class Settings {
