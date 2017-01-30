@@ -476,7 +476,7 @@ public class AndroidStatuesTest extends TestCase {
                 }
 
                 plotter.writeImage("_orb_corres_final_" + 
-                    "_" + fileName1Root + "_" + fn0);
+                    "_gbman_" + fileName1Root + "_" + fn0);
                 System.out.println(cor.getPoints1().size() + 
                     " matches " + fileName1Root);
                 //MiscDebug.writeImage(img11, "_orb_matched_" + str
@@ -608,7 +608,7 @@ public class AndroidStatuesTest extends TestCase {
             }
 
             plotter.writeImage("_orb_corres_final_" + 
-                "_" + fileName1Root);
+                "_cupcake_" + fileName1Root);
             System.out.println(cor.getPoints1().size() + 
                 " matches " + fileName1Root + " test2");
             //MiscDebug.writeImage(img11, "_orb_matched_" + str
@@ -755,7 +755,7 @@ public class AndroidStatuesTest extends TestCase {
             }
 
             plotter.writeImage("_orb_corres_final_" + 
-                "_" + fileName1Root);
+                "_icecream_" + fileName1Root);
             System.out.println(cor.getPoints1().size() + 
                 " matches " + fileName1Root + " test3");
             //MiscDebug.writeImage(img11, "_orb_matched_" + str

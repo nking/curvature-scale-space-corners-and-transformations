@@ -909,8 +909,6 @@ public class ObjectMatcher {
      * The patch matches are then aggregated with consistent 
      * other matches in terms of separation and size within the
      * octave scales.
-     * 
-     *
      *
      * @param img0
      * @param shape0
@@ -1146,8 +1144,22 @@ public class ObjectMatcher {
             pyrRGB0, pyrPT0, cRegions0, labeledSets0List, pointLabelMap0,
             pyrRGB1,  pyrPT1, cRegions1, labeledSets1, pointLabelMap1,
             settings.getDebugLabel());
+        
+        if (corList == null) {
+            return null;
+        }
+        
+        // apply offsets for having trimmed image 0
+        CorrespondenceList topC = corList.get(0);
+        for (int i = 0; i < topC.getPoints1().size(); ++i) {
+            PairInt p = topC.getPoints1().get(i);
+            int x = p.getX();
+            int y = p.getY();
+            p.setX(x + img0Trim.getXOffset());
+            p.setY(y + img0Trim.getYOffset());
+        }
 
-        return corList.get(0);
+        return topC;
     }
     
     private ImageExt[] maskImage(ImageExt img, Set<PairInt> shape) {
