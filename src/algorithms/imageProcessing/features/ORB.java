@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
 
 /**
  * An implementation of "ORB: an efficient alternative to SIFT or SURF"
@@ -172,6 +173,8 @@ public class ORB {
 
     protected float curvatureThresh = 0.05f;
 
+    private Logger log = Logger.getLogger(this.getClass().getName());
+    
     /**
      * a map holding the scale factor of a pyramid image as key
      * and the octave number of pyramid images.
@@ -342,7 +345,7 @@ public class ORB {
 
         int nKeyPointsTotal = countKeypoints();
 
-        System.out.println("nKeypointsTotal=" + nKeyPointsTotal +
+        log.info("nKeypointsTotal=" + nKeyPointsTotal +
             " this.nKeypoints=" + this.nKeypoints);
 
         assert(pyramidImages.size() == keypoints0List.size());
@@ -646,7 +649,7 @@ public class ORB {
             sb.append(Arrays.toString(a[i])).append("\n");
         }
 
-        System.out.println(sb.toString());
+        log.info(sb.toString());
     }
 
     private void debugPrint(String label, int[][] a) {
@@ -657,7 +660,7 @@ public class ORB {
             sb.append(Arrays.toString(a[i])).append("\n");
         }
 
-        System.out.println(sb.toString());
+        log.info(sb.toString());
     }
 
     protected float[][] multiply(float[][] a, float[][] b) {
@@ -763,25 +766,20 @@ public class ORB {
 
                 float f = 0.1f;    
                 imageProcessor.peakLocalMax(fastResponse, 1, f, atk0, atk1);
-     
-                System.out.println("  atrous nKeypoints= " + atk0.size());
-            
-                try {
-                    float factor = 255.f;
-                    Image img2 = image.createWithDimensions();
-                    for (int i = 0; i < atk0.size(); ++i) {
-                        int x = atk1.get(i);
-                        int y = atk0.get(i);
-                        img2.setRGB(x, y, 255, 0, 0);
-                    }
-                    //algorithms.imageProcessing.ImageDisplayer.displayImage("curvature", img2);
-                    MiscDebug.writeImage(img2, "_atrous_" 
-                        + MiscDebug.getCurrentTimeFormatted());
-                    int z = 1;
-                } catch(Exception e) {
-                    System.out.println(e.getMessage());
+    
+                log.fine("  atrous nKeypoints= " + atk0.size());
+                /*
+                float factor = 255.f;
+                Image img2 = image.createWithDimensions();
+                for (int i = 0; i < atk0.size(); ++i) {
+                    int x = atk1.get(i);
+                    int y = atk0.get(i);
+                    img2.setRGB(x, y, 255, 0, 0);
                 }
-            
+                algorithms.imageProcessing.ImageDisplayer.displayImage("curvature", img2);
+                MiscDebug.writeImage(img2, "_atrous_" 
+                    + MiscDebug.getCurrentTimeFormatted());
+                */
             }
         }
         
@@ -805,7 +803,7 @@ public class ORB {
                     float y0 = (float)pyramid.get(octave - 1).a[0].length/
                         (float)pyramid.get(octave).a[0].length;
                     scale = prevScl * (x0 + y0)/2.f;
-                    System.out.println("scl=" + scale + " prevScl=" + prevScl);
+                    log.fine("scl=" + scale + " prevScl=" + prevScl);
                     prevScl = scale;
                 }
             }
@@ -821,7 +819,7 @@ public class ORB {
                 continue;
             }
 
-            System.out.println("  octave " + octave + " nKeypoints="
+            log.fine("  octave " + octave + " nKeypoints="
                 + r.keypoints0.size());
             
             if (octave == 0 && !atk0.isEmpty()) {
@@ -1905,7 +1903,7 @@ public class ORB {
 
         int nKP = orientations.size();
 
-        System.out.println("nKP=" + nKP);
+        log.fine("nKP=" + nKP);
 
         VeryLongBitString[] descriptors = new VeryLongBitString[nKP];
 
@@ -2039,7 +2037,7 @@ public class ORB {
 
         int nKP = orientations.size();
 
-        System.out.println("nKP=" + nKP);
+        log.fine("nKP=" + nKP);
 
         VeryLongBitString[] descriptors = new VeryLongBitString[nKP];
         Descriptors desc = new Descriptors();

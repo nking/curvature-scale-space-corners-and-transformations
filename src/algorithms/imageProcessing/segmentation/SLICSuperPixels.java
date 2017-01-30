@@ -99,7 +99,7 @@ public class SLICSuperPixels {
         nYs = Math.round((float)img.getHeight()/(float)s);
         this.k = nXs * nYs;
 
-        log.info("k = " + k + " s=" + this.s + " nXs=" + nXs + " nYs=" + nYs);
+        log.fine("k = " + k + " s=" + this.s + " nXs=" + nXs + " nYs=" + nYs);
 
         this.img = img;
         if (cieType == 1) {

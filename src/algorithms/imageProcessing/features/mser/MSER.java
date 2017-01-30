@@ -578,8 +578,6 @@ public class MSER {
         regions.add(new ArrayList<Region>());
 
         mser8.operator(greyscale, width, height, regions.get(0));
-
-   System.out.println("inverse");
    
         // Invert the pixel values
         for (int i = 0; i < width * height; ++i) {

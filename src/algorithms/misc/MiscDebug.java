@@ -1691,8 +1691,8 @@ public class MiscDebug {
             output = new GreyscaleImage(a[0].length, a.length);
         }
         
-System.out.println("value 0 is rescaled to value=" + ((int)(-minV*scale))
-+ " minV=" + minV + " scale=" + scale);
+//System.out.println("value 0 is rescaled to value=" + ((int)(-minV*scale))
+//+ " minV=" + minV + " scale=" + scale);
         
         for (int i = 0; i < a.length; ++i) {
             for (int j = 0; j < a[i].length; ++j) {

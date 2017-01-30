@@ -1,20 +1,17 @@
 package algorithms.imageProcessing.matching;
 
-import algorithms.QuickSort;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.DFSConnectedGroupsFinder;
 import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.features.CorrespondenceList;
 import algorithms.imageProcessing.features.HCPT;
 import algorithms.imageProcessing.features.HOGs;
 import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
 import algorithms.imageProcessing.features.mser.Region;
-import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
 import algorithms.imageProcessing.util.PairIntWithIndex;
@@ -25,26 +22,16 @@ import algorithms.search.NearestNeighbor2D;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.QuadInt;
-import algorithms.util.VeryLongBitString;
 import com.climbwithyourfeet.clustering.DTClusterFinder;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
-import gnu.trove.list.TFloatList;
-import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TFloatArrayList;
-import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.map.hash.TObjectIntHashMap;
-import gnu.trove.set.TIntSet;
-import gnu.trove.set.hash.TIntHashSet;
-import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -217,14 +204,9 @@ public class MSERMatcher {
             }
         }
       
-        // filter rIndexHogMap to keep best within a spatial proximity,
-        //  to help ensure the top results are different regions
         float critDens = 2.f/5.f;
         //filterBySpatialProximity(critDens, rIndexHOGMap, pyrRGB0, pyrRGB1);
         
-        // any  indexes still in map passed the size filter.
-        // further looking at range of intersection values to see if
-        //    can use intersection > 0.5 as a high pass filter.
         System.out.println("r1 map size = " + cRegions1.size()
             + " size filtered = " + rIndexHOGMap.size());
 
@@ -258,49 +240,51 @@ public class MSERMatcher {
 
             tmp.add(obj0);
 
-            /*
-            int imgIdx0 = obj0.imgIdx0;
-            int imgIdx1 = obj0.imgIdx1;
+            if (debug) {
+                int imgIdx0 = obj0.imgIdx0;
+                int imgIdx1 = obj0.imgIdx1;
 
-            GreyscaleImage gsI0 = pyrRGB0.get(imgIdx0).get(1);
-            GreyscaleImage gsI1 = pyrRGB1.get(imgIdx1).get(1);
+                GreyscaleImage gsI0 = pyrRGB0.get(imgIdx0).get(1);
+                GreyscaleImage gsI1 = pyrRGB1.get(imgIdx1).get(1);
 
-            float scale00, scale01;
-            {
-                int w0_i = gsI0.getWidth();
-                int h0_i = gsI0.getHeight();
-                scale00 = (((float) w0 / (float) w0_i) + ((float) h0 / (float) h0_i)) / 2.f;
+                float scale00, scale01;
+                {
+                    int w0_i = gsI0.getWidth();
+                    int h0_i = gsI0.getHeight();
+                    scale00 = (((float) w0 / (float) w0_i) + ((float) h0 / (float) h0_i)) / 2.f;
 
-                int w1_i = gsI1.getWidth();
-                int h1_i = gsI1.getHeight();
-                scale01 = (((float) w1 / (float) w1_i) + ((float) h1 / (float) h1_i)) / 2.f;
+                    int w1_i = gsI1.getWidth();
+                    int h1_i = gsI1.getHeight();
+                    scale01 = (((float) w1 / (float) w1_i) + ((float) h1 / (float) h1_i)) / 2.f;
+                }
+
+                String lbl = "_" + obj0.imgIdx0 + "_" + obj0.imgIdx1 + "_"
+                    + obj0.r0Idx + "_" + obj0.r1Idx;
+
+                int or0 = (int) Math.round(
+                    obj0.cr0.ellipseParams.orientation * 180. / Math.PI);
+
+                int or1 = (int) Math.round(
+                    obj0.cr1.ellipseParams.orientation * 180. / Math.PI);
+
+                String str1 = String.format("angles=(%d,%d ; %d,%d)",
+                    or0, or1, obj0.cr0.hogOrientation, obj0.cr1.hogOrientation);
+
+                sb.append(String.format(
+                    "1st %s %d (%d,%d) best: %.3f (%d,%d) %s [%.3f,%.3f,%.3f] %s\n",
+                    dbgLbl, i3, Math.round(scale01 * obj0.cr1.ellipseParams.xC),
+                    Math.round(scale01 * obj0.cr1.ellipseParams.yC),
+                    (float) obj0.cost,
+                    Math.round(scale00 * obj0.cr0.ellipseParams.xC),
+                    Math.round(scale00 * obj0.cr0.ellipseParams.yC), lbl,
+                    (float) obj0.costs[0], (float) obj0.costs[1], (float) obj0.costs[2], 
+                    str1
+                ));
             }
-
-            String lbl = "_" + obj0.imgIdx0 + "_" + obj0.imgIdx1 + "_"
-                + obj0.r0Idx + "_" + obj0.r1Idx;
-
-            int or0 = (int) Math.round(
-                obj0.cr0.ellipseParams.orientation * 180. / Math.PI);
-
-            int or1 = (int) Math.round(
-                obj0.cr1.ellipseParams.orientation * 180. / Math.PI);
-
-            String str1 = String.format("angles=(%d,%d ; %d,%d)",
-                or0, or1, obj0.cr0.hogOrientation, obj0.cr1.hogOrientation);
-
-            sb.append(String.format(
-                "1st %s %d (%d,%d) best: %.3f (%d,%d) %s [%.3f,%.3f,%.3f] %s\n",
-                dbgLbl, i3, Math.round(scale01 * obj0.cr1.ellipseParams.xC),
-                Math.round(scale01 * obj0.cr1.ellipseParams.yC),
-                (float) obj0.cost,
-                Math.round(scale00 * obj0.cr0.ellipseParams.xC),
-                Math.round(scale00 * obj0.cr0.ellipseParams.yC), lbl,
-                (float) obj0.costs[0], (float) obj0.costs[1], (float) obj0.costs[2], 
-                str1
-            ));
-            */
         }
-        //System.out.println(sb.toString());
+        if (debug) {
+            System.out.println(sb.toString());
+        }
 
         StringBuilder sb2 = new StringBuilder();
 
@@ -325,40 +309,44 @@ public class MSERMatcher {
                 scale01 = (((float) w1 / (float) w1_i) + ((float) h1 / (float) h1_i)) / 2.f;
             }
 
-            String lbl = "_" + obj0.imgIdx0 + "_" + obj0.imgIdx1 + "_"
-                + obj0.r0Idx + "_" + obj0.r1Idx;
+            if (debug) {
+                String lbl = "_" + obj0.imgIdx0 + "_" + obj0.imgIdx1 + "_"
+                    + obj0.r0Idx + "_" + obj0.r1Idx;
 
-            int or0 = (int) Math.round(
-                obj0.cr0.ellipseParams.orientation * 180. / Math.PI);
+                int or0 = (int) Math.round(
+                    obj0.cr0.ellipseParams.orientation * 180. / Math.PI);
 
-            int or1 = (int) Math.round(
-                obj0.cr1.ellipseParams.orientation * 180. / Math.PI);
+                int or1 = (int) Math.round(
+                    obj0.cr1.ellipseParams.orientation * 180. / Math.PI);
 
-            String str1 = String.format("angles=(%d,%d ; %d,%d)",
-                or0, or1, obj0.cr0.hogOrientation, obj0.cr1.hogOrientation);
+                String str1 = String.format("angles=(%d,%d ; %d,%d)",
+                    or0, or1, obj0.cr0.hogOrientation, obj0.cr1.hogOrientation);
 
-            sb2.append(String.format(
-                "2nd %s %d (%d,%d) best: %.3f (%d,%d) %s [%.3f,%.3f,%.3f] %s\n",
-                dbgLbl, i3, Math.round(scale01 * obj0.cr1.ellipseParams.xC),
-                Math.round(scale01 * obj0.cr1.ellipseParams.yC),
-                (float) obj0.cost,
-                Math.round(scale00 * obj0.cr0.ellipseParams.xC),
-                Math.round(scale00 * obj0.cr0.ellipseParams.yC), lbl,
-                (float) obj0.costs[0], (float) obj0.costs[1], (float) obj0.costs[1],
-                str1
-            ));
+                sb2.append(String.format(
+                    "2nd %s %d (%d,%d) best: %.3f (%d,%d) %s [%.3f,%.3f,%.3f] %s\n",
+                    dbgLbl, i3, Math.round(scale01 * obj0.cr1.ellipseParams.xC),
+                    Math.round(scale01 * obj0.cr1.ellipseParams.yC),
+                    (float) obj0.cost,
+                    Math.round(scale00 * obj0.cr0.ellipseParams.xC),
+                    Math.round(scale00 * obj0.cr0.ellipseParams.yC), lbl,
+                    (float) obj0.costs[0], (float) obj0.costs[1], (float) obj0.costs[1],
+                    str1
+                ));
 
-            /*
-            Image im0 = gsI0.copyToColorGreyscale();
-            Image im1 = gsI1.copyToColorGreyscale();
-            int[] clr = ImageIOHelper.getNextRGB(4);
-            obj0.cr0.drawEachPixel(im0, 0, clr[0], clr[1], clr[2]);
-            obj0.cr1.drawEachPixel(im1, 0, clr[0], clr[1], clr[2]);
-            MiscDebug.writeImage(im0, dbgLbl + "_" + lbl);
-            MiscDebug.writeImage(im1, dbgLbl + "_" + lbl);
-            */
+                /*
+                Image im0 = gsI0.copyToColorGreyscale();
+                Image im1 = gsI1.copyToColorGreyscale();
+                int[] clr = ImageIOHelper.getNextRGB(4);
+                obj0.cr0.drawEachPixel(im0, 0, clr[0], clr[1], clr[2]);
+                obj0.cr1.drawEachPixel(im1, 0, clr[0], clr[1], clr[2]);
+                MiscDebug.writeImage(im0, dbgLbl + "_" + lbl);
+                MiscDebug.writeImage(im1, dbgLbl + "_" + lbl);
+                */
+            }
         }
-        System.out.println(sb2.toString());
+        if (debug) {
+             System.out.println(sb2.toString());
+        }
 
         List<CorrespondenceList> out = new ArrayList<CorrespondenceList>();
         

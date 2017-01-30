@@ -332,7 +332,7 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void estORBMSERMatcher_gingerbreadman() throws Exception {
+    public void runMatcher_gingerbreadman(boolean debug) throws Exception {
 
         int maxDimension = 256;//512;
         SIGMA sigma = SIGMA.ZEROPOINTFIVE;//SIGMA.ONE;
@@ -431,28 +431,26 @@ public class AndroidStatuesTest extends TestCase {
                 System.out.println("99 percent nIter for RANSAC=" 
                     + nnn);*/
         
+                /*
                 GreyscaleImage theta1 = imageProcessor.createCIELUVTheta(imgs0[0], 255);
                 MiscDebug.writeImage(theta1, fileName1Root + "_theta_0");
                 theta1 = imageProcessor.createCIELUVTheta(img, 255);
                 MiscDebug.writeImage(theta1, fileName1Root + "_theta_1");
-        
+                */
+                
                 Settings settings = new Settings();
-                //settings.setToFindVnishingPoints();
                 
                 settings.setToUseLargerPyramid0();
                 settings.setToUseLargerPyramid1();
                 
                 ObjectMatcher objMatcher = new ObjectMatcher();
-                if (fileName1Root.contains("_01")) {
-               //     settings.setToUseLargerPyramid0();
-               //     settings.setToUseLargerPyramid1();
-               //     settings.setToUseSmallObjectMethod();
+                
+                if (debug) {
+                    objMatcher.setToDebug();  
+                    settings.setDebugLabel("gbm_" + fIdx);
                 }
-                objMatcher.setToDebug();  
-                settings.setDebugLabel("gbm_" + fIdx);
                 
                 CorrespondenceList cor 
-                    //= objMatcher.findObject(
                     = objMatcher.findObject11(
                         imgs0[0], shape0, img, settings);
                 
@@ -485,7 +483,7 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void estORBMatcher_cupcake() throws Exception {
+    public void runMatcher_cupcake(boolean debug) throws Exception {
         
         int maxDimension = 256;//512;
         SIGMA sigma = SIGMA.ZEROPOINTFIVE;//SIGMA.ONE;
@@ -519,7 +517,6 @@ public class AndroidStatuesTest extends TestCase {
         andr04  (scale 61/58  = 1   0:0
          92, 74                   91, 103                
         */
-
         
         for (int fIdx = 0; fIdx < fileNames1.length; ++fIdx) {
             
@@ -569,21 +566,17 @@ public class AndroidStatuesTest extends TestCase {
             //MiscDebug.writeImage(theta1, fileName1Root + "_theta_1");
         
             Settings settings = new Settings();
-          //  settings.setToFindVnishingPoints();
             settings.setToUseLargerPyramid0();
             settings.setToUseLargerPyramid1();
           
             settings.setDebugLabel("cc_" + fIdx);
             
             ObjectMatcher objMatcher = new ObjectMatcher();
-          //  if (
-          //      fileName1Root.contains("_01") ||
-          //      fileName1Root.contains("_02")) {
-          //      settings.setToUseShapeFinderMethod();
-          //  }
             
-            //settings.setToUseLargerPyramid0();
-            objMatcher.setToDebug();
+            if (debug) {
+                objMatcher.setToDebug();
+            }
+            
             CorrespondenceList cor = objMatcher
                 .findObject11(
                 imgs0[0], shape0, img, settings);
@@ -617,12 +610,13 @@ public class AndroidStatuesTest extends TestCase {
     }
     
     public void testObjectFinder() throws Exception {
-        estORBMSERMatcher_gingerbreadman();
-        estORBMSERMatcher_icecream();
-        estORBMatcher_cupcake();
+        boolean debug = false;
+        runMatcher_gingerbreadman(debug);
+        runMatcher_icecream(debug);
+        runMatcher_cupcake(debug);
     }
 
-    public void estORBMSERMatcher_icecream() throws Exception {
+    public void runMatcher_icecream(boolean debug) throws Exception {
 
         int maxDimension = 256;//512;
         SIGMA sigma = SIGMA.ZEROPOINTFIVE;//SIGMA.ONE;
@@ -712,10 +706,10 @@ public class AndroidStatuesTest extends TestCase {
             System.out.println("99 percent nIter for RANSAC=" 
                 + nnn);*/
 
-            GreyscaleImage theta1 = imageProcessor.createCIELUVTheta(imgs0[0], 255);
-            MiscDebug.writeImage(theta1, fileName1Root + "_theta_0");
-            theta1 = imageProcessor.createCIELUVTheta(img, 255);
-            MiscDebug.writeImage(theta1, fileName1Root + "_theta_1");
+            //GreyscaleImage theta1 = imageProcessor.createCIELUVTheta(imgs0[0], 255);
+            //MiscDebug.writeImage(theta1, fileName1Root + "_theta_0");
+            //theta1 = imageProcessor.createCIELUVTheta(img, 255);
+            //MiscDebug.writeImage(theta1, fileName1Root + "_theta_1");
         
             Settings settings = new Settings();
             settings.setToUseLargerPyramid0();
@@ -723,13 +717,11 @@ public class AndroidStatuesTest extends TestCase {
             settings.setDebugLabel("icec_" + fIdx);
             
             ObjectMatcher objMatcher = new ObjectMatcher();
-            //if (
-            //    fileName1Root.contains("_01") ||
-            //    fileName1Root.contains("_02")) {
-            //    settings.setToUseShapeFinderMethod();
-            //}
-            //settings.setToUseLargerPyramid0();
-            objMatcher.setToDebug();
+            
+            if (debug) {
+                objMatcher.setToDebug();
+            }
+            
             CorrespondenceList cor = objMatcher
                 //.findObject(
                 .findObject11(
@@ -2487,8 +2479,7 @@ public class AndroidStatuesTest extends TestCase {
             + "\n  min of avg sig="
             + luvInterStats.findMinOfAverageSignficance()
         );
-        
-    
+       
     }
     
     private List<Set<PairInt>> extractNonZeros(ImageExt[] imgs) {

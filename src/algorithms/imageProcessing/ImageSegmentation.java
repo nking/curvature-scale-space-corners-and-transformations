@@ -10234,7 +10234,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 }
             }
         }
-        log.info("number of small merges=" + merged.size()
+        log.fine("number of small merges=" + merged.size()
            + " nSmall=" + nSmall + " nSets=" + labelToIndexMap.size());
     }
 
@@ -10395,7 +10395,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 }
             }
         }
-        log.info("number of small merges=" + merged.size()
+        log.fine("number of small merges=" + merged.size()
            + " nSmall=" + nSmall + " nSets=" + labelToIndexMap.size());
     }
 
@@ -13987,7 +13987,7 @@ int z = 1;
         int n11 = Math.round(nPix/f11);
         //==> nClusters = nPix/((w/x0)^2)
         //==> nClusters = nPix/((h/x0)^2)
-        log.info("  n1=" + n10 + "," + n11);
+        log.fine("  n1=" + n10 + "," + n11);
         int nc = (n10+n11)/2;
         SLICSuperPixels slic = new SLICSuperPixels(imgCp, 
             nc, 5); 
@@ -13996,11 +13996,11 @@ int z = 1;
         slic.calculate();
         int[] labels = slic.getLabels();
 
-        Image img3 = img.createWithDimensions();
-        ImageIOHelper.addAlternatingColorLabelsToRegion(img3, labels);
-        String str = Integer.toString(nc);
-        str = (str.length() < 3) ? "0" + str : str;
-        MiscDebug.writeImage(img3, "_slic_" + ts + "_" + str);
+        //Image img3 = img.createWithDimensions();
+        //ImageIOHelper.addAlternatingColorLabelsToRegion(img3, labels);
+        //String str = Integer.toString(nc);
+        //str = (str.length() < 3) ? "0" + str : str;
+        //MiscDebug.writeImage(img3, "_slic_" + ts + "_" + str);
         
         List<Set<PairInt>> contigSets = LabelToColorHelper
             .extractContiguousLabelPoints(img, labels);
@@ -14142,7 +14142,7 @@ int z = 1;
         int n11 = Math.round(nPix/f11);
         //==> nClusters = nPix/((w/x0)^2)
         //==> nClusters = nPix/((h/x0)^2)
-        log.info("  n1=" + n10 + "," + n11);
+        log.fine("  n1=" + n10 + "," + n11);
         int nc = (n10+n11)/2;
         
         int[] norms = new int[]{5/*1, 5, 10*/};
@@ -14246,7 +14246,7 @@ int z = 1;
         int n11 = Math.round(nPix/f11);
         //==> nClusters = nPix/((w/x0)^2)
         //==> nClusters = nPix/((h/x0)^2)
-        log.info("  n1=" + n10 + "," + n11);
+        log.fine("  n1=" + n10 + "," + n11);
         int nc = (n10+n11)/2;
         ImageExt imgCp = img.copyToImageExt();
         SLICSuperPixels slic = new SLICSuperPixels(imgCp, nc);
@@ -14359,7 +14359,7 @@ int z = 1;
         int n11 = Math.round(nPix/f11);
         //==> nClusters = nPix/((w/x0)^2)
         //==> nClusters = nPix/((h/x0)^2)
-        log.info("  n1=" + n10 + "," + n11);
+        log.fine("  n1=" + n10 + "," + n11);
         int nc = (n10+n11)/2;
         SLICSuperPixels slic = new SLICSuperPixels(imgCp2, nc);
         slic.setGradient(gradient);

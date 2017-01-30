@@ -2493,8 +2493,8 @@ public class MiscMath {
         
         double scale = (maxScaled - minScaled)/range;
         
-System.out.println("value 0 is rescaled to value=" + (-minV*scale)
-+ " minV=" + minV + " scale=" + scale);
+//System.out.println("value 0 is rescaled to value=" + (-minV*scale)
+//+ " minV=" + minV + " scale=" + scale);
         
         for (int i = 0; i < a.length; ++i) {
             for (int j = 0; j < a[i].length; ++j) {
@@ -2551,8 +2551,8 @@ System.out.println("value 0 is rescaled to value=" + (-minV*scale)
         
         float scale = (maxScaled - minScaled)/range;
         
-System.out.println("value 0 is rescaled to value=" + (-minV*scale)
-+ " minV=" + minV + " scale=" + scale);
+//System.out.println("value 0 is rescaled to value=" + (-minV*scale)
+//+ " minV=" + minV + " scale=" + scale);
         
         for (int i = 0; i < a.length; ++i) {
             for (int j = 0; j < a[i].length; ++j) {
@@ -2593,8 +2593,8 @@ System.out.println("value 0 is rescaled to value=" + (-minV*scale)
         
         float scale = (maxScaled - minScaled)/range;
         
-System.out.println("value 0 is rescaled to value=" + (-minV*scale)
-+ " minV=" + minV + " scale=" + scale);
+//System.out.println("value 0 is rescaled to value=" + (-minV*scale)
+//+ " minV=" + minV + " scale=" + scale);
         
         for (int i = 0; i < a.length; ++i) {
             for (int j = 0; j < a[i].length; ++j) {

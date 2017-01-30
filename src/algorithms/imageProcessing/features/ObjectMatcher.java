@@ -1029,6 +1029,7 @@ public class ObjectMatcher {
         List<GreyscaleImage> pyrPT1 = imageProcessor
             .buildPyramid(luvTheta1, settings.useLargerPyramid1);
        
+        //NOTE: this is necessary
         applyWindowedMean(pyrRGB0, 1);
         applyWindowedMean(pyrRGB1, 1);
         applyWindowedMean2(pyrPT0, 1);
@@ -1085,7 +1086,6 @@ public class ObjectMatcher {
         // while regions[1) are found from the inverted image.
         TIntObjectMap<RegionPoints> regionPoints0 = 
             new TIntObjectHashMap<RegionPoints>();
-            //canonicalizer.canonicalizeRegions2(regionsComb0, pyrRGB0.get(0).get(1));
 
         // create a fake mser shape0 size
         createAWholeRegion(regionPoints0, shape0Trimmed, pyrRGB0.get(0).get(1));
@@ -1108,10 +1108,6 @@ public class ObjectMatcher {
         
         TIntObjectMap<CRegion> cRegions1 = canonicalizer.canonicalizeRegions3(
             regionPoints1, pyrRGB1.get(0).get(1));
-        
-        // add a fake mser for each labeled region not present singly in regionPoints1
-        //createForLabels(labeledSets0List, cRegions0, gsImg0.getWidth(), gsImg0.getHeight());
-        //createForLabels(labeledSets1, cRegions1, gsImg1.getWidth(), gsImg1.getHeight());
         
         TObjectIntMap<PairInt> pointLabelMap0 = createPointLabelMap(labeledSets0List);
 
