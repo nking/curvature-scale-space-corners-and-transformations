@@ -98,6 +98,8 @@ public class Canonicalizer {
         
         public RegionGeometry ellipseParams = new RegionGeometry();
 
+        public int hogOrientation;
+        
         public double autocorrel;
 
         // NOTE: this could probably be stored more efficiently

@@ -878,6 +878,8 @@ public class MSERMatcher {
                     
                     int sz0 = calculateObjectSize(cr0.offsetsToOrigCoords.values());
                     
+                    //int area0_full = csr0.get(0).get(rIdx0).offsetsToOrigCoords.size();
+                    
                     TIntObjectIterator<CRegion> iter1 = regions1.iterator();
                     for (int i1 = 0; i1 < regions1.size(); ++i1) {
                         iter1.advance();
@@ -898,7 +900,7 @@ public class MSERMatcher {
                             rIndexHOGMap.put(rIdx1, objVec);
                         }
                 
-                        //[intersectionSum, f, err, count]
+                        //double[]{intersectionSSD, f0, f1, count};
                         double[] hogCosts = sumHOGCost2(hogs0, cr0, scale0,
                             hogs1, cr1, scale1
                         );
@@ -906,19 +908,22 @@ public class MSERMatcher {
                         if (hogCosts == null) {
                             continue;
                         }
+                        float hogCost = 1.f - (float)hogCosts[0];
+                        double f = hogCosts[2];
+        
+                        if (f < 0) {
+//                          f = 0;
+                        }
                                                                         
-                        // [ssdSumRGB, ssdSumPTCIELUV, ssdHSV, f, err, ssdCount]
+                        // [ssdSumGS, ssdSumPTCIELUV, ssdHSV, f, err, ssdCount]
                         double[] costs = matchRegion(
                             cr0, pyrRGB0.get(imgIdx0), 
                             gsI0, ptI0, scale0,
                             cr1, pyrRGB1.get(imgIdx1), 
                             gsI1, ptI1, scale1);
 
-                        // the hogs are intersection values, so cost
-                        // is 1.f - intersection
-                        float cost = 1.f - (float)hogCosts[0];
-                        double f = hogCosts[1];
-                        cost = (float)Math.sqrt(cost*cost + f*f
+                        double cost = (float)Math.sqrt(
+                            hogCost*hogCost + f*f
                             + costs[1]*costs[1] + costs[2]*costs[2]
                             + costs[0]*costs[0]
                         );
@@ -933,6 +938,8 @@ public class MSERMatcher {
                         obj.ssd = 1.f - (float)hogCosts[0];
                         obj.nMatched = (int)hogCosts[3];
                         obj.cost = cost;
+                        obj.costs = new double[]{hogCost, costs[0], costs[1],
+                            costs[2], f};
                         
                         boolean added = objVec.add(obj);
                     }
@@ -1002,7 +1009,7 @@ public class MSERMatcher {
             
             tmp.add(obj0);
         }
-        
+         
         for (int i3 = 0; i3 < tmp.getNumberOfItems(); ++i3) {
             
             Obj obj0 = tmp.getArray()[i3];
@@ -1033,16 +1040,19 @@ public class MSERMatcher {
             int or1 = (int)Math.round(
                 obj0.cr1.ellipseParams.orientation * 180./Math.PI);
             
+            String str1 = String.format("angles=(%d,%d ; %d,%d)", 
+                or0, or1, obj0.cr0.hogOrientation, obj0.cr1.hogOrientation);
+            
             System.out.format(
-"> %d (%d,%d) best: %.3f (%d,%d) %s or=%d,%d ec=%.4f,%.4f\n",
+"> %d (%d,%d) best: %.3f (%d,%d) %s [%.3f,%.3f,%.3f,%.3f,%.3f] %s\n",
                 i3, Math.round(scale01*obj0.cr1.ellipseParams.xC),
                 Math.round(scale01*obj0.cr1.ellipseParams.yC),
                 (float)obj0.cost,
                 Math.round(scale00*obj0.cr0.ellipseParams.xC),
                 Math.round(scale00*obj0.cr0.ellipseParams.yC), lbl,
-                or0, or1, 
-                (float)obj0.cr0.ellipseParams.eccentricity,
-                (float)obj0.cr1.ellipseParams.eccentricity
+                (float)obj0.costs[0], (float)obj0.costs[1],
+                (float)obj0.costs[2], (float)obj0.costs[3], (float)obj0.costs[4],
+                str1
             );
            
             Image im0 = gsI0.copyToColorGreyscale();
@@ -2842,6 +2852,7 @@ if (dbg) {
         return sum/3.;
     }
 
+    //double[]{intersectionSSD, f0, f1, count};
     private double[] sumHOGCost2(HOGs hogs0, CRegion cr0, float scale0, 
         HOGs hogs1, CRegion cr1, float scale1) {
         
@@ -2854,9 +2865,11 @@ if (dbg) {
         
         int orientation0 = hogs0.calculateDominantOrientation(
             cr0.offsetsToOrigCoords.values());
+        cr0.hogOrientation = orientation0;
         
         int orientation1 = hogs1.calculateDominantOrientation(
             cr1.offsetsToOrigCoords.values());
+        cr1.hogOrientation = orientation1;
         
         Map<PairInt, PairInt> offsetMap1 = cr1.offsetsToOrigCoords;
 
@@ -2900,6 +2913,62 @@ if (dbg) {
 
         sum = Math.sqrt(sum);
         
+        // scaling count/area up to scale=1 reference frames
+        double area1 = cr1.offsetsToOrigCoords.size();
+        area1 /= scale1;
+        double f1 = 1. - ((double) count / area1);
+        
+        double area0 = cr0.offsetsToOrigCoords.size();
+        area0 /= scale0;
+        double f0 = 1. - ((double) count / area0);
+        
+        return new double[]{sum, f0, f1, count};
+    }
+
+    private double[] sumHCPTCost(HCPT hcpt0, CRegion cr0, float scale0, 
+        HCPT hcpt1, CRegion cr1, float scale1) {
+        
+        Map<PairInt, PairInt> offsetMap1 = cr1.offsetsToOrigCoords;
+
+        double sum = 0;
+        int count = 0;
+        
+        int[] h0 = new int[hcpt0.getNumberOfBins()];
+        int[] h1 = new int[h0.length];
+        
+        // key = transformed offsets, value = coords in image ref frame,
+        // so, can compare dataset0 and dataset1 points with same
+        //  keys
+        for (Entry<PairInt, PairInt> entry0 : cr0.offsetsToOrigCoords.entrySet()) {
+
+            PairInt pOffset0 = entry0.getKey();
+
+            PairInt xy1 = offsetMap1.get(pOffset0);
+
+            if (xy1 == null) {
+                continue;
+            }
+
+            PairInt xy0 = entry0.getValue();
+
+            hcpt0.extractFeature(xy0.getX(), xy0.getY(), h0);
+
+            hcpt1.extractFeature(xy1.getX(), xy1.getY(), h1);
+
+            float intersection = hcpt0.intersection(h0, h1);
+            
+            sum += (intersection * intersection);
+
+            count++;
+        }
+        if (count == 0) {
+            return null;
+        }
+
+        sum /= (double)count;
+
+        sum = Math.sqrt(sum);
+        
         //NOTE: this may need revision.  now assuming that all invoker's 
         // have one object in cRegions0, hence, need to scale fraction
         // of whole so all are in same reference frame
@@ -2912,7 +2981,63 @@ if (dbg) {
         //  it's based upon green only
         double err = Math.max(cr0.autocorrel, cr1.autocorrel);
 
-        return new double[]{sum, f, err, count};
+        return new double[]{sum, f, err, count};            
+    }
+
+    // clculating deviation from a constant line of difference
+    private double calcGreyTerm(float[] rgb0, float[] rgb1) {
+        
+        float dR = Math.abs(rgb0[0] - rgb1[0]);
+        float dG = Math.abs(rgb0[1] - rgb1[1]);
+        float dB = Math.abs(rgb0[2] - rgb1[2]);
+        
+        // deviation from a constant line
+        
+        float dAvg = (dR + dG + dB)/3.f;
+        
+        dR -= dAvg;
+        dG -= dAvg;
+        dB -= dAvg;
+
+        double cost = Math.sqrt((dR*dR + dG*dG + dB*dB)/3.);
+        
+        // max value would be r,g,b diffs spread over entire range of 255
+        // so that is 85.3...85.3/2=42.7,0,42.7 --> 34.8
+        cost /= 34.82;
+        
+        return cost;
+    }
+
+    private float[] calcAvgRGB(CRegion cr, List<GreyscaleImage> rgb) {
+        
+        double r = 0;
+        double g = 0;
+        double b = 0;
+        for (Entry<PairInt, PairInt> entry : cr.offsetsToOrigCoords.entrySet()) {
+            PairInt xy = entry.getValue();
+            r += rgb.get(0).getValue(xy);
+            g += rgb.get(1).getValue(xy);
+            b += rgb.get(2).getValue(xy);
+        }
+        
+        r /= (double)cr.offsetsToOrigCoords.size();
+        g /= (double)cr.offsetsToOrigCoords.size();
+        b /= (double)cr.offsetsToOrigCoords.size();
+        
+        return new float[]{(float)r, (float)g, (float)b};
+    }
+
+    private boolean isGrey(float[] rgb, int deltaLimit) {
+
+        float dRG = Math.abs(rgb[0] - rgb[1]);
+        float dRB = Math.abs(rgb[0] - rgb[2]);
+        float dBG = Math.abs(rgb[1] - rgb[2]);
+        
+        if (dRG < deltaLimit && dRB < deltaLimit && dBG < deltaLimit) {
+            return true;
+        }
+        
+        return false;
     }
 
     /* NOTE: recalculating this worsens the solutions.
@@ -2960,6 +3085,7 @@ if (dbg) {
         double ssd;
         int nMatched;
         double cost = Double.MAX_VALUE;
+        double[] costs;
         
         // might not be populatated:
         int r0Idx = -1;
