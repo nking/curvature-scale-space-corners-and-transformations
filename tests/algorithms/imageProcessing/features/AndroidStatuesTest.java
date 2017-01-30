@@ -344,19 +344,20 @@ public class AndroidStatuesTest extends TestCase {
         //    "android_statues_03_sz1",
             "android_statues_03_sz3"
         };
+        String[] fileNames1 = new String[]{
+            "android_statues_01.jpg",
+            "android_statues_02.jpg", 
+            "android_statues_03.jpg",
+            "android_statues_04.jpg", 
+        };
         
-        /*  
-        NOTE for gbman, centers are off and sometimes orientation,
-        so more precise centering is needed
-        (center of segmentation maybe or from shape matching
-        and orientation from hogs or shape matching)
-        
+        /* 
         ROUGH COORDS
         gbman template sz3    
             center
               60. 72  (sz1 has center 32,45)
         
-        andr01 (scale 95/23 = 4.1   5:0
+        andr01 (scale 95/23 = 4.1   5:0   <=== 3rd
               78, 52
         
         andr02 (scale 95/70 = 1.35  1:0
@@ -364,28 +365,19 @@ public class AndroidStatuesTest extends TestCase {
             (seg: 175, 57)
         
         andr03 (scale 95/61 = 1.6   1:0
-           38, 76  
-           BUT ORIENTAATION 
-           is off by 45 degrees 
-           (needs shape or 
-           hog orientation)
+           38, 76
         
         andr04 (scale 95/46 = 2.1   2:0
            196, 87
         */
-
-        String[] fileNames1 = new String[]{
-        //    "android_statues_01.jpg", // no kp remaining
-        //   "android_statues_02.jpg", // OK:
-        //  "android_statues_04.jpg", // OK:
-             "android_statues_03.jpg"  // OK:
-        };
         
         int fn0 = 0;
         for (String fileNameRoot0 : fileNames0) {               
             fn0++;
-            for (String fileName1 : fileNames1) {               
+            for (int fIdx = 0; fIdx < fileNames1.length; ++fIdx) {               
         
+                String fileName1 = fileNames1[fIdx];
+                
                 long t0 = System.currentTimeMillis();
                 
                 Set<PairInt> shape0 = new HashSet<PairInt>();
@@ -418,10 +410,15 @@ public class AndroidStatuesTest extends TestCase {
                 int w1 = img.getWidth();
                 int h1 = img.getHeight();
         
+                /*
                 int binFactor1 = (int) Math.ceil(Math.max(
                     (float) w1 / maxDimension,
                     (float) h1 / maxDimension));
-        
+                */
+                int binFactor1 = (int) Math.ceil(Math.max(
+                    (float) w1 / maxDimension,
+                    (float) h1 / maxDimension));
+                        
                 img = imageProcessor.binImage(img, binFactor1);
                
                 int w = img.getWidth();
@@ -451,7 +448,8 @@ public class AndroidStatuesTest extends TestCase {
                //     settings.setToUseLargerPyramid1();
                //     settings.setToUseSmallObjectMethod();
                 }
-                objMatcher.setToDebug();          
+                objMatcher.setToDebug();  
+                settings.setDebugLabel("gbm_" + fIdx);
                 
                 CorrespondenceList cor 
                     //= objMatcher.findObject(
@@ -500,10 +498,9 @@ public class AndroidStatuesTest extends TestCase {
             "android_statues_04_cupcake_mask.png"};
 
         String[] fileNames1 = new String[]{
-            "android_statues_01.jpg",   // 
-        //   "android_statues_02.jpg", //  
-        //     "android_statues_04.jpg", // <-- segmentation needs a little more 
-                                       //     metging OR bin the image more...
+           "android_statues_01.jpg",   //  <== NOT found, needs segmentation
+           "android_statues_02.jpg", //  
+             "android_statues_04.jpg"
         };
         
         /*  ROUGH COORDS
@@ -511,9 +508,9 @@ public class AndroidStatuesTest extends TestCase {
             top      bottom    approx center
           48, 32    44, 59         51, 54
         
-        andr01  (scale 61/14 = 4.35  5:0
-          15,48 
-        (seg: 14, 56)
+        andr01  (scale 61/14 = 4.35  5:0    <==== not found
+          15,48                                   needs to use template0 segmentation
+        (seg: 14, 56)                             -> best cost for not found 0.44
         
         andr02  (scale 61/27 = 2.25  2:0
             52, 50                     
@@ -523,7 +520,10 @@ public class AndroidStatuesTest extends TestCase {
          92, 74                   91, 103                
         */
 
-        for (String fileName1 : fileNames1) {               
+        
+        for (int fIdx = 0; fIdx < fileNames1.length; ++fIdx) {
+            
+            String fileName1 = fileNames1[fIdx];             
 
             long t0 = System.currentTimeMillis();
 
@@ -573,6 +573,8 @@ public class AndroidStatuesTest extends TestCase {
             settings.setToUseLargerPyramid0();
             settings.setToUseLargerPyramid1();
           
+            settings.setDebugLabel("cc_" + fIdx);
+            
             ObjectMatcher objMatcher = new ObjectMatcher();
           //  if (
           //      fileName1Root.contains("_01") ||
@@ -583,8 +585,6 @@ public class AndroidStatuesTest extends TestCase {
             //settings.setToUseLargerPyramid0();
             objMatcher.setToDebug();
             CorrespondenceList cor = objMatcher
-                //.findObject(
-                //.findObject10(
                 .findObject11(
                 imgs0[0], shape0, img, settings);
 
@@ -615,8 +615,14 @@ public class AndroidStatuesTest extends TestCase {
             //    + "_" + fileName1Root);
         }
     }
+    
+    public void testObjectFinder() throws Exception {
+        estORBMSERMatcher_gingerbreadman();
+        estORBMSERMatcher_icecream();
+        estORBMatcher_cupcake();
+    }
 
-    public void testORBMSERMatcher_icecream() throws Exception {
+    public void estORBMSERMatcher_icecream() throws Exception {
 
         int maxDimension = 256;//512;
         SIGMA sigma = SIGMA.ZEROPOINTFIVE;//SIGMA.ONE;
@@ -640,6 +646,12 @@ public class AndroidStatuesTest extends TestCase {
             "android_statues_04_icecream_mask.png",
         };
         
+        String[] fileNames1 = new String[]{
+           "android_statues_01.jpg",  
+            "android_statues_02.jpg",
+            "android_statues_04.jpg", // descr are fine
+        };
+        
         /*  ROUGH COORDS
         icecream template
             top      bottom    approx center
@@ -650,22 +662,18 @@ public class AndroidStatuesTest extends TestCase {
                                   49, 53
         
         andr02  (scale 53/36 = 1.5    1:0
-                                 108, 55
+                                 108, 55,   98,63
         
         andr04  (scale 53/50 = 1      0:0
                                  153, 96
         */
-        
+
         //paused here.  handle 02 first.  orientation problem!
 
-        String[] fileNames1 = new String[]{
-        //   "android_statues_01.jpg",  
-        //  "android_statues_02.jpg",
-            "android_statues_04.jpg", // descr are fine
-        };
+        for (int fIdx = 0; fIdx < fileNames1.length; ++fIdx) {               
 
-        for (String fileName1 : fileNames1) {               
-
+            String fileName1 = fileNames1[fIdx];
+            
             long t0 = System.currentTimeMillis();
 
             Set<PairInt> shape0 = new HashSet<PairInt>();
@@ -712,6 +720,7 @@ public class AndroidStatuesTest extends TestCase {
             Settings settings = new Settings();
             settings.setToUseLargerPyramid0();
             settings.setToUseLargerPyramid1();
+            settings.setDebugLabel("icec_" + fIdx);
             
             ObjectMatcher objMatcher = new ObjectMatcher();
             //if (

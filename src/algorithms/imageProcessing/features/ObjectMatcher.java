@@ -733,11 +733,21 @@ public class ObjectMatcher {
 
         private boolean findVanishingPoints = false;
 
+        private String lbl = "";
+        
         /**
          * @return the useLargerPyramid0
          */
         public boolean isUseLargerPyramid0() {
             return useLargerPyramid0;
+        }
+        
+        public void setDebugLabel(String dbgLabel) {
+            this.lbl = dbgLabel;
+        }
+        
+        public String getDebugLabel() {
+            return lbl;
         }
 
         /**
@@ -1064,9 +1074,11 @@ public class ObjectMatcher {
             matcher.setToDebug();
         }
 
-        List<CorrespondenceList> corList = matcher.matchObject3(
+        List<CorrespondenceList> corList 
+            = matcher.matchObject3(
             pyrRGB0, pyrPT0, cRegions0, labeledSets0List, pointLabelMap0,
-            pyrRGB1,  pyrPT1, cRegions1, labeledSets1, pointLabelMap1);
+            pyrRGB1,  pyrPT1, cRegions1, labeledSets1, pointLabelMap1,
+            settings.getDebugLabel());
 
         return corList.get(0);
     }
