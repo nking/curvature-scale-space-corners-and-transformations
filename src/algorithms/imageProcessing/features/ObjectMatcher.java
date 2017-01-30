@@ -892,7 +892,7 @@ public class ObjectMatcher {
     }
     
     /**
-     * NOT READY FOR USe
+     * NOT READY FOR USE
      * 
      * TODO: edit documentation here.
      * 
