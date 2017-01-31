@@ -471,56 +471,9 @@ public class MSERMatcher {
             csRegion.offsetsToOrigCoords = offsetMap;
             csRegion.autocorrel = Math.sqrt(autocorrel)/255.;
             csRegion.labels.addAll(csr.labels);
-            
+            csRegion.dataIdx = idx;
+                
             csrMap.put(idx, csRegion);
-        }
-
-        return csrMap;
-    }
-
-    private TIntObjectMap<RegionPoints> getOrCreate2(
-        TIntObjectMap<TIntObjectMap<RegionPoints>> csrs,
-        int imgIdx, GreyscaleImage rgb, float scale) {
-
-        TIntObjectMap<RegionPoints> csrMap = csrs.get(imgIdx);
-        if (csrMap != null) {
-            return csrMap;
-        }
-        csrMap = new TIntObjectHashMap<RegionPoints>();
-        csrs.put(imgIdx, csrMap);
-
-        TIntObjectMap<RegionPoints> csrMap0 = csrs.get(0);
-
-        int w = rgb.getWidth();
-        int h = rgb.getHeight();
-
-        TIntObjectIterator<RegionPoints> iter = csrMap0.iterator();
-        for (int i = 0; i < csrMap0.size(); ++i) {
-            iter.advance();
-            int idx = iter.key();
-            RegionPoints csr = iter.value();
-
-            if (csr.points.size() < 9) {
-                continue;
-            }
-
-            // these are in scale of individual octave (not full reference frame)
-            Set<PairInt> scaledSet = extractScaledPts(csr, w, h, scale);
-
-            if (scaledSet.size() < 4) {
-                continue;
-            }
-                        
-            Region r = new Region();
-            for (PairInt pl : scaledSet) {
-                r.accumulate(pl.getX(), pl.getY());
-            }
-                        
-            RegionPoints rg = new RegionPoints();
-            rg.ellipseParams = Canonicalizer.calculateEllipseParams(r,  w, h);
-            rg.points = scaledSet;
-            
-            csrMap.put(idx, rg);
         }
 
         return csrMap;
