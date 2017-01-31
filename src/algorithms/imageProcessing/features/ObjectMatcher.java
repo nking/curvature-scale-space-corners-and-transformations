@@ -1405,9 +1405,6 @@ public class ObjectMatcher {
             Image im0Cp, im1Cp;
             im0Cp = img0Trimmed.copyImage();
             int n9 = regionsComb0.size();
-            if (n9 > 10) {
-            //    n9 = 10;
-            }
             for (int i = 0; i < n9; ++i) {
                 Region r = regionsComb0.get(i);
                 int[] clr = ImageIOHelper.getNextRGB(i);
@@ -1433,25 +1430,19 @@ public class ObjectMatcher {
             MiscDebug.writeImage(im1Cp, "_" + settings.getDebugLabel() + "_regions_1_");
         }
         
-        //regions[0) are found from the image,
-        // while regions[1) are found from the inverted image.
-        /*TIntObjectMap<RegionPoints> regionPoints0 = 
-            new TIntObjectHashMap<RegionPoints>();
-        // create a fake mser shape0 size
-        createAWholeRegion(regionPoints0, shape0Trimmed, pyrRGB0.get(0).get(1));
-        */
-        
         TIntObjectMap<RegionPoints> regionPoints0 =
             canonicalizer.canonicalizeRegions2(regionsComb0, pyrRGB0.get(0).get(1));
    
         TIntObjectMap<RegionPoints> regionPoints1 =
             canonicalizer.canonicalizeRegions2(regionsComb1, pyrRGB1.get(0).get(1));
-   
+  
         // filter the mser regions by center and or variation?
         
         {// filter by color hist of hsv, cielab and by CIECH
+            
             filterByColorHistograms(img0Trimmed, shape0Trimmed, img1, 
                 regionPoints1);
+            
             if (debug) {
                 int[] xyCen = new int[2];
                 Image im1Cp = img1.copyImage();
@@ -1468,6 +1459,36 @@ public class ObjectMatcher {
                 }
                 MiscDebug.writeImage(im1Cp, "_" + settings.getDebugLabel() 
                     + "_regions_1_filtered_");
+            
+                // look at each region's accumulated points
+                /*
+                NOTE: can see tentatively that should be using the 
+                accumulated points along with the ellipse approximation, 
+                either the ellipse is very good bounds to help include
+                internal points from other inner mser regions OR it is
+                useful as a first approx which is then modified by the 
+                outer bounds of the accumulated points...
+                */
+                iter = regionPoints1.iterator();
+                for (int i = 0; i < regionPoints1.size(); ++i) {
+                    iter.advance();
+                    int rIdx = iter.key();
+                    Region r = regionsComb1.get(rIdx);
+                    int[] clr = ImageIOHelper.getNextRGB(i);
+                    
+                    im1Cp = img1.copyImage();
+                    
+                    for (int j = 0; j < r.accX.size(); ++j) {
+                        int x = r.accX.get(j);
+                        int y = r.accY.get(j);
+                        ImageIOHelper.addPointToImage(x, y, im1Cp, 1, 
+                            clr[0], clr[1], clr[2]);
+                    }
+                    
+                    MiscDebug.writeImage(im1Cp, "_" 
+                        + settings.getDebugLabel() 
+                        + "_regions_1_acc_" + i + "_");
+                }
             }
 
         }

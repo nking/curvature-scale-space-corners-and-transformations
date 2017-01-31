@@ -84,6 +84,10 @@ public class Region {
     private Region parent_ = null;
     private Region child_ = null;
     private Region next_ = null;
+   
+    // temporary storage of accumulated points to look at partial edges
+    public TIntList accX = new TIntArrayList();
+    public TIntList accY = new TIntArrayList();
     
     /**
      * constructor with default level = 256 and pixel=0.  255 is the maximum
@@ -132,6 +136,9 @@ public class Region {
         moments_[3] += x * y;
         moments_[4] += y * y;
         
+        // temporarily adding these to look at partial edges
+        this.accX.add(x);
+        this.accY.add(y);
     }
 
     public void merge(Region child) {
@@ -145,6 +152,9 @@ public class Region {
         moments_[2] += child.moments_[2];
         moments_[3] += child.moments_[3];
         moments_[4] += child.moments_[4];
+        
+        this.accX.addAll(child.accX);
+        this.accY.addAll(child.accY);
         
         child.next_ = child_;
         child_ = child;
@@ -769,6 +779,9 @@ public class Region {
         region.parent_ = this.parent_;
         region.child_ = this.child_;
         region.next_ = this.next_;
+        region.accX.addAll(this.accX);
+        region.accY.addAll(this.accY);
+        
         return region;
     }
     

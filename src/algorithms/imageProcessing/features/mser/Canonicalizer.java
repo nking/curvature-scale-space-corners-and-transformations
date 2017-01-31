@@ -96,6 +96,11 @@ public class Canonicalizer {
 
         // orientations in degrees in range 0 to 180
         public TIntList hogOrientations = new TIntArrayList();
+        
+        // temporary storage of original accumulated points to explore partial edges
+        public TIntList accX = new TIntArrayList();
+        public TIntList accY = new TIntArrayList();
+        
     }
 
     public static class CRegion {
@@ -458,6 +463,9 @@ public class Canonicalizer {
         RegionPoints regionPoints = new RegionPoints();
         regionPoints.ellipseParams = rg;
         regionPoints.points = Misc.convert(xy);
+    
+        regionPoints.accX.addAll(r.accX);
+        regionPoints.accY.addAll(r.accY);
         
         return regionPoints;
     }
