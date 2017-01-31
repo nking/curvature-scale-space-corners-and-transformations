@@ -1379,24 +1379,18 @@ public class ObjectMatcher {
         filterBySpatialProximity(critDens, regionsComb1, 
             img1.getWidth(), img1.getHeight());
         
-        List<List<GreyscaleImage>> pyrRGB0 = imageProcessor
-            .buildColorPyramid(img0Trimmed,
-            settings.useLargerPyramid0);
+        List<List<GreyscaleImage>> pyrRGB0 = imageProcessor.buildColorPyramid(
+            img0Trimmed, settings.useLargerPyramid0);
         
-        List<GreyscaleImage> pyrPT0 = imageProcessor
-            .buildPyramid(luvTheta0, settings.useLargerPyramid0);
+        List<GreyscaleImage> pyrPT0 = imageProcessor.buildPyramid(
+            luvTheta0, settings.useLargerPyramid0);
 
-        List<List<GreyscaleImage>> pyrRGB1 = imageProcessor
-            .buildColorPyramid(img1, settings.useLargerPyramid1);
+        List<List<GreyscaleImage>> pyrRGB1 = imageProcessor.buildColorPyramid(
+            img1, settings.useLargerPyramid1);
 
-        List<GreyscaleImage> pyrPT1 = imageProcessor
-            .buildPyramid(luvTheta1, settings.useLargerPyramid1);
+        List<GreyscaleImage> pyrPT1 = imageProcessor.buildPyramid(
+            luvTheta1, settings.useLargerPyramid1);
        
-        /*applyWindowedMean(pyrRGB0, 1);
-        applyWindowedMean(pyrRGB1, 1);
-        applyWindowedMean2(pyrPT0, 1);
-        applyWindowedMean2(pyrPT1, 1);
-        */
         Canonicalizer canonicalizer = new Canonicalizer();
 
         // ----- create the cRegions for a masked image pyramid of img 0 ====
@@ -1427,9 +1421,6 @@ public class ObjectMatcher {
 
             im1Cp = img1.copyImage();
             n9 = regionsComb1.size();
-            if (n9 > 10) {
-            //    n9 = 10;
-            }
             for (int i = 0; i < n9; ++i) {
                 Region r = regionsComb1.get(i);
                 int[] clr = ImageIOHelper.getNextRGB(i);

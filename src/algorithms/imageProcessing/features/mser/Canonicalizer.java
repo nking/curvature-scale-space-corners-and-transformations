@@ -238,7 +238,7 @@ public class Canonicalizer {
         TIntObjectIterator<RegionPoints> iter = regions.iterator();
         for (int i = 0; i < regions.size(); ++i) {
             iter.advance();
-            int label = iter.key();
+            int rIdx = iter.key();
             RegionPoints r = iter.value();
             
             TIntList orientations = r.hogOrientations;
@@ -257,10 +257,10 @@ public class Canonicalizer {
                 CRegion cRegion = new CRegion();
                 cRegion.ellipseParams = r.ellipseParams;
                 cRegion.offsetsToOrigCoords = offsetToOrigMap;
-                cRegion.dataIdx = label;
+                cRegion.dataIdx = rIdx;
                 
                 if (j == 0) {
-                    output.put(label, cRegion);
+                    output.put(rIdx, cRegion);
                 } else {
                     output.put(addIdx, cRegion);
                     addIdx++;
