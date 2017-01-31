@@ -29,8 +29,10 @@ import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
+import algorithms.search.NearestNeighbor2D;
 import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
 import com.climbwithyourfeet.clustering.DTClusterFinder;
 import gnu.trove.iterator.TIntIntIterator;
 import gnu.trove.iterator.TIntIterator;
@@ -55,6 +57,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.Stack;
 
 /**
  * a class that finds a template object in another image where the
@@ -911,60 +914,22 @@ public class ObjectMatcher {
         System.out.println("chist filter removed " + rmSet.size());
     }
 
-    private Set<PairInt> extractBoundaries(TIntObjectMap<RegionPoints> 
-        regionPoints, List<Region> regions) {
-        
-        Set<PairInt> out = new HashSet<PairInt>();
-        
+    private void replaceWithAccumulatedPoints(TIntObjectMap<RegionPoints> regionPoints) {
+    
         TIntObjectIterator<RegionPoints> iter = regionPoints.iterator();
         for (int i = 0; i < regionPoints.size(); ++i) {
             
             iter.advance();
-            
             int rIdx = iter.key();
-            Region r = regions.get(rIdx);
-
-            //next, plot outer bounds of these points
-            Set<PairInt> points = new HashSet<PairInt>();
-            for (int j = 0; j < r.accX.size(); ++j) {
-                points.add(new PairInt(r.accX.get(j), r.accY.get(j)));
-            }
-
-            PerimeterFinder2 finder = new PerimeterFinder2();
-            Set<PairInt> outer = finder.extractBorder(points);
-          
-            if (outer != null) {
-                out.addAll(outer);
+            
+            RegionPoints rp = iter.value();
+            
+            rp.points.clear();
+            
+            for (int j = 0; j < rp.accX.size(); ++j) {
+                rp.points.add(new PairInt(rp.accX.get(j), rp.accY.get(j)));
             }
         }
-        
-        return out;
-    }
-
-    private void modifyRegionsByEdges(TIntObjectMap<RegionPoints> 
-        regionPoints, Set<PairInt> regionEdges) {
-        
-        /*
-        for each region,
-           (1) extract the edge points from regionEdges that
-               are within the ellipse.
-               (since the ellipse points are already filled, this
-               is N_ellipse_pts * O(1) runtime complexity).
-           (2) make a nearest neighbor instance of the extracted edge pts.
-               building runtime complexity:
-               query runtime complexity:  2 * O(log_2(maxW)) where expect
-               maxW to be near 9 bits for expected image sizes that
-               have been binned, so rt ~ 18 * O(1).
-               NOTE: can replace this with a faster impl one day.
-           (3) for each ellipse point, find nearest interior edge
-                point and assign the ellipse point to that.
-                can use a set to keep the points unique, and
-                multiple assignments to an edge point idempotent.
-                -- might need more than one iteration.
-           (4) flood fill interior to the edge points to make shape points.
-           (5) add to the shape points, all accumulated region points
-              (some of these extend beyond the ellipse)
-        */
     }
 
     public static class Settings {
@@ -1500,14 +1465,21 @@ public class ObjectMatcher {
         filterByColorHistograms(img0Trimmed, shape0Trimmed, img1, 
             regionPoints1);
 
-        // gather the boundaries of all filtered region1 accumulated points into
-        // a single set for use to make the regions filled shapes instead
-        // of filled ellipses.
-        Set<PairInt> region1Edges = extractBoundaries(regionPoints1, 
-            regionsComb1);
+        /*
+        NOTE: tried 2 changes in the region points to see if they improved the
+        results.
+        (1) modified the ellipse boundaries inward to the nearest bounding edges
+            of the accumulated points.
+        (2) used just the accumulated points instead of the ellipse.
         
-        modifyRegionsByEdges(regionPoints1, region1Edges);
+        in terms of the hogs and color patch matching results, the simple mser
+        filled ellipse had better results than points in (1) or (2).
+        */
         
+        // alternately, could replace the regionPoints with the accumulated points
+        //replaceWithAccumulatedPoints(regionPoints1);
+        
+        /*
         if (debug) {
             int[] xyCen = new int[2];
             Image im1Cp = img1.copyImage();
@@ -1524,27 +1496,18 @@ public class ObjectMatcher {
             }
             MiscDebug.writeImage(im1Cp, "_" + settings.getDebugLabel() 
                 + "_regions_1_filtered_");
-
-            // look at each region's accumulated points
-            /*
-            NOTE: can see tentatively that should be using the 
-            accumulated points along with the ellipse approximation, 
-            either the ellipse is very good bounds to help include
-            internal points from other inner mser regions OR it is
-            useful as a first approx which is then modified by the 
-            outer bounds of the accumulated points...
-            */
+            
             iter = regionPoints1.iterator();
             for (int i = 0; i < regionPoints1.size(); ++i) {
                 iter.advance();
                 int rIdx = iter.key();
+                RegionPoints rp = iter.value();
                 Region r = regionsComb1.get(rIdx);
                 int[] clr = ImageIOHelper.getNextRGB(i);
 
                 im1Cp = img1.copyImage();
-
-                r.drawEllipse(im1Cp, 0, 255, 10, 10);
-                for (PairInt p : region1Edges) {
+                r.drawEllipse(im1Cp, 0, 255, 0, 0);
+                for (PairInt p : rp.points) {
                     ImageIOHelper.addPointToImage(p.getX(), p.getY(), 
                         im1Cp, 0, 10, 255, 10);
                 }
@@ -1555,7 +1518,8 @@ public class ObjectMatcher {
                     + "_regions_1_acc_" + i + "_");
             }
         }
-                
+        */
+        
         MSERMatcher matcher = new MSERMatcher();
 
         if (debug) {

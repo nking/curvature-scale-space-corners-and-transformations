@@ -1,10 +1,8 @@
 package algorithms.imageProcessing.features.mser;
 
-import algorithms.QuickSort;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
 import algorithms.imageProcessing.util.AngleUtil;
@@ -12,15 +10,10 @@ import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import java.util.List;
 import algorithms.util.PairIntArray;
-import algorithms.util.TrioInt;
-import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
-import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
@@ -81,6 +74,7 @@ public class Canonicalizer {
         public double eccentricity;
         public double minor;
         public double major;
+        public double[] m;
     }
     
     public static class RegionPoints {
@@ -199,7 +193,8 @@ public class Canonicalizer {
        GreyscaleImage imgM = sumTable.createAbsoluteSummedAreaTable(img);
        imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM,
             2*halfDimension + 1);
-
+     * @param regions
+     * @param meanWindowedImg
      * @return
      */
     public TIntObjectMap<CRegion> canonicalizeRegions(List<Region> regions,
@@ -376,6 +371,54 @@ public class Canonicalizer {
 
         return cRegion;
     }
+
+    /**
+     * 
+     * @param x
+     * @param y
+     * @param m ellipse coefficients derived from x,y moments.
+       double[]{v0x, v1x, v0y, v1y}
+     * @param imageWidth
+     * @param imageHeight
+     * @return 
+     */
+    public static PairIntArray createEllipse(int x, int y, 
+        double[] m, int imageWidth, int imageHeight) {
+
+        PairIntArray xy = new PairIntArray();
+        
+        assert(x >= 0 && x < imageWidth);
+        assert(y >= 0 && y < imageHeight);
+
+        //v0x, v1x, v0y, v1y
+        //double[] m = r.calcParamTransCoeff();
+
+        double angle = Math.atan(m[0]/m[2]);
+        if (angle < 0) {
+            angle += Math.PI;
+        }
+
+        double major = 2. * m[4];
+        double minor = 2. * m[5];
+
+        double ecc = Math.sqrt(major * major - minor * minor)/major;
+        assert(!Double.isNaN(ecc));
+
+        // elliptical bounds
+        // find the ranges of the untransformed ellipse first
+        for (double t = 0.0; t < 2.0 * Math.PI; t += 0.001) {
+            int xE = (int)Math.round(x +
+                (Math.cos(t) * m[0] + Math.sin(t) * m[1]) * 2.0 + 0.5);
+            int yE = (int)Math.round(y + (Math.cos(t) * m[2]
+                + Math.sin(t) * m[3]) * 2.0 + 0.5);
+            if ((xE >= 0) && (xE < imageWidth) &&
+                (yE >= 0) && (yE < imageHeight)) {
+                xy.add(xE, yE);
+            }
+        }
+        
+        return xy;
+    }   
     
     /**
      * NOTE, for best use, invoker should use this descriptor with
@@ -415,7 +458,7 @@ public class Canonicalizer {
         double ecc = Math.sqrt(major * major - minor * minor)/major;
         assert(!Double.isNaN(ecc));
 
-        PairIntArray xy = new PairIntArray();
+        PairIntArray xy;
 
         boolean createEllipse = true;
         double radius = minor;
@@ -425,19 +468,9 @@ public class Canonicalizer {
         }
 
         if (createEllipse) {
-            // elliptical bounds
-            // find the ranges of the untransformed ellipse first
-            for (double t = 0.0; t < 2.0 * Math.PI; t += 0.001) {
-                int xE = (int)Math.round(x +
-                    (Math.cos(t) * m[0] + Math.sin(t) * m[1]) * 2.0 + 0.5);
-                int yE = (int)Math.round(y + (Math.cos(t) * m[2]
-                    + Math.sin(t) * m[3]) * 2.0 + 0.5);
-                if ((xE >= 0) && (xE < imageWidth) &&
-                    (yE >= 0) && (yE < imageHeight)) {
-                    xy.add(xE, yE);
-                }
-            }
+            xy = createEllipse(x, y, m, imageWidth, imageHeight);
         } else {
+            xy = new PairIntArray();
             for (double t = 0.0; t < 2.0 * Math.PI; t += 0.001) {
                 double mc = Math.cos(t);
                 double ms = Math.sin(t);
@@ -457,8 +490,10 @@ public class Canonicalizer {
         rg.major = major;
         rg.minor = minor;
         rg.orientation = angle;
+        rg.m = m;
         rg.xC = x;
         rg.yC = y;
+        rg.m = m;
 
         RegionPoints regionPoints = new RegionPoints();
         regionPoints.ellipseParams = rg;
@@ -509,7 +544,7 @@ public class Canonicalizer {
             return null;
         }
 
-        PairIntArray xy = new PairIntArray();
+        PairIntArray xy;
 
         boolean createEllipse = true;
         double radius = minor;
@@ -519,19 +554,9 @@ public class Canonicalizer {
         }
 
         if (createEllipse) {
-            // elliptical bounds
-            // find the ranges of the untransformed ellipse first
-            for (double t = 0.0; t < 2.0 * Math.PI; t += 0.001) {
-                int xE = (int)Math.round(x +
-                    (Math.cos(t) * m[0] + Math.sin(t) * m[1]) * 2.0 + 0.5);
-                int yE = (int)Math.round(y + (Math.cos(t) * m[2]
-                    + Math.sin(t) * m[3]) * 2.0 + 0.5);
-                if ((xE >= 0) && (xE < imageWidth) &&
-                    (yE >= 0) && (yE < imageHeight)) {
-                    xy.add(xE, yE);
-                }
-            }
+            xy = createEllipse(x, y, m, imageWidth, imageHeight);
         } else {
+            xy = new PairIntArray();
             for (double t = 0.0; t < 2.0 * Math.PI; t += 0.001) {
                 double mc = Math.cos(t);
                 double ms = Math.sin(t);
@@ -554,6 +579,7 @@ public class Canonicalizer {
         rg.orientation = angle;
         rg.xC = x;
         rg.yC = y;
+        rg.m = m;
 
         CRegion cRegion = new CRegion();
         cRegion.ellipseParams = rg;
@@ -595,7 +621,8 @@ public class Canonicalizer {
         rg.orientation = angle;
         rg.xC = x;
         rg.yC = y;
-
+        rg.m = m;
+        
         return rg;
     }
 
@@ -725,7 +752,9 @@ public class Canonicalizer {
                 rg.orientation = cr.ellipseParams.orientation;
                 rg.xC = xc2;
                 rg.yC = yc2;
-        
+                //NOTE: these are not scaled:
+                rg.m = cr.ellipseParams.m;
+                
                 CRegion cRegion = new CRegion();
                 cRegion.ellipseParams = rg;
                 cRegion.offsetsToOrigCoords = offsetMap;
