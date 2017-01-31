@@ -182,8 +182,8 @@ public class MSERMatcher {
                         double hcptCost = 1.f - costs2[0];
 
                         double cost = (float) Math.sqrt(hogCost * hogCost
-                            + fracOfWhole * fracOfWhole
-                            + 2. * hcptCost * hcptCost
+                            + 2. * fracOfWhole * fracOfWhole
+                            + hcptCost * hcptCost
                         );
 
                         Obj obj = new Obj();
@@ -1238,9 +1238,10 @@ public class MSERMatcher {
                             hcpt1, cr1, scale1);
                         double hcptCost = 1.f - costs2[0];
 
-                        double cost = (float) Math.sqrt(hogCost * hogCost
-                            + fracOfWhole * fracOfWhole
-                            + 2. * hcptCost * hcptCost
+                        double cost = (float) Math.sqrt(
+                            hogCost * hogCost
+                            + 2. * fracOfWhole * fracOfWhole
+                            + hcptCost * hcptCost
                         );
 
                         Obj obj = new Obj();
@@ -1352,13 +1353,14 @@ public class MSERMatcher {
 
                 sb.append(String.format(
                     "1] r1 %s %d (%d,%d) best: %.3f (%d,%d) %s [%.3f,%.3f,%.3f] %s\n",
-                    debugLabel, i3, 
+                    debugLabel, rIdx, 
                     Math.round(scale01 * obj0.cr1.ellipseParams.xC),
                     Math.round(scale01 * obj0.cr1.ellipseParams.yC),
                     (float) obj0.cost,
                     Math.round(scale00 * obj0.cr0.ellipseParams.xC),
                     Math.round(scale00 * obj0.cr0.ellipseParams.yC), lbl,
-                    (float) obj0.costs[0], (float) obj0.costs[1], (float) obj0.costs[2], 
+                    (float) obj0.costs[0], (float) obj0.costs[1], 
+                    (float) obj0.costs[2], 
                     str1
                 ));
             }
@@ -1369,9 +1371,9 @@ public class MSERMatcher {
 
         StringBuilder sb2 = new StringBuilder();
 
-        for (int i3 = 0; i3 < tmp1.getNumberOfItems(); ++i3) {
+        for (int i = 0; i < tmp1.getNumberOfItems(); ++i) {
 
-            Obj obj0 = tmp1.getArray()[i3];
+            Obj obj0 = tmp1.getArray()[i];
 
             int imgIdx0 = obj0.imgIdx0;
             int imgIdx1 = obj0.imgIdx1;
@@ -1401,17 +1403,19 @@ public class MSERMatcher {
                     obj0.cr1.ellipseParams.orientation * 180. / Math.PI);
 
                 String str1 = String.format("angles=(%d,%d ; %d,%d)",
-                    or0, or1, obj0.cr0.hogOrientation, obj0.cr1.hogOrientation);
+                    or0, or1, obj0.cr0.hogOrientation, 
+                    obj0.cr1.hogOrientation);
 
                 sb2.append(String.format(
                     "2] r1 %s %d (%d,%d) best: %.3f (%d,%d) %s [%.3f,%.3f,%.3f] %s\n",
-                    debugLabel, i3, 
+                    debugLabel, i, 
                     Math.round(scale01 * obj0.cr1.ellipseParams.xC),
                     Math.round(scale01 * obj0.cr1.ellipseParams.yC),
                     (float) obj0.cost,
                     Math.round(scale00 * obj0.cr0.ellipseParams.xC),
                     Math.round(scale00 * obj0.cr0.ellipseParams.yC), lbl,
-                    (float) obj0.costs[0], (float) obj0.costs[1], (float) obj0.costs[1],
+                    (float) obj0.costs[0], (float) obj0.costs[1], 
+                    (float) obj0.costs[2],
                     str1
                 ));
 
@@ -1481,13 +1485,14 @@ public class MSERMatcher {
 
                     sb.append(String.format(
                         "1] r0 %s %d %d (%d,%d) best: %.3f (%d,%d) %s [%.3f,%.3f,%.3f] %s\n",
-                        debugLabel, i3, j, 
+                        debugLabel, rIdx, j, 
                         Math.round(scale01 * obj0.cr1.ellipseParams.xC),
                         Math.round(scale01 * obj0.cr1.ellipseParams.yC),
                         (float) obj0.cost,
                         Math.round(scale00 * obj0.cr0.ellipseParams.xC),
                         Math.round(scale00 * obj0.cr0.ellipseParams.yC), lbl,
-                        (float) obj0.costs[0], (float) obj0.costs[1], (float) obj0.costs[2], 
+                        (float) obj0.costs[0], (float) obj0.costs[1], 
+                        (float) obj0.costs[2], 
                         str1
                     ));
                 }

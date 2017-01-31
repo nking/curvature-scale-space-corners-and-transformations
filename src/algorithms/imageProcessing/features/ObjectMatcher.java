@@ -1392,12 +1392,11 @@ public class ObjectMatcher {
         List<GreyscaleImage> pyrPT1 = imageProcessor
             .buildPyramid(luvTheta1, settings.useLargerPyramid1);
        
-        //NOTE: this is necessary
-        applyWindowedMean(pyrRGB0, 1);
+        /*applyWindowedMean(pyrRGB0, 1);
         applyWindowedMean(pyrRGB1, 1);
         applyWindowedMean2(pyrPT0, 1);
         applyWindowedMean2(pyrPT1, 1);
-        
+        */
         Canonicalizer canonicalizer = new Canonicalizer();
 
         // ----- create the cRegions for a masked image pyramid of img 0 ====

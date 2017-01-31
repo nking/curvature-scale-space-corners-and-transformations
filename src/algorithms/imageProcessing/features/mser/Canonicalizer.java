@@ -222,7 +222,7 @@ public class Canonicalizer {
      * uses RegionPoints.hogOrientations to make multiple cRegions for 
      * each RegionPoints instance.
      * 
-     * @param regionPoints
+     * @param regions
      * @param img
      * @return 
      */
