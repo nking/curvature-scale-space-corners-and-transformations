@@ -1028,4 +1028,13 @@ public class MSERMatcher {
         System.out.println(cRegions.size() + " labeled regions for " + label);
     }
 
+    public List<CorrespondenceList> matchObject0(
+        List<List<GreyscaleImage>> pyrRGB0, List<GreyscaleImage> pyrPT0, 
+        TIntObjectMap<Canonicalizer.RegionPoints> regionPoints0, 
+        List<List<GreyscaleImage>> pyrRGB1, List<GreyscaleImage> pyrPT1, 
+        TIntObjectMap<Canonicalizer.RegionPoints> regionPoints1, 
+        String debugLabel) {
+        
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
 }
