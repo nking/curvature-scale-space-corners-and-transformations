@@ -860,6 +860,56 @@ public class ObjectMatcher {
         System.out.println("after spatial filter regions.n=" + regions.size());
     }
 
+    private void filterByColorHistograms(ImageExt img0, Set<PairInt> shape0, 
+        ImageExt img1, TIntObjectMap<RegionPoints> regions1) {
+        
+        //filter by color hist of hsv, cielab and by CIECH
+
+        ColorHistogram clrHist = new ColorHistogram();
+
+        // make the template histograms from the first scale only
+        int[][] template_ch_HSV = clrHist.histogramHSV(img0, shape0);
+        int[][] template_ch_LAB = clrHist.histogramCIELAB(img0, shape0);
+        int[] tHist = clrHist.histogramCIECH64(img0, shape0);
+        
+        TIntObjectIterator<RegionPoints> iter = regions1.iterator();
+        
+        TIntSet rmSet = new TIntHashSet();
+        
+        for (int i = 0; i < regions1.size(); ++i) {
+            iter.advance();
+            
+            int rIdx = iter.key();
+            RegionPoints r = iter.value();
+            
+            int[][] ch = clrHist.histogramHSV(img1, r.points);
+            float intersection = clrHist.intersection(template_ch_HSV, ch);
+            if (intersection < 0.2) {
+                rmSet.add(rIdx);
+            } else {
+                ch = clrHist.histogramCIELAB(img1, r.points);
+                intersection = clrHist.intersection(template_ch_LAB, ch);
+                if (intersection < 0.2) {
+                    rmSet.add(rIdx);
+                } else {
+                    int[] tHist1 = clrHist.histogramCIECH64(img1, r.points);
+                    intersection = clrHist.intersection(tHist, tHist1);
+                    if (intersection < 0.2f) {
+                        rmSet.add(rIdx);
+                    }
+                }
+            }
+        }
+        
+        TIntIterator iter2 = rmSet.iterator();
+        while (iter2.hasNext()) {
+            int rmIdx = iter2.next();
+            regions1.remove(rmIdx);
+        }
+        
+        System.out.println("chist filter removed " + rmSet.size());
+    }
+
     public static class Settings {
         private boolean useLargerPyramid0 = false;
         private boolean useLargerPyramid1 = false;
@@ -1395,16 +1445,42 @@ public class ObjectMatcher {
         
         //regions[0) are found from the image,
         // while regions[1) are found from the inverted image.
-        TIntObjectMap<RegionPoints> regionPoints0 = 
+        /*TIntObjectMap<RegionPoints> regionPoints0 = 
             new TIntObjectHashMap<RegionPoints>();
-
         // create a fake mser shape0 size
         createAWholeRegion(regionPoints0, shape0Trimmed, pyrRGB0.get(0).get(1));
+        */
         
+        TIntObjectMap<RegionPoints> regionPoints0 =
+            canonicalizer.canonicalizeRegions2(regionsComb0, pyrRGB0.get(0).get(1));
+   
         TIntObjectMap<RegionPoints> regionPoints1 =
             canonicalizer.canonicalizeRegions2(regionsComb1, pyrRGB1.get(0).get(1));
    
         // filter the mser regions by center and or variation?
+        
+        {// filter by color hist of hsv, cielab and by CIECH
+            filterByColorHistograms(img0Trimmed, shape0Trimmed, img1, 
+                regionPoints1);
+            if (debug) {
+                int[] xyCen = new int[2];
+                Image im1Cp = img1.copyImage();
+                TIntObjectIterator<RegionPoints> iter = regionPoints1.iterator();
+                for (int i = 0; i < regionPoints1.size(); ++i) {
+                    iter.advance();
+                    int rIdx = iter.key();
+                    Region r = regionsComb1.get(rIdx);
+                    int[] clr = ImageIOHelper.getNextRGB(i);
+                    r.drawEllipse(im1Cp, 0, clr[0], clr[1], clr[2]);
+                    r.calculateXYCentroid(xyCen, im1Cp.getWidth(), im1Cp.getHeight());
+                    ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im1Cp,
+                        1, 255, 0, 0);
+                }
+                MiscDebug.writeImage(im1Cp, "_" + settings.getDebugLabel() 
+                    + "_regions_1_filtered_");
+            }
+
+        }
                 
         MSERMatcher matcher = new MSERMatcher();
 

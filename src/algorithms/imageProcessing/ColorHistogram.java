@@ -7,6 +7,11 @@ import gnu.trove.set.TIntSet;
 import java.util.Set;
 
 /**
+ * 
+ * NOTE: instead of this class, consider using a polar
+ * theta of cie luv to better cover the distribution
+ * of colors.
+ * 
  * @author nichole
  */
 public class ColorHistogram {
@@ -270,7 +275,7 @@ public class ColorHistogram {
      * 
      * @param img
      * @param points 
-     * @return istogram of CIE LUV C and H which are the polar angle of 
+     * @return histogram of CIE LUV C and H which are the polar angle of 
      * U,V and the magnitude.  The histogram is a one dimensional binning 
      * of divisions of C and H in combination.  8 divisions in C or H 
      * results in 84 bins, for example.
@@ -375,8 +380,10 @@ public class ColorHistogram {
             }
         }
         
-        float sim = sum / ((float)Math.min(sum0, sum1));
+        float d = Math.min(sum0, sum1);
         
+        float sim = (d == 0.f) ? 0 : sum/d;
+                
         return sim;
     }
     
@@ -643,15 +650,17 @@ public class ColorHistogram {
             sum1 += y1;
         }
         
-        float sim = sum / ((float)Math.min(sum0, sum1));
+        float d = Math.min(sum0, sum1);
         
+        float sim = (d == 0.f) ? 0 : sum/d;
+                
         return sim;
     }
 
     /**
      * 
      * @param hist0
-     * @param hist21
+     * @param hist1
      * @param bins0Shift the number of bins to shift bins1 by during
      * comparison.
      * @return 
@@ -702,8 +711,10 @@ public class ColorHistogram {
             sum1 += y1;
         }
         
-        float sim = sum / Math.min(sum0, sum1);
+        float d = Math.min(sum0, sum1);
         
+        float sim = (d == 0.f) ? 0 : sum/d;
+                
         return sim;
     }
     

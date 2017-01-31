@@ -379,6 +379,22 @@ public class MiscMath {
         return index;
     }
     
+    public static int findYMaxIndex(long[] a) {
+    
+        if (a == null || a.length == 0) {
+            return -1;
+        }
+        long max = Long.MIN_VALUE;
+        int index = 0;
+        for (int i = 0; i < a.length; i++) {
+            if (a[i] > max) {
+                max = a[i];
+                index = i;
+            }
+        }
+        return index;
+    }
+    
     public static int[] findYMaxIndexes(int[] a) {
         if (a == null || a.length == 0) {
             return null;
@@ -2748,4 +2764,5 @@ public class MiscMath {
     public static int calculateObjectSize(PairIntArray points) {
         return calculateObjectSize(Misc.convert(points));
     }
+
 }

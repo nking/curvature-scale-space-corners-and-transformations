@@ -15,7 +15,9 @@ import algorithms.util.PairIntArray;
 import algorithms.util.TrioInt;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.TObjectIntMap;
@@ -92,6 +94,8 @@ public class Canonicalizer {
          */
         public Set<PairInt> points;
 
+        // orientations in degrees in range 0 to 180
+        public TIntList hogOrientations = new TIntArrayList();
     }
 
     public static class CRegion {
@@ -113,6 +117,8 @@ public class Canonicalizer {
          * when not empty, this holds label of segmented regions
          */
         public TIntSet labels = new TIntHashSet();
+        
+        public int dataIdx = -1;
         
         public void draw(Image img, int nExtraDot, int rClr, int gClr, int bClr) {
 
@@ -211,7 +217,60 @@ public class Canonicalizer {
 
         return output;
     }
+    
+    /**
+     * uses RegionPoints.hogOrientations to make multiple cRegions for 
+     * each RegionPoints instance.
+     * 
+     * @param regionPoints
+     * @param img
+     * @return 
+     */
+    public TIntObjectMap<CRegion> canonicalizeRegions4(
+        TIntObjectMap<RegionPoints> regions, GreyscaleImage img) {
+        
+        int addIdx = regions.size();
+        
+        TIntObjectMap<CRegion> output = new TIntObjectHashMap<CRegion>();
 
+        int[] xyCen = new int[2];
+    
+        TIntObjectIterator<RegionPoints> iter = regions.iterator();
+        for (int i = 0; i < regions.size(); ++i) {
+            iter.advance();
+            int label = iter.key();
+            RegionPoints r = iter.value();
+            
+            TIntList orientations = r.hogOrientations;
+            
+            PairIntArray points = Misc.convertWithoutOrder(r.points);
+            
+            for (int j = 0; j < orientations.size(); ++j) {
+            
+                double angle = orientations.get(j) * (Math.PI/180.);
+                
+                Map<PairInt, PairInt> offsetToOrigMap = createOffsetToOrigMap(
+                    r.ellipseParams.xC, r.ellipseParams.yC,
+                    points, img.getWidth(), img.getHeight(),
+                    angle);
+
+                CRegion cRegion = new CRegion();
+                cRegion.ellipseParams = r.ellipseParams;
+                cRegion.offsetsToOrigCoords = offsetToOrigMap;
+                cRegion.dataIdx = label;
+                
+                if (j == 0) {
+                    output.put(label, cRegion);
+                } else {
+                    output.put(addIdx, cRegion);
+                    addIdx++;
+                }
+            }
+        }
+
+        return output;        
+    }
+    
     /**
      * NOTE, for best use, invoker should use this descriptor with
      * an image processed to create a window average for each pixel.

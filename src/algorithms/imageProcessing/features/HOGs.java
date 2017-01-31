@@ -8,10 +8,13 @@ import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 /**
  CAVEAT: small amount of testing done, not yet throughly tested.
@@ -386,7 +389,8 @@ public class HOGs {
             //System.out.println(" " + yA + " -- " + yB + " sum="+sum + ", " + sumA + "," + sumB);
         }
         
-        float sim = sum / ((float)Math.min(sumA, sumB));
+        float d = Math.min(sumA, sumB);
+        float sim = (d == 0.f) ? 0 : sum/d;
         
         return sim;
     }
@@ -576,4 +580,47 @@ public class HOGs {
             return (int)Math.round(angleAvg);
         }
     }
+
+    public TIntSet calculateDominantOrientations(Collection<PairInt> xy) {
+        
+        long[] combined = new long[nAngleBins];
+
+        for (PairInt p : xy) {
+            int pixIdx = (p.getY() * w) + p.getY();
+            add(combined, gHists[pixIdx]);
+        }
+
+        int maxIdx = MiscMath.findYMaxIndex(combined);
+        
+        if (maxIdx == -1) {
+            throw new IllegalArgumentException("histogram is full of "
+                + " min value longs");
+        }
+        
+        // if any bins have values within 80% of max, add to maxIdxs
+        TIntList maxIdxs = new TIntArrayList();
+        
+        long max = combined[maxIdx];
+        double limit = 0.8 * max;
+        
+        for (int i = 0; i < combined.length; ++i) {
+            long v = combined[i];
+            if (v >= limit) {
+                maxIdxs.add(i);
+            }
+        }
+
+        int binWidth = 180 / nAngleBins;
+        
+        TIntSet orientations = new TIntHashSet();
+        
+        for (int i = 0; i < maxIdxs.size(); ++i) {
+            int idx = maxIdxs.get(i);
+            int angle = Math.round((maxIdxs.get(i) + 0.5f) * binWidth);
+            orientations.add(angle);
+        }
+
+        return orientations;
+    }
+    
 }
