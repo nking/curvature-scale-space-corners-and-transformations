@@ -884,17 +884,17 @@ public class ObjectMatcher {
             
             int[][] ch = clrHist.histogramHSV(img1, r.points);
             float intersection = clrHist.intersection(template_ch_HSV, ch);
-            if (intersection < 0.3) {
+            if (intersection < 0.33) {
                 rmSet.add(rIdx);
             } else {
                 ch = clrHist.histogramCIELAB(img1, r.points);
                 intersection = clrHist.intersection(template_ch_LAB, ch);
-                if (intersection < 0.3) {
+                if (intersection < 0.33) {
                     rmSet.add(rIdx);
                 } else {
                     int[] tHist1 = clrHist.histogramCIECH64(img1, r.points);
                     intersection = clrHist.intersection(tHist, tHist1);
-                    if (intersection < 0.3f) {
+                    if (intersection < 0.33f) {
                         rmSet.add(rIdx);
                     }
                 }
