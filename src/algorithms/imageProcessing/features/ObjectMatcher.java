@@ -834,18 +834,19 @@ public class ObjectMatcher {
             
             Set<PairIntWithIndex> set = cFinder.getCluster(i);
             
-            double maxArea = Double.MIN_VALUE;
+            int maxArea = Integer.MIN_VALUE;
             int maxAreaIdx = -1;
 
             for (PairIntWithIndex pii : set) {
                 int rIdx = pii.getPixIndex();
                 RegionGeometry rg = rgList.get(rIdx);
-                double area = rg.major * rg.minor;
+                //double area = rg.major * rg.minor;
+                int area = regions.get(rIdx).accX.size();
                 
                 if (area > maxArea) {
                     maxArea = area;
                     maxAreaIdx = rIdx;
-                }
+                }               
             }
             assert(maxAreaIdx > -1);
             for (PairIntWithIndex pii : set) {
@@ -1556,7 +1557,7 @@ public class ObjectMatcher {
 
         //TODO: add filter here for patterns in the MSER regions that
         // are strong, and if present in reference frame1, then
-        // anything without it should be removed.
+        // anything without it mughr be removable.
         // use of this feature should be a Setting option.
 
         if (debug) {
@@ -1595,13 +1596,13 @@ public class ObjectMatcher {
         TIntObjectMap<RegionPoints> regionPoints1 =
             canonicalizer.canonicalizeRegions2(regionsComb1, pyrRGB1.get(0).get(1));
   
-        // filter by color hist of hsv, cielab and by CIECH
+        // filter by color hist of hsv, cielab and CIECH
         filterByColorHistograms(img0Trimmed, shape0Trimmed, img1, 
             regionPoints1);
 
-        //NOTE: not sure this is the best approach, but wanting to keep the template
-        //   shapes as 1 full shape and then the 2 largest partitions of it to allow
-        //   a finer fragmented search.
+        //NOTE: not sure this is the best approach, but wanting to keep the 
+        //   template shapes as 1 full shape and then the 2 largest 
+        //   parts of it to allow a finer fragmented search.
         filterToLargestPartitions(regionPoints0, img0Trimmed, shape0Trimmed);
         
         if (debug) {
@@ -1630,8 +1631,6 @@ public class ObjectMatcher {
             of the accumulated points.
         (2) used just the accumulated points instead of the ellipse filled points.
         
-        in terms of the hogs and color patch matching results, the simple mser
-        filled ellipse had better results than points in (1) or (2).
         */
         
         replaceWithAccumulatedPoints(regionPoints1);
