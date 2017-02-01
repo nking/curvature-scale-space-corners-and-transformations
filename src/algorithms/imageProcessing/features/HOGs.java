@@ -515,7 +515,7 @@ public class HOGs {
         long[] combined = new long[nAngleBins];
 
         for (PairInt p : xy) {
-            int pixIdx = (p.getY() * w) + p.getY();
+            int pixIdx = (p.getY() * w) + p.getX();
             add(combined, gHists[pixIdx]);
         }
 
@@ -586,7 +586,7 @@ public class HOGs {
         long[] combined = new long[nAngleBins];
 
         for (PairInt p : xy) {
-            int pixIdx = (p.getY() * w) + p.getY();
+            int pixIdx = (p.getY() * w) + p.getX();
             add(combined, gHists[pixIdx]);
         }
 
