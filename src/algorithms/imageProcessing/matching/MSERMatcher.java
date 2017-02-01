@@ -1077,7 +1077,7 @@ public class MSERMatcher {
         TIntObjectMap<HGS> hgsMap1 = new TIntObjectHashMap<HGS>();
 
         // 16, 12
-        int nPixPerCellDimH = 6;
+        int nPixPerCellDimH = 8;
         int nPixPerCellDim = 4;
         
         // use hogs to calculate the dominant orientations
@@ -1384,6 +1384,7 @@ public class MSERMatcher {
                 ));
                 //hogCost, fracOfWhole, hcptCost, hgsCost}
                 
+                /*
                 Image im0 = gsI0.copyToColorGreyscale();
                 Image im1 = gsI1.copyToColorGreyscale();
                 int[] clr = new int[]{255, 0, 0};
@@ -1391,6 +1392,7 @@ public class MSERMatcher {
                 obj0.cr1.drawEachPixel(im1, 0, clr[0], clr[1], clr[2]);
                 MiscDebug.writeImage(im0, debugLabel + "_" + lbl);
                 MiscDebug.writeImage(im1, debugLabel + "_" + lbl);
+                */
             }
         }
         if (debug) {
@@ -1448,6 +1450,7 @@ public class MSERMatcher {
                 ));
                 //hogCost, fracOfWhole, hcptCost, hgsCost}
                 
+                /*
                 Image im0 = gsI0.copyToColorGreyscale();
                 Image im1 = gsI1.copyToColorGreyscale();
                 int[] clr = new int[]{255,0,0};
@@ -1455,7 +1458,7 @@ public class MSERMatcher {
                 obj0.cr1.drawEachPixel(im1, 0, clr[0], clr[1], clr[2]);
                 MiscDebug.writeImage(im0, debugLabel + "_" + lbl);
                 MiscDebug.writeImage(im1, debugLabel + "_" + lbl);
-                
+                */
             }
         }
         if (debug) {
@@ -1524,7 +1527,8 @@ public class MSERMatcher {
                         str1, obj0.cr0.offsetsToOrigCoords.size()
                     ));
                     //hogCost, fracOfWhole, hcptCost, hgsCost}
-                    
+                  
+                    /*
                     Image im0 = gsI0.copyToColorGreyscale();
                     Image im1 = gsI1.copyToColorGreyscale();
                     int[] clr = new int[]{255, 0, 0};
@@ -1532,7 +1536,7 @@ public class MSERMatcher {
                     obj0.cr1.drawEachPixel(im1, 0, clr[0], clr[1], clr[2]);
                     MiscDebug.writeImage(im0, debugLabel + "_" + lbl);
                     MiscDebug.writeImage(im1, debugLabel + "_" + lbl);
-                    
+                    */
                 }
             }
             if (debug) {
