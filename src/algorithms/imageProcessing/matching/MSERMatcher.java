@@ -1077,16 +1077,17 @@ public class MSERMatcher {
         TIntObjectMap<HGS> hgsMap1 = new TIntObjectHashMap<HGS>();
 
         // 16, 12
-        int nPixPerCellDim = 6;
+        int nPixPerCellDimH = 6;;
+        int nPixPerCellDim = 4;//6;
         
         // use hogs to calculate the dominant orientations
         calculateDominantOrientations(regionPoints0, 
             getOrCreate(hogsMap0, combineImages(pyrRGB0.get(0)), 
-                0, nPixPerCellDim));
+                0, nPixPerCellDimH));
         
         calculateDominantOrientations(regionPoints1, 
             getOrCreate(hogsMap1, combineImages(pyrRGB1.get(0)), 
-                0, nPixPerCellDim));
+                0, nPixPerCellDimH));
         
         Canonicalizer canonicalizer = new Canonicalizer();
         
@@ -1136,13 +1137,11 @@ public class MSERMatcher {
                 + ((float) h0 / (float) h0_i)) / 2.f;
 
             HOGs hogs0 = getOrCreate(hogsMap0, gsI0, imgIdx0,
-                nPixPerCellDim);
+                nPixPerCellDimH);
 
-            HCPT hcpt0 = getOrCreate2(hcptMap0, ptI0, 
-                imgIdx0, nPixPerCellDim);
+            HCPT hcpt0 = getOrCreate2(hcptMap0, ptI0, imgIdx0, nPixPerCellDim);
                 
-            HGS hgs0 = getOrCreate3(hgsMap0, gsI0, imgIdx0, 
-                nPixPerCellDim);
+            HGS hgs0 = getOrCreate3(hgsMap0, gsI0, imgIdx0, nPixPerCellDim);
             
             TIntObjectMap<CRegion> regions0 = getOrCreate(csr0, imgIdx0, gsI0,
                 scale0);
@@ -1160,14 +1159,11 @@ public class MSERMatcher {
                 TIntObjectMap<CRegion> regions1 = getOrCreate(csr1, imgIdx1,
                     gsI1, scale1);
 
-                HOGs hogs1 = getOrCreate(hogsMap1, gsI1, imgIdx1,
-                    nPixPerCellDim);
+                HOGs hogs1 = getOrCreate(hogsMap1, gsI1, imgIdx1, nPixPerCellDimH);
 
-                HCPT hcpt1 = getOrCreate2(hcptMap1, ptI1, imgIdx1,
-                    nPixPerCellDim);
+                HCPT hcpt1 = getOrCreate2(hcptMap1, ptI1, imgIdx1, nPixPerCellDim);
 
-                HGS hgs1 = getOrCreate3(hgsMap1, gsI1, imgIdx1,
-                     nPixPerCellDim);
+                HGS hgs1 = getOrCreate3(hgsMap1, gsI1, imgIdx1, nPixPerCellDim);
                 
                 TIntObjectIterator<CRegion> iter0 = regions0.iterator();
                 for (int i0 = 0; i0 < regions0.size(); ++i0) {
@@ -1375,7 +1371,7 @@ public class MSERMatcher {
                     or0, or1, obj0.cr0.hogOrientation, obj0.cr1.hogOrientation);
 
                 sb.append(String.format(
-                    "1] r1 %s %d (%d,%d) best: %.3f (%d,%d) %s [%.3f,%.3f,%.3f,%.3f] %s\n",
+"1] r1 %s %d (%d,%d) best: %.3f (%d,%d) %s [%.3f,%.3f,%.3f,%.3f] %s n=%d\n",
                     debugLabel, rIdx, 
                     Math.round(scale01 * obj0.cr1.ellipseParams.xC),
                     Math.round(scale01 * obj0.cr1.ellipseParams.yC),
@@ -1384,7 +1380,7 @@ public class MSERMatcher {
                     Math.round(scale00 * obj0.cr0.ellipseParams.yC), lbl,
                     (float) obj0.costs[0], (float) obj0.costs[1], 
                     (float) obj0.costs[2], (float) obj0.costs[3], 
-                    str1
+                    str1, obj0.cr0.offsetsToOrigCoords.size()
                 ));
                 //hogCost, fracOfWhole, hcptCost, hgsCost}
                 
@@ -1439,7 +1435,7 @@ public class MSERMatcher {
                     obj0.cr1.hogOrientation);
 
                 sb2.append(String.format(
-                    "2] r1 %s %d (%d,%d) best: %.3f (%d,%d) %s [%.3f,%.3f,%.3f,%.3f] %s\n",
+ "2] r1 %s %d (%d,%d) best: %.3f (%d,%d) %s [%.3f,%.3f,%.3f,%.3f] %s n=%d\n",
                     debugLabel, i, 
                     Math.round(scale01 * obj0.cr1.ellipseParams.xC),
                     Math.round(scale01 * obj0.cr1.ellipseParams.yC),
@@ -1448,7 +1444,7 @@ public class MSERMatcher {
                     Math.round(scale00 * obj0.cr0.ellipseParams.yC), lbl,
                     (float) obj0.costs[0], (float) obj0.costs[1], 
                     (float) obj0.costs[2], (float) obj0.costs[3],
-                    str1
+                    str1, obj0.cr0.offsetsToOrigCoords.size()
                 ));
                 //hogCost, fracOfWhole, hcptCost, hgsCost}
                 
@@ -1516,7 +1512,7 @@ public class MSERMatcher {
                         obj0.cr1.hogOrientation);
 
                     sb.append(String.format(
-                        "1] r0 %s %d %d (%d,%d) best: %.3f (%d,%d) %s [%.3f,%.3f,%.3f,%.3f] %s\n",
+  "1] r0 %s %d %d (%d,%d) best: %.3f (%d,%d) %s [%.3f,%.3f,%.3f,%.3f] %s n=%d\n",
                         debugLabel, rIdx, j, 
                         Math.round(scale01 * obj0.cr1.ellipseParams.xC),
                         Math.round(scale01 * obj0.cr1.ellipseParams.yC),
@@ -1525,7 +1521,7 @@ public class MSERMatcher {
                         Math.round(scale00 * obj0.cr0.ellipseParams.yC), lbl,
                         (float) obj0.costs[0], (float) obj0.costs[1], 
                         (float) obj0.costs[2], (float) obj0.costs[3], 
-                        str1
+                        str1, obj0.cr0.offsetsToOrigCoords.size()
                     ));
                     //hogCost, fracOfWhole, hcptCost, hgsCost}
                     
