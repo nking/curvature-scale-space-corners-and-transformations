@@ -1316,6 +1316,14 @@ public class MSERMatcher {
                     (float) obj0.costs[2], 
                     str1
                 ));
+                
+                Image im0 = gsI0.copyToColorGreyscale();
+                Image im1 = gsI1.copyToColorGreyscale();
+                int[] clr = new int[]{255, 0, 0};
+                obj0.cr0.drawEachPixel(im0, 0, clr[0], clr[1], clr[2]);
+                obj0.cr1.drawEachPixel(im1, 0, clr[0], clr[1], clr[2]);
+                MiscDebug.writeImage(im0, debugLabel + "_" + lbl);
+                MiscDebug.writeImage(im1, debugLabel + "_" + lbl);
             }
         }
         if (debug) {
@@ -1372,15 +1380,15 @@ public class MSERMatcher {
                     str1
                 ));
 
-                /*
+                
                 Image im0 = gsI0.copyToColorGreyscale();
                 Image im1 = gsI1.copyToColorGreyscale();
-                int[] clr = ImageIOHelper.getNextRGB(4);
+                int[] clr = new int[]{255,0,0};
                 obj0.cr0.drawEachPixel(im0, 0, clr[0], clr[1], clr[2]);
                 obj0.cr1.drawEachPixel(im1, 0, clr[0], clr[1], clr[2]);
-                MiscDebug.writeImage(im0, dbgLbl + "_" + lbl);
-                MiscDebug.writeImage(im1, dbgLbl + "_" + lbl);
-                */
+                MiscDebug.writeImage(im0, debugLabel + "_" + lbl);
+                MiscDebug.writeImage(im1, debugLabel + "_" + lbl);
+                
             }
         }
         if (debug) {
@@ -1449,15 +1457,15 @@ public class MSERMatcher {
                         str1
                     ));
                     
-                    /*
+                    
                     Image im0 = gsI0.copyToColorGreyscale();
                     Image im1 = gsI1.copyToColorGreyscale();
-                    int[] clr = ImageIOHelper.getNextRGB(4);
+                    int[] clr = new int[]{255, 0, 0};
                     obj0.cr0.drawEachPixel(im0, 0, clr[0], clr[1], clr[2]);
                     obj0.cr1.drawEachPixel(im1, 0, clr[0], clr[1], clr[2]);
                     MiscDebug.writeImage(im0, debugLabel + "_" + lbl);
                     MiscDebug.writeImage(im1, debugLabel + "_" + lbl);
-                    */
+                    
                 }
             }
             if (debug) {

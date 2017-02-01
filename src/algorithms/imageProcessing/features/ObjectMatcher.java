@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.features;
 
+import algorithms.QuickSort;
 import algorithms.compGeometry.FurthestPair;
 import algorithms.compGeometry.NearestPoints;
 import algorithms.compGeometry.PerimeterFinder2;
@@ -51,6 +52,7 @@ import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -932,6 +934,136 @@ public class ObjectMatcher {
         }
     }
 
+    private void filterToLargestPartitions(TIntObjectMap<RegionPoints> 
+        regionPoints, ImageExt img, Set<PairInt> shape) {
+        
+        if (regionPoints.size() < 4) {
+            return;
+        }
+        
+        // keep the largest region, which is usually the entire shape
+        // and keep the largest 2 regions which sum to a union equal to the whole
+        
+        // some original regions are present in multiplocity due to having 
+        // diferent orientation angles, so need to extract only the unique
+        // centers
+        Map<PairInt, TIntList> centerRIdxMap = new HashMap<PairInt, TIntList>();
+        
+        int maxV = Integer.MIN_VALUE;
+        PairInt maxVXY = null;
+        TIntObjectIterator<RegionPoints> iter = regionPoints.iterator();
+        for (int i = 0; i < regionPoints.size(); ++i) {
+            iter.advance();
+            RegionPoints r = iter.value();
+            int rIdx = iter.key();
+            PairInt xy = new PairInt(r.ellipseParams.xC, r.ellipseParams.yC);
+            TIntList rList = centerRIdxMap.get(xy);
+            if (rList == null) {
+                rList = new TIntArrayList();
+                centerRIdxMap.put(xy, rList);
+            }
+            rList.add(rIdx);
+            int n = r.points.size();
+            if (n > maxV) {
+                maxV = n;
+                maxVXY = xy;
+            }
+        }
+        
+        TIntList keep = new TIntArrayList();
+        keep.add(centerRIdxMap.get(maxVXY).iterator().next());
+       
+        // skipping the max value, single partition
+        int[] ns = new int[centerRIdxMap.size() - 1];
+        int[] rIdxs = new int[ns.length];
+        int count = 0;
+        
+        Set<PairInt> added = new HashSet<PairInt>();
+        
+        iter = regionPoints.iterator();
+        for (int i = 0; i < regionPoints.size(); ++i) {
+            iter.advance();
+            RegionPoints r = iter.value();
+            int rIdx = iter.key();
+            PairInt xy = new PairInt(r.ellipseParams.xC, r.ellipseParams.yC);
+            if (xy.equals(maxVXY) || added.contains(xy)) {
+                continue;
+            }
+            added.add(xy);
+            
+            ns[count] = r.points.size();
+            rIdxs[count] = rIdx;
+            count++;
+        }
+        assert(ns.length == count);
+        
+        QuickSort.sortBy1stArg(ns, rIdxs);
+         
+        int sum = 0;
+        for (int i = 0; i < ns.length; ++i) {
+            sum += ns[i];
+        }
+        int half = sum/2;
+        
+        int mIdx = Arrays.binarySearch(ns, half);
+        if (mIdx < 0) {
+            //(-(insertion point) - 1)
+            mIdx = -mIdx - 2;
+        }
+        if (mIdx == (ns.length - 1)) {
+            mIdx--;
+        }
+        
+        // the sum is actually the sum of non-intersecting points to the
+        //   definition of middle of sum at mIdx is an approximate
+        //   place to make a partition to choose one from either side
+        //   which total to max sum.
+        
+        int maxSum = Integer.MIN_VALUE;
+        int maxIdxA = -1;
+        int maxIdxB = -1;
+        for (int i = 0; i <= mIdx; ++i) {
+            int rIdxA = rIdxs[i];
+            Set<PairInt> setA = regionPoints.get(rIdxA).points;
+            for (int j = (mIdx + 1); j < ns.length; ++j) {
+                int rIdxB = rIdxs[j];
+                Set<PairInt> setB = regionPoints.get(rIdxB).points;
+                Set<PairInt> aMinusB = new HashSet<PairInt>(setA);
+                aMinusB.removeAll(setB);
+                
+                Set<PairInt> bMinusA = new HashSet<PairInt>(setB);
+                bMinusA.removeAll(setA);
+                
+                int sum2 = aMinusB.size() + bMinusA.size();
+                
+                if (sum2 > maxSum) {
+                    maxSum = sum2;
+                    maxIdxA = rIdxA;
+                    maxIdxB = rIdxB;
+                }
+            }
+        }
+        assert(maxIdxA > -1);
+        assert(maxIdxB > -1);
+        keep.add(maxIdxA);
+        keep.add(maxIdxB);
+        
+        TIntObjectMap<RegionPoints> regionPoints2 
+            = new TIntObjectHashMap<RegionPoints>();
+        for (int i = 0; i < keep.size(); ++i) {
+            int idx = keep.get(i);
+            RegionPoints r = regionPoints.get(idx);
+            PairInt xy = new PairInt(r.ellipseParams.xC, r.ellipseParams.yC);
+            TIntList idxs = centerRIdxMap.get(xy);
+            for (int j = 0; j < idxs.size(); ++j) {
+                int idx2 = idxs.get(j);
+                regionPoints2.put(idx2, regionPoints.get(idx2));
+            }
+        }
+        regionPoints.clear();
+        regionPoints.putAll(regionPoints2);
+    }
+
     public static class Settings {
         private boolean useLargerPyramid0 = false;
         private boolean useLargerPyramid1 = false;
@@ -1458,26 +1590,46 @@ public class ObjectMatcher {
         TIntObjectMap<RegionPoints> regionPoints1 =
             canonicalizer.canonicalizeRegions2(regionsComb1, pyrRGB1.get(0).get(1));
   
-        // filter the mser regions by center and or variation?
-        
         // filter by color hist of hsv, cielab and by CIECH
-            
         filterByColorHistograms(img0Trimmed, shape0Trimmed, img1, 
             regionPoints1);
 
+        //NOTE: not sure this is the best approach, but wanting to keep the template
+        //   shapes as 1 full shape and then the 2 largest partitions of it to allow
+        //   a finer fragmented search.
+        filterToLargestPartitions(regionPoints0, img0Trimmed, shape0Trimmed);
+        
+        if (debug) {
+            int[] xyCen = new int[2];
+            Image im0Cp, im1Cp;
+            im0Cp = img0Trimmed.copyImage();
+            TIntObjectIterator<RegionPoints> iter = regionPoints0.iterator();
+            for (int i = 0; i < regionPoints0.size(); ++i) {
+                iter.advance();
+                int rIdx = iter.key();
+                Region r = regionsComb0.get(rIdx);
+                int[] clr = ImageIOHelper.getNextRGB(i);
+                r.drawEllipse(im0Cp, 0, clr[0], clr[1], clr[2]);
+                r.calculateXYCentroid(xyCen, im0Cp.getWidth(), im0Cp.getHeight());
+                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im0Cp,
+                    1, 255, 0, 0);
+            }
+            MiscDebug.writeImage(im0Cp, "_" + settings.getDebugLabel() + 
+                "_regions_0_filterP_");
+        }
+        
         /*
         NOTE: tried 2 changes in the region points to see if they improved the
         results.
         (1) modified the ellipse boundaries inward to the nearest bounding edges
             of the accumulated points.
-        (2) used just the accumulated points instead of the ellipse.
+        (2) used just the accumulated points instead of the ellipse filled points.
         
         in terms of the hogs and color patch matching results, the simple mser
         filled ellipse had better results than points in (1) or (2).
         */
         
-        // alternately, could replace the regionPoints with the accumulated points
-        //replaceWithAccumulatedPoints(regionPoints1);
+        // replaceWithAccumulatedPoints(regionPoints1);
         
         /*
         if (debug) {
