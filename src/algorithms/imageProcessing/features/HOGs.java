@@ -14,16 +14,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 /**
  CAVEAT: small amount of testing done, not yet throughly tested.
- 
+
  An implementation of Histograms of Oriented Gradients
  constructed from reading the following papers:
  <pre>
- "Histograms of Oriented Gradients for Human Detection" 
- by Dalal and Triggs, 2010 
+ "Histograms of Oriented Gradients for Human Detection"
+ by Dalal and Triggs, 2010
  and
  "Distinctive Image Features from Scale-Invariant Keypoints"
  by Lowe, 2004
@@ -38,42 +37,42 @@ import java.util.Set;
    The GradientIntegralHistogram is used to store histograms of values that
    that are counts defined by gradient magnitudes in bins of
    orientation.
-   
-   As recommended by Dalal & Triggs, 9 bins are used for 180 degrees of gradient 
+
+   As recommended by Dalal & Triggs, 9 bins are used for 180 degrees of gradient
    angle range.
-   
-   The building of the integral image has a runtime complexity of O(N_pixels) 
+
+   The building of the integral image has a runtime complexity of O(N_pixels)
    for the gradient and O(N_pixels) for the histogram integral image.
-   
-   Extraction of histogram data is 4 steps, just as in summed area tables, but 
+
+   Extraction of histogram data is 4 steps, just as in summed area tables, but
    there is additionally the copy which is nBins steps.
-  
-   The extraction of data is at the "cell" level, which is recommended to be 
+
+   The extraction of data is at the "cell" level, which is recommended to be
    6 X 6 pixels^2 by Dalal and Triggs.
-   
-   a block of cells is gathered for a point and that is an addition of the 
+
+   a block of cells is gathered for a point and that is an addition of the
    N_cells X N_cells histograms.
-   
+
    Before the addition, block level normalization is calculated for each cell.
-   
+
    The block level normalization uses L2NormHys.
    They found best results using normalization of each cell histogram
    by the total over the block.
    The total number of values is summed over all cells within the
-   block and a normalization factor for each cell is then computed using 
+   block and a normalization factor for each cell is then computed using
    that block total.  The individually normalized cells are then added
    over the block to create the block histogram.
        for each cell calculate cell_total_count.
        total_block_count = sum over cells ( cell_total_count )
        for each cell, normalization is 1/total_block_count
    then the block histogram is added over the same bins in each cell.
-   To keep the block histogram as integer but normalized to same 
-   max value could apply a further factor of 
-   max possible value for a block being, 
+   To keep the block histogram as integer but normalized to same
+   max value could apply a further factor of
+   max possible value for a block being,
    for example (2X2)*(6X6)*(255) = 36720.
 
    Note that a shift is needed for identifying the bin that is the
-   canonical angle 0, that is a shift specific to a 
+   canonical angle 0, that is a shift specific to a
    dominant angle correction for the histogram.
    That shift will be applied during the intersection stage to produce a
    canonicalized feature in a rotation corrected reference frame.
@@ -89,131 +88,131 @@ import java.util.Set;
    and an intersection equal to the max value is maximally similar.
    (see the method ColorHistogram.intersection, but here, the normalization
    will already have been applied instead of determined in the method).
-  
+
   Other details are in converting the intersection to a cost or score
   and specialized methods for that specific to this project will be
   present in this class.
-  
+
   @author nichole
 */
 public class HOGs {
-   
+
     // 9 is default
     private final int nAngleBins;
-    
+
     // 6 x 6 is recommended
     private final int N_PIX_PER_CELL_DIM;
-    
+
     // 2x2 or 3x3 is recommended
     private final int N_CELLS_PER_BLOCK_DIM;
-    
+
     // histogrm integral images with a windowed sum of N_PIX_PER_CELL_DIM
     private final int[][] gHists;
-    
+
     private final int w;
     private final int h;
-    
+
     private boolean debug = false;
-    
+
     //TODO: calculate the limits in nPixels this can handle due to
     //   using integers instead of long for storage.
     //  8.4 million pix, roughly 2900 X 2900
-    
+
     public HOGs(GreyscaleImage rgb) {
-        
+
         nAngleBins = 9;
         N_PIX_PER_CELL_DIM = 4;
         N_CELLS_PER_BLOCK_DIM = 2;
         w = rgb.getWidth();
         h = rgb.getHeight();
-        
+
         gHists = init(rgb);
     }
-    
+
     public HOGs(GreyscaleImage rgb, int nCellsPerDim, int nPixPerCellDim) {
-        
+
         nAngleBins = 9;
         N_PIX_PER_CELL_DIM = nPixPerCellDim;
         N_CELLS_PER_BLOCK_DIM = nCellsPerDim;
         w = rgb.getWidth();
         h = rgb.getHeight();
-        
+
         gHists = init(rgb);
     }
-    
+
     public HOGs(GreyscaleImage gradientXY, GreyscaleImage theta) {
-        
+
         nAngleBins = 9;
         N_PIX_PER_CELL_DIM = 4;
         N_CELLS_PER_BLOCK_DIM = 2;
         w = gradientXY.getWidth();
         h = gradientXY.getHeight();
-        
+
         gHists = init(gradientXY, theta);
     }
-    
+
     public void setToDebug() {
         debug = true;
     }
-    
+
     private int[][] init(GreyscaleImage rgb) {
-        
+
         ImageProcessor imageProcessor = new ImageProcessor();
-        
+
         GreyscaleImage[] gXgY = imageProcessor.createSobelGradients(rgb);
-        
+
         GreyscaleImage theta = imageProcessor.computeTheta180(gXgY[0], gXgY[1]);
-        
+
         GreyscaleImage gXY = imageProcessor.combineConvolvedImages(gXgY[0], gXgY[1]);
-        
+
         if (debug) {
             algorithms.misc.MiscDebug.writeImage(gXgY[0], "_gX_");
             algorithms.misc.MiscDebug.writeImage(gXgY[1], "_gY_");
             algorithms.misc.MiscDebug.writeImage(gXY, "_gXY_");
             algorithms.misc.MiscDebug.writeImage(theta, "_theta_");
         }
-        
+
         return init(gXY, theta);
     }
-    
+
     private int[][] init(GreyscaleImage gradientXY, GreyscaleImage theta) {
-        
+
         if (w != gradientXY.getWidth() || h != gradientXY.getHeight()) {
             throw new IllegalArgumentException("gradient and theta must be same size");
         }
-        
+
         if (w != theta.getWidth() || h != theta.getHeight()) {
             throw new IllegalArgumentException("gradient and theta must be same size");
         }
-        
+
         if (debug) {
             algorithms.misc.MiscDebug.writeImage(gradientXY, "_gXY_");
             algorithms.misc.MiscDebug.writeImage(theta, "_theta_");
         }
-        
+
         GradientIntegralHistograms gh = new GradientIntegralHistograms();
-        
+
         int[][] histograms = gh.createHistograms(gradientXY, theta, nAngleBins);
 
         //apply a windowed sum across the integral image
         gh.applyWindowedSum(histograms, w, h, N_PIX_PER_CELL_DIM);
-        
-        return histograms;        
+
+        return histograms;
     }
 
     /**
      * CAVEAT: small amount of testing done, not yet throughly tested.
-     * 
+     *
      * extract the block surrounding the feature.
      * the number of pixels in a cell and the number of cells in block were set during
      * construction.
-     * 
+     *
      * @param x
      * @param y
-     * @param outHist 
+     * @param outHist
      */
     public void extractFeature(int x, int y, int[] outHist) {
-                
+
         if (outHist.length != nAngleBins) {
             throw new IllegalArgumentException("outHist.length != nAngleBins");
         }
@@ -222,23 +221,23 @@ public class HOGs {
             throw new IllegalArgumentException("x or y is out of bounds of "
                 + "original image");
         }
-        
+
         // uses the block normalization recomended by Dalal & Triggs,
         //   the summary of histogram counts over all cells
         //   is used to normaliza each cell by that sum.
-        
+
         int nH = N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM;
 
-        double blockTotal = 0;        
-                
+        double blockTotal = 0;
+
         List<OneDIntArray> cells = new ArrayList<OneDIntArray>(nH);
-        
+
         for (int cX = 0; cX < N_CELLS_PER_BLOCK_DIM; ++cX) {
-            
+
             int cXOff = -(N_CELLS_PER_BLOCK_DIM/2) + cX;
-        
+
             int x2 = x + (cXOff * N_PIX_PER_CELL_DIM);
-            
+
             if ((x2 + N_PIX_PER_CELL_DIM - 1) < 0) {
                 break;
             } else if (x2 < 0) {
@@ -246,11 +245,11 @@ public class HOGs {
             } else if (x2 >= w) {
                 break;
             }
-            
+
             for (int cY = 0; cY < N_CELLS_PER_BLOCK_DIM; ++cY) {
-                    
+
                 int cYOff = -(N_CELLS_PER_BLOCK_DIM/2) + cY;
-                
+
                 int y2 = y + (cYOff * N_PIX_PER_CELL_DIM);
 
                 if ((y2 + N_PIX_PER_CELL_DIM - 1) < 0) {
@@ -260,78 +259,78 @@ public class HOGs {
                 } else if (y2 >= h) {
                     break;
                 }
-                                
+
                 int pixIdx = (y2 * w) + x2;
-                
+
                 int[] out = Arrays.copyOf(gHists[pixIdx], gHists[pixIdx].length);
 
                 cells.add(new OneDIntArray(out));
-            
+
                 int t = sumCounts(out);
-                
+
                 blockTotal += (t * t);
             }
         }
-        
+
         blockTotal /= (double)cells.size();
-        
+
         double norm = 1./Math.sqrt(blockTotal + 0.0001);
-                
+
         float maxBlock = (N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM) *
             (N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM) * 255,f;
-   
+
         norm *= maxBlock;
-        
+
         Arrays.fill(outHist, 0, outHist.length, 0);
-        
+
         for (int i = 0; i < cells.size(); ++i) {
             int[] a = cells.get(i).a;
             for (int j = 0; j < a.length; ++j) {
                 //v /= Math.sqrt(blockTotal + 0.0001);
                 a[j] = (int)Math.round(norm * a[j]);
-            } 
+            }
             add(outHist, a);
         }
-        
-        /*        
+
+        /*
         part of a block of 3 X 3 cells
-        
+
            2        2        2        2
            1        1        1        1
            0        0        0        0
           -9 -8 -7 -6 -5 -4 -3 -2 -1  *  1  2  3  4  5  6  7  9
                                       *
-        */        
+        */
     }
-    
+
     /**
      * CAVEAT: small amount of testing done, not yet throughly tested.
-     * 
+     *
      * calculate the intersection of histA and histB which have already
      * been normalized to the same scale.
      * A result of 0 is maximally dissimilar and a result of 1 is maximally similar.
-     * 
+     *
      * The orientations are needed to compare the correct rotated bins to one another.
      * Internally, orientation of 90 leads to no shift for rotation,
      * and orientation near 0 results in rotation of nBins/2, etc...
-     * 
+     *
      * Note that an orientation of 90 is a unit vector from x,y=0,0 to
      * x,y=0,1.
-     * 
+     *
      * @param histA
      * @param orientationA
      * @param histB
      * @param orientationB
-     * @return 
+     * @return
      */
-    public float intersection(int[] histA, int orientationA, int[] histB, 
+    public float intersection(int[] histA, int orientationA, int[] histB,
         int orientationB) {
-        
+
         if ((histA.length != histB.length)) {
             throw new IllegalArgumentException(
                 "histA and histB must be same dimensions");
         }
-        
+
         if (orientationA < 0 || orientationA > 180 || orientationB < 0 ||
             orientationB > 180) {
             throw new IllegalArgumentException("orientations must be in range 0 to 180,"
@@ -343,86 +342,86 @@ public class HOGs {
         if (orientationB == 180) {
             orientationB = 0;
         }
-        
+
         int nBins = histA.length;
-        
+
         int binWidth = 180/nBins;
-        
+
         int shiftA = (orientationA - 90)/binWidth;
         int shiftB = (orientationB - 90)/binWidth;
-        
+
         /*
         histograms are already normalized
-        
-        K(a,b) = 
+
+        K(a,b) =
             (summation_over_i_from_1_to_n( min(a_i, b_i))
              /
             (min(summation_over_i(a_i), summation_over_i(b_i))
         */
-            
+
         float sum = 0;
         float sumA = 0;
         float sumB = 0;
         for (int j = 0; j < nBins; ++j) {
-            
+
             int idxA = j + shiftA;
             if (idxA < 0) {
                 idxA += nBins;
             } else if (idxA > (nBins - 1 )) {
                 idxA -= nBins;
             }
-            
+
             int idxB = j + shiftB;
             if (idxB < 0) {
                 idxB += nBins;
             } else if (idxB > (nBins - 1 )) {
                 idxB -= nBins;
             }
-            
+
             float yA = histA[idxA];
             float yB = histB[idxB];
-            
+
             sum += Math.min(yA, yB);
             sumA += yA;
             sumB += yB;
-            
+
             //System.out.println(" " + yA + " -- " + yB + " sum="+sum + ", " + sumA + "," + sumB);
         }
-        
+
         float d = Math.min(sumA, sumB);
         float sim = (d == 0.f) ? 0 : sum/d;
-        
+
         return sim;
     }
-    
+
     /**
      * CAVEAT: small amount of testing done, not yet throughly tested.
-     * 
+     *
      * calculate the intersection of histA and histB which have already
      * been normalized to the same scale.
      * A result of 0 is maximally dissimilar and a result of 1 is maximally similar.
-     * 
+     *
      * The orientations are needed to compare the correct rotated bins to one another.
      * Internally, orientation of 90 leads to no shift for rotation,
      * and orientation near 0 results in rotation of nBins/2, etc...
-     * 
+     *
      * Note that an orientation of 90 is a unit vector from x,y=0,0 to
      * x,y=0,1.
-     * 
+     *
      * @param histA
      * @param orientationA
      * @param histB
      * @param orientationB
-     * @return 
+     * @return
      */
-    public float ssd(int[] histA, int orientationA, int[] histB, 
+    public float ssd(int[] histA, int orientationA, int[] histB,
         int orientationB) {
-        
+
         if ((histA.length != histB.length)) {
             throw new IllegalArgumentException(
                 "histA and histB must be same dimensions");
         }
-        
+
         if (orientationA < 0 || orientationA > 180 || orientationB < 0 ||
             orientationB > 180) {
             throw new IllegalArgumentException("orientations must be in range 0 to 180,"
@@ -434,81 +433,81 @@ public class HOGs {
         if (orientationB == 180) {
             orientationB = 0;
         }
-        
+
         double sumDiff = 0;
-        
+
         int nBins = histA.length;
-        
+
         int binWidth = 180/nBins;
-        
+
         int shiftA = (orientationA - 90)/binWidth;
         int shiftB = (orientationB - 90)/binWidth;
-       
+
         for (int j = 0; j < nBins; ++j) {
-            
+
             int idxA = j + shiftA;
             if (idxA < 0) {
                 idxA += nBins;
             } else if (idxA > (nBins - 1 )) {
                 idxA -= nBins;
             }
-            
+
             int idxB = j + shiftB;
             if (idxB < 0) {
                 idxB += nBins;
             } else if (idxB > (nBins - 1 )) {
                 idxB -= nBins;
             }
-            
+
             float yA = histA[idxA];
             float yB = histB[idxB];
-            
+
             float diff = yA - yB;
-            
-            sumDiff += (diff * diff);            
+
+            sumDiff += (diff * diff);
         }
-        
+
         sumDiff /= (double)nBins;
-        
-        float maxValue = Math.max(MiscMath.findMax(histA), 
+
+        float maxValue = Math.max(MiscMath.findMax(histA),
             MiscMath.findMax(histB));
-        
+
         sumDiff = Math.sqrt(sumDiff)/maxValue;
-        
+
         return (float)sumDiff;
     }
 
     private int sumCounts(int[] hist) {
-        
+
         int sum = 0;
         for (int v : hist) {
             sum += v;
         }
-        
+
         return sum;
     }
-     
+
     private void add(int[] addTo, int[] addFrom) {
         for (int i = 0; i < addTo.length; ++i) {
             addTo[i] += addFrom[i];
         }
     }
-    
+
     private void add(long[] addTo, int[] addFrom) {
         for (int i = 0; i < addTo.length; ++i) {
             addTo[i] += addFrom[i];
         }
     }
-    
+
     public int getNumberOfBins() {
         return nAngleBins;
     }
 
     /**
-     * NOT READY FOR USE.  
-     * 
+     * NOT READY FOR USE.
+     *
      * @param xy
-     * @return 
+     * @return
      */
     public int calculateDominantOrientation(Collection<PairInt> xy) {
 
@@ -554,8 +553,8 @@ public class HOGs {
                 }
 
                 return Math.round(0.5f * (ang0 + ang1));
-            } 
-                
+            }
+
             float diff0 = 360 + ang1 - ang0;
             float diff1 = ang0 - ang1;
             if (diff0 < diff1) {
@@ -565,24 +564,24 @@ public class HOGs {
             return Math.round(0.5f * (ang0 + ang1));
 
         } else {
-            
+
             // average of all indexes
-            
+
              double[] angles = new double[maxIdxs.size()];
              for (int i = 0; i < maxIdxs.size(); ++i) {
                  angles[i] = ((maxIdxs.get(i) + 0.5f) * binWidth);
              }
-            
-             double angleAvg = 
+
+             double angleAvg =
                  AngleUtil.calculateAverageWithQuadrantCorrections(
                      angles, false);
-             
+
             return (int)Math.round(angleAvg);
         }
     }
 
     public TIntSet calculateDominantOrientations(Collection<PairInt> xy) {
-        
+
         long[] combined = new long[nAngleBins];
 
         for (PairInt p : xy) {
@@ -591,18 +590,18 @@ public class HOGs {
         }
 
         int maxIdx = MiscMath.findYMaxIndex(combined);
-        
+
         if (maxIdx == -1) {
             throw new IllegalArgumentException("histogram is full of "
                 + " min value longs");
         }
-        
+
         // if any bins have values within 80% of max, add to maxIdxs
         TIntList maxIdxs = new TIntArrayList();
-        
+
         long max = combined[maxIdx];
         double limit = 0.8 * max;
-        
+
         for (int i = 0; i < combined.length; ++i) {
             long v = combined[i];
             if (v >= limit) {
@@ -611,9 +610,9 @@ public class HOGs {
         }
 
         int binWidth = 180 / nAngleBins;
-        
+
         TIntSet orientations = new TIntHashSet();
-        
+
         for (int i = 0; i < maxIdxs.size(); ++i) {
             int idx = maxIdxs.get(i);
             int angle = Math.round((maxIdxs.get(i) + 0.5f) * binWidth);
@@ -622,5 +621,5 @@ public class HOGs {
 
         return orientations;
     }
-    
+
 }
