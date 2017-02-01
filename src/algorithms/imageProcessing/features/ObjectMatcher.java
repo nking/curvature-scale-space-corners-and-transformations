@@ -1545,6 +1545,11 @@ public class ObjectMatcher {
         List<GreyscaleImage> pyrPT1 = imageProcessor.buildPyramid(
             luvTheta1, settings.useLargerPyramid1);
        
+        applyWindowedMean(pyrRGB0, 1);
+        applyWindowedMean(pyrRGB1, 1);
+        applyWindowedMean2(pyrPT0, 1);
+        applyWindowedMean2(pyrPT1, 1);
+        
         Canonicalizer canonicalizer = new Canonicalizer();
 
         // ----- create the cRegions for a masked image pyramid of img 0 ====
@@ -1629,9 +1634,8 @@ public class ObjectMatcher {
         filled ellipse had better results than points in (1) or (2).
         */
         
-        // replaceWithAccumulatedPoints(regionPoints1);
+        replaceWithAccumulatedPoints(regionPoints1);
         
-        /*
         if (debug) {
             int[] xyCen = new int[2];
             Image im1Cp = img1.copyImage();
@@ -1670,7 +1674,7 @@ public class ObjectMatcher {
                     + "_regions_1_acc_" + i + "_");
             }
         }
-        */
+        
         
         MSERMatcher matcher = new MSERMatcher();
 

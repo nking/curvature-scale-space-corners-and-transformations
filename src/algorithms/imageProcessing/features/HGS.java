@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.IntegralHistograms;
 import algorithms.misc.MiscMath;
 import algorithms.util.OneDIntArray;
 import java.util.ArrayList;
@@ -8,7 +9,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- A class holding histograms of a polar theta color space greyscale image 
+ A class holding histograms of a greyscale image 
  * and methods to extract
  * features.
  * The algorithm is similar to those mentioned in HOGs.java except
@@ -17,7 +18,7 @@ import java.util.List;
  
   @author nichole
 */
-public class HCPT {
+public class HGS {
    
     private final int nBins;
     
@@ -37,7 +38,7 @@ public class HCPT {
     //   using integers instead of long for storage.
     //  8.4 million pix, roughly 2900 X 2900
     
-    public HCPT(GreyscaleImage img) {
+    public HGS(GreyscaleImage img) {
         
         // binWidth of 16
         nBins = 16;
@@ -49,7 +50,7 @@ public class HCPT {
         gHists = init(img);
     }
     
-    public HCPT(GreyscaleImage img, int nCellsPerDim, int nPixPerCellDim,
+    public HGS(GreyscaleImage img, int nCellsPerDim, int nPixPerCellDim,
         int nBins) {
         
         // binWidth of 16
@@ -68,9 +69,9 @@ public class HCPT {
     
     private int[][] init(GreyscaleImage img) {
        
-        PolarThetaIntegralHistograms gh = new PolarThetaIntegralHistograms();
+        IntegralHistograms gh = new IntegralHistograms();
         
-        int[][] histograms = gh.createHistograms(img, nBins);
+        int[][] histograms = gh.create(img, nBins);
 
         //apply a windowed avg across the integral image
         gh.applyWindowedSum(histograms, w, h, N_PIX_PER_CELL_DIM);

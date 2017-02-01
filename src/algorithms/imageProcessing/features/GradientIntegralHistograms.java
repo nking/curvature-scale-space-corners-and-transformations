@@ -63,6 +63,9 @@ public class GradientIntegralHistograms {
                 }
                 
                 int bin = t/binWidth;
+                if (bin >= nBins) {
+                    bin = nBins - 1;
+                }
                 
                 int v = gradient.getValue(pixIdx);
                
