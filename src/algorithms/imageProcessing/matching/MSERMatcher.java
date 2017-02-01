@@ -1077,8 +1077,8 @@ public class MSERMatcher {
         TIntObjectMap<HGS> hgsMap1 = new TIntObjectHashMap<HGS>();
 
         // 16, 12
-        int nPixPerCellDimH = 6;;
-        int nPixPerCellDim = 4;//6;
+        int nPixPerCellDimH = 6;
+        int nPixPerCellDim = 4;
         
         // use hogs to calculate the dominant orientations
         calculateDominantOrientations(regionPoints0, 
