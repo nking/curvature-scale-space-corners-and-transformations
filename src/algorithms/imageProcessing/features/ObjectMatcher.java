@@ -847,10 +847,10 @@ public class ObjectMatcher {
         for (int rIdx = 0; rIdx < regions.size(); ++rIdx) {
 
             Region region = regions.get(rIdx);
-
+         
             RegionGeometry rg = Canonicalizer.calculateEllipseParams(
                 region, width, height);
-
+            
             PairIntWithIndex pii = new PairIntWithIndex(rg.xC, rg.yC, rIdx);
             points2.add(pii);
             
@@ -955,6 +955,8 @@ public class ObjectMatcher {
 
     private void replaceWithAccumulatedPoints(TIntObjectMap<RegionPoints> regionPoints) {
     
+        PerimeterFinder2 finder = new PerimeterFinder2();
+        
         TIntObjectIterator<RegionPoints> iter = regionPoints.iterator();
         for (int i = 0; i < regionPoints.size(); ++i) {
             
@@ -963,11 +965,38 @@ public class ObjectMatcher {
             
             RegionPoints rp = iter.value();
             
+            //NOTE this may need to be revised.
+            //  wanting to trim down the points outside of the ellipse if
+            //  they are too far away, such as a line of pixels blended into
+            //  what is otherwise a more compact object.
+            
+            Set<PairInt> ellipse = new HashSet<PairInt>(rp.points);
+            
             rp.points.clear();
             
             for (int j = 0; j < rp.accX.size(); ++j) {
-                rp.points.add(new PairInt(rp.accX.get(j), rp.accY.get(j)));
+                int x = rp.accX.get(j);
+                int y = rp.accY.get(j);
+                PairInt p2 = new PairInt(x, y);
+                if (!ellipse.contains(p2)) {
+                    // if far away from center, past major axis, do not add
+                    int diffX = x - rp.ellipseParams.xC;
+                    int diffY = y - rp.ellipseParams.yC;
+                    double d = Math.sqrt(diffX * diffX + diffY * diffY);
+                    if (d > 1.2 * rp.ellipseParams.major) {
+                        continue;
+                    }
+                }
+                rp.points.add(p2);
             }
+            
+            // fill in embedded spaces.
+            // NOTE: this may need to be reconsidered in special cases.
+            Set<PairInt> embedded = finder.findEmbeddedGaps(rp.points);
+            if (embedded != null) {
+                rp.points.addAll(embedded);
+            }
+            
         }
     }
 
@@ -1205,273 +1234,6 @@ public class ObjectMatcher {
     /**
      * NOT READY FOR USE
      * 
-     * TODO: edit documentation here.
-     * 
-     * given an object in image img0 which is defined by shape0, find the same
-     * object in img1.
-     * This method was created to handle a range of lighting changes, poses,
-     * and different background and foregrounds, that is, cases where the
-     * number of true matching keypoints in img1 is small compared to the
-     * total number of keypoints in img1, making the standard best matching
-     * descriptors and RANSAC to remove outliers infeasible.
-     *
-     * The method uses segmentation and the mser blob detector to
-     * to create regions of patches to compare.
-     * The patch matches are then aggregated with consistent 
-     * other matches in terms of separation and size within the
-     * octave scales.
-     *
-     * @param img0
-     * @param shape0
-     * @param img1
-     * @param settings for the method
-     * @return
-     */
-    public CorrespondenceList findObject11(ImageExt img0, Set<PairInt> shape0,
-        ImageExt img1, Settings settings) {
-
-        long ts = 0;
-        if (debug) {
-            ts = MiscDebug.getCurrentTimeFormatted();
-        }
-
-        TrimmedImage img0Trim = trim(img0, shape0, 20);
-
-        Set<PairInt> shape0Trimmed = new HashSet<PairInt>();
-        for (PairInt p : shape0) {
-            PairInt p2 = new PairInt(p.getX() - img0Trim.getXOffset(),
-                p.getY() - img0Trim.getYOffset());
-            shape0Trimmed.add(p2);
-        }
-
-        ImageExt img0Trimmed = (ImageExt)img0Trim.getTrimmed();
-
-        ImageProcessor imageProcessor = new ImageProcessor();
-
-        GreyscaleImage luvTheta0 = imageProcessor.createCIELUVTheta(img0Trimmed, 255);
-        GreyscaleImage luvTheta1 = imageProcessor.createCIELUVTheta(img1, 255);
-        imageProcessor.singlePixelFilter(luvTheta0);
-        imageProcessor.singlePixelFilter(luvTheta1);
-
-        mask(img0Trimmed, shape0Trimmed);
-        mask(luvTheta0, shape0Trimmed);
-
-        CMODE clrMode = determineColorMode(img0Trimmed, shape0Trimmed);
-        
-        CMODE ptMode = determinePolarThetaMode(luvTheta0, shape0Trimmed);
-        
-        // ----- create the cRegions for a masked image pyramid of img 0 ====
-        
-        GreyscaleImage gsImg0 = img0Trimmed.copyToGreyscale2();
-        GreyscaleImage gsImg1 = img1.copyToGreyscale2();
-        
-        boolean fewerMSER = true;
-       
-        GreyscaleImage tmp00 = gsImg0.copyImage();
-        imageProcessor.enhanceContrast(tmp00, 4);
-        GreyscaleImage tmp01 = luvTheta0.copyImage();
-        imageProcessor.enhanceContrast(tmp01, 4);
-        
-        // build combined list of regions
-        List<Region> regionsComb0 = createCombinedMSERRegions(
-            tmp00, tmp01,
-            //gsImg0, luvTheta0, 
-            clrMode, ptMode, fewerMSER, settings.getDebugLabel() + "_0_");
-
-        int[] xy = new int[2];
-        //remove all regions with centers outside of shape0 points
-        for (int i = (regionsComb0.size() - 1); i > -1; --i) {
-            Region r = regionsComb0.get(i);
-            r.calculateXYCentroid(xy, img0Trimmed.getWidth(), img0Trimmed.getHeight());
-            PairInt p = new PairInt(xy[0], xy[1]);
-            if (!shape0Trimmed.contains(p)) {
-                regionsComb0.remove(i);
-            }
-        }
-
-        fewerMSER = false;
-        
-        GreyscaleImage tmp10 = gsImg1.copyImage();
-        imageProcessor.enhanceContrast(tmp10, 4);
-        GreyscaleImage tmp11 = luvTheta1.copyImage();
-        imageProcessor.enhanceContrast(tmp11, 4);
-        
-        if (debug) {            
-            MiscDebug.writeImage(img0Trimmed, "_shape0_mask_");
-            MiscDebug.writeImage(luvTheta0, "_luv_mask_");
-            
-            //MiscDebug.writeImage(tmp00, "_gs_enhanced_0_");
-            //MiscDebug.writeImage(tmp01, "_luv_enhanced_0_");
-            //MiscDebug.writeImage(tmp10, "_gs_enhanced_1_");
-            //MiscDebug.writeImage(tmp11, "_luv_enhanced_1_");
-        }
-        
-        List<Region> regionsComb1 = createCombinedMSERRegions(
-            tmp10, tmp11,
-            //gsImg1, luvTheta1, 
-            clrMode, ptMode, fewerMSER, settings.getDebugLabel() + "_1_");
-        
-        // these are in the trimmed reference frame
-        //NOTE: need segmentation for shape0 in order to find partial
-        //   object when composed of very different parts, such as the
-        //   cupcake cup and frosting, so don't condense to 1 label composed of shape0
-        TIntObjectMap<Set<PairInt>> labeledSets0 = segment(img0Trimmed, shape0Trimmed);
-        List<Set<PairInt>> labeledSets0List = new ArrayList<Set<PairInt>>();
-        TIntObjectIterator<Set<PairInt>> iter = labeledSets0.iterator();
-        for (int i = 0; i < labeledSets0.size(); ++i) {
-            iter.advance();
-            labeledSets0List.add(iter.value());
-        }
-
-        // filter regions by segmentation
-        List<Set<PairInt>> labeledSets1 = filterBySegmentation2(
-            img0Trimmed, shape0Trimmed, img1, regionsComb1, settings);
-                
-        List<List<GreyscaleImage>> pyrRGB0 = imageProcessor
-            .buildColorPyramid(img0Trimmed,
-            settings.useLargerPyramid0);
-        
-        List<GreyscaleImage> pyrPT0 = imageProcessor
-            .buildPyramid(luvTheta0, settings.useLargerPyramid0);
-
-        List<List<GreyscaleImage>> pyrRGB1 = imageProcessor
-            .buildColorPyramid(img1, settings.useLargerPyramid1);
-
-        List<GreyscaleImage> pyrPT1 = imageProcessor
-            .buildPyramid(luvTheta1, settings.useLargerPyramid1);
-       
-        //NOTE: this is necessary
-        applyWindowedMean(pyrRGB0, 1);
-        applyWindowedMean(pyrRGB1, 1);
-        applyWindowedMean2(pyrPT0, 1);
-        applyWindowedMean2(pyrPT1, 1);
-        
-        Canonicalizer canonicalizer = new Canonicalizer();
-
-        // ----- create the cRegions for a masked image pyramid of img 0 ====
-
-        //TODO: add filter here for patterns in the MSER regions that
-        // are strong, and if present in reference frame1, then
-        // anything without it should be removed.
-        // use of this feature should be a Setting option.
-
-        if (debug) {
-            int[] xyCen = new int[2];
-            Image im0Cp, im1Cp;
-            im0Cp = img0Trimmed.copyImage();
-            int n9 = regionsComb0.size();
-            if (n9 > 10) {
-            //    n9 = 10;
-            }
-            for (int i = 0; i < n9; ++i) {
-                Region r = regionsComb0.get(i);
-                int[] clr = ImageIOHelper.getNextRGB(i);
-                r.drawEllipse(im0Cp, 0, clr[0], clr[1], clr[2]);
-                r.calculateXYCentroid(xyCen, im0Cp.getWidth(), im0Cp.getHeight());
-                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im0Cp,
-                    1, 255, 0, 0);
-            }
-            MiscDebug.writeImage(im0Cp, "regions_0_");
-
-            im1Cp = img1.copyImage();
-            n9 = regionsComb1.size();
-            if (n9 > 10) {
-            //    n9 = 10;
-            }
-            for (int i = 0; i < n9; ++i) {
-                Region r = regionsComb1.get(i);
-                int[] clr = ImageIOHelper.getNextRGB(i);
-                r.drawEllipse(im1Cp, 0, clr[0], clr[1], clr[2]);
-                r.calculateXYCentroid(xyCen, im1Cp.getWidth(), im1Cp.getHeight());
-                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im1Cp,
-                    1, 255, 0, 0);
-            //    System.out.println("regIdx1=" + i + " x="+xyCen[0] + " y=" + xyCen[1]);
-            }
-            MiscDebug.writeImage(im1Cp, "regions_1_");
-        }
-        
-        //NOTE: temporarily reducing the template regions to only be a single
-        // region containing all shape points.
-
-        //regions[0) are found from the image,
-        // while regions[1) are found from the inverted image.
-        TIntObjectMap<RegionPoints> regionPoints0 = 
-            new TIntObjectHashMap<RegionPoints>();
-
-        // create a fake mser shape0 size
-        createAWholeRegion(regionPoints0, shape0Trimmed, pyrRGB0.get(0).get(1));
-        
-        TIntObjectMap<RegionPoints> regionPoints1 =
-            canonicalizer.canonicalizeRegions2(regionsComb1, pyrRGB1.get(0).get(1));
-   
-        // these have been filtered to remove excess labeled points where possible.
-        // and if last variable is true, the points have been 
-        // replaced with filtered segmented label points instead of the ellipse.
-        // MOTE: the geometry variable that include orientation is not changed from the
-        // original ellipse and that may need to be.
-        //mergeRegionsAndSegmentation(labeledSets0List, regionPoints0, gsImg0, luvTheta0,
-        //    true);
-        
-        mergeRegionsAndSegmentation(labeledSets1, regionPoints1, gsImg1, luvTheta1, true);
-      
-        TIntObjectMap<CRegion> cRegions0 = canonicalizer.canonicalizeRegions3(
-            regionPoints0, pyrRGB0.get(0).get(1));
-        
-        TIntObjectMap<CRegion> cRegions1 = canonicalizer.canonicalizeRegions3(
-            regionPoints1, pyrRGB1.get(0).get(1));
-        
-        TObjectIntMap<PairInt> pointLabelMap0 = createPointLabelMap(labeledSets0List);
-
-        TObjectIntMap<PairInt> pointLabelMap1 = createPointLabelMap(labeledSets1);
-        
-        populateLabels(cRegions0, pointLabelMap0);
-        populateLabels(cRegions1, pointLabelMap1);
-        
-        reduceToUnique(cRegions0);
-        reduceToUnique(cRegions1);
-        
-        if (debug) {
-            debugPrint2(cRegions0, pyrRGB0.get(0), "_cr_0_");
-            debugPrint2(cRegions1, pyrRGB1.get(0), "_cr_1_");
-            //debugPrint2(cRegions1, luvTheta1, "_cr_1_");
-            MiscDebug.writeImage(luvTheta1, "_polar_cieluv_");
-        
-            System.out.println("0: " + cRegions0.size());
-            System.out.println("1: " + cRegions1.size());
-        }
-                
-        MSERMatcher matcher = new MSERMatcher();
-
-        if (debug) {
-            matcher.setToDebug();
-        }
-
-        List<CorrespondenceList> corList 
-            = matcher.matchObject3(
-            pyrRGB0, pyrPT0, cRegions0, labeledSets0List, pointLabelMap0,
-            pyrRGB1,  pyrPT1, cRegions1, labeledSets1, pointLabelMap1,
-            settings.getDebugLabel());
-        
-        if (corList == null) {
-            return null;
-        }
-        
-        // apply offsets for having trimmed image 0
-        CorrespondenceList topC = corList.get(0);
-        for (int i = 0; i < topC.getPoints1().size(); ++i) {
-            PairInt p = topC.getPoints1().get(i);
-            int x = p.getX();
-            int y = p.getY();
-            p.setX(x + img0Trim.getXOffset());
-            p.setY(y + img0Trim.getYOffset());
-        }
-
-        return topC;
-    }
-    
-    /**
-     * NOT READY FOR USE
-     * 
      * 
      * @param img0
      * @param shape0
@@ -1667,7 +1429,6 @@ public class ObjectMatcher {
         (1) modified the ellipse boundaries inward to the nearest bounding edges
             of the accumulated points.
         (2) used just the accumulated points instead of the ellipse filled points.
-        
         */
         
         replaceWithAccumulatedPoints(regionPoints1);
