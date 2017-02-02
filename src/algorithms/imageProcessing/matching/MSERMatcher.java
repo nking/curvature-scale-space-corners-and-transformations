@@ -140,53 +140,6 @@ public class MSERMatcher {
         return csrMap;
     }
 
-    private void match(TransformationParameters params,
-        PairIntArray points0, PairIntArray points1,
-        PairIntArray outputM0, PairIntArray outputM1,
-        TIntObjectMap<PairInt> indexPoint0Map,
-        int image1Width, int image1Height, int dMax) {
-
-        Transformer transformer = new Transformer();
-
-        PairIntArray points0Tr = transformer.applyTransformation(params,
-            points0);
-
-        NearestNeighbor2D nn1 = new NearestNeighbor2D(
-            Misc.convert(points1), image1Width, image1Height);
-
-        Set<PairInt> added1 = new HashSet<PairInt>();
-
-        for (int i = 0; i < points0Tr.getN(); ++i) {
-            int x0Tr = points0Tr.getX(i);
-            int y0Tr = points0Tr.getY(i);
-
-            Set<PairInt> nearest1 = nn1.findClosest(x0Tr, y0Tr, dMax);
-            if (nearest1 == null) {
-                continue;
-            }
-
-            //TODO: add iteration over nearest1 for closest in color
-
-            PairInt p1 = null;
-            for (PairInt p3 : nearest1) {
-                if (added1.contains(p3)) {
-                    continue;
-                }
-                p1 = p3;
-                break;
-            }
-            if (p1 == null) {
-                continue;
-            }
-
-            PairInt p0 = indexPoint0Map.get(i);
-            assert(p0 != null);
-            outputM0.add(p0);
-            outputM1.add(p1);
-            added1.add(p1);
-        }
-    }
-
     private GreyscaleImage combineImages(List<GreyscaleImage> rgb) {
 
         GreyscaleImage r = rgb.get(0);
@@ -293,6 +246,20 @@ public class MSERMatcher {
         double xy = Math.sqrt(diffX * diffX + diffY * diffY);
         
         return (int)Math.round(xy);
+    }
+    
+    private int calculateObjectSizeByAvgDist(int x, int y, 
+        Collection<PairInt> values) {
+
+        int sumD = 0;
+        for (PairInt p : values) {
+            int diffX = p.getX() - x;
+            int diffY = p.getY() - y;
+            sumD += (diffX * diffX + diffY * diffY);
+        }
+        sumD = (int)Math.ceil(Math.sqrt((double)sumD/(double)values.size()));
+        
+        return sumD;
     }
 
     private void debugPrint3(List<List<Obj>> list, GreyscaleImage img0, 
@@ -644,10 +611,10 @@ public class MSERMatcher {
         CRegion cr1;
         int imgIdx0;
         int imgIdx1;
-        double ssd;
         int nMatched;
         double cost = Double.MAX_VALUE;
         double[] costs;
+        double f;
         
         // might not be populatated:
         int r0Idx = -1;
@@ -655,7 +622,23 @@ public class MSERMatcher {
 
         @Override
         public int compareTo(Obj other) {
-            if (cost < other.cost) {
+            double diffCost = Math.abs(other.cost - cost);
+            if (diffCost < 0.001) {
+                // NOTE: may revise this.  wanting to choose smallest scale
+                //   or smaller fraction of whole
+                if (imgIdx0 < other.imgIdx0 && imgIdx1 < other.imgIdx1) {
+                    return -1;
+                } else if (imgIdx0 > other.imgIdx0 && imgIdx1 > other.imgIdx1) {
+                    return 1;
+                }
+                
+                if (f < other.f) {
+                    return -1;
+                } else if (f > other.f) {
+                    return 1;
+                }
+                return 0;
+            } else if (cost < other.cost) {
                 return -1;
             } else if (cost > other.cost) {
                 return 1;
@@ -716,7 +699,7 @@ public class MSERMatcher {
      * regionPoints0 in the MSER regions of regionPoints1.
      * 
      * The method is using 10 tests to find the android statues and
-     * is successfully finding 8 out of the 10 currently.
+     * is successfully finding 9 out of the 10 currently.
      * 
      * The method uses a cell size for the histograms and the results
      * are sensitive to that.
@@ -862,8 +845,10 @@ public class MSERMatcher {
                     int rIdx0 = iter0.key();
                     CRegion cr0 = iter0.value();
 
-                    int sz0 = calculateObjectSize(cr0.offsetsToOrigCoords.values());
-
+                    int sz0 = calculateObjectSizeByAvgDist(
+                        cr0.ellipseParams.xC, cr0.ellipseParams.yC,
+                        cr0.offsetsToOrigCoords.values());
+                    
                     //int area0_full = csr0.get(0).get(rIdx0).offsetsToOrigCoords.size();
                     TIntObjectIterator<CRegion> iter1 = regions1.iterator();
                     for (int i1 = 0; i1 < regions1.size(); ++i1) {
@@ -879,7 +864,9 @@ public class MSERMatcher {
                         int rIdx1 = iter1.key();
                         CRegion cr1 = iter1.value();
 
-                        int sz1 = calculateObjectSize(cr1.offsetsToOrigCoords.values());
+                        int sz1 = calculateObjectSizeByAvgDist(
+                            cr1.ellipseParams.xC, cr1.ellipseParams.yC,
+                            cr1.offsetsToOrigCoords.values());
 
                         // size filter
                         if ((sz1 > sz0 && ((sz1 / sz0) > sizeFactor))
@@ -897,10 +884,11 @@ public class MSERMatcher {
                         }
                         float hogCost = 1.f - (float) hogCosts[0];
 
-                        double fracOfWhole = hogCosts[1];
+                        // 1 - fraction of whole
+                        double f = hogCosts[1];
                        
-                        if (fracOfWhole < 0.) {
-                            fracOfWhole = 0.;
+                        if (f < 0.) {
+                            f = 0.;
                         }
                         
                         /*
@@ -911,7 +899,7 @@ public class MSERMatcher {
                         double hgsCost = 1.f - costs2[1];
                         double cost = (float) Math.sqrt(
                             2. * hogCost * hogCost
-                            + 2. * fracOfWhole * fracOfWhole
+                            + 2. * f * f
                             + hcptCost * hcptCost
                             + hgsCost * hgsCost
                         );
@@ -924,7 +912,7 @@ public class MSERMatcher {
 
                         double cost = (float) Math.sqrt(
                             2. * hogCost * hogCost
-                            + 2. * fracOfWhole * fracOfWhole
+                            + 2. * f * f
                             + hcptHgsCost * hcptHgsCost
                         );
 
@@ -935,14 +923,14 @@ public class MSERMatcher {
                         obj.r1Idx = rIdx1;
                         obj.imgIdx0 = imgIdx0;
                         obj.imgIdx1 = imgIdx1;
-                        obj.ssd = hcptHgsCost;//hcptCost;
                         obj.nMatched = (int) hogCosts[3];
                         obj.cost = cost;
                         obj.costs = new double[]{
-                            hogCost, fracOfWhole, 
+                            hogCost, f, 
                             //hcptCost, hgsCost};
                             hcptHgsCost
                         };
+                        obj.f = f;
 
                         //NOTE: may need to consider the best match
                         //  for each rIdx, that is, consider multiple 
@@ -1005,7 +993,7 @@ public class MSERMatcher {
             }
 
             Obj obj0 = vec.getArray()[0];
-
+            
             tmp1.add(obj0);
 
             if (debug) {
@@ -1039,7 +1027,7 @@ public class MSERMatcher {
                     or0, or1, obj0.cr0.hogOrientation, obj0.cr1.hogOrientation);
 
                 sb.append(String.format(
-"1] r1 %s %d (%d,%d) best: %.3f (%d,%d) %s [%.3f,%.3f,%.3f] %s n=%d\n",
+"1] r1 %s %d (%d,%d) best: %.4f (%d,%d) %s [%.3f,%.3f,%.3f] %s n=%d\n",
                     debugLabel, rIdx, 
                     Math.round(scale01 * obj0.cr1.ellipseParams.xC),
                     Math.round(scale01 * obj0.cr1.ellipseParams.yC),
@@ -1048,7 +1036,6 @@ public class MSERMatcher {
                     Math.round(scale00 * obj0.cr0.ellipseParams.yC), lbl,
                     (float) obj0.costs[0], (float) obj0.costs[1], 
                     (float) obj0.costs[2], 
-                    //(float) obj0.costs[3], 
                     str1, obj0.cr0.offsetsToOrigCoords.size()
                 ));
                 //hogCost, fracOfWhole, hcptCost, hgsCost}
@@ -1068,7 +1055,7 @@ public class MSERMatcher {
         if (debug) {
             System.out.println(sb.toString());
         }
-
+        
         StringBuilder sb2 = new StringBuilder();
 
         for (int i = 0; i < tmp1.getNumberOfItems(); ++i) {
@@ -1107,7 +1094,7 @@ public class MSERMatcher {
                     obj0.cr1.hogOrientation);
 
                 sb2.append(String.format(
- "2] r1 %s %d (%d,%d) best: %.3f (%d,%d) %s [%.3f,%.3f,%.3f] %s n=%d\n",
+ "2] r1 %s %d (%d,%d) best: %.4f (%d,%d) %s [%.3f,%.3f,%.3f] %s n=%d\n",
                     debugLabel, i, 
                     Math.round(scale01 * obj0.cr1.ellipseParams.xC),
                     Math.round(scale01 * obj0.cr1.ellipseParams.yC),
@@ -1116,7 +1103,6 @@ public class MSERMatcher {
                     Math.round(scale00 * obj0.cr0.ellipseParams.yC), lbl,
                     (float) obj0.costs[0], (float) obj0.costs[1], 
                     (float) obj0.costs[2], 
-                    //(float) obj0.costs[3],
                     str1, obj0.cr0.offsetsToOrigCoords.size()
                 ));
                 //hogCost, fracOfWhole, hcptCost, hgsCost}
@@ -1187,7 +1173,7 @@ public class MSERMatcher {
                         obj0.cr1.hogOrientation);
 
                     sb.append(String.format(
-  "1] r0 %s %d %d (%d,%d) best: %.3f (%d,%d) %s [%.3f,%.3f,%.3f] %s n=%d\n",
+  "1] r0 %s %d %d (%d,%d) best: %.4f (%d,%d) %s [%.3f,%.3f,%.3f] %s n=%d\n",
                         debugLabel, rIdx, j, 
                         Math.round(scale01 * obj0.cr1.ellipseParams.xC),
                         Math.round(scale01 * obj0.cr1.ellipseParams.yC),

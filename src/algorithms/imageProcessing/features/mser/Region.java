@@ -793,6 +793,7 @@ public class Region {
         sb.append(" area_=").append(area_);
         sb.append(" moments_=").append(Arrays.toString(moments_));
         sb.append(" variation_=").append(variation_);
+        sb.append(" stable=").append(stable_);
         return sb.toString();
     }
     
