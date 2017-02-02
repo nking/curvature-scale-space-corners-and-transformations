@@ -1061,6 +1061,51 @@ public class MSERMatcher {
         System.out.println(cRegions.size() + " labeled regions for " + label);
     }
 
+    /**
+     * This method is a work in progress.  
+     * It uses Histogram of Oriented Gradients, histograms of 
+     * images of cie luv converted to the polar angle, and
+     * histograms of greyscale intensity to find the object in
+     * regionPoints0 in the MSER regions of regionPoints1.
+     * 
+     * The method is using 10 tests to find the android statues and
+     * is successfully finding 7 out of the 10 currently.
+     * 
+     * The method uses a cell size for the histograms and the results
+     * are sensitive to that.
+     * The input images have been pre-processed in several ways.
+     * The images are binned down to an image size such that the largest
+     * dimension is 256 or smaller.
+     * Then ObjectMatcher.findObject12 is used.
+     * ObjectMatcher.findObject12 creates the polar theta images and
+     * then looks at the general black, white or other characteristics
+     * of the template object in dataset0 to determine which MSER 
+     * methods should be used (MSER has a positive and negative image 
+     * search and several parameters that affect the threshold of the
+     * results).
+     * The dataset1 MSER regions are filtered to remove those very 
+     * different in color than the template object.
+     * Both MSER regions are then filtered to keep the strongest mser
+     * when there are overlapping mser regions.
+     * The results given to this method here are 3 or so mser for dataset0
+     * and about 40 or less MSER for dataset1.
+     * 
+     * The sensitivity of ObjectMatcher.findObject12 and this method to image 
+     * resolution and size mean that use of this method should probably be 
+     * wrapped in a class that handles resolution and size logic in 
+     * pre-processing steps.
+     * Note that there may also be some color filter properties that would
+     * need to change for extreme cases.
+     * 
+     * @param pyrRGB0
+     * @param pyrPT0
+     * @param regionPoints0
+     * @param pyrRGB1
+     * @param pyrPT1
+     * @param regionPoints1
+     * @param debugLabel
+     * @return 
+     */
     public List<CorrespondenceList> matchObject0(
         List<List<GreyscaleImage>> pyrRGB0, List<GreyscaleImage> pyrPT0, 
         TIntObjectMap<Canonicalizer.RegionPoints> regionPoints0, 
@@ -1248,32 +1293,46 @@ public class MSERMatcher {
                             fracOfWhole = 0.;
                         }
                         
+                        /*
                         //double[]{sumA, sumB, f, err, count}
                         double[] costs2 = sumCost(hcpt0, hgs0, cr0, scale0, 
                             hcpt1, hgs1, cr1, scale1);
                         double hcptCost = 1.f - costs2[0];
                         double hgsCost = 1.f - costs2[1];
-
                         double cost = (float) Math.sqrt(
                             2. * hogCost * hogCost
                             + 2. * fracOfWhole * fracOfWhole
                             + hcptCost * hcptCost
                             + hgsCost * hgsCost
                         );
+                        */
+                        
+                        //double[]{sumA, f, count}
+                        double[] costs2 = sumCost2(hcpt0, hgs0, cr0, scale0, 
+                            hcpt1, hgs1, cr1, scale1);
+                        double hcptHgsCost = 1.f - costs2[0];
+
+                        double cost = (float) Math.sqrt(
+                            2. * hogCost * hogCost
+                            + 2. * fracOfWhole * fracOfWhole
+                            + hcptHgsCost * hcptHgsCost
+                        );
 
                         Obj obj = new Obj();
                         obj.cr0 = cr0;
                         obj.cr1 = cr1;
-                        //obj.r1Idx = cr1.dataIdx;
                         obj.r0Idx = rIdx0;
                         obj.r1Idx = rIdx1;
                         obj.imgIdx0 = imgIdx0;
                         obj.imgIdx1 = imgIdx1;
-                        obj.ssd = hcptCost;
+                        obj.ssd = hcptHgsCost;//hcptCost;
                         obj.nMatched = (int) hogCosts[3];
                         obj.cost = cost;
                         obj.costs = new double[]{
-                            hogCost, fracOfWhole, hcptCost, hgsCost};
+                            hogCost, fracOfWhole, 
+                            //hcptCost, hgsCost};
+                            hcptHgsCost
+                        };
 
                         //NOTE: may need to consider the best match
                         //  for each rIdx, that is, consider multiple 
@@ -1370,7 +1429,7 @@ public class MSERMatcher {
                     or0, or1, obj0.cr0.hogOrientation, obj0.cr1.hogOrientation);
 
                 sb.append(String.format(
-"1] r1 %s %d (%d,%d) best: %.3f (%d,%d) %s [%.3f,%.3f,%.3f,%.3f] %s n=%d\n",
+"1] r1 %s %d (%d,%d) best: %.3f (%d,%d) %s [%.3f,%.3f,%.3f] %s n=%d\n",
                     debugLabel, rIdx, 
                     Math.round(scale01 * obj0.cr1.ellipseParams.xC),
                     Math.round(scale01 * obj0.cr1.ellipseParams.yC),
@@ -1378,7 +1437,8 @@ public class MSERMatcher {
                     Math.round(scale00 * obj0.cr0.ellipseParams.xC),
                     Math.round(scale00 * obj0.cr0.ellipseParams.yC), lbl,
                     (float) obj0.costs[0], (float) obj0.costs[1], 
-                    (float) obj0.costs[2], (float) obj0.costs[3], 
+                    (float) obj0.costs[2], 
+                    //(float) obj0.costs[3], 
                     str1, obj0.cr0.offsetsToOrigCoords.size()
                 ));
                 //hogCost, fracOfWhole, hcptCost, hgsCost}
@@ -1436,7 +1496,7 @@ public class MSERMatcher {
                     obj0.cr1.hogOrientation);
 
                 sb2.append(String.format(
- "2] r1 %s %d (%d,%d) best: %.3f (%d,%d) %s [%.3f,%.3f,%.3f,%.3f] %s n=%d\n",
+ "2] r1 %s %d (%d,%d) best: %.3f (%d,%d) %s [%.3f,%.3f,%.3f] %s n=%d\n",
                     debugLabel, i, 
                     Math.round(scale01 * obj0.cr1.ellipseParams.xC),
                     Math.round(scale01 * obj0.cr1.ellipseParams.yC),
@@ -1444,7 +1504,8 @@ public class MSERMatcher {
                     Math.round(scale00 * obj0.cr0.ellipseParams.xC),
                     Math.round(scale00 * obj0.cr0.ellipseParams.yC), lbl,
                     (float) obj0.costs[0], (float) obj0.costs[1], 
-                    (float) obj0.costs[2], (float) obj0.costs[3],
+                    (float) obj0.costs[2], 
+                    //(float) obj0.costs[3],
                     str1, obj0.cr0.offsetsToOrigCoords.size()
                 ));
                 //hogCost, fracOfWhole, hcptCost, hgsCost}
@@ -1514,7 +1575,7 @@ public class MSERMatcher {
                         obj0.cr1.hogOrientation);
 
                     sb.append(String.format(
-  "1] r0 %s %d %d (%d,%d) best: %.3f (%d,%d) %s [%.3f,%.3f,%.3f,%.3f] %s n=%d\n",
+  "1] r0 %s %d %d (%d,%d) best: %.3f (%d,%d) %s [%.3f,%.3f,%.3f] %s n=%d\n",
                         debugLabel, rIdx, j, 
                         Math.round(scale01 * obj0.cr1.ellipseParams.xC),
                         Math.round(scale01 * obj0.cr1.ellipseParams.yC),
@@ -1522,7 +1583,8 @@ public class MSERMatcher {
                         Math.round(scale00 * obj0.cr0.ellipseParams.xC),
                         Math.round(scale00 * obj0.cr0.ellipseParams.yC), lbl,
                         (float) obj0.costs[0], (float) obj0.costs[1], 
-                        (float) obj0.costs[2], (float) obj0.costs[3], 
+                        (float) obj0.costs[2], 
+                        //(float) obj0.costs[3], 
                         str1, obj0.cr0.offsetsToOrigCoords.size()
                     ));
                     //hogCost, fracOfWhole, hcptCost, hgsCost}
@@ -1718,5 +1780,68 @@ public class MSERMatcher {
         double err = Math.max(cr0.autocorrel, cr1.autocorrel);
 
         return new double[]{sumA, sumB, f, err, count};            
+    }
+    
+    //double[]{sumA, f, count}
+    private double[] sumCost2(HCPT hcpt0, HGS hgs0, CRegion cr0, float scale0, 
+        HCPT hcpt1, HGS hgs1, CRegion cr1, float scale1) {
+        
+        Map<PairInt, PairInt> offsetMap1 = cr1.offsetsToOrigCoords;
+
+        double sumA = 0;
+        int count = 0;
+        
+        int[] h0 = new int[hcpt0.getNumberOfBins()];
+        int[] h1 = new int[h0.length];
+        
+        // key = transformed offsets, value = coords in image ref frame,
+        // so, can compare dataset0 and dataset1 points with same
+        //  keys
+        for (Entry<PairInt, PairInt> entry0 : cr0.offsetsToOrigCoords.entrySet()) {
+
+            PairInt pOffset0 = entry0.getKey();
+
+            PairInt xy1 = offsetMap1.get(pOffset0);
+
+            if (xy1 == null) {
+                continue;
+            }
+
+            PairInt xy0 = entry0.getValue();
+
+            hcpt0.extractFeature(xy0.getX(), xy0.getY(), h0);
+
+            hcpt1.extractFeature(xy1.getX(), xy1.getY(), h1);
+
+            float intersection = hcpt0.intersection(h0, h1);
+            
+            sumA += (intersection * intersection);
+            
+            hgs0.extractFeature(xy0.getX(), xy0.getY(), h0);
+
+            hgs1.extractFeature(xy1.getX(), xy1.getY(), h1);
+
+            intersection = hgs0.intersection(h0, h1);
+            
+            sumA += (intersection * intersection);
+
+            count++;
+        }
+        if (count == 0) {
+            return null;
+        }
+
+        sumA /= (double)count;
+
+        sumA = Math.sqrt(sumA);
+                
+        //NOTE: this may need revision.  now assuming that all invoker's 
+        // have one object in cRegions0, hence, need to scale fraction
+        // of whole so all are in same reference frame
+        double area = cr0.offsetsToOrigCoords.size();
+        
+        double f = 1. - ((double) count / area);
+
+        return new double[]{sumA, f, count};            
     }
 }

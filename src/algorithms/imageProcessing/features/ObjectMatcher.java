@@ -289,7 +289,7 @@ public class ObjectMatcher {
 
     private List<Region> createCombinedMSERRegions(GreyscaleImage gsImg,
         GreyscaleImage luvTheta, CMODE clrMode, CMODE ptMode,
-        boolean fewerMSER) {
+        boolean fewerMSER, String debugLabel) {
 
         MSER mser = new MSER();
 
@@ -304,6 +304,9 @@ public class ObjectMatcher {
             thrGs = Threshold.SLIGHTLY_LESS_SENSITIVE;
             thrPt = Threshold.DEFAULT;
         }
+        
+        System.out.println(debugLabel + "  clrMode=" + clrMode.name() 
+            + " ptMode=" + ptMode.name());
         
         if (clrMode.equals(CMODE.WHITE)) {
             int[] gsA = mser.readIntoArray(gsImg);
@@ -335,9 +338,22 @@ public class ObjectMatcher {
             regionsT.add(new ArrayList<Region>());
         } else {
             regionsT = mser.findRegions(luvTheta, thrPt);
+        
+            // filter to remove all w/ variation > 0
+            for (int type = 0; type < 2; ++type) {
+                List<Region> list = regionsT.get(type);
+                for (int i = (list.size() - 1); i > -1; --i) {
+                    Region r = list.get(i);
+                    if ((type == 1) && r.getVariation() > 0.001) {
+                        list.remove(i);
+                    } else if ((type == 0) && r.getVariation() == 0.0) {
+                        list.remove(i);
+                    }
+                }
+            }
         }
         
-        /*
+        
         if (debug){
             long ts = MiscDebug.getCurrentTimeFormatted();
             int[] xyCen = new int[2];
@@ -353,7 +369,7 @@ public class ObjectMatcher {
                     ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], imCp,
                         1, 255, 0, 0);
                 }
-                MiscDebug.writeImage(imCp, "regions_gs_"+ type + "_" + ts);
+                MiscDebug.writeImage(imCp, debugLabel + "_regions_gs_"+ type + "_" + ts);
             }
             
             for (int type = 0; type < 2; ++type) {
@@ -366,10 +382,12 @@ public class ObjectMatcher {
                     r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
                     ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], imCp,
                         1, 255, 0, 0);
+                    //System.out.println(type + " xy=" + xyCen[0] + "," + xyCen[1] 
+                    //    + " variation=" + r.getVariation());
                 }
-                MiscDebug.writeImage(imCp, "regions_pt_"+ type + "_" + ts);
+                MiscDebug.writeImage(imCp, debugLabel + "_regions_pt_"+ type + "_" + ts);
             }
-        }*/
+        }
         
         List<Region> combined = new ArrayList<Region>();
         
@@ -1258,7 +1276,7 @@ public class ObjectMatcher {
         List<Region> regionsComb0 = createCombinedMSERRegions(
             tmp00, tmp01,
             //gsImg0, luvTheta0, 
-            clrMode, ptMode, fewerMSER);
+            clrMode, ptMode, fewerMSER, settings.getDebugLabel() + "_0_");
 
         int[] xy = new int[2];
         //remove all regions with centers outside of shape0 points
@@ -1291,7 +1309,7 @@ public class ObjectMatcher {
         List<Region> regionsComb1 = createCombinedMSERRegions(
             tmp10, tmp11,
             //gsImg1, luvTheta1, 
-            clrMode, ptMode, fewerMSER);
+            clrMode, ptMode, fewerMSER, settings.getDebugLabel() + "_1_");
         
         // these are in the trimmed reference frame
         //NOTE: need segmentation for shape0 in order to find partial
@@ -1494,10 +1512,6 @@ public class ObjectMatcher {
         
         CMODE ptMode = determinePolarThetaMode(luvTheta0, shape0Trimmed);
         
-   // TODO: add to CMODE a term for white, and when
-   // than is present, the first index of the mser 2 stage region list
-   //  should not be used
-        
         // ----- create the cRegions for a masked image pyramid of img 0 ====
         
         GreyscaleImage gsImg0 = img0Trimmed.copyToGreyscale2();
@@ -1514,7 +1528,7 @@ public class ObjectMatcher {
         List<Region> regionsComb0 = createCombinedMSERRegions(
             tmp00, tmp01,
             //gsImg0, luvTheta0, 
-            clrMode, ptMode, fewerMSER);
+            clrMode, ptMode, fewerMSER, settings.getDebugLabel() + "_0_");
 
         int[] xy = new int[2];
         //remove all regions with centers outside of shape0 points
@@ -1547,7 +1561,7 @@ public class ObjectMatcher {
         List<Region> regionsComb1 = createCombinedMSERRegions(
             tmp10, tmp11,
             //gsImg1, luvTheta1, 
-            clrMode, ptMode, fewerMSER);
+            clrMode, ptMode, fewerMSER, settings.getDebugLabel() + "_1_");
                 
         float critDens = 2.f/10.f;
         filterBySpatialProximity(critDens, regionsComb0, 
