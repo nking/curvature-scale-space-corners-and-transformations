@@ -10,6 +10,7 @@ import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import java.util.List;
 import algorithms.util.PairIntArray;
+import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
@@ -220,7 +221,8 @@ public class Canonicalizer {
     
     /**
      * uses RegionPoints.hogOrientations to make multiple cRegions for 
-     * each RegionPoints instance.
+     * each RegionPoints instance.  it also make a region for the mser
+     * ellipse derived orientation.
      * 
      * @param regions
      * @param img
@@ -238,17 +240,43 @@ public class Canonicalizer {
         TIntObjectIterator<RegionPoints> iter = regions.iterator();
         for (int i = 0; i < regions.size(); ++i) {
             iter.advance();
+            
             int rIdx = iter.key();
             RegionPoints r = iter.value();
             
-            TIntList orientations = r.hogOrientations;
+            TIntSet orientations = new TIntHashSet(r.hogOrientations);
+            
+            /*
+            NOTE that hog orientations have 90 pointing up and that is the
+            direction of the major axis of points, that is 90 degrees is
+            the direction from x,y = (0,0) to (1,0).
+            
+            NOTE also that the regionpoint ellipse orientation is the angle of the
+            minor axis of the ellipse, so 90 degrees must be subtracted from
+            it to use with the dominant orientations.
+            */
+            
+            int eAngle = (int)Math.round(r.ellipseParams.orientation * 180./Math.PI);
+            // put into 0 to 180 ref frame
+            if (eAngle > 179) {
+                eAngle -= 180;
+            }
+            // put into ref frame of dominant orientations (major axis direction)
+            eAngle -= 90;
+            if (eAngle < 0) {
+                eAngle += 180;
+            }
+            orientations.add(eAngle);
             
             PairIntArray points = Misc.convertWithoutOrder(r.points);
             
-            for (int j = 0; j < orientations.size(); ++j) {
-            
-                double angle = orientations.get(j) * (Math.PI/180.);
+            TIntIterator iter2 = orientations.iterator();
+            while (iter2.hasNext()) {
                 
+                int or = iter2.next();
+            
+                double angle = or * (Math.PI/180.);
+                    
                 Map<PairInt, PairInt> offsetToOrigMap = createOffsetToOrigMap(
                     r.ellipseParams.xC, r.ellipseParams.yC,
                     points, img.getWidth(), img.getHeight(),
@@ -258,12 +286,13 @@ public class Canonicalizer {
                 cRegion.ellipseParams = r.ellipseParams;
                 cRegion.offsetsToOrigCoords = offsetToOrigMap;
                 cRegion.dataIdx = rIdx;
+                cRegion.hogOrientation = or;
                 
-                if (j == 0) {
-                    output.put(rIdx, cRegion);
-                } else {
+                if (output.containsKey(rIdx)) {
                     output.put(addIdx, cRegion);
                     addIdx++;
+                } else {
+                    output.put(rIdx, cRegion);
                 }
             }
         }

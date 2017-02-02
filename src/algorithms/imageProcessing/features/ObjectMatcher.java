@@ -2252,10 +2252,6 @@ public class ObjectMatcher {
 
         //TODO: consider returning the keypoints from the full frames
 
-
-        //TODO: since the ORBs are not kept, can revise this to
-        // work on a single image instead of a pyramid.
-
         long ts = 0;
         if (debug) {
             ts = MiscDebug.getCurrentTimeFormatted();
