@@ -19,7 +19,6 @@ import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
 import algorithms.imageProcessing.features.mser.Canonicalizer.RegionGeometry;
 import algorithms.imageProcessing.features.mser.Canonicalizer.RegionPoints;
-import static algorithms.imageProcessing.features.mser.Canonicalizer.calculateEllipseParams;
 import algorithms.imageProcessing.features.mser.MSER;
 import algorithms.imageProcessing.features.mser.MSER.Threshold;
 import algorithms.imageProcessing.features.mser.Region;
@@ -294,16 +293,50 @@ public class ObjectMatcher {
 
         MSER mser = new MSER();
 
-        List<List<Region>> regionsT = null;
-        List<List<Region>> regions = null;
+        List<List<Region>> regionsT = new ArrayList<List<Region>>();
+        List<List<Region>> regions = new ArrayList<List<Region>>();
+        Threshold thrGs;
+        Threshold thrPt;
         if (fewerMSER) {
-            regions = mser.findRegions(gsImg, Threshold.LEAST_SENSITIVE);
-            regionsT = mser.findRegions(luvTheta, Threshold.LESS_SENSITIVE);
+            thrGs = Threshold.LEAST_SENSITIVE;
+            thrPt = Threshold.LESS_SENSITIVE;
         } else {
-            regions = mser.findRegions(gsImg, Threshold.SLIGHTLY_LESS_SENSITIVE);
-            regionsT = mser.findRegions(luvTheta);
+            thrGs = Threshold.SLIGHTLY_LESS_SENSITIVE;
+            thrPt = Threshold.DEFAULT;
         }
-
+        
+        if (clrMode.equals(CMODE.WHITE)) {
+            int[] gsA = mser.readIntoArray(gsImg);
+            List<Region> list = mser.findRegionsNeg(gsA,
+                gsImg.getWidth(), gsImg.getHeight(), thrGs);
+            regions.add(new ArrayList<Region>());
+            regions.add(list);
+        } else if (clrMode.equals(CMODE.BLACK)) {
+            int[] gsA = mser.readIntoArray(gsImg);
+            List<Region> list = mser.findRegionsPos(gsA,
+                gsImg.getWidth(), gsImg.getHeight(), thrGs);
+            regions.add(list);
+            regions.add(new ArrayList<Region>());
+        } else {
+            regions = mser.findRegions(gsImg, thrGs);
+        }
+        
+        if (ptMode.equals(CMODE.WHITE)) {
+            int[] ptA = mser.readIntoArray(luvTheta);
+            List<Region> list = mser.findRegionsNeg(ptA,
+                luvTheta.getWidth(), luvTheta.getHeight(), thrPt);
+            regionsT.add(new ArrayList<Region>());
+            regionsT.add(list);
+        } else if (ptMode.equals(CMODE.BLACK)) {
+            int[] ptA = mser.readIntoArray(luvTheta);
+            List<Region> list = mser.findRegionsPos(ptA,
+                luvTheta.getWidth(), luvTheta.getHeight(), thrPt);
+            regionsT.add(list);
+            regionsT.add(new ArrayList<Region>());
+        } else {
+            regionsT = mser.findRegions(luvTheta, thrPt);
+        }
+        
         /*
         if (debug){
             long ts = MiscDebug.getCurrentTimeFormatted();
@@ -340,28 +373,13 @@ public class ObjectMatcher {
         
         List<Region> combined = new ArrayList<Region>();
         
-        int start = 0;
-        int stop = 2;
-        if (clrMode.equals(CMODE.WHITE)) {
-            start = 1;
-        } else if (clrMode.equals(CMODE.BLACK)) {
-            stop = 1;
-        }
-        
-        for (int i = start; i < stop; ++i) {
+        for (int i = 0; i < 2; ++i) {
             for (Region r : regions.get(i)) {
                 combined.add(r);
             }
         }
         
-        start = 0;
-        stop = 2;
-        if (ptMode.equals(CMODE.WHITE)) {
-            start = 1;
-        } else if (ptMode.equals(CMODE.BLACK)) {
-            stop = 1;
-        }
-        for (int i = start; i < stop; ++i) {
+        for (int i = 0; i < 2; ++i) {
             for (Region r : regionsT.get(i)) {
                 combined.add(r);
             }
@@ -1476,6 +1494,10 @@ public class ObjectMatcher {
         
         CMODE ptMode = determinePolarThetaMode(luvTheta0, shape0Trimmed);
         
+   // TODO: add to CMODE a term for white, and when
+   // than is present, the first index of the mser 2 stage region list
+   //  should not be used
+        
         // ----- create the cRegions for a masked image pyramid of img 0 ====
         
         GreyscaleImage gsImg0 = img0Trimmed.copyToGreyscale2();
@@ -1546,10 +1568,10 @@ public class ObjectMatcher {
         List<GreyscaleImage> pyrPT1 = imageProcessor.buildPyramid(
             luvTheta1, settings.useLargerPyramid1);
        
-        applyWindowedMean(pyrRGB0, 1);
-        applyWindowedMean(pyrRGB1, 1);
-        applyWindowedMean2(pyrPT0, 1);
-        applyWindowedMean2(pyrPT1, 1);
+       // applyWindowedMean(pyrRGB0, 1);
+        //applyWindowedMean(pyrRGB1, 1);
+        //applyWindowedMean2(pyrPT0, 1);
+        //applyWindowedMean2(pyrPT1, 1);
         
         Canonicalizer canonicalizer = new Canonicalizer();
 
@@ -1587,7 +1609,8 @@ public class ObjectMatcher {
                     1, 255, 0, 0);
             //    System.out.println("regIdx1=" + i + " x="+xyCen[0] + " y=" + xyCen[1]);
             }
-            MiscDebug.writeImage(im1Cp, "_" + settings.getDebugLabel() + "_regions_1_");
+            MiscDebug.writeImage(im1Cp, "_" + settings.getDebugLabel() 
+                + "_regions_1_");
         }
         
         TIntObjectMap<RegionPoints> regionPoints0 =

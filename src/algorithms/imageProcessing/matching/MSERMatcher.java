@@ -1076,9 +1076,8 @@ public class MSERMatcher {
         TIntObjectMap<HCPT> hcptMap1 = new TIntObjectHashMap<HCPT>();
         TIntObjectMap<HGS> hgsMap1 = new TIntObjectHashMap<HGS>();
 
-        // 16, 12
-        int nPixPerCellDimH = 10;//8
-        int nPixPerCellDim = 4;//4
+        int nPixPerCellDimH = 10;
+        int nPixPerCellDim = 6;//4
         
         // use hogs to calculate the dominant orientations
         calculateDominantOrientations(regionPoints0, 
@@ -1384,7 +1383,7 @@ public class MSERMatcher {
                 ));
                 //hogCost, fracOfWhole, hcptCost, hgsCost}
                 
-                /*
+                
                 Image im0 = gsI0.copyToColorGreyscale();
                 Image im1 = gsI1.copyToColorGreyscale();
                 int[] clr = new int[]{255, 0, 0};
@@ -1392,7 +1391,7 @@ public class MSERMatcher {
                 obj0.cr1.drawEachPixel(im1, 0, clr[0], clr[1], clr[2]);
                 MiscDebug.writeImage(im0, debugLabel + "_" + lbl);
                 MiscDebug.writeImage(im1, debugLabel + "_" + lbl);
-                */
+               
             }
         }
         if (debug) {
@@ -1450,7 +1449,7 @@ public class MSERMatcher {
                 ));
                 //hogCost, fracOfWhole, hcptCost, hgsCost}
                 
-                /*
+               
                 Image im0 = gsI0.copyToColorGreyscale();
                 Image im1 = gsI1.copyToColorGreyscale();
                 int[] clr = new int[]{255,0,0};
@@ -1458,7 +1457,7 @@ public class MSERMatcher {
                 obj0.cr1.drawEachPixel(im1, 0, clr[0], clr[1], clr[2]);
                 MiscDebug.writeImage(im0, debugLabel + "_" + lbl);
                 MiscDebug.writeImage(im1, debugLabel + "_" + lbl);
-                */
+               
             }
         }
         if (debug) {
@@ -1528,7 +1527,7 @@ public class MSERMatcher {
                     ));
                     //hogCost, fracOfWhole, hcptCost, hgsCost}
                   
-                    /*
+                   
                     Image im0 = gsI0.copyToColorGreyscale();
                     Image im1 = gsI1.copyToColorGreyscale();
                     int[] clr = new int[]{255, 0, 0};
@@ -1536,7 +1535,7 @@ public class MSERMatcher {
                     obj0.cr1.drawEachPixel(im1, 0, clr[0], clr[1], clr[2]);
                     MiscDebug.writeImage(im0, debugLabel + "_" + lbl);
                     MiscDebug.writeImage(im1, debugLabel + "_" + lbl);
-                    */
+                   
                 }
             }
             if (debug) {

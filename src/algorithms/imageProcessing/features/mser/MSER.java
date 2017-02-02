@@ -476,6 +476,19 @@ public class MSER {
         LEAST_SENSITIVE, LESS_SENSITIVE, SLIGHTLY_LESS_SENSITIVE, DEFAULT
     }
     
+    public static int[] readIntoArray(GreyscaleImage img) {
+        
+        int width = img.getWidth();
+        int height = img.getHeight();
+
+        int[] greyscale = new int[width * height];
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            greyscale[i] = img.getValue(i);
+        }
+        
+        return greyscale;
+    }
+    
     /**
      * given 8 bit image, calculate the MSER regions.
      * @param img
@@ -531,6 +544,102 @@ public class MSER {
         return findRegions(greyscale, width, height, delta, minArea, maxArea, 
             maxVariation, minDiversity);
         
+    }
+    
+    /**
+     * given 8 bit image, calculate the MSER regions.
+     * @param greyscale greyscale intensities of the image written so
+     * that the array index is (row * imageWidth) + col.
+     * @param width image width
+     * @param height image height
+     * @return  list of mser regions created from a non-inverted
+     */
+    public List<Region> findRegionsPos(int[] greyscale, int width,
+        int height, Threshold threshold) {
+        
+        int delta = 2;
+        double minArea;
+        double maxArea = 0.25;//0.1;
+        double maxVariation = 0.5;
+        double minDiversity = 0.5;
+        if (threshold.equals(Threshold.LEAST_SENSITIVE)) {
+            minArea = 0.1;
+        } else if (threshold.equals(Threshold.LESS_SENSITIVE)) {
+            minArea = 0.01;
+        } else if (threshold.equals(Threshold.SLIGHTLY_LESS_SENSITIVE)) {
+            minArea = 0.001;
+        } else {
+            minArea = 0.0005;
+        }
+        
+        MSER mser8 = new MSER(delta, minArea, maxArea, maxVariation, 
+            minDiversity, true);
+        
+        List<Region> regions = new ArrayList<Region>();
+
+        mser8.operator(greyscale, width, height, regions);
+        
+        long stop = System.currentTimeMillis();
+
+        //System.out.println(
+        //    "Extracted " + (regions.get(0).size() + regions.get(1).size())
+        //    + " regions  (" + width + 'x' + height + ") in "
+        //    + ((stop - start) / 1000) + "s.");
+
+        return regions;
+        
+    }
+    
+    /**
+     * given 8 bit image, calculate the MSER regions.
+     * @param greyscale greyscale intensities of the image written so
+     * that the array index is (row * imageWidth) + col.
+     * Note, the input greyscale array is modified to invert it.
+     * @param width image width
+     * @param height image height
+     * @return  list of mser regions created from a inverted
+     */
+    public List<Region> findRegionsNeg(int[] greyscale, int width,
+        int height, Threshold threshold) {
+        
+        int delta = 2;
+        double minArea;
+        double maxArea = 0.25;//0.1;
+        double maxVariation = 0.5;
+        double minDiversity = 0.5;
+        if (threshold.equals(Threshold.LEAST_SENSITIVE)) {
+            minArea = 0.1;
+        } else if (threshold.equals(Threshold.LESS_SENSITIVE)) {
+            minArea = 0.01;
+        } else if (threshold.equals(Threshold.SLIGHTLY_LESS_SENSITIVE)) {
+            minArea = 0.001;
+        } else {
+            minArea = 0.0005;
+        }
+
+        MSER mser4 = new MSER(delta, minArea, maxArea, maxVariation, 
+            minDiversity, false);
+
+        List<Region> regions = new ArrayList<Region>();
+   
+        // Invert the pixel values
+        for (int i = 0; i < width * height; ++i) {
+            greyscale[i] = ~greyscale[i];
+            if (greyscale[i] < 0) {
+                greyscale[i] += 256;
+            }
+        }
+
+        mser4.operator(greyscale, width, height, regions);
+
+        long stop = System.currentTimeMillis();
+
+        //System.out.println(
+        //    "Extracted " + (regions.get(0).size() + regions.get(1).size())
+        //    + " regions  (" + width + 'x' + height + ") in "
+        //    + ((stop - start) / 1000) + "s.");
+
+        return regions;
     }
     
     /**
