@@ -113,18 +113,18 @@ public class MSEREdges {
     
         ptRegions = extractMSERRegions(ptImg, Threshold.DEFAULT);
     
-        // for 0.001, a gsRegions limit for var of 0. is used
+        // for minArea 0.001, a gsRegions limit for var of 0. is used
         //   but for 0.0001, limit should be near 0.001
         
         for (int type = 0; type < 2; ++type) {
             List<Region> list = gsRegions.get(type);
             for (int i = (list.size() - 1); i > -1; --i) {
                 Region r = list.get(i);
-                if ((type == 1) && r.getVariation() > 0.99) {
+                if ((type == 1) && r.getVariation() > 2.) {
                     list.remove(i);
                 } else if ((type == 0) 
                     //&& r.getVariation() == 0.0) {
-                    && r.getVariation() < 0.99) {
+                    && r.getVariation() < 2.) {
                     list.remove(i);
                 }
             }
@@ -187,8 +187,8 @@ public class MSEREdges {
         double maxVariation = 0.9;//0.5;
         double minDiversity = 0.75;//0.1;//0.5
         if (threshold.equals(Threshold.LESS_SENSITIVE)) {
-            maxVariation = 0.95;
-            minArea = 0.01;
+            maxVariation = 2.0;
+            minArea = 0.0075;
         }
         
         MSER mser = new MSER();
@@ -225,64 +225,49 @@ public class MSEREdges {
         
         PerimeterFinder2 finder = new PerimeterFinder2();
     
-        for (int type = 0; type < 2; ++type) {
-            int n = gsRegions.get(type).size();
-            for (int i = 0; i < n; ++i) {
-                Region r = gsRegions.get(type).get(i);
-                //NOTE: accumulated points are a connected group of points
-                Set<PairInt> points = new HashSet<PairInt>();
-                for (int j = 0; j < r.accX.size(); ++j) {
-                    int x = r.accX.get(j);
-                    int y = r.accY.get(j);
-                    PairInt p2 = new PairInt(x, y);
-                    points.add(p2);
-                    // NOTE: here is where could test membership of point in
-                    //   a disjoint forrest for the region connections
-                }
-                Set<PairInt> embedded = new HashSet<PairInt>();
-                Set<PairInt> outerBorder = new HashSet<PairInt>();
-                finder.extractBorder2(points, embedded, embedded);
-                
-                edgeList.add(outerBorder);
-                
-                DFSConnectedGroupsFinder dfsFinder = new DFSConnectedGroupsFinder();
-                dfsFinder.setMinimumNumberInCluster(24);
-                dfsFinder.findConnectedPointGroups(embedded);
-                for (int j = 0; j < dfsFinder.getNumberOfGroups(); ++j) {
-                    
-                    Set<PairInt> eSet = dfsFinder.getXY(j);
-                    
-                    Set<PairInt> embedded2 = new HashSet<PairInt>();
-                    Set<PairInt> outerBorder2 = new HashSet<PairInt>();
-                    finder.extractBorder2(eSet, embedded2, outerBorder2);
-                
-                    if (outerBorder2.size() > 16) {
-                        edgeList.add(outerBorder2);
+        for (int rListIdx = 0; rListIdx < 2; ++rListIdx) {
+            List<List<Region>> regions;
+            if (rListIdx == 0) {
+                regions = gsRegions;
+            } else {
+                regions = ptRegions;
+            }
+            for (int type = 0; type < 2; ++type) {
+                int n = regions.get(type).size();
+                for (int i = 0; i < n; ++i) {
+                    Region r = regions.get(type).get(i);
+                    //NOTE: accumulated points are a connected group of points
+                    Set<PairInt> points = new HashSet<PairInt>();
+                    for (int j = 0; j < r.accX.size(); ++j) {
+                        int x = r.accX.get(j);
+                        int y = r.accY.get(j);
+                        PairInt p2 = new PairInt(x, y);
+                        points.add(p2);
+                        // NOTE: here is where could test membership of point in
+                        //   a disjoint forrest for the region connections
+                    }
+                    Set<PairInt> embedded = new HashSet<PairInt>();
+                    Set<PairInt> outerBorder = new HashSet<PairInt>();
+                    finder.extractBorder2(points, embedded, outerBorder);
+
+                    edgeList.add(outerBorder);
+
+                    DFSConnectedGroupsFinder dfsFinder = new DFSConnectedGroupsFinder();
+                    dfsFinder.setMinimumNumberInCluster(24);
+                    dfsFinder.findConnectedPointGroups(embedded);
+                    for (int j = 0; j < dfsFinder.getNumberOfGroups(); ++j) {
+
+                        Set<PairInt> eSet = dfsFinder.getXY(j);
+
+                        Set<PairInt> embedded2 = new HashSet<PairInt>();
+                        Set<PairInt> outerBorder2 = new HashSet<PairInt>();
+                        finder.extractBorder2(eSet, embedded2, outerBorder2);
+
+                        if (outerBorder2.size() > 16) {
+                            edgeList.add(outerBorder2);
+                        }
                     }
                 }
-            }
-        }
-        
-        for (int type = 0; type < 2; ++type) {
-            int n = ptRegions.get(type).size();
-            for (int i = 0; i < n; ++i) {
-                Region r = ptRegions.get(type).get(i);
-                //NOTE: accumulated points are a connected group of points
-                Set<PairInt> points = new HashSet<PairInt>();
-                for (int j = 0; j < r.accX.size(); ++j) {
-                    int x = r.accX.get(j);
-                    int y = r.accY.get(j);
-                    PairInt p2 = new PairInt(x, y);
-                    points.add(p2);
-                    // NOTE: here is where could test membership of point in
-                    //   a disjoint forrest for the region connections
-                }
-                Set<PairInt> embedded = new HashSet<PairInt>();
-                Set<PairInt> outerBorder = new HashSet<PairInt>();
-                finder.extractBorder2(points, embedded, outerBorder);
-                //TODO: consider extracting the outer bounds of the embedded
-                //  also, but separately
-                edgeList.add(outerBorder);
             }
         }
     }
