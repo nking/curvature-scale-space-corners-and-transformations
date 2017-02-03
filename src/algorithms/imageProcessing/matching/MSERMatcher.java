@@ -38,6 +38,7 @@ import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -368,7 +369,6 @@ public class MSERMatcher {
     private double[] sumHOGCost2(HOGs hogs0, CRegion cr0, float scale0, 
         HOGs hogs1, CRegion cr1, float scale1) {
         
-        
         int orientation0 = cr0.hogOrientation;
         
         int orientation1 =cr1.hogOrientation;
@@ -623,7 +623,7 @@ public class MSERMatcher {
         @Override
         public int compareTo(Obj other) {
             double diffCost = Math.abs(other.cost - cost);
-            if (diffCost < 0.001) {
+            if (diffCost < 0.01) {//0.001
                 // NOTE: may revise this.  wanting to choose smallest scale
                 //   or smaller fraction of whole
                 if (imgIdx0 < other.imgIdx0 && imgIdx1 < other.imgIdx1) {
@@ -699,7 +699,7 @@ public class MSERMatcher {
      * regionPoints0 in the MSER regions of regionPoints1.
      * 
      * The method is using 10 tests to find the android statues and
-     * is successfully finding 9 out of the 10 currently.
+     * is successfully finding 12 out of the 13 currently.
      * 
      * The method uses a cell size for the histograms and the results
      * are sensitive to that.
@@ -800,6 +800,9 @@ public class MSERMatcher {
         
         float sizeFactor = 1.2f;
 
+        FixedSizeSortedVector<Obj> bestOverallA =
+            new FixedSizeSortedVector<Obj>(n0, Obj.class);
+        
         for (int imgIdx0 = 0; imgIdx0 < n0; ++imgIdx0) {
 
             GreyscaleImage gsI0 = combineImages(pyrRGB0.get(imgIdx0));
@@ -820,6 +823,9 @@ public class MSERMatcher {
             TIntObjectMap<CRegion> regions0 = getOrCreate(csr0, imgIdx0, gsI0,
                 scale0);
 
+            FixedSizeSortedVector<Obj> bestPerOctave =
+                new FixedSizeSortedVector<Obj>(1, Obj.class);
+            
             for (int imgIdx1 = 0; imgIdx1 < n1; ++imgIdx1) {
 
                 GreyscaleImage gsI1 = combineImages(pyrRGB1.get(imgIdx1));
@@ -886,25 +892,10 @@ public class MSERMatcher {
 
                         // 1 - fraction of whole
                         double f = hogCosts[1];
-                       
                         if (f < 0.) {
                             f = 0.;
                         }
-                        
-                        /*
-                        //double[]{sumA, sumB, f, err, count}
-                        double[] costs2 = sumCost(hcpt0, hgs0, cr0, scale0, 
-                            hcpt1, hgs1, cr1, scale1);
-                        double hcptCost = 1.f - costs2[0];
-                        double hgsCost = 1.f - costs2[1];
-                        double cost = (float) Math.sqrt(
-                            2. * hogCost * hogCost
-                            + 2. * f * f
-                            + hcptCost * hcptCost
-                            + hgsCost * hgsCost
-                        );
-                        */
-                        
+                         
                         //double[]{sumA, f, count}
                         double[] costs2 = sumCost2(hcpt0, hgs0, cr0, scale0, 
                             hcpt1, hgs1, cr1, scale1);
@@ -954,14 +945,58 @@ public class MSERMatcher {
                             rIndexHOGMap0.put(cr0.dataIdx, objVec);
                         }
                         added = objVec.add(obj);
+                    
+                        added = bestPerOctave.add(obj);
                     }
                 }
+            } // end over dataset1 octaves
+            
+            // temporarily print the best of each octave0 to look at 
+            //    scale biases
+            for (int k = 0; k < bestPerOctave.getNumberOfItems(); ++k) {
+                Obj obj0 = bestPerOctave.getArray()[k];
+                int imgIdx1 = obj0.imgIdx1;
+                GreyscaleImage gsI1 = pyrRGB1.get(imgIdx1).get(1);
+                int w1_i = gsI1.getWidth();
+                int h1_i = gsI1.getHeight();
+                float scale1 = (((float) w1 / (float) w1_i) + ((float) h1 / (float) h1_i)) / 2.f;
+                int or0 = obj0.cr0.hogOrientation;
+                int or1 = obj0.cr1.hogOrientation;
+                String str1 = String.format("angles=(%d,%d) s=(%.1f,%.1f)", 
+                    or0, or1, scale0, scale1);
+
+                /*
+                this needs more testing, but a small number of tests suggest that
+                the current cost estimate above and
+                the cost2 estimate below, almost always give the same top result,
+                and when they don't, the one with the smallest octave index
+                (== the largest image) should be chosen.
+                */
+                
+                double cost2 = (float) Math.sqrt(
+                    obj0.costs[0]*obj0.costs[0] +
+                    obj0.costs[1]*obj0.costs[1] +
+                    obj0.costs[2]*obj0.costs[2]
+                );
+                
+                System.out.format(
+ "%s octave %d %d] %d (%d,%d) best: %.4f (%d,%d) [%.3f,%.3f,%.3f] %s n=%d c2=%.3f\n",
+                    debugLabel, imgIdx0, imgIdx1, k, 
+                    Math.round(scale1 * obj0.cr1.ellipseParams.xC),
+                    Math.round(scale1 * obj0.cr1.ellipseParams.yC),
+                    (float) obj0.cost,
+                    Math.round(scale0 * obj0.cr0.ellipseParams.xC),
+                    Math.round(scale0 * obj0.cr0.ellipseParams.yC), 
+                    (float) obj0.costs[0], (float) obj0.costs[1], 
+                    (float) obj0.costs[2], str1,
+                    obj0.cr0.offsetsToOrigCoords.size(),
+                    (float)cost2
+                );
+                                
+                bestOverallA.add(obj0);
             }
         }
       
-        float critDens = 1.f/10.f;
-        //filterBySpatialProximity(critDens, rIndexHOGMap, pyrRGB0, pyrRGB1);
-        
         System.out.println("r1 points size = " + regionPoints1.size()
             + " r1 map size filtered = " + rIndexHOGMap1.size() 
             + " r0 map size filtered = " + rIndexHOGMap0.size());
@@ -1107,7 +1142,6 @@ public class MSERMatcher {
                 ));
                 //hogCost, fracOfWhole, hcptCost, hgsCost}
                 
-               
                 Image im0 = gsI0.copyToColorGreyscale();
                 Image im1 = gsI1.copyToColorGreyscale();
                 int[] clr = new int[]{255,0,0};
@@ -1123,95 +1157,44 @@ public class MSERMatcher {
              System.out.println(sb2.toString());
         }
         
-        // --- print the top 5 of region0 matches -----
-        iter2 = rIndexHOGMap0.iterator();
-
-        for (int i3 = 0; i3 < rIndexHOGMap0.size(); ++i3) {
-
-            iter2.advance();
-
-            int rIdx = iter2.key();
-            FixedSizeSortedVector<Obj> vec = iter2.value();
-
-            sb = new StringBuilder();
-            
-            int n = vec.getNumberOfItems();
-            
-            for (int j = 0; j < n; ++j) {
-                
-                Obj obj0 = vec.getArray()[j];
-
-                if (debug) {
-                    int imgIdx0 = obj0.imgIdx0;
-                    int imgIdx1 = obj0.imgIdx1;
-
-                    GreyscaleImage gsI0 = pyrRGB0.get(imgIdx0).get(1);
-                    GreyscaleImage gsI1 = pyrRGB1.get(imgIdx1).get(1);
-
-                    float scale00, scale01;
-                    {
-                        int w0_i = gsI0.getWidth();
-                        int h0_i = gsI0.getHeight();
-                        scale00 = (((float) w0 / (float) w0_i) + ((float) h0 / (float) h0_i)) / 2.f;
-
-                        int w1_i = gsI1.getWidth();
-                        int h1_i = gsI1.getHeight();
-                        scale01 = (((float) w1 / (float) w1_i) + ((float) h1 / (float) h1_i)) / 2.f;
-                    }
-
-                    String lbl = "_" + obj0.imgIdx0 + "_" + obj0.imgIdx1 + "_"
-                        + obj0.r0Idx + "_" + obj0.r1Idx;
-
-                    int or0 = (int) Math.round(
-                        obj0.cr0.ellipseParams.orientation * 180. / Math.PI);
-
-                    int or1 = (int) Math.round(
-                        obj0.cr1.ellipseParams.orientation * 180. / Math.PI);
-
-                    String str1 = String.format("angles=(%d,%d ; %d,%d)",
-                        or0, or1, obj0.cr0.hogOrientation, 
-                        obj0.cr1.hogOrientation);
-
-                    sb.append(String.format(
-  "1] r0 %s %d %d (%d,%d) best: %.4f (%d,%d) %s [%.3f,%.3f,%.3f] %s n=%d\n",
-                        debugLabel, rIdx, j, 
-                        Math.round(scale01 * obj0.cr1.ellipseParams.xC),
-                        Math.round(scale01 * obj0.cr1.ellipseParams.yC),
-                        (float) obj0.cost,
-                        Math.round(scale00 * obj0.cr0.ellipseParams.xC),
-                        Math.round(scale00 * obj0.cr0.ellipseParams.yC), lbl,
-                        (float) obj0.costs[0], (float) obj0.costs[1], 
-                        (float) obj0.costs[2], 
-                        //(float) obj0.costs[3], 
-                        str1, obj0.cr0.offsetsToOrigCoords.size()
-                    ));
-                    //hogCost, fracOfWhole, hcptCost, hgsCost}
-                  
-                   
-                    Image im0 = gsI0.copyToColorGreyscale();
-                    Image im1 = gsI1.copyToColorGreyscale();
-                    int[] clr = new int[]{255, 0, 0};
-                    obj0.cr0.drawEachPixel(im0, 0, clr[0], clr[1], clr[2]);
-                    obj0.cr1.drawEachPixel(im1, 0, clr[0], clr[1], clr[2]);
-                    //obj0.cr1.draw(im1, 1, 0, 0, 0);
-                    MiscDebug.writeImage(im0, debugLabel + "_" + lbl);
-                    MiscDebug.writeImage(im1, debugLabel + "_" + lbl);
-                   
+        if (bestOverallA.getNumberOfItems() == 0) {
+            return null;
+        }
+        
+        /*
+        TODO: revisit with more tests.
+        a few tests suggest that the correct answer is to order by cost,
+        then walk down the array if hogs cost is lower for 2nd best
+        */
+        double eps = 0.03;
+        List<Obj> bestOverall = new ArrayList<Obj>(bestOverallA.getNumberOfItems());
+        Obj objA = bestOverallA.getArray()[0];
+        if (bestOverallA.getNumberOfItems() > 1) {
+            for (int i = 0; i < bestOverallA.getNumberOfItems(); ++i) {
+                Obj objB = bestOverallA.getArray()[i];
+                if (objB.costs[0] < (objA.costs[0] + eps)) {
+                    objA = objB;
+                } else {
+                    break;
                 }
             }
-            if (debug) {
-                System.out.println(sb.toString());
+        }
+        bestOverall.add(objA);
+        for (int i = 0; i < bestOverallA.getNumberOfItems(); ++i) {
+            Obj objB = bestOverallA.getArray()[i];
+            if (!objA.equals(objB)) {
+                bestOverall.add(objB);
             }
         }
-
+        
         // storing top 5 of r1 matches
         List<CorrespondenceList> out = new ArrayList<CorrespondenceList>();
         
-        for (int i = 0; i < tmp1.getNumberOfItems(); ++i) {
+        for (int i = 0; i < bestOverall.size(); ++i) {
             
             List<QuadInt> qs = new ArrayList<QuadInt>();
             
-            Obj obj = tmp1.getArray()[i];
+            Obj obj = bestOverall.get(i);
             
             int imgIdx0 = obj.imgIdx0;
             int imgIdx1 = obj.imgIdx1;

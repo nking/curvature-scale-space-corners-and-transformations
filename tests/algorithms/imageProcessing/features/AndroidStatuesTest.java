@@ -451,7 +451,8 @@ public class AndroidStatuesTest extends TestCase {
                 }
                 
                 CorrespondenceList cor 
-                    = objMatcher.findObject11(
+                    //= objMatcher.findObject11(
+                    = objMatcher.findObject12(
                         imgs0[0], shape0, img, settings);
                 
                 long t1 = System.currentTimeMillis();
@@ -496,9 +497,9 @@ public class AndroidStatuesTest extends TestCase {
             "android_statues_04_cupcake_mask.png"};
 
         String[] fileNames1 = new String[]{
-           "android_statues_01.jpg",   //  <== NOT found, needs segmentation
-           "android_statues_02.jpg", //  
-             "android_statues_04.jpg"
+            "android_statues_01.jpg",   //  <== NOT found, needs segmentation
+            "android_statues_02.jpg", //  
+            "android_statues_04.jpg"
         };
         
         /*  ROUGH COORDS
@@ -578,7 +579,8 @@ public class AndroidStatuesTest extends TestCase {
             }
             
             CorrespondenceList cor = objMatcher
-                .findObject11(
+                //.findObject11(
+                .findObject12(
                 imgs0[0], shape0, img, settings);
 
             long t1 = System.currentTimeMillis();
@@ -610,7 +612,7 @@ public class AndroidStatuesTest extends TestCase {
     }
     
     public void testObjectFinder() throws Exception {
-        boolean debug = false;
+        boolean debug = true;
         runMatcher_gingerbreadman(debug);
         runMatcher_icecream(debug);
         runMatcher_cupcake(debug);
@@ -723,8 +725,8 @@ public class AndroidStatuesTest extends TestCase {
             }
             
             CorrespondenceList cor = objMatcher
-                //.findObject(
-                .findObject11(
+                //.findObject11(
+                .findObject12(
                     imgs0[0], shape0, img, settings);
 
             long t1 = System.currentTimeMillis();
