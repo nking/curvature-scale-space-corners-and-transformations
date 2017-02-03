@@ -6,10 +6,12 @@ import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
 import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import java.util.List;
 import algorithms.util.PairIntArray;
+import com.climbwithyourfeet.clustering.DTClusterFinder;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TIntList;
@@ -1047,6 +1049,83 @@ public class Canonicalizer {
                 xy.add(x, i);
             }
         }
+    }
+     
+    public static void filterBySpatialProximity(float critDens, 
+        List<Region> regions, int width, int height) {
+        
+        System.out.println("before spatial filter regions.n=" + regions.size());
+
+        Set<PairIntWithIndex> points2
+            = new HashSet<PairIntWithIndex>();
+       
+        TIntObjectMap<Canonicalizer.RegionGeometry> rgMap 
+            = new TIntObjectHashMap<Canonicalizer.RegionGeometry>();
+        
+        for (int rIdx = 0; rIdx < regions.size(); ++rIdx) {
+
+            Region region = regions.get(rIdx);
+         
+            Canonicalizer.RegionGeometry rg = Canonicalizer.calculateEllipseParams(
+                region, width, height);
+            
+            if (rg == null) {
+                continue;
+            }
+            
+            PairIntWithIndex pii = new PairIntWithIndex(rg.xC, rg.yC, rIdx);
+            points2.add(pii);
+            
+            rgMap.put(rIdx, rg);
+        }
+        
+        DTClusterFinder<PairIntWithIndex> cFinder
+            = new DTClusterFinder<PairIntWithIndex>(points2, width + 1, height + 1);
+        cFinder.setMinimumNumberInCluster(2);
+        cFinder.setCriticalDensity(critDens);
+        cFinder.findClusters();
+
+        TIntList rm = new TIntArrayList();
+        
+        //NOTE: may need to revise how to choose best region to keep.
+        for (int i = 0; i < cFinder.getNumberOfClusters(); ++i) {
+            
+            Set<PairIntWithIndex> set = cFinder.getCluster(i);
+            
+            int maxArea = Integer.MIN_VALUE;
+            int maxAreaIdx = -1;
+
+            for (PairIntWithIndex pii : set) {
+                int rIdx = pii.getPixIndex();
+                Canonicalizer.RegionGeometry rg = rgMap.get(rIdx);
+                if (rg == null) {
+                    continue;
+                }
+                //double area = rg.major * rg.minor;
+                int area = regions.get(rIdx).accX.size();
+                
+                if (area > maxArea) {
+                    maxArea = area;
+                    maxAreaIdx = rIdx;
+                }               
+            }
+            assert(maxAreaIdx > -1);
+            for (PairIntWithIndex pii : set) {
+                int rIdx = pii.getPixIndex();
+                if (rIdx == maxAreaIdx) {
+                    continue;
+                }
+                rm.add(rIdx);
+            }
+        }
+        rm.sort();
+        
+        for (int i = (rm.size() - 1); i > -1; --i) {
+            int rmIdx = rm.get(i);
+            regions.remove(rmIdx);
+        }
+        
+        System.out.println("after spatial filter regions.n=" + regions.size());
     }
 
 }

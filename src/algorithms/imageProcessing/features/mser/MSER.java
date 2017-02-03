@@ -9,15 +9,18 @@ import java.util.List;
 
 /**
 MSER.java and Region.java are java ports of the C++ MSER
-implementation of MSER by Charles Dubout <charles.dubout@idiap.ch>
+implementation of MSER by Charles Dubout, charles.dubout@idiap.ch,
 downloaded from https://github.com/idiap/mser
+His C++ code is an implementation of  
+"Linear Time Maximally Stable Extremal Regions",
+by D. Nistér and H. Stewénius, ECCV 2008.
 
 The C++ code has copyright:
 --------------------------
 GNU GENERAL PUBLIC LICENSE, Version 3
 
 Copyright (c) 2011 Idiap Research Institute, http://www.idiap.ch/.
-Written by Charles Dubout <charles.dubout@idiap.ch>.
+Written by Charles Dubout charles.dubout@idiap.ch.
 
 MSER is free software: you can redistribute it and/or modify it under the terms of the GNU
 General Public License version 3 as published by the Free Software Foundation.
@@ -26,14 +29,14 @@ the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
 Public License for more details.
 
 You should have received a copy of the GNU General Public License along with MSER. If not, see
-<http://www.gnu.org/licenses/>.
+http://www.gnu.org/licenses/.
 --------------------------
 
 Linear time Maximally Stable Extremal Regions (MSER) implementation as described
 in D. Nistér and H. Stewénius, "Linear Time Maximally Stable Extremal Regions",
 ECCV 2008.
 The functionality is similar to that of VLFeat MSER feature detector
-<http://www.vlfeat.org/overview/mser.html> but the code is several time faster.
+http://www.vlfeat.org/overview/mser.html but the code is several time faster.
 MSER is a blob detector, like the Laplacian of Gaussian used by the SIFT
 algorithm. It extracts stable connected regions of some level sets from an
 image, and optionally fits ellipses to them.
@@ -77,6 +80,8 @@ thread needs to have its own MSER class instance.
 * author nichole ported the C++ code of Charles Dubout to java 
 * and added the use of bit vectors as 
 * recommended by Nister and Stewénius.
+* recently added the accumulated points also at the cost of space complexity
+* in order to use the Regions for patch matching and edges.
 */
 public class MSER {
 
@@ -193,10 +198,10 @@ public class MSER {
       of the array is currently 2^27 -1, due to
       internal data structures and encoding, but this may change.
           
-      * @param width Width of the image.
+      @param width Width of the image.
       @param height Height of the image.
       @param regions output Detected MSER.
-      */
+    */
     public void operator(int[] bits, int width, int height,
         List<Region> regions) {
 

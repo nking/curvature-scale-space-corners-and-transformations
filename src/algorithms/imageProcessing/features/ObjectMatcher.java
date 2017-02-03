@@ -834,75 +834,6 @@ public class ObjectMatcher {
         return (int)Math.round(xy);
     }
 
-    private void filterBySpatialProximity(float critDens, 
-        List<Region> regions, int width, int height) {
-        
-        System.out.println("before spatial filter regions.n=" + regions.size());
-
-        Set<PairIntWithIndex> points2
-            = new HashSet<PairIntWithIndex>();
-       
-        List<RegionGeometry> rgList = new ArrayList<RegionGeometry>();
-        
-        for (int rIdx = 0; rIdx < regions.size(); ++rIdx) {
-
-            Region region = regions.get(rIdx);
-         
-            RegionGeometry rg = Canonicalizer.calculateEllipseParams(
-                region, width, height);
-            
-            PairIntWithIndex pii = new PairIntWithIndex(rg.xC, rg.yC, rIdx);
-            points2.add(pii);
-            
-            rgList.add(rg);
-        }
-        
-        DTClusterFinder<PairIntWithIndex> cFinder
-            = new DTClusterFinder<PairIntWithIndex>(points2, width + 1, height + 1);
-        cFinder.setMinimumNumberInCluster(2);
-        cFinder.setCriticalDensity(critDens);
-        cFinder.findClusters();
-
-        TIntList rm = new TIntArrayList();
-        
-        //NOTE: may need to revise how to choose best region to keep.
-        for (int i = 0; i < cFinder.getNumberOfClusters(); ++i) {
-            
-            Set<PairIntWithIndex> set = cFinder.getCluster(i);
-            
-            int maxArea = Integer.MIN_VALUE;
-            int maxAreaIdx = -1;
-
-            for (PairIntWithIndex pii : set) {
-                int rIdx = pii.getPixIndex();
-                RegionGeometry rg = rgList.get(rIdx);
-                //double area = rg.major * rg.minor;
-                int area = regions.get(rIdx).accX.size();
-                
-                if (area > maxArea) {
-                    maxArea = area;
-                    maxAreaIdx = rIdx;
-                }               
-            }
-            assert(maxAreaIdx > -1);
-            for (PairIntWithIndex pii : set) {
-                int rIdx = pii.getPixIndex();
-                if (rIdx == maxAreaIdx) {
-                    continue;
-                }
-                rm.add(rIdx);
-            }
-        }
-        rm.sort();
-        
-        for (int i = (rm.size() - 1); i > -1; --i) {
-            int rmIdx = rm.get(i);
-            regions.remove(rmIdx);
-        }
-        
-        System.out.println("after spatial filter regions.n=" + regions.size());
-    }
-
     private void filterByColorHistograms(ImageExt img0, Set<PairInt> shape0, 
         ImageExt img1, TIntObjectMap<RegionPoints> regions1) {
         
@@ -1326,10 +1257,10 @@ public class ObjectMatcher {
             clrMode, ptMode, fewerMSER, settings.getDebugLabel() + "_1_");
                 
         float critDens = 2.f/10.f;
-        filterBySpatialProximity(critDens, regionsComb0, 
+        Canonicalizer.filterBySpatialProximity(critDens, regionsComb0, 
             img0Trimmed.getWidth(), img0Trimmed.getHeight());
         
-        filterBySpatialProximity(critDens, regionsComb1, 
+        Canonicalizer.filterBySpatialProximity(critDens, regionsComb1, 
             img1.getWidth(), img1.getHeight());
         
         List<List<GreyscaleImage>> pyrRGB0 = imageProcessor.buildColorPyramid(
