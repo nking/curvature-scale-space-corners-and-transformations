@@ -32,12 +32,8 @@ public class MSEREdges {
       -- makes greyscale image and a polar theta of cie luv
       -- creates positive and negative mser regions for both,
             filtering by variation for the specific mser type
-      -- applies a spatial filter to keep one for an overlapping
-         or close centered mser.
-         -- keeps the mser w/ most accumulated points
-            (this is where the component tree approach would be better).
-      -- using PerimeterFinder2 extract the outer boundaries from each mser
-         region points, and do the same for the contiguous embedded regions.
+      -- uses PerimeterFinder2 extract the outer boundaries from each mser
+         region points, and the same for the contiguous embedded regions.
     */
     
     private final GreyscaleImage gsImg;
@@ -48,6 +44,8 @@ public class MSEREdges {
     
     private boolean debug = false;
     
+    private boolean useLowerContrastLimits = false;
+    
     private long ts = 0;
     
     public MSEREdges(ImageExt img) {
@@ -56,9 +54,7 @@ public class MSEREdges {
         
         this.gsImg = img.copyToGreyscale2();
         this.ptImg = imageProcesor.createCIELUVTheta(img, 255);
-        //this.ptImg = imageProcesor.createCIELABTheta(img, 255);
         
-        //enhanceContrast();
     }
     
     public MSEREdges(GreyscaleImage greyscaleImage, GreyscaleImage 
@@ -67,7 +63,6 @@ public class MSEREdges {
         this.gsImg = greyscaleImage;
         this.ptImg = polarThetaCIELUV;  
         
-        //enhanceContrast();
     }
     
     public void setToDebug() {
@@ -75,17 +70,12 @@ public class MSEREdges {
         ts = MiscDebug.getCurrentTimeFormatted();
     }
     
-    public void enhanceContrast() {
-        
-        ImageProcessor imageProcessor = new ImageProcessor();
-        
-        imageProcessor.enhanceContrast(gsImg, 4);
-        
-        //TODO: for the polar theta, need to use deltaE2000 to enhance the
-        // skyline contrast for seattle test image, for example.  
-        // can see that in the result from
-        // using an adapted sobel on cielab with deltaE2000,
-        imageProcessor.enhanceContrast(ptImg, 4);        
+    /**
+     * use this to change the limits to keep lower contrast edges.
+     * NOTE that this increases the number of edges that are noise.
+     */
+    public void setToLowerContrast() {
+        useLowerContrastLimits = true;
     }
     
     public void extractEdges() {
@@ -189,6 +179,9 @@ public class MSEREdges {
         if (threshold.equals(Threshold.LESS_SENSITIVE)) {
             maxVariation = 2.0;
             minArea = 0.0075;
+            if (useLowerContrastLimits) {
+                minDiversity = 0.1;//.4
+            }
         }
         
         MSER mser = new MSER();

@@ -202,6 +202,7 @@ public class MSEREdgesTest extends TestCase {
                 
             MSEREdges mserE = new MSEREdges(img);
             mserE.setToDebug();
+            //mserE.setToLowerContrast();
             mserE.extractEdges();
         }
     }
