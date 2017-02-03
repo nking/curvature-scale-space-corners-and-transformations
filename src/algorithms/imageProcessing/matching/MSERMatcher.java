@@ -783,10 +783,6 @@ public class MSERMatcher {
         csr1.put(0, cRegions1);
 
         // key = region index, value = Obj w/ cost being hog intersection
-        TIntObjectMap<FixedSizeSortedVector<Obj>> rIndexHOGMap0
-            = new TIntObjectHashMap<FixedSizeSortedVector<Obj>>();
-
-        // key = region index, value = Obj w/ cost being hog intersection
         TIntObjectMap<FixedSizeSortedVector<Obj>> rIndexHOGMap1
             = new TIntObjectHashMap<FixedSizeSortedVector<Obj>>();
 
@@ -937,15 +933,6 @@ public class MSERMatcher {
                         }
                         boolean added = objVec.add(obj);
                         
-                        // add to r0 map
-                        objVec = rIndexHOGMap0.get(cr0.dataIdx);
-                        if (objVec == null) {
-                            // store top 5 for each r0Idx
-                            objVec = new FixedSizeSortedVector<Obj>(5, Obj.class);
-                            rIndexHOGMap0.put(cr0.dataIdx, objVec);
-                        }
-                        added = objVec.add(obj);
-                    
                         added = bestPerOctave.add(obj);
                     }
                 }
@@ -998,8 +985,7 @@ public class MSERMatcher {
         }
       
         System.out.println("r1 points size = " + regionPoints1.size()
-            + " r1 map size filtered = " + rIndexHOGMap1.size() 
-            + " r0 map size filtered = " + rIndexHOGMap0.size());
+            + " r1 map size filtered = " + rIndexHOGMap1.size());
 
         // re-ordering the best for each rIdx1:
         FixedSizeSortedVector<Obj> tmp1
