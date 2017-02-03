@@ -698,7 +698,7 @@ public class MSERMatcher {
      * histograms of greyscale intensity to find the object in
      * regionPoints0 in the MSER regions of regionPoints1.
      * 
-     * The method is using 10 tests to find the android statues and
+     * The method is using 13 tests to find the android statues and
      * is successfully finding 12 out of the 13 currently.
      * 
      * The method uses a cell size for the histograms and the results
