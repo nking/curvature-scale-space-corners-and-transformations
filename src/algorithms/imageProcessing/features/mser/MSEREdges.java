@@ -32,14 +32,23 @@ public class MSEREdges {
       -- makes greyscale image and a polar theta of cie luv
       -- creates positive and negative mser regions for both,
             filtering by variation for the specific mser type
-      -- uses PerimeterFinder2 extract the outer boundaries from each mser
-         region points, and the same for the contiguous embedded regions.
+    extractEdges:
+        -- uses PerimeterFinder2 extract the outer boundaries from each mser
+           region points, and the same for the contiguous embedded regions.
+    mergeAndExtractEdges
+        -- merges adjacent regions by similarity of color (and maybe texture in future)
+        -- extracts edges using PerimeterFinder2 just as above
+        
     */
+    
+    private enum STATE {
+        INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
+    }
     
     private final GreyscaleImage gsImg;
     private final GreyscaleImage ptImg;
-    private List<List<Region>> gsRegions = null;
-    private List<List<Region>> ptRegions = null;
+    private List<Region> regions = null;
+    // NOTE: the edges indexes do not correspond to the regions indexes
     private List<Set<PairInt>> edgeList = null;
     
     private boolean debug = false;
@@ -48,6 +57,8 @@ public class MSEREdges {
     
     private long ts = 0;
     
+    private STATE state = null;
+    
     public MSEREdges(ImageExt img) {
         
         ImageProcessor imageProcesor = new ImageProcessor();
@@ -55,6 +66,7 @@ public class MSEREdges {
         this.gsImg = img.copyToGreyscale2();
         this.ptImg = imageProcesor.createCIELUVTheta(img, 255);
         
+        state = STATE.INITIALIZED;
     }
     
     public MSEREdges(GreyscaleImage greyscaleImage, GreyscaleImage 
@@ -63,6 +75,7 @@ public class MSEREdges {
         this.gsImg = greyscaleImage;
         this.ptImg = polarThetaCIELUV;  
         
+        state = STATE.INITIALIZED;
     }
     
     public void setToDebug() {
@@ -80,16 +93,45 @@ public class MSEREdges {
     
     public void extractEdges() {
         
+        //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
+        if (!state.equals(STATE.INITIALIZED)) {
+            throw new IllegalStateException("can only perform extraction of "
+                + "edges once");
+        }
+        
+        if (debug) {
+            MiscDebug.writeImage(ptImg, "_" + ts + "_polartheta");
+        }
+        
+        extractRegions();
+           
+        extractBoundaries();
+        
+        if (debug) {
+            printEdges();
+        }
+    }
+    
+    /**
+     * merge regions and then extract edges.  this method is most useful when
+     * setToLowerContrast() has been invoked before. 
+     */
+    public void mergeAndExtractEdges() {
+        
+        //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
+        if (!state.equals(STATE.INITIALIZED)) {
+            throw new IllegalStateException("can only perform extraction of "
+                + "edges once");
+        }
+        
         if (debug) {
             MiscDebug.writeImage(ptImg, "_" + ts + "_polartheta");
         }
         
         extractRegions();
         
-        //NOTE: may prefer a component tree approach to embedded regions instead
-        //   of this filter
-        //filterBySpatialProximity();
-                
+        mergeRegions();
+        
         extractBoundaries();
         
         if (debug) {
@@ -99,10 +141,18 @@ public class MSEREdges {
     
     private void extractRegions() {
         
-        gsRegions = extractMSERRegions(gsImg, Threshold.LESS_SENSITIVE);
+        //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
+        if (state.equals(STATE.EDGES_EXTRACTED)) {
+            throw new IllegalStateException("can only perform extraction of "
+                + "edges once");
+        }
+        
+        List<List<Region>> gsRegions = extractMSERRegions(gsImg, Threshold.LESS_SENSITIVE);
     
-        ptRegions = extractMSERRegions(ptImg, Threshold.DEFAULT);
+        List<List<Region>> ptRegions = extractMSERRegions(ptImg, Threshold.DEFAULT);
     
+        regions = new ArrayList<Region>();
+        
         // for minArea 0.001, a gsRegions limit for var of 0. is used
         //   but for 0.0001, limit should be near 0.001
         
@@ -116,6 +166,8 @@ public class MSEREdges {
                     //&& r.getVariation() == 0.0) {
                     && r.getVariation() < 2.) {
                     list.remove(i);
+                } else {
+                    regions.add(r);
                 }
             }
         }
@@ -128,6 +180,8 @@ public class MSEREdges {
                     list.remove(i);
                 } else if ((type == 0) && r.getVariation() == 0.0) {
                     list.remove(i);
+                } else {
+                    regions.add(r);
                 }
             }
         }
@@ -166,6 +220,8 @@ public class MSEREdges {
                 MiscDebug.writeImage(imCp, "_" + ts + "_regions_pt_"+ type);
             }
         }
+        
+        state = STATE.REGIONS_EXTRACTED;
     }
 
     private List<List<Region>> extractMSERRegions(GreyscaleImage img,
@@ -195,74 +251,55 @@ public class MSEREdges {
         return regions;
     }
 
-    private void filterBySpatialProximity() {
-        
-        float critDens = 2.f/10.f;
-        Canonicalizer.filterBySpatialProximity(critDens, gsRegions.get(0), 
-            gsImg.getWidth(), gsImg.getHeight());
-        
-        Canonicalizer.filterBySpatialProximity(critDens, gsRegions.get(1), 
-            gsImg.getWidth(), gsImg.getHeight());
-        
-        Canonicalizer.filterBySpatialProximity(critDens, ptRegions.get(0), 
-            ptImg.getWidth(), ptImg.getHeight());
-        
-        Canonicalizer.filterBySpatialProximity(critDens, ptRegions.get(1), 
-            ptImg.getWidth(), ptImg.getHeight());
-    }
-
     private void extractBoundaries() {
+        
+        //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
+        if (state.equals(STATE.EDGES_EXTRACTED)) {
+            throw new IllegalStateException("can only perform extraction of "
+                + "edges once");
+        }
         
         // without a component tree for now
         edgeList = new ArrayList<Set<PairInt>>();
         
         PerimeterFinder2 finder = new PerimeterFinder2();
     
-        for (int rListIdx = 0; rListIdx < 2; ++rListIdx) {
-            List<List<Region>> regions;
-            if (rListIdx == 0) {
-                regions = gsRegions;
-            } else {
-                regions = ptRegions;
+        for (int rListIdx = 0; rListIdx < regions.size(); ++rListIdx) {
+            Region r = regions.get(rListIdx);
+            //NOTE: accumulated points are a connected group of points
+            Set<PairInt> points = new HashSet<PairInt>();
+            for (int j = 0; j < r.accX.size(); ++j) {
+                int x = r.accX.get(j);
+                int y = r.accY.get(j);
+                PairInt p2 = new PairInt(x, y);
+                points.add(p2);
+                // NOTE: here is where could test membership of point in
+                //   a disjoint forrest for the region connections
             }
-            for (int type = 0; type < 2; ++type) {
-                int n = regions.get(type).size();
-                for (int i = 0; i < n; ++i) {
-                    Region r = regions.get(type).get(i);
-                    //NOTE: accumulated points are a connected group of points
-                    Set<PairInt> points = new HashSet<PairInt>();
-                    for (int j = 0; j < r.accX.size(); ++j) {
-                        int x = r.accX.get(j);
-                        int y = r.accY.get(j);
-                        PairInt p2 = new PairInt(x, y);
-                        points.add(p2);
-                        // NOTE: here is where could test membership of point in
-                        //   a disjoint forrest for the region connections
-                    }
-                    Set<PairInt> embedded = new HashSet<PairInt>();
-                    Set<PairInt> outerBorder = new HashSet<PairInt>();
-                    finder.extractBorder2(points, embedded, outerBorder);
+            Set<PairInt> embedded = new HashSet<PairInt>();
+            Set<PairInt> outerBorder = new HashSet<PairInt>();
+            finder.extractBorder2(points, embedded, outerBorder);
 
-                    edgeList.add(outerBorder);
+            edgeList.add(outerBorder);
 
-                    DFSConnectedGroupsFinder dfsFinder = new DFSConnectedGroupsFinder();
-                    dfsFinder.setMinimumNumberInCluster(24);
-                    dfsFinder.findConnectedPointGroups(embedded);
-                    for (int j = 0; j < dfsFinder.getNumberOfGroups(); ++j) {
+            DFSConnectedGroupsFinder dfsFinder = new DFSConnectedGroupsFinder();
+            dfsFinder.setMinimumNumberInCluster(24);
+            dfsFinder.findConnectedPointGroups(embedded);
+            for (int j = 0; j < dfsFinder.getNumberOfGroups(); ++j) {
 
-                        Set<PairInt> eSet = dfsFinder.getXY(j);
+                Set<PairInt> eSet = dfsFinder.getXY(j);
 
-                        Set<PairInt> embedded2 = new HashSet<PairInt>();
-                        Set<PairInt> outerBorder2 = new HashSet<PairInt>();
-                        finder.extractBorder2(eSet, embedded2, outerBorder2);
+                Set<PairInt> embedded2 = new HashSet<PairInt>();
+                Set<PairInt> outerBorder2 = new HashSet<PairInt>();
+                finder.extractBorder2(eSet, embedded2, outerBorder2);
 
-                        if (outerBorder2.size() > 16) {
-                            edgeList.add(outerBorder2);
-                        }
-                    }
+                if (outerBorder2.size() > 16) {
+                    edgeList.add(outerBorder2);
                 }
             }
         }
+        
+        state = STATE.EDGES_EXTRACTED;
     }
 
     private void printEdges() {
@@ -280,4 +317,59 @@ public class MSEREdges {
         MiscDebug.writeImage(im, "_" + ts + "_edges_");
     }
     
+    
+    private void mergeRegions() {
+        /*
+        -- create a point index map
+        -- put the region indexes in a disjoint forest
+        -- calculate the properties to use for merging for each region in lists
+           that have the same indexes as regions
+        -- create an adjacency map of region indexes
+        -- bfs of regions:
+           slighlty different than the merge pattern I usually use.
+           usually I update the colors of a region as new points are merged
+           and update the adjacency indexes.
+     
+           for this version, instead, will only write the adjacency indexes once
+           and the color calcs once and rely on the disjoint forest to update
+           merged region indexes.
+          
+           needs a set<PairInt> of already compared region indexes with the 
+           smaller being first
+        
+           the regions get placed in a queue or list and iterated over.
+           for each region
+               get adjacent indexes
+               for each neighbor region index
+                  if already compared, continue
+                  compare color (and/or texture) properties
+                  if within merge limit
+                      merge involves updating the disjoint forest index with a untion
+                  store neighbor and current region index in compared set
+         if more than one iteration is needed, then need to update the adjacency 
+             indexes and colors and populate the queue with only the
+             top most forest indexes.
+         
+        iterate over the regions list:
+        use the disjoint forest findSet to find if a region's representative index
+           has changed from original, and if so, put all of its points in the
+           other region and clear the current region set.
+           (adding to the other region involves using the accumulate method)
+        
+        iterate over the regions list backwrds and remove the regions which have no
+            points
+       */
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
+    public List<Set<PairInt>> getEdges() {
+        
+        //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
+        if (!state.equals(STATE.EDGES_EXTRACTED)) {
+            throw new IllegalStateException("must use one of the extraction"
+                + " methods first");
+        }
+        
+        return edgeList;
+    }
 }
