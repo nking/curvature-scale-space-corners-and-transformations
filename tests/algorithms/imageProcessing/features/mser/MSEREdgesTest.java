@@ -27,7 +27,7 @@ public class MSEREdgesTest extends TestCase {
 
         String fileName1 = "";
 
-        //for (int i = 0; i < 6; ++i) {
+        //for (int i = 6; i < 7; ++i) {
         for (int i = 0; i < 37; ++i) {
 
             switch(i) {
@@ -56,75 +56,75 @@ public class MSEREdgesTest extends TestCase {
                     break;
                 }
                 case 6: {
-                    fileName1 = "cloudy_san_jose.jpg";
+                    fileName1 = "costa_rica.jpg";
                     break;
                 }
                 case 7: {
-                    fileName1 = "patagonia_snowy_foreground.jpg";
+                    fileName1 = "cloudy_san_jose.jpg";
                     break;
                 }
                 case 8: {
-                    fileName1 = "mt_rainier_snowy_field.jpg";
+                    fileName1 = "patagonia_snowy_foreground.jpg";
                     break;
                 }
                 case 9: {
-                    fileName1 = "brown_lowe_2003_image1.jpg";
+                    fileName1 = "mt_rainier_snowy_field.jpg";
                     break;
                 }
                 case 10: {
-                    fileName1 = "brown_lowe_2003_image2.jpg";
+                    fileName1 = "brown_lowe_2003_image1.jpg";
                     break;
                 }
                 case 11: {
-                    fileName1 = "venturi_mountain_j6_0001.png";
+                    fileName1 = "brown_lowe_2003_image2.jpg";
                     break;
                 }
                 case 12: {
-                    fileName1 = "venturi_mountain_j6_0010.png";
+                    fileName1 = "venturi_mountain_j6_0001.png";
                     break;
                 }
                 case 13: {
-                    fileName1 = "campus_010.jpg";
+                    fileName1 = "venturi_mountain_j6_0010.png";
                     break;
                 }
                 case 14: {
-                    fileName1 = "campus_011.jpg";
+                    fileName1 = "campus_010.jpg";
                     break;
                 }
                 case 15: {
-                    fileName1 = "merton_college_I_001.jpg";
+                    fileName1 = "campus_011.jpg";
                     break;
                 }
                 case 16: {
-                    fileName1 = "merton_college_I_002.jpg";
+                    fileName1 = "merton_college_I_001.jpg";
                     break;
                 }
                 case 17: {
-                    fileName1 = "arches.jpg";
+                    fileName1 = "merton_college_I_002.jpg";
                     break;
                 }
                 case 18: {
-                    fileName1 = "stinson_beach.jpg";
+                    fileName1 = "arches.jpg";
                     break;
                 }
                 case 19: {
-                    fileName1 = "norwegian_mtn_range.jpg";
+                    fileName1 = "stinson_beach.jpg";
                     break;
                 }
                 case 20: {
-                    fileName1 = "halfdome.jpg";
+                    fileName1 = "norwegian_mtn_range.jpg";
                     break;
                 }
                 case 21: {
-                    fileName1 = "halfdome2.jpg";
+                    fileName1 = "halfdome.jpg";
                     break;
                 }
                 case 22: {
-                    fileName1 = "halfdome3.jpg";
+                    fileName1 = "halfdome2.jpg";
                     break;
                 }
                 case 23: {
-                    fileName1 = "costa_rica.jpg";
+                    fileName1 = "halfdome3.jpg";
                     break;
                 }
                 case 24: {
@@ -202,8 +202,9 @@ public class MSEREdgesTest extends TestCase {
                 
             MSEREdges mserE = new MSEREdges(img);
             mserE.setToDebug();
-            //mserE.setToLowerContrast();
-            mserE.extractEdges();
+            //mserE.extractEdges();
+            mserE.setToLowerContrast();
+            mserE.mergeAndExtractEdges();
         }
     }
     

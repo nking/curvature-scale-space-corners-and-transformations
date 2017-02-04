@@ -1,6 +1,9 @@
 package algorithms.imageProcessing.features.mser;
 
 import algorithms.compGeometry.PerimeterFinder2;
+import algorithms.disjointSets.DisjointSet2Helper;
+import algorithms.disjointSets.DisjointSet2Node;
+import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.DFSConnectedGroupsFinder;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
@@ -8,9 +11,18 @@ import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.features.mser.MSER.Threshold;
+import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
+import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
+import algorithms.util.VeryLongBitString;
+import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntIntHashMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import java.awt.Color;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -45,6 +57,7 @@ public class MSEREdges {
         INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
     }
     
+    private final ImageExt clrImg;
     private final GreyscaleImage gsImg;
     private final GreyscaleImage ptImg;
     private List<Region> regions = null;
@@ -65,15 +78,7 @@ public class MSEREdges {
         
         this.gsImg = img.copyToGreyscale2();
         this.ptImg = imageProcesor.createCIELUVTheta(img, 255);
-        
-        state = STATE.INITIALIZED;
-    }
-    
-    public MSEREdges(GreyscaleImage greyscaleImage, GreyscaleImage 
-        polarThetaCIELUV) {
-        
-        this.gsImg = greyscaleImage;
-        this.ptImg = polarThetaCIELUV;  
+        this.clrImg = img.copyToImageExt();
         
         state = STATE.INITIALIZED;
     }
@@ -130,7 +135,8 @@ public class MSEREdges {
         
         extractRegions();
         
-        mergeRegions();
+        do {
+        } while (mergeRegions() > 0);
         
         extractBoundaries();
         
@@ -240,9 +246,9 @@ public class MSEREdges {
             }
         }
         
-        MSER mser = new MSER();
+        int[] a = MSER.readIntoArray(img);
         
-        int[] a = mser.readIntoArray(img);
+        MSER mser = new MSER();        
         
         List<List<Region>> regions = mser.findRegions(a, img.getWidth(),
             img.getHeight(), delta, minArea, maxArea, maxVariation, 
@@ -317,49 +323,179 @@ public class MSEREdges {
         MiscDebug.writeImage(im, "_" + ts + "_edges_");
     }
     
+    private class OneDFloatArray {
+        float[] a;
+        public OneDFloatArray(float[] a) {
+            this.a = a;
+        }
+    }
     
-    private void mergeRegions() {
-        /*
-        -- create a point index map
-        -- put the region indexes in a disjoint forest
-        -- calculate the properties to use for merging for each region in lists
-           that have the same indexes as regions
-        -- create an adjacency map of region indexes
-        -- bfs of regions:
-           slighlty different than the merge pattern I usually use.
-           usually I update the colors of a region as new points are merged
-           and update the adjacency indexes.
-     
-           for this version, instead, will only write the adjacency indexes once
-           and the color calcs once and rely on the disjoint forest to update
-           merged region indexes.
-          
-           needs a set<PairInt> of already compared region indexes with the 
-           smaller being first
+    //NOT READY FOR USE.  might need another colorspace
+    private int mergeRegions() {
+                
+        // key = pix idx, value = regions idx
+        TIntIntMap pRIMap = new TIntIntHashMap();
         
-           the regions get placed in a queue or list and iterated over.
-           for each region
-               get adjacent indexes
-               for each neighbor region index
-                  if already compared, continue
-                  compare color (and/or texture) properties
-                  if within merge limit
-                      merge involves updating the disjoint forest index with a untion
-                  store neighbor and current region index in compared set
-         if more than one iteration is needed, then need to update the adjacency 
-             indexes and colors and populate the queue with only the
-             top most forest indexes.
+        // key = region idx, value = disjoint forest node
+        TIntObjectMap<DisjointSet2Node<Integer>> rMap = new 
+            TIntObjectHashMap<DisjointSet2Node<Integer>>();
+
+        // w/ indexes same as regions  
+        List<OneDFloatArray> clrs = new ArrayList<OneDFloatArray>();
+       
+        CIEChromaticity cieC = new CIEChromaticity();
          
-        iterate over the regions list:
-        use the disjoint forest findSet to find if a region's representative index
-           has changed from original, and if so, put all of its points in the
-           other region and clear the current region set.
-           (adding to the other region involves using the accumulate method)
+        DisjointSet2Helper disjointSetHelper = new DisjointSet2Helper();
         
-        iterate over the regions list backwrds and remove the regions which have no
-            points
-       */
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        float[] clrSum = new float[3];
+        
+        for (int rIdx = 0; rIdx < regions.size(); ++rIdx) {
+            
+            Region r = regions.get(rIdx);
+            
+            Arrays.fill(clrSum, 0);
+            
+            for (int i = 0; i < r.accX.size(); ++i) {
+            
+                int pixIdx = clrImg.getInternalIndex(r.accX.get(i), r.accY.get(i));
+                pRIMap.put(pixIdx, rIdx);
+            
+                float[] lab = cieC.rgbToCIELUV(clrImg.getR(pixIdx), 
+                    clrImg.getG(pixIdx), clrImg.getB(pixIdx));
+                for (int j = 0; j < clrSum.length; ++j) {
+                    clrSum[j] += lab[j];
+                }
+            }
+            
+            DisjointSet2Node<Integer> node = new 
+                DisjointSet2Node<Integer>(Integer.valueOf(rIdx));
+            node = disjointSetHelper.makeSet(node);
+            assert(disjointSetHelper.findSet(node).getMember().intValue() == rIdx);
+            rMap.put(rIdx, node);
+        
+            float[] clr0 = new float[3];
+            for (int j = 0; j < clrSum.length; ++j) {
+                clr0[j] = clrSum[j] / (float)r.accX.size();
+            }
+        
+            clrs.add(new OneDFloatArray(clr0));
+        }
+
+        // adjacency map of regions indexes
+        TIntObjectMap<VeryLongBitString> rAdjMap
+            = new TIntObjectHashMap<VeryLongBitString>();
+        
+        int[] dxs = Misc.dx4;
+        int[] dys = Misc.dy4;
+        int w = clrImg.getWidth();
+        int h = clrImg.getHeight();
+        for (int rIdx = 0; rIdx < regions.size(); ++rIdx) {
+            Region r = regions.get(rIdx);            
+            for (int i = 0; i < r.accX.size(); ++i) {
+                int x = r.accX.get(i);
+                int y = r.accY.get(i);
+                for (int k = 0; k < dxs.length; ++k) {
+                    int x2 = x + dxs[k];
+                    int y2 = y + dys[k];
+                    if (x2 < 0 || y2 < 0 || (x2 >= w) || (y2 >= h)) {
+                        continue;
+                    }
+                    int pixIdx2 = clrImg.getInternalIndex(x2, y2);
+                    if (!pRIMap.containsKey(pixIdx2)) {
+                        continue;
+                    }
+                    int rIdx2 = pRIMap.get(pixIdx2);
+                    if (rIdx2 == rIdx) {
+                        continue;
+                    }
+                    VeryLongBitString adjIdxs = rAdjMap.get(rIdx);
+                    if (adjIdxs == null) {
+                        adjIdxs = new VeryLongBitString(regions.size());
+                        rAdjMap.put(rIdx, adjIdxs);
+                    }
+                    adjIdxs.setBit(rIdx2);
+                }
+            }
+        }        
+       
+        Set<PairInt> compared = new HashSet<PairInt>();
+        
+        float clrLimit = 3.0f;
+        
+        for (int rIdx = 0; rIdx < regions.size(); ++rIdx) {
+            
+            OneDFloatArray clr = clrs.get(rIdx);
+            
+            VeryLongBitString adjIdxs = rAdjMap.get(rIdx);
+            if (adjIdxs == null) {
+                continue;
+            }
+            for (int rIdx2 : adjIdxs.getSetBits()) {
+                PairInt c = (rIdx < rIdx2) ? new PairInt(rIdx, rIdx2) : 
+                    new PairInt(rIdx2, rIdx);
+                if (compared.contains(c)) {
+                    continue;
+                }
+                compared.add(c);
+                
+                OneDFloatArray clr2 = clrs.get(rIdx2);
+                
+                float diff0 = clr.a[0] - clr2.a[0];
+                float diff1 = clr.a[1] - clr2.a[1];
+                float diff2 = clr.a[2] - clr2.a[2];
+                double diff = Math.abs(diff0) + Math.abs(diff1) + Math.abs(diff2);
+                diff /= 3.;
+               
+                System.out.format("(%d,%d) (%d,%d) diff=%.3f\n", 
+                    regions.get(rIdx).accX.get(0),
+                    regions.get(rIdx).accY.get(0),
+                    regions.get(rIdx2).accX.get(0),
+                    regions.get(rIdx2).accY.get(0), (float)diff
+                );
+                
+                if (diff > clrLimit) {
+                    continue;
+                }
+                
+                // merge rIdx2 with rIdx
+                DisjointSet2Node<Integer> r2Node = rMap.get(rIdx2);
+                DisjointSet2Node<Integer> rNode = rMap.get(rIdx);
+                DisjointSet2Node<Integer> mergedNode = 
+                    disjointSetHelper.union(rNode, r2Node);
+                rMap.put(rIdx, mergedNode);
+                rMap.put(rIdx2, mergedNode);
+            }
+        }
+
+        for (int rIdx = 0; rIdx < regions.size(); ++rIdx) {
+            DisjointSet2Node<Integer> rNode = rMap.get(rIdx);
+            int repIdx = disjointSetHelper.findSet(rNode).getMember().intValue();
+            if (repIdx == rIdx) {
+                continue;
+            }
+            // merge all of rIdx content into repIdx and clear
+            Region r = regions.get(rIdx); 
+            Region r0 = regions.get(repIdx); 
+            for (int i = 0; i < r.accX.size(); ++i) {
+                int x = r.accX.get(i);
+                int y = r.accY.get(i);
+                r0.accumulate(x, y);
+            }
+            r.accX.clear();
+            r.accY.clear();
+        }
+        
+        int nMerged = regions.size();
+        for (int rIdx = (regions.size() - 1); rIdx > -1; --rIdx) {
+            Region r = regions.get(rIdx); 
+            if (r.accX.isEmpty()) {
+                regions.remove(rIdx);
+            }
+        }  
+        nMerged -= regions.size();
+        System.out.println("merged " + nMerged + " regions");
+    
+        return nMerged;
     }
     
     public List<Set<PairInt>> getEdges() {
