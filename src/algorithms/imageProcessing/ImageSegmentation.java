@@ -10238,7 +10238,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
            + " nSmall=" + nSmall + " nSets=" + labelToIndexMap.size());
     }
 
-    private void mergeSmallSegments(ImageExt img,
+    public void mergeSmallSegments(ImageExt img,
         int[] labels, int sizeLimit, ColorSpace clrSpace) {
 
         CIEChromaticity cieC = null;

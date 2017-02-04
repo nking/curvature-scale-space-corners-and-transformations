@@ -6,21 +6,30 @@ import algorithms.disjointSets.DisjointSet2Node;
 import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.DFSConnectedGroupsFinder;
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.GroupPixelRGB0;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.ImageProcessor.Colors;
+import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.features.mser.MSER.Threshold;
+import algorithms.imageProcessing.segmentation.ColorSpace;
+import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
 import algorithms.util.VeryLongBitString;
+import gnu.trove.iterator.TIntIterator;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.awt.Color;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -136,9 +145,11 @@ public class MSEREdges {
         extractRegions();
         
         do {
-        } while (mergeRegions() > 0);
+        } while (mergeRegions1() > 0);
         
         extractBoundaries();
+        
+        mergeRegions2();
         
         if (debug) {
             printEdges();
@@ -330,9 +341,14 @@ public class MSEREdges {
         }
     }
     
-    //NOT READY FOR USE.  might need another colorspace
-    private int mergeRegions() {
+    private int mergeRegions1() {
                 
+        //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
+        if (!state.equals(STATE.REGIONS_EXTRACTED)) {
+            throw new IllegalStateException("can only perform extraction of "
+                + "edges once");
+        }
+        
         // key = pix idx, value = regions idx
         TIntIntMap pRIMap = new TIntIntHashMap();
         
@@ -495,7 +511,200 @@ public class MSEREdges {
         nMerged -= regions.size();
         System.out.println("merged " + nMerged + " regions");
     
+        if (debug) {
+            int[] xyCen = new int[2];
+            Image imCp = clrImg.copyImage();
+            for (int i = 0; i < regions.size(); ++i) {
+                Region r = regions.get(i);
+                int[] clr = ImageIOHelper.getNextRGB(i);
+                r.drawEllipse(imCp, 0, clr[0], clr[1], clr[2]);
+                r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
+                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], imCp,
+                    1, 255, 0, 0);
+            }
+            MiscDebug.writeImage(imCp, "_" + ts + "_regions_merged_");
+        }
+        
         return nMerged;
+    }
+    
+    private void mergeRegions2() {
+        
+        //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
+        if (!state.equals(STATE.EDGES_EXTRACTED)) {
+            throw new IllegalStateException("error in algorithm.  expecting"
+                + " edges were extracted.");
+        }
+        
+        TIntSet edges = new TIntHashSet();
+        for (int i = 0; i < edgeList.size(); ++i) {
+            Set<PairInt> set = edgeList.get(i);
+            for (PairInt p : set) {
+                int pixIdx = clrImg.getInternalIndex(p);
+                edges.add(pixIdx);
+            }
+        }
+        
+        int w = clrImg.getWidth();
+        int h = clrImg.getHeight();
+        
+        Set<PairInt> notEdges = new HashSet<PairInt>();
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                int pixIdx = clrImg.getInternalIndex(i, j);
+                if (!edges.contains(pixIdx)) {
+                    notEdges.add(new PairInt(i, j));
+                }
+            }
+        }
+        
+        DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
+        finder.setMinimumNumberInCluster(1);
+        finder.findConnectedPointGroups(notEdges);
+        
+        TIntIntMap pointIndexMap = new TIntIntHashMap();
+        
+        List<Colors> clrsList = new ArrayList<Colors>();
+        
+        List<Set<PairInt>> contigSets = new ArrayList<Set<PairInt>>();
+        for (int i = 0; i < finder.getNumberOfGroups(); ++i) {
+            Set<PairInt> group = finder.getXY(i);
+            contigSets.add(group);
+            
+            for (PairInt p : group) {
+                int pixIdx = clrImg.getInternalIndex(p);
+                pointIndexMap.put(pixIdx, i);
+            }
+            
+            GroupPixelRGB0 gpb = new GroupPixelRGB0();
+            gpb.calculateColors(group, clrImg, 0, 0);
+            int r = Math.round(gpb.getAvgRed());
+            int g = Math.round(gpb.getAvgGreen());
+            int b = Math.round(gpb.getAvgBlue());
+            float[] hsb = new float[3];
+            Color.RGBtoHSB(r, g, b, hsb);
+            Colors clr = new Colors(hsb);
+            clrsList.add(clr);
+        }
+        
+        // -- place edges in the contiguous adjacent set, closest to them
+        //    in color
+        int[] dxs = Misc.dx4;
+        int[] dys = Misc.dy4;
+        ArrayDeque<Integer> queue = new ArrayDeque<Integer>();
+        TIntIterator iter = edges.iterator();
+        while (iter.hasNext()) {
+            int pixIdx = iter.next();
+            queue.add(Integer.valueOf(pixIdx));
+        }
+        
+        while (!queue.isEmpty()) {
+            int pixIdx = queue.pop().intValue();
+            if (pointIndexMap.containsKey(pixIdx)) {
+                continue;
+            }
+            int x = clrImg.getCol(pixIdx);
+            int y = clrImg.getRow(pixIdx);
+            
+            float[] hsb = new float[3];
+            Color.RGBtoHSB(clrImg.getR(pixIdx), clrImg.getG(pixIdx), 
+                clrImg.getB(pixIdx), hsb);
+            
+            int minClrDiff = Integer.MAX_VALUE;
+            int minClrDiffIdx = -1;
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                if (x2 < 0 || y2 < 0 || (x2 >= w) || (y2 >= h)) {
+                    continue;
+                }
+                int pixIdx2 = clrImg.getInternalIndex(x2, y2);
+                if (!pointIndexMap.containsKey(pixIdx2)) {
+                    // an edge pixel adjacent to another
+                    continue;
+                }
+                int gIdx = pointIndexMap.get(pixIdx2);
+                Colors clrs2 = clrsList.get(gIdx);
+                int diff = 0;
+                for (int j = 0; j < hsb.length; ++j) {
+                    diff += Math.abs(hsb[j] - clrs2.getColors()[j]);
+                }
+                if (diff < minClrDiff) {
+                    minClrDiff = diff;
+                    minClrDiffIdx = pixIdx2;
+                }
+            }
+            if (minClrDiffIdx == -1) {
+                queue.add(Integer.valueOf(pixIdx));
+                continue;
+            }
+            int gIdx = pointIndexMap.get(minClrDiffIdx);
+            pointIndexMap.put(pixIdx, gIdx);
+            contigSets.get(gIdx).add(new PairInt(x, y));
+        }
+        
+        // -- merge contigSets
+        int sizeLimit = 16;//31;
+        if (clrImg.getNPixels() < 100) {
+            sizeLimit = 5;
+        }
+        
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
+        float hsvLimit = 0.095f;
+        int[] labels = imageSegmentation.mergeByColor(clrImg, contigSets, 
+            ColorSpace.HSV, 
+            hsvLimit);//0.1f);
+        
+        imageSegmentation.mergeSmallSegments(clrImg, labels, sizeLimit, 
+            ColorSpace.HSV);
+
+        contigSets = LabelToColorHelper
+            .extractContiguousLabelPoints(clrImg, labels);
+ 
+        labels = imageSegmentation.mergeByColor(clrImg, contigSets, 
+            ColorSpace.CIELUV_NORMALIZED, 
+            0.01f);
+        
+        labels = imageSegmentation.mergeByColor(clrImg, contigSets, 
+            ColorSpace.POLAR_CIELUV, 
+            1.f);// in degrees
+        
+        sizeLimit = 24;
+        if (clrImg.getNPixels() < 100) {
+            sizeLimit = 10;
+        }
+        imageSegmentation.mergeSmallSegments(clrImg, labels, sizeLimit, 
+            ColorSpace.CIELAB);
+        
+        contigSets = LabelToColorHelper
+            .extractContiguousLabelPoints(clrImg, labels);
+        
+        // - write the final edges (and clear the regions list)
+        edgeList.clear();
+        PerimeterFinder2 finder2 = new PerimeterFinder2();
+        for (Set<PairInt> set : contigSets) {
+            Set<PairInt> embedded = new HashSet<PairInt>();
+            Set<PairInt> outerBorder = new HashSet<PairInt>();
+            finder2.extractBorder2(set, embedded, outerBorder);
+            edgeList.add(outerBorder);
+            
+            DFSConnectedGroupsFinder dfsFinder = new DFSConnectedGroupsFinder();
+            dfsFinder.setMinimumNumberInCluster(24);
+            dfsFinder.findConnectedPointGroups(embedded);
+            for (int j = 0; j < dfsFinder.getNumberOfGroups(); ++j) {
+
+                Set<PairInt> eSet = dfsFinder.getXY(j);
+
+                Set<PairInt> embedded2 = new HashSet<PairInt>();
+                Set<PairInt> outerBorder2 = new HashSet<PairInt>();
+                finder2.extractBorder2(eSet, embedded2, outerBorder2);
+
+                if (outerBorder2.size() > 16) {
+                    edgeList.add(outerBorder2);
+                }
+            }
+        }
+        
     }
     
     public List<Set<PairInt>> getEdges() {
