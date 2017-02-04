@@ -15894,4 +15894,68 @@ int z = 1;
         return !rm.isEmpty();
     }
     
+    /**
+     * gather pixels on either side of adjacent edges to compare their
+     * colors and if the differences are below the limit,
+     * remove the edge intersection.
+     * After adjacent edges have been compared,
+     * edges that are not adjacent to others are examined.  these
+     * are the thin edges embedded in what would otherwise be labeled
+     * pixels.  if the edge pixel colors are similar below limit to
+     * it's neighboring pixels, it is also removed.
+     * the number of edges altered by this method is returned along
+     * with the modified edge list.
+     * note that empty edges are removed, so the input edgesList may
+     * have different indexes for a previously identified edge after the
+     * method returns.
+     * 
+     * runtime complexity is O(N_edge_pixels)
+     * 
+     * @param img
+     * @param edgeList
+     * @param clrSpace
+     * @param limit
+     * @return 
+     */
+    public int mergeEdges(ImageExt img, List<Set<PairInt>> edgeList,
+        ColorSpace clrSpace, float limit) {
+        
+        /*
+          -- O(N_edge_pixels): creates a pairint pixel, edgeIdx map
+          -- 4*O(N_edge_pixels): create a neighbors map: key = pairint pixel, 
+             value = map w/ key=edgeIdx, value=set of pairint pixels
+          -- create a variable called edgesCompared which is a pairint of edges compared already
+               with smaller edge index first
+          -- create a set rmPixIdxs which is pairint of pixels
+        
+          -- O(N_edges*N_pixels_in_edge*4*log2(N_pixels_in_edge)): 
+             iterate over each edge index
+             for each pixel in edge, wanting to gather all of it's neighboring pixels,
+             grow them by one, and then subtract this edges pixels from all.
+             in detail:
+             create map localEdgePixMap w/ key=edgeIdx, value=set of pixels.
+             for each pixel in edge,
+                 if rmPix contains pixel, continue
+                 gather its neighboring pixels from map above
+                 - put each neighboring pixel into localEdgePixMap by edge idx as key
+             for each key in localEdgePixMap (where key is edgeIdx)
+                 - if pair of edge indexes have been compared, continue, else add to compared indexes
+                 - copy and grow the set of pixels by 1 pixel,
+                   but add to set a pixel only if the "grown pixel" is not an edge point (check rmSet too)
+                 - subtract the current edge pixels from the grown set
+                 - use dfs connected finder w/ 4 neighbors
+                 - assert that it found 2 groups.
+                 - calculate the group colors of each.
+                 - if difference of the colors is less than threshold
+                   - merge the 2 edges under consideration
+                     that involves, removing the intersection, that is the
+                     points in the map right before growing the pixels by 1
+                     --> put all pixels to be removed into the removePixSet.
+           when all of edges have been visited
+           iterate over rmSet and remove those pixels from their edges
+           then iterate over the edges in reverse and remove an empty lists.
+        */
+        
+        throw new UnsupportedOperationException("not implmented yet");
+    }
 }
