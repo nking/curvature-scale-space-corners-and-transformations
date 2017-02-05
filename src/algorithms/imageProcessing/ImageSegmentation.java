@@ -49,6 +49,7 @@ import com.climbwithyourfeet.clustering.DTClusterFinder;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.iterator.TLongIterator;
+import gnu.trove.iterator.TObjectIntIterator;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TDoubleArrayList;
@@ -15921,40 +15922,177 @@ int z = 1;
         ColorSpace clrSpace, float limit) {
         
         /*
-          -- O(N_edge_pixels): creates a pairint pixel, edgeIdx map
-          -- 4*O(N_edge_pixels): create a neighbors map: key = pairint pixel, 
-             value = map w/ key=edgeIdx, value=set of pairint pixels
-          -- create a variable called edgesCompared which is a pairint of edges compared already
-               with smaller edge index first
-          -- create a set rmPixIdxs which is pairint of pixels
+        create the data structures needed for the merges
         
-          -- O(N_edges*N_pixels_in_edge*4*log2(N_pixels_in_edge)): 
-             iterate over each edge index
-             for each pixel in edge, wanting to gather all of it's neighboring pixels,
-             grow them by one, and then subtract this edges pixels from all.
-             in detail:
-             create map localEdgePixMap w/ key=edgeIdx, value=set of pixels.
-             for each pixel in edge,
-                 if rmPix contains pixel, continue
-                 gather its neighboring pixels from map above
-                 - put each neighboring pixel into localEdgePixMap by edge idx as key
-             for each key in localEdgePixMap (where key is edgeIdx)
-                 - if pair of edge indexes have been compared, continue, else add to compared indexes
-                 - copy and grow the set of pixels by 1 pixel,
-                   but add to set a pixel only if the "grown pixel" is not an edge point (check rmSet too)
-                 - subtract the current edge pixels from the grown set
-                 - use dfs connected finder w/ 4 neighbors
-                 - assert that it found 2 groups.
-                 - calculate the group colors of each.
-                 - if difference of the colors is less than threshold
+        -- O(N_edge_pixels): creates a pairint pixel, edgeIdx map
+        -- 4*O(N_edge_pixels): create a neighbors map: key = pairint pixel, 
+           value = map w/ key=edgeIdx, value=set of pairint pixels
+        -- create a variable called edgesCompared which is a pairint of 
+           edges compared already
+           with smaller edge index first
+        -- create a set rmPixIdxs which is pairint of pixels
+        */
+        
+        TObjectIntMap<PairInt> pixEdgeMap = new TObjectIntHashMap<PairInt>();
+        for (int edgeIdx = 0; edgeIdx < edgeList.size(); ++edgeIdx) {
+            Set<PairInt> edge = edgeList.get(edgeIdx);
+            for (PairInt p : edge) {
+                pixEdgeMap.put(p, edgeIdx);
+            }
+        }
+        
+        // key = an edge pixel, 
+        // value = map of neigbhors not in same edge
+        //         key = edgeIdx of neighbor, value = neighboring pixels
+        Map<PairInt, TIntObjectMap<Set<PairInt>>> pointNeighborsMap = 
+            new HashMap<PairInt, TIntObjectMap<Set<PairInt>>>();
+        
+        int[] dxs = Misc.dx4;
+        int[] dys = Misc.dy4;
+        TObjectIntIterator<PairInt> iter = pixEdgeMap.iterator();
+        for (int i = 0; i < pixEdgeMap.size(); ++i) {
+            iter.advance();
+            PairInt p1 = iter.key();
+            int edgeIdx = iter.value();
+            TIntObjectMap<Set<PairInt>> map = pointNeighborsMap.get(p1);
+            if (map == null) {
+                map = new TIntObjectHashMap<Set<PairInt>>();
+                pointNeighborsMap.put(p1, map);
+            }
+            int x = p1.getX();
+            int y = p1.getY();
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                PairInt p2 = new PairInt(x2, y2);
+                if (!pixEdgeMap.containsKey(p2)) {
+                    continue;
+                }
+                int edgeIdx2 = pixEdgeMap.get(p2);
+                if (edgeIdx2 == edgeIdx) {
+                    continue;
+                }
+                Set<PairInt> set2 = map.get(edgeIdx2);
+                if (set2 == null) {
+                    set2 = new HashSet<PairInt>();
+                    map.put(edgeIdx2, set2);
+                }
+                set2.add(p2);
+            }
+        }
+        
+        // set of compared edge indexes with smaller index in x
+        Set<PairInt> edgesCompared = new HashSet<PairInt>();
+        
+        // set of pixels to be removed from edges.  the edge index can be 
+        //    found with pixEdgeMap
+        Set<PairInt> rmPixels = new HashSet<PairInt>();
+    
+        int[] dxs2 = Misc.dx8;
+        int[] dys2 = Misc.dy8;
+        
+        for (int edgeIdx = 0; edgeIdx < edgeList.size(); ++edgeIdx) {
+            
+            Set<PairInt> edge = edgeList.get(edgeIdx);
+            
+            TIntObjectMap<Set<PairInt>> localEdgePixMap = new 
+                TIntObjectHashMap<Set<PairInt>>();
+            
+            for (PairInt p : edge) {
+                if (rmPixels.contains(p)) {
+                    continue;
+                }
+                TIntObjectMap<Set<PairInt>> neighborMap = pointNeighborsMap.get(p);
+                if (neighborMap == null || neighborMap.isEmpty()) {
+                    continue;
+                }
+                TIntObjectIterator<Set<PairInt>> iter2 = neighborMap.iterator();
+                for (int j = 0; j < neighborMap.size(); ++j) {
+                    
+                    iter2.advance();
+                    int edgeIdx2 = iter2.key();
+                    
+                    PairInt c = (edgeIdx < edgeIdx2) ? 
+                        new PairInt(edgeIdx, edgeIdx2) : 
+                        new PairInt(edgeIdx2, edgeIdx);
+                    if (edgesCompared.contains(c)) {
+                        continue;
+                    }
+                    edgesCompared.add(c);
+                    
+                    Set<PairInt> nhbrs = iter2.value();
+                    
+                    Set<PairInt> local = localEdgePixMap.get(edgeIdx2);
+                    if (local == null) {
+                        local = new HashSet<PairInt>();
+                        localEdgePixMap.put(edgeIdx2, local);
+                    }
+                    local.addAll(nhbrs);
+                } // end loop over neighbors
+            } // end loop over the pixels in an edge
+           
+            // -- with all edge's neighboring pixels
+            TIntObjectIterator<Set<PairInt>> iter3 = localEdgePixMap.iterator();
+            for (int i = 0; i < localEdgePixMap.size(); ++i) {
+                iter3.advance();
+                int edgeIdx2 = iter3.key();
+                assert(edgeIdx2 != edgeIdx);
+                
+                Set<PairInt> neighbors = iter3.value();
+                Set<PairInt> neighborsPlus = new HashSet<PairInt>(neighbors);
+                
+                // grow neighborsPlus by "1", but only add the new pixel if it
+                // is not an existing edge pixel
+                for (PairInt p : neighbors) {
+                    int x1 = p.getX();
+                    int y1 = p.getY();
+                    for (int k = 0; k < dxs2.length; ++k) {
+                        int x2 = x1 + dxs2[k];
+                        int y2 = y1 + dys2[k];
+                        PairInt p2 = new PairInt(x2, y2);
+                        if (!pixEdgeMap.containsKey(p2)) {
+                            neighborsPlus.add(p2);
+                        }
+                    }
+                }
+                
+                // subtract the edge1 pixels from neighborsPlus, which should
+                // then divide the set into 2 groups, findable by a dfs 
+                // contiguous search
+                neighborsPlus.removeAll(edge);
+                
+                if (neighborsPlus.isEmpty()) {
+                    continue;
+                }
+                
+                DFSConnectedGroupsFinder finder2 = new DFSConnectedGroupsFinder();
+                finder2.setMinimumNumberInCluster(1);
+                finder2.findConnectedPointGroups(neighborsPlus);
+                int nGroups = finder2.getNumberOfGroups();
+                assert(nGroups <= 2);
+                
+                /*
+                - if difference of the colors is less than threshold
                    - merge the 2 edges under consideration
                      that involves, removing the intersection, that is the
                      points in the map right before growing the pixels by 1
                      --> put all pixels to be removed into the removePixSet.
+                */
+                
+                //TODO: may need revision here.
+                if (nGroups == 1) {
+                    // compare the edge colors to the neighbors
+                } else {
+                    // compare the 2 neighbor groups to one another
+                }
+            }
+        }
+        /*
            when all of edges have been visited
            iterate over rmSet and remove those pixels from their edges
            then iterate over the edges in reverse and remove an empty lists.
         */
+        
         
         throw new UnsupportedOperationException("not implmented yet");
     }
