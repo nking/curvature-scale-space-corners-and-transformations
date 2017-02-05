@@ -21,7 +21,7 @@ public class EllipseHelper {
     
     private final int y;
     
-    private Bounds bounds = null;
+    private final Bounds bounds;
     
     /**
      * constructor w/ center x, y and coefficients 
@@ -54,6 +54,8 @@ public class EllipseHelper {
 
             ellipse.add(x2, y2);
         }
+        
+        bounds = new Bounds(ellipse);
     }
     
     /**
@@ -65,6 +67,11 @@ public class EllipseHelper {
         ellipse = xy;
         this.x = x;
         this.y = y;
+        bounds = new Bounds(ellipse);
+    }
+    
+    public PairIntArray getEllipse() {
+        return ellipse;
     }
     
     /**
@@ -76,12 +83,27 @@ public class EllipseHelper {
      * @return 
      */
     public boolean isWithin(int xPoint, int yPoint) {
-        
-        if (bounds == null) {
-            bounds = new Bounds(ellipse);
-        }
-        
+                
         return bounds.isWithin(xPoint, yPoint);
+    }
+    
+    public boolean intersects(EllipseHelper other) {
+        
+        if (other.bounds.maxRow < bounds.minRow || 
+            other.bounds.minRow > bounds.maxRow) {
+            return false;
+        }
+        if (other.bounds.maxCol < bounds.minCol || 
+            other.bounds.minCol > bounds.maxCol) {
+            return false;
+        }
+        PairIntArray otherXY = other.getEllipse();
+        for (int i = 0; i < otherXY.getN(); ++i) {
+            if (bounds.isWithin(otherXY.getX(i), otherXY.getY(i))) {
+                return true;
+            }
+        }
+        return false;
     }
     
     private class Bounds {
@@ -90,6 +112,9 @@ public class EllipseHelper {
         final int maxRow;
         final TIntObjectMap<PairInt> rowBounds;
     
+        final int minCol;
+        final int maxCol;
+        
         public Bounds(PairIntArray xy) {
             
             int[] minMaxXY = MiscMath.findMinMaxXY(xy);
@@ -97,6 +122,9 @@ public class EllipseHelper {
             this.minRow = minMaxXY[2];
             this.maxRow = minMaxXY[3];
             this.rowBounds = new TIntObjectHashMap<PairInt>();
+            
+            int minX = Integer.MAX_VALUE;
+            int maxX = Integer.MIN_VALUE;
             
             for (int i = 0; i < xy.getN(); ++i) {
                 
@@ -114,13 +142,25 @@ public class EllipseHelper {
                     } else if (col > xMinMax.getY()) {
                         xMinMax.setY(col);
                     }
-                }                
+                }
+                
+                if (col < minX) {
+                    minX = col;
+                }
+                if (col > maxX) {
+                    maxX = col;
+                }
             }
+            this.minCol = minX;
+            this.maxCol = maxX;
         }
         
         boolean isWithin(int xPoint, int yPoint) {
             
             if (yPoint < minRow || yPoint > maxRow) {
+                return false;
+            }
+            if (xPoint < minCol || xPoint > maxCol) {
                 return false;
             }
             
