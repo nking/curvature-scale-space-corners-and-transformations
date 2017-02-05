@@ -6,6 +6,8 @@ import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  *
@@ -22,6 +24,9 @@ public class EllipseHelper {
     private final int y;
     
     private final Bounds bounds;
+    
+    private final double minor;
+    private final double major;
     
     /**
      * constructor w/ center x, y and coefficients 
@@ -41,6 +46,9 @@ public class EllipseHelper {
         
         ellipse = new PairIntArray();
         
+        this.major = 2. * coeffs[4];
+        this.minor = 2. * coeffs[5];
+        
         this.x = x;
         this.y = y;
         
@@ -59,7 +67,7 @@ public class EllipseHelper {
     }
     
     /**
-         * constructor w/ center x, y and points of the ellipse
+     * constructor w/ center x, y and points of the ellipse
      * @param xy points of the ellipse
      */
     public EllipseHelper(int x, int y, PairIntArray xy) {
@@ -68,6 +76,17 @@ public class EllipseHelper {
         this.x = x;
         this.y = y;
         bounds = new Bounds(ellipse);
+        
+        // use a Region to calculate the major and minor axes
+        Region r = new Region();
+        for (int i = 0; i < xy.getN(); ++i) {
+            int x2 = xy.getX(i);
+            int y2 = xy.getY(i);
+            r.accumulate(x2, y2);
+        }
+        double[] coeffs = r.calcParamTransCoeff();
+        this.major = 2. * coeffs[4];
+        this.minor = 2. * coeffs[5];
     }
     
     public PairIntArray getEllipse() {
@@ -87,6 +106,10 @@ public class EllipseHelper {
         return bounds.isWithin(xPoint, yPoint);
     }
     
+    public double getMajorTimesMinor() {
+        return major * minor;
+    }
+    
     public boolean intersects(EllipseHelper other) {
         
         if (other.bounds.maxRow < bounds.minRow || 
@@ -102,6 +125,27 @@ public class EllipseHelper {
             if (bounds.isWithin(otherXY.getX(i), otherXY.getY(i))) {
                 return true;
             }
+        }
+        
+        // check for whether one is embedded within the other
+        // and the coordinates of the ellipses do not intersect
+        // so wasn't detected yet
+        if (surrounds(other)) {
+            return true;
+        }
+        if (other.surrounds(this)) {
+            return true;
+        }
+        
+        return false;
+    }
+    
+    public boolean surrounds(EllipseHelper other) {
+        if (bounds.minRow < other.bounds.minRow &&
+            bounds.maxRow > other.bounds.maxRow &&
+            bounds.minCol < other.bounds.minCol &&
+            bounds.maxCol > other.bounds.maxCol) {
+            return true;
         }
         return false;
     }
@@ -173,5 +217,27 @@ public class EllipseHelper {
             
             return true;
         }
+    
+        Set<PairInt> createEllipseFillingPoints() {
+            
+            Set<PairInt> points = new HashSet<PairInt>();
+        
+            for (int r = minRow; r <= maxRow; ++r) {
+                PairInt xMinMax = rowBounds.get(r);
+                for (int c = xMinMax.getX(); c <= xMinMax.getY(); ++c) {
+                    points.add(new PairInt(c, r));
+                }
+            }
+        
+            return points;
+        }
+    }
+    
+    public Set<PairInt> createEllipseFillingPoints() {
+        return bounds.createEllipseFillingPoints();
+    }
+    
+    public int[] getXYCenter() {
+        return new int[]{x, y};
     }
 }

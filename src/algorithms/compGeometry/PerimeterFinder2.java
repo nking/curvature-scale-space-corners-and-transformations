@@ -313,7 +313,8 @@ public class PerimeterFinder2 {
         int[] minMaxXY = MiscMath.findMinMaxXY(b); 
         
         ImageProcessor imp = new ImageProcessor();
-        imp.applyThinning(boundary, minMaxXY[1] + 1, minMaxXY[3] + 1);
+        imp.applyThinning(boundary, minMaxXY[1] + 1, 
+            minMaxXY[3] + 1, true);
         
         //ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
         //lt.applyLineThinner(b, 

@@ -27,7 +27,7 @@ public class MSEREdgesTest extends TestCase {
 
         String fileName1 = "";
 
-        //for (int i = 6; i < 7; ++i) {
+        //for (int i = 0; i < 1; ++i) {
         for (int i = 0; i < 37; ++i) {
 
             switch(i) {
@@ -188,7 +188,6 @@ public class MSEREdgesTest extends TestCase {
             ImageExt img = ImageIOHelper.readImageExt(filePath1);
 
             ImageProcessor imageProcessor = new ImageProcessor();
-            ImageSegmentation imageSegmentation = new ImageSegmentation();
 
             int w1 = img.getWidth();
             int h1 = img.getHeight();
@@ -202,6 +201,7 @@ public class MSEREdgesTest extends TestCase {
                 
             MSEREdges mserE = new MSEREdges(img);
             mserE.setToDebug();
+            //mserE.setToLowerContrast();
             //mserE.extractEdges();
             mserE.setToLowerContrast();
             mserE.mergeAndExtractEdges();

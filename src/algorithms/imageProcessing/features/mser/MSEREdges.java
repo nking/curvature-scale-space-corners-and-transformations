@@ -47,7 +47,7 @@ import java.util.Set;
  * @author nichole
  */
 public class MSEREdges {
-    
+
     /*
     given a color image
       -- makes greyscale image and a polar theta of cie luv
@@ -70,6 +70,13 @@ public class MSEREdges {
     private final GreyscaleImage gsImg;
     private final GreyscaleImage ptImg;
     private List<Region> regions = null;
+    
+    // color contrast regions filtered to the smallest that
+    // do not have any other ellipse centers within them.
+    // (then all positive filtered and negative filtered are compared
+    // and kept, but only the largest if intersecting are kept)
+    private List<Region> filteredRegions = null;
+    
     // NOTE: the edges indexes do not correspond to the regions indexes
     private List<Set<PairInt>> edgeList = null;
     
@@ -118,8 +125,14 @@ public class MSEREdges {
         }
         
         extractRegions();
-           
+        
+        //TODO: reconsider this one:
+        do {
+        } while (mergeRegions1() > 0);
+        
         extractBoundaries();
+        
+        useFilterOnEdges();
         
         if (debug) {
             printEdges();
@@ -138,16 +151,7 @@ public class MSEREdges {
                 + "edges once");
         }
         
-        if (debug) {
-            MiscDebug.writeImage(ptImg, "_" + ts + "_polartheta");
-        }
-        
-        extractRegions();
-        
-        do {
-        } while (mergeRegions1() > 0);
-        
-        extractBoundaries();
+        extractEdges();
         
         mergeRegions2();
         
@@ -238,6 +242,270 @@ public class MSEREdges {
             }
         }
         
+        // ---- make a list of filtered color contrast regions while still have
+        //      the individual Region lists 
+        
+        boolean additionalFiltering = true;
+        
+        int w = ptImg.getWidth();
+        int h = ptImg.getHeight();
+        
+        if (additionalFiltering) {
+        
+            List<List<Region>> filtered = filterOverlapping(ptRegions, w, h);
+            
+            // --- compare the two lists of filtered and if there is
+            //     an intersection, keep the largest
+
+            List<Region> regions0 = filtered.get(0);
+
+            TIntSet skip0 = new TIntHashSet();
+            TIntSet skip1 = new TIntHashSet();
+
+            int[] xyCen = new int[2];
+
+            List<EllipseHelper> hs0 = new ArrayList<EllipseHelper>();
+            for (int j = 0; j < regions0.size(); ++j) {
+                Region r = regions0.get(j);
+                r.calculateXYCentroid(xyCen, w, h);
+                double[] coeffs = r.calcParamTransCoeff();
+                EllipseHelper eh = new EllipseHelper(xyCen[0], xyCen[1], coeffs);
+                hs0.add(eh);
+            }
+
+            List<Region> regions1 = filtered.get(1);
+            List<EllipseHelper> hs1 = new ArrayList<EllipseHelper>();
+            for (int j = 0; j < regions1.size(); ++j) {
+                Region r = regions1.get(j);
+                r.calculateXYCentroid(xyCen, w, h);
+                double[] coeffs = r.calcParamTransCoeff();
+                EllipseHelper eh = new EllipseHelper(xyCen[0], xyCen[1], coeffs);
+                hs1.add(eh);
+            }
+
+            for (int i = 0; i < regions0.size(); ++i) {
+                if (skip0.contains(i)) { continue;}
+
+                EllipseHelper eh0 = hs0.get(i);
+
+                TIntSet intersects = new TIntHashSet();
+
+                for (int j = 0; j < regions1.size(); ++j) {
+                    if (skip1.contains(j)) { continue;}
+                    EllipseHelper eh1 = hs1.get(j);
+                    if (eh0.intersects(eh1)) {
+                        intersects.add(j);
+                    }
+                }
+
+                if (!intersects.isEmpty()) {
+                    // compare eh0 and all in intersects and the largest is kept
+                    // while the others are put into skip lists.
+                    double maxArea = eh0.getMajorTimesMinor();
+                    int maxIdx = -1;
+                    TIntIterator iter = intersects.iterator();
+                    while (iter.hasNext()) {
+                        int j = iter.next();
+                        double area = hs1.get(j).getMajorTimesMinor();
+                        if (area > maxArea) {
+                            maxArea = area;
+                            maxIdx = j;
+                        }
+                    }
+                    if (maxIdx == -1) {
+                        // current i is largest, so put other in skip set
+                        iter = intersects.iterator();
+                        while (iter.hasNext()) {
+                            skip1.add(iter.next());
+                        }
+                    } else {
+                        // a j is largest, so put i in skip set and all other js
+                        skip0.add(i);
+                        iter = intersects.iterator();
+                        while (iter.hasNext()) {
+                            int j = iter.next();
+                            if (j == maxIdx) { continue; }
+                            skip1.add(j);
+                        }
+                    }
+                }
+            }
+
+            // -- write anything not in skip sets to filtered
+            filteredRegions = new ArrayList<Region>();
+            TIntSet kept0 = new TIntHashSet();
+            TIntSet kept1 = new TIntHashSet();
+            List<EllipseHelper> keptEHs = new ArrayList<EllipseHelper>();
+            for (int i = 0; i < regions0.size(); ++i) {
+                if (skip0.contains(i)) { continue;}
+                filteredRegions.add(regions0.get(i));
+                kept0.add(i);
+                keptEHs.add(hs0.get(i));
+            }
+            for (int i = 0; i < regions1.size(); ++i) {
+                if (skip1.contains(i)) { continue;}
+                filteredRegions.add(regions1.get(i));
+                kept1.add(i);
+                keptEHs.add(hs1.get(i));
+            }
+
+            // revisit all of filtered regions0 and regions1 
+            // to pick up any regions not yet
+            // included and not intersecting with any in filteredPtRegions
+            TIntSet add0 = new TIntHashSet();
+            TIntSet add1 = new TIntHashSet();
+            for (int i = 0; i < regions0.size(); ++i) {
+                if (kept0.contains(i)) { continue;}
+                EllipseHelper eh0 = hs0.get(i);
+                boolean intersects = false;
+
+                for (int j = 0; j < filteredRegions.size(); ++j) {
+                    EllipseHelper eh2 = keptEHs.get(j);
+                    if (eh0.intersects(eh2)) {
+                        intersects = true;
+                        break;
+                    }
+                }
+                if (!intersects) {
+                    add0.add(i);
+                }
+            }
+            for (int i = 0; i < regions1.size(); ++i) {
+                if (kept1.contains(i)) { continue;}
+                EllipseHelper eh1 = hs1.get(i);
+                boolean intersects = false;
+
+                for (int j = 0; j < filteredRegions.size(); ++j) {
+                    EllipseHelper eh2 = keptEHs.get(j);
+                    if (eh1.intersects(eh2)) {
+                        intersects = true;
+                        break;
+                    }
+                }
+                if (!intersects) {
+                    add1.add(i);
+                }
+            }
+            TIntIterator iter = add0.iterator();
+            while (iter.hasNext()) {
+                int i = iter.next();
+                filteredRegions.add(regions0.get(i));
+                keptEHs.add(hs0.get(i));
+            }
+            iter = add1.iterator();
+            while (iter.hasNext()) {
+                int i = iter.next();
+                filteredRegions.add(regions1.get(i));
+                keptEHs.add(hs1.get(i));
+            }
+
+            if (debug) {
+
+                Image imCp;
+
+                imCp = ptImg.copyToColorGreyscale();
+                int n = filteredRegions.size();
+                for (int i = 0; i < n; ++i) {
+                    Region r = filteredRegions.get(i);
+                    int[] clr = ImageIOHelper.getNextRGB(i);
+                    r.drawEllipse(imCp, 0, clr[0], clr[1], clr[2]);
+                    r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
+                    ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], imCp,
+                        1, 255, 0, 0);
+                    //System.out.println(type + " xy=" + xyCen[0] + "," + xyCen[1] 
+                    //    + " variation=" + r.getVariation());
+                }
+                MiscDebug.writeImage(imCp, "_" + ts + "_regions_pt_filtered_");
+            }
+            
+            // ---- now add gs regions in that do not intersect with filtered
+            List<List<Region>> filteredGS = filterOverlapping(gsRegions, w, h);
+            
+            add0 = new TIntHashSet();
+            add1 = new TIntHashSet();
+            
+            regions0 = filteredGS.get(0);
+            regions1 = filteredGS.get(1);
+            
+            hs0 = new ArrayList<EllipseHelper>();
+            for (int j = 0; j < regions0.size(); ++j) {
+                Region r = regions0.get(j);
+                r.calculateXYCentroid(xyCen, w, h);
+                double[] coeffs = r.calcParamTransCoeff();
+                EllipseHelper eh = new EllipseHelper(xyCen[0], xyCen[1], coeffs);
+                hs0.add(eh);
+            }
+            hs1 = new ArrayList<EllipseHelper>();
+            for (int j = 0; j < regions1.size(); ++j) {
+                Region r = regions1.get(j);
+                r.calculateXYCentroid(xyCen, w, h);
+                double[] coeffs = r.calcParamTransCoeff();
+                EllipseHelper eh = new EllipseHelper(xyCen[0], xyCen[1], coeffs);
+                hs1.add(eh);
+            }
+            
+            for (int i = 0; i < regions0.size(); ++i) {
+                EllipseHelper eh0 = hs0.get(i);
+                boolean intersects = false;
+
+                /*for (int j = 0; j < filteredPtRegions.size(); ++j) {
+                    EllipseHelper eh2 = keptEHs.get(j);
+                    if (eh0.intersects(eh2)) {
+                        intersects = true;
+                        break;
+                    }
+                }*/
+                if (!intersects) {
+                    add0.add(i);
+                }
+            }
+            for (int i = 0; i < regions1.size(); ++i) {
+                EllipseHelper eh1 = hs1.get(i);
+                boolean intersects = false;
+
+                /*
+                for (int j = 0; j < filteredPtRegions.size(); ++j) {
+                    EllipseHelper eh2 = keptEHs.get(j);
+                    if (eh1.intersects(eh2)) {
+                        intersects = true;
+                        break;
+                    }
+                }*/
+                if (!intersects) {
+                    add1.add(i);
+                }
+            }
+            iter = add0.iterator();
+            while (iter.hasNext()) {
+                int i = iter.next();
+                filteredRegions.add(regions0.get(i));
+            }
+            iter = add1.iterator();
+            while (iter.hasNext()) {
+                int i = iter.next();
+                filteredRegions.add(regions1.get(i));
+            }
+
+            if (debug) {
+
+                Image imCp;
+
+                imCp = ptImg.copyToColorGreyscale();
+                int n = filteredRegions.size();
+                for (int i = 0; i < n; ++i) {
+                    Region r = filteredRegions.get(i);
+                    int[] clr = ImageIOHelper.getNextRGB(i);
+                    r.drawEllipse(imCp, 0, clr[0], clr[1], clr[2]);
+                    r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
+                    ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], imCp,
+                        1, 255, 0, 0);
+                    //System.out.println(type + " xy=" + xyCen[0] + "," + xyCen[1] 
+                    //    + " variation=" + r.getVariation());
+                }
+                MiscDebug.writeImage(imCp, "_" + ts + "_regions_pt_filtered2_");
+            }
+        }
+        
         state = STATE.REGIONS_EXTRACTED;
     }
 
@@ -266,6 +534,56 @@ public class MSEREdges {
             minDiversity);
         
         return regions;
+    }
+    
+    /**
+     * this extracts the filtered regions and creates edges for them then
+     * substitutes them into that area in edgeList.
+     */
+    private void useFilterOnEdges() {
+        
+        //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
+        if (!state.equals(STATE.EDGES_EXTRACTED)) {
+            throw new IllegalStateException("edges must be extrcted before"
+                + " this method can be used");
+        }
+        
+        Set<PairInt> edges = new HashSet<PairInt>();
+        for (int edgeIdx = 0; edgeIdx < edgeList.size(); ++edgeIdx) {
+            edges.addAll(edgeList.get(edgeIdx));
+        }
+        
+        PerimeterFinder2 finder = new PerimeterFinder2();
+        
+        int w = ptImg.getWidth();
+        int h = ptImg.getHeight();
+        
+        Set<PairInt> addEdgePoints = new HashSet<PairInt>();
+        for (int i = 0; i < filteredRegions.size(); ++i) {
+            Region r = filteredRegions.get(i);
+            Set<PairInt> ellipsePoints = new HashSet<PairInt>();
+            for (int j = 0; j < r.accX.size(); ++j) {
+                ellipsePoints.add(new PairInt(r.accX.get(j), r.accY.get(j)));
+            }
+            edges.removeAll(ellipsePoints);
+            
+            Set<PairInt> embedded = new HashSet<PairInt>();
+            Set<PairInt> outerBoundary = new HashSet<PairInt>();
+            finder.extractBorder2(ellipsePoints, embedded, outerBoundary);
+            addEdgePoints.addAll(outerBoundary);
+        }
+        
+        edges.addAll(addEdgePoints);
+        
+        edgeList.clear();
+        
+        DFSConnectedGroupsFinder finder2 = new DFSConnectedGroupsFinder();
+        finder2.setMinimumNumberInCluster(1);
+        finder2.findConnectedPointGroups(edges);
+        
+        for (int i = 0; i < finder2.getNumberOfGroups(); ++i) {
+            edgeList.add(finder2.getXY(i));
+        }
     }
 
     private void extractBoundaries() {
@@ -462,12 +780,12 @@ public class MSEREdges {
                 double diff = Math.abs(diff0) + Math.abs(diff1) + Math.abs(diff2);
                 diff /= 3.;
                
-                System.out.format("(%d,%d) (%d,%d) diff=%.3f\n", 
+                /*System.out.format("(%d,%d) (%d,%d) diff=%.3f\n", 
                     regions.get(rIdx).accX.get(0),
                     regions.get(rIdx).accY.get(0),
                     regions.get(rIdx2).accX.get(0),
                     regions.get(rIdx2).accY.get(0), (float)diff
-                );
+                );*/
                 
                 if (diff > clrLimit) {
                     continue;
@@ -528,22 +846,19 @@ public class MSEREdges {
         return nMerged;
     }
     
-    private void mergeRegions2() {
+    private List<Set<PairInt>> reduceToUniquePointToEdge() {
         
-        //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
-        if (!state.equals(STATE.EDGES_EXTRACTED)) {
-            throw new IllegalStateException("error in algorithm.  expecting"
-                + " edges were extracted.");
-        }
-        
-        TIntSet edges = new TIntHashSet();
+        Set<PairInt> edges = new HashSet<PairInt>();
         for (int i = 0; i < edgeList.size(); ++i) {
             Set<PairInt> set = edgeList.get(i);
             for (PairInt p : set) {
-                int pixIdx = clrImg.getInternalIndex(p);
-                edges.add(pixIdx);
+                edges.add(p);
             }
         }
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        imageProcessor.applyThinning(edges, clrImg.getWidth(), clrImg.getHeight(),
+            false);
         
         int w = clrImg.getWidth();
         int h = clrImg.getHeight();
@@ -551,9 +866,9 @@ public class MSEREdges {
         Set<PairInt> notEdges = new HashSet<PairInt>();
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
-                int pixIdx = clrImg.getInternalIndex(i, j);
-                if (!edges.contains(pixIdx)) {
-                    notEdges.add(new PairInt(i, j));
+                PairInt p = new PairInt(i, j);
+                if (!edges.contains(p)) {
+                    notEdges.add(p);
                 }
             }
         }
@@ -564,12 +879,16 @@ public class MSEREdges {
         
         TIntIntMap pointIndexMap = new TIntIntHashMap();
         
-        List<Colors> clrsList = new ArrayList<Colors>();
-        
         List<Set<PairInt>> contigSets = new ArrayList<Set<PairInt>>();
         for (int i = 0; i < finder.getNumberOfGroups(); ++i) {
             Set<PairInt> group = finder.getXY(i);
             contigSets.add(group);
+        }
+        
+        List<Colors> clrsList = new ArrayList<Colors>();
+        for (int i = 0; i < contigSets.size(); ++i) {
+            
+            Set<PairInt> group = contigSets.get(i);
             
             for (PairInt p : group) {
                 int pixIdx = clrImg.getInternalIndex(p);
@@ -591,15 +910,12 @@ public class MSEREdges {
         //    in color
         int[] dxs = Misc.dx4;
         int[] dys = Misc.dy4;
-        ArrayDeque<Integer> queue = new ArrayDeque<Integer>();
-        TIntIterator iter = edges.iterator();
-        while (iter.hasNext()) {
-            int pixIdx = iter.next();
-            queue.add(Integer.valueOf(pixIdx));
-        }
+        ArrayDeque<PairInt> queue = new ArrayDeque<PairInt>();
+        queue.addAll(edges);
         
         while (!queue.isEmpty()) {
-            int pixIdx = queue.pop().intValue();
+            PairInt p = queue.pop();
+            int pixIdx = clrImg.getInternalIndex(p);
             if (pointIndexMap.containsKey(pixIdx)) {
                 continue;
             }
@@ -635,13 +951,44 @@ public class MSEREdges {
                 }
             }
             if (minClrDiffIdx == -1) {
-                queue.add(Integer.valueOf(pixIdx));
+                queue.add(p);
                 continue;
             }
             int gIdx = pointIndexMap.get(minClrDiffIdx);
             pointIndexMap.put(pixIdx, gIdx);
-            contigSets.get(gIdx).add(new PairInt(x, y));
+            contigSets.get(gIdx).add(p);
+        
+            edges.remove(p);
+            notEdges.add(p);
         }
+        assert(edges.isEmpty());
+        
+        // extract boundaries of contigSets
+        edgeList.clear();
+       
+        PerimeterFinder2 finder2 = new PerimeterFinder2();
+        for (Set<PairInt> set : contigSets) {
+            Set<PairInt> embedded = new HashSet<PairInt>();
+            Set<PairInt> outerBorder = new HashSet<PairInt>();
+            finder2.extractBorder2(set, embedded, outerBorder);
+            edgeList.add(outerBorder);
+        }
+        
+        return contigSets;
+    }
+    
+    private void mergeRegions2() {
+        
+        //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
+        if (!state.equals(STATE.EDGES_EXTRACTED)) {
+            throw new IllegalStateException("error in algorithm.  expecting"
+                + " edges were extracted.");
+        }
+        
+        List<Set<PairInt>> contigSets = reduceToUniquePointToEdge();
+        
+        int w = clrImg.getWidth();
+        int h = clrImg.getHeight();
         
         // -- merge contigSets
         int sizeLimit = 16;//31;
@@ -704,7 +1051,62 @@ public class MSEREdges {
                 }
             }
         }
+                
+    }
+    
+    private List<List<Region>> filterOverlapping(List<List<Region>> rlist, 
+        int w, int h) {
         
+        List<List<Region>> filtered = new ArrayList<List<Region>>();
+        for (int i = 0; i < rlist.size(); ++i) {
+
+            List<Region> regions = rlist.get(i);
+
+            List<Region> out = new ArrayList<Region>();
+            filtered.add(out);
+
+            int[] xyCen = new int[2];
+
+            List<EllipseHelper> hs = new ArrayList<EllipseHelper>();
+            for (int j = 0; j < regions.size(); ++j) {
+                Region r = regions.get(j);
+                r.calculateXYCentroid(xyCen, w, h);
+                double[] coeffs = r.calcParamTransCoeff();
+                EllipseHelper eh = new EllipseHelper(xyCen[0], xyCen[1], coeffs);
+                hs.add(eh);
+            }
+
+            // filter Regions to only keep those without another Region center
+            // in them
+            for (int j = 0; j < regions.size(); ++j) {
+                Region r1 = regions.get(j);
+                EllipseHelper eh1 = hs.get(j);
+
+                boolean noneInternal = true;
+
+                for (int k = 0; k < regions.size(); ++k) {
+                    if (j == k) {
+                        continue;
+                    }
+
+                    Region r2 = regions.get(k);
+                    EllipseHelper eh2 = hs.get(k);
+                    r2.calculateXYCentroid(xyCen, w, h);
+
+                    if (eh1.isWithin(xyCen[0], xyCen[1])
+                        && !eh2.surrounds(eh1)) {
+                        noneInternal = false;
+                        break;
+                    }
+                }
+
+                if (noneInternal) {
+                    out.add(r1);
+                }
+            }
+        }
+
+        return filtered;
     }
     
     public List<Set<PairInt>> getEdges() {

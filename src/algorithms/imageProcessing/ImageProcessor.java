@@ -7311,7 +7311,8 @@ if (sum > 511) {
      * apply 8 hit or miss filters iteratively until convergence to thin the
      * image.  the operation is performed on all pixels with value > 0.
      */
-    public void applyThinning(Set<PairInt> points, int imageWidth, int imageHeight) {
+    public void applyThinning(Set<PairInt> points, int imageWidth, int imageHeight,
+        boolean usePostCorrections) {
 
         //from https://en.wikipedia.org/wiki/Hit-or-miss_transform
         // and thinning
@@ -7383,9 +7384,11 @@ if (sum > 511) {
                 
         points.clear();
         points.addAll(out);
-                
-        PostLineThinnerCorrections pLTC = new PostLineThinnerCorrections();
-        pLTC._correctForArtifacts(points, imageWidth, imageHeight);
+     
+        if (usePostCorrections) {
+            PostLineThinnerCorrections pLTC = new PostLineThinnerCorrections();
+            pLTC._correctForArtifacts(points, imageWidth, imageHeight);
+        }
     }
     
     private void rotatePairsBy90(int[] xy) {
