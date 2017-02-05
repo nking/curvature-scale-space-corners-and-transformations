@@ -517,6 +517,7 @@ public class MSEREdges {
             minArea = 0.0075;
             if (useLowerContrastLimits) {
                 minDiversity = 0.1;//.4
+                delta = 5;
             }
         }
         
