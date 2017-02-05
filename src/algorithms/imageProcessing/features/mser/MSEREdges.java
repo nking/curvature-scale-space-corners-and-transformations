@@ -126,10 +126,6 @@ public class MSEREdges {
         
         extractRegions();
         
-        //TODO: reconsider this one:
-        do {
-        } while (mergeRegions1() > 0);
-        
         extractBoundaries();
         
         useFilterOnEdges();
@@ -448,13 +444,13 @@ public class MSEREdges {
                 EllipseHelper eh0 = hs0.get(i);
                 boolean intersects = false;
 
-                /*for (int j = 0; j < filteredPtRegions.size(); ++j) {
+                for (int j = 0; j < filteredRegions.size(); ++j) {
                     EllipseHelper eh2 = keptEHs.get(j);
                     if (eh0.intersects(eh2)) {
                         intersects = true;
                         break;
                     }
-                }*/
+                }
                 if (!intersects) {
                     add0.add(i);
                 }
@@ -462,15 +458,14 @@ public class MSEREdges {
             for (int i = 0; i < regions1.size(); ++i) {
                 EllipseHelper eh1 = hs1.get(i);
                 boolean intersects = false;
-
-                /*
-                for (int j = 0; j < filteredPtRegions.size(); ++j) {
+                
+                for (int j = 0; j < filteredRegions.size(); ++j) {
                     EllipseHelper eh2 = keptEHs.get(j);
                     if (eh1.intersects(eh2)) {
                         intersects = true;
                         break;
                     }
-                }*/
+                }
                 if (!intersects) {
                     add1.add(i);
                 }
@@ -657,193 +652,6 @@ public class MSEREdges {
         public OneDFloatArray(float[] a) {
             this.a = a;
         }
-    }
-    
-    private int mergeRegions1() {
-                
-        //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
-        if (!state.equals(STATE.REGIONS_EXTRACTED)) {
-            throw new IllegalStateException("can only perform extraction of "
-                + "edges once");
-        }
-        
-        // key = pix idx, value = regions idx
-        TIntIntMap pRIMap = new TIntIntHashMap();
-        
-        // key = region idx, value = disjoint forest node
-        TIntObjectMap<DisjointSet2Node<Integer>> rMap = new 
-            TIntObjectHashMap<DisjointSet2Node<Integer>>();
-
-        // w/ indexes same as regions  
-        List<OneDFloatArray> clrs = new ArrayList<OneDFloatArray>();
-       
-        CIEChromaticity cieC = new CIEChromaticity();
-         
-        DisjointSet2Helper disjointSetHelper = new DisjointSet2Helper();
-        
-        float[] clrSum = new float[3];
-        
-        for (int rIdx = 0; rIdx < regions.size(); ++rIdx) {
-            
-            Region r = regions.get(rIdx);
-            
-            Arrays.fill(clrSum, 0);
-            
-            for (int i = 0; i < r.accX.size(); ++i) {
-            
-                int pixIdx = clrImg.getInternalIndex(r.accX.get(i), r.accY.get(i));
-                pRIMap.put(pixIdx, rIdx);
-            
-                float[] lab = cieC.rgbToCIELUV(clrImg.getR(pixIdx), 
-                    clrImg.getG(pixIdx), clrImg.getB(pixIdx));
-                for (int j = 0; j < clrSum.length; ++j) {
-                    clrSum[j] += lab[j];
-                }
-            }
-            
-            DisjointSet2Node<Integer> node = new 
-                DisjointSet2Node<Integer>(Integer.valueOf(rIdx));
-            node = disjointSetHelper.makeSet(node);
-            assert(disjointSetHelper.findSet(node).getMember().intValue() == rIdx);
-            rMap.put(rIdx, node);
-        
-            float[] clr0 = new float[3];
-            for (int j = 0; j < clrSum.length; ++j) {
-                clr0[j] = clrSum[j] / (float)r.accX.size();
-            }
-        
-            clrs.add(new OneDFloatArray(clr0));
-        }
-
-        // adjacency map of regions indexes
-        TIntObjectMap<VeryLongBitString> rAdjMap
-            = new TIntObjectHashMap<VeryLongBitString>();
-        
-        int[] dxs = Misc.dx4;
-        int[] dys = Misc.dy4;
-        int w = clrImg.getWidth();
-        int h = clrImg.getHeight();
-        for (int rIdx = 0; rIdx < regions.size(); ++rIdx) {
-            Region r = regions.get(rIdx);            
-            for (int i = 0; i < r.accX.size(); ++i) {
-                int x = r.accX.get(i);
-                int y = r.accY.get(i);
-                for (int k = 0; k < dxs.length; ++k) {
-                    int x2 = x + dxs[k];
-                    int y2 = y + dys[k];
-                    if (x2 < 0 || y2 < 0 || (x2 >= w) || (y2 >= h)) {
-                        continue;
-                    }
-                    int pixIdx2 = clrImg.getInternalIndex(x2, y2);
-                    if (!pRIMap.containsKey(pixIdx2)) {
-                        continue;
-                    }
-                    int rIdx2 = pRIMap.get(pixIdx2);
-                    if (rIdx2 == rIdx) {
-                        continue;
-                    }
-                    VeryLongBitString adjIdxs = rAdjMap.get(rIdx);
-                    if (adjIdxs == null) {
-                        adjIdxs = new VeryLongBitString(regions.size());
-                        rAdjMap.put(rIdx, adjIdxs);
-                    }
-                    adjIdxs.setBit(rIdx2);
-                }
-            }
-        }        
-       
-        Set<PairInt> compared = new HashSet<PairInt>();
-        
-        float clrLimit = 3.0f;
-        
-        for (int rIdx = 0; rIdx < regions.size(); ++rIdx) {
-            
-            OneDFloatArray clr = clrs.get(rIdx);
-            
-            VeryLongBitString adjIdxs = rAdjMap.get(rIdx);
-            if (adjIdxs == null) {
-                continue;
-            }
-            for (int rIdx2 : adjIdxs.getSetBits()) {
-                PairInt c = (rIdx < rIdx2) ? new PairInt(rIdx, rIdx2) : 
-                    new PairInt(rIdx2, rIdx);
-                if (compared.contains(c)) {
-                    continue;
-                }
-                compared.add(c);
-                
-                OneDFloatArray clr2 = clrs.get(rIdx2);
-                
-                float diff0 = clr.a[0] - clr2.a[0];
-                float diff1 = clr.a[1] - clr2.a[1];
-                float diff2 = clr.a[2] - clr2.a[2];
-                double diff = Math.abs(diff0) + Math.abs(diff1) + Math.abs(diff2);
-                diff /= 3.;
-               
-                /*System.out.format("(%d,%d) (%d,%d) diff=%.3f\n", 
-                    regions.get(rIdx).accX.get(0),
-                    regions.get(rIdx).accY.get(0),
-                    regions.get(rIdx2).accX.get(0),
-                    regions.get(rIdx2).accY.get(0), (float)diff
-                );*/
-                
-                if (diff > clrLimit) {
-                    continue;
-                }
-                
-                // merge rIdx2 with rIdx
-                DisjointSet2Node<Integer> r2Node = rMap.get(rIdx2);
-                DisjointSet2Node<Integer> rNode = rMap.get(rIdx);
-                DisjointSet2Node<Integer> mergedNode = 
-                    disjointSetHelper.union(rNode, r2Node);
-                rMap.put(rIdx, mergedNode);
-                rMap.put(rIdx2, mergedNode);
-            }
-        }
-
-        for (int rIdx = 0; rIdx < regions.size(); ++rIdx) {
-            DisjointSet2Node<Integer> rNode = rMap.get(rIdx);
-            int repIdx = disjointSetHelper.findSet(rNode).getMember().intValue();
-            if (repIdx == rIdx) {
-                continue;
-            }
-            // merge all of rIdx content into repIdx and clear
-            Region r = regions.get(rIdx); 
-            Region r0 = regions.get(repIdx); 
-            for (int i = 0; i < r.accX.size(); ++i) {
-                int x = r.accX.get(i);
-                int y = r.accY.get(i);
-                r0.accumulate(x, y);
-            }
-            r.accX.clear();
-            r.accY.clear();
-        }
-        
-        int nMerged = regions.size();
-        for (int rIdx = (regions.size() - 1); rIdx > -1; --rIdx) {
-            Region r = regions.get(rIdx); 
-            if (r.accX.isEmpty()) {
-                regions.remove(rIdx);
-            }
-        }  
-        nMerged -= regions.size();
-        System.out.println("merged " + nMerged + " regions");
-    
-        if (debug) {
-            int[] xyCen = new int[2];
-            Image imCp = clrImg.copyImage();
-            for (int i = 0; i < regions.size(); ++i) {
-                Region r = regions.get(i);
-                int[] clr = ImageIOHelper.getNextRGB(i);
-                r.drawEllipse(imCp, 0, clr[0], clr[1], clr[2]);
-                r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
-                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], imCp,
-                    1, 255, 0, 0);
-            }
-            MiscDebug.writeImage(imCp, "_" + ts + "_regions_merged_");
-        }
-        
-        return nMerged;
     }
     
     private List<Set<PairInt>> reduceToUniquePointToEdge() {

@@ -237,6 +237,14 @@ public class EllipseHelper {
         return bounds.createEllipseFillingPoints();
     }
     
+    public int getSemiMinor() {
+        return (int)Math.round(minor);
+    }
+    
+    public int getSemiMajor() {
+        return (int)Math.round(major);
+    }
+    
     public int[] getXYCenter() {
         return new int[]{x, y};
     }
