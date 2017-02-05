@@ -15915,12 +15915,20 @@ int z = 1;
      * @param img
      * @param edgeList
      * @param clrSpace
-     * @param limit
+     * @param threshold
      * @return 
      */
     public int mergeEdges(ImageExt img, List<Set<PairInt>> edgeList,
-        ColorSpace clrSpace, float limit) {
+        ColorSpace clrSpace, float threshold) {
         
+        if (!clrSpace.equals(ColorSpace.HSV)
+            && !clrSpace.equals(ColorSpace.CIELAB)
+            && !clrSpace.equals(ColorSpace.POLAR_CIELUV)
+            && !clrSpace.equals(ColorSpace.CIELUV_NORMALIZED)) {
+            throw new IllegalArgumentException("need to write the"
+                + " blocks for " + clrSpace);
+        }
+            
         /*
         create the data structures needed for the merges
         
@@ -15933,11 +15941,16 @@ int z = 1;
         -- create a set rmPixIdxs which is pairint of pixels
         */
         
-        TObjectIntMap<PairInt> pixEdgeMap = new TObjectIntHashMap<PairInt>();
+        Map<PairInt, TIntSet> pixEdgeMap = new HashMap<PairInt, TIntSet>();
         for (int edgeIdx = 0; edgeIdx < edgeList.size(); ++edgeIdx) {
             Set<PairInt> edge = edgeList.get(edgeIdx);
             for (PairInt p : edge) {
-                pixEdgeMap.put(p, edgeIdx);
+                TIntSet set = pixEdgeMap.get(p);
+                if (set == null) {
+                    set = new TIntHashSet();
+                    pixEdgeMap.put(p, set);
+                }
+                set.add(edgeIdx);
             }
         }
         
@@ -15949,35 +15962,45 @@ int z = 1;
         
         int[] dxs = Misc.dx4;
         int[] dys = Misc.dy4;
-        TObjectIntIterator<PairInt> iter = pixEdgeMap.iterator();
-        for (int i = 0; i < pixEdgeMap.size(); ++i) {
-            iter.advance();
-            PairInt p1 = iter.key();
-            int edgeIdx = iter.value();
-            TIntObjectMap<Set<PairInt>> map = pointNeighborsMap.get(p1);
-            if (map == null) {
-                map = new TIntObjectHashMap<Set<PairInt>>();
-                pointNeighborsMap.put(p1, map);
-            }
-            int x = p1.getX();
-            int y = p1.getY();
-            for (int k = 0; k < dxs.length; ++k) {
-                int x2 = x + dxs[k];
-                int y2 = y + dys[k];
-                PairInt p2 = new PairInt(x2, y2);
-                if (!pixEdgeMap.containsKey(p2)) {
-                    continue;
+        for (Entry<PairInt, TIntSet> entry : pixEdgeMap.entrySet()) {
+            
+            PairInt p1 = entry.getKey();
+            
+            TIntSet edgeIdxs = entry.getValue();
+            TIntIterator iter = edgeIdxs.iterator();
+            
+            while (iter.hasNext()) {
+                int edgeIdx = iter.next();
+                
+                TIntObjectMap<Set<PairInt>> map = pointNeighborsMap.get(p1);
+                if (map == null) {
+                    map = new TIntObjectHashMap<Set<PairInt>>();
+                    pointNeighborsMap.put(p1, map);
                 }
-                int edgeIdx2 = pixEdgeMap.get(p2);
-                if (edgeIdx2 == edgeIdx) {
-                    continue;
+                int x = p1.getX();
+                int y = p1.getY();
+                for (int k = 0; k < dxs.length; ++k) {
+                    int x2 = x + dxs[k];
+                    int y2 = y + dys[k];
+                    PairInt p2 = new PairInt(x2, y2);
+                    if (!pixEdgeMap.containsKey(p2)) {
+                        continue;
+                    }
+                    TIntSet edgeIdxs2 = pixEdgeMap.get(p2);
+                    TIntIterator iter2 = edgeIdxs2.iterator();
+                    while (iter2.hasNext()) {
+                        int edgeIdx2 = iter2.next();
+                        if (edgeIdx2 == edgeIdx) {
+                            continue;
+                        }
+                        Set<PairInt> set2 = map.get(edgeIdx2);
+                        if (set2 == null) {
+                            set2 = new HashSet<PairInt>();
+                            map.put(edgeIdx2, set2);
+                        }
+                        set2.add(p2);
+                    }
                 }
-                Set<PairInt> set2 = map.get(edgeIdx2);
-                if (set2 == null) {
-                    set2 = new HashSet<PairInt>();
-                    map.put(edgeIdx2, set2);
-                }
-                set2.add(p2);
             }
         }
         
@@ -15987,7 +16010,11 @@ int z = 1;
         // set of pixels to be removed from edges.  the edge index can be 
         //    found with pixEdgeMap
         Set<PairInt> rmPixels = new HashSet<PairInt>();
+        
+        TIntSet isolatedEdges = new TIntHashSet();
     
+        CIEChromaticity cieC = new CIEChromaticity();
+        
         int[] dxs2 = Misc.dx8;
         int[] dys2 = Misc.dy8;
         
@@ -15996,6 +16023,10 @@ int z = 1;
             Set<PairInt> edge = edgeList.get(edgeIdx);
             
             TIntObjectMap<Set<PairInt>> localEdgePixMap = new 
+                TIntObjectHashMap<Set<PairInt>>();
+            
+            // same as localEdgePixMap except values are this edge's pixels
+            TIntObjectMap<Set<PairInt>> localEdgePixMap0 = new 
                 TIntObjectHashMap<Set<PairInt>>();
             
             for (PairInt p : edge) {
@@ -16023,14 +16054,23 @@ int z = 1;
                     Set<PairInt> nhbrs = iter2.value();
                     
                     Set<PairInt> local = localEdgePixMap.get(edgeIdx2);
+                    Set<PairInt> local0 = localEdgePixMap0.get(edgeIdx2);
                     if (local == null) {
                         local = new HashSet<PairInt>();
                         localEdgePixMap.put(edgeIdx2, local);
+                        local0 = new HashSet<PairInt>();
+                        localEdgePixMap0.put(edgeIdx2, local0);
                     }
                     local.addAll(nhbrs);
+                    local0.add(p);
                 } // end loop over neighbors
             } // end loop over the pixels in an edge
            
+            if (localEdgePixMap.isEmpty()) {
+                isolatedEdges.add(edgeIdx);
+                continue;
+            }
+            
             // -- with all edge's neighboring pixels
             TIntObjectIterator<Set<PairInt>> iter3 = localEdgePixMap.iterator();
             for (int i = 0; i < localEdgePixMap.size(); ++i) {
@@ -16079,21 +16119,108 @@ int z = 1;
                      --> put all pixels to be removed into the removePixSet.
                 */
                 
+                Set<PairInt> group0 = finder2.getXY(0);
+                GroupPixelRGB0 rgb0 = new GroupPixelRGB0();
+                rgb0.calculateColors(group0, img, 0, 0);
+            
+                Set<PairInt> group1;
+                
                 //TODO: may need revision here.
                 if (nGroups == 1) {
                     // compare the edge colors to the neighbors
+                    group1 = edge;
                 } else {
                     // compare the 2 neighbor groups to one another
+                    group1 = finder2.getXY(1);
                 }
+                
+                GroupPixelRGB0 rgb1 = new GroupPixelRGB0();
+                rgb1.calculateColors(group1, img, 0, 0);
+                
+                int r0 = Math.round(rgb0.getAvgRed());
+                int g0 = Math.round(rgb0.getAvgGreen());
+                int b0 = Math.round(rgb0.getAvgBlue());
+                int r1 = Math.round(rgb1.getAvgRed());
+                int g1 = Math.round(rgb1.getAvgGreen());
+                int b1 = Math.round(rgb1.getAvgBlue());
+
+                if (clrSpace.equals(ColorSpace.HSV)) {
+                    float[] hsb0 = new float[3];
+                    Color.RGBtoHSB(r0, g0, b0, hsb0);
+                    float[] hsb1 = new float[3];
+                    Color.RGBtoHSB(r1, g1, b1, hsb1);
+                    float diff0 = Math.abs(hsb0[0] - hsb1[0]);
+                    float diff1 = Math.abs(hsb0[1] - hsb1[1]);
+                    float diff2 = Math.abs(hsb0[2] - hsb1[2]);
+                    if ((diff0 > threshold) || (diff1 > threshold)
+                        || (diff2 > threshold)) {
+                        continue;
+                    }
+                } else if (clrSpace.equals(ColorSpace.CIELAB)){
+                    float[] lab0 = cieC.rgbToCIELAB(r0, g0, b0);
+                    float[] lab1 = cieC.rgbToCIELAB(r1, g1, b1);
+                    double delta = Math.abs(cieC.calcDeltaECIE2000( lab0, lab1));
+                    if (delta > threshold) {
+                        continue;
+                    }
+                } else if (clrSpace.equals(ColorSpace.POLAR_CIELUV)){
+                    float[] luv0 = cieC.rgbToCIELUV(r0, g0, b0);
+                    float[] luv1 = cieC.rgbToCIELUV(r1, g1, b1);
+                    
+                    double t1 = calcPolarTheta(luv0);
+                    double t2 = calcPolarTheta(luv1);
+                    double tDiff = AngleUtil.getAngleDifference(
+                        (float)Math.round(t1 * 180.f/Math.PI),
+                        (float)Math.round(t2 * 180.f/Math.PI));
+                    if (Math.abs(tDiff) > threshold) {
+                        continue;
+                    }
+                    
+                } else if (clrSpace.equals(ColorSpace.CIELUV_NORMALIZED)) {
+                    float[] luv0 = cieC.rgbToCIELUV(r0, g0, b0);
+                    float[] luv1 = cieC.rgbToCIELUV(r1, g1, b1);
+                    float diff = cieC.calcNormalizedDifferenceLUV(
+                        luv0[0], luv0[1], luv0[2],
+                        luv1[0], luv1[1], luv1[2]);
+                    if (diff > threshold) {
+                        continue;
+                    }
+                }
+                
+                Set<PairInt> edge0Pixels = localEdgePixMap0.get(edgeIdx2);
+                rmPixels.addAll(edge0Pixels);
+                
+                // merge/remove intersection
+                if (nGroups == 2) {
+                    // compared the 2 neighbor groups to one another
+                    rmPixels.addAll(neighbors);
+                }
+                
+            }// end loop over edge to edgeIdx2 comparison
+        }
+        
+        if (!isolatedEdges.isEmpty()) {
+            // TODO: process these by comparing edge colors with 
+            //  neighboring pixel colors
+            System.out.println("number of isolated edges to process=" +
+                isolatedEdges.size());
+        }
+        
+        TIntSet modifiedEdgeIdxs = new TIntHashSet();
+        
+        for (PairInt rm : rmPixels) {
+            int edgeIdx = pixEdgeMap.get(rm);
+            edgeList.get(edgeIdx).remove(rm);
+            modifiedEdgeIdxs.add(edgeIdx);
+        }
+
+        for (int i = (edgeList.size() - 1); i > -1; --i) {
+            Set<PairInt> edge = edgeList.get(i);
+            if (edge.isEmpty()) {
+                edgeList.remove(i);
             }
         }
-        /*
-           when all of edges have been visited
-           iterate over rmSet and remove those pixels from their edges
-           then iterate over the edges in reverse and remove an empty lists.
-        */
-        
-        
-        throw new UnsupportedOperationException("not implmented yet");
+           
+        return modifiedEdgeIdxs.size();
     }
 }
