@@ -451,14 +451,23 @@ public class CIEChromaticity {
      * <pre>
      * using the standard illuminant of daylight, D65,
      * the range of return values is
-     *   luminosity L*  0 to 104.5
-     *   magnitude, C:  0 to 139 
-     *   angle,     H:  0 to 359
+     range of CIE LUV using default standard illumination of
+        D65 daylight is:
+        L       0 to 104.5
+        u   -86.9 to 183.8
+        v  -141.4 to 112.3
+        luminosity L*  0 to 104.5
+        magnitude, m:  sqrt(2) * 183.8 = 260
+        angle,     a:  0 to 359
      * </pre>
      * @param r
      * @param g
      * @param b
-     * @return
+     * @return luv[0], (float)m, (float)t where
+     * the first item is luminosity, the
+     * second is the magnitude of the color, that
+     * is sqrt of square sums of U and V,
+     * and the third is the polar theta angle
      */
     public float[] rgbToPolarCIELUV(int r, int g, int b) {
 

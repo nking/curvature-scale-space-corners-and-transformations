@@ -1,7 +1,6 @@
 package algorithms.imageProcessing;
 
 import algorithms.compGeometry.PointInPolygon;
-import algorithms.imageProcessing.SkylineExtractor.RemovedSets;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.ArrayPair;
@@ -13,14 +12,12 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 /**
+ * NOT READY FOR USE.
+ * rewriting most of it.
+ * 
  * class with methods to find a rainbow within an image and to create a hull
  * to encapsulate it for various methods.
  * 
- *  TODO: Note, it may be necessary to build a hull from a spine of
-    more than 10 points for complex images w/ rainbow intersecting
-    multiple times with structured foreground and sky
-    (see the end of method createRainbowHull).
-        
  * @author nichole
  */
 public class RainbowFinder {
@@ -46,23 +43,7 @@ public class RainbowFinder {
     
     private float hullHalfWidth = 0;
     
-    /**
-     * search for a rainbow within the image, and if found, create a hull of
-     * points around that encapsulates image points that are part of the
-     * expanded rainbow.  The results are kept in member variables
-     * rainbowCoeff, rainbowHull, outputRainbowPoints, and 
-     * excludePointsInRainbowHull.
-     * 
-     * @param skyPoints
-     * @param reflectedSunRemoved
-     * @param colorImg
-     * @param xOffset
-     * @param yOffset
-     * @param imageWidth
-     * @param imageHeight
-     * @param skyIsDarkGrey
-     * @param removedSets 
-     */
+    /*
     public void findRainbowInImage(Set<PairInt> skyPoints, 
         Set<PairInt> reflectedSunRemoved,
         ImageExt colorImg, int xOffset, int yOffset, 
@@ -133,18 +114,7 @@ public class RainbowFinder {
     
     private void addRainbowToPoints(Set<PairInt> skyPoints, 
         int lastImgCol, int lastImgRow) {
-        
-        /* n=21
-         0,20    1    2    3    4    5    6    7    8    9
-                                                  
-         19   18   17   16   15   14   13   12   11   10
-        
-        Points 0 and 19 are opposite points on the hull, so are 1 and 18, etc.
-        So can do quick check that for each segment such as 0->1->18->19->0
-        that there are skyPoints surrounding them.
-        If not, and if the coverage is partial, will reduce the segment polygon
-        size and only add points to skypoints within the segment polygon.
-        */ 
+         
         
         int nHull = rainbowHull.xHull.length;
         int nHalf = nHull >> 1;
@@ -247,29 +217,10 @@ public class RainbowFinder {
         
     }
 
-    /**
-     * search for rainbow colored points over the entire image, fit an
-     * ellipse to them, and assert that the points have certain colors in
-     * them.  If the original fit to an ellipse is not good, the
-     * method divides the rainbow points by contiguous subsets to find best
-     * and similar fits.  The last step of color requirement helps to rule
-     * out half ellipse patterns in rocks for instance that have only rock
-     * colors in them. 
-     * The return polynomial coefficients are float[]{c0, c1, c2}
-     * where y[i] = c0 + c1 * x[i] + c2 * x[i] * x[i].
-     * when c2 is negative, the parabola peak is upward (higher y).
-       c2 also indicates the magnitude of the points in powers of 1/10.
-     * @param skyPoints
-     * @param reflectedSunRemoved
-     * @param colorImg
-     * @param xRelativeOffset
-     * @param yRelativeOffset
-     * @param outputRainbowPoints output variable to return found rainbow
-     * points if any
-     * @return polynomial fit coefficients to 
-     * y[i] = c0*1 + c1*x[i] + c2*x[i]*x[i].  this may be null if a fit wasn't
-     * possible.
-     */
+     // @return polynomial fit coefficients to 
+    // y[i] = c0*1 + c1*x[i] + c2*x[i]*x[i].  this may be null if a fit wasn't
+     // possible.
+     
     float[] findRainbowPoints(Set<PairInt> skyPoints, 
         Set<PairInt> reflectedSunRemoved,
         ImageExt colorImg, int xOffset, int yOffset, 
@@ -477,10 +428,6 @@ log.fine(String.format(
 MiscDebug.plotPoints(bestFittingPoints, imageWidth, imageHeight, 
 MiscDebug.getCurrentTimeFormatted());
 
-            /*asserting that all rainbow colors are present but with caveat
-            that green wasn't included (to avoid adding common green foreground)
-            */
-
             boolean colorsAreNotRainbow = false;
             
             if (skyIsDarkGrey) {
@@ -520,17 +467,6 @@ MiscDebug.getCurrentTimeFormatted());
         return coef;
     }
    
-     /**
-     * search over the entire image for pixels that are rainbow colored.
-     * 
-     * @param colorImg
-     * @param reflectedSunRemoved
-     * @param xOffset
-     * @param yOffset
-     * @param skyIsDarkGrey
-     * @return rainbowPoints pixels from the entire image containing rainbow 
-     * colors.
-     */
     Set<PairInt> findRainbowColoredPoints(ImageExt colorImg, 
         Set<PairInt> reflectedSunRemoved,
         int xOffset, int yOffset, boolean skyIsDarkGrey) {
@@ -576,14 +512,7 @@ MiscDebug.getCurrentTimeFormatted());
                  
                     set.add(p);
                     
-                } /*else if (colors.isInYellowishYellowGreen(r, g, b, cieX, cieY, 
-                    saturation, brightness)) {
-                    
-                    // finds grass and trees
-                
-                    set.add(p);
-                    
-                }*/
+                }
             }
         }
         
@@ -591,73 +520,11 @@ MiscDebug.getCurrentTimeFormatted());
         
         return set;
     }
-    
-     /**
-     * a method to roughly fit a hull around the rainbow polynomial described
-     * by rainbowCoeff and populated by rainbowPoints.
-     * 
-     * @param skyPoints
-     * @param rainbowCoeff coefficients for a 2nd order polynomial
-     * @param rainbowPoints  rainbow colored points in the image that fit a polynomial.
-     * there should be 10 or more points at least.
-     * @param originalColorImage
-     * @param xOffset
-     * @param yOffset
-     * @return 
-     */
+   
     private Hull createRainbowHull(float[] rainbowCoeff, 
         Set<PairInt> rainbowPoints, ImageExt originalColorImage, int xOffset, 
         int yOffset) {
-        
-        /*
-        need to know the furthest closest distance to the polynomial, that is the
-        furthest perpendicular point to the polynomial in order to expand the 
-        region around the polynomial to become a hull that encloses all rainbow 
-        points.
-        
-        (1) Could determine for every point, the distance to the polynomial:
-        Robust and Efficient Computation of the Closest Point on a Spline Curve" 
-        Hongling Wang, Joseph Kearney, and Kendall Atkinson
-        http://homepage.cs.uiowa.edu/~kearney/pubs/CurvesAndSufacesClosestPoint.pdf
-        implemented by:
-        http://www.ogre3d.org/tikiwiki/tiki-index.php?page=Nearest+point+on+a+Spline
-        
-        -- The method for nearest point on a spline requires creating a
-        spline out of the polynomial.  can assume that something like 1000
-        points would be necessary, though maybe 100 would be fine.
-        -- Then the method requires a good starting guess for 3 points on the
-        polynomial that would be near the true perpendicular point.
-        One could guess the first 3 splines by making the polynomial roughly
-        10 splines separately and doing a distance test to each spline
-        for each point (with shortcuts for not needing to check).
-        -- Then about 10 iterations or less to find the best answer.
-        
-        The runtime might look roughly like
-        N_poly +  N_points * 10 distance tests + N_points * 10 iterations of the 
-        closestToSpline algorithm.
-        
-        (2) Or could instead, characterize the hull by 10 points and calculate 
-        the coordinates of the points projected perpendicular to them above and 
-        below at distances that are the hull of the rainbow.
-        Then evaluation of the size would be "point in polygon" tests for
-        each point.
-        Improved estimates of the hull size can use a binomial search pattern
-        to expand or shrink the distance estimate used for furthest extension
-        of the hull.
-        The first estimate of the hull size can use the rough distance point test
-        just as above, by comparing each point to the polynomial as 10 segments.
-        
-        runtime is roughly:
-            N_points * 10 distance tests +
-            N_iter * N_points *
-               "point in polygon" (which is roughly O(N_poly) where N_poly would be ~20)
-            = N_points * 10 + N_iter * N_points * 20 for each iteration
-        
-        expect that N_iter is probably <= 5 because it's close already.
-        
-        So the 2nd method will be fine for the purposes here, but the first
-        method is interesting for use cases which need precision.
-        */
+       
         
         int width = originalColorImage.getWidth() - xOffset;
         int height = originalColorImage.getHeight() - yOffset;
@@ -673,14 +540,7 @@ MiscDebug.getCurrentTimeFormatted());
         float high = 2 * maxOfPointMinDistances;
         float low = maxOfPointMinDistances / 2;
         int nMatched = 0;
-        
-        /* 
-        n=21
-         0,20    1    2    3    4    5    6    7    8    9
-                                                  
-         19   18   17   16   15   14   13   12   11   10
-        */
-        
+     
         float[] xPoly = new float[2 * rainbowSkeletonX.length + 1];
         float[] yPoly = new float[xPoly.length];
         int nMaxIter = 5;
@@ -788,23 +648,11 @@ MiscDebug.getCurrentTimeFormatted());
                 maxDistSq = minDistSq;
             }
             
-            /*log.info(String.format(
-                "(%d,%d) is closest to poly point (%f,%f) dist=%f", x, y, 
-                xc[minIdx], yc[minIdx], (float)Math.sqrt(minDistSq)));
-            */
         }
         
         return (float)Math.sqrt(maxDistSq);
     }
 
-    /**
-    populate outputXPoly and outputYPoly with points perpendicular to x and y
-    * at distances dist.  note that the lengths of outputXPoly and outputYPoly
-    * should be 2*x.length+1.
-    * Also note that one wants the separation between points in x and y
-    * to be larger than dist (else, the concave portion of writing the hull
-    * has a retrograde order and appearance).
-    */
     protected void populatePolygon(float[] x, float[] y, float dist, 
         float[] outputXPoly, float[] outputYPoly, float[] polynomialCoeff,
         int imgWidth, int imgHeight) {
@@ -836,22 +684,13 @@ MiscDebug.getCurrentTimeFormatted());
                 " (2 * x.length) + 1");
         }
         
-        /*
-        y = c0*1 + c1*x[i] + c2*x[i]*x[i]
+        //y = c0*1 + c1*x[i] + c2*x[i]*x[i]
         
-        dy/dx = c1 + 2*c2*x[i] = tan theta
-        */
+        //dy/dx = c1 + 2*c2*x[i] = tan theta
         
         int n = outputXPoly.length;
         
-        /*
-        want them in order so using count0 and count1
-        n=21
-        
-        0,20    1    2    3    4    5    6    7    8    9
-                                                  
-         19    18   17   16   15   14   13   12   11   10
-        */
+       
         int count0 = 0;
         int count1 = n - 2;
         
@@ -986,5 +825,5 @@ MiscDebug.getCurrentTimeFormatted());
         
         return sb.toString();
     }
-    
+    */
 }

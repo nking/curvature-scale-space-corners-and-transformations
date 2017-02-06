@@ -4,6 +4,9 @@ import algorithms.util.PairInt;
 import java.util.Set;
 
 /**
+ * algorithm to create a line of points between
+ * two points.
+ * 
  * https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
  * and
  * http://rosettacode.org/wiki/Bitmap/Bresenham%27s_line_algorithm#Java

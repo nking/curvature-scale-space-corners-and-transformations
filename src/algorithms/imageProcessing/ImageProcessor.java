@@ -9533,6 +9533,66 @@ if (sum > 511) {
         
         return (int)t;
     }
+    
+    /**
+     * create 3 images of the LCG color space where LCH is the 
+     * luminosity, magnitude, and polar angle of CIE LUV color space.
+     * @param img
+     * @return 
+     */
+    public GreyscaleImage[] createLCHForLUV(Image img) {
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        int n = img.getNPixels();
+        
+        /*
+        range of CIE LUV using default standard illumination of
+        D65 daylight is:
+        L       0 to 104.5
+        u   -86.9 to 183.8
+        v  -141.4 to 112.3
+        luminosity L*  0 to 104.5
+        magnitude, m:  sqrt(2) * 183.8 = 260
+        angle,     a:  0 to 359
+        */
+        
+        float[] factors = new float[]{255.f/104.5f, 255.f/260.f, 255.f/359.f};
+        
+        GreyscaleImage[] output = new GreyscaleImage[3];
+        for (int i = 0; i < output.length; ++i) {
+            output[i] = new GreyscaleImage(w, h);
+        }
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+                
+        int v;
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                
+                int r = img.getR(i, j);
+                int g = img.getG(i, j);
+                int b = img.getB(i, j);
+                
+                float[] lma = cieC.rgbToPolarCIELUV(r, g, b);
+             
+                for (int k = 0; k < output.length; ++k) {
+                    if (k == 2 && lma[k] > 359.f) {
+                        lma[k] = 360 - lma[k];
+                    }
+                    v = Math.round(factors[k] * lma[k]);
+                    if (v > 255) {
+                        v = 255;
+                    } else if (v < 0) {
+                        v = 0;
+                    }
+                    output[k].setValue(i, j, v);
+                }
+            }
+        }
+        
+        return output;
+    }
    
     /**
      * convert the image to cie luv and then calculate polar angle of u and v

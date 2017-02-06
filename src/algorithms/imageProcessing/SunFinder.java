@@ -11,7 +11,9 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 /**
- *
+ * NOT READY FOR USE.
+ * undergoing changes
+ * 
  * @author nichole
  */
 public class SunFinder {

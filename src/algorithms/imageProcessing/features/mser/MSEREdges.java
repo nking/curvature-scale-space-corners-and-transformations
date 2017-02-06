@@ -1,9 +1,6 @@
 package algorithms.imageProcessing.features.mser;
 
 import algorithms.compGeometry.PerimeterFinder2;
-import algorithms.disjointSets.DisjointSet2Helper;
-import algorithms.disjointSets.DisjointSet2Node;
-import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.DFSConnectedGroupsFinder;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.GroupPixelRGB0;
@@ -18,20 +15,15 @@ import algorithms.imageProcessing.segmentation.ColorSpace;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
-import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
-import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.map.TIntIntMap;
-import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntIntHashMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.awt.Color;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -70,6 +62,11 @@ public class MSEREdges {
     private final GreyscaleImage gsImg;
     private final GreyscaleImage ptImg;
     private List<Region> regions = null;
+
+    // the original regions for gs positive, negative, then pt positive
+    // and negative.  regions and filteredRegions should be prefered for most
+    // uses.
+    private List<List<Region>> origGsPtRegions = null;
     
     // color contrast regions filtered to the smallest that
     // do not have any other ellipse centers within them.
@@ -169,6 +166,8 @@ public class MSEREdges {
         List<List<Region>> ptRegions = extractMSERRegions(ptImg, Threshold.DEFAULT);
     
         regions = new ArrayList<Region>();
+    
+        origGsPtRegions = new ArrayList<List<Region>>();
         
         // for minArea 0.001, a gsRegions limit for var of 0. is used
         //   but for 0.0001, limit should be near 0.001
@@ -187,6 +186,13 @@ public class MSEREdges {
                     regions.add(r);
                 }
             }
+            
+            // copy list into origGsPtRegions
+            List<Region> cpList = new ArrayList<Region>();
+            origGsPtRegions.add(cpList);
+            for (Region r : list) {
+                cpList.add(r.copy());
+            }
         }
         
         for (int type = 0; type < 2; ++type) {
@@ -201,10 +207,15 @@ public class MSEREdges {
                     regions.add(r);
                 }
             }
+            // copy list into origGsPtRegions
+            List<Region> cpList = new ArrayList<Region>();
+            origGsPtRegions.add(cpList);
+            for (Region r : list) {
+                cpList.add(r.copy());
+            }
         }
      
         if (debug) {
-            
             int[] xyCen = new int[2];
             Image imCp;
             for (int type = 0; type < 2; ++type) {
@@ -918,6 +929,31 @@ public class MSEREdges {
         return filtered;
     }
     
+    public void _debugOrigRegions(int idx, String lbl) {
+                
+        int[] xyCen = new int[2];
+        List<Region> list = origGsPtRegions.get(idx);
+        Image imCp;
+        System.out.println("printing " + list.size());
+        for (int j = 0; j < list.size(); ++j) {
+            imCp = ptImg.copyToColorGreyscale();
+            Region r = list.get(j);
+            for (int i = 0; i < r.accX.size(); ++i) {
+                int x = r.accX.get(i);
+                int y = r.accY.get(i);
+                ImageIOHelper.addPointToImage(x, y, imCp, 0, 0, 255, 0);
+            }
+            r.drawEllipse(imCp, 0, 255, 0, 0);
+            r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
+            ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], imCp,
+                1, 255, 0, 0);
+            //System.out.println(type + " xy=" + xyCen[0] + "," + xyCen[1] 
+            //    + " variation=" + r.getVariation());
+            MiscDebug.writeImage(imCp, "_" + ts + "_orig_regions_" + lbl
+                + "_" + idx + "_" + j + "_");
+        }
+    }
+    
     public List<Set<PairInt>> getEdges() {
         
         //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
@@ -927,5 +963,54 @@ public class MSEREdges {
         }
         
         return edgeList;
+    }
+
+    /**
+     * @return the clrImg
+     */
+    public ImageExt getClrImg() {
+        return clrImg;
+    }
+
+    /**
+     * @return the gsImg
+     */
+    public GreyscaleImage getGsImg() {
+        return gsImg;
+    }
+
+    /**
+     * @return the ptImg
+     */
+    public GreyscaleImage getPtImg() {
+        return ptImg;
+    }
+
+    /**
+     * @return the regions
+     */
+    public List<Region> getRegions() {
+        return regions;
+    }
+
+    /**
+     * @return the origGsPtRegions
+     */
+    public List<List<Region>> getOrigGsPtRegions() {
+        return origGsPtRegions;
+    }
+
+    /**
+     * @return the filteredRegions
+     */
+    public List<Region> getFilteredRegions() {
+        return filteredRegions;
+    }
+
+    /**
+     * @return the useLowerContrastLimits
+     */
+    public boolean isUsingLowerContrastLimits() {
+        return useLowerContrastLimits;
     }
 }
