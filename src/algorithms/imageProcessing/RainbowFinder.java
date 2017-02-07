@@ -1,13 +1,21 @@
 package algorithms.imageProcessing;
 
-import algorithms.compGeometry.PointInPolygon;
-import algorithms.misc.MiscDebug;
+import algorithms.imageProcessing.Sky.SkyObject;
+import algorithms.imageProcessing.features.mser.Canonicalizer;
+import algorithms.imageProcessing.features.mser.Canonicalizer.RegionGeometry;
+import algorithms.imageProcessing.features.mser.EllipseHelper;
+import algorithms.imageProcessing.features.mser.MSEREdges;
+import algorithms.imageProcessing.features.mser.Region;
+import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
-import algorithms.util.ArrayPair;
+import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
-import algorithms.util.PolynomialFitter;
+import algorithms.util.PairIntArray;
+import java.awt.Color;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -23,25 +31,137 @@ import java.util.logging.Logger;
 public class RainbowFinder {
     
     private Logger log = Logger.getLogger(this.getClass().getName());
-    
+
     static class Hull {
         float[] xHull;
         float[] yHull;
     }
     
-    private Set<PairInt> outputRainbowPoints = new HashSet<PairInt>();
-    
-    private Set<PairInt> excludePointsInRainbowHull = new HashSet<PairInt>();
-    
     private Hull rainbowHull = null;
     
-    private float[] rainbowCoeff = null;
+    public RainbowFinder() {
+    }
     
-    private float[] rainbowSkeletonX = null;
-    
-    private float[] rainbowSkeletonY = null;
-    
-    private float hullHalfWidth = 0;
+    /**
+     * find rainbows in the blob detector results of MSER.
+     * NOTE that the method needs more testing.
+     * 
+     * @param mserEdges
+     * @return 
+     */
+    public SkyObject[] findRainbows(MSEREdges mserEdges) {
+        
+        ImageExt img = mserEdges.getClrImg();
+        
+        List<Region> polarThetaPositive = mserEdges.getOrigGsPtRegions().get(2);
+        
+        /*
+        segments of rainbows in two test images are found as elongated
+        thin ellipses in the polar theta positive images,
+        and those then have adjacent thin elongated regions in
+        the polar theta negative images where the brighter arcs of the
+        rainbow are.
+        
+        NOTE: once a rainbow is found, could look for others fainter in the
+        image.
+        */
+        List<Set<PairInt>> listOfSets = new ArrayList<Set<PairInt>>();
+        
+        List<OneDIntArray> hists = new ArrayList<OneDIntArray>();
+        
+        for (int rIdx = 0; rIdx < polarThetaPositive.size(); ++rIdx) {
+            
+            Region r = polarThetaPositive.get(rIdx);
+           
+            Set<PairInt> set1 = null;
+                        
+            for (int i = 0; i < r.accX.size(); ++i) {
+                int x = r.accX.get(i);
+                int y = r.accY.get(i);
+                PairInt p = new PairInt(x, y);
+                int pixIdx = img.getInternalIndex(p);
+               
+                if (set1 == null) {
+                    set1 = new HashSet<PairInt>();
+                }
+                set1.add(p);
+            }
+            
+            if (set1 != null) {
+                
+                RegionGeometry rg = Canonicalizer.calculateEllipseParams(
+                    r, img.getWidth(), img.getHeight());
+
+                //System.out.println("xy=" + Arrays.toString(eh.getXYCenter())
+                //   + " ecc=" + eh.getEccentricity());
+                
+                if (rg.eccentricity >= 0.95) {
+                    
+                    int[] hues = extractHues(img, set1);
+                    
+                    Set<PairInt> offRegionPoints = extractOffRegion(img, r, rg);
+                    
+                    int[] offRegion = new int[hues.length];
+                    float[] sbAvg = new float[2];
+                    extractHSBProperties(img, offRegionPoints, offRegion, sbAvg);
+                    
+                    if (Float.isNaN(sbAvg[0])) {
+                        continue;
+                    }
+                    
+                    int[] hues2 = subtractNormalized(hues, offRegion);
+                    
+                    /*
+                    bright sky:
+                            sAvg=0.23220387   bck vAvg=0.5838191
+                        bck sAvg=0.16768077   bck vAvg=0.80450857
+                        rnbw hues peak is 2nd bin
+                    dark sky:
+                        sAvg=0.26138106   bck vAvg=0.25395915
+                        bck sAvg=0.3070194   bck vAvg=0.2282818
+                        rnbw hues peak is 1st peak
+                    */
+                    
+                    int maxPeakIdx = MiscMath.findYMaxIndex(hues2);
+                    
+                    //NOTE: this may need to be revised
+                    if (sbAvg[1] < 0.4) {
+                        if (maxPeakIdx == 1) {
+                            listOfSets.add(set1);
+                            hists.add(new OneDIntArray(hues2));
+                        }
+                    } else {
+                        if (maxPeakIdx == 0) {
+                            listOfSets.add(set1);
+                            hists.add(new OneDIntArray(hues2));
+                        }
+                    }
+                    
+                    /*
+                    System.out.println("xy=(" + rg.xC + "," + rg.yC + ") "
+                        + " angle=" + (rg.orientation*180./Math.PI)
+                        + " ecc=" + rg.eccentricity
+                        + "\n   bck sAvg=" + sbAvg[0] 
+                        + "   bck vAvg=" + sbAvg[1]
+                        + " hues hist=" + Arrays.toString(hues2)
+                        + "\n   bck=" + Arrays.toString(offRegion)
+                    );
+                    */
+                }
+            }
+        }
+        
+        // points from the same rainbow should have similar hue histograms
+        // so gather those into groups here.
+        
+        
+        //SkyObject obj = new SkyObject();
+        //obj.points = listOfSets2.get(0);
+        //obj.xyCenter = ehs.get(0).getXYCenter();
+        //return obj;
+        
+        throw new UnsupportedOperationException("not implemented yet");
+    }
     
     /*
     public void findRainbowInImage(Set<PairInt> skyPoints, 
@@ -826,4 +946,187 @@ MiscDebug.getCurrentTimeFormatted());
         return sb.toString();
     }
     */
+    
+    private EllipseHelper createRegion(Set<PairInt> points) {
+
+        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
+        int[] xyCen = ch.calculateRoundedXYCentroids(points);
+    
+        PairIntArray xy = Misc.convertWithoutOrder(points);
+        
+        EllipseHelper eh = new EllipseHelper(xyCen[0], xyCen[1], xy);
+        
+        return eh;
+    }
+    
+    private int[] extractHues(ImageExt img, Set<PairInt> set) {
+        
+        int[] hues = new int[10];
+        
+        float[] hsb = new float[3];
+        for (PairInt p : set) {
+            int r = img.getR(p);
+            int g = img.getG(p);
+            int b = img.getB(p);
+            Color.RGBtoHSB(r, g, b, hsb);
+            
+            // TODO: consider satudation and brightness limits
+            int bin = (int)(hsb[0]/0.1f);
+            if (bin == 10) {
+                bin--;
+            }
+            hues[bin]++;
+        }
+        
+        return hues;
+    }
+    
+    private Set<PairInt> extractOffRegion(ImageExt img, Region r, 
+        RegionGeometry rg) {
+        
+        // region orientation is the direction that the minor axis points
+        //  to, so is the direction needed for an offset patch
+        // and so is 180 from that.
+        
+        int eAngle = (int)Math.round(rg.orientation * 180./Math.PI);
+            // put into 0 to 180 ref frame
+        if (eAngle > 179) {
+            eAngle -= 180;
+        }
+        // put into ref frame of dominant orientations (major axis direction)
+        eAngle -= 90;
+        if (eAngle < 0) {
+            eAngle += 180;
+        }
+        double d = eAngle * Math.PI/180.;
+        
+        int x = rg.xC;
+        int y = rg.yC;
+        
+        int delta = (int)((rg.minor + rg.major)/2.);
+        
+        int x2 = (int)Math.round(x + 2.f * delta * Math.cos(d));
+        int y2 = (int)Math.round(y + 2.f * delta * Math.sin(d));
+
+        int w = img.getWidth();
+        int h = img.getHeight();
+
+        Set<PairInt> out = new HashSet<PairInt>();
+        
+        if (isWithinBounds(x2, y2, w, h)) {
+        
+            Set<PairInt> points = new HashSet<PairInt>();
+            
+            for (int i = (x2 - delta); i < (x2 + delta); ++i) {
+               for (int j = (y2 - delta); j < (y2 + delta); ++j) {
+                   if (isWithinBounds(i, j, w, h)) {
+                       points.add(new PairInt(i, j));
+                   }
+               }
+            }
+            out.addAll(points);
+        }
+
+        int x3 = (int)Math.round(x - 2.f * delta * Math.cos(d));
+        int y3 = (int)Math.round(y - 2.f * delta * Math.sin(d));
+        if (isWithinBounds(x3, y3, w, h)) {
+        
+            Set<PairInt> points = new HashSet<PairInt>();
+            
+            for (int i = (x3 - delta); i < (x3 + delta); ++i) {
+               for (int j = (y3 - delta); j < (y3 + delta); ++j) {
+                   if (isWithinBounds(i, j, w, h)) {
+                       points.add(new PairInt(i, j));
+                   }
+               }
+            }
+            out.addAll(points);
+        }
+        
+        return out;
+    }
+    
+    private void extractHSBProperties(ImageExt img, Set<PairInt> points, 
+        int[] hues, float[] sbAvg) {
+        
+        float sum0 = 0;
+        float sum1 = 0;
+        
+        float[] hsb = new float[3];
+        for (PairInt p : points) {
+            int r = img.getR(p);
+            int g = img.getG(p);
+            int b = img.getB(p);
+            Color.RGBtoHSB(r, g, b, hsb);
+            
+            sum0 += hsb[1];
+            sum1 += hsb[2];
+            
+            // TODO: consider satudation and brightness limits
+            int bin = (int)(hsb[0]/0.1f);
+            if (bin == 10) {
+                bin--;
+            }
+            hues[bin]++;
+        }
+        
+        sum0 /= (float)points.size();
+        sum1 /= (float)points.size();
+    
+        sbAvg[0] = sum0;
+        sbAvg[1] = sum1;
+    }
+
+    private boolean isWithinBounds(int x, int y, int width, int height) {
+    
+        if (x < 0 || y < 0 || (x >= width) || (y >= height)) {
+            return false;
+        }
+        return true;
+    }
+    
+    private float[] normalize(int[] hues) {
+        
+        float[] norm0 = new float[hues.length];
+        int n0 = 0;
+        for (int h : hues) {
+            n0 += h;
+        }
+        
+        for (int i = 0; i < hues.length; ++i) {
+             norm0[i] = (float)hues[i]/(float)n0;    
+        }
+        
+        return norm0;
+    }
+
+    private int[] subtractNormalized(int[] hues, int[] offRegion) {
+    
+        float[] h = normalize(hues);
+        float[] bck = normalize(offRegion);
+        
+        /*System.out.println(
+            "hues=" + Arrays.toString(hues) + 
+            " off=" + Arrays.toString(offRegion) + 
+            " h=" + Arrays.toString(h) + 
+            " bck=" + Arrays.toString(bck));
+        */
+        float tot = 0;
+        for (int i = 0; i < h.length; ++i) {
+            h[i] -= bck[i];
+            if (h[i] < 0) {
+                h[i] = 0;
+            }
+            tot += h[i];
+        }
+        
+        float factor = 100.f/tot;
+        int[] out = new int[hues.length];
+        for (int i = 0; i < h.length; ++i) {
+            out[i] = Math.round(factor * h[i]);
+        }
+        
+        return out;
+    }
+
 }

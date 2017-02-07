@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.imageProcessing.Sky.SkyObject;
 import algorithms.imageProcessing.features.mser.EllipseHelper;
@@ -9,14 +8,10 @@ import algorithms.imageProcessing.features.mser.Region;
 import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Logger;
 
 /**
  * class to find the sun in pictures.  it needs more images to test against.
@@ -38,7 +33,6 @@ public class SunFinder {
         
         SunColors sunColors = new SunColors();
         
-        //n=3, area=657, dens=0.0014 is not correct
         List<Set<PairInt>> listOfSets = new ArrayList<Set<PairInt>>();
         
         for (int rIdx = 0; rIdx < greyscaleNegative.size(); ++rIdx) {

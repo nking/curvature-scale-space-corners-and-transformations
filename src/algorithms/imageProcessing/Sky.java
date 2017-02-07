@@ -35,8 +35,9 @@ public class Sky {
         return finder.findSun(mserEdges);
     }
     
-    public SkyObject findRainbows() {
-        throw new UnsupportedOperationException("not ready for use");
+    public SkyObject[] findRainbows() {
+        RainbowFinder finder = new RainbowFinder();
+        return finder.findRainbows(mserEdges);
     }
     
     public SkyObject findMoonDogs() {

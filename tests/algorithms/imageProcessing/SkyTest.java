@@ -54,11 +54,11 @@ public class SkyTest extends TestCase {
     };
     
     private String[] rainbowFileNames = new String[] {
-        "sky_with_rainbow.jpg",
-        "sky_with_rainbow2.jpg"
+        "sky_with_rainbow.jpg",  // bright
+        "sky_with_rainbow2.jpg" // dark
     };
     
-    public void testFindSun() throws Exception {
+    public void estFindSun() throws Exception {
         
         /*
         String filePath = ResourceFinder.findFileInTestResources("tmp2.png");
@@ -115,7 +115,7 @@ public class SkyTest extends TestCase {
                 MiscDebug.writeImage(lma[k], "_"
                     + fileName1Root + "_lma_" + k + "_");
             }
-            //194, 8, 58, 56, 67
+            
             Sky sky = new Sky(img);
             SkyObject obj = sky.findSun();
             
@@ -134,10 +134,6 @@ public class SkyTest extends TestCase {
                 assertTrue(Math.abs(xyCenter[0] - 155) < 3);
                 assertTrue(Math.abs(xyCenter[1] - 80) < 3);
             }
-            /*
-        "arches_sun_01.jpg",
-        "stlouis_arch.jpg",
-            */
             
             ImageIOHelper.addCurveToImage(obj.points, img, 
                 0, 0, 255, 0);
@@ -146,6 +142,90 @@ public class SkyTest extends TestCase {
                 img, 0, 255, 0, 0);
             
             MiscDebug.writeImage(img, "_" + fileName1Root + "_SUN_");
+        
+        }
+    }
+    
+    public void testFindRainbows() throws Exception {
+       
+        /*
+        String filePath = ResourceFinder.findFileInTestResources("tmp2.png");
+        ImageExt img0 = ImageIOHelper.readImageExt(filePath);
+
+        float[] hsb = new float[3];
+        for (int y = 0; y < 120; y+=10) {
+            for (int x = 0; x < 95; x+=10) {
+                Color.RGBtoHSB(img0.getR(x, y), img0.getG(x, y), img0.getB(x, y), 
+                    hsb);
+                System.out.format("(%d,%d) h,s,v=%.2f %.2f %.2f\n", 
+                    x, y, hsb[0], hsb[1], hsb[2]);
+            }
+            for (int x = 520; x < img0.getWidth(); x+=10) {
+                Color.RGBtoHSB(img0.getR(x, y), img0.getG(x, y), img0.getB(x, y), 
+                    hsb);
+                System.out.format("(%d,%d) h,s,v=%.2f %.2f %.2f\n", 
+                    x, y, hsb[0], hsb[1], hsb[2]);
+            }
+        }
+        if (true) {
+            return;
+        }
+        */
+       
+        int maxDimension = 256;//512;
+
+        String fileName1 = "";
+
+        for (int i = 0; i < rainbowFileNames.length; ++i) {
+
+            fileName1 = rainbowFileNames[i];
+            
+            int idx = fileName1.lastIndexOf(".");
+            String fileName1Root = fileName1.substring(0, idx);
+
+            String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+            ImageExt img = ImageIOHelper.readImageExt(filePath1);
+
+            ImageProcessor imageProcessor = new ImageProcessor();
+
+            int w1 = img.getWidth();
+            int h1 = img.getHeight();
+
+            int binFactor1 = (int) Math.ceil(Math.max(
+                (float) w1 / maxDimension,
+                (float) h1 / maxDimension));
+
+            img = imageProcessor.binImage(img, binFactor1);
+            MiscDebug.writeImage(img, "_"  + fileName1Root);
+        
+            GreyscaleImage[] lma = imageProcessor.createLCHForLUV(img);
+            for (int k = 0; k < lma.length; ++k) {
+                MiscDebug.writeImage(lma[k], "_"
+                    + fileName1Root + "_lma_" + k + "_");
+            }
+            
+            Sky sky = new Sky(img);
+            SkyObject[] objs = sky.findRainbows();
+       
+        /*
+        "sky_with_rainbow.jpg",
+        "sky_with_rainbow2.jpg"
+        */
+              
+            //assertNotNull(objs);
+            if (fileName1Root.contains("rainbow2")) {
+                //assertTrue(Math.abs(xyCenter[0] - 22) < 3);
+                //assertTrue(Math.abs(xyCenter[1] - 85) < 3);
+            } else {
+            }
+            
+            //ImageIOHelper.addCurveToImage(obj.points, img, 
+            //    0, 0, 255, 0);
+            
+            //ImageIOHelper.addPointToImage(obj.xyCenter[0], obj.xyCenter[1], 
+            //    img, 0, 255, 0, 0);
+            
+            //MiscDebug.writeImage(img, "_" + fileName1Root + "_SUN_");
         
         }
     }
