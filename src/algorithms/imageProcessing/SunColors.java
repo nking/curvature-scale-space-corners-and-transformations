@@ -11,19 +11,16 @@ import java.awt.Color;
 public class SunColors {
     
     /*
-    photosphere of sun, 6500K,
-    average digital camera filters
+    photosphere of sun, 5800K,
     
-    range of atmos conditions produce
+    average digital camera response from detector + filters...
+    
+    range of atmos conditions
         sunset/dawn
            - clear skies
-              
            - with clouds
-              
-    
        mid day
           - clear skies
-    
           - with clouds
     
     with sunset/dawn and no clouds, could write a simple radiative transfer
