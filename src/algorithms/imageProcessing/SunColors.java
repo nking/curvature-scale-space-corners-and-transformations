@@ -34,13 +34,7 @@ public class SunColors {
     contributing a range of absorption and sometimes reflection.
     
     */
-
-    private CIEChromaticity cieC = new CIEChromaticity();
-    
-    private float totRGBLimit = 0.2f * 768.f;
-    
-    private boolean useDarkSkiesLogic = false;
-   
+       
     public boolean isSunCenterColor(int r, int g, int b) {
         
         if ((r < 15) && (g < 15) && (b < 15)) {
