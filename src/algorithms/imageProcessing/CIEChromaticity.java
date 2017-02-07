@@ -537,7 +537,7 @@ public class CIEChromaticity {
     }
 
     /**
-     * convert rgb to CIE LUV (a.k.a. CIEL*A*B* 1976?)
+     * convert rgb to CIE LUV (a.k.a. CIEL*A*B* 1976)
      * CIE 1976 (L*, u*, v*) 
      * 
      * Note that differences in CIELUV are simply the differences
