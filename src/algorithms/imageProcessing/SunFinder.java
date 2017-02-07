@@ -109,9 +109,9 @@ public class SunFinder {
             double area = 2. * Math.PI * eh.getMajorTimesMinor();
             double dens = (double)points.size()/area;
         
-            System.out.println(Arrays.toString(eh.getXYCenter()) 
-                + " n=" + points.size()
-                + " area=" + area + " dens=" + dens);
+            //System.out.println(Arrays.toString(eh.getXYCenter()) 
+            //    + " n=" + points.size()
+            //    + " area=" + area + " dens=" + dens);
         
             SkyObject obj = new SkyObject();
             obj.points = points;

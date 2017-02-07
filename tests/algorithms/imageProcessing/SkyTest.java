@@ -5,6 +5,7 @@ import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.Sky.SkyObject;
 import algorithms.misc.MiscDebug;
+import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
 import java.awt.Color;
 import junit.framework.TestCase;
@@ -118,7 +119,25 @@ public class SkyTest extends TestCase {
             Sky sky = new Sky(img);
             SkyObject obj = sky.findSun();
             
-            if (obj == null) { continue;}
+            assertNotNull(obj);
+            int[] xyCenter = obj.xyCenter;
+            if (fileName1Root.contains("costa")) {
+                assertTrue(Math.abs(xyCenter[0] - 22) < 3);
+                assertTrue(Math.abs(xyCenter[1] - 85) < 3);
+            } else if (fileName1Root.contains("arizona")) {
+                assertTrue(Math.abs(xyCenter[0] - 117) < 3);
+                assertTrue(Math.abs(xyCenter[1] - 118) < 3);
+            } else if (fileName1Root.contains("stlouis")) {
+                assertTrue(Math.abs(xyCenter[0] - 136) < 3);
+                assertTrue(Math.abs(xyCenter[1] - 34) < 3);
+            } else if (fileName1Root.contains("arches_sun")) {
+                assertTrue(Math.abs(xyCenter[0] - 155) < 3);
+                assertTrue(Math.abs(xyCenter[1] - 80) < 3);
+            }
+            /*
+        "arches_sun_01.jpg",
+        "stlouis_arch.jpg",
+            */
             
             ImageIOHelper.addCurveToImage(obj.points, img, 
                 0, 0, 255, 0);

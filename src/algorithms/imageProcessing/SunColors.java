@@ -88,8 +88,8 @@ public class SunColors {
         float hue = colorImg.getHue(pixelIndex);
         
         boolean a = isSunCenterColor(hue, saturation, brightness);
-        System.out.format("(%d,%d) %.3f, %.3f, %.3f sunClr=%b\n", colorImg.getCol(pixelIndex), 
-            colorImg.getRow(pixelIndex), hue, saturation, brightness, a);
+        //System.out.format("(%d,%d) %.3f, %.3f, %.3f sunClr=%b\n", colorImg.getCol(pixelIndex), 
+        //    colorImg.getRow(pixelIndex), hue, saturation, brightness, a);
         
         return a;
     }
