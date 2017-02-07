@@ -7,6 +7,7 @@ import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 import java.util.List;
+import java.util.Set;
 
 /**
  *
@@ -130,6 +131,21 @@ public class QuickSort {
         sortByA(abc, 0, abc.length - 1);
     }
     
+    public static void sortBy1stArg(int[] a, List b) {
+    
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (b == null) {
+            throw new IllegalArgumentException("b cannot be null");
+        }
+        if (a.length != b.size()) {
+            throw new IllegalArgumentException("a and b must be the same length");
+        }
+        
+        sortBy1stArg(a, b, 0, a.length - 1);
+    }
+
     /**
      * sort a by ascending values and perform the same swap operation on b.
      * @param a
@@ -2098,6 +2114,15 @@ public class QuickSort {
             sortBy1stThen2nd(a, b, c, d, idxMid + 1, idxHi);
         }
     }
+
+    private static void sortBy1stArg(int[] a, List b, int idxLo, int idxHi) {
+    
+        if (idxLo < idxHi) {
+            int idxMid = partitionBy1stArg(a, b, idxLo, idxHi);
+            sortBy1stArg(a, b, idxLo, idxMid - 1);
+            sortBy1stArg(a, b, idxMid + 1, idxHi);
+        }
+    }
     
     public static void sort(float[] a, float[] b, float[] c, int idxLo, 
         int idxHi) {
@@ -2184,6 +2209,37 @@ public class QuickSort {
         swap2 = c[store];
         c[store] = c[idxHi];
         c[idxHi] = swap2;
+        return store;
+    }
+    
+    private static int partitionBy1stArg(int[] a, List b, int idxLo, int idxHi) {
+        
+        int x = a[idxHi];
+        int store = idxLo - 1;
+        
+        for (int i = idxLo; i < idxHi; i++) {
+            boolean doSwap = false;
+            if (a[i] <= x) {
+                doSwap = true;
+            }
+            if (doSwap) {
+                store++;
+                int swap = a[store];
+                a[store] = a[i];
+                a[i] = swap;
+                Object swap2 = b.get(store);
+                b.set(store, b.get(i));
+                b.set(i, swap2);
+            }
+        }
+        store++;
+        int swap = a[store];
+        a[store] = a[idxHi];
+        a[idxHi] = swap;
+        Object swap2 = b.get(store);
+        b.set(store, b.get(idxHi));
+        b.set(idxHi, swap2);
+        
         return store;
     }
     

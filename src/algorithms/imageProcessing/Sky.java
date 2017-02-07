@@ -1,6 +1,8 @@
 package algorithms.imageProcessing;
 
 import algorithms.imageProcessing.features.mser.MSEREdges;
+import algorithms.util.PairInt;
+import java.util.Set;
 
 /**
  * a class with methods related to sky specific tasks such as finding the sun,
@@ -24,7 +26,21 @@ public class Sky {
         this.img = img.copyToImageExt();
         
         mserEdges = new MSEREdges(this.img);
+        mserEdges.setToDebug();
         mserEdges.mergeAndExtractEdges();
+    }
+    
+    public SkyObject findSun() {
+        SunFinder finder = new SunFinder();
+        return finder.findSun(mserEdges);
+    }
+    
+    public SkyObject findRainbows() {
+        throw new UnsupportedOperationException("not ready for use");
+    }
+    
+    public SkyObject findMoonDogs() {
+        throw new UnsupportedOperationException("not ready for use");
     }
     
     public void setToDebug() {
@@ -44,4 +60,8 @@ public class Sky {
         mserEdges._debugOrigRegions(3, "pt");
     }
     
+    public static class SkyObject {
+        Set<PairInt> points;
+        int[] xyCenter;
+    }
 }

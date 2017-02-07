@@ -27,6 +27,7 @@ public class EllipseHelper {
     
     private final double minor;
     private final double major;
+    private final double eccentricity;
     
     /**
      * constructor w/ center x, y and coefficients 
@@ -63,6 +64,8 @@ public class EllipseHelper {
             ellipse.add(x2, y2);
         }
         
+        eccentricity = Math.sqrt(major*major - minor*minor)/major;
+        
         bounds = new Bounds(ellipse);
     }
     
@@ -87,6 +90,12 @@ public class EllipseHelper {
         double[] coeffs = r.calcParamTransCoeff();
         this.major = 2. * coeffs[4];
         this.minor = 2. * coeffs[5];
+    
+        eccentricity = Math.sqrt(major*major - minor*minor)/major;
+    }
+    
+    public double getEccentricity() {
+        return eccentricity;
     }
     
     public PairIntArray getEllipse() {

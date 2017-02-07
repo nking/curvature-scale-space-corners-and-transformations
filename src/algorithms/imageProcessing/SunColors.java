@@ -9,13 +9,37 @@ import java.awt.Color;
  * @author nichole
  */
 public class SunColors {
+    
+    /*
+    photosphere of sun, 6500K,
+    average digital camera filters
+    
+    range of atmos conditions produce
+        sunset/dawn
+           - clear skies
+              
+           - with clouds
+              
+    
+       mid day
+          - clear skies
+    
+          - with clouds
+    
+    with sunset/dawn and no clouds, could write a simple radiative transfer
+    model w/ source being sun, optically thin (tau < 1) atmos having air 
+    and aerosols and no clouds
+    then blue light scattered out of beam by an amount dependent upon
+    the airmass which is dependent upon the altitude.
+    
+    but for the other cases, the conditions are not single scattering,
+    and clouds may be optically thin or optically thick and in between
+    contributing a range of absorption and sometimes reflection.
+    
+    */
 
     private CIEChromaticity cieC = new CIEChromaticity();
-        
-    private PointInPolygon pInPoly = new PointInPolygon();
-        
-    private ArrayPair yellowBounds = cieC.getYellowPolynomial();
-        
+    
     private float totRGBLimit = 0.2f * 768.f;
     
     private boolean useDarkSkiesLogic = false;
@@ -29,30 +53,7 @@ public class SunColors {
         float[] hsb = new float[3];
         Color.RGBtoHSB(r, g, b, hsb);
 
-        if (useDarkSkiesLogic) {
-            
-            if ((hsb[1] > 0.1f) && (hsb[2] > 0.25)) {
-
-                float[] pixCIEXY = cieC.rgbToXYChromaticity(r, g, b);
-                
-                if (pInPoly.isInSimpleCurve(pixCIEXY[0], pixCIEXY[1],
-                    yellowBounds.getX(), yellowBounds.getY(),
-                    yellowBounds.getX().length)) {
-
-                    return true;
-                }
-            }
-            
-        } else {
-            
-            if ((r >= 240) && (hsb[2] >= 0.87) && (hsb[1] < .30)
-                && ((r + g + b) > totRGBLimit)) {
-
-                return true;
-            }
-        }
-        
-        return false;
+        return isSunCenterColor(hsb[0], hsb[1], hsb[2]);
     }
     
     public boolean isSunCenterColor(ImageExt colorImg, int pixelCol, int pixelRow) {
@@ -62,44 +63,35 @@ public class SunColors {
         return isSunCenterColor(colorImg, idx);
     }
     
-    public boolean isSunCenterColor(ImageExt colorImg, int pixelIndex) {
-                
-        float saturation = colorImg.getSaturation(pixelIndex);
-        float brightness = colorImg.getBrightness(pixelIndex);
-        
-        if (useDarkSkiesLogic) {
-            
-            if ((saturation > 0.1f) && (brightness > 0.25)) {
-
-                float cieX = colorImg.getCIEX(pixelIndex);
-                float cieY = colorImg.getCIEY(pixelIndex);
-                
-                if (pInPoly.isInSimpleCurve(cieX, cieY, yellowBounds.getX(), 
-                    yellowBounds.getY(), yellowBounds.getX().length)) {
-
-                    return true;
-                }
-            }
-            
-        } else {
-            
-            float r = colorImg.getR(pixelIndex);
-            float g = colorImg.getG(pixelIndex);
-            float b = colorImg.getB(pixelIndex);
-            
-            if ((r >= 240) && (brightness >= 0.87) && (saturation < .30)
-                && ((r + g + b) > totRGBLimit)) {
-
-                return true;
-            }
+    public boolean isSunCenterColor(float h, float s, float v) {
+        if (
+            (s < 0.4f) && 
+            (v > 0.25)
+            && (h >= 0.0) && (h <= 0.18)) {
+            return true;
+        } else if ((s < 0.05) && (v > 0.95)) {
+            return true;
         }
-        
         return false;
     }
-     
-    public void useDarkSkiesLogic() {
-        
-        useDarkSkiesLogic = true;
-    }
     
+    public boolean isSunCenterColor(ImageExt colorImg, int pixelIndex) {
+         
+        if ((colorImg.getR(pixelIndex) < 15) && 
+            (colorImg.getG(pixelIndex) < 15) && 
+            (colorImg.getB(pixelIndex) < 15)) {
+            return false;
+        }
+        
+        float saturation = colorImg.getSaturation(pixelIndex);
+        float brightness = colorImg.getBrightness(pixelIndex);
+        float hue = colorImg.getHue(pixelIndex);
+        
+        boolean a = isSunCenterColor(hue, saturation, brightness);
+        System.out.format("(%d,%d) %.3f, %.3f, %.3f sunClr=%b\n", colorImg.getCol(pixelIndex), 
+            colorImg.getRow(pixelIndex), hue, saturation, brightness, a);
+        
+        return a;
+    }
+     
 }
