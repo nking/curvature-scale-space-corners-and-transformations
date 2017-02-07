@@ -1,7 +1,5 @@
 package algorithms.imageProcessing;
 
-import algorithms.compGeometry.PointInPolygon;
-import algorithms.util.ArrayPair;
 import java.awt.Color;
 
 /**

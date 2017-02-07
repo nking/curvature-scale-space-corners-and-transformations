@@ -653,4 +653,27 @@ public class QuickSortTest extends TestCase {
         assertEquals("7", (String)b.get(3));
         
     }
+    
+    public void testSortByFirstArg_4() {
+        
+        int[] a = new int[]{3, 7, 1, 5};
+        
+        List b = new ArrayList();
+        b.add("3"); b.add("7"); b.add("1"); b.add("5");
+        
+        QuickSort.sortBy1stArg(a, b);
+        
+        assertEquals(1, a[0]);
+        assertEquals("1", (String)b.get(0));
+        
+        assertEquals(3, a[1]);
+        assertEquals("3", (String)b.get(1));
+        
+        assertEquals(5, a[2]);
+        assertEquals("5", (String)b.get(2));
+        
+        assertEquals(7, a[3]);
+        assertEquals("7", (String)b.get(3));
+        
+    }
 }

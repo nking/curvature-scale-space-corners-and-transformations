@@ -19,14 +19,13 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 /**
- * NOT READY FOR USE.
- * undergoing changes
+ * class to find the sun in pictures.  it needs more images to test against.
  * 
  * @author nichole
  */
 public class SunFinder {
     
-    private Logger log = Logger.getLogger(this.getClass().getName());
+    //private Logger log = Logger.getLogger(this.getClass().getName());
 
     public SunFinder() {
     }
