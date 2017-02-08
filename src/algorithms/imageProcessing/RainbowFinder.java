@@ -69,8 +69,14 @@ public class RainbowFinder {
         
         List<RegionGeometry> rgs0 = new ArrayList<RegionGeometry>();
 
+        //mserEdges._debugOrigRegions(2, "_PT_");
         findPositivePT(img, polarThetaPositive, listOfSets0, hists0, rgs0);
-        
+       
+        // TODO: for complete rainbows, sometimes the entire arc is present
+        // in an MSER region and separate segments of it are
+        // in other smaller MSER regions,
+        // so look for that here
+        // paused here
         
         List<Region> polarThetaNegative = mserEdges.getOrigGsPtRegions().get(3);
         
@@ -94,13 +100,16 @@ public class RainbowFinder {
             
             List<Set<PairInt>> setsI = new ArrayList<Set<PairInt>>(histIdxs.length);
             List<RegionGeometry> rgsI = new ArrayList<RegionGeometry>(histIdxs.length);
+System.out.println("hs=" + Arrays.toString(histIdxs));
+  
             for (int hIdx : histIdxs) {
                 //int idx = indexes.get(hIdx);
                 setsI.add(listOfSets0.get(hIdx));
                 RegionGeometry rg = rgs0.get(hIdx);
                 rgsI.add(rg);
             
-                System.out.println(i + ") " 
+                System.out.println(
+                    i + ") " 
                     + " xy=(" + rg.xC + "," + rg.yC + ") "
                     + " angle=" + (rg.orientation*180./Math.PI)
                     + " ecc=" + rg.eccentricity
@@ -976,19 +985,28 @@ public class RainbowFinder {
                 RegionGeometry rg = Canonicalizer.calculateEllipseParams(
                     r, img.getWidth(), img.getHeight());
                 
+                System.out.format(
+                    "%d : xy=(%d,%d) angle=%.2f "
+                        + " ecc=%.3f minor=%.3f major=%.3f n=%d\n",
+                    rIdx, rg.xC, rg.yC,
+                    (rg.orientation * 180. / Math.PI),
+                    (float) rg.eccentricity, (float) rg.minor, 
+                    (float) rg.major, set1.size());
+
                 if (rg.eccentricity >= 0.95) {
                     
                     int[] hues = extractHues(img, set1);
+                    
+                    System.out.println("  " + rIdx + " hues=" + Arrays.toString(hues));
                     
                     if (isEmpty(hues)) {
                         continue;
                     }
                     
-                    Set<PairInt> offRegionPoints = extractOffRegion(img, r, rg);
-                    
+                    //Set<PairInt> offRegionPoints = extractOffRegion(img, r, rg);
                     int[] offRegion = new int[hues.length];
                     float[] sbAvg = new float[2];
-                    extractHSBProperties(img, offRegionPoints, offRegion, sbAvg);
+                    extractHSBProperties(img, set1, offRegion, sbAvg);
                     
                     if (Float.isNaN(sbAvg[0])) {
                         continue;
@@ -998,42 +1016,44 @@ public class RainbowFinder {
                     
                     /*
                     bright sky:
-                            sAvg=0.23220387   bck vAvg=0.5838191
-                        bck sAvg=0.16768077   bck vAvg=0.80450857
+                            sAvg=0.23  vAvg=0.75
                         rnbw hues peak is 2nd bin
                     dark sky:
-                           sAvg=0.26138106   bck vAvg=0.25395915
-                        bck sAvg=0.3070194   bck vAvg=0.2282818
+                           sAvg=0.5   bck vAvg=0.43
                         rnbw hues peak is 1st peak
                     */
                     
-                    int maxPeakIdx = MiscMath.findYMaxIndex(hues2);
+                    int maxPeakIdx = MiscMath.findYMaxIndex(hues);
+                    int hIdx = -1;
                     
                     //NOTE: this may need to be revised
-                    if (sbAvg[1] < 0.4) {
+                    if (sbAvg[1] < 0.55) {
                         if (maxPeakIdx == 0) {
+                            hIdx = hists.size();
                             listOfSets.add(set1);
                             hists.add(new OneDIntArray(hues2));
                             rgs.add(rg);
                         }
                     } else {
                         if (maxPeakIdx == 1) {
+                            hIdx = hists.size();
                             listOfSets.add(set1);
                             hists.add(new OneDIntArray(hues2));
                             rgs.add(rg);
                         }
                     }
                     
-                    /*
-                    System.out.println("xy=(" + rg.xC + "," + rg.yC + ") "
+                    System.out.println(
+                        "  " + rIdx + " xy=(" + rg.xC + "," + rg.yC + ") "
+                        + " maxIdx=" + maxPeakIdx
+                        + " hists.idx=" + hIdx
                         + " angle=" + (rg.orientation*180./Math.PI)
                         + " ecc=" + rg.eccentricity
-                        + "\n   bck sAvg=" + sbAvg[0] 
-                        + "   bck vAvg=" + sbAvg[1]
+                        + "\n  sAvg=" + sbAvg[0] 
+                        + "    vAvg=" + sbAvg[1]
                         + " hues hist=" + Arrays.toString(hues2)
                         + "\n   bck=" + Arrays.toString(offRegion)
                     );
-                    */
                 }
             }
         }        
@@ -1078,11 +1098,11 @@ public class RainbowFinder {
                         continue;
                     }
                     
-                    Set<PairInt> offRegionPoints = extractOffRegion(img, r, rg);
+                    //Set<PairInt> offRegionPoints = extractOffRegion(img, r, rg);
                     
                     int[] offRegion = new int[hues.length];
                     float[] sbAvg = new float[2];
-                    extractHSBProperties(img, offRegionPoints, offRegion, sbAvg);
+                    extractHSBProperties(img, set1, offRegion, sbAvg);
                     
                     if (Float.isNaN(sbAvg[0])) {
                         continue;
@@ -1092,16 +1112,16 @@ public class RainbowFinder {
                     
                     /*
                     bright sky:
-                        bck sAvg=0.07984637   bck vAvg=0.7707274
-                        hues hist=[0, 0, 0, 0, 6, 94, 0, 0, 0, 0]
+                        sAvg=0.07   vAvg=0.86
+                        hues hist=[0, 0, 0, 0, 3, 36, 0, 0, 0, 0]
                         rnbw hues peak is  bin
                     dark sky:
-                        bck sAvg=0.19074595   bck vAvg=0.44089583
-                        hues hist=[0, 0, 0, 0, 0, 100, 0, 0, 0, 0]
-                        rnbw hues peak is peak
+                        sAvg=  vAvg=
+                        hues hist=
+                        rnbw hues
                     */
                     
-                    int maxPeakIdx = MiscMath.findYMaxIndex(hues2);
+                    int maxPeakIdx = MiscMath.findYMaxIndex(hues);
                     
                     //NOTE: this may need to be revised
                     if (maxPeakIdx == 5) {
@@ -1113,9 +1133,9 @@ public class RainbowFinder {
                     System.out.println("negative xy=(" + rg.xC + "," + rg.yC + ") "
                         + " angle=" + (rg.orientation*180./Math.PI)
                         + " ecc=" + rg.eccentricity
-                        + "\n   bck sAvg=" + sbAvg[0] 
-                        + "   bck vAvg=" + sbAvg[1]
-                        + "\n   hues hist=" + Arrays.toString(hues2)
+                        + "\n   sAvg=" + sbAvg[0] 
+                        + "\n   vAvg=" + sbAvg[1]
+                        + "\n   hues hist=" + Arrays.toString(hues)
                         + "\n   bck=" + Arrays.toString(offRegion)
                     );
                    
