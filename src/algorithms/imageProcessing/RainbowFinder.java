@@ -11,6 +11,9 @@ import algorithms.misc.MiscMath;
 import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.VeryLongBitString;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -65,102 +68,71 @@ public class RainbowFinder {
         NOTE: once a rainbow is found, could look for others fainter in the
         image.
         */
-        List<Set<PairInt>> listOfSets = new ArrayList<Set<PairInt>>();
+        List<Set<PairInt>> listOfSets0 = new ArrayList<Set<PairInt>>();
         
-        List<OneDIntArray> hists = new ArrayList<OneDIntArray>();
+        List<OneDIntArray> hists0 = new ArrayList<OneDIntArray>();
         
-        for (int rIdx = 0; rIdx < polarThetaPositive.size(); ++rIdx) {
-            
-            Region r = polarThetaPositive.get(rIdx);
-           
-            Set<PairInt> set1 = null;
-                        
-            for (int i = 0; i < r.accX.size(); ++i) {
-                int x = r.accX.get(i);
-                int y = r.accY.get(i);
-                PairInt p = new PairInt(x, y);
-                int pixIdx = img.getInternalIndex(p);
-               
-                if (set1 == null) {
-                    set1 = new HashSet<PairInt>();
-                }
-                set1.add(p);
-            }
-            
-            if (set1 != null) {
-                
-                RegionGeometry rg = Canonicalizer.calculateEllipseParams(
-                    r, img.getWidth(), img.getHeight());
+        List<RegionGeometry> rgs0 = new ArrayList<RegionGeometry>();
 
-                //System.out.println("xy=" + Arrays.toString(eh.getXYCenter())
-                //   + " ecc=" + eh.getEccentricity());
+        findPositivePT(img, polarThetaPositive, listOfSets0, hists0, rgs0);
+        
+        
+        List<Region> polarThetaNegative = mserEdges.getOrigGsPtRegions().get(3);
+        
+        List<Set<PairInt>> listOfSets1 = new ArrayList<Set<PairInt>>();
+        
+        List<OneDIntArray> hists1 = new ArrayList<OneDIntArray>();
+        
+        List<RegionGeometry> rgs1 = new ArrayList<RegionGeometry>();
+
+        findNegativePT(img, polarThetaNegative, listOfSets1, hists1, rgs1);
                 
-                if (rg.eccentricity >= 0.95) {
-                    
-                    int[] hues = extractHues(img, set1);
-                    
-                    Set<PairInt> offRegionPoints = extractOffRegion(img, r, rg);
-                    
-                    int[] offRegion = new int[hues.length];
-                    float[] sbAvg = new float[2];
-                    extractHSBProperties(img, offRegionPoints, offRegion, sbAvg);
-                    
-                    if (Float.isNaN(sbAvg[0])) {
-                        continue;
-                    }
-                    
-                    int[] hues2 = subtractNormalized(hues, offRegion);
-                    
-                    /*
-                    bright sky:
-                            sAvg=0.23220387   bck vAvg=0.5838191
-                        bck sAvg=0.16768077   bck vAvg=0.80450857
-                        rnbw hues peak is 2nd bin
-                    dark sky:
-                        sAvg=0.26138106   bck vAvg=0.25395915
-                        bck sAvg=0.3070194   bck vAvg=0.2282818
-                        rnbw hues peak is 1st peak
-                    */
-                    
-                    int maxPeakIdx = MiscMath.findYMaxIndex(hues2);
-                    
-                    //NOTE: this may need to be revised
-                    if (sbAvg[1] < 0.4) {
-                        if (maxPeakIdx == 1) {
-                            listOfSets.add(set1);
-                            hists.add(new OneDIntArray(hues2));
-                        }
-                    } else {
-                        if (maxPeakIdx == 0) {
-                            listOfSets.add(set1);
-                            hists.add(new OneDIntArray(hues2));
-                        }
-                    }
-                    
-                    /*
-                    System.out.println("xy=(" + rg.xC + "," + rg.yC + ") "
-                        + " angle=" + (rg.orientation*180./Math.PI)
-                        + " ecc=" + rg.eccentricity
-                        + "\n   bck sAvg=" + sbAvg[0] 
-                        + "   bck vAvg=" + sbAvg[1]
-                        + " hues hist=" + Arrays.toString(hues2)
-                        + "\n   bck=" + Arrays.toString(offRegion)
-                    );
-                    */
-                }
+        // points from the same rainbow in the positive image
+        // should have similar hue histograms.
+        // gathered those into groups here.
+        List<VeryLongBitString> lists = clusterByIntersection(hists0, 0.95f);
+        for (int i = 0; i < lists.size(); ++i) {
+            VeryLongBitString bs = lists.get(i);
+            int[] histIdxs = bs.getSetBits();
+            
+            List<Set<PairInt>> setsI = new ArrayList<Set<PairInt>>(histIdxs.length);
+            List<RegionGeometry> rgsI = new ArrayList<RegionGeometry>(histIdxs.length);
+            for (int hIdx : histIdxs) {
+                //int idx = indexes.get(hIdx);
+                setsI.add(listOfSets0.get(hIdx));
+                RegionGeometry rg = rgs0.get(hIdx);
+                rgsI.add(rg);
+            
+                System.out.println(i + ") " 
+                    + " xy=(" + rg.xC + "," + rg.yC + ") "
+                    + " angle=" + (rg.orientation*180./Math.PI)
+                    + " ecc=" + rg.eccentricity
+                );
             }
+            
+            // there may be more than one rainbow in this set.
+            // for example, a test image has 1 strong rainbow and 2 fainter ones.
+            
+            // combine these positive mser w/ the complementary MSER regions found in the
+            //    negative polar theta image here. for the strong mser regions
+            //    in the positive image that are rainbow arcs, there are
+            //    complementary arcs which appear in the
+            //    negative image near them.
+            
+            // TODO: paused here
         }
         
-        // points from the same rainbow should have similar hue histograms
-        // so gather those into groups here.
-        
-        
+        /*can use a clustering based on intersection limit
+        to get clusters of points and fit ellipses to them.
+        because of the eccentricity limit, the individual point set
+        mser regions already have elliptical fits.
+        */  
         //SkyObject obj = new SkyObject();
         //obj.points = listOfSets2.get(0);
         //obj.xyCenter = ehs.get(0).getXYCenter();
         //return obj;
         
-        throw new UnsupportedOperationException("not implemented yet");
+        throw new UnsupportedOperationException("not yet implemented");
     }
     
     /*
@@ -1128,5 +1100,230 @@ MiscDebug.getCurrentTimeFormatted());
         
         return out;
     }
+    
+    private boolean isEmpty(int[] hues) {
+        for (int h : hues) {
+            if (h != 0) {
+                return false;
+            }
+        }
+        return true;
+    }
 
+    private List<VeryLongBitString> clusterByIntersection(List<OneDIntArray> hists, 
+        float minIntersection) {
+        
+        ColorHistogram ch = new ColorHistogram();
+        
+        List<VeryLongBitString> out = new ArrayList<VeryLongBitString>();
+        
+        for (int i = 0; i < hists.size(); ++i) {
+            
+            OneDIntArray h = hists.get(i);
+            
+            VeryLongBitString indexes = new VeryLongBitString(hists.size());
+            boolean didSet = false;
+            for (int j = (i + 1); j < hists.size(); ++j) {
+                OneDIntArray h2 = hists.get(j);
+                float intersection = ch.intersection(h.a, h2.a);
+                if (intersection >= minIntersection) {
+                    indexes.setBit(j);
+                    didSet = true;
+                }
+            }
+            if (didSet) {
+                indexes.setBit(i);
+                // if this bitstring is not a subset of an existing in out, add
+                boolean doNotAdd = false;
+                for (int j = 0; j < i; ++j) {
+                    VeryLongBitString bs = out.get(j);
+                    VeryLongBitString intersectionBS = bs.and(indexes);
+                    if (intersectionBS.getNSetBits() == indexes.getNSetBits()) {
+                        doNotAdd = true;
+                        break;
+                    }
+                }
+                if (!doNotAdd) {
+                    out.add(indexes);
+                }
+            }
+        }
+       
+        return out;
+    }
+
+    private void findPositivePT(ImageExt img, 
+        List<Region> polarThetaPositive, List<Set<PairInt>> listOfSets, 
+        List<OneDIntArray> hists, List<RegionGeometry> rgs) {
+        
+        for (int rIdx = 0; rIdx < polarThetaPositive.size(); ++rIdx) {
+            
+            Region r = polarThetaPositive.get(rIdx);
+           
+            Set<PairInt> set1 = null;
+                        
+            for (int i = 0; i < r.accX.size(); ++i) {
+                int x = r.accX.get(i);
+                int y = r.accY.get(i);
+                PairInt p = new PairInt(x, y);
+                int pixIdx = img.getInternalIndex(p);
+               
+                if (set1 == null) {
+                    set1 = new HashSet<PairInt>();
+                }
+                set1.add(p);
+            }
+            
+            if (set1 != null) {
+                
+                RegionGeometry rg = Canonicalizer.calculateEllipseParams(
+                    r, img.getWidth(), img.getHeight());
+                
+                if (rg.eccentricity >= 0.95) {
+                    
+                    int[] hues = extractHues(img, set1);
+                    
+                    if (isEmpty(hues)) {
+                        continue;
+                    }
+                    
+                    Set<PairInt> offRegionPoints = extractOffRegion(img, r, rg);
+                    
+                    int[] offRegion = new int[hues.length];
+                    float[] sbAvg = new float[2];
+                    extractHSBProperties(img, offRegionPoints, offRegion, sbAvg);
+                    
+                    if (Float.isNaN(sbAvg[0])) {
+                        continue;
+                    }
+                    
+                    int[] hues2 = subtractNormalized(hues, offRegion);
+                    
+                    /*
+                    bright sky:
+                            sAvg=0.23220387   bck vAvg=0.5838191
+                        bck sAvg=0.16768077   bck vAvg=0.80450857
+                        rnbw hues peak is 2nd bin
+                    dark sky:
+                           sAvg=0.26138106   bck vAvg=0.25395915
+                        bck sAvg=0.3070194   bck vAvg=0.2282818
+                        rnbw hues peak is 1st peak
+                    */
+                    
+                    int maxPeakIdx = MiscMath.findYMaxIndex(hues2);
+                    
+                    //NOTE: this may need to be revised
+                    if (sbAvg[1] < 0.4) {
+                        if (maxPeakIdx == 0) {
+                            listOfSets.add(set1);
+                            hists.add(new OneDIntArray(hues2));
+                            rgs.add(rg);
+                        }
+                    } else {
+                        if (maxPeakIdx == 1) {
+                            listOfSets.add(set1);
+                            hists.add(new OneDIntArray(hues2));
+                            rgs.add(rg);
+                        }
+                    }
+                    
+                    /*
+                    System.out.println("xy=(" + rg.xC + "," + rg.yC + ") "
+                        + " angle=" + (rg.orientation*180./Math.PI)
+                        + " ecc=" + rg.eccentricity
+                        + "\n   bck sAvg=" + sbAvg[0] 
+                        + "   bck vAvg=" + sbAvg[1]
+                        + " hues hist=" + Arrays.toString(hues2)
+                        + "\n   bck=" + Arrays.toString(offRegion)
+                    );
+                    */
+                }
+            }
+        }        
+    }
+    
+    private void findNegativePT(ImageExt img, 
+        List<Region> polarThetaNegative, List<Set<PairInt>> listOfSets, 
+        List<OneDIntArray> hists, List<RegionGeometry> rgs) {
+        
+        for (int rIdx = 0; rIdx < polarThetaNegative.size(); ++rIdx) {
+            
+            Region r = polarThetaNegative.get(rIdx);
+           
+            Set<PairInt> set1 = null;
+                        
+            for (int i = 0; i < r.accX.size(); ++i) {
+                int x = r.accX.get(i);
+                int y = r.accY.get(i);
+                PairInt p = new PairInt(x, y);
+                int pixIdx = img.getInternalIndex(p);
+               
+                if (set1 == null) {
+                    set1 = new HashSet<PairInt>();
+                }
+                set1.add(p);
+            }
+            
+            if (set1 != null) {
+                
+                RegionGeometry rg = Canonicalizer.calculateEllipseParams(
+                    r, img.getWidth(), img.getHeight());
+
+                //System.out.println("negative xy=" 
+                //   + rg.xC + "," + rg.yC 
+                //   + " ecc=" + rg.eccentricity);
+                
+                if (rg.eccentricity >= 0.95) {
+                    
+                    int[] hues = extractHues(img, set1);
+                    
+                    if (isEmpty(hues)) {
+                        continue;
+                    }
+                    
+                    Set<PairInt> offRegionPoints = extractOffRegion(img, r, rg);
+                    
+                    int[] offRegion = new int[hues.length];
+                    float[] sbAvg = new float[2];
+                    extractHSBProperties(img, offRegionPoints, offRegion, sbAvg);
+                    
+                    if (Float.isNaN(sbAvg[0])) {
+                        continue;
+                    }
+                    
+                    int[] hues2 = subtractNormalized(hues, offRegion);
+                    
+                    /*
+                    bright sky:
+                        bck sAvg=0.07984637   bck vAvg=0.7707274
+                        hues hist=[0, 0, 0, 0, 6, 94, 0, 0, 0, 0]
+                        rnbw hues peak is  bin
+                    dark sky:
+                        bck sAvg=0.19074595   bck vAvg=0.44089583
+                        hues hist=[0, 0, 0, 0, 0, 100, 0, 0, 0, 0]
+                        rnbw hues peak is peak
+                    */
+                    
+                    int maxPeakIdx = MiscMath.findYMaxIndex(hues2);
+                    
+                    //NOTE: this may need to be revised
+                    if (maxPeakIdx == 5) {
+                        listOfSets.add(set1);
+                        hists.add(new OneDIntArray(hues2));
+                        rgs.add(rg);
+                    }
+                    
+                    System.out.println("negative xy=(" + rg.xC + "," + rg.yC + ") "
+                        + " angle=" + (rg.orientation*180./Math.PI)
+                        + " ecc=" + rg.eccentricity
+                        + "\n   bck sAvg=" + sbAvg[0] 
+                        + "   bck vAvg=" + sbAvg[1]
+                        + "\n   hues hist=" + Arrays.toString(hues2)
+                        + "\n   bck=" + Arrays.toString(offRegion)
+                    );
+                   
+                }
+            }
+        }        
+    }
 }
