@@ -3,17 +3,12 @@ package algorithms.imageProcessing;
 import algorithms.imageProcessing.Sky.SkyObject;
 import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.RegionGeometry;
-import algorithms.imageProcessing.features.mser.EllipseHelper;
 import algorithms.imageProcessing.features.mser.MSEREdges;
 import algorithms.imageProcessing.features.mser.Region;
-import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
-import algorithms.util.PairIntArray;
 import algorithms.util.VeryLongBitString;
-import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TIntArrayList;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -90,8 +85,10 @@ public class RainbowFinder {
         // points from the same rainbow in the positive image
         // should have similar hue histograms.
         // gathered those into groups here.
-        List<VeryLongBitString> lists = clusterByIntersection(hists0, 0.95f);
+        List<VeryLongBitString> lists = clusterByIntersection(hists0, 0.9f);
+        
         for (int i = 0; i < lists.size(); ++i) {
+
             VeryLongBitString bs = lists.get(i);
             int[] histIdxs = bs.getSetBits();
             
@@ -119,6 +116,20 @@ public class RainbowFinder {
             //    complementary arcs which appear in the
             //    negative image near them.
             
+            // add the negative sets
+            for (int j = 0; j < listOfSets1.size(); ++j) {
+                setsI.add(listOfSets1.get(j));
+                RegionGeometry rg = rgs1.get(j);
+                rgsI.add(rg);
+            }
+            
+            /*
+            either:
+               (1) fit setsI in combinations to find the best fitting sets
+               or
+               (2)
+            */
+            
             // TODO: paused here
         }
         
@@ -136,13 +147,7 @@ public class RainbowFinder {
     }
     
     /*
-    public void findRainbowInImage(Set<PairInt> skyPoints, 
-        Set<PairInt> reflectedSunRemoved,
-        ImageExt colorImg, int xOffset, int yOffset, 
-        int imageWidth, int imageHeight,
-        boolean skyIsDarkGrey, GroupPixelColors allSkyColor, 
-        RemovedSets removedSets) {
-
+    
         rainbowCoeff = findRainbowPoints(skyPoints, 
             removedSets.getReflectedSunRemoved(), colorImg, 
             xOffset, yOffset, imageWidth, imageHeight,
@@ -184,18 +189,6 @@ public class RainbowFinder {
                 }
             }
         }
-    }
-    
-    public Set<PairInt> getPointsToExcludeInHull() {
-        return excludePointsInRainbowHull;
-    }
-    
-    public Set<PairInt> getRainbowPoints() {
-        return outputRainbowPoints;
-    }
-    
-    public float[] getRainbowCoeff() {
-        return rainbowCoeff;
     }
     
     public void addRainbowToSkyPoints(Set<PairInt> skyPoints, 
@@ -413,210 +406,18 @@ public class RainbowFinder {
             ArrayPair cRed = cieC.getRedPolynomial();
             PointInPolygon pInPoly = new PointInPolygon();
             
-            float minCIEX = Float.MAX_VALUE;
-            float maxCIEX = Float.MIN_VALUE;
-            float minCIEY = Float.MAX_VALUE;
-            float maxCIEY = Float.MIN_VALUE;
-            for (PairInt p : bestFittingPoints) {
-                
-                int x = p.getX();
-                int y = p.getY();
-                
-                int idx = colorImg.getInternalIndex(x + xOffset, y + yOffset);
-                
-                int r = colorImg.getR(idx);
-                int g = colorImg.getG(idx);
-                int b = colorImg.getB(idx);
-                float rDivB = (float)r/(float)b;
-                float cieX = colorImg.getCIEX(idx);
-                float cieY = colorImg.getCIEY(idx);
-
-log.fine(String.format(
-                    "(%d,%d) r=%d, g=%d, b=%d  rDivB=%f  cieX=%f  cieY=%f  hue=%f",
-                    x, y, r, g, b, rDivB, cieX, cieY, colorImg.getHue(idx)));
-
-                boolean isWhite = cieC.isWhite(cieX, cieY);
-                
-                if (cieX >= 0.35) {
-                    nGTX++;
-                }
-                if ((cieY <= 0.3) || (rDivB < 0.89f)) {
-                    nLTY++;
-                }
-                if (cieX < minCIEX) {
-                    minCIEX = cieX;
-                }
-                if (cieX > maxCIEX) {
-                    maxCIEX = cieX;
-                }
-                if (cieY < minCIEY) {
-                    minCIEY = cieY;
-                }
-                if (cieY > maxCIEY) {
-                    maxCIEY = cieY;
-                }
-                
-                if (!isWhite) {
-                    if (pInPoly.isInSimpleCurve(cieX,cieY, cPurpRed.getX(), 
-                        cPurpRed.getY(), cPurpRed.getX().length)) {
-                        nPurpRed++;
-                    }
-                    if (pInPoly.isInSimpleCurve(cieX, cieY, cOranRed.getX(), 
-                        cOranRed.getY(), cOranRed.getX().length)) {
-                        nOranRed++;
-                    }
-                    if (pInPoly.isInSimpleCurve(cieX, cieY, cYellow.getX(), 
-                        cYellow.getY(), cYellow.getX().length)) {
-                        nYellow++;
-                    }
-                    if (pInPoly.isInSimpleCurve(cieX, cieY, cGreen.getX(), 
-                        cGreen.getY(), cGreen.getX().length)) {
-                        nGreen++;
-                    }
-                    if (pInPoly.isInSimpleCurve(cieX, cieY, cRed.getX(), 
-                        cRed.getY(), cRed.getX().length)) {
-                        nRed++;
-                    }
-                }
-                
-                if (colors.isInBroadRedRainbowSpace(cieX, cieY)) {
-                    nBroadlyRed++;
-                }
-            }
-            
-            float cieXRange = maxCIEX - minCIEX;
-            float cieYRange = maxCIEY - minCIEY;
-            
-            float nTot = (float)bestFittingPoints.size();
-            
-            float nOrangeFrac = (float)nOranRed/nTot;
-            
-            float nPurpleRedFrac = (float)nPurpRed/nTot;
-            
-            float nGreenFrac = (float)nGreen/nTot;
-            
-            float nYellowFrac = (float)nYellow/nTot;
-            
-            float nBroadlyRedFrac = (float)nBroadlyRed/nTot;
-    
-            log.info("nGTX=" + nGTX + " nLTY=" + nLTY + " n=" 
-                + bestFittingPoints.size() + " "
-                + " CIE: minCIEX=" + minCIEX + " maxCIEX=" + maxCIEX
-                + " minCIEY=" + minCIEY + " maxCIEY=" + maxCIEY
-                + " range=(" + cieXRange + "," + cieYRange + ")"
-                + "\n nPurpRed=" + nPurpRed + " nOranRed=" + nOranRed
-                + " nYellow=" + nYellow + " nGreen=" + nGreen + " nRed=" + nRed
-                + " nOrange/nPurpRed=" + ((float)nOranRed/(float)nPurpRed)
-                + " nOrange/nTot=" + nOrangeFrac
-                + " nPurpRed/nTot=" + nPurpleRedFrac
-                + " nGreen/nTot=" + nGreenFrac
-                + " nYellow/nTot=" + nYellowFrac
-                + " nBroadlyRed/nTot=" + nBroadlyRedFrac
-            );
-
-            rainbowPoints.clear();
-
-            //TODO: this entire section could use more testing
-MiscDebug.plotPoints(bestFittingPoints, imageWidth, imageHeight, 
-MiscDebug.getCurrentTimeFormatted());
-
-            boolean colorsAreNotRainbow = false;
-            
-            if (skyIsDarkGrey) {
-                //TODO: this needs to be tested on more night images.
-                // rainbow: nOrange/nTot=0.36870417
-                //          nPurpRed/nTot=0.2621027
-                //          nBroadlyRed/nTot=0.65574574
-                //          nGreen/nTot=0.19
-                //          nYellow/nTot=0.44
-                if (nPurpleRedFrac < 0.1 && nOrangeFrac < 0.1 && nGreenFrac < 0.1) {
-                    colorsAreNotRainbow = true;
-                }
-            } else {
-                if (
-                    (nBroadlyRedFrac > 0.1 && nOrangeFrac > 0.05)
-                    || (nPurpleRedFrac < 0.005)
-                    || (nYellowFrac > 0.8)
-                    ){
-                    colorsAreNotRainbow = true;
-                }
-            }
-            
-            if (!colorsAreNotRainbow) {
-                rainbowPoints.addAll(bestFittingPoints);
-            }
         }
-        
-        outputRainbowPoints.addAll(rainbowPoints);
         
         if (!rainbowPoints.isEmpty()) {
             polyFitter.plotFit(coef, outputRainbowPoints, colorImg.getWidth(),
                 colorImg.getHeight(), 234, "rainbow points");
         }
         
-        log.info("rainbow points size=" + outputRainbowPoints.size());
- 
-        return coef;
-    }
-   
-    Set<PairInt> findRainbowColoredPoints(ImageExt colorImg, 
-        Set<PairInt> reflectedSunRemoved,
-        int xOffset, int yOffset, boolean skyIsDarkGrey) {
-        
-        AbstractSkyRainbowColors colors = skyIsDarkGrey ?
-            new DarkSkyRainbowColors() : new BrightSkyRainbowColors();
-        
-        Set<PairInt> set = new HashSet<PairInt>();
-        
-        for (int col = 0; col < colorImg.getWidth(); col++) {
-            for (int row = 0; row < colorImg.getHeight(); row++) {
-                
-                PairInt p = new PairInt(col - xOffset, row - yOffset);
-                
-                if (reflectedSunRemoved.contains(p)) {
-                    continue;
-                }
-                
-                int idx = colorImg.getInternalIndex(col, row);
-      
-                float cieX = colorImg.getCIEX(idx);
-                float cieY = colorImg.getCIEY(idx);
-
-                int r = colorImg.getR(idx);
-                int g = colorImg.getG(idx);
-                int b = colorImg.getB(idx);
-
-                float saturation = colorImg.getSaturation(idx);
-                float brightness = colorImg.getBrightness(idx);
-        
-                if (colors.isInRedThroughPurplishRed(r, g, b, cieX, cieY, 
-                    saturation, brightness)) {
-                    
-                    set.add(p);
-
-                } else if (colors.isInOrangeRed(r, g, b, cieX, cieY, saturation, 
-                    brightness)) {
-                    
-                    set.add(p);
-                
-                } else if (colors.isInGreenishYellowOrange(r, g, b, cieX, cieY,
-                    saturation, brightness)) {
-                 
-                    set.add(p);
-                    
-                }
-            }
-        }
-        
-        //debugPlot(set, colorImg, xOffset, yOffset, "rainbow_colored_points");
-        
-        return set;
     }
    
     private Hull createRainbowHull(float[] rainbowCoeff, 
         Set<PairInt> rainbowPoints, ImageExt originalColorImage, int xOffset, 
-        int yOffset) {
-       
+        int yOffset) {   
         
         int width = originalColorImage.getWidth() - xOffset;
         int height = originalColorImage.getHeight() - yOffset;
@@ -919,18 +720,6 @@ MiscDebug.getCurrentTimeFormatted());
     }
     */
     
-    private EllipseHelper createRegion(Set<PairInt> points) {
-
-        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
-        int[] xyCen = ch.calculateRoundedXYCentroids(points);
-    
-        PairIntArray xy = Misc.convertWithoutOrder(points);
-        
-        EllipseHelper eh = new EllipseHelper(xyCen[0], xyCen[1], xy);
-        
-        return eh;
-    }
-    
     private int[] extractHues(ImageExt img, Set<PairInt> set) {
         
         int[] hues = new int[10];
@@ -1147,6 +936,14 @@ MiscDebug.getCurrentTimeFormatted());
                     out.add(indexes);
                 }
             }
+        }
+        
+        // add entries for the sets by themselves
+        for (int i = 0; i < hists.size(); ++i) {            
+            OneDIntArray h = hists.get(i);
+            VeryLongBitString indexes = new VeryLongBitString(hists.size());
+            indexes.setBit(i);
+            out.add(indexes);
         }
        
         return out;
