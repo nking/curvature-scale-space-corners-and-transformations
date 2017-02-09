@@ -2,6 +2,7 @@ package algorithms.imageProcessing;
 
 import algorithms.QuickSort;
 import algorithms.SubsetChooser;
+import algorithms.compGeometry.ParabolaLeastSquares;
 import algorithms.imageProcessing.Sky.SkyObject;
 import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.RegionGeometry;
@@ -966,8 +967,7 @@ System.out.println("hs=" + Arrays.toString(histIdxs));
     
     private TIntList findLargeArc(List<VeryLongBitString> listOfSetBits, 
         List<Set<PairInt>> listOfSets, 
-        List<OneDIntArray> hists0, List<RegionGeometry> rgs0,
-        Image img) {
+        List<OneDIntArray> hists0, List<RegionGeometry> rgs0, Image img) {
     
         int n = listOfSetBits.size();
         
@@ -987,7 +987,7 @@ System.out.println("hs=" + Arrays.toString(histIdxs));
             TIntList subsetIdxs = new TIntArrayList();
             int nInSubsets = 0;
             
-            PolynomialFitter polyFitter0 = null;
+            ParabolaLeastSquares polyFitter0 = null;
             float[] coeff0 = null;
             
             for (int j = i - 1; j > -1; --j) {
@@ -1026,44 +1026,55 @@ System.out.println("hs=" + Arrays.toString(histIdxs));
                     // the camera
                     
                     if (polyFitter0 == null) {
-                        polyFitter0 = new PolynomialFitter();
+                        polyFitter0 = new ParabolaLeastSquares();
                         Set<PairInt> set = listOfSets.get(idx0);
                         
                         //y = c0*1 + c1*x[i] + c2*x[i]*x[i]
-                        if (set.size() > 400) {
-                            coeff0 = polyFitter0.solveAfterRandomSampling(set);
-                        } else {
-                            float[] xPoints = new float[set.size()];
-                            float[] yPoints = new float[xPoints.length];
-                            int c = 0;
-                            for (PairInt p : set) {
-                                xPoints[c] = p.getX();
-                                yPoints[c] = p.getY();
-                                c++;
-                            }
-                            coeff0 = polyFitter0.solve(xPoints, yPoints);
-                        }
+                        polyFitter0.accumulate(set);
+                        coeff0 = polyFitter0.solve();
                         
                         polyFitter0.plotFit(coeff0, set, img.getWidth(),
                             img.getHeight(), i, 
                             "rainbow points");
 
-                        double resid = polyFitter0.calcResiduals(
-                            coeff0, set);
+                        double resid = polyFitter0.calcResiduals(coeff0, set);
                         
-                        log.info("rainbow polynomial coefficients = " 
+                        System.out.println("rainbow polynomial coefficients = " 
                             + Arrays.toString(coeff0));
-                        log.info("image dimensions are " + img.getWidth() + " X "
+                        System.out.println("image dimensions are " + img.getWidth() + " X "
                             + img.getHeight() + " pixels^2 " 
                             + " resid=" + resid
                             + " rg.coeff=" + Arrays.toString(rg0.m)
                         );
 
                         if (resid < 5) {
+                            TIntSet chk = new TIntHashSet(subsetIdxs);
                             
-                            // TODO: since we have a polynomial now,
+                            // since we have a polynomial now,
                             // look for other regions that may fit on the arc
-                            
+                            for (int j = i - 1; j > -1; --j) {
+                                int idx1 = indexes[j];
+                                if (chk.contains(idx1)) {
+                                    continue;
+                                }
+                                Set<PairInt> chkSet = listOfSets.get(idx1);
+                                                                
+                                double resid2 = polyFitter0.calcResiduals(
+                                    coeff0, chkSet);
+                                
+                                System.out.println("check " + " x=" + 
+                                    rgs0.get(idx1).xC + " y=" +
+                                    rgs0.get(idx1).yC + " resid=" + resid2);
+                                
+                                if (resid2 > 5) {
+                                    continue;
+                                }
+                        
+                                RegionGeometry chkRg = rgs0.get(idx1);
+                                
+                                System.out.println("check " + " x=" + chkRg.xC + " y=" +
+                                    chkRg.yC + " resid=" + resid2);
+                            }
                             
                             subsetIdxs.add(idx0);
                             return subsetIdxs;
@@ -1141,8 +1152,6 @@ System.out.println("hs=" + Arrays.toString(histIdxs));
         
         double minResid = Double.MAX_VALUE;
         
-        PolynomialFitter polyFitter = new PolynomialFitter();
-        
         for (int k = idxs.length; k > 0; k--) {
             
             int[] selectedIndexes = new int[k];
@@ -1151,6 +1160,8 @@ System.out.println("hs=" + Arrays.toString(histIdxs));
             
             int nV = subsetChooser.getNextSubset(selectedIndexes);
             
+            ParabolaLeastSquares polyFitter = new ParabolaLeastSquares();
+        
             while (nV != -1) {
                 
                 Set<PairInt> subset = new HashSet<PairInt>();
@@ -1167,21 +1178,10 @@ System.out.println("hs=" + Arrays.toString(histIdxs));
                     
                     sb.append(String.format(" (%d,%d) ", rg.xC, rg.yC));
                 }
+                
+                polyFitter.accumulate(subset);
                                 
-                float[] coeff = null;
-                if (subset.size() > 400) {
-                    coeff = polyFitter.solveAfterRandomSampling(subset);
-                } else {
-                    float[] xPoints = new float[subset.size()];
-                    float[] yPoints = new float[xPoints.length];
-                    int c = 0;
-                    for (PairInt p : subset) {
-                        xPoints[c] = p.getX();
-                        yPoints[c] = p.getY();
-                        c++;
-                    }
-                    coeff = polyFitter.solve(xPoints, yPoints);
-                }
+                float[] coeff = polyFitter.solve();
                 
                 if (coeff == null) {
                     continue;

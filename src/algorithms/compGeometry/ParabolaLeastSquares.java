@@ -44,8 +44,6 @@ import no.uib.cipr.matrix.UpperTriangDenseMatrix;
 
        then can solve the 3 equations for a, b, c using linear algebra.
        
-       
-
  * @author nichole
  */
 public class ParabolaLeastSquares {
@@ -78,6 +76,16 @@ public class ParabolaLeastSquares {
         moments_[4] += tmp;
         moments_[5] += x * y;
         moments_[6] += y * x * x;
+    }
+    
+    public void accumulate(PairInt p) {
+        accumulate(p.getX(), p.getY());
+    }
+    
+    public void accumulate(Set<PairInt> set) {
+        for (PairInt p : set) {
+            accumulate(p);
+        }
     }
     
     double[][] getMatrixA() {
@@ -184,12 +192,25 @@ public class ParabolaLeastSquares {
     public static String plotFit(float[] coefficients, Set<PairInt> points, 
         int plotXMax, int plotYMax, int plotNumber, String plotLabel) {
     
-        return PolynomialFitter.plotFit(coefficients, points, plotXMax, plotYMax, 
+        System.out.println("coeff=" + Arrays.toString(coefficients));
+        float[] rev = reverse(coefficients);
+        System.out.println("rev=" + Arrays.toString(rev));
+        
+        return PolynomialFitter.plotFit(rev, points, plotXMax, plotYMax, 
             plotNumber, plotLabel);
+    }
+    
+    private static float[] reverse(float[] coeff) {
+        assert(coeff.length == 3);
+        float[] rev = new float[3];
+        rev[0] = coeff[2];
+        rev[1] = coeff[1];
+        rev[2] = coeff[0];
+        return rev;
     }
     
     public static double calcResiduals(float[] coefficients, Set<PairInt> points) {
         
-        return PolynomialFitter.calcResiduals(coefficients, points);
+        return PolynomialFitter.calcResiduals(reverse(coefficients), points);
     }
 }
