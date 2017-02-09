@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import no.uib.cipr.matrix.Matrix;
 import no.uib.cipr.matrix.MatrixEntry;
 import no.uib.cipr.matrix.VectorEntry;
 import no.uib.cipr.matrix.sparse.FlexCompColMatrix;
@@ -1148,6 +1149,46 @@ public class MatrixUtil {
         }
         
         return eev;
+    }
+
+    public static double[] multiply(Matrix a, double[] b) {
+        
+        if (a == null || a.numRows() == 0) {
+            throw new IllegalArgumentException("m cannot be null or empty");
+        }
+        if (b == null || b.length == 0) {
+            throw new IllegalArgumentException("n cannot be null or empty");
+        }
+        
+        int mrows = a.numRows();
+
+        int mcols = a.numColumns();
+
+        int nrows = b.length;
+        
+        if (mcols != nrows) {
+            throw new IllegalArgumentException(
+                "the number of cols in a must equal the length of b");
+        }
+        
+        double[] c = new double[mrows];
+
+        int cCol = 0;
+        
+        /*
+        a0 1 2     0
+                   1
+                   2
+        */
+        
+        for (int row = 0; row < mrows; row++) {
+            for (int col = 0; col < mcols; col++) {
+                c[cCol] += (a.get(row, col) * b[col]);
+            }
+            cCol++;        
+        }
+
+        return c;
     }
     
     public static class EigenValuesAndVectors {
