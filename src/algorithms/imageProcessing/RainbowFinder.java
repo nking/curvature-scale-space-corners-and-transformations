@@ -1056,9 +1056,15 @@ System.out.println("hs=" + Arrays.toString(histIdxs));
                         log.info("image dimensions are " + img.getWidth() + " X "
                             + img.getHeight() + " pixels^2 " 
                             + " resid=" + resid
+                            + " rg.coeff=" + Arrays.toString(rg0.m)
                         );
 
                         if (resid < 5) {
+                            
+                            // TODO: since we have a polynomial now,
+                            // look for other regions that may fit on the arc
+                            
+                            
                             subsetIdxs.add(idx0);
                             return subsetIdxs;
                         }
