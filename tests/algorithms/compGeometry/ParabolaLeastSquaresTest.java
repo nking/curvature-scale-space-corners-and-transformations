@@ -29,7 +29,7 @@ public class ParabolaLeastSquaresTest extends TestCase {
         assertEquals(100., pLS.moments_[3]);
         assertEquals(354., pLS.moments_[4]);
         
-        double[] coeffs = pLS.solve();
+        float[] coeffs = pLS.solve();
         
         assertTrue(Math.abs(coeffs[2] - -4) < 0.01);
         assertTrue(Math.abs(coeffs[1] - 2) < 0.01);

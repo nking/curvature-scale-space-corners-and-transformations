@@ -1,18 +1,14 @@
 package algorithms.compGeometry;
 
 import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.util.PairInt;
+import algorithms.util.PolynomialFitter;
 import java.util.Arrays;
-import java.util.Iterator;
-import no.uib.cipr.matrix.DenseLU;
+import java.util.Set;
 import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.Matrix;
-import no.uib.cipr.matrix.MatrixEntry;
 import no.uib.cipr.matrix.QR;
 import no.uib.cipr.matrix.UpperTriangDenseMatrix;
-import org.ejml.data.DenseMatrix64F;
-import org.ejml.factory.DecompositionFactory;
-import org.ejml.interfaces.decomposition.QRDecomposition;
-import org.ejml.simple.SimpleMatrix;
 
 /**
  
@@ -26,7 +22,7 @@ import org.ejml.simple.SimpleMatrix;
  to minimize, need each partial deriv = 0,
  that is d(eqn)/da = 0, etc
 
- the 3 partial derivatives are summrized as
+ the 3 partial derivatives are summarized as
 
      a * sum_i=1toN (x_i)^4 + b * sum_i=1toN (x_i)^3
          + c * sum_i=1toN (x_i)^2
@@ -46,7 +42,9 @@ import org.ejml.simple.SimpleMatrix;
 
        sum each of those for the points
 
-       then can solve the 3d pde for a,b,c
+       then can solve the 3 equations for a, b, c using linear algebra.
+       
+       
 
  * @author nichole
  */
@@ -56,9 +54,15 @@ public class ParabolaLeastSquares {
     protected final double[] moments_;
     protected int n;
     
+    private boolean debug = false;
+    
     public ParabolaLeastSquares() {
         moments_ = new double[7];
         n = 0;
+    }
+    
+    public void setToDebug() {
+        debug = true;
     }
     
     public void accumulate(double x, double y) {
@@ -99,7 +103,7 @@ public class ParabolaLeastSquares {
         return Y;
     }
     
-    public double[] solve() {
+    public float[] solve() {
     
         /*
         a * sum_i=1toN (x_i)^4 + b * sum_i=1toN (x_i)^3
@@ -129,8 +133,9 @@ public class ParabolaLeastSquares {
         |b| = inv of coeff above * right sides 
         |c|
         
-        inv of matrix = (1/det(matrix)) *
         */
+        
+        // helpful also was the Go solution of http://rosettacode.org/wiki/Polynomial_Fitting
         
         double[][] A = getMatrixA();
         
@@ -138,27 +143,31 @@ public class ParabolaLeastSquares {
         
         Matrix mA = new DenseMatrix(A);
         
-        System.out.println("row0=" + Arrays.toString(A[0]));
-        System.out.println("row1=" + Arrays.toString(A[1]));
-        System.out.println("row2=" + Arrays.toString(A[2]));
-         
+        if (debug) {
+            System.out.println("row0=" + Arrays.toString(A[0]));
+            System.out.println("row1=" + Arrays.toString(A[1]));
+            System.out.println("row2=" + Arrays.toString(A[2]));
+        }
+        
         QR qr = QR.factorize(mA);
         DenseMatrix q = qr.getQ();
         UpperTriangDenseMatrix r = qr.getR();
         
         Matrix qT = q.transpose();
         double[] qTY = MatrixUtil.multiply(qT, getRHSVector());
-        double[] c = new double[3];
+        float[] c = new float[3];
         for (int i = (3 - 1); i >= 0; i--) {
-            c[i] = qTY[i];
+            c[i] = (float)qTY[i];
             for (int j = (i + 1); j < 3; j++) {
                 c[i] -= c[j] * r.get(i, j);
             }
             c[i] /= r.get(i, i);
         }
-        System.out.println("abc=" + Arrays.toString(c));
         
-        {// check sums
+        if (debug) {
+            
+            System.out.println("abc=" + Arrays.toString(c));
+        
             for (int i = 0; i < 3; ++i) {
                 double s = 0;
                 for (int j = 0; j < 3; ++j) {
@@ -170,5 +179,17 @@ public class ParabolaLeastSquares {
         //qr_res  = test of QR factorization, norm1(Q*R-A)/(n*eps)
         
         return c;
+    }
+    
+    public String plotFit(float[] coefficients, Set<PairInt> points, 
+        int plotXMax, int plotYMax, int plotNumber, String plotLabel) {
+    
+        return PolynomialFitter.plotFit(coefficients, points, plotXMax, plotYMax, 
+            plotNumber, plotLabel);
+    }
+    
+    public double calcResiduals(float[] coefficients, Set<PairInt> points) {
+        
+        return PolynomialFitter.calcResiduals(coefficients, points);
     }
 }

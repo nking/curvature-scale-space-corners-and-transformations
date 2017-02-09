@@ -187,7 +187,7 @@ public class PolynomialFitter {
      * @param plotLabel
      * @return 
      */
-    public String plotFit(float[] coefficients, Set<PairInt> points, 
+    public static String plotFit(float[] coefficients, Set<PairInt> points, 
         int plotXMax, int plotYMax, int plotNumber, String plotLabel) {
                 
         // shape the rainbow points into a more even ribbon
@@ -226,7 +226,7 @@ public class PolynomialFitter {
             return fileName;
             
         } catch (IOException e) {
-            Logger.getLogger(this.getClass().getName()).severe(e.getMessage());
+            Logger.getLogger(PolynomialFitter.class.getName()).severe(e.getMessage());
         }
         
         return null;
@@ -239,7 +239,7 @@ public class PolynomialFitter {
      * @param points
      * @return float[]{minX, YForMinX, maxX, YFoMaxX}
      */
-    public float[] determineGoodEndPoints(float[] coefficients,
+    public static float[] determineGoodEndPoints(float[] coefficients,
         Set<PairInt> points) {
         
         /*
@@ -347,7 +347,7 @@ public class PolynomialFitter {
      * @param points
      * @return 
      */
-    public double calcResiduals(float[] coefficients, Set<PairInt> points) {
+    public static double calcResiduals(float[] coefficients, Set<PairInt> points) {
         
         if (points == null || points.isEmpty()) {
             return Double.POSITIVE_INFINITY;
