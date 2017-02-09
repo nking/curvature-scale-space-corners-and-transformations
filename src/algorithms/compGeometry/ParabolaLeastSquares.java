@@ -181,14 +181,14 @@ public class ParabolaLeastSquares {
         return c;
     }
     
-    public String plotFit(float[] coefficients, Set<PairInt> points, 
+    public static String plotFit(float[] coefficients, Set<PairInt> points, 
         int plotXMax, int plotYMax, int plotNumber, String plotLabel) {
     
         return PolynomialFitter.plotFit(coefficients, points, plotXMax, plotYMax, 
             plotNumber, plotLabel);
     }
     
-    public double calcResiduals(float[] coefficients, Set<PairInt> points) {
+    public static double calcResiduals(float[] coefficients, Set<PairInt> points) {
         
         return PolynomialFitter.calcResiduals(coefficients, points);
     }
