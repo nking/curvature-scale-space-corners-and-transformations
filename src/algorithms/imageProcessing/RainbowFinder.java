@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.QuickSort;
+import algorithms.SubsetChooser;
 import algorithms.imageProcessing.Sky.SkyObject;
 import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.RegionGeometry;
@@ -54,8 +55,11 @@ public class RainbowFinder {
      * @param mserEdges
      * @return 
      */
-    public SkyObject[] findRainbows(MSEREdges mserEdges) {
+    public List<SkyObject> findRainbows(MSEREdges mserEdges) {
         
+        // there may be more than one rainbow in this set.
+        // for example, a test image has 1 strong rainbow and 2 fainter ones.
+            
         ImageExt img = mserEdges.getClrImg();
         
         List<Region> polarThetaPositive = mserEdges.getOrigGsPtRegions().get(2);
@@ -89,21 +93,22 @@ public class RainbowFinder {
 
         findNegativePT(img, polarThetaNegative, listOfSets1, hists1, rgs1);
        
-        // TODO: for complete rainbows, sometimes the entire arc is present
-        // in an MSER region and separate segments of it are
-        // in other smaller MSER regions,
-        // so look for that here
         List<VeryLongBitString> listOfSetBits0 = makeBitStrings(listOfSets0, img);
         
-        int arcIdx = findLargeArc(listOfSetBits0, listOfSets0, hists0, rgs0,
-            img);
+        List<SkyObject> output = new ArrayList<SkyObject>();
         
-        if (arcIdx > -1) {
+        TIntList arcIdxs = findLargeArc(listOfSetBits0, listOfSets0, hists0, rgs0, img);
+        
+        if (arcIdxs != null && !arcIdxs.isEmpty()) {
             
             // if have found a large arc in the positive image, search for 
             //    adjacent arcs in the negative regions
             
-            Set<PairInt> arcPoints = listOfSets0.get(arcIdx);
+            Set<PairInt> arcPoints = new HashSet<PairInt>();
+            for (int j = 0; j < arcIdxs.size(); ++j) {
+                arcPoints.addAll(listOfSets0.get(arcIdxs.get(j)));
+            }
+            
             NearestNeighbor2D nn = new NearestNeighbor2D(arcPoints, 
                 img.getWidth(), img.getHeight());
             
@@ -113,77 +118,108 @@ public class RainbowFinder {
                 for (int idx1 : negativeIdxs) {
                     arcPoints.addAll(listOfSets1.get(idx1));
                 }
-                SkyObject obj = new SkyObject();
-                obj.points = arcPoints;
-                obj.xyCenter = new int[]{rgs0.get(arcIdx).xC, rgs0.get(arcIdx).yC};
-                return new SkyObject[]{obj};
+                
+                Arrays.sort(negativeIdxs);
+                for (int j = (negativeIdxs.length - 1); j > -1; --j) {
+                    int idx = negativeIdxs[j];
+                    listOfSets1.remove(idx);
+                    rgs1.remove(idx);
+                    hists1.remove(idx);
+                }                
             }
+            
+            MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
+            double[] xyCenter = ch.calculateXYCentroids(arcPoints);
+            int x = (int)Math.round(xyCenter[0]);
+            int y = (int)Math.round(xyCenter[1]);
+
+            SkyObject obj = new SkyObject();
+            obj.points = arcPoints;
+            obj.xyCenter = new int[]{x, y};
+            output.add(obj);
+            
+            arcIdxs.sort();
+            for (int j = (arcIdxs.size() - 1); j > -1; --j) {
+                int arcIdx = arcIdxs.get(j);
+                System.out.println("removing " + 
+                    rgs0.get(arcIdx).xC + ", " + rgs0.get(arcIdx).yC);
+                listOfSets0.remove(arcIdx);
+                listOfSetBits0.remove(arcIdx);
+                hists0.remove(arcIdx);
+                rgs0.remove(arcIdx);
+            }
+            
+            //return output;
         }
         
         // points from the same rainbow in the positive image
         // should have similar hue histograms.
-        // gathered those into groups here.
+        // gather those into groups here.
         List<VeryLongBitString> lists = clusterByIntersection(hists0, 0.9f);
+        
+        TIntSet added0 = new TIntHashSet();
         
         for (int i = 0; i < lists.size(); ++i) {
 
             VeryLongBitString bs = lists.get(i);
             int[] histIdxs = bs.getSetBits();
+            TIntSet tmp = new TIntHashSet(histIdxs);
+            tmp.removeAll(added0);
+            if (tmp.isEmpty()) {
+                continue;
+            }
+            histIdxs = tmp.toArray(new int[tmp.size()]);
             
-            List<Set<PairInt>> setsI = new ArrayList<Set<PairInt>>(histIdxs.length);
-            List<RegionGeometry> rgsI = new ArrayList<RegionGeometry>(histIdxs.length);
-
 System.out.println("hs=" + Arrays.toString(histIdxs));
   
+            // try combinations of sets in histIdxs and keep the best
+            //   fitting (lowest residuals).
+            TIntList bestCombIdxs = findBestCombination(
+                histIdxs, listOfSets0, rgs0);
+
+            if (bestCombIdxs.isEmpty()) {
+                continue;
+            }
+            
+            // find adjacent to bestCombIdxs in the negative image
+            Set<PairInt> arcPoints = new HashSet<PairInt>();
             for (int hIdx : histIdxs) {
-                //int idx = indexes.get(hIdx);
-                setsI.add(listOfSets0.get(hIdx));
-                RegionGeometry rg = rgs0.get(hIdx);
-                rgsI.add(rg);
-            
-                System.out.println(
-                    i + ") " + " xy=(" + rg.xC + "," + rg.yC + ") "
-                    + " angle=" + (rg.orientation*180./Math.PI)
-                    + " ecc=" + rg.eccentricity);
+                arcPoints.addAll(listOfSets0.get(hIdx));
             }
             
-            // there may be more than one rainbow in this set.
-            // for example, a test image has 1 strong rainbow and 2 fainter ones.
+            NearestNeighbor2D nn = new NearestNeighbor2D(arcPoints, 
+                img.getWidth(), img.getHeight());
             
-            // combine these positive mser w/ the complementary MSER regions found in the
-            //    negative polar theta image here. for the strong mser regions
-            //    in the positive image that are rainbow arcs, there are
-            //    complementary arcs which appear in the
-            //    negative image near them.
+            int[] negativeIdxs = findAdjacent(nn, listOfSets1, rgs1);
             
-            // add the negative sets
-            for (int j = 0; j < listOfSets1.size(); ++j) {
-                setsI.add(listOfSets1.get(j));
-                RegionGeometry rg = rgs1.get(j);
-                rgsI.add(rg);
+            if (negativeIdxs != null) {
+                for (int idx1 : negativeIdxs) {
+                    arcPoints.addAll(listOfSets1.get(idx1));
+                }
+                                
+                Arrays.sort(negativeIdxs);
+                for (int j = (negativeIdxs.length - 1); j > -1; --j) {
+                    int idx = negativeIdxs[j];
+                    listOfSets1.remove(idx);
+                    rgs1.remove(idx);
+                    hists1.remove(idx);
+                } 
             }
             
-            /*
-            either:
-               (1) fit setsI in combinations to find the best fitting sets
-               or
-               (2)
-            */
+            MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
+            double[] xyCenter = ch.calculateXYCentroids(arcPoints);
+            int x = (int)Math.round(xyCenter[0]);
+            int y = (int)Math.round(xyCenter[1]);
+
+            SkyObject obj = new SkyObject();
+            obj.points = arcPoints;
+            obj.xyCenter = new int[]{x, y};
+            output.add(obj);
             
-            // TODO: paused here
+            added0.addAll(bestCombIdxs);
         }
-        
-        /*can use a clustering based on intersection limit
-        to get clusters of points and fit ellipses to them.
-        because of the eccentricity limit, the individual point set
-        mser regions already have elliptical fits.
-        */  
-        //SkyObject obj = new SkyObject();
-        //obj.points = listOfSets2.get(0);
-        //obj.xyCenter = ehs.get(0).getXYCenter();
-        //return obj;
-        
-        throw new UnsupportedOperationException("not yet implemented");
+
+        return output;
     }
     
     /*
@@ -928,7 +964,7 @@ System.out.println("hs=" + Arrays.toString(histIdxs));
         }        
     }
     
-    private int findLargeArc(List<VeryLongBitString> listOfSetBits, 
+    private TIntList findLargeArc(List<VeryLongBitString> listOfSetBits, 
         List<Set<PairInt>> listOfSets, 
         List<OneDIntArray> hists0, List<RegionGeometry> rgs0,
         Image img) {
@@ -948,7 +984,7 @@ System.out.println("hs=" + Arrays.toString(histIdxs));
             VeryLongBitString bs = listOfSetBits.get(idx0);
             int nbs0 = (int)bs.getNSetBits();
             
-            TIntSet subsetIdxs = new TIntHashSet();
+            TIntList subsetIdxs = new TIntArrayList();
             int nInSubsets = 0;
             
             PolynomialFitter polyFitter0 = null;
@@ -963,7 +999,7 @@ System.out.println("hs=" + Arrays.toString(histIdxs));
                 int nbsi = (int)inter.getNSetBits();
                 
                 if ((nbs2 - nbsi) < 0.1*(nbs2)) {
-                    subsetIdxs.add(j);
+                    subsetIdxs.add(idx1);
                     nInSubsets += nbs2;
                 }
             }
@@ -982,7 +1018,7 @@ System.out.println("hs=" + Arrays.toString(histIdxs));
                     + " nPts=" + nbs0 + " nInSubsets=" + nInSubsets    
                 );
                 
-                if (dens > 0.05) {
+                if (dens > 0.1) {
                     
                     // fit a polynomial to rainbow points.  
                     // would prefer a circle, but the optical depth of the dispersers and the
@@ -994,7 +1030,7 @@ System.out.println("hs=" + Arrays.toString(histIdxs));
                         Set<PairInt> set = listOfSets.get(idx0);
                         
                         //y = c0*1 + c1*x[i] + c2*x[i]*x[i]
-                        if (set.size() < 150) {
+                        if (set.size() > 400) {
                             coeff0 = polyFitter0.solveAfterRandomSampling(set);
                         } else {
                             float[] xPoints = new float[set.size()];
@@ -1023,7 +1059,8 @@ System.out.println("hs=" + Arrays.toString(histIdxs));
                         );
 
                         if (resid < 5) {
-                            return i;
+                            subsetIdxs.add(idx0);
+                            return subsetIdxs;
                         }
                         
                     }
@@ -1031,7 +1068,7 @@ System.out.println("hs=" + Arrays.toString(histIdxs));
             }
         }
         
-        return -1;
+        return null;
     }
 
     private List<VeryLongBitString> makeBitStrings(List<Set<PairInt>> 
@@ -1061,7 +1098,8 @@ System.out.println("hs=" + Arrays.toString(histIdxs));
             int n = set.size();
             int nAdj = 0;
             
-            int d = 5;//(int)rg.minor;
+            int d = 5;
+            int m = 2 * (int)Math.round(rg.minor);
             
             for (PairInt p : set) {
                 Set<PairInt> nearest = nn.findClosest(p.getX(), p.getY(), d);
@@ -1070,10 +1108,13 @@ System.out.println("hs=" + Arrays.toString(histIdxs));
                 }
             }
             if (nAdj > 0) {
-                float f = ((float)d)/(float)rg.minor;
+                float f = ((float)d)/(float)m;
                 if (f > 1) {
                     f = 1;
                 }
+                System.out.println("nAdj=" + nAdj 
+                    + " f*n=" + (f*n) + " setx=" + rg.xC + " y=" + rg.yC
+                    + " n=" + n);
                 if (nAdj >= (f*n)) {
                     idxs2.add(i);
                 }
@@ -1085,6 +1126,85 @@ System.out.println("hs=" + Arrays.toString(histIdxs));
         }
         
         return idxs2.toArray(new int[idxs2.size()]);
+    }
+    
+    private TIntList findBestCombination(int[] idxs, 
+        List<Set<PairInt>> listOfSets, List<RegionGeometry> rgs) {
+        
+        TIntList bestIdxs = new TIntArrayList();
+        
+        double minResid = Double.MAX_VALUE;
+        
+        PolynomialFitter polyFitter = new PolynomialFitter();
+        
+        for (int k = idxs.length; k > 0; k--) {
+            
+            int[] selectedIndexes = new int[k];
+            
+            SubsetChooser subsetChooser = new SubsetChooser(idxs.length, k);
+            
+            int nV = subsetChooser.getNextSubset(selectedIndexes);
+            
+            while (nV != -1) {
+                
+                Set<PairInt> subset = new HashSet<PairInt>();
+
+                StringBuilder sb = new StringBuilder();
+                
+                for (int bitIndex : selectedIndexes) {
+
+                    Set<PairInt> g = listOfSets.get(bitIndex);
+
+                    subset.addAll(g);
+                    
+                    RegionGeometry rg = rgs.get(bitIndex);
+                    
+                    sb.append(String.format(" (%d,%d) ", rg.xC, rg.yC));
+                }
+                                
+                float[] coeff = null;
+                if (subset.size() > 400) {
+                    coeff = polyFitter.solveAfterRandomSampling(subset);
+                } else {
+                    float[] xPoints = new float[subset.size()];
+                    float[] yPoints = new float[xPoints.length];
+                    int c = 0;
+                    for (PairInt p : subset) {
+                        xPoints[c] = p.getX();
+                        yPoints[c] = p.getY();
+                        c++;
+                    }
+                    coeff = polyFitter.solve(xPoints, yPoints);
+                }
+                
+                if (coeff == null) {
+                    continue;
+                }
+               
+                double resid = polyFitter.calcResiduals(coeff, subset);
+                
+                if (resid > 5) {
+                    nV = subsetChooser.getNextSubset(selectedIndexes);
+                    continue;
+                }
+                
+                sb.append(String.format(" resid=%.3f\n", resid));
+                
+                if (resid < minResid) {
+                    minResid = resid;
+                    bestIdxs.clear();
+                    for (int bitIndex : selectedIndexes) {
+                        bestIdxs.add(bitIndex);
+                    }
+                }
+                
+                System.out.println(sb.toString());
+            
+                nV = subsetChooser.getNextSubset(selectedIndexes);
+            }
+        }
+
+        return bestIdxs;
     }
 
 }

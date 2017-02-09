@@ -2,6 +2,7 @@ package algorithms.imageProcessing;
 
 import algorithms.imageProcessing.features.mser.MSEREdges;
 import algorithms.util.PairInt;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -35,7 +36,7 @@ public class Sky {
         return finder.findSun(mserEdges);
     }
     
-    public SkyObject[] findRainbows() {
+    public List<SkyObject> findRainbows() {
         RainbowFinder finder = new RainbowFinder();
         return finder.findRainbows(mserEdges);
     }

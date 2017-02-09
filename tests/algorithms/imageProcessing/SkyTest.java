@@ -8,6 +8,7 @@ import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
 import java.awt.Color;
+import java.util.List;
 import junit.framework.TestCase;
 
 /**
@@ -148,30 +149,6 @@ public class SkyTest extends TestCase {
     
     public void testFindRainbows() throws Exception {
        
-        /*
-        String filePath = ResourceFinder.findFileInTestResources("tmp2.png");
-        ImageExt img0 = ImageIOHelper.readImageExt(filePath);
-
-        float[] hsb = new float[3];
-        for (int y = 0; y < 120; y+=10) {
-            for (int x = 0; x < 95; x+=10) {
-                Color.RGBtoHSB(img0.getR(x, y), img0.getG(x, y), img0.getB(x, y), 
-                    hsb);
-                System.out.format("(%d,%d) h,s,v=%.2f %.2f %.2f\n", 
-                    x, y, hsb[0], hsb[1], hsb[2]);
-            }
-            for (int x = 520; x < img0.getWidth(); x+=10) {
-                Color.RGBtoHSB(img0.getR(x, y), img0.getG(x, y), img0.getB(x, y), 
-                    hsb);
-                System.out.format("(%d,%d) h,s,v=%.2f %.2f %.2f\n", 
-                    x, y, hsb[0], hsb[1], hsb[2]);
-            }
-        }
-        if (true) {
-            return;
-        }
-        */
-       
         int maxDimension = 256;//512;
 
         String fileName1 = "";
@@ -205,28 +182,26 @@ public class SkyTest extends TestCase {
             }
             
             Sky sky = new Sky(img);
-            SkyObject[] objs = sky.findRainbows();
-       
-        /*
-        "sky_with_rainbow.jpg",
-        "sky_with_rainbow2.jpg"
-        */
-              
-            //assertNotNull(objs);
+            List<SkyObject> objs = sky.findRainbows();
+                  
+            assertNotNull(objs);
+            
+            for (int k = 0; k < objs.size(); ++k) {
+                int[] clr = ImageIOHelper.getNextRGB(k);
+                ImageIOHelper.addCurveToImage(objs.get(i).points, img, 
+                    0, clr[0], clr[1], clr[2]);
+            }
+            
+            System.out.println("size=" + objs.size());
+            
             if (fileName1Root.contains("rainbow2")) {
                 //assertTrue(Math.abs(xyCenter[0] - 22) < 3);
                 //assertTrue(Math.abs(xyCenter[1] - 85) < 3);
             } else {
             }
             
-            //ImageIOHelper.addCurveToImage(obj.points, img, 
-            //    0, 0, 255, 0);
-            
-            //ImageIOHelper.addPointToImage(obj.xyCenter[0], obj.xyCenter[1], 
-            //    img, 0, 255, 0, 0);
-            
-            //MiscDebug.writeImage(img, "_" + fileName1Root + "_SUN_");
-        
+            MiscDebug.writeImage(img, "_" + fileName1Root 
+                + "_RAINBOW_");
         }
     }
 
