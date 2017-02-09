@@ -188,7 +188,7 @@ public class SkyTest extends TestCase {
             
             for (int k = 0; k < objs.size(); ++k) {
                 int[] clr = ImageIOHelper.getNextRGB(k);
-                ImageIOHelper.addCurveToImage(objs.get(i).points, img, 
+                ImageIOHelper.addCurveToImage(objs.get(k).points, img, 
                     0, clr[0], clr[1], clr[2]);
             }
             

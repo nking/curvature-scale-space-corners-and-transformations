@@ -149,7 +149,7 @@ public class RainbowFinder {
                 rgs0.remove(arcIdx);
             }
             
-            //return output;
+            return output;
         }
         
         // points from the same rainbow in the positive image
