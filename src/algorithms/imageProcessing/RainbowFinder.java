@@ -1048,6 +1048,7 @@ System.out.println("hs=" + Arrays.toString(histIdxs));
                         );
 
                         if (resid < 5) {
+                            
                             TIntSet chk = new TIntHashSet(subsetIdxs);
                             
                             // since we have a polynomial now,
@@ -1057,10 +1058,19 @@ System.out.println("hs=" + Arrays.toString(histIdxs));
                                 if (chk.contains(idx1)) {
                                     continue;
                                 }
+                                     
                                 Set<PairInt> chkSet = listOfSets.get(idx1);
-                                                                
-                                double resid2 = polyFitter0.calcResiduals(
-                                    coeff0, chkSet);
+                                
+                                ParabolaLeastSquares polyFitter2 = polyFitter0.copy();
+                                polyFitter2.accumulate(chkSet);
+                                
+                                float[] coeff2 = polyFitter2.solve();
+                                
+                                Set<PairInt> tmp = new HashSet<PairInt>(set);
+                                tmp.addAll(chkSet);
+                                
+                                double resid2 = polyFitter2.calcResiduals(coeff2, 
+                                    tmp);
                                 
                                 System.out.println("check " + " x=" + 
                                     rgs0.get(idx1).xC + " y=" +
@@ -1074,12 +1084,14 @@ System.out.println("hs=" + Arrays.toString(histIdxs));
                                 
                                 System.out.println("check " + " x=" + chkRg.xC + " y=" +
                                     chkRg.yC + " resid=" + resid2);
+                            
+                                subsetIdxs.add(idx1);
+                                //set.addAll(chkSet);
                             }
                             
                             subsetIdxs.add(idx0);
                             return subsetIdxs;
                         }
-                        
                     }
                 }
             }

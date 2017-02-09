@@ -56,7 +56,8 @@ public class SkyTest extends TestCase {
     
     private String[] rainbowFileNames = new String[] {
         //"sky_with_rainbow.jpg",  // bright
-        "sky_with_rainbow2.jpg" // dark
+        "sky_with_rainbow.jpg", // bright
+        "sky_with_rainbow2.jpg"   // dark
     };
     
     public void estFindSun() throws Exception {

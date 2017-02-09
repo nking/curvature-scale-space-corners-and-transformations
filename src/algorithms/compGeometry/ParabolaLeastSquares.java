@@ -111,6 +111,14 @@ public class ParabolaLeastSquares {
         return Y;
     }
     
+    /**
+    <pre>
+     solve for the coefficients of a parabola.
+     The results can be applied in the following way:
+         y = coeff[0]*x*x + x*coeff[1] + coeff[2]
+    </pre>
+    @return
+    */
     public float[] solve() {
     
         /*
@@ -140,7 +148,6 @@ public class ParabolaLeastSquares {
         |a|
         |b| = inv of coeff above * right sides 
         |c|
-        
         */
         
         // helpful also was the Go solution of http://rosettacode.org/wiki/Polynomial_Fitting
@@ -184,6 +191,7 @@ public class ParabolaLeastSquares {
                 System.out.println("sum=" + s + " rhs=" + Y[i][0]);
             }
         }
+        
         //qr_res  = test of QR factorization, norm1(Q*R-A)/(n*eps)
         
         return c;
@@ -192,9 +200,9 @@ public class ParabolaLeastSquares {
     public static String plotFit(float[] coefficients, Set<PairInt> points, 
         int plotXMax, int plotYMax, int plotNumber, String plotLabel) {
     
-        System.out.println("coeff=" + Arrays.toString(coefficients));
+        //System.out.println("coeff=" + Arrays.toString(coefficients));
         float[] rev = reverse(coefficients);
-        System.out.println("rev=" + Arrays.toString(rev));
+        //System.out.println("rev=" + Arrays.toString(rev));
         
         return PolynomialFitter.plotFit(rev, points, plotXMax, plotYMax, 
             plotNumber, plotLabel);
@@ -212,5 +220,12 @@ public class ParabolaLeastSquares {
     public static double calcResiduals(float[] coefficients, Set<PairInt> points) {
         
         return PolynomialFitter.calcResiduals(reverse(coefficients), points);
+    }
+    
+    public ParabolaLeastSquares copy() {
+        ParabolaLeastSquares cp = new ParabolaLeastSquares();
+        System.arraycopy(moments_, 0, cp.moments_, 0, moments_.length);
+        cp.n = n;
+        return cp;
     }
 }
