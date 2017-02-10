@@ -46,6 +46,10 @@ public class Sky {
         throw new UnsupportedOperationException("not ready for use");
     }
     
+    public GreyscaleImage extractSkyMask() {
+        throw new UnsupportedOperationException("not ready for use");
+    }
+    
     public void setToDebug() {
         debug = true;
     }

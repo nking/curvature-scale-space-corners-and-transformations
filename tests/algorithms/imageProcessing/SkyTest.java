@@ -55,12 +55,11 @@ public class SkyTest extends TestCase {
     };
     
     private String[] rainbowFileNames = new String[] {
-        //"sky_with_rainbow.jpg",  // bright
         "sky_with_rainbow.jpg", // bright
         "sky_with_rainbow2.jpg"   // dark
     };
     
-    public void estFindSun() throws Exception {
+    public void testFindSky() throws Exception {
         
         /*
         String filePath = ResourceFinder.findFileInTestResources("tmp2.png");
@@ -85,6 +84,50 @@ public class SkyTest extends TestCase {
             return;
         }
         */
+        
+        int maxDimension = 256;//512;
+
+        String fileName1 = "";
+
+        for (int i = 0; i < fileNames.length; ++i) {
+
+            fileName1 = fileNames[i];
+            
+            int idx = fileName1.lastIndexOf(".");
+            String fileName1Root = fileName1.substring(0, idx);
+
+            String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+            ImageExt img = ImageIOHelper.readImageExt(filePath1);
+
+            ImageProcessor imageProcessor = new ImageProcessor();
+
+            int w1 = img.getWidth();
+            int h1 = img.getHeight();
+
+            int binFactor1 = (int) Math.ceil(Math.max(
+                (float) w1 / maxDimension,
+                (float) h1 / maxDimension));
+
+            img = imageProcessor.binImage(img, binFactor1);
+            //MiscDebug.writeImage(img, "_"  + fileName1Root);
+        
+            GreyscaleImage[] lma = imageProcessor.createLCHForLUV(img);
+            for (int k = 0; k < lma.length; ++k) {
+                MiscDebug.writeImage(lma[k], "_"
+                    + fileName1Root + "_lma_" + k + "_");
+            }
+            
+            Sky sky = new Sky(img);
+            GreyscaleImage skyMask = sky.extractSkyMask();
+            
+            assertNotNull(skyMask);
+            
+            MiscDebug.writeImage(skyMask, "_" + fileName1Root + "_SKY_MASK_");
+        
+        }
+    }
+    
+    public void testFindSun() throws Exception {
         
         int maxDimension = 256;//512;
 
