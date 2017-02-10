@@ -112,11 +112,6 @@ public class SunFinder {
             return obj;
         }
         
-        //SkyObject obj = new SkyObject();
-        //obj.points = listOfSets2.get(0);
-        //obj.xyCenter = ehs.get(0).getXYCenter();
-        //return obj;
-        
         return null;        
     }
 

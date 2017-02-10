@@ -162,38 +162,30 @@ public class MSEREdges {
         }
         
         List<List<Region>> gsRegions = extractMSERRegions(gsImg, Threshold.LESS_SENSITIVE);
-    
+
         List<List<Region>> ptRegions = extractMSERRegions(ptImg, Threshold.DEFAULT);
-    
-        //_debugOrigRegions(gsRegions.get(0), "_gs0_0_");
-        //_debugOrigRegions(gsRegions.get(1), "_gs0_1_");
-        //_debugOrigRegions(ptRegions.get(0), "_pt0_0_");
-        //_debugOrigRegions(ptRegions.get(1), "_pt0_1_");
-        
+
         regions = new ArrayList<Region>();
-    
+
         origGsPtRegions = new ArrayList<List<Region>>();
         
         // for minArea 0.001, a gsRegions limit for var of 0. is used
         //   but for 0.0001, limit should be near 0.001
-        
+
         for (int type = 0; type < 2; ++type) {
             List<Region> list = gsRegions.get(type);
             for (int i = (list.size() - 1); i > -1; --i) {
                 Region r = list.get(i);
                 if ((type == 1) && r.getVariation() > 2.) {
                     list.remove(i);
-                } else if ((type == 0) 
+                } else if ((type == 0)
                     //&& r.getVariation() == 0.0) {
-                    //&& r.getVariation() < 2.
-                    && r.getVariation() < 0.01
-                    ) {
+                    && r.getVariation() < 2.) {
                     list.remove(i);
                 } else {
                     regions.add(r);
                 }
             }
-            
             // copy list into origGsPtRegions
             List<Region> cpList = new ArrayList<Region>();
             origGsPtRegions.add(cpList);
@@ -201,8 +193,6 @@ public class MSEREdges {
                 cpList.add(r.copy());
             }
         }
-        
-        //_debugOrigRegions(origGsPtRegions.get(1), "_gsT_1_");
         
         for (int type = 0; type < 2; ++type) {
             List<Region> list = ptRegions.get(type);
@@ -223,7 +213,7 @@ public class MSEREdges {
                 cpList.add(r.copy());
             }
         }
-     
+
         if (debug) {
             int[] xyCen = new int[2];
             Image imCp;
@@ -240,7 +230,6 @@ public class MSEREdges {
                 }
                 MiscDebug.writeImage(imCp, "_" + ts + "_regions_gs_"+ type);
             }
-            
             for (int type = 0; type < 2; ++type) {
                 imCp = ptImg.copyToColorGreyscale();
                 int n = ptRegions.get(type).size();
@@ -251,27 +240,25 @@ public class MSEREdges {
                     r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
                     ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], imCp,
                         1, 255, 0, 0);
-                    //System.out.println(type + " xy=" + xyCen[0] + "," + xyCen[1] 
+                    //System.out.println(type + " xy=" + xyCen[0] + "," + xyCen[1]
                     //    + " variation=" + r.getVariation());
                 }
                 MiscDebug.writeImage(imCp, "_" + ts + "_regions_pt_"+ type);
             }
         }
-        
+
         // ---- make a list of filtered color contrast regions while still have
-        //      the individual Region lists 
-        
+        //      the individual Region lists
+
         boolean additionalFiltering = true;
-        
+
         int w = ptImg.getWidth();
         int h = ptImg.getHeight();
         
         if (additionalFiltering) {
-        
-            List<List<Region>> filtered = 
-                gsRegions;
-                //filterOverlapping(ptRegions, w, h);
-            
+
+            List<List<Region>> filtered = filterOverlapping(ptRegions, w, h);
+
             // --- compare the two lists of filtered and if there is
             //     an intersection, keep the largest
 
@@ -300,7 +287,7 @@ public class MSEREdges {
                 EllipseHelper eh = new EllipseHelper(xyCen[0], xyCen[1], coeffs);
                 hs1.add(eh);
             }
-            
+
             for (int i = 0; i < regions0.size(); ++i) {
                 if (skip0.contains(i)) { continue;}
 
@@ -315,7 +302,7 @@ public class MSEREdges {
                         intersects.add(j);
                     }
                 }
-
+                
                 if (!intersects.isEmpty()) {
                     // compare eh0 and all in intersects and the largest is kept
                     // while the others are put into skip lists.
@@ -348,7 +335,7 @@ public class MSEREdges {
                     }
                 }
             }
-            
+
             // -- write anything not in skip sets to filtered
             filteredRegions = new ArrayList<Region>();
             TIntSet kept0 = new TIntHashSet();
@@ -367,7 +354,7 @@ public class MSEREdges {
                 keptEHs.add(hs1.get(i));
             }
 
-            // revisit all of filtered regions0 and regions1 
+            // revisit all of filtered regions0 and regions1
             // to pick up any regions not yet
             // included and not intersecting with any in filteredPtRegions
             TIntSet add0 = new TIntHashSet();
@@ -430,21 +417,79 @@ public class MSEREdges {
                     r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
                     ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], imCp,
                         1, 255, 0, 0);
-                    //System.out.println(type + " xy=" + xyCen[0] + "," + xyCen[1] 
+                    //System.out.println(type + " xy=" + xyCen[0] + "," + xyCen[1]
                     //    + " variation=" + r.getVariation());
                 }
                 MiscDebug.writeImage(imCp, "_" + ts + "_regions_pt_filtered_");
             }
-           
-            regions0 = gsRegions.get(0);
-            regions1 = gsRegions.get(1);
-            for (int i = 0; i < regions0.size(); ++i) {
-                filteredRegions.add(regions0.get(i));
+
+            // ---- now add gs regions in that do not intersect with filtered
+            List<List<Region>> filteredGS = filterOverlapping(gsRegions, w, h);
+
+            add0 = new TIntHashSet();
+            add1 = new TIntHashSet();
+
+            regions0 = filteredGS.get(0);
+            regions1 = filteredGS.get(1);
+            
+            hs0 = new ArrayList<EllipseHelper>();
+            for (int j = 0; j < regions0.size(); ++j) {
+                Region r = regions0.get(j);
+                r.calculateXYCentroid(xyCen, w, h);
+                double[] coeffs = r.calcParamTransCoeff();
+                EllipseHelper eh = new EllipseHelper(xyCen[0], xyCen[1], coeffs);
+                hs0.add(eh);
             }
-            for (int i = 0; i < regions1.size(); ++i) {
-                filteredRegions.add(regions1.get(i));
+            hs1 = new ArrayList<EllipseHelper>();
+            for (int j = 0; j < regions1.size(); ++j) {
+                Region r = regions1.get(j);
+                r.calculateXYCentroid(xyCen, w, h);
+                double[] coeffs = r.calcParamTransCoeff();
+                EllipseHelper eh = new EllipseHelper(xyCen[0], xyCen[1], coeffs);
+                hs1.add(eh);
             }
 
+            for (int i = 0; i < regions0.size(); ++i) {
+                EllipseHelper eh0 = hs0.get(i);
+                boolean intersects = false;
+                
+                for (int j = 0; j < filteredRegions.size(); ++j) {
+                    EllipseHelper eh2 = keptEHs.get(j);
+                    if (eh0.intersects(eh2)) {
+                        intersects = true;
+                        break;
+                    }
+                }
+                if (!intersects) {
+                    add0.add(i);
+                }
+            }
+            for (int i = 0; i < regions1.size(); ++i) {
+                EllipseHelper eh1 = hs1.get(i);
+                boolean intersects = false;
+                
+                for (int j = 0; j < filteredRegions.size(); ++j) {
+                    EllipseHelper eh2 = keptEHs.get(j);
+                    if (eh1.intersects(eh2)) {
+                        intersects = true;
+                        break;
+                    }
+                }
+                if (!intersects) {
+                    add1.add(i);
+                }
+            }
+            iter = add0.iterator();
+            while (iter.hasNext()) {
+                int i = iter.next();
+                filteredRegions.add(regions0.get(i));
+            }
+            iter = add1.iterator();
+            while (iter.hasNext()) {
+                int i = iter.next();
+                filteredRegions.add(regions1.get(i));
+            }
+            
             if (debug) {
 
                 Image imCp;
@@ -458,13 +503,13 @@ public class MSEREdges {
                     r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
                     ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], imCp,
                         1, 255, 0, 0);
-                    //System.out.println(type + " xy=" + xyCen[0] + "," + xyCen[1] 
+                    //System.out.println(type + " xy=" + xyCen[0] + "," + xyCen[1]
                     //    + " variation=" + r.getVariation());
                 }
                 MiscDebug.writeImage(imCp, "_" + ts + "_regions_pt_filtered2_");
             }
         }
-        
+            
         state = STATE.REGIONS_EXTRACTED;
     }
 

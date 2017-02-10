@@ -12,7 +12,6 @@ import algorithms.misc.MiscMath;
 import algorithms.search.NearestNeighbor2D;
 import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
-import algorithms.util.PolynomialFitter;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
@@ -100,124 +99,56 @@ public class RainbowFinder {
         
         TIntList arcIdxs = findLargeArc(listOfSetBits0, listOfSets0, hists0, rgs0, img);
         
-        if (arcIdxs != null && !arcIdxs.isEmpty()) {
-            
-            // if have found a large arc in the positive image, search for 
-            //    adjacent arcs in the negative regions
-            
-            Set<PairInt> arcPoints = new HashSet<PairInt>();
-            for (int j = 0; j < arcIdxs.size(); ++j) {
-                arcPoints.addAll(listOfSets0.get(arcIdxs.get(j)));
-            }
-            
-            NearestNeighbor2D nn = new NearestNeighbor2D(arcPoints, 
-                img.getWidth(), img.getHeight());
-            
-            int[] negativeIdxs = findAdjacent(nn, listOfSets1, rgs1);
-            
-            if (negativeIdxs != null) {
-                for (int idx1 : negativeIdxs) {
-                    arcPoints.addAll(listOfSets1.get(idx1));
-                }
-                
-                Arrays.sort(negativeIdxs);
-                for (int j = (negativeIdxs.length - 1); j > -1; --j) {
-                    int idx = negativeIdxs[j];
-                    listOfSets1.remove(idx);
-                    rgs1.remove(idx);
-                    hists1.remove(idx);
-                }                
-            }
-            
-            MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
-            double[] xyCenter = ch.calculateXYCentroids(arcPoints);
-            int x = (int)Math.round(xyCenter[0]);
-            int y = (int)Math.round(xyCenter[1]);
-
-            SkyObject obj = new SkyObject();
-            obj.points = arcPoints;
-            obj.xyCenter = new int[]{x, y};
-            output.add(obj);
-            
-            arcIdxs.sort();
-            for (int j = (arcIdxs.size() - 1); j > -1; --j) {
-                int arcIdx = arcIdxs.get(j);
-                System.out.println("removing " + 
-                    rgs0.get(arcIdx).xC + ", " + rgs0.get(arcIdx).yC);
-                listOfSets0.remove(arcIdx);
-                listOfSetBits0.remove(arcIdx);
-                hists0.remove(arcIdx);
-                rgs0.remove(arcIdx);
-            }
-            
-            return output;
+        if (arcIdxs == null || arcIdxs.isEmpty()) {
+            return null;
         }
-        
-        // points from the same rainbow in the positive image
-        // should have similar hue histograms.
-        // gather those into groups here.
-        List<VeryLongBitString> lists = clusterByIntersection(hists0, 0.9f);
-        
-        TIntSet added0 = new TIntHashSet();
-        
-        for (int i = 0; i < lists.size(); ++i) {
+            
+        // if have found a large arc in the positive image, search for 
+        //    adjacent arcs in the negative regions
 
-            VeryLongBitString bs = lists.get(i);
-            int[] histIdxs = bs.getSetBits();
-            TIntSet tmp = new TIntHashSet(histIdxs);
-            tmp.removeAll(added0);
-            if (tmp.isEmpty()) {
-                continue;
-            }
-            histIdxs = tmp.toArray(new int[tmp.size()]);
-            
-System.out.println("hs=" + Arrays.toString(histIdxs));
-  
-            // try combinations of sets in histIdxs and keep the best
-            //   fitting (lowest residuals).
-            TIntList bestCombIdxs = findBestCombination(
-                histIdxs, listOfSets0, rgs0);
+        Set<PairInt> arcPoints = new HashSet<PairInt>();
+        for (int j = 0; j < arcIdxs.size(); ++j) {
+            arcPoints.addAll(listOfSets0.get(arcIdxs.get(j)));
+        }
 
-            if (bestCombIdxs.isEmpty()) {
-                continue;
-            }
-            
-            // find adjacent to bestCombIdxs in the negative image
-            Set<PairInt> arcPoints = new HashSet<PairInt>();
-            for (int hIdx : histIdxs) {
-                arcPoints.addAll(listOfSets0.get(hIdx));
-            }
-            
-            NearestNeighbor2D nn = new NearestNeighbor2D(arcPoints, 
-                img.getWidth(), img.getHeight());
-            
-            int[] negativeIdxs = findAdjacent(nn, listOfSets1, rgs1);
-            
-            if (negativeIdxs != null) {
-                for (int idx1 : negativeIdxs) {
-                    arcPoints.addAll(listOfSets1.get(idx1));
-                }
-                                
-                Arrays.sort(negativeIdxs);
-                for (int j = (negativeIdxs.length - 1); j > -1; --j) {
-                    int idx = negativeIdxs[j];
-                    listOfSets1.remove(idx);
-                    rgs1.remove(idx);
-                    hists1.remove(idx);
-                } 
-            }
-            
-            MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
-            double[] xyCenter = ch.calculateXYCentroids(arcPoints);
-            int x = (int)Math.round(xyCenter[0]);
-            int y = (int)Math.round(xyCenter[1]);
+        NearestNeighbor2D nn = new NearestNeighbor2D(arcPoints, 
+            img.getWidth(), img.getHeight());
 
-            SkyObject obj = new SkyObject();
-            obj.points = arcPoints;
-            obj.xyCenter = new int[]{x, y};
-            output.add(obj);
-            
-            added0.addAll(bestCombIdxs);
+        int[] negativeIdxs = findAdjacent(nn, listOfSets1, rgs1);
+
+        if (negativeIdxs != null) {
+            for (int idx1 : negativeIdxs) {
+                arcPoints.addAll(listOfSets1.get(idx1));
+            }
+
+            Arrays.sort(negativeIdxs);
+            for (int j = (negativeIdxs.length - 1); j > -1; --j) {
+                int idx = negativeIdxs[j];
+                listOfSets1.remove(idx);
+                rgs1.remove(idx);
+                hists1.remove(idx);
+            }                
+        }
+
+        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
+        double[] xyCenter = ch.calculateXYCentroids(arcPoints);
+        int x = (int)Math.round(xyCenter[0]);
+        int y = (int)Math.round(xyCenter[1]);
+
+        SkyObject obj = new SkyObject();
+        obj.points = arcPoints;
+        obj.xyCenter = new int[]{x, y};
+        output.add(obj);
+
+        arcIdxs.sort();
+        for (int j = (arcIdxs.size() - 1); j > -1; --j) {
+            int arcIdx = arcIdxs.get(j);
+            System.out.println("removing " + 
+                rgs0.get(arcIdx).xC + ", " + rgs0.get(arcIdx).yC);
+            listOfSets0.remove(arcIdx);
+            listOfSetBits0.remove(arcIdx);
+            hists0.remove(arcIdx);
+            rgs0.remove(arcIdx);
         }
 
         return output;
