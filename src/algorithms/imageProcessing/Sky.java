@@ -22,6 +22,10 @@ public class Sky {
     
     private boolean debug = false;
     
+    private RainbowFinder rFinder = null;
+    
+    private SunFinder sFinder = null;
+    
     public Sky(ImageExt img) {
         
         this.img = img.copyToImageExt();
@@ -33,13 +37,17 @@ public class Sky {
     }
     
     public SkyObject findSun() {
-        SunFinder finder = new SunFinder();
-        return finder.findSun(mserEdges);
+        if (sFinder == null) {
+            sFinder = new SunFinder();
+        }
+        return sFinder.findSun(mserEdges);
     }
     
     public List<SkyObject> findRainbows() {
-        RainbowFinder finder = new RainbowFinder();
-        return finder.findRainbows(mserEdges);
+        if (rFinder == null) {
+            rFinder = new RainbowFinder();
+        }
+        return rFinder.findRainbows(mserEdges);
     }
     
     public SkyObject findMoonDogs() {
@@ -47,6 +55,15 @@ public class Sky {
     }
     
     public GreyscaleImage extractSkyMask() {
+        
+        // (1) choosing labeled regions as candidates that
+        //  have constancy in color but may have a gradient in illumination.
+        //  blue - can use the polar theta images or mser edges (ptRegions[1]) 
+        //  then the lch, c image, which is the magnitude of the
+        //   LUV u and v, can find the gradual change if any
+        //  dark red - same except ptRegions[0]
+        
+       
         throw new UnsupportedOperationException("not ready for use");
     }
     
