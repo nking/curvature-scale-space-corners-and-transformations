@@ -1,7 +1,10 @@
 package algorithms.imageProcessing;
 
+import algorithms.QuickSort;
 import algorithms.imageProcessing.features.mser.MSEREdges;
 import algorithms.imageProcessing.features.mser.Region;
+import algorithms.misc.MiscDebug;
+import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.TIntObjectMap;
@@ -157,7 +160,7 @@ public class Sky {
         //  then the lch, c image, which is the magnitude of the
         //   LUV u and v, can find the gradual change if any.
         //  dark red - same except ptRegions[0]
-        mserEdges._debugOrigRegions(3, "_pt_1_acc_");
+        //mserEdges._debugOrigRegions(3, "_pt_1_acc_");
         
         List<Set<PairInt>> labeledSets = mserEdges.getLabeledSets();
         
@@ -176,12 +179,15 @@ public class Sky {
         // 6 X n
         float[][] hsvlch = null;
         
-        TIntObjectMap<Set<PairInt>> filteredLabeledRegion = new
-            TIntObjectHashMap<Set<PairInt>>();
+        List<Set<PairInt>> filteredLabeledRegion = new
+            ArrayList<Set<PairInt>>();
+        List<OneDFloatArray> filteredHSVLCH = null; 
         
         int nIter = 0;
         while (filteredLabeledRegion.isEmpty() && nIter < 2) {
             nIter++;
+            
+            filteredHSVLCH = new ArrayList<OneDFloatArray>();
             
             if (nIter == 1) {
                 regionPt = mserEdges.getOrigGsPtRegions().get(3);
@@ -210,7 +216,8 @@ public class Sky {
                                 System.out.println(debugLabel + 
                                     " xy=" + Arrays.toString(xyCen) + 
                                     " hsvlch=" + Arrays.toString(clrs) + " n=" + set.size());
-                                filteredLabeledRegion.put(i, set);
+                                filteredLabeledRegion.add(set);
+                                filteredHSVLCH.add(new OneDFloatArray(clrs));
                             }
                         }
                     } else {
@@ -219,12 +226,39 @@ public class Sky {
                                 System.out.println(debugLabel + 
                                     " PT0 xy=" + Arrays.toString(xyCen) + 
                                     " hsvlch=" + Arrays.toString(clrs) + " n=" + set.size());
-                                filteredLabeledRegion.put(i, set);
+                                filteredLabeledRegion.add(set);
+                                filteredHSVLCH.add(new OneDFloatArray(clrs));
                             }
                         }
                     }
                 }
             }
+        }
+        
+        // creating an objective function to sert the segmented cells to find a
+        // starting cell which is most likely sky.
+        // at this point, we have regions filtered to contain only those on the
+        // border of the image having a color within a range of sky colors.
+        
+        // if nIter==1, the negative polar theta image was used.  blue is in the
+        // middle of the theta range, so these pick up the sky regions if they're
+        // blue. (NOTE, this logic may need to be edited with more testing).
+        if (nIter == 1) {
+            sortForBlue(filteredLabeledRegion, filteredHSVLCH);
+        }
+        
+        // plot the first in filtered lists.  it is on the image
+        // border, is within sky color range, and is the largest
+        // of the filtered segmented cells
+        if (debug) {
+            Image imgCp = img.copyImage();
+            Set<PairInt> s0 = filteredLabeledRegion.get(0);
+            ImageIOHelper.addCurveToImage(s0, imgCp, 0, 0, 255, 0);
+            for (int i = 0; i < mserEdges.getEdges().size(); ++i) {
+                ImageIOHelper.addCurveToImage(mserEdges.getEdges().get(i), 
+                    imgCp, 0, 255, 0, 0);
+            }
+            MiscDebug.writeImage(imgCp, "_" + debugLabel + "_first_");
         }
         
         //List<Region> regionPt0 = mserEdges.getOrigGsPtRegions().get(2);
@@ -348,6 +382,40 @@ public class Sky {
         }
         return false;
     }
+
+    private void sortForBlue(List<Set<PairInt>> filteredLabeledRegion,
+        List<OneDFloatArray> filteredHSVLCH) {
+        
+        float maxS = Float.MIN_VALUE;
+        float maxH = Float.MIN_VALUE;
+        float maxV = Float.MIN_VALUE;
+        
+        for (OneDFloatArray a : filteredHSVLCH) {
+            if (a.a[0] > maxH) {
+                maxH = a.a[0];
+            }
+            if (a.a[1] > maxS) {
+                maxS = a.a[1];
+            }
+            if (a.a[2] > maxV) {
+                maxV = a.a[2];
+            }
+        }
+        
+        // trying an objective function of 
+        // obj cost = 5*(h-hmax) + (s-smax) + 0.5*(v-vmax)
+        float[] costs = new float[filteredHSVLCH.size()];
+        for (int i = 0; i < filteredHSVLCH.size(); ++i) {
+            float[] a = filteredHSVLCH.get(i).a;
+            float cost = 5.f*(Math.abs(a[0] - maxH)) +
+                (Math.abs(a[1] - maxS)) + 
+                0.5f * (Math.abs(a[2] - maxV));
+            costs[i] = cost;
+        }
+        
+        // sort filtered lists by costs
+        QuickSort.sortBy1stArg(costs, filteredHSVLCH, filteredLabeledRegion);
+    }
     
     //TODO: consider adding findSolarEclipse or sun w/ occultation or coronograph...
     // note that the moon can be found with "findSun" since it is illuminated 
@@ -356,5 +424,12 @@ public class Sky {
     public static class SkyObject {
         Set<PairInt> points;
         int[] xyCenter;
+    }
+    
+    private class OneDFloatArray {
+        float[] a;
+        public OneDFloatArray(float[] b) {
+            a = b;
+        }
     }
 }

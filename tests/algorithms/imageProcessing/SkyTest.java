@@ -22,29 +22,36 @@ public class SkyTest extends TestCase {
     
     private String[] fileNames = new String[] {
         "seattle.jpg",
-        "stonehenge.jpg",
-        "costa_rica.jpg",
         "cloudy_san_jose.jpg",
+        "venturi_mountain_j6_0001.png",
+        "venturi_mountain_j6_0010.png",
+        "arches.jpg",
+        
+        "arches_sun_01.jpg",
+        "stlouis_arch.jpg",
+        "contrail.jpg",
+        
+        "klein_matterhorn_snowy_foreground.jpg",
         "patagonia_snowy_foreground.jpg",
         "mt_rainier_snowy_field.jpg",
         "brown_lowe_2003_image1.jpg",
         "brown_lowe_2003_image2.jpg",
-        "venturi_mountain_j6_0001.png",
-        "venturi_mountain_j6_0010.png",
-        "arches.jpg",
+    
         "stinson_beach.jpg",
-        "norwegian_mtn_range.jpg",
+        
         "halfdome.jpg",
         "halfdome2.jpg",
         "halfdome3.jpg",
+        
+        "costa_rica.jpg",
+        
+        "norwegian_mtn_range.jpg",
+        "stonehenge.jpg",
+        
         "new-mexico-sunrise_w725_h490.jpg",
         "arizona-sunrise-1342919937GHz.jpg",
         "sky_with_rainbow.jpg",
-        "sky_with_rainbow2.jpg",
-        "klein_matterhorn_snowy_foreground.jpg",
-        "arches_sun_01.jpg",
-        "stlouis_arch.jpg",
-        "contrail.jpg"
+        "sky_with_rainbow2.jpg"
     };
     
     private String[] sunFileNames = new String[] {
@@ -73,7 +80,8 @@ public class SkyTest extends TestCase {
                 System.out.format("(%d,%d) h,s,v=%.2f %.2f %.2f\n", 
                     x, y, hsb[0], hsb[1], hsb[2]);
             }
-            for (int x = 520; x < img0.getWidth(); x+=10) {
+            //for (int x = 520; x < img0.getWidth(); x+=10) {
+            for (int x = 270; x < img0.getWidth(); x+=10) {
                 Color.RGBtoHSB(img0.getR(x, y), img0.getG(x, y), img0.getB(x, y), 
                     hsb);
                 System.out.format("(%d,%d) h,s,v=%.2f %.2f %.2f\n", 
@@ -116,18 +124,18 @@ public class SkyTest extends TestCase {
                 MiscDebug.writeImage(lma[k], "_"
                     + fileName1Root + "_lma_" + k + "_");
             }
-            
+
             Sky sky = new Sky(img);
+            sky.setToDebug(fileName1Root);
             GreyscaleImage skyMask = sky.extractSkyMask();
             
-            assertNotNull(skyMask);
+            //assertNotNull(skyMask);
             
-            MiscDebug.writeImage(skyMask, "_" + fileName1Root + "_SKY_MASK_");
-        
+            //MiscDebug.writeImage(skyMask, "_" + fileName1Root + "_SKY_MASK_");
         }
     }
     
-    public void testFindSun() throws Exception {
+    public void estFindSun() throws Exception {
         
         int maxDimension = 256;//512;
 
@@ -191,7 +199,7 @@ public class SkyTest extends TestCase {
         }
     }
     
-    public void testFindRainbows() throws Exception {
+    public void estFindRainbows() throws Exception {
        
         int maxDimension = 256;//512;
 

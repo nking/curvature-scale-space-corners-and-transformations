@@ -1,13 +1,11 @@
 package algorithms;
 
-import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.util.IntIntDouble;
 import algorithms.util.PairInt;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 import java.util.List;
-import java.util.Set;
 
 /**
  *
@@ -1235,6 +1233,103 @@ public class QuickSort {
             sortBy1stArg(a, b, idxLo, idxMid - 1);
 
             sortBy1stArg(a, b, idxMid + 1, idxHi);
+        }
+    }
+    
+    /**
+     * sort a from index idxLo to idxHi, inclusive.  Uses the optimized
+     * qsort3 from the book "Programming in Pearls" by Jon Bentley.
+     * @param a
+     * @param b
+     */
+    public static void sortBy1stArg(float[] a, List b, List c) {
+        
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (b == null) {
+            throw new IllegalArgumentException("b cannot be null");
+        }
+        if (a.length != b.size()) {
+            throw new IllegalArgumentException("a and b must be the same length");
+        }
+        if (a.length != c.size()) {
+            throw new IllegalArgumentException("a and c must be the same length");
+        }
+        
+        sortBy1stArg(a, b, c, 0, a.length - 1);
+    }
+    
+    /**
+     * sort a from index idxLo to idxHi, inclusive.  Uses the optimized
+     * qsort3 from the book "Programming in Pearls" by Jon Bentley.
+     * @param a
+     * @param b
+     * @param idxLo
+     * @param idxHi 
+     */
+    public static void sortBy1stArg(float[] a, List b, List c, int idxLo, int idxHi) {
+        
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (b == null) {
+            throw new IllegalArgumentException("b cannot be null");
+        }
+        if (a.length != b.size()) {
+            throw new IllegalArgumentException("a and b must be the same length");
+        }
+        if (a.length != c.size()) {
+            throw new IllegalArgumentException("a and c must be the same length");
+        }
+        
+        if (a.length < 2) {
+            return;
+        }
+        
+        if (idxLo < idxHi) {
+
+            float x = a[idxLo];
+            int store = idxLo;
+            int idxMid = idxHi + 1;
+
+            while (true) {
+                do {
+                    store++;     
+                } while ((store <= idxHi) && (a[store] < x));
+                do {
+                    idxMid--;
+                } while (a[idxMid] > x);
+                if (store > idxMid) {
+                    break;
+                }
+                float swap = a[store];
+                a[store] = a[idxMid];
+                a[idxMid] = swap;
+                
+                Object swap2 = b.get(store);
+                b.set(store, b.get(idxMid));
+                b.set(idxMid, swap2);
+                
+                swap2 = c.get(store);
+                c.set(store, c.get(idxMid));
+                c.set(idxMid, swap2);
+            }
+            float swap = a[idxLo];
+            a[idxLo] = a[idxMid];
+            a[idxMid] = swap;
+            
+            Object swap2 = b.get(idxLo);
+            b.set(idxLo, b.get(idxMid));
+            b.set(idxMid, swap2);
+               
+            swap2 = c.get(idxLo);
+            c.set(idxLo, c.get(idxMid));
+            c.set(idxMid, swap2);
+            
+            sortBy1stArg(a, b, c, idxLo, idxMid - 1);
+
+            sortBy1stArg(a, b, c, idxMid + 1, idxHi);
         }
     }
     
