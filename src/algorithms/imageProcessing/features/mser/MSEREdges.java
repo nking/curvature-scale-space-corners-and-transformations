@@ -77,6 +77,8 @@ public class MSEREdges {
     // NOTE: the edges indexes do not correspond to the regions indexes
     private List<Set<PairInt>> edgeList = null;
     
+    private List<Set<PairInt>> labeledSets = null;
+    
     private boolean debug = false;
     
     private boolean useLowerContrastLimits = false;
@@ -146,7 +148,7 @@ public class MSEREdges {
         
         extractEdges();
         
-        mergeRegions2();
+        this.labeledSets = mergeRegions2();
         
         if (debug) {
             printEdges();
@@ -526,7 +528,7 @@ public class MSEREdges {
             minArea = 0.0075;
             if (useLowerContrastLimits) {
                 minDiversity = 0.1;//.4
-                delta = 5;
+                delta = 3;//5;
             }
         }
         
@@ -795,7 +797,7 @@ public class MSEREdges {
         return contigSets;
     }
     
-    private void mergeRegions2() {
+    private List<Set<PairInt>> mergeRegions2() {
         
         //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
         if (!state.equals(STATE.EDGES_EXTRACTED)) {
@@ -852,7 +854,8 @@ public class MSEREdges {
             Set<PairInt> outerBorder = new HashSet<PairInt>();
             finder2.extractBorder2(set, embedded, outerBorder);
             edgeList.add(outerBorder);
-            
+        
+            /*
             DFSConnectedGroupsFinder dfsFinder = new DFSConnectedGroupsFinder();
             dfsFinder.setMinimumNumberInCluster(24);
             dfsFinder.findConnectedPointGroups(embedded);
@@ -867,9 +870,9 @@ public class MSEREdges {
                 if (outerBorder2.size() > 16) {
                     edgeList.add(outerBorder2);
                 }
-            }
+            }*/
         }
-                
+        return contigSets;
     }
     
     private List<List<Region>> filterOverlapping(List<List<Region>> rlist, 
@@ -965,6 +968,23 @@ public class MSEREdges {
         }
         
         return edgeList;
+    }
+    
+    /**
+     * get labeled sets of points separated by the edges.
+     * Note that the method returns null unless mergeAndExtractEdges was 
+     * already used.
+     * @return 
+     */
+    public List<Set<PairInt>> getLabeledSets() {
+        
+        //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
+        if (!state.equals(STATE.EDGES_EXTRACTED)) {
+            throw new IllegalStateException("must use one of the extraction"
+                + " methods first");
+        }
+        
+        return labeledSets;
     }
 
     /**
