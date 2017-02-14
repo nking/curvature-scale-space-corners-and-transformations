@@ -4,11 +4,17 @@ import algorithms.QuickSort;
 import algorithms.imageProcessing.features.mser.MSEREdges;
 import algorithms.imageProcessing.features.mser.Region;
 import algorithms.misc.MiscDebug;
-import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
+import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,6 +44,12 @@ public class Sky {
     private RainbowFinder rFinder = null;
     
     private SunFinder sFinder = null;
+    
+    private final float vLLimit0 = 0.2f;
+    private final float vLLimit1 = 0.35f;
+    private final float hULimit = 0.20f;
+    private final float hLLimitPurple = 0.25f;//0.35f;//0.49f;
+    private final float hLLimit = 0.49f;
     
     private String debugLabel = "";
     
@@ -107,51 +119,23 @@ public class Sky {
     public GreyscaleImage extractSkyMask() {
         
         /*
-        -- sky color hue range
-        -- cells on image border w/ color in hue range.
-        -- average and std. dev. of those cells.
-        -- 
-        when find the decider, create method with start region of sky 
-        defined.  this is to allow many other means to determine a valid
-        starting sky cell.
-        
-        hsvlch=[0.5953295,  0.39462394, 0.851081, 173.90898, 50.907433, 175.28432] n=7119
-        hsvlch=[0.6043746,  0.31119394, 0.7372585, 159.8233, 35.561916, 176.82475] n=19332
-        hsvlch=[0.5803546,  0.75092393, 0.9483775, 159.40683, 92.31827, 176.29259] n=6504
-        hsvlch=[0.58049035, 0.74868315, 0.9470542, 159.31277, 92.0528, 176.29291] n=6647
-        hsvlch=[0.5811613,  0.7009847,  0.5313757, 95.19146, 47.15611, 174.95387] n=7610
-        hsvlch=[0.6201314,  0.6317332,  0.68089944, 107.000824, 72.094025, 183.30006] n=6062
-        hsvlch=[0.5826857,  0.44832748, 0.9766973, 195.71774, 61.26734, 172.22879] n=7107
-        
-        contrail:
-        hsvlch=[0.56487614, 0.68869406, 0.2976, 56.69307, 21.15481, 169.08089] n=40146
-        
-        hsvlch=[0.5829515,  0.5649942,  0.47821, 93.125145, 36.189724, 173.60103] n=3484
-        
-        white clouds:
-        hsvlch=[0.57725304, 0.2487225,  0.87804, 201.12279, 30.319664, 167.74161] n=8437
-        
-        hsvlch=[0.54253477, 0.2853499,  0.77005726, 183.51671, 27.280539, 154.57755] n=10323
-        hsvlch=[0.5433781,  0.33766806, 0.7310331, 171.6103, 30.494549, 155.42032] n=8622
-        
-        hsvlch=[0.6017986,  0.39862663, 0.590903, 122.25383, 36.566723, 176.97502] n=1761
-        hsvlch=[0.92348933, 0.34691936, 0.578129, 120.40768, 33.578182, 236.87389] n=7636
-        hsvlch=[0.66858685, 0.25035322, 0.42694178, 95.210014, 19.515263, 189.7619] n=819
-        
-        hsvlch=[0.0940289,  0.5701533,  0.9364302, 197.72493, 73.67476, 35.64526] n=9187
-        hsvlch=[0.85543936, 0.42690355, 0.74646324, 146.43176, 58.856434, 224.26616] n=14112
-
-        hsvlch=[0.9579757,  0.14876272, 0.72665846, 173.23404, 16.787233, 224.12766] n=47
-        
-        hsvlch=[0.85543936, 0.42690355, 0.74646324, 146.43176, 58.856434, 224.26616] n=14112
-        
-        hsvlch=[0.0940289, 0.5701533, 0.9364302, 197.72493, 73.67476, 35.64526] n=9187
-        
-        stonehenge:
-        hsvlch=[0.96825397, 0.09251101, 0.8901961, 216.0, 12.0, 254.0] n=1
-        
-        hsvlch=[0.5853093, 0.39359564, 0.7887473, 165.84178, 44.59479, 172.24834] n=5992
-        hsvlch=[0.5899351, 0.10313386, 0.249918, 64.911804, 3.5182912, 171.74931] n=7982
+        this may change.
+        looking for sky colored labeled segmentation cells that are on the border
+        of the image.
+          - from mserEdges, can see that the polar theta[1] mser regions are usually
+            a good way to find the majority of sky and when not, the
+            polar theta[0] regions are.
+          - that findins is used to decide between two color filters which are
+            basically bright blue sky and dark red sky.
+          - then, the regions are sorted by a color criteria to find what is hopefully
+            sky in a border cell.
+          - the color filter learned in the previous steps is then used to filter
+            all of the labeled segmentation.
+          - then the starter cell and the filtered regions are passed
+            to a method to further find the sky or decide its already found 
+            completely and return the sky points.
+            (logic such as near constancy in color with a gradual change in
+            magnitude of luv's u and v for example will be used).
         */
         
         // looking at labeled regions that
@@ -164,7 +148,30 @@ public class Sky {
         
         List<Set<PairInt>> labeledSets = mserEdges.getLabeledSets();
         
-        int[] pointLabelMap = createPixLabelMap(labeledSets);
+        int[] pointLabels = createPixLabelMap(labeledSets);
+        
+        // remove sun points
+        SkyObject sunObj = findSun();
+        if (sunObj != null && !sunObj.points.isEmpty()) {
+            System.out.println("found sun for " + debugLabel + " at " + 
+                Arrays.toString(sunObj.xyCenter));
+            for (PairInt p : sunObj.points) {
+                int pixIdx = img.getInternalIndex(p);
+                int label = pointLabels[pixIdx];
+                labeledSets.get(label).remove(p);
+            }
+        }
+        // remove rainbow points
+        List<SkyObject> rainbowObjs = findRainbows();
+        if (rainbowObjs != null) {
+            for (SkyObject obj : rainbowObjs) {
+                for (PairInt p : obj.points) {
+                    int pixIdx = img.getInternalIndex(p);
+                    int label = pointLabels[pixIdx];
+                    labeledSets.get(label).remove(p);
+                }
+            }
+        }
         
         ImageProcessor imageProcessor = new ImageProcessor();
         
@@ -186,7 +193,7 @@ public class Sky {
         int nIter = 0;
         while (filteredLabeledRegion.isEmpty() && nIter < 2) {
             nIter++;
-            
+                        
             filteredHSVLCH = new ArrayList<OneDFloatArray>();
             
             if (nIter == 1) {
@@ -196,7 +203,7 @@ public class Sky {
             }
             
             // note, idxs not same as other lists
-            labeledInRegion = createRegionLabeledSubSets(regionPt, pointLabelMap);
+            labeledInRegion = createRegionLabeledSubSets(regionPt, pointLabels);
 
             // gather hsv, and lch of each labeled region
             // 6 X n
@@ -204,63 +211,153 @@ public class Sky {
 
             // filter labeledInRegion1 for sky colors over a generous range in hue
             // key=index in labeledInRegion, value=set of pairint of the region
-            if (debug) {
-                MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
-                for (int i = 0; i < labeledInRegion.size(); ++i) {
-                    Set<PairInt> set = labeledInRegion.get(i);
-                    int[] xyCen = ch.calculateRoundedXYCentroids(set);
-                    float[] clrs = hsvlch[i];
-                    if (nIter == 1) {
-                        if ((clrs[2] > 0.35) && (clrs[0] < 0.18 || clrs[0] > 0.49)) {
-                            if (setDoesBorderImage(set, img)) {
-                                System.out.println(debugLabel + 
-                                    " xy=" + Arrays.toString(xyCen) + 
-                                    " hsvlch=" + Arrays.toString(clrs) + " n=" + set.size());
-                                filteredLabeledRegion.add(set);
-                                filteredHSVLCH.add(new OneDFloatArray(clrs));
-                            }
+            MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
+            for (int i = 0; i < labeledInRegion.size(); ++i) {
+                Set<PairInt> set = labeledInRegion.get(i);
+                int[] xyCen = ch.calculateRoundedXYCentroids(set);
+                float[] clrs = hsvlch[i];
+                if (nIter == 1) {
+                    if ((clrs[2] > 0.8) ||
+                        ((clrs[2] > vLLimit1) && (clrs[0] < hULimit || 
+                        clrs[0] > hLLimit))) {
+                        if (setDoesBorderImage(set, img)) {
+                            System.out.println(debugLabel + 
+                                " xy=" + Arrays.toString(xyCen) + 
+                                " hsvlch=" + Arrays.toString(clrs) + " n=" + set.size());
+                            filteredLabeledRegion.add(set);
+                            filteredHSVLCH.add(new OneDFloatArray(clrs));
                         }
-                    } else {
-                        if ((clrs[2] > 0.20) && (clrs[0] < 0.18 || clrs[0] > 0.49)) {
-                            if (setDoesBorderImage(set, img)) {
-                                System.out.println(debugLabel + 
-                                    " PT0 xy=" + Arrays.toString(xyCen) + 
-                                    " hsvlch=" + Arrays.toString(clrs) + " n=" + set.size());
-                                filteredLabeledRegion.add(set);
-                                filteredHSVLCH.add(new OneDFloatArray(clrs));
-                            }
+                    }
+                } else {
+                    if ((clrs[2] > 0.8) ||
+                        ((clrs[2] > vLLimit0) && (clrs[0] < hULimit || 
+                        clrs[0] > hLLimit))) {
+                        if (setDoesBorderImage(set, img)) {
+                            System.out.println(debugLabel + 
+                                " PT0 xy=" + Arrays.toString(xyCen) + 
+                                " hsvlch=" + Arrays.toString(clrs) + " n=" + set.size());
+                            filteredLabeledRegion.add(set);
+                            filteredHSVLCH.add(new OneDFloatArray(clrs));
                         }
                     }
                 }
             }
         }
         
-        // creating an objective function to sert the segmented cells to find a
-        // starting cell which is most likely sky.
-        // at this point, we have regions filtered to contain only those on the
-        // border of the image having a color within a range of sky colors.
-        
-        // if nIter==1, the negative polar theta image was used.  blue is in the
-        // middle of the theta range, so these pick up the sky regions if they're
-        // blue. (NOTE, this logic may need to be edited with more testing).
-        if (nIter == 1) {
-            sortForBlue(filteredLabeledRegion, filteredHSVLCH);
+        if (filteredLabeledRegion.isEmpty()) {
+            //sky wasn't found.  is the image a tunnel, that is no sky on border
+            // of image?
+            return null;
         }
+                
+        sortForBlue(filteredLabeledRegion, filteredHSVLCH);
         
-        // plot the first in filtered lists.  it is on the image
-        // border, is within sky color range, and is the largest
-        // of the filtered segmented cells
-        if (debug) {
-            Image imgCp = img.copyImage();
-            Set<PairInt> s0 = filteredLabeledRegion.get(0);
-            ImageIOHelper.addCurveToImage(s0, imgCp, 0, 0, 255, 0);
-            for (int i = 0; i < mserEdges.getEdges().size(); ++i) {
-                ImageIOHelper.addCurveToImage(mserEdges.getEdges().get(i), 
-                    imgCp, 0, 255, 0, 0);
+        TIntIntMap startIdxMap = new TIntIntHashMap();
+        for (PairInt p : filteredLabeledRegion.get(0)) {
+            int pixIdx = img.getInternalIndex(p);
+            int label = pointLabels[pixIdx];
+            if (startIdxMap.containsKey(label)) {
+                startIdxMap.put(label, startIdxMap.get(label) + 1);
+            } else {
+                startIdxMap.put(label, 1);
             }
-            MiscDebug.writeImage(imgCp, "_" + debugLabel + "_first_");
+        }
+        System.out.println(debugLabel);
+        assert(startIdxMap.size() == 1);
+        int startIdx = startIdxMap.keySet().iterator().next();
+        Set<PairInt> starterSet = labeledSets.get(startIdx);
+
+        /*
+        now that have a starter sky patch and sky filter params
+        (1) add labeled sets that are very similar to starter patch
+        (2) look for the gradual change in illumination of sky as
+            constancy in lch h and gradual change in lch c.
+            add those sets if found.
+        */
+        TIntSet add = new TIntHashSet();
+        
+        // -- recalc colors, but for all of labeled sets ---
+        // 6 X n
+        hsvlch = calcHSVLCH(labeledSets);
+        
+        findSimilar(hsvlch, startIdx, add);
+        
+        {// debug
+            Image tmpImg = img.copyImage();
+            // plotting all filtered segments in green
+            // then all edges in red
+            // then all added sky cells thus far in purple
+            for (Set<PairInt> set : labeledSets) {
+                ImageIOHelper.addCurveToImage(set, tmpImg, 0, 0, 255, 0);
+            }
+            for (Set<PairInt> set : mserEdges.getEdges()) {
+                ImageIOHelper.addCurveToImage(set, tmpImg, 0, 255, 0, 0);
+            }
+            TIntIterator iter = add.iterator();
+            while (iter.hasNext()) {
+                int label = iter.next();
+                ImageIOHelper.addCurveToImage(labeledSets.get(label), tmpImg, 
+                    0, 255, 0, 255);
+            }
+            MiscDebug.writeImage(tmpImg, "_" + debugLabel + "_CAND_SKY_");
         }
         
+        /*  a look at sky colors
+        filteredHSVLCH = new ArrayList<OneDFloatArray>();
+        
+        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
+        
+        TIntList rm = new TIntArrayList();
+        if (nIter == 1) {
+            for (int i = 0; i < labeledSets.size(); ++i) {
+                String str = (i == startIdx) ? "STRT" : "";
+                int[] xyCen = ch.calculateRoundedXYCentroids(labeledSets.get(i));
+                float[] clrs = hsvlch[i];
+                if (!((clrs[2] > vLLimit1) && (clrs[0] < hULimit || 
+                    clrs[0] > hLLimit)
+                    )) {
+                    rm.add(i);
+                    
+                    System.out.println(debugLabel + 
+                        " RM " + str + " xy=" + Arrays.toString(xyCen) + 
+                        " hsvlch=" + Arrays.toString(clrs) + " n=" + 
+                        labeledSets.get(i).size());
+                } else {
+                    filteredHSVLCH.add(new OneDFloatArray(clrs));
+                    System.out.println(debugLabel + 
+                        str + " xy=" + Arrays.toString(xyCen) + 
+                        " hsvlch=" + Arrays.toString(clrs) + " n=" + 
+                        labeledSets.get(i).size());
+                }
+            }
+        } else {
+            for (int i = 0; i < labeledSets.size(); ++i) {
+                float[] clrs = hsvlch[i];
+                if (!((clrs[2] > vLLimit0) && (clrs[0] < hULimit || 
+                    clrs[0] > hLLimit))) {
+                    rm.add(i);
+                } else {
+                    filteredHSVLCH.add(new OneDFloatArray(clrs));
+                }
+            }
+        }
+               
+        for (int i = rm.size() - 1; i > -1; --i) {
+            int rmIdx = rm.get(i);
+            labeledSets.remove(rmIdx);
+        }
+        
+        if (debug) {
+            Image tmpImg = img.copyImage();
+            for (Set<PairInt> set : labeledSets) {
+                ImageIOHelper.addCurveToImage(set, tmpImg, 0, 0, 255, 0);
+            }
+            //ImageIOHelper.addCurveToImage(filteredLabeledRegion.get(0), 
+            //    tmpImg, 0, 255, 0, 255);
+            MiscDebug.writeImage(tmpImg, "_" + debugLabel + "_CAND_SKY_");
+        }
+        */
+                
         //List<Region> regionPt0 = mserEdges.getOrigGsPtRegions().get(2);
         
         return null;
@@ -390,7 +487,10 @@ public class Sky {
         float maxH = Float.MIN_VALUE;
         float maxV = Float.MIN_VALUE;
         
-        for (OneDFloatArray a : filteredHSVLCH) {
+        for (int i = 0; i < filteredHSVLCH.size(); ++i) {
+            
+            OneDFloatArray a = filteredHSVLCH.get(i);
+            
             if (a.a[0] > maxH) {
                 maxH = a.a[0];
             }
@@ -401,7 +501,7 @@ public class Sky {
                 maxV = a.a[2];
             }
         }
-        
+                
         // trying an objective function of 
         // obj cost = 5*(h-hmax) + (s-smax) + 0.5*(v-vmax)
         float[] costs = new float[filteredHSVLCH.size()];
@@ -409,12 +509,57 @@ public class Sky {
             float[] a = filteredHSVLCH.get(i).a;
             float cost = 5.f*(Math.abs(a[0] - maxH)) +
                 (Math.abs(a[1] - maxS)) + 
-                0.5f * (Math.abs(a[2] - maxV));
+                0.5f * (Math.abs(a[2] - maxV)) 
+                ;
             costs[i] = cost;
         }
         
         // sort filtered lists by costs
         QuickSort.sortBy1stArg(costs, filteredHSVLCH, filteredLabeledRegion);
+    }
+
+    private void findSimilar(float[][] hsvlch, int starterIdx, TIntSet add) {
+        
+        add.add(starterIdx);
+        
+        float[] strtClrs = hsvlch[starterIdx];
+        
+        for (int i = 0; i < hsvlch.length; ++i) {
+            if (i == starterIdx) {continue;}
+            float[] clrs = hsvlch[i];
+            
+            float diffH = Math.abs(clrs[0] - strtClrs[0]);
+            if (diffH > 0.1) {
+                continue;
+            }
+            
+            float diffV = Math.abs(clrs[2] - strtClrs[2]);
+            if (diffV > 0.05) {
+                continue;
+            }
+            
+            // h of lch is a wrap around scale from 0 to 255, inclusive,
+            // so need to add a phase to check whether closer to other end.
+            float h_0 = strtClrs[5];
+            float h_1 = clrs[5];
+            if (h_0 > h_1) {
+                // add a phase to next value if it's closer to current with addition
+                if ((h_0 - h_1) > Math.abs(h_0 - (h_1 + 255))) {
+                    h_1 += 255;
+                }
+            } else if (h_1 > h_0) {
+                // add a phase to next value if it's closer to current with addition
+                if ((h_1 - h_0) > Math.abs(h_1 - (h_0 + 255))) {
+                    h_0 += 255;
+                }
+            }
+            float diff = Math.abs(h_0 - h_1);
+
+            if (diff > 4) {
+                continue;
+            }
+            add.add(i);
+        }
     }
     
     //TODO: consider adding findSolarEclipse or sun w/ occultation or coronograph...

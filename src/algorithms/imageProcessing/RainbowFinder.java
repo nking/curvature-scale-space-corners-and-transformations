@@ -143,8 +143,8 @@ public class RainbowFinder {
         arcIdxs.sort();
         for (int j = (arcIdxs.size() - 1); j > -1; --j) {
             int arcIdx = arcIdxs.get(j);
-            System.out.println("removing " + 
-                rgs0.get(arcIdx).xC + ", " + rgs0.get(arcIdx).yC);
+            //System.out.println("removing " + 
+            //    rgs0.get(arcIdx).xC + ", " + rgs0.get(arcIdx).yC);
             listOfSets0.remove(arcIdx);
             listOfSetBits0.remove(arcIdx);
             hists0.remove(arcIdx);
@@ -758,21 +758,22 @@ public class RainbowFinder {
                 RegionGeometry rg = Canonicalizer.calculateEllipseParams(
                     r, img.getWidth(), img.getHeight());
                 
-                System.out.format(
+                /*System.out.format(
                     "%d : xy=(%d,%d) angle=%.2f "
                         + " ecc=%.3f minor=%.3f major=%.3f n=%d\n",
                     rIdx, rg.xC, rg.yC,
                     (rg.orientation * 180. / Math.PI),
                     (float) rg.eccentricity, (float) rg.minor, 
                     (float) rg.major, set1.size());
-
+                */
+                
                 if (rg.eccentricity >= 0.95) {
                     
                     int[] hues = new int[10];
                     float[] sbAvg = new float[2];
                     extractHues(img, set1, hues, sbAvg);
                     
-                    System.out.println("  " + rIdx + " hues=" + Arrays.toString(hues));
+                    //System.out.println("  " + rIdx + " hues=" + Arrays.toString(hues));
                     
                     if (isEmpty(hues) || Float.isNaN(sbAvg[0])) {
                         continue;
@@ -807,7 +808,7 @@ public class RainbowFinder {
                         }
                     }
                     
-                    System.out.println(
+                    /*System.out.println(
                         "  " + rIdx + " xy=(" + rg.xC + "," + rg.yC + ") "
                         + " maxIdx=" + maxPeakIdx
                         + " hists.idx=" + hIdx
@@ -816,7 +817,7 @@ public class RainbowFinder {
                         + "\n  sAvg=" + sbAvg[0] 
                         + "    vAvg=" + sbAvg[1]
                         + " hues hist=" + Arrays.toString(hues)
-                    );
+                    );*/
                 }
             }
         }        
@@ -883,13 +884,13 @@ public class RainbowFinder {
                         rgs.add(rg);
                     }
                     
-                    System.out.println("negative xy=(" + rg.xC + "," + rg.yC + ") "
+                    /*System.out.println("negative xy=(" + rg.xC + "," + rg.yC + ") "
                         + " angle=" + (rg.orientation*180./Math.PI)
                         + " ecc=" + rg.eccentricity
                         + "\n   sAvg=" + sbAvg[0] 
                         + "\n   vAvg=" + sbAvg[1]
                         + "\n   hues hist=" + Arrays.toString(hues)
-                    );
+                    );*/
                    
                 }
             }
@@ -944,10 +945,10 @@ public class RainbowFinder {
             
                 double dens = ((double)listOfSets.get(idx0).size())/area;
                 
-                System.out.println("dens of x,y=" + rg0.xC + "," + rg0.yC
+                /*System.out.println("dens of x,y=" + rg0.xC + "," + rg0.yC
                     + " -> " + String.format("%.3f", dens)
                     + " nPts=" + nbs0 + " nInSubsets=" + nInSubsets    
-                );
+                );*/
                 
                 if (dens > 0.1) {
                     
@@ -970,13 +971,13 @@ public class RainbowFinder {
 
                         double resid = polyFitter0.calcResiduals(coeff0, set);
                         
-                        System.out.println("rainbow polynomial coefficients = " 
+                        /*System.out.println("rainbow polynomial coefficients = " 
                             + Arrays.toString(coeff0));
                         System.out.println("image dimensions are " + img.getWidth() + " X "
                             + img.getHeight() + " pixels^2 " 
                             + " resid=" + resid
                             + " rg.coeff=" + Arrays.toString(rg0.m)
-                        );
+                        );*/
 
                         if (resid < 5) {
                             
@@ -1003,9 +1004,9 @@ public class RainbowFinder {
                                 double resid2 = polyFitter2.calcResiduals(coeff2, 
                                     tmp);
                                 
-                                System.out.println("check " + " x=" + 
-                                    rgs0.get(idx1).xC + " y=" +
-                                    rgs0.get(idx1).yC + " resid=" + resid2);
+                                //System.out.println("check " + " x=" + 
+                                //    rgs0.get(idx1).xC + " y=" +
+                                //    rgs0.get(idx1).yC + " resid=" + resid2);
                                 
                                 if (resid2 > 5) {
                                     continue;
@@ -1013,8 +1014,8 @@ public class RainbowFinder {
                         
                                 RegionGeometry chkRg = rgs0.get(idx1);
                                 
-                                System.out.println("check " + " x=" + chkRg.xC + " y=" +
-                                    chkRg.yC + " resid=" + resid2);
+                                //System.out.println("check " + " x=" + chkRg.xC + " y=" +
+                                //    chkRg.yC + " resid=" + resid2);
                             
                                 subsetIdxs.add(idx1);
                                 //set.addAll(chkSet);
@@ -1072,9 +1073,9 @@ public class RainbowFinder {
                 if (f > 1) {
                     f = 1;
                 }
-                System.out.println("nAdj=" + nAdj 
-                    + " f*n=" + (f*n) + " setx=" + rg.xC + " y=" + rg.yC
-                    + " n=" + n);
+                //System.out.println("nAdj=" + nAdj 
+                //    + " f*n=" + (f*n) + " setx=" + rg.xC + " y=" + rg.yC
+                //    + " n=" + n);
                 if (nAdj >= (f*n)) {
                     idxs2.add(i);
                 }

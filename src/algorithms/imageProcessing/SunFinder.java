@@ -9,6 +9,7 @@ import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -66,9 +67,18 @@ public class SunFinder {
             Set<PairInt> points = listOfSets.get(i);
             EllipseHelper eh = createRegion(points);
             int n = points.size();
+            
+            if (n < 9) {
+                continue;
+            }
         
             double area = 2. * Math.PI * eh.getMajorTimesMinor();
             double dens = (double)n/area;
+            if (Double.isInfinite(dens)) {
+                continue;
+            }
+            //System.out.println("sunfinder: " + Arrays.toString(eh.getXYCenter())
+            //    + " dens=" + dens + " n=" + n);
             if (dens > 0.1) {
                 ehs.add(eh);
                 listOfSets2.add(points);
