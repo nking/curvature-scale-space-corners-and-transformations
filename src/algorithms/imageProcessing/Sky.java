@@ -280,7 +280,9 @@ public class Sky {
         // 6 X n
         hsvlch = calcHSVLCH(labeledSets);
         
-        findSimilar(hsvlch, startIdx, add);
+        findSimilar(labeledSets, hsvlch, startIdx, add);
+        
+        System.out.println("starter patch clrs=" + Arrays.toString(hsvlch[startIdx]));
         
         {// debug
             Image tmpImg = img.copyImage();
@@ -483,6 +485,32 @@ public class Sky {
     private void sortForBlue(List<Set<PairInt>> filteredLabeledRegion,
         List<OneDFloatArray> filteredHSVLCH) {
         
+        /*
+        for largely white filtered sets,
+             c of lch is small
+        */
+        float[] avgClrs = new float[filteredHSVLCH.get(0).a.length];
+        float[] stdDvsClrs = new float[avgClrs.length];
+        calcMeanAndStdv(filteredHSVLCH, avgClrs, stdDvsClrs);
+        System.out.println(debugLabel + " mean and stdv sky=" +
+            Arrays.toString(avgClrs) + ", " + Arrays.toString(stdDvsClrs));
+        
+        float hF = 5.0f;
+        float sF = 1.0f;
+        float vF = 0.5f;
+        
+        // whiteish from snow and clouds
+        if (avgClrs[4] < 20 && stdDvsClrs[4] < 20 && stdDvsClrs[5] < 20) {
+            hF = 1.0f;
+            sF = 0.5f;
+            vF = 1.0f;
+        } else if (avgClrs[0] < 20 && stdDvsClrs[0] < 0.5 && stdDvsClrs[5] < 20) {
+            // reddish skies
+            hF = 1.0f;
+            sF = 0.5f;
+            vF = 1.0f;
+        }
+        
         float maxS = Float.MIN_VALUE;
         float maxH = Float.MIN_VALUE;
         float maxV = Float.MIN_VALUE;
@@ -507,9 +535,10 @@ public class Sky {
         float[] costs = new float[filteredHSVLCH.size()];
         for (int i = 0; i < filteredHSVLCH.size(); ++i) {
             float[] a = filteredHSVLCH.get(i).a;
-            float cost = 5.f*(Math.abs(a[0] - maxH)) +
-                (Math.abs(a[1] - maxS)) + 
-                0.5f * (Math.abs(a[2] - maxV)) 
+            float cost = 
+                hF * (Math.abs(a[0] - maxH)) +
+                sF * (Math.abs(a[1] - maxS)) + 
+                vF * (Math.abs(a[2] - maxV)) 
                 ;
             costs[i] = cost;
         }
@@ -518,7 +547,10 @@ public class Sky {
         QuickSort.sortBy1stArg(costs, filteredHSVLCH, filteredLabeledRegion);
     }
 
-    private void findSimilar(float[][] hsvlch, int starterIdx, TIntSet add) {
+    private void findSimilar(List<Set<PairInt>> labeledSets,
+        float[][] hsvlch, int starterIdx, TIntSet add) {
+        
+        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
         
         add.add(starterIdx);
         
@@ -526,15 +558,15 @@ public class Sky {
         
         for (int i = 0; i < hsvlch.length; ++i) {
             if (i == starterIdx) {continue;}
+            
+            int[] xyCen = ch.calculateRoundedXYCentroids(labeledSets.get(i));
+            
             float[] clrs = hsvlch[i];
             
             float diffH = Math.abs(clrs[0] - strtClrs[0]);
             if (diffH > 0.1) {
-                continue;
-            }
-            
-            float diffV = Math.abs(clrs[2] - strtClrs[2]);
-            if (diffV > 0.05) {
+                System.out.println("removed by h: " + Arrays.toString(xyCen)
+                    + " " + Arrays.toString(clrs));
                 continue;
             }
             
@@ -555,10 +587,48 @@ public class Sky {
             }
             float diff = Math.abs(h_0 - h_1);
 
-            if (diff > 4) {
+            if (diff > 7) {
+                System.out.println("removed by h, lch: diff=" + diff 
+                    + Arrays.toString(xyCen)
+                    + " " + " " 
+                    + Arrays.toString(clrs));
                 continue;
             }
+            
+            float diffV = Math.abs(clrs[2] - strtClrs[2]);
+            if (diffV > 0.05) {
+                System.out.println("removed by v: " + Arrays.toString(xyCen)
+                    + " " + Arrays.toString(clrs));
+                continue;
+            }
+            
             add.add(i);
+        }
+    }
+
+    private void calcMeanAndStdv(List<OneDFloatArray> filteredHSVLCH, 
+        float[] avgClrs, float[] stdDvsClrs) {
+        
+        for (OneDFloatArray a : filteredHSVLCH) {
+            float[] clrs = a.a;
+            for (int j = 0; j < clrs.length; ++j) {
+                avgClrs[j] += clrs[j];
+            }
+        }
+        for (int j = 0; j < avgClrs.length; ++j) {
+            avgClrs[j] /= (float)filteredHSVLCH.size();
+        }
+        
+        for (OneDFloatArray a : filteredHSVLCH) {
+            float[] clrs = a.a;
+            for (int j = 0; j < clrs.length; ++j) {
+                float diff = avgClrs[j] - clrs[j];
+                stdDvsClrs[j] += (diff * diff);
+            }
+        }
+        for (int j = 0; j < avgClrs.length; ++j) {
+            stdDvsClrs[j] = (float)
+                (Math.sqrt(stdDvsClrs[j]/(float)filteredHSVLCH.size()));
         }
     }
     
