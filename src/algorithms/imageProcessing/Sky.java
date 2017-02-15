@@ -863,7 +863,7 @@ public class Sky {
                 
                 boolean added = false;
                 if (avgClrType == 0) {
-                    if (diffH2 < 7 && diffC < 20) {
+                    if (diffH2 < 9 && diffC < 30) {
                         BSObj obj2 = obj.copy();
                         obj2.add(idx2);
                         
