@@ -3,8 +3,11 @@ package algorithms.imageProcessing;
 import algorithms.QuickSort;
 import algorithms.imageProcessing.features.mser.MSEREdges;
 import algorithms.imageProcessing.features.mser.Region;
+import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
+import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
+import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TIntList;
@@ -16,9 +19,11 @@ import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.awt.Color;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -249,8 +254,15 @@ public class Sky {
             // of image?
             return null;
         }
-                
-        sortForBlue(filteredLabeledRegion, filteredHSVLCH);
+         
+        float[] avgClrs = new float[filteredHSVLCH.get(0).a.length];
+        float[] stdDvClrs = new float[avgClrs.length];
+        calcMeanAndStdv(filteredHSVLCH, avgClrs, stdDvClrs);
+        
+        System.out.println(debugLabel + " mean and stdv sky=" +
+            Arrays.toString(avgClrs) + ", " + Arrays.toString(stdDvClrs));
+        
+        sortForBlue(filteredLabeledRegion, filteredHSVLCH, avgClrs, stdDvClrs);
         
         TIntIntMap startIdxMap = new TIntIntHashMap();
         for (PairInt p : filteredLabeledRegion.get(0)) {
@@ -275,15 +287,28 @@ public class Sky {
             add those sets if found.
         */
         TIntSet add = new TIntHashSet();
+        add.add(startIdx);
         
         // -- recalc colors, but for all of labeled sets ---
         // 6 X n
         hsvlch = calcHSVLCH(labeledSets);
         
-        findSimilar(labeledSets, hsvlch, startIdx, add);
+        //findSimilar(labeledSets, hsvlch, startIdx, add);
         
-        System.out.println("starter patch clrs=" + Arrays.toString(hsvlch[startIdx]));
+        System.out.println(debugLabel + " starter patch clrs=" + 
+            Arrays.toString(hsvlch[startIdx]));
+       
+        addIfGradientIllumination(pointLabels, labeledSets, hsvlch, startIdx, 
+            add, avgClrs, stdDvClrs);
         
+        //TODO:
+        // (1) possibly, reduce the added sets to the largest contiguou
+        //     or only those connected to the starter idx,
+        //     or keep all added sets excepting the 
+        // (2) if sun was found, search adjacent to it if not already in
+        //     "added" set.  this helps collect sky behind clouds which 
+        //     are occluding
+         
         {// debug
             Image tmpImg = img.copyImage();
             // plotting all filtered segments in green
@@ -483,17 +508,8 @@ public class Sky {
     }
 
     private void sortForBlue(List<Set<PairInt>> filteredLabeledRegion,
-        List<OneDFloatArray> filteredHSVLCH) {
-        
-        /*
-        for largely white filtered sets,
-             c of lch is small
-        */
-        float[] avgClrs = new float[filteredHSVLCH.get(0).a.length];
-        float[] stdDvsClrs = new float[avgClrs.length];
-        calcMeanAndStdv(filteredHSVLCH, avgClrs, stdDvsClrs);
-        System.out.println(debugLabel + " mean and stdv sky=" +
-            Arrays.toString(avgClrs) + ", " + Arrays.toString(stdDvsClrs));
+        List<OneDFloatArray> filteredHSVLCH, float[] avgClrs,
+        float[] stdDvsClrs) {
         
         float hF = 5.0f;
         float sF = 1.0f;
@@ -504,7 +520,7 @@ public class Sky {
             hF = 1.0f;
             sF = 0.5f;
             vF = 1.0f;
-        } else if (avgClrs[0] < 20 && stdDvsClrs[0] < 0.5 && stdDvsClrs[5] < 20) {
+        } else if (avgClrs[0] < .2 && stdDvsClrs[0] < 0.5 && stdDvsClrs[5] < 20) {
             // reddish skies
             hF = 1.0f;
             sF = 0.5f;
@@ -551,9 +567,7 @@ public class Sky {
         float[][] hsvlch, int starterIdx, TIntSet add) {
         
         MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
-        
-        add.add(starterIdx);
-        
+                
         float[] strtClrs = hsvlch[starterIdx];
         
         for (int i = 0; i < hsvlch.length; ++i) {
@@ -565,8 +579,8 @@ public class Sky {
             
             float diffH = Math.abs(clrs[0] - strtClrs[0]);
             if (diffH > 0.1) {
-                System.out.println("removed by h: " + Arrays.toString(xyCen)
-                    + " " + Arrays.toString(clrs));
+                //System.out.println("removed by h: " + Arrays.toString(xyCen)
+                //    + " " + Arrays.toString(clrs));
                 continue;
             }
             
@@ -588,17 +602,17 @@ public class Sky {
             float diff = Math.abs(h_0 - h_1);
 
             if (diff > 7) {
-                System.out.println("removed by h, lch: diff=" + diff 
-                    + Arrays.toString(xyCen)
-                    + " " + " " 
-                    + Arrays.toString(clrs));
+                //System.out.println("removed by h, lch: diff=" + diff 
+                //    + Arrays.toString(xyCen)
+                //    + " " + " " 
+                //    + Arrays.toString(clrs));
                 continue;
             }
             
             float diffV = Math.abs(clrs[2] - strtClrs[2]);
             if (diffV > 0.05) {
-                System.out.println("removed by v: " + Arrays.toString(xyCen)
-                    + " " + Arrays.toString(clrs));
+                //System.out.println("removed by v: " + Arrays.toString(xyCen)
+                //    + " " + Arrays.toString(clrs));
                 continue;
             }
             
@@ -630,6 +644,294 @@ public class Sky {
             stdDvsClrs[j] = (float)
                 (Math.sqrt(stdDvsClrs[j]/(float)filteredHSVLCH.size()));
         }
+    }
+
+    private boolean isAVector(BSObj obj, int idx2, 
+        List<Set<PairInt>> labeledSets, List<OneDIntArray> xyCenters) {
+        
+        // draw a line from
+        // the first cell center to this cell center and asserting
+        // that the vector passes through points in the cells
+        // in between.
+            
+        if (obj.getOrderedIdxs().size() == 1) {
+            return true;
+        }
+        
+        int idx0 = obj.getOrderedIdxs().get(0);
+        int[] xyi = xyCenters.get(idx0).a;
+        int[] xyf = xyCenters.get(idx2).a;
+        
+        List<PairInt> line = new ArrayList<PairInt>();
+        BresenhamsLine bLine = new BresenhamsLine();
+        bLine.createLinePoints(xyi[0], xyi[1], xyf[0], xyf[1], line);
+        
+        if (line.isEmpty()) {
+            throw new IllegalStateException("error in creating a line "
+                + " between points " + Arrays.toString(xyi) + " and " +
+                Arrays.toString(xyf));
+        }
+        
+        TIntList cp = new TIntArrayList(obj.getOrderedIdxs());
+        cp.add(idx2);
+        
+        int cIdx = 0;
+        
+        TIntSet present = new TIntHashSet();
+        
+        for (int i = 0; i < line.size(); ++i) {
+            
+            if (cIdx >= cp.size()) {
+                return false;
+            }
+            
+            PairInt p = line.get(i);
+            
+            Set<PairInt> set = labeledSets.get(cp.get(cIdx));
+            
+            if (set.contains(p)) {
+                present.add(cIdx);
+            } else if (!present.contains(cIdx)) {
+                return false;
+            } else {
+                cIdx++;
+            }
+        }
+        
+        return true;
+    }
+    
+    private class BSObj {
+        private VeryLongBitString idxs;
+        private TIntList orderedIdxs;
+        public BSObj(int nBS) {
+            idxs = new VeryLongBitString(nBS);
+            orderedIdxs = new TIntArrayList();
+        }
+        public BSObj() {
+        }
+        public void add(int idx) {
+            idxs.setBit(idx);
+            orderedIdxs.add(idx);
+        }
+        public int latest() {
+            return orderedIdxs.get(orderedIdxs.size() - 1);
+        }
+        public VeryLongBitString getBS() {
+            return idxs;
+        }
+        public TIntList getOrderedIdxs() {
+            return orderedIdxs;
+        }
+        public BSObj copy() {
+            BSObj cp = new BSObj();
+            cp.idxs = idxs.copy();
+            cp.orderedIdxs = new TIntArrayList(orderedIdxs);
+            return cp;
+        }
+    }
+
+    private void addIfGradientIllumination(int[] labels, 
+        List<Set<PairInt>> labeledSets, float[][] hsvlch, int startIdx, 
+        TIntSet add, float[] avgClrs, float[] stdDvClrs) {
+        
+        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
+        
+        List<OneDIntArray> xyCenters = new ArrayList<OneDIntArray>();
+        for (int i = 0; i < labeledSets.size(); ++i) {
+            Set<PairInt> set = labeledSets.get(i);
+            int[] xy = ch.calculateRoundedXYCentroids(set);
+            xyCenters.add(new OneDIntArray(xy));
+        }
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        TIntObjectMap<VeryLongBitString> adjMap = imageProcessor.
+            createAdjacencyMap(labels, labeledSets, img.getWidth(),
+            img.getHeight());
+        
+        // 0 = bright blue, 1 = blue, 2 = white, 3 = red or dark
+        int avgClrType = 1;
+        if (avgClrs[0] < 0.75 && avgClrs[0] > 0.5) {
+            if (avgClrs[2] > 0.65 && avgClrs[4] > 40) {
+                avgClrType = 0;
+            } else {
+                avgClrType = 1;
+            }
+        } else if (avgClrs[4] < 20 && stdDvClrs[4] < 20 && 
+            stdDvClrs[5] < 20) {
+            // whiteish from snow and clouds
+            avgClrType = 2;
+        } else if (avgClrs[0] < 0.2 && stdDvClrs[0] < 0.5 && stdDvClrs[5] < 20) {
+            avgClrType = 3;
+        } else if ((avgClrs[0] < 0.1 || avgClrs[0] > 0.85) && stdDvClrs[0]> 0.1) {
+            avgClrType = 3;
+        }
+        
+        // find gradients in the 4th item in clrs[] which is the
+        //    magnitude lch, that is c
+        /*
+                 [0.-1]  [0.-1, -2] 
+              0  -1         -2
+        
+                -1
+        
+                    -2
+         if roughly same in h of lch,
+            will store the c's of lch until queue is empty
+            and for the paths which have increasing or decreasing
+            or c, will add those cells into "add"
+        */
+       
+        List<BSObj> paths = new ArrayList<BSObj>();
+        
+        int nBS = hsvlch.length;
+        
+        BSObj strtObj = new BSObj(nBS);
+        strtObj.add(startIdx);
+       
+        // BFS search around items in add
+        ArrayDeque<BSObj> queue = new ArrayDeque<BSObj>();
+        queue.add(strtObj);
+        TIntIterator iter = add.iterator();
+        while (iter.hasNext()) {
+            int idx = iter.next();
+            if (idx == startIdx) { continue; }
+            BSObj obj = new BSObj(nBS);
+            obj.add(idx);
+            queue.add(obj);
+        }
+                
+        Set<VeryLongBitString> visited = new HashSet<VeryLongBitString>();
+        
+        while (!queue.isEmpty()) {
+            
+            BSObj obj = queue.pop();
+            int idx = obj.latest();
+            
+            if (visited.contains(obj.getBS())) { continue; }
+            visited.add(obj.getBS());
+            
+            VeryLongBitString ngbhrs = adjMap.get(idx);
+            if (ngbhrs == null) {
+                continue;
+            }
+            
+            float[] clrs = hsvlch[idx];
+            
+            for (int idx2 : ngbhrs.getSetBits()) {
+                
+                // -- check if path was searched already
+                VeryLongBitString tmpBS = obj.getBS().copy();
+                tmpBS.setBit(idx2);
+                if (visited.contains(tmpBS)) {
+                    continue;
+                }
+                
+                // -- skip if this addition to obj.orderedIdxs is not along
+                //    a vector.
+                //    temporarily, this check will be drawing a line from
+                //    the first cell center to this cell center and asserting
+                //    that the vector passes through points in the cells
+                //    in between.
+                if (!isAVector(obj, idx2, labeledSets, xyCenters)) {
+                    continue;
+                }
+                
+                float[] clrs2 = hsvlch[idx2];
+                
+                // diff in h of lch:
+                float h_0 = clrs[5];
+                float h_1 = clrs2[5];
+                if (h_0 > h_1) {
+                    // add a phase to next value if it's closer to current with addition
+                    if ((h_0 - h_1) > Math.abs(h_0 - (h_1 + 255))) {
+                        h_1 += 255;
+                    }
+                } else if (h_1 > h_0) {
+                    // add a phase to next value if it's closer to current with addition
+                    if ((h_1 - h_0) > Math.abs(h_1 - (h_0 + 255))) {
+                        h_0 += 255;
+                    }
+                }
+                float diffH2 = Math.abs(h_0 - h_1);
+                
+                float diffC = Math.abs(clrs[4] - clrs2[4]);
+                
+                int[] xyCen = ch.calculateRoundedXYCentroids(
+                    labeledSets.get(idx2));
+                
+                boolean added = false;
+                if (avgClrType == 0) {
+                    if (diffH2 < 7 && diffC < 20) {
+                        BSObj obj2 = obj.copy();
+                        obj2.add(idx2);
+                        
+                        queue.add(obj2);
+                        paths.add(obj2);
+                        
+                        added = true;
+                    }
+                }
+                
+                System.out.println(debugLabel + 
+                    " neighbor " + " xy=" + Arrays.toString(xyCen) + 
+                    " hsvlch=" + Arrays.toString(hsvlch[idx2]) 
+                    + " diffH2=" + diffH2 + " diffC=" + diffC
+                    + " n=" + 
+                    labeledSets.get(idx2).size() + 
+                    " avgClrType=" + avgClrType + " added=" + added
+                );
+            }
+        }
+        
+        float eps = 1;
+        
+        // paths ordered indexes are along vectors, so can now look
+        //    for whether a path item has same c's, increasing c's
+        //    or decreasing c's
+        for (BSObj path : paths) {
+            
+            TIntList idxs = path.getOrderedIdxs();
+            
+            float[] deltaCs = new float[idxs.size() - 1];
+            for (int i = 0; i < idxs.size() - 1; ++i) {
+                deltaCs[i] = hsvlch[idxs.get(i)][4] 
+                    - hsvlch[idxs.get(i + 1)][4];
+            }
+            
+            // TODO: improve this.
+            // will make an assumption that all are increasing,
+            // and sepearately that all are decreasing and see if either are
+            // true
+            boolean allIncr = true;
+            boolean allDecr = true;
+            for (int i = 1; i < deltaCs.length;++i) {
+                // c[1] > (c[0] - eps)
+                if (deltaCs[i] < (deltaCs[i - 1] + eps)) {
+                    allIncr = false;
+                    break;
+                }
+            }
+            if (!allIncr) {
+                for (int i = 1; i < deltaCs.length;++i) {
+                    // c[1] < (c[0] - eps)
+                    if (deltaCs[i] > (deltaCs[i - 1] + eps)) {
+                        allDecr = false;
+                        break;
+                    }
+                }
+            }
+            if (!allIncr && !allDecr) {
+                continue;
+            }
+            // add all in path
+            for (int i = 0; i < idxs.size(); ++i) {
+                int idx = idxs.get(i);
+                add.add(idx);
+            } 
+        }
+        
     }
     
     //TODO: consider adding findSolarEclipse or sun w/ occultation or coronograph...

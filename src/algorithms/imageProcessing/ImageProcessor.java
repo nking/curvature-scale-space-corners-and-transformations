@@ -9738,6 +9738,49 @@ if (sum > 511) {
         return output;
     }
     
+    public TIntObjectMap<VeryLongBitString> createAdjacencyMap(
+        int[] labels, List<Set<PairInt>> labeledPoints,
+        int width, int height) {
+
+        int n = labeledPoints.size();
+
+        TIntObjectMap<VeryLongBitString> output
+            = new TIntObjectHashMap<VeryLongBitString>();
+
+        int[] dxs = Misc.dx4;
+        int[] dys = Misc.dy4;
+
+        for (int label = 0; label < n; ++label) {
+            Set<PairInt> set = labeledPoints.get(label);
+            VeryLongBitString nbrs = new VeryLongBitString(n);
+            
+            boolean aloSet = false;
+            
+            for (PairInt p : set) {
+                int x = p.getX();
+                int y = p.getY();
+                for (int k = 0; k < dxs.length; ++k) {
+                    int x2 = x + dxs[k];
+                    int y2 = y + dys[k];
+                    if (x2 < 0 || y2 < 0 || (x2 >= width) || (y2 >= height)) {
+                        continue;
+                    }
+                    int pixIdx = (y2 * width) + x2;
+                    int label2 = labels[pixIdx];
+                    if (label2 != label) {
+                        nbrs.setBit(label2);
+                        aloSet = true;
+                    }
+                }
+            }
+            if (aloSet) {
+                output.put(label, nbrs);
+            }
+        }
+
+        return output;
+    }
+    
     public void applyUnsharpMask(GreyscaleImage img) {
         
         //NOTE: if make a color version of this, should use a color
