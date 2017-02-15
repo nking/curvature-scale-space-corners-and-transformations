@@ -804,6 +804,9 @@ public class Sky {
                 avgClrType = 0;
             } else if (avgClrs[2] > 0.85) {
                 avgClrType = 2;
+            } else if (avgClrs[0] < 0.6) {
+                // less blue than type 1
+                avgClrType = 5;
             } else {
                 avgClrType = 1;
             }
@@ -919,6 +922,10 @@ public class Sky {
                     }
                 } else if (avgClrType == 1) {
                     if (diffH2 < 5 && diffC < 5) {
+                        added = true;
+                    }
+                } else if (avgClrType == 5) {
+                    if (diffH2 < 6 && diffC < 8) {
                         added = true;
                     }
                 } else if (avgClrType == 3) {
