@@ -78,8 +78,11 @@ public class SunFinder {
                 continue;
             }
             //System.out.println("sunfinder: " + Arrays.toString(eh.getXYCenter())
-            //    + " dens=" + dens + " n=" + n);
-            if (dens > 0.1) {
+            //    + " dens=" + dens + " n=" + n 
+            //    + " ecc=" + eh.getEccentricity() + " minor=" + 
+            //    eh.getSemiMinor() + " major=" + eh.getSemiMajor()
+            //);
+            if (dens > 0.1 && eh.getEccentricity() < 0.9) {
                 ehs.add(eh);
                 listOfSets2.add(points);
             }

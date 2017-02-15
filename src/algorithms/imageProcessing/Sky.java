@@ -155,6 +155,7 @@ public class Sky {
         
         int[] pointLabels = createPixLabelMap(labeledSets);
         
+        int sunLabel = -1;
         // remove sun points
         SkyObject sunObj = findSun();
         if (sunObj != null && !sunObj.points.isEmpty()) {
@@ -164,6 +165,7 @@ public class Sky {
                 int pixIdx = img.getInternalIndex(p);
                 int label = pointLabels[pixIdx];
                 labeledSets.get(label).remove(p);
+                sunLabel = label;
             }
         }
         // remove rainbow points
@@ -264,21 +266,38 @@ public class Sky {
         
         sortForBlue(filteredLabeledRegion, filteredHSVLCH, avgClrs, stdDvClrs);
         
-        TIntIntMap startIdxMap = new TIntIntHashMap();
-        for (PairInt p : filteredLabeledRegion.get(0)) {
-            int pixIdx = img.getInternalIndex(p);
-            int label = pointLabels[pixIdx];
-            if (startIdxMap.containsKey(label)) {
-                startIdxMap.put(label, startIdxMap.get(label) + 1);
-            } else {
-                startIdxMap.put(label, 1);
+        int startIdx = -1;
+        if (sunLabel > -1) {
+            //if sunLabel is in a filtered region, select that
+            for (int i = 0; i < filteredLabeledRegion.size(); ++i) {
+                for (PairInt p : filteredLabeledRegion.get(i)) {
+                    int pixIdx = img.getInternalIndex(p);
+                    int label = pointLabels[pixIdx];
+                    if (sunLabel == label) {
+                        startIdx = label;
+                        break;
+                    }
+                }
+            }  
+        } 
+        if (startIdx == -1) {  
+            TIntIntMap startIdxMap = new TIntIntHashMap();
+            for (PairInt p : filteredLabeledRegion.get(0)) {
+                int pixIdx = img.getInternalIndex(p);
+                int label = pointLabels[pixIdx];
+                if (startIdxMap.containsKey(label)) {
+                    startIdxMap.put(label, startIdxMap.get(label) + 1);
+                } else {
+                    startIdxMap.put(label, 1);
+                }
             }
+            System.out.println(debugLabel + " sunLabel=" + sunLabel + " strt=" + 
+                startIdx);
+            assert(startIdxMap.size() == 1);
+            startIdx = startIdxMap.keySet().iterator().next();
+            //Set<PairInt> starterSet = labeledSets.get(startIdx);
         }
-        System.out.println(debugLabel);
-        assert(startIdxMap.size() == 1);
-        int startIdx = startIdxMap.keySet().iterator().next();
-        Set<PairInt> starterSet = labeledSets.get(startIdx);
-
+        
         /*
         now that have a starter sky patch and sky filter params
         (1) add labeled sets that are very similar to starter patch
@@ -752,21 +771,25 @@ public class Sky {
         
         // 0 = bright blue, 1 = blue, 2 = white, 3 = red or dark
         int avgClrType = 1;
-        if (avgClrs[0] < 0.75 && avgClrs[0] > 0.5) {
+        if (avgClrs[0] < 0.75 && avgClrs[0] > 0.45) {
             if (avgClrs[2] > 0.65 && avgClrs[4] > 40) {
                 avgClrType = 0;
+            } else if (avgClrs[2] > 0.85) {
+                avgClrType = 2;
             } else {
                 avgClrType = 1;
             }
         } else if (avgClrs[4] < 20 && stdDvClrs[4] < 20 && 
-            stdDvClrs[5] < 20) {
+            stdDvClrs[5] < 20 && avgClrs[2] > 0.75) {
             // whiteish from snow and clouds
             avgClrType = 2;
         } else if (avgClrs[0] < 0.2 && stdDvClrs[0] < 0.5 && stdDvClrs[5] < 20) {
             avgClrType = 3;
         } else if ((avgClrs[0] < 0.1 || avgClrs[0] > 0.85) && stdDvClrs[0]> 0.1) {
             avgClrType = 3;
-        }
+        } else if (avgClrs[0] < 0.25 && avgClrs[1] > 0.8) {
+            avgClrType = 3;
+        } 
         
         // find gradients in the 4th item in clrs[] which is the
         //    magnitude lch, that is c
@@ -864,14 +887,25 @@ public class Sky {
                 boolean added = false;
                 if (avgClrType == 0) {
                     if (diffH2 < 9 && diffC < 30) {
-                        BSObj obj2 = obj.copy();
-                        obj2.add(idx2);
-                        
-                        queue.add(obj2);
-                        paths.add(obj2);
-                        
                         added = true;
                     }
+                } else if (avgClrType == 1) {
+                    if (diffH2 < 4 && diffC < 5) {
+                        added = true;
+                    }
+                } else if (avgClrType == 3) {
+                    if (diffH2 < 9 && diffC < 45) {
+                        added = true;
+                    }
+                }
+                
+                if (added) {
+                    BSObj obj2 = obj.copy();
+                    obj2.add(idx2);
+
+                    queue.add(obj2);
+                    paths.add(obj2);
+
                 }
                 
                 System.out.println(debugLabel + 
@@ -886,6 +920,9 @@ public class Sky {
         }
         
         float eps = 1;
+        if (avgClrType == 3) {
+            eps = 10;
+        }
         
         // paths ordered indexes are along vectors, so can now look
         //    for whether a path item has same c's, increasing c's
@@ -898,6 +935,12 @@ public class Sky {
             for (int i = 0; i < idxs.size() - 1; ++i) {
                 deltaCs[i] = hsvlch[idxs.get(i)][4] 
                     - hsvlch[idxs.get(i + 1)][4];
+            }
+            
+            {
+                for (int i = 0; i < idxs.size(); ++i) {
+            System.out.println(i + " ?: " + hsvlch[idxs.get(i)][4]);
+                }
             }
             
             // TODO: improve this.
@@ -923,6 +966,7 @@ public class Sky {
                 }
             }
             if (!allIncr && !allDecr) {
+                System.out.println("did not add: " + Arrays.toString(deltaCs));
                 continue;
             }
             // add all in path
