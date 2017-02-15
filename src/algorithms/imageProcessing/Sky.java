@@ -918,7 +918,7 @@ public class Sky {
                         added = true;
                     }
                 } else if (avgClrType == 1) {
-                    if (diffH2 < 4 && diffC < 5) {
+                    if (diffH2 < 5 && diffC < 5) {
                         added = true;
                     }
                 } else if (avgClrType == 3) {
