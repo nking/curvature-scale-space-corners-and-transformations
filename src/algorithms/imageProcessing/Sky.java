@@ -691,6 +691,34 @@ public class Sky {
                 Arrays.toString(xyf));
         }
         
+        // NOTE: this method has a flaw if one or both endpoint centers
+        //     are not in their point sets.  for example, the centroid
+        //     of a "c" shape is not in the "c" points.
+        //     so need to make some changes here for that.
+        // trimming off the end of bline which is not in the xyf set.
+        for (int i = line.size() - 1; i > -1; --i) {
+            PairInt p = line.get(i);
+            if (labeledSets.get(idx2).contains(p)) {
+                break;
+            } else {
+                line.remove(i);
+            }
+        }
+        // do same trim for xycenter at front of line
+        TIntList rm = new TIntArrayList();
+        for (int i = 0; i < line.size(); ++i) {
+            PairInt p = line.get(i);
+            if (labeledSets.get(idx0).contains(p)) {
+                break;
+            } else {
+                rm.add(i);
+            }
+        }
+        for (int i = (rm.size() - 1); i > -1; --i) {
+            int rmIdx = rm.get(i);
+            line.remove(rmIdx);
+        }
+        
         TIntList cp = new TIntArrayList(obj.getOrderedIdxs());
         cp.add(idx2);
         
