@@ -820,6 +820,9 @@ public class Sky {
             avgClrType = 3;
         } else if (avgClrs[0] < 0.25 && avgClrs[1] > 0.8) {
             avgClrType = 3;
+        } else if (avgClrs[0] > 0.75) {
+            // purple to red
+            avgClrType = 6;
         } 
         
         // find gradients in the 4th item in clrs[] which is the
@@ -926,6 +929,11 @@ public class Sky {
                     }
                 } else if (avgClrType == 5) {
                     if (diffH2 < 6 && diffC < 8) {
+                        added = true;
+                    }
+                } else if (avgClrType == 6) {
+                    //if (diffH2 < 6 && diffC < 8) {
+                    if (diffH2 < 30 && diffC < 20) {
                         added = true;
                     }
                 } else if (avgClrType == 3) {
