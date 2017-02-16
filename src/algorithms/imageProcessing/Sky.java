@@ -122,13 +122,46 @@ public class Sky {
       
      @return 
      */
-    public GreyscaleImage extractSkyMask() {
+    public GreyscaleImage extractSkyMask(boolean useSun) {
     
-        List<SkyObject> skyList = findSky();
-        
-        return null;
+        throw new UnsupportedOperationException("not yet implemented");
     }
     
+    /**
+     * NOT READY FOR USE
+     * 
+     * NOTE: there are several ways to search for the sky cells in the image,
+     * depending upon what information is available.
+     * Other methods for use with specific additional information might be
+     * made in the future.  For now, this one makes some assumptions
+     * about sky color and sky on the border of the image.
+     
+     Here is an outline in progress of ways to find the sky in the image using
+     only the rgb camera image (though w/ transformations to other color spaces
+     possibly):
+       (1) labeled information
+          - to filter out non-sky objects
+          - to add context.
+            - for example, if know there are buildings and reflection,
+              then one knows up and down
+              and hence area of image where sky should be.
+            - or birds in flight and airplanes in flight or animals present in water
+              the are distinctive from their fins, etc.
+      (2) information about "up and down" from sensors like gyroscope and compass.
+          - that can limit where to look for sky in image
+      (3) finding unique atmospheric objects present in the sky.
+          - if find the sun or rainbows, then one knows where part of the sky is.
+          - some clouds are distinguishable from snow and mountains
+      (4) filtering out non sky colors such as green
+          then making an assumption of sky being on an image border.
+          further search requires a look at effects of sun location, that is,
+          blue or red skies in the segmentation regions...
+          lt 0.17 gt 0.5 
+     (5) could make an assumption about the orientation of the camera place, that is, decreasing y
+          pixel coord is direction "up" where sky is found.
+       
+     * @return 
+     */
     public List<SkyObject> findSky() {
         
         /*
@@ -1145,6 +1178,15 @@ public class Sky {
     }
     
     public List<SkyObject> findSkyAssumingHorizon() {
+         /*
+         -- make sets of segmented cells or regions or just every pixel that is within sky color range
+              and those that are not.
+         -- find the regions from gs_1 that creates the largest matching 
+               partition between sky and non-sky.
+                can use the assumption of sky being at smaller y coordinates if needed to distinguish
+                foreground.
+         */
+        //mserEdges._debugOrigRegions(1, debugLabel + "_gs_1_");
         throw new UnsupportedOperationException("not yet implemented");
     }
     
