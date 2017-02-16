@@ -1187,7 +1187,7 @@ public class Sky {
         the notes below are details gathered while looking at individual 
         test images in order to design the algorithm.
         
-        -- looks as if it is necessry for some cases to find the foreground
+        -- looks as if it is necessary for some cases to find the foreground
            non-sky pixels as one of the first steps.
            -- (details in progress)
         
@@ -1203,8 +1203,9 @@ public class Sky {
            -- red skies with red foreground
            -- white featureless cloudy skies over snowy mountains.
               (in this case, naively would expect that separate polarized
-              light filters would help because the mountain reflected
-              light should be slightly more polarized.)
+              light filters might help because the mountain reflected
+              light might be slightly more polarized...need to think more
+              about this and browse the empirical (existing data))
            -- polarization for red skies might be stronger than the polarization
               of foreground horizon (the light is approximated as directly from
               the source, directly thru atmosphere rather than primarily
@@ -1217,7 +1218,7 @@ public class Sky {
         -- the mseredges edges have the correct boundaries present in the many 
         edges.
         
-        (1) so the mseredges are still a god first step in this algorithm.
+        (1) so the mseredges are still a good first step in this algorithm.
         (2) foreground determination
         (3) use of level sets to find good partition(s)
             -- before that need a pass through pixels to characterize pixels
@@ -1234,7 +1235,7 @@ public class Sky {
            non-sky and the approximation is faster than the
            region growing methods.
         
-        NOTE that the regions are the negtive only for the final mser
+        NOTE that the regions are the negative only for the final mser
         edges because the positive mser parameters were set for less sensitive
         so no regions are present in gs_0, but that should be re-examined
         for this method if it doesn't use the segmentation edges.
@@ -1259,11 +1260,6 @@ public class Sky {
         
         patagonia test image is good image for finding foreground with
            the regions as a component tree of level sets (mser regions).
-        
-        see seattle test, region gs_1_29 is close to the correct answer
-        
-        for sanjose, looks like needed more sensitive settings for
-            gs_0.
         
         
          */
