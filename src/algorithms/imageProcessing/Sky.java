@@ -1181,7 +1181,7 @@ public class Sky {
          /*
          -- make sets of segmented cells or regions or just every pixel that is within sky color range
               and those that are not.
-         -- find the regions from gs_1 that creates the largest matching 
+         -- find the region from gs_1 that creates the largest matching 
                partition between sky and non-sky.
                 can use the assumption of sky being at smaller y coordinates if needed to distinguish
                 foreground.
