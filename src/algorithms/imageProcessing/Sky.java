@@ -99,7 +99,7 @@ public class Sky {
      Here is an outline in progress of ways to find the sky in the image using
      only the rgb camera image (though w/ transformations to other color spaces
      possibly):
-       (1) labelled information
+       (1) labeled information
           - to filter out non-sky objects
           - to add context.
             - for example, if know there are buildings and reflection,
@@ -167,14 +167,10 @@ public class Sky {
         // remove sun points
         SkyObject sunObj = findSun();
         if (sunObj != null && !sunObj.points.isEmpty()) {
+           
             System.out.println("found sun for " + debugLabel + " at " + 
                 Arrays.toString(sunObj.xyCenter));
             
-            //System.out.println("sunfinder: " + Arrays.toString(eh.getXYCenter())
-            //    + " dens=" + dens + " n=" + n 
-            //    + " ecc=" + eh.getEccentricity() + " minor=" + 
-            //    eh.getSemiMinor() + " major=" + eh.getSemiMajor()
-            //);
             for (PairInt p : sunObj.points) {
                 int pixIdx = img.getInternalIndex(p);
                 int label = pointLabels[pixIdx];
@@ -231,35 +227,21 @@ public class Sky {
             hsvlch = calcHSVLCH(labeledInRegion);
 
             // filter labeledInRegion1 for sky colors over a generous range in hue
+            // NOTE: any changes here should be made in addAdjacentSky too
             // key=index in labeledInRegion, value=set of pairint of the region
             MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
             for (int i = 0; i < labeledInRegion.size(); ++i) {
                 Set<PairInt> set = labeledInRegion.get(i);
                 int[] xyCen = ch.calculateRoundedXYCentroids(set);
                 float[] clrs = hsvlch[i];
-                if (nIter == 1) {
-                    if ((clrs[2] > 0.8) ||
-                        ((clrs[2] > vLLimit1) && (clrs[0] < hULimit || 
-                        clrs[0] > hLLimit))) {
-                        if (setDoesBorderImage(set, img)) {
-                            System.out.println(debugLabel + 
-                                " xy=" + Arrays.toString(xyCen) + 
-                                " hsvlch=" + Arrays.toString(clrs) + " n=" + set.size());
-                            filteredLabeledRegion.add(set);
-                            filteredHSVLCH.add(new OneDFloatArray(clrs));
-                        }
-                    }
-                } else {
-                    if ((clrs[2] > 0.8) ||
-                        ((clrs[2] > vLLimit0) && (clrs[0] < hULimit || 
-                        clrs[0] > hLLimit))) {
-                        if (setDoesBorderImage(set, img)) {
-                            System.out.println(debugLabel + 
-                                " PT0 xy=" + Arrays.toString(xyCen) + 
-                                " hsvlch=" + Arrays.toString(clrs) + " n=" + set.size());
-                            filteredLabeledRegion.add(set);
-                            filteredHSVLCH.add(new OneDFloatArray(clrs));
-                        }
+                if (isInSkyRange(clrs, (nIter == 1))) {
+                    if (setDoesBorderImage(set, img)) {
+                        System.out.println(debugLabel
+                            + " xy=" + Arrays.toString(xyCen)
+                            + " hsvlch=" + Arrays.toString(clrs) + " n=" 
+                            + set.size());
+                        filteredLabeledRegion.add(set);
+                        filteredHSVLCH.add(new OneDFloatArray(clrs));
                     }
                 }
             }
@@ -331,13 +313,46 @@ public class Sky {
             Arrays.toString(hsvlch[startIdx]));
        
         addIfGradientIllumination(pointLabels, labeledSets, hsvlch, startIdx, 
-            add, avgClrs, stdDvClrs);
+            add, avgClrs, stdDvClrs, false);
+        
+        // put the "add" sets into output sky0Points
+        Set<PairInt> sky0Points = new HashSet<PairInt>();
+        TIntIterator iter = add.iterator();
+        while (iter.hasNext()) {
+            sky0Points.addAll(labeledSets.get(iter.next()));
+        }
+        
+        // start a set for the case where the sun is present but not adjacent
+        //    to sky0Points
+        Set<PairInt> sky1Points = new HashSet<PairInt>();
         
         //TODO:
         //  if sun was found and is not connected with current found sky, 
         //     search adjacent to it and add results to a wnd list
         //     for the return
-         
+        if (sunObj != null && !sunObj.points.isEmpty()) {
+            
+            TIntSet cSet = findAdjacentToSun(sunObj.points, pointLabels, 
+                img.getWidth(), img.getHeight());
+            
+            boolean isAdjToSky = false;
+            iter = cSet.iterator();
+            while (iter.hasNext()) {
+                for (PairInt p : labeledSets.get(iter.next())) {
+                    if (sky0Points.contains(p)) {
+                        isAdjToSky = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (!isAdjToSky) {
+                addAdjacentSky(sunObj.points, sky0Points, pointLabels, 
+                    labeledSets, hsvlch, avgClrs, stdDvClrs, cSet, sky1Points,
+                    (nIter == 1));
+            }
+        }
+        
         {// debug
             Image tmpImg = img.copyImage();
             // plotting all filtered segments in green
@@ -349,75 +364,38 @@ public class Sky {
             for (Set<PairInt> set : mserEdges.getEdges()) {
                 ImageIOHelper.addCurveToImage(set, tmpImg, 0, 255, 0, 0);
             }
-            TIntIterator iter = add.iterator();
-            while (iter.hasNext()) {
-                int label = iter.next();
-                ImageIOHelper.addCurveToImage(labeledSets.get(label), tmpImg, 
-                    0, 255, 0, 255);
+            ImageIOHelper.addCurveToImage(sky0Points, tmpImg, 0, 255, 0, 255);
+            if (!sky1Points.isEmpty()) {
+                ImageIOHelper.addCurveToImage(sky1Points, tmpImg, 0, 255, 0, 255);
             }
+            
             MiscDebug.writeImage(tmpImg, "_" + debugLabel + "_CAND_SKY_");
         }
-        
-        /*  a look at sky colors
-        filteredHSVLCH = new ArrayList<OneDFloatArray>();
-        
-        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
-        
-        TIntList rm = new TIntArrayList();
-        if (nIter == 1) {
-            for (int i = 0; i < labeledSets.size(); ++i) {
-                String str = (i == startIdx) ? "STRT" : "";
-                int[] xyCen = ch.calculateRoundedXYCentroids(labeledSets.get(i));
-                float[] clrs = hsvlch[i];
-                if (!((clrs[2] > vLLimit1) && (clrs[0] < hULimit || 
-                    clrs[0] > hLLimit)
-                    )) {
-                    rm.add(i);
-                    
-                    System.out.println(debugLabel + 
-                        " RM " + str + " xy=" + Arrays.toString(xyCen) + 
-                        " hsvlch=" + Arrays.toString(clrs) + " n=" + 
-                        labeledSets.get(i).size());
-                } else {
-                    filteredHSVLCH.add(new OneDFloatArray(clrs));
-                    System.out.println(debugLabel + 
-                        str + " xy=" + Arrays.toString(xyCen) + 
-                        " hsvlch=" + Arrays.toString(clrs) + " n=" + 
-                        labeledSets.get(i).size());
-                }
-            }
-        } else {
-            for (int i = 0; i < labeledSets.size(); ++i) {
-                float[] clrs = hsvlch[i];
-                if (!((clrs[2] > vLLimit0) && (clrs[0] < hULimit || 
-                    clrs[0] > hLLimit))) {
-                    rm.add(i);
-                } else {
-                    filteredHSVLCH.add(new OneDFloatArray(clrs));
-                }
-            }
-        }
-               
-        for (int i = rm.size() - 1; i > -1; --i) {
-            int rmIdx = rm.get(i);
-            labeledSets.remove(rmIdx);
-        }
-        
-        if (debug) {
-            Image tmpImg = img.copyImage();
-            for (Set<PairInt> set : labeledSets) {
-                ImageIOHelper.addCurveToImage(set, tmpImg, 0, 0, 255, 0);
-            }
-            //ImageIOHelper.addCurveToImage(filteredLabeledRegion.get(0), 
-            //    tmpImg, 0, 255, 0, 255);
-            MiscDebug.writeImage(tmpImg, "_" + debugLabel + "_CAND_SKY_");
-        }
-        */
-                
+             
         //List<Region> regionPt0 = mserEdges.getOrigGsPtRegions().get(2);
         
-        return null;
-        //throw new UnsupportedOperationException("not ready for use");
+        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
+        double[] xyCenter = ch.calculateXYCentroids(sky0Points);
+        int x = (int)Math.round(xyCenter[0]);
+        int y = (int)Math.round(xyCenter[1]);
+
+        List<SkyObject> output = new ArrayList<SkyObject>();
+        SkyObject obj = new SkyObject();
+        obj.points = sky0Points;
+        obj.xyCenter = new int[]{x, y};
+        output.add(obj);
+        
+        if (!sky1Points.isEmpty()) {
+            xyCenter = ch.calculateXYCentroids(sky1Points);
+            x = (int)Math.round(xyCenter[0]);
+            y = (int)Math.round(xyCenter[1]);
+            obj = new SkyObject();
+            obj.points = sky1Points;
+            obj.xyCenter = new int[]{x, y};
+            output.add(obj);
+        }
+        
+        return output;
     }
     
     public void setToDebug(String dbgLbl) {
@@ -767,6 +745,110 @@ public class Sky {
         
         return true;
     }
+
+    private TIntSet findAdjacentToSun(Set<PairInt> sunPoints, int[] pointLabels,
+        int width, int height) {
+
+        TIntSet adjLabels = new TIntHashSet();
+     
+        int[] dxs = Misc.dx4;
+        int[] dys = Misc.dy4;
+        
+        for (PairInt p : sunPoints) {
+            int x = p.getX();
+            int y = p.getY();
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                if (x2 < 0 || y2 < 0 || x2 >= width || y2 >= height) {
+                    continue;
+                }
+                PairInt p2 = new PairInt(x2, y2);
+                if (sunPoints.contains(p2)) {
+                    continue;
+                }
+                int pixIdx2 = (y2 * width) + x2;
+                adjLabels.add(pointLabels[pixIdx2]);
+            }
+        }
+        
+        return adjLabels;
+    }
+
+    private void addAdjacentSky(Set<PairInt> sunPoints, Set<PairInt> sky0Points,
+        int[] pointLabels, List<Set<PairInt>> labeledSets, float[][] hsvlch, 
+        float[] avgClrs, float[] stdDvClrs, TIntSet adjLabels, 
+        Set<PairInt> output, boolean type1) {
+
+        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
+        
+        TIntSet add = new TIntHashSet();
+        
+        // in the adjacent points, look for those that have sky colors
+        TIntIterator iter = adjLabels.iterator();
+        while (iter.hasNext()) {
+            
+            int label = iter.next();
+            
+            float[] clrs = hsvlch[label];
+            
+            if (isInSkyRange(clrs, type1)) {
+                add.add(label);
+            }
+        }
+        
+        if (add.isEmpty()) {
+            return;
+        }
+        
+        int n0 = add.size();
+        
+        addIfGradientIllumination(pointLabels, labeledSets, hsvlch, 
+            add.iterator().next(), add, avgClrs, stdDvClrs, true);
+        
+        int n1 = add.size();
+        System.out.println("added to sky=" + (n1 - n0));
+                
+        iter = add.iterator();
+        while (iter.hasNext()) {
+            output.addAll(labeledSets.get(iter.next()));
+        }
+        
+    }
+    
+    private boolean isInSkyRange(float[] clrs, boolean type1) {
+        
+        if (type1) {
+            if ((clrs[2] > 0.8) ||
+                ((clrs[2] > vLLimit1) && (clrs[0] < hULimit || 
+                clrs[0] > hLLimit))) {
+
+                return true;
+
+                //int[] xyCen = ch.calculateRoundedXYCentroids(
+                //    labeledSets.get(label));
+                //System.out.println(debugLabel + 
+                //    " xy=" + Arrays.toString(xyCen) + 
+                //    " hsvlch=" + Arrays.toString(clrs) + " n=" 
+                //    + labeledSets.get(label).size());
+            }
+        } else {
+            if ((clrs[2] > 0.8) ||
+                ((clrs[2] > vLLimit0) && (clrs[0] < hULimit || 
+                clrs[0] > hLLimit))) {
+
+                return true;
+
+                //int[] xyCen = ch.calculateRoundedXYCentroids(
+                //    labeledSets.get(label));
+                //System.out.println(debugLabel + 
+                //    "** xy=" + Arrays.toString(xyCen) + 
+                //    " hsvlch=" + Arrays.toString(clrs) + " n=" 
+                //    + labeledSets.get(label).size());
+            }
+        }
+        return false;
+    }
     
     private class BSObj {
         private VeryLongBitString idxs;
@@ -800,7 +882,8 @@ public class Sky {
 
     private void addIfGradientIllumination(int[] labels, 
         List<Set<PairInt>> labeledSets, float[][] hsvlch, int startIdx, 
-        TIntSet add, float[] avgClrs, float[] stdDvClrs) {
+        TIntSet add, float[] avgClrs, float[] stdDvClrs,
+        boolean isNearSun) {
         
         MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
         
@@ -860,6 +943,8 @@ public class Sky {
             or c, will add those cells into "add"
         */
        
+        float eps = isNearSun ? 10 : 0;
+        
         List<BSObj> paths = new ArrayList<BSObj>();
         
         int nBS = hsvlch.length;
@@ -944,9 +1029,15 @@ public class Sky {
                         h_0 += 255;
                     }
                 }
-                float diffH2 = Math.abs(h_0 - h_1);
+                float diffH2 = Math.abs(h_0 - h_1) - eps;
+                if (diffH2 < 0) {
+                    diffH2 = 0;
+                }
                 
-                float diffC = Math.abs(clrs[4] - clrs2[4]);
+                float diffC = Math.abs(clrs[4] - clrs2[4]) - eps;
+                if (diffC < 0) {
+                    diffC = 0;
+                }
                 
                 int[] xyCen = ch.calculateRoundedXYCentroids(
                     labeledSets.get(idx2));
@@ -994,7 +1085,7 @@ public class Sky {
             }
         }
         
-        float eps = 1;
+        eps = 1;
         if (avgClrType == 3) {
             eps = 10;
         }
@@ -1051,6 +1142,10 @@ public class Sky {
             } 
         }
         
+    }
+    
+    public List<SkyObject> findSkyAssumingHorizon() {
+        throw new UnsupportedOperationException("not yet implemented");
     }
     
     //TODO: consider adding findSolarEclipse or sun w/ occultation or coronograph...

@@ -36,7 +36,7 @@ public class SkyTest extends TestCase {
         "mt_rainier_snowy_field.jpg",
         "brown_lowe_2003_image1.jpg",
         "brown_lowe_2003_image2.jpg",
-    
+        
         "stinson_beach.jpg",
         
         "halfdome.jpg",
@@ -52,6 +52,7 @@ public class SkyTest extends TestCase {
         "arizona-sunrise-1342919937GHz.jpg",
         "sky_with_rainbow.jpg",
         "sky_with_rainbow2.jpg"
+        
     };
     
     private String[] sunFileNames = new String[] {
@@ -68,20 +69,13 @@ public class SkyTest extends TestCase {
     
     public void testFindSky() throws Exception {
         
-        /*
+        /* 
         String filePath = ResourceFinder.findFileInTestResources("tmp2.png");
         ImageExt img0 = ImageIOHelper.readImageExt(filePath);
 
         float[] hsb = new float[3];
-        for (int y = 0; y < 120; y+=10) {
-            for (int x = 0; x < 95; x+=10) {
-                Color.RGBtoHSB(img0.getR(x, y), img0.getG(x, y), img0.getB(x, y), 
-                    hsb);
-                System.out.format("(%d,%d) h,s,v=%.2f %.2f %.2f\n", 
-                    x, y, hsb[0], hsb[1], hsb[2]);
-            }
-            //for (int x = 520; x < img0.getWidth(); x+=10) {
-            for (int x = 270; x < img0.getWidth(); x+=10) {
+        for (int y = 0; y < img0.getHeight(); y+=2) {
+            for (int x = 0; x < img0.getWidth(); x+=2) {
                 Color.RGBtoHSB(img0.getR(x, y), img0.getG(x, y), img0.getB(x, y), 
                     hsb);
                 System.out.format("(%d,%d) h,s,v=%.2f %.2f %.2f\n", 
