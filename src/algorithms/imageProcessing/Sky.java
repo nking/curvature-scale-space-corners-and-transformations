@@ -28,11 +28,10 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * a class with methods related to sky specific tasks such as finding the sun,
+ * a class with methods related to daytime sky specific tasks such as finding the sun,
  * rainbow, sky, and skyline.
  * 
  * NOT READY FOR USE.
- * still in design phase
  * 
  * @author nichole
  */
@@ -89,6 +88,8 @@ public class Sky {
     }
     
     /**
+     * NOT READY FOR USE
+     * 
      * NOTE: there are several ways to search for the sky cells in the image,
      * depending upon what information is available.
      * Other methods for use with specific additional information might be
@@ -122,6 +123,13 @@ public class Sky {
      @return 
      */
     public GreyscaleImage extractSkyMask() {
+    
+        List<SkyObject> skyList = findSky();
+        
+        return null;
+    }
+    
+    public List<SkyObject> findSky() {
         
         /*
         this may change.
@@ -161,6 +169,12 @@ public class Sky {
         if (sunObj != null && !sunObj.points.isEmpty()) {
             System.out.println("found sun for " + debugLabel + " at " + 
                 Arrays.toString(sunObj.xyCenter));
+            
+            //System.out.println("sunfinder: " + Arrays.toString(eh.getXYCenter())
+            //    + " dens=" + dens + " n=" + n 
+            //    + " ecc=" + eh.getEccentricity() + " minor=" + 
+            //    eh.getSemiMinor() + " major=" + eh.getSemiMajor()
+            //);
             for (PairInt p : sunObj.points) {
                 int pixIdx = img.getInternalIndex(p);
                 int label = pointLabels[pixIdx];
@@ -300,8 +314,7 @@ public class Sky {
         
         /*
         now that have a starter sky patch and sky filter params
-        (1) add labeled sets that are very similar to starter patch
-        (2) look for the gradual change in illumination of sky as
+           looking for the gradual change in illumination of sky as
             constancy in lch h and gradual change in lch c.
             add those sets if found.
         */
@@ -321,12 +334,9 @@ public class Sky {
             add, avgClrs, stdDvClrs);
         
         //TODO:
-        // (1) possibly, reduce the added sets to the largest contiguou
-        //     or only those connected to the starter idx,
-        //     or keep all added sets excepting the 
-        // (2) if sun was found, search adjacent to it if not already in
-        //     "added" set.  this helps collect sky behind clouds which 
-        //     are occluding
+        //  if sun was found and is not connected with current found sky, 
+        //     search adjacent to it and add results to a wnd list
+        //     for the return
          
         {// debug
             Image tmpImg = img.copyImage();
@@ -566,7 +576,7 @@ public class Sky {
         }
                 
         // trying an objective function of 
-        // obj cost = 5*(h-hmax) + (s-smax) + 0.5*(v-vmax)
+        // obj cost = 5*(h-hmax) + (s-smax) + 0.5*(v-vmax).
         float[] costs = new float[filteredHSVLCH.size()];
         for (int i = 0; i < filteredHSVLCH.size(); ++i) {
             float[] a = filteredHSVLCH.get(i).a;
@@ -666,7 +676,8 @@ public class Sky {
     }
 
     private boolean isAVector(BSObj obj, int idx2, 
-        List<Set<PairInt>> labeledSets, List<OneDIntArray> xyCenters) {
+        List<Set<PairInt>> labeledSets, List<OneDIntArray> xyCenters,
+        int[] labels, int width, int height) {
         
         // draw a line from
         // the first cell center to this cell center and asserting
@@ -734,12 +745,21 @@ public class Sky {
             
             PairInt p = line.get(i);
             
-            Set<PairInt> set = labeledSets.get(cp.get(cIdx));
+            int cLabel = cp.get(cIdx);
+            
+            Set<PairInt> set = labeledSets.get(cLabel);
             
             if (set.contains(p)) {
-                present.add(cIdx);
-            } else if (!present.contains(cIdx)) {
-                return false;
+                present.add(cLabel);
+            } else if (!present.contains(cLabel)) {
+    
+               // int pixIdx = (p.getY() * width) + p.getX();
+               // int label = labels[pixIdx];
+               // if (!present.contains(label)) {                    
+                    return false;
+               // } else {
+               //     cIdx++;
+               // }
             } else {
                 cIdx++;
             }
@@ -875,8 +895,8 @@ public class Sky {
             }
             
             float[] clrs = hsvlch[idx];
-            
-            for (int idx2 : ngbhrs.getSetBits()) {
+            int[] nghbrsIdxs = ngbhrs.getSetBits();
+            for (int idx2 : nghbrsIdxs) {
                 
                 // -- check if path was searched already
                 VeryLongBitString tmpBS = obj.getBS().copy();
@@ -891,7 +911,20 @@ public class Sky {
                 //    the first cell center to this cell center and asserting
                 //    that the vector passes through points in the cells
                 //    in between.
-                if (!isAVector(obj, idx2, labeledSets, xyCenters)) {
+                if (!isAVector(obj, idx2, labeledSets, xyCenters, labels,
+                    img.getWidth(), img.getHeight())) {
+                    System.out.println("n0=" + labeledSets.get(
+                        obj.getOrderedIdxs().get(0)).size());
+                    StringBuilder sb = new StringBuilder("SKIP: ");
+                    TIntList tmp = new TIntArrayList(obj.orderedIdxs);
+                    tmp.add(idx2);
+                    for (int j = 0; j < tmp.size(); ++j) {
+                        int _idx = tmp.get(j);
+                        int[] xyCen = ch.calculateRoundedXYCentroids(
+                            labeledSets.get(_idx));
+                        sb.append(Arrays.toString(xyCen)).append(", ");
+                    }
+                    System.out.println(sb.toString());
                     continue;
                 }
                 
@@ -932,7 +965,6 @@ public class Sky {
                         added = true;
                     }
                 } else if (avgClrType == 6) {
-                    //if (diffH2 < 6 && diffC < 8) {
                     if (diffH2 < 30 && diffC < 20) {
                         added = true;
                     }

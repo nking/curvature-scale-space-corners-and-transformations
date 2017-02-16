@@ -82,7 +82,7 @@ public class SunFinder {
             //    + " ecc=" + eh.getEccentricity() + " minor=" + 
             //    eh.getSemiMinor() + " major=" + eh.getSemiMajor()
             //);
-            if (dens > 0.1 && eh.getEccentricity() < 0.9) {
+            if (dens > 0.1 && eh.getEccentricity() < 0.9 && dens > 0.375) {
                 ehs.add(eh);
                 listOfSets2.add(points);
             }
@@ -115,9 +115,12 @@ public class SunFinder {
             double area = 2. * Math.PI * eh.getMajorTimesMinor();
             double dens = (double)points.size()/area;
         
-            //System.out.println(Arrays.toString(eh.getXYCenter()) 
-            //    + " n=" + points.size()
-            //    + " area=" + area + " dens=" + dens);
+            System.out.println(Arrays.toString(eh.getXYCenter()) 
+                + " n=" + points.size()
+                + " area=" + area + " dens=" + dens
+                + " ecc=" + eh.getEccentricity() + " minor=" + 
+                eh.getSemiMinor() + " major=" + eh.getSemiMajor()
+            );
         
             SkyObject obj = new SkyObject();
             obj.points = points;
