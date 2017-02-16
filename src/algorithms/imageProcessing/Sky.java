@@ -1178,13 +1178,94 @@ public class Sky {
     }
     
     public List<SkyObject> findSkyAssumingHorizon() {
-         /*
-         -- make sets of segmented cells or regions or just every pixel that is within sky color range
-              and those that are not.
-         -- find the region from gs_1 that creates the largest matching 
-               partition between sky and non-sky.
-                can use the assumption of sky being at smaller y coordinates if needed to distinguish
-                foreground.
+        /*
+        essentially, using level sets for binarization of the image.
+        
+        the orientation of the camera is assumed to be up in the images, that
+        is, up is towards smaller y.
+        
+        the notes below are details gathered while looking at individual 
+        test images in order to design the algorithm.
+        
+        -- looks as if it is necessry for some cases to find the foreground
+           non-sky pixels as one of the first steps.
+           -- (details in progress)
+        
+        -- it might be helpful to have had a lower sensitivity for mser edges
+           for gs_0 for some features, though usually the negative image
+           provides the significant level set regions (gs_1 regions).
+        
+        a bigger picture look at the process would suggest that usually the
+        horizon is distinguishable from the sky by color contrast and 
+        illumination.
+        example cases where that is not true are: 
+           -- blue skies with bluish grey buildings.
+           -- red skies with red foreground
+           -- white featureless cloudy skies over snowy mountains.
+              (in this case, naively would expect that separate polarized
+              light filters would help because the mountain reflected
+              light should be slightly more polarized.)
+           -- polarization for red skies might be stronger than the polarization
+              of foreground horizon (the light is approximated as directly from
+              the source, directly thru atmosphere rather than primarily
+              multiply scattered blue light).
+        
+        -- the level sets approach results seen in mserEdges edges handles
+        the blue skies w/ blue buildings better than other techniques tried
+        so far.  in other words, the mseredges edges preserve the boundaries
+        well.
+        -- the mseredges edges have the correct boundaries present in the many 
+        edges.
+        
+        (1) so the mseredges are still a god first step in this algorithm.
+        (2) foreground determination
+        (3) use of level sets to find good partition(s)
+            -- before that need a pass through pixels to characterize pixels
+               as possibly sky or not possibly sky.
+            -- below, notes about individual tests while designing this.
+            -- presumably, a good follow up to the partition is then
+               following the edges they coincide with in order to
+               finish the boundaries.
+            -- need to consider how sun and rainbows when present in
+               image affect the process
+        
+        -- can see from individual regions in gs_1 that a region can be
+           a good partition for the majority of the separation of sky and
+           non-sky and the approximation is faster than the
+           region growing methods.
+        
+        NOTE that the regions are the negtive only for the final mser
+        edges because the positive mser parameters were set for less sensitive
+        so no regions are present in gs_0, but that should be re-examined
+        for this method if it doesn't use the segmentation edges.
+        
+        seattle - gs_1_29 is close, but includes a small building in sky
+        san jose - gs_1_1_4 is close, but is missing the top of the dark
+            hill
+        venturi_0001 - gs_1_1__16 is close, but the sky region overruns the
+           boundary to include the snowy top level mountains
+        arches - gs_1_1__2 is close but is missing the top corner due to
+           sky illumination gradient.
+        arches_sun is a good example of showing spatially separated sky
+            hence the solution would need as many region partitions as
+            separate regions of sky.
+            --> might need to find foreground first (w/ assumption of
+                vertical direction) to estimate number of partions needed
+                (where partition is made by non-intersecting regions).
+        stlouis_arch is also best fit with 2 regions as partion,
+                but this would be difficult to tell by just foreground
+                pixel filter (which doesn't result in separate spatial regions
+                in this one)
+        
+        patagonia test image is good image for finding foreground with
+           the regions as a component tree of level sets (mser regions).
+        
+        see seattle test, region gs_1_29 is close to the correct answer
+        
+        for sanjose, looks like needed more sensitive settings for
+            gs_0.
+        
+        
          */
         //mserEdges._debugOrigRegions(1, debugLabel + "_gs_1_");
         throw new UnsupportedOperationException("not yet implemented");
