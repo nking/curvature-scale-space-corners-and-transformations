@@ -128,15 +128,20 @@ public class Sky {
     }
     
     /**
-     * NOT READY FOR USE
+     * NOT READY FOR USE.
      * 
-     * NOTE: there are several ways to search for the sky cells in the image,
+     * NOTE: this method is possibly over-fitting color terms in conditional
+     * logic due to the small number of test images used to approximate the 
+     * variables.
+     * 
+     * Summary: there are several ways to search for the sky cells in the image,
      * depending upon what information is available.
      * Other methods for use with specific additional information might be
      * made in the future.  For now, this one makes some assumptions
      * about sky color and sky on the border of the image.
      
-     Here is an outline in progress of ways to find the sky in the image using
+     Here is an outline in progress of ways including this method, 
+     to find the sky in the image using
      only the rgb camera image (though w/ transformations to other color spaces
      possibly):
        (1) labeled information
@@ -159,7 +164,11 @@ public class Sky {
           lt 0.17 gt 0.5 
      (5) could make an assumption about the orientation of the camera place, that is, decreasing y
           pixel coord is direction "up" where sky is found.
-       
+     (6) polarization can help find boundaries between sky and foreground
+         objects or horizon.
+     (7) multiple images at same location and pose can help to distinguish
+         between moving sky such as clouds and non-sky.
+     
      * @return 
      */
     public List<SkyObject> findSky() {
