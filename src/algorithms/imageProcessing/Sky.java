@@ -1189,7 +1189,9 @@ public class Sky {
     public List<SkyObject> findSkyAssumingHorizon() {
         
         /*
-        essentially, using level sets for binarization of the image.
+        essentially, using level sets for binarization of the image into sky
+        and non sky.   success depends upon ablilty to evaluate whether 
+        pixels are sky or non-sky.
         
         the orientation of the camera is assumed to be up in the images, that
         is, up is towards smaller y.
@@ -1198,15 +1200,16 @@ public class Sky {
         test images in order to design the algorithm.
         
         -- looks as if it is necessary for some cases to find the foreground
-           non-sky pixels as one of the first steps.
+           and horizon non-sky pixels as one of the first steps.
            -- (details in progress)
               -- since region growing from bottom of image in general looks like
                  a feasible approach, level set regions should be even better.
-              -- redid gs0 sim to gs1:
+              -- re-did regions gs[0] similar to mser sensitivity parameters used
+                 for the more sensitive gs[1]:
                  -- looking for whether one region in each provides
-                    the right partitions (or more than one region).
+                    the right partitions (or more than one region if needed).
                     -- seattle 1_1__29 and 0__42.
-                         could curtail overrun by using the intersection segmentation
+                         could curtail overrun by using the intersection with segmentation
                     -- san jose sky: 1_1__29, 0__7, 0__2 
                              nonsky: 1_1__4, 0__11
                     -- venturi_0001 sky: 0__7
@@ -1283,18 +1286,10 @@ public class Sky {
                        ==> best partition is single region for sky 1_1__1
                     
         
-        -- it might be helpful to have had a lower sensitivity for mser edges
-           for gs_0 for some features, though usually the negative image
-           provides the significant level set regions (gs_1 regions).
-        
-        -- (could consider the regions gs_1 in a component tree of level
-            sets to more quickly encapsulate the illumination change
-            in sky... useful for filtering out the embedded when clearly
-            part of same larger scale object)
         -- the partition logic when designed, should include a penalty for
            including non-sky pixels...
            might need to find the region which included most possible sky
-           pixels whilse excluding non-sky, then choose among those
+           pixels while excluding non-sky, then choose among those
            for the best partition.
            either at that prev step or here, need to consider the
            boundary defined by extending the overlap of current region
@@ -1311,22 +1306,22 @@ public class Sky {
         that the camera receives is more polarized.
         
         for white cloudy skies over snowy mountains, polarization might be
-        helpful in finding the skyline.
+        helpful in differentiating, hence finding the skyline.
         for blue metal buildings upon blue sky backgrounds, polarization difference
         will be large.
 
-        polarization data isnt available here, nor are multiple images taken at the
+        NOTE that polarization data isnt available here in the project currently, 
+        nor are multiple images taken at the
         same location and pose.
 
-        -- the level sets approach results seen in mserEdges edges handles
-        the blue skies w/ blue buildings better than other techniques tried
-        so far.  in other words, the mseredges edges preserve the boundaries
-        well.
-        -- the mseredges edges have the correct boundaries present in the many 
-        edges.
+        -- note that the level sets approach to edges 
+        results in better boundaries for test with
+        blue skies and blue buildings better than other techniques tried
+        so far.  in other words, the MSEREdges edges preserve the boundaries
+        well, even for low constrast conditions.
         
         (1) so the mseredges are still a good first step in this algorithm.
-        (2) foreground determination
+        (2) foreground/horizon determination
         (3) use of level sets to find good partition(s)
             -- before that need a pass through pixels to characterize pixels
                as possibly sky or not possibly sky.
@@ -1357,27 +1352,7 @@ public class Sky {
         so no regions are present in gs_0, but that should be re-examined
         for this method if it doesn't use the segmentation edges.
         
-        seattle - gs_1_29 is close, but includes a small building in sky
-        san jose - gs_1_1_4 is close, but is missing the top of the dark
-            hill
-        venturi_0001 - gs_1_1__16 is close, but the sky region overruns the
-           boundary to include the snowy top level mountains
-        arches - gs_1_1__2 is close but is missing the top corner due to
-           sky illumination gradient.
-        arches_sun is a good example of showing spatially separated sky
-            hence the solution would need as many region partitions as
-            separate regions of sky.
-            --> might need to find foreground first (w/ assumption of
-                vertical direction) to estimate number of partions needed
-                (where partition is made by non-intersecting regions).
-        stlouis_arch is also best fit with 2 regions as partion,
-                but this would be difficult to tell by just foreground
-                pixel filter (which doesn't result in separate spatial regions
-                in this one)
-        
-        patagonia test image is good image for finding foreground with
-           the regions as a component tree of level sets (mser regions).
-        
+       
         */
         
         List<Region> gs0 = mserEdges._extractSensitiveGS0();
