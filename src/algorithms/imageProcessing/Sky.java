@@ -1178,6 +1178,7 @@ public class Sky {
     }
     
     public List<SkyObject> findSkyAssumingHorizon() {
+        
         /*
         essentially, using level sets for binarization of the image.
         
@@ -1190,27 +1191,124 @@ public class Sky {
         -- looks as if it is necessary for some cases to find the foreground
            non-sky pixels as one of the first steps.
            -- (details in progress)
+              -- since region growing from bottom of image in general looks like
+                 a feasible approach, level set regions should be even better.
+              -- redid gs0 sim to gs1:
+                 -- looking for whether one region in each provides
+                    the right partitions (or more than one region).
+                    -- seattle 1_1__29 and 0__42.
+                         could curtail overrun by using the intersection segmentation
+                    -- san jose sky: 1_1__29, 0__7, 0__2 
+                             nonsky: 1_1__4, 0__11
+                    -- venturi_0001 sky: 0__7
+                                 nonsky: 0__16, 1_1__1, 1_1__2
+                       ==> best partition is single region for non-sky 0__25
+                    -- venturi_0010 sky: 
+                                 nonsky:
+                       ==> best partition is single region for non-sky 0__25
+                    -- arches sky: 
+                                 nonsky:
+                       ==> best partition is single region for non-sky 0__22
+                    -- arches-sun sky: 
+                                 nonsky:
+                       ==> best partition is single region for non-sky 0__36
+                    -- stlouis arch sky: 
+                                 nonsky:
+                       ==> best partition is single region for non-sky 0__23
+                       (note: SUN is all empty space in 0__33)
+                    --  contrail sky: 
+                                 nonsky:
+                        ==> best partition is single region for sky 0__7
+                    --  klein matterhorn sky: 
+                                 nonsky: 0__35, 1_1_19
+                    --  patagonia sky: 
+                                 nonsky: 1_1__2, 0_18, 0_10, 1_1_23
+                    --  rainier snowy field sky: 
+                                 nonsky:
+                           horizon partly merges with sky within this image
+                           so with only this, is difficult to discerne it
+                    --  brown and lowe image 1 sky: 
+                                            nonsky: 
+                        NOTE gs 0 and 1 have several regions which add up to
+                            an incomplete partition.
+                        BUT, pt1 finds sky completely w/ 1_3__16
+                    --  brown and lowe image 2 sky: 
+                                            nonsky:
+                        NOTE gs 0 and 1 have several regions which add up to
+                            an incomplete partition.
+                        BUT, pt1 finds sky completely w/ 1_3__18
+                    -- stinson sky: 
+                                 nonsky:
+                       ==> best partition is single region for sky 0__35
+                    -- halfdome sky: 
+                                 nonsky:
+                       ==> best partition is single region for nonsky 0__2 OR 1_1__1
+                    -- halfdome 2 sky: 
+                                 nonsky:
+                       ==> best partition is single region for nonsky 0__24 OR 1_1__6
+                    -- halfdome 3 sky: 
+                                 nonsky:
+                       ==> best partition is single region for nonsky 0__23 
+                           OR for sky 1_1__11
+                    -- costa-rica   sky: 1_1__13
+                                 nonsky: or 0_14
+                    -- norwegian    sky: 1_1__5 + 0_5
+                                 nonsky:
+                    -- stonehenge sky: 
+                                 nonsky:
+                       ==> best partition is single region for nonsky 0__3
+                            OR sky 1_1__4
+                    -- new-mexico sky: 
+                                 nonsky:
+                       ==> best partition is single region for nonsky 0__19
+                            OR sky 1_1__0
+                    -- arizona sky: overruns horizon 1_1__0
+                                 nonsky:
+                         NOTE: can find the sun completely in the space of 0___18
+                    -- sky with rainbow sky: 
+                                     nonsky:
+                       ==> best partition is single region for nonsky 0__34
+                           OR sky 1_1__3
+                    -- sky with rainbow2 sky: 
+                                     nonsky:
+                       ==> best partition is single region for sky 1_1__1
+                    
         
         -- it might be helpful to have had a lower sensitivity for mser edges
            for gs_0 for some features, though usually the negative image
            provides the significant level set regions (gs_1 regions).
         
+        -- (could consider the regions gs_1 in a component tree of level
+            sets to more quickly encapsulate the illumination change
+            in sky... useful for filtering out the embedded when clearly
+            part of same larger scale object)
+        -- the partition logic when designed, should include a penalty for
+           including non-sky pixels...
+           might need to find the region which included most possible sky
+           pixels whilse excluding non-sky, then choose among those
+           for the best partition.
+           either at that prev step or here, need to consider the
+           boundary defined by extending the overlap of current region
+           boundary with mser edges.
+        
+        
         a bigger picture look at the process would suggest that usually the
         horizon is distinguishable from the sky by color contrast and 
         illumination.
-        example cases where that is not true are: 
-           -- blue skies with bluish grey buildings.
-           -- red skies with red foreground
-           -- white featureless cloudy skies over snowy mountains.
-              (in this case, naively would expect that separate polarized
-              light filters might help because the mountain reflected
-              light might be slightly more polarized...need to think more
-              about this and browse the empirical (existing data))
-           -- polarization for red skies might be stronger than the polarization
-              of foreground horizon (the light is approximated as directly from
-              the source, directly thru atmosphere rather than primarily
-              multiply scattered blue light).
+        polarization could help distinguish atmosphere and clouds from the
+        foreground at the horizon.  the sunlight source function is not
+        polarized (its a mixture of all polarizations), but upon reflection
+        or interactions with molecules in clouds and aerosols, the light 
+        that the camera receives is more polarized.
         
+        for white cloudy skies over snowy mountains, polarization might be
+        helpful in finding the skyline.
+        for blue metal buildings upon blue sky backgrounds, polarization difference
+        will be large.
+
+        polarization data isnt available here, nor are multiple images taken at the
+        same location and pose.
+
         -- the level sets approach results seen in mserEdges edges handles
         the blue skies w/ blue buildings better than other techniques tried
         so far.  in other words, the mseredges edges preserve the boundaries
@@ -1229,7 +1327,17 @@ public class Sky {
                finish the boundaries.
             -- need to consider how sun and rainbows when present in
                image affect the process
-        
+        -- sometimes the foreground is found really well by the
+           regions pt_0 
+            (foreground theta is darker than sky theta)
+        -- sky is found really well with pt_1 for
+           - blue skies in arches, arches_sun, brown and lowe
+           - blue and cloudy also in cloudy_sanjose, contrail,
+           - *if rainbow had been masked out of bright skies rainbow
+            image, a region would have found all of the clouds,
+            though not complete sky
+           - in no others is the pt_1 useful for finding all sky
+         
         -- can see from individual regions in gs_1 that a region can be
            a good partition for the majority of the separation of sky and
            non-sky and the approximation is faster than the
@@ -1261,10 +1369,17 @@ public class Sky {
         patagonia test image is good image for finding foreground with
            the regions as a component tree of level sets (mser regions).
         
+        */
         
-         */
+        List<Region> gs0 = mserEdges._extractSensitiveGS0();
+        mserEdges._debugOrigRegions(gs0, debugLabel + "_gs_0_");
+        
         //mserEdges._debugOrigRegions(1, debugLabel + "_gs_1_");
-        throw new UnsupportedOperationException("not yet implemented");
+        //mserEdges._debugOrigRegions(2, debugLabel + "_pt_0_");
+        //mserEdges._debugOrigRegions(3, debugLabel + "_pt_1_");
+        
+        return null;
+        //throw new UnsupportedOperationException("not yet implemented");
     }
     
     //TODO: consider adding findSolarEclipse or sun w/ occultation or coronograph...
