@@ -1,8 +1,10 @@
 package algorithms.imageProcessing.features.mser;
 
+import algorithms.QuickSort;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.DFSConnectedGroupsFinder;
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.GroupPixelHSV;
 import algorithms.imageProcessing.GroupPixelRGB0;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
@@ -13,10 +15,20 @@ import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.features.mser.MSER.Threshold;
 import algorithms.imageProcessing.segmentation.ColorSpace;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
+import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
+import gnu.trove.iterator.TIntIntIterator;
 import gnu.trove.iterator.TIntIterator;
+import gnu.trove.list.TDoubleList;
+import gnu.trove.list.TFloatList;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TDoubleArrayList;
+import gnu.trove.list.array.TFloatArrayList;
+import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.set.TIntSet;
@@ -24,9 +36,13 @@ import gnu.trove.set.hash.TIntHashSet;
 import java.awt.Color;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import thirdparty.edu.princeton.cs.algs4.Interval;
+import thirdparty.edu.princeton.cs.algs4.Interval2D;
+import thirdparty.edu.princeton.cs.algs4.QuadTree;
 
 /**
  * class to explore the boundaries of the accumulated points in MSER regions.
@@ -62,6 +78,11 @@ public class MSEREdges {
     private final GreyscaleImage gsImg;
     private final GreyscaleImage ptImg;
     private List<Region> regions = null;
+    
+    //a re-extraction of regions on the gs positive image, but using the
+    // MSER parameters used for the negative image.
+    // this is not useful in edges, but is useful for other methods.
+    private List<Region> sensitiveGS0 = null;
 
     // the original regions for gs positive, negative, then pt positive
     // and negative.  regions and filteredRegions should be prefered for most
@@ -124,7 +145,7 @@ public class MSEREdges {
         }
         
         extractRegions();
-        
+                
         extractBoundaries();
         
         useFilterOnEdges();
@@ -184,15 +205,29 @@ public class MSEREdges {
                     //&& r.getVariation() == 0.0) {
                     && r.getVariation() < 2.) {
                     list.remove(i);
-                } else {
-                    regions.add(r);
                 }
             }
+            if (type == 1) {
+                List<TIntList> concList = getEmbeddedLevels(list);
+                TIntList rmList = new TIntArrayList();
+                for (int k = 0; k < concList.size(); ++k) {
+                    for (int i3 = 1; i3 < concList.get(k).size(); ++i3) {
+                        rmList.add(concList.get(k).get(i3));
+                    }
+                }
+                rmList.sort();
+                for (int k = rmList.size() - 1; k > -1; --k) {
+                    int rmIdx = rmList.get(k);
+                    list.remove(rmIdx);
+                }
+            }
+            
             // copy list into origGsPtRegions
             List<Region> cpList = new ArrayList<Region>();
             origGsPtRegions.add(cpList);
             for (Region r : list) {
                 cpList.add(r.copy());
+                regions.add(r);
             }
         }
         
@@ -646,7 +681,7 @@ public class MSEREdges {
 
     private void printEdges() {
         
-        Image im = gsImg.copyToColorGreyscale();
+        Image im = clrImg.copyImage();
         
         int[] clr = new int[]{255, 0, 0};
         
@@ -930,13 +965,286 @@ public class MSEREdges {
         return filtered;
     }
     
+    /**
+     * experimental method for a specific use case.  if this method is retained
+     * and used, it could be made more efficient.
+     * @return 
+     */
+    public List<Region> _extractSensitiveGS0() {
+    
+        GreyscaleImage invImg = gsImg.copyImage();
+        // Invert the pixel values
+        for (int i = 0; i < invImg.getNPixels(); ++i) {
+            int v = invImg.getValue(i);
+            v = ~v;
+            if (v < 0) {
+                v += 256;
+            }
+            invImg.setValue(i, v);
+        }
+        
+        List<List<Region>> gsRegions = extractMSERRegions(invImg, 
+            Threshold.LESS_SENSITIVE);
+
+        List<Region> regions2 = new ArrayList<Region>();
+        
+        for (int type = 1; type < 2; ++type) {
+            List<Region> list = gsRegions.get(type);
+            for (int i = (list.size() - 1); i > -1; --i) {
+                Region r = list.get(i);
+                if ((type == 1) && r.getVariation() > 2.) {
+                    list.remove(i);
+                } else if ((type == 0)
+                    //&& r.getVariation() == 0.0) {
+                    && r.getVariation() < 2.) {
+                    list.remove(i);
+                } else {
+                    regions2.add(r);
+                }
+            }
+        }
+        
+        return regions2;
+    }
+    
+    public List<TIntList> getEmbeddedGS0Levels() {
+        if (sensitiveGS0 == null) {
+            sensitiveGS0 = _extractSensitiveGS0();
+        }
+        
+        return getEmbeddedLevels(sensitiveGS0);
+    }
+    
+    private List<TIntList> getEmbeddedLevels(List<Region> rs) {
+        
+        //NOTE: if end up using this heavily, should consider a layered level
+        //   set structure from the start
+        
+        // looking for level sets of concentric ellipses
+        int[] sizes = new int[rs.size()];
+        for (int i = 0; i < rs.size(); ++i) {
+            sizes[i] = rs.get(i).area_;
+        }
+        QuickSort.sortBy1stArg(sizes, rs);
+        
+        //_debugOrigRegions(rs, "_rs_");
+        
+        List<EllipseHelper> ehs = new ArrayList<EllipseHelper>();
+        List<GroupPixelHSV> hsvs = new ArrayList<GroupPixelHSV>();
+        
+        int[] xyCen = new int[2];
+        int w = clrImg.getWidth();
+        int h = clrImg.getHeight();
+        
+        QuadTree<Integer, Integer> centroidQT = new QuadTree<Integer, Integer>();
+
+        // store the region centroids in quadtree
+        for (int i = 0; i < rs.size(); ++i) {
+            Region r = rs.get(i);
+            r.calculateXYCentroid(xyCen, w, h);
+            double[] coeffs = r.calcParamTransCoeff();
+            EllipseHelper eh = new EllipseHelper(xyCen[0], xyCen[1], coeffs);
+            ehs.add(eh);
+
+            GroupPixelHSV gHSV = new GroupPixelHSV();
+            gHSV.calculateColors(r.getAcc(), clrImg);
+            hsvs.add(gHSV);
+            
+            centroidQT.insert(xyCen[0], xyCen[1], Integer.valueOf(i));
+        }
+        
+        TIntList skip = new TIntArrayList();
+        
+        /*
+        concentric regions due to illumintion gradient tend to have
+        similar eccentricities, orientation, and direction away from
+        the largest region center.
+        They also tend to have 3 or 4 of the ellipse semi major and 
+        minor endpoints within the largest region's bounds,
+        that is the direction of the illumination gradient is in one 
+        direction.
+        */
+        
+        List<TIntList> concentric = new ArrayList<TIntList>();
+        
+        // visit from largest region to smallest 
+        for (int i = (rs.size() - 1); i > -1; --i) {
+            if (skip.contains(i)) { continue; }
+            EllipseHelper eh = ehs.get(i);
+            
+            if (hsvs.get(i).getStdDevV() > 0.075) {
+                continue;
+            }
+            
+            int[] minMaxXY = eh.getMinMaxXY();
+        
+            Interval<Integer> intX = new Interval<Integer>(minMaxXY[0], minMaxXY[1]);
+            Interval<Integer> intY = new Interval<Integer>(minMaxXY[2], minMaxXY[3]);
+            Interval2D<Integer> rect = new Interval2D<Integer>(intX, intY);
+
+            List<Integer> indexes = centroidQT.query2D(rect);
+            if (indexes == null || indexes.size() < 2) {
+                continue;
+            }
+            
+            float orientation = (float)(
+                eh.getOrientation() * 180./Math.PI);
+            double ecc = eh.getEccentricity();
+            
+            System.out.format(
+                "OUTER (%d,%d) or=%.3f ecc=%.3f  stdvV=%.3f n=%d\n",
+                eh.getXYCenter()[0], eh.getXYCenter()[1],
+                (float)eh.getOrientation(),
+                (float)eh.getEccentricity(), hsvs.get(i).getStdDevV(),
+                rs.get(i).accX.size()
+            );
+            
+            TIntList idx2s = new TIntArrayList();
+            TDoubleList dirs = new TDoubleArrayList();
+            for (int j = 0; j < indexes.size(); ++j) {
+                int idx2 = indexes.get(j).intValue();
+                if (idx2 == i || skip.contains(idx2)) { continue; }
+                
+                if (hsvs.get(idx2).getStdDevV() > 0.075) {
+                    continue;
+                }
+                
+                EllipseHelper eh2 = ehs.get(idx2);
+                float orientation2 = (float)(
+                    eh2.getOrientation() * 180./Math.PI);
+                
+                float diffOr = AngleUtil.getAngleDifference(orientation, 
+                    orientation2);
+                
+                if (Math.abs(diffOr) > 5.75) {
+                    continue;
+                }
+                if (Math.abs(ecc - eh2.getEccentricity()) > 0.07) {
+                    continue;
+                }
+                
+                PairInt[] ep = eh2.getSemiAxesEndoints();
+                int nTrue = 0;
+                for (int k = 0; k < 4; ++k) {
+                    if (eh.isWithin(ep[k].getX(), ep[k].getY())) {
+                        nTrue++;
+                    }
+                }
+                
+                boolean t0 = eh.isWithin(ep[0].getX(), ep[0].getY());
+                boolean t1 = eh.isWithin(ep[1].getX(), ep[1].getY());
+                boolean t2 = eh.isWithin(ep[2].getX(), ep[2].getY());
+                boolean t3 = eh.isWithin(ep[3].getX(), ep[3].getY());
+                
+                
+                double atan2 = Math.atan2(
+                    (double)(eh2.getXYCenter()[1] -  eh.getXYCenter()[1]),
+                    (double)(eh2.getXYCenter()[0] -  eh.getXYCenter()[0]))
+                    * 180./Math.PI;
+                if (atan2 < 0) {
+                    atan2 += 360;
+                }
+                
+                //System.out.println("     " + Arrays.toString(ep));
+                
+                System.out.format(
+                    "     (%d,%d) or=%.3f ecc=%.3f atan2=%.3f "
+                        + "isWithin=%b,%b,%b,%b  stdvV=%.3f n=%d\n",
+                    eh2.getXYCenter()[0], eh2.getXYCenter()[1],
+                    (float)eh2.getOrientation(),
+                    (float)eh2.getEccentricity(), (float)atan2, 
+                    t0, t1, t2, t3, hsvs.get(idx2).getStdDevV(),
+                    rs.get(idx2).accX.size()
+                );
+                
+                if (nTrue < 2) {
+                    continue;
+                }
+              
+   //cannot include if there is alot of variation in the level set
+                
+                // can't tell which directions are consistent w/ a gradient
+                // yet, so collect all
+                idx2s.add(idx2);
+                dirs.add(atan2);
+            }
+            
+            if (dirs.size() < 2) {
+                continue;
+            }
+            
+            // gradient will be apparent as 2 or more regions having
+            // similar atan2 (within approx 10 degrees)
+            // key = bin number where bin size is 10 degrees, value = number
+            //    of items in dirs which have that direction key bin
+            float binSz = 10.f;
+            TIntIntMap dirFreq = new TIntIntHashMap();
+            for (int k = 0; k < dirs.size(); ++k) {
+                double direction = dirs.get(k);
+                int bin = (int)(direction/binSz);
+                if (dirFreq.containsKey(bin)) {
+                    int c = dirFreq.get(bin);
+                    dirFreq.put(bin, c + 1);
+                } else {
+                    dirFreq.put(bin, 1);
+                }
+            }
+            int maxFreq = Integer.MIN_VALUE;
+            int maxFreqBin = -1;
+            TIntIntIterator iter = dirFreq.iterator();
+            for (int k = 0; k < dirFreq.size(); ++k) {
+                iter.advance();
+                int c = iter.value();
+                if (c > maxFreq) {
+                    maxFreq = c;
+                    maxFreqBin = iter.key();
+                }
+            }
+            if (maxFreq < 2) {
+                continue;
+            }
+            // combine those ideally within 10 degrees of each other,
+            //  so roughly 7.07 from bin center
+            float dirCenter = ((float)maxFreqBin)*binSz + (binSz/2.f);
+            double dist = Math.sqrt(2) * binSz/2.;
+            
+            System.out.println("   adding");
+            
+            //List<TIntList> concentric = new ArrayList<TIntList>();
+            TIntList concList = new TIntArrayList();
+            concentric.add(concList);
+            concList.add(i);
+            skip.add(i);
+            for (int k = 0; k < dirs.size(); ++k) {
+                double direction = dirs.get(k);
+                double diff = Math.abs(direction - dirCenter);
+                if (diff > dist) {
+                    continue;
+                }
+                int idx2 = idx2s.get(k);
+                concList.add(idx2);
+                skip.add(idx2);
+            }
+            
+            {//DEBUG
+                List<Region> tmp = new ArrayList<Region>();
+                for (int k = 0; k < concList.size(); ++k) {
+                    tmp.add(rs.get(concList.get(k)));
+                }
+                _debugOrigRegions(tmp, "_rs_" + concentric.size());
+            }
+        }
+        
+        return concentric;
+    }
+    
     public void _debugOrigRegions(int idx, String lbl) {
         List<Region> list = origGsPtRegions.get(idx);
         lbl = lbl + "_" + idx + "_";
         _debugOrigRegions(list, lbl);
     }
     
-    private void _debugOrigRegions(List<Region> list, String lbl) {
+    public void _debugOrigRegions(List<Region> list, String lbl) {
         int[] xyCen = new int[2];
         Image imCp;
         System.out.println("printing " + list.size());

@@ -1,6 +1,5 @@
 package algorithms.imageProcessing.features.mser;
 
-import algorithms.QuickSort;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -28,6 +27,8 @@ public class EllipseHelper {
     private final double minor;
     private final double major;
     private final double eccentricity;
+    private final double orientation;
+    private final PairInt[] semiAxesEndPoints;
     
     /**
      * constructor w/ center x, y and coefficients 
@@ -65,8 +66,72 @@ public class EllipseHelper {
         }
         
         eccentricity = Math.sqrt(major*major - minor*minor)/major;
+    
+        double angle = Math.atan(coeffs[0]/coeffs[2]);
+        if (angle < 0) {
+            angle += Math.PI;
+        }
+        orientation = angle;
         
         bounds = new Bounds(ellipse);
+        
+        semiAxesEndPoints = calculateAxesEndpoints(v0x, v1x, v0y, v1y);
+    }
+    
+    private PairInt[] calculateAxesEndpoints(double v0x, double v1x, 
+        double v0y, double v1y) {
+        /*
+        orientation ref frame is 90 is 0,0 to 0,1 direction
+        and the orientation is the direction the semi-minor axis points along
+        its axis (not tangent to its axis).
+        
+                  .
+                X .       -
+                  .   -
+                  -...........
+              -
+          -         X
+           
+        apogee points are the semi-minor axes endpoints:
+        */
+        PairInt[] axesEndPoints = new PairInt[4];
+        double ori = orientation;
+        
+        double mc = Math.cos(ori - Math.PI/2.);
+        double ms = Math.sin(ori - Math.PI/2.);
+        int x1 = (int)Math.round(x - major * mc);
+        int y1 = (int)Math.round(y + major * ms);
+        int x2 = (int)Math.round(x + major * mc);
+        int y2 = (int)Math.round(y - major * ms);
+        if (x1 < 0) { x1 = 0;}
+        if (y1 < 0) { y1 = 0;}
+        if (x2 < 0) { x2 = 0;}
+        if (y2 < 0) { y2 = 0;}
+        x1 = (x1 >= bounds.maxCol) ? bounds.maxCol - 1 : x1;
+        y1 = (y1 >= bounds.maxRow) ? bounds.maxRow - 1 : y1;
+        x2 = (x2 >= bounds.maxCol) ? bounds.maxCol - 1 : x2;
+        y2 = (y2 >= bounds.maxRow) ? bounds.maxRow - 1 : y2;
+        axesEndPoints[0] = new PairInt(x1, y1);
+        axesEndPoints[1] = new PairInt(x2, y2);
+        
+        mc = Math.cos(ori);
+        ms = Math.sin(ori);
+        x1 = (int)Math.round(x + minor * mc);
+        y1 = (int)Math.round(y - minor * ms);
+        x2 = (int)Math.round(x - minor * mc);
+        y2 = (int)Math.round(y + minor * ms);
+        if (x1 < 0) { x1 = 0;}
+        if (y1 < 0) { y1 = 0;}
+        if (x2 < 0) { x2 = 0;}
+        if (y2 < 0) { y2 = 0;}
+        x1 = (x1 >= bounds.maxCol) ? bounds.maxCol - 1 : x1;
+        y1 = (y1 >= bounds.maxRow) ? bounds.maxRow - 1 : y1;
+        x2 = (x2 >= bounds.maxCol) ? bounds.maxCol - 1 : x2;
+        y2 = (y2 >= bounds.maxRow) ? bounds.maxRow - 1 : y2;
+        axesEndPoints[2] = new PairInt(x1, y1);
+        axesEndPoints[3] = new PairInt(x2, y2);
+        
+        return axesEndPoints;
     }
     
     /**
@@ -91,11 +156,27 @@ public class EllipseHelper {
         this.major = 2. * coeffs[4];
         this.minor = 2. * coeffs[5];
     
+        double angle = Math.atan(coeffs[0]/coeffs[2]);
+        if (angle < 0) {
+            angle += Math.PI;
+        }
+        orientation = angle;
+        
         eccentricity = Math.sqrt(major*major - minor*minor)/major;
+    
+        double v0x = coeffs[0];
+        double v1x = coeffs[1];
+        double v0y = coeffs[2];
+        double v1y = coeffs[3];
+        semiAxesEndPoints = calculateAxesEndpoints(v0x, v1x, v0y, v1y);
     }
     
     public double getEccentricity() {
         return eccentricity;
+    }
+    
+    public double getOrientation() {
+        return orientation;
     }
     
     public PairIntArray getEllipse() {
@@ -254,7 +335,16 @@ public class EllipseHelper {
         return (int)Math.round(major);
     }
     
+    public PairInt[] getSemiAxesEndoints() {
+        return semiAxesEndPoints;
+    }
+    
     public int[] getXYCenter() {
         return new int[]{x, y};
+    }
+    
+    public int[] getMinMaxXY() {
+        return new int[]{bounds.minCol, bounds.maxCol, bounds.minRow, 
+            bounds.maxRow};
     }
 }

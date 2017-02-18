@@ -796,5 +796,12 @@ public class Region {
         sb.append(" stable=").append(stable_);
         return sb.toString();
     }
-    
+   
+    public Set<PairInt> getAcc() {
+        Set<PairInt> out = new HashSet<PairInt>();
+        for (int i = 0; i < accX.size(); ++i) {
+            out.add(new PairInt(accX.get(i), accY.get(i)));
+        }
+        return out;
+    }
 }
