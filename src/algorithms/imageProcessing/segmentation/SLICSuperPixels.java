@@ -571,7 +571,7 @@ public class SLICSuperPixels {
             for (int j = 0; j < h; ++j) {
                 int pixIdx = img.getInternalIndex(i, j);
                 if (labels[pixIdx] == -1) {
-                    addNeighobLabelsForPoint(unassignedMap, i, j, dxs, dys);
+                    SLICSuperPixels.this.addNeighborLabelsForPoint(unassignedMap, i, j, dxs, dys);
                 }
             }
         }
@@ -607,7 +607,7 @@ public class SLICSuperPixels {
                 assert (adjLabels != null);
             } else {
                 adjLabels = new TIntHashSet();
-                addNeighobLabelsForPoint(adjLabels, x1, y1, dxs, dys);
+                addNeighborLabelsForPoint(adjLabels, x1, y1, dxs, dys);
             }
 
             double minD = Double.MAX_VALUE;
@@ -686,7 +686,7 @@ public class SLICSuperPixels {
         return labels;
     }
 
-    private void addNeighobLabelsForPoint(Map<PairInt, TIntSet> unassignedMap,
+    private void addNeighborLabelsForPoint(Map<PairInt, TIntSet> unassignedMap,
         int i, int j, int[] dxs, int[] dys) {
 
         int w = img.getWidth();
@@ -700,10 +700,10 @@ public class SLICSuperPixels {
             unassignedMap.put(p, adjLabels);
         }
 
-        addNeighobLabelsForPoint(adjLabels, i, j, dxs, dys);
+        addNeighborLabelsForPoint(adjLabels, i, j, dxs, dys);
     }
 
-    private void addNeighobLabelsForPoint(TIntSet adjLabels,
+    private void addNeighborLabelsForPoint(TIntSet adjLabels,
         int i, int j, int[] dxs, int[] dys) {
 
         int w = img.getWidth();

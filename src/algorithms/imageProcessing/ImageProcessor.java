@@ -7213,13 +7213,22 @@ if (sum > 511) {
             }
         }
     }
-    
+
     /**
      * apply 8 hit or miss filters iteratively until convergence to thin the
      * image.  the operation is performed on all pixels with value > 0.
      * @param img
      */
     public void applyThinning(GreyscaleImage img) {
+        applyThinning(img, true);
+    }
+    
+    /**
+     * apply 8 hit or miss filters iteratively until convergence to thin the
+     * image.  the operation is performed on all pixels with value > 0.
+     * @param img
+     */
+    public void applyThinning(GreyscaleImage img, boolean usePLTC) {
 
         //from https://en.wikipedia.org/wiki/Hit-or-miss_transform
         // and thinning
@@ -7294,14 +7303,16 @@ if (sum > 511) {
         
         Set<PairInt> points = readNonZeroPixels(img);
         
-        PostLineThinnerCorrections pLTC = new PostLineThinnerCorrections();
-        pLTC._correctForArtifacts(points, img.getWidth(), 
-            img.getHeight());
-        for (int i = 0; i < img.getWidth(); ++i) {
-            for (int j = 0; j < img.getHeight(); ++j) {
-                PairInt p = new PairInt(i, j);
-                if (!points.contains(p)) {
-                    img.setValue(i, j, 0);
+        if (usePLTC) {
+            PostLineThinnerCorrections pLTC = new PostLineThinnerCorrections();
+            pLTC._correctForArtifacts(points, img.getWidth(), 
+                img.getHeight());
+            for (int i = 0; i < img.getWidth(); ++i) {
+                for (int j = 0; j < img.getHeight(); ++j) {
+                    PairInt p = new PairInt(i, j);
+                    if (!points.contains(p)) {
+                        img.setValue(i, j, 0);
+                    }
                 }
             }
         }
