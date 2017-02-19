@@ -5986,7 +5986,60 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
         return tmpImg2;
     }
+    
+    /**
+     * expecting binary image input where a pixel of value "1" is significant.
+     * if any of the pixels in gapsOf1 are completely surrounded by
+     * pixels of value "1" in their 8 pixel neighborhood,
+     * those gap pixels are set to "0".
+     * 
+     * @param img binary image
+     * @param gapsOf1
+     * @param value 
+     */
+    public void restoreGapsOf1WhereSurrounded(GreyscaleImage img,
+        Set<PairInt> gapsOf1, int value) {
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        int w = img.getWidth();
+        int h = img.getHeight();
+        Set<PairInt> reset = new HashSet<PairInt>();
+        for (PairInt p : gapsOf1) {
+            int x = p.getX();
+            int y = p.getY();
+            int n1s = 0;
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                if (x2 < 0 || y2 < 0 || x2 >= w || y2 >= h) {
+                    continue;
+                }
+                if (img.getValue(x2, y2) == 1) {
+                    n1s++;
+                }
+            }
+            if (n1s == dxs.length) {
+                reset.add(p);
+            }
+        }
+        for (PairInt p : reset) {
+            img.setValue(p.getX(), p.getY(), 0);
+        } 
+        
+    }
 
+    /**
+     * expecting binary image input where a pixel of value "1" is significant.
+     * The algorithm is similar to dilation, in that if any pixel has
+     * a gap of size 1 pixel in between itself and another, that gap is
+     * set to value 0 and stored in outputAddedGaps.
+     * 
+     * @param img
+     * @param outputAddedGaps
+     * @param value
+     * @return 
+     */
     public GreyscaleImage fillInGapsOf1(GreyscaleImage img,
         Set<PairInt> outputAddedGaps, int value) {
 

@@ -3,7 +3,6 @@ package algorithms.imageProcessing.features.mser;
 import algorithms.QuickSort;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.DFSConnectedGroupsFinder;
-import algorithms.imageProcessing.DFSContiguousIntValueFinder;
 import algorithms.imageProcessing.DFSContiguousValueFinder;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.GroupPixelHSV;
@@ -14,6 +13,7 @@ import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageProcessor.Colors;
 import algorithms.imageProcessing.ImageSegmentation;
+import algorithms.imageProcessing.features.mser.Canonicalizer.RegionGeometry;
 import algorithms.imageProcessing.features.mser.MSER.Threshold;
 import algorithms.imageProcessing.segmentation.ColorSpace;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
@@ -79,6 +79,8 @@ public class MSEREdges {
     private final ImageExt clrImg;
     private final GreyscaleImage gsImg;
     private final GreyscaleImage ptImg;
+    // ptImg shifted by -20 degrees in pixel values to look for wrap around affects
+    private final GreyscaleImage ptImgShifted;
     private List<Region> regions = null;
     
     //a re-extraction of regions on the gs positive image, but using the
@@ -117,6 +119,14 @@ public class MSEREdges {
         this.gsImg = img.copyToGreyscale2();
         this.ptImg = imageProcesor.createCIELUVTheta(img, 255);
         this.clrImg = img.copyToImageExt();
+        
+        //to correct for wrap around effects in ptImg, making a copy
+        //   shifted by -20 degrees in pixel values.
+        //   any false regions found due to the range 0-255 being wrap
+        //   around from 255 to 0, but perceived as different can be
+        //   found by comparing these two image's results, though
+        //   there may be faster ways to achieve this.
+        this.ptImgShifted = copyAndShift(ptImg, -20);
         
         state = STATE.INITIALIZED;
     }
@@ -193,6 +203,9 @@ public class MSEREdges {
 
         List<List<Region>> ptRegions = extractMSERRegions(ptImg, Threshold.DEFAULT);
 
+        List<List<Region>> ptShiftedRegions = extractMSERRegions(
+            ptImgShifted, Threshold.DEFAULT);
+                
         regions = new ArrayList<Region>();
 
         origGsPtRegions = new ArrayList<List<Region>>();
@@ -260,6 +273,10 @@ public class MSEREdges {
             regions.remove(rmIdx);
         }
         
+        // need to correct for regions created due to the differene between pixels
+        //    near values of 255 appearing to be very different from pixels near
+        //    values of 0 when the scale is circular, that is 0 to 255 to 0, etc.
+        
         for (int type = 0; type < 2; ++type) {
             List<Region> list = ptRegions.get(type);
             for (int i = (list.size() - 1); i > -1; --i) {
@@ -268,14 +285,93 @@ public class MSEREdges {
                     list.remove(i);
                 } else if ((type == 0) && r.getVariation() == 0.0) {
                     list.remove(i);
-                } else {
-                    regions.add(r);
                 }
             }
+            List<Region> listS = ptShiftedRegions.get(type);
+            for (int i = (listS.size() - 1); i > -1; --i) {
+                Region r = listS.get(i);
+                if ((type == 1) && r.getVariation() > 0.001) {
+                    listS.remove(i);
+                } else if ((type == 0) && r.getVariation() == 0.0) {
+                    listS.remove(i);
+                }
+            }
+            
+            int w = ptImg.getWidth();
+            int h = ptImg.getHeight();
+            
+            // correct list using listS.  the intersection is the final list
+            List<RegionGeometry> listSRG = new ArrayList<RegionGeometry>();
+            for (int i = 0; i < listS.size(); ++i) {
+                listSRG.add(Canonicalizer.calculateEllipseParams(
+                    listS.get(i), w, h));
+            }
+            for (int i0 = list.size() - 1; i0 > -1; --i0) {
+                Region r0 = list.get(i0);
+                RegionGeometry rg0 = Canonicalizer.calculateEllipseParams(r0, w, h);
+                float orientation0 = (float)(
+                    rg0.orientation * 180./Math.PI);
+                
+                boolean found = false;
+                
+                for (int i1 = 0; i1 < listS.size(); ++i1) {
+                    Region r1 = listS.get(i1);
+                    RegionGeometry rg1 = listSRG.get(i1);
+                    float orientation1 = (float)(
+                        rg1.orientation * 180./Math.PI);
+                
+                    float diffOr = AngleUtil.getAngleDifference(orientation0, 
+                        orientation1);
+                    
+                    if ((Math.abs(rg0.xC - rg1.xC) > 5) || 
+                        (Math.abs(rg0.yC - rg1.yC) > 5) ||
+                        (Math.abs(rg0.minor - rg1.minor) > 5) ||
+                        (Math.abs(rg0.major - rg1.major) > 5) ||
+                        (Math.abs(diffOr) > 5)
+                        ) {
+                        continue;
+                    }
+                    found = true;
+                    break;
+                }
+                if (!found) {
+                    list.remove(i0);
+                }
+            }
+            /*{//DEBUG
+                Image imCp = ptImg.copyToColorGreyscale();
+                int n = ptRegions.get(type).size();
+                for (int i = 0; i < n; ++i) {
+                    Region r = ptRegions.get(type).get(i);
+                    int[] clr = ImageIOHelper.getNextRGB(i);
+                    r.drawEllipse(imCp, 0, clr[0], clr[1], clr[2]);
+                    r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
+                    ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], imCp,
+                        1, 255, 0, 0);
+                    //System.out.println(type + " xy=" + xyCen[0] + "," + xyCen[1]
+                    //    + " variation=" + r.getVariation());
+                }
+                MiscDebug.writeImage(imCp, "_" + ts + "_" + type + "_pt_unshifted_");
+                imCp = ptImgShifted.copyToColorGreyscale();
+                n = ptShiftedRegions.get(type).size();
+                for (int i = 0; i < n; ++i) {
+                    Region r = ptShiftedRegions.get(type).get(i);
+                    int[] clr = ImageIOHelper.getNextRGB(i);
+                    r.drawEllipse(imCp, 0, clr[0], clr[1], clr[2]);
+                    r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
+                    ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], imCp,
+                        1, 255, 0, 0);
+                    //System.out.println(type + " xy=" + xyCen[0] + "," + xyCen[1]
+                    //    + " variation=" + r.getVariation());
+                }
+                MiscDebug.writeImage(imCp, "_" + ts + "_" + type + "_pt_shifted_");
+            }*/
+            
             // copy list into origGsPtRegions
             List<Region> cpList = new ArrayList<Region>();
             origGsPtRegions.add(cpList);
             for (Region r : list) {
+                regions.add(r);
                 cpList.add(r.copy());
             }
         }
@@ -1434,8 +1530,7 @@ public class MSEREdges {
        
         ImageSegmentation imageSegmentation = new ImageSegmentation();
         Set<PairInt> outputAddedGaps = new HashSet<PairInt>();
-        img2 = imageSegmentation.fillInGapsOf1(img2,
-            outputAddedGaps, 1);
+        img2 = imageSegmentation.fillInGapsOf1(img2, outputAddedGaps, 1);
         
         if (debug) {
             MiscDebug.writeImage(clrImg, "_" + ts + "_0_");
@@ -1450,33 +1545,7 @@ public class MSEREdges {
         }
         
         // restore gap where the gap is completely surrounded
-        // TODO: consider dfs of contig within outputAddedGaps
-        int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;
-        int w = clrImg.getWidth();
-        int h = clrImg.getHeight();
-        Set<PairInt> reset = new HashSet<PairInt>();
-        for (PairInt p : outputAddedGaps) {
-            int x = p.getX();
-            int y = p.getY();
-            int n1s = 0;
-            for (int k = 0; k < dxs.length; ++k) {
-                int x2 = x + dxs[k];
-                int y2 = y + dys[k];
-                if (x2 < 0 || y2 < 0 || x2 >= w || y2 >= h) {
-                    continue;
-                }
-                if (img2.getValue(x2, y2) == 1) {
-                    n1s++;
-                }
-            }
-            if (n1s == 8) {
-                reset.add(p);
-            }
-        }
-        for (PairInt p : reset) {
-            img2.setValue(p.getX(), p.getY(), 0);
-        } 
+        imageSegmentation.restoreGapsOf1WhereSurrounded(img2, outputAddedGaps, 1);
         
         Set<PairInt> thinned = new HashSet<PairInt>();
         for (int i = 0; i < img2.getNPixels(); ++i) {
@@ -1529,6 +1598,7 @@ public class MSEREdges {
             Set<PairInt> embedded = new HashSet<PairInt>();
             Set<PairInt> outerBorder = new HashSet<PairInt>();
             finder2.extractBorder2(set, embedded, outerBorder);
+            
             edgeList.add(outerBorder);
             thinned.addAll(outerBorder);
         }
@@ -1738,6 +1808,23 @@ public class MSEREdges {
         }
 
         return queue;
+    }
+    
+    private GreyscaleImage copyAndShift(GreyscaleImage polarImage, int valueShift) {
+    
+        GreyscaleImage shiftedImg = polarImage.createWithDimensions();
+        for (int i = 0; i < polarImage.getNPixels(); ++i) {
+            int v = polarImage.getValue(i);
+            v += valueShift;
+            if (v < 0) {
+                v += 255;
+            } else if (v > 255) {
+                v -= 255;
+            }
+            shiftedImg.setValue(i, v);
+        }
+        
+        return shiftedImg;
     }
 
 }

@@ -9607,7 +9607,8 @@ if (sum > 511) {
    
     /**
      * convert the image to cie luv and then calculate polar angle of u and v
-     * around 0 in degrees.
+     * around 0 in degrees (a.k.a. the "H" of LCH color space, but with
+     * the 1976 CIE LAB which is LUV).
      * If maxV of 360, returns full value image, 
      * else if is 255, scales the values to max value of 255, etc.
      * @param img
