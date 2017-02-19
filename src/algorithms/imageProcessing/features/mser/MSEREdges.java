@@ -178,6 +178,9 @@ public class MSEREdges {
     
     private void extractRegions() {
         
+        //NOTE: this method should be cleaned up when have the better pattern
+        //   of mser region extraction and filtering
+        
         //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
         if (state.equals(STATE.EDGES_EXTRACTED)) {
             throw new IllegalStateException("can only perform extraction of "
@@ -197,6 +200,10 @@ public class MSEREdges {
 
         for (int type = 0; type < 2; ++type) {
             List<Region> list = gsRegions.get(type);
+            // temporary change to look at including more sensitive gs0
+            if (type==0) {
+                list = _extractSensitiveGS0();
+            }
             for (int i = (list.size() - 1); i > -1; --i) {
                 Region r = list.get(i);
                 if ((type == 1) && r.getVariation() > 2.) {
@@ -205,6 +212,12 @@ public class MSEREdges {
                     //&& r.getVariation() == 0.0) {
                     && r.getVariation() < 2.) {
                     list.remove(i);
+                } else {
+                    GroupPixelHSV gHSV = new GroupPixelHSV();
+                    gHSV.calculateColors(r.getAcc(), clrImg);
+                    if (gHSV.getStdDevV() > 0.3){
+                        list.remove(i);
+                    }
                 }
             }
             if (type == 1) {
@@ -231,6 +244,19 @@ public class MSEREdges {
             }
         }
         
+        List<TIntList> concList = getEmbeddedLevels(regions);
+        TIntList rmList = new TIntArrayList();
+        for (int k = 0; k < concList.size(); ++k) {
+            for (int i3 = 1; i3 < concList.get(k).size(); ++i3) {
+                rmList.add(concList.get(k).get(i3));
+            }
+        }
+        rmList.sort();
+        for (int k = rmList.size() - 1; k > -1; --k) {
+            int rmIdx = rmList.get(k);
+            regions.remove(rmIdx);
+        }
+            
         for (int type = 0; type < 2; ++type) {
             List<Region> list = ptRegions.get(type);
             for (int i = (list.size() - 1); i > -1; --i) {
