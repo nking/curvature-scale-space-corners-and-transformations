@@ -142,6 +142,26 @@ public class ImageExt extends Image {
         return getCIEY(idx);
     }
   
+    public void getHSB(int col, int row, float[] output) {
+        
+        int idx = getInternalIndex(col, row);
+        
+        getHSB(idx, output);
+    }
+    
+    public void getHSB(int pixIdx, float[] output) {
+                
+        if (output.length != 3) {
+            throw new IllegalArgumentException("output must be length 3");
+        }
+        
+        getHue(pixIdx);
+        
+        output[0] = hue[pixIdx];
+        output[1] = saturation[pixIdx];
+        output[2] = brightness[pixIdx];
+    }
+    
     public float getHue(int col, int row) {
         
         int idx = getInternalIndex(col, row);

@@ -2576,6 +2576,53 @@ public class MiscMath {
             }
         }
     }
+   
+    /**
+     *rescale a to between 0 and 255 and write to output
+     * @param a
+     * @return 
+     */
+    public static GreyscaleImage rescaleAndCreateImage(float[] a,
+        int imageWidth, int imageHeight) {
+        
+        int nPix = a.length;
+        
+        if (nPix != (imageWidth * imageHeight)) {
+            throw new IllegalArgumentException("a.length must be == to "
+                + "imageWidth X imageHeight");
+        }
+        
+        float minV = Float.MAX_VALUE;
+        float maxV = Float.MIN_VALUE;
+        
+        for (int i = 0; i < a.length; ++i) {
+            float v = a[i];
+            if (v < minV) {
+                minV = v;
+            }
+            if (v > maxV) {
+                maxV = v;
+            }
+        }
+        float range = maxV - minV;
+        
+        float scale = 255.f/range;
+        
+        GreyscaleImage out = new GreyscaleImage(imageWidth, imageHeight);
+        
+        for (int i = 0; i < imageWidth; ++i) {
+            for (int j = 0; j < imageHeight; ++j) {
+                int pixIdx = (j * imageWidth) + i;
+                int v = Math.round((a[pixIdx] - minV) * scale);
+                if (v > 255) {
+                    v = 255;
+                }
+                out.setValue(pixIdx, v);
+            }
+        }
+        
+        return out;
+    }
     
     /**
      * ignores values of MAX_VALUE and MIN_VALUE during scale calculation

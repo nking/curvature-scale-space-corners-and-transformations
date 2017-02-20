@@ -89,6 +89,56 @@ public class ImageProcessor {
         input.resetTo(img2);
     }
     
+    /**
+     * given a color image array with first dimension being color index
+     * and the second dimension being the image pixel index,
+     * apply the sobel kernel to each pixel and combine the results
+     * as SSD.
+     * @param colorInput with first dimension being color index
+     * and the second dimension being the image pixel index
+     */
+    public float[] createSobelConvolution(float[][] colorInput, int imgWidth, 
+        int imgHeight) {
+
+        int nClrs = colorInput.length;
+        int nPix = colorInput[0].length;
+        
+        if (nPix != (imgWidth * imgHeight)) {
+            throw new IllegalArgumentException("image width X height must equal "
+                + " colorInput[0].length");
+        }
+        
+        float[] out = new float[nPix];
+       
+        Kernel1DHelper kernelHelper = new Kernel1DHelper();
+        
+        float[] kernel = Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive();
+        
+        for (int i = 0; i < imgWidth; ++i) {
+            for (int j = 0; j < imgHeight; ++j) {
+                
+                double sqSum = 0;
+                
+                for (int c = 0; c < nClrs; ++c) {
+                    
+                    float convX = kernelHelper.convolvePointWithKernel(
+                        colorInput[c], i, j, kernel, true, imgWidth, imgHeight);
+                    
+                    float convY = kernelHelper.convolvePointWithKernel(
+                        colorInput[c], i, j, kernel, false, imgWidth, imgHeight);
+                
+                    sqSum += (convX * convX + convY * convY);
+                }
+
+                int pixIdx = (j * imgWidth) + i;
+                
+                out[pixIdx] = (float)Math.sqrt(sqSum/(double)nClrs);
+            }
+        }
+        
+        return out;
+    }
+    
     public void applySobelX(float[][] input) {
 
         float[] kernel = Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive();
@@ -1911,6 +1961,35 @@ if (sum > 511) {
         }
 
         return output;
+    }
+    
+    /**
+     * convert img to HSV and store in array with 1st dimension being
+     * the color, that is hue, saturation or brightness and the next
+     * dimension being the image with indexes being pixel index
+     * @param img
+     * @return 
+     */
+    public float[][] createHSVImage(ImageExt img) {
+        
+        int n = img.getNPixels();
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        float[] hsb = new float[3];
+        float[][] out = new float[3][n];
+        for (int c = 0; c < 3; ++c) {
+            out[c] = new float[n];
+        }
+        
+        for (int pixIdx = 0; pixIdx < n; ++pixIdx) {
+            img.getHSB(pixIdx, hsb);
+            for (int c = 0; c < 3; ++c) {
+                out[c][pixIdx] = hsb[c];
+            }            
+        }
+        
+        return out;
     }
 
     public void applyKernel1D(GreyscaleImage input, float[] kernel,
