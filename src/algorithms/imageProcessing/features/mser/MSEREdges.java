@@ -13,6 +13,9 @@ import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageProcessor.Colors;
 import algorithms.imageProcessing.ImageSegmentation;
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.imageProcessing.PostLineThinnerCorrections;
+import algorithms.imageProcessing.SummedAreaTable;
 import algorithms.imageProcessing.features.mser.Canonicalizer.RegionGeometry;
 import algorithms.imageProcessing.features.mser.MSER.Threshold;
 import algorithms.imageProcessing.segmentation.ColorSpace;
@@ -20,6 +23,7 @@ import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import gnu.trove.iterator.TIntIntIterator;
@@ -43,6 +47,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 import thirdparty.edu.princeton.cs.algs4.Interval;
 import thirdparty.edu.princeton.cs.algs4.Interval2D;
 import thirdparty.edu.princeton.cs.algs4.QuadTree;
@@ -1454,9 +1459,6 @@ public class MSEREdges {
 
     private Set<PairInt> combineAndThinBoundaries() {
 
-        // --- plot intersections to examine a better thinning
-        //     and possibly removal before all bounds are combined
-
         List<Set<PairInt>> boundaries = new ArrayList<Set<PairInt>>();
 
         PerimeterFinder2 finder = new PerimeterFinder2();
@@ -1604,13 +1606,15 @@ public class MSEREdges {
                 // so for those, need to reassign to the closest
                 // set in color            
                 edgeList.add(outerBorder);
-                thinned.addAll(outerBorder);
             }
         } else {
             edgeList = extractedBoundaries;
-            for (Set<PairInt> set : extractedBoundaries) {
-                thinned.addAll(set);
-            }
+        }
+        
+        filterBySobel(edgeList);
+        
+        for (Set<PairInt> set : edgeList) {
+            thinned.addAll(set);
         }
         
         if (debug) {
@@ -1839,4 +1843,147 @@ public class MSEREdges {
         return shiftedImg;
     }
 
+    private void filterBySobel(List<Set<PairInt>> boundaries) {
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+
+        float[] sobelScores = imageProcessor.createSobelColorScores(
+            gsImg, ptImg, 20);
+
+        int w = gsImg.getWidth();
+        int h = gsImg.getHeight();
+        GreyscaleImage scaled = MiscMath.rescaleAndCreateImage(sobelScores,
+            w, h);
+
+        // smearing values over a 3 pixel window
+        SummedAreaTable sumTable = new SummedAreaTable();
+
+        GreyscaleImage imgM = sumTable.createAbsoluteSummedAreaTable(scaled);
+        imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM, 3);
+
+        // debug:
+        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
+        
+        Set<PairInt> points = new HashSet<PairInt>();
+        
+        double limit = 0.01;
+        
+        for (int i = boundaries.size() - 1; i > -1; --i) {
+            
+            Set<PairInt> boundary = boundaries.get(i);
+
+            double sum = 0;
+            for (PairInt p : boundary) {
+                sum += imgM.getValue(p);
+            }
+            sum /= (255. * (double) boundary.size());
+
+            int[] xyCen = ch.calculateRoundedXYCentroids(boundary);
+            
+            System.out.println(Arrays.toString(xyCen) + " sobel=" + sum);
+            
+            if (sum < limit) {
+                boundaries.remove(i);
+            } else {
+                points.addAll(boundary);
+            }
+        }
+        
+        // TODO: need to improve this post line thinner
+        imageProcessor.applyThinning(points, w, h, true);
+        
+        Set<PairInt> junctions = findJunctions(points);
+        
+        if (debug) {
+            Image cp = clrImg.copyImage();
+            ImageIOHelper.addCurveToImage(points,    cp, 0, 0, 255, 0);
+            ImageIOHelper.addCurveToImage(junctions, cp, 0, 255, 0, 0);
+            MiscDebug.writeImage(cp, "_" + ts + "_junctions_");
+        }
+        
+        /*
+        now removing edges between junctions w/ low sobel counts
+        
+        thin the edges
+        
+        visit all points to find junctions
+        
+        create a map with key = junction1:junction2 and value =
+            connected points between the 2 junctions.
+        
+        put all junctions in stack
+                
+        while !stack is empty
+            point = pop
+            if visited, continue
+            
+            put each neighbor into a stack to follow to next junction
+            put into a set too, to avoid doubling back in paths
+                
+            for each nbrstack
+                start a path set for this neighbor
+                while !nbrstack.isempty
+                   pt2 = pop
+                   if pt2 is a junction
+                        finish path set for this nbrstack
+                           and store it with point:pt2 key in map
+                           break for this stack
+                   else
+                      add to path set
+                      visit the 4 or 8 neighbor region and add 
+                        if not added to a path already, add to nbrstack
+        
+        visit each path set in map
+           sum the sobel counts
+           if less than limit, remove from points set
+        
+        remove stragglers from points
+        
+        create new tmp image with points given value=1
+        use dfs finder to find contig groups of value=0
+        replace edgeList contents with these latest groups
+        */
+       
+    }
+
+    private Set<PairInt> findJunctions(Set<PairInt> points) {
+        
+        Set<PairInt> junctions = new HashSet<PairInt>();
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        PostLineThinnerCorrections.removeStragglers(points);
+        
+        for (int n = 5; n >= 3; --n) {
+
+            for (PairInt p : points) {
+
+                int x = p.getX();
+                int y = p.getY();
+
+                int count = 0;
+
+                for (int k = 0; k < dxs.length; ++k) {
+                    int x2 = x + dxs[k];
+                    int y2 = y + dys[k];
+                    PairInt p2 = new PairInt(x2, y2);
+                    if (junctions.contains(p2)) {
+                        count = 0;
+                        break;
+                    }
+                    if (points.contains(p2)) {
+                        count++;
+                    }
+                }
+
+                if (count >= n) {
+                    junctions.add(p);
+                }
+            }
+        }
+        
+        return junctions;
+    }
+    
 }

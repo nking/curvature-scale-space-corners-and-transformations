@@ -11,6 +11,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 import java.util.logging.Logger;
 
 /**
@@ -5827,4 +5828,71 @@ public class PostLineThinnerCorrections {
             Integer.toString(nCorrections));
     }
     
+    public static void removeStragglers(Set<PairInt> points) {
+        
+        // remove anything with only one neighbor
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        Stack<PairInt> stack = new Stack<PairInt>();
+        
+        // place single neighbor points at top of stack
+        for (PairInt p : points) {
+            
+            int x = p.getX();
+            int y = p.getY();
+            
+            int nn = 0;
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                PairInt p2 = new PairInt(x2, y2);
+                if (points.contains(p2)) {
+                    nn++;
+                }
+                if (nn > 1) {
+                    break;
+                }
+            }
+            if (nn == 1) {
+                stack.add(p);
+            }
+        }
+                
+        Set<PairInt> visited = new HashSet<PairInt>();
+                
+        while (!stack.isEmpty()) {
+            
+            PairInt p = stack.pop();
+            if (visited.contains(p)) {
+                continue;
+            }
+            visited.add(p);
+            
+            int x = p.getX();
+            int y = p.getY();
+            
+            PairInt pn = null;
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                PairInt p2 = new PairInt(x2, y2);
+                if (points.contains(p2)) {
+                    if (pn == null) {
+                        pn = p2;
+                    } else {
+                        pn = null;
+                        break;
+                    }
+                }
+            }
+            if (pn != null) {
+                points.remove(p);
+                stack.add(pn);
+            }
+        }
+    
+    }
+
 }

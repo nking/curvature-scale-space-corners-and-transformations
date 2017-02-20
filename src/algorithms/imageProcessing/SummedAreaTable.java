@@ -86,7 +86,7 @@ public class SummedAreaTable {
     
      /**
      * @param imgS
-     * @param d
+     * @param d diameter of window in x and y
      * @return 
      */
     public GreyscaleImage applyMeanOfWindowFromSummedAreaTable(
