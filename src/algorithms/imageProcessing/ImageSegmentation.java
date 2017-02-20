@@ -10219,12 +10219,12 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                         //wrap around diff test
                         if (clrs > clrs3) {
                             // add a phase to next value if it's closer to current with addition
-                            if ((clrs - clrs3) > Math.abs(clrs - (clrs3 + 255))) {
+                            if ((clrs - clrs3) > ((clrs3 + 255) - clrs)) {
                                 clrs3 += 255;
                             }
                         } else if (clrs3 > clrs) {
                             // add a phase to next value if it's closer to current with addition
-                            if ((clrs3 - clrs) > Math.abs(clrs3 - (clrs + 255))) {
+                            if ((clrs3 - clrs) > ((clrs + 255) - clrs3)) {
                                 clrs += 255;
                             }
                         }
@@ -15013,12 +15013,12 @@ int z = 1;
                 //wrap around diff test
                 if (avg1 > avg2) {
                     // add a phase to next value if it's closer to current with addition
-                    if ((avg1 - avg2) > Math.abs(avg1 - (avg2 + 255))) {
+                    if ((avg1 - avg2) > ((avg2 + 255) - avg1 )) {
                         avg2 += 255;
                     }
                 } else if (avg2 > avg1) {
                     // add a phase to next value if it's closer to current with addition
-                    if ((avg2 - avg1) > Math.abs(avg2 - (avg1 + 255))) {
+                    if ((avg2 - avg1) > ((avg1 + 255) - avg2)) {
                         avg1 += 255;
                     }
                 }

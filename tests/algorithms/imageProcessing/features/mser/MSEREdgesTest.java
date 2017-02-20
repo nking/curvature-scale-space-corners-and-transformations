@@ -5,6 +5,7 @@ import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
 import algorithms.util.ResourceFinder;
 import junit.framework.TestCase;
 
@@ -23,7 +24,8 @@ public class MSEREdgesTest extends TestCase {
 
         String fileName1 = "";
 
-        //for (int i = 21; i < 22; ++i) {
+        //for (int i = 5; i < 6; ++i) {
+        //for (int i = 18; i < 19; ++i) {
         for (int i = 0; i < 37; ++i) {
 
             switch(i) {
@@ -202,11 +204,21 @@ public class MSEREdgesTest extends TestCase {
             mserE.setToLowerContrast();
             mserE.mergeAndExtractEdges();
             
-            GreyscaleImage[] lma = imageProcessor.createLCHForLUV(img);
+            /*GreyscaleImage[] lma = imageProcessor.createLCHForLUV(img);
             for (int k = 0; k < lma.length; ++k) {
                 MiscDebug.writeImage(lma[k], "_" + 
                     fileName1Root + "_lma_" + k + "_");
-            }
+            }*/
+
+            float[] sobelScores = imageProcessor.createSobelColorScores(
+                mserE.getGsImg(), mserE.getPtImg(), 20);
+            
+            GreyscaleImage scaled = MiscMath.rescaleAndCreateImage(sobelScores,
+                img.getWidth(), img.getHeight());
+        
+            MiscDebug.writeImage(scaled,  
+                "_" + fileName1Root + "_SOBEL_");
+        
         }
     }
     

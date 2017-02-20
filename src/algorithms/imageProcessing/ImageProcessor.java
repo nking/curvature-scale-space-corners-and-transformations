@@ -157,6 +157,59 @@ public class ImageProcessor {
     }
     
     /**
+     * using the binary results from createBinarySobelForPolarTheta
+     * and the greyscale results from sobel operator,
+     * scale the greyscale sobel so that the maximum value is 1.f,
+     * add both and divide by 2.
+     * NOTE: for other uses, may want to make a method which does not
+     * scale the greyscale results or uses a different weighting 
+     * in the addition.
+     * 
+     * @param gsImg
+     * @param ptImg
+     * @param lowerDiff
+     * @return 
+     */
+    public float[] createSobelColorScores(GreyscaleImage gsImg,
+        GreyscaleImage ptImg, int lowerDiff) {
+        
+        int nPix = gsImg.getNPixels();
+        int w = gsImg.getWidth();
+        int h = gsImg.getHeight();
+        
+        if (ptImg.getWidth() != w || ptImg.getHeight() != h) {
+            throw new IllegalArgumentException("images must be same size");
+        }
+        
+        GreyscaleImage ptGrad = createBinarySobelForPolarTheta(
+            ptImg, lowerDiff);
+        
+        float[] out = new float[nPix];
+        for (int i = 0; i < gsImg.getNPixels(); ++i) {
+            out[i] = gsImg.getValue(i);
+        }
+        
+        out = createSobelConvolution(out, w, h);
+        float maxV = MiscMath.findMax(out);
+        float factor = 0.5f/maxV;
+        int pixIdx;
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                pixIdx = (j * w) + i;
+                
+                int v0 = ptGrad.getValue(pixIdx);
+                float v = out[pixIdx] * factor;
+                if (v0 == 1) {
+                    v += 0.5f;
+                }
+                out[pixIdx] = v;
+            }
+        }
+        
+        return out;
+    }
+    
+    /**
      * given a color image array with first dimension being color index
      * and the second dimension being the image pixel index,
      * apply the sobel kernel to each pixel and combine the results
@@ -200,6 +253,52 @@ public class ImageProcessor {
                 int pixIdx = (j * imgWidth) + i;
                 
                 out[pixIdx] = (float)Math.sqrt(sqSum/(double)nClrs);
+            }
+        }
+        
+        return out;
+    }
+    
+    /**
+     * given a greyscale image
+     * apply the sobel kernel to each pixel and combine the results
+     * as SSD.
+     * @param greyscaleInput with index being the image pixel index
+     */
+    public float[] createSobelConvolution(float[] greyscaleInput, int imgWidth, 
+        int imgHeight) {
+
+        int nPix = greyscaleInput.length;
+        
+        if (nPix != (imgWidth * imgHeight)) {
+            throw new IllegalArgumentException("image width X height must equal "
+                + " colorInput[0].length");
+        }
+        
+        float[] out = new float[nPix];
+       
+        Kernel1DHelper kernelHelper = new Kernel1DHelper();
+        
+        float[] kernel = Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive();
+        double sqSum;
+        int pixIdx;
+        
+        for (int i = 0; i < imgWidth; ++i) {
+            for (int j = 0; j < imgHeight; ++j) {
+                
+                sqSum = 0;
+                                    
+                float convX = kernelHelper.convolvePointWithKernel(
+                    greyscaleInput, i, j, kernel, true, imgWidth, imgHeight);
+                    
+                float convY = kernelHelper.convolvePointWithKernel(
+                    greyscaleInput, i, j, kernel, false, imgWidth, imgHeight);
+                
+                sqSum += (convX * convX + convY * convY);
+
+                pixIdx = (j * imgWidth) + i;
+                
+                out[pixIdx] = (float)Math.sqrt(sqSum);
             }
         }
         
@@ -9592,7 +9691,7 @@ if (sum > 511) {
      * else if is 255, scales the values to max value of 255, etc.
      * @param img
      * @param maxV
-     * @param offsetTheta an offset in degrees from 0 to shift
+     * @param offset an offset in degrees from 0 to shift
      *    values by.  This is useful for a quick look between 
      * results of offset=0 and offset=10, for example, to look
      * at the wrap around point for 360 to 0
