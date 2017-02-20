@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
 import algorithms.util.ResourceFinder;
 import junit.framework.TestCase;
 
@@ -8,9 +9,9 @@ import junit.framework.TestCase;
  *
  * @author nichole
  */
-public class ImageProcessor3Test extends TestCase {
+public class ImageProcessor4Test extends TestCase {
 
-    public ImageProcessor3Test(String testName) {
+    public ImageProcessor4Test(String testName) {
         super(testName);
     }
     
@@ -18,7 +19,7 @@ public class ImageProcessor3Test extends TestCase {
         
         int maxDimension = 256;
         
-        String fileName1 = "android_statues_01.jpg";
+        String fileName1 = "android_statues_04.jpg";
         
         int idx = fileName1.lastIndexOf(".");
         String fileName1Root = fileName1.substring(0, idx);
@@ -27,7 +28,6 @@ public class ImageProcessor3Test extends TestCase {
         ImageExt img = ImageIOHelper.readImageExt(filePath1);
 
         ImageProcessor imageProcessor = new ImageProcessor();
-        ImageSegmentation imageSegmentation = new ImageSegmentation();
 
         int w1 = img.getWidth();
         int h1 = img.getHeight();
@@ -39,17 +39,25 @@ public class ImageProcessor3Test extends TestCase {
         img = imageProcessor.binImage(img, binFactor1);
 
         imageProcessor = new ImageProcessor();
-        GreyscaleImage theta1 = imageProcessor.createCIELUVTheta(img, 255);
-        //MiscDebug.writeImage(theta1,  "_theta_"  + fileName1Root);
         
-        imageProcessor.singlePixelFilter(theta1);
-        imageProcessor.singlePixelFilter(theta1);
-        MiscDebug.writeImage(theta1,  "_theta_1_"  + fileName1Root);
+        float[][] hsvImg = imageProcessor.createHSVImage(img);
         
-        GreyscaleImage tmp = theta1.copyImage();
-        //unsharp mask to bring up the cupcake and icecream
-        imageProcessor.applyUnsharpMask(tmp, 0.5f, 5, 0.f);
-        MiscDebug.writeImage(tmp,  "_unsharp__1_"  + fileName1Root);
+        float[] hsb = new float[3];
+        
+        int pixIdx = img.getNPixels() >> 1;
+        img.getHSB(pixIdx, hsb);
+        
+        assertTrue(Math.abs(hsb[0] - hsvImg[0][pixIdx]) < 0.01);
+        assertTrue(Math.abs(hsb[1] - hsvImg[1][pixIdx]) < 0.01);
+        assertTrue(Math.abs(hsb[2] - hsvImg[2][pixIdx]) < 0.01);
+        
+        float[] sobelHSV = imageProcessor.createSobelConvolution(
+            hsvImg, img.getWidth(), img.getHeight());
+        
+        GreyscaleImage scaled = MiscMath.rescaleAndCreateImage(sobelHSV,
+            img.getWidth(), img.getHeight());
+            
+        MiscDebug.writeImage(scaled,  "_hsv_sobel_scaled_"  + fileName1Root);
         
     }
     
