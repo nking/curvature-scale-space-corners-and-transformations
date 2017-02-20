@@ -94,6 +94,47 @@ public class ImageProcessor {
      * and the second dimension being the image pixel index,
      * apply the sobel kernel to each pixel and combine the results
      * as SSD.
+     * @param ptImg polar theta image of a color space such as 
+     * H of LCH that contains values between 0 and 255.
+     * @param lowerDiff value in degrees for which a difference in
+     * pixels results in a final value of "1".  For example,
+     * 20 degrees.
+     */
+    public GreyscaleImage createBinarySobelForPolarTheta(
+        GreyscaleImage ptImg, int lowerDiff) {
+
+        int nPix = ptImg.getNPixels();
+        int w = ptImg.getWidth();
+        int h = ptImg.getHeight();
+        
+        GreyscaleImage out = ptImg.createWithDimensions();
+        
+        // sobel is .5, 0, -.5 so looking for difference in pixels on either
+        //   side being .lte. lowerDiff
+        
+        for (int i = 1; i < w - 1; ++i) {
+            for (int j = 1; j < h - 1; ++j) {
+                
+                int dx = ptImg.getValue(i - 1, j) - ptImg.getValue(i + 1, j);
+                
+                int dy = ptImg.getValue(i, j - 1) - ptImg.getValue(i, j + 1);
+                
+                double v = Math.sqrt((dx * dx + dy * dy)/2.);
+
+                if (v > lowerDiff) {                
+                    out.setValue(i, j, 1);
+                }
+            }
+        }
+        
+        return out;
+    }
+    
+    /**
+     * given a color image array with first dimension being color index
+     * and the second dimension being the image pixel index,
+     * apply the sobel kernel to each pixel and combine the results
+     * as SSD.
      * @param colorInput with first dimension being color index
      * and the second dimension being the image pixel index
      */

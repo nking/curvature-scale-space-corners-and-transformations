@@ -59,6 +59,14 @@ public class ImageProcessor4Test extends TestCase {
             
         MiscDebug.writeImage(scaled,  "_hsv_sobel_scaled_"  + fileName1Root);
         
+        GreyscaleImage ptImg = imageProcessor.createCIELUVTheta(img, 255);
+        
+        GreyscaleImage ptGrad = imageProcessor.createBinarySobelForPolarTheta(
+            ptImg, 20);
+       
+        ptGrad.multiply(255.f);
+        
+        MiscDebug.writeImage(ptGrad,  "_polar_theta_sobel_scaled_"  + fileName1Root);
     }
     
 }
