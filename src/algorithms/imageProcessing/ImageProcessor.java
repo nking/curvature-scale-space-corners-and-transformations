@@ -111,17 +111,43 @@ public class ImageProcessor {
         
         // sobel is .5, 0, -.5 so looking for difference in pixels on either
         //   side being .lte. lowerDiff
-        
+        int[] diffs = new int[4];
+        int offset;
+        int above;
         for (int i = 1; i < w - 1; ++i) {
             for (int j = 1; j < h - 1; ++j) {
                 
-                int dx = ptImg.getValue(i - 1, j) - ptImg.getValue(i + 1, j);
-                
-                int dy = ptImg.getValue(i, j - 1) - ptImg.getValue(i, j + 1);
-                
-                double v = Math.sqrt((dx * dx + dy * dy)/2.);
+                diffs[0] = ptImg.getValue(i - 1, j);
+                diffs[1] = ptImg.getValue(i + 1, j);                
+                diffs[2] = ptImg.getValue(i, j - 1);
+                diffs[3] = ptImg.getValue(i, j + 1);
+                offset = 0;            
+                above = 0;
+                for (int k = 0; k < 2; ++k) {
+                    // in case there is wrap around, test adding a phase
+                    //   and take the smaller of the results for each diff.
+                    if (diffs[offset] > diffs[offset + 1]) {
+                        // add a phase to next value if it's closer to current with addition
+                        if ((diffs[offset] - diffs[offset + 1]) > 
+                            (diffs[offset + 1] + 255) - diffs[offset]) {
+                            diffs[offset + 1] += 255;
+                        }
+                    } else if (diffs[offset + 1] > diffs[offset]) {
+                        // add a phase to next value if it's closer to current with addition
+                        if ((diffs[offset + 1] - diffs[offset]) > 
+                            (diffs[offset] + 255) - diffs[offset + 1]) {
+                            diffs[offset] += 255;
+                        }
+                    }
+                    int d = diffs[offset] - diffs[offset + 1];
+                    if (Math.abs(d) >= lowerDiff) {
+                        above = 1;
+                        break;
+                    }
+                    offset += 2;
+                }
 
-                if (v > lowerDiff) {                
+                if (above == 1) {                
                     out.setValue(i, j, 1);
                 }
             }

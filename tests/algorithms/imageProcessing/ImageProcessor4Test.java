@@ -54,9 +54,22 @@ public class ImageProcessor4Test extends TestCase {
         float[] sobelHSV = imageProcessor.createSobelConvolution(
             hsvImg, img.getWidth(), img.getHeight());
         
-        GreyscaleImage scaled = MiscMath.rescaleAndCreateImage(sobelHSV,
-            img.getWidth(), img.getHeight());
-            
+        float maxV = MiscMath.findMax(sobelHSV);
+        float factor = 255.f/maxV;
+        
+        GreyscaleImage scaled = new GreyscaleImage(img.getWidth(), img.getHeight());
+        for (int i = 0; i < img.getWidth(); ++i) {
+            for (int j = 0; j < img.getHeight(); ++j) {
+                pixIdx = img.getInternalIndex(i, j);
+                float v = sobelHSV[pixIdx] * factor;
+                int vInt = (v > 255) ? 255 : Math.round(v);
+                scaled.setValue(pixIdx, vInt);
+            }
+        }
+        
+        //GreyscaleImage scaled = MiscMath.rescaleAndCreateImage(sobelHSV,
+        //    img.getWidth(), img.getHeight());
+        
         MiscDebug.writeImage(scaled,  "_hsv_sobel_scaled_"  + fileName1Root);
         
         GreyscaleImage ptImg = imageProcessor.createCIELUVTheta(img, 255);
