@@ -1544,7 +1544,7 @@ public class MSEREdges {
             }
             MiscDebug.writeImage(tmp, "_" + ts + "_closing_");
         }
-
+        
         // find clusters (contiguous pixels of value 0) between edges
         List<Set<PairInt>> contigousSets = extractContiguous(img2, 0, 3);//9);
         
@@ -1563,22 +1563,56 @@ public class MSEREdges {
                 contigousSets, 0, 0, 0, tmp);
             MiscDebug.writeImage(tmp, "_" + ts + "_assigned_");
         }
-
-        thinned.clear();
-
-        // --- extract bounds ---
-        this.labeledSets = contigousSets;
-        edgeList = new ArrayList<Set<PairInt>>();
+        
         PerimeterFinder2 finder2 = new PerimeterFinder2();
-        for (Set<PairInt> set : contigousSets) {
+        
+        // --- extract the bounds, and if any are empty of internal points,
+        //     re-submit those to be reassigned to a cluster which does
+        List<Set<PairInt>> extractedBoundaries = new ArrayList<Set<PairInt>>();
+        for (int i = (contigousSets.size() - 1); i > -1; --i) {
+            Set<PairInt> set = contigousSets.get(i);
             Set<PairInt> embedded = new HashSet<PairInt>();
             Set<PairInt> outerBorder = new HashSet<PairInt>();
             finder2.extractBorder2(set, embedded, outerBorder);
-
-            edgeList.add(outerBorder);
-            thinned.addAll(outerBorder);
+            
+            // if outerBorder is same size as set, there are no internal
+            // points, so remove the set so can reassign it
+            if (set.size() - outerBorder.size() < 2) {
+                contigousSets.remove(i);
+            } else {
+                extractedBoundaries.add(outerBorder);
+            }
         }
+        
+        thinned.clear();
+        this.labeledSets = contigousSets;
+        edgeList = new ArrayList<Set<PairInt>>();
+        
+        if (contigousSets.size() < extractedBoundaries.size()) {
+            
+            //TODO: this needs to be edited to improve the
+            // order of assignments
+            assignTheUnassigned(contigousSets);
+            
+            for (Set<PairInt> set : contigousSets) {
+                Set<PairInt> embedded = new HashSet<PairInt>();
+                Set<PairInt> outerBorder = new HashSet<PairInt>();
+                finder2.extractBorder2(set, embedded, outerBorder);
 
+                // for small regions, sometimes outerBorder has no inner
+                // points, making the set a 2 pixel thick edge,
+                // so for those, need to reassign to the closest
+                // set in color            
+                edgeList.add(outerBorder);
+                thinned.addAll(outerBorder);
+            }
+        } else {
+            edgeList = extractedBoundaries;
+            for (Set<PairInt> set : extractedBoundaries) {
+                thinned.addAll(set);
+            }
+        }
+        
         if (debug) {
             Image tmp = clrImg.copyImage();
             ImageIOHelper.addCurveToImage(thinned, tmp, 0, 255, 0, 0);
