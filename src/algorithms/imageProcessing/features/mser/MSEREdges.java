@@ -37,6 +37,7 @@ import gnu.trove.set.hash.TIntHashSet;
 import java.awt.Color;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -48,12 +49,12 @@ import thirdparty.edu.princeton.cs.algs4.QuadTree;
 
 /**
  * class to explore the boundaries of the accumulated points in MSER regions.
- * 
- * The contents may in the future be replaced by an implementation of 
+ *
+ * The contents may in the future be replaced by an implementation of
  * http://www.vision.ee.ethz.ch/~rhayko/paper/aapr2009_boundary_detection_SBER_hayko.pdf
- * 
+ *
  * but for now is an exploration of the existing MSER and Region class results.
- * 
+ *
  * @author nichole
  */
 public class MSEREdges {
@@ -69,20 +70,20 @@ public class MSEREdges {
     mergeAndExtractEdges
         -- merges adjacent regions by similarity of color (and maybe texture in future)
         -- extracts edges using PerimeterFinder2 just as above
-        
+
     */
-    
+
     private enum STATE {
         INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
     }
-    
+
     private final ImageExt clrImg;
     private final GreyscaleImage gsImg;
     private final GreyscaleImage ptImg;
     // ptImg shifted by -20 degrees in pixel values to look for wrap around affects
     private final GreyscaleImage ptImgShifted;
     private List<Region> regions = null;
-    
+
     //a re-extraction of regions on the gs positive image, but using the
     // MSER parameters used for the negative image.
     // this is not useful in edges, but is useful for other methods.
@@ -92,34 +93,34 @@ public class MSEREdges {
     // and negative.  regions and filteredRegions should be prefered for most
     // uses.
     private List<List<Region>> origGsPtRegions = null;
-    
+
     // color contrast regions filtered to the smallest that
     // do not have any other ellipse centers within them.
     // (then all positive filtered and negative filtered are compared
     // and kept, but only the largest if intersecting are kept)
     private List<Region> filteredRegions = null;
-    
+
     // NOTE: the edges indexes do not correspond to the regions indexes
     private List<Set<PairInt>> edgeList = null;
-    
+
     private List<Set<PairInt>> labeledSets = null;
-    
+
     private boolean debug = false;
-    
+
     private boolean useLowerContrastLimits = false;
-    
+
     private long ts = 0;
-    
+
     private STATE state = null;
-    
+
     public MSEREdges(ImageExt img) {
-        
+
         ImageProcessor imageProcesor = new ImageProcessor();
-        
+
         this.gsImg = img.copyToGreyscale2();
         this.ptImg = imageProcesor.createCIELUVTheta(img, 255);
         this.clrImg = img.copyToImageExt();
-        
+
         //to correct for wrap around effects in ptImg, making a copy
         //   shifted by -20 degrees in pixel values.
         //   any false regions found due to the range 0-255 being wrap
@@ -127,15 +128,15 @@ public class MSEREdges {
         //   found by comparing these two image's results, though
         //   there may be faster ways to achieve this.
         this.ptImgShifted = copyAndShift(ptImg, -20);
-        
+
         state = STATE.INITIALIZED;
     }
-    
+
     public void setToDebug() {
         debug = true;
         ts = MiscDebug.getCurrentTimeFormatted();
     }
-    
+
     /**
      * use this to change the limits to keep lower contrast edges.
      * NOTE that this increases the number of edges that are noise.
@@ -143,73 +144,73 @@ public class MSEREdges {
     public void setToLowerContrast() {
         useLowerContrastLimits = true;
     }
-    
+
     public void extractEdges() {
-        
+
         //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
         if (!state.equals(STATE.INITIALIZED)) {
             throw new IllegalStateException("can only perform extraction of "
                 + "edges once");
         }
-        
+
         if (debug) {
             MiscDebug.writeImage(ptImg, "_" + ts + "_polartheta");
         }
-        
+
         extractRegions();
-                        
+
         extractBoundaries();
-        
+
         useFilterOnEdges();
-        
+
         if (debug) {
             printEdges();
         }
     }
-    
+
     /**
      * merge regions and then extract edges.  this method is most useful when
-     * setToLowerContrast() has been invoked before. 
+     * setToLowerContrast() has been invoked before.
      */
     public void mergeAndExtractEdges() {
-        
+
         //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
         if (!state.equals(STATE.INITIALIZED)) {
             throw new IllegalStateException("can only perform extraction of "
                 + "edges once");
         }
-        
+
         extractEdges();
-        
+
         this.labeledSets = mergeRegions2();
-        
+
         if (debug) {
             printEdges();
         }
     }
-    
+
     private void extractRegions() {
-        
+
         //NOTE: this method should be cleaned up when have the better pattern
         //   of mser region extraction and filtering
-        
+
         //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
         if (state.equals(STATE.EDGES_EXTRACTED)) {
             throw new IllegalStateException("can only perform extraction of "
                 + "edges once");
         }
-        
+
         List<List<Region>> gsRegions = extractMSERRegions(gsImg, Threshold.LESS_SENSITIVE);
 
         List<List<Region>> ptRegions = extractMSERRegions(ptImg, Threshold.DEFAULT);
 
         List<List<Region>> ptShiftedRegions = extractMSERRegions(
             ptImgShifted, Threshold.DEFAULT);
-                
+
         regions = new ArrayList<Region>();
 
         origGsPtRegions = new ArrayList<List<Region>>();
-        
+
         // for minArea 0.001, a gsRegions limit for var of 0. is used
         //   but for 0.0001, limit should be near 0.001
 
@@ -235,7 +236,7 @@ public class MSEREdges {
                     }
                 }
             }
-            
+
             //if (type == 1) {
                 List<TIntList> concList = getEmbeddedLevels(list);
                 TIntList rmList = new TIntArrayList();
@@ -250,7 +251,7 @@ public class MSEREdges {
                     list.remove(rmIdx);
                 }
             //}
-            
+
             // copy list into origGsPtRegions
             List<Region> cpList = new ArrayList<Region>();
             origGsPtRegions.add(cpList);
@@ -259,7 +260,7 @@ public class MSEREdges {
                 regions.add(r);
             }
         }
-        
+
         List<TIntList> concList = getEmbeddedLevels(regions);
         TIntList rmList = new TIntArrayList();
         for (int k = 0; k < concList.size(); ++k) {
@@ -272,11 +273,11 @@ public class MSEREdges {
             int rmIdx = rmList.get(k);
             regions.remove(rmIdx);
         }
-        
+
         // need to correct for regions created due to the differene between pixels
         //    near values of 255 appearing to be very different from pixels near
         //    values of 0 when the scale is circular, that is 0 to 255 to 0, etc.
-        
+
         for (int type = 0; type < 2; ++type) {
             List<Region> list = ptRegions.get(type);
             for (int i = (list.size() - 1); i > -1; --i) {
@@ -296,10 +297,10 @@ public class MSEREdges {
                     listS.remove(i);
                 }
             }
-            
+
             int w = ptImg.getWidth();
             int h = ptImg.getHeight();
-            
+
             // correct list using listS.  the intersection is the final list
             List<RegionGeometry> listSRG = new ArrayList<RegionGeometry>();
             for (int i = 0; i < listS.size(); ++i) {
@@ -311,19 +312,19 @@ public class MSEREdges {
                 RegionGeometry rg0 = Canonicalizer.calculateEllipseParams(r0, w, h);
                 float orientation0 = (float)(
                     rg0.orientation * 180./Math.PI);
-                
+
                 boolean found = false;
-                
+
                 for (int i1 = 0; i1 < listS.size(); ++i1) {
                     Region r1 = listS.get(i1);
                     RegionGeometry rg1 = listSRG.get(i1);
                     float orientation1 = (float)(
                         rg1.orientation * 180./Math.PI);
-                
-                    float diffOr = AngleUtil.getAngleDifference(orientation0, 
+
+                    float diffOr = AngleUtil.getAngleDifference(orientation0,
                         orientation1);
-                    
-                    if ((Math.abs(rg0.xC - rg1.xC) > 5) || 
+
+                    if ((Math.abs(rg0.xC - rg1.xC) > 5) ||
                         (Math.abs(rg0.yC - rg1.yC) > 5) ||
                         (Math.abs(rg0.minor - rg1.minor) > 5) ||
                         (Math.abs(rg0.major - rg1.major) > 5) ||
@@ -366,7 +367,7 @@ public class MSEREdges {
                 }
                 MiscDebug.writeImage(imCp, "_" + ts + "_" + type + "_pt_shifted_");
             }*/
-            
+
             // copy list into origGsPtRegions
             List<Region> cpList = new ArrayList<Region>();
             origGsPtRegions.add(cpList);
@@ -416,7 +417,7 @@ public class MSEREdges {
 
         int w = ptImg.getWidth();
         int h = ptImg.getHeight();
-        
+
         if (additionalFiltering) {
 
             List<List<Region>> filtered = filterOverlapping(ptRegions, w, h);
@@ -464,7 +465,7 @@ public class MSEREdges {
                         intersects.add(j);
                     }
                 }
-                
+
                 if (!intersects.isEmpty()) {
                     // compare eh0 and all in intersects and the largest is kept
                     // while the others are put into skip lists.
@@ -593,7 +594,7 @@ public class MSEREdges {
 
             regions0 = filteredGS.get(0);
             regions1 = filteredGS.get(1);
-            
+
             hs0 = new ArrayList<EllipseHelper>();
             for (int j = 0; j < regions0.size(); ++j) {
                 Region r = regions0.get(j);
@@ -614,7 +615,7 @@ public class MSEREdges {
             for (int i = 0; i < regions0.size(); ++i) {
                 EllipseHelper eh0 = hs0.get(i);
                 boolean intersects = false;
-                
+
                 for (int j = 0; j < filteredRegions.size(); ++j) {
                     EllipseHelper eh2 = keptEHs.get(j);
                     if (eh0.intersects(eh2)) {
@@ -629,7 +630,7 @@ public class MSEREdges {
             for (int i = 0; i < regions1.size(); ++i) {
                 EllipseHelper eh1 = hs1.get(i);
                 boolean intersects = false;
-                
+
                 for (int j = 0; j < filteredRegions.size(); ++j) {
                     EllipseHelper eh2 = keptEHs.get(j);
                     if (eh1.intersects(eh2)) {
@@ -651,7 +652,7 @@ public class MSEREdges {
                 int i = iter.next();
                 filteredRegions.add(regions1.get(i));
             }
-            
+
             if (debug) {
 
                 Image imCp;
@@ -671,13 +672,13 @@ public class MSEREdges {
                 MiscDebug.writeImage(imCp, "_" + ts + "_regions_pt_filtered2_");
             }
         }
-            
+
         state = STATE.REGIONS_EXTRACTED;
     }
 
     private List<List<Region>> extractMSERRegions(GreyscaleImage img,
         Threshold threshold) {
-       
+
         int delta = 2;
         double minArea = 0.001;//.0001
         double maxArea = 0.99;//0.1;
@@ -691,40 +692,40 @@ public class MSEREdges {
                 delta = 3;//5;
             }
         }
-        
+
         int[] a = MSER.readIntoArray(img);
-        
-        MSER mser = new MSER();        
-        
+
+        MSER mser = new MSER();
+
         List<List<Region>> regions = mser.findRegions(a, img.getWidth(),
-            img.getHeight(), delta, minArea, maxArea, maxVariation, 
+            img.getHeight(), delta, minArea, maxArea, maxVariation,
             minDiversity);
-        
+
         return regions;
     }
-    
+
     /**
      * this extracts the filtered regions and creates edges for them then
      * substitutes them into that area in edgeList.
      */
     private void useFilterOnEdges() {
-        
+
         //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
         if (!state.equals(STATE.EDGES_EXTRACTED)) {
             throw new IllegalStateException("edges must be extrcted before"
                 + " this method can be used");
         }
-        
+
         Set<PairInt> edges = new HashSet<PairInt>();
         for (int edgeIdx = 0; edgeIdx < edgeList.size(); ++edgeIdx) {
             edges.addAll(edgeList.get(edgeIdx));
         }
-        
+
         PerimeterFinder2 finder = new PerimeterFinder2();
-        
+
         int w = ptImg.getWidth();
         int h = ptImg.getHeight();
-        
+
         Set<PairInt> addEdgePoints = new HashSet<PairInt>();
         for (int i = 0; i < filteredRegions.size(); ++i) {
             Region r = filteredRegions.get(i);
@@ -733,53 +734,53 @@ public class MSEREdges {
                 ellipsePoints.add(new PairInt(r.accX.get(j), r.accY.get(j)));
             }
             edges.removeAll(ellipsePoints);
-            
+
             Set<PairInt> embedded = new HashSet<PairInt>();
             Set<PairInt> outerBoundary = new HashSet<PairInt>();
             finder.extractBorder2(ellipsePoints, embedded, outerBoundary);
             addEdgePoints.addAll(outerBoundary);
         }
-        
+
         edges.addAll(addEdgePoints);
-        
+
         edgeList.clear();
-        
+
         DFSConnectedGroupsFinder finder2 = new DFSConnectedGroupsFinder();
         finder2.setMinimumNumberInCluster(1);
         finder2.findConnectedPointGroups(edges);
-        
+
         for (int i = 0; i < finder2.getNumberOfGroups(); ++i) {
             edgeList.add(finder2.getXY(i));
         }
     }
-    
-    private List<Set<PairInt>> extractContiguous(GreyscaleImage tImg, 
+
+    private List<Set<PairInt>> extractContiguous(GreyscaleImage tImg,
         int value, int minGroupSize) {
-        
+
         List<Set<PairInt>> out = new ArrayList<Set<PairInt>>();
-        
+
         DFSContiguousValueFinder dfsFinder = new DFSContiguousValueFinder(tImg);
         dfsFinder.setMinimumNumberInCluster(minGroupSize);
         dfsFinder.findGroups(value);
-                
+
         int nGroups = dfsFinder.getNumberOfGroups();
-                
+
         for (int j = 0; j < nGroups; ++j) {
             PairIntArray xy = dfsFinder.getXY(j);
             out.add(Misc.convert(xy));
         }
-        
+
         return out;
     }
 
     private void extractBoundaries() {
-        
+
         //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
         if (state.equals(STATE.EDGES_EXTRACTED)) {
             throw new IllegalStateException("can only perform extraction of "
                 + "edges once");
         }
-                
+
         // edgeList and labeledSets are made in this:
         Set<PairInt> thinned = combineAndThinBoundaries();
 
@@ -787,29 +788,29 @@ public class MSEREdges {
     }
 
     private void printEdges() {
-        
+
         Image im = clrImg.copyImage();
-        
+
         int[] clr = new int[]{255, 0, 0};
-        
+
         for (int i = 0; i < edgeList.size(); ++i) {
             //int[] clr = ImageIOHelper.getNextRGB(i);
-            ImageIOHelper.addCurveToImage(edgeList.get(i), im, 0, clr[0], 
+            ImageIOHelper.addCurveToImage(edgeList.get(i), im, 0, clr[0],
                 clr[1], clr[2]);
         }
-        
+
         MiscDebug.writeImage(im, "_" + ts + "_edges_");
     }
-    
+
     private class OneDFloatArray {
         float[] a;
         public OneDFloatArray(float[] a) {
             this.a = a;
         }
     }
-    
+
     private List<Set<PairInt>> reduceToUniquePointToEdge() {
-        
+
         Set<PairInt> edges = new HashSet<PairInt>();
         for (int i = 0; i < edgeList.size(); ++i) {
             Set<PairInt> set = edgeList.get(i);
@@ -817,14 +818,14 @@ public class MSEREdges {
                 edges.add(p);
             }
         }
-        
+
         ImageProcessor imageProcessor = new ImageProcessor();
         imageProcessor.applyThinning(edges, clrImg.getWidth(), clrImg.getHeight(),
             false);
-        
+
         int w = clrImg.getWidth();
         int h = clrImg.getHeight();
-        
+
         Set<PairInt> notEdges = new HashSet<PairInt>();
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
@@ -834,29 +835,29 @@ public class MSEREdges {
                 }
             }
         }
-        
+
         DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
         finder.setMinimumNumberInCluster(1);
         finder.findConnectedPointGroups(notEdges);
-        
+
         TIntIntMap pointIndexMap = new TIntIntHashMap();
-        
+
         List<Set<PairInt>> contigSets = new ArrayList<Set<PairInt>>();
         for (int i = 0; i < finder.getNumberOfGroups(); ++i) {
             Set<PairInt> group = finder.getXY(i);
             contigSets.add(group);
         }
-        
+
         List<Colors> clrsList = new ArrayList<Colors>();
         for (int i = 0; i < contigSets.size(); ++i) {
-            
+
             Set<PairInt> group = contigSets.get(i);
-            
+
             for (PairInt p : group) {
                 int pixIdx = clrImg.getInternalIndex(p);
                 pointIndexMap.put(pixIdx, i);
             }
-            
+
             GroupPixelRGB0 gpb = new GroupPixelRGB0();
             gpb.calculateColors(group, clrImg, 0, 0);
             int r = Math.round(gpb.getAvgRed());
@@ -867,14 +868,14 @@ public class MSEREdges {
             Colors clr = new Colors(hsb);
             clrsList.add(clr);
         }
-        
+
         // -- place edges in the contiguous adjacent set, closest to them
         //    in color
         int[] dxs = Misc.dx4;
         int[] dys = Misc.dy4;
         ArrayDeque<PairInt> queue = new ArrayDeque<PairInt>();
         queue.addAll(edges);
-        
+
         while (!queue.isEmpty()) {
             PairInt p = queue.pop();
             int pixIdx = clrImg.getInternalIndex(p);
@@ -883,11 +884,11 @@ public class MSEREdges {
             }
             int x = clrImg.getCol(pixIdx);
             int y = clrImg.getRow(pixIdx);
-            
+
             float[] hsb = new float[3];
-            Color.RGBtoHSB(clrImg.getR(pixIdx), clrImg.getG(pixIdx), 
+            Color.RGBtoHSB(clrImg.getR(pixIdx), clrImg.getG(pixIdx),
                 clrImg.getB(pixIdx), hsb);
-            
+
             int minClrDiff = Integer.MAX_VALUE;
             int minClrDiffIdx = -1;
             for (int k = 0; k < dxs.length; ++k) {
@@ -919,15 +920,15 @@ public class MSEREdges {
             int gIdx = pointIndexMap.get(minClrDiffIdx);
             pointIndexMap.put(pixIdx, gIdx);
             contigSets.get(gIdx).add(p);
-        
+
             edges.remove(p);
             notEdges.add(p);
         }
         assert(edges.isEmpty());
-        
+
         // extract boundaries of contigSets
         edgeList.clear();
-       
+
         PerimeterFinder2 finder2 = new PerimeterFinder2();
         for (Set<PairInt> set : contigSets) {
             Set<PairInt> embedded = new HashSet<PairInt>();
@@ -935,59 +936,59 @@ public class MSEREdges {
             finder2.extractBorder2(set, embedded, outerBorder);
             edgeList.add(outerBorder);
         }
-        
+
         return contigSets;
     }
-    
+
     private List<Set<PairInt>> mergeRegions2() {
-        
+
         //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
         if (!state.equals(STATE.EDGES_EXTRACTED)) {
             throw new IllegalStateException("error in algorithm.  expecting"
                 + " edges were extracted.");
         }
-        
+
         List<Set<PairInt>> contigSets = reduceToUniquePointToEdge();
-        
+
         int w = clrImg.getWidth();
         int h = clrImg.getHeight();
-        
+
         // -- merge contigSets
         int sizeLimit = 16;//31;
         if (clrImg.getNPixels() < 100) {
             sizeLimit = 5;
         }
-        
+
         ImageSegmentation imageSegmentation = new ImageSegmentation();
         float hsvLimit = 0.095f;
-        int[] labels = imageSegmentation.mergeByColor(clrImg, contigSets, 
-            ColorSpace.HSV, 
+        int[] labels = imageSegmentation.mergeByColor(clrImg, contigSets,
+            ColorSpace.HSV,
             hsvLimit);//0.1f);
-        
-        imageSegmentation.mergeSmallSegments(clrImg, labels, sizeLimit, 
+
+        imageSegmentation.mergeSmallSegments(clrImg, labels, sizeLimit,
             ColorSpace.HSV);
 
         contigSets = LabelToColorHelper
             .extractContiguousLabelPoints(clrImg, labels);
- 
-        labels = imageSegmentation.mergeByColor(clrImg, contigSets, 
-            ColorSpace.CIELUV_NORMALIZED, 
+
+        labels = imageSegmentation.mergeByColor(clrImg, contigSets,
+            ColorSpace.CIELUV_NORMALIZED,
             0.01f);
-        
-        labels = imageSegmentation.mergeByColor(clrImg, contigSets, 
-            ColorSpace.POLAR_CIELUV, 
+
+        labels = imageSegmentation.mergeByColor(clrImg, contigSets,
+            ColorSpace.POLAR_CIELUV,
             1.f);// in degrees
-        
+
         sizeLimit = 24;
         if (clrImg.getNPixels() < 100) {
             sizeLimit = 10;
         }
-        imageSegmentation.mergeSmallSegments(clrImg, labels, sizeLimit, 
+        imageSegmentation.mergeSmallSegments(clrImg, labels, sizeLimit,
             ColorSpace.CIELAB);
-        
+
         contigSets = LabelToColorHelper
             .extractContiguousLabelPoints(clrImg, labels);
-        
+
         // - write the final edges (and clear the regions list)
         edgeList.clear();
         PerimeterFinder2 finder2 = new PerimeterFinder2();
@@ -996,7 +997,7 @@ public class MSEREdges {
             Set<PairInt> outerBorder = new HashSet<PairInt>();
             finder2.extractBorder2(set, embedded, outerBorder);
             edgeList.add(outerBorder);
-        
+
             /*
             DFSConnectedGroupsFinder dfsFinder = new DFSConnectedGroupsFinder();
             dfsFinder.setMinimumNumberInCluster(24);
@@ -1016,10 +1017,10 @@ public class MSEREdges {
         }
         return contigSets;
     }
-    
-    private List<List<Region>> filterOverlapping(List<List<Region>> rlist, 
+
+    private List<List<Region>> filterOverlapping(List<List<Region>> rlist,
         int w, int h) {
-        
+
         List<List<Region>> filtered = new ArrayList<List<Region>>();
         for (int i = 0; i < rlist.size(); ++i) {
 
@@ -1071,14 +1072,14 @@ public class MSEREdges {
 
         return filtered;
     }
-    
+
     /**
      * experimental method for a specific use case.  if this method is retained
      * and used, it could be made more efficient.
-     * @return 
+     * @return
      */
     public List<Region> _extractSensitiveGS0() {
-    
+
         GreyscaleImage invImg = gsImg.copyImage();
         // Invert the pixel values
         for (int i = 0; i < invImg.getNPixels(); ++i) {
@@ -1089,12 +1090,12 @@ public class MSEREdges {
             }
             invImg.setValue(i, v);
         }
-        
-        List<List<Region>> gsRegions = extractMSERRegions(invImg, 
+
+        List<List<Region>> gsRegions = extractMSERRegions(invImg,
             Threshold.LESS_SENSITIVE);
 
         List<Region> regions2 = new ArrayList<Region>();
-        
+
         for (int type = 1; type < 2; ++type) {
             List<Region> list = gsRegions.get(type);
             for (int i = (list.size() - 1); i > -1; --i) {
@@ -1110,39 +1111,39 @@ public class MSEREdges {
                 }
             }
         }
-        
+
         return regions2;
     }
-    
+
     public List<TIntList> getEmbeddedGS0Levels() {
         if (sensitiveGS0 == null) {
             sensitiveGS0 = _extractSensitiveGS0();
         }
-        
+
         return getEmbeddedLevels(sensitiveGS0);
     }
-    
+
     private List<TIntList> getEmbeddedLevels(List<Region> rs) {
-        
+
         //NOTE: if end up using this heavily, should consider a layered level
         //   set structure from the start
-        
+
         // looking for level sets of concentric ellipses
         int[] sizes = new int[rs.size()];
         for (int i = 0; i < rs.size(); ++i) {
             sizes[i] = rs.get(i).area_;
         }
         QuickSort.sortBy1stArg(sizes, rs);
-        
+
         //_debugOrigRegions(rs, "_rs_");
-        
+
         List<EllipseHelper> ehs = new ArrayList<EllipseHelper>();
         List<GroupPixelHSV> hsvs = new ArrayList<GroupPixelHSV>();
-        
+
         int[] xyCen = new int[2];
         int w = clrImg.getWidth();
         int h = clrImg.getHeight();
-        
+
         QuadTree<Integer, Integer> centroidQT = new QuadTree<Integer, Integer>();
 
         // store the region centroids in quadtree
@@ -1156,35 +1157,35 @@ public class MSEREdges {
             GroupPixelHSV gHSV = new GroupPixelHSV();
             gHSV.calculateColors(r.getAcc(), clrImg);
             hsvs.add(gHSV);
-            
+
             centroidQT.insert(xyCen[0], xyCen[1], Integer.valueOf(i));
         }
-        
+
         TIntList skip = new TIntArrayList();
-        
+
         /*
         concentric regions due to illumintion gradient tend to have
         similar eccentricities, orientation, and direction away from
         the largest region center.
-        They also tend to have 3 or 4 of the ellipse semi major and 
+        They also tend to have 3 or 4 of the ellipse semi major and
         minor endpoints within the largest region's bounds,
-        that is the direction of the illumination gradient is in one 
+        that is the direction of the illumination gradient is in one
         direction.
         */
-        
+
         List<TIntList> concentric = new ArrayList<TIntList>();
-        
-        // visit from largest region to smallest 
+
+        // visit from largest region to smallest
         for (int i = (rs.size() - 1); i > -1; --i) {
             if (skip.contains(i)) { continue; }
             EllipseHelper eh = ehs.get(i);
-            
+
             if (hsvs.get(i).getStdDevV() > 0.075) {
                 continue;
             }
-            
+
             int[] minMaxXY = eh.getMinMaxXY();
-        
+
             Interval<Integer> intX = new Interval<Integer>(minMaxXY[0], minMaxXY[1]);
             Interval<Integer> intY = new Interval<Integer>(minMaxXY[2], minMaxXY[3]);
             Interval2D<Integer> rect = new Interval2D<Integer>(intX, intY);
@@ -1193,11 +1194,11 @@ public class MSEREdges {
             if (indexes == null || indexes.size() < 2) {
                 continue;
             }
-            
+
             float orientation = (float)(
                 eh.getOrientation() * 180./Math.PI);
             double ecc = eh.getEccentricity();
-            
+
             System.out.format(
                 "OUTER (%d,%d) or=%.3f ecc=%.3f  stdvV=%.3f n=%d\n",
                 eh.getXYCenter()[0], eh.getXYCenter()[1],
@@ -1205,31 +1206,31 @@ public class MSEREdges {
                 (float)eh.getEccentricity(), hsvs.get(i).getStdDevV(),
                 rs.get(i).accX.size()
             );
-            
+
             TIntList idx2s = new TIntArrayList();
             TDoubleList dirs = new TDoubleArrayList();
             for (int j = 0; j < indexes.size(); ++j) {
                 int idx2 = indexes.get(j).intValue();
                 if (idx2 == i || skip.contains(idx2)) { continue; }
-                
+
                 if (hsvs.get(idx2).getStdDevV() > 0.075) {
                     continue;
                 }
-                
+
                 EllipseHelper eh2 = ehs.get(idx2);
                 float orientation2 = (float)(
                     eh2.getOrientation() * 180./Math.PI);
-                
-                float diffOr = AngleUtil.getAngleDifference(orientation, 
+
+                float diffOr = AngleUtil.getAngleDifference(orientation,
                     orientation2);
-                
+
                 if (Math.abs(diffOr) > 5.75) {
                     continue;
                 }
                 if (Math.abs(ecc - eh2.getEccentricity()) > 0.07) {
                     continue;
                 }
-                
+
                 PairInt[] ep = eh2.getSemiAxesEndoints();
                 int nTrue = 0;
                 for (int k = 0; k < 4; ++k) {
@@ -1237,13 +1238,13 @@ public class MSEREdges {
                         nTrue++;
                     }
                 }
-                
+
                 boolean t0 = eh.isWithin(ep[0].getX(), ep[0].getY());
                 boolean t1 = eh.isWithin(ep[1].getX(), ep[1].getY());
                 boolean t2 = eh.isWithin(ep[2].getX(), ep[2].getY());
                 boolean t3 = eh.isWithin(ep[3].getX(), ep[3].getY());
-                
-                
+
+
                 double atan2 = Math.atan2(
                     (double)(eh2.getXYCenter()[1] -  eh.getXYCenter()[1]),
                     (double)(eh2.getXYCenter()[0] -  eh.getXYCenter()[0]))
@@ -1251,35 +1252,35 @@ public class MSEREdges {
                 if (atan2 < 0) {
                     atan2 += 360;
                 }
-                
+
                 //System.out.println("     " + Arrays.toString(ep));
-                
+
                 System.out.format(
                     "     (%d,%d) or=%.3f ecc=%.3f atan2=%.3f "
                         + "isWithin=%b,%b,%b,%b  stdvV=%.3f n=%d\n",
                     eh2.getXYCenter()[0], eh2.getXYCenter()[1],
                     (float)eh2.getOrientation(),
-                    (float)eh2.getEccentricity(), (float)atan2, 
+                    (float)eh2.getEccentricity(), (float)atan2,
                     t0, t1, t2, t3, hsvs.get(idx2).getStdDevV(),
                     rs.get(idx2).accX.size()
                 );
-                
+
                 if (nTrue < 2) {
                     continue;
                 }
-              
+
    //cannot include if there is alot of variation in the level set
-                
+
                 // can't tell which directions are consistent w/ a gradient
                 // yet, so collect all
                 idx2s.add(idx2);
                 dirs.add(atan2);
             }
-            
+
             if (dirs.size() < 2) {
                 continue;
             }
-            
+
             // gradient will be apparent as 2 or more regions having
             // similar atan2 (within approx 10 degrees)
             // key = bin number where bin size is 10 degrees, value = number
@@ -1314,9 +1315,9 @@ public class MSEREdges {
             //  so roughly 7.07 from bin center
             float dirCenter = ((float)maxFreqBin)*binSz + (binSz/2.f);
             double dist = Math.sqrt(2) * binSz/2.;
-            
+
             System.out.println("   adding");
-            
+
             //List<TIntList> concentric = new ArrayList<TIntList>();
             TIntList concList = new TIntArrayList();
             concentric.add(concList);
@@ -1332,7 +1333,7 @@ public class MSEREdges {
                 concList.add(idx2);
                 skip.add(idx2);
             }
-            
+
             /*{//DEBUG
                 List<Region> tmp = new ArrayList<Region>();
                 for (int k = 0; k < concList.size(); ++k) {
@@ -1341,16 +1342,16 @@ public class MSEREdges {
                 _debugOrigRegions(tmp, "_rs_" + concentric.size());
             }*/
         }
-        
+
         return concentric;
     }
-    
+
     public void _debugOrigRegions(int idx, String lbl) {
         List<Region> list = origGsPtRegions.get(idx);
         lbl = lbl + "_" + idx + "_";
         _debugOrigRegions(list, lbl);
     }
-    
+
     public void _debugOrigRegions(List<Region> list, String lbl) {
         int[] xyCen = new int[2];
         Image imCp;
@@ -1367,38 +1368,38 @@ public class MSEREdges {
             r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
             ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], imCp,
                 1, 255, 0, 0);
-            //System.out.println(type + " xy=" + xyCen[0] + "," + xyCen[1] 
+            //System.out.println(type + " xy=" + xyCen[0] + "," + xyCen[1]
             //    + " variation=" + r.getVariation());
             MiscDebug.writeImage(imCp, "_" + ts + "_orig_regions_" + lbl
                 + "_" + "_" + j + "_");
         }
     }
-    
+
     public List<Set<PairInt>> getEdges() {
-        
+
         //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
         if (!state.equals(STATE.EDGES_EXTRACTED)) {
             throw new IllegalStateException("must use one of the extraction"
                 + " methods first");
         }
-        
+
         return edgeList;
     }
-    
+
     /**
      * get labeled sets of points separated by the edges.
-     * Note that the method returns null unless mergeAndExtractEdges was 
+     * Note that the method returns null unless mergeAndExtractEdges was
      * already used.
-     * @return 
+     * @return
      */
     public List<Set<PairInt>> getLabeledSets() {
-        
+
         //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
         if (!state.equals(STATE.EDGES_EXTRACTED)) {
             throw new IllegalStateException("must use one of the extraction"
                 + " methods first");
         }
-        
+
         return labeledSets;
     }
 
@@ -1450,19 +1451,19 @@ public class MSEREdges {
     public boolean isUsingLowerContrastLimits() {
         return useLowerContrastLimits;
     }
-    
+
     private Set<PairInt> combineAndThinBoundaries() {
-        
+
         // --- plot intersections to examine a better thinning
         //     and possibly removal before all bounds are combined
-        
+
         List<Set<PairInt>> boundaries = new ArrayList<Set<PairInt>>();
-        
+
         PerimeterFinder2 finder = new PerimeterFinder2();
-    
+
         TIntObjectMap<TIntList> pointIndexesMap = new TIntObjectHashMap<TIntList>();
         Set<PairInt> allPoints = new HashSet<PairInt>();
-        
+
         for (int rListIdx = 0; rListIdx < regions.size(); ++rListIdx) {
             Region r = regions.get(rListIdx);
             Set<PairInt> points = r.getAcc();
@@ -1470,9 +1471,9 @@ public class MSEREdges {
             Set<PairInt> outerBorder = new HashSet<PairInt>();
             finder.extractBorder2(points, embedded, outerBorder);
             boundaries.add(outerBorder);
-            
+
             allPoints.addAll(outerBorder);
-            
+
             for (PairInt p : outerBorder) {
                 int pixIdx = clrImg.getInternalIndex(p);
                 TIntList bIdxs = pointIndexesMap.get(pixIdx);
@@ -1482,7 +1483,7 @@ public class MSEREdges {
                 }
                 bIdxs.add(rListIdx);
             }
-            
+
             DFSConnectedGroupsFinder dfsFinder = new DFSConnectedGroupsFinder();
             dfsFinder.setMinimumNumberInCluster(12);
             dfsFinder.findConnectedPointGroups(embedded);
@@ -1495,9 +1496,9 @@ public class MSEREdges {
                 finder.extractBorder2(eSet, embedded2, outerBorder2);
 
                 if (outerBorder2.size() > 12) {
-                    
+
                     allPoints.addAll(outerBorder2);
-                    
+
                     for (PairInt p : outerBorder2) {
                         int pixIdx = clrImg.getInternalIndex(p);
                         TIntList bIdxs = pointIndexesMap.get(pixIdx);
@@ -1510,121 +1511,96 @@ public class MSEREdges {
                 }
             }
         }
-        
+
         GreyscaleImage img2 = new GreyscaleImage(clrImg.getWidth(),
             clrImg.getHeight());
         for (PairInt p : allPoints) {
-            img2.setValue(p.getX(), p.getY(), 1);    
+            img2.setValue(p.getX(), p.getY(), 1);
         }
-        
-        if (debug) {
-            MiscDebug.writeImage(clrImg, "_" + ts + "_0_");
-            Image tmp = clrImg.copyImage();
-            for (int i = 0; i < clrImg.getNPixels(); ++i) {
-                if (img2.getValue(i) > 0) {
-                    tmp.setRGB(i, 255, 0, 0);
-                }
-            }
-            MiscDebug.writeImage(tmp, "_" + ts + "_pre_closing_");
-        }
-       
+
         ImageSegmentation imageSegmentation = new ImageSegmentation();
         Set<PairInt> outputAddedGaps = new HashSet<PairInt>();
         img2 = imageSegmentation.fillInGapsOf1(img2, outputAddedGaps, 1);
-        
-        if (debug) {
-            MiscDebug.writeImage(clrImg, "_" + ts + "_0_");
-            Image tmp = clrImg.copyImage();
-            for (int i = 0; i < clrImg.getNPixels(); ++i) {
-                if (img2.getValue(i) > 0) {
-                    tmp.setRGB(i, 255, 0, 0);
-                }
-            }
-            ImageIOHelper.addCurveToImage(outputAddedGaps, tmp, 0, 255, 0, 255);
-            MiscDebug.writeImage(tmp, "_" + ts + "_closing0_");
-        }
-        
+
         // restore gap where the gap is completely surrounded
         imageSegmentation.restoreGapsOf1WhereSurrounded(img2, outputAddedGaps, 1);
-        
+
         Set<PairInt> thinned = new HashSet<PairInt>();
         for (int i = 0; i < img2.getNPixels(); ++i) {
+            // img2 edges have pixel value=1
             if (img2.getValue(i) > 0) {
                 thinned.add(new PairInt(img2.getCol(i), img2.getRow(i)));
             }
         }
-        
+
         if (debug) {
             MiscDebug.writeImage(clrImg, "_" + ts + "_0_");
             Image tmp = clrImg.copyImage();
             for (int i = 0; i < clrImg.getNPixels(); ++i) {
+                // img2 has edges w/ value=1
                 if (img2.getValue(i) > 0) {
                     tmp.setRGB(i, 255, 0, 0);
                 }
             }
             MiscDebug.writeImage(tmp, "_" + ts + "_closing_");
         }
-        
-        // find clusters between edges, that is find clusters of
-        //    value 0 in tmpImg
-        // then place all edge points into most similar adjacent cluster
-        //    (TODO: see similar method in SLICSuperPixels and consider moving
-        //    same to ImageProcessor)
-        List<Set<PairInt>> contigousSets = extractContiguous(img2, 0, 1);
+
+        // find clusters (contiguous pixels of value 0) between edges
+        List<Set<PairInt>> contigousSets = extractContiguous(img2, 0, 3);//9);
         
         if (debug) {
             Image tmp = clrImg.copyImage();
             ImageIOHelper.addAlternatingColorPointSetsToImage(
                 contigousSets, 0, 0, 0, tmp);
-            MiscDebug.writeImage(tmp, "_" + ts + "_contig_");
+            MiscDebug.writeImage(tmp, "_" + ts + "_expanded_");
         }
-        
-        assignTheUnassigned(contigousSets, thinned);        
-        
+
+        assignTheUnassigned(contigousSets);
+
         if (debug) {
             Image tmp = clrImg.copyImage();
             ImageIOHelper.addAlternatingColorPointSetsToImage(
                 contigousSets, 0, 0, 0, tmp);
-            MiscDebug.writeImage(tmp, "_" + ts + "_contig1_");
+            MiscDebug.writeImage(tmp, "_" + ts + "_assigned_");
         }
-        
+
         thinned.clear();
-        
+
         // --- extract bounds ---
-        this.labeledSets = contigousSets; 
+        this.labeledSets = contigousSets;
         edgeList = new ArrayList<Set<PairInt>>();
         PerimeterFinder2 finder2 = new PerimeterFinder2();
         for (Set<PairInt> set : contigousSets) {
             Set<PairInt> embedded = new HashSet<PairInt>();
             Set<PairInt> outerBorder = new HashSet<PairInt>();
             finder2.extractBorder2(set, embedded, outerBorder);
-            
+
             edgeList.add(outerBorder);
             thinned.addAll(outerBorder);
         }
-        
-        //if (debug) {
-        //    Image tmp = clrImg.copyImage();
-        //    ImageIOHelper.addCurveToImage(thinned, tmp, 0, 255, 0, 0);
-        //    MiscDebug.writeImage(tmp, "_" + ts + "_edges_1_");
-        //}
-       
+
+        if (debug) {
+            Image tmp = clrImg.copyImage();
+            ImageIOHelper.addCurveToImage(thinned, tmp, 0, 255, 0, 0);
+            MiscDebug.writeImage(tmp, "_" + ts + "_thinned_0_");
+        }
+
         return thinned;
     }
 
-    private void assignTheUnassigned(List<Set<PairInt>> contiguous,
-        Set<PairInt> unassigned) {
-        
+    private void assignTheUnassigned(List<Set<PairInt>> contiguous) {
+
         float[][] hsvs = new float[contiguous.size()][];
-        
+
         int[] labels = new int[clrImg.getNPixels()];
+        Arrays.fill(labels, -1);
         for (int label = 0; label < contiguous.size(); ++label) {
             Set<PairInt> set = contiguous.get(label);
             for (PairInt p : set) {
                 int pixIdx = clrImg.getInternalIndex(p);
                 labels[pixIdx] = label;
             }
-            
+
             GroupPixelHSV hsv = new GroupPixelHSV();
             hsv.calculateColors(set, clrImg);
             hsvs[label] = new float[]{hsv.getAvgH(), hsv.getAvgS(),
@@ -1640,19 +1616,21 @@ public class MSEREdges {
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
 
-        for (PairInt p : unassigned) {
-            int pixIdx = clrImg.getInternalIndex(p);
-            int i = clrImg.getCol(pixIdx);
-            int j = clrImg.getRow(pixIdx);
-            addNeighborLabelsForPoint(labels, unassignedMap, i, j, dxs, dys);
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                int pixIdx = clrImg.getInternalIndex(i, j);
+                if (labels[pixIdx] == -1) {
+                    addNeighborLabelsForPoint(labels, unassignedMap, i, j, dxs, dys);
+                }
+            }
         }
-
+        
         ArrayDeque<PairInt> queue0 = populateByNumberOfNeighbors(unassignedMap);
 
         ArrayDeque<PairInt> queue1 = new ArrayDeque<PairInt>();
 
         int nIter = 0;
-        
+
         float[] lab2 = null;
 
         Set<PairInt> visited = new HashSet<PairInt>();
@@ -1685,7 +1663,7 @@ public class MSEREdges {
 
             double minD = Double.MAX_VALUE;
             int minLabel2 = -1;
-            
+
             float[] lab = new float[3];
             lab[0] = clrImg.getHue(x1, y1);
             lab[1] = clrImg.getSaturation(x1, y1);
@@ -1729,17 +1707,17 @@ public class MSEREdges {
         }
 
         assert(unassignedMap.isEmpty());
-        
+
         for (int pixIdx = 0; pixIdx < labels.length; ++pixIdx) {
-            
+
             int label = labels[pixIdx];
             PairInt p = new PairInt(clrImg.getCol(pixIdx), clrImg.getRow(pixIdx));
-            
+
             contiguous.get(label).add(p);
-        }        
+        }
     }
 
-    private void addNeighborLabelsForPoint(int[] labels, 
+    private void addNeighborLabelsForPoint(int[] labels,
         Map<PairInt, TIntSet> unassignedMap,
         int i, int j, int[] dxs, int[] dys) {
 
@@ -1777,7 +1755,7 @@ public class MSEREdges {
             }
         }
     }
-    
+
     private ArrayDeque<PairInt> populateByNumberOfNeighbors(
         Map<PairInt, TIntSet> unassignedMap) {
 
@@ -1809,9 +1787,9 @@ public class MSEREdges {
 
         return queue;
     }
-    
+
     private GreyscaleImage copyAndShift(GreyscaleImage polarImage, int valueShift) {
-    
+
         GreyscaleImage shiftedImg = polarImage.createWithDimensions();
         for (int i = 0; i < polarImage.getNPixels(); ++i) {
             int v = polarImage.getValue(i);
@@ -1823,7 +1801,7 @@ public class MSEREdges {
             }
             shiftedImg.setValue(i, v);
         }
-        
+
         return shiftedImg;
     }
 
