@@ -24,8 +24,10 @@ import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
+import algorithms.search.NearestNeighbor2D;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.QuadInt;
 import gnu.trove.iterator.TIntIntIterator;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.list.TDoubleList;
@@ -46,6 +48,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.Stack;
 import thirdparty.edu.princeton.cs.algs4.Interval;
@@ -1901,42 +1904,39 @@ public class MSEREdges {
             MiscDebug.writeImage(cp, "_" + ts + "_junctions_");
         }
         
-        /*
-        now removing edges between junctions w/ low sobel counts
-        
-        thin the edges
-        
-        visit all points to find junctions
-        
-        create a map with key = junction1:junction2 and value =
-            connected points between the 2 junctions.
-        
-        put all junctions in stack
-                
-        while !stack is empty
-            point = pop
-            if visited, continue
+        DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
+        finder.setToUse8Neighbors();
+        finder.findConnectedPointGroups(points);
+        for (int i = 0; i < finder.getNumberOfGroups(); ++i) {
+            Set<PairInt> set = finder.getXY(i);
             
-            put each neighbor into a stack to follow to next junction
-            put into a set too, to avoid doubling back in paths
-                
-            for each nbrstack
-                start a path set for this neighbor
-                while !nbrstack.isempty
-                   pt2 = pop
-                   if pt2 is a junction
-                        finish path set for this nbrstack
-                           and store it with point:pt2 key in map
-                           break for this stack
-                   else
-                      add to path set
-                      visit the 4 or 8 neighbor region and add 
-                        if not added to a path already, add to nbrstack
+            PairInt j1 = null;
+            Set<PairInt> junctionsInSet = new HashSet<PairInt>();
+            for (PairInt p : junctions) {
+                if (set.contains(p)) {
+                    junctionsInSet.add(p);
+                    if (j1 == null) {
+                        j1 = p;
+                    } else {
+                        if (p.getX() < j1.getX()) {
+                            j1 = p;
+                        } else if (p.getX() == j1.getX()) {
+                            if (p.getY() < j1.getY()) {
+                                j1 = p;
+                            }
+                        }
+                    }
+                }
+            }
+                        
+            // iterate over pairs of nearest junctions in set, starting with j1 
+            // and its closest junction in set.
+            //    extract the connected points between them.
+            //    look at the sobel score and if below limit, remove the points
+            
+        }
         
-        visit each path set in map
-           sum the sobel counts
-           if less than limit, remove from points set
-        
+        /*
         remove stragglers from points
         
         create new tmp image with points given value=1
