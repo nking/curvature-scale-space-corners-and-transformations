@@ -32,14 +32,19 @@ import algorithms.util.PairIntArray;
 import algorithms.util.QuadInt;
 import gnu.trove.iterator.TIntIntIterator;
 import gnu.trove.iterator.TIntIterator;
+import gnu.trove.iterator.TObjectIntIterator;
 import gnu.trove.list.TDoubleList;
+import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TDoubleArrayList;
+import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.awt.Color;
@@ -118,6 +123,8 @@ public class MSEREdges {
     private boolean debug = false;
 
     private boolean useLowerContrastLimits = false;
+    
+    private GreyscaleImage sobelScores = null;
 
     private long ts = 0;
 
@@ -726,6 +733,13 @@ public class MSEREdges {
                 + " this method can be used");
         }
 
+        if (sobelScores == null) {
+            sobelScores = createSobelScores();
+            MiscDebug.writeImage(sobelScores, "_" + ts + "_sobel_");
+        }
+        
+        double limit = 0.0001;//0.05;
+        
         Set<PairInt> edges = new HashSet<PairInt>();
         for (int edgeIdx = 0; edgeIdx < edgeList.size(); ++edgeIdx) {
             edges.addAll(edgeList.get(edgeIdx));
@@ -743,11 +757,17 @@ public class MSEREdges {
             for (int j = 0; j < r.accX.size(); ++j) {
                 ellipsePoints.add(new PairInt(r.accX.get(j), r.accY.get(j)));
             }
-            edges.removeAll(ellipsePoints);
-
+           
             Set<PairInt> embedded = new HashSet<PairInt>();
             Set<PairInt> outerBoundary = new HashSet<PairInt>();
             finder.extractBorder2(ellipsePoints, embedded, outerBoundary);
+            
+            double score = calcAvgScore(outerBoundary, sobelScores);
+            if (score < limit) {
+                continue;
+            }
+            
+            edges.removeAll(ellipsePoints);
             addEdgePoints.addAll(outerBoundary);
         }
 
@@ -1461,9 +1481,41 @@ public class MSEREdges {
     public boolean isUsingLowerContrastLimits() {
         return useLowerContrastLimits;
     }
+    
+    private GreyscaleImage createSobelScores() {
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        float[] sobelScores = imageProcessor.createSobelColorScores(
+            gsImg, ptImg, 20);
+
+        int w = gsImg.getWidth();
+        int h = gsImg.getHeight();
+        GreyscaleImage scaled = MiscMath.rescaleAndCreateImage(sobelScores,
+            w, h);
+
+        // smearing values over a 3 pixel window
+        SummedAreaTable sumTable = new SummedAreaTable();
+
+        GreyscaleImage imgM = sumTable.createAbsoluteSummedAreaTable(scaled);
+        imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM, 3);
+
+        return imgM;
+    }
 
     private Set<PairInt> combineAndThinBoundaries() {
 
+        if (sobelScores == null) {
+            sobelScores = createSobelScores();
+            MiscDebug.writeImage(sobelScores, "_" + ts + "_sobel_");
+        }
+        
+        double limit = 0.2;//0.3;//0.05;
+        
+        //the intersection of overlapping regions, present in many regions
+        //   is often a strong edge
+        List<Set<PairInt>> rmvd = new ArrayList<Set<PairInt>>();
+        
         List<Set<PairInt>> boundaries = new ArrayList<Set<PairInt>>();
 
         PerimeterFinder2 finder = new PerimeterFinder2();
@@ -1477,10 +1529,14 @@ public class MSEREdges {
             Set<PairInt> embedded = new HashSet<PairInt>();
             Set<PairInt> outerBorder = new HashSet<PairInt>();
             finder.extractBorder2(points, embedded, outerBorder);
-            boundaries.add(outerBorder);
 
-            //TODO: consider sobel score filter here
+            double score = calcAvgScore(outerBorder, sobelScores);
+            if (score < limit) {
+                rmvd.add(outerBorder);
+                continue;
+            }
             
+            boundaries.add(outerBorder);
             allPoints.addAll(outerBorder);
 
             for (PairInt p : outerBorder) {
@@ -1520,7 +1576,25 @@ public class MSEREdges {
                 }
             }
         }
-
+        
+        //TODO: adjust score limits and angle thhresh
+        
+        if (rmvd.size() > 0) {
+            for (Set<PairInt> set : rmvd) {
+                for (PairInt p : set) {
+                    if (sobelScores.getValue(p) > 9) {
+                        allPoints.add(p);
+                    }
+                }
+            }
+        }
+        
+        if (debug) {
+            Image tmp = clrImg.copyImage();
+            ImageIOHelper.addCurveToImage(allPoints, tmp, 0, 255, 0, 0);
+            MiscDebug.writeImage(tmp, "_" + ts + "_TMP_");
+        }
+        
         GreyscaleImage img2 = new GreyscaleImage(clrImg.getWidth(),
             clrImg.getHeight());
         for (PairInt p : allPoints) {
@@ -2215,6 +2289,18 @@ public class MSEREdges {
         }
         
         return points.iterator().next();
+    }
+
+    private double calcAvgScore(Set<PairInt> points, GreyscaleImage sobelScores) {
+   
+        double sum = 0;
+        for (PairInt p : points) {
+            sum += sobelScores.getValue(p);
+        }
+        
+        sum /= (255. * (double) points.size());
+        
+        return sum;
     }
 
 }
