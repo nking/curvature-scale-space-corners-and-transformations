@@ -5639,11 +5639,8 @@ public class PostLineThinnerCorrections {
      * remove single isolated pixels
      * 
      * @param points
-     * @param imageWidth
-     * @param imageHeight 
      */
-    public void correctForIsolatedPixels(Set<PairInt> points, int imageWidth, 
-        int imageHeight) {
+    public static void correctForIsolatedPixels(Set<PairInt> points) {
         
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
@@ -5837,6 +5834,8 @@ public class PostLineThinnerCorrections {
         
         Stack<PairInt> stack = new Stack<PairInt>();
         
+        Set<PairInt> rm = new HashSet<PairInt>();
+        
         // place single neighbor points at top of stack
         for (PairInt p : points) {
             
@@ -5857,8 +5856,12 @@ public class PostLineThinnerCorrections {
             }
             if (nn == 1) {
                 stack.add(p);
+            } else if (nn == 0) {
+                rm.add(p);
             }
         }
+        
+        points.removeAll(rm);
                 
         Set<PairInt> visited = new HashSet<PairInt>();
                 

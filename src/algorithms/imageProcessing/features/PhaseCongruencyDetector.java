@@ -1353,7 +1353,7 @@ public class PhaseCongruencyDetector {
 
         /*
         PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
-        pltc.correctForIsolatedPixels(stepPoints, nRows, nCols);
+        pltc.correctForIsolatedPixels(stepPoints);
 
         for (int i = 0; i < nRows; ++i) {
             Arrays.fill(thinned[i], 0);
