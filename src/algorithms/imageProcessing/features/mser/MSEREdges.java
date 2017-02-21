@@ -208,9 +208,6 @@ public class MSEREdges {
 
     private void extractRegions() {
 
-        //NOTE: this method should be cleaned up when have the better pattern
-        //   of mser region extraction and filtering
-
         //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
         if (state.equals(STATE.EDGES_EXTRACTED)) {
             throw new IllegalStateException("can only perform extraction of "
@@ -233,10 +230,7 @@ public class MSEREdges {
 
         for (int type = 0; type < 2; ++type) {
             List<Region> list = gsRegions.get(type);
-            // temporary change to look at including more sensitive gs0
-            if (type==0) {
-                list = _extractSensitiveGS0();
-            }
+    
             for (int i = (list.size() - 1); i > -1; --i) {
                 Region r = list.get(i);
                 if ((type == 1) && r.getVariation() > 2.) {
@@ -245,30 +239,9 @@ public class MSEREdges {
                     //&& r.getVariation() == 0.0) {
                     && r.getVariation() < 2.) {
                     list.remove(i);
-                } else {
-                    GroupPixelHSV gHSV = new GroupPixelHSV();
-                    gHSV.calculateColors(r.getAcc(), clrImg);
-                    if (gHSV.getStdDevV() > 0.3){
-                        list.remove(i);
-                    }
                 }
             }
 
-            //if (type == 1) {
-                List<TIntList> concList = getEmbeddedLevels(list);
-                TIntList rmList = new TIntArrayList();
-                for (int k = 0; k < concList.size(); ++k) {
-                    for (int i3 = 1; i3 < concList.get(k).size(); ++i3) {
-                        rmList.add(concList.get(k).get(i3));
-                    }
-                }
-                rmList.sort();
-                for (int k = rmList.size() - 1; k > -1; --k) {
-                    int rmIdx = rmList.get(k);
-                    list.remove(rmIdx);
-                }
-            //}
-            
             // copy list into origGsPtRegions
             List<Region> cpList = new ArrayList<Region>();
             origGsPtRegions.add(cpList);
@@ -276,19 +249,6 @@ public class MSEREdges {
                 cpList.add(r.copy());
                 regions.add(r);
             }
-        }
-
-        List<TIntList> concList = getEmbeddedLevels(regions);
-        TIntList rmList = new TIntArrayList();
-        for (int k = 0; k < concList.size(); ++k) {
-            for (int i3 = 1; i3 < concList.get(k).size(); ++i3) {
-                rmList.add(concList.get(k).get(i3));
-            }
-        }
-        rmList.sort();
-        for (int k = rmList.size() - 1; k > -1; --k) {
-            int rmIdx = rmList.get(k);
-            regions.remove(rmIdx);
         }
 
         // need to correct for regions created due to the differene between pixels
@@ -299,9 +259,11 @@ public class MSEREdges {
             List<Region> list = ptRegions.get(type);
             for (int i = (list.size() - 1); i > -1; --i) {
                 Region r = list.get(i);
-                if ((type == 1) && r.getVariation() > 0.001) {
+                if ((type == 1) 
+                    && r.getVariation() > 0.001) {
                     list.remove(i);
-                } else if ((type == 0) && r.getVariation() == 0.0) {
+                } else if ((type == 0) 
+                    && r.getVariation() == 0.0) {
                     list.remove(i);
                 }
             }
@@ -310,7 +272,8 @@ public class MSEREdges {
                 Region r = listS.get(i);
                 if ((type == 1) && r.getVariation() > 0.001) {
                     listS.remove(i);
-                } else if ((type == 0) && r.getVariation() == 0.0) {
+                } else if ((type == 0) 
+                    && r.getVariation() == 0.0) {
                     listS.remove(i);
                 }
             }
@@ -318,6 +281,34 @@ public class MSEREdges {
             int w = ptImg.getWidth();
             int h = ptImg.getHeight();
 
+ //TODO: error here.  this removes a real region
+            if (debug) {
+                Image imCp = ptImg.copyToColorGreyscale();
+                int[] xyCen = new int[2];
+                int n = list.size();
+                for (int i = 0; i < n; ++i) {
+                    Region r = list.get(i);
+                    int[] clr = ImageIOHelper.getNextRGB(i);
+                    r.drawEllipse(imCp, 0, clr[0], clr[1], clr[2]);
+                    r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
+                    ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], imCp,
+                        1, 255, 0, 0);
+                }
+                MiscDebug.writeImage(imCp, "_" + ts + "_PT_"+ type);
+                
+                imCp = ptImgShifted.copyToColorGreyscale();
+                n = listS.size();
+                for (int i = 0; i < n; ++i) {
+                    Region r = listS.get(i);
+                    int[] clr = ImageIOHelper.getNextRGB(i);
+                    r.drawEllipse(imCp, 0, clr[0], clr[1], clr[2]);
+                    r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
+                    ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], imCp,
+                        1, 255, 0, 0);
+                }
+                MiscDebug.writeImage(imCp, "_" + ts + "_PT_SHIFTED_"+ type);
+            }           
+ 
             // correct list using listS.  the intersection is the final list
             List<RegionGeometry> listSRG = new ArrayList<RegionGeometry>();
             for (int i = 0; i < listS.size(); ++i) {
@@ -356,34 +347,6 @@ public class MSEREdges {
                     list.remove(i0);
                 }
             }
-            /*{//DEBUG
-                Image imCp = ptImg.copyToColorGreyscale();
-                int n = ptRegions.get(type).size();
-                for (int i = 0; i < n; ++i) {
-                    Region r = ptRegions.get(type).get(i);
-                    int[] clr = ImageIOHelper.getNextRGB(i);
-                    r.drawEllipse(imCp, 0, clr[0], clr[1], clr[2]);
-                    r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
-                    ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], imCp,
-                        1, 255, 0, 0);
-                    //System.out.println(type + " xy=" + xyCen[0] + "," + xyCen[1]
-                    //    + " variation=" + r.getVariation());
-                }
-                MiscDebug.writeImage(imCp, "_" + ts + "_" + type + "_pt_unshifted_");
-                imCp = ptImgShifted.copyToColorGreyscale();
-                n = ptShiftedRegions.get(type).size();
-                for (int i = 0; i < n; ++i) {
-                    Region r = ptShiftedRegions.get(type).get(i);
-                    int[] clr = ImageIOHelper.getNextRGB(i);
-                    r.drawEllipse(imCp, 0, clr[0], clr[1], clr[2]);
-                    r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
-                    ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], imCp,
-                        1, 255, 0, 0);
-                    //System.out.println(type + " xy=" + xyCen[0] + "," + xyCen[1]
-                    //    + " variation=" + r.getVariation());
-                }
-                MiscDebug.writeImage(imCp, "_" + ts + "_" + type + "_pt_shifted_");
-            }*/
 
             // copy list into origGsPtRegions
             List<Region> cpList = new ArrayList<Region>();
@@ -430,7 +393,7 @@ public class MSEREdges {
         // ---- make a list of filtered color contrast regions while still have
         //      the individual Region lists
 
-        boolean additionalFiltering = true;
+        boolean additionalFiltering = false;
 
         int w = ptImg.getWidth();
         int h = ptImg.getHeight();
@@ -731,6 +694,10 @@ public class MSEREdges {
         if (!state.equals(STATE.EDGES_EXTRACTED)) {
             throw new IllegalStateException("edges must be extrcted before"
                 + " this method can be used");
+        }
+        
+        if (filteredRegions == null) {
+            return;
         }
 
         if (sobelScores == null) {
@@ -1577,7 +1544,7 @@ public class MSEREdges {
             }
         }
         
-        //TODO: adjust score limits and angle thhresh
+ //TODO: adjust score limits and angle thhresh
         
         if (rmvd.size() > 0) {
             for (Set<PairInt> set : rmvd) {
