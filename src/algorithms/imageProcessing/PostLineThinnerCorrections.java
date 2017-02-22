@@ -5825,7 +5825,7 @@ public class PostLineThinnerCorrections {
             Integer.toString(nCorrections));
     }
     
-    public static void removeStragglers(Set<PairInt> points) {
+    public static Set<PairInt> removeStragglers(Set<PairInt> points) {
         
         // remove anything with only one neighbor
         
@@ -5877,6 +5877,7 @@ public class PostLineThinnerCorrections {
             int y = p.getY();
             
             PairInt pn = null;
+            int nn = 0;
             for (int k = 0; k < dxs.length; ++k) {
                 int x2 = x + dxs[k];
                 int y2 = y + dys[k];
@@ -5885,17 +5886,22 @@ public class PostLineThinnerCorrections {
                     if (pn == null) {
                         pn = p2;
                     } else {
-                        pn = null;
+                        nn = 100;
                         break;
                     }
                 }
             }
-            if (pn != null) {
+            if (nn < 2) {
+                // removes if no neighbors or 1 neighbor
                 points.remove(p);
-                stack.add(pn);
+                rm.add(p);
+                if (pn != null) {
+                    stack.add(pn);
+                }
             }
         }
     
+        return rm;
     }
 
 }

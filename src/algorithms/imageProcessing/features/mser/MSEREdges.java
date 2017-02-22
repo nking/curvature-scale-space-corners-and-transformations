@@ -70,6 +70,8 @@ import thirdparty.edu.princeton.cs.algs4.QuadTree;
  * 
  * The class in not ready for use yet.
  *
+ * NOTE that the default mode may change to the low contrast settings.
+ * 
  * @author nichole
  */
 public class MSEREdges {
@@ -1119,9 +1121,9 @@ public class MSEREdges {
         }
         
         // below this removes:
-        double limit = 76;//51;//76;//12.75;
+        final double limit = 76;//51;//76;//12.75;
         // above this restores
-        double limit2 = 5;
+        final double limit2 = useLowerContrastLimits ? 2 : 9;
         
         //the intersection of overlapping regions, present in many regions
         //   is often a strong edge
@@ -1192,14 +1194,12 @@ public class MSEREdges {
                 }
             }
         }
-        
- //TODO: adjust score limits and angle thhresh
-        
+                
         if (rmvd.size() > 0) {
             for (Set<PairInt> set : rmvd) {
                 for (PairInt p : set) {
                     int score = sobelScores.getValue(p);
-                    System.out.println(" ? " + p + " score=" + score);
+                    //System.out.println(" ? " + p + " score=" + score);
                     if (score > limit2) {
                         allPoints.add(p);
                     }
@@ -1233,7 +1233,13 @@ public class MSEREdges {
                 thinned.add(new PairInt(img2.getCol(i), img2.getRow(i)));
             }
         }
+        
+        Set<PairInt> rmvd2 = PostLineThinnerCorrections.removeStragglers(thinned);
 
+        for (PairInt p : rmvd2) {
+             img2.setValue(p.getX(), p.getY(), 0);
+        }
+        
         if (debug) {
             MiscDebug.writeImage(clrImg, "_" + ts + "_0_");
             Image tmp = clrImg.copyImage();
