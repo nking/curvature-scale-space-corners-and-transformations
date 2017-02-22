@@ -281,10 +281,10 @@ public class MSEREdges {
                         } else {
                             avgLevel = calcAvg(negImg, r.getAcc());
                         }
-                        System.out.format(" %d add x,y=%d,%d level=%d  acgLevel=%d\n",
-                            type, (int)(r.moments_[0]/r.area_),
-                            (int)(r.moments_[1]/r.area_), r.level_,
-                            avgLevel);
+                        //System.out.format(" %d add x,y=%d,%d level=%d  acgLevel=%d\n",
+                        //    type, (int)(r.moments_[0]/r.area_),
+                        //    (int)(r.moments_[1]/r.area_), r.level_,
+                        //    avgLevel);
                         if (avgLevel > 240) {//230?
                             list.remove(i);
                         }
@@ -312,9 +312,9 @@ public class MSEREdges {
                         if (Math.abs(r.level_ - 60) < 20) {
                             r.level_ += 60;
                             list.add(r);
-                            System.out.format("  add shifted x,y=%d,%d level=%d\n",
-                            (int)(r.moments_[0]/r.area_),
-                            (int)(r.moments_[1]/r.area_), r.level_);
+                            //System.out.format("  add shifted x,y=%d,%d level=%d\n",
+                            // (int)(r.moments_[0]/r.area_),
+                            // (int)(r.moments_[1]/r.area_), r.level_);
                         }
                         //TODO: consider adding other regions in list2
                         //   as long as level is > 25 and < 230
@@ -1118,7 +1118,10 @@ public class MSEREdges {
             MiscDebug.writeImage(sobelScores, "_" + ts + "_sobel_");
         }
         
-        double limit = 0.2;//0.3;//0.05;
+        // below this removes:
+        double limit = 76;//51;//76;//12.75;
+        // above this restores
+        double limit2 = 5;
         
         //the intersection of overlapping regions, present in many regions
         //   is often a strong edge
@@ -1139,14 +1142,15 @@ public class MSEREdges {
             finder.extractBorder2(points, embedded, outerBorder);
 
             double score = calcAvgScore(outerBorder, sobelScores);
-            if (score < limit) {
+            boolean doNotAdd = (score < limit);
+            if (doNotAdd) {
                 rmvd.add(outerBorder);
-                continue;
+            } else {
+                boundaries.add(outerBorder);
+                allPoints.addAll(outerBorder);
             }
             
-            boundaries.add(outerBorder);
-            allPoints.addAll(outerBorder);
-
+            // TODO: revisit this.  when are these vars used?
             for (PairInt p : outerBorder) {
                 int pixIdx = clrImg.getInternalIndex(p);
                 TIntList bIdxs = pointIndexesMap.get(pixIdx);
@@ -1170,8 +1174,12 @@ public class MSEREdges {
 
                 if (outerBorder2.size() > 12) {
 
-                    allPoints.addAll(outerBorder2);
-
+                    if (doNotAdd) {
+                        rmvd.add(outerBorder2);
+                    } else {
+                        allPoints.addAll(outerBorder2);
+                    }
+                    
                     for (PairInt p : outerBorder2) {
                         int pixIdx = clrImg.getInternalIndex(p);
                         TIntList bIdxs = pointIndexesMap.get(pixIdx);
@@ -1190,7 +1198,9 @@ public class MSEREdges {
         if (rmvd.size() > 0) {
             for (Set<PairInt> set : rmvd) {
                 for (PairInt p : set) {
-                    if (sobelScores.getValue(p) > 9) {
+                    int score = sobelScores.getValue(p);
+                    System.out.println(" ? " + p + " score=" + score);
+                    if (score > limit2) {
                         allPoints.add(p);
                     }
                 }
@@ -1299,9 +1309,7 @@ public class MSEREdges {
         } else {
             edgeList = extractedBoundaries;
         }
-        
-        //filterBySobel(edgeList);
-        
+                
         for (Set<PairInt> set : edgeList) {
             thinned.addAll(set);
         }
@@ -1532,373 +1540,6 @@ public class MSEREdges {
         return shiftedImg;
     }
 
-    /**
-     * a look at using sobel color contrast and grey intensity to score edges
-     * and remove them.
-     * 
-     * @deprecated 
-     * @param boundaries 
-     */
-    private void filterBySobel(List<Set<PairInt>> boundaries) {
-
-        /*
-        goal is to remove edges that have smaller scores than a limit.
-        
-        boundaries contains closed curves that surround a labeled region
-        
-        the boundaries are added to an edge point set and those are thinned.
-        
-        then junctions are found in the edge points
-        
-        then rough segments are extracted between junctions.
-        (this could be improved, but testing whether this or simpler
-        version can give same result).
-        
-        then the scores are added over a segment and divided by segment number
-        then removed from edge points if score is lower than a limit.
-        */
-        
-        ImageProcessor imageProcessor = new ImageProcessor();
-
-        float[] sobelScores = imageProcessor.createSobelColorScores(
-            gsImg, ptImg, 20);
-
-        int w = gsImg.getWidth();
-        int h = gsImg.getHeight();
-        GreyscaleImage scaled = MiscMath.rescaleAndCreateImage(sobelScores,
-            w, h);
-
-        // smearing values over a 3 pixel window
-        SummedAreaTable sumTable = new SummedAreaTable();
-
-        GreyscaleImage imgM = sumTable.createAbsoluteSummedAreaTable(scaled);
-        imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM, 3);
-
-        // debug:
-        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
-        
-        Set<PairInt> points = new HashSet<PairInt>();
-        
-        double limit = 0.01;
-        
-        for (int i = boundaries.size() - 1; i > -1; --i) {
-            
-            Set<PairInt> boundary = boundaries.get(i);
-
-            double sum = 0;
-            for (PairInt p : boundary) {
-                sum += imgM.getValue(p);
-            }
-            sum /= (255. * (double) boundary.size());
-
-            int[] xyCen = ch.calculateRoundedXYCentroids(boundary);
-            
-            System.out.println(Arrays.toString(xyCen) + " sobel=" + sum);
-            
-            if (sum < limit) {
-                boundaries.remove(i);
-            } else {
-                points.addAll(boundary);
-            }
-        }
-        
-        // TODO: need to improve this post line thinner
-        imageProcessor.applyThinning(points, w, h, true);
-        
-        Set<PairInt> junctions = findJunctions(points);
-        
-        if (debug) {
-            Image cp = clrImg.copyImage();
-            ImageIOHelper.addCurveToImage(points,    cp, 0, 0, 255, 0);
-            ImageIOHelper.addCurveToImage(junctions, cp, 0, 255, 0, 0);
-            MiscDebug.writeImage(cp, "_" + ts + "_junctions_");
-        }
-        
-        int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;
-       
-        // key = 2 junctions ordered by smallest x then smallest y
-        // value = set of points in between them (not including the junctions)
-        Map<QuadInt, Set<PairInt>> segments = new HashMap<QuadInt, Set<PairInt>>();
-        
-        DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
-        finder.setToUse8Neighbors();
-        finder.findConnectedPointGroups(points);
-        for (int i = 0; i < finder.getNumberOfGroups(); ++i) {
-            
-            Set<PairInt> setXY = finder.getXY(i);
-            
-            Stack<Set<PairInt>> setList = new Stack<Set<PairInt>>();
-            setList.add(setXY);
-            
-            while (!setList.isEmpty()) {
-            
-                Set<PairInt> set = setList.pop();
-                PairInt j1 = null;
-                Set<PairInt> junctionsInSet = new HashSet<PairInt>();
-                for (PairInt p : junctions) {
-                    if (set.contains(p)) {
-                        junctionsInSet.add(p);
-                        if (j1 == null) {
-                            j1 = p;
-                        } else {
-                            if (p.getX() < j1.getX()) {
-                                j1 = p;
-                            } else if (p.getX() == j1.getX()) {
-                                if (p.getY() < j1.getY()) {
-                                    j1 = p;
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                if (j1 == null) {
-                    j1 = findEndPoint(set);
-                    if (j1 == null) {
-                        throw new IllegalStateException("error in algorithm. " +
-                            " set.size=" + set.size());
-                    }
-                }
-                
-                Stack<PairInt> stack = new Stack<PairInt>();
-                stack.add(j1);
-                
-                PairInt j2 = null;
-
-                Set<PairInt> segment = new HashSet<PairInt>();
-
-                boolean doBreak = false;
-
-                while (!stack.isEmpty()) {
-
-                    PairInt pE = stack.pop();
-
-                    for (int k = 0; k < dxs.length; ++k) {
-                        int x2 = pE.getX() + dxs[k];
-                        int y2 = pE.getY() + dys[k];
-                        PairInt p2 = new PairInt(x2, y2);
-                        if (set.contains(p2) && !segment.contains(p2)) {
-                            if (junctionsInSet.contains(p2)) {
-                                j2 = p2;
-                                doBreak = true;
-                                break;
-                            } else {
-                                j2 = p2;
-                                segment.add(p2);
-                                stack.add(p2);
-                            }
-                        }
-                    }                
-                    if (doBreak) {
-                        break;
-                    }
-                } // end loop over local edge stack
-                if (j2 == null) {
-                    set.remove(j1);
-                } else {
-                    QuadInt j12;
-                    if (j1.getX() < j2.getX()) {
-                        j12 = new QuadInt(j1, j2);
-                    } else if (j1.getX() == j2.getX()) {
-                        if (j1.getY() < j2.getY()) {
-                            j12 = new QuadInt(j1, j2);
-                        } else {
-                            j12 = new QuadInt(j2, j1);
-                        }
-                    } else {
-                        j12 = new QuadInt(j2, j1);
-                    }
-                    segments.put(j12, segment);
-                }
-                
-                set.removeAll(segment);
-               
-                DFSConnectedGroupsFinder finder2 = new DFSConnectedGroupsFinder();
-                finder2.setToUse8Neighbors();
-                finder2.findConnectedPointGroups(set);
-                for (int j = 0; j < finder2.getNumberOfGroups(); ++j) {
-                    setList.add(finder2.getXY(j));
-                }
-                
-            } // end loop over set to extract segments
-        }
-        
-        if (debug) {
-            Image tmp = gsImg.copyToColorGreyscale();
-            int c = 0;
-            for (Entry<QuadInt, Set<PairInt>> entry : segments.entrySet()) {
-                Set<PairInt> edge = entry.getValue();
-                int[] clr = ImageIOHelper.getNextRGB(c);
-                ImageIOHelper.addCurveToImage(edge, tmp, 0, clr[0], clr[1], clr[2]);
-                ++c;
-            }
-            MiscDebug.writeImage(tmp, "_" + ts + "_segments_");
-        }
-        
-        limit = 0.05;
-        
-        for (Entry<QuadInt, Set<PairInt>> entry : segments.entrySet()) {
-            
-            Set<PairInt> edge = entry.getValue();
-            
-            double score = 0;
-            for (PairInt p : edge) {
-                score += imgM.getValue(p);
-            }
-            score /= (255. * (double) edge.size());
-
-            int[] xyCen = ch.calculateRoundedXYCentroids(edge);
-            
-            System.out.println(Arrays.toString(xyCen) + " segment sobel=" + score);
-            
-            if (score < limit) {
-                points.removeAll(edge);
-            }
-        }
-                
-        //PostLineThinnerCorrections.removeStragglers(points);
-        PostLineThinnerCorrections.correctForIsolatedPixels(points);
-        
-        GreyscaleImage img2 = new GreyscaleImage(clrImg.getWidth(),
-            clrImg.getHeight());
-        for (PairInt p : points) {
-            img2.setValue(p.getX(), p.getY(), 1);
-        }
-        
-        ImageSegmentation imageSegmentation = new ImageSegmentation();
-        Set<PairInt> outputAddedGaps = new HashSet<PairInt>();
-        img2 = imageSegmentation.fillInGapsOf1(img2, outputAddedGaps, 1);
-
-        // restore gap where the gap is completely surrounded
-        imageSegmentation.restoreGapsOf1WhereSurrounded(img2, outputAddedGaps, 1);
-
-        // find clusters (contiguous pixels of value 0) between edges
-        List<Set<PairInt>> contigousSets = extractContiguous(img2, 0, 3);//9);
-        
-        if (debug) {
-            Image tmp = clrImg.copyImage();
-            ImageIOHelper.addAlternatingColorPointSetsToImage(
-                contigousSets, 0, 0, 0, tmp);
-            MiscDebug.writeImage(tmp, "_" + ts + "_expanded_");
-        }
-
-        assignTheUnassigned(contigousSets);
-
-        if (debug) {
-            Image tmp = clrImg.copyImage();
-            ImageIOHelper.addAlternatingColorPointSetsToImage(
-                contigousSets, 0, 0, 0, tmp);
-            MiscDebug.writeImage(tmp, "_" + ts + "_edges_assigned_");
-        }
-        
-        edgeList.clear();
-        
-        PerimeterFinder2 finder2 = new PerimeterFinder2();
-        
-        // --- extract the bounds, and if any are empty of internal points,
-        //     re-submit those to be reassigned to a cluster which does
-        for (int i = (contigousSets.size() - 1); i > -1; --i) {
-            Set<PairInt> set = contigousSets.get(i);
-            Set<PairInt> embedded = new HashSet<PairInt>();
-            Set<PairInt> outerBorder = new HashSet<PairInt>();
-            finder2.extractBorder2(set, embedded, outerBorder);
-            
-            // if outerBorder is same size as set, there are no internal
-            // points, so remove the set so can reassign it
-            if (set.size() - outerBorder.size() < 2) {
-                contigousSets.remove(i);
-            } else {
-                edgeList.add(outerBorder);
-            }
-        }
-        
-        this.labeledSets = contigousSets;
-    }
-
-    private Set<PairInt> findJunctions(Set<PairInt> points) {
-        
-        Set<PairInt> junctions = new HashSet<PairInt>();
-        
-        int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;
-        
-        PostLineThinnerCorrections.removeStragglers(points);
-        
-        for (int n = 5; n >= 3; --n) {
-
-            for (PairInt p : points) {
-
-                int x = p.getX();
-                int y = p.getY();
-
-                int count = 0;
-
-                for (int k = 0; k < dxs.length; ++k) {
-                    int x2 = x + dxs[k];
-                    int y2 = y + dys[k];
-                    PairInt p2 = new PairInt(x2, y2);
-                    if (junctions.contains(p2)) {
-                        count = 0;
-                        break;
-                    }
-                    if (points.contains(p2)) {
-                        count++;
-                    }
-                }
-
-                if (count >= n) {
-                    junctions.add(p);
-                }
-            }
-        }
-        
-        return junctions;
-    }
-    
-    /**
-     * return first point found that has only 1 neighbor in the 8 neighbor region,
-     * else return any point if no end point was found.
-     * 
-     * @param points
-     * @return 
-     */
-    private PairInt findEndPoint(Set<PairInt> points) {
-        
-        if (points.isEmpty()) {
-            return null;
-        }
-        
-        // return first point that has only one neighbor
-        
-        int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;
-                
-        for (PairInt p : points) {
-            
-            int x = p.getX();
-            int y = p.getY();
-            
-            int nn = 0;
-            for (int k = 0; k < dxs.length; ++k) {
-                int x2 = x + dxs[k];
-                int y2 = y + dys[k];
-                PairInt p2 = new PairInt(x2, y2);
-                if (points.contains(p2)) {
-                    nn++;
-                }
-                if (nn > 1) {
-                    break;
-                }
-            }
-            if (nn == 1) {
-                return p;
-            }
-        }
-        
-        return points.iterator().next();
-    }
-
     private double calcAvgScore(Set<PairInt> points, GreyscaleImage sobelScores) {
    
         double sum = 0;
@@ -1906,7 +1547,7 @@ public class MSEREdges {
             sum += sobelScores.getValue(p);
         }
         
-        sum /= (255. * (double) points.size());
+        sum /= (double) points.size();
         
         return sum;
     }
