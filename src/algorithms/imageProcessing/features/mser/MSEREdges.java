@@ -95,7 +95,7 @@ public class MSEREdges {
     private final ImageExt clrImg;
     private final GreyscaleImage gsImg;
     private final GreyscaleImage ptImg;
-    // ptImg shifted by -20 degrees in pixel values to look for wrap around affects
+    // ptImg shifted by +60 degrees in pixel values to look for wrap around affects
     private final GreyscaleImage ptImgShifted;
     private List<Region> regions = null;
 
@@ -144,7 +144,7 @@ public class MSEREdges {
         //   around from 255 to 0, but perceived as different can be
         //   found by comparing these two image's results, though
         //   there may be faster ways to achieve this.
-        this.ptImgShifted = copyAndShift(ptImg, -20);
+        this.ptImgShifted = copyAndShift(ptImg, 60);
 
         state = STATE.INITIALIZED;
     }
@@ -225,6 +225,9 @@ public class MSEREdges {
 
         origGsPtRegions = new ArrayList<List<Region>>();
 
+        int w = ptImg.getWidth();
+        int h = ptImg.getHeight();
+            
         // for minArea 0.001, a gsRegions limit for var of 0. is used
         //   but for 0.0001, limit should be near 0.001
 
@@ -251,12 +254,21 @@ public class MSEREdges {
             }
         }
 
-        // need to correct for regions created due to the differene between pixels
-        //    near values of 255 appearing to be very different from pixels near
-        //    values of 0 when the scale is circular, that is 0 to 255 to 0, etc.
-
         for (int type = 0; type < 2; ++type) {
             List<Region> list = ptRegions.get(type);
+            GreyscaleImage negImg = null;
+            if (type == 1) {
+                negImg = gsImg.copyImage();
+                for (int i = 0; i < gsImg.getNPixels(); ++i) {
+                    int v = ~gsImg.getValue(i);
+                    if (v < 0) {
+                        v += 256;
+                    }
+                    negImg.setValue(i, v);
+                }
+            }
+                        
+            boolean hadWrapAroundArtifacts = false;
             for (int i = (list.size() - 1); i > -1; --i) {
                 Region r = list.get(i);
                 if ((type == 1) 
@@ -265,89 +277,59 @@ public class MSEREdges {
                 } else if ((type == 0) 
                     && r.getVariation() == 0.0) {
                     list.remove(i);
-                }
-            }
-            List<Region> listS = ptShiftedRegions.get(type);
-            for (int i = (listS.size() - 1); i > -1; --i) {
-                Region r = listS.get(i);
-                if ((type == 1) && r.getVariation() > 0.001) {
-                    listS.remove(i);
-                } else if ((type == 0) 
-                    && r.getVariation() == 0.0) {
-                    listS.remove(i);
-                }
-            }
-
-            int w = ptImg.getWidth();
-            int h = ptImg.getHeight();
-
- //TODO: error here.  this removes a real region
-            if (debug) {
-                Image imCp = ptImg.copyToColorGreyscale();
-                int[] xyCen = new int[2];
-                int n = list.size();
-                for (int i = 0; i < n; ++i) {
-                    Region r = list.get(i);
-                    int[] clr = ImageIOHelper.getNextRGB(i);
-                    r.drawEllipse(imCp, 0, clr[0], clr[1], clr[2]);
-                    r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
-                    ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], imCp,
-                        1, 255, 0, 0);
-                }
-                MiscDebug.writeImage(imCp, "_" + ts + "_PT_"+ type);
-                
-                imCp = ptImgShifted.copyToColorGreyscale();
-                n = listS.size();
-                for (int i = 0; i < n; ++i) {
-                    Region r = listS.get(i);
-                    int[] clr = ImageIOHelper.getNextRGB(i);
-                    r.drawEllipse(imCp, 0, clr[0], clr[1], clr[2]);
-                    r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
-                    ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], imCp,
-                        1, 255, 0, 0);
-                }
-                MiscDebug.writeImage(imCp, "_" + ts + "_PT_SHIFTED_"+ type);
-            }           
- 
-            // correct list using listS.  the intersection is the final list
-            List<RegionGeometry> listSRG = new ArrayList<RegionGeometry>();
-            for (int i = 0; i < listS.size(); ++i) {
-                listSRG.add(Canonicalizer.calculateEllipseParams(
-                    listS.get(i), w, h));
-            }
-            for (int i0 = list.size() - 1; i0 > -1; --i0) {
-                Region r0 = list.get(i0);
-                RegionGeometry rg0 = Canonicalizer.calculateEllipseParams(r0, w, h);
-                float orientation0 = (float)(
-                    rg0.orientation * 180./Math.PI);
-
-                boolean found = false;
-
-                for (int i1 = 0; i1 < listS.size(); ++i1) {
-                    Region r1 = listS.get(i1);
-                    RegionGeometry rg1 = listSRG.get(i1);
-                    float orientation1 = (float)(
-                        rg1.orientation * 180./Math.PI);
-
-                    float diffOr = AngleUtil.getAngleDifference(orientation0,
-                        orientation1);
-
-                    if ((Math.abs(rg0.xC - rg1.xC) > 5) ||
-                        (Math.abs(rg0.yC - rg1.yC) > 5) ||
-                        (Math.abs(rg0.minor - rg1.minor) > 5) ||
-                        (Math.abs(rg0.major - rg1.major) > 5) ||
-                        (Math.abs(diffOr) > 5)
-                        ) {
-                        continue;
+                } else {
+                    // check for this Region being an artifact of wrap around
+                    if (r.level_ < 25) {
+                        list.remove(i);
+                        hadWrapAroundArtifacts = true;
+                    } else {
+                        int avgLevel;
+                        if (type == 0) {
+                            avgLevel = calcAvg(ptImg, r.getAcc());
+                        } else {
+                            avgLevel = calcAvg(negImg, r.getAcc());
+                        }
+                        System.out.format(" %d add x,y=%d,%d level=%d  acgLevel=%d\n",
+                            type, (int)(r.moments_[0]/r.area_),
+                            (int)(r.moments_[1]/r.area_), r.level_,
+                            avgLevel);
+                        if (avgLevel > 240) {//230?
+                            list.remove(i);
+                        }
                     }
-                    found = true;
-                    break;
-                }
-                if (!found) {
-                    list.remove(i0);
                 }
             }
-
+            if (hadWrapAroundArtifacts) {
+                // excluded level < 25.
+                //   so shift by +60 and any region found w level approx 60
+                //   is a real region possibly excluded near level=0
+                // if find a region near level=60, edit the level
+                //   and add it to list
+                List<Region> list2 = ptShiftedRegions.get(type);
+                for (int i = (list2.size() - 1); i > -1; --i) {
+                    Region r = list2.get(i);
+                    if ((type == 1)
+                        && r.getVariation() > 0.001) {
+                        list2.remove(i);
+                    } else if ((type == 0)
+                        && r.getVariation() == 0.0) {
+                        list2.remove(i);
+                    } else {
+                        //TODO: consider checking whether this already exists in
+                        //   the list
+                        if (Math.abs(r.level_ - 60) < 20) {
+                            r.level_ += 60;
+                            list.add(r);
+                            System.out.format("  add shifted x,y=%d,%d level=%d\n",
+                            (int)(r.moments_[0]/r.area_),
+                            (int)(r.moments_[1]/r.area_), r.level_);
+                        }
+                        //TODO: consider adding other regions in list2
+                        //   as long as level is > 25 and < 230
+                    }
+                }
+            }
+          
             // copy list into origGsPtRegions
             List<Region> cpList = new ArrayList<Region>();
             origGsPtRegions.add(cpList);
@@ -360,11 +342,14 @@ public class MSEREdges {
         if (debug) {
             int[] xyCen = new int[2];
             Image imCp;
+            int n;
+            List<Region> list;
             for (int type = 0; type < 2; ++type) {
                 imCp = gsImg.copyToColorGreyscale();
-                int n = gsRegions.get(type).size();
+                list = origGsPtRegions.get(type);
+                n = list.size();
                 for (int i = 0; i < n; ++i) {
-                    Region r = gsRegions.get(type).get(i);
+                    Region r = list.get(i);
                     int[] clr = ImageIOHelper.getNextRGB(i);
                     r.drawEllipse(imCp, 0, clr[0], clr[1], clr[2]);
                     r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
@@ -375,9 +360,10 @@ public class MSEREdges {
             }
             for (int type = 0; type < 2; ++type) {
                 imCp = ptImg.copyToColorGreyscale();
-                int n = ptRegions.get(type).size();
+                list = origGsPtRegions.get(type + 2);
+                n = list.size();
                 for (int i = 0; i < n; ++i) {
-                    Region r = ptRegions.get(type).get(i);
+                    Region r = list.get(i);
                     int[] clr = ImageIOHelper.getNextRGB(i);
                     r.drawEllipse(imCp, 0, clr[0], clr[1], clr[2]);
                     r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
@@ -394,9 +380,6 @@ public class MSEREdges {
         //      the individual Region lists
 
         boolean additionalFiltering = false;
-
-        int w = ptImg.getWidth();
-        int h = ptImg.getHeight();
 
         if (additionalFiltering) {
 
@@ -2269,5 +2252,45 @@ public class MSEREdges {
         
         return sum;
     }
+    
+    private boolean similarExists(Region rToCheck, List<RegionGeometry> listSRG) {
+        
+        int w = ptImg.getWidth();
+        int h = ptImg.getHeight();
+        
+        RegionGeometry rg0 = Canonicalizer.calculateEllipseParams(rToCheck, w, h);
+        float orientation0 = (float)(
+            rg0.orientation * 180./Math.PI);
 
+        for (int i1 = 0; i1 < listSRG.size(); ++i1) {
+            RegionGeometry rg1 = listSRG.get(i1);
+            float orientation1 = (float)(
+                rg1.orientation * 180./Math.PI);
+
+            float diffOr = AngleUtil.getAngleDifference(orientation0,
+                orientation1);
+
+            if ((Math.abs(rg0.xC - rg1.xC) > 5) ||
+                (Math.abs(rg0.yC - rg1.yC) > 5) ||
+                (Math.abs(rg0.minor - rg1.minor) > 5) ||
+                (Math.abs(rg0.major - rg1.major) > 5) ||
+                (Math.abs(diffOr) > 5)
+                ) {
+                continue;
+            }
+            return true;
+        }
+        return false;
+    }
+    
+    private int calcAvg(GreyscaleImage img, Set<PairInt> points) {
+
+        double sum = 0;
+        for (PairInt p : points) {
+            sum += img.getValue(p);
+        }
+        sum /= (double)points.size();
+        
+        return (int)Math.round(sum);
+    }    
 }
