@@ -1,10 +1,8 @@
 package algorithms.imageProcessing.features.mser;
 
-import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.DFSConnectedGroupsFinder;
-import algorithms.imageProcessing.DFSContiguousIntValueFinder;
 import algorithms.imageProcessing.DFSContiguousValueFinder;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.GroupPixelHSV;
@@ -26,25 +24,19 @@ import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
-import algorithms.search.NearestNeighbor2D;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.QuadInt;
 import gnu.trove.iterator.TIntIntIterator;
 import gnu.trove.iterator.TIntIterator;
-import gnu.trove.iterator.TObjectIntIterator;
 import gnu.trove.list.TDoubleList;
-import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TDoubleArrayList;
-import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.awt.Color;
@@ -63,12 +55,20 @@ import thirdparty.edu.princeton.cs.algs4.Interval2D;
 import thirdparty.edu.princeton.cs.algs4.QuadTree;
 
 /**
- * class to explore the boundaries of the accumulated points in MSER regions.
+ * class to explore the boundaries of the accumulated points in MSER regions
+ * to make edges that are complete contours (the level sets approach has a
+ * much larger pixel association than the few pixels of canny edges for
+ * example).
  *
- * The contents may in the future be replaced by an implementation of
- * http://www.vision.ee.ethz.ch/~rhayko/paper/aapr2009_boundary_detection_SBER_hayko.pdf
- *
- * but for now is an exploration of the existing MSER and Region class results.
+ * It currently uses the level sets found in the MSER regions made from
+ * greyscale and "H" of LCH colr space images (caveat, configured
+ * to extract MSER regions from images from COTS of past several years
+ * binned to size near 256 X 256).
+ * The boundaries of the accumulated points in the regions are extracted
+ * and the high scoring points are kept where score is a combination
+ * of sobel color contrast and greyscale intensity values).
+ * 
+ * The class in not ready for use yet.
  *
  * @author nichole
  */
