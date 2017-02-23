@@ -5825,6 +5825,61 @@ public class PostLineThinnerCorrections {
             Integer.toString(nCorrections));
     }
     
+    /**
+     * use with caution.  it has a small window it uses to determine which
+     * pixel to remove.  
+     * if precision is needed, consider the zig-zag methods because they
+     * use larger windows and patterns.
+     * @param points
+     * @param imageWidth
+     * @param imageHeight 
+     */
+    public void extremeStaircaseRemover(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
+       
+        /*       
+            0  0  0         2
+            0  #< #         1
+            #  #*           0
+                           -1
+           -1  0  1  2  3        
+        */
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+       
+        /*       
+            0  0  0         2
+            0  #< #         1
+            #  #*           0
+                           -1
+           -1  0  1  2  3        
+        */
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-1, -2));
+        zeroes.add(new PairInt(0, -2));
+        zeroes.add(new PairInt(1, -2));
+        
+        ones.add(new PairInt(-1, 0)); 
+        ones.add(new PairInt(0, 0));
+        ones.add(new PairInt(0, -1));
+        ones.add(new PairInt(1, -1));
+        
+        changeToZeroes.add(new PairInt(0, -1));
+                    
+        int nCorrections = 0;
+       
+        nCorrections += replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
+            Integer.toString(nCorrections));
+    }
+    
     public static Set<PairInt> removeStragglers(Set<PairInt> points) {
         
         // remove anything with only one neighbor

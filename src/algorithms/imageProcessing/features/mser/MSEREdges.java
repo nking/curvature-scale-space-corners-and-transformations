@@ -15,6 +15,7 @@ import algorithms.imageProcessing.ImageProcessor.Colors;
 import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.PostLineThinnerCorrections;
+import algorithms.imageProcessing.SpurRemover;
 import algorithms.imageProcessing.SummedAreaTable;
 import algorithms.imageProcessing.features.mser.Canonicalizer.RegionGeometry;
 import algorithms.imageProcessing.features.mser.MSER.Threshold;
@@ -1152,7 +1153,6 @@ public class MSEREdges {
                 allPoints.addAll(outerBorder);
             }
             
-            // TODO: revisit this.  when are these vars used?
             for (PairInt p : outerBorder) {
                 int pixIdx = clrImg.getInternalIndex(p);
                 TIntList bIdxs = pointIndexesMap.get(pixIdx);
@@ -1250,6 +1250,49 @@ public class MSEREdges {
                 }
             }
             MiscDebug.writeImage(tmp, "_" + ts + "_closing_");
+        }
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        imageProcessor.applyThinning(img2, false);
+        
+        thinned.clear();
+        for (int i = 0; i < clrImg.getNPixels(); ++i) {
+            // img2 has edges w/ value=1
+            if (img2.getValue(i) > 0) {
+                thinned.add(new PairInt(clrImg.getCol(i), clrImg.getRow(i)));
+            }
+        }
+        
+        int w = img2.getWidth();
+        int h = img2.getHeight();
+        
+        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
+        SpurRemover spurRm = new SpurRemover();
+        int nRM = 0;
+        do {
+            int n0 = thinned.size();
+            spurRm.remove(thinned, w, h);
+            pltc.extremeStaircaseRemover(thinned, w, h);    
+            rmvd2 = PostLineThinnerCorrections.removeStragglers(thinned);
+            nRM = n0 - thinned.size();
+        } while (nRM > 0);
+        
+        img2.fill(0);
+        for (PairInt p : thinned) {
+            // img2 has edges w/ value=1
+            img2.setValue(p.getX(), p.getY(), 1);
+        }
+        
+        if (debug) {
+            MiscDebug.writeImage(clrImg, "_" + ts + "_0_");
+            Image tmp = clrImg.copyImage();
+            for (int i = 0; i < tmp.getNPixels(); ++i) {
+                // img2 has edges w/ value=1
+                if (img2.getValue(i) > 0) {
+                    tmp.setRGB(i, 255, 0, 0);
+                }
+            }
+            MiscDebug.writeImage(tmp, "_" + ts + "_closing_thinned_");
         }
         
         // find clusters (contiguous pixels of value 0) between edges
