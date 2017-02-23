@@ -1296,7 +1296,9 @@ public class MSEREdges {
         }
         
         // find clusters (contiguous pixels of value 0) between edges
-        List<Set<PairInt>> contigousSets = extractContiguous(img2, 0, 3);//9);
+        List<Set<PairInt>> contigousSets = extractContiguous(img2, 0, 4);
+        
+        debugFreqOfSizes(contigousSets);
         
         if (debug) {
             Image tmp = clrImg.copyImage();
@@ -1640,5 +1642,30 @@ public class MSEREdges {
         sum /= (double)points.size();
         
         return (int)Math.round(sum);
-    }    
+    } 
+    
+    private void debugFreqOfSizes(List<Set<PairInt>> listOfSets) {
+        
+        int maxSz = Integer.MIN_VALUE;
+        for (Set<PairInt> set : listOfSets) {
+            int n = set.size();
+            if (n > maxSz) {
+                maxSz = n;
+            }
+        }
+        
+        // indexes = sizes, values = counts
+        int[] counts = new int[maxSz];
+        for (Set<PairInt> set : listOfSets) {
+            int n = set.size();
+            int bin = n - 1;
+            counts[bin]++;
+        }
+        
+        int maxCountIdx = MiscMath.findYMaxIndex(counts);
+        System.out.println("max number of sets with size=" + (maxCountIdx + 1));
+        for (int i = 0; i < counts.length; ++i) {
+            System.out.println("sz=" + (i + 1) + " count=" + counts[i]);
+        }
+    }
 }
