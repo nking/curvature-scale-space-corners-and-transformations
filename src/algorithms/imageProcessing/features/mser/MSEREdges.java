@@ -428,10 +428,30 @@ public class MSEREdges {
             throw new IllegalStateException("can only perform extraction of "
                 + "edges once");
         }
+        
+        long ts0 = System.currentTimeMillis();
 
-        // edgeList and labeledSets are made in this:
-        Set<PairInt> thinned = combineAndThinBoundaries();
+        Set<PairInt> boundaries = combineBoundaries();
+        
+        long ts1 = System.currentTimeMillis();
+        
+        closeGapsOf1(boundaries);
+        
+        long ts2 = System.currentTimeMillis();
+        
+        // populate this.edgeList and this.labeledSets
+        thinTheBoundaries(boundaries, 1);
 
+        long ts3 = System.currentTimeMillis();
+                
+        System.out.format(
+            "%.3f sec for boundary extr, "
+                + "%.3f sec for closing, "
+                + " %.3f sec for reassigning and labels\n",
+            ((float)(ts1 - ts0)/1000.f), ((float)(ts2 - ts1)/1000.f),
+            ((float)(ts3 - ts2)/1000.f)
+        );
+        
         state = STATE.EDGES_EXTRACTED;
     }
 
@@ -590,6 +610,15 @@ public class MSEREdges {
 
     private List<Set<PairInt>> mergeRegions2() {
 
+        /*
+        TODO: refactoring this to use color and texture
+        (need to add use of gradients within labeled regions to
+        improve the merging.
+        inspired by Alpert, Galun, Basri et al. (2007) though will
+        probably use a different distance and update after merge)
+        */
+        
+        
         //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
         if (!state.equals(STATE.EDGES_EXTRACTED)) {
             throw new IllegalStateException("error in algorithm.  expecting"
@@ -1114,7 +1143,7 @@ public class MSEREdges {
         return imgM;
     }
 
-    private Set<PairInt> combineAndThinBoundaries() {
+    private Set<PairInt> combineBoundaries() {
 
         if (sobelScores == null) {
             sobelScores = createSobelScores();
@@ -1210,11 +1239,24 @@ public class MSEREdges {
         if (debug) {
             Image tmp = clrImg.copyImage();
             ImageIOHelper.addCurveToImage(allPoints, tmp, 0, 255, 0, 0);
-            MiscDebug.writeImage(tmp, "_" + ts + "_TMP_");
+            MiscDebug.writeImage(tmp, "_" + ts + "_borders0_");
         }
         
-        GreyscaleImage img2 = new GreyscaleImage(clrImg.getWidth(),
-            clrImg.getHeight());
+        return allPoints;
+    }
+    
+    /**
+     * 
+     * 
+     * @param allPoints
+     * @return 
+     */
+    private void closeGapsOf1(Set<PairInt> allPoints) {
+        
+        int w = gsImg.getWidth();
+        int h = gsImg.getHeight();
+        
+        GreyscaleImage img2 = gsImg.copyImage();
         for (PairInt p : allPoints) {
             img2.setValue(p.getX(), p.getY(), 1);
         }
@@ -1233,93 +1275,64 @@ public class MSEREdges {
                 thinned.add(new PairInt(img2.getCol(i), img2.getRow(i)));
             }
         }
+    }
+    
+    // has the side effect of populate this.edgeList and this.labeledSets
+    private void thinTheBoundaries(Set<PairInt> edgePoints,
+        int minGroupSize) {
         
-        Set<PairInt> rmvd2 = PostLineThinnerCorrections.removeStragglers(thinned);
-
-        for (PairInt p : rmvd2) {
-             img2.setValue(p.getX(), p.getY(), 0);
-        }
+        populateEdgeLists(edgePoints, minGroupSize);
         
-        if (debug) {
-            MiscDebug.writeImage(clrImg, "_" + ts + "_0_");
-            Image tmp = clrImg.copyImage();
-            for (int i = 0; i < clrImg.getNPixels(); ++i) {
-                // img2 has edges w/ value=1
-                if (img2.getValue(i) > 0) {
-                    tmp.setRGB(i, 255, 0, 0);
-                }
-            }
-            MiscDebug.writeImage(tmp, "_" + ts + "_closing_");
-        }
-        
-        ImageProcessor imageProcessor = new ImageProcessor();
-        imageProcessor.applyThinning(img2, false);
-        
-        thinned.clear();
-        for (int i = 0; i < clrImg.getNPixels(); ++i) {
-            // img2 has edges w/ value=1
-            if (img2.getValue(i) > 0) {
-                thinned.add(new PairInt(clrImg.getCol(i), clrImg.getRow(i)));
-            }
-        }
-        
-        int w = img2.getWidth();
-        int h = img2.getHeight();
-        
-        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
-        SpurRemover spurRm = new SpurRemover();
-        int nRM = 0;
-        do {
-            int n0 = thinned.size();
-            spurRm.remove(thinned, w, h);
-            pltc.extremeStaircaseRemover(thinned, w, h);    
-            rmvd2 = PostLineThinnerCorrections.removeStragglers(thinned);
-            nRM = n0 - thinned.size();
-        } while (nRM > 0);
-        
-        img2.fill(0);
-        for (PairInt p : thinned) {
-            // img2 has edges w/ value=1
-            img2.setValue(p.getX(), p.getY(), 1);
-        }
-        
-        if (debug) {
-            MiscDebug.writeImage(clrImg, "_" + ts + "_0_");
-            Image tmp = clrImg.copyImage();
-            for (int i = 0; i < tmp.getNPixels(); ++i) {
-                // img2 has edges w/ value=1
-                if (img2.getValue(i) > 0) {
-                    tmp.setRGB(i, 255, 0, 0);
-                }
-            }
-            MiscDebug.writeImage(tmp, "_" + ts + "_closing_thinned_");
-        }
-        
-        // find clusters (contiguous pixels of value 0) between edges
-        List<Set<PairInt>> contigousSets = extractContiguous(img2, 0, 4);
-        
-        debugFreqOfSizes(contigousSets);
-        
-        if (debug) {
-            Image tmp = clrImg.copyImage();
-            ImageIOHelper.addAlternatingColorPointSetsToImage(
-                contigousSets, 0, 0, 0, tmp);
-            MiscDebug.writeImage(tmp, "_" + ts + "_expanded_");
-        }
-
-        assignTheUnassigned(contigousSets);
+        assignTheUnassigned(labeledSets);
 
         if (debug) {
             Image tmp = clrImg.copyImage();
             ImageIOHelper.addAlternatingColorPointSetsToImage(
-                contigousSets, 0, 0, 0, tmp);
-            MiscDebug.writeImage(tmp, "_" + ts + "_assigned_");
+                labeledSets, 0, 0, 0, tmp);
+            MiscDebug.writeImage(tmp, "_" + ts + "_reassigned0_");
         }
         
         PerimeterFinder2 finder2 = new PerimeterFinder2();
+                
+        List<Set<PairInt>> contigousSets2 = new ArrayList<Set<PairInt>>();
+        edgeList.clear();
         
-        // --- extract the bounds, and if any are empty of internal points,
-        //     re-submit those to be reassigned to a cluster which does
+        for (int i = (labeledSets.size() - 1); i > -1; --i) {
+            Set<PairInt> set = labeledSets.get(i);
+            Set<PairInt> embedded = new HashSet<PairInt>();
+            Set<PairInt> outerBorder = new HashSet<PairInt>();
+            finder2.extractBorder2(set, embedded, outerBorder);
+            
+            contigousSets2.add(set);
+            edgeList.add(outerBorder);
+        }
+        this.labeledSets = contigousSets2;
+        
+        if (debug) {
+            Image tmp = clrImg.copyImage();
+            ImageIOHelper.addAlternatingColorPointSetsToImage(
+                labeledSets, 0, 0, 0, tmp);
+            MiscDebug.writeImage(tmp, "_" + ts + "thinned0_");
+        }
+        
+    }
+    
+    private void populateEdgeLists(Set<PairInt> edgePoints, int minGroupSize) {
+       
+        GreyscaleImage img2 = gsImg.createWithDimensions();
+        for (PairInt p : edgePoints) {
+            // img2 has edges w/ value=1
+            img2.setValue(p.getX(), p.getY(), 1);
+        }
+                
+        // find clusters (contiguous pixels of value 0) between edges
+        List<Set<PairInt>> contigousSets = extractContiguous(img2, 0, minGroupSize);
+        
+        labeledSets = contigousSets;
+        edgeList = new ArrayList<Set<PairInt>>();
+        
+        PerimeterFinder2 finder2 = new PerimeterFinder2();
+        
         List<Set<PairInt>> extractedBoundaries = new ArrayList<Set<PairInt>>();
         for (int i = (contigousSets.size() - 1); i > -1; --i) {
             Set<PairInt> set = contigousSets.get(i);
@@ -1327,51 +1340,10 @@ public class MSEREdges {
             Set<PairInt> outerBorder = new HashSet<PairInt>();
             finder2.extractBorder2(set, embedded, outerBorder);
             
-            // if outerBorder is same size as set, there are no internal
-            // points, so remove the set so can reassign it
-            if (set.size() - outerBorder.size() < 2) {
-                contigousSets.remove(i);
-            } else {
-                extractedBoundaries.add(outerBorder);
-            }
+            edgeList.add(outerBorder);
         }
         
-        thinned.clear();
-        this.labeledSets = contigousSets;
-        edgeList = new ArrayList<Set<PairInt>>();
-        
-        if (contigousSets.size() < extractedBoundaries.size()) {
-            
-            //TODO: this needs to be edited to improve the
-            // order of assignments
-            assignTheUnassigned(contigousSets);
-            
-            for (Set<PairInt> set : contigousSets) {
-                Set<PairInt> embedded = new HashSet<PairInt>();
-                Set<PairInt> outerBorder = new HashSet<PairInt>();
-                finder2.extractBorder2(set, embedded, outerBorder);
-
-                // for small regions, sometimes outerBorder has no inner
-                // points, making the set a 2 pixel thick edge,
-                // so for those, need to reassign to the closest
-                // set in color            
-                edgeList.add(outerBorder);
-            }
-        } else {
-            edgeList = extractedBoundaries;
-        }
-                
-        for (Set<PairInt> set : edgeList) {
-            thinned.addAll(set);
-        }
-        
-        if (debug) {
-            Image tmp = clrImg.copyImage();
-            ImageIOHelper.addCurveToImage(thinned, tmp, 0, 255, 0, 0);
-            MiscDebug.writeImage(tmp, "_" + ts + "_thinned_0_");
-        }
-
-        return thinned;
+        System.out.println(labeledSets.size() + " labeled sets");
     }
 
     private void assignTheUnassigned(List<Set<PairInt>> contiguous) {
