@@ -157,6 +157,92 @@ public class ImageProcessor {
     }
     
     /**
+     * given a color image array with first dimension being color index
+     * and the second dimension being the image pixel index,
+     * apply the sobel kernel to each pixel and combine the results
+     * as SSD.
+     * @param ptImg polar theta image of a color space such as 
+     * H of LCH that contains values between 0 and 255.
+     * @param lowerDiff value in degrees for which a difference in
+     * pixels results in a final value of "1".  For example,
+     * 20 degrees.
+     */
+    public GreyscaleImage createBinary2ndDerivForPolarTheta(
+        GreyscaleImage ptImg, int lowerDiff) {
+
+        int nPix = ptImg.getNPixels();
+        int w = ptImg.getWidth();
+        int h = ptImg.getHeight();
+        
+        GreyscaleImage out = ptImg.createWithDimensions();
+        
+        // sobel is .5, 0, -.5 so looking for difference in pixels on either
+        //   side being .lte. lowerDiff
+        int[] diffs = new int[2];
+        int offset;
+        int above;
+        for (int i = 1; i < w - 1; ++i) {
+            for (int j = 1; j < h - 1; ++j) {
+                
+                // kernel for 2nd deriv, binomial 1 -2  1 
+                
+                int v = 2 * ptImg.getValue(i, j);
+                
+                diffs[0] = ptImg.getValue(i - 1, j) + ptImg.getValue(i + 1, j);                
+                diffs[1] = ptImg.getValue(i, j - 1) + ptImg.getValue(i, j + 1);
+                offset = 0;            
+                above = 0;
+                for (int k = 0; k < 2; ++k) {
+                    int v0 = v;
+                    // in case there is wrap around, test adding a phase
+                    //   and take the smaller of the results for each diff.
+                    if (diffs[offset] > v0) {
+                        // add a phase to next value if it's closer to current with addition
+                        if ((diffs[offset] - v0) > 
+                            (v0 + 255) - diffs[offset]) {
+                            v0 += 255;
+                        }
+                    } else if (v0 > diffs[offset]) {
+                        // add a phase to next value if it's closer to current with addition
+                        if ((v0 - diffs[offset]) > 
+                            (diffs[offset] + 255) - v0) {
+                            diffs[offset] += 255;
+                        }
+                    }
+                    int d = diffs[offset] - v0;
+                    if (Math.abs(d) >= lowerDiff) {
+                        above = 1;
+                        break;
+                    }
+                    offset++;
+                }
+
+                if (above == 1) {                
+                    out.setValue(i, j, 1);
+                }
+            }
+        }
+        
+        return out;
+    }
+    
+    /**
+     * create  a float array from the image (the image is not scaled).
+     * @param img
+     * @return 
+     */
+    public float[] convertToFloat(GreyscaleImage img) {
+        
+        float[] a = new float[img.getNPixels()];
+        
+        for (int i = 0; i < a.length; ++i) {
+            a[i] = img.getValue(i);
+        }
+        
+        return a;
+    }
+    
+    /**
      * using the binary results from createBinarySobelForPolarTheta
      * and the greyscale results from sobel operator,
      * scale the greyscale sobel so that the maximum value is 1.f,
@@ -209,6 +295,66 @@ public class ImageProcessor {
         return out;
     }
     
+    /**
+     * create a greyscale adaptive threshold gradient with canny algorithm
+     * and then a color contrast gradient with "H" of LCH, and sobel with
+     * a threshold of 20 degrees for binarization, scale them to 
+     * 127 and add them.
+     * The color binary sobel pixels are scaled to 1/4th the maximum
+     * of the greyscale gradient.
+     * 
+     * The results could be improved in various ways, but for now
+     * is a quick way to look at completing greyscale intensity
+     * gradient contours with the color contrast gradient.
+     * 
+     * @param img
+     * @return 
+     */
+    public GreyscaleImage createGradientWithColorAndGreyscale(Image img) {
+
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        GreyscaleImage gsImg = img.copyToGreyscale2();
+        
+        CannyEdgeFilterAdaptive canny = new CannyEdgeFilterAdaptive();
+        canny.overrideToUseAdaptiveThreshold();
+        canny.overrideToNotUseLineThinner();
+        canny.applyFilter(gsImg);
+        EdgeFilterProducts prod = canny.getFilterProducts();
+
+        float[] gsCanny = convertToFloat(prod.getGradientXY());
+
+        GreyscaleImage scaled = MiscMath.rescaleAndCreateImage(gsCanny, w, h);
+
+        //TODO: could consider using the sobel polar theta in canny edges
+        //   as additional cues for strong edges in the 2-layer filter
+        //   and then only use that result here.
+        
+        GreyscaleImage ptImg = createCIELUVTheta(img, 255);
+        GreyscaleImage ptGrad = 
+            //createBinary2ndDerivForPolarTheta(ptImg, 20);
+            createBinarySobelForPolarTheta(ptImg, 20);
+        
+        /*
+        ptGrad.multiply(255);
+        applyAdaptiveMeanThresholding(ptGrad, 1);
+        for (int j = 0; j < ptGrad.getNPixels(); ++j) {
+            ptGrad.setValue(j, 255 - ptGrad.getValue(j));
+        }*/
+         
+        float[] ptSobel = convertToFloat(ptGrad);
+
+        for (int j = 0; j < ptSobel.length; ++j) {
+            ptSobel[j] *= 63;
+            ptSobel[j] += scaled.getValue(j);
+        }
+
+        scaled = MiscMath.rescaleAndCreateImage(ptSobel, w, h);
+
+        return scaled;
+    }
+
     /**
      * given a color image array with first dimension being color index
      * and the second dimension being the image pixel index,
