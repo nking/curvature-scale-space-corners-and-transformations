@@ -666,6 +666,8 @@ public class MSEREdges {
         int[] idxs = new int[labeledSets.size()];
         TIntIntMap pointIndexMap = new TIntIntHashMap();
 
+  //TODOneed to keep a queue here to keep merging
+        
         for (int i = 0; i < labeledSets.size(); ++i) {
             Set<PairInt> set = labeledSets.get(i);
             sizes[i] = set.size();
@@ -1595,105 +1597,63 @@ public class MSEREdges {
             MiscDebug.writeImage(tmp, "_" + ts + "_reassigned0_");
         }
         
-        // make a pass through results to find any sets that do not have
-        //  embedded points and re-submit those if any
-        List<Set<PairInt>> contigousSets2 = new ArrayList<Set<PairInt>>();
-        List<Set<PairInt>> edgeLists2 = new ArrayList<Set<PairInt>>();
-        Set<PairInt> reassign = new HashSet<PairInt>();
-        for (int i = 0; i < labeledSets.size(); ++i) {
-            Set<PairInt> set = labeledSets.get(i);
-            Set<PairInt> embedded = new HashSet<PairInt>();
-            Set<PairInt> outerBorder = new HashSet<PairInt>();
-            finder2.extractBorder2(set, embedded, outerBorder);
-
-            // if there are no internal points, do not store
-            if (set.size() - outerBorder.size() >= minGroupSize) {
-                contigousSets2.add(set);
-                edgeLists2.add(outerBorder);
-            } else {
-                reassign.addAll(set);
-            }
-        }
+        // make successive passes through to re-assign the smallest sets,
+        //    pixel by pixel
+        int[] mszs = new int[]{minGroupSize, 4, 6, 12, 18, 24};
         
-        if (reassign.isEmpty()) {
-            labeledSets = contigousSets2;
-            edgeList = edgeLists2;
-        } else {
-            labels = new int[clrImg.getNPixels()];
-            Arrays.fill(labels, -1);
-            hsvs = new float[contigousSets2.size()][];
-            for (int label = 0; label < contigousSets2.size(); ++label) {
-                Set<PairInt> set = contigousSets2.get(label);
-                for (PairInt p : set) {
-                    int pixIdx = clrImg.getInternalIndex(p);
-                    labels[pixIdx] = label;
-                }
-                GroupPixelHSV hsv = new GroupPixelHSV();
-                hsv.calculateColors(set, clrImg);
-                hsvs[label] = new float[]{hsv.getAvgH(), hsv.getAvgS(),
-                    hsv.getAvgV()};
-            }
-            
-            assignTheUnassigned(contigousSets2, labels, hsvs, reassign);
-
-            labeledSets.clear();
-            edgeList.clear();
-            
-            for (int i = 0; i < contigousSets2.size(); ++i) {
-                Set<PairInt> set = contigousSets2.get(i);
-                Set<PairInt> embedded = new HashSet<PairInt>();
-                Set<PairInt> outerBorder = new HashSet<PairInt>();
-                finder2.extractBorder2(set, embedded, outerBorder);
-
-                labeledSets.add(set);
-                edgeList.add(outerBorder);
-            }
-        }
-     
-        // make one more pass through to merge the groups smller than  dozenish
-        reassign = new HashSet<PairInt>();
-        for (int i = labeledSets.size() - 1; i > -1; --i) {
-            Set<PairInt> set = labeledSets.get(i);
-            Set<PairInt> outerBorder = edgeList.get(i);
-            if ((set.size() < 16) || 
-                (set.size() - outerBorder.size() < 16)) {
-                reassign.addAll(set);
-                labeledSets.remove(i);
-                edgeList.remove(i);
-            }
-        }
-        
-        if (!reassign.isEmpty()) {
-            
-            labels = new int[clrImg.getNPixels()];
-            Arrays.fill(labels, -1);
-            hsvs = new float[labeledSets.size()][];
-            for (int label = 0; label < labeledSets.size(); ++label) {
-                Set<PairInt> set = labeledSets.get(label);
-                for (PairInt p : set) {
-                    int pixIdx = clrImg.getInternalIndex(p);
-                    labels[pixIdx] = label;
-                }
-                GroupPixelHSV hsv = new GroupPixelHSV();
-                hsv.calculateColors(set, clrImg);
-                hsvs[label] = new float[]{hsv.getAvgH(), hsv.getAvgS(),
-                    hsv.getAvgV()};
-            }
-            
-            assignTheUnassigned(labeledSets, labels, hsvs, reassign);
-            
-            contigousSets2 = new ArrayList<Set<PairInt>>();
-            edgeLists2 = new ArrayList<Set<PairInt>>();
+        for (int msz : mszs) {
+                    
+            // make a pass through results to find any sets that do not have
+            //  embedded points and re-submit those if any
+            List<Set<PairInt>> contigousSets2 = new ArrayList<Set<PairInt>>();
+            List<Set<PairInt>> edgeLists2 = new ArrayList<Set<PairInt>>();
+            Set<PairInt> reassign = new HashSet<PairInt>();
             for (int i = 0; i < labeledSets.size(); ++i) {
                 Set<PairInt> set = labeledSets.get(i);
                 Set<PairInt> embedded = new HashSet<PairInt>();
                 Set<PairInt> outerBorder = new HashSet<PairInt>();
                 finder2.extractBorder2(set, embedded, outerBorder);
-                contigousSets2.add(set);
-                edgeLists2.add(outerBorder);
+                if (set.size() - outerBorder.size() >= msz) {
+                    contigousSets2.add(set);
+                    edgeLists2.add(outerBorder);
+                } else {
+                    reassign.addAll(set);
+                }
             }
-            this.edgeList = edgeLists2;
-            this.labeledSets = contigousSets2;
+            if (reassign.isEmpty()) {
+                labeledSets = contigousSets2;
+                edgeList = edgeLists2;
+            } else {
+                labels = new int[clrImg.getNPixels()];
+                Arrays.fill(labels, -1);
+                hsvs = new float[contigousSets2.size()][];
+                for (int label = 0; label < contigousSets2.size(); ++label) {
+                    Set<PairInt> set = contigousSets2.get(label);
+                    for (PairInt p : set) {
+                        int pixIdx = clrImg.getInternalIndex(p);
+                        labels[pixIdx] = label;
+                    }
+                    GroupPixelHSV hsv = new GroupPixelHSV();
+                    hsv.calculateColors(set, clrImg);
+                    hsvs[label] = new float[]{hsv.getAvgH(), hsv.getAvgS(),
+                        hsv.getAvgV()};
+                }
+
+                assignTheUnassigned(contigousSets2, labels, hsvs, reassign);
+
+                labeledSets.clear();
+                edgeList.clear();
+
+                for (int i = 0; i < contigousSets2.size(); ++i) {
+                    Set<PairInt> set = contigousSets2.get(i);
+                    Set<PairInt> embedded = new HashSet<PairInt>();
+                    Set<PairInt> outerBorder = new HashSet<PairInt>();
+                    finder2.extractBorder2(set, embedded, outerBorder);
+
+                    labeledSets.add(set);
+                    edgeList.add(outerBorder);
+                }
+            }
         }
         
         if (debug) {
