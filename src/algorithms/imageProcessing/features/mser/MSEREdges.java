@@ -643,8 +643,8 @@ public class MSEREdges {
 
         // hsv difference upper limit
         float hsvUL = 0.095f;
-        float hcptLL = 0.7f;
-        float hgsLL = 0.7f;
+        float[] hcptLL = new float[]{0.7f, 0.6f, 0.55f};
+        float hgsLL = 0.55f;
 
         HGS hgs = new HGS(gsImg, 1, 6, 12);
         HCPT hcpt = new HCPT(ptImg, 1, 6, 12);
@@ -667,8 +667,6 @@ public class MSEREdges {
         int[] idxs = new int[labeledSets.size()];
         TIntIntMap pointIndexMap = new TIntIntHashMap();
 
-  //TODOneed to keep a queue here to keep merging
-        
         for (int i = 0; i < labeledSets.size(); ++i) {
             Set<PairInt> set = labeledSets.get(i);
             sizes[i] = set.size();
@@ -700,139 +698,161 @@ public class MSEREdges {
             .createAdjacencyMap(pointIndexMap, mapOfSets, w, h);
 
         MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
+        
+        // consider making a queue here instead of revisiting all
+        //    sets for each iteration.
+        //    requires a has of updated indexes, that is
+        //    queue idx --> updated to idxB
+        
+        int nIter = 0;
+        int nIterMax = 10;
+        int nMerged = 0;
+        int hcptIdx = 0;
+        
+        do {
+            nMerged = 0;
+            for (int i = (idxs.length - 1); i > -1; --i) {
 
-        for (int i = (sizes.length - 1); i > -1; --i) {
+                int idx1 = idxs[i];
 
-            int idx1 = idxs[i];
+                TIntSet set1 = mapOfSets.get(idx1);
 
-            TIntSet set1 = mapOfSets.get(idx1);
-            
-            if (set1 == null || set1.isEmpty()) {
-                // merged already
-                continue;
-            }
-
-            TIntSet border1 = mapOfBorders.get(idx1);
-
-            //as suggested by Alpert, Galun, Basri et al. (2007),
-            //removing the boundaries from grdients
-            set1 = new TIntHashSet(set1);
-            set1.removeAll(border1);
-
-            int[] hcpt1H = getRegionHistogram(hcpt, set1);
-            int[] hgs1H = getRegionHistogram(hgs, set1);
-            GroupPixelHSV2 hsv1 = getColors(clrs, set1, idx1);
-
-            int n1 = set1.size();
-
-            int[] xyCen1 = ch.calculateRoundedXYCentroids(border1,
-                clrImg.getWidth());
-
-            VeryLongBitString nbrsBS = adjMap.get(idx1);
-
-            int[] idxs2 = nbrsBS.getSetBits();
-
-            // find best merge
-            // if none meet limits, this is not reset:
-            float minCost = Float.MAX_VALUE;
-            int minCostIdx2 = -1;
-
-            for (int idx2 : idxs2) {
-
-                TIntSet set2 = mapOfSets.get(idx2);
-
-                // skip over set2 smaller than n1 because they've already
-                //   been compared
-                if (set2 == null || set2.size() < n1) {
+                if (set1 == null || set1.isEmpty()) {
+                    // merged already
                     continue;
                 }
-                TIntSet border2 = mapOfBorders.get(idx2);
-                
+
+                TIntSet border1 = mapOfBorders.get(idx1);
+
                 //as suggested by Alpert, Galun, Basri et al. (2007),
                 //removing the boundaries from grdients
-                TIntHashSet set3 = new TIntHashSet(set2);
-                set3.removeAll(border2);
+                set1 = new TIntHashSet(set1);
+                set1.removeAll(border1);
 
-                GroupPixelHSV2 hsv2 = getColors(clrs, set3, idx2);
+                int[] hcpt1H = getRegionHistogram(hcpt, set1);
+                int[] hgs1H = getRegionHistogram(hgs, set1);
+                GroupPixelHSV2 hsv1 = getColors(clrs, set1, idx1);
 
-                float cost = hsv1.calculateDifference(hsv2);
+                int n1 = set1.size();
 
-                if (cost > hsvUL) {
-                    continue;
-                }
-
-                int[] xyCen2 = ch.calculateRoundedXYCentroids(border2,
+                int[] xyCen1 = ch.calculateRoundedXYCentroids(border1,
                     clrImg.getWidth());
 
-                int[] hcpt2H = getRegionHistogram(hcpt, set3);
-                int[] hgs2H = getRegionHistogram(hgs, set3);
+                VeryLongBitString nbrsBS = adjMap.get(idx1);
 
-                float hcptInter = hcpt.intersection(hcpt1H, hcpt2H);
+                int[] idxs2 = nbrsBS.getSetBits();
 
-                float hgsInter = hgs.intersection(hgs1H, hgs2H);
+                // find best merge
+                // if none meet limits, this is not reset:
+                float minCost = Float.MAX_VALUE;
+                int minCostIdx2 = -1;
 
-                System.out.format("m (%d,%d) (%d,%d) hsvd=%.3f ptInter=%.3f "
-                    + " gsInter=%.3f n=%d,%d\n",
-                    xyCen1[0], xyCen1[1], xyCen2[0], xyCen2[1],
-                    cost, hcptInter, hgsInter, set1.size(), set2.size()
-                );
+                for (int idx2 : idxs2) {
 
-                if (hcptInter < hcptLL || hgsInter < hgsLL) {
-                    continue;
+                    TIntSet set2 = mapOfSets.get(idx2);
+
+                    // skip over set2 smaller than n1 because they've already
+                    //   been compared
+                    if (set2 == null || set2.size() < n1) {
+                        continue;
+                    }
+                    TIntSet border2 = mapOfBorders.get(idx2);
+
+                    //as suggested by Alpert, Galun, Basri et al. (2007),
+                    //removing the boundaries from grdients
+                    TIntHashSet set3 = new TIntHashSet(set2);
+                    set3.removeAll(border2);
+
+                    GroupPixelHSV2 hsv2 = getColors(clrs, set3, idx2);
+
+                    float cost = hsv1.calculateDifference(hsv2);
+
+                    if (cost > hsvUL) {
+                        continue;
+                    }
+
+                    int[] xyCen2 = ch.calculateRoundedXYCentroids(border2,
+                        clrImg.getWidth());
+
+                    int[] hcpt2H = getRegionHistogram(hcpt, set3);
+                    int[] hgs2H = getRegionHistogram(hgs, set3);
+
+                    float hcptInter = hcpt.intersection(hcpt1H, hcpt2H);
+
+                    float hgsInter = hgs.intersection(hgs1H, hgs2H);
+
+                    System.out.format("m (%d,%d) (%d,%d) hsvd=%.3f ptInter=%.3f "
+                        + " gsInter=%.3f n=%d,%d\n",
+                        xyCen1[0], xyCen1[1], xyCen2[0], xyCen2[1],
+                        cost, hcptInter, hgsInter, set1.size(), set2.size()
+                    );
+
+                    if (hcptInter < hcptLL[hcptIdx] || hgsInter < hgsLL) {
+                        continue;
+                    }
+
+                    hcptInter = 1.f - hcptInter;
+                    hgsInter = 1.f - hgsInter;
+
+                    cost *= cost;
+                    cost += (hcptInter * hcptInter + hgsInter * hgsInter);
+                    cost = (float)Math.sqrt(cost/3.f);
+
+                    if (cost < minCost) {
+                        minCost = cost;
+                        minCostIdx2 = idx2;
+                    }
                 }
 
-                hcptInter = 1.f - hcptInter;
-                hgsInter = 1.f - hgsInter;
+                if (minCostIdx2 > -1) {
 
-                cost *= cost;
-                cost += (hcptInter * hcptInter + hgsInter * hgsInter);
-                cost = (float)Math.sqrt(cost/3.f);
+                    // merging contents of idx1 into minCostIdx2
+                    nMerged++;
+                    
+                    System.out.println("    merging");
 
-                if (cost < minCost) {
-                    minCost = cost;
-                    minCostIdx2 = idx2;
+                    clrs.get(minCostIdx2).add(set1, clrImg);
+                    clrs.remove(idx1);
+
+                    TIntIterator iter = mapOfSets.get(idx1).iterator();
+                    while (iter.hasNext()) {
+                        int pixIdx = iter.next();
+                        pointIndexMap.put(pixIdx, minCostIdx2);                    
+                    }
+
+                    // update the adjacency maps to point to minCostIdx2
+                    int[] idxs3 = nbrsBS.getSetBits();
+                    for (int idx3 : idxs3) {
+                        VeryLongBitString nbrsBS3 = adjMap.get(idx3);
+                        nbrsBS3.clearBit(idx1);
+                        nbrsBS3.setBit(minCostIdx2);
+                    }
+
+                    VeryLongBitString union = nbrsBS.or(adjMap.get(minCostIdx2));
+                    union.clearBit(minCostIdx2);
+                    union.clearBit(idx1);
+                    adjMap.put(minCostIdx2, union);
+                    adjMap.remove(idx1);
+
+                    mapOfSets.get(minCostIdx2).addAll(mapOfSets.get(idx1));
+                    //TODO: consider updating borders by clipping out intersection
+                    mapOfBorders.get(minCostIdx2).addAll(mapOfBorders.get(idx1));
+                    mapOfSets.remove(idx1);
+                    mapOfBorders.remove(idx1);
+
+                    assert(mapOfSets.get(idx1) == null);
+                    assert(mapOfBorders.get(idx1) == null);                
                 }
             }
-
-            if (minCostIdx2 > -1) {
-                
-                // merging contents of idx1 into minCostIdx2
-                
-                System.out.println("    merging");
-
-                clrs.get(minCostIdx2).add(set1, clrImg);
-                clrs.remove(idx1);
-                
-                TIntIterator iter = mapOfSets.get(idx1).iterator();
-                while (iter.hasNext()) {
-                    int pixIdx = iter.next();
-                    pointIndexMap.put(pixIdx, minCostIdx2);                    
-                }
-
-                // update the adjacency maps to point to minCostIdx2
-                int[] idxs3 = nbrsBS.getSetBits();
-                for (int idx3 : idxs3) {
-                    VeryLongBitString nbrsBS3 = adjMap.get(idx3);
-                    nbrsBS3.clearBit(idx1);
-                    nbrsBS3.setBit(minCostIdx2);
-                }
-
-                VeryLongBitString union = nbrsBS.or(adjMap.get(minCostIdx2));
-                union.clearBit(minCostIdx2);
-                union.clearBit(idx1);
-                adjMap.put(minCostIdx2, union);
-                adjMap.remove(idx1);
-                
-                mapOfSets.get(minCostIdx2).addAll(mapOfSets.get(idx1));
-                //TODO: consider updating borders by clipping out intersection
-                mapOfBorders.get(minCostIdx2).addAll(mapOfBorders.get(idx1));
-                mapOfSets.remove(idx1);
-                mapOfBorders.remove(idx1);
-           
-                assert(mapOfSets.get(idx1) == null);
-                assert(mapOfBorders.get(idx1) == null);                
+            System.out.println("nMerged=" + nMerged + " nIter=" +
+                nIter);
+            nIter++;
+            if (nMerged == 0 && hcptIdx < (hcptLL.length - 1)) {
+                hcptIdx++;
+                nIter = 0;
+                nMerged = 1;
             }
-        }
+        } while (nIter < nIterMax && nMerged > 0);
 
         // reset the instance vars
         edgeList.clear();
@@ -869,6 +889,12 @@ public class MSEREdges {
             edgeList.add(outerBorder);
         }
 
+        if (debug) {
+            Image imgCp = clrImg.copyImage();
+            ImageIOHelper.addAlternatingColorCurvesToImage0(edgeList, 
+                imgCp, 0);
+            MiscDebug.writeImage(imgCp, "_" + ts + "_MERGED_");
+        }
     }
 
     private void mergeRegions2() {
