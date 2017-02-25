@@ -728,8 +728,6 @@ public class MSEREdges {
             int[] xyCen1 = ch.calculateRoundedXYCentroids(border1,
                 clrImg.getWidth());
 
-            boolean useHogs = (n1 - border1.size() > 10);
-
             VeryLongBitString nbrsBS = adjMap.get(idx1);
 
             int[] idxs2 = nbrsBS.getSetBits();
@@ -766,42 +764,29 @@ public class MSEREdges {
                 int[] xyCen2 = ch.calculateRoundedXYCentroids(border2,
                     clrImg.getWidth());
 
-                if (useHogs) {
+                int[] hcpt2H = getRegionHistogram(hcpt, set3);
+                int[] hgs2H = getRegionHistogram(hgs, set3);
 
-                    // can use hogs in comparison
+                float hcptInter = hcpt.intersection(hcpt1H, hcpt2H);
 
-                    int[] hcpt2H = getRegionHistogram(hcpt, set3);
-                    int[] hgs2H = getRegionHistogram(hgs, set3);
+                float hgsInter = hgs.intersection(hgs1H, hgs2H);
 
-                    float hcptInter = hcpt.intersection(hcpt1H, hcpt2H);
+                System.out.format("m (%d,%d) (%d,%d) hsvd=%.3f ptInter=%.3f "
+                    + " gsInter=%.3f n=%d,%d\n",
+                    xyCen1[0], xyCen1[1], xyCen2[0], xyCen2[1],
+                    cost, hcptInter, hgsInter, set1.size(), set2.size()
+                );
 
-                    float hgsInter = hgs.intersection(hgs1H, hgs2H);
-
-                    System.out.format("m (%d,%d) (%d,%d) hsvd=%.3f ptInter=%.3f "
-                        + " gsInter=%.3f n=%d,%d\n",
-                        xyCen1[0], xyCen1[1], xyCen2[0], xyCen2[1],
-                        cost, hcptInter, hgsInter, set1.size(), set2.size()
-                    );
-
-                    if (hcptInter < hcptLL || hgsInter < hgsInter) {
-                        continue;
-                    }
-
-                    hcptInter = 1.f - hcptInter;
-                    hgsInter = 1.f - hgsInter;
-
-                    cost *= cost;
-
-                    cost += (hcptInter * hcptInter + hgsInter * hgsInter);
-                    cost = (float)Math.sqrt(cost/3.f);
-
-                } else {
-
-                    System.out.format("m (%d,%d) (%d,%d) hsvd=%.3f n=%d,%d\n",
-                        xyCen1[0], xyCen1[1], xyCen2[0], xyCen2[1],
-                        cost, set1.size(), set3.size()
-                    );
+                if (hcptInter < hcptLL || hgsInter < hgsLL) {
+                    continue;
                 }
+
+                hcptInter = 1.f - hcptInter;
+                hgsInter = 1.f - hgsInter;
+
+                cost *= cost;
+                cost += (hcptInter * hcptInter + hgsInter * hgsInter);
+                cost = (float)Math.sqrt(cost/3.f);
 
                 if (cost < minCost) {
                     minCost = cost;
@@ -867,8 +852,6 @@ public class MSEREdges {
                 continue;
             }
             
-            TIntSet border1 = mapOfBorders.get(idx);
-
             Set<PairInt> points = new HashSet<PairInt>();
             TIntIterator iter = set1.iterator();
             while (iter.hasNext()) {
