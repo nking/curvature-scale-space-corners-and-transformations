@@ -371,7 +371,7 @@ public class MSERMatcher {
         
         int orientation0 = cr0.hogOrientation;
         
-        int orientation1 =cr1.hogOrientation;
+        int orientation1 = cr1.hogOrientation;
         
         Map<PairInt, PairInt> offsetMap1 = cr1.offsetsToOrigCoords;
 

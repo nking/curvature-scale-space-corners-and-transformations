@@ -10143,8 +10143,8 @@ if (sum > 511) {
     }
     
     public TIntObjectMap<VeryLongBitString> createAdjacencyMap(
-        TIntIntMap pointIndexMap, List<TIntSet> labeledPoints, int imgWidth,
-        int imgHeight) {
+        TIntIntMap pointIndexMap, TIntObjectMap<TIntSet> labeledPoints, 
+        int imgWidth, int imgHeight) {
 
         int n = labeledPoints.size();
 
@@ -10153,16 +10153,23 @@ if (sum > 511) {
 
         int[] dxs = Misc.dx4;
         int[] dys = Misc.dy4;
+        
+        TIntObjectIterator<TIntSet> iter = labeledPoints.iterator();
 
-        for (int label = 0; label < n; ++label) {
-            TIntSet set = labeledPoints.get(label);
+        for (int i = 0; i < n; ++i) {
+            
+            iter.advance();
+            
+            int label = iter.key();
+            TIntSet pixIdxs = iter.value();
+            
             VeryLongBitString nbrs = new VeryLongBitString(n);
             
             boolean aloSet = false;
             
-            TIntIterator iter = set.iterator();
-            while (iter.hasNext()) {
-                int pixIdx = iter.next();
+            TIntIterator iter2 = pixIdxs.iterator();
+            while (iter2.hasNext()) {
+                int pixIdx = iter2.next();
                 int y = pixIdx/imgWidth;
                 int x = pixIdx - (y * imgWidth);
                 for (int k = 0; k < dxs.length; ++k) {

@@ -16,6 +16,8 @@ import algorithms.util.PairIntArrayComparator;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArrayWithColor;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.set.TIntSet;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -980,6 +982,33 @@ public class MiscellaneousCurveHelper {
         int[] out = new int[2];
         out[0] = (int)Math.round(xyCen[0]);
         out[1] = (int)Math.round(xyCen[1]);
+
+        return out;
+    }
+    
+    public int[] calculateRoundedXYCentroids(TIntSet pixelIdxs, int imgWidth) {
+
+        double xc = 0;
+        double yc = 0;
+
+        TIntIterator iter = pixelIdxs.iterator();
+        while (iter.hasNext()) {
+
+            int pixIdx = iter.next();
+            
+            int y = pixIdx/imgWidth;
+            int x = pixIdx - (y * imgWidth);
+            
+            xc += x;
+            yc += y;
+        }
+
+        xc /= (double)pixelIdxs.size();
+        yc /= (double)pixelIdxs.size();
+        
+        int[] out = new int[2];
+        out[0] = (int)Math.round(xc);
+        out[1] = (int)Math.round(yc);
 
         return out;
     }
