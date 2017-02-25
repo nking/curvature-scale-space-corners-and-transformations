@@ -31,6 +31,7 @@ import algorithms.util.PairIntArray;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIntIterator;
 import gnu.trove.iterator.TIntIterator;
+import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TDoubleArrayList;
@@ -620,7 +621,7 @@ public class MSEREdges {
 
     private void mergeRegions3() {
         
-        if (true) {return;}
+        //if (true) {return;}
         
         /*
         TODO: refactoring this to use color and texture
@@ -691,6 +692,8 @@ public class MSEREdges {
         }
         QuickSort.sortBy1stArg(sizes, idxs);
 
+        PerimeterFinder2 finder2 = new PerimeterFinder2();
+        
         ImageProcessor imageProcessor = new ImageProcessor();
 
         TIntObjectMap<VeryLongBitString> adjMap = imageProcessor
@@ -745,10 +748,14 @@ public class MSEREdges {
                 if (set2 == null || set2.size() < n1) {
                     continue;
                 }
-
-                GroupPixelHSV2 hsv2 = getColors(clrs, set2, idx2);
-
                 TIntSet border2 = mapOfBorders.get(idx2);
+                
+                //as suggested by Alpert, Galun, Basri et al. (2007),
+                //removing the boundaries from grdients
+                TIntHashSet set3 = new TIntHashSet(set2);
+                set3.removeAll(border2);
+
+                GroupPixelHSV2 hsv2 = getColors(clrs, set3, idx2);
 
                 float cost = hsv1.calculateDifference(hsv2);
 
@@ -763,22 +770,17 @@ public class MSEREdges {
 
                     // can use hogs in comparison
 
-                    //as suggested by Alpert, Galun, Basri et al. (2007),
-                    //removing the boundaries from grdients
-                    set2 = new TIntHashSet(set2);
-                    set2.removeAll(border2);
-
-                    int[] hcpt2H = getRegionHistogram(hcpt, set2);
-                    int[] hgs2H = getRegionHistogram(hgs, set2);
+                    int[] hcpt2H = getRegionHistogram(hcpt, set3);
+                    int[] hgs2H = getRegionHistogram(hgs, set3);
 
                     float hcptInter = hcpt.intersection(hcpt1H, hcpt2H);
 
                     float hgsInter = hgs.intersection(hgs1H, hgs2H);
 
                     System.out.format("m (%d,%d) (%d,%d) hsvd=%.3f ptInter=%.3f "
-                        + " gsInter=%.3f\n",
+                        + " gsInter=%.3f n=%d,%d\n",
                         xyCen1[0], xyCen1[1], xyCen2[0], xyCen2[1],
-                        cost, hcptInter, hgsInter
+                        cost, hcptInter, hgsInter, set1.size(), set2.size()
                     );
 
                     if (hcptInter < hcptLL || hgsInter < hgsInter) {
@@ -795,9 +797,9 @@ public class MSEREdges {
 
                 } else {
 
-                    System.out.format("m (%d,%d) (%d,%d) hsvd=%.3f\n",
+                    System.out.format("m (%d,%d) (%d,%d) hsvd=%.3f n=%d,%d\n",
                         xyCen1[0], xyCen1[1], xyCen2[0], xyCen2[1],
-                        cost
+                        cost, set1.size(), set3.size()
                     );
                 }
 
@@ -809,41 +811,41 @@ public class MSEREdges {
 
             if (minCostIdx2 > -1) {
                 
-                System.out.println("    merged");
+                // merging contents of idx1 into minCostIdx2
+                
+                System.out.println("    merging");
 
-                TIntSet set2 = mapOfSets.get(minCostIdx2);
-                TIntSet border2 = mapOfBorders.get(minCostIdx2);
-                set2 = new TIntHashSet(set2);
-                set2.removeAll(border2);
+                clrs.get(minCostIdx2).add(set1, clrImg);
+                clrs.remove(idx1);
                 
-                hsv1.add(set2, clrImg);
-                
-                TIntIterator iter = set2.iterator();
+                TIntIterator iter = mapOfSets.get(idx1).iterator();
                 while (iter.hasNext()) {
                     int pixIdx = iter.next();
                     pointIndexMap.put(pixIdx, minCostIdx2);                    
                 }
 
-                // update the adjacency maps
-                VeryLongBitString nbrsBS2 = adjMap.get(minCostIdx2);
-                int[] idxs3 = nbrsBS2.getSetBits();
+                // update the adjacency maps to point to minCostIdx2
+                int[] idxs3 = nbrsBS.getSetBits();
                 for (int idx3 : idxs3) {
                     VeryLongBitString nbrsBS3 = adjMap.get(idx3);
-                    nbrsBS3.clearBit(minCostIdx2);
-                    nbrsBS3.setBit(idx1);
+                    nbrsBS3.clearBit(idx1);
+                    nbrsBS3.setBit(minCostIdx2);
                 }
 
-                VeryLongBitString union = nbrsBS.or(nbrsBS2);
+                VeryLongBitString union = nbrsBS.or(adjMap.get(minCostIdx2));
                 union.clearBit(minCostIdx2);
                 union.clearBit(idx1);
-                adjMap.put(idx1, union);
-                nbrsBS = union;
-
-                mapOfSets.get(idx1).addAll(mapOfSets.get(minCostIdx2));
-                mapOfBorders.get(idx1).addAll(mapOfBorders.get(minCostIdx2));
-                mapOfSets.remove(minCostIdx2);
-                mapOfBorders.remove(minCostIdx2);
-                clrs.remove(minCostIdx2);
+                adjMap.put(minCostIdx2, union);
+                adjMap.remove(idx1);
+                
+                mapOfSets.get(minCostIdx2).addAll(mapOfSets.get(idx1));
+                //TODO: consider updating borders by clipping out intersection
+                mapOfBorders.get(minCostIdx2).addAll(mapOfBorders.get(idx1));
+                mapOfSets.remove(idx1);
+                mapOfBorders.remove(idx1);
+           
+                assert(mapOfSets.get(idx1) == null);
+                assert(mapOfBorders.get(idx1) == null);                
             }
         }
 
@@ -851,14 +853,17 @@ public class MSEREdges {
         edgeList.clear();
         labeledSets.clear();;
 
-        for (int i = (sizes.length - 1); i > -1; --i) {
-
-            int idx = idxs[i];
-
-            TIntSet set1 = mapOfSets.get(idx);
+        TIntObjectIterator<TIntSet> iter2 = mapOfSets.iterator();
+        
+        for (int i = 0; i < mapOfSets.size(); ++i) {
             
-            if (set1 == null || set1.isEmpty()) {
-                // merged already
+            iter2.advance();
+            
+            int idx = iter2.key();
+
+            TIntSet set1 = iter2.value();
+            
+            if (set1.isEmpty()) {
                 continue;
             }
             
@@ -875,16 +880,10 @@ public class MSEREdges {
             }
             labeledSets.add(points);
 
-            points = new HashSet<PairInt>();
-            iter = border1.iterator();
-            while (iter.hasNext()) {
-                int pixIdx = iter.next();
-                int y = pixIdx/w;
-                int x = pixIdx - (y * w);
-                PairInt p = new PairInt(x, y);
-                points.add(p);
-            }
-            edgeList.add(points);
+            Set<PairInt> embedded = new HashSet<PairInt>();
+            Set<PairInt> outerBorder = new HashSet<PairInt>();
+            finder2.extractBorder2(points, embedded, outerBorder);
+            edgeList.add(outerBorder);
         }
 
     }
