@@ -6,6 +6,7 @@ import algorithms.imageProcessing.DFSConnectedGroupsFinder;
 import algorithms.imageProcessing.DFSContiguousValueFinder;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.GroupPixelHSV;
+import algorithms.imageProcessing.GroupPixelHSV2;
 import algorithms.imageProcessing.GroupPixelRGB0;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
@@ -13,10 +14,9 @@ import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageProcessor.Colors;
 import algorithms.imageProcessing.ImageSegmentation;
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
-import algorithms.imageProcessing.PostLineThinnerCorrections;
-import algorithms.imageProcessing.SpurRemover;
 import algorithms.imageProcessing.SummedAreaTable;
+import algorithms.imageProcessing.features.HCPT;
+import algorithms.imageProcessing.features.HOGs;
 import algorithms.imageProcessing.features.mser.Canonicalizer.RegionGeometry;
 import algorithms.imageProcessing.features.mser.MSER.Threshold;
 import algorithms.imageProcessing.segmentation.ColorSpace;
@@ -27,7 +27,7 @@ import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.QuadInt;
+import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIntIterator;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.list.TDoubleList;
@@ -48,9 +48,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
-import java.util.Stack;
 import thirdparty.edu.princeton.cs.algs4.Interval;
 import thirdparty.edu.princeton.cs.algs4.Interval2D;
 import thirdparty.edu.princeton.cs.algs4.QuadTree;
@@ -174,6 +172,9 @@ public class MSEREdges {
         extractRegions();
         
         extractBoundaries();
+        
+        assert(labeledSets != null);
+        assert(edgeList != null);
 
         if (debug) {
             printEdges();
@@ -194,8 +195,16 @@ public class MSEREdges {
 
         extractEdges();
 
-        this.labeledSets = mergeRegions2();
+        long ts0 = System.currentTimeMillis();
+        
+        //mergeRegions2();
+        mergeRegions3();
 
+        long ts1 = System.currentTimeMillis();
+        
+        System.out.format("%.3f sec for merge", 
+            (((float)ts1 - ts0)/1000.f));
+        
         if (debug) {
             printEdges();
         }
@@ -440,7 +449,7 @@ public class MSEREdges {
         long ts2 = System.currentTimeMillis();
         
         // populate this.edgeList and this.labeledSets
-        thinTheBoundaries(boundaries, 1);
+        thinTheBoundaries(boundaries, 4);
 
         long ts3 = System.currentTimeMillis();
                 
@@ -608,7 +617,7 @@ public class MSEREdges {
         return contigSets;
     }
 
-    private List<Set<PairInt>> mergeRegions2() {
+    private void mergeRegions3() {
 
         /*
         TODO: refactoring this to use color and texture
@@ -618,17 +627,95 @@ public class MSEREdges {
         probably use a different distance and update after merge)
         */
         
-        
         //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
         if (!state.equals(STATE.EDGES_EXTRACTED)) {
             throw new IllegalStateException("error in algorithm.  expecting"
                 + " edges were extracted.");
         }
+        
+        assert(labeledSets != null);
+        assert(edgeList != null);
+        assert(labeledSets.size() == edgeList.size());
 
-        List<Set<PairInt>> contigSets = reduceToUniquePointToEdge();
+        HOGs gsHogs = new HOGs(gsImg, 1, 10);
+        
+        HCPT ptHogs = new HCPT(ptImg, 1, 6, 12);
+        
+        List<GroupPixelHSV2> clrs = new ArrayList<GroupPixelHSV2>();
+        
+        int w = gsImg.getWidth();
+        int h = gsImg.getHeight();
 
-        int w = clrImg.getWidth();
-        int h = clrImg.getHeight();
+        for (int label = 0; label < labeledSets.size(); ++label) {
+            Set<PairInt> set = labeledSets.get(label);
+            GroupPixelHSV2 hsv = new GroupPixelHSV2();
+            hsv.calculateColors(set, clrImg);
+            clrs.add(hsv);
+        }
+       
+        List<TIntSet> listOfSets = new ArrayList<TIntSet>();
+        List<TIntSet> listOfBorders = new ArrayList<TIntSet>();
+        
+        int[] sizes = new int[labeledSets.size()];
+        for (int i = 0; i < labeledSets.size(); ++i) {
+            Set<PairInt> set = labeledSets.get(i);
+            sizes[i] = set.size();
+            
+            TIntSet set2 = new TIntHashSet();
+            listOfSets.add(set2);
+            for (PairInt p : set) {
+                int pixIdx = clrImg.getInternalIndex(p);
+                set2.add(pixIdx);
+            }
+            
+            set = edgeList.get(i);
+            set2 = new TIntHashSet();
+            listOfBorders.add(set2);
+            for (PairInt p : set) {
+                int pixIdx = clrImg.getInternalIndex(p);
+                set2.add(pixIdx);
+            }
+        }
+        QuickSort.sortBy1stArgDesc(sizes, listOfSets, listOfBorders);
+       
+        TIntIntMap pointIndexMap = new TIntIntHashMap();
+        for (int i = 0; i < listOfSets.size(); ++i) {
+            TIntIterator iter = listOfSets.get(i).iterator();
+            while (iter.hasNext()) {
+                int pixIdx = iter.next();
+                pointIndexMap.put(pixIdx, i);
+            }
+        }
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        TIntObjectMap<VeryLongBitString> adjMap = imageProcessor
+            .createAdjacencyMap(pointIndexMap, listOfSets, w, h);
+        
+        /*
+        // -- loop by largest index to smallest (so deletes and updates preserve indexes)
+        //    -- merge by color and hogs
+        //       note, can only use hogs if critical number of points are
+        //       present
+        //       - update vars upon merge
+        */
+        
+        
+    }
+    
+    private void mergeRegions2() {
+
+        //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
+        if (!state.equals(STATE.EDGES_EXTRACTED)) {
+            throw new IllegalStateException("error in algorithm.  expecting"
+                + " edges were extracted.");
+        }
+        
+        assert(labeledSets != null);
+        assert(edgeList != null);        
+        
+        int w = gsImg.getWidth();
+        int h = gsImg.getHeight();
 
         // -- merge contigSets
         int sizeLimit = 16;//31;
@@ -638,21 +725,21 @@ public class MSEREdges {
 
         ImageSegmentation imageSegmentation = new ImageSegmentation();
         float hsvLimit = 0.095f;
-        int[] labels = imageSegmentation.mergeByColor(clrImg, contigSets,
+        int[] labels = imageSegmentation.mergeByColor(clrImg, labeledSets,
             ColorSpace.HSV,
             hsvLimit);//0.1f);
 
         imageSegmentation.mergeSmallSegments(clrImg, labels, sizeLimit,
             ColorSpace.HSV);
 
-        contigSets = LabelToColorHelper
+        labeledSets = LabelToColorHelper
             .extractContiguousLabelPoints(clrImg, labels);
 
-        labels = imageSegmentation.mergeByColor(clrImg, contigSets,
+        labels = imageSegmentation.mergeByColor(clrImg, labeledSets,
             ColorSpace.CIELUV_NORMALIZED,
             0.01f);
 
-        labels = imageSegmentation.mergeByColor(clrImg, contigSets,
+        labels = imageSegmentation.mergeByColor(clrImg, labeledSets,
             ColorSpace.POLAR_CIELUV,
             1.f);// in degrees
 
@@ -663,13 +750,13 @@ public class MSEREdges {
         imageSegmentation.mergeSmallSegments(clrImg, labels, sizeLimit,
             ColorSpace.CIELAB);
 
-        contigSets = LabelToColorHelper
+        labeledSets = LabelToColorHelper
             .extractContiguousLabelPoints(clrImg, labels);
 
         // - write the final edges (and clear the regions list)
         edgeList.clear();
         PerimeterFinder2 finder2 = new PerimeterFinder2();
-        for (Set<PairInt> set : contigSets) {
+        for (Set<PairInt> set : labeledSets) {
             Set<PairInt> embedded = new HashSet<PairInt>();
             Set<PairInt> outerBorder = new HashSet<PairInt>();
             finder2.extractBorder2(set, embedded, outerBorder);
@@ -692,7 +779,6 @@ public class MSEREdges {
                 }
             }*/
         }
-        return contigSets;
     }
 
     private List<List<Region>> filterOverlapping(List<List<Region>> rlist,
@@ -1283,7 +1369,34 @@ public class MSEREdges {
         
         populateEdgeLists(edgePoints, minGroupSize);
         
-        assignTheUnassigned(labeledSets);
+        int w = clrImg.getWidth();
+        int h = clrImg.getHeight();
+        
+        float[][] hsvs = new float[labeledSets.size()][];
+
+        int[] labels = new int[clrImg.getNPixels()];
+        Arrays.fill(labels, -1);
+        for (int label = 0; label < labeledSets.size(); ++label) {
+            Set<PairInt> set = labeledSets.get(label);
+            for (PairInt p : set) {
+                int pixIdx = clrImg.getInternalIndex(p);
+                labels[pixIdx] = label;
+            }
+
+            GroupPixelHSV hsv = new GroupPixelHSV();
+            hsv.calculateColors(set, clrImg);
+            hsvs[label] = new float[]{hsv.getAvgH(), hsv.getAvgS(),
+                hsv.getAvgV()};
+        }
+
+        Set<PairInt> unassignedSet = new HashSet<PairInt>();
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                unassignedSet.add(new PairInt(i, j));
+            }
+        }
+        
+        assignTheUnassigned(labeledSets, labels, hsvs, unassignedSet);
 
         if (debug) {
             Image tmp = clrImg.copyImage();
@@ -1297,15 +1410,20 @@ public class MSEREdges {
         List<Set<PairInt>> contigousSets2 = new ArrayList<Set<PairInt>>();
         edgeList.clear();
         
+        Set<PairInt> reassign = new HashSet<PairInt>();
         for (int i = (labeledSets.size() - 1); i > -1; --i) {
             Set<PairInt> set = labeledSets.get(i);
             Set<PairInt> embedded = new HashSet<PairInt>();
             Set<PairInt> outerBorder = new HashSet<PairInt>();
             finder2.extractBorder2(set, embedded, outerBorder);
             
-            contigousSets2.add(set);
-            edgeList.add(outerBorder);
+            // if there are no internal points, do no store
+            if (set.size() - outerBorder.size() >= minGroupSize) {
+                contigousSets2.add(set);
+                edgeList.add(outerBorder);
+            }
         }
+        
         this.labeledSets = contigousSets2;
         
         if (debug) {
@@ -1345,25 +1463,9 @@ public class MSEREdges {
         
         System.out.println(labeledSets.size() + " labeled sets");
     }
-
-    private void assignTheUnassigned(List<Set<PairInt>> contiguous) {
-
-        float[][] hsvs = new float[contiguous.size()][];
-
-        int[] labels = new int[clrImg.getNPixels()];
-        Arrays.fill(labels, -1);
-        for (int label = 0; label < contiguous.size(); ++label) {
-            Set<PairInt> set = contiguous.get(label);
-            for (PairInt p : set) {
-                int pixIdx = clrImg.getInternalIndex(p);
-                labels[pixIdx] = label;
-            }
-
-            GroupPixelHSV hsv = new GroupPixelHSV();
-            hsv.calculateColors(set, clrImg);
-            hsvs[label] = new float[]{hsv.getAvgH(), hsv.getAvgS(),
-                hsv.getAvgV()};
-        }
+    
+    private void assignTheUnassigned(List<Set<PairInt>> contiguous,
+        int[] labels, float[][] hsvs, Set<PairInt> unassignedSet) {
 
         Map<PairInt, TIntSet> unassignedMap = new HashMap<PairInt, TIntSet>();
 
@@ -1373,16 +1475,14 @@ public class MSEREdges {
 
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
-
-        for (int i = 0; i < w; ++i) {
-            for (int j = 0; j < h; ++j) {
-                int pixIdx = clrImg.getInternalIndex(i, j);
-                if (labels[pixIdx] == -1) {
-                    addNeighborLabelsForPoint(labels, unassignedMap, i, j, dxs, dys);
-                }
-            }
-        }
         
+        for (PairInt p : unassignedSet) {
+            int i = p.getX();
+            int j = p.getY();
+            addNeighborLabelsForPoint(labels, unassignedMap, i, j, 
+                dxs, dys);
+        }
+
         ArrayDeque<PairInt> queue0 = populateByNumberOfNeighbors(unassignedMap);
 
         ArrayDeque<PairInt> queue1 = new ArrayDeque<PairInt>();

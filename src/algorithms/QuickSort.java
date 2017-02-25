@@ -6,6 +6,7 @@ import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 import java.util.List;
+import java.util.Set;
 
 /**
  *
@@ -294,6 +295,81 @@ public class QuickSort {
         sortBy1stArg(a, b, 0, a.size() - 1);
     }
     
+    public static void sortBy1stArgDesc(int[] a, List b, List c) {
+        sortBy1stArgDesc(a, b, c, 0, a.length - 1);
+    }
+    
+    public static void sortBy1stArgDesc(int[] a, List b, List c, int idxLo, 
+        int idxHi) {
+        
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (b == null) {
+            throw new IllegalArgumentException("b cannot be null");
+        }
+        if (c == null) {
+            throw new IllegalArgumentException("c cannot be null");
+        }
+        if (a.length != b.size()) {
+            throw new IllegalArgumentException("a and b must be the same length");
+        }
+        if (a.length != c.size()) {
+            throw new IllegalArgumentException("a and c must be the same length");
+        }
+        
+        if (a.length < 2) {
+            return;
+        }
+        
+        if (idxLo < idxHi) {
+
+            int x = a[idxLo];
+            int store = idxLo;
+            int idxMid = idxHi + 1;
+
+            while (true) {
+                do {
+                    store++;     
+                } while ((store <= idxHi) && (a[store] >= x));
+                do {
+                    idxMid--;
+                } while (a[idxMid] <= x);
+                if (store > idxMid) {
+                    break;
+                }
+                int swap = a[store];
+                a[store] = a[idxMid];
+                a[idxMid] = swap;
+                
+                Object swap2 = b.get(store);
+                b.set(store, b.get(idxMid));
+                b.set(idxMid, swap2);
+                
+                swap2 = c.get(store);
+                c.set(store, c.get(idxMid));
+                c.set(idxMid, swap2);
+                
+            }
+            
+            int swap = a[idxLo];
+            a[idxLo] = a[idxMid];
+            a[idxMid] = swap;
+
+            Object swap2 = b.get(idxLo);
+            b.set(idxLo, b.get(idxMid));
+            b.set(idxMid, swap2);
+
+            swap2 = c.get(idxLo);
+            c.set(idxLo, c.get(idxMid));
+            c.set(idxMid, swap2);
+         
+            sortBy1stArgDesc(a, b, c, idxLo, idxMid - 1);
+
+            sortBy1stArgDesc(a, b, c, idxMid + 1, idxHi);
+        }
+    }
+
     /**
      * sort a from index idxLo to idxHi, inclusive.  Uses the optimized
      * qsort3 from the book "Programming in Pearls" by Jon Bentley.

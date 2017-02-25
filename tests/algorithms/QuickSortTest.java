@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import junit.framework.TestCase;
-import static org.junit.Assert.*;
 
 /**
  *
@@ -676,4 +675,70 @@ public class QuickSortTest extends TestCase {
         assertEquals("7", (String)b.get(3));
         
     }
+    
+    public void testSortByFirstArg_5() {
+        
+        float[] a = new float[]{3, 7, 1, 5};
+        List<String> b = new ArrayList<String>();
+        b.add("3");
+        b.add("7");
+        b.add("1");
+        b.add("5");
+        List<Integer> c = new ArrayList<Integer>();
+        c.add(3);
+        c.add(7);
+        c.add(1);
+        c.add(5);
+        
+        QuickSort.sortBy1stArg(a, b, c);
+        
+        assertEquals(1.f, a[0]);
+        assertEquals("1", ((String)b.get(0)).toString());
+        assertEquals(1, ((Integer)c.get(0)).intValue());
+        
+        assertEquals(3.f, a[1]);
+        assertEquals("3", ((String)b.get(1)).toString());
+        assertEquals(3, ((Integer)c.get(1)).intValue());
+        
+        assertEquals(5.f, a[2]);
+        assertEquals("5", ((String)b.get(2)).toString());
+        assertEquals(5, ((Integer)c.get(2)).intValue());
+    
+        assertEquals(7.f, a[3]);
+        assertEquals("7", ((String)b.get(3)).toString());
+        assertEquals(7, ((Integer)c.get(3)).intValue());
+    }
+    
+    public void testSortBy1stArgDesc() {
+        int[] a = new int[]{3, 7, 1, 5};
+        List<String> b = new ArrayList<String>();
+        b.add("3");
+        b.add("7");
+        b.add("1");
+        b.add("5");
+        List<Integer> c = new ArrayList<Integer>();
+        c.add(3);
+        c.add(7);
+        c.add(1);
+        c.add(5);
+        
+        QuickSort.sortBy1stArgDesc(a, b, c);
+        System.out.println("a=" + Arrays.toString(a));
+        assertEquals(1, a[3]);
+        assertEquals("1", ((String)b.get(3)).toString());
+        assertEquals(1, ((Integer)c.get(3)).intValue());
+        
+        assertEquals(3, a[2]);
+        assertEquals("3", ((String)b.get(2)).toString());
+        assertEquals(3, ((Integer)c.get(2)).intValue());
+        
+        assertEquals(5, a[1]);
+        assertEquals("5", ((String)b.get(1)).toString());
+        assertEquals(5, ((Integer)c.get(1)).intValue());
+    
+        assertEquals(7, a[0]);
+        assertEquals("7", ((String)b.get(0)).toString());
+        assertEquals(7, ((Integer)c.get(0)).intValue());
+    }
+    
 }

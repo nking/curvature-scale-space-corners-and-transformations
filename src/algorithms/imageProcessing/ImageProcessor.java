@@ -25,6 +25,7 @@ import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
@@ -10126,6 +10127,50 @@ if (sum > 511) {
                     PairInt p2 = new PairInt(x2, y2);
                     if (pointIndexMap.containsKey(p2)) {
                         int label2 = pointIndexMap.get(p2);
+                        if (label2 != label) {
+                            nbrs.setBit(label2);
+                            aloSet = true;
+                        }
+                    }
+                }
+            }
+            if (aloSet) {
+                output.put(label, nbrs);
+            }
+        }
+
+        return output;
+    }
+    
+    public TIntObjectMap<VeryLongBitString> createAdjacencyMap(
+        TIntIntMap pointIndexMap, List<TIntSet> labeledPoints, int imgWidth,
+        int imgHeight) {
+
+        int n = labeledPoints.size();
+
+        TIntObjectMap<VeryLongBitString> output
+            = new TIntObjectHashMap<VeryLongBitString>();
+
+        int[] dxs = Misc.dx4;
+        int[] dys = Misc.dy4;
+
+        for (int label = 0; label < n; ++label) {
+            TIntSet set = labeledPoints.get(label);
+            VeryLongBitString nbrs = new VeryLongBitString(n);
+            
+            boolean aloSet = false;
+            
+            TIntIterator iter = set.iterator();
+            while (iter.hasNext()) {
+                int pixIdx = iter.next();
+                int y = pixIdx/imgWidth;
+                int x = pixIdx - (y * imgWidth);
+                for (int k = 0; k < dxs.length; ++k) {
+                    int x2 = x + dxs[k];
+                    int y2 = y + dys[k];
+                    int pixIdx2 = (y2 * imgWidth) + x2;
+                    if (pointIndexMap.containsKey(pixIdx2)) {
+                        int label2 = pointIndexMap.get(pixIdx2);
                         if (label2 != label) {
                             nbrs.setBit(label2);
                             aloSet = true;
