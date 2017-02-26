@@ -10102,7 +10102,8 @@ if (sum > 511) {
     }
     
     public TIntObjectMap<VeryLongBitString> createAdjacencyMap(
-        TObjectIntMap<PairInt> pointIndexMap, List<Set<PairInt>> labeledPoints) {
+        TObjectIntMap<PairInt> pointIndexMap, List<Set<PairInt>> labeledPoints,
+        int imgWidth, int imgHeight) {
 
         int n = labeledPoints.size();
 
@@ -10124,6 +10125,9 @@ if (sum > 511) {
                 for (int k = 0; k < dxs.length; ++k) {
                     int x2 = x + dxs[k];
                     int y2 = y + dys[k];
+                    if (x2 < 0 || y2 < 0 || x2 >= imgWidth || y2 >= imgHeight) {
+                        continue;
+                    }
                     PairInt p2 = new PairInt(x2, y2);
                     if (pointIndexMap.containsKey(p2)) {
                         int label2 = pointIndexMap.get(p2);
@@ -10175,6 +10179,9 @@ if (sum > 511) {
                 for (int k = 0; k < dxs.length; ++k) {
                     int x2 = x + dxs[k];
                     int y2 = y + dys[k];
+                    if (x2 < 0 || y2 < 0 || x2 >= imgWidth || y2 >= imgHeight) {
+                        continue;
+                    }
                     int pixIdx2 = (y2 * imgWidth) + x2;
                     if (pointIndexMap.containsKey(pixIdx2)) {
                         int label2 = pointIndexMap.get(pixIdx2);

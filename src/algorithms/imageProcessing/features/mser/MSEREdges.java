@@ -199,7 +199,6 @@ public class MSEREdges {
 
         long ts0 = System.currentTimeMillis();
 
-        //mergeRegions2();
         mergeRegions3();
 
         long ts1 = System.currentTimeMillis();
@@ -642,9 +641,9 @@ public class MSEREdges {
         assert(labeledSets.size() == edgeList.size());
 
         // hsv difference upper limit
-        float hsvUL = 0.095f;
-        float[] hcptLL = new float[]{0.7f, 0.6f, 0.55f};
-        float hgsLL = 0.55f;
+        float hsvUL = 0.08f;
+        float[] hcptLL = new float[]{0.7f, 0.6f, 0.5f, 0.65f};
+        float[] hgsLL = new float[]{0.55f, 0.55f, 0.5f, 0.35f};
 
         HGS hgs = new HGS(gsImg, 1, 6, 12);
         HCPT hcpt = new HCPT(ptImg, 1, 6, 12);
@@ -665,7 +664,7 @@ public class MSEREdges {
         TIntObjectMap<TIntSet> mapOfBorders = new TIntObjectHashMap<TIntSet>();
         int[] sizes = new int[labeledSets.size()];
         int[] idxs = new int[labeledSets.size()];
-        TIntIntMap pointIndexMap = new TIntIntHashMap();
+        TIntIntMap pointIndexMap = createPointIndexMap(labeledSets);
 
         for (int i = 0; i < labeledSets.size(); ++i) {
             Set<PairInt> set = labeledSets.get(i);
@@ -676,7 +675,6 @@ public class MSEREdges {
             for (PairInt p : set) {
                 int pixIdx = clrImg.getInternalIndex(p);
                 set2.add(pixIdx);
-                pointIndexMap.put(pixIdx, i);
             }
             mapOfSets.put(i, set2);
 
@@ -787,7 +785,10 @@ public class MSEREdges {
                         cost, hcptInter, hgsInter, set1.size(), set2.size()
                     );
 
-                    if (hcptInter < hcptLL[hcptIdx] || hgsInter < hgsLL) {
+                    if (hcptInter < hcptLL[hcptIdx] || hgsInter < hgsLL[hcptIdx]) {
+                        System.out.format("     %.3f %.3f\n",
+                            hcptLL[hcptIdx], hgsLL[hcptIdx]
+                        );
                         continue;
                     }
 
@@ -821,9 +822,8 @@ public class MSEREdges {
                     }
 
                     // update the adjacency maps to point to minCostIdx2
-                    int[] idxs3 = nbrsBS.getSetBits();
-                    for (int idx3 : idxs3) {
-                        VeryLongBitString nbrsBS3 = adjMap.get(idx3);
+                    for (int idx2 : idxs2) {
+                        VeryLongBitString nbrsBS3 = adjMap.get(idx2);
                         nbrsBS3.clearBit(idx1);
                         nbrsBS3.setBit(minCostIdx2);
                     }
@@ -851,6 +851,9 @@ public class MSEREdges {
                 hcptIdx++;
                 nIter = 0;
                 nMerged = 1;
+                //pointIndexMap = createPointIndexMap(mapOfSets);
+                //adjMap = imageProcessor
+                //    .createAdjacencyMap(pointIndexMap, mapOfSets, w, h);
             }
         } while (nIter < nIterMax && nMerged > 0);
 
@@ -894,84 +897,6 @@ public class MSEREdges {
             ImageIOHelper.addAlternatingColorCurvesToImage0(edgeList, 
                 imgCp, 0);
             MiscDebug.writeImage(imgCp, "_" + ts + "_MERGED_");
-        }
-    }
-
-    private void mergeRegions2() {
-
-        //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
-        if (!state.equals(STATE.EDGES_EXTRACTED)) {
-            throw new IllegalStateException("error in algorithm.  expecting"
-                + " edges were extracted.");
-        }
-
-        assert(labeledSets != null);
-        assert(edgeList != null);
-
-        int w = gsImg.getWidth();
-        int h = gsImg.getHeight();
-
-        // -- merge contigSets
-        int sizeLimit = 16;//31;
-        if (clrImg.getNPixels() < 100) {
-            sizeLimit = 5;
-        }
-
-        ImageSegmentation imageSegmentation = new ImageSegmentation();
-        float hsvLimit = 0.095f;
-        int[] labels = imageSegmentation.mergeByColor(clrImg, labeledSets,
-            ColorSpace.HSV,
-            hsvLimit);//0.1f);
-
-        imageSegmentation.mergeSmallSegments(clrImg, labels, sizeLimit,
-            ColorSpace.HSV);
-
-        labeledSets = LabelToColorHelper
-            .extractContiguousLabelPoints(clrImg, labels);
-
-        labels = imageSegmentation.mergeByColor(clrImg, labeledSets,
-            ColorSpace.CIELUV_NORMALIZED,
-            0.01f);
-
-        labels = imageSegmentation.mergeByColor(clrImg, labeledSets,
-            ColorSpace.POLAR_CIELUV,
-            1.f);// in degrees
-
-        sizeLimit = 24;
-        if (clrImg.getNPixels() < 100) {
-            sizeLimit = 10;
-        }
-        imageSegmentation.mergeSmallSegments(clrImg, labels, sizeLimit,
-            ColorSpace.CIELAB);
-
-        labeledSets = LabelToColorHelper
-            .extractContiguousLabelPoints(clrImg, labels);
-
-        // - write the final edges (and clear the regions list)
-        edgeList.clear();
-        PerimeterFinder2 finder2 = new PerimeterFinder2();
-        for (Set<PairInt> set : labeledSets) {
-            Set<PairInt> embedded = new HashSet<PairInt>();
-            Set<PairInt> outerBorder = new HashSet<PairInt>();
-            finder2.extractBorder2(set, embedded, outerBorder);
-            edgeList.add(outerBorder);
-
-            /*
-            DFSConnectedGroupsFinder dfsFinder = new DFSConnectedGroupsFinder();
-            dfsFinder.setMinimumNumberInCluster(24);
-            dfsFinder.findConnectedPointGroups(embedded);
-            for (int j = 0; j < dfsFinder.getNumberOfGroups(); ++j) {
-
-                Set<PairInt> eSet = dfsFinder.getXY(j);
-
-                Set<PairInt> embedded2 = new HashSet<PairInt>();
-                Set<PairInt> outerBorder2 = new HashSet<PairInt>();
-                finder2.extractBorder2(eSet, embedded2, outerBorder2);
-
-                if (outerBorder2.size() > 16) {
-                    edgeList.add(outerBorder2);
-                }
-            }*/
         }
     }
 
@@ -2056,6 +1981,47 @@ public class MSEREdges {
         hsv.calculateColors(pIdxs, clrImg);
 
         return hsv;
+    }
+    
+    private TIntIntMap createPointIndexMap(List<Set<PairInt>> labeledSets) {
+        
+        TIntIntMap pointIndexMap = new TIntIntHashMap();
+        
+        for (int i = 0; i < labeledSets.size(); ++i) {
+            Set<PairInt> set = labeledSets.get(i);
+
+            TIntSet set2 = new TIntHashSet();
+            for (PairInt p : set) {
+                int pixIdx = clrImg.getInternalIndex(p);
+                set2.add(pixIdx);
+                pointIndexMap.put(pixIdx, i);
+            }
+        }
+        
+        return pointIndexMap;
+    }
+    
+    private TIntIntMap createPointIndexMap(TIntObjectMap<TIntSet> mapOfSets) {
+        
+        TIntIntMap pointIndexMap = new TIntIntHashMap();
+        
+        TIntObjectIterator<TIntSet> iter = mapOfSets.iterator();
+        
+        for (int i = 0; i < mapOfSets.size(); ++i) {
+            
+            iter.advance();
+            
+            int label = iter.key();
+            TIntSet set = iter.value();
+
+            TIntIterator iter2 = set.iterator();
+            while (iter2.hasNext()) {
+                int pixIdx = iter2.next();
+                pointIndexMap.put(pixIdx, label);
+            }
+        }
+        
+        return pointIndexMap;
     }
 
 }
