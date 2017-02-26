@@ -195,4 +195,14 @@ public class GroupPixelHSV2 {
         return sumDiff;
     }
     
+    public float[] calculateDifferences(GroupPixelHSV2 hsv2) {
+
+        float[] a = new float[]{
+            Math.abs(getAvgH() - hsv2.getAvgH()),
+            Math.abs(getAvgS() - hsv2.getAvgS()), 
+            Math.abs(getAvgV() - hsv2.getAvgV())};
+            
+        return a;
+    }
+    
 }

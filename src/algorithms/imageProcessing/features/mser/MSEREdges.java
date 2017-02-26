@@ -476,8 +476,11 @@ public class MSEREdges {
             ImageIOHelper.addCurveToImage(edgeList.get(i), im, 0, clr[0],
                 clr[1], clr[2]);
         }
-
         MiscDebug.writeImage(im, "_" + ts + "_edges_");
+        im = clrImg.copyImage();
+        ImageIOHelper.addAlternatingColorCurvesToImage0(
+            labeledSets, im, 0);
+        MiscDebug.writeImage(im, "_" + ts + "_sets_");
     }
 
     private class OneDFloatArray {
@@ -641,11 +644,15 @@ public class MSEREdges {
         assert(labeledSets.size() == edgeList.size());
 
         // hsv difference upper limit
-        float hsvUL = 0.08f;
+        float hsvUL = 0.07f;//0.08f;
         float[] hcptLL = new float[]{0.7f, 0.6f, 0.5f, 0.65f};
-        float[] hgsLL = new float[]{0.55f, 0.55f, 0.5f, 0.35f};
+        float[] hgsLL = new float[]{0.55f, 0.55f, 0.5f, 0.45f};
 
-        HGS hgs = new HGS(gsImg, 1, 6, 12);
+        if (sobelScores == null) {
+            sobelScores = createSobelScores();
+        }
+        
+        HGS hgs = new HGS(sobelScores, 1, 6, 12);
         HCPT hcpt = new HCPT(ptImg, 1, 6, 12);
 
         TIntObjectMap<GroupPixelHSV2> clrs = new TIntObjectHashMap<GroupPixelHSV2>();
@@ -731,6 +738,10 @@ public class MSEREdges {
                 int[] hgs1H = getRegionHistogram(hgs, set1);
                 GroupPixelHSV2 hsv1 = getColors(clrs, set1, idx1);
 
+                // for white and black, the colorspace filters need
+                // specialization
+                boolean isW1 = isWhite(hsv1);
+                
                 int n1 = set1.size();
 
                 int[] xyCen1 = ch.calculateRoundedXYCentroids(border1,
@@ -756,6 +767,9 @@ public class MSEREdges {
                     }
                     TIntSet border2 = mapOfBorders.get(idx2);
 
+                    int[] xyCen2 = ch.calculateRoundedXYCentroids(border2,
+                        clrImg.getWidth());
+
                     //as suggested by Alpert, Galun, Basri et al. (2007),
                     //removing the boundaries from grdients
                     TIntHashSet set3 = new TIntHashSet(set2);
@@ -763,29 +777,48 @@ public class MSEREdges {
 
                     GroupPixelHSV2 hsv2 = getColors(clrs, set3, idx2);
 
+                    //float[] hsvDiffs = hsv1.calculateDifferences(hsv2);
                     float cost = hsv1.calculateDifference(hsv2);
 
                     if (cost > hsvUL) {
+                        System.out.format("skip (%d,%d) (%d,%d) hsvd=%.3f "
+                            + " n=%d,%d\n",
+                            xyCen1[0], xyCen1[1], xyCen2[0], xyCen2[1],
+                            cost, set1.size(), set2.size()
+                        );
                         continue;
                     }
-
-                    int[] xyCen2 = ch.calculateRoundedXYCentroids(border2,
-                        clrImg.getWidth());
 
                     int[] hcpt2H = getRegionHistogram(hcpt, set3);
                     int[] hgs2H = getRegionHistogram(hgs, set3);
 
                     float hcptInter = hcpt.intersection(hcpt1H, hcpt2H);
-
                     float hgsInter = hgs.intersection(hgs1H, hgs2H);
 
-                    System.out.format("m (%d,%d) (%d,%d) hsvd=%.3f ptInter=%.3f "
-                        + " gsInter=%.3f n=%d,%d\n",
-                        xyCen1[0], xyCen1[1], xyCen2[0], xyCen2[1],
-                        cost, hcptInter, hgsInter, set1.size(), set2.size()
+                    boolean isW2 = isWhite(hsv2);
+                    
+                    boolean simW = isW1 && isW2 &&
+                        (hcptIdx == (hcptLL.length - 1)) &&
+                        ((cost < 0.065 && hcptInter > 0.475 
+                          && hgsInter > 0.4) 
+                        ||
+                        (cost < 0.0075 && hcptInter > 0.4));
+                    
+                    System.out.format("m %d %d (%d,%d) (%d,%d) hsvd=%.3f ptInter=%.3f "
+                        + " gradInter=%.3f n=%d,%d white=%b,%b->%b\n",
+                        idx1, idx2, xyCen1[0], xyCen1[1], xyCen2[0], xyCen2[1],
+                        cost, hcptInter, hgsInter,
+                        set1.size(), set2.size(),
+                        isW1, isW2, simW
                     );
+                    //System.out.println("gs hists=\n    " + 
+                    //    Arrays.toString(hgs1H) + "\n    " + 
+                    //    Arrays.toString(hgs2H));
 
-                    if (hcptInter < hcptLL[hcptIdx] || hgsInter < hgsLL[hcptIdx]) {
+                    if ((hcptInter < hcptLL[hcptIdx] ||
+                        hgsInter < hgsLL[hcptIdx])
+                        && !simW
+                        ) {
                         System.out.format("     %.3f %.3f\n",
                             hcptLL[hcptIdx], hgsLL[hcptIdx]
                         );
@@ -810,7 +843,8 @@ public class MSEREdges {
                     // merging contents of idx1 into minCostIdx2
                     nMerged++;
                     
-                    System.out.println("    merging");
+                    System.out.println("    merging " + minCostIdx2
+                        );
 
                     clrs.get(minCostIdx2).add(set1, clrImg);
                     clrs.remove(idx1);
@@ -847,13 +881,11 @@ public class MSEREdges {
             System.out.println("nMerged=" + nMerged + " nIter=" +
                 nIter);
             nIter++;
+            
             if (nMerged == 0 && hcptIdx < (hcptLL.length - 1)) {
                 hcptIdx++;
                 nIter = 0;
                 nMerged = 1;
-                //pointIndexMap = createPointIndexMap(mapOfSets);
-                //adjMap = imageProcessor
-                //    .createAdjacencyMap(pointIndexMap, mapOfSets, w, h);
             }
         } while (nIter < nIterMax && nMerged > 0);
 
@@ -1964,7 +1996,7 @@ public class MSEREdges {
             int pixIdx = iter.next();
             int y = pixIdx/gsImg.getWidth();
             int x = pixIdx - (y * gsImg.getWidth());
-            hgs0.extractFeature(x, y, h0);
+            hgs0.extractFeature2(x, y, h0);
         }
         return h0;
     }
@@ -2022,6 +2054,39 @@ public class MSEREdges {
         }
         
         return pointIndexMap;
+    }
+    
+    private boolean isWhite(GroupPixelHSV2 hsv) {
+        
+        if (hsv.getAvgV() < 0.625) {
+            //System.out.println("brightness=" + hsv.getAvgV());
+            return false;
+        }
+        
+        int rgb = Color.HSBtoRGB(hsv.getAvgH(), hsv.getAvgS(), 
+            hsv.getAvgV());
+        
+        int r = (rgb >> 16) & 0xFF;
+        int g = (rgb >> 8) & 0xFF;
+        int b = rgb & 0xFF;
+        
+        // looking at whether color is grey
+        int avgRGB = (r + g + b)/3;
+        
+        int limit = 10;
+        
+        //System.out.format("    -> %d,%d,%d\n",
+        //    (Math.abs(r - avgRGB)),
+        //    (Math.abs(g - avgRGB)),
+        //    (Math.abs(b - avgRGB)));
+        
+        if ((Math.abs(r - avgRGB) < limit) &&
+            (Math.abs(g - avgRGB) < limit) &&
+            (Math.abs(b - avgRGB) < limit)) {
+            return true;
+        }
+        
+        return false;
     }
 
 }

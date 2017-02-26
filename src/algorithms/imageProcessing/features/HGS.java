@@ -38,6 +38,10 @@ public class HGS {
     //   using integers instead of long for storage.
     //  8.4 million pix, roughly 2900 X 2900
     
+    /**
+     * constructor
+     * @param img gradient image or greyscale
+     */
     public HGS(GreyscaleImage img) {
         
         // binWidth of 16
@@ -85,6 +89,7 @@ public class HGS {
      * extract the block surrounding the feature.
      * the number of pixels in a cell and the number of cells in block were set during
      * construction.
+     * This uses the block normalization of Dalal & Triggs.
      * 
      * @param x
      * @param y
@@ -180,6 +185,99 @@ public class HGS {
           -9 -8 -7 -6 -5 -4 -3 -2 -1  *  1  2  3  4  5  6  7  9
                                       *
         */        
+    }
+    
+    /**
+     * NOT READY FOR USE
+     * 
+     * extract the block surrounding the feature.
+     * the number of pixels in a cell and the number of cells in block were set during
+     * construction.
+     * 
+     * The normalization is the number of pixels visited during
+     * construction.   The result is better for uses needing a signal level.
+     * TODO: consider adding errors for this.
+     * 
+     * @param x
+     * @param y
+     * @param outHist 
+     */
+    public void extractFeature2(int x, int y, int[] outHist) {
+                
+        if (outHist.length != nBins) {
+            throw new IllegalArgumentException("outHist.length != nBins");
+        }
+
+        if (x < 0 || y < 0 || x >= w || y >= h) {
+            throw new IllegalArgumentException("x or y is out of bounds of "
+                + "original image");
+        }
+        
+        int nH = N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM;
+                
+        List<OneDIntArray> cells = new ArrayList<OneDIntArray>(nH);
+        
+        for (int cX = 0; cX < N_CELLS_PER_BLOCK_DIM; ++cX) {
+            
+            int cXOff = -(N_CELLS_PER_BLOCK_DIM/2) + cX;
+        
+            int x2 = x + (cXOff * N_PIX_PER_CELL_DIM);
+            
+            if ((x2 + N_PIX_PER_CELL_DIM - 1) < 0) {
+                break;
+            } else if (x2 < 0) {
+                x2 = 0;
+            } else if (x2 >= w) {
+                break;
+            }
+            
+            for (int cY = 0; cY < N_CELLS_PER_BLOCK_DIM; ++cY) {
+                    
+                int cYOff = -(N_CELLS_PER_BLOCK_DIM/2) + cY;
+                
+                int y2 = y + (cYOff * N_PIX_PER_CELL_DIM);
+
+                if ((y2 + N_PIX_PER_CELL_DIM - 1) < 0) {
+                    break;
+                } else if (y2 < 0) {
+                    y2 = 0;
+                } else if (y2 >= h) {
+                    break;
+                }
+                                
+                int pixIdx = (y2 * w) + x2;
+                
+                int[] out = Arrays.copyOf(gHists[pixIdx], gHists[pixIdx].length);
+
+                cells.add(new OneDIntArray(out));                            
+            }
+        }
+        
+        //TODO: might need to consider a factor to place the significant
+        //    digits into integers
+        
+        // max value in a cell's histogram will be
+        //   number of pixels * 255
+        //   = N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM * 255
+        //
+        // the normalized counts would be divided by 
+        //     N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM * 255
+        //     but the result is smaller than 1 and we want to use integers,
+        //     so can multiply the result by 255.
+        
+        double norm = 1./(double)cells.size();
+            //* N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM);
+               
+        Arrays.fill(outHist, 0, outHist.length, 0);
+        
+        for (int i = 0; i < cells.size(); ++i) {
+            int[] a = cells.get(i).a;
+            add(outHist, a);
+        }
+        
+        for (int i = 0; i < outHist.length; ++i) {
+            outHist[i] = (int)Math.round(outHist[i] * norm);
+        }
     }
     
     /**
