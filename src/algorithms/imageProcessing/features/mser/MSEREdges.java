@@ -742,6 +742,8 @@ public class MSEREdges {
                 // specialization
                 boolean isW1 = isWhite(hsv1);
                 
+                boolean isB1 = isBlack(hsv1);
+                
                 int n1 = set1.size();
 
                 int[] xyCen1 = ch.calculateRoundedXYCentroids(border1,
@@ -776,15 +778,32 @@ public class MSEREdges {
                     set3.removeAll(border2);
 
                     GroupPixelHSV2 hsv2 = getColors(clrs, set3, idx2);
-
-                    //float[] hsvDiffs = hsv1.calculateDifferences(hsv2);
+                    
                     float cost = hsv1.calculateDifference(hsv2);
 
-                    if (cost > hsvUL) {
-                        System.out.format("skip (%d,%d) (%d,%d) hsvd=%.3f "
-                            + " n=%d,%d\n",
+                    boolean isW2 = isWhite(hsv2);
+                    
+                    boolean isB2 = isW2 ? false : isBlack(hsv2);
+                    
+                    if (isB1 && isB2) {
+                        // do not use hue
+                        float[] hsvDiffs = hsv1.calculateDifferences(hsv2);
+                        cost = hsvDiffs[2];
+                    }
+                    
+                    if ((cost > hsvUL) && !(isB1 && isB2)) {
+                        System.out.format("skip (%d,%d) (%d,%d) "
+                            + "hsvd=%.3f "
+                            + " n=%d,%d isBl=%b,%b "
+                            + "\n    hsv1=%.3f,%.3f,%.3f"
+                            + "\n    hsv2=%.3f,%.3f,%.3f\n",
                             xyCen1[0], xyCen1[1], xyCen2[0], xyCen2[1],
-                            cost, set1.size(), set2.size()
+                            cost, set1.size(), set2.size(),
+                            isB1, isB2,
+                            hsv1.getAvgH(), hsv1.getAvgS(),
+                            hsv1.getAvgV(),
+                            hsv2.getAvgH(), hsv2.getAvgS(),
+                            hsv2.getAvgV()
                         );
                         continue;
                     }
@@ -795,8 +814,6 @@ public class MSEREdges {
                     float hcptInter = hcpt.intersection(hcpt1H, hcpt2H);
                     float hgsInter = hgs.intersection(hgs1H, hgs2H);
 
-                    boolean isW2 = isWhite(hsv2);
-                    
                     boolean simW = isW1 && isW2 &&
                         (hcptIdx == (hcptLL.length - 1)) &&
                         ((cost < 0.065 && hcptInter > 0.475 
@@ -804,12 +821,24 @@ public class MSEREdges {
                         ||
                         (cost < 0.0075 && hcptInter > 0.4));
                     
+                    boolean simB = isB1 && isB2 &&
+                        (hcptIdx == (hcptLL.length - 1)) &&
+                        (cost < 0.065);
+                    
                     System.out.format("m %d %d (%d,%d) (%d,%d) hsvd=%.3f ptInter=%.3f "
-                        + " gradInter=%.3f n=%d,%d white=%b,%b->%b\n",
+                        + " gradInter=%.3f n=%d,%d wh=%b,%b->%b "
+                        + " bl=%b,%b->%b\n"
+                        + "\n    hsv1=%.3f,%.3f,%.3f"
+                        + "\n    hsv2=%.3f,%.3f,%.3f\n",
                         idx1, idx2, xyCen1[0], xyCen1[1], xyCen2[0], xyCen2[1],
                         cost, hcptInter, hgsInter,
                         set1.size(), set2.size(),
-                        isW1, isW2, simW
+                        isW1, isW2, simW,
+                        isB1, isB2, simB,
+                        hsv1.getAvgH(), hsv1.getAvgS(),
+                        hsv1.getAvgV(),
+                        hsv2.getAvgH(), hsv2.getAvgS(),
+                        hsv2.getAvgV()
                     );
                     //System.out.println("gs hists=\n    " + 
                     //    Arrays.toString(hgs1H) + "\n    " + 
@@ -817,7 +846,7 @@ public class MSEREdges {
 
                     if ((hcptInter < hcptLL[hcptIdx] ||
                         hgsInter < hgsLL[hcptIdx])
-                        && !simW
+                        && !simW && !simB
                         ) {
                         System.out.format("     %.3f %.3f\n",
                             hcptLL[hcptIdx], hgsLL[hcptIdx]
@@ -2056,6 +2085,16 @@ public class MSEREdges {
         return pointIndexMap;
     }
     
+    private boolean isBlack(GroupPixelHSV2 hsv) {
+        
+        if (hsv.getAvgV() >= 0.2) {
+            //System.out.println("brightness=" + hsv.getAvgV());
+            return false;
+        }
+        
+        return hsv.isGrey(12);
+    }
+    
     private boolean isWhite(GroupPixelHSV2 hsv) {
         
         if (hsv.getAvgV() < 0.625) {
@@ -2063,30 +2102,7 @@ public class MSEREdges {
             return false;
         }
         
-        int rgb = Color.HSBtoRGB(hsv.getAvgH(), hsv.getAvgS(), 
-            hsv.getAvgV());
-        
-        int r = (rgb >> 16) & 0xFF;
-        int g = (rgb >> 8) & 0xFF;
-        int b = rgb & 0xFF;
-        
-        // looking at whether color is grey
-        int avgRGB = (r + g + b)/3;
-        
-        int limit = 10;
-        
-        //System.out.format("    -> %d,%d,%d\n",
-        //    (Math.abs(r - avgRGB)),
-        //    (Math.abs(g - avgRGB)),
-        //    (Math.abs(b - avgRGB)));
-        
-        if ((Math.abs(r - avgRGB) < limit) &&
-            (Math.abs(g - avgRGB) < limit) &&
-            (Math.abs(b - avgRGB) < limit)) {
-            return true;
-        }
-        
-        return false;
+        return hsv.isGrey(10);
     }
 
 }

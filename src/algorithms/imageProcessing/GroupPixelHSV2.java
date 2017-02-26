@@ -205,4 +205,32 @@ public class GroupPixelHSV2 {
         return a;
     }
     
+    public boolean isGrey(int limit) {
+        
+        int rgb = Color.HSBtoRGB(getAvgH(), getAvgS(), 
+            getAvgV());
+        
+        int r = (rgb >> 16) & 0xFF;
+        int g = (rgb >> 8) & 0xFF;
+        int b = rgb & 0xFF;
+        
+        // looking at whether color is grey
+        int avgRGB = (r + g + b)/3;
+          
+        /*
+        System.out.format("    -> (%d,%d,%d) %d,%d,%d\n",
+            r, g, b,
+            (Math.abs(r - avgRGB)),
+            (Math.abs(g - avgRGB)),
+            (Math.abs(b - avgRGB)));
+        */
+        
+        if ((Math.abs(r - avgRGB) < limit) &&
+            (Math.abs(g - avgRGB) < limit) &&
+            (Math.abs(b - avgRGB) < limit)) {
+            return true;
+        }
+        
+        return false;
+    }
 }
