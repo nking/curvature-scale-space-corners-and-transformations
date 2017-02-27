@@ -233,4 +233,20 @@ public class GroupPixelHSV2 {
         
         return false;
     }
+
+    public boolean isGreen() {
+        
+        int rgb = Color.HSBtoRGB(getAvgH(), getAvgS(), 
+            getAvgV());
+        
+        int r = (rgb >> 16) & 0xFF;
+        int g = (rgb >> 8) & 0xFF;
+        int b = rgb & 0xFF;
+    
+        System.out.println("r=" + r + " g=" + g + " b=" + b);
+        
+        int limit = 8;//3% of 256
+        
+        return ((g - r) >= limit) && ((g - b) >= limit);
+    }
 }

@@ -621,6 +621,12 @@ public class MSEREdges {
         return contigSets;
     }
 
+    /**
+     * moderate merging of the labeled regions is performed
+     * to remove noisey edges.  Note that the color filters
+     * may need to be revised with more testing.
+     *
+     */
     private void mergeRegions3() {
         
         //if (true) {return;}
@@ -645,8 +651,11 @@ public class MSEREdges {
 
         // hsv difference upper limit
         float hsvUL = 0.07f;//0.08f;
-        float[] hcptLL = new float[]{0.7f, 0.6f, 0.5f, 0.65f};
-        float[] hgsLL = new float[]{0.55f, 0.55f, 0.5f, 0.45f};
+        float hsvUL_green = 0.09f;
+        float[] hcptLL = new float[]{
+            0.7f,  0.6f,  0.5f, 0.65f, 0.35f};
+        float[] hgsLL = new float[]{
+            0.55f, 0.55f, 0.5f, 0.45f, 0.8f};
 
         if (sobelScores == null) {
             sobelScores = createSobelScores();
@@ -780,18 +789,22 @@ public class MSEREdges {
                     GroupPixelHSV2 hsv2 = getColors(clrs, set3, idx2);
                     
                     float cost = hsv1.calculateDifference(hsv2);
-
+                    float[] hsvDiffs = hsv1.calculateDifferences(hsv2);
+                    
                     boolean isW2 = isWhite(hsv2);
                     
                     boolean isB2 = isW2 ? false : isBlack(hsv2);
                     
                     if (isB1 && isB2) {
                         // do not use hue
-                        float[] hsvDiffs = hsv1.calculateDifferences(hsv2);
                         cost = hsvDiffs[2];
                     }
                     
-                    if ((cost > hsvUL) && !(isB1 && isB2)) {
+                    boolean bothGreen = hsv1.isGreen() && hsv2.isGreen();
+                    
+                    double hsvLimit = bothGreen ? hsvUL_green : hsvUL;
+                    
+                    if (!(isB1 && isB2) && (cost > hsvLimit)) {
                         System.out.format("skip (%d,%d) (%d,%d) "
                             + "hsvd=%.3f "
                             + " n=%d,%d isBl=%b,%b "
@@ -825,16 +838,21 @@ public class MSEREdges {
                         (hcptIdx == (hcptLL.length - 1)) &&
                         (cost < 0.065);
                     
+                    boolean greenException = bothGreen && 
+                        ((hgsInter >= hgsLL[hcptIdx]) ||
+                        (cost < 0.05 && hcptInter >= 0.6
+                        && hgsInter >= 0.3));
+                    
                     System.out.format("m %d %d (%d,%d) (%d,%d) hsvd=%.3f ptInter=%.3f "
                         + " gradInter=%.3f n=%d,%d wh=%b,%b->%b "
-                        + " bl=%b,%b->%b\n"
+                        + " bl=%b,%b->%b grE=%b->%b\n"
                         + "\n    hsv1=%.3f,%.3f,%.3f"
                         + "\n    hsv2=%.3f,%.3f,%.3f\n",
                         idx1, idx2, xyCen1[0], xyCen1[1], xyCen2[0], xyCen2[1],
                         cost, hcptInter, hgsInter,
                         set1.size(), set2.size(),
                         isW1, isW2, simW,
-                        isB1, isB2, simB,
+                        isB1, isB2, simB, bothGreen, greenException,
                         hsv1.getAvgH(), hsv1.getAvgS(),
                         hsv1.getAvgV(),
                         hsv2.getAvgH(), hsv2.getAvgS(),
@@ -846,7 +864,7 @@ public class MSEREdges {
 
                     if ((hcptInter < hcptLL[hcptIdx] ||
                         hgsInter < hgsLL[hcptIdx])
-                        && !simW && !simB
+                        && !simW && !simB && !greenException
                         ) {
                         System.out.format("     %.3f %.3f\n",
                             hcptLL[hcptIdx], hgsLL[hcptIdx]
