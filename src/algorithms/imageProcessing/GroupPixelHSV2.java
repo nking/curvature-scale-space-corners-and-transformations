@@ -216,7 +216,7 @@ public class GroupPixelHSV2 {
         
         // looking at whether color is grey
         int avgRGB = (r + g + b)/3;
-          
+        
         /*
         System.out.format("    -> (%d,%d,%d) %d,%d,%d\n",
             r, g, b,
@@ -243,7 +243,7 @@ public class GroupPixelHSV2 {
         int g = (rgb >> 8) & 0xFF;
         int b = rgb & 0xFF;
     
-        System.out.println("r=" + r + " g=" + g + " b=" + b);
+        //System.out.println("r=" + r + " g=" + g + " b=" + b);
         
         int limit = 8;//3% of 256
         

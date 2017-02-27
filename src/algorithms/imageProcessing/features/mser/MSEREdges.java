@@ -650,12 +650,17 @@ public class MSEREdges {
         assert(labeledSets.size() == edgeList.size());
 
         // hsv difference upper limit
-        float hsvUL = 0.07f;//0.08f;
+        
+        float[] hsvUL = new float[]{
+             0.07f, 0.07f, 0.07f, 0.07f, 0.07f,
+             0.02f};
         float hsvUL_green = 0.09f;
         float[] hcptLL = new float[]{
-            0.7f,  0.6f,  0.5f, 0.65f, 0.35f};
+            0.7f,  0.6f,  0.5f, 0.65f, 0.35f,
+            0.8f};
         float[] hgsLL = new float[]{
-            0.55f, 0.55f, 0.5f, 0.45f, 0.8f};
+            0.55f, 0.55f, 0.5f, 0.45f, 0.8f,
+            0.35f};
 
         if (sobelScores == null) {
             sobelScores = createSobelScores();
@@ -712,11 +717,6 @@ public class MSEREdges {
             .createAdjacencyMap(pointIndexMap, mapOfSets, w, h);
 
         MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
-        
-        // consider making a queue here instead of revisiting all
-        //    sets for each iteration.
-        //    requires a has of updated indexes, that is
-        //    queue idx --> updated to idxB
         
         int nIter = 0;
         int nIterMax = 10;
@@ -795,29 +795,30 @@ public class MSEREdges {
                     
                     boolean isB2 = isW2 ? false : isBlack(hsv2);
                     
-                    if (isB1 && isB2) {
+                    if ((isB1 && isB2) || (isW1 && isW2)) {
                         // do not use hue
                         cost = hsvDiffs[2];
                     }
                     
                     boolean bothGreen = hsv1.isGreen() && hsv2.isGreen();
                     
-                    double hsvLimit = bothGreen ? hsvUL_green : hsvUL;
+                    double hsvLimit = bothGreen ? hsvUL_green : 
+                        hsvUL[hcptIdx];
                     
-                    if (!(isB1 && isB2) && (cost > hsvLimit)) {
-                        System.out.format("skip (%d,%d) (%d,%d) "
+                    if (!((isB1 && isB2) || (isW1 && isW2)) && (cost > hsvLimit)) {
+                        /*System.out.format("skip (%d,%d) (%d,%d) "
                             + "hsvd=%.3f "
-                            + " n=%d,%d isBl=%b,%b "
+                            + " n=%d,%d isWh=%b,%b isBl=%b,%b "
                             + "\n    hsv1=%.3f,%.3f,%.3f"
                             + "\n    hsv2=%.3f,%.3f,%.3f\n",
                             xyCen1[0], xyCen1[1], xyCen2[0], xyCen2[1],
                             cost, set1.size(), set2.size(),
-                            isB1, isB2,
+                            isW1, isW2, isB1, isB2,
                             hsv1.getAvgH(), hsv1.getAvgS(),
                             hsv1.getAvgV(),
                             hsv2.getAvgH(), hsv2.getAvgS(),
                             hsv2.getAvgV()
-                        );
+                        );*/
                         continue;
                     }
 
@@ -831,8 +832,10 @@ public class MSEREdges {
                         (hcptIdx == (hcptLL.length - 1)) &&
                         ((cost < 0.065 && hcptInter > 0.475 
                           && hgsInter > 0.4) 
-                        ||
-                        (cost < 0.0075 && hcptInter > 0.4));
+                        || (cost < 0.02 && hcptInter > 0.4)
+                        || (cost < 0.01 && hcptInter > 0.15
+                        && hgsInter > 0.35)
+                        );
                     
                     boolean simB = isB1 && isB2 &&
                         (hcptIdx == (hcptLL.length - 1)) &&
@@ -843,7 +846,7 @@ public class MSEREdges {
                         (cost < 0.05 && hcptInter >= 0.6
                         && hgsInter >= 0.3));
                     
-                    System.out.format("m %d %d (%d,%d) (%d,%d) hsvd=%.3f ptInter=%.3f "
+                    /*System.out.format("m %d %d (%d,%d) (%d,%d) hsvd=%.3f ptInter=%.3f "
                         + " gradInter=%.3f n=%d,%d wh=%b,%b->%b "
                         + " bl=%b,%b->%b grE=%b->%b\n"
                         + "\n    hsv1=%.3f,%.3f,%.3f"
@@ -857,7 +860,7 @@ public class MSEREdges {
                         hsv1.getAvgV(),
                         hsv2.getAvgH(), hsv2.getAvgS(),
                         hsv2.getAvgV()
-                    );
+                    );*/
                     //System.out.println("gs hists=\n    " + 
                     //    Arrays.toString(hgs1H) + "\n    " + 
                     //    Arrays.toString(hgs2H));
@@ -866,9 +869,9 @@ public class MSEREdges {
                         hgsInter < hgsLL[hcptIdx])
                         && !simW && !simB && !greenException
                         ) {
-                        System.out.format("     %.3f %.3f\n",
-                            hcptLL[hcptIdx], hgsLL[hcptIdx]
-                        );
+                        //System.out.format("     %.3f %.3f\n",
+                        //    hcptLL[hcptIdx], hgsLL[hcptIdx]
+                        //);
                         continue;
                     }
 
@@ -2120,7 +2123,7 @@ public class MSEREdges {
             return false;
         }
         
-        return hsv.isGrey(10);
+        return hsv.isGrey(12);
     }
 
 }
