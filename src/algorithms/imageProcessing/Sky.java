@@ -67,6 +67,7 @@ public class Sky {
         mserEdges.setToDebug();
         mserEdges.setToLowerContrast();
         mserEdges.mergeAndExtractEdges();
+        
     }
     
     public SkyObject findSun() {
@@ -161,7 +162,6 @@ public class Sky {
           then making an assumption of sky being on an image border.
           further search requires a look at effects of sun location, that is,
           blue or red skies in the segmentation regions...
-          lt 0.17 gt 0.5 
      (5) could make an assumption about the orientation of the camera place, that is, decreasing y
           pixel coord is direction "up" where sky is found.
      (6) polarization can help find boundaries between sky and foreground
@@ -172,272 +172,7 @@ public class Sky {
      * @return 
      */
     public List<SkyObject> findSky() {
-        
-        /*
-        this may change.
-        looking for sky colored labeled segmentation cells that are on the border
-        of the image.
-          - from mserEdges, can see that the polar theta[1] mser regions are usually
-            a good way to find the majority of sky and when not, the
-            polar theta[0] regions are.
-          - that findins is used to decide between two color filters which are
-            basically bright blue sky and dark red sky.
-          - then, the regions are sorted by a color criteria to find what is hopefully
-            sky in a border cell.
-          - the color filter learned in the previous steps is then used to filter
-            all of the labeled segmentation.
-          - then the starter cell and the filtered regions are passed
-            to a method to further find the sky or decide its already found 
-            completely and return the sky points.
-            (logic such as near constancy in color with a gradual change in
-            magnitude of luv's u and v for example will be used).
-        */
-        
-        // looking at labeled regions that
-        //  have constancy in color but may have a gradient in illumination.
-        //  blue - can use the polar theta images or mser edges (ptRegions[1]) 
-        //  then the lch, c image, which is the magnitude of the
-        //   LUV u and v, can find the gradual change if any.
-        //  dark red - same except ptRegions[0]
-        //mserEdges._debugOrigRegions(3, "_pt_1_acc_");
-        
-        List<Set<PairInt>> labeledSets = mserEdges.getLabeledSets();
-        
-        int[] pointLabels = createPixLabelMap(labeledSets);
-        
-        int sunLabel = -1;
-        // remove sun points
-        SkyObject sunObj = findSun();
-        if (sunObj != null && !sunObj.points.isEmpty()) {
-           
-            System.out.println("found sun for " + debugLabel + " at " + 
-                Arrays.toString(sunObj.xyCenter));
-            
-            for (PairInt p : sunObj.points) {
-                int pixIdx = img.getInternalIndex(p);
-                int label = pointLabels[pixIdx];
-                labeledSets.get(label).remove(p);
-                sunLabel = label;
-            }
-        }
-        // remove rainbow points
-        List<SkyObject> rainbowObjs = findRainbows();
-        if (rainbowObjs != null) {
-            for (SkyObject obj : rainbowObjs) {
-                for (PairInt p : obj.points) {
-                    int pixIdx = img.getInternalIndex(p);
-                    int label = pointLabels[pixIdx];
-                    labeledSets.get(label).remove(p);
-                }
-            }
-        }
-        
-        ImageProcessor imageProcessor = new ImageProcessor();
-        
-        if (lma == null) {
-            lma = imageProcessor.createLCHForLUV(img);
-        }
-        
-        List<Region> regionPt = null;
-        // note, idxs not same as other lists
-        List<Set<PairInt>> labeledInRegion = null;
-        // gather hsv, and lch of each labeled region
-        // 6 X n
-        float[][] hsvlch = null;
-        
-        List<Set<PairInt>> filteredLabeledRegion = new
-            ArrayList<Set<PairInt>>();
-        List<OneDFloatArray> filteredHSVLCH = null; 
-        
-        int nIter = 0;
-        while (filteredLabeledRegion.isEmpty() && nIter < 2) {
-            nIter++;
-                        
-            filteredHSVLCH = new ArrayList<OneDFloatArray>();
-            
-            if (nIter == 1) {
-                regionPt = mserEdges.getOrigGsPtRegions().get(3);
-            } else {
-                regionPt = mserEdges.getOrigGsPtRegions().get(2);
-            }
-            
-            // note, idxs not same as other lists
-            labeledInRegion = createRegionLabeledSubSets(regionPt, pointLabels);
-
-            // gather hsv, and lch of each labeled region
-            // 6 X n
-            hsvlch = calcHSVLCH(labeledInRegion);
-
-            // filter labeledInRegion1 for sky colors over a generous range in hue
-            // NOTE: any changes here should be made in addAdjacentSky too
-            // key=index in labeledInRegion, value=set of pairint of the region
-            MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
-            for (int i = 0; i < labeledInRegion.size(); ++i) {
-                Set<PairInt> set = labeledInRegion.get(i);
-                int[] xyCen = ch.calculateRoundedXYCentroids(set);
-                float[] clrs = hsvlch[i];
-                if (isInSkyRange(clrs, (nIter == 1))) {
-                    if (setDoesBorderImage(set, img)) {
-                        System.out.println(debugLabel
-                            + " xy=" + Arrays.toString(xyCen)
-                            + " hsvlch=" + Arrays.toString(clrs) + " n=" 
-                            + set.size());
-                        filteredLabeledRegion.add(set);
-                        filteredHSVLCH.add(new OneDFloatArray(clrs));
-                    }
-                }
-            }
-        }
-        
-        if (filteredLabeledRegion.isEmpty()) {
-            //sky wasn't found.  is the image a tunnel, that is no sky on border
-            // of image?
-            return null;
-        }
-         
-        float[] avgClrs = new float[filteredHSVLCH.get(0).a.length];
-        float[] stdDvClrs = new float[avgClrs.length];
-        calcMeanAndStdv(filteredHSVLCH, avgClrs, stdDvClrs);
-        
-        System.out.println(debugLabel + " mean and stdv sky=" +
-            Arrays.toString(avgClrs) + ", " + Arrays.toString(stdDvClrs));
-        
-        sortForBlue(filteredLabeledRegion, filteredHSVLCH, avgClrs, stdDvClrs);
-        
-        int startIdx = -1;
-        if (sunLabel > -1) {
-            //if sunLabel is in a filtered region, select that
-            for (int i = 0; i < filteredLabeledRegion.size(); ++i) {
-                for (PairInt p : filteredLabeledRegion.get(i)) {
-                    int pixIdx = img.getInternalIndex(p);
-                    int label = pointLabels[pixIdx];
-                    if (sunLabel == label) {
-                        startIdx = label;
-                        break;
-                    }
-                }
-            }  
-        } 
-        if (startIdx == -1) {  
-            TIntIntMap startIdxMap = new TIntIntHashMap();
-            for (PairInt p : filteredLabeledRegion.get(0)) {
-                int pixIdx = img.getInternalIndex(p);
-                int label = pointLabels[pixIdx];
-                if (startIdxMap.containsKey(label)) {
-                    startIdxMap.put(label, startIdxMap.get(label) + 1);
-                } else {
-                    startIdxMap.put(label, 1);
-                }
-            }
-            System.out.println(debugLabel + " sunLabel=" + sunLabel + " strt=" + 
-                startIdx);
-            assert(startIdxMap.size() == 1);
-            startIdx = startIdxMap.keySet().iterator().next();
-            //Set<PairInt> starterSet = labeledSets.get(startIdx);
-        }
-        
-        /*
-        now that have a starter sky patch and sky filter params
-           looking for the gradual change in illumination of sky as
-            constancy in lch h and gradual change in lch c.
-            add those sets if found.
-        */
-        TIntSet add = new TIntHashSet();
-        add.add(startIdx);
-        
-        // -- recalc colors, but for all of labeled sets ---
-        // 6 X n
-        hsvlch = calcHSVLCH(labeledSets);
-        
-        //findSimilar(labeledSets, hsvlch, startIdx, add);
-        
-        System.out.println(debugLabel + " starter patch clrs=" + 
-            Arrays.toString(hsvlch[startIdx]));
-       
-        addIfGradientIllumination(pointLabels, labeledSets, hsvlch, startIdx, 
-            add, avgClrs, stdDvClrs, false);
-        
-        // put the "add" sets into output sky0Points
-        Set<PairInt> sky0Points = new HashSet<PairInt>();
-        TIntIterator iter = add.iterator();
-        while (iter.hasNext()) {
-            sky0Points.addAll(labeledSets.get(iter.next()));
-        }
-        
-        // start a set for the case where the sun is present but not adjacent
-        //    to sky0Points
-        Set<PairInt> sky1Points = new HashSet<PairInt>();
-        
-        //TODO:
-        //  if sun was found and is not connected with current found sky, 
-        //     search adjacent to it and add results to a wnd list
-        //     for the return
-        if (sunObj != null && !sunObj.points.isEmpty()) {
-            
-            TIntSet cSet = findAdjacentToSun(sunObj.points, pointLabels, 
-                img.getWidth(), img.getHeight());
-            
-            boolean isAdjToSky = false;
-            iter = cSet.iterator();
-            while (iter.hasNext()) {
-                for (PairInt p : labeledSets.get(iter.next())) {
-                    if (sky0Points.contains(p)) {
-                        isAdjToSky = true;
-                        break;
-                    }
-                }
-            }
-            
-            if (!isAdjToSky) {
-                addAdjacentSky(sunObj.points, sky0Points, pointLabels, 
-                    labeledSets, hsvlch, avgClrs, stdDvClrs, cSet, sky1Points,
-                    (nIter == 1));
-            }
-        }
-        
-        {// debug
-            Image tmpImg = img.copyImage();
-            // plotting all filtered segments in green
-            // then all edges in red
-            // then all added sky cells thus far in purple
-            for (Set<PairInt> set : labeledSets) {
-                ImageIOHelper.addCurveToImage(set, tmpImg, 0, 0, 255, 0);
-            }
-            for (Set<PairInt> set : mserEdges.getEdges()) {
-                ImageIOHelper.addCurveToImage(set, tmpImg, 0, 255, 0, 0);
-            }
-            ImageIOHelper.addCurveToImage(sky0Points, tmpImg, 0, 255, 0, 255);
-            if (!sky1Points.isEmpty()) {
-                ImageIOHelper.addCurveToImage(sky1Points, tmpImg, 0, 255, 0, 255);
-            }
-            
-            MiscDebug.writeImage(tmpImg, "_" + debugLabel + "_CAND_SKY_");
-        }
-             
-        //List<Region> regionPt0 = mserEdges.getOrigGsPtRegions().get(2);
-        
-        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
-        double[] xyCenter = ch.calculateXYCentroids(sky0Points);
-        int x = (int)Math.round(xyCenter[0]);
-        int y = (int)Math.round(xyCenter[1]);
-
-        List<SkyObject> output = new ArrayList<SkyObject>();
-        SkyObject obj = new SkyObject();
-        obj.points = sky0Points;
-        obj.xyCenter = new int[]{x, y};
-        output.add(obj);
-        
-        if (!sky1Points.isEmpty()) {
-            xyCenter = ch.calculateXYCentroids(sky1Points);
-            x = (int)Math.round(xyCenter[0]);
-            y = (int)Math.round(xyCenter[1]);
-            obj = new SkyObject();
-            obj.points = sky1Points;
-            obj.xyCenter = new int[]{x, y};
-            output.add(obj);
-        }
-        
-        return output;
+       throw new UnsupportedOperationException("not yet implemented");
     }
     
     public void setToDebug(String dbgLbl) {
@@ -639,12 +374,12 @@ public class Sky {
             float h_1 = clrs[5];
             if (h_0 > h_1) {
                 // add a phase to next value if it's closer to current with addition
-                if ((h_0 - h_1) > Math.abs(h_0 - (h_1 + 255))) {
+                if ((h_0 - h_1) > ((h_1 + 255) - h_0)) {
                     h_1 += 255;
                 }
             } else if (h_1 > h_0) {
                 // add a phase to next value if it's closer to current with addition
-                if ((h_1 - h_0) > Math.abs(h_1 - (h_0 + 255))) {
+                if ((h_1 - h_0) > ((h_0 + 255) - h_1)) {
                     h_0 += 255;
                 }
             }
@@ -1196,106 +931,6 @@ public class Sky {
         the orientation of the camera is assumed to be up in the images, that
         is, up is towards smaller y.
         
-        the notes below are details gathered while looking at individual 
-        test images in order to design the algorithm.
-        
-        -- looks as if it is necessary for some cases to find the foreground
-           and horizon non-sky pixels as one of the first steps.
-           -- (details in progress)
-              -- since region growing from bottom of image in general looks like
-                 a feasible approach, level set regions should be even better.
-              -- re-did regions gs[0] similar to mser sensitivity parameters used
-                 for the more sensitive gs[1]:
-                 -- looking for whether one region in each provides
-                    the right partitions (or more than one region if needed).
-                    -- seattle 1_1__29 and 0__42.
-                         could curtail overrun by using the intersection with segmentation
-                    -- san jose sky: 1_1__29, 0__7, 0__2 
-                             nonsky: 1_1__4, 0__11
-                    -- venturi_0001 sky: 0__7
-                                 nonsky: 0__16, 1_1__1, 1_1__2
-                       ==> best partition is single region for non-sky 0__25
-                    -- venturi_0010 sky: 
-                                 nonsky:
-                       ==> best partition is single region for non-sky 0__25
-                    -- arches sky: 
-                                 nonsky:
-                       ==> best partition is single region for non-sky 0__22
-                    -- arches-sun sky: 
-                                 nonsky:
-                       ==> best partition is single region for non-sky 0__36
-                    -- stlouis arch sky: 
-                                 nonsky:
-                       ==> best partition is single region for non-sky 0__23
-                       (note: SUN is all empty space in 0__33)
-                    --  contrail sky: 
-                                 nonsky:
-                        ==> best partition is single region for sky 0__7
-                    --  klein matterhorn sky: 
-                                 nonsky: 0__35, 1_1_19
-                    --  patagonia sky: 
-                                 nonsky: 1_1__2, 0_18, 0_10, 1_1_23
-                    --  rainier snowy field sky: 
-                                 nonsky:
-                           horizon partly merges with sky within this image
-                           so with only this, is difficult to discerne it
-                    --  brown and lowe image 1 sky: 
-                                            nonsky: 
-                        NOTE gs 0 and 1 have several regions which add up to
-                            an incomplete partition.
-                        BUT, pt1 finds sky completely w/ 1_3__16
-                    --  brown and lowe image 2 sky: 
-                                            nonsky:
-                        NOTE gs 0 and 1 have several regions which add up to
-                            an incomplete partition.
-                        BUT, pt1 finds sky completely w/ 1_3__18
-                    -- stinson sky: 
-                                 nonsky:
-                       ==> best partition is single region for sky 0__35
-                    -- halfdome sky: 
-                                 nonsky:
-                       ==> best partition is single region for nonsky 0__2 OR 1_1__1
-                    -- halfdome 2 sky: 
-                                 nonsky:
-                       ==> best partition is single region for nonsky 0__24 OR 1_1__6
-                    -- halfdome 3 sky: 
-                                 nonsky:
-                       ==> best partition is single region for nonsky 0__23 
-                           OR for sky 1_1__11
-                    -- costa-rica   sky: 1_1__13
-                                 nonsky: or 0_14
-                    -- norwegian    sky: 1_1__5 + 0_5
-                                 nonsky:
-                    -- stonehenge sky: 
-                                 nonsky:
-                       ==> best partition is single region for nonsky 0__3
-                            OR sky 1_1__4
-                    -- new-mexico sky: 
-                                 nonsky:
-                       ==> best partition is single region for nonsky 0__19
-                            OR sky 1_1__0
-                    -- arizona sky: overruns horizon 1_1__0
-                                 nonsky:
-                         NOTE: can find the sun completely in the space of 0___18
-                    -- sky with rainbow sky: 
-                                     nonsky:
-                       ==> best partition is single region for nonsky 0__34
-                           OR sky 1_1__3
-                    -- sky with rainbow2 sky: 
-                                     nonsky:
-                       ==> best partition is single region for sky 1_1__1
-                    
-        
-        -- the partition logic when designed, should include a penalty for
-           including non-sky pixels...
-           might need to find the region which included most possible sky
-           pixels while excluding non-sky, then choose among those
-           for the best partition.
-           either at that prev step or here, need to consider the
-           boundary defined by extending the overlap of current region
-           boundary with mser edges.
-        
-        
         a bigger picture look at the process would suggest that usually the
         horizon is distinguishable from the sky by color contrast and 
         illumination.
@@ -1314,56 +949,10 @@ public class Sky {
         nor are multiple images taken at the
         same location and pose.
 
-        -- note that the level sets approach to edges 
-        results in better boundaries for test with
-        blue skies and blue buildings better than other techniques tried
-        so far.  in other words, the MSEREdges edges preserve the boundaries
-        well, even for low constrast conditions.
-        
-        (1) so the mseredges are still a good first step in this algorithm.
-        (2) foreground/horizon determination
-        (3) use of level sets to find good partition(s)
-            -- before that need a pass through pixels to characterize pixels
-               as possibly sky or not possibly sky.
-            -- below, notes about individual tests while designing this.
-            -- presumably, a good follow up to the partition is then
-               following the edges they coincide with in order to
-               finish the boundaries.
-            -- need to consider how sun and rainbows when present in
-               image affect the process
-        -- sometimes the foreground is found really well by the
-           regions pt_0 
-            (foreground theta is darker than sky theta)
-        -- sky is found really well with pt_1 for
-           - blue skies in arches, arches_sun, brown and lowe
-           - blue and cloudy also in cloudy_sanjose, contrail,
-           - *if rainbow had been masked out of bright skies rainbow
-            image, a region would have found all of the clouds,
-            though not complete sky
-           - in no others is the pt_1 useful for finding all sky
-         
-        -- can see from individual regions in gs_1 that a region can be
-           a good partition for the majority of the separation of sky and
-           non-sky and the approximation is faster than the
-           region growing methods.
-        
-        NOTE that the regions are the negative only for the final mser
-        edges because the positive mser parameters were set for less sensitive
-        so no regions are present in gs_0, but that should be re-examined
-        for this method if it doesn't use the segmentation edges.
-        
-       
         */
-        
-        List<Region> gs0 = mserEdges._extractSensitiveGS0();
-        mserEdges._debugOrigRegions(gs0, debugLabel + "_gs_0_");
-        
-        //mserEdges._debugOrigRegions(1, debugLabel + "_gs_1_");
-        //mserEdges._debugOrigRegions(2, debugLabel + "_pt_0_");
-        //mserEdges._debugOrigRegions(3, debugLabel + "_pt_1_");
-        
-        return null;
-        //throw new UnsupportedOperationException("not yet implemented");
+       
+        //return null;
+        throw new UnsupportedOperationException("not yet implemented");
     }
     
     //TODO: consider adding findSolarEclipse or sun w/ occultation or coronograph...
