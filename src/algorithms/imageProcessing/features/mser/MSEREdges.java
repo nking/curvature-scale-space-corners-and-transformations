@@ -521,15 +521,18 @@ public class MSEREdges {
         // hsv difference upper limit
         
         float[] hsvUL = new float[]{
-             0.07f, 0.07f, 0.07f, 0.07f, 0.07f,
-             0.02f};
+             0.06f
+            , 0.06f, 0.06f, 0.06f, 0.06f,0.02f
+            };
         float hsvUL_green = 0.09f;
         float[] hcptLL = new float[]{
-            0.7f,  0.6f,  0.5f, 0.65f, 0.35f,
-            0.8f};
+            0.7f
+            ,  0.6f,  0.5f, 0.65f, 0.35f, 0.8f
+            };
         float[] hgsLL = new float[]{
-            0.55f, 0.55f, 0.5f, 0.45f, 0.8f,
-            0.35f};
+            0.55f
+            , 0.55f, 0.5f, 0.45f, 0.8f, 0.35f
+            };
 
         if (sobelScores == null) {
             sobelScores = createSobelScores();
@@ -706,7 +709,7 @@ public class MSEREdges {
                         (cost < 0.05 && hcptInter >= 0.6
                         && hgsInter >= 0.3));
                     
-                    /*System.out.format("m %d %d (%d,%d) (%d,%d) hsvd=%.3f ptInter=%.3f "
+                    System.out.format("m %d %d (%d,%d) (%d,%d) hsvd=%.3f ptInter=%.3f "
                         + " gradInter=%.3f n=%d,%d wh=%b,%b->%b "
                         + " bl=%b,%b->%b grE=%b->%b\n"
                         + "\n    hsv1=%.3f,%.3f,%.3f"
@@ -720,7 +723,7 @@ public class MSEREdges {
                         hsv1.getAvgV(),
                         hsv2.getAvgH(), hsv2.getAvgS(),
                         hsv2.getAvgV()
-                    );*/
+                    );
                     //System.out.println("gs hists=\n    " + 
                     //    Arrays.toString(hgs1H) + "\n    " + 
                     //    Arrays.toString(hgs2H));
@@ -1233,9 +1236,9 @@ public class MSEREdges {
         }
 
         // below this removes:
-        final double limit = 76;//51;//76;//12.75;
+        final double limit = 250;//100;//76;//12.75;
         // above this restores
-        final double limit2 = useLowerContrastLimits ? 2 : 9;
+        final double limit2 = useLowerContrastLimits ? 3 : 11;
 
         //the intersection of overlapping regions, present in many regions
         //   is often a strong edge
@@ -1275,7 +1278,7 @@ public class MSEREdges {
                 }
                 bIdxs.add(rListIdx);
             }
-      
+                
             DFSConnectedGroupsFinder0 dfsFinder 
                 = new DFSConnectedGroupsFinder0(clrImg.getWidth());
             dfsFinder.setMinimumNumberInCluster(12);
@@ -1632,7 +1635,13 @@ public class MSEREdges {
 
         assert(unassignedMap.isEmpty());
 
-        for (int pixIdx = 0; pixIdx < labels.length; ++pixIdx) {
+        /*for (int pixIdx = 0; pixIdx < labels.length; ++pixIdx) {
+            int label = labels[pixIdx];
+            contiguous.get(label).add(pixIdx);
+        }*/
+        iter = unassignedSet.iterator();
+        while (iter.hasNext()) {
+            int pixIdx = iter.next();
             int label = labels[pixIdx];
             contiguous.get(label).add(pixIdx);
         }
