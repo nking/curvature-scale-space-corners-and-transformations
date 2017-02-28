@@ -309,18 +309,14 @@ public class PerimeterFinder2 {
         int stopX = minmaxXY[1] + 1;
         int stopY = minmaxXY[3] + 1;
         
-        Stack<Integer> stack = new Stack<Integer>();
+        Stack<PairInt> stack = new Stack<PairInt>();
         for (int i = startX; i <= stopX; ++i) {
-            int pixIdx = (startY * imgWidth) + i;
-            stack.add(Integer.valueOf(pixIdx));
-            pixIdx = (stopY * imgWidth) + i;
-            stack.add(Integer.valueOf(pixIdx));
+            stack.add(new PairInt(i, startY));
+            stack.add(new PairInt(i, stopY));
         }
         for (int j = startY+1; j <= stopY-1; ++j) {
-            int pixIdx = (j * imgWidth) + startX;
-            stack.add(Integer.valueOf(pixIdx));
-            pixIdx = (j * imgWidth) + stopX;
-            stack.add(Integer.valueOf(pixIdx));
+            stack.add(new PairInt(startX, j));
+            stack.add(new PairInt(stopX, j));
         }
         
         TIntSet visited = new TIntHashSet();
@@ -328,13 +324,14 @@ public class PerimeterFinder2 {
         int[] dxs = Misc.dx4;
         int[] dys = Misc.dy4;
         while (!stack.isEmpty()) {
-            int s = stack.pop().intValue();
-            if (visited.contains(s)) {
+            PairInt s = stack.pop();
+            int x = s.getX();
+            int y = s.getY();
+            int pixIdx = (y * imgWidth) + x;
+            if (visited.contains(pixIdx)) {
                 continue;
             }
-            surrounding.add(s);
-            int y = s/imgWidth;
-            int x = s - (y * imgWidth);
+            surrounding.add(pixIdx);
             
             for (int k = 0; k < dxs.length; ++k) {
                 int x2 = x + dxs[k];
@@ -346,13 +343,13 @@ public class PerimeterFinder2 {
                 int pixIdx2 = (y2 * imgWidth) + x2;
                 if (!contiguousPoints.contains(pixIdx2)) {
                     // add the spaces to the stack
-                    stack.add(Integer.valueOf(pixIdx2));
+                    stack.add(new PairInt(x2, y2));
                 } else {
                     // if not a space, it's an outer boundary point
                     outputBoundary.add(pixIdx2);
                 }
             }
-            visited.add(s);
+            visited.add(pixIdx);
         }
         
         // visit entire region within min and max, and place
