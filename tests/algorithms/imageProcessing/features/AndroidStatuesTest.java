@@ -19,12 +19,15 @@ import algorithms.imageProcessing.IntraClassColorStats;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.features.ORB.Descriptors;
 import algorithms.imageProcessing.features.ObjectMatcher.Settings;
+import algorithms.imageProcessing.features.mser.Canonicalizer;
+import algorithms.imageProcessing.features.mser.Region;
 import algorithms.imageProcessing.segmentation.ColorSpace;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.imageProcessing.segmentation.NormalizedCuts;
 import algorithms.imageProcessing.segmentation.SLICSuperPixels;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
+import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
@@ -35,6 +38,7 @@ import algorithms.util.PairIntPair;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
 import algorithms.util.VeryLongBitString;
+import com.climbwithyourfeet.clustering.DTClusterFinder;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
@@ -2587,4 +2591,5 @@ public class AndroidStatuesTest extends TestCase {
         
         return out;
     }
+  
 }

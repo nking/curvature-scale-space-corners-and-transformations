@@ -1,8 +1,5 @@
 package algorithms.imageProcessing;
 
-import algorithms.misc.MiscDebug;
-import algorithms.misc.MiscMath;
-import algorithms.util.ResourceFinder;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.TIntIntMap;

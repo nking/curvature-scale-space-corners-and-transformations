@@ -69,24 +69,6 @@ public class SkyTest extends TestCase {
     
     public void testFindSky() throws Exception {
         
-        /* 
-        String filePath = ResourceFinder.findFileInTestResources("tmp2.png");
-        ImageExt img0 = ImageIOHelper.readImageExt(filePath);
-
-        float[] hsb = new float[3];
-        for (int y = 0; y < img0.getHeight(); y+=2) {
-            for (int x = 0; x < img0.getWidth(); x+=2) {
-                Color.RGBtoHSB(img0.getR(x, y), img0.getG(x, y), img0.getB(x, y), 
-                    hsb);
-                System.out.format("(%d,%d) h,s,v=%.2f %.2f %.2f\n", 
-                    x, y, hsb[0], hsb[1], hsb[2]);
-            }
-        }
-        if (true) {
-            return;
-        }
-        */
-        
         int maxDimension = 256;//512;
 
         String fileName1 = "";
@@ -121,9 +103,11 @@ public class SkyTest extends TestCase {
 
             Sky sky = new Sky(img);
             sky.setToDebug(fileName1Root);
-            GreyscaleImage skyMask = sky.extractSkyMask();
+            List<SkyObject> skyList = sky
+                //.findSky();
+                .findSkyAssumingHorizon();
             
-            //assertNotNull(skyMask);
+            //assertNotNull(skyList);
             
             //MiscDebug.writeImage(skyMask, "_" + fileName1Root + "_SKY_MASK_");
         }

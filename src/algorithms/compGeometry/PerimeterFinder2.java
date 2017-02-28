@@ -286,6 +286,94 @@ public class PerimeterFinder2 {
         }*/
     }
     
+    /**
+     * finds any gaps embedded in the contiguous points.
+     * @param contiguousPoints
+     * @param outputEmbedded output variable
+     * @param outputBoundary output variable
+     */
+    public void extractBorder2(TIntSet contiguousPoints,
+        TIntSet outputEmbedded, TIntSet outputBoundary,
+        int imgWidth) {
+        
+        int[] minmaxXY = MiscMath.findMinMaxXY(contiguousPoints, 
+            imgWidth);
+        
+        // visit the 1 pixel region surrounding the shape and
+        // place the pixels in a stack.
+        // then visit their neighbors that are not in contig points
+        // until have reached them all
+        
+        int startX = minmaxXY[0] - 1;
+        int startY = minmaxXY[2] - 1;
+        int stopX = minmaxXY[1] + 1;
+        int stopY = minmaxXY[3] + 1;
+        
+        Stack<Integer> stack = new Stack<Integer>();
+        for (int i = startX; i <= stopX; ++i) {
+            int pixIdx = (startY * imgWidth) + i;
+            stack.add(Integer.valueOf(pixIdx));
+            pixIdx = (stopY * imgWidth) + i;
+            stack.add(Integer.valueOf(pixIdx));
+        }
+        for (int j = startY+1; j <= stopY-1; ++j) {
+            int pixIdx = (j * imgWidth) + startX;
+            stack.add(Integer.valueOf(pixIdx));
+            pixIdx = (j * imgWidth) + stopX;
+            stack.add(Integer.valueOf(pixIdx));
+        }
+        
+        TIntSet visited = new TIntHashSet();
+        TIntSet surrounding = new TIntHashSet();
+        int[] dxs = Misc.dx4;
+        int[] dys = Misc.dy4;
+        while (!stack.isEmpty()) {
+            int s = stack.pop().intValue();
+            if (visited.contains(s)) {
+                continue;
+            }
+            surrounding.add(s);
+            int y = s/imgWidth;
+            int x = s - (y * imgWidth);
+            
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                if (x2 < startX || y2 < startY || x2 > stopX ||
+                    y2 > stopY) {
+                    continue;
+                }
+                int pixIdx2 = (y2 * imgWidth) + x2;
+                if (!contiguousPoints.contains(pixIdx2)) {
+                    // add the spaces to the stack
+                    stack.add(Integer.valueOf(pixIdx2));
+                } else {
+                    // if not a space, it's an outer boundary point
+                    outputBoundary.add(pixIdx2);
+                }
+            }
+            visited.add(s);
+        }
+        
+        // visit entire region within min and max, and place
+        // any point not in surrounding nor in contig into
+        // embedded
+        startX++;
+        stopX--;
+        startY++;
+        stopY--;
+        for (int i = startX; i <= stopX; ++i) {
+            for (int j = startY; j <= stopY; ++j) {
+                int pixIdx = (j * imgWidth) + i;
+                if (!contiguousPoints.contains(pixIdx) && 
+                    !surrounding.contains(pixIdx)) {
+                    outputEmbedded.add(pixIdx);
+                }
+            }
+        }
+        
+    }
+    
   
     /**
      * finds the outer boundary points of the contiguous points.

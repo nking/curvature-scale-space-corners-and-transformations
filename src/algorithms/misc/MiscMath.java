@@ -11,6 +11,8 @@ import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.set.TIntSet;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
@@ -1319,6 +1321,42 @@ public class MiscMath {
         for (PairInt p : points) {
             int x = p.getX();
             int y = p.getY();
+            if (x < xMin) {
+                xMin = x;
+            }
+            if (y < yMin) {
+                yMin = y;
+            }
+            if (x > xMax) {
+                xMax = x;
+            }
+            if (y > yMax) {
+                yMax = y;
+            }
+        }
+        return new int[]{xMin, xMax, yMin, yMax};
+    }
+    
+    /**
+     * find the minima and maxima of x and y and return them as
+     * int[]{xMin, xMax, yMin, yMax}
+     * @param points
+     * @return minMaxXY int[]{xMin, xMax, yMin, yMax}
+     */
+    public static int[] findMinMaxXY(TIntSet pixelIdxs, int imgWidth) {
+        
+        int xMin = Integer.MAX_VALUE;
+        int xMax = Integer.MIN_VALUE;
+        int yMin = Integer.MAX_VALUE;
+        int yMax = Integer.MIN_VALUE;
+        
+        TIntIterator iter = pixelIdxs.iterator();
+        
+        while (iter.hasNext()) {
+            
+            int pixIdx = iter.next();
+            int y = pixIdx/imgWidth;
+            int x = pixIdx - (y * imgWidth);
             if (x < xMin) {
                 xMin = x;
             }

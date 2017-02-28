@@ -925,7 +925,8 @@ public class Sky {
         
         /*
         essentially, using level sets for binarization of the image into sky
-        and non sky.   success depends upon ablilty to evaluate whether 
+        and non sky.   
+        success depends upon ablilty to evaluate whether 
         pixels are sky or non-sky.
         
         the orientation of the camera is assumed to be up in the images, that
@@ -950,6 +951,33 @@ public class Sky {
         same location and pose.
 
         */
+        
+        /*
+        - get mser edges and labeled sets
+        - extract the y=0 bordering sets
+        - need to determine color presence either using polar theta
+             and making  transformed test for the colors and angle
+             or using the rough clr hist bins in the class,
+        - need to make 3 lists:
+            -- non sky as foreground or background, that is
+               the non-sky colors touching y=yMax.
+            -- definitely sky
+                 possibly only the starting cell
+            -- possibly sky
+                 - sky colored sets
+        
+        pt values:
+        red = 0 - 18
+        orange = 18 - 40
+        yellow = 41 - 60ish
+        green = 61 - 106
+        blue = 107 - 192
+        purple = 193 - 255
+       
+        */
+        GreyscaleImage ptImg = mserEdges.getPtImg();
+        
+        List<TIntSet> labeledSet = mserEdges.getLabeledSets();
        
         //return null;
         throw new UnsupportedOperationException("not yet implemented");

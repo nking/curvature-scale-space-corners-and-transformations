@@ -970,6 +970,53 @@ public class ImageIOHelper {
      * draw the edge over the image using the given rgb colors and the size
      * of the dot beyond 1 pixel.
      * 
+     * @param pixIdxs
+     * @param input
+     * @param nExtraForDot
+     * @param rClr
+     * @param gClr
+     * @param bClr 
+     */
+    public static void addCurveToImage(TIntSet pixIdxs, Image input, 
+        int nExtraForDot, int rClr, int gClr, int bClr) {
+        
+        if (pixIdxs == null || input == null) {
+            return;
+        }
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
+        TIntIterator iter = pixIdxs.iterator();
+        while (iter.hasNext()) {
+            
+            int pixIdx = iter.next();
+            
+            int y = pixIdx/w;
+            int x = pixIdx - (y * w);
+            
+            for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
+                
+                int xx = x + dx;
+                
+                if ((xx < 0) || (xx > (w - 1))) {
+                    continue;
+                }
+                for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); ++dy) {
+                    int yy = y + dy;
+                    if ((yy < 0) || (yy > (h - 1))) {
+                        continue;
+                    }
+                    input.setRGB(xx, yy, rClr, gClr, bClr);
+                }
+            }
+        }
+    }
+    
+    /**
+     * draw the edge over the image using the given rgb colors and the size
+     * of the dot beyond 1 pixel.
+     * 
      * @param points
      * @param input
      * @param nExtraForDot
@@ -1019,6 +1066,31 @@ public class ImageIOHelper {
      */
     public static <T extends Collection<PairInt>> void addAlternatingColorCurvesToImage0(
         List<T> pointGroups, Image input, int nExtraForDot) {
+        
+        if (pointGroups == null || input == null) {
+            return;
+        }
+        
+        for (int i = 0; i < pointGroups.size(); ++i) {
+            
+            int[] clr = getNextRGB(i);
+            
+            addCurveToImage(pointGroups.get(i), input, nExtraForDot,
+                clr[0], clr[1], clr[2]);
+        }
+        
+    }
+    
+    /**
+     * draw the edge over the image using the given rgb colors and the size
+     * of the dot beyond 1 pixel.
+     * 
+     * @param pointGroups
+     * @param input
+     * @param nExtraForDot
+     */
+    public static void addAlternatingColorCurvesToImage3(
+        List<TIntSet> pointGroups, Image input, int nExtraForDot) {
         
         if (pointGroups == null || input == null) {
             return;
@@ -1787,6 +1859,24 @@ public class ImageIOHelper {
         }
     }
     
+    public static void addAlternatingColorPointSetsToImage2(
+        List<TIntSet> pointSets, int xOffset, int yOffset, 
+        int nExtraForDot, Image input) {
+        
+        if (pointSets == null || input == null) {
+            return;
+        }
+                
+        for (int i = 0; i < pointSets.size(); i++) {
+            
+            TIntSet pIdxs = pointSets.get(i);
+            
+            int[] c = getNextRGB(i);
+            
+            addToImage(pIdxs, 0, 0, input, nExtraForDot, c[0], c[1], c[2]);
+        }
+    }
+    
     public static <T extends Collection<PairInt>> void addToImage(
         T points, int xOffsetToApply, int yOffsetToApply, Image input) {
         
@@ -1853,6 +1943,42 @@ public class ImageIOHelper {
 
             int x = p.getX() + xOffsetToApply;
             int y = p.getY() + yOffsetToApply;
+            
+            for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); ++dx) {
+                int xx = x + dx;
+                if ((xx < 0) || (xx > (w - 1))) {
+                    continue;
+                }
+                for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); ++dy) {
+                    int yy = y + dy;
+                    if ((yy < 0) || (yy > (h - 1))) {
+                        continue;
+                    }
+                    input.setRGB(xx, yy, rClr, gClr, bClr);
+                }
+            }
+        }
+    }
+
+    public static void addToImage(
+        TIntSet pIdxs, int xOffsetToApply, 
+        int yOffsetToApply, Image input, int nExtraForDot,
+        int rClr, int gClr, int bClr) {
+        
+        if (pIdxs == null || input == null) {
+            return;
+        }
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
+             
+        TIntIterator iter = pIdxs.iterator();
+        while (iter.hasNext()) {
+            int pixIdx = iter.next();
+            int y = pixIdx/w;
+            int x = pixIdx - (y * w);
+            x += xOffsetToApply;
+            y += yOffsetToApply;
             
             for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); ++dx) {
                 int xx = x + dx;

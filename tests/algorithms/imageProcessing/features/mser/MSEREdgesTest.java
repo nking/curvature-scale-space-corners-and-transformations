@@ -24,8 +24,9 @@ public class MSEREdgesTest extends TestCase {
 
         String fileName1 = "";
 
-        //for (int i = 5; i < 6; ++i) {
-        //for (int i = 18; i < 19; ++i) {
+        //for (int i = 36; i < 37; ++i) {
+        //for (int i = 10; i < 11; ++i) {
+        //for (int i = 0; i < 10; ++i) {
         for (int i = 0; i < 37; ++i) {
 
             switch(i) {
@@ -208,17 +209,14 @@ public class MSEREdgesTest extends TestCase {
             for (int k = 0; k < lma.length; ++k) {
                 MiscDebug.writeImage(lma[k], "_" + 
                     fileName1Root + "_lma_" + k + "_");
-            }*/
-
-            float[] sobelScores = imageProcessor.createSobelColorScores(
-                mserE.getGsImg(), mserE.getPtImg(), 20);
+            }
             
-            GreyscaleImage scaled = MiscMath.rescaleAndCreateImage(sobelScores,
-                img.getWidth(), img.getHeight());
+            GreyscaleImage gradients = imageProcessor
+                .createGradientWithColorAndGreyscale(img);
         
-            MiscDebug.writeImage(scaled,  
+            MiscDebug.writeImage(gradients,  
                 "_" + fileName1Root + "_SOBEL_");
-        
+            */
         }
     }
     

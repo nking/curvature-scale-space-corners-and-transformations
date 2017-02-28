@@ -7,6 +7,7 @@ import algorithms.util.PairInt;
 import algorithms.util.TrioInt;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -802,6 +803,18 @@ public class Region {
         for (int i = 0; i < accX.size(); ++i) {
             out.add(new PairInt(accX.get(i), accY.get(i)));
         }
+        return out;
+    }
+    
+    public TIntSet getAcc(int imgWidth) {
+        
+        TIntSet out = new TIntHashSet();
+        
+        for (int i = 0; i < accX.size(); ++i) {
+            int pixIdx = (accY.get(i) * imgWidth) + accX.get(i);
+            out.add(pixIdx);
+        }
+        
         return out;
     }
 }

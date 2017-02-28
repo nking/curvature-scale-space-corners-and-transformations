@@ -35,6 +35,7 @@ import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -215,7 +216,7 @@ public class PhaseCongruencyDetectorTest extends TestCase {
             GreyscaleImage edgeImage = imageSegmentation.createColorEdges(img);
 
             edgeImage = imageSegmentation.fillInGapsOf1(edgeImage,
-                new HashSet<PairInt>(), 255);
+                new TIntHashSet(), 255);
 
 // TODO: edit performSegmentationWithColorEdges
             List<Set<PairInt>> segmentedPoints =
@@ -278,19 +279,21 @@ public class PhaseCongruencyDetectorTest extends TestCase {
         }
     }
 
-    public void test4() throws Exception {
+    public void testUnsupervisedTextureExtraction() throws Exception {
 
         String[] fileNames = new String[]{
             //"seattle.jpg",
             //"merton_college_I_001.jpg",
             //"house.gif",
             //"lena.jpg",
-            //"campus_010.jpg",
+            //"campus_010.jpg",           //*
             //"android_statues_01.jpg",
             "android_statues_02.jpg",
-            //"android_statues_03.jpg",
+            //"android_statues_03.jpg",    //*
             //"android_statues_04.jpg"
         };
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
 
         ImageSegmentation imageSegmentation = new ImageSegmentation();
         /*
@@ -298,6 +301,8 @@ public class PhaseCongruencyDetectorTest extends TestCase {
         phase conguency that would result in closed curves for the main objects.
         */
 
+        int maxDimension = 256;//512;
+        
         for (String fileName : fileNames) {
 
             System.out.println("fileName=" + fileName);
@@ -306,15 +311,14 @@ public class PhaseCongruencyDetectorTest extends TestCase {
 
             ImageExt img = ImageIOHelper.readImageExt(filePath);
 
-            //GreyscaleImage combined = imageSegmentation.createColorEdges_2(img);
-
-            //MiscDebug.writeImage(combined, "_MAX_SOBEL_EDGES_");
-
-            //GreyscaleImage combinedCopy = combined.copyImage();
-            //ImageProcessor imageProcessor = new ImageProcessor();
-            //imageProcessor.applyAdaptiveMeanThresholding(combinedCopy);
-            //MiscDebug.writeImage(combinedCopy, "_MAX_SOBEL_EDGES__AMT_");
-
+            int w1 = img.getWidth();
+            int h1 = img.getHeight();
+            int binFactor1 = (int) Math.ceil(Math.max(
+                (float) w1 / maxDimension,
+                (float) h1 / maxDimension));
+            img = imageProcessor.binImage(img, binFactor1);
+            
+            
             GreyscaleImage img2 = img.copyToGreyscale2();
 
             PhaseCongruencyDetector phaseCDetector
@@ -332,17 +336,15 @@ public class PhaseCongruencyDetectorTest extends TestCase {
                 finder.createTextureImages(img, products, fileName);
        
             /*
-            -- color histograms to look for color classes in the subset noise.
             -- look into the texture stats of Malik et al 2001.
                -- whether a sure edge lies along path in between two
                   texture xlusters.
-                    along the line between the pixels:
-                       W_IC_i_j = 1 - argmax(local maxima of pc perpendicular
-                                             to curve)
-                    to search for curve points, they use a radii of 30
-                    around the  textons of interest.
-                  -- this might be useful during some merging steps
-                     after super pixels stage.
+                     along the line between the pixels:
+                        W_IC_i_j = 1 - argmax(local maxima of pc perpendicular
+                                   to curve)
+                     to search for curve points, they use a radii of 30
+                     around the  textons of interest.
+            
                -- different goal: adding other terms to the normalized cuts
                   weighting function is in this paper and the DNCuts paper.
 
@@ -364,7 +366,7 @@ public class PhaseCongruencyDetectorTest extends TestCase {
                -- might be able to reduce computations due to sparse
                   data
                -- Malik et al. 2001 normalize their texton responses using:
-                    F(x) = F(x) X log(1-(|F(x)|/0.03))/|F(x)|
+                    F(x) = F(x) X log(1+(|F(x)|/0.03))/|F(x)|
             */
 
            
