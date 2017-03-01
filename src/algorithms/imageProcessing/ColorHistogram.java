@@ -1,9 +1,12 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.set.TIntSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -718,4 +721,161 @@ public class ColorHistogram {
         return sim;
     }
     
+    /**
+     ptImg values for histogram bins:
+     0:  red = 0 - 18
+     1:  orange = 18 - 40
+     2:  yellow = 41 - 60ish
+     3:  green = 61 - 106
+     4:  blue = 107 - 192
+     5:  purple = 193 - 255
+        
+     * @param ptImg, the "H" image of LCH color space
+     * @param labeledSets
+     * @return 
+     */
+    public static List<OneDIntArray> createPTHistograms(GreyscaleImage ptImg, 
+        List<TIntSet> labeledSets) {
+        
+        /*
+        ptImg values for histogram bins:
+         0:  red = 0 - 18
+         1:  orange = 18 - 40
+         2:  yellow = 41 - 60ish
+         3:  green = 61 - 106
+         4:  blue = 107 - 192
+         5:  purple = 193 - 255
+        */
+        
+        List<OneDIntArray> output = new ArrayList<OneDIntArray>();
+        
+        for (int i = 0; i < labeledSets.size(); ++i) {
+            
+            TIntSet set = labeledSets.get(i);
+            TIntIterator iter = set.iterator();
+            
+            int[] hist = new int[6];
+            output.add(new OneDIntArray(hist));
+            
+            while (iter.hasNext()) {
+                int pixIdx = iter.next();
+                int v = ptImg.getValue(pixIdx);
+                if (v < 19) {
+                    hist[0]++;
+                } else if (v < 41) {
+                    hist[1]++;
+                } else if (v < 61) {
+                    hist[2]++;
+                } else if (v < 107) {
+                    hist[3]++;
+                } else if (v < 193) {
+                    hist[4]++;
+                } else {
+                    hist[5]++;
+                }
+            }
+        }
+        
+        return output;
+    }
+
+    /**
+     ptImg values for histogram bins:
+     0:  red = 0 - 18
+     1:  orange = 18 - 40
+     2:  yellow = 41 - 60ish
+     3:  green = 61 - 106
+     4:  blue = 107 - 192
+     5:  purple = 193 - 255
+        
+     * @param ptImg, the "H" image of LCH color space
+     * @param labeledSet
+     * @return 
+     */
+    public static int[] createPTHistogram(GreyscaleImage ptImg, 
+        TIntSet labeledSet) {
+        
+        /*
+        ptImg values for histogram bins:
+         0:  red = 0 - 18
+         1:  orange = 18 - 40
+         2:  yellow = 41 - 60ish
+         3:  green = 61 - 106
+         4:  blue = 107 - 192
+         5:  purple = 193 - 255
+        */
+        
+        TIntIterator iter = labeledSet.iterator();
+
+        int[] hist = new int[6];
+
+        while (iter.hasNext()) {
+            int pixIdx = iter.next();
+            int v = ptImg.getValue(pixIdx);
+            if (v < 19) {
+                hist[0]++;
+            } else if (v < 41) {
+                hist[1]++;
+            } else if (v < 61) {
+                hist[2]++;
+            } else if (v < 107) {
+                hist[3]++;
+            } else if (v < 193) {
+                hist[4]++;
+            } else {
+                hist[5]++;
+            }
+        }
+        
+        return hist;
+    }
+
+    /**
+     ptImg values for histogram bins:
+     0:  red = 0 - 18
+     1:  orange = 18 - 40
+     2:  yellow = 41 - 60ish
+     3:  green = 61 - 106
+     4:  blue = 107 - 192
+     5:  purple = 193 - 255
+        
+     * @param ptImg, the "H" image of LCH color space
+     * @param labeledSet
+     * @return 
+     */
+    public static int[] createPTHistogram(GreyscaleImage ptImg, 
+        Set<PairInt> labeledSet) {
+        
+        /*
+        ptImg values for histogram bins:
+         0:  red = 0 - 18
+         1:  orange = 18 - 40
+         2:  yellow = 41 - 60ish
+         3:  green = 61 - 106
+         4:  blue = 107 - 192
+         5:  purple = 193 - 255
+        */
+        
+        int[] hist = new int[6];
+
+        for (PairInt p : labeledSet) {
+            int v = ptImg.getValue(p);
+            if (v < 19) {
+                hist[0]++;
+            } else if (v < 41) {
+                hist[1]++;
+            } else if (v < 61) {
+                hist[2]++;
+            } else if (v < 107) {
+                hist[3]++;
+            } else if (v < 193) {
+                hist[4]++;
+            } else {
+                hist[5]++;
+            }
+        }
+        
+        return hist;
+    }
+
 }

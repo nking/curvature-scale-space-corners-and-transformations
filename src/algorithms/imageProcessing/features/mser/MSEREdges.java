@@ -198,7 +198,7 @@ public class MSEREdges {
 
         long ts1 = System.currentTimeMillis();
 
-        System.out.format("%.3f sec for merge",
+        System.out.format("%.3f sec for merge\n",
             (((float)ts1 - ts0)/1000.f));
 
         if (debug) {
@@ -709,6 +709,7 @@ public class MSEREdges {
                         (cost < 0.05 && hcptInter >= 0.6
                         && hgsInter >= 0.3));
                     
+                    /*
                     System.out.format("m %d %d (%d,%d) (%d,%d) hsvd=%.3f ptInter=%.3f "
                         + " gradInter=%.3f n=%d,%d wh=%b,%b->%b "
                         + " bl=%b,%b->%b grE=%b->%b\n"
@@ -723,7 +724,7 @@ public class MSEREdges {
                         hsv1.getAvgV(),
                         hsv2.getAvgH(), hsv2.getAvgS(),
                         hsv2.getAvgV()
-                    );
+                    );*/
                     //System.out.println("gs hists=\n    " + 
                     //    Arrays.toString(hgs1H) + "\n    " + 
                     //    Arrays.toString(hgs2H));
@@ -756,7 +757,7 @@ public class MSEREdges {
                     // merging contents of idx1 into minCostIdx2
                     nMerged++;
                     
-                    System.out.println("    merging " + minCostIdx2);
+                    //System.out.println("    merging " + minCostIdx2);
 
                     clrs.get(minCostIdx2).add(set1, clrImg);
                     clrs.remove(idx1);
@@ -790,8 +791,10 @@ public class MSEREdges {
                     assert(mapOfBorders.get(idx1) == null);                
                 }
             }
-            System.out.println("nMerged=" + nMerged + " nIter=" +
-                nIter);
+            if (debug) {
+                System.out.println("nMerged=" + nMerged + " nIter=" +
+                    nIter);
+            }
             nIter++;
             
             if (nMerged == 0 && hcptIdx < (hcptLL.length - 1)) {

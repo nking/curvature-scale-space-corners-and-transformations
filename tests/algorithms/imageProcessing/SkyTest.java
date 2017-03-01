@@ -1,13 +1,8 @@
 package algorithms.imageProcessing;
 
-import algorithms.imageProcessing.ImageExt;
-import algorithms.imageProcessing.ImageIOHelper;
-import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.Sky.SkyObject;
 import algorithms.misc.MiscDebug;
-import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
-import java.awt.Color;
 import java.util.List;
 import junit.framework.TestCase;
 
@@ -34,6 +29,7 @@ public class SkyTest extends TestCase {
         "klein_matterhorn_snowy_foreground.jpg",
         "patagonia_snowy_foreground.jpg",
         "mt_rainier_snowy_field.jpg",
+        
         "brown_lowe_2003_image1.jpg",
         "brown_lowe_2003_image2.jpg",
         
@@ -50,6 +46,7 @@ public class SkyTest extends TestCase {
         
         "new-mexico-sunrise_w725_h490.jpg",
         "arizona-sunrise-1342919937GHz.jpg",
+        
         "sky_with_rainbow.jpg",
         "sky_with_rainbow2.jpg"
         
@@ -95,11 +92,12 @@ public class SkyTest extends TestCase {
             img = imageProcessor.binImage(img, binFactor1);
             //MiscDebug.writeImage(img, "_"  + fileName1Root);
         
+            /*
             GreyscaleImage[] lma = imageProcessor.createLCHForLUV(img);
             for (int k = 0; k < lma.length; ++k) {
                 MiscDebug.writeImage(lma[k], "_"
                     + fileName1Root + "_lma_" + k + "_");
-            }
+            }*/
 
             Sky sky = new Sky(img);
             sky.setToDebug(fileName1Root);
@@ -110,6 +108,17 @@ public class SkyTest extends TestCase {
             //assertNotNull(skyList);
             
             //MiscDebug.writeImage(skyMask, "_" + fileName1Root + "_SKY_MASK_");
+        
+            if (skyList != null) {
+                for (int j = 0; j < skyList.size(); ++j) {
+                    SkyObject obj = skyList.get(j);
+                    Image imgCp = img.copyImage();
+                    ImageIOHelper.addCurveToImage(obj.points, imgCp, 
+                        0, 0, 255, 0);
+                    MiscDebug.writeImage(imgCp, "_"+ fileName1Root + 
+                        "_SKY_" + j);
+                }
+            }
         }
     }
     

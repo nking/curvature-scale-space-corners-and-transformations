@@ -128,6 +128,8 @@ public class SunFinder {
             return obj;
         }
         
+        System.out.println("did not find sun in image");
+        
         return null;        
     }
 

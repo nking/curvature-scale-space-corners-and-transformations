@@ -97,7 +97,8 @@ public class RainbowFinder {
         
         List<SkyObject> output = new ArrayList<SkyObject>();
         
-        TIntList arcIdxs = findLargeArc(listOfSetBits0, listOfSets0, hists0, rgs0, img);
+        TIntList arcIdxs = findLargeArc(listOfSetBits0, listOfSets0, hists0, 
+            rgs0, img);
         
         if (arcIdxs == null || arcIdxs.isEmpty()) {
             return null;
@@ -130,6 +131,35 @@ public class RainbowFinder {
             }                
         }
 
+        /*
+        ptImg values for histogram bins:
+         0:  red = 0 - 18
+         1:  orange = 18 - 40
+         2:  yellow = 41 - 60ish
+         3:  green = 61 - 106
+         4:  blue = 107 - 192
+         5:  purple = 193 - 255
+        */
+        int[] ptCH = ColorHistogram.createPTHistogram(mserEdges.getPtImg(), 
+            arcPoints);
+        
+        float[] normalizedHist = new float[ptCH.length];
+        int tot = 0;
+        for (int c : ptCH) {
+            tot += c;
+        }
+        for (int j = 0; j < ptCH.length; ++j) {
+            normalizedHist[j] = (float)ptCH[j]/(float)tot;
+        }
+        
+        //System.out.println("rainbow? " + Arrays.toString(ptCH) + 
+        //    "\n   " + Arrays.toString(normalizedHist));
+        
+        if (normalizedHist[0] < 0.1 && normalizedHist[4] < 0.1 &&
+            normalizedHist[5] < 0.1) {
+            return null;
+        }
+        
         MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
         double[] xyCenter = ch.calculateXYCentroids(arcPoints);
         int x = (int)Math.round(xyCenter[0]);

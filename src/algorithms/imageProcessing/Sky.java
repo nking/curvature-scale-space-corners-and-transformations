@@ -196,240 +196,6 @@ public class Sky {
         mserEdges._debugOrigRegions(3, "pt");
     }
 
-    private int[] createPixLabelMap(List<Set<PairInt>> labeledSets) {
-        
-        int[] labels = new int[img.getNPixels()];
-        int count = 0;
-        for (int i = 0; i < labeledSets.size(); ++i) {
-            Set<PairInt> set = labeledSets.get(i);
-            for (PairInt p : set) {
-                int pixIdx = img.getInternalIndex(p);
-                labels[pixIdx] = i;
-                count++;
-            }
-        }
-        System.out.println("count=" + count + " n=" + img.getNPixels());
-        assert(count == img.getNPixels());
-        
-        return labels;
-    }
-
-    private List<Set<PairInt>> createRegionLabeledSubSets(
-        List<Region> regionPt, int[] pointLabels) {
-        
-        TIntObjectMap<Set<PairInt>> map = new TIntObjectHashMap<Set<PairInt>>();
-        
-        for (int i = 0; i < regionPt.size(); ++i) {
-            Region r = regionPt.get(i);
-            for (int j = 0; j < r.accX.size(); ++j) {
-                int x = r.accX.get(j);
-                int y = r.accY.get(j);
-                int pixIdx = img.getInternalIndex(x, y);
-                int label = pointLabels[pixIdx];
-                
-                Set<PairInt> set = map.get(label);
-                if (set == null) {
-                    set = new HashSet<PairInt>();
-                    map.put(label, set);
-                }
-                set.add(new PairInt(x, y));
-            }
-        }
-        
-        List<Set<PairInt>> out = new ArrayList<Set<PairInt>>();
-        TIntObjectIterator<Set<PairInt>> iter = map.iterator();
-        for (int j = 0; j < map.size(); ++j) {
-            iter.advance();
-            Set<PairInt> set = iter.value();
-            out.add(set);
-        }
-        
-        return out;
-    }
-
-    private float[][] calcHSVLCH(List<Set<PairInt>> regionPointsLabeled) {
-
-        int n = regionPointsLabeled.size();
-        
-        float[] hsv = new float[3];
-        
-        float[][] hsvlch = new float[n][];
-        for (int i = 0; i < n; ++i) {
-            hsvlch[i] = new float[6];
-            
-            Set<PairInt> set = regionPointsLabeled.get(i);
-            for (PairInt p : set) {
-                int pixIdx = img.getInternalIndex(p);
-                Color.RGBtoHSB(img.getR(pixIdx), img.getG(pixIdx), 
-                    img.getB(pixIdx), hsv);
-                for (int j = 0; j < 3; ++j) {
-                    hsvlch[i][j] += hsv[j];
-                }
-                hsvlch[i][3] += lma[0].getValue(pixIdx);
-                hsvlch[i][4] += lma[1].getValue(pixIdx);
-                hsvlch[i][5] += lma[2].getValue(pixIdx);
-            }
-            float nf = set.size();
-            for (int j = 0; j < 6; ++j) {
-                hsvlch[i][j] /= nf;
-            }
-        }
-        
-        return hsvlch;
-    }
-
-    private boolean setDoesBorderImage(Set<PairInt> set, ImageExt img) {
-        int lc = img.getWidth() - 1;
-        int lr = img.getHeight() - 1;
-        for (PairInt p : set) {
-            int x = p.getX();
-            int y = p.getY();
-            if (x == 0 || y == 0 || x == lc || y == lr) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private void sortForBlue(List<Set<PairInt>> filteredLabeledRegion,
-        List<OneDFloatArray> filteredHSVLCH, float[] avgClrs,
-        float[] stdDvsClrs) {
-        
-        float hF = 5.0f;
-        float sF = 1.0f;
-        float vF = 0.5f;
-        
-        // whiteish from snow and clouds
-        if (avgClrs[4] < 20 && stdDvsClrs[4] < 20 && stdDvsClrs[5] < 20) {
-            hF = 1.0f;
-            sF = 0.5f;
-            vF = 1.0f;
-        } else if (avgClrs[0] < .2 && stdDvsClrs[0] < 0.5 && stdDvsClrs[5] < 20) {
-            // reddish skies
-            hF = 1.0f;
-            sF = 0.5f;
-            vF = 1.0f;
-        }
-        
-        float maxS = Float.MIN_VALUE;
-        float maxH = Float.MIN_VALUE;
-        float maxV = Float.MIN_VALUE;
-        
-        for (int i = 0; i < filteredHSVLCH.size(); ++i) {
-            
-            OneDFloatArray a = filteredHSVLCH.get(i);
-            
-            if (a.a[0] > maxH) {
-                maxH = a.a[0];
-            }
-            if (a.a[1] > maxS) {
-                maxS = a.a[1];
-            }
-            if (a.a[2] > maxV) {
-                maxV = a.a[2];
-            }
-        }
-                
-        // trying an objective function of 
-        // obj cost = 5*(h-hmax) + (s-smax) + 0.5*(v-vmax).
-        float[] costs = new float[filteredHSVLCH.size()];
-        for (int i = 0; i < filteredHSVLCH.size(); ++i) {
-            float[] a = filteredHSVLCH.get(i).a;
-            float cost = 
-                hF * (Math.abs(a[0] - maxH)) +
-                sF * (Math.abs(a[1] - maxS)) + 
-                vF * (Math.abs(a[2] - maxV)) 
-                ;
-            costs[i] = cost;
-        }
-        
-        // sort filtered lists by costs
-        QuickSort.sortBy1stArg(costs, filteredHSVLCH, filteredLabeledRegion);
-    }
-
-    private void findSimilar(List<Set<PairInt>> labeledSets,
-        float[][] hsvlch, int starterIdx, TIntSet add) {
-        
-        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
-                
-        float[] strtClrs = hsvlch[starterIdx];
-        
-        for (int i = 0; i < hsvlch.length; ++i) {
-            if (i == starterIdx) {continue;}
-            
-            int[] xyCen = ch.calculateRoundedXYCentroids(labeledSets.get(i));
-            
-            float[] clrs = hsvlch[i];
-            
-            float diffH = Math.abs(clrs[0] - strtClrs[0]);
-            if (diffH > 0.1) {
-                //System.out.println("removed by h: " + Arrays.toString(xyCen)
-                //    + " " + Arrays.toString(clrs));
-                continue;
-            }
-            
-            // h of lch is a wrap around scale from 0 to 255, inclusive,
-            // so need to add a phase to check whether closer to other end.
-            float h_0 = strtClrs[5];
-            float h_1 = clrs[5];
-            if (h_0 > h_1) {
-                // add a phase to next value if it's closer to current with addition
-                if ((h_0 - h_1) > ((h_1 + 255) - h_0)) {
-                    h_1 += 255;
-                }
-            } else if (h_1 > h_0) {
-                // add a phase to next value if it's closer to current with addition
-                if ((h_1 - h_0) > ((h_0 + 255) - h_1)) {
-                    h_0 += 255;
-                }
-            }
-            float diff = Math.abs(h_0 - h_1);
-
-            if (diff > 7) {
-                //System.out.println("removed by h, lch: diff=" + diff 
-                //    + Arrays.toString(xyCen)
-                //    + " " + " " 
-                //    + Arrays.toString(clrs));
-                continue;
-            }
-            
-            float diffV = Math.abs(clrs[2] - strtClrs[2]);
-            if (diffV > 0.05) {
-                //System.out.println("removed by v: " + Arrays.toString(xyCen)
-                //    + " " + Arrays.toString(clrs));
-                continue;
-            }
-            
-            add.add(i);
-        }
-    }
-
-    private void calcMeanAndStdv(List<OneDFloatArray> filteredHSVLCH, 
-        float[] avgClrs, float[] stdDvsClrs) {
-        
-        for (OneDFloatArray a : filteredHSVLCH) {
-            float[] clrs = a.a;
-            for (int j = 0; j < clrs.length; ++j) {
-                avgClrs[j] += clrs[j];
-            }
-        }
-        for (int j = 0; j < avgClrs.length; ++j) {
-            avgClrs[j] /= (float)filteredHSVLCH.size();
-        }
-        
-        for (OneDFloatArray a : filteredHSVLCH) {
-            float[] clrs = a.a;
-            for (int j = 0; j < clrs.length; ++j) {
-                float diff = avgClrs[j] - clrs[j];
-                stdDvsClrs[j] += (diff * diff);
-            }
-        }
-        for (int j = 0; j < avgClrs.length; ++j) {
-            stdDvsClrs[j] = (float)
-                (Math.sqrt(stdDvsClrs[j]/(float)filteredHSVLCH.size()));
-        }
-    }
-
     private boolean isAVector(BSObj obj, int idx2, 
         List<Set<PairInt>> labeledSets, List<OneDIntArray> xyCenters,
         int[] labels, int width, int height) {
@@ -523,108 +289,157 @@ public class Sky {
         return true;
     }
 
-    private TIntSet findAdjacentToSun(Set<PairInt> sunPoints, int[] pointLabels,
-        int width, int height) {
-
-        TIntSet adjLabels = new TIntHashSet();
-     
-        int[] dxs = Misc.dx4;
-        int[] dys = Misc.dy4;
+    /**
+     * find any labeledSets with points having y=0 and sky colors and return the
+     * index of those sets in labeledSets.
+     * @param ptCHs
+     * @param labeledSets
+     * @return 
+     */
+    private TIntList findSkyColorsAtTop(List<OneDIntArray> ptCHs, 
+        List<TIntSet> labeledSets, int imgWidth) {
         
-        for (PairInt p : sunPoints) {
-            int x = p.getX();
-            int y = p.getY();
-            for (int k = 0; k < dxs.length; ++k) {
-                int x2 = x + dxs[k];
-                int y2 = y + dys[k];
-                if (x2 < 0 || y2 < 0 || x2 >= width || y2 >= height) {
-                    continue;
+        /*
+        ptImg values for histogram bins:
+         0:  red = 0 - 18
+         1:  orange = 18 - 40
+         2:  yellow = 41 - 60ish
+         3:  green = 61 - 106
+         4:  blue = 107 - 192
+         5:  purple = 193 - 255
+        */
+        
+        TIntList indexes = new TIntArrayList();
+        
+        for (int i = 0; i < labeledSets.size(); ++i) {
+            TIntSet pixIdxs = labeledSets.get(i);
+            if (hasAPointWithY(0, pixIdxs, imgWidth)) {
+                int[] hist = ptCHs.get(i).a;
+                float[] normalizedHist = new float[hist.length];
+                int tot = 0;
+                for (int c : hist) {
+                    tot += c;
                 }
-                PairInt p2 = new PairInt(x2, y2);
-                if (sunPoints.contains(p2)) {
-                    continue;
+                for (int j = 0; j < hist.length; ++j) {
+                    normalizedHist[j] = (float)hist[j]/(float)tot;
                 }
-                int pixIdx2 = (y2 * width) + x2;
-                adjLabels.add(pointLabels[pixIdx2]);
+                // all colors are sky colors except green,
+                // but this could be improved
+                if (normalizedHist[3] < 0.3f) {
+                    indexes.add(i);
+                }
             }
         }
         
-        return adjLabels;
+        return indexes;
     }
 
-    private void addAdjacentSky(Set<PairInt> sunPoints, Set<PairInt> sky0Points,
-        int[] pointLabels, List<Set<PairInt>> labeledSets, float[][] hsvlch, 
-        float[] avgClrs, float[] stdDvClrs, TIntSet adjLabels, 
-        Set<PairInt> output, boolean type1) {
-
-        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
+    private boolean hasAPointWithY(int yCoord, TIntSet pixIdxs, 
+        int imgWidth) {
         
-        TIntSet add = new TIntHashSet();
-        
-        // in the adjacent points, look for those that have sky colors
-        TIntIterator iter = adjLabels.iterator();
+        TIntIterator iter = pixIdxs.iterator();
         while (iter.hasNext()) {
-            
-            int label = iter.next();
-            
-            float[] clrs = hsvlch[label];
-            
-            if (isInSkyRange(clrs, type1)) {
-                add.add(label);
-            }
-        }
-        
-        if (add.isEmpty()) {
-            return;
-        }
-        
-        int n0 = add.size();
-        
-        addIfGradientIllumination(pointLabels, labeledSets, hsvlch, 
-            add.iterator().next(), add, avgClrs, stdDvClrs, true);
-        
-        int n1 = add.size();
-        System.out.println("added to sky=" + (n1 - n0));
-                
-        iter = add.iterator();
-        while (iter.hasNext()) {
-            output.addAll(labeledSets.get(iter.next()));
-        }
-        
-    }
-    
-    private boolean isInSkyRange(float[] clrs, boolean type1) {
-        
-        if (type1) {
-            if ((clrs[2] > 0.8) ||
-                ((clrs[2] > vLLimit1) && (clrs[0] < hULimit || 
-                clrs[0] > hLLimit))) {
-
+            int pixIdx = iter.next();
+            int y = pixIdx/imgWidth;
+            if (y == yCoord) {
                 return true;
-
-                //int[] xyCen = ch.calculateRoundedXYCentroids(
-                //    labeledSets.get(label));
-                //System.out.println(debugLabel + 
-                //    " xy=" + Arrays.toString(xyCen) + 
-                //    " hsvlch=" + Arrays.toString(clrs) + " n=" 
-                //    + labeledSets.get(label).size());
-            }
-        } else {
-            if ((clrs[2] > 0.8) ||
-                ((clrs[2] > vLLimit0) && (clrs[0] < hULimit || 
-                clrs[0] > hLLimit))) {
-
-                return true;
-
-                //int[] xyCen = ch.calculateRoundedXYCentroids(
-                //    labeledSets.get(label));
-                //System.out.println(debugLabel + 
-                //    "** xy=" + Arrays.toString(xyCen) + 
-                //    " hsvlch=" + Arrays.toString(clrs) + " n=" 
-                //    + labeledSets.get(label).size());
-            }
+            } 
         }
+        
         return false;
+    }
+
+    private TIntIntMap getLabelSetLs(GreyscaleImage gsImg, 
+        List<TIntSet> labeledSets, TIntList indexes) {
+        
+        TIntIntMap map = new TIntIntHashMap();
+        
+        TIntIterator iter = indexes.iterator();
+        while (iter.hasNext()) {
+            int idx = iter.next();
+            
+            TIntSet pixIdxs = labeledSets.get(idx);
+            
+            TIntIterator iter2 = pixIdxs.iterator();
+            
+            int avg = 0;
+            while (iter2.hasNext()) {
+                int pixIdx = iter2.next();
+                avg += gsImg.getValue(pixIdx);
+            }
+            avg /= pixIdxs.size();
+            
+            map.put(idx, avg);
+        }
+        
+        return map;
+    }
+
+    private TIntObjectMap<PairInt> calcCentroids(List<TIntSet> labeledSets, 
+        TIntList indexes, int width) {
+        
+        TIntObjectMap<PairInt> map = new TIntObjectHashMap<PairInt>();
+        
+        TIntIterator iter = indexes.iterator();
+        while (iter.hasNext()) {
+            int idx = iter.next();
+            
+            TIntSet pixIdxs = labeledSets.get(idx);
+            
+            TIntIterator iter2 = pixIdxs.iterator();
+            
+            int xAvg = 0;
+            int yAvg = 0;
+            while (iter2.hasNext()) {
+                int pixIdx = iter2.next();
+                int y = pixIdx/width;
+                int x = pixIdx - (y * width);
+                xAvg += x;
+                yAvg += y;
+            }
+            xAvg /= pixIdxs.size();
+            yAvg /= pixIdxs.size();
+            
+            map.put(idx, new PairInt(xAvg, yAvg));
+        }
+        
+        return map;
+    }
+
+    private TIntList getBottomBordering(List<TIntSet> labeledSets, int width,
+        int height) {
+
+        TIntList indexes = new TIntArrayList();
+        
+        for (int i = 0; i < labeledSets.size(); ++i) {
+            TIntSet pixIdxs = labeledSets.get(i);
+            if (hasAPointWithY(height - 1, pixIdxs, width)) {
+                indexes.add(i);
+            }
+        }
+        
+        return indexes;
+    }
+
+    private Set<PairInt> createPoints(List<TIntSet> labeledSets, 
+        TIntList indexes, int width) {
+        
+        Set<PairInt> set = new HashSet<PairInt>();
+        
+        TIntIterator iter = indexes.iterator();
+        while (iter.hasNext()) {
+            int idx = iter.next();
+            TIntSet pixIdxs = labeledSets.get(idx);
+            TIntIterator iter2 = pixIdxs.iterator();
+            while (iter2.hasNext()) {
+                int pixIdx = iter2.next();
+                int y = pixIdx/width;
+                int x = pixIdx - (y * width);
+                set.add(new PairInt(x, y));
+            }
+        }
+        
+        return set;
     }
     
     private class BSObj {
@@ -921,6 +736,12 @@ public class Sky {
         
     }
     
+    /**
+     * NOTE: improvements in segmentation may improve this method for sky and
+     * filtering out foreground in the future.
+     * 
+     * @return 
+     */
     public List<SkyObject> findSkyAssumingHorizon() {
         
         /*
@@ -949,38 +770,126 @@ public class Sky {
         NOTE that polarization data isnt available here in the project currently, 
         nor are multiple images taken at the
         same location and pose.
-
         */
         
         /*
-        - get mser edges and labeled sets
-        - extract the y=0 bordering sets
-        - need to determine color presence either using polar theta
-             and making  transformed test for the colors and angle
-             or using the rough clr hist bins in the class,
-        - need to make 3 lists:
-            -- non sky as foreground or background, that is
-               the non-sky colors touching y=yMax.
-            -- definitely sky
-                 possibly only the starting cell
-            -- possibly sky
-                 - sky colored sets
+        starting with the segmentation from MSEREdges,
+           -- list 1: all labeled sets touching the y=0 border of the image
+                      and having colors not dominated by green.
+           -- list 2: all labeled sets touching the y=hieght-1 border of the
+                      image.
+           -- search for sun and rainbows
         
-        pt values:
-        red = 0 - 18
-        orange = 18 - 40
-        yellow = 41 - 60ish
-        green = 61 - 106
-        blue = 107 - 192
-        purple = 193 - 255
-       
+        general rules used below:
+           if list 1 contains only one set
+               if no sun nor rainbows, that set is returned 
+                  without any further region growing.
+               else if has sun or rainbows,
+                  return the top border set and the sun or rainbow.
+                  it would be difficult to add other sets without
+                  other information such as labeling, polarization,
+                  multiple images (for cloud or foreground motion), etc.
+           if list 1 contains more than one set,
+               -- removing the intersection with list 2
+               -- if sun or rainbow are present,
+                  -- find immediate surrounding sky and add those to the list
+                     to be returned, but with restrictions that they be
+                     sky colors and if skies are red, then y < sun sets only.
+                     (NOTE: in case of test image for arizona, there possibly
+                     needs to be a region growing stage here)
+               -- if all of the remaining list 1 are predominantly
+                  blue histograms,
+                     (or alternatively, find brightest 
+                      with little to no green (<0.01 blue)
+                      as starter and
+                     return it and the others resembling its histogram).
+               -- if there are only red histograms in list 1
+                  return all
+               -- if there are blue and red histograms in list 1
+                  if all are bright, return all
+                  else return brightest
         */
+        
         GreyscaleImage ptImg = mserEdges.getPtImg();
         
-        List<TIntSet> labeledSet = mserEdges.getLabeledSets();
+        GreyscaleImage gsImg = mserEdges.getGsImg();
+        
+        List<TIntSet> labeledSets = mserEdges.getLabeledSets();
        
-        //return null;
-        throw new UnsupportedOperationException("not yet implemented");
+        List<OneDIntArray> ptCHs = 
+            ColorHistogram.createPTHistograms(ptImg, labeledSets);
+        
+        //NOTE: this may need corrections for some bright white clouds:
+        TIntList topSkyIndexes = findSkyColorsAtTop(ptCHs, labeledSets, 
+            ptImg.getWidth());
+        
+        TIntObjectMap<PairInt> topXYs = calcCentroids(labeledSets, topSkyIndexes,
+            gsImg.getWidth());
+        
+        SkyObject sun = findSun();
+        
+        List<SkyObject> rbs = findRainbows();
+        
+        if (topSkyIndexes.size() == 1) {
+            
+            PairInt xy = topXYs.get(topSkyIndexes.get(0));
+            
+            Set<PairInt> skyPoints = createPoints(labeledSets, topSkyIndexes, 
+                ptImg.getWidth());
+            
+            List<SkyObject> sky = new ArrayList<SkyObject>();
+            
+            SkyObject obj = new SkyObject();
+            obj.points = skyPoints;
+            obj.xyCenter = new int[]{xy.getX(), xy.getY()};
+            sky.add(obj);
+      
+            if (sun != null) {
+                sky.add(sun);
+            } else if (rbs != null && !rbs.isEmpty()) {
+                sky.addAll(rbs);
+            }
+            
+            return sky;
+        }
+        
+        TIntIntMap topAvgGrey = getLabelSetLs(gsImg, labeledSets, topSkyIndexes);
+        
+        if (debug) {
+            System.out.println(debugLabel);
+            TIntIterator iter = topSkyIndexes.iterator();
+            while (iter.hasNext()) {
+                int idx = iter.next();
+                int[] hist = ptCHs.get(idx).a;
+                System.out.println("  top " + Arrays.toString(hist) + ""
+                    + "  inten=" + topAvgGrey.get(idx)
+                    + "  xy=" + topXYs.get(idx));
+            }
+        }
+        
+        TIntList bottomBorderIndexes = getBottomBordering(labeledSets,
+            ptImg.getWidth(), ptImg.getHeight());
+        
+        TIntIntMap bottomAvgGrey = getLabelSetLs(gsImg, labeledSets, 
+            bottomBorderIndexes);
+        
+        // DEBUG xy centroids
+        TIntObjectMap<PairInt> bottomXYs = calcCentroids(labeledSets, 
+            bottomBorderIndexes, gsImg.getWidth());
+        
+        if (debug) {
+            TIntIterator iter = bottomBorderIndexes.iterator();
+            while (iter.hasNext()) {
+                int idx = iter.next();
+                int[] hist = ptCHs.get(idx).a;
+                System.out.println("  bot " + Arrays.toString(hist) + ""
+                    + "  inten=" + bottomAvgGrey.get(idx)
+                    + "  xy=" + bottomXYs.get(idx));
+            }
+        }
+        
+        return null;
+        //throw new UnsupportedOperationException("not yet implemented");
     }
     
     //TODO: consider adding findSolarEclipse or sun w/ occultation or coronograph...
