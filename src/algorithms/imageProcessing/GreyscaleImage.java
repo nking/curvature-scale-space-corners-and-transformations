@@ -253,7 +253,9 @@ public class GreyscaleImage {
     
     /**
      * convenience method to multiply entire image by factor.  Note that
-     * if the result for a pixel is > 255, it is set to 255.
+     * if the result for a pixel is > maxAllowedValue (i.e. 255 for default 
+     * constructor), 
+     * it is set to maxAllowed.
      * @param factor a positive number that results in pixel values in range
      * 0 to 255;
      */
@@ -266,6 +268,9 @@ public class GreyscaleImage {
         
         for (int i = 0; i < getNPixels(); ++i) {
             int v = Math.round(getValue(i)*factor);
+            if (v > maxAllowed) {
+                v = maxAllowed;
+            }
             setValue(i, v);
         }
         

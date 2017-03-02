@@ -608,67 +608,6 @@ public class CannyEdgeFilterAdaptive {
 
         gY = getGradientY1D(img);
         
-        // a look at reversing axes to make gradient then averaging
-        GreyscaleImage tmp = img.createFullRangeIntWithDimensions();
-        for (int i = 0; i < gX.getWidth(); ++i) {
-            int i2 = gX.getWidth() -i - 1;
-            for (int j = 0; j < gX.getHeight(); ++j) {
-                int v = gX.getValue(i, j);
-                tmp.setValue(i2, j, v);
-            }
-        }
-        GreyscaleImage gXR = getGradientX1D(tmp);
-        // swap columns in gXR
-        int nSep = gXR.getWidth() >> 1;
-        for (int j = 0; j < gXR.getHeight(); ++j) {
-            for (int i = 0; i < nSep; ++i) {
-                int i2 = gXR.getWidth() - 1 - i;
-                int v = gXR.getValue(i, j);
-                int v2 = gXR.getValue(i2, j);
-                gXR.setValue(i, j, v2);
-                gXR.setValue(i2, j, v);
-            }
-        }
-        
-        for (int i = 0; i < gX.getWidth(); ++i) {
-            for (int j = 0; j < gX.getHeight(); ++j) {
-                int v = gX.getValue(i, j);
-                int vR = gXR.getValue(i, j);
-                int avg = (v + vR)/2;
-                gX.setValue(i, j, avg);
-            }
-        }
-        
-        tmp = img.createFullRangeIntWithDimensions();
-        for (int i = 0; i < gY.getWidth(); ++i) {
-            for (int j = 0; j < gY.getHeight(); ++j) {
-                int j2 = gY.getHeight() - j - 1;
-                int v = gY.getValue(i, j);
-                tmp.setValue(i, j2, v);
-            }
-        }
-        GreyscaleImage gYR = getGradientX1D(tmp);
-        // swap rows in gYR
-        nSep = gYR.getHeight() >> 1;
-        for (int i = 0; i < gYR.getWidth(); ++i) {
-            for (int j = 0; j < nSep; ++j) {
-                int j2 = gYR.getHeight() - 1 - j;
-                int v = gYR.getValue(i, j);
-                int v2 = gYR.getValue(i, j2);
-                gYR.setValue(i, j, v2);
-                gYR.setValue(i, j2, v);
-            }
-        }
-        
-        for (int i = 0; i < gY.getWidth(); ++i) {
-            for (int j = 0; j < gY.getHeight(); ++j) {
-                int v = gY.getValue(i, j);
-                int vR = gYR.getValue(i, j);
-                int avg = (v + vR)/2;
-                gY.setValue(i, j, avg);
-            }
-        }
-        
         g = imageProcessor.combineConvolvedImages(gX, gY);
         
         // the theta is in range 0 to 180
