@@ -16,6 +16,7 @@ public class SkyTest extends TestCase {
     }
     
     private String[] fileNames = new String[] {
+        
         "seattle.jpg",
         "cloudy_san_jose.jpg",
         "venturi_mountain_j6_0001.png",
@@ -49,7 +50,6 @@ public class SkyTest extends TestCase {
         
         "sky_with_rainbow.jpg",
         "sky_with_rainbow2.jpg"
-        
     };
     
     private String[] sunFileNames = new String[] {
@@ -105,7 +105,7 @@ public class SkyTest extends TestCase {
                 //.findSky();
                 .findSkyAssumingHorizon();
             
-            //assertNotNull(skyList);
+            assertNotNull(skyList);
             
             //MiscDebug.writeImage(skyMask, "_" + fileName1Root + "_SKY_MASK_");
         
@@ -222,7 +222,7 @@ public class SkyTest extends TestCase {
             
             Sky sky = new Sky(img);
             List<SkyObject> objs = sky.findRainbows();
-                  
+                     
             assertNotNull(objs);
             
             for (int k = 0; k < objs.size(); ++k) {

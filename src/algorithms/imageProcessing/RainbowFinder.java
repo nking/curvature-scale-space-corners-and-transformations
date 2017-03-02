@@ -152,11 +152,16 @@ public class RainbowFinder {
             normalizedHist[j] = (float)ptCH[j]/(float)tot;
         }
         
-        //System.out.println("rainbow? " + Arrays.toString(ptCH) + 
-        //    "\n   " + Arrays.toString(normalizedHist));
+        System.out.println("rainbow? " + Arrays.toString(ptCH) + 
+            "\n   " + Arrays.toString(normalizedHist));
         
-        if (normalizedHist[0] < 0.1 && normalizedHist[4] < 0.1 &&
-            normalizedHist[5] < 0.1) {
+        boolean dark = normalizedHist[0] > 0.1 
+            && normalizedHist[1] > 0.1;
+        boolean bright = normalizedHist[1] > 0.01
+            && normalizedHist[3] > 0.01 
+            && normalizedHist[4] > 0.01;
+        
+        if (!dark && !bright) {
             return null;
         }
         

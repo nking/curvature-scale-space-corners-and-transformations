@@ -1,15 +1,10 @@
 package algorithms.imageProcessing;
 
-import algorithms.QuickSort;
 import algorithms.imageProcessing.features.mser.MSEREdges;
-import algorithms.imageProcessing.features.mser.Region;
-import algorithms.misc.Misc;
-import algorithms.misc.MiscDebug;
 import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIterator;
-import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntIntMap;
@@ -18,12 +13,10 @@ import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
-import java.awt.Color;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -84,12 +77,11 @@ public class Sky {
         return rFinder.findRainbows(mserEdges);
     }
     
-    public SkyObject findMoonDogs() {
-        throw new UnsupportedOperationException("not ready for use");
-    }
+    //public SkyObject findMoonDogs() {
+    //    throw new UnsupportedOperationException("not ready for use");
+    //}
     
     /**
-     * NOT READY FOR USE
      * 
      * NOTE: there are several ways to search for the sky cells in the image,
      * depending upon what information is available.
@@ -119,14 +111,9 @@ public class Sky {
           blue or red skies in the segmentation regions...
           lt 0.17 gt 0.5 
      (5) could make an assumption about the orientation of the camera place, that is, decreasing y
-          pixel coord is direction "up" where sky is found.
-      
-     @return 
+          pixel coord is direction "up" where sky is found.      
      */
-    public GreyscaleImage extractSkyMask(boolean useSun) {
     
-        throw new UnsupportedOperationException("not yet implemented");
-    }
     
     /**
      * NOT READY FOR USE.
@@ -169,11 +156,10 @@ public class Sky {
      (7) multiple images at same location and pose can help to distinguish
          between moving sky such as clouds and non-sky.
      
-     * @return 
      */
-    public List<SkyObject> findSky() {
-       throw new UnsupportedOperationException("not yet implemented");
-    }
+    //public List<SkyObject> findSky() {
+    //   throw new UnsupportedOperationException("not yet implemented");
+    //}
     
     public void setToDebug(String dbgLbl) {
         debug = true;
@@ -871,6 +857,8 @@ public class Sky {
             return sky;
         }
         
+        // ---- NOTE: still editing below -----
+        
         TIntIntMap topAvgGrey = getLabelSetLs(gsImg, labeledSets, topSkyIndexes);
         
         if (debug) {
@@ -928,7 +916,7 @@ public class Sky {
                 + "  xy=" + topXYs.get(idx));
             if (norm[0] > 0.1) {
                 allAreBlue = false;
-            } else if (norm[3] < 0.01 && norm[0] < 0.1) {
+            } else if (norm[3] < 0.03 && norm[0] < 0.1) {
                 // to try to remove relfection from water, avoiding the
                 //    histograms with green and darker for blue skies
                 int avg = topAvgGrey.get(idx);
@@ -967,7 +955,7 @@ public class Sky {
                 int idx = iter.next();
                 float[] norm = normPTCHs.get(idx).a;
                 // collect the sky w/o green that has similar intensity
-                if (norm[3] < 0.01 && norm[0] < 0.1) {
+                if (norm[3] < 0.03 && norm[0] < 0.1) {
                     int avg = topAvgGrey.get(idx);
                     filtered.add(idx);
                 }
@@ -983,6 +971,12 @@ public class Sky {
             obj.points = skyPoints;
             obj.xyCenter = xyCen;
             sky.add(obj);
+            
+            if (sun != null) {
+                sky.add(sun);
+            } else if (rbs != null && !rbs.isEmpty()) {
+                sky.addAll(rbs);
+            }
             
             return sky;
         }
@@ -1001,28 +995,49 @@ public class Sky {
         //    (mostly, trying to remove anything resembling the
         //    removed foreground)
         
-        /*
-        if list 1 contains more than one set,
-           -- remove the intersection with list 2
-           -- if all of the remaining list 1 are predominantly
-              blue histograms,
-                 (or alternatively, find brightest 
-                  with little to no green (<0.01 blue)
-                  as starter and
-                 return it and the others resembling its histogram).
-           -- if there are only red histograms in list 1
-              return all
-           -- if there are blue and red histograms in list 1
-              if all are bright, return all
-              else return brightest
-           -- if sun or rainbow are present, return those too.
-              it would be difficult to add other sets without
-              other information such as labeling, polarization,
-              multiple images (for cloud or foreground motion), etc.
-        */
+        ColorHistogram clrHist = new ColorHistogram();
         
-        return null;
-        //throw new UnsupportedOperationException("not yet implemented");
+        TIntList filtered = new TIntArrayList();
+            
+        iter = topSkyIndexes.iterator();
+        while (iter.hasNext()) {
+            int idx = iter.next();
+            int[] hist = ptCHs.get(idx).a;
+            boolean keep = true;
+            for (int i = 0; i < rmvd.size(); ++i) {
+                int rIdx = rmvd.get(i);
+                int[] rHist = ptCHs.get(rIdx).a;
+                float intersection = clrHist.intersection(hist, rHist);
+                System.out.println(" inter=" + intersection + " " +
+                    Arrays.toString(hist));   
+                if (intersection > 0.5) {
+                    keep = false;
+                    break;
+                }
+            }
+            if (keep) {
+                filtered.add(idx);
+            }
+        }
+
+        Set<PairInt> skyPoints = createPoints(labeledSets, filtered, 
+            ptImg.getWidth());
+        int[] xyCen = ch.calculateRoundedXYCentroids(skyPoints);
+
+        List<SkyObject> sky = new ArrayList<SkyObject>();
+
+        SkyObject obj = new SkyObject();
+        obj.points = skyPoints;
+        obj.xyCenter = xyCen;
+        sky.add(obj);
+        
+        if (sun != null) {
+            sky.add(sun);
+        } else if (rbs != null && !rbs.isEmpty()) {
+            sky.addAll(rbs);
+        }
+        
+        return sky;
     }
     
     //TODO: consider adding findSolarEclipse or sun w/ occultation or coronograph...
