@@ -296,7 +296,7 @@ public class Sky {
      * @param labeledSets
      * @return 
      */
-    private TIntList findSkyColorsAtTop(List<OneDIntArray> ptCHs, 
+    private TIntList findSkyColorsAtTop(List<OneDFloatArray> normPTCHs, 
         List<TIntSet> labeledSets, int imgWidth) {
         
         /*
@@ -314,15 +314,7 @@ public class Sky {
         for (int i = 0; i < labeledSets.size(); ++i) {
             TIntSet pixIdxs = labeledSets.get(i);
             if (hasAPointWithY(0, pixIdxs, imgWidth)) {
-                int[] hist = ptCHs.get(i).a;
-                float[] normalizedHist = new float[hist.length];
-                int tot = 0;
-                for (int c : hist) {
-                    tot += c;
-                }
-                for (int j = 0; j < hist.length; ++j) {
-                    normalizedHist[j] = (float)hist[j]/(float)tot;
-                }
+                float[] normalizedHist = normPTCHs.get(i).a;
                 // all colors are sky colors except green,
                 // but this could be improved
                 if (normalizedHist[3] < 0.3f) {
@@ -440,6 +432,25 @@ public class Sky {
         }
         
         return set;
+    }
+
+    private List<OneDFloatArray> normalize(List<OneDIntArray> chs) {
+    
+        List<OneDFloatArray> norm = new ArrayList<OneDFloatArray>();
+        for (int i = 0; i < chs.size(); ++i) {
+            int[] a = chs.get(i).a;
+            int tot = 0;
+            for (int c : a) {
+                tot += c;
+            }
+            float[] b = new float[a.length];
+            for (int j = 0; j < a.length; ++j) {
+                b[j] = (float)a[j]/(float)tot;
+            }
+            norm.add(new OneDFloatArray(b));
+        }
+        
+        return norm;
     }
     
     private class BSObj {
@@ -790,13 +801,7 @@ public class Sky {
                   other information such as labeling, polarization,
                   multiple images (for cloud or foreground motion), etc.
            if list 1 contains more than one set,
-               -- removing the intersection with list 2
-               -- if sun or rainbow are present,
-                  -- find immediate surrounding sky and add those to the list
-                     to be returned, but with restrictions that they be
-                     sky colors and if skies are red, then y < sun sets only.
-                     (NOTE: in case of test image for arizona, there possibly
-                     needs to be a region growing stage here)
+               -- remove the intersection with list 2
                -- if all of the remaining list 1 are predominantly
                   blue histograms,
                      (or alternatively, find brightest 
@@ -808,6 +813,10 @@ public class Sky {
                -- if there are blue and red histograms in list 1
                   if all are bright, return all
                   else return brightest
+               -- if sun or rainbow are present, return those too.
+                  it would be difficult to add other sets without
+                  other information such as labeling, polarization,
+                  multiple images (for cloud or foreground motion), etc.
         */
         
         GreyscaleImage ptImg = mserEdges.getPtImg();
@@ -816,12 +825,18 @@ public class Sky {
         
         List<TIntSet> labeledSets = mserEdges.getLabeledSets();
        
+        if (labeledSets.isEmpty()) {
+            return null;
+        }
+        
         List<OneDIntArray> ptCHs = 
             ColorHistogram.createPTHistograms(ptImg, labeledSets);
         
+        List<OneDFloatArray> normPTCHs = normalize(ptCHs);
+        
         //NOTE: this may need corrections for some bright white clouds:
-        TIntList topSkyIndexes = findSkyColorsAtTop(ptCHs, labeledSets, 
-            ptImg.getWidth());
+        TIntList topSkyIndexes = findSkyColorsAtTop(normPTCHs,
+            labeledSets, ptImg.getWidth());
         
         TIntObjectMap<PairInt> topXYs = calcCentroids(labeledSets, topSkyIndexes,
             gsImg.getWidth());
@@ -843,7 +858,10 @@ public class Sky {
             obj.points = skyPoints;
             obj.xyCenter = new int[]{xy.getX(), xy.getY()};
             sky.add(obj);
-      
+    
+            System.out.println(debugLabel + ": hist=" + Arrays.toString(
+                normPTCHs.get(0).a));  
+            
             if (sun != null) {
                 sky.add(sun);
             } else if (rbs != null && !rbs.isEmpty()) {
@@ -861,9 +879,9 @@ public class Sky {
             while (iter.hasNext()) {
                 int idx = iter.next();
                 int[] hist = ptCHs.get(idx).a;
-                System.out.println("  top " + Arrays.toString(hist) + ""
-                    + "  inten=" + topAvgGrey.get(idx)
-                    + "  xy=" + topXYs.get(idx));
+                //System.out.println("  top " + Arrays.toString(hist) + ""
+                //    + "  inten=" + topAvgGrey.get(idx)
+                //    + "  xy=" + topXYs.get(idx));
             }
         }
         
@@ -882,11 +900,126 @@ public class Sky {
             while (iter.hasNext()) {
                 int idx = iter.next();
                 int[] hist = ptCHs.get(idx).a;
-                System.out.println("  bot " + Arrays.toString(hist) + ""
-                    + "  inten=" + bottomAvgGrey.get(idx)
-                    + "  xy=" + bottomXYs.get(idx));
+                //System.out.println("  bot " + Arrays.toString(hist) + ""
+                //    + "  inten=" + bottomAvgGrey.get(idx)
+                //    + "  xy=" + bottomXYs.get(idx));
             }
         }
+        
+        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
+        
+        // could improve efficiency here:
+        TIntList rmvd = new TIntArrayList(topSkyIndexes);
+        topSkyIndexes.removeAll(bottomBorderIndexes);
+        rmvd.removeAll(topSkyIndexes);
+        
+        // test for all blue or 
+        //    brightest having essentially no green
+        //    and return those resembling them
+        boolean allAreBlue = true;
+        int maxAvgIfBlue = Integer.MIN_VALUE;
+        int maxAvgIdx = -1;
+        TIntIterator iter = topSkyIndexes.iterator();
+        while (iter.hasNext()) {
+            int idx = iter.next();
+            float[] norm = normPTCHs.get(idx).a;
+            System.out.println("  *top " + Arrays.toString(norm) + ""
+                + "  inten=" + topAvgGrey.get(idx)
+                + "  xy=" + topXYs.get(idx));
+            if (norm[0] > 0.1) {
+                allAreBlue = false;
+            } else if (norm[3] < 0.01 && norm[0] < 0.1) {
+                // to try to remove relfection from water, avoiding the
+                //    histograms with green and darker for blue skies
+                int avg = topAvgGrey.get(idx);
+                if (avg > maxAvgIfBlue) {
+                    maxAvgIfBlue = avg;
+                    maxAvgIdx = idx;
+                }
+            }
+        }
+        {
+        iter = rmvd.iterator();
+        while (iter.hasNext()) {
+            int idx = iter.next();
+            float[] normHost = normPTCHs.get(idx).a;
+            System.out.println("  RMVD " + Arrays.toString(normHost) + ""
+                + "  inten=" + topAvgGrey.get(idx)
+                + "  xy=" + topXYs.get(idx));
+        }
+        }
+        
+        if (allAreBlue) {
+            
+            if (maxAvgIdx == -1) {
+                // possibly an error in algorithm above, espec. 
+                //    regarding reflection filter for green
+                return null;
+            }
+            
+            //TODO: consider how to correct for sky reflected in water
+            //  (see stinson beach test image)
+            
+            TIntList filtered = new TIntArrayList();
+            
+            iter = topSkyIndexes.iterator();
+            while (iter.hasNext()) {
+                int idx = iter.next();
+                float[] norm = normPTCHs.get(idx).a;
+                // collect the sky w/o green that has similar intensity
+                if (norm[3] < 0.01 && norm[0] < 0.1) {
+                    int avg = topAvgGrey.get(idx);
+                    filtered.add(idx);
+                }
+            }
+            
+            Set<PairInt> skyPoints = createPoints(labeledSets, filtered, 
+                ptImg.getWidth());
+            int[] xyCen = ch.calculateRoundedXYCentroids(skyPoints);
+            
+            List<SkyObject> sky = new ArrayList<SkyObject>();
+            
+            SkyObject obj = new SkyObject();
+            obj.points = skyPoints;
+            obj.xyCenter = xyCen;
+            sky.add(obj);
+            
+            return sky;
+        }
+        
+        /*
+        ptImg values for histogram bins:
+         0:  red = 0 - 18
+         1:  orange = 18 - 40
+         2:  yellow = 41 - 60ish
+         3:  green = 61 - 106
+         4:  blue = 107 - 192
+         5:  purple = 193 - 255
+        */
+        
+        // filtering for all red or blue and red
+        //    (mostly, trying to remove anything resembling the
+        //    removed foreground)
+        
+        /*
+        if list 1 contains more than one set,
+           -- remove the intersection with list 2
+           -- if all of the remaining list 1 are predominantly
+              blue histograms,
+                 (or alternatively, find brightest 
+                  with little to no green (<0.01 blue)
+                  as starter and
+                 return it and the others resembling its histogram).
+           -- if there are only red histograms in list 1
+              return all
+           -- if there are blue and red histograms in list 1
+              if all are bright, return all
+              else return brightest
+           -- if sun or rainbow are present, return those too.
+              it would be difficult to add other sets without
+              other information such as labeling, polarization,
+              multiple images (for cloud or foreground motion), etc.
+        */
         
         return null;
         //throw new UnsupportedOperationException("not yet implemented");
