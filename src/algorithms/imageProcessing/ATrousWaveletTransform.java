@@ -27,6 +27,34 @@ public class ATrousWaveletTransform {
     
     /**
     Uses the first step of an A Trous wavelet transform, which is two 1D 
+    convolutions of a binomial kernel for sigma=1.
+    * @param input
+     * @return 
+    */
+    public Image smoothToSigmaOne(Image input) {
+        
+        B3SplineFunction scalingFunction = new B3SplineFunction();
+        
+        GreyscaleImage[] smoothed = new GreyscaleImage[3];
+        smoothed[0] = input.copyRedToGreyscale();
+        smoothed[1] = input.copyGreenToGreyscale();
+        smoothed[2] = input.copyRedToGreyscale();
+        
+        for (int i = 0; i < 3; ++i) {
+            smoothed[i] = scalingFunction.calculate(smoothed[i]);
+        }
+        
+        Image out = input.createWithDimensions();
+        for (int i = 0; i < input.getNPixels(); ++i) {
+            out.setRGB(i, smoothed[0].getValue(i), 
+                smoothed[1].getValue(i), smoothed[2].getValue(i));
+        }
+        
+        return out;
+    }
+    
+    /**
+    Uses the first step of an A Trous wavelet transform, which is two 1D 
     convolutions of a binomial kernel for sigma=0.707 (=sqrt(2)/2).
      * @param input
      * @return 
@@ -39,7 +67,35 @@ public class ATrousWaveletTransform {
         
         return smoothed;
     }
+
+    /**
+    Uses the first step of an A Trous wavelet transform, which is two 1D 
+    convolutions of a binomial kernel for sigma=0.707 (=sqrt(2)/2).
+     * @param input
+     * @return 
+    */
+    public Image smoothToSigmaZeroPointSevenOne(Image input) {
         
+        TriangleFunction scalingFunction = new TriangleFunction();
+             
+        GreyscaleImage[] smoothed = new GreyscaleImage[3];
+        smoothed[0] = input.copyRedToGreyscale();
+        smoothed[1] = input.copyGreenToGreyscale();
+        smoothed[2] = input.copyRedToGreyscale();
+        
+        for (int i = 0; i < 3; ++i) {
+            smoothed[i] = scalingFunction.calculateNextLevel(smoothed[i], 0);
+        }
+        
+        Image out = input.createWithDimensions();
+        for (int i = 0; i < input.getNPixels(); ++i) {
+            out.setRGB(i, smoothed[0].getValue(i), 
+                smoothed[1].getValue(i), smoothed[2].getValue(i));
+        }
+        
+        return out;        
+    }
+    
     /**
      * The a trous algorithm is a fast implementation of a wavelet transform 
      * with no downsampling.   It is non-orthogonal, semi-linear runtime

@@ -2,6 +2,7 @@ package algorithms.imageProcessing;
 
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
 import java.util.logging.Logger;
 import java.util.HashSet;
 import algorithms.util.PairInt;
@@ -14,7 +15,9 @@ import java.util.Set;
  * The class began by following the general advice given in
  * "Performance Analysis of Adaptive Canny Edge Detector 
  * Using Bilateral Filter" by Rashmi, Kumar, Jaiswal, and Saxena, 
- * but made modifications afterwards.
+ * but made modifications afterwards and added a "C" gradient of colorspace
+ * LCH to the greyscale gradient.
+ * 
  * Their paper has the following qualities: 
  *<pre>
  * -- instead of a Gaussian filter, uses a bilateral filter
@@ -52,7 +55,7 @@ import java.util.Set;
  * 
  * @author nichole
  */
-public class CannyEdgeFilterAdaptive {
+public class CannyEdgeColorAdaptive {
               
     /** the factor that the low threshold is below the high threshold in the 
     2 layer filter.
@@ -61,8 +64,16 @@ public class CannyEdgeFilterAdaptive {
            
     private EdgeFilterProducts filterProducts = null;
     
-    private boolean performHistEq = false;
-    
+    /**
+     * by default, adds the gradients of L and C from colorspace LCH, scaled
+     * to their own color space vector maxima then the maximum possible in their
+     * color vectors is mapped to 255.
+     * If "scaleGrdients" is set to true, the individual sobel gradients are
+     * scaled so that their maximum values present in the image are transformed
+     * to values 255.
+     */
+    private boolean scaleGradients = false;
+        
     private boolean performNonMaxSuppr = true;
     
     private boolean debug = false;
@@ -86,8 +97,6 @@ public class CannyEdgeFilterAdaptive {
     private boolean useAdaptiveThreshold = false;
     
     private boolean useAdaptive2Layer = true;
-
-    private boolean lineDrawingMode = false;
         
     private float otsuScaleFactor = 0.75f;//0.65f;
     
@@ -95,11 +104,23 @@ public class CannyEdgeFilterAdaptive {
     
     protected boolean useLineThinner = true;
     
-    public CannyEdgeFilterAdaptive() {        
+    public CannyEdgeColorAdaptive() {        
     }
     
     public void setToDebug() {
         debug = true;
+    }
+    
+    /**
+     * by default, adds the gradients of L and C from colorspace LCH, scaled
+     * to their own color space vector maxima then the maximum possible in their
+     * color vectors is mapped to 255.
+     * If "scaleGrdients" is set to true, the individual sobel gradients are
+     * scaled so that their maximum values present in the image are transformed
+     * to values 255.
+     */
+    public void overrideToScaleGradients() {
+        scaleGradients = true;
     }
     
     public void overrideToNotUseLineThinner() {
@@ -113,18 +134,6 @@ public class CannyEdgeFilterAdaptive {
      */
     public void setToNotRestoreJunctions() {
         restoreJunctions = false;
-    }
-    
-    public void setToUseLineDrawingMode() {
-        lineDrawingMode = true;      
-    }
-    
-    /**
-     * applies a histogram equalization before any processing in order to rescale
-     * the data to use the entire range of 0 to 255.
-     */
-    public void setToPerformHistogramEqualization() {
-        performHistEq = true;
     }
     
     /**
@@ -173,69 +182,38 @@ public class CannyEdgeFilterAdaptive {
         factorBelowHighThreshold = factor;
     }
     
-    public void applyFilter(final GreyscaleImage input) {
+    /**
+     * apply the filter.  note that unlike the other canny filters in this
+     * project, the input is not modified.
+     * @param input 
+     */
+    public void applyFilter(Image input) {
         
         if (input.getWidth() < 3 || input.getHeight() < 3) {
             throw new IllegalArgumentException("images should be >= 3x3 in size");
         }
-        
-        if (performHistEq) {
-            HistogramEqualization hEq = new HistogramEqualization(input);
-            hEq.applyFilter();
-        }
-        
-        if (lineDrawingMode) {
-            useAdaptive2Layer = true;
-            useAdaptiveThreshold = false;
-            apply2LayerFilter(input, new HashSet<PairInt>(), input);
-            if (debug) {
-                GreyscaleImage imgcp = input.copyImage();
-                for (int i = 0; i < imgcp.getNPixels(); ++i) {
-                    int v = imgcp.getValue(i);
-                    if (v > 0) {
-                        imgcp.setValue(i, 255);
-                    }
-                }
-                MiscDebug.writeImage(imgcp, "_after_2_layer_");
-            }
             
-            filterProducts = createDiffOfGaussians(input);
-            approxProcessedSigma = Math.sqrt(
-                approxProcessedSigma*approxProcessedSigma + (0.678*0.678));
-            
-            if (debug) {
-                MiscDebug.writeImage(filterProducts.getGradientXY(), "_gXY_");
-                MiscDebug.writeImage(filterProducts.getTheta(), "_theta_");
-            }
-            
-            if (useLineThinner) {
-                ImageProcessor imageProcessor = new ImageProcessor();
-                imageProcessor.applyThinning(filterProducts.getGradientXY());
-            }
-                        
-            input.resetTo(filterProducts.getGradientXY());
-            
-            return;
-        }
-        
         // (1) smooth image using separable binomial filters
-        SIGMA sigma = SIGMA.ONE;
-        if (sigma.equals(SIGMA.ONE)) {
+        SIGMA sigma = null;//SIGMA.ZEROPOINTSEVENONE;
+        if (sigma == null) {
+            //no smoothing
+            approxProcessedSigma = 0.4;
+        } else if (sigma.equals(SIGMA.ONE)) {
             ATrousWaveletTransform at = new ATrousWaveletTransform();
-            GreyscaleImage smoothed = at.smoothToSigmaOne(input);
-            input.resetTo(smoothed);
+            Image smoothed = at.smoothToSigmaOne(input);
+            input = smoothed;
             approxProcessedSigma = 1;
         } else if (sigma.equals(SIGMA.ZEROPOINTSEVENONE)) {
             ATrousWaveletTransform at = new ATrousWaveletTransform();
-            GreyscaleImage smoothed = at.smoothToSigmaZeroPointSevenOne(input);
-            input.resetTo(smoothed);
+            Image smoothed = at.smoothToSigmaZeroPointSevenOne(input);
+            input = smoothed;
             approxProcessedSigma = Math.sqrt(2.)/2.;
         } else {
             ImageProcessor imageProcessor = new ImageProcessor();
             imageProcessor.blur(input, sigma, 0, 255);
             approxProcessedSigma = SIGMA.getValue(sigma);
         }
-        
+                
         //(2) create gradient
         // uses a binomial filter for a first derivative gradient, sobel.
         filterProducts = createGradient(input);
@@ -301,9 +279,7 @@ public class CannyEdgeFilterAdaptive {
             if (v < 0) {
                 filterProducts.getGradientXY().setValue(i, 0);
             }
-        }
-                                       
-        input.resetTo(filterProducts.getGradientXY());
+        }                                       
     }
    
     /*
@@ -598,81 +574,62 @@ public class CannyEdgeFilterAdaptive {
      * @param img
      * @return 
      */
-    protected EdgeFilterProducts createGradient(final GreyscaleImage img) {
-        
-        GreyscaleImage gX, gY, g, theta;
+    protected EdgeFilterProducts createGradient(final Image img) {
+    
+        int n = img.getNPixels();
         
         ImageProcessor imageProcessor = new ImageProcessor();
+        GreyscaleImage[] lch = imageProcessor.createLCHForLUV(img);
+        //GreyscaleImage[] lcGradients = imageProcessor.createSobelLCForLUV(input);
+                             
+        GreyscaleImage[] gXs = new GreyscaleImage[2];
+        GreyscaleImage[] gYs = new GreyscaleImage[2];
+        GreyscaleImage[] gs = new GreyscaleImage[2];
         
-        gX = getGradientX1D(img);
-
-        gY = getGradientY1D(img);
-        
-        // a look at reversing axes to make gradient then averaging
-        GreyscaleImage tmp = img.createFullRangeIntWithDimensions();
-        for (int i = 0; i < gX.getWidth(); ++i) {
-            int i2 = gX.getWidth() -i - 1;
-            for (int j = 0; j < gX.getHeight(); ++j) {
-                int v = gX.getValue(i, j);
-                tmp.setValue(i2, j, v);
-            }
-        }
-        GreyscaleImage gXR = getGradientX1D(tmp);
-        // swap columns in gXR
-        int nSep = gXR.getWidth() >> 1;
-        for (int j = 0; j < gXR.getHeight(); ++j) {
-            for (int i = 0; i < nSep; ++i) {
-                int i2 = gXR.getWidth() - 1 - i;
-                int v = gXR.getValue(i, j);
-                int v2 = gXR.getValue(i2, j);
-                gXR.setValue(i, j, v2);
-                gXR.setValue(i2, j, v);
-            }
-        }
-        
-        for (int i = 0; i < gX.getWidth(); ++i) {
-            for (int j = 0; j < gX.getHeight(); ++j) {
-                int v = gX.getValue(i, j);
-                int vR = gXR.getValue(i, j);
-                int avg = (v + vR)/2;
-                gX.setValue(i, j, avg);
+        for (int k = 0; k < 2; ++k) {
+            gXs[k] = getGradientX1D(lch[k]);
+            gYs[k] = getGradientY1D(lch[k]);
+            gs[k] = imageProcessor.combineConvolvedImages(gXs[k], gYs[k]);
+            if (scaleGradients) {
+                float[] values = imageProcessor.convertToFloat(gs[k]);
+                float maxV = MiscMath.findMax(values);
+                float factor = 255.f/maxV;
+                for (int ii = 0; ii < values.length; ++ii) {
+                    int v = Math.round(factor * values[ii]);
+                    if (v > 255) {
+                        v = 255;
+                    }
+                    gs[k].setValue(ii, v);
+                    
+                    v = Math.round(factor * gXs[k].getValue(ii));
+                    gXs[k].setValue(ii, v);
+                    
+                    v = Math.round(factor * gYs[k].getValue(ii));
+                    gYs[k].setValue(ii, v);
+                }
             }
         }
         
-        tmp = img.createFullRangeIntWithDimensions();
-        for (int i = 0; i < gY.getWidth(); ++i) {
-            for (int j = 0; j < gY.getHeight(); ++j) {
-                int j2 = gY.getHeight() - j - 1;
-                int v = gY.getValue(i, j);
-                tmp.setValue(i, j2, v);
+        GreyscaleImage gX = gXs[0].createFullRangeIntWithDimensions();
+        GreyscaleImage gY = gXs[0].createFullRangeIntWithDimensions();
+        GreyscaleImage g = gXs[0].createWithDimensions();
+        for (int ii = 0; ii < n; ++ii) {
+            
+            int v = (gXs[0].getValue(ii) + gXs[1].getValue(ii))/2;
+            gX.setValue(ii, v);
+            
+            v = (gYs[0].getValue(ii) + gYs[1].getValue(ii))/2;
+            gY.setValue(ii, v);
+            
+            v = (gs[0].getValue(ii) + gs[1].getValue(ii))/2;
+            if (v > 255) {
+                v = 255;
             }
+            g.setValue(ii, v);
         }
-        GreyscaleImage gYR = getGradientX1D(tmp);
-        // swap rows in gYR
-        nSep = gYR.getHeight() >> 1;
-        for (int i = 0; i < gYR.getWidth(); ++i) {
-            for (int j = 0; j < nSep; ++j) {
-                int j2 = gYR.getHeight() - 1 - j;
-                int v = gYR.getValue(i, j);
-                int v2 = gYR.getValue(i, j2);
-                gYR.setValue(i, j, v2);
-                gYR.setValue(i, j2, v);
-            }
-        }
-        
-        for (int i = 0; i < gY.getWidth(); ++i) {
-            for (int j = 0; j < gY.getHeight(); ++j) {
-                int v = gY.getValue(i, j);
-                int vR = gYR.getValue(i, j);
-                int avg = (v + vR)/2;
-                gY.setValue(i, j, avg);
-            }
-        }
-        
-        g = imageProcessor.combineConvolvedImages(gX, gY);
         
         // the theta is in range 0 to 180
-        theta = imageProcessor.computeTheta180(gX, gY);
+        GreyscaleImage theta = imageProcessor.computeTheta180(gX, gY);
         
         if (debug) {
             // when replace the aspect library, put these renders in the 
@@ -926,17 +883,6 @@ public class CannyEdgeFilterAdaptive {
      */
     public EdgeFilterProducts getFilterProducts() {
         return filterProducts;
-    }
-
-    public void setSetters(CannyEdgeFilterSettings settings) {
-        
-        if (settings.getNormalizeByHistogram()) {
-            setToPerformHistogramEqualization();
-        }
-        
-        if (settings.getUseLineDrawingMode()) {
-            setToUseLineDrawingMode();
-        }
     }
 
     private void applyPostLineThinningCorrections(GreyscaleImage gradientXY,

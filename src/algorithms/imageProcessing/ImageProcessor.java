@@ -9937,6 +9937,88 @@ if (sum > 511) {
         return (int)t;
     }
     
+    public GreyscaleImage createSobelLCCombined(Image img) {
+        
+        GreyscaleImage[] sobels = createSobelLCForLUV(img);
+        
+        float[] vl = convertToFloat(sobels[0]);
+        float[] vc = convertToFloat(sobels[1]);
+        float factorL = 255.f / MiscMath.findMax(vl);
+        float factorC = 255.f / MiscMath.findMax(vc);
+        GreyscaleImage sobelLC = sobels[0].createWithDimensions();
+        int v0, v1, vavg;
+        for (int j = 0; j < img.getNPixels(); ++j) {
+            v0 = Math.round(vl[j] * factorL);
+            v1 = Math.round(vc[j] * factorC);
+            vavg = (v0 + v1) / 2;
+            if (vavg > 255) {
+                vavg = 255;
+            }
+            sobelLC.setValue(j, vavg);
+        }
+        
+        return sobelLC;
+    }
+    
+    /*
+    public GreyscaleImage createSobelLCHCombined(Image img) {
+        
+        GreyscaleImage[] lch = createLCHForLUV(img);
+        
+        GreyscaleImage[] sobelsLC = createSobels(lch, new int[]{0, 1});
+        
+        GreyscaleImage sobelH = createBinarySobelForPolarTheta(lch[2], 20);
+        
+        float[] vl = convertToFloat(sobelsLC[0]);
+        float[] vc = convertToFloat(sobelsLC[1]);
+        float factorL = 255.f / MiscMath.findMax(vl);
+        float factorC = 255.f / MiscMath.findMax(vc);
+        GreyscaleImage sobelLCH = sobelsLC[0].createWithDimensions();
+        int v0, v1, v2, vavg;
+        for (int j = 0; j < img.getNPixels(); ++j) {
+            v0 = Math.round(vl[j] * factorL);
+            v1 = Math.round(vc[j] * factorC);
+            v2 = sobelH.getValue(j) * 255;
+            vavg = (v0 + v1 + v2) / 3;
+            if (vavg > 255) {
+                vavg = 255;
+            }
+            sobelLCH.setValue(j, vavg);
+        }
+        
+        return sobelLCH;
+    }
+    */
+    
+    /**
+     * create sobel gradient images for the given images specified by idxs
+     * @param images
+     * @param idxs
+     * @return 
+     */
+    public GreyscaleImage[] createSobels(GreyscaleImage[] images, int[] idxs) {
+        
+        GreyscaleImage[] sobels = new GreyscaleImage[2];
+        
+        int count = 0;
+        for (int idx : idxs) {
+            GreyscaleImage img2 = images[idx];
+            sobels[count] = img2.copyImage();
+            applySobelKernel(sobels[count]);
+            count++;
+        }
+        return sobels;
+    }
+    
+    public GreyscaleImage[] createSobelLCForLUV(Image img) {
+        
+        GreyscaleImage[] lch = createLCHForLUV(img);
+        
+        GreyscaleImage[] sobels = createSobels(lch, new int[]{0, 1});
+        
+        return sobels;
+    }
+    
     /**
      * create 3 images of the LCG color space where LCH is the 
      * luminosity, magnitude, and polar angle of CIE LUV color space.
