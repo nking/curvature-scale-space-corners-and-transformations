@@ -827,38 +827,6 @@ public class Sky {
         TIntObjectMap<PairInt> topXYs = calcCentroids(labeledSets, topSkyIndexes,
             gsImg.getWidth());
         
-        SkyObject sun = findSun();
-        
-        List<SkyObject> rbs = findRainbows();
-        
-        if (topSkyIndexes.size() == 1) {
-            
-            PairInt xy = topXYs.get(topSkyIndexes.get(0));
-            
-            Set<PairInt> skyPoints = createPoints(labeledSets, topSkyIndexes, 
-                ptImg.getWidth());
-            
-            List<SkyObject> sky = new ArrayList<SkyObject>();
-            
-            SkyObject obj = new SkyObject();
-            obj.points = skyPoints;
-            obj.xyCenter = new int[]{xy.getX(), xy.getY()};
-            sky.add(obj);
-    
-            System.out.println(debugLabel + ": hist=" + Arrays.toString(
-                normPTCHs.get(0).a));  
-            
-            if (sun != null) {
-                sky.add(sun);
-            } else if (rbs != null && !rbs.isEmpty()) {
-                sky.addAll(rbs);
-            }
-            
-            return sky;
-        }
-        
-        // ---- NOTE: still editing below -----
-        
         TIntIntMap topAvgGrey = getLabelSetLs(gsImg, labeledSets, topSkyIndexes);
         
         if (debug) {
@@ -894,134 +862,145 @@ public class Sky {
             }
         }
         
+        
+        SkyObject sun = findSun();
+        
+        List<SkyObject> rbs = findRainbows();
+        
+        // ---- finding the main sky sets at top of image, before further logic
+        //      about sky in other sets
+        
+        TIntList filtered = new TIntArrayList();
+        
+        ColorHistogram clrHist = new ColorHistogram();
         MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
         
-        // could improve efficiency here:
-        TIntList rmvd = new TIntArrayList(topSkyIndexes);
-        topSkyIndexes.removeAll(bottomBorderIndexes);
-        rmvd.removeAll(topSkyIndexes);
-        
-        // test for all blue or 
-        //    brightest having essentially no green
-        //    and return those resembling them
         boolean allAreBlue = true;
         int maxAvgIfBlue = Integer.MIN_VALUE;
         int maxAvgIdx = -1;
-        TIntIterator iter = topSkyIndexes.iterator();
-        while (iter.hasNext()) {
-            int idx = iter.next();
-            float[] norm = normPTCHs.get(idx).a;
-            System.out.println("  *top " + Arrays.toString(norm) + ""
-                + "  inten=" + topAvgGrey.get(idx)
-                + "  xy=" + topXYs.get(idx));
-            if (norm[0] > 0.1) {
-                allAreBlue = false;
-            } else if (norm[3] < 0.03 && norm[0] < 0.1) {
-                // to try to remove relfection from water, avoiding the
-                //    histograms with green and darker for blue skies
-                int avg = topAvgGrey.get(idx);
-                if (avg > maxAvgIfBlue) {
-                    maxAvgIfBlue = avg;
-                    maxAvgIdx = idx;
-                }
-            }
-        }
-        {
-        iter = rmvd.iterator();
-        while (iter.hasNext()) {
-            int idx = iter.next();
-            float[] normHost = normPTCHs.get(idx).a;
-            System.out.println("  RMVD " + Arrays.toString(normHost) + ""
-                + "  inten=" + topAvgGrey.get(idx)
-                + "  xy=" + topXYs.get(idx));
-        }
-        }
         
-        if (allAreBlue) {
+        if (topSkyIndexes.size() == 1) {
             
-            if (maxAvgIdx == -1) {
-                // possibly an error in algorithm above, espec. 
-                //    regarding reflection filter for green
-                return null;
+            int idx = topSkyIndexes.get(0);
+            filtered.add(idx);
+            
+            if (normPTCHs.get(idx).a[0] > 0.1) {
+                allAreBlue = false;
+            } else {
+                maxAvgIdx = idx;
+                maxAvgIfBlue = topAvgGrey.get(idx);
             }
             
-            //TODO: consider how to correct for sky reflected in water
-            //  (see stinson beach test image)
+        } else {
             
-            TIntList filtered = new TIntArrayList();
+            // could improve efficiency here:
+            TIntList rmvd = new TIntArrayList(topSkyIndexes);
+            //NOTE: assuming all bottom bordering sets are "nonsky"
+            topSkyIndexes.removeAll(bottomBorderIndexes);
+            rmvd.removeAll(topSkyIndexes);
             
-            iter = topSkyIndexes.iterator();
+            // test for all blue or 
+            //    brightest having essentially no green
+            //    and add to filtered, those resembling them
+            TIntIterator iter = topSkyIndexes.iterator();
             while (iter.hasNext()) {
                 int idx = iter.next();
                 float[] norm = normPTCHs.get(idx).a;
-                // collect the sky w/o green that has similar intensity
-                if (norm[3] < 0.03 && norm[0] < 0.1) {
+                System.out.println("  *top " + Arrays.toString(norm) + ""
+                    + "  inten=" + topAvgGrey.get(idx)
+                    + "  xy=" + topXYs.get(idx));
+                if (norm[0] > 0.1) {
+                    allAreBlue = false;
+                } else if (norm[3] < 0.03 && norm[0] < 0.1) {
+                    // to try to remove relfection from water, avoiding the
+                    //    histograms with green and darker for blue skies
                     int avg = topAvgGrey.get(idx);
-                    filtered.add(idx);
+                    if (avg > maxAvgIfBlue) {
+                        maxAvgIfBlue = avg;
+                        maxAvgIdx = idx;
+                    }
                 }
             }
             
-            Set<PairInt> skyPoints = createPoints(labeledSets, filtered, 
-                ptImg.getWidth());
-            int[] xyCen = ch.calculateRoundedXYCentroids(skyPoints);
-            
-            List<SkyObject> sky = new ArrayList<SkyObject>();
-            
-            SkyObject obj = new SkyObject();
-            obj.points = skyPoints;
-            obj.xyCenter = xyCen;
-            sky.add(obj);
-            
-            if (sun != null) {
-                sky.add(sun);
-            } else if (rbs != null && !rbs.isEmpty()) {
-                sky.addAll(rbs);
-            }
-            
-            return sky;
-        }
-        
-        /*
-        ptImg values for histogram bins:
-         0:  red = 0 - 18
-         1:  orange = 18 - 40
-         2:  yellow = 41 - 60ish
-         3:  green = 61 - 106
-         4:  blue = 107 - 192
-         5:  purple = 193 - 255
-        */
-        
-        // filtering for all red or blue and red
-        //    (mostly, trying to remove anything resembling the
-        //    removed foreground)
-        
-        ColorHistogram clrHist = new ColorHistogram();
-        
-        TIntList filtered = new TIntArrayList();
-            
-        iter = topSkyIndexes.iterator();
-        while (iter.hasNext()) {
-            int idx = iter.next();
-            int[] hist = ptCHs.get(idx).a;
-            boolean keep = true;
-            for (int i = 0; i < rmvd.size(); ++i) {
-                int rIdx = rmvd.get(i);
-                int[] rHist = ptCHs.get(rIdx).a;
-                float intersection = clrHist.intersection(hist, rHist);
-                System.out.println(" inter=" + intersection + " " +
-                    Arrays.toString(hist));   
-                if (intersection > 0.5) {
-                    keep = false;
-                    break;
+            if (debug) {
+                iter = rmvd.iterator();
+                while (iter.hasNext()) {
+                    int idx = iter.next();
+                    float[] normHost = normPTCHs.get(idx).a;
+                    System.out.println("  RMVD " + Arrays.toString(normHost) + ""
+                        + "  inten=" + topAvgGrey.get(idx)
+                        + "  xy=" + topXYs.get(idx));
                 }
             }
-            if (keep) {
-                filtered.add(idx);
-            }
+            
+            if (allAreBlue) {
+
+                if (maxAvgIdx == -1) {
+                    // possibly an error in algorithm above, espec. 
+                    //    regarding reflection filter for green
+                    return null;
+                }
+
+                //TODO: consider how to correct for sky reflected in water
+                //  (see test image for stinson beach)
+                iter = topSkyIndexes.iterator();
+                while (iter.hasNext()) {
+                    int idx = iter.next();
+                    float[] norm = normPTCHs.get(idx).a;
+                    // collect the sky w/o green that has similar intensity
+                    if (norm[3] < 0.03 && norm[0] < 0.1) {
+                        int avg = topAvgGrey.get(idx);
+                        filtered.add(idx);
+                    }
+                }
+            } else {
+                /*
+                ptImg values for histogram bins:
+                 0:  red = 0 - 18
+                 1:  orange = 18 - 40
+                 2:  yellow = 41 - 60ish
+                 3:  green = 61 - 106
+                 4:  blue = 107 - 192
+                 5:  purple = 193 - 255
+                 */
+
+                // filtering for all red or blue and red
+                //    (mostly, trying to remove anything resembling the
+                //    removed foreground)
+                iter = topSkyIndexes.iterator();
+                while (iter.hasNext()) {
+                    int idx = iter.next();
+                    int[] hist = ptCHs.get(idx).a;
+                    boolean keep = true;
+                    for (int i = 0; i < rmvd.size(); ++i) {
+                        int rIdx = rmvd.get(i);
+                        int[] rHist = ptCHs.get(rIdx).a;
+                        float intersection = clrHist.intersection(hist, rHist);
+                        System.out.println(" inter=" + intersection + " "
+                            + Arrays.toString(hist));
+                        if (intersection > 0.5) {
+                            keep = false;
+                            break;
+                        }
+                    }
+                    if (keep) {
+                        filtered.add(idx);
+                    }
+                }
+            }   
         }
+        
+        // TODO: 
+        //    looking at properties of filtered indexes and bottom indexes
+        //      and their intersection with remaining sets to see if there
+        //      are clear ways to continue adding sky sets
+        
+        
+        
 
         Set<PairInt> skyPoints = createPoints(labeledSets, filtered, 
             ptImg.getWidth());
+        
         int[] xyCen = ch.calculateRoundedXYCentroids(skyPoints);
 
         List<SkyObject> sky = new ArrayList<SkyObject>();
@@ -1030,13 +1009,12 @@ public class Sky {
         obj.points = skyPoints;
         obj.xyCenter = xyCen;
         sky.add(obj);
-        
+
         if (sun != null) {
             sky.add(sun);
         } else if (rbs != null && !rbs.isEmpty()) {
             sky.addAll(rbs);
         }
-        
         return sky;
     }
     

@@ -792,8 +792,8 @@ public class MSEREdges {
                 }
             }
             if (debug) {
-                System.out.println("nMerged=" + nMerged + " nIter=" +
-                    nIter);
+                //System.out.println("nMerged=" + nMerged + " nIter=" +
+                //    nIter);
             }
             nIter++;
             
