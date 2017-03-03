@@ -1292,6 +1292,19 @@ public class MiscMath {
         return firstNonZero;
     }
     
+    public static int findFirstNonZeroIndex(int[] h) {
+        int n = h.length;
+        int firstNonZero = -1;
+        for (int i = 0; i < n; i++) {
+            int y = h[i];
+            if (y > 0) {
+                firstNonZero = i;
+                break;
+            }
+        }
+        return firstNonZero;
+    }
+    
     public static int findLastNonZeroIndex(HistogramHolder h) {
         int n = h.getXHist().length;
         int idx = -1;
@@ -1305,6 +1318,19 @@ public class MiscMath {
         return idx;
     }
 
+    public static int findLastNonZeroIndex(int[] h) {
+        int n = h.length;
+        int idx = -1;
+        for (int i = (n - 1); i > -1; --i) {
+            int y = h[i];
+            if (y > 0) {
+                idx = i;
+                break;
+            }
+        }
+        return idx;
+    }
+    
     /**
      * find the minima and maxima of x and y and return them as
      * int[]{xMin, xMax, yMin, yMax}

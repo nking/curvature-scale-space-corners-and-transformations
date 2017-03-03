@@ -405,7 +405,18 @@ public class CannyEdgeFilterAdaptive {
         float tLow = 0;
         if (!useAdaptive2Layer || !useAdaptiveThreshold) {
             OtsuThresholding ot = new OtsuThresholding();
-            tHigh = otsuScaleFactor * ot.calculateBinaryThreshold256(gradientXY);
+                        
+            double[][] g = new double[w][];
+            for (int i = 0; i < w; ++i) {
+                g[i] = new double[h];
+                for (int j = 0; j < h; ++j) {
+                    g[i][j] = gradientXY.getValue(i, j);
+                }
+            }
+            int nBins = 256/5;
+            float t = (float)ot.calculateBinaryThreshold2D(g, nBins);
+            
+            tHigh = otsuScaleFactor * t;
             tLow = tHigh/factorBelowHighThreshold;
         }
         
@@ -447,6 +458,12 @@ public class CannyEdgeFilterAdaptive {
                     }
                 }
             }
+        }
+        
+        
+        if (debug) {
+            MiscDebug.writeImage(gradientXY, "_before_2layer_");
+            MiscDebug.writeImage(img2, "_in_2layer_");
         }
         
         applyPostLineThinningCorrections(img2);
@@ -875,7 +892,19 @@ public class CannyEdgeFilterAdaptive {
     private void applyPostLineThinningCorrections(GreyscaleImage gradientXY) {
 
         ImageProcessor imageProcessor = new ImageProcessor();
-        imageProcessor.applyThinning(gradientXY, false);
+        GreyscaleImage tmp = gradientXY.copyImage();
+        for (int i = 0; i < tmp.getNPixels(); ++i) {
+            if (tmp.getValue(i) > 0) {
+                tmp.setValue(i, 1);
+            }
+        }
+        imageProcessor.applyThinning(tmp, false);
+        
+        for (int i = 0; i < tmp.getNPixels(); ++i) {
+            if (tmp.getValue(i) == 0) {
+                gradientXY.setValue(i, 0);
+            }
+        }
         
         if (useLineThinner) {
             ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
