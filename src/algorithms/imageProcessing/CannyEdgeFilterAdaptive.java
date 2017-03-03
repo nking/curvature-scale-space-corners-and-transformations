@@ -428,7 +428,7 @@ public class CannyEdgeFilterAdaptive {
                     tLow0 = tLow;
                 }
 
-                if (v < tHigh0 || v < tLow0) {
+                if (v < tHigh0) {
                     continue;
                 }
 
@@ -449,15 +449,10 @@ public class CannyEdgeFilterAdaptive {
             }
         }
         
+        applyPostLineThinningCorrections(img2);
+        
         gradientXY.resetTo(img2);
         
-        if (debug) {
-            MiscDebug.writeImage(gradientXY, "_after_2layer_before_pltc_");
-        }
-
-        applyPostLineThinningCorrections(gradientXY, 
-            gradientCopyBeforeThinning);
-
         if (debug) {
             MiscDebug.writeImage(gradientXY, "_after_linethinning_1_");
         }
@@ -502,8 +497,7 @@ public class CannyEdgeFilterAdaptive {
                 MiscDebug.writeImage(gradientXY, "_after_restore_junctions_");
             }
             
-            applyPostLineThinningCorrections(gradientXY, 
-                gradientCopyBeforeThinning);
+            applyPostLineThinningCorrections(gradientXY);
             
             if (debug) {
                 MiscDebug.writeImage(gradientXY, "_after_linethinning_2_");
@@ -878,66 +872,15 @@ public class CannyEdgeFilterAdaptive {
         }
     }
 
-    private void applyPostLineThinningCorrections(GreyscaleImage gradientXY,
-        GreyscaleImage valuesBeforeThinning) {
+    private void applyPostLineThinningCorrections(GreyscaleImage gradientXY) {
 
-        Set<PairInt> correctedPoints = new HashSet<PairInt>();
+        ImageProcessor imageProcessor = new ImageProcessor();
+        imageProcessor.applyThinning(gradientXY, false);
         
-        for (int i = 0; i < gradientXY.getWidth(); ++i) {
-            for (int j = 0; j < gradientXY.getHeight(); ++j) {
-                if (gradientXY.getValue(i, j) > 0) {
-                    correctedPoints.add(new PairInt(i, j));
-                }
-            }
-        }
-        
-        int n0 = gradientXY.getWidth();
-        int n1 = gradientXY.getHeight();
-        
-        // if there are too many points in correctedPoints, then
-        // the image is probably still filled with pixels noise or textures
-        // so do not perform line thinning in that case.
-        int nP = correctedPoints.size();
-        float frac = (float)nP/(float)(n0 * n1);
-        if (nP < 30000) {
-            PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
- //           pltc.correctForHolePattern100(correctedPoints, n0, n1);            
-            pltc.correctForLineHatHoriz(correctedPoints, n0, n1);
-            pltc.correctForLineHatVert(correctedPoints, n0, n1);
-            pltc.correctForLineSpurHoriz(correctedPoints, n0, n1);
-            pltc.correctForLineSpurVert(correctedPoints, n0, n1);
-            pltc.correctForIsolatedPixels(correctedPoints);
-        }
-        
-        GreyscaleImage out = gradientXY.createWithDimensions();
-        int[][] morphInput = new int[out.getWidth()][out.getHeight()];
-        for (int i = 0; i < morphInput.length; ++i) {
-            morphInput[i] = new int[out.getHeight()];
-        }
-        for (PairInt p : correctedPoints) {
-            int v = valuesBeforeThinning.getValue(p);
-            out.setValue(p.getX(), p.getY(), v);
-            morphInput[p.getX()][p.getY()] = 1;
-        }
-        
-        MorphologicalFilter mFilter = new MorphologicalFilter();
-        int[][] skel = mFilter.bwMorphThin(morphInput, Integer.MAX_VALUE);
-        for (int i = 0; i < n0; ++i) {
-            for (int j = 0; j < n1; ++j) {
-                int m = skel[i][j]; 
-                if (m == 0) {
-                    out.setValue(i, j, 0);
-                }
-            }
-        }
         if (useLineThinner) {
-            //ImageProcessor imageProcessor = new ImageProcessor();
-            //imageProcessor.applyThinning(out);
             ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
-            lt.applyFilter(out);
-        }
-        
-        gradientXY.resetTo(out);
+            lt.applyFilter(gradientXY);
+        } 
     }
 
     private int countAboveZero(GreyscaleImage img) {

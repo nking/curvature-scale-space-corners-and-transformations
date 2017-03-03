@@ -253,9 +253,8 @@ public class GreyscaleImage {
     
     /**
      * convenience method to multiply entire image by factor.  Note that
-     * if the result for a pixel is > maxAllowedValue (i.e. 255 for default 
-     * constructor), 
-     * it is set to maxAllowed.
+     * if the result for a pixel is outside of minAllowed and maxAllowed,
+     * it is clipped to that end of the allowed range.
      * @param factor a positive number that results in pixel values in range
      * 0 to 255;
      */
@@ -268,7 +267,9 @@ public class GreyscaleImage {
         
         for (int i = 0; i < getNPixels(); ++i) {
             int v = Math.round(getValue(i)*factor);
-            if (v > maxAllowed) {
+            if (v < minAllowed) {
+                v = minAllowed;
+            } else if (v > maxAllowed) {
                 v = maxAllowed;
             }
             setValue(i, v);
@@ -1033,6 +1034,8 @@ public class GreyscaleImage {
     /**
      * add img to this image and return result in a new image of same
      * type as this image.
+     * NOTE if the result for a pixel is outside of minAllowed and maxAllowed,
+     * it is clipped to that end of the allowed range.
      * @param img
      * @return 
      */
@@ -1047,7 +1050,13 @@ public class GreyscaleImage {
         for (int i = 0; i < img.getNPixels(); ++i) {
             int v0 = getValue(i);
             int v1 = img.getValue(i);
-            output.setValue(i, (v0 + v1));
+            v0 += v1;
+            if (v0 < minAllowed) {
+                v0 = minAllowed;
+            } else if (v0 > maxAllowed) {
+                v0 = maxAllowed;
+            }
+            output.setValue(i, v0);
         }
         
         return output;

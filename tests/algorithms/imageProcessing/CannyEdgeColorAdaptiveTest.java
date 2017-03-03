@@ -193,21 +193,59 @@ public class CannyEdgeColorAdaptiveTest extends TestCase {
             int w = img.getWidth();
             int h = img.getHeight();
 
-            CannyEdgeColorAdaptive canny = new CannyEdgeColorAdaptive();
+            GreyscaleImage[] lch = imageProcessor.createLCHForLUV(img);
+          
+            CannyEdgeFilterAdaptive canny = new CannyEdgeFilterAdaptive();
             canny.overrideToNotUseLineThinner();
-            canny.overrideToScaleGradients();
-            canny.applyFilter(img);
+            //canny.overrideToUseAdaptiveThreshold();
+            canny.applyFilter(lch[0]);
             EdgeFilterProducts edgeProducts = canny.getFilterProducts();
-            MiscDebug.writeImage(edgeProducts.getGradientXY(), fileName1Root
-                + "_default_scaled_");
-        
-            GreyscaleImage sobelLCH = imageProcessor.createSobelLCCombined(img);
+            GreyscaleImage gs = canny.getFilterProducts().getGradientXY();
+            
+            canny = new CannyEdgeFilterAdaptive();
+            canny.overrideToNotUseLineThinner();
+            //canny.overrideToUseAdaptiveThreshold();
+            canny.applyFilter(lch[1]);
+            edgeProducts = canny.getFilterProducts();
+            GreyscaleImage gs2 = canny.getFilterProducts().getGradientXY();
+                        
+            gs.multiply(255/gs.max());
+            gs.multiply(4);
+            MiscDebug.writeImage(gs, fileName1Root
+                + "_default_L_");
+            
+            gs2.multiply(255/gs2.max());
+            gs2.multiply(4);
+            MiscDebug.writeImage(gs2, fileName1Root
+                + "_default_C_");
+            
+            gs2.multiply(32);
+            GreyscaleImage comb = gs.add(gs2);
+            MiscDebug.writeImage(comb, fileName1Root
+                + "_default_LC_");
+            
+            
+            CannyEdgeColorAdaptive canny2 = new CannyEdgeColorAdaptive();
+            canny2.overrideToNotUseLineThinner();
+            //canny2.overrideToUseAdaptiveThreshold();
+            canny2.applyFilter(img);
+            EdgeFilterProducts edgeProducts2 = canny2.getFilterProducts();
+            GreyscaleImage gs3 = canny2.getFilterProducts().getGradientXY();
+            gs3.multiply(255/gs3.max());
+            gs3.multiply(4);
+            MiscDebug.writeImage(gs3, fileName1Root
+                + "_default_LC_2_");
+            
+            
+            /*
+            GreyscaleImage sobelLCH = 
+                imageProcessor.createSobelLCCombined(img);
             
             sobelLCH.multiply(4.f);
             
             MiscDebug.writeImage(sobelLCH, fileName1Root
                 + "_sobel_LC_");
-            
+            */
         }
     }
 

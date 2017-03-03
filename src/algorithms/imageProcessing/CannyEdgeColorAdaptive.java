@@ -6,9 +6,18 @@ import algorithms.misc.MiscMath;
 import java.util.logging.Logger;
 import java.util.HashSet;
 import algorithms.util.PairInt;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 
 /**
+ * NOTE: need to edit these comments.  for this color version of canny,
+ * using the "L" and "C" images of LCH CIELUV color space.
+ * May also add use of "H"...still experimenting.
+ * 
+ * 
+ * 
  * The CannyEdge filter is an algorithm to operate on an image to
  * replace objects with their edges.  
  * 
@@ -42,15 +51,6 @@ import java.util.Set;
  * For the Lena test image for example, one might prefer only the brightest
  * edges, so use a higher setting than the default.
  * 
- * The "line drawing mode" is present as a convenience method to process images
- * that are line drawings or shapes filled with solid colors, for the case when 
- * the user needs the theta image for example.  If only the edges are needed, 
- * it would be faster for the user to use 
- *     ImageProcessor.applyAdaptiveMeanThresholding(mask, 1);
- *     followed by
- *       a line thinner
- * Note that line drawing mode starts with the 2 layer filter here, though.
- * </pre>
  * Not ready for use yet...
  * 
  * @author nichole
@@ -63,6 +63,10 @@ public class CannyEdgeColorAdaptive {
     protected float factorBelowHighThreshold = 2.f;
            
     private EdgeFilterProducts filterProducts = null;
+    
+    private EdgeFilterProducts lFilterProducts = null;
+    
+    private EdgeFilterProducts cFilterProducts = null;
     
     /**
      * by default, adds the gradients of L and C from colorspace LCH, scaled
@@ -79,9 +83,7 @@ public class CannyEdgeColorAdaptive {
     private boolean debug = false;
     
     private boolean restoreJunctions = true;
-    
-    private boolean useHigherThresholdIfNeeded = false;
-        
+            
     /**
      * the sigma from the blur combined with the sigma present in the gradient
      * are present in this variable by the end of processing.
@@ -149,17 +151,6 @@ public class CannyEdgeColorAdaptive {
     }
     
     /**
-     * use this setting to check the number of thinned points and if the number
-     * is very high, resets the parameters to nLevels=1
-     * and otsuFactor=2.5 and performs the line thinning again.   Note that
-     * if the image has alot of small textures, using PhaseCongruencyDetector
-     * in default mode and k=1 w nsCale = 6 or 3, etc may produce better results.
-     */
-    public void setToUseHigherThresholdIfNeeded() {
-        useHigherThresholdIfNeeded = true;
-    }
-    
-    /**
      * set this to use the adaptive threshold in the 2 layer
      * filter.  it adjusts the threshold by regions of size
      * 15.  Note that if the image has alot of noise, this
@@ -213,53 +204,53 @@ public class CannyEdgeColorAdaptive {
             imageProcessor.blur(input, sigma, 0, 255);
             approxProcessedSigma = SIGMA.getValue(sigma);
         }
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        GreyscaleImage[] lch = imageProcessor.createLCHForLUV(input);
                 
         //(2) create gradient
         // uses a binomial filter for a first derivative gradient, sobel.
-        filterProducts = createGradient(input);
+        EdgeFilterProducts[] eps = createGradients(lch);
+        //EdgeFilterProducts[] eps = createDiffOfGaussians(lch);
+        lFilterProducts = eps[0];
+        cFilterProducts = eps[1];
         
-        GreyscaleImage gradientCopyBeforeThinning = filterProducts.getGradientXY().copyImage();
+        GreyscaleImage[] gXYsOrig = new GreyscaleImage[]{
+            lFilterProducts.getGradientXY().copyImage(),
+            cFilterProducts.getGradientXY().copyImage()
+        };
 
         approxProcessedSigma = Math.sqrt(
             approxProcessedSigma*approxProcessedSigma + (1./4.));
                 
-        Set<PairInt> removedDisconnecting = new HashSet<PairInt>();
-        
-        if (debug) {
-            MiscDebug.writeImage(filterProducts.getGradientXY(), "_before_nms_");
-        }
+        List<Set<PairInt>> rmvdDisconnecting = new ArrayList<Set<PairInt>>();
+        rmvdDisconnecting.add(new HashSet<PairInt>());
+        rmvdDisconnecting.add(new HashSet<PairInt>());
         
         //(3) non-maximum suppression
         if (performNonMaxSuppr) {
-            applyNonMaximumSuppression(filterProducts, removedDisconnecting);
+            for (int i = 0; i < 2; ++i) {
+                applyNonMaximumSuppression(eps[i], 
+                    rmvdDisconnecting.get(i));
+            }
         }
         
         if (debug) {
-            MiscDebug.writeImage(filterProducts.getGradientXY(), "_after_nms_");
-        }
-           
-        //(4) adaptive 2 layer filter                        
-        apply2LayerFilter(filterProducts.getGradientXY(), removedDisconnecting,
-            gradientCopyBeforeThinning);
-        
-        if (useHigherThresholdIfNeeded) {
-            int c = countAboveZero(filterProducts.getGradientXY());
-            float cFraction = (float)c/(float)input.getNPixels();
-            if (cFraction > 0.1) {
-                this.useAdaptive2Layer = false;
-                useAdaptiveThreshold = false;
-                this.otsuScaleFactor = 2.5f;
-                
-                filterProducts.getGradientX().resetTo(gradientCopyBeforeThinning);
-                if (performNonMaxSuppr) {
-                    applyNonMaximumSuppression(filterProducts, removedDisconnecting);
-                }
-                apply2LayerFilter(filterProducts.getGradientXY(), removedDisconnecting,
-                    gradientCopyBeforeThinning);
+            for (int i = 0; i < 2; ++i) {
+                MiscDebug.writeImage(eps[i].getGradientXY(),
+                    "_after_nms_" + i);
             }
         }
+        
+        //(4) adaptive 2 layer filter
+        this.filterProducts = apply2LayerFilter(eps, rmvdDisconnecting, gXYsOrig);
                 
         if (restoreJunctions) {
+            
+            //TODO: consdier whether should apply this
+            //   to the L and C grdients separately
+            
             int minResolution = (int)Math.ceil(2.35 * approxProcessedSigma);
             int minResolvableAngle = (int)Math.ceil(
                 Math.atan2(1, minResolution) * 180./Math.PI);
@@ -272,14 +263,7 @@ public class CannyEdgeColorAdaptive {
                 filterProducts.getTheta(), filterProducts.getGradientXY(), 
                 minResolvableAngle);
         }
-        
-        // is this necessary?
-        for (int i = 0; i < filterProducts.getGradientXY().getNPixels(); ++i) {
-            int v = filterProducts.getGradientXY().getValue(i);
-            if (v < 0) {
-                filterProducts.getGradientXY().setValue(i, 0);
-            }
-        }                                       
+                                           
     }
    
     /*
@@ -306,13 +290,13 @@ public class CannyEdgeColorAdaptive {
        The threshold is determined adaptively using Otsu's multilevel threshold
         calculation.
     */
-    protected void apply2LayerFilter(final GreyscaleImage gradientXY,
-        Set<PairInt> removedDisconnecting,
-        GreyscaleImage gradientCopyBeforeThinning) {
-        
-        int n = gradientXY.getNPixels();
-        int w = gradientXY.getWidth();
-        int h = gradientXY.getHeight();
+    protected EdgeFilterProducts apply2LayerFilter(EdgeFilterProducts[] lcFilterProducts, 
+        List<Set<PairInt>> lcRemovedDisconnecting,
+        GreyscaleImage[] gXYsOrig) {
+                
+        int n = lcFilterProducts[0].getGradientXY().getNPixels();
+        int w = lcFilterProducts[0].getGradientXY().getWidth();
+        int h = lcFilterProducts[0].getGradientXY().getHeight();
         
         if (w < 3 || h < 3) {
             throw new IllegalArgumentException("images should be >= 3x3 in size");
@@ -320,26 +304,38 @@ public class CannyEdgeColorAdaptive {
            
         ImageProcessor imageProcessor = new ImageProcessor();
 
-        double[][] threshImg = null;
+        // 1st dimension is 0 or 1 and is L or C data
+        double[][][] lcThreshImg = null;
        
         if (useAdaptive2Layer && useAdaptiveThreshold) {
+            
+            lcThreshImg = new double[2][][];
+            
             AdaptiveThresholding th = new AdaptiveThresholding();
-            threshImg = th.createAdaptiveThresholdImage(
-                imageProcessor.copy(gradientXY), 15, 0.2);
-            if (debug) {//DEBUG
-                double[][] imgCp = imageProcessor.copy(gradientXY);
-                for (int i = 0; i < w; ++i) {
-                    for (int j = 0; j < h; ++j) {
-                        double t = threshImg[i][j];
-                        if (imgCp[i][j] > t) {
-                            imgCp[i][j] = 255.;
-                        } else {
-                            imgCp[i][j] = 0;
+            
+            for (int i = 0; i < 2; ++i) {
+            
+                lcThreshImg[i] = th.createAdaptiveThresholdImage(
+                    imageProcessor.copy(
+                        lcFilterProducts[i].getGradientXY()), 15, 0.2);
+                        
+                if (debug) {//DEBUG
+                    double[][] imgCp = imageProcessor.copy(
+                        lcFilterProducts[i].getGradientXY());
+                    for (int ii = 0; ii < w; ++ii) {
+                        for (int jj = 0; jj < h; ++jj) {
+                            double t = lcThreshImg[i][ii][jj];
+                            if (imgCp[ii][jj] > t) {
+                                imgCp[ii][jj] = 255.;
+                            } else {
+                                imgCp[ii][jj] = 0;
+                            }
                         }
                     }
+                    MiscDebug.writeImage(imgCp, "img_" + i + "_thresholded_.png");
+                    MiscDebug.writeImage(lcThreshImg[i], "img_" + i 
+                        + "_adaptive_threshold_.png");
                 }
-                MiscDebug.writeImage(imgCp, "img_a_thresholded_.png");
-                MiscDebug.writeImage(threshImg, "img_a_adaptive_threshold_.png");
             }
         }
         
@@ -351,7 +347,7 @@ public class CannyEdgeColorAdaptive {
         pixel to a radius of 2 neighbors (here neighbors have intensity > t_low).
         
         The traversal used in other methods is to visit each pixel and if
-           its intensity > thigh, add the pixel and then visit it's neighbors
+           its intensity > tHigh, add the pixel and then visit it's neighbors
            to see if their intensities are > tLow.
            (there are redundant visits, but the results are idempotent).
         
@@ -376,39 +372,60 @@ public class CannyEdgeColorAdaptive {
         only, and then a pattern of searching around it.
         TODO: write a second method for the later to try that too...
         */
-                
-        float tHigh = 0;
-        float tLow = 0;
+               
+        float[] tHs = new float[2];
+        float[] tLs = new float[2];
         if (!useAdaptive2Layer || !useAdaptiveThreshold) {
             OtsuThresholding ot = new OtsuThresholding();
-            tHigh = otsuScaleFactor * ot.calculateBinaryThreshold256(gradientXY);
-            tLow = tHigh/factorBelowHighThreshold;
+            for (int i = 0; i < 2; ++i) {
+                tHs[i] = otsuScaleFactor * ot.calculateBinaryThreshold256(
+                    lcFilterProducts[i].getGradientXY());
+                tLs[i] = tHs[i]/factorBelowHighThreshold;
+            }
         }
-        
-        GreyscaleImage img2 = gradientXY.createWithDimensions();
-        
+       
+        GreyscaleImage combXY = lcFilterProducts[0]
+            .getGradientX().createWithDimensions();
+                
         // store pixels w/ v > tHigh
         // and store any of it's neighbors w/ v > tLow
+        
+        GreyscaleImage[] gs = new GreyscaleImage[]{
+            lcFilterProducts[0].getGradientXY(),
+            lcFilterProducts[1].getGradientXY()};
 
+        double[] tHs0 = new double[2];
+        double[] tLs0 = new double[2];
+        
+        if (lcThreshImg == null) {
+            for (int i = 0; i < 2; ++i) {
+                tHs0[i] = tHs[i];
+                tLs0[i] = tLs[i];
+            }
+        }
+        
+        double[] vs = new double[2];
+        
         for (int x = 0; x < w; ++x) {
             for (int y = 0; y < h; ++y) {
 
-                double v = gradientXY.getValue(x, y);
-
-                double tHigh0, tLow0;
-                if (threshImg != null) {
-                    tHigh0 = threshImg[x][y];
-                    tLow0 = tHigh0/2;
-                } else {
-                    tHigh0 = tHigh;
-                    tLow0 = tLow;
+                for (int i = 0; i < 2; ++i) {
+                    vs[i] = gs[i].getValue(x, y);
                 }
 
-                if (v < tHigh0 || v < tLow0) {
+                if (lcThreshImg != null) {
+                    for (int i = 0; i < 2; ++i) {
+                        tHs0[i] = lcThreshImg[i][x][y];
+                        tLs0[i] = tHs0[i]/2;
+                    }
+                }
+
+                // both "L" and "C" gradient pixels are below high threshold
+                if (vs[0] < tHs0[0] && vs[1] < tHs0[1]) {
                     continue;
                 }
 
-                img2.setValue(x, y, 255);
+                combXY.setValue(x, y, 255);
 
                 // store any adjacent w/ v > tLow
                 for (int k = 0; k < dxs.length; ++k) {
@@ -417,25 +434,24 @@ public class CannyEdgeColorAdaptive {
                     if ((x2 < 0) || (y2 < 0) || (x2 > (w - 1)) || (y2 > (h - 1))) {
                         continue;
                     }
-                    double v2 = gradientXY.getValue(x2, y2);
-                    if (v2 > tLow0) {
-                        img2.setValue(x2, y2, 255);
+                    for (int i = 0; i < 2; ++i) {
+                        if (gs[i].getValue(x2, y2) > tLs0[i]) {
+                            combXY.setValue(x2, y2, 255);
+                            break;
+                        } 
                     }
                 }
             }
         }
         
-        gradientXY.resetTo(img2);
+        applyPostLineThinningCorrections(combXY);
         
-        if (debug) {
-            MiscDebug.writeImage(gradientXY, "_after_2layer_before_pltc_");
+        for (int i = 0; i < 2; ++i) {            
+            gs[i].resetTo(combXY);
         }
 
-        applyPostLineThinningCorrections(gradientXY, 
-            gradientCopyBeforeThinning);
-
         if (debug) {
-            MiscDebug.writeImage(gradientXY, "_after_linethinning_1_");
+            MiscDebug.writeImage(combXY, "_after_linethinning_1_");
         }
         
         if (restoreJunctions) {
@@ -446,45 +462,129 @@ public class CannyEdgeColorAdaptive {
                 = AbstractLineThinner.createCoordinatePointsForEightNeighbors(
                     0, 0);
 
-            for (PairInt p : removedDisconnecting) {
-                                
-                if (ImageSegmentation.doesDisconnect(gradientXY,
-                    neighborCoordOffsets, p.getX(), p.getY())) {
+            for (int i0 = 0; i0 < 2; ++i0) {
+            
+                Set<PairInt> removedDisconnecting = lcRemovedDisconnecting.get(i0);
+                
+                for (PairInt p : removedDisconnecting) {
 
-                    int x = p.getX();
-                    int y = p.getY();
-                    int i = gradientXY.getIndex(x, y);
+                    if (ImageSegmentation.doesDisconnect(combXY,
+                        neighborCoordOffsets, p.getX(), p.getY())) {
 
-                    double tHigh0, tLow0;
-                    if (threshImg != null) {
-                        tHigh0 = threshImg[x][y];
-                        tLow0 = tHigh0/2;
-                    } else {
-                        tHigh0 = tHigh;
-                        tLow0 = tLow;
-                    }
-                    
-                    int v = gradientCopyBeforeThinning.getValue(p);
-                                      
-                    if (v > tLow0) {
-                        if (isAdjacentToAHorizOrVertLine(gradientXY, x, y, 3)) {
-                            gradientXY.setValue(x, y, 255);
+                        int x = p.getX();
+                        int y = p.getY();
+
+                        if (lcThreshImg != null) {
+                            for (int ii = 0; ii < 2; ++ii) {
+                                tHs0[ii] = lcThreshImg[ii][x][y];
+                                tLs0[ii] = tHs0[ii] / 2;
+                            }
+                        }
+
+                        int v = gs[i0].getValue(p);
+
+                        if (v > tHs0[i0]) {
+                            if (isAdjacentToAHorizOrVertLine(combXY, x, y, 3)) {
+                                combXY.setValue(x, y, 255);
+                            }
                         }
                     }
                 }
             }
      
             if (debug) {
-                MiscDebug.writeImage(gradientXY, "_after_restore_junctions_");
+                MiscDebug.writeImage(combXY, "_after_restore_junctions_");
             }
             
-            applyPostLineThinningCorrections(gradientXY, 
-                gradientCopyBeforeThinning);
+            applyPostLineThinningCorrections(combXY);
             
             if (debug) {
-                MiscDebug.writeImage(gradientXY, "_after_linethinning_2_");
+                MiscDebug.writeImage(combXY, "_after_linethinning_2_");
             }
         }
+        
+        GreyscaleImage combX = lcFilterProducts[0].getGradientX()
+            .copyImage();
+        GreyscaleImage combY = lcFilterProducts[0].getGradientY()
+            .copyImage();
+
+        // need to make a combined gradient in X and Y, then calc theta
+        //   image, based upon combXY results.
+        int nBins = 40;
+        int binSz = (int)Math.ceil(512./(double)nBins);
+        for (int i = 0; i < 2; ++i) {
+            // plotting histograms to see how to make
+            int[] hX = new int[nBins];
+            GreyscaleImage gX = lcFilterProducts[i].getGradientX();
+            for (int pixIdx = 0; pixIdx < n; ++pixIdx) {
+                int v = gX.getValue(pixIdx);
+                int bin = (v - -255)/binSz;
+                hX[bin]++;
+            }
+            int[] hY = new int[nBins];
+            GreyscaleImage gY = lcFilterProducts[i].getGradientY();
+            for (int pixIdx = 0; pixIdx < n; ++pixIdx) {
+                int v = gY.getValue(pixIdx);
+                int bin = (v - -255)/binSz;
+                hY[bin]++;
+            }
+            System.out.println(i + ": \n  hX=" 
+                + Arrays.toString(hX) + " \n  hY=" + Arrays.toString(hY)
+                + "\n  " + Arrays.toString(tHs));
+            
+            //Need to look at this in more detail to decide whether the
+            //  addition of 2 canny edges of lch[0] and lch[1] added
+            //     together are better than this pixel by pixel
+            //     2 layer filter approach.
+            //     the approach in this class currently is not as good for
+            //     low contrast images.
+        }
+        
+        // usually, the color gradient seems to be smaller values,
+        // so until see the histograms and impl scaling logic,
+        // will use tHs
+        float cFactor = tHs[0]/tHs[1];
+        
+        for (int pixIdx = 0; pixIdx < n; ++pixIdx) {
+            int v1 = combX.getValue(pixIdx);
+            int v2 = Math.round(cFactor * lcFilterProducts[1]
+                .getGradientX().getValue(pixIdx));
+            
+            // instead of averaging, will take the strongest
+            if (v2 > v1) {
+                if (v2 > 255) {
+                    combX.setValue(pixIdx, 255);
+                } else {
+                    combX.setValue(pixIdx, v2);
+                }
+            }
+            
+            // --- gradient Y ---
+            
+            v1 = combY.getValue(pixIdx);
+            v2 = Math.round(cFactor * lcFilterProducts[1]
+                .getGradientY().getValue(pixIdx));
+            
+            // instead of averaging, will take the strongest
+            if (v2 > v1) {
+                if (v2 > 255) {
+                    combY.setValue(pixIdx, 255);
+                } else {
+                    combY.setValue(pixIdx, v2);
+                }
+            }
+        }
+
+        GreyscaleImage combTheta = 
+            imageProcessor.computeTheta180(combX, combY);
+        
+        EdgeFilterProducts efp = new EdgeFilterProducts();
+        efp.setGradientX(combX);
+        efp.setGradientY(combY);
+        efp.setGradientXY(combXY);
+        efp.setTheta(combTheta);
+        
+        return efp;
     }
     
     /**
@@ -495,9 +595,9 @@ public class CannyEdgeColorAdaptive {
      * @param input
      * @return 
      */
-    private GreyscaleImage getGradientX1D(final GreyscaleImage input) {
+    private GreyscaleImage createGradientX1D(final GreyscaleImage input) {
                 
-        return getGradient1D(input, true);
+        return createGradient1D(input, true);
     }
     
     /**
@@ -509,7 +609,7 @@ public class CannyEdgeColorAdaptive {
      */
     private GreyscaleImage getGradientY1D(final GreyscaleImage input) {
                 
-        return getGradient1D(input, false);
+        return createGradient1D(input, false);
     }
     
     /**
@@ -519,7 +619,7 @@ public class CannyEdgeColorAdaptive {
      * @param input
      * @return 
      */
-    private GreyscaleImage getGradient1D(final GreyscaleImage input, 
+    private GreyscaleImage createGradient1D(final GreyscaleImage input, 
         boolean calculateForX) {
         
         log.fine("getGradientID calculateForX=" + calculateForX);
@@ -569,120 +669,88 @@ public class CannyEdgeColorAdaptive {
      * theta image
      * using two 1-D passes of a Sobel 1D kernel which is the same as a 
      * Gaussian first derivative with sigma = sqrt(1)/2 where FWHM=2.355*sigma.
-     * The theta image has range 0 t 360.
+     * The theta image has range 0 to 180.
      * 
-     * @param img
+     * @param lch
      * @return 
      */
-    protected EdgeFilterProducts createGradient(final Image img) {
+    protected EdgeFilterProducts[] createGradients(final GreyscaleImage[] lch) {
     
-        int n = img.getNPixels();
+        GreyscaleImage gX, gY, g, theta;
         
         ImageProcessor imageProcessor = new ImageProcessor();
-        GreyscaleImage[] lch = imageProcessor.createLCHForLUV(img);
-        //GreyscaleImage[] lcGradients = imageProcessor.createSobelLCForLUV(input);
-                             
-        GreyscaleImage[] gXs = new GreyscaleImage[2];
-        GreyscaleImage[] gYs = new GreyscaleImage[2];
-        GreyscaleImage[] gs = new GreyscaleImage[2];
         
-        for (int k = 0; k < 2; ++k) {
-            gXs[k] = getGradientX1D(lch[k]);
-            gYs[k] = getGradientY1D(lch[k]);
-            gs[k] = imageProcessor.combineConvolvedImages(gXs[k], gYs[k]);
-            if (scaleGradients) {
-                float[] values = imageProcessor.convertToFloat(gs[k]);
-                float maxV = MiscMath.findMax(values);
-                float factor = 255.f/maxV;
-                for (int ii = 0; ii < values.length; ++ii) {
-                    int v = Math.round(factor * values[ii]);
-                    if (v > 255) {
-                        v = 255;
-                    }
-                    gs[k].setValue(ii, v);
-                    
-                    v = Math.round(factor * gXs[k].getValue(ii));
-                    gXs[k].setValue(ii, v);
-                    
-                    v = Math.round(factor * gYs[k].getValue(ii));
-                    gYs[k].setValue(ii, v);
-                }
+        EdgeFilterProducts[] eps = new EdgeFilterProducts[2];
+        
+        for (int i = 0; i < 2; ++i) {
+        
+            gX = createGradientX1D(lch[i]);
+
+            gY = getGradientY1D(lch[i]);
+        
+            g = imageProcessor.combineConvolvedImages(gX, gY);
+        
+            // the theta is in range 0 to 180
+            theta = imageProcessor.computeTheta180(gX, gY);
+        
+            if (debug) {
+                // when replace the aspect library, put these renders in the 
+                //   equivalent replacement
+                long ts = MiscDebug.getCurrentTimeFormatted();
+                MiscDebug.writeImage(theta, "_theta_" + i + "_" + ts);
+                MiscDebug.writeImage(gX, "_gX_" + i + "_" + ts);
+                MiscDebug.writeImage(gY, "_gY_" + i + "_" + ts);
             }
+        
+            EdgeFilterProducts efp = new EdgeFilterProducts();
+            efp.setGradientX(gX);
+            efp.setGradientY(gY);
+            efp.setGradientXY(g);
+            efp.setTheta(theta);
+            
+            eps[i] = efp;
         }
         
-        GreyscaleImage gX = gXs[0].createFullRangeIntWithDimensions();
-        GreyscaleImage gY = gXs[0].createFullRangeIntWithDimensions();
-        GreyscaleImage g = gXs[0].createWithDimensions();
-        for (int ii = 0; ii < n; ++ii) {
-            
-            int v = (gXs[0].getValue(ii) + gXs[1].getValue(ii))/2;
-            gX.setValue(ii, v);
-            
-            v = (gYs[0].getValue(ii) + gYs[1].getValue(ii))/2;
-            gY.setValue(ii, v);
-            
-            v = (gs[0].getValue(ii) + gs[1].getValue(ii))/2;
-            if (v > 255) {
-                v = 255;
-            }
-            g.setValue(ii, v);
-        }
-        
-        // the theta is in range 0 to 180
-        GreyscaleImage theta = imageProcessor.computeTheta180(gX, gY);
-        
-        if (debug) {
-            // when replace the aspect library, put these renders in the 
-            //   equivalent replacement
-            long ts = MiscDebug.getCurrentTimeFormatted();
-            MiscDebug.writeImage(theta, "_theta_" + ts);
-            MiscDebug.writeImage(gX, "_gX_" + ts);
-            MiscDebug.writeImage(gY, "_gY_" + ts);
-            /*
-            int x = 37; int y = 163;
-            System.out.println("(" + x + ", " + y + ") math.atan2(" + gY.getValue(x, y)
-                + "," + gX.getValue(x, y) + ")*180./math.pi=" + 
-                theta.getValue(x, y));*/
-        }
-        
-        EdgeFilterProducts efp = new EdgeFilterProducts();
-        efp.setGradientX(gX);
-        efp.setGradientY(gY);
-        efp.setGradientXY(g);
-        efp.setTheta(theta);
-        
-        return efp;
+        return eps;
     }
 
     /**
      * note, uses small gaussian, so should only be used when very little or
      * no smoothing has occurred (line drawings, for example might be best
      * handled with this and no smoothing).
-     * @param img
+     * @param lch
      * @return 
      */
-    protected EdgeFilterProducts createDiffOfGaussians(final GreyscaleImage img) {
+    protected EdgeFilterProducts[] createDiffOfGaussians(final 
+        GreyscaleImage[] lch) {
+        
+        EdgeFilterProducts[] eps = new EdgeFilterProducts[2];
         
         GreyscaleImage gX, gY, g, theta;
         
         ImageProcessor imageProcessor = new ImageProcessor();
         
-        gX = createGradientFromDiffOfGauss(img, true);
-
-        gY = createGradientFromDiffOfGauss(img, false);
+        for (int i = 0; i < 2; ++i) {
             
-        g = imageProcessor.combineConvolvedImages(gX, gY);
+            gX = createGradientFromDiffOfGauss(lch[i], true);
+
+            gY = createGradientFromDiffOfGauss(lch[i], false);
+
+            g = imageProcessor.combineConvolvedImages(gX, gY);
+
+            // the theta is in range 0 to 180
+            theta = imageProcessor.computeTheta180(gX, gY);
+
+            EdgeFilterProducts efp = new EdgeFilterProducts();
+            efp.setGradientX(gX);
+            efp.setGradientY(gY);
+            efp.setGradientXY(g);
+            efp.setTheta(theta);
+            
+            eps[i] = efp;
+        }
         
-        // the theta is in range 0 to 180
-        theta = imageProcessor.computeTheta180(gX, gY);
-        
-        EdgeFilterProducts efp = new EdgeFilterProducts();
-        efp.setGradientX(gX);
-        efp.setGradientY(gY);
-        efp.setGradientXY(g);
-        efp.setTheta(theta);
-        
-        return efp;
+        return eps;
     }
     
     private GreyscaleImage createGradientFromDiffOfGauss(
@@ -858,24 +926,6 @@ public class CannyEdgeColorAdaptive {
         return false;
     }
 
-    public GreyscaleImage createGradientPSFForTesting() {
-                
-        float[] k = Gaussian1D.getBinomialKernelSigmaZeroPointFive();
-        
-        GreyscaleImage gX = new GreyscaleImage(3, 3);
-        gX.setValue(1, 1, 127);        
-        apply1DKernelToImage(gX, k, true);
-        
-        GreyscaleImage gY = new GreyscaleImage(3, 3);
-        gY.setValue(1, 1, 127);
-        apply1DKernelToImage(gY, k, false);
-        
-        ImageProcessor imageProcessor = new ImageProcessor();
-        GreyscaleImage g = imageProcessor.combineConvolvedImages(gX, gY);
-        
-        return g;
-    }
-
     /**
      * get the filter products for gradient and orientation.
      * note that the orientation image has values between 0 and 180.
@@ -885,66 +935,15 @@ public class CannyEdgeColorAdaptive {
         return filterProducts;
     }
 
-    private void applyPostLineThinningCorrections(GreyscaleImage gradientXY,
-        GreyscaleImage valuesBeforeThinning) {
-
-        Set<PairInt> correctedPoints = new HashSet<PairInt>();
+    private void applyPostLineThinningCorrections(GreyscaleImage gradientXY) {
         
-        for (int i = 0; i < gradientXY.getWidth(); ++i) {
-            for (int j = 0; j < gradientXY.getHeight(); ++j) {
-                if (gradientXY.getValue(i, j) > 0) {
-                    correctedPoints.add(new PairInt(i, j));
-                }
-            }
-        }
+        ImageProcessor imageProcessor = new ImageProcessor();
+        imageProcessor.applyThinning(gradientXY, false);
         
-        int n0 = gradientXY.getWidth();
-        int n1 = gradientXY.getHeight();
-        
-        // if there are too many points in correctedPoints, then
-        // the image is probably still filled with pixels noise or textures
-        // so do not perform line thinning in that case.
-        int nP = correctedPoints.size();
-        float frac = (float)nP/(float)(n0 * n1);
-        if (nP < 30000) {
-            PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
- //           pltc.correctForHolePattern100(correctedPoints, n0, n1);            
-            pltc.correctForLineHatHoriz(correctedPoints, n0, n1);
-            pltc.correctForLineHatVert(correctedPoints, n0, n1);
-            pltc.correctForLineSpurHoriz(correctedPoints, n0, n1);
-            pltc.correctForLineSpurVert(correctedPoints, n0, n1);
-            pltc.correctForIsolatedPixels(correctedPoints);
-        }
-        
-        GreyscaleImage out = gradientXY.createWithDimensions();
-        int[][] morphInput = new int[out.getWidth()][out.getHeight()];
-        for (int i = 0; i < morphInput.length; ++i) {
-            morphInput[i] = new int[out.getHeight()];
-        }
-        for (PairInt p : correctedPoints) {
-            int v = valuesBeforeThinning.getValue(p);
-            out.setValue(p.getX(), p.getY(), v);
-            morphInput[p.getX()][p.getY()] = 1;
-        }
-        
-        MorphologicalFilter mFilter = new MorphologicalFilter();
-        int[][] skel = mFilter.bwMorphThin(morphInput, Integer.MAX_VALUE);
-        for (int i = 0; i < n0; ++i) {
-            for (int j = 0; j < n1; ++j) {
-                int m = skel[i][j]; 
-                if (m == 0) {
-                    out.setValue(i, j, 0);
-                }
-            }
-        }
         if (useLineThinner) {
-            //ImageProcessor imageProcessor = new ImageProcessor();
-            //imageProcessor.applyThinning(out);
             ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
-            lt.applyFilter(out);
-        }
-        
-        gradientXY.resetTo(out);
+            lt.applyFilter(gradientXY);
+        }        
     }
 
     private int countAboveZero(GreyscaleImage img) {
@@ -958,5 +957,5 @@ public class CannyEdgeColorAdaptive {
         
         return n;
     }
-    
+
 }
