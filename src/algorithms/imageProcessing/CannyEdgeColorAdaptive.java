@@ -64,11 +64,7 @@ public class CannyEdgeColorAdaptive {
     protected float factorBelowHighThreshold = 2.f;
            
     private EdgeFilterProducts filterProducts = null;
-    
-    private EdgeFilterProducts lFilterProducts = null;
-    
-    private EdgeFilterProducts cFilterProducts = null;
-      
+              
     private boolean performNonMaxSuppr = true;
     
     private boolean debug = false;
@@ -178,9 +174,36 @@ public class CannyEdgeColorAdaptive {
             cannyC.overrideToUseAdaptiveThreshold();
         }
         
-        //cannyC.override2LayerFactorBelowHighThreshold(1.5f);
-        //cannyC.setOtsuScaleFactor(1.0f);
-        //cannyC.setToDebug();
+        cannyL.setOtsuScaleFactor(otsuScaleFactor);
+        cannyC.setOtsuScaleFactor(otsuScaleFactor);
+    
+        cannyL.override2LayerFactorBelowHighThreshold(factorBelowHighThreshold);
+        cannyC.override2LayerFactorBelowHighThreshold(factorBelowHighThreshold);
+        
+        if (!performNonMaxSuppr) {
+            cannyL.setToNotUseNonMaximumSuppression();
+            cannyC.setToNotUseNonMaximumSuppression();
+        }
+        
+        if (!restoreJunctions) {
+            cannyL.setToNotRestoreJunctions();
+            cannyC.setToNotRestoreJunctions();
+        }
+        
+        if (!useAdaptive2Layer) {
+            cannyL.setToUseSingleThresholdIn2LayerFilter();
+            cannyC.setToUseSingleThresholdIn2LayerFilter();
+        }
+        
+        if (!useLineThinner) {
+            cannyL.overrideToNotUseLineThinner();
+            cannyC.overrideToNotUseLineThinner();
+        }
+        
+        if (debug) {
+            cannyL.setToDebug();
+            cannyC.setToDebug();
+        }
         
         cannyL.applyFilter(lch[0]);
         cannyC.applyFilter(lch[1]);
