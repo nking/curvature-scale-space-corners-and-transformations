@@ -68,17 +68,7 @@ public class CannyEdgeColorAdaptive {
     private EdgeFilterProducts lFilterProducts = null;
     
     private EdgeFilterProducts cFilterProducts = null;
-    
-    /**
-     * by default, adds the gradients of L and C from colorspace LCH, scaled
-     * to their own color space vector maxima then the maximum possible in their
-     * color vectors is mapped to 255.
-     * If "scaleGrdients" is set to true, the individual sobel gradients are
-     * scaled so that their maximum values present in the image are transformed
-     * to values 255.
-     */
-    private boolean scaleGradients = false;
-        
+      
     private boolean performNonMaxSuppr = true;
     
     private boolean debug = false;
@@ -112,18 +102,6 @@ public class CannyEdgeColorAdaptive {
     
     public void setToDebug() {
         debug = true;
-    }
-    
-    /**
-     * by default, adds the gradients of L and C from colorspace LCH, scaled
-     * to their own color space vector maxima then the maximum possible in their
-     * color vectors is mapped to 255.
-     * If "scaleGrdients" is set to true, the individual sobel gradients are
-     * scaled so that their maximum values present in the image are transformed
-     * to values 255.
-     */
-    public void overrideToScaleGradients() {
-        scaleGradients = true;
     }
     
     public void overrideToNotUseLineThinner() {
@@ -201,8 +179,7 @@ public class CannyEdgeColorAdaptive {
         }
         
         //cannyC.override2LayerFactorBelowHighThreshold(1.5f);
-        cannyC.setOtsuScaleFactor(1.0f);
-        
+        //cannyC.setOtsuScaleFactor(1.0f);
         //cannyC.setToDebug();
         
         cannyL.applyFilter(lch[0]);
@@ -211,35 +188,11 @@ public class CannyEdgeColorAdaptive {
         EdgeFilterProducts edgeProductsL = cannyL.getFilterProducts();
         EdgeFilterProducts edgeProductsC = cannyC.getFilterProducts();
         
-        
-        //MiscDebug.writeImage(edgeProductsL.getGradientXY(), 
-        //    "_L_");
-        //MiscDebug.writeImage(edgeProductsC.getGradientXY(), 
-        //    "_C_");
-        
-        float lFactor;
-        float cFactor;
-        if (scaleGradients) {
-            lFactor = 255.f/(float)edgeProductsL.getGradientXY().max();
-            cFactor = 255.f/(float)edgeProductsC.getGradientXY().max();
-        } else {
-            lFactor = 1.f;
-            
-            OtsuThresholding ot = new OtsuThresholding();
-            float f1 = otsuScaleFactor * ot.calculateBinaryThreshold256(
-                edgeProductsL.getGradientXY());
-            float f2 = otsuScaleFactor * ot.calculateBinaryThreshold256(
-                edgeProductsC.getGradientXY());
-            cFactor = f1/f2;
-        }
+        float lFactor = 255.f/(float)edgeProductsL.getGradientXY().max();
+        float cFactor = 255.f/(float)edgeProductsC.getGradientXY().max();
         
         GreyscaleImage combXY = edgeProductsL.getGradientXY()
             .createWithDimensions();
-        
-        // DEBUG: tmp image 
-        GreyscaleImage tmp = combXY.createWithDimensions();
-        // DEBUG: tmp image that scales then averages the 2 values
-        GreyscaleImage tmp2 = combXY.createWithDimensions();
         
         GreyscaleImage combX = edgeProductsL.getGradientX()
             .createWithDimensions();
@@ -253,14 +206,6 @@ public class CannyEdgeColorAdaptive {
         for (int i = 0; i < n; ++i) {
             v0 = edgeProductsL.getGradientXY().getValue(i);
             v1 = edgeProductsC.getGradientXY().getValue(i);
-            v = (v0 + v1)/2;
-            if (v0 > v1) {
-                tmp2.setValue(i, v0);
-            } else {
-                tmp2.setValue(i, v1);
-            }
-            
-            tmp.setValue(i, v);
             
             v0 = Math.round(v0 * lFactor);
             if (v0 > 255) {
@@ -295,12 +240,7 @@ public class CannyEdgeColorAdaptive {
         efp.setGradientY(combY);
         efp.setGradientXY(combXY);
         efp.setTheta(combTheta);
-        
-        long ts = MiscDebug.getCurrentTimeFormatted();
-        //MiscDebug.writeImage(tmp, ts + "_no_scaling_avg_");
-        //MiscDebug.writeImage(tmp2, ts + "_no_scaling_");
-        MiscDebug.writeImage(combXY, ts + "_scaling_final_");
-        
+         
         this.filterProducts = efp;
     }
    
