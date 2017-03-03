@@ -2,6 +2,7 @@ package algorithms.imageProcessing.features.mser;
 
 import algorithms.QuickSort;
 import algorithms.compGeometry.PerimeterFinder2;
+import algorithms.imageProcessing.CannyEdgeColorAdaptive;
 import algorithms.imageProcessing.DFSConnectedGroupsFinder0;
 import algorithms.imageProcessing.DFSContiguousValueFinder;
 import algorithms.imageProcessing.GreyscaleImage;
@@ -623,6 +624,10 @@ public class MSEREdges {
 
                 VeryLongBitString nbrsBS = adjMap.get(idx1);
 
+                if (nbrsBS == null) {
+                    continue;
+                }
+                
                 int[] idxs2 = nbrsBS.getSetBits();
 
                 // find best merge
@@ -1212,17 +1217,35 @@ public class MSEREdges {
 
     private GreyscaleImage createSobelScores() {
 
+        int w = gsImg.getWidth();
+        int h = gsImg.getHeight();
+        
         ImageProcessor imageProcessor = new ImageProcessor();
 
+        /*
         float[] sobelScores = imageProcessor.createSobelColorScores(
             gsImg, ptImg, 20);
 
-        int w = gsImg.getWidth();
-        int h = gsImg.getHeight();
         GreyscaleImage scaled = MiscMath.rescaleAndCreateImage(sobelScores,
             w, h);
+        */
+        
+        CannyEdgeColorAdaptive canny2 = new CannyEdgeColorAdaptive();
+        canny2.overrideToNotUseLineThinner();
+        canny2.applyFilter(clrImg);
+        GreyscaleImage scaled = canny2.getFilterProducts().getGradientXY();
+        scaled.multiply(255/scaled.max());
+        //MiscDebug.writeImage(scaled, debugLabel
+        //    + "_lc_edges_");
+        
+        /*
+        GreyscaleImage sobelLCH = 
+            imageProcessor.createSobelLCCombined(img);
+        */
+        
 
-        // smearing values over a 3 pixel window
+        // smearing values over a 3 pixel window to avoid the potential
+        //   1 pixel displacement of an edge from the level set boundaries
         SummedAreaTable sumTable = new SummedAreaTable();
 
         GreyscaleImage imgM = sumTable.createAbsoluteSummedAreaTable(scaled);
@@ -1235,11 +1258,33 @@ public class MSEREdges {
 
         if (sobelScores == null) {
             sobelScores = createSobelScores();
-            MiscDebug.writeImage(sobelScores, "_" + ts + "_sobel_");
+            MiscDebug.writeImage(sobelScores, 
+                "_" + ts + "_sobel_");
         }
+        
+        /*
+        using the level set region boundaries as contours to complete
+        the edges from the canny edges of L and C from LCH.
+        
+        Looking for the best ways to essentially fill in gaps in the canny edges.
+        
+        -- first applying a filter that is the fraction of region 
+           boundary points which have a canny edge pixel.
+             -- a generous limit of match >= 0.15 is needed for some test
+                images such as costa rica.
+                -- might need to adjust the regions created from
+                   greyscale positive image (gs[0])
+                   to improve detection,
+                   then the match limit would possibly be higher
+                   that is, near 0.8 and hence less noise too...
+                   truly adding contours instead of needing
+                   to further extract segments from the contours here. 
+        */
 
         // below this removes:
-        final double limit = 250;//100;//76;//12.75;
+        float mLimit = 0.15001f;//0.1
+        // below this removes:
+        final double limit = 50;//12.75;
         // above this restores
         final double limit2 = useLowerContrastLimits ? 3 : 11;
 
@@ -1253,7 +1298,7 @@ public class MSEREdges {
 
         TIntObjectMap<TIntList> pointIndexesMap = new TIntObjectHashMap<TIntList>();
         TIntSet allPoints = new TIntHashSet();
-
+        
         for (int rListIdx = 0; rListIdx < regions.size(); ++rListIdx) {
             Region r = regions.get(rListIdx);
             TIntSet points = r.getAcc(clrImg.getWidth());
@@ -1261,9 +1306,22 @@ public class MSEREdges {
             TIntSet outerBorder = new TIntHashSet();
             finder.extractBorder2(points, embedded, outerBorder, clrImg.getWidth());
 
-            double score = calcAvgScore(outerBorder, sobelScores,
+//Image tmpImg = clrImg.copyImage();
+//ImageIOHelper.addCurveToImage(outerBorder, tmpImg, 0, 255, 0, 0);
+//MiscDebug.writeImage(tmpImg, "_" + rListIdx);
+    
+            double[] scoreAndMatch = calcAvgScore(outerBorder, sobelScores,
                 clrImg.getWidth());
-            boolean doNotAdd = (score < limit);
+            
+            double matchFraction = scoreAndMatch[1]/(double)outerBorder.size();
+            
+            System.out.format(" rIdx=%d score=%.3f nm=%d nmf=%.3f\n",
+                rListIdx, (float)scoreAndMatch[0], 
+                (int)scoreAndMatch[1], 
+                (float)matchFraction);
+            
+            boolean doNotAdd = matchFraction < mLimit;
+                //= (scoreAndMatch[0] < limit);
             if (doNotAdd) {
                 rmvd.add(outerBorder);
             } else {
@@ -1325,7 +1383,7 @@ public class MSEREdges {
                     int score = sobelScores.getValue(pixIdx);
                     //System.out.println(" ? " + p + " score=" + score);
                     if (score > limit2) {
-                        allPoints.add(pixIdx);
+            //            allPoints.add(pixIdx);
                     }
                 }
             }
@@ -1739,19 +1797,25 @@ public class MSEREdges {
         return shiftedImg;
     }
 
-    private double calcAvgScore(TIntSet pixIdxs, GreyscaleImage sobelScores,
+    // calc avg score and count the points w/ v>0
+    private double[] calcAvgScore(TIntSet pixIdxs, GreyscaleImage sobelScores,
         int imgWidth) {
 
+        int count = 0;
         double sum = 0;
         TIntIterator iter = pixIdxs.iterator();
         while (iter.hasNext()) {
             int pixIdx = iter.next();
-            sum += sobelScores.getValue(pixIdx);
+            int v = sobelScores.getValue(pixIdx);
+            sum += v;
+            if (v > 0) {
+                count++;
+            }
         }
 
         sum /= (double) pixIdxs.size();
 
-        return sum;
+        return new double[]{sum, count};
     }
 
     private boolean similarExists(Region rToCheck, List<RegionGeometry> listSRG) {
