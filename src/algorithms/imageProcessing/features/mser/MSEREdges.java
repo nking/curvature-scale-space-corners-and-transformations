@@ -8,6 +8,8 @@ import algorithms.imageProcessing.DFSContiguousValueFinder;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.GroupPixelHSV;
 import algorithms.imageProcessing.GroupPixelHSV2;
+import algorithms.imageProcessing.Heap;
+import algorithms.imageProcessing.HeapNode;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
@@ -119,6 +121,8 @@ public class MSEREdges {
 
     private GreyscaleImage sobelScores = null;
 
+    private GreyscaleImage cannyEdges = null;
+    
     private long ts = 0;
 
     private STATE state = null;
@@ -1250,6 +1254,7 @@ public class MSEREdges {
             imageProcessor.createSobelLCCombined(img);
         */
         
+        this.cannyEdges = scaled;
 
         // smearing values over a 3 pixel window to avoid the potential
         //   1 pixel displacement of an edge from the level set boundaries
@@ -1266,7 +1271,8 @@ public class MSEREdges {
         if (sobelScores == null) {
             sobelScores = createSobelScores();
             MiscDebug.writeImage(sobelScores, 
-                "_" + ts + "_sobel_");
+                "_" + ts + "_canny_blurred_");
+            MiscDebug.writeImage(cannyEdges, "_" + ts + "_canny_");
         }
         
         /*
@@ -1290,7 +1296,7 @@ public class MSEREdges {
         
         two approaches will be compared:
            -- given the mLimit filtered region boundaries, will extract the longest
-              segements from those matching cnny edge points and minimizing the
+              segments from those matching canny edge points and minimizing the
               gap sizes within the segment.
            -- or alternatively,
               given the mLimit filtered region boundaries,
@@ -1304,22 +1310,16 @@ public class MSEREdges {
         */
         
         // below this removes:
-        float mLimit = 0.4001f;//0.1
-        // below this removes:
-        final double limit = 50;//12.75;
-        // above this restores
-        final double limit2 = useLowerContrastLimits ? 3 : 11;
-
-        //the intersection of overlapping regions, present in many regions
-        //   is often a strong edge
-        List<TIntSet> rmvd = new ArrayList<TIntSet>();
-
-        List<TIntSet> boundaries = new ArrayList<TIntSet>();
-
+        float mLimit = 0.4001f;
+       
+        // maximum number of contiguous pixels that are not already canny
+        //   edge points
+        int maxGapSize = 16;
+        
         PerimeterFinder2 finder = new PerimeterFinder2();
 
-        TIntObjectMap<TIntList> pointIndexesMap = new TIntObjectHashMap<TIntList>();
-        TIntSet allPoints = new TIntHashSet();
+        TIntSet allEdgePoints = new TIntHashSet();
+        TIntSet unmatchedPoints = new TIntHashSet();
         
         for (int rListIdx = 0; rListIdx < regions.size(); ++rListIdx) {
             Region r = regions.get(rListIdx);
@@ -1331,12 +1331,11 @@ public class MSEREdges {
             TIntSet border2 = removeImageBorder(outerBorder, 
                 clrImg.getWidth(), clrImg.getHeight());
             
-//Image tmpImg = clrImg.copyImage();
-//ImageIOHelper.addCurveToImage(outerBorder, tmpImg, 0, 255, 0, 0);
-//MiscDebug.writeImage(tmpImg, "_" + rListIdx);
-    
+            TIntSet matched = new TIntHashSet();
+            TIntSet unmatched = new TIntHashSet();
+            
             double[] scoreAndMatch = calcAvgScore(border2, sobelScores,
-                clrImg.getWidth());
+                matched, unmatched, clrImg.getWidth());
             
             double matchFraction = scoreAndMatch[1]/(double)border2.size();
             
@@ -1349,79 +1348,221 @@ public class MSEREdges {
                 ((int)scoreAndMatch[1] == 0);
             
             if (doNotAdd) {
-                rmvd.add(outerBorder);
-            } else {
-                boundaries.add(outerBorder);
-                allPoints.addAll(outerBorder);
+                continue;
             }
 
-            TIntIterator iter = outerBorder.iterator();
-            while (iter.hasNext()) {
-                int pixIdx = iter.next();
-                TIntList bIdxs = pointIndexesMap.get(pixIdx);
-                if (bIdxs == null) {
-                    bIdxs = new TIntArrayList();
-                    pointIndexesMap.put(pixIdx, bIdxs);
-                }
-                bIdxs.add(rListIdx);
+Image tmpImg = sobelScores.copyToColorGreyscale();
+ImageIOHelper.addCurveToImage(border2, tmpImg, 0, 255, 0, 0);
+MiscDebug.writeImage(tmpImg, "_" + rListIdx);
+
+            if (unmatched.size() == 0) {
+                // add all points including the border
+                allEdgePoints.addAll(outerBorder);
+                continue;
             }
-                
-            DFSConnectedGroupsFinder0 dfsFinder 
-                = new DFSConnectedGroupsFinder0(clrImg.getWidth());
-            dfsFinder.setMinimumNumberInCluster(12);
-            dfsFinder.findConnectedPointGroups(embedded);
-            for (int j = 0; j < dfsFinder.getNumberOfGroups(); ++j) {
+            
+            /*
+            to find the points in border2 which are not in the canny edges, but
+            are the missing contour points of an object:
+            
+            -- separating the border2 points which are matched to canny edge
+                 points from those which do not have a canny edge pixel
+                 (done in steps above)
+            -- for the matched points, putting them all in allPoints and
+                putting unmatched into unmatchedSet.
+            -- when this block is complete,
+               -- will find the contiguous matched segments.
+               -- will find the unmatchedSet points which are adjacent
+                  to one of the matched.
+                  these are the endpoints in the unmatched which may be path
+                  endpoints between matched segments or they might not be.
+               -- will search through unmatched points from the starting 
+                  endpoints to the other endpoints
+                  and keep paths that are shorter than
+                  maxGapSize
+            */
+            
+            allEdgePoints.addAll(matched);
+            unmatchedPoints.addAll(unmatched);
+        }
+           
+        //make contiguous connected segments of matched set.
+        DFSConnectedGroupsFinder0 finder2 = new DFSConnectedGroupsFinder0(
+            clrImg.getWidth());
+        finder2.setMinimumNumberInCluster(1);
+        finder2.findConnectedPointGroups(allEdgePoints);
+            
+        // key = matched point, value = finder2 index of point
+        TIntIntMap mpIdxMap = finder2.createPointIndexMap();
+        
+        //find the endpoints for the unmatched
+        //as any that are adjacent to matched points
+        //and note their contiguous segment.
+        // key=pixIdx of point in unmatched, value=mpIdxMap value djacent to point
+        TIntIntMap umEPIdxMap = findUnmatchedEndpoints(unmatchedPoints, 
+            mpIdxMap, clrImg.getWidth(), clrImg.getHeight());
 
-                TIntSet eSet = dfsFinder.getXY(j);
-
-                TIntSet embedded2 = new TIntHashSet();
-                TIntSet outerBorder2 = new TIntHashSet();
-                finder.extractBorder2(eSet, embedded2, outerBorder2,
-                    clrImg.getWidth());
-
-                if (outerBorder2.size() > 12) {
-
-                    if (doNotAdd) {
-                        rmvd.add(outerBorder2);
-                    } else {
-                        allPoints.addAll(outerBorder2);
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        // consider each unmatched endpoint a search along
+        // unmatched points to find paths to the other matched segments.
+        // with a maximum size to the path being the
+        // allowed gap size. 
+        DFSConnectedGroupsFinder0 finder3 = new DFSConnectedGroupsFinder0(
+            clrImg.getWidth());
+        finder3.setMinimumNumberInCluster(1);
+        finder3.findConnectedPointGroups(unmatchedPoints);
+        
+        TIntSet umEPKeys = umEPIdxMap.keySet();
+        
+        int w = clrImg.getWidth();
+        int h = clrImg.getHeight();
+        
+        int n3 = finder3.getNumberOfGroups();
+        for (int i = 0; i < n3; ++i) {
+            
+            TIntSet uSet = finder3.getXY(i);
+            
+            // if any 2 points in umEPIdxMap keys are present in uSet,
+            // then that links 2 canny edge segments,
+            // but uSet must be smaller than maxGapSize.
+            // so here, need to perform a dijkstra search for each endpoint
+            //  to the other endpoints within uSet,
+            //  and if any of the paths is < maxGapSize, the points
+            //  get added to the final points list
+            
+            //NOTE: could improve this intersection by using bit vectors
+            TIntSet intersection = new TIntHashSet(uSet);
+            boolean a = intersection.retainAll(umEPKeys);
+            if (intersection.size() < 2) {
+                continue;
+            }
+            
+            //assign indexes to uSet for search arrays
+            TIntIntMap uMap = new TIntIntHashMap();
+            TIntIterator iter4 = uSet.iterator();
+            while (iter4.hasNext()) {
+                int pixIdx = iter4.next();
+                uMap.put(pixIdx, uMap.size());
+            }
+            
+            // searches from each intersection point to each other intersection 
+            //    point thrugh points in uSet
+            TIntList localEPs = new TIntArrayList(intersection);
+            for (int i0 = 0; i0 < localEPs.size(); ++i0) {
+                int pixIdx0 = localEPs.get(i0);
+                int srcIdx = uMap.get(pixIdx0);
+                for (int i1 = (i0 + 1); i1 < localEPs.size(); ++i1) {
+                    int pixIdx1 = localEPs.get(i1);
+                    
+                    double dist = distance(pixIdx0, pixIdx1, w);
+                    
+                    if (dist > maxGapSize) {
+                        continue;
                     }
-
-                    TIntIterator iter2 = outerBorder2.iterator();
-                    while (iter2.hasNext()) {
-                        int pixIdx = iter2.next();
-                        TIntList bIdxs = pointIndexesMap.get(pixIdx);
-                        if (bIdxs == null) {
-                            bIdxs = new TIntArrayList();
-                            pointIndexesMap.put(pixIdx, bIdxs);
+                    
+                    int destIdx = uMap.get(pixIdx1);
+                    
+                    Heap heap = new Heap();
+                    
+                    // -- init dijkstra variables ---
+                    HeapNode[] nodes = new HeapNode[uSet.size()];
+                    long[] distFromS = new long[nodes.length];
+                    HeapNode[] prevNode = new HeapNode[nodes.length];
+                    
+                    Arrays.fill(distFromS, Long.MAX_VALUE);
+                    distFromS[srcIdx] = 0;
+                    
+                    iter4 = uSet.iterator();
+                    while (iter4.hasNext()) {
+                        int pixIdx = iter4.next();
+                        int idx = uMap.get(pixIdx);
+                        
+                        nodes[idx] = new HeapNode(distFromS[idx]);
+                        nodes[idx].setData(Integer.valueOf(pixIdx));
+                        heap.insert(nodes[idx]); 
+                    }
+                    
+                    // --- traverse the nodes ---
+                    
+                    HeapNode u = heap.extractMin();
+                    while (u != null) {
+                        int uPixIdx = ((Integer)u.getData()).intValue();
+                        int uY = uPixIdx/w;
+                        int uX = uPixIdx - (uY * w);
+                        
+                        int uIdx = uMap.get(uPixIdx);
+                        
+                        // could create an adj map above
+                        for (int k = 0; k < dxs.length; ++k) {
+                            int vX = uX + dxs[k];
+                            int vY = uY + dys[k];
+                            if (vX < 0 || vY < 0 || (vX >= w) || (vY >= h)) {
+                                continue;
+                            }
+                            int vPixIdx = (vY * w) + vX;
+                            if (!uSet.contains(vPixIdx)) {
+                                continue;
+                            }
+                            
+                            int vIdx = uMap.get(vPixIdx);
+                            
+                            long alt;
+                            if (distFromS[uIdx] == Long.MAX_VALUE) {
+                                alt = Long.MAX_VALUE;
+                            } else {
+                                alt = distFromS[uIdx] + 
+                                    (long)Math.round(distance(uPixIdx, vPixIdx, w));
+                            }
+                            
+                            if ((alt >= 0) && (alt < distFromS[vIdx])) {
+                                distFromS[vIdx] = alt;
+                                prevNode[vIdx] = u;
+                                heap.decreaseKey(nodes[vIdx], alt); // O(1)
+                            }
                         }
-                        bIdxs.add(rListIdx);
+
+                        u = heap.extractMin();
+                    }
+                    
+                    // --- read dijkstra soln if any ---
+                    int[] pathNodes = new int[prevNode.length];
+                    int count = prevNode.length - 1;
+                    int lastInd = destIdx;
+                    pathNodes[count] = ((Integer)nodes[lastInd].getData()).intValue();
+                    count--;
+                    while (lastInd != srcIdx) {
+                        HeapNode node = prevNode[lastInd];
+                        int pixIdx = ((Integer)node.getData()).intValue();
+                        lastInd = uMap.get(pixIdx);
+                        
+                        pathNodes[count] = 
+                            ((Integer)nodes[lastInd].getData()).intValue();
+                        count--;
+                    }
+                    
+                    // pathNodes from count+1 to end of array are new nodes
+                    pathNodes = Arrays.copyOfRange(pathNodes, count + 1, 
+                        pathNodes.length);
+                    
+                    if (pathNodes.length <= maxGapSize) {
+                        allEdgePoints.addAll(pathNodes);
                     }
                 }
             }
+            
+            //TODO: add back removed image border points during creation of
+            //   border2 that are connected to allEdgePoints
         }
-
-        if (rmvd.size() > 0) {
-            for (TIntSet set : rmvd) {
-                TIntIterator iter2 = set.iterator();
-                while (iter2.hasNext()) {
-                    int pixIdx = iter2.next();
-                    int score = sobelScores.getValue(pixIdx);
-                    //System.out.println(" ? " + p + " score=" + score);
-                    if (score > limit2) {
-            //            allPoints.add(pixIdx);
-                    }
-                }
-            }
-        }
-
+                      
         if (debug) {
             Image tmp = clrImg.copyImage();
-            ImageIOHelper.addCurveToImage(allPoints, tmp, 0, 255, 0, 0);
+            ImageIOHelper.addCurveToImage(allEdgePoints, tmp, 0, 255, 0, 0);
             MiscDebug.writeImage(tmp, "_" + ts + "_borders0_");
         }
 
-        return allPoints;
+        return allEdgePoints;
     }
 
     /**
@@ -1845,9 +1986,8 @@ public class MSEREdges {
 
     // calc avg score and count the points w/ v>0
     private double[] calcAvgScore(TIntSet pixIdxs, GreyscaleImage sobelScores,
-        int imgWidth) {
+        TIntSet outputMatched, TIntSet outputUnmatched, int imgWidth) {
 
-        int count = 0;
         double sum = 0;
         TIntIterator iter = pixIdxs.iterator();
         while (iter.hasNext()) {
@@ -1855,13 +1995,15 @@ public class MSEREdges {
             int v = sobelScores.getValue(pixIdx);
             sum += v;
             if (v > 0) {
-                count++;
+                outputMatched.add(pixIdx);
+            } else {
+                outputUnmatched.add(pixIdx);
             }
         }
 
         sum /= (double) pixIdxs.size();
 
-        return new double[]{sum, count};
+        return new double[]{sum, outputMatched.size()};
     }
 
     private boolean similarExists(Region rToCheck, List<RegionGeometry> listSRG) {
@@ -1986,6 +2128,52 @@ public class MSEREdges {
         }
         
         return hsv.isGrey(12);
+    }
+    
+    private TIntIntMap findUnmatchedEndpoints(TIntSet unmatchedPoints, 
+        TIntIntMap matchedPointsIdxMap, int width, int height) {
+        
+        TIntIntMap umEPIdxMap = new TIntIntHashMap();
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        TIntIterator iter = unmatchedPoints.iterator();
+        while (iter.hasNext()) {
+            int pixIdx = iter.next();
+            int y = pixIdx/width;
+            int x = pixIdx - (y * width);
+            
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                if (x2 < 0 || y2 < 0 || (x2 >= width) || (y2 >= height)) {
+                    continue;
+                }
+                int pixIdx2 = (y2 * width) + x2;
+                if (matchedPointsIdxMap.containsKey(pixIdx2)) {
+                    umEPIdxMap.put(pixIdx, matchedPointsIdxMap.get(pixIdx2));
+                }
+            }
+        }
+        
+        return umEPIdxMap;
+    }
+
+    private double distance(int pixIdx0, int pixIdx1, int width) {
+        
+        int y0 = pixIdx0/width;
+        int x0 = pixIdx0 - (y0 * width);
+        
+        int y1 = pixIdx1/width;
+        int x1 = pixIdx1 - (y1 * width);
+    
+        int diffX = x0 - x1;
+        int diffY = y0 - y1;
+        
+        double dist = Math.sqrt(diffX * diffX + diffY * diffY);
+        
+        return dist;
     }
 
 }

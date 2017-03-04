@@ -261,6 +261,26 @@ public class DFSConnectedGroupsFinder0 {
         }
         log.finest("number of groups after prune=" + groupMembership.size());
     }
+    
+    public TIntIntMap createPointIndexMap() {
+        
+        TIntIntMap ptIdxMap = new TIntIntHashMap();
+        
+        int n = getNumberOfGroups();
+        for (int i = 0; i < n; ++i) {
+            
+            TIntSet set = getXY(i);
+            
+            TIntIterator iter = set.iterator();
+            while (iter.hasNext()) {
+                int pixIdx = iter.next();
+                ptIdxMap.put(pixIdx, i);
+            }
+        }
+        
+        return ptIdxMap;
+    }
+
 
     public int getNumberofGroupMembers(int groupId) {
         if (groupMembership.isEmpty()) {
