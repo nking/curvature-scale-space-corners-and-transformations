@@ -205,11 +205,19 @@ public class CannyEdgeColorAdaptive {
             cannyC.setToDebug();
         }
         
+        //cannyC.setOtsuScaleFactor(1.0f);
+        //cannyC.override2LayerFactorBelowHighThreshold(1.5f);
+        
         cannyL.applyFilter(lch[0]);
         cannyC.applyFilter(lch[1]);
         
         EdgeFilterProducts edgeProductsL = cannyL.getFilterProducts();
         EdgeFilterProducts edgeProductsC = cannyC.getFilterProducts();
+        
+        // DEBUG: temporary look at recalculating the L thresholds
+        //        to filter out scaled C values to reduce noise.
+        //        assuming not adaptive for now.
+        int tLowL = edgeProductsL.getGradientXY().min();
         
         float lFactor = 255.f/(float)edgeProductsL.getGradientXY().max();
         float cFactor = 255.f/(float)edgeProductsC.getGradientXY().max();
@@ -237,6 +245,12 @@ public class CannyEdgeColorAdaptive {
             v1 = Math.round(v1 * cFactor);
             if (v1 > 255) {
                 v1 = 255;
+            }
+            
+            if (cFactor > 1) {
+                if (v1 < tLowL) {
+                    v1 = 0;
+                }
             }
                         
             // choosing the largest of both instead of avg

@@ -55,7 +55,7 @@ import thirdparty.edu.princeton.cs.algs4.QuadTree;
  * much larger pixel association than the few pixels of canny edges for
  * example).
  *
- * It currently uses the level sets found in the MSER regions made from
+ * It currently uses the level sets found in the MSER =made from
  * greyscale and "H" of LCH color space images (caveat, configured
  * to extract MSER regions from images from COTS of past several years
  * binned to size near 256 X 256).
@@ -339,6 +339,13 @@ public class MSEREdges {
                 cpList.add(r.copy());
             }
         }
+
+        /*
+        adding better configuration for greyscale positive here.
+        TODO: consider fixing the process above to include these.
+        */
+        regions.addAll(_extractSensitiveGS0());
+        //_debugOrigRegions(regions,"_GS0__");
 
         if (debug) {
             int[] xyCen = new int[2];
@@ -1266,23 +1273,38 @@ public class MSEREdges {
         using the level set region boundaries as contours to complete
         the edges from the canny edges of L and C from LCH.
         
-        Looking for the best ways to essentially fill in gaps in the canny edges.
+        Looking for the best ways to essentially fill in gaps in the canny edges
+        with these region boundaries, making complete contours (and hence
+        labeled sets, that is, segmentation).
         
         -- first applying a filter that is the fraction of region 
            boundary points which have a canny edge pixel.
-             -- a generous limit of match >= 0.15 is needed for some test
-                images such as costa rica.
-                -- might need to adjust the regions created from
-                   greyscale positive image (gs[0])
-                   to improve detection,
-                   then the match limit would possibly be higher
-                   that is, near 0.8 and hence less noise too...
-                   truly adding contours instead of needing
-                   to further extract segments from the contours here. 
+           
+        -- unimplemented:
+             then need to extract for each region, the longest matching segment
+             to the canny edges (minimizes gaps, that is contiguous pixels in
+             the boundary which are not in the canny edge pixels).
+    
+        current low limit for mLimit = 0.4001f;
+        is necessary for the test image for costa rica, for example
+        
+        two approaches will be compared:
+           -- given the mLimit filtered region boundaries, will extract the longest
+              segements from those matching cnny edge points and minimizing the
+              gap sizes within the segment.
+           -- or alternatively,
+              given the mLimit filtered region boundaries,
+              can rely on subsequent color based merging method to
+              handle the remaining reduction of edges.
+              this method is more consistent with goal of preserving contours,
+              that is maintaining closed curves.
+              caveat of this approach is a large dependency on color filters
+              which when finally tuned, may be overfitting for
+              larger test datasets.
         */
-
+        
         // below this removes:
-        float mLimit = 0.15001f;//0.1
+        float mLimit = 0.4001f;//0.1
         // below this removes:
         final double limit = 50;//12.75;
         // above this restores
@@ -1306,22 +1328,26 @@ public class MSEREdges {
             TIntSet outerBorder = new TIntHashSet();
             finder.extractBorder2(points, embedded, outerBorder, clrImg.getWidth());
 
+            TIntSet border2 = removeImageBorder(outerBorder, 
+                clrImg.getWidth(), clrImg.getHeight());
+            
 //Image tmpImg = clrImg.copyImage();
 //ImageIOHelper.addCurveToImage(outerBorder, tmpImg, 0, 255, 0, 0);
 //MiscDebug.writeImage(tmpImg, "_" + rListIdx);
     
-            double[] scoreAndMatch = calcAvgScore(outerBorder, sobelScores,
+            double[] scoreAndMatch = calcAvgScore(border2, sobelScores,
                 clrImg.getWidth());
             
-            double matchFraction = scoreAndMatch[1]/(double)outerBorder.size();
+            double matchFraction = scoreAndMatch[1]/(double)border2.size();
             
             System.out.format(" rIdx=%d score=%.3f nm=%d nmf=%.3f\n",
                 rListIdx, (float)scoreAndMatch[0], 
                 (int)scoreAndMatch[1], 
                 (float)matchFraction);
             
-            boolean doNotAdd = matchFraction < mLimit;
-                //= (scoreAndMatch[0] < limit);
+            boolean doNotAdd = (matchFraction < mLimit) || 
+                ((int)scoreAndMatch[1] == 0);
+            
             if (doNotAdd) {
                 rmvd.add(outerBorder);
             } else {
@@ -1795,6 +1821,26 @@ public class MSEREdges {
         }
 
         return shiftedImg;
+    }
+    
+    private TIntSet removeImageBorder(TIntSet pixIdxs, int width, int height) {
+        
+        TIntSet set = new TIntHashSet(pixIdxs);
+        
+        TIntSet rm = new TIntHashSet();
+        TIntIterator iter = set.iterator();
+        while (iter.hasNext()) {
+            int pixIdx = iter.next();
+            int y = pixIdx/width;
+            int x = pixIdx - (y * width);
+            if (x == 0 || y == 0 || x == (width - 1) || (y == (height - 1))) {
+                rm.add(pixIdx);
+            }
+        }
+        
+        set.removeAll(rm);
+        
+        return set;
     }
 
     // calc avg score and count the points w/ v>0
