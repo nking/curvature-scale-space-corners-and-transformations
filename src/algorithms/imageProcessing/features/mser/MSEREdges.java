@@ -226,6 +226,9 @@ public class MSEREdges {
         List<List<Region>> ptShiftedRegions = extractMSERRegions(
             ptImgShifted, Threshold.DEFAULT);
 
+        //_debugOrigRegions(ptShiftedRegions.get(0), "_shifted_0");
+        //_debugOrigRegions(ptShiftedRegions.get(1), "_shifted_1");
+        
         regions = new ArrayList<Region>();
 
         origGsPtRegions = new ArrayList<List<Region>>();
@@ -276,11 +279,14 @@ public class MSEREdges {
             boolean hadWrapAroundArtifacts = false;
             for (int i = (list.size() - 1); i > -1; --i) {
                 Region r = list.get(i);
+
                 if ((type == 1)
-                    && r.getVariation() > 0.001) {
+                    //&& r.getVariation() > 0.001) {
+                    && r.getVariation() > 2) {
                     list.remove(i);
                 } else if ((type == 0)
-                    && r.getVariation() == 0.0) {
+                    //&& r.getVariation() == 0.0) {
+                    && r.getVariation() < 2) {
                     list.remove(i);
                 } else {
                     // check for this Region being an artifact of wrap around
@@ -294,7 +300,7 @@ public class MSEREdges {
                         } else {
                             avgLevel = calcAvg(negImg, r.getAcc(w));
                         }
-                        //System.out.format(" %d add x,y=%d,%d level=%d  acgLevel=%d\n",
+                        //System.out.format(" %d add x,y=%d,%d level=%d  avgLevel=%d\n",
                         //    type, (int)(r.moments_[0]/r.area_),
                         //    (int)(r.moments_[1]/r.area_), r.level_,
                         //    avgLevel);
@@ -313,11 +319,14 @@ public class MSEREdges {
                 List<Region> list2 = ptShiftedRegions.get(type);
                 for (int i = (list2.size() - 1); i > -1; --i) {
                     Region r = list2.get(i);
+                    
                     if ((type == 1)
-                        && r.getVariation() > 0.001) {
+                        //&& r.getVariation() > 0.001) {
+                        && r.getVariation() > 2) {
                         list2.remove(i);
                     } else if ((type == 0)
-                        && r.getVariation() == 0.0) {
+                        //&& r.getVariation() == 0.0) {
+                        && r.getVariation() < 2) {
                         list2.remove(i);
                     } else {
                         //TODO: consider checking whether this already exists in
@@ -457,7 +466,7 @@ public class MSEREdges {
 
         long ts1 = System.currentTimeMillis();
 
-        closeGapsOf1(boundaries);
+        //closeGapsOf1(boundaries);
 
         long ts2 = System.currentTimeMillis();
 
@@ -1328,6 +1337,11 @@ public class MSEREdges {
         TIntSet unmatchedPoints = new TIntHashSet();
   
         TIntSet rmvdImgBorders = new TIntHashSet();
+ 
+        //_debugOrigRegions(0, "_orig_gs_0");
+        //_debugOrigRegions(1, "_orig_gs_1");
+        //_debugOrigRegions(2, "_orig_pt_0");
+        //_debugOrigRegions(3, "_orig_pt_1");
         
         for (int rListIdx = 0; rListIdx < regions.size(); ++rListIdx) {
             Region r = regions.get(rListIdx);
@@ -1355,6 +1369,10 @@ public class MSEREdges {
             boolean doNotAdd = (matchFraction < mLimit) || 
                 ((int)scoreAndMatch[1] == 0);
             
+//Image tmpImg = sobelScores.copyToColorGreyscale();
+//ImageIOHelper.addCurveToImage(border2, tmpImg, 0, 255, 0, 0);
+//MiscDebug.writeImage(tmpImg, "_" + rListIdx);
+
             if (doNotAdd) {
                 continue;
             }
@@ -1394,12 +1412,12 @@ public class MSEREdges {
             unmatchedPoints.addAll(unmatched);
         }
         
-//Image tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
-//ImageIOHelper.addCurveToImage(allEdgePoints, tmpImg, 0, 255, 0, 0);
-//MiscDebug.writeImage(tmpImg, "_matched_");
-//tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
-//ImageIOHelper.addCurveToImage(unmatchedPoints, tmpImg, 0, 255, 0, 0);
-//MiscDebug.writeImage(tmpImg, "_unmatched_");
+Image tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
+ImageIOHelper.addCurveToImage(allEdgePoints, tmpImg, 0, 255, 0, 0);
+MiscDebug.writeImage(tmpImg, "_matched_");
+tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
+ImageIOHelper.addCurveToImage(unmatchedPoints, tmpImg, 0, 255, 0, 0);
+MiscDebug.writeImage(tmpImg, "_unmatched_");
            
         //make contiguous connected segments of matched set.
         DFSConnectedGroupsFinder0 finder2 = new DFSConnectedGroupsFinder0(
@@ -1407,6 +1425,9 @@ public class MSEREdges {
         finder2.setMinimumNumberInCluster(1);
         finder2.findConnectedPointGroups(allEdgePoints);
             
+        //TODO: edit this.  some segments are
+        //   only 1 pixel from another segment so
+        //   the values need to hold more than one point
         // key = matched point, value = finder2 index of point
         TIntIntMap mpIdxMap = finder2.createPointIndexMap();
         
@@ -1593,7 +1614,7 @@ public class MSEREdges {
             }
             
             //add back any points in rmvdImgBorders adjacent to allEdgePoints
-            TIntSet addRmvd = new TIntHashSet();
+            //TIntSet addRmvd = new TIntHashSet();
             TIntIterator iter = rmvdImgBorders.iterator();
             while (iter.hasNext()) {
                 int pixIdx = iter.next();
@@ -1608,12 +1629,13 @@ public class MSEREdges {
                     int pixIdx2 = (y2 * w) + x2;
                     if (allEdgePoints.contains(pixIdx2)) {
                         // to add entire border of image back, use allEdgePoints here
-                        addRmvd.add(pixIdx);
+                        //addRmvd.add(pixIdx);
+                        allEdgePoints.add(pixIdx);
                         break;
                     }
                 }
             }
-            allEdgePoints.addAll(addRmvd);
+            //allEdgePoints.addAll(addRmvd);
         }
                       
         if (debug) {
@@ -1661,7 +1683,15 @@ public class MSEREdges {
         }
     }
 
-    // has the side effect of populate this.edgeList and this.labeledSets
+    /**
+     * using the given edges as definitions of separation between 
+     * contiguous pixels in the image,
+     * essentially performs kmeans using the contiguous non-edge pixels
+     * as the existing labelled region and then adds back all edge pixels
+     * to the adjacent labelled region which is closest in color.
+     * 
+     * NOTE: has the side effect of populating this.edgeList and this.labeledSets
+     */ 
     private void thinTheBoundaries(TIntSet edgePixIdxs,
         int minGroupSize) {
 
@@ -1710,7 +1740,10 @@ public class MSEREdges {
         }
         
         // make successive passes through to re-assign the smallest sets,
-        //    pixel by pixel
+        //    pixel by pixel.  the gradual merging of smaller sets helps
+        //    preserve some of the low SNR object boundaries
+        //    such as the gingerbread man in the test image android_statues_01
+        //    downsampled to size near 256 pixels per dimension.
         int[] mszs = new int[]{minGroupSize, 4, 6, 12, 18, 24};
         
         for (int msz : mszs) {
