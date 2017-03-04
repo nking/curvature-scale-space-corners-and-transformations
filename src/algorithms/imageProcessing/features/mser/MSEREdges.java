@@ -1393,6 +1393,13 @@ public class MSEREdges {
             allEdgePoints.addAll(matched);
             unmatchedPoints.addAll(unmatched);
         }
+        
+//Image tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
+//ImageIOHelper.addCurveToImage(allEdgePoints, tmpImg, 0, 255, 0, 0);
+//MiscDebug.writeImage(tmpImg, "_matched_");
+//tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
+//ImageIOHelper.addCurveToImage(unmatchedPoints, tmpImg, 0, 255, 0, 0);
+//MiscDebug.writeImage(tmpImg, "_unmatched_");
            
         //make contiguous connected segments of matched set.
         DFSConnectedGroupsFinder0 finder2 = new DFSConnectedGroupsFinder0(
@@ -1406,7 +1413,7 @@ public class MSEREdges {
         //find the endpoints for the unmatched
         //as any that are adjacent to matched points
         //and note their contiguous segment.
-        // key=pixIdx of point in unmatched, value=mpIdxMap value djacent to point
+        // key=pixIdx of point in unmatched, value=mpIdxMap value adjacent to point
         TIntIntMap umEPIdxMap = findUnmatchedEndpoints(unmatchedPoints, 
             mpIdxMap, clrImg.getWidth(), clrImg.getHeight());
 
@@ -1420,6 +1427,7 @@ public class MSEREdges {
         DFSConnectedGroupsFinder0 finder3 = new DFSConnectedGroupsFinder0(
             clrImg.getWidth());
         finder3.setMinimumNumberInCluster(1);
+        finder3.setToUse8Neighbors();
         finder3.findConnectedPointGroups(unmatchedPoints);
         
         TIntSet umEPKeys = umEPIdxMap.keySet();
@@ -1428,6 +1436,9 @@ public class MSEREdges {
         int h = clrImg.getHeight();
         
         int n3 = finder3.getNumberOfGroups();
+        
+        System.out.println("number of unmatched segments=" + n3);
+        
         for (int i = 0; i < n3; ++i) {
             
             TIntSet uSet = finder3.getXY(i);
@@ -1443,6 +1454,10 @@ public class MSEREdges {
             //NOTE: could improve this intersection by using bit vectors
             TIntSet intersection = new TIntHashSet(uSet);
             boolean a = intersection.retainAll(umEPKeys);
+            
+            System.out.println("segment " + i + " contains " + intersection.size()
+                + " endpoints");
+            
             if (intersection.size() < 2) {
                 continue;
             }
@@ -1461,10 +1476,24 @@ public class MSEREdges {
             for (int i0 = 0; i0 < localEPs.size(); ++i0) {
                 int pixIdx0 = localEPs.get(i0);
                 int srcIdx = uMap.get(pixIdx0);
+                
+                int mappedEdgeIdx0 = umEPIdxMap.get(pixIdx0);
+                
                 for (int i1 = (i0 + 1); i1 < localEPs.size(); ++i1) {
                     int pixIdx1 = localEPs.get(i1);
                     
+                    int mappedEdgeIdx1 = umEPIdxMap.get(pixIdx1);
+                    
+                    if (mappedEdgeIdx0 == mappedEdgeIdx1) {
+                        continue;
+                    }
+                    
                     double dist = distance(pixIdx0, pixIdx1, w);
+                    
+                    System.out.println("unmapped endpoints adjacent to mapped"
+                        + " segments " + mappedEdgeIdx0 + ", " +
+                        mappedEdgeIdx1 + " sep=" +  dist + " maxGapSz=" +
+                        maxGapSize);
                     
                     if (dist > maxGapSize) {
                         continue;
@@ -1554,6 +1583,9 @@ public class MSEREdges {
                     pathNodes = Arrays.copyOfRange(pathNodes, count + 1, 
                         pathNodes.length);
                     
+                    System.out.println("found " + pathNodes.length + 
+                        " gap pixels to add");
+                    
                     if (pathNodes.length <= maxGapSize) {
                         allEdgePoints.addAll(pathNodes);
                     }
@@ -1587,7 +1619,7 @@ public class MSEREdges {
         if (debug) {
             Image tmp = clrImg.copyImage();
             ImageIOHelper.addCurveToImage(allEdgePoints, tmp, 0, 255, 0, 0);
-            MiscDebug.writeImage(tmp, "_" + ts + "_borders0_");
+            MiscDebug.writeImage(tmp, "_" + ts + "_boundaries0_");
         }
 
         return allEdgePoints;
