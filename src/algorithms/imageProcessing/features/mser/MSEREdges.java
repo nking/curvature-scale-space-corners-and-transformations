@@ -514,7 +514,7 @@ public class MSEREdges {
        
         //TODO: this needs many edits after
         //   have finished improvements in the canny edges and the
-        //   boundary extration
+        //   boundary extraction
         
         //if (true) {return;}
         
@@ -1790,6 +1790,14 @@ public class MSEREdges {
     private void assignTheUnassigned(List<TIntSet> contiguous,
         int[] labels, float[][] hsvs, TIntSet unassignedSet) {
 
+        //TODO: could refactor this to use a fibonacci heap
+        //   with the key being one to maximize the number
+        //   of assigned neighbors.
+        //   currently, the code uses a one time sort by decreasing
+        //   number of assigned neighbors.
+        //   fiboncci heap decreasekey is O(1) so updates after each assignment
+        //   are fast
+        
         // key = pixel index, value = 
         TIntObjectMap<TIntSet> unassignedMap 
             = new TIntObjectHashMap<TIntSet>();
