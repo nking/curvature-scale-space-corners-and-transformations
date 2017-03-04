@@ -503,12 +503,18 @@ public class MSEREdges {
     }
 
     /**
+     * NOT READY FOR USE
+     * 
      * moderate merging of the labeled regions is performed
      * to remove noisey edges.  Note that the color filters
      * may need to be revised with more testing.
      *
      */
     private void mergeRegions3() {
+       
+        //TODO: this needs many edits after
+        //   have finished improvements in the canny edges and the
+        //   boundary extration
         
         //if (true) {return;}
         
@@ -1320,6 +1326,8 @@ public class MSEREdges {
 
         TIntSet allEdgePoints = new TIntHashSet();
         TIntSet unmatchedPoints = new TIntHashSet();
+  
+        TIntSet rmvdImgBorders = new TIntHashSet();
         
         for (int rListIdx = 0; rListIdx < regions.size(); ++rListIdx) {
             Region r = regions.get(rListIdx);
@@ -1328,7 +1336,7 @@ public class MSEREdges {
             TIntSet outerBorder = new TIntHashSet();
             finder.extractBorder2(points, embedded, outerBorder, clrImg.getWidth());
 
-            TIntSet border2 = removeImageBorder(outerBorder, 
+            TIntSet border2 = removeImageBorder(outerBorder, rmvdImgBorders,
                 clrImg.getWidth(), clrImg.getHeight());
             
             TIntSet matched = new TIntHashSet();
@@ -1351,9 +1359,9 @@ public class MSEREdges {
                 continue;
             }
 
-Image tmpImg = sobelScores.copyToColorGreyscale();
-ImageIOHelper.addCurveToImage(border2, tmpImg, 0, 255, 0, 0);
-MiscDebug.writeImage(tmpImg, "_" + rListIdx);
+//Image tmpImg = sobelScores.copyToColorGreyscale();
+//ImageIOHelper.addCurveToImage(border2, tmpImg, 0, 255, 0, 0);
+//MiscDebug.writeImage(tmpImg, "_" + rListIdx);
 
             if (unmatched.size() == 0) {
                 // add all points including the border
@@ -1552,8 +1560,28 @@ MiscDebug.writeImage(tmpImg, "_" + rListIdx);
                 }
             }
             
-            //TODO: add back removed image border points during creation of
-            //   border2 that are connected to allEdgePoints
+            //add back any points in rmvdImgBorders adjacent to allEdgePoints
+            TIntSet addRmvd = new TIntHashSet();
+            TIntIterator iter = rmvdImgBorders.iterator();
+            while (iter.hasNext()) {
+                int pixIdx = iter.next();
+                int y = pixIdx/w;
+                int x = pixIdx - (y * w);
+                for (int k = 0; k < dxs.length; ++k) {
+                    int x2 = x + dxs[k];
+                    int y2 = y + dys[k];
+                    if (x2 < 0 || y2 < 0 || (x2 >= w) || (y2 >= w)) {
+                        continue;
+                    }
+                    int pixIdx2 = (y2 * w) + x2;
+                    if (allEdgePoints.contains(pixIdx2)) {
+                        // to add entire border of image back, use allEdgePoints here
+                        addRmvd.add(pixIdx);
+                        break;
+                    }
+                }
+            }
+            allEdgePoints.addAll(addRmvd);
         }
                       
         if (debug) {
@@ -1964,7 +1992,8 @@ MiscDebug.writeImage(tmpImg, "_" + rListIdx);
         return shiftedImg;
     }
     
-    private TIntSet removeImageBorder(TIntSet pixIdxs, int width, int height) {
+    private TIntSet removeImageBorder(TIntSet pixIdxs, TIntSet outputRmvd,
+        int width, int height) {
         
         TIntSet set = new TIntHashSet(pixIdxs);
         
@@ -1976,11 +2005,12 @@ MiscDebug.writeImage(tmpImg, "_" + rListIdx);
             int x = pixIdx - (y * width);
             if (x == 0 || y == 0 || x == (width - 1) || (y == (height - 1))) {
                 rm.add(pixIdx);
+                outputRmvd.add(pixIdx);
             }
         }
         
         set.removeAll(rm);
-        
+                
         return set;
     }
 
