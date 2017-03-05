@@ -25,6 +25,7 @@ import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
+import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.VeryLongBitString;
@@ -1360,18 +1361,21 @@ public class MSEREdges {
                 matched, unmatched, clrImg.getWidth());
             
             double matchFraction = scoreAndMatch[1]/(double)border2.size();
-            
-            System.out.format(" rIdx=%d score=%.3f nm=%d nmf=%.3f\n",
+  
+            /*
+            System.out.format(" rIdx=%d score=%.3f "
+                + " border2.n=%d nmf=%.3f  m.n=%d um.n=%d\n",
                 rListIdx, (float)scoreAndMatch[0], 
-                (int)scoreAndMatch[1], 
-                (float)matchFraction);
+                border2.size(), 
+                (float)matchFraction, matched.size(), unmatched.size());
+            */
             
             boolean doNotAdd = (matchFraction < mLimit) || 
                 ((int)scoreAndMatch[1] == 0);
             
 //Image tmpImg = sobelScores.copyToColorGreyscale();
 //ImageIOHelper.addCurveToImage(border2, tmpImg, 0, 255, 0, 0);
-//MiscDebug.writeImage(tmpImg, "_" + rListIdx);
+//MiscDebug.writeImage(tmpImg, "_r_" + rListIdx);
 
             if (doNotAdd) {
                 continue;
@@ -1379,14 +1383,8 @@ public class MSEREdges {
 
 //Image tmpImg = sobelScores.copyToColorGreyscale();
 //ImageIOHelper.addCurveToImage(border2, tmpImg, 0, 255, 0, 0);
-//MiscDebug.writeImage(tmpImg, "_" + rListIdx);
+//MiscDebug.writeImage(tmpImg, "_r_" + rListIdx);
 
-            if (unmatched.size() == 0) {
-                // add all points including the border
-                allEdgePoints.addAll(outerBorder);
-                continue;
-            }
-            
             /*
             to find the points in border2 which are not in the canny edges, but
             are the missing contour points of an object:
@@ -1418,6 +1416,9 @@ MiscDebug.writeImage(tmpImg, "_matched_");
 tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
 ImageIOHelper.addCurveToImage(unmatchedPoints, tmpImg, 0, 255, 0, 0);
 MiscDebug.writeImage(tmpImg, "_unmatched_");
+tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
+ImageIOHelper.addCurveToImage(rmvdImgBorders, tmpImg, 0, 255, 0, 0);
+MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
            
         //make contiguous connected segments of matched set.
         DFSConnectedGroupsFinder0 finder2 = new DFSConnectedGroupsFinder0(
@@ -1425,17 +1426,16 @@ MiscDebug.writeImage(tmpImg, "_unmatched_");
         finder2.setMinimumNumberInCluster(1);
         finder2.findConnectedPointGroups(allEdgePoints);
             
-        //TODO: edit this.  some segments are
-        //   only 1 pixel from another segment so
-        //   the values need to hold more than one point
         // key = matched point, value = finder2 index of point
         TIntIntMap mpIdxMap = finder2.createPointIndexMap();
         
         //find the endpoints for the unmatched
         //as any that are adjacent to matched points
         //and note their contiguous segment.
-        // key=pixIdx of point in unmatched, value=mpIdxMap value adjacent to point
-        TIntIntMap umEPIdxMap = findUnmatchedEndpoints(unmatchedPoints, 
+        // key=pixIdx of point in unmatched, 
+        //   value = indexes of adjacent segments from mpIdxMap values
+        TIntObjectMap<VeryLongBitString> umEPIdxMap = findUnmatchedEndpoints(
+            finder2.getNumberOfGroups(), unmatchedPoints, 
             mpIdxMap, clrImg.getWidth(), clrImg.getHeight());
 
         int[] dxs = Misc.dx8;
@@ -1479,7 +1479,37 @@ MiscDebug.writeImage(tmpImg, "_unmatched_");
             System.out.println("segment " + i + " contains " + intersection.size()
                 + " endpoints");
             
-            if (intersection.size() < 2) {
+            /*{//DEBUG
+                TIntIterator iterA = intersection.iterator();
+                while (iterA.hasNext()) {
+                    int pIdx = iterA.next();
+                    int y = pIdx/w;
+                    int x = pIdx - (y * w);
+                    VeryLongBitString bs = umEPIdxMap.get(pIdx);
+                    System.out.println("x=" + x + " y=" + y + " pixIdx=" + pIdx
+                        + " setBits=" + 
+                        Arrays.toString(bs.getSetBits()));
+                }
+            }*/
+            
+            if (intersection.size() == 1) {
+                // check whether the single endpoint is adjacent to 2 edges
+                int pixIdx = intersection.iterator().next();
+                VeryLongBitString bs = umEPIdxMap.get(pixIdx);
+                if (bs.getNSetBits() < 2) {
+                    // if this is borders the image boundaries, then keep it
+                    //  else skip
+                    int y = pixIdx/w;
+                    int x = pixIdx - (y * w);
+                    if (!(x == 1 || y == 1 || (x == (w - 2)) || (y == (h - 2)))) {
+                        continue;
+                    }
+                }
+                
+                // if here, then this single pixel is adjacent to more than one
+                // separated edge segment, so should be added to join them.
+                allEdgePoints.add(pixIdx);
+                
                 continue;
             }
             
@@ -1490,30 +1520,35 @@ MiscDebug.writeImage(tmpImg, "_unmatched_");
                 int pixIdx = iter4.next();
                 uMap.put(pixIdx, uMap.size());
             }
-            
+           
             // searches from each intersection point to each other intersection 
             //    point thrugh points in uSet
             TIntList localEPs = new TIntArrayList(intersection);
+             
             for (int i0 = 0; i0 < localEPs.size(); ++i0) {
                 int pixIdx0 = localEPs.get(i0);
                 int srcIdx = uMap.get(pixIdx0);
-                
-                int mappedEdgeIdx0 = umEPIdxMap.get(pixIdx0);
+                                
+                VeryLongBitString mappedEdgeIdx0s = umEPIdxMap.get(pixIdx0);
                 
                 for (int i1 = (i0 + 1); i1 < localEPs.size(); ++i1) {
                     int pixIdx1 = localEPs.get(i1);
-                    
-                    int mappedEdgeIdx1 = umEPIdxMap.get(pixIdx1);
-                    
-                    if (mappedEdgeIdx0 == mappedEdgeIdx1) {
+                     
+                    VeryLongBitString mappedEdgeIdx1s = umEPIdxMap.get(pixIdx1);
+
+                    if (mappedEdgeIdx0s.getNSetBits() == 1 &&
+                        mappedEdgeIdx1s.getNSetBits() == 1 &&
+                        mappedEdgeIdx0s.equals(mappedEdgeIdx1s)) {
                         continue;
                     }
                     
                     double dist = distance(pixIdx0, pixIdx1, w);
                     
                     System.out.println("unmapped endpoints adjacent to mapped"
-                        + " segments " + mappedEdgeIdx0 + ", " +
-                        mappedEdgeIdx1 + " sep=" +  dist + " maxGapSz=" +
+                        + " segments " + 
+                        Arrays.toString(mappedEdgeIdx0s.getSetBits()) + ", " +
+                        Arrays.toString(mappedEdgeIdx1s.getSetBits()) 
+                        + " sep=" +  dist + " maxGapSz=" +
                         maxGapSize);
                     
                     if (dist > maxGapSize) {
@@ -1614,7 +1649,7 @@ MiscDebug.writeImage(tmpImg, "_unmatched_");
             }
             
             //add back any points in rmvdImgBorders adjacent to allEdgePoints
-            //TIntSet addRmvd = new TIntHashSet();
+            TIntSet addRmvd = new TIntHashSet();
             TIntIterator iter = rmvdImgBorders.iterator();
             while (iter.hasNext()) {
                 int pixIdx = iter.next();
@@ -1628,18 +1663,16 @@ MiscDebug.writeImage(tmpImg, "_unmatched_");
                     }
                     int pixIdx2 = (y2 * w) + x2;
                     if (allEdgePoints.contains(pixIdx2)) {
-                        // to add entire border of image back, use allEdgePoints here
-                        //addRmvd.add(pixIdx);
                         allEdgePoints.add(pixIdx);
                         break;
                     }
                 }
             }
-            //allEdgePoints.addAll(addRmvd);
+            //allEdgePoints.addAll(rmvdImgBorders);
         }
                       
         if (debug) {
-            Image tmp = clrImg.copyImage();
+            Image tmp = clrImg.copyToGreyscale2().copyToColorGreyscale();
             ImageIOHelper.addCurveToImage(allEdgePoints, tmp, 0, 255, 0, 0);
             MiscDebug.writeImage(tmp, "_" + ts + "_boundaries0_");
         }
@@ -1730,6 +1763,13 @@ MiscDebug.writeImage(tmpImg, "_unmatched_");
             }
         }
 
+        if (debug) {
+            Image tmp = clrImg.copyImage();
+            ImageIOHelper.addAlternatingColorPointSetsToImage2(
+                labeledSets, 0, 0, 0, tmp);
+            MiscDebug.writeImage(tmp, "_" + ts + "_before_assigned_");
+        }
+        
         assignTheUnassigned(labeledSets, labels, hsvs, unassignedSet);
 
         if (debug) {
@@ -2233,10 +2273,12 @@ MiscDebug.writeImage(tmpImg, "_unmatched_");
         return hsv.isGrey(12);
     }
     
-    private TIntIntMap findUnmatchedEndpoints(TIntSet unmatchedPoints, 
+    private TIntObjectMap<VeryLongBitString> findUnmatchedEndpoints(
+        int nEdgeSegments, TIntSet unmatchedPoints, 
         TIntIntMap matchedPointsIdxMap, int width, int height) {
         
-        TIntIntMap umEPIdxMap = new TIntIntHashMap();
+        TIntObjectMap<VeryLongBitString> umEPIdxMap = 
+            new TIntObjectHashMap<VeryLongBitString>();
         
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
@@ -2255,7 +2297,12 @@ MiscDebug.writeImage(tmpImg, "_unmatched_");
                 }
                 int pixIdx2 = (y2 * width) + x2;
                 if (matchedPointsIdxMap.containsKey(pixIdx2)) {
-                    umEPIdxMap.put(pixIdx, matchedPointsIdxMap.get(pixIdx2));
+                    VeryLongBitString values = umEPIdxMap.get(pixIdx);
+                    if (values == null) {
+                        values = new VeryLongBitString(nEdgeSegments);
+                        umEPIdxMap.put(pixIdx, values);
+                    }
+                    values.setBit(matchedPointsIdxMap.get(pixIdx2));
                 }
             }
         }
