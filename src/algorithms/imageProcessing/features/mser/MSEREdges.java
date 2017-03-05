@@ -123,7 +123,7 @@ public class MSEREdges {
     private GreyscaleImage sobelScores = null;
 
     private GreyscaleImage cannyEdges = null;
-    
+
     private long ts = 0;
 
     private STATE state = null;
@@ -229,7 +229,7 @@ public class MSEREdges {
 
         //_debugOrigRegions(ptShiftedRegions.get(0), "_shifted_0");
         //_debugOrigRegions(ptShiftedRegions.get(1), "_shifted_1");
-        
+
         regions = new ArrayList<Region>();
 
         origGsPtRegions = new ArrayList<List<Region>>();
@@ -320,7 +320,7 @@ public class MSEREdges {
                 List<Region> list2 = ptShiftedRegions.get(type);
                 for (int i = (list2.size() - 1); i > -1; --i) {
                     Region r = list2.get(i);
-                    
+
                     if ((type == 1)
                         //&& r.getVariation() > 0.001) {
                         && r.getVariation() > 2) {
@@ -460,7 +460,7 @@ public class MSEREdges {
             throw new IllegalStateException("can only perform extraction of "
                 + "edges once");
         }
-        
+
         long ts0 = System.currentTimeMillis();
 
         TIntSet boundaries = combineBoundaries();
@@ -514,20 +514,20 @@ public class MSEREdges {
 
     /**
      * NOT READY FOR USE
-     * 
+     *
      * moderate merging of the labeled regions is performed
      * to remove noisey edges.  Note that the color filters
      * may need to be revised with more testing.
      *
      */
     private void mergeRegions3() {
-       
+
         //TODO: this needs many edits after
         //   have finished improvements in the canny edges and the
         //   boundary extraction
-        
+
         //if (true) {return;}
-        
+
         /*
         TODO: refactoring this to use color and texture
         (need to add use of gradients within labeled regions to
@@ -547,7 +547,7 @@ public class MSEREdges {
         assert(labeledSets.size() == edgeList.size());
 
         // hsv difference upper limit
-        
+
         float[] hsvUL = new float[]{
              0.06f
             , 0.06f, 0.06f, 0.06f, 0.06f,0.02f
@@ -565,7 +565,7 @@ public class MSEREdges {
         if (sobelScores == null) {
             sobelScores = createSobelScores();
         }
-        
+
         HGS hgs = new HGS(sobelScores, 1, 6, 12);
         HCPT hcpt = new HCPT(ptImg, 1, 6, 12);
 
@@ -580,9 +580,9 @@ public class MSEREdges {
             hsv.calculateColors(set, clrImg);
             clrs.put(label, hsv);
         }
-        
+
         ImageProcessor imageProcessor = new ImageProcessor();
-        
+
         TIntObjectMap<TIntSet> mapOfSets = new TIntObjectHashMap<TIntSet>();
         TIntObjectMap<TIntSet> mapOfBorders = new TIntObjectHashMap<TIntSet>();
         int[] sizes = new int[labeledSets.size()];
@@ -597,23 +597,23 @@ public class MSEREdges {
             mapOfBorders.put(i, set);
         }
         assert(mapOfBorders.size() == mapOfSets.size());
-        
+
         TIntIntMap pointIndexMap = createPointIndexMap(mapOfSets);
-        
+
         QuickSort.sortBy1stArg(sizes, idxs);
 
         PerimeterFinder2 finder2 = new PerimeterFinder2();
-        
+
         TIntObjectMap<VeryLongBitString> adjMap = imageProcessor
             .createAdjacencyMap(pointIndexMap, mapOfSets, w, h);
 
         MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
-        
+
         int nIter = 0;
         int nIterMax = 10;
         int nMerged = 0;
         int hcptIdx = 0;
-        
+
         do {
             nMerged = 0;
             for (int i = (idxs.length - 1); i > -1; --i) {
@@ -641,9 +641,9 @@ public class MSEREdges {
                 // for white and black, the colorspace filters need
                 // specialization
                 boolean isW1 = isWhite(hsv1);
-                
+
                 boolean isB1 = isBlack(hsv1);
-                
+
                 int n1 = set1.size();
 
                 int[] xyCen1 = ch.calculateRoundedXYCentroids(border1,
@@ -654,7 +654,7 @@ public class MSEREdges {
                 if (nbrsBS == null) {
                     continue;
                 }
-                
+
                 int[] idxs2 = nbrsBS.getSetBits();
 
                 // find best merge
@@ -682,24 +682,24 @@ public class MSEREdges {
                     set3.removeAll(border2);
 
                     GroupPixelHSV2 hsv2 = getColors(clrs, set3, idx2);
-                    
+
                     float cost = hsv1.calculateDifference(hsv2);
                     float[] hsvDiffs = hsv1.calculateDifferences(hsv2);
-                    
+
                     boolean isW2 = isWhite(hsv2);
-                    
+
                     boolean isB2 = isW2 ? false : isBlack(hsv2);
-                    
+
                     if ((isB1 && isB2) || (isW1 && isW2)) {
                         // do not use hue
                         cost = hsvDiffs[2];
                     }
-                    
+
                     boolean bothGreen = hsv1.isGreen() && hsv2.isGreen();
-                    
-                    double hsvLimit = bothGreen ? hsvUL_green : 
+
+                    double hsvLimit = bothGreen ? hsvUL_green :
                         hsvUL[hcptIdx];
-                    
+
                     if (!((isB1 && isB2) || (isW1 && isW2)) && (cost > hsvLimit)) {
                         /*System.out.format("skip (%d,%d) (%d,%d) "
                             + "hsvd=%.3f "
@@ -725,22 +725,22 @@ public class MSEREdges {
 
                     boolean simW = isW1 && isW2 &&
                         (hcptIdx == (hcptLL.length - 1)) &&
-                        ((cost < 0.065 && hcptInter > 0.475 
-                          && hgsInter > 0.4) 
+                        ((cost < 0.065 && hcptInter > 0.475
+                          && hgsInter > 0.4)
                         || (cost < 0.02 && hcptInter > 0.4)
                         || (cost < 0.01 && hcptInter > 0.15
                         && hgsInter > 0.35)
                         );
-                    
+
                     boolean simB = isB1 && isB2 &&
                         (hcptIdx == (hcptLL.length - 1)) &&
                         (cost < 0.065);
-                    
-                    boolean greenException = bothGreen && 
+
+                    boolean greenException = bothGreen &&
                         ((hgsInter >= hgsLL[hcptIdx]) ||
                         (cost < 0.05 && hcptInter >= 0.6
                         && hgsInter >= 0.3));
-                    
+
                     /*
                     System.out.format("m %d %d (%d,%d) (%d,%d) hsvd=%.3f ptInter=%.3f "
                         + " gradInter=%.3f n=%d,%d wh=%b,%b->%b "
@@ -757,8 +757,8 @@ public class MSEREdges {
                         hsv2.getAvgH(), hsv2.getAvgS(),
                         hsv2.getAvgV()
                     );*/
-                    //System.out.println("gs hists=\n    " + 
-                    //    Arrays.toString(hgs1H) + "\n    " + 
+                    //System.out.println("gs hists=\n    " +
+                    //    Arrays.toString(hgs1H) + "\n    " +
                     //    Arrays.toString(hgs2H));
 
                     if ((hcptInter < hcptLL[hcptIdx] ||
@@ -788,7 +788,7 @@ public class MSEREdges {
 
                     // merging contents of idx1 into minCostIdx2
                     nMerged++;
-                    
+
                     //System.out.println("    merging " + minCostIdx2);
 
                     clrs.get(minCostIdx2).add(set1, clrImg);
@@ -797,7 +797,7 @@ public class MSEREdges {
                     TIntIterator iter = mapOfSets.get(idx1).iterator();
                     while (iter.hasNext()) {
                         int pixIdx = iter.next();
-                        pointIndexMap.put(pixIdx, minCostIdx2);                    
+                        pointIndexMap.put(pixIdx, minCostIdx2);
                     }
 
                     // update the adjacency maps to point to minCostIdx2
@@ -820,7 +820,7 @@ public class MSEREdges {
                     mapOfBorders.remove(idx1);
 
                     assert(mapOfSets.get(idx1) == null);
-                    assert(mapOfBorders.get(idx1) == null);                
+                    assert(mapOfBorders.get(idx1) == null);
                 }
             }
             if (debug) {
@@ -828,7 +828,7 @@ public class MSEREdges {
                 //    nIter);
             }
             nIter++;
-            
+
             if (nMerged == 0 && hcptIdx < (hcptLL.length - 1)) {
                 hcptIdx++;
                 nIter = 0;
@@ -841,19 +841,19 @@ public class MSEREdges {
         labeledSets.clear();;
 
         TIntObjectIterator<TIntSet> iter2 = mapOfSets.iterator();
-        
+
         for (int i = 0; i < mapOfSets.size(); ++i) {
-            
+
             iter2.advance();
-            
+
             int idx = iter2.key();
 
             TIntSet set1 = iter2.value();
-            
+
             if (set1.isEmpty()) {
                 continue;
             }
-                        
+
             labeledSets.add(set1);
 
             TIntSet embedded = new TIntHashSet();
@@ -864,7 +864,7 @@ public class MSEREdges {
 
         if (debug) {
             Image imgCp = clrImg.copyImage();
-            ImageIOHelper.addAlternatingColorCurvesToImage3(edgeList, 
+            ImageIOHelper.addAlternatingColorCurvesToImage3(edgeList,
                 imgCp, 0);
             MiscDebug.writeImage(imgCp, "_" + ts + "_MERGED_");
         }
@@ -1246,7 +1246,7 @@ public class MSEREdges {
 
         int w = gsImg.getWidth();
         int h = gsImg.getHeight();
-        
+
         ImageProcessor imageProcessor = new ImageProcessor();
 
         /*
@@ -1256,7 +1256,7 @@ public class MSEREdges {
         GreyscaleImage scaled = MiscMath.rescaleAndCreateImage(sobelScores,
             w, h);
         */
-        
+
         CannyEdgeColorAdaptive canny2 = new CannyEdgeColorAdaptive();
         canny2.overrideToNotUseLineThinner();
         canny2.applyFilter(clrImg);
@@ -1264,12 +1264,12 @@ public class MSEREdges {
         scaled.multiply(255/scaled.max());
         //MiscDebug.writeImage(scaled, debugLabel
         //    + "_lc_edges_");
-        
+
         /*
-        GreyscaleImage sobelLCH = 
+        GreyscaleImage sobelLCH =
             imageProcessor.createSobelLCCombined(img);
         */
-        
+
         this.cannyEdges = scaled;
 
         // smearing values over a 3 pixel window to avoid the potential
@@ -1286,30 +1286,30 @@ public class MSEREdges {
 
         if (sobelScores == null) {
             sobelScores = createSobelScores();
-            MiscDebug.writeImage(sobelScores, 
+            MiscDebug.writeImage(sobelScores,
                 "_" + ts + "_canny_blurred_");
             MiscDebug.writeImage(cannyEdges, "_" + ts + "_canny_");
         }
-        
+
         /*
         using the level set region boundaries as contours to complete
         the edges from the canny edges of L and C from LCH.
-        
+
         Looking for the best ways to essentially fill in gaps in the canny edges
         with these region boundaries, making complete contours (and hence
         labeled sets, that is, segmentation).
-        
-        -- first applying a filter that is the fraction of region 
+
+        -- first applying a filter that is the fraction of region
            boundary points which have a canny edge pixel.
-           
+
         -- unimplemented:
              then need to extract for each region, the longest matching segment
              to the canny edges (minimizes gaps, that is contiguous pixels in
              the boundary which are not in the canny edge pixels).
-    
+
         current low limit for mLimit = 0.4001f;
         is necessary for the test image for costa rica, for example
-        
+
         two approaches will be compared:
            -- given the mLimit filtered region boundaries, will extract the longest
               segments from those matching canny edge points and minimizing the
@@ -1324,26 +1324,26 @@ public class MSEREdges {
               which when finally tuned, may be overfitting for
               larger test datasets.
         */
-        
+
         // below this removes:
         float mLimit = 0.4001f;
-       
+
         // maximum number of contiguous pixels that are not already canny
         //   edge points
         int maxGapSize = 16;
-        
+
         PerimeterFinder2 finder = new PerimeterFinder2();
 
         TIntSet allEdgePoints = new TIntHashSet();
         TIntSet unmatchedPoints = new TIntHashSet();
-  
+
         TIntSet rmvdImgBorders = new TIntHashSet();
- 
+
         //_debugOrigRegions(0, "_orig_gs_0");
         //_debugOrigRegions(1, "_orig_gs_1");
         //_debugOrigRegions(2, "_orig_pt_0");
         //_debugOrigRegions(3, "_orig_pt_1");
-        
+
         for (int rListIdx = 0; rListIdx < regions.size(); ++rListIdx) {
             Region r = regions.get(rListIdx);
             TIntSet points = r.getAcc(clrImg.getWidth());
@@ -1353,26 +1353,26 @@ public class MSEREdges {
 
             TIntSet border2 = removeImageBorder(outerBorder, rmvdImgBorders,
                 clrImg.getWidth(), clrImg.getHeight());
-            
+
             TIntSet matched = new TIntHashSet();
             TIntSet unmatched = new TIntHashSet();
-            
+
             double[] scoreAndMatch = calcAvgScore(border2, sobelScores,
                 matched, unmatched, clrImg.getWidth());
-            
+
             double matchFraction = scoreAndMatch[1]/(double)border2.size();
-  
+
             /*
             System.out.format(" rIdx=%d score=%.3f "
                 + " border2.n=%d nmf=%.3f  m.n=%d um.n=%d\n",
-                rListIdx, (float)scoreAndMatch[0], 
-                border2.size(), 
+                rListIdx, (float)scoreAndMatch[0],
+                border2.size(),
                 (float)matchFraction, matched.size(), unmatched.size());
             */
-            
-            boolean doNotAdd = (matchFraction < mLimit) || 
+
+            boolean doNotAdd = (matchFraction < mLimit) ||
                 ((int)scoreAndMatch[1] == 0);
-            
+
 //Image tmpImg = sobelScores.copyToColorGreyscale();
 //ImageIOHelper.addCurveToImage(border2, tmpImg, 0, 255, 0, 0);
 //MiscDebug.writeImage(tmpImg, "_r_" + rListIdx);
@@ -1388,7 +1388,7 @@ public class MSEREdges {
             /*
             to find the points in border2 which are not in the canny edges, but
             are the missing contour points of an object:
-            
+
             -- separating the border2 points which are matched to canny edge
                  points from those which do not have a canny edge pixel
                  (done in steps above)
@@ -1400,16 +1400,16 @@ public class MSEREdges {
                   to one of the matched.
                   these are the endpoints in the unmatched which may be path
                   endpoints between matched segments or they might not be.
-               -- will search through unmatched points from the starting 
+               -- will search through unmatched points from the starting
                   endpoints to the other endpoints
                   and keep paths that are shorter than
                   maxGapSize
             */
-            
+
             allEdgePoints.addAll(matched);
             unmatchedPoints.addAll(unmatched);
         }
-        
+
 Image tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
 ImageIOHelper.addCurveToImage(allEdgePoints, tmpImg, 0, 255, 0, 0);
 MiscDebug.writeImage(tmpImg, "_matched_");
@@ -1419,51 +1419,51 @@ MiscDebug.writeImage(tmpImg, "_unmatched_");
 tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
 ImageIOHelper.addCurveToImage(rmvdImgBorders, tmpImg, 0, 255, 0, 0);
 MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
-           
+
         //make contiguous connected segments of matched set.
         DFSConnectedGroupsFinder0 finder2 = new DFSConnectedGroupsFinder0(
             clrImg.getWidth());
         finder2.setMinimumNumberInCluster(1);
         finder2.findConnectedPointGroups(allEdgePoints);
-            
+
         // key = matched point, value = finder2 index of point
         TIntIntMap mpIdxMap = finder2.createPointIndexMap();
-        
+
         //find the endpoints for the unmatched
         //as any that are adjacent to matched points
         //and note their contiguous segment.
-        // key=pixIdx of point in unmatched, 
+        // key=pixIdx of point in unmatched,
         //   value = indexes of adjacent segments from mpIdxMap values
         TIntObjectMap<VeryLongBitString> umEPIdxMap = findUnmatchedEndpoints(
-            finder2.getNumberOfGroups(), unmatchedPoints, 
+            finder2.getNumberOfGroups(), unmatchedPoints,
             mpIdxMap, clrImg.getWidth(), clrImg.getHeight());
 
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
-        
+
         // consider each unmatched endpoint a search along
         // unmatched points to find paths to the other matched segments.
         // with a maximum size to the path being the
-        // allowed gap size. 
+        // allowed gap size.
         DFSConnectedGroupsFinder0 finder3 = new DFSConnectedGroupsFinder0(
             clrImg.getWidth());
         finder3.setMinimumNumberInCluster(1);
         finder3.setToUse8Neighbors();
         finder3.findConnectedPointGroups(unmatchedPoints);
-        
+
         TIntSet umEPKeys = umEPIdxMap.keySet();
-        
+
         int w = clrImg.getWidth();
         int h = clrImg.getHeight();
-        
+
         int n3 = finder3.getNumberOfGroups();
-        
+
         System.out.println("number of unmatched segments=" + n3);
-        
+
         for (int i = 0; i < n3; ++i) {
-            
+
             TIntSet uSet = finder3.getXY(i);
-            
+
             // if any 2 points in umEPIdxMap keys are present in uSet,
             // then that links 2 canny edge segments,
             // but uSet must be smaller than maxGapSize.
@@ -1471,14 +1471,14 @@ MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
             //  to the other endpoints within uSet,
             //  and if any of the paths is < maxGapSize, the points
             //  get added to the final points list
-            
+
             //NOTE: could improve this intersection by using bit vectors
             TIntSet intersection = new TIntHashSet(uSet);
             boolean a = intersection.retainAll(umEPKeys);
-            
+
             System.out.println("segment " + i + " contains " + intersection.size()
                 + " endpoints");
-            
+
             /*{//DEBUG
                 TIntIterator iterA = intersection.iterator();
                 while (iterA.hasNext()) {
@@ -1487,32 +1487,57 @@ MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
                     int x = pIdx - (y * w);
                     VeryLongBitString bs = umEPIdxMap.get(pIdx);
                     System.out.println("x=" + x + " y=" + y + " pixIdx=" + pIdx
-                        + " setBits=" + 
+                        + " setBits=" +
                         Arrays.toString(bs.getSetBits()));
                 }
             }*/
+            
+            // --- before endpoint to endpoint search
+            // looking for unmatched endpoints that are adjacent to the image
+            // boundary and only adjacent to one edge segment from matched.
             
             if (intersection.size() == 1) {
                 // check whether the single endpoint is adjacent to 2 edges
                 int pixIdx = intersection.iterator().next();
                 VeryLongBitString bs = umEPIdxMap.get(pixIdx);
                 if (bs.getNSetBits() < 2) {
-                    // if this is borders the image boundaries, then keep it
-                    //  else skip
+                    // if this is not adjacent to the image boundaries, skip
                     int y = pixIdx/w;
                     int x = pixIdx - (y * w);
                     if (!(x == 1 || y == 1 || (x == (w - 2)) || (y == (h - 2)))) {
                         continue;
                     }
                 }
-                
+
                 // if here, then this single pixel is adjacent to more than one
-                // separated edge segment, so should be added to join them.
+                // separated edge segment or to the image boundaries,
+                // so should be added.
                 allEdgePoints.add(pixIdx);
-                
+
                 continue;
+                
+            } else {
+                // if all are adjacent to same edge and all are adjacent to
+                //   image border, they should all be added
+                TIntSet edgeIdxs = new TIntHashSet();
+                TIntSet imgBoundsIdxs = new TIntHashSet();
+                TIntIterator iterA = intersection.iterator();
+                while (iterA.hasNext()) {
+                    int pixIdx = iterA.next();
+                    int y = pixIdx / w;
+                    int x = pixIdx - (y * w);
+                    if (x == 1 || y == 1 || (x == (w - 2)) || (y == (h - 2))) {
+                        imgBoundsIdxs.add(pixIdx);
+                    }
+                    VeryLongBitString bs = umEPIdxMap.get(pixIdx);
+                    edgeIdxs.addAll(bs.getSetBits());
+                }
+                if (edgeIdxs.size() == 1) {
+                    allEdgePoints.addAll(imgBoundsIdxs);
+                    continue;
+                }
             }
-            
+
             //assign indexes to uSet for search arrays
             TIntIntMap uMap = new TIntIntHashMap();
             TIntIterator iter4 = uSet.iterator();
@@ -1520,20 +1545,20 @@ MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
                 int pixIdx = iter4.next();
                 uMap.put(pixIdx, uMap.size());
             }
-           
-            // searches from each intersection point to each other intersection 
+
+            // searches from each intersection point to each other intersection
             //    point thrugh points in uSet
             TIntList localEPs = new TIntArrayList(intersection);
-             
+
             for (int i0 = 0; i0 < localEPs.size(); ++i0) {
                 int pixIdx0 = localEPs.get(i0);
                 int srcIdx = uMap.get(pixIdx0);
-                                
+
                 VeryLongBitString mappedEdgeIdx0s = umEPIdxMap.get(pixIdx0);
-                
+
                 for (int i1 = (i0 + 1); i1 < localEPs.size(); ++i1) {
                     int pixIdx1 = localEPs.get(i1);
-                     
+
                     VeryLongBitString mappedEdgeIdx1s = umEPIdxMap.get(pixIdx1);
 
                     if (mappedEdgeIdx0s.getNSetBits() == 1 &&
@@ -1541,52 +1566,54 @@ MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
                         mappedEdgeIdx0s.equals(mappedEdgeIdx1s)) {
                         continue;
                     }
-                    
+
                     double dist = distance(pixIdx0, pixIdx1, w);
-                    
+
+                    /*
                     System.out.println("unmapped endpoints adjacent to mapped"
-                        + " segments " + 
+                        + " segments " +
                         Arrays.toString(mappedEdgeIdx0s.getSetBits()) + ", " +
-                        Arrays.toString(mappedEdgeIdx1s.getSetBits()) 
+                        Arrays.toString(mappedEdgeIdx1s.getSetBits())
                         + " sep=" +  dist + " maxGapSz=" +
                         maxGapSize);
+                    */
                     
                     if (dist > maxGapSize) {
                         continue;
                     }
-                    
+
                     int destIdx = uMap.get(pixIdx1);
-                    
+
                     Heap heap = new Heap();
-                    
+
                     // -- init dijkstra variables ---
                     HeapNode[] nodes = new HeapNode[uSet.size()];
                     long[] distFromS = new long[nodes.length];
                     HeapNode[] prevNode = new HeapNode[nodes.length];
-                    
+
                     Arrays.fill(distFromS, Long.MAX_VALUE);
                     distFromS[srcIdx] = 0;
-                    
+
                     iter4 = uSet.iterator();
                     while (iter4.hasNext()) {
                         int pixIdx = iter4.next();
                         int idx = uMap.get(pixIdx);
-                        
+
                         nodes[idx] = new HeapNode(distFromS[idx]);
                         nodes[idx].setData(Integer.valueOf(pixIdx));
-                        heap.insert(nodes[idx]); 
+                        heap.insert(nodes[idx]);
                     }
-                    
+
                     // --- traverse the nodes ---
-                    
+
                     HeapNode u = heap.extractMin();
                     while (u != null) {
                         int uPixIdx = ((Integer)u.getData()).intValue();
                         int uY = uPixIdx/w;
                         int uX = uPixIdx - (uY * w);
-                        
+
                         int uIdx = uMap.get(uPixIdx);
-                        
+
                         // could create an adj map above
                         for (int k = 0; k < dxs.length; ++k) {
                             int vX = uX + dxs[k];
@@ -1598,17 +1625,17 @@ MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
                             if (!uSet.contains(vPixIdx)) {
                                 continue;
                             }
-                            
+
                             int vIdx = uMap.get(vPixIdx);
-                            
+
                             long alt;
                             if (distFromS[uIdx] == Long.MAX_VALUE) {
                                 alt = Long.MAX_VALUE;
                             } else {
-                                alt = distFromS[uIdx] + 
+                                alt = distFromS[uIdx] +
                                     (long)Math.round(distance(uPixIdx, vPixIdx, w));
                             }
-                            
+
                             if ((alt >= 0) && (alt < distFromS[vIdx])) {
                                 distFromS[vIdx] = alt;
                                 prevNode[vIdx] = u;
@@ -1618,7 +1645,7 @@ MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
 
                         u = heap.extractMin();
                     }
-                    
+
                     // --- read dijkstra soln if any ---
                     int[] pathNodes = new int[prevNode.length];
                     int count = prevNode.length - 1;
@@ -1629,25 +1656,25 @@ MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
                         HeapNode node = prevNode[lastInd];
                         int pixIdx = ((Integer)node.getData()).intValue();
                         lastInd = uMap.get(pixIdx);
-                        
-                        pathNodes[count] = 
+
+                        pathNodes[count] =
                             ((Integer)nodes[lastInd].getData()).intValue();
                         count--;
                     }
-                    
+
                     // pathNodes from count+1 to end of array are new nodes
-                    pathNodes = Arrays.copyOfRange(pathNodes, count + 1, 
+                    pathNodes = Arrays.copyOfRange(pathNodes, count + 1,
                         pathNodes.length);
-                    
-                    System.out.println("found " + pathNodes.length + 
-                        " gap pixels to add");
-                    
+
+                    //System.out.println("found " + pathNodes.length +
+                    //    " gap pixels to add");
+
                     if (pathNodes.length <= maxGapSize) {
                         allEdgePoints.addAll(pathNodes);
                     }
                 }
             }
-            
+
             //add back any points in rmvdImgBorders adjacent to allEdgePoints
             TIntSet addRmvd = new TIntHashSet();
             TIntIterator iter = rmvdImgBorders.iterator();
@@ -1663,14 +1690,14 @@ MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
                     }
                     int pixIdx2 = (y2 * w) + x2;
                     if (allEdgePoints.contains(pixIdx2)) {
-                        allEdgePoints.add(pixIdx);
+                        addRmvd.add(pixIdx);
                         break;
                     }
                 }
             }
-            //allEdgePoints.addAll(rmvdImgBorders);
+            allEdgePoints.addAll(addRmvd);
         }
-                      
+
         if (debug) {
             Image tmp = clrImg.copyToGreyscale2().copyToColorGreyscale();
             ImageIOHelper.addCurveToImage(allEdgePoints, tmp, 0, 255, 0, 0);
@@ -1717,21 +1744,21 @@ MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
     }
 
     /**
-     * using the given edges as definitions of separation between 
+     * using the given edges as definitions of separation between
      * contiguous pixels in the image,
      * essentially performs kmeans using the contiguous non-edge pixels
      * as the existing labelled region and then adds back all edge pixels
      * to the adjacent labelled region which is closest in color.
-     * 
+     *
      * NOTE: has the side effect of populating this.edgeList and this.labeledSets
-     */ 
+     */
     private void thinTheBoundaries(TIntSet edgePixIdxs,
         int minGroupSize) {
 
         populateEdgeLists(edgePixIdxs, minGroupSize);
 
         PerimeterFinder2 finder2 = new PerimeterFinder2();
-        
+
         int w = clrImg.getWidth();
         int h = clrImg.getHeight();
 
@@ -1739,23 +1766,23 @@ MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
 
         int[] labels = new int[clrImg.getNPixels()];
         Arrays.fill(labels, -1);
-        
+
         for (int label = 0; label < labeledSets.size(); ++label) {
-            
+
             TIntSet set = labeledSets.get(label);
-            
+
             TIntIterator iter2 = set.iterator();
             while (iter2.hasNext()) {
                 int pixIdx = iter2.next();
                 labels[pixIdx] = label;
             }
-                        
+
             GroupPixelHSV2 hsv = new GroupPixelHSV2();
             hsv.calculateColors(set, clrImg);
             hsvs[label] = new float[]{hsv.getAvgH(), hsv.getAvgS(),
                 hsv.getAvgV()};
         }
-                
+
         TIntSet unassignedSet = new TIntHashSet();
         for (int i = 0; i < clrImg.getNPixels(); ++i) {
             if (labels[i] == -1) {
@@ -1769,7 +1796,7 @@ MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
                 labeledSets, 0, 0, 0, tmp);
             MiscDebug.writeImage(tmp, "_" + ts + "_before_assigned_");
         }
-        
+
         assignTheUnassigned(labeledSets, labels, hsvs, unassignedSet);
 
         if (debug) {
@@ -1778,16 +1805,16 @@ MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
                 labeledSets, 0, 0, 0, tmp);
             MiscDebug.writeImage(tmp, "_" + ts + "_reassigned0_");
         }
-        
+
         // make successive passes through to re-assign the smallest sets,
         //    pixel by pixel.  the gradual merging of smaller sets helps
         //    preserve some of the low SNR object boundaries
         //    such as the gingerbread man in the test image android_statues_01
         //    downsampled to size near 256 pixels per dimension.
         int[] mszs = new int[]{minGroupSize, 4, 6, 12, 18, 24};
-        
+
         for (int msz : mszs) {
-                    
+
             // make a pass through results to find any sets that do not have
             //  embedded points and re-submit those if any
             List<TIntSet> contigousSets2 = new ArrayList<TIntSet>();
@@ -1842,7 +1869,7 @@ MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
                 }
             }
         }
-        
+
         if (debug) {
             Image tmp = clrImg.copyImage();
             ImageIOHelper.addAlternatingColorPointSetsToImage2(
@@ -1859,7 +1886,7 @@ MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
      * So the method uses a minGroupSize that does not include the boundary
      * pixels.
      * @param edgePoints
-     * @param minGroupSize 
+     * @param minGroupSize
      */
     private void populateEdgeLists(TIntSet edgePixIdxs, int minGroupSize) {
 
@@ -1877,7 +1904,7 @@ MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
         edgeList = new ArrayList<TIntSet>();
 
         PerimeterFinder2 finder2 = new PerimeterFinder2();
-                
+
         for (int i = 0; i < labeledSets.size(); ++i) {
             TIntSet set = labeledSets.get(i);
             TIntSet embedded = new TIntHashSet();
@@ -1886,7 +1913,7 @@ MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
 
             edgeList.add(outerBorder);
         }
-                
+
         assert(labeledSets.size() == edgeList.size());
 
         System.out.println(labeledSets.size() + " labeled sets");
@@ -1902,9 +1929,9 @@ MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
         //   number of assigned neighbors.
         //   fiboncci heap decreasekey is O(1) so updates after each assignment
         //   are fast
-        
-        // key = pixel index, value = 
-        TIntObjectMap<TIntSet> unassignedMap 
+
+        // key = pixel index, value =
+        TIntObjectMap<TIntSet> unassignedMap
             = new TIntObjectHashMap<TIntSet>();
 
         int w = clrImg.getWidth();
@@ -1955,7 +1982,7 @@ MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
                 assert (adjLabels != null);
             } else {
                 adjLabels = new TIntHashSet();
-                addNeighborLabelsForPoint(labels, adjLabels, 
+                addNeighborLabelsForPoint(labels, adjLabels,
                     pixIdx, dxs, dys);
             }
 
@@ -2040,7 +2067,7 @@ MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
 
         int j = pixIdx/w;
         int i = pixIdx - (j * w);
-        
+
         for (int m = 0; m < dxs.length; ++m) {
             int x2 = i + dxs[m];
             int y2 = j + dys[m];
@@ -2063,7 +2090,7 @@ MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
         int[] nN = new int[n];
 
         TIntObjectIterator<TIntSet> iter = unassignedMap.iterator();
-        
+
         for (int count = 0; count < n; ++count) {
             iter.advance();
             int pixIdx = iter.key();
@@ -2104,12 +2131,12 @@ MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
 
         return shiftedImg;
     }
-    
+
     private TIntSet removeImageBorder(TIntSet pixIdxs, TIntSet outputRmvd,
         int width, int height) {
-        
+
         TIntSet set = new TIntHashSet(pixIdxs);
-        
+
         TIntSet rm = new TIntHashSet();
         TIntIterator iter = set.iterator();
         while (iter.hasNext()) {
@@ -2121,9 +2148,9 @@ MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
                 outputRmvd.add(pixIdx);
             }
         }
-        
+
         set.removeAll(rm);
-                
+
         return set;
     }
 
@@ -2229,17 +2256,17 @@ MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
 
         return hsv;
     }
-        
+
     private TIntIntMap createPointIndexMap(TIntObjectMap<TIntSet> mapOfSets) {
-        
+
         TIntIntMap pointIndexMap = new TIntIntHashMap();
-        
+
         TIntObjectIterator<TIntSet> iter = mapOfSets.iterator();
-        
+
         for (int i = 0; i < mapOfSets.size(); ++i) {
-            
+
             iter.advance();
-            
+
             int label = iter.key();
             TIntSet set = iter.value();
 
@@ -2249,46 +2276,46 @@ MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
                 pointIndexMap.put(pixIdx, label);
             }
         }
-        
+
         return pointIndexMap;
     }
-    
+
     private boolean isBlack(GroupPixelHSV2 hsv) {
-        
+
         if (hsv.getAvgV() >= 0.2) {
             //System.out.println("brightness=" + hsv.getAvgV());
             return false;
         }
-        
+
         return hsv.isGrey(12);
     }
-    
+
     private boolean isWhite(GroupPixelHSV2 hsv) {
-        
+
         if (hsv.getAvgV() < 0.625) {
             //System.out.println("brightness=" + hsv.getAvgV());
             return false;
         }
-        
+
         return hsv.isGrey(12);
     }
-    
+
     private TIntObjectMap<VeryLongBitString> findUnmatchedEndpoints(
-        int nEdgeSegments, TIntSet unmatchedPoints, 
+        int nEdgeSegments, TIntSet unmatchedPoints,
         TIntIntMap matchedPointsIdxMap, int width, int height) {
-        
-        TIntObjectMap<VeryLongBitString> umEPIdxMap = 
+
+        TIntObjectMap<VeryLongBitString> umEPIdxMap =
             new TIntObjectHashMap<VeryLongBitString>();
-        
+
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
-        
+
         TIntIterator iter = unmatchedPoints.iterator();
         while (iter.hasNext()) {
             int pixIdx = iter.next();
             int y = pixIdx/width;
             int x = pixIdx - (y * width);
-            
+
             for (int k = 0; k < dxs.length; ++k) {
                 int x2 = x + dxs[k];
                 int y2 = y + dys[k];
@@ -2306,23 +2333,23 @@ MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
                 }
             }
         }
-        
+
         return umEPIdxMap;
     }
 
     private double distance(int pixIdx0, int pixIdx1, int width) {
-        
+
         int y0 = pixIdx0/width;
         int x0 = pixIdx0 - (y0 * width);
-        
+
         int y1 = pixIdx1/width;
         int x1 = pixIdx1 - (y1 * width);
-    
+
         int diffX = x0 - x1;
         int diffY = y0 - y1;
-        
+
         double dist = Math.sqrt(diffX * diffX + diffY * diffY);
-        
+
         return dist;
     }
 
