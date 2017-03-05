@@ -174,9 +174,6 @@ public class CannyEdgeColorAdaptive {
             cannyC.overrideToUseAdaptiveThreshold();
         }
         
-        cannyL.setOtsuScaleFactor(otsuScaleFactor);
-        cannyC.setOtsuScaleFactor(otsuScaleFactor);
-    
         cannyL.override2LayerFactorBelowHighThreshold(factorBelowHighThreshold);
         cannyC.override2LayerFactorBelowHighThreshold(factorBelowHighThreshold);
         
@@ -205,8 +202,8 @@ public class CannyEdgeColorAdaptive {
             cannyC.setToDebug();
         }
         
-        //cannyC.setOtsuScaleFactor(1.0f);
-        //cannyC.override2LayerFactorBelowHighThreshold(1.5f);
+        cannyL.setOtsuScaleFactor(otsuScaleFactor);
+        cannyC.setOtsuScaleFactor(1.0f);
         
         cannyL.applyFilter(lch[0]);
         cannyC.applyFilter(lch[1]);
