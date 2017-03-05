@@ -1295,34 +1295,15 @@ public class MSEREdges {
         using the level set region boundaries as contours to complete
         the edges from the canny edges of L and C from LCH.
 
-        Looking for the best ways to essentially fill in gaps in the canny edges
-        with these region boundaries, making complete contours (and hence
-        labeled sets, that is, segmentation).
-
         -- first applying a filter that is the fraction of region
-           boundary points which have a canny edge pixel.
-
-        -- unimplemented:
-             then need to extract for each region, the longest matching segment
-             to the canny edges (minimizes gaps, that is contiguous pixels in
-             the boundary which are not in the canny edge pixels).
-
-        current low limit for mLimit = 0.4001f;
-        is necessary for the test image for costa rica, for example
-
-        two approaches will be compared:
-           -- given the mLimit filtered region boundaries, will extract the longest
-              segments from those matching canny edge points and minimizing the
-              gap sizes within the segment.
-           -- or alternatively,
-              given the mLimit filtered region boundaries,
-              can rely on subsequent color based merging method to
-              handle the remaining reduction of edges.
-              this method is more consistent with goal of preserving contours,
-              that is maintaining closed curves.
-              caveat of this approach is a large dependency on color filters
-              which when finally tuned, may be overfitting for
-              larger test datasets.
+           boundary points which have a canny edge pixel to filter the
+           mser regions list.
+        -- then finding the contiguous sets of all matched region points
+        and the sets of all unmatched points from those same regions
+        (where matched means that the region pixel coordinates
+        have canny edge pixel values > 0).
+        -- then finding the paths in the unmatched points that complete
+        gaps between the matched segments.
         */
 
         // below this removes:
@@ -1338,11 +1319,6 @@ public class MSEREdges {
         TIntSet unmatchedPoints = new TIntHashSet();
 
         TIntSet rmvdImgBorders = new TIntHashSet();
-
-        //_debugOrigRegions(0, "_orig_gs_0");
-        //_debugOrigRegions(1, "_orig_gs_1");
-        //_debugOrigRegions(2, "_orig_pt_0");
-        //_debugOrigRegions(3, "_orig_pt_1");
 
         for (int rListIdx = 0; rListIdx < regions.size(); ++rListIdx) {
             Region r = regions.get(rListIdx);
@@ -1410,15 +1386,19 @@ public class MSEREdges {
             unmatchedPoints.addAll(unmatched);
         }
 
-Image tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
-ImageIOHelper.addCurveToImage(allEdgePoints, tmpImg, 0, 255, 0, 0);
-MiscDebug.writeImage(tmpImg, "_matched_");
-tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
-ImageIOHelper.addCurveToImage(unmatchedPoints, tmpImg, 0, 255, 0, 0);
-MiscDebug.writeImage(tmpImg, "_unmatched_");
-tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
-ImageIOHelper.addCurveToImage(rmvdImgBorders, tmpImg, 0, 255, 0, 0);
-MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
+        /*
+        if (debug) {
+            Image tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
+            ImageIOHelper.addCurveToImage(allEdgePoints, tmpImg, 0, 255, 0, 0);
+            MiscDebug.writeImage(tmpImg, "_matched_");
+            tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
+            ImageIOHelper.addCurveToImage(unmatchedPoints, tmpImg, 0, 255, 0, 0);
+            MiscDebug.writeImage(tmpImg, "_unmatched_");
+            tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
+            ImageIOHelper.addCurveToImage(rmvdImgBorders, tmpImg, 0, 255, 0, 0);
+            MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
+        }
+        */
 
         //make contiguous connected segments of matched set.
         DFSConnectedGroupsFinder0 finder2 = new DFSConnectedGroupsFinder0(
