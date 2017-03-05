@@ -467,21 +467,15 @@ public class MSEREdges {
 
         long ts1 = System.currentTimeMillis();
 
-        //closeGapsOf1(boundaries);
-
-        long ts2 = System.currentTimeMillis();
-
         // populate this.edgeList and this.labeledSets
         thinTheBoundaries(boundaries, 2);
 
-        long ts3 = System.currentTimeMillis();
+        long ts2 = System.currentTimeMillis();
 
         System.out.format(
             "%.3f sec for boundary extr, "
-                + "%.3f sec for closing, "
                 + " %.3f sec for reassigning and labels\n",
-            ((float)(ts1 - ts0)/1000.f), ((float)(ts2 - ts1)/1000.f),
-            ((float)(ts3 - ts2)/1000.f)
+            ((float)(ts1 - ts0)/1000.f), ((float)(ts2 - ts1)/1000.f)
         );
 
         state = STATE.EDGES_EXTRACTED;
@@ -1286,9 +1280,9 @@ public class MSEREdges {
 
         if (sobelScores == null) {
             sobelScores = createSobelScores();
-            MiscDebug.writeImage(sobelScores,
-                "_" + ts + "_canny_blurred_");
-            MiscDebug.writeImage(cannyEdges, "_" + ts + "_canny_");
+            //MiscDebug.writeImage(sobelScores,
+            //    "_" + ts + "_canny_blurred_");
+            //MiscDebug.writeImage(cannyEdges, "_" + ts + "_canny_");
         }
 
         /*
@@ -1407,6 +1401,9 @@ public class MSEREdges {
         finder2.setMinimumNumberInCluster(1);
         finder2.findConnectedPointGroups(allEdgePoints);
 
+        System.out.println("number of matched segments=" 
+            + finder2.getNumberOfGroups());
+        
         // key = matched point, value = finder2 index of point
         TIntIntMap mpIdxMap = finder2.createPointIndexMap();
 
@@ -1558,21 +1555,23 @@ public class MSEREdges {
 
                     double dist = distance(pixIdx0, pixIdx1, w);
 
-                    /*
+                    
                     System.out.println("unmapped endpoints adjacent to mapped"
                         + " segments " +
                         Arrays.toString(mappedEdgeIdx0s.getSetBits()) + ", " +
                         Arrays.toString(mappedEdgeIdx1s.getSetBits())
                         + " sep=" +  dist + " maxGapSz=" +
-                        maxGapSize);
-                    */
+                        maxGapSize + " unmatched segment size=" + uSet.size());
+                    
                     
                     if (dist > maxGapSize) {
                         continue;
                     }
-
+                    
                     int destIdx = uMap.get(pixIdx1);
 
+                    // TODO: when implement multi-level-buckets, replace this to
+                    //   improve the runtime to near O(N_uSet.size)
                     Heap heap = new Heap();
 
                     // -- init dijkstra variables ---
@@ -1664,7 +1663,7 @@ public class MSEREdges {
                 }
             }
         }
-        
+                
         //add back any points in rmvdImgBorders adjacent to allEdgePoints
         TIntSet addRmvd = new TIntHashSet();
         TIntIterator iter = rmvdImgBorders.iterator();

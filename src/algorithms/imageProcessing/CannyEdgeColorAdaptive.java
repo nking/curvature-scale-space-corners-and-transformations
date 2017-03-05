@@ -203,7 +203,8 @@ public class CannyEdgeColorAdaptive {
         }
         
         cannyL.setOtsuScaleFactor(otsuScaleFactor);
-        cannyC.setOtsuScaleFactor(1.0f);
+        cannyC.setOtsuScaleFactor(otsuScaleFactor);
+        //cannyC.setOtsuScaleFactor(0.5f);
         
         cannyL.applyFilter(lch[0]);
         cannyC.applyFilter(lch[1]);
