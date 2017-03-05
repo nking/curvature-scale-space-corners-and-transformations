@@ -1381,7 +1381,7 @@ public class MSEREdges {
             unmatchedPoints.addAll(unmatched);
         }
 
-        /*
+        
         if (debug) {
             Image tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
             ImageIOHelper.addCurveToImage(allEdgePoints, tmpImg, 0, 255, 0, 0);
@@ -1393,7 +1393,7 @@ public class MSEREdges {
             ImageIOHelper.addCurveToImage(rmvdImgBorders, tmpImg, 0, 255, 0, 0);
             MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
         }
-        */
+       
         
 
         //make contiguous connected segments of matched set.
@@ -1556,14 +1556,14 @@ public class MSEREdges {
 
                     double dist = distance(pixIdx0, pixIdx1, w);
 
-                    
+                    /*      
                     System.out.println("unmapped endpoints adjacent to mapped"
                         + " segments " +
                         Arrays.toString(mappedEdgeIdx0s.getSetBits()) + ", " +
                         Arrays.toString(mappedEdgeIdx1s.getSetBits())
                         + " sep=" +  dist + " maxGapSz=" +
                         maxGapSize + " unmatched segment size=" + uSet.size());
-                    
+                    */
                     
                     if (dist > maxGapSize) {
                         continue;
@@ -1635,16 +1635,17 @@ public class MSEREdges {
 
                         u = heap.extractMin();
                     }
+                    
+                    // 205,143
 
                     // --- read dijkstra soln if any ---
                     int[] pathNodes = new int[prevNode.length];
-                    int count = prevNode.length - 1;
+                    
                     int lastInd = destIdx;
-                    if (prevNode[lastInd] == null) {
-                        continue;
-                    }
-                    pathNodes[count] = ((Integer)prevNode[lastInd].getData()).intValue();
-                    count--;
+                    
+                    pathNodes[0] = pixIdx1;
+                    
+                    int count = 1;
                     
                     boolean noSoln = false;
                     
@@ -1659,27 +1660,25 @@ public class MSEREdges {
                         
                         int pixIdx = ((Integer)node.getData()).intValue();
                         
-                        lastInd = uMap.get(pixIdx);
-
                         pathNodes[count] = pixIdx;
                         
-                        count--;
+                        lastInd = uMap.get(pixIdx);
+
+                        count++;
                     }
                     
                     if (noSoln) {
                         continue;
                     }
-
-                    // pathNodes from count+1 to end of array are new nodes
-                    pathNodes = Arrays.copyOfRange(pathNodes, count + 1,
-                        pathNodes.length);
-
-                    //System.out.println("found " + pathNodes.length +
-                    //    " gap pixels to add");
-
-                    if (pathNodes.length <= maxGapSize) {
-                        allEdgePoints.addAll(pathNodes);
+                    
+                    //System.out.println("src pixIdx0=" + pixIdx0 +
+                    //    " dest pixIdx1=" + pixIdx1);
+                        
+                    for (int ii = 0; ii < count; ++ii) {
+                        allEdgePoints.add(pathNodes[ii]);
                     }
+                    assert(pathNodes[count - 1] == pixIdx0);
+
                 }
             }
         }
