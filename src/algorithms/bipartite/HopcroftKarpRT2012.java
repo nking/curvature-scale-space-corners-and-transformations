@@ -20,10 +20,8 @@ import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -269,7 +267,7 @@ public class HopcroftKarpRT2012 {
             // in the heap are men not in the forest who are in
             // an alternating path from a maiden.
             // the key is the length of shortest path so far
-            PathNode y = heap.extractMin();
+            PathNode y = (PathNode) heap.extractMin();
             assert(y instanceof RightNode);
             
             log.fine("heap.size=" + heap.getNumberOfNodes());

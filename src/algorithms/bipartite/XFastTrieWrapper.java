@@ -1,6 +1,6 @@
 package algorithms.bipartite;
 
-import algorithms.bipartite.MinCostUnbalancedAssignment.PathNode;
+import algorithms.imageProcessing.HeapNode;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -21,8 +21,8 @@ public class XFastTrieWrapper {
     
     private final XFastTrie<XFastTrieNode<Integer>, Integer> xft;
     
-    private final TIntObjectHashMap<Set<PathNode>> map =
-        new TIntObjectHashMap<Set<PathNode>>();
+    private final TIntObjectHashMap<Set<HeapNode>> map =
+        new TIntObjectHashMap<Set<HeapNode>>();
     
     private long lastKnownMinKey = 0;
     private long lastKnownMaxKey = -1;
@@ -63,11 +63,11 @@ public class XFastTrieWrapper {
      * l term).
      * @param node 
      */
-    public void insert(PathNode node) {
+    public void insert(HeapNode node) {
         
         int keyIdx = (int)node.getKey();
         
-        Set<PathNode> set = map.get(keyIdx);
+        Set<HeapNode> set = map.get(keyIdx);
         
         if (set == null) {
             Integer key = Integer.valueOf(keyIdx);
@@ -75,7 +75,7 @@ public class XFastTrieWrapper {
             boolean added = xft.add(key);
             assert(added);
             
-            set = new HashSet<PathNode>();
+            set = new HashSet<HeapNode>();
             map.put(keyIdx, set);
         }
         
@@ -104,11 +104,11 @@ public class XFastTrieWrapper {
      * l term).
      * @param node 
      */
-    public void decreaseKey(PathNode node, long key2) {
+    public void decreaseKey(HeapNode node, long key2) {
 
         int keyIdx = (int)node.getKey();
                 
-        Set<PathNode> set0 = map.get(keyIdx);
+        Set<HeapNode> set0 = map.get(keyIdx);
         
         assert(set0 != null);
         
@@ -124,13 +124,13 @@ public class XFastTrieWrapper {
         
         Integer index2 = Integer.valueOf((int)key2);
         
-        Set<PathNode> set2 = map.get((int)key2);
+        Set<HeapNode> set2 = map.get((int)key2);
          
         if (set2 == null) {
             boolean added = xft.add(index2);
             assert(added);
             
-            set2 = new HashSet<PathNode>();
+            set2 = new HashSet<HeapNode>();
             map.put((int)key2, set2);
         }
         
@@ -153,7 +153,7 @@ public class XFastTrieWrapper {
      * l term).
      * @return node 
      */
-    public PathNode extractMin() {
+    public HeapNode extractMin() {
         
         if (n == 0) {
             return null;
@@ -161,9 +161,9 @@ public class XFastTrieWrapper {
      
         Integer key = xft.minimum();
         
-        Set<PathNode> set = map.get(key.intValue());
+        Set<HeapNode> set = map.get(key.intValue());
         
-        PathNode node = set.iterator().next();
+        HeapNode node = set.iterator().next();
         set.remove(node);
         
         if (set.isEmpty()) {

@@ -775,7 +775,7 @@ public class MinCostUnbalancedAssignment {
         // V * minHeap,extractMin +
         //     V * n_edges_per_V * minHeap.insert (or decr Key)
         do {
-            PathNode node1 = minHeap.extractMin();
+            PathNode node1 = (PathNode) minHeap.extractMin();
             if (node1 == null) {
                 //TODO: revisit this for whether additional handling of
                 //   lastKey is needed

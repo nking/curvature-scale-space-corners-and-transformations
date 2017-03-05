@@ -1,6 +1,5 @@
 package algorithms.bipartite;
 
-import algorithms.bipartite.MinCostUnbalancedAssignment.PathNode;
 import algorithms.imageProcessing.DoubleLinkedCircularList;
 import algorithms.imageProcessing.HeapNode;
 import java.util.logging.Logger;
@@ -42,7 +41,7 @@ public class MinHeapForRT2012 {
     private final XFastTrieWrapper heap2;
     
     void printLastKnownMinMax() {
-        log.info("min=" + lastKnownMinKey0
+        log.fine("min=" + lastKnownMinKey0
             + " max=" + lastKnownMaxKey0);
     }
     
@@ -98,7 +97,11 @@ public class MinHeapForRT2012 {
         }
     }
     
-    public void insert(PathNode node) {
+    public void insert(HeapNode node) {
+        
+        if (node.getKey() < 0) {
+            throw new IllegalArgumentException("key must be >= 0");
+        }
         
         switch(algorithm) {
             case 0:
@@ -113,7 +116,7 @@ public class MinHeapForRT2012 {
         }
     }
     
-    public PathNode extractMin() {
+    public HeapNode extractMin() {
         
         switch(algorithm) {
             case 0:
@@ -126,7 +129,7 @@ public class MinHeapForRT2012 {
         
     }
     
-    private PathNode extractMin0() {
+    private HeapNode extractMin0() {
     
         for (int i = lastKnownMinKey0; i < heap0.length; ++i) {
             DoubleLinkedCircularList bucket = heap0[i];
@@ -135,28 +138,28 @@ public class MinHeapForRT2012 {
                 bucket.remove(node);
                 lastKnownMinKey0 = i;
                 n0--;
-                return (PathNode)node;
+                return (HeapNode)node;
             }
         }
         
         return null;
     }
     
-    private PathNode extractMin1() {
+    private HeapNode extractMin1() {
         
         HeapNode node = heap1.extractMin();
         if (node != null) {
-            return (PathNode)node;
+            return (HeapNode)node;
         } else {
             return null;
         }
     }
     
-    private PathNode extractMin2() {        
+    private HeapNode extractMin2() {        
         return heap2.extractMin();
     }
     
-    private void insert0(PathNode node) {
+    private void insert0(HeapNode node) {
          
         int key = (int)node.getKey();
         
@@ -179,7 +182,7 @@ public class MinHeapForRT2012 {
         }
     }
     
-    private void insert1(PathNode node) {
+    private void insert1(HeapNode node) {
          
         int key = (int)node.getKey();
         
@@ -188,7 +191,7 @@ public class MinHeapForRT2012 {
         log.fine("insert into minHeap at key =" + key);        
     }
     
-    private void insert2(PathNode node) {
+    private void insert2(HeapNode node) {
          
         int key = (int)node.getKey();
         
@@ -197,7 +200,7 @@ public class MinHeapForRT2012 {
         log.fine("insert into minHeap at key =" + key);        
     }
     
-    public void decreaseKey(PathNode node, long key2) {
+    public void decreaseKey(HeapNode node, long key2) {
     
         switch(algorithm) {
             case 0:
@@ -212,7 +215,7 @@ public class MinHeapForRT2012 {
         }
     }
      
-    private void decreaseKey0(PathNode node, long key2) {
+    private void decreaseKey0(HeapNode node, long key2) {
 
         log.fine("decreaseKey in minHeap from key=" + 
             node.getKey() + " to key=" + key2);
@@ -225,7 +228,7 @@ public class MinHeapForRT2012 {
         insert0(node);
     }
     
-    private void decreaseKey1(PathNode node, long key2) {
+    private void decreaseKey1(HeapNode node, long key2) {
 
         log.fine("decreaseKey in fibHeap from key=" + 
             node.getKey() + " to key=" + key2);
@@ -233,7 +236,7 @@ public class MinHeapForRT2012 {
         heap1.decreaseKey(node, key2);
     }
     
-    private void decreaseKey2(PathNode node, long key2) {
+    private void decreaseKey2(HeapNode node, long key2) {
 
         log.fine("decreaseKey in fibHeap from key=" + 
             node.getKey() + " to key=" + key2);

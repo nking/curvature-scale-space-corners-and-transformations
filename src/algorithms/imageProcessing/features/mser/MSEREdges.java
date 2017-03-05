@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.features.mser;
 
 import algorithms.QuickSort;
+import algorithms.bipartite.MinHeapForRT2012;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.CannyEdgeColorAdaptive;
 import algorithms.imageProcessing.DFSConnectedGroupsFinder0;
@@ -1570,16 +1571,17 @@ public class MSEREdges {
                     
                     int destIdx = uMap.get(pixIdx1);
 
-                    // TODO: when implement multi-level-buckets, replace this to
-                    //   improve the runtime to near O(N_uSet.size)
-                    Heap heap = new Heap();
+                    MinHeapForRT2012 heap = new MinHeapForRT2012(maxGapSize + 1,
+                        uSet.size());
 
                     // -- init dijkstra variables ---
                     HeapNode[] nodes = new HeapNode[uSet.size()];
                     long[] distFromS = new long[nodes.length];
                     HeapNode[] prevNode = new HeapNode[nodes.length];
 
-                    Arrays.fill(distFromS, Long.MAX_VALUE);
+                    // instead of Long.MAX_VALUE, will use maxGapSize+1
+                    final long long_max_value = maxGapSize + 1;
+                    Arrays.fill(distFromS, long_max_value);
                     distFromS[srcIdx] = 0;
 
                     iter4 = uSet.iterator();
@@ -1617,8 +1619,8 @@ public class MSEREdges {
                             int vIdx = uMap.get(vPixIdx);
 
                             long alt;
-                            if (distFromS[uIdx] == Long.MAX_VALUE) {
-                                alt = Long.MAX_VALUE;
+                            if (distFromS[uIdx] == long_max_value) {
+                                alt = long_max_value;
                             } else {
                                 alt = distFromS[uIdx] +
                                     (long)Math.round(distance(uPixIdx, vPixIdx, w));
@@ -1638,16 +1640,34 @@ public class MSEREdges {
                     int[] pathNodes = new int[prevNode.length];
                     int count = prevNode.length - 1;
                     int lastInd = destIdx;
-                    pathNodes[count] = ((Integer)nodes[lastInd].getData()).intValue();
+                    if (prevNode[lastInd] == null) {
+                        continue;
+                    }
+                    pathNodes[count] = ((Integer)prevNode[lastInd].getData()).intValue();
                     count--;
+                    
+                    boolean noSoln = false;
+                    
                     while (lastInd != srcIdx) {
+                        
                         HeapNode node = prevNode[lastInd];
+                        
+                        if (node == null) {
+                            noSoln = true;
+                            break;
+                        }
+                        
                         int pixIdx = ((Integer)node.getData()).intValue();
+                        
                         lastInd = uMap.get(pixIdx);
 
-                        pathNodes[count] =
-                            ((Integer)nodes[lastInd].getData()).intValue();
+                        pathNodes[count] = pixIdx;
+                        
                         count--;
+                    }
+                    
+                    if (noSoln) {
+                        continue;
                     }
 
                     // pathNodes from count+1 to end of array are new nodes

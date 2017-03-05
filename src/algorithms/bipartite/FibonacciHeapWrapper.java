@@ -1,6 +1,5 @@
 package algorithms.bipartite;
 
-import algorithms.bipartite.MinCostUnbalancedAssignment.PathNode;
 import algorithms.imageProcessing.Heap;
 import algorithms.imageProcessing.HeapNode;
 
@@ -48,7 +47,7 @@ public class FibonacciHeapWrapper {
         }
     }
     
-    public void insert(PathNode node) {
+    public void insert(HeapNode node) {
         
         int key = (int)node.getKey();
         
@@ -84,7 +83,7 @@ public class FibonacciHeapWrapper {
      * @param node
      * @param key2 
      */
-    public void decreaseKey(PathNode node, long key2) {
+    public void decreaseKey(HeapNode node, long key2) {
         
         int key = (int)node.getKey();
         
@@ -122,7 +121,7 @@ public class FibonacciHeapWrapper {
         }
     }
     
-    public PathNode extractMin() {
+    public HeapNode extractMin() {
         
         if (n == 0) {
             return null;
@@ -138,7 +137,7 @@ public class FibonacciHeapWrapper {
             lastKnownMinKey = i;
             n--;
             
-            return (PathNode)node;
+            return (HeapNode)node;
         }
         
         return null;
