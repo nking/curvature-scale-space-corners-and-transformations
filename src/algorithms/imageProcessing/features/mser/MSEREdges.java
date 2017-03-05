@@ -1266,7 +1266,7 @@ public class MSEREdges {
         */
 
         this.cannyEdges = scaled;
-
+        
         // smearing values over a 3 pixel window to avoid the potential
         //   1 pixel displacement of an edge from the level set boundaries
         SummedAreaTable sumTable = new SummedAreaTable();
@@ -1333,13 +1333,13 @@ public class MSEREdges {
 
             double matchFraction = scoreAndMatch[1]/(double)border2.size();
 
-            
+            /*
             System.out.format(" rIdx=%d score=%.3f "
                 + " border2.n=%d nmf=%.3f  m.n=%d um.n=%d\n",
                 rListIdx, (float)scoreAndMatch[0],
                 border2.size(),
                 (float)matchFraction, matched.size(), unmatched.size());
-            
+            */
 
             boolean doNotAdd = (matchFraction < mLimit) ||
                 ((int)scoreAndMatch[1] == 0);
@@ -1381,7 +1381,7 @@ public class MSEREdges {
             unmatchedPoints.addAll(unmatched);
         }
 
-        
+        /*
         if (debug) {
             Image tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
             ImageIOHelper.addCurveToImage(allEdgePoints, tmpImg, 0, 255, 0, 0);
@@ -1393,9 +1393,8 @@ public class MSEREdges {
             ImageIOHelper.addCurveToImage(rmvdImgBorders, tmpImg, 0, 255, 0, 0);
             MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
         }
-       
+        */
         
-
         //make contiguous connected segments of matched set.
         DFSConnectedGroupsFinder0 finder2 = new DFSConnectedGroupsFinder0(
             clrImg.getWidth());
@@ -1432,6 +1431,7 @@ public class MSEREdges {
         TIntObjectMap<VeryLongBitString> umEPIdxMap = findUnmatchedEndpoints(
             n2 + n3, unmatchedPoints,
             mpIdxMap, clrImg.getWidth(), clrImg.getHeight());
+        
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
 
@@ -1441,14 +1441,12 @@ public class MSEREdges {
         //   do not exist as group indexes in finder2.
         int nEs = addImageBoundaryAdjacentPoints(n2 + n3, n2, umEPIdxMap, 
             finder3);
+        
         TIntSet umEPKeys = umEPIdxMap.keySet();
 
         int w = clrImg.getWidth();
         int h = clrImg.getHeight();
-
         
-        System.out.println("number of unmatched segments=" + n3);
-
         for (int i = 0; i < n3; ++i) {
 
             //contig segment of unmatched pixIdxs
@@ -1488,13 +1486,12 @@ public class MSEREdges {
                 //   add the pixel to all edges and skip a search
                 int pixIdx = intersection.iterator().next();
                 VeryLongBitString bs = umEPIdxMap.get(pixIdx);
-                
                 if (bs.getNSetBits() > 1) {
                     allEdgePoints.add(pixIdx);
                     continue;
                 }
             }
-
+                        
             //assign indexes to uSet for search arrays
             TIntIntMap uMap = new TIntIntHashMap();
             TIntIterator iter4 = uSet.iterator();
@@ -1526,7 +1523,7 @@ public class MSEREdges {
 
                     double dist = distance(pixIdx0, pixIdx1, w);
 
-                    /*      
+                    /*     
                     System.out.println("unmapped endpoints adjacent to mapped"
                         + " segments " +
                         Arrays.toString(mappedEdgeIdx0s.getSetBits()) + ", " +
@@ -1541,16 +1538,17 @@ public class MSEREdges {
                     
                     int destIdx = uMap.get(pixIdx1);
 
-                    MinHeapForRT2012 heap = new MinHeapForRT2012(maxGapSize + 1,
-                        uSet.size());
+                    // instead of Long.MAX_VALUE, will use maxGapSize+1
+                    final long long_max_value = maxGapSize + 1;
+                    
+                    MinHeapForRT2012 heap = new MinHeapForRT2012(
+                        (int)long_max_value + 1, uSet.size());
 
                     // -- init dijkstra variables ---
                     HeapNode[] nodes = new HeapNode[uSet.size()];
                     long[] distFromS = new long[nodes.length];
                     HeapNode[] prevNode = new HeapNode[nodes.length];
-
-                    // instead of Long.MAX_VALUE, will use maxGapSize+1
-                    final long long_max_value = maxGapSize + 1;
+                    
                     Arrays.fill(distFromS, long_max_value);
                     distFromS[srcIdx] = 0;
 
@@ -1606,8 +1604,6 @@ public class MSEREdges {
                         u = heap.extractMin();
                     }
                     
-                    // 205,143
-
                     // --- read dijkstra soln if any ---
                     int[] pathNodes = new int[prevNode.length];
                     
@@ -2332,6 +2328,7 @@ public class MSEREdges {
 
         return dist;
     }
+    
     private int addImageBoundaryAdjacentPoints(
         int bsSize, int nEs,
         TIntObjectMap<VeryLongBitString> umEPIdxMap, 

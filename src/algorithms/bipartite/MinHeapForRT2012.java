@@ -55,8 +55,8 @@ public class MinHeapForRT2012 {
      */
     public MinHeapForRT2012(int capacity, int approxN) {
                 
-        if (capacity < 10) {
-        //if (capacity < 46300) {
+        //if (capacity < 10) {
+        if (capacity < 46300) {
             //TODO:  need MLB for this...
         
             // the 1 level Dial algorithm has O(1) inserts and
