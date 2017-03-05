@@ -1399,6 +1399,7 @@ public class MSEREdges {
             MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
         }
         */
+        
 
         //make contiguous connected segments of matched set.
         DFSConnectedGroupsFinder0 finder2 = new DFSConnectedGroupsFinder0(
@@ -1456,8 +1457,8 @@ public class MSEREdges {
             TIntSet intersection = new TIntHashSet(uSet);
             boolean a = intersection.retainAll(umEPKeys);
 
-            System.out.println("segment " + i + " contains " + intersection.size()
-                + " endpoints");
+            //System.out.println("segment " + i + " contains " + intersection.size()
+            //    + " endpoints");
 
             /*{//DEBUG
                 TIntIterator iterA = intersection.iterator();
@@ -1512,7 +1513,15 @@ public class MSEREdges {
                     VeryLongBitString bs = umEPIdxMap.get(pixIdx);
                     edgeIdxs.addAll(bs.getSetBits());
                 }
+                
+                //System.out.println("edges.n=" + edgeIdxs.size() + 
+                //    " imgB.n=" + imgBoundsIdxs.size());
+                
                 if (edgeIdxs.size() == 1) {
+                    
+                    //System.out.println("  adding pixIdxs=" + Arrays.toString(
+                    //    imgBoundsIdxs.toArray(new int[imgBoundsIdxs.size()])));
+                    
                     allEdgePoints.addAll(imgBoundsIdxs);
                     continue;
                 }
@@ -1654,29 +1663,32 @@ public class MSEREdges {
                     }
                 }
             }
+        }
+        
+        //add back any points in rmvdImgBorders adjacent to allEdgePoints
+        TIntSet addRmvd = new TIntHashSet();
+        TIntIterator iter = rmvdImgBorders.iterator();
+        while (iter.hasNext()) {
+            int pixIdx = iter.next();
+            int y = pixIdx / w;
+            int x = pixIdx - (y * w);
 
-            //add back any points in rmvdImgBorders adjacent to allEdgePoints
-            TIntSet addRmvd = new TIntHashSet();
-            TIntIterator iter = rmvdImgBorders.iterator();
-            while (iter.hasNext()) {
-                int pixIdx = iter.next();
-                int y = pixIdx/w;
-                int x = pixIdx - (y * w);
-                for (int k = 0; k < dxs.length; ++k) {
-                    int x2 = x + dxs[k];
-                    int y2 = y + dys[k];
-                    if (x2 < 0 || y2 < 0 || (x2 >= w) || (y2 >= w)) {
-                        continue;
-                    }
-                    int pixIdx2 = (y2 * w) + x2;
-                    if (allEdgePoints.contains(pixIdx2)) {
-                        addRmvd.add(pixIdx);
-                        break;
-                    }
+            //System.out.println(" imgB xy=" + x + ", " + y);
+
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                if (x2 < 0 || y2 < 0 || (x2 >= w) || (y2 >= w)) {
+                    continue;
+                }
+                int pixIdx2 = (y2 * w) + x2;
+                if (allEdgePoints.contains(pixIdx2)) {
+                    addRmvd.add(pixIdx);
+                    break;
                 }
             }
-            allEdgePoints.addAll(addRmvd);
         }
+        allEdgePoints.addAll(addRmvd);
 
         if (debug) {
             Image tmp = clrImg.copyToGreyscale2().copyToColorGreyscale();
