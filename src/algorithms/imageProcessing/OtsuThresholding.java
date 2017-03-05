@@ -560,7 +560,7 @@ public class OtsuThresholding {
         double thresh = (maxPair.getX() * binWidth) + min;
         thresh += (binWidth/2);
         
-        System.out.println("==> " + thresh);
+        //System.out.println("==> " + thresh);
         
         return thresh;
     }
