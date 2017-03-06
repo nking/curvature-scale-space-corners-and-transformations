@@ -1316,6 +1316,8 @@ public class MSEREdges {
         
         TIntSet rmvdImgBorders = new TIntHashSet();
         
+        long tt0 = System.currentTimeMillis();
+        
         for (int rListIdx = 0; rListIdx < regions.size(); ++rListIdx) {
             Region r = regions.get(rListIdx);
             TIntSet points = r.getAcc(clrImg.getWidth());
@@ -1388,6 +1390,8 @@ public class MSEREdges {
 //MiscDebug.writeImage(tmpImg, "_u_" + rListIdx);
 
         }
+        
+        long tt1 = System.currentTimeMillis();
 
         if (debug) {
             Image tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
@@ -1400,7 +1404,9 @@ public class MSEREdges {
             //ImageIOHelper.addCurveToImage(rmvdImgBorders, tmpImg, 0, 255, 0, 0);
             //MiscDebug.writeImage(tmpImg, "_" + ts + "_rmvdBounds_");
         }
-        
+        if (debug) {
+            System.out.println(((tt1 - tt0)/1000) + " sec for region filter");
+        }
         
         //make contiguous connected segments of matched set.
         ConnectedPointsFinder finder2 = new ConnectedPointsFinder(
@@ -1412,6 +1418,9 @@ public class MSEREdges {
         
         System.out.println("number of matched segments=" + n2);
 
+        // key = matched point, value = finder2 index of point
+        TIntIntMap mpIdxMap = finder2.createPointIndexMap();
+        
         // TODO: refactoring the addition or unmatched points:
         //   sections in unmatchedRMap are single width segments
         //   .  when a segment is adjacent to 2 matched segments (from finder2),
@@ -1430,261 +1439,69 @@ public class MSEREdges {
         //            portions which are not edges.
         //        this will replace the dihkstra search below.
         //        notes below have not been updated for these changes.
-        
-        // consider each unmatched endpoint a search along
-        // unmatched points to find paths to the other matched segments.
-        // with a maximum size to the path being the
-        // allowed gap size.
-        ConnectedPointsFinder finder3 = new ConnectedPointsFinder(
-            clrImg.getWidth());
-        finder3.setMinimumNumberInCluster(1);
-        finder3.setToUse8Neighbors();
-        finder3.findConnectedPointGroups(unmatchedPoints);
+       
+        TIntObjectMap<List<TIntSet>> unmatchedRSegments = 
+            extractontiguousSegments(unmatchedRMap);
 
-        final int n3 = finder3.getNumberOfGroups();
-        
-        System.out.println("number of unmatched segments=" + n3);
-
-        
-        // key = matched point, value = finder2 index of point
-        TIntIntMap mpIdxMap = finder2.createPointIndexMap();
-
-        //find the endpoints for the unmatched
-        //as any that are adjacent to matched points
-        //and note their contiguous segment.
-        // key=pixIdx of point in unmatched,
-        //   value = indexes of adjacent segments from mpIdxMap values
-        TIntObjectMap<VeryLongBitString> umEPIdxMap = findUnmatchedEndpoints(
-            n2 + n3, unmatchedPoints,
-            mpIdxMap, clrImg.getWidth(), clrImg.getHeight());
-        
-        int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;
-
-        //an extra step for the points in an unmatched contiguous segment
-        //when there is a point near the image boundary:
-        //   adds points to umEPIdxMapm though the values are fake values that
-        //   do not exist as group indexes in finder2.
-        int nEs = addImageBoundaryAdjacentPoints(n2 + n3, n2, umEPIdxMap, 
-            finder3);
-        
-        TIntSet umEPKeys = umEPIdxMap.keySet();
-
-        int w = clrImg.getWidth();
-        int h = clrImg.getHeight();
-        
-        for (int i = 0; i < n3; ++i) {
-
-            //contig segment of unmatched pixIdxs
-            TIntSet uSet = finder3.getXY(i);
-
-            // if any 2 points in umEPIdxMap keys are present in uSet,
-            // then that links 2 canny edge segments,
-            // but uSet must be smaller than maxGapSize.
-            // so here, need to perform a dijkstra search for each endpoint
-            //  to the other endpoints within uSet,
-            //  and if any of the paths is < maxGapSize, the points
-            //  get added to the final points list
-
-            TIntSet intersection = new TIntHashSet(uSet);
-            boolean a = intersection.retainAll(umEPKeys);
-
-            //System.out.println("segment " + i + " contains " + intersection.size()
-            //    + " endpoints.  n2=" + n2);
-
-            //TODO: looking at endpoints which have same bit sets
-            //   and which are adjacent to one another.
-            //   for those, removing all but the strongest gradient pixel
-            //   should reduce the number of searches here,
-            //   but the removed pixels cannot be bridges, that is, they 
-            //   cannot be points that are the only connectors between
-            //   points.  would be good to havw orig region idx here
-            {//DEBUG
-                TIntIterator iterA = intersection.iterator();
-                while (iterA.hasNext()) {
-                    int pIdx = iterA.next();
-                    int y = pIdx/w;
-                    int x = pIdx - (y * w);
-                    VeryLongBitString bs = umEPIdxMap.get(pIdx);
-                    System.out.println(i + ") x=" + x + " y=" + y + " pixIdx=" + pIdx
-                        + " setBits=" +
-                        Arrays.toString(bs.getSetBits()));
-                }
-            }
-            //TIntSet rm = filterEndPoints(intersection, uSet);
-            //uSet.removeAll(rm);
-            //intersection.removeAll(rm);
+        TIntObjectIterator<List<TIntSet>> iter10 = 
+            unmatchedRSegments.iterator();
+        for (int i = 0; i < unmatchedRSegments.size(); ++i) {
             
-            if (intersection.size() == 1) {
-                // if there is only one "endpoint", check to see if it is
-                //   adjacent to more than one matched segment, and if so,
-                //   add the pixel to all edges and skip a search
-                int pixIdx = intersection.iterator().next();
-                VeryLongBitString bs = umEPIdxMap.get(pixIdx);
-                if (bs.getNSetBits() > 1) {
-                    allEdgePoints.add(pixIdx);
+            iter10.advance();
+            
+            int rIdx = iter10.key();
+            List<TIntSet> segmentList = iter10.value();
+            for (TIntSet segment : segmentList) {
+        
+                if (segment.size() > maxGapSize) {
                     continue;
                 }
-            }
-                        
-            //assign indexes to uSet for search arrays
-            TIntIntMap uMap = new TIntIntHashMap();
-            TIntIterator iter4 = uSet.iterator();
-            while (iter4.hasNext()) {
-                int pixIdx = iter4.next();
-                uMap.put(pixIdx, uMap.size());
-            }
-
-            // searches from each intersection point to each other intersection
-            //    point thrugh points in uSet
-            TIntList localEPs = new TIntArrayList(intersection);
-
-            for (int i0 = 0; i0 < localEPs.size(); ++i0) {
-                int pixIdx0 = localEPs.get(i0);
-                int srcIdx = uMap.get(pixIdx0);
-
-                VeryLongBitString mappedEdgeIdx0s = umEPIdxMap.get(pixIdx0);
-
-                for (int i1 = (i0 + 1); i1 < localEPs.size(); ++i1) {
-                    int pixIdx1 = localEPs.get(i1);
-
-                    VeryLongBitString mappedEdgeIdx1s = umEPIdxMap.get(pixIdx1);
-
-                    if (mappedEdgeIdx0s.getNSetBits() == 1 &&
-                        mappedEdgeIdx1s.getNSetBits() == 1 &&
-                        mappedEdgeIdx0s.equals(mappedEdgeIdx1s)) {
-                        continue;
-                    }
-
-                    double dist = distance(pixIdx0, pixIdx1, w);
-
-                       
-                    System.out.println("unmapped endpoints adjacent to mapped"
-                        + " segments " +
-                        Arrays.toString(mappedEdgeIdx0s.getSetBits()) + ", " +
-                        Arrays.toString(mappedEdgeIdx1s.getSetBits())
-                        + " sep=" +  dist + " maxGapSz=" +
-                        maxGapSize + " unmatched segment size=" + uSet.size());
-                    
-                 
-                    if (dist > maxGapSize) {
-                        continue;
-                    }
-                    
-                    int destIdx = uMap.get(pixIdx1);
-
-                    // instead of Long.MAX_VALUE, will use maxGapSize+1
-                    final long long_max_value = maxGapSize + 1;
-                    
-                    //TODO: need to add a clear() to this, and
-                    //  create it only once outside this loop
-                    MinHeapForRT2012 heap = new MinHeapForRT2012(
-                        (int)long_max_value + 1, uSet.size());
-
-                    // -- init dijkstra variables ---
-                    HeapNode[] nodes = new HeapNode[uSet.size()];
-                    long[] distFromS = new long[nodes.length];
-                    HeapNode[] prevNode = new HeapNode[nodes.length];
-                    
-                    Arrays.fill(distFromS, long_max_value);
-                    distFromS[srcIdx] = 0;
-
-                    iter4 = uSet.iterator();
-                    while (iter4.hasNext()) {
-                        int pixIdx = iter4.next();
-                        int idx = uMap.get(pixIdx);
-
-                        nodes[idx] = new HeapNode(distFromS[idx]);
-                        nodes[idx].setData(Integer.valueOf(pixIdx));
-                        heap.insert(nodes[idx]);
-                    }
-
-                    // --- traverse the nodes ---
-
-                    HeapNode u = heap.extractMin();
-                    while (u != null) {
-                        int uPixIdx = ((Integer)u.getData()).intValue();
-                        int uY = uPixIdx/w;
-                        int uX = uPixIdx - (uY * w);
-
-                        int uIdx = uMap.get(uPixIdx);
-
-                        // could create an adj map above
-                        for (int k = 0; k < dxs.length; ++k) {
-                            int vX = uX + dxs[k];
-                            int vY = uY + dys[k];
-                            if (vX < 0 || vY < 0 || (vX >= w) || (vY >= h)) {
-                                continue;
-                            }
-                            int vPixIdx = (vY * w) + vX;
-                            if (!uSet.contains(vPixIdx)) {
-                                continue;
-                            }
-
-                            int vIdx = uMap.get(vPixIdx);
-
-                            long alt;
-                            if (distFromS[uIdx] == long_max_value) {
-                                alt = long_max_value;
-                            } else {
-                                alt = distFromS[uIdx] +
-                                    (long)Math.round(distance(uPixIdx, vPixIdx, w));
-                            }
-
-                            if ((alt >= 0) && (alt < distFromS[vIdx])) {
-                                distFromS[vIdx] = alt;
-                                prevNode[vIdx] = u;
-                                heap.decreaseKey(nodes[vIdx], alt); // O(1)
-                            }
+                
+                // key = pixIdx, value=edge segment indexes that key
+                //       pixel is adjacent to
+                // NOTE, that for pixels adjacent to an image border pixel,
+                //       that is one off from image border, a fake edge
+                //       is added to the values and those fake edges are
+                //       negative numbers starting at -1
+                TIntObjectMap<TIntList> umEPIdxMap
+                    = findEndpoints(segment, mpIdxMap, 
+                    clrImg.getWidth(), clrImg.getHeight());
+                
+                assert(!umEPIdxMap.isEmpty());
+        
+                // for any 2 entries in umEPIdxMap
+                //   if the set difference operation results in 2 edge
+                //      indexes, can add this segment to allEdgePoints.
+                
+                TIntSet posEdgeIdxs = new TIntHashSet(3);
+                boolean connectsToBorder = false;
+               
+                TIntObjectIterator<TIntList> iter11 = umEPIdxMap.iterator();
+                for (int ii = 0; ii < umEPIdxMap.size(); ++ii) {
+                    iter11.advance();
+                    TIntList eIdxs = iter11.value();
+                    for (int jj = 0; jj < eIdxs.size(); ++jj) {
+                        int eIdx = eIdxs.get(jj);
+                        if (eIdx < 0) {
+                            connectsToBorder = true;
+                        } else {
+                            posEdgeIdxs.add(eIdx);
                         }
-
-                        u = heap.extractMin();
                     }
-                    
-                    // --- read dijkstra soln if any ---
-                    int[] pathNodes = new int[prevNode.length];
-                    
-                    int lastInd = destIdx;
-                    
-                    pathNodes[0] = pixIdx1;
-                    
-                    int count = 1;
-                    
-                    boolean noSoln = false;
-                    
-                    while (lastInd != srcIdx) {
-                        
-                        HeapNode node = prevNode[lastInd];
-                        
-                        if (node == null) {
-                            noSoln = true;
-                            break;
-                        }
-                        
-                        int pixIdx = ((Integer)node.getData()).intValue();
-                        
-                        pathNodes[count] = pixIdx;
-                        
-                        lastInd = uMap.get(pixIdx);
-
-                        count++;
-                    }
-                    
-                    if (noSoln) {
-                        continue;
-                    }
-                    
-                    //System.out.println("src pixIdx0=" + pixIdx0 +
-                    //    " dest pixIdx1=" + pixIdx1);
-                        
-                    for (int ii = 0; ii < count; ++ii) {
-                        allEdgePoints.add(pathNodes[ii]);
-                    }
-                    assert(pathNodes[count - 1] == pixIdx0);
-
+                }
+                
+                if (posEdgeIdxs.size() >= 2 ||
+                    (posEdgeIdxs.size() == 1 && connectsToBorder)) {
+                    allEdgePoints.addAll(segment);
                 }
             }
         }
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        int w = clrImg.getWidth();
+        int h = clrImg.getHeight();
                 
         //add back any points in rmvdImgBorders adjacent to allEdgePoints
         TIntSet addRmvd = new TIntHashSet();
@@ -2313,12 +2130,15 @@ public class MSEREdges {
         return hsv.isGrey(12);
     }
 
-    private TIntObjectMap<VeryLongBitString> findUnmatchedEndpoints(
-        int nEdgeSegments, TIntSet unmatchedPoints,
+    // the values are sorted
+    private TIntObjectMap<TIntList> findEndpoints(
+        TIntSet unmatchedPoints,
         TIntIntMap matchedPointsIdxMap, int width, int height) {
 
-        TIntObjectMap<VeryLongBitString> umEPIdxMap =
-            new TIntObjectHashMap<VeryLongBitString>();
+        int bIdx = -1;
+        
+        TIntObjectMap<TIntList> umEPIdxMap =
+            new TIntObjectHashMap<TIntList>();
 
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
@@ -2329,6 +2149,17 @@ public class MSEREdges {
             int y = pixIdx/width;
             int x = pixIdx - (y * width);
 
+            // add fake point if this is adjacent to an image border pixel
+            if ((x == 1) || (y == 1) || (x == (width - 2)) || (y == (height - 2))) {
+                TIntList idxs = umEPIdxMap.get(pixIdx);
+                if (idxs == null) {
+                    idxs = new TIntArrayList(3);
+                    umEPIdxMap.put(pixIdx, idxs);
+                }
+                idxs.add(bIdx);
+                --bIdx;
+            }
+            
             for (int k = 0; k < dxs.length; ++k) {
                 int x2 = x + dxs[k];
                 int y2 = y + dys[k];
@@ -2337,16 +2168,16 @@ public class MSEREdges {
                 }
                 int pixIdx2 = (y2 * width) + x2;
                 if (matchedPointsIdxMap.containsKey(pixIdx2)) {
-                    VeryLongBitString values = umEPIdxMap.get(pixIdx);
+                    TIntList values = umEPIdxMap.get(pixIdx);
                     if (values == null) {
-                        values = new VeryLongBitString(nEdgeSegments);
+                        values = new TIntArrayList(3);
                         umEPIdxMap.put(pixIdx, values);
                     }
-                    values.setBit(matchedPointsIdxMap.get(pixIdx2));
+                    values.add(matchedPointsIdxMap.get(pixIdx2));
                 }
             }
         }
-
+        
         return umEPIdxMap;
     }
 
@@ -2366,46 +2197,42 @@ public class MSEREdges {
         return dist;
     }
     
-    private int addImageBoundaryAdjacentPoints(
-        int bsSize, int nEs,
-        TIntObjectMap<VeryLongBitString> umEPIdxMap, 
-        ConnectedPointsFinder finder3) {
-
-        int w = clrImg.getWidth();
-        int h = clrImg.getHeight();
+    private TIntObjectMap<List<TIntSet>> extractontiguousSegments(
+        TIntObjectMap<TIntSet> unmatchedRMap) {
+       
+        int n = unmatchedRMap.size();
         
-        int n3 = finder3.getNumberOfGroups();
+        System.out.println("number of unmatched regions=" + n);
         
-        for (int i = 0; i < n3; ++i) {
-
-            //contiguous segment of unmatched pixIdxs
-            TIntSet uSet = finder3.getXY(i);
-
-            boolean added = false;
+        TIntObjectMap<List<TIntSet>> output = new 
+            TIntObjectHashMap<List<TIntSet>>();
+        
+        TIntObjectIterator<TIntSet> iter = unmatchedRMap.iterator();
+        for (int i = 0; i < unmatchedRMap.size(); ++i) {
+            iter.advance();
             
-            // if any are adjacent to image border, will add a point
-            TIntIterator iter = uSet.iterator();
-            while (iter.hasNext()) {
-                int pixIdx = iter.next();
-                int y = pixIdx/w;
-                int x = pixIdx - (y * w);
-                if ((x == 1) || (y == 1) || (x == (w - 2)) || (y == (h - 2))) {
-                    
-                    VeryLongBitString idxs = umEPIdxMap.get(pixIdx);
-                    if (idxs == null) {
-                        idxs = new VeryLongBitString(bsSize);
-                        umEPIdxMap.put(pixIdx, idxs);
-                    }
-                    idxs.setBit(nEs);
-                }
-            }
+            int rIdx = iter.key();
             
-            if (added) {
-                ++nEs;
+            TIntSet idxs = iter.value();
+            
+            ConnectedPointsFinder finder3 = new ConnectedPointsFinder(
+                clrImg.getWidth());
+            finder3.setMinimumNumberInCluster(1);
+            finder3.setToUse8Neighbors();
+            finder3.findConnectedPointGroups(idxs);
+            
+            List<TIntSet> list = new ArrayList<TIntSet>();
+            output.put(rIdx, list);
+            
+            int n3 = finder3.getNumberOfGroups();
+            for (int ii = 0; ii < n3; ++ii) {
+                
+                TIntSet segment = finder3.getXY(ii);
+                
+                list.add(segment);
             }
         }
-
-        return nEs;
+       
+        return output;
     }
-
 }
