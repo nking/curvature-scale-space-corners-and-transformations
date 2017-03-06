@@ -1385,13 +1385,13 @@ public class MSEREdges {
         if (debug) {
             Image tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
             ImageIOHelper.addCurveToImage(allEdgePoints, tmpImg, 0, 255, 0, 0);
-            MiscDebug.writeImage(tmpImg, "_matched_");
+            MiscDebug.writeImage(tmpImg, "_" + ts + "_matched_");
             tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
             ImageIOHelper.addCurveToImage(unmatchedPoints, tmpImg, 0, 255, 0, 0);
-            MiscDebug.writeImage(tmpImg, "_unmatched_");
-            tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
-            ImageIOHelper.addCurveToImage(rmvdImgBorders, tmpImg, 0, 255, 0, 0);
-            MiscDebug.writeImage(tmpImg, "_rmvdBounds_");
+            MiscDebug.writeImage(tmpImg, "_" + ts + "_unmatched_");
+            //tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
+            //ImageIOHelper.addCurveToImage(rmvdImgBorders, tmpImg, 0, 255, 0, 0);
+            //MiscDebug.writeImage(tmpImg, "_" + ts + "_rmvdBounds_");
         }
         */
         
@@ -1460,7 +1460,6 @@ public class MSEREdges {
             //  and if any of the paths is < maxGapSize, the points
             //  get added to the final points list
 
-            //NOTE: could improve this intersection by using bit vectors
             TIntSet intersection = new TIntHashSet(uSet);
             boolean a = intersection.retainAll(umEPKeys);
 
@@ -1541,6 +1540,8 @@ public class MSEREdges {
                     // instead of Long.MAX_VALUE, will use maxGapSize+1
                     final long long_max_value = maxGapSize + 1;
                     
+                    //TODO: need to add a clear() to this, and
+                    //  create it only once outside this loop
                     MinHeapForRT2012 heap = new MinHeapForRT2012(
                         (int)long_max_value + 1, uSet.size());
 
