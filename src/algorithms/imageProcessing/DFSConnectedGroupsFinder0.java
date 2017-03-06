@@ -96,26 +96,15 @@ public class DFSConnectedGroupsFinder0 {
         
         TIntSet visited = new TIntHashSet();
         
-        java.util.Stack<Integer> stack = new java.util.Stack<Integer>();
-        
-        //O(N)
-        if (use4Neighbors) {
-            TIntIterator iter = pixIdxs.iterator();
-            while (iter.hasNext()) {
-                stack.add(Integer.valueOf(iter.next()));
-            }
-        } else {
-            stack.add(Integer.valueOf(pixIdxs.iterator().next()));
-        }
-        
-        while (!stack.isEmpty()) {
+        TIntIterator iter = pixIdxs.iterator();
+        while (iter.hasNext()) {
 
-            int uPoint = stack.pop().intValue();
+            int uPoint = iter.next();
             
             if (visited.contains(uPoint)) {
                 continue;
             }
-
+            
             int uY = uPoint/imgWidth;
             int uX = uPoint - (uY * imgWidth);
             
@@ -140,9 +129,9 @@ public class DFSConnectedGroupsFinder0 {
 
                 processPair(uPoint, vPoint);
 
-                if (!use4Neighbors) {
-                    stack.add(vPoint);
-                }
+                //if (!use4Neighbors) {
+                //    stack.add(vPoint);
+                //}
 
                 foundANeighbor = true;
             }
