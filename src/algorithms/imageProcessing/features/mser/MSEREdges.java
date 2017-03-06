@@ -1393,6 +1393,7 @@ public class MSEREdges {
         
         long tt1 = System.currentTimeMillis();
 
+        /*
         if (debug) {
             Image tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
             ImageIOHelper.addCurveToImage(allEdgePoints, tmpImg, 0, 255, 0, 0);
@@ -1404,6 +1405,7 @@ public class MSEREdges {
             //ImageIOHelper.addCurveToImage(rmvdImgBorders, tmpImg, 0, 255, 0, 0);
             //MiscDebug.writeImage(tmpImg, "_" + ts + "_rmvdBounds_");
         }
+        */
         if (debug) {
             System.out.println(((tt1 - tt0)/1000) + " sec for region filter");
         }
@@ -1437,8 +1439,6 @@ public class MSEREdges {
         //            of pixels in the unmatched segment still need to remain under
         //            the maxGapSize, helping to avoid adding the region
         //            portions which are not edges.
-        //        this will replace the dihkstra search below.
-        //        notes below have not been updated for these changes.
        
         TIntObjectMap<List<TIntSet>> unmatchedRSegments = 
             extractontiguousSegments(unmatchedRMap);
@@ -1490,8 +1490,7 @@ public class MSEREdges {
                     }
                 }
                 
-                if (posEdgeIdxs.size() >= 2 ||
-                    (posEdgeIdxs.size() == 1 && connectsToBorder)) {
+                if (posEdgeIdxs.size() >= 1) {
                     allEdgePoints.addAll(segment);
                 }
             }
