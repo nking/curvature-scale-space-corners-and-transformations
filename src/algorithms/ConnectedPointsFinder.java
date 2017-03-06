@@ -23,6 +23,8 @@ import java.util.logging.Logger;
  * adjacent is defined by the default "4 neighbor" offsets,
  * but can be overridden to use all 8 neighbors.
  * 
+ * The runtime complexity is essentially O(N_points).
+ * 
  * @author nichole
  */
 public class ConnectedPointsFinder {
@@ -73,6 +75,15 @@ public class ConnectedPointsFinder {
         use4Neighbors = false;
     }
     
+    /**
+     * find the groups of connected points in pixIdxs where connected
+     * means is adjacent to another point in the group, making the group
+     * contiguous.  The adjacency by default is using the 4 neighbor
+     * pattern search unless the user has set that to 8 neighbors.
+     * The runtime complexity is essentially O(pixIdxs.size()).
+     * 
+     * @param pixIdxs 
+     */
     public void findConnectedPointGroups(TIntSet pixIdxs) {
     
         initMap(pixIdxs);
@@ -212,9 +223,7 @@ public class ConnectedPointsFinder {
         TIntObjectIterator<TIntSet> iter2 = map.iterator();
         for (int i = 0; i < map.size(); ++i) {
             iter2.advance();
-            
-            int reprIdx = iter.key();
-            
+                        
             TIntSet idxs = iter2.value();
             
             if (idxs.size() >= minimumNumberInCluster) {

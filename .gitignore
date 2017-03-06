@@ -3,6 +3,7 @@
 *.swp
 *.class
 build.log
+miscPDFs
 log
 data
 build
@@ -16,3 +17,5 @@ algorithms_in_java/tmpdata
 junit*properties
 TEST-*txt
 tt
+tmp_tmp*
+tmp_tmp*/*

@@ -55,9 +55,9 @@ public class MinHeapForRT2012 {
      * 
      * If capacity is less than 46300 (might lower this as memory will begin
      * to affect performance at high capacity),
-     * then a minimum priority monotonic bucket queue which uses the node keys as priorities
-     * is used.  creation of the structure has runtime complexity O(capacity), 
-     * but thereafter, all operations are O(1).
+     * then a minimum priority monotonic bucket queue which uses the node keys 
+     * as priorities is used.  creation of the structure has runtime complexity 
+     * O(capacity), but thereafter, all operations are O(1).
      * If capacity is higher than 46300, then the approxN is used to 
      * decide between an XFastTrie and a FibonacciHeap.
      * 
@@ -68,7 +68,6 @@ public class MinHeapForRT2012 {
     public MinHeapForRT2012(int capacity, int approxN) {
                 
         if (capacity < 46300) {
-            //TODO:  need MLB for this...
         
             // the 1 level Dial algorithm has O(1) inserts and
             //    constant time extractMin.

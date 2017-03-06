@@ -1312,9 +1312,10 @@ public class MSEREdges {
 
         TIntSet allEdgePoints = new TIntHashSet();
         TIntSet unmatchedPoints = new TIntHashSet();
-
+        TIntObjectMap<TIntSet> unmatchedRMap = new TIntObjectHashMap<TIntSet>();
+        
         TIntSet rmvdImgBorders = new TIntHashSet();
-
+        
         for (int rListIdx = 0; rListIdx < regions.size(); ++rListIdx) {
             Region r = regions.get(rListIdx);
             TIntSet points = r.getAcc(clrImg.getWidth());
@@ -1379,9 +1380,15 @@ public class MSEREdges {
 
             allEdgePoints.addAll(matched);
             unmatchedPoints.addAll(unmatched);
+            
+            unmatchedRMap.put(rListIdx, unmatched);
+            
+//Image tmpImg = sobelScores.copyToColorGreyscale();
+//ImageIOHelper.addCurveToImage(unmatched, tmpImg, 0, 255, 0, 0);
+//MiscDebug.writeImage(tmpImg, "_u_" + rListIdx);
+
         }
 
-        /*
         if (debug) {
             Image tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
             ImageIOHelper.addCurveToImage(allEdgePoints, tmpImg, 0, 255, 0, 0);
@@ -1393,7 +1400,7 @@ public class MSEREdges {
             //ImageIOHelper.addCurveToImage(rmvdImgBorders, tmpImg, 0, 255, 0, 0);
             //MiscDebug.writeImage(tmpImg, "_" + ts + "_rmvdBounds_");
         }
-        */
+        
         
         //make contiguous connected segments of matched set.
         ConnectedPointsFinder finder2 = new ConnectedPointsFinder(
@@ -1405,6 +1412,25 @@ public class MSEREdges {
         
         System.out.println("number of matched segments=" + n2);
 
+        // TODO: refactoring the addition or unmatched points:
+        //   sections in unmatchedRMap are single width segments
+        //   .  when a segment is adjacent to 2 matched segments (from finder2),
+        //      that unmatched segment can be added.
+        //      note that multiple regions may have adjacent arcs in
+        //      an unmatched area, so to thin to the best path,
+        //      could either take the best
+        //      unmatched segment that connects those 2 matched segments
+        //      for that area, or could let the "assignTheUnassigned"
+        //      kmeans-style method handle this thinning.
+        //      choosing the later since it is needed for the matched
+        //      points already.
+        //      NOTE: the unmatched dist between endpoints AND the number
+        //            of pixels in the unmatched segment still need to remain under
+        //            the maxGapSize, helping to avoid adding the region
+        //            portions which are not edges.
+        //        this will replace the dihkstra search below.
+        //        notes below have not been updated for these changes.
+        
         // consider each unmatched endpoint a search along
         // unmatched points to find paths to the other matched segments.
         // with a maximum size to the path being the
@@ -1466,7 +1492,14 @@ public class MSEREdges {
             //System.out.println("segment " + i + " contains " + intersection.size()
             //    + " endpoints.  n2=" + n2);
 
-            /*{//DEBUG
+            //TODO: looking at endpoints which have same bit sets
+            //   and which are adjacent to one another.
+            //   for those, removing all but the strongest gradient pixel
+            //   should reduce the number of searches here,
+            //   but the removed pixels cannot be bridges, that is, they 
+            //   cannot be points that are the only connectors between
+            //   points.  would be good to havw orig region idx here
+            {//DEBUG
                 TIntIterator iterA = intersection.iterator();
                 while (iterA.hasNext()) {
                     int pIdx = iterA.next();
@@ -1477,7 +1510,10 @@ public class MSEREdges {
                         + " setBits=" +
                         Arrays.toString(bs.getSetBits()));
                 }
-            }*/
+            }
+            //TIntSet rm = filterEndPoints(intersection, uSet);
+            //uSet.removeAll(rm);
+            //intersection.removeAll(rm);
             
             if (intersection.size() == 1) {
                 // if there is only one "endpoint", check to see if it is
@@ -1522,15 +1558,15 @@ public class MSEREdges {
 
                     double dist = distance(pixIdx0, pixIdx1, w);
 
-                    /*     
+                       
                     System.out.println("unmapped endpoints adjacent to mapped"
                         + " segments " +
                         Arrays.toString(mappedEdgeIdx0s.getSetBits()) + ", " +
                         Arrays.toString(mappedEdgeIdx1s.getSetBits())
                         + " sep=" +  dist + " maxGapSz=" +
                         maxGapSize + " unmatched segment size=" + uSet.size());
-                    */
                     
+                 
                     if (dist > maxGapSize) {
                         continue;
                     }
