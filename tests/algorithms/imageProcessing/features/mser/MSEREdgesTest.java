@@ -1,11 +1,8 @@
 package algorithms.imageProcessing.features.mser;
 
-import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
-import algorithms.misc.MiscDebug;
-import algorithms.misc.MiscMath;
 import algorithms.util.ResourceFinder;
 import junit.framework.TestCase;
 
@@ -24,10 +21,10 @@ public class MSEREdgesTest extends TestCase {
 
         String fileName1 = "";
 
-        //for (int i = 36; i < 37; ++i) {
-        //for (int i = 10; i < 11; ++i) {
-        //for (int i = 0; i < 10; ++i) {
-        for (int i = 0; i < 37; ++i) {
+        //for (int i = 24; i < 25; ++i) {
+        //for (int i = 18; i < 19; ++i) {
+        for (int i = 1; i < 2; ++i) {
+        //for (int i = 0; i < 37; ++i) {
 
             switch(i) {
                 case 0: {
@@ -200,10 +197,10 @@ public class MSEREdgesTest extends TestCase {
                 
             MSEREdges mserE = new MSEREdges(img);
             mserE.setToDebug();
-            //mserE.setToLowerContrast();
-            //mserE.extractEdges();
             mserE.setToLowerContrast();
-            mserE.mergeAndExtractEdges();
+            mserE.extractEdges();
+            //mserE.setToLowerContrast();
+            //mserE.mergeAndExtractEdges();
             
             /*GreyscaleImage[] lma = imageProcessor.createLCHForLUV(img);
             for (int k = 0; k < lma.length; ++k) {

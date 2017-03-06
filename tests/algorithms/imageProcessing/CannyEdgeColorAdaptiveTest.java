@@ -198,12 +198,11 @@ public class CannyEdgeColorAdaptiveTest extends TestCase {
             
             CannyEdgeColorAdaptive canny2 = new CannyEdgeColorAdaptive();
             canny2.overrideToNotUseLineThinner();
-            canny2.overrideToScaleGradients();
             canny2.applyFilter(img);
             GreyscaleImage gs3 = canny2.getFilterProducts().getGradientXY();
             gs3.multiply(255/gs3.max());
-            //MiscDebug.writeImage(gs3, fileName1Root
-            //    + "_default_LC_2_");
+            MiscDebug.writeImage(gs3, fileName1Root
+                + "_default_LC_2_");
             
             /*
             GreyscaleImage sobelLCH = 
