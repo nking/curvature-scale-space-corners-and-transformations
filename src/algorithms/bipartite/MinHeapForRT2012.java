@@ -52,10 +52,21 @@ public class MinHeapForRT2012 {
      * to be in the heap as a rough maximum at a given time.
      * (it's used to help determine which algorithm to use
      * internally).
+     * 
+     * If capacity is less than 46300 (might lower this as memory will begin
+     * to affect performance at high capacity),
+     * then a minimum priority monotonic bucket queue which uses the node keys as priorities
+     * is used.  creation of the structure has runtime complexity O(capacity), 
+     * but thereafter, all operations are O(1).
+     * If capacity is higher than 46300, then the approxN is used to 
+     * decide between an XFastTrie and a FibonacciHeap.
+     * 
+     * TODO: implement a multi-level bucket such as Cherkassky, Goldberg,
+     * and Silverstein 1999 or Raman 1996 which has a faster extractMin
+     * than a Fibonacci Heap.
      */
     public MinHeapForRT2012(int capacity, int approxN) {
                 
-        //if (capacity < 10) {
         if (capacity < 46300) {
             //TODO:  need MLB for this...
         
