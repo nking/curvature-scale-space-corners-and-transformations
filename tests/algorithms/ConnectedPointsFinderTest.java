@@ -8,9 +8,9 @@ import junit.framework.TestCase;
  *
  * @author nichole
  */
-public class DFSConnectedGroupsFinder0Test extends TestCase {
+public class ConnectedPointsFinderTest extends TestCase {
     
-    public DFSConnectedGroupsFinder0Test() {
+    public ConnectedPointsFinderTest() {
     }
     
     public void test0() {
@@ -34,8 +34,8 @@ public class DFSConnectedGroupsFinder0Test extends TestCase {
         pixIdxs.add((2 * w) + 3);
         pixIdxs.add((3 * w) + 3);
         
-        DFSConnectedGroupsFinder0 finder 
-            = new DFSConnectedGroupsFinder0(w);
+        ConnectedPointsFinder finder 
+            = new ConnectedPointsFinder(w);
         finder.setMinimumNumberInCluster(1);
         finder.findConnectedPointGroups(pixIdxs);
         
@@ -43,7 +43,7 @@ public class DFSConnectedGroupsFinder0Test extends TestCase {
         assertEquals(4, finder.getNumberofGroupMembers(0));
         assertEquals(4, finder.getNumberofGroupMembers(1));
         
-        finder = new DFSConnectedGroupsFinder0(w);
+        finder = new ConnectedPointsFinder(w);
         finder.setMinimumNumberInCluster(1);
         finder.setToUse8Neighbors();
         finder.findConnectedPointGroups(pixIdxs);

@@ -4,7 +4,7 @@ import algorithms.QuickSort;
 import algorithms.bipartite.MinHeapForRT2012;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.CannyEdgeColorAdaptive;
-import algorithms.imageProcessing.DFSConnectedGroupsFinder0;
+import algorithms.imageProcessing.ConnectedPointsFinder;
 import algorithms.imageProcessing.DFSContiguousValueFinder;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.GroupPixelHSV;
@@ -1396,7 +1396,7 @@ public class MSEREdges {
         */
         
         //make contiguous connected segments of matched set.
-        DFSConnectedGroupsFinder0 finder2 = new DFSConnectedGroupsFinder0(
+        ConnectedPointsFinder finder2 = new ConnectedPointsFinder(
             clrImg.getWidth());
         finder2.setMinimumNumberInCluster(1);
         finder2.findConnectedPointGroups(allEdgePoints);
@@ -1409,7 +1409,7 @@ public class MSEREdges {
         // unmatched points to find paths to the other matched segments.
         // with a maximum size to the path being the
         // allowed gap size.
-        DFSConnectedGroupsFinder0 finder3 = new DFSConnectedGroupsFinder0(
+        ConnectedPointsFinder finder3 = new ConnectedPointsFinder(
             clrImg.getWidth());
         finder3.setMinimumNumberInCluster(1);
         finder3.setToUse8Neighbors();
@@ -2333,7 +2333,7 @@ public class MSEREdges {
     private int addImageBoundaryAdjacentPoints(
         int bsSize, int nEs,
         TIntObjectMap<VeryLongBitString> umEPIdxMap, 
-        DFSConnectedGroupsFinder0 finder3) {
+        ConnectedPointsFinder finder3) {
 
         int w = clrImg.getWidth();
         int h = clrImg.getHeight();
