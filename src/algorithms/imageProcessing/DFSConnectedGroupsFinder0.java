@@ -99,9 +99,13 @@ public class DFSConnectedGroupsFinder0 {
         java.util.Stack<Integer> stack = new java.util.Stack<Integer>();
         
         //O(N)
-        TIntIterator iter = pixIdxs.iterator();
-        while (iter.hasNext()) {
-            stack.add(Integer.valueOf(iter.next()));
+        if (use4Neighbors) {
+            TIntIterator iter = pixIdxs.iterator();
+            while (iter.hasNext()) {
+                stack.add(Integer.valueOf(iter.next()));
+            }
+        } else {
+            stack.add(Integer.valueOf(pixIdxs.iterator().next()));
         }
         
         while (!stack.isEmpty()) {
@@ -136,7 +140,9 @@ public class DFSConnectedGroupsFinder0 {
 
                 processPair(uPoint, vPoint);
 
-                stack.add(vPoint);
+                if (!use4Neighbors) {
+                    stack.add(vPoint);
+                }
 
                 foundANeighbor = true;
             }
@@ -175,6 +181,7 @@ public class DFSConnectedGroupsFinder0 {
                 // else both are not null
                 if (vGroupId != uGroupId) {
                     // merge groups
+                    //TODO: this is where use of disjoint forest could help
                     TIntSet uGroup = groupMembership.get(uGroupId);
                     TIntSet vGroup = groupMembership.get(vGroupId);
                     int nU = uGroup.size();
@@ -231,9 +238,7 @@ public class DFSConnectedGroupsFinder0 {
      */
     protected void prune() {
         log.finest("number of groups before prune=" + groupMembership.size());
-        //TODO: the data structures used could be written at the expense
-        // of space complexity to reduce changes needed when group number
-        // changes
+        //TODO: this is where use of a disjoint forest could help
         /*
          * [------] 0
          * [------] 1 <---- too few
