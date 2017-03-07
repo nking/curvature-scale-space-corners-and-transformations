@@ -116,6 +116,7 @@ public class MinHeapForRT2012 {
         switch(algorithm) {
             case 0:
                 insert0(node);
+                ++n0;
                 break;
             case 1:
                 insert1(node);
@@ -148,7 +149,7 @@ public class MinHeapForRT2012 {
                 bucket.remove(node);
                 lastKnownMinKey0 = i;
                 n0--;
-                return (HeapNode)node;
+                return node;
             }
         }
         
@@ -159,7 +160,7 @@ public class MinHeapForRT2012 {
         
         HeapNode node = heap1.extractMin();
         if (node != null) {
-            return (HeapNode)node;
+            return node;
         } else {
             return null;
         }
@@ -182,7 +183,6 @@ public class MinHeapForRT2012 {
         log.fine("insert into minHeap at key =" + node.toString());
        
         bucket.insert(node);
-        n0++;
         
         if (key < lastKnownMinKey0) {
             lastKnownMinKey0 = key;
@@ -235,7 +235,7 @@ public class MinHeapForRT2012 {
         
         node.setKey(key2);
         
-        insert0(node);
+        insert0(node);        
     }
     
     private void decreaseKey1(HeapNode node, long key2) {

@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.features.mser;
 
 import algorithms.QuickSort;
+import algorithms.bipartite.MinHeapForRT2012;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.CannyEdgeColorAdaptive;
 import algorithms.imageProcessing.ConnectedPointsFinder;
@@ -470,15 +471,22 @@ public class MSEREdges {
         finder.setMinimumNumberInCluster(1);
         if (debug) {
             finder.setDebug(debug);
+            
+            //System.out.println(nonEdgePixels.size() + " non-edge pixels");
         }
+        
         finder.findConnectedPointGroups(nonEdgePixels);
         
         List<TIntSet> output = new ArrayList<TIntSet>();
         
+        int ns = 0;
         for (int i = 0; i < finder.getNumberOfGroups(); ++i) {
             TIntSet group = finder.getXY(i);
             output.add(group);
+            ns += group.size();
         }
+        
+        assert(ns == nonEdgePixels.size());
         
         return output;
     }
@@ -491,31 +499,13 @@ public class MSEREdges {
                 + "edges once");
         }
         
-        /*
-        TODO: consider a version of this which:
-           -- uses the non blurred canny edges and same mLimit
-              to find a small but precise subset of regions.
-              -- might be able to add it's unmatched in without
-                 checking gap size.
-           -- then, because there are some edges missing like the
-              legs of the gingerbread man in android_statues_01,
-              could make one more pass through the remaining
-              regions list and instead of matching to the canny edges,
-              add regions which match the current set of
-              allEdgePixels for a high intersection limit.
-              -- will need a fraction matching score for this filter.
-         Goal is to make the results of this method return a thinner
-             set of edges that are still completely connected around
-             objects and to do so in a faster runtime than the
-             current method.
-        */
-
         long ts0 = System.currentTimeMillis();
 
         TIntSet boundaries = combineBoundaries();
 
         long ts1 = System.currentTimeMillis();
 
+        // populate this.edgeList and this.labeledSets
         populateEdgeLists(boundaries);
         
         if (debug) {
@@ -527,7 +517,6 @@ public class MSEREdges {
         
         long ts1_2 = System.currentTimeMillis();
         
-        // populate this.edgeList and this.labeledSets
         thinTheBoundaries(2);
 
         long ts2 = System.currentTimeMillis();
@@ -1371,11 +1360,13 @@ public class MSEREdges {
 
         TIntSet allEdgePoints = new TIntHashSet();
         TIntSet unmatchedPoints = new TIntHashSet();
-        TIntObjectMap<TIntSet> unmatchedRMap = new TIntObjectHashMap<TIntSet>();
+        List<TIntSet> unmatchedRMap = new ArrayList<TIntSet>();
         
         TIntSet rmvdImgBorders = new TIntHashSet();
         
         double tt0 = System.currentTimeMillis();
+        
+        List<TIntSet> unusedRegionBounds = new ArrayList<TIntSet>();
         
         for (int rListIdx = 0; rListIdx < regions.size(); ++rListIdx) {
             Region r = regions.get(rListIdx);
@@ -1411,6 +1402,7 @@ public class MSEREdges {
 //MiscDebug.writeImage(tmpImg, "_r_" + rListIdx);
 
             if (doNotAdd) {
+                unusedRegionBounds.add(border2);
                 continue;
             }
 
@@ -1442,20 +1434,12 @@ public class MSEREdges {
             allEdgePoints.addAll(matched);
             unmatchedPoints.addAll(unmatched);
             
-            unmatchedRMap.put(rListIdx, unmatched);
+            unmatchedRMap.add(unmatched);
             
 //Image tmpImg = sobelScores.copyToColorGreyscale();
 //ImageIOHelper.addCurveToImage(unmatched, tmpImg, 0, 255, 0, 0);
 //MiscDebug.writeImage(tmpImg, "_u_" + rListIdx);
 
-        }
-        
-        double tt1 = System.currentTimeMillis();
-
-        if (debug) {
-            System.out.println(((tt1 - tt0)/1000.) + 
-                " sec for region filter. " + unmatchedRMap.size() +
-                " regions added");
         }
         
         /*
@@ -1472,91 +1456,20 @@ public class MSEREdges {
         }
         */
         
-        //make contiguous connected segments of matched set.
-        ConnectedPointsFinder finder2 = new ConnectedPointsFinder(
-            clrImg.getWidth(), clrImg.getHeight());
-        finder2.setMinimumNumberInCluster(1);
-        finder2.findConnectedPointGroups(allEdgePoints);
+        double tt1 = System.currentTimeMillis();
 
-        final int n2 = finder2.getNumberOfGroups();
+        addUnmatchedToEdgePoints(unmatchedPoints, unmatchedRMap,
+            allEdgePoints, rmvdImgBorders, maxGapSize);
+      
+        long tt2 = System.currentTimeMillis();
         
-        System.out.println("number of matched segments=" + n2);
-
-        // key = matched point, value = finder2 index of point
-        TIntIntMap mpIdxMap = finder2.createPointIndexMap();
-        
-        //   sections in unmatchedRMap are single width segments
-        //   .  when a segment is adjacent to 2 matched segments (from finder2),
-        //      that unmatched segment can be added.
-        //      note that multiple regions may have adjacent arcs in
-        //      an unmatched area, so to thin to the best path,
-        //      could either take the best
-        //      unmatched segment that connects those 2 matched segments
-        //      for that area, or could let the "assignTheUnassigned"
-        //      kmeans-style method handle this thinning.
-        //      choosing the later since it is needed for the matched
-        //      points already.
-        //      NOTE: the unmatched dist between endpoints AND the number
-        //            of pixels in the unmatched segment still need to remain under
-        //            the maxGapSize, helping to avoid adding the region
-        //            portions which are not edges.
-       
-        TIntObjectMap<List<TIntSet>> unmatchedRSegments = 
-            extractontiguousSegments(unmatchedRMap);
-
-        TIntObjectIterator<List<TIntSet>> iter10 = 
-            unmatchedRSegments.iterator();
-        for (int i = 0; i < unmatchedRSegments.size(); ++i) {
-            
-            iter10.advance();
-            
-            int rIdx = iter10.key();
-            List<TIntSet> segmentList = iter10.value();
-            for (TIntSet segment : segmentList) {
-        
-                if (segment.size() > maxGapSize) {
-                    continue;
-                }
-                
-                // key = pixIdx, value=edge segment indexes that key
-                //       pixel is adjacent to
-                // NOTE, that for pixels adjacent to an image border pixel,
-                //       that is one off from image border, a fake edge
-                //       is added to the values and those fake edges are
-                //       negative numbers starting at -1
-                TIntObjectMap<TIntList> umEPIdxMap
-                    = findEndpoints(segment, mpIdxMap, 
-                    clrImg.getWidth(), clrImg.getHeight());
-                
-                assert(!umEPIdxMap.isEmpty());
-        
-                // for any 2 entries in umEPIdxMap
-                //   if the set difference operation results in 2 edge
-                //      indexes, can add this segment to allEdgePoints.
-                
-                TIntSet posEdgeIdxs = new TIntHashSet(3);
-                boolean connectsToBorder = false;
-               
-                TIntObjectIterator<TIntList> iter11 = umEPIdxMap.iterator();
-                for (int ii = 0; ii < umEPIdxMap.size(); ++ii) {
-                    iter11.advance();
-                    TIntList eIdxs = iter11.value();
-                    for (int jj = 0; jj < eIdxs.size(); ++jj) {
-                        int eIdx = eIdxs.get(jj);
-                        if (eIdx < 0) {
-                            connectsToBorder = true;
-                        } else {
-                            posEdgeIdxs.add(eIdx);
-                        }
-                    }
-                }
-                
-                if (posEdgeIdxs.size() >= 1) {
-                    allEdgePoints.addAll(segment);
-                }
-            }
+        if (debug) {
+            System.out.println(((tt1 - tt0)/1000.) + 
+                " sec for region filter " +
+                ((tt2 - tt1)/1000.) + " sec for add unmatched "
+                );
         }
-        
+                
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
         
@@ -1782,6 +1695,11 @@ public class MSEREdges {
      */
     private void populateEdgeLists(TIntSet edgePixIdxs) {
 
+        //if (debug) {
+        //    System.out.println("populateEdgeLists: nE=" + edgePixIdxs.size() 
+        //        + " pixels");
+        //}
+        
         // find clusters (contiguous pixels of value 0) between edges
         labeledSets = extractContiguousBetweenEdges(edgePixIdxs);
 
@@ -1789,6 +1707,7 @@ public class MSEREdges {
 
         PerimeterFinder2 finder2 = new PerimeterFinder2();
 
+        int ne = 0;
         for (int i = 0; i < labeledSets.size(); ++i) {
             TIntSet set = labeledSets.get(i);
             TIntSet embedded = new TIntHashSet();
@@ -1796,6 +1715,12 @@ public class MSEREdges {
             finder2.extractBorder2(set, embedded, outerBorder, gsImg.getWidth());
 
             edgeList.add(outerBorder);
+        
+            ne += outerBorder.size();
+        }
+        
+        if (debug) {
+            System.out.println(ne + " pixels in edgeList");
         }
 
         assert(labeledSets.size() == edgeList.size());
@@ -1806,21 +1731,18 @@ public class MSEREdges {
     private void assignTheUnassigned(List<TIntSet> contiguous,
         int[] labels, float[][] hsvs, TIntSet unassignedSet) {
 
-        //TODO: could refactor this to use a fibonacci heap
-        //   with the key being one to maximize the number
-        //   of assigned neighbors.
-        //   currently, the code uses a one time sort by decreasing
-        //   number of assigned neighbors.
-        //   fiboncci heap decreasekey is O(1) so updates after each assignment
-        //   are fast
-
-        // key = pixel index, value =
-        TIntObjectMap<TIntSet> unassignedMap
-            = new TIntObjectHashMap<TIntSet>();
-
         int w = clrImg.getWidth();
         int h = clrImg.getHeight();
         int n = clrImg.getNPixels();
+
+        System.out.println("assign " + unassignedSet.size() + " out of "
+            + n + " pixels");
+        
+        // key = pixel index of unassigned, value = adj pixels that are assigned
+        TIntObjectMap<TIntSet> adjAssignedMap = new TIntObjectHashMap<TIntSet>();
+        
+        // key = pixel index of unassigned, value = adj pixels that are unassigned
+        TIntObjectMap<TIntSet> adjUnassignedMap = new TIntObjectHashMap<TIntSet>();
 
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
@@ -1828,60 +1750,70 @@ public class MSEREdges {
         TIntIterator iter = unassignedSet.iterator();
         while (iter.hasNext()) {
             int pixIdx = iter.next();
-            addNeighborLabelsForPoint(labels, unassignedMap, pixIdx,
-                dxs, dys);
+            addNeighborLabelsForPoint(labels, adjAssignedMap, 
+                adjUnassignedMap, pixIdx, dxs, dys);
         }
+        
+        // using a min heap whose priority is to set the nodes
+        //    which have the largest number of assigned neighbors.
+        //    nAssigned=8 -> key=8-nAssigned = 0.
+        MinHeapForRT2012 heap = new MinHeapForRT2012(9, n);
 
-        ArrayDeque<Integer> queue0 = populateByNumberOfNeighbors(
-            unassignedMap);
-
-        ArrayDeque<Integer> queue1 = new ArrayDeque<Integer>();
-
-        int nIter = 0;
-
+        // a map of nodes for the unassigned pixels
+        TIntObjectMap<HeapNode> unAMap = new TIntObjectHashMap<HeapNode>();
+        
+        iter = unassignedSet.iterator();
+        while (iter.hasNext()) {
+            
+            int pixIdx = iter.next();
+            
+            TIntSet neighbors = adjAssignedMap.get(pixIdx);
+            assert(neighbors != null);
+            
+            int nNeigbhors = neighbors.size();
+            
+            long key = 8 - nNeigbhors;
+            HeapNode node = new HeapNode(key);
+            node.setData(Integer.valueOf(pixIdx));
+            
+            unAMap.put(pixIdx, node);
+            
+            heap.insert(node);
+        }
+        
+        assert(unassignedSet.size() == heap.getNumberOfNodes());
+        
         float[] lab2 = null;
+        float[] lab = new float[3];
+        
+        while (heap.getNumberOfNodes() > 0) {
+                        
+            HeapNode node = heap.extractMin();
+            
+            assert(node != null);
+            
+            int pixIdx = ((Integer)node.getData()).intValue();
+            
+            clrImg.getHSB(pixIdx, lab);
 
-        TIntSet visited = new TIntHashSet();
-
-        while (!queue0.isEmpty() || !queue1.isEmpty()) {
-
-            int pixIdx;
-            if (!queue1.isEmpty()) {
-                pixIdx = queue1.poll().intValue();
-            } else {
-                pixIdx = queue0.poll().intValue();
+            TIntSet adjAssigned = adjAssignedMap.get(pixIdx);
+            if (adjAssigned.isEmpty()) {
+                System.out.println("priority=" + node.getKey()
+                   + " nUnassigned remaining=" + 
+                    adjAssignedMap.size() + " heap.n=" +
+                    heap.getNumberOfNodes());
             }
-
-            if (visited.contains(pixIdx)) {
-                continue;
-            }
-            visited.add(pixIdx);
-
-            int y1 = pixIdx/w;
-            int x1 = pixIdx - (y1 * w);
-
-            TIntSet adjLabels;
-            if (nIter == 0) {
-                adjLabels = unassignedMap.get(pixIdx);
-                assert (adjLabels != null);
-            } else {
-                adjLabels = new TIntHashSet();
-                addNeighborLabelsForPoint(labels, adjLabels,
-                    pixIdx, dxs, dys);
-            }
-
+            assert(!adjAssigned.isEmpty());
+            
             double minD = Double.MAX_VALUE;
             int minLabel2 = -1;
 
-            float[] lab = new float[3];
-            lab[0] = clrImg.getHue(x1, y1);
-            lab[1] = clrImg.getSaturation(x1, y1);
-            lab[2] = clrImg.getBrightness(x1, y1);
-
-            TIntIterator iter2 = adjLabels.iterator();
+            TIntIterator iter2 = adjAssigned.iterator();
             while (iter2.hasNext()) {
-                int label2 = iter2.next();
+                int pixIdx2 = iter2.next();
+                int label2 = labels[pixIdx2];
                 lab2 = hsvs[label2];
+                
                 double diffSum = 0;
                 for (int i = 0; i < 3; ++i) {
                     float diff = lab[i] - lab2[i];
@@ -1893,32 +1825,51 @@ public class MSEREdges {
                     minLabel2 = label2;
                 }
             }
-
+            
             labels[pixIdx] = minLabel2;
 
-            unassignedMap.remove(pixIdx);
+            adjAssignedMap.remove(pixIdx);
+            
+            unAMap.remove(pixIdx);
+            
+            // update the adjacent unassigned pixels and their keys in heap.
+            // these pixels are not in adjLabels.
+            TIntSet adjUnassigned = adjUnassignedMap.get(pixIdx);
+            if (adjUnassigned == null) {
+                continue;
+            }
+            adjUnassignedMap.remove(pixIdx);
+            
+            iter2 = adjUnassigned.iterator();
+            while (iter2.hasNext()) {
+                
+                // this is an unassigned pixel
+                int pixIdx2 = iter2.next();
+                assert(pixIdx != pixIdx2);
+                
+                // pixIdx should be in it's adj unassigned and then removed
+                TIntSet adj2 = adjUnassignedMap.get(pixIdx2);
+                assert(adj2 != null);
+                boolean rmvd = adj2.remove(pixIdx);
+                assert(rmvd);
+                
+                // add pixIdx to it's assigned pixels
+                adj2 = adjAssignedMap.get(pixIdx2);
+                assert(adj2 != null);
+                adj2.add(pixIdx);
 
-            for (int m = 0; m < dxs.length; ++m) {
-                int x2 = x1 + dxs[m];
-                int y2 = y1 + dys[m];
-                if (x2 < 0 || y2 < 0 || (x2 > (w - 1)) || (y2 > (h - 1))) {
-                    continue;
-                }
-                int pixIdx2 = clrImg.getInternalIndex(x2, y2);
-                if (labels[pixIdx2] == -1) {
-                    queue1.add(pixIdx2);
-                    //assert (!visited.contains(pixIdx2));
+                HeapNode node2 = unAMap.get(pixIdx2);
+                assert(node2 != null);
+                long key2 = 8 - adj2.size();
+                assert(key2 > -1);
+                if (key2 < node2.getKey()) {
+                    heap.decreaseKey(node2, key2);
                 }
             }
-            nIter++;
         }
 
-        assert(unassignedMap.isEmpty());
+        assert(adjAssignedMap.isEmpty());
 
-        /*for (int pixIdx = 0; pixIdx < labels.length; ++pixIdx) {
-            int label = labels[pixIdx];
-            contiguous.get(label).add(pixIdx);
-        }*/
         iter = unassignedSet.iterator();
         while (iter.hasNext()) {
             int pixIdx = iter.next();
@@ -1928,27 +1879,25 @@ public class MSEREdges {
     }
 
     private void addNeighborLabelsForPoint(int[] labels,
-        TIntObjectMap<TIntSet> unassignedMap,
+        TIntObjectMap<TIntSet> adjAssignedMap, 
+        TIntObjectMap<TIntSet> adjUnassignedMap,
         int pixIdx, int[] dxs, int[] dys) {
 
         int w = clrImg.getWidth();
         int h = clrImg.getHeight();
 
-        TIntSet adjLabels = unassignedMap.get(pixIdx);
+        TIntSet adjLabels = adjAssignedMap.get(pixIdx);
+        TIntSet adjULabels = adjUnassignedMap.get(pixIdx);
         if (adjLabels == null) {
+            assert(adjULabels == null);
+            
             adjLabels = new TIntHashSet();
-            unassignedMap.put(pixIdx, adjLabels);
+            adjAssignedMap.put(pixIdx, adjLabels);
+            
+            adjULabels = new TIntHashSet();
+            adjUnassignedMap.put(pixIdx, adjULabels);
         }
-
-        addNeighborLabelsForPoint(labels, adjLabels, pixIdx, dxs, dys);
-    }
-
-    private void addNeighborLabelsForPoint(int[] labels, TIntSet adjLabels,
-        int pixIdx, int[] dxs, int[] dys) {
-
-        int w = clrImg.getWidth();
-        int h = clrImg.getHeight();
-
+        
         int j = pixIdx/w;
         int i = pixIdx - (j * w);
 
@@ -1958,9 +1907,11 @@ public class MSEREdges {
             if (x2 < 0 || y2 < 0 || (x2 > (w - 1)) || (y2 > (h - 1))) {
                 continue;
             }
-            int pixIdx2 = clrImg.getInternalIndex(x2, y2);
-            if (labels[pixIdx2] > -1) {
-                adjLabels.add(labels[pixIdx2]);
+            int pixIdx2 = (y2 * w) + x2;
+            if (labels[pixIdx2] == -1) {
+                adjULabels.add(pixIdx2);
+            } else {
+                adjLabels.add(pixIdx2);
             }
         }
     }
@@ -2251,23 +2202,19 @@ public class MSEREdges {
         return dist;
     }
     
-    private TIntObjectMap<List<TIntSet>> extractontiguousSegments(
-        TIntObjectMap<TIntSet> unmatchedRMap) {
+    private List<List<TIntSet>> extractontiguousSegments(
+        List<TIntSet> unmatchedRMap) {
        
         int n = unmatchedRMap.size();
         
         System.out.println("number of unmatched regions=" + n);
         
-        TIntObjectMap<List<TIntSet>> output = new 
-            TIntObjectHashMap<List<TIntSet>>();
+        List<List<TIntSet>> output = new 
+            ArrayList<List<TIntSet>>();
         
-        TIntObjectIterator<TIntSet> iter = unmatchedRMap.iterator();
         for (int i = 0; i < unmatchedRMap.size(); ++i) {
-            iter.advance();
-            
-            int rIdx = iter.key();
-            
-            TIntSet idxs = iter.value();
+                        
+            TIntSet idxs = unmatchedRMap.get(i);
             
             ConnectedPointsFinder finder3 = new ConnectedPointsFinder(
                 clrImg.getWidth(), clrImg.getHeight());
@@ -2276,7 +2223,7 @@ public class MSEREdges {
             finder3.findConnectedPointGroups(idxs);
             
             List<TIntSet> list = new ArrayList<TIntSet>();
-            output.put(rIdx, list);
+            output.add(list);
             
             int n3 = finder3.getNumberOfGroups();
             for (int ii = 0; ii < n3; ++ii) {
@@ -2289,4 +2236,88 @@ public class MSEREdges {
        
         return output;
     }
+    
+    private void addUnmatchedToEdgePoints(TIntSet unmatchedPoints, 
+        List<TIntSet> unmatchedRMap, TIntSet allEdgePoints, 
+        TIntSet rmvdImgBorders, int maxGapSize) {
+        
+        //make contiguous connected segments of matched set.
+        ConnectedPointsFinder finder2 = new ConnectedPointsFinder(
+            clrImg.getWidth(), clrImg.getHeight());
+        finder2.setMinimumNumberInCluster(1);
+        finder2.findConnectedPointGroups(allEdgePoints);
+
+        final int n2 = finder2.getNumberOfGroups();
+
+        System.out.println("number of matched segments=" + n2);
+
+        // key = matched point, value = finder2 index of point
+        TIntIntMap mpIdxMap = finder2.createPointIndexMap();
+
+        //   sections in unmatchedRMap are single width segments
+        //   .  when a segment is adjacent to 2 matched segments (from finder2),
+        //      that unmatched segment can be added.
+        //      note that multiple regions may have adjacent arcs in
+        //      an unmatched area, so to thin to the best path,
+        //      could either take the best
+        //      unmatched segment that connects those 2 matched segments
+        //      for that area, or could let the "assignTheUnassigned"
+        //      kmeans-style method handle this thinning.
+        //      choosing the later since it is needed for the matched
+        //      points already.
+        //      NOTE: the unmatched dist between endpoints AND the number
+        //            of pixels in the unmatched segment still need to remain under
+        //            the maxGapSize, helping to avoid adding the region
+        //            portions which are not edges.
+        List<List<TIntSet>> unmatchedRSegments
+            = extractontiguousSegments(unmatchedRMap);
+
+        for (List<TIntSet> segmentList : unmatchedRSegments) {
+
+            for (TIntSet segment : segmentList) {
+
+                if (segment.size() > maxGapSize) {
+                    continue;
+                }
+
+                // key = pixIdx, value=edge segment indexes that key
+                //       pixel is adjacent to
+                // NOTE, that for pixels adjacent to an image border pixel,
+                //       that is one off from image border, a fake edge
+                //       is added to the values and those fake edges are
+                //       negative numbers starting at -1
+                TIntObjectMap<TIntList> umEPIdxMap
+                    = findEndpoints(segment, mpIdxMap,
+                        clrImg.getWidth(), clrImg.getHeight());
+
+                assert (!umEPIdxMap.isEmpty());
+
+                // for any 2 entries in umEPIdxMap
+                //   if the set difference operation results in 2 edge
+                //      indexes, can add this segment to allEdgePoints.
+                TIntSet posEdgeIdxs = new TIntHashSet(3);
+                boolean connectsToBorder = false;
+
+                TIntObjectIterator<TIntList> iter11 = umEPIdxMap.iterator();
+                for (int ii = 0; ii < umEPIdxMap.size(); ++ii) {
+                    iter11.advance();
+                    TIntList eIdxs = iter11.value();
+                    for (int jj = 0; jj < eIdxs.size(); ++jj) {
+                        int eIdx = eIdxs.get(jj);
+                        if (eIdx < 0) {
+                            connectsToBorder = true;
+                        } else {
+                            posEdgeIdxs.add(eIdx);
+                        }
+                    }
+                }
+
+                if (posEdgeIdxs.size() >= 1) {
+                    allEdgePoints.addAll(segment);
+                }
+            }
+        }
+
+    }
+    
 }
