@@ -1,23 +1,19 @@
 package algorithms.imageProcessing.segmentation;
 
-import algorithms.QuickSort;
+import algorithms.bipartite.MinHeapForRT2012;
 import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.Gaussian1DFirstDeriv;
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.HeapNode;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.misc.Misc;
-import algorithms.util.PairInt;
 import gnu.trove.iterator.TIntIterator;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
-import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 import java.util.logging.Logger;
 
 /**
@@ -28,6 +24,11 @@ import java.util.logging.Logger;
  * "SLIC Superpixels Compared to State-of-the-Art Superpixel Methods"
    by Achanta, Appu Shaji,Smith,  Lucchi, Fua, and Su ̈sstrunk,
  *
+ * The method "assignTheUnassigned" was not provided by pseudocode
+ * and has been implemented here to use a min priority queue
+ * to order the pixels and then assign them by closest in color 
+ * among adjacent labels.
+ * 
  * @author nichole
  */
 public class SLICSuperPixels {
@@ -555,161 +556,179 @@ public class SLICSuperPixels {
 
         return dComb;
     }
-
+    
     private void assignTheUnassigned() {
+        
+        TIntSet unassignedSet = new TIntHashSet();
+        
+        for (int pixIdx = 0; pixIdx < img.getNPixels(); ++pixIdx) {
+            if (labels[pixIdx] == -1) {
+                unassignedSet.add(pixIdx);
+            }
+        }
+        
+        assignTheUnassigned(unassignedSet);
+    }
 
-        Map<PairInt, TIntSet> unassignedMap = new HashMap<PairInt, TIntSet>();
+    private void assignTheUnassigned(TIntSet unassignedSet) {
 
         int w = img.getWidth();
         int h = img.getHeight();
         int n = img.getNPixels();
 
+        System.out.println("assign " + unassignedSet.size() + " out of "
+            + n + " pixels");
+        
+        // key = pixel index of unassigned, value = adj pixels that are assigned
+        TIntObjectMap<TIntSet> adjAssignedMap = new TIntObjectHashMap<TIntSet>();
+        
+        // key = pixel index of unassigned, value = adj pixels that are unassigned
+        TIntObjectMap<TIntSet> adjUnassignedMap = new TIntObjectHashMap<TIntSet>();
+
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
 
-        for (int i = 0; i < w; ++i) {
-            for (int j = 0; j < h; ++j) {
-                int pixIdx = img.getInternalIndex(i, j);
-                if (labels[pixIdx] == -1) {
-                    SLICSuperPixels.this.addNeighborLabelsForPoint(unassignedMap, i, j, dxs, dys);
-                }
-            }
+        TIntIterator iter = unassignedSet.iterator();
+        while (iter.hasNext()) {
+            int pixIdx = iter.next();
+            addNeighborLabelsForPoint(labels, adjAssignedMap, 
+                adjUnassignedMap, pixIdx, dxs, dys);
         }
+        
+        // using a min heap whose priority is to set the nodes
+        //    which have the largest number of assigned neighbors.
+        //    nAssigned=8 -> key=8-nAssigned = 0.
+        MinHeapForRT2012 heap = new MinHeapForRT2012(9, n);
 
-        ArrayDeque<PairInt> queue0 = populateByNumberOfNeighbors(unassignedMap);
-
-        ArrayDeque<PairInt> queue1 = new ArrayDeque<PairInt>();
-
-        int nIter = 0;
-
-        Set<PairInt> visited = new HashSet<PairInt>();
-
-        while (!queue0.isEmpty() || !queue1.isEmpty()) {
-
-            PairInt p;
-            if (!queue1.isEmpty()) {
-                p = queue1.poll();
-            } else {
-                p = queue0.poll();
+        // a map of nodes for the unassigned pixels
+        TIntObjectMap<HeapNode> unAMap = new TIntObjectHashMap<HeapNode>();
+        
+        iter = unassignedSet.iterator();
+        while (iter.hasNext()) {
+            
+            int pixIdx = iter.next();
+            
+            TIntSet neighbors = adjAssignedMap.get(pixIdx);
+            assert(neighbors != null);
+            
+            int nNeigbhors = neighbors.size();
+            
+            long key = 8 - nNeigbhors;
+            HeapNode node = new HeapNode(key);
+            node.setData(Integer.valueOf(pixIdx));
+            
+            unAMap.put(pixIdx, node);
+            
+            heap.insert(node);
+        }
+        
+        assert(unassignedSet.size() == heap.getNumberOfNodes());
+        
+        while (heap.getNumberOfNodes() > 0) {
+                        
+            HeapNode node = heap.extractMin();
+            
+            assert(node != null);
+            
+            int pixIdx = ((Integer)node.getData()).intValue();
+            
+            TIntSet adjAssigned = adjAssignedMap.get(pixIdx);
+            if (adjAssigned.isEmpty()) {
+                System.out.println("priority=" + node.getKey()
+                   + " nUnassigned remaining=" + 
+                    adjAssignedMap.size() + " heap.n=" +
+                    heap.getNumberOfNodes());
             }
-
-            if (visited.contains(p)) {
-                continue;
-            }
-            visited.add(p);
-
-            int x1 = p.getX();
-            int y1 = p.getY();
-
-            TIntSet adjLabels;
-            if (nIter == 0) {
-                adjLabels = unassignedMap.get(p);
-                assert (adjLabels != null);
-            } else {
-                adjLabels = new TIntHashSet();
-                addNeighborLabelsForPoint(adjLabels, x1, y1, dxs, dys);
-            }
-
+            assert(!adjAssigned.isEmpty());
+        
+            int y1 = pixIdx/w;
+            int x1 = pixIdx - (y1 * w);
+            
             double minD = Double.MAX_VALUE;
             int minLabel2 = -1;
 
-            TIntIterator iter = adjLabels.iterator();
-            while (iter.hasNext()) {
-                int label2 = iter.next();
+            TIntIterator iter2 = adjAssigned.iterator();
+            while (iter2.hasNext()) {
+                int pixIdx2 = iter2.next();
+                int label2 = labels[pixIdx2];
+                
                 double dist = calcDist(seedDescriptors[label2],
                     img.getCIELAB(x1, y1), x1, y1);
-
+                
                 if (dist < minD) {
                     minD = dist;
                     minLabel2 = label2;
                 }
             }
+            
+            labels[pixIdx] = minLabel2;
+            distances[pixIdx] = minD;
+            
+            adjAssignedMap.remove(pixIdx);
+            
+            unAMap.remove(pixIdx);
+            
+            // update the adjacent unassigned pixels and their keys in heap.
+            // these pixels are not in adjLabels.
+            TIntSet adjUnassigned = adjUnassignedMap.get(pixIdx);
+            if (adjUnassigned == null) {
+                continue;
+            }
+            adjUnassignedMap.remove(pixIdx);
+            
+            iter2 = adjUnassigned.iterator();
+            while (iter2.hasNext()) {
+                
+                // this is an unassigned pixel
+                int pixIdx2 = iter2.next();
+                assert(pixIdx != pixIdx2);
+                
+                // pixIdx should be in it's adj unassigned and then removed
+                TIntSet adj2 = adjUnassignedMap.get(pixIdx2);
+                assert(adj2 != null);
+                boolean rmvd = adj2.remove(pixIdx);
+                assert(rmvd);
+                
+                // add pixIdx to it's assigned pixels
+                adj2 = adjAssignedMap.get(pixIdx2);
+                assert(adj2 != null);
+                adj2.add(pixIdx);
 
-            int pixIdx1 = img.getInternalIndex(p.getX(), p.getY());
-            labels[pixIdx1] = minLabel2;
-            distances[pixIdx1] = minD;
-
-            unassignedMap.remove(p);
-
-            for (int m = 0; m < dxs.length; ++m) {
-                int x2 = p.getX() + dxs[m];
-                int y2 = p.getY() + dys[m];
-                if (x2 < 0 || y2 < 0 || (x2 > (w - 1)) || (y2 > (h - 1))) {
-                    continue;
-                }
-                int pixIdx2 = img.getInternalIndex(x2, y2);
-                if (labels[pixIdx2] == -1) {
-                    PairInt p2 = new PairInt(x2, y2);
-                    queue1.add(p2);
-                    //assert (!visited.contains(p2));
+                HeapNode node2 = unAMap.get(pixIdx2);
+                assert(node2 != null);
+                long key2 = 8 - adj2.size();
+                assert(key2 > -1);
+                if (key2 < node2.getKey()) {
+                    heap.decreaseKey(node2, key2);
                 }
             }
-            nIter++;
         }
 
-        assert(unassignedMap.isEmpty());
+        assert(adjAssignedMap.isEmpty());
     }
 
-    private ArrayDeque<PairInt> populateByNumberOfNeighbors(
-        Map<PairInt, TIntSet> unassignedMap) {
-
-        int n = unassignedMap.size();
-
-        PairInt[] points = new PairInt[n];
-        int[] nN = new int[n];
-
-        int count = 0;
-        for (Entry<PairInt, TIntSet> entry : unassignedMap.entrySet()) {
-            points[count] = entry.getKey();
-            nN[count] = entry.getValue().size();
-            count++;
-        }
-
-        QuickSort.sortBy1stArg(nN, points);
-
-        ArrayDeque<PairInt> queue = new ArrayDeque<PairInt>();
-
-        for (int i = (n - 1); i > -1; --i) {
-
-            int nP = nN[i];
-            if (nP == 0) {
-                break;
-            }
-
-            queue.add(points[i]);
-        }
-
-        return queue;
-    }
-
-    public int[] getLabels() {
-        return labels;
-    }
-
-    private void addNeighborLabelsForPoint(Map<PairInt, TIntSet> unassignedMap,
-        int i, int j, int[] dxs, int[] dys) {
+    private void addNeighborLabelsForPoint(int[] labels,
+        TIntObjectMap<TIntSet> adjAssignedMap, 
+        TIntObjectMap<TIntSet> adjUnassignedMap,
+        int pixIdx, int[] dxs, int[] dys) {
 
         int w = img.getWidth();
         int h = img.getHeight();
 
-        PairInt p = new PairInt(i, j);
-
-        TIntSet adjLabels = unassignedMap.get(p);
+        TIntSet adjLabels = adjAssignedMap.get(pixIdx);
+        TIntSet adjULabels = adjUnassignedMap.get(pixIdx);
         if (adjLabels == null) {
+            assert(adjULabels == null);
+            
             adjLabels = new TIntHashSet();
-            unassignedMap.put(p, adjLabels);
+            adjAssignedMap.put(pixIdx, adjLabels);
+            
+            adjULabels = new TIntHashSet();
+            adjUnassignedMap.put(pixIdx, adjULabels);
         }
-
-        addNeighborLabelsForPoint(adjLabels, i, j, dxs, dys);
-    }
-
-    private void addNeighborLabelsForPoint(TIntSet adjLabels,
-        int i, int j, int[] dxs, int[] dys) {
-
-        int w = img.getWidth();
-        int h = img.getHeight();
-
-        PairInt p = new PairInt(i, j);
+        
+        int j = pixIdx/w;
+        int i = pixIdx - (j * w);
 
         for (int m = 0; m < dxs.length; ++m) {
             int x2 = i + dxs[m];
@@ -717,10 +736,17 @@ public class SLICSuperPixels {
             if (x2 < 0 || y2 < 0 || (x2 > (w - 1)) || (y2 > (h - 1))) {
                 continue;
             }
-            int pixIdx2 = img.getInternalIndex(x2, y2);
-            if (labels[pixIdx2] > -1) {
-                adjLabels.add(labels[pixIdx2]);
+            int pixIdx2 = (y2 * w) + x2;
+            if (labels[pixIdx2] == -1) {
+                adjULabels.add(pixIdx2);
+            } else {
+                adjLabels.add(pixIdx2);
             }
         }
     }
+    
+    public int[] getLabels() {
+        return labels;
+    }
+
 }

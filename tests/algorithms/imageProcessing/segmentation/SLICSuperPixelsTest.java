@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.segmentation;
 
+import algorithms.imageProcessing.CannyEdgeColorAdaptive;
 import algorithms.imageProcessing.CannyEdgeFilterAdaptive;
 import algorithms.imageProcessing.EdgeFilterProducts;
 import algorithms.imageProcessing.Image;
@@ -198,7 +199,7 @@ public class SLICSuperPixelsTest extends TestCase {
             int w1 = img.getWidth();
             int h1 = img.getHeight();
 
-            int maxDimension = 128;//256;//512;
+            int maxDimension = 256;//512;
 
             int binFactor1 = (int) Math.ceil(Math.max(
                 (float) w1 / maxDimension,
@@ -208,10 +209,10 @@ public class SLICSuperPixelsTest extends TestCase {
             int w = img.getWidth();
             int h = img.getHeight();
 
-            CannyEdgeFilterAdaptive canny =
-                new CannyEdgeFilterAdaptive();
+            CannyEdgeColorAdaptive canny =
+                new CannyEdgeColorAdaptive();
             canny.overrideToNotUseLineThinner();
-            canny.applyFilter(img.copyToGreyscale2());
+            canny.applyFilter(img);
             EdgeFilterProducts edgeProducts = canny.getFilterProducts();
             
             float nPix = img.getNPixels();
@@ -227,6 +228,7 @@ public class SLICSuperPixelsTest extends TestCase {
             int nc = (n10+n11)/2;
             //nc = 40;
             //nc *= 2;
+      nc = 100;      
             System.out.println("nc=" + nc);
             SLICSuperPixels slic = new SLICSuperPixels(img, nc);
             slic.setGradient(edgeProducts.getGradientXY());
