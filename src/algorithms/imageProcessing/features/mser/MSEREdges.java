@@ -1,7 +1,6 @@
 package algorithms.imageProcessing.features.mser;
 
 import algorithms.QuickSort;
-import algorithms.bipartite.MinHeapForRT2012;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.CannyEdgeColorAdaptive;
 import algorithms.imageProcessing.ConnectedPointsFinder;
@@ -467,7 +466,7 @@ public class MSEREdges {
             MiscDebug.writeImage(tmp, "_" + ts + "_non_edge_");
         }
         
-        ConnectedPointsFinder finder = new ConnectedPointsFinder(w);
+        ConnectedPointsFinder finder = new ConnectedPointsFinder(w, h);
         finder.setMinimumNumberInCluster(1);
         if (debug) {
             finder.setDebug(debug);
@@ -1475,7 +1474,7 @@ public class MSEREdges {
         
         //make contiguous connected segments of matched set.
         ConnectedPointsFinder finder2 = new ConnectedPointsFinder(
-            clrImg.getWidth());
+            clrImg.getWidth(), clrImg.getHeight());
         finder2.setMinimumNumberInCluster(1);
         finder2.findConnectedPointGroups(allEdgePoints);
 
@@ -2271,7 +2270,7 @@ public class MSEREdges {
             TIntSet idxs = iter.value();
             
             ConnectedPointsFinder finder3 = new ConnectedPointsFinder(
-                clrImg.getWidth());
+                clrImg.getWidth(), clrImg.getHeight());
             finder3.setMinimumNumberInCluster(1);
             finder3.setToUse8Neighbors();
             finder3.findConnectedPointGroups(idxs);

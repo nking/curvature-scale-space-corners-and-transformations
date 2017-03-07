@@ -49,14 +49,17 @@ public class ConnectedPointsFinder {
     protected int minimumNumberInCluster = 3;
     
     private final int imgWidth;
+    private final int imgHeight;
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
     protected boolean debug = false;
 
-    public ConnectedPointsFinder(int imageWidth) {
+    public ConnectedPointsFinder(int imageWidth, int imageHeight) {
         
         imgWidth = imageWidth;
+        
+        imgHeight = imageHeight;
         
         pixNodes = new TIntObjectHashMap<DisjointSet2Node<Integer>>();
     
@@ -98,10 +101,7 @@ public class ConnectedPointsFinder {
         if (pixIdxs.isEmpty()) {
             return;
         }
-        
-        //TODO: fix bug in here seen during a test for
-        //   4 neighbors = true
-        
+                
         int[] dxs;
         int[] dys;
         if (use4Neighbors) {
@@ -132,6 +132,11 @@ public class ConnectedPointsFinder {
                 
                 int vX = uX + dxs[i];
                 int vY = uY + dys[i];
+                
+                if (vX < 0 || vY < 0 || (vX >= (imgWidth - 1))
+                    || (vY >= (imgHeight - 1))) {
+                    continue;
+                }
             
                 int vPoint = (vY * imgWidth) + vX;
 
