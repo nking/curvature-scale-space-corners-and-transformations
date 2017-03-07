@@ -99,6 +99,9 @@ public class ConnectedPointsFinder {
             return;
         }
         
+        //TODO: fix bug in here seen during a test for
+        //   4 neighbors = true
+        
         int[] dxs;
         int[] dys;
         if (use4Neighbors) {

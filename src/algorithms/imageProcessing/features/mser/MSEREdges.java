@@ -429,29 +429,59 @@ public class MSEREdges {
 
         return regions;
     }
-
-    private List<TIntSet> extractContiguous(GreyscaleImage tImg,
-        int value, int minGroupSize) {
-
-        List<TIntSet> out = new ArrayList<TIntSet>();
-
-        DFSContiguousValueFinder dfsFinder = new DFSContiguousValueFinder(
-            tImg);
-        dfsFinder.setMinimumNumberInCluster(minGroupSize);
-        dfsFinder.findGroups(value);
-
-        int nGroups = dfsFinder.getNumberOfGroups();
-
-        for (int j = 0; j < nGroups; ++j) {
-            PairIntArray xy = dfsFinder.getXY(j);
-            TIntSet pixIdxs = new TIntHashSet();
-            for (int k = 0; k < xy.getN(); ++k) {
-                pixIdxs.add(tImg.getIndex(xy.getX(k), xy.getY(k)));
+    
+    private TIntSet extractNonEdgePixels(TIntSet edgePixels) {
+        int w = clrImg.getWidth();
+        int h = clrImg.getHeight();
+        int n = clrImg.getNPixels();
+        
+        TIntSet nonEdgePixels = new TIntHashSet(n - edgePixels.size());
+        for (int pixIdx = 0; pixIdx < n; ++pixIdx) {
+            if (!edgePixels.contains(pixIdx)) {
+                nonEdgePixels.add(pixIdx);
             }
-            out.add(pixIdxs);
         }
-
-        return out;
+        
+        return nonEdgePixels;
+    }
+    
+    /**
+     * extract the contiguous conneted pixels that are not in edgePixels
+     * @param edgePixels
+     * @param minGroupSize
+     * @return 
+     */
+    private List<TIntSet> extractContiguousBetweenEdges(TIntSet 
+        edgePixels) {
+        
+        int w = clrImg.getWidth();
+        int h = clrImg.getHeight();
+        int n = clrImg.getNPixels();
+        
+        TIntSet nonEdgePixels = extractNonEdgePixels(edgePixels);
+    
+        if (debug) {
+            Image tmp = clrImg.createWithDimensions();
+            ImageIOHelper.addCurveToImage(
+                nonEdgePixels, tmp, 0, 255, 255, 0);
+            MiscDebug.writeImage(tmp, "_" + ts + "_non_edge_");
+        }
+        
+        ConnectedPointsFinder finder = new ConnectedPointsFinder(w);
+        finder.setMinimumNumberInCluster(1);
+        if (debug) {
+            finder.setDebug(debug);
+        }
+        finder.findConnectedPointGroups(nonEdgePixels);
+        
+        List<TIntSet> output = new ArrayList<TIntSet>();
+        
+        for (int i = 0; i < finder.getNumberOfGroups(); ++i) {
+            TIntSet group = finder.getXY(i);
+            output.add(group);
+        }
+        
+        return output;
     }
 
     private void extractBoundaries() {
@@ -461,6 +491,25 @@ public class MSEREdges {
             throw new IllegalStateException("can only perform extraction of "
                 + "edges once");
         }
+        
+        /*
+        TODO: consider a version of this which:
+           -- uses the non blurred canny edges and same mLimit
+              to find a small but precise subset of regions.
+              -- might be able to add it's unmatched in without
+                 checking gap size.
+           -- then, because there are some edges missing like the
+              legs of the gingerbread man in android_statues_01,
+              could make one more pass through the remaining
+              regions list and instead of matching to the canny edges,
+              add regions which match the current set of
+              allEdgePixels for a high intersection limit.
+              -- will need a fraction matching score for this filter.
+         Goal is to make the results of this method return a thinner
+             set of edges that are still completely connected around
+             objects and to do so in a faster runtime than the
+             current method.
+        */
 
         long ts0 = System.currentTimeMillis();
 
@@ -468,15 +517,26 @@ public class MSEREdges {
 
         long ts1 = System.currentTimeMillis();
 
+        populateEdgeLists(boundaries);
+        
+        if (debug) {
+            Image tmp = clrImg.copyImage();
+            ImageIOHelper.addAlternatingColorPointSetsToImage2(
+                labeledSets, 0, 0, 0, tmp);
+            MiscDebug.writeImage(tmp, "_" + ts + "_labeled_boundaries_");
+        }
+        
+        long ts1_2 = System.currentTimeMillis();
+        
         // populate this.edgeList and this.labeledSets
-        thinTheBoundaries(boundaries, 2);
+        thinTheBoundaries(2);
 
         long ts2 = System.currentTimeMillis();
 
         System.out.format(
             "%.3f sec for boundary extr, "
                 + " %.3f sec for reassigning and labels\n",
-            ((float)(ts1 - ts0)/1000.f), ((float)(ts2 - ts1)/1000.f)
+            ((float)(ts1 - ts0)/1000.f), ((float)(ts2 - ts1_2)/1000.f)
         );
 
         state = STATE.EDGES_EXTRACTED;
@@ -1266,7 +1326,7 @@ public class MSEREdges {
         */
 
         this.cannyEdges = scaled;
-        
+                
         // smearing values over a 3 pixel window to avoid the potential
         //   1 pixel displacement of an edge from the level set boundaries
         SummedAreaTable sumTable = new SummedAreaTable();
@@ -1316,7 +1376,7 @@ public class MSEREdges {
         
         TIntSet rmvdImgBorders = new TIntHashSet();
         
-        long tt0 = System.currentTimeMillis();
+        double tt0 = System.currentTimeMillis();
         
         for (int rListIdx = 0; rListIdx < regions.size(); ++rListIdx) {
             Region r = regions.get(rListIdx);
@@ -1391,8 +1451,14 @@ public class MSEREdges {
 
         }
         
-        long tt1 = System.currentTimeMillis();
+        double tt1 = System.currentTimeMillis();
 
+        if (debug) {
+            System.out.println(((tt1 - tt0)/1000.) + 
+                " sec for region filter. " + unmatchedRMap.size() +
+                " regions added");
+        }
+        
         /*
         if (debug) {
             Image tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
@@ -1406,9 +1472,6 @@ public class MSEREdges {
             //MiscDebug.writeImage(tmpImg, "_" + ts + "_rmvdBounds_");
         }
         */
-        if (debug) {
-            System.out.println(((tt1 - tt0)/1000) + " sec for region filter");
-        }
         
         //make contiguous connected segments of matched set.
         ConnectedPointsFinder finder2 = new ConnectedPointsFinder(
@@ -1423,7 +1486,6 @@ public class MSEREdges {
         // key = matched point, value = finder2 index of point
         TIntIntMap mpIdxMap = finder2.createPointIndexMap();
         
-        // TODO: refactoring the addition or unmatched points:
         //   sections in unmatchedRMap are single width segments
         //   .  when a segment is adjacent to 2 matched segments (from finder2),
         //      that unmatched segment can be added.
@@ -1574,18 +1636,20 @@ public class MSEREdges {
 
     /**
      * using the given edges as definitions of separation between
-     * contiguous pixels in the image,
-     * essentially performs kmeans using the contiguous non-edge pixels
-     * as the existing labelled region and then adds back all edge pixels
-     * to the adjacent labelled region which is closest in color.
+     * contiguous pixels in the image (== labels),
+     * perform kmeans on the edge pixels to add them back to
+     * the labels which are adjacent and closest in color.
      *
-     * NOTE: has the side effect of populating this.edgeList and this.labeledSets
+     * NOTE: has the side effect of populating this.edgeList and 
+     * this.labeledSets
      */
-    private void thinTheBoundaries(TIntSet edgePixIdxs,
-        int minGroupSize) {
+    private void thinTheBoundaries(int minGroupSize) {
 
-        populateEdgeLists(edgePixIdxs, minGroupSize);
-
+        if (this.labeledSets == null || this.edgeList == null) {
+            throw new IllegalStateException("instance vars are null: "
+                + " labeledSets, edgeLists");
+        }
+        
         PerimeterFinder2 finder2 = new PerimeterFinder2();
 
         int w = clrImg.getWidth();
@@ -1717,18 +1781,10 @@ public class MSEREdges {
      * @param edgePoints
      * @param minGroupSize
      */
-    private void populateEdgeLists(TIntSet edgePixIdxs, int minGroupSize) {
-
-        GreyscaleImage img2 = gsImg.createWithDimensions();
-        TIntIterator iter = edgePixIdxs.iterator();
-        while (iter.hasNext()) {
-            int pixIdx = iter.next();
-            // img2 has edges w/ value=1
-            img2.setValue(pixIdx, 1);
-        }
+    private void populateEdgeLists(TIntSet edgePixIdxs) {
 
         // find clusters (contiguous pixels of value 0) between edges
-        labeledSets = extractContiguous(img2, 0, minGroupSize);
+        labeledSets = extractContiguousBetweenEdges(edgePixIdxs);
 
         edgeList = new ArrayList<TIntSet>();
 
