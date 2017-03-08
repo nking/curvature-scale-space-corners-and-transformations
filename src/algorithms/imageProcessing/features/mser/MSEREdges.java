@@ -262,9 +262,9 @@ public class MSEREdges {
             List<Region> list = ptRegions.get(type);
             GreyscaleImage negImg = null;
             if (type == 1) {
-                negImg = gsImg.copyImage();
-                for (int i = 0; i < gsImg.getNPixels(); ++i) {
-                    int v = ~gsImg.getValue(i);
+                negImg = ptImg.copyImage();
+                for (int i = 0; i < ptImg.getNPixels(); ++i) {
+                    int v = ~ptImg.getValue(i);
                     if (v < 0) {
                         v += 256;
                     }
@@ -819,6 +819,96 @@ public class MSEREdges {
         }
 
         return regions2;
+    }
+    
+    /**
+     * experimental method for a specific use case.  if this method is retained
+     * and used, it could be made more efficient.
+     * @return
+     */
+    public List<Region> _extractSensitivePT0() {
+
+        int delta = 2;
+        double minArea = 0.001;//.0001
+        double maxArea = 0.99;//0.1;
+        double maxVariation = 0.9;//0.5;
+        double minDiversity = 0.75;//0.1;//0.5
+        
+        int[] a = MSER.readIntoArray(ptImg);
+        
+        int w = ptImg.getWidth();
+        int h = ptImg.getHeight();
+
+        List<Region> pt0Regions = new ArrayList<Region>();
+        MSER mser8 = new MSER(delta, minArea, maxArea, maxVariation, 
+            minDiversity, true);
+        mser8.operator(a, w, h, pt0Regions);
+        
+        a = MSER.readIntoArray(ptImgShifted);
+        List<Region> pt0ShiftedRegions = new ArrayList<Region>();
+        mser8 = new MSER(delta, minArea, maxArea, maxVariation, 
+            minDiversity, true);
+        mser8.operator(a, w, h, pt0ShiftedRegions);
+        
+        //_debugOrigRegions(ptShiftedRegions.get(0), "_shifted_0");
+        //_debugOrigRegions(ptShiftedRegions.get(1), "_shifted_1");
+            
+        boolean hadWrapAroundArtifacts = false;
+        for (int i = (pt0Regions.size() - 1); i > -1; --i) {
+            
+            Region r = pt0Regions.get(i);
+
+            if (r.getVariation() == 0.0) {
+                
+                pt0Regions.remove(i);
+                
+            } else {
+                // check for this Region being an artifact of wrap around
+                if (r.level_ < 25) {
+                    pt0Regions.remove(i);
+                    hadWrapAroundArtifacts = true;
+                } else {
+                    int avgLevel = calcAvg(ptImg, r.getAcc(w));
+                    
+                    //System.out.format(" %d add x,y=%d,%d level=%d  avgLevel=%d\n",
+                    //    type, (int)(r.moments_[0]/r.area_),
+                    //    (int)(r.moments_[1]/r.area_), r.level_,
+                    //    avgLevel);
+                    if (avgLevel > 240) {//230?
+                        pt0Regions.remove(i);
+                    }
+                }
+            }
+        }
+        
+        if (hadWrapAroundArtifacts) {
+            // excluded level < 25.
+            //   so shift by +60 and any region found w level approx 60
+            //   is a real region possibly excluded near level=0
+            // if find a region near level=60, edit the level
+            //   and add it to list
+            for (int i = (pt0ShiftedRegions.size() - 1); i > -1; --i) {
+                Region r = pt0ShiftedRegions.get(i);
+
+                if (r.getVariation() == 0.0) {
+                    pt0ShiftedRegions.remove(i);
+                } else {
+                    //TODO: consider checking whether this already exists in
+                    //   the list
+                    if (Math.abs(r.level_ - 60) < 20) {
+                        r.level_ += 60;
+                        pt0Regions.add(r);
+                        //System.out.format("  add shifted x,y=%d,%d level=%d\n",
+                        // (int)(r.moments_[0]/r.area_),
+                        // (int)(r.moments_[1]/r.area_), r.level_);
+                    }
+                    //TODO: consider adding other regions in list2
+                    //   as long as level is > 25 and < 230
+                }
+            }
+        }
+        
+        return pt0Regions;
     }
 
     public List<TIntList> getEmbeddedGS0Levels() {

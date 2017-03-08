@@ -64,7 +64,7 @@ public class SkyTest extends TestCase {
         "sky_with_rainbow2.jpg"   // dark
     };
     
-    public void testFindSky() throws Exception {
+    public void estFindSky() throws Exception {
         
         int maxDimension = 256;//512;
 
@@ -91,13 +91,26 @@ public class SkyTest extends TestCase {
 
             img = imageProcessor.binImage(img, binFactor1);
             //MiscDebug.writeImage(img, "_"  + fileName1Root);
-        
-            /*
+            
             GreyscaleImage[] lma = imageProcessor.createLCHForLUV(img);
+            GreyscaleImage[] sobels = new GreyscaleImage[lma.length];
             for (int k = 0; k < lma.length; ++k) {
+                
+                GreyscaleImage img2 = lma[k];
+                if (k == 2) {
+                    sobels[k] = imageProcessor.createBinarySobelForPolarTheta(
+                        img2, 20);
+                } else {
+                    sobels[k] = img2.copyImage();
+                    imageProcessor.applySobelKernel(sobels[k]);
+                }
+                
                 MiscDebug.writeImage(lma[k], "_"
                     + fileName1Root + "_lma_" + k + "_");
-            }*/
+                
+                MiscDebug.writeImage(sobels[k], "_"
+                    + fileName1Root + "_sobel_" + k + "_");
+            }
 
             Sky sky = new Sky(img);
             sky.setToDebug(fileName1Root);
@@ -122,7 +135,7 @@ public class SkyTest extends TestCase {
         }
     }
     
-    public void estFindSun() throws Exception {
+    public void testFindSun() throws Exception {
         
         int maxDimension = 256;//512;
 
@@ -186,7 +199,7 @@ public class SkyTest extends TestCase {
         }
     }
     
-    public void estFindRainbows() throws Exception {
+    public void testFindRainbows() throws Exception {
        
         int maxDimension = 256;//512;
 
@@ -221,6 +234,7 @@ public class SkyTest extends TestCase {
             }
             
             Sky sky = new Sky(img);
+            sky.setToDebug(fileName1Root);
             List<SkyObject> objs = sky.findRainbows();
                      
             assertNotNull(objs);

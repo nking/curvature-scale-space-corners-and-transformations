@@ -62,7 +62,7 @@ public class RainbowFinder {
             
         ImageExt img = mserEdges.getClrImg();
         
-        List<Region> polarThetaPositive = mserEdges.getOrigGsPtRegions().get(2);
+        List<Region> polarThetaPositive = mserEdges._extractSensitivePT0();
         
         /*
         segments of rainbows in two test images are found as elongated
