@@ -21,10 +21,10 @@ public class MSEREdgesTest extends TestCase {
 
         String fileName1 = "";
 
-        //for (int i = 24; i < 25; ++i) {
-        //for (int i = 18; i < 19; ++i) {
-        for (int i = 1; i < 2; ++i) {
-        //for (int i = 0; i < 37; ++i) {
+        //for (int i = 0; i < 1; ++i) {
+        //for (int i = 25; i < 26; ++i) {
+        //for (int i = 5; i < 6; ++i) {
+        for (int i = 0; i < 37; ++i) {
 
             switch(i) {
                 case 0: {
@@ -197,10 +197,10 @@ public class MSEREdgesTest extends TestCase {
                 
             MSEREdges mserE = new MSEREdges(img);
             mserE.setToDebug();
-            mserE.setToLowerContrast();
-            mserE.extractEdges();
             //mserE.setToLowerContrast();
-            //mserE.mergeAndExtractEdges();
+            //mserE.extractEdges();
+            mserE.setToLowerContrast();
+            mserE.mergeAndExtractEdges();
             
             /*GreyscaleImage[] lma = imageProcessor.createLCHForLUV(img);
             for (int k = 0; k < lma.length; ++k) {
