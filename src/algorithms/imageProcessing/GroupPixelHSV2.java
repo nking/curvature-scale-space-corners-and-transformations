@@ -173,6 +173,24 @@ public class GroupPixelHSV2 {
         nPoints += pIdxs.size();
     }
     
+    /**
+     * adds the calculated HSB of points to the current instance sums.
+     * 
+     * @param other 
+     */
+    public void add(final GroupPixelHSV2 other) {
+        
+        sumR += other.sumR;
+        sumG += other.sumG;
+        sumB += other.sumB;
+
+        sumH += other.sumH;
+        sumS += other.sumS;
+        sumV += other.sumV;
+                
+        nPoints += other.nPoints;
+    }
+    
     public void addPoint(final PairInt point, ImageExt img) {
                             
         int pixIdx = img.getInternalIndex(point);
@@ -270,24 +288,38 @@ public class GroupPixelHSV2 {
         return a;
     }
     
+    /**
+     * values are normalized from 0 to 255 to 0.f to 1.f
+     * @param hsv2
+     * @return 
+     */
     public float calculateRGBDifference(GroupPixelHSV2 hsv2) {
 
         float sumDiff = Math.abs(getAvgR() - hsv2.getAvgR()) +
             Math.abs(getAvgG() - hsv2.getAvgG()) + 
             Math.abs(getAvgB() - hsv2.getAvgB());
     
-        sumDiff /= 3.f;
+        sumDiff /= (255.f * 3.f);
         
         return sumDiff;
     }
     
+    /**
+     * values are normalized from 0 to 255 to 0.f to 1.f
+     * @param hsv2
+     * @return 
+     */
     public float[] calculateRGBDifferences(GroupPixelHSV2 hsv2) {
 
         float[] a = new float[]{
             Math.abs(getAvgR() - hsv2.getAvgR()),
             Math.abs(getAvgG() - hsv2.getAvgG()), 
             Math.abs(getAvgB() - hsv2.getAvgB())};
-            
+        
+        for (int i = 0; i < a.length; ++i) {
+            a[i] /= 255.f;
+        }
+        
         return a;
     }
     
