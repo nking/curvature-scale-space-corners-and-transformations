@@ -12,6 +12,9 @@ import java.util.Set;
  */
 public class GroupPixelHSV2 {
     
+    private double sumR;
+    private double sumG;
+    private double sumB;
     private double sumH;
     private double sumS;
     private double sumV;
@@ -35,17 +38,27 @@ public class GroupPixelHSV2 {
         sumH = 0;
         sumS = 0;
         sumV = 0;
+        sumR = 0;
+        sumG = 0;
+        sumB = 0;
         
         for (PairInt p : points) {
             
             int pixIdx = img.getInternalIndex(p);
             
-            Color.RGBtoHSB(img.getR(pixIdx), img.getG(pixIdx), 
-                img.getB(pixIdx), hsv);
+            int r = img.getR(pixIdx);
+            int g = img.getG(pixIdx);
+            int b = img.getB(pixIdx);
+            
+            Color.RGBtoHSB(r, g, b, hsv);
             
             sumH += hsv[0];
             sumS += hsv[1];
             sumV += hsv[2];
+            
+            sumR += r;
+            sumG += g;
+            sumB += b;
         }
                 
         nPoints = points.size();
@@ -66,6 +79,9 @@ public class GroupPixelHSV2 {
         sumH = 0;
         sumS = 0;
         sumV = 0;
+        sumR = 0;
+        sumG = 0;
+        sumB = 0;
         
         TIntIterator iter = pIdxs.iterator();
         
@@ -73,12 +89,19 @@ public class GroupPixelHSV2 {
             
             int pixIdx = iter.next();
             
-            Color.RGBtoHSB(img.getR(pixIdx), img.getG(pixIdx), 
-                img.getB(pixIdx), hsv);
+            int r = img.getR(pixIdx);
+            int g = img.getG(pixIdx);
+            int b = img.getB(pixIdx);
+            
+            Color.RGBtoHSB(r, g, b, hsv);
             
             sumH += hsv[0];
             sumS += hsv[1];
             sumV += hsv[2];
+        
+            sumR += r;
+            sumG += g;
+            sumB += b;
         }
                 
         nPoints = pIdxs.size();
@@ -98,9 +121,16 @@ public class GroupPixelHSV2 {
             
             int pixIdx = img.getInternalIndex(p);
             
-            Color.RGBtoHSB(img.getR(pixIdx), img.getG(pixIdx), 
-                img.getB(pixIdx), hsv);
+            int r = img.getR(pixIdx);
+            int g = img.getG(pixIdx);
+            int b = img.getB(pixIdx);
             
+            Color.RGBtoHSB(r, g, b, hsv);
+            
+            sumR += r;
+            sumG += g;
+            sumB += b;
+                
             sumH += hsv[0];
             sumS += hsv[1];
             sumV += hsv[2];
@@ -125,8 +155,15 @@ public class GroupPixelHSV2 {
             
             int pixIdx = iter.next();
             
-            Color.RGBtoHSB(img.getR(pixIdx), img.getG(pixIdx), 
-                img.getB(pixIdx), hsv);
+            int r = img.getR(pixIdx);
+            int g = img.getG(pixIdx);
+            int b = img.getB(pixIdx);
+            
+            Color.RGBtoHSB(r, g, b, hsv);
+            
+            sumR += r;
+            sumG += g;
+            sumB += b;
             
             sumH += hsv[0];
             sumS += hsv[1];
@@ -146,9 +183,16 @@ public class GroupPixelHSV2 {
     public void addPoint(final int pixIdx, ImageExt img) {
         
         float[] hsv = new float[3];
-                    
-        Color.RGBtoHSB(img.getR(pixIdx), img.getG(pixIdx), 
-            img.getB(pixIdx), hsv);
+          
+        int r = img.getR(pixIdx);
+        int g = img.getG(pixIdx);
+        int b = img.getB(pixIdx);
+
+        Color.RGBtoHSB(r, g, b, hsv);
+        
+        sumR += r;
+        sumG += g;
+        sumB += b;
 
         sumH += hsv[0];
         sumS += hsv[1];
@@ -176,7 +220,28 @@ public class GroupPixelHSV2 {
     public float getAvgV() {
         return (float)(sumV/(double)nPoints);
     }
+    
+    /**
+     * @return the avgR
+     */
+    public float getAvgR() {
+        return (float)(sumR/(double)nPoints);
+    }
+    
+    /**
+     * @return the avgG
+     */
+    public float getAvgG() {
+        return (float)(sumG/(double)nPoints);
+    }
 
+    /**
+     * @return the avgB
+     */
+    public float getAvgB() {
+        return (float)(sumB/(double)nPoints);
+    }
+    
     /**
      * @return the nPoints
      */
@@ -205,14 +270,32 @@ public class GroupPixelHSV2 {
         return a;
     }
     
+    public float calculateRGBDifference(GroupPixelHSV2 hsv2) {
+
+        float sumDiff = Math.abs(getAvgR() - hsv2.getAvgR()) +
+            Math.abs(getAvgG() - hsv2.getAvgG()) + 
+            Math.abs(getAvgB() - hsv2.getAvgB());
+    
+        sumDiff /= 3.f;
+        
+        return sumDiff;
+    }
+    
+    public float[] calculateRGBDifferences(GroupPixelHSV2 hsv2) {
+
+        float[] a = new float[]{
+            Math.abs(getAvgR() - hsv2.getAvgR()),
+            Math.abs(getAvgG() - hsv2.getAvgG()), 
+            Math.abs(getAvgB() - hsv2.getAvgB())};
+            
+        return a;
+    }
+    
     public boolean isGrey(int limit) {
         
-        int rgb = Color.HSBtoRGB(getAvgH(), getAvgS(), 
-            getAvgV());
-        
-        int r = (rgb >> 16) & 0xFF;
-        int g = (rgb >> 8) & 0xFF;
-        int b = rgb & 0xFF;
+        int r = Math.round(getAvgR());
+        int g = Math.round(getAvgG());
+        int b = Math.round(getAvgB());
         
         // looking at whether color is grey
         int avgRGB = (r + g + b)/3;
@@ -236,12 +319,9 @@ public class GroupPixelHSV2 {
 
     public boolean isGreen() {
         
-        int rgb = Color.HSBtoRGB(getAvgH(), getAvgS(), 
-            getAvgV());
-        
-        int r = (rgb >> 16) & 0xFF;
-        int g = (rgb >> 8) & 0xFF;
-        int b = rgb & 0xFF;
+        int r = Math.round(getAvgR());
+        int g = Math.round(getAvgG());
+        int b = Math.round(getAvgB());
     
         //System.out.println("r=" + r + " g=" + g + " b=" + b);
         

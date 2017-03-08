@@ -5,11 +5,9 @@ import algorithms.bipartite.MinHeapForRT2012;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.CannyEdgeColorAdaptive;
 import algorithms.imageProcessing.ConnectedPointsFinder;
-import algorithms.imageProcessing.DFSContiguousValueFinder;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.GroupPixelHSV;
 import algorithms.imageProcessing.GroupPixelHSV2;
-import algorithms.imageProcessing.Heap;
 import algorithms.imageProcessing.HeapNode;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
@@ -25,10 +23,7 @@ import algorithms.imageProcessing.features.mser.MSER.Threshold;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
-import algorithms.misc.MiscMath;
-import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
-import algorithms.util.PairIntArray;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIntIterator;
 import gnu.trove.iterator.TIntIterator;
@@ -43,12 +38,9 @@ import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import thirdparty.edu.princeton.cs.algs4.Interval;
 import thirdparty.edu.princeton.cs.algs4.Interval2D;
 import thirdparty.edu.princeton.cs.algs4.QuadTree;
@@ -201,7 +193,7 @@ public class MSEREdges {
 
         long ts0 = System.currentTimeMillis();
 
-        mergeRegions3();
+        mergeRegions();
 
         long ts1 = System.currentTimeMillis();
 
@@ -565,18 +557,9 @@ public class MSEREdges {
      */
     private void mergeRegions3() {
 
-        //TODO: this needs many edits after
-        //   have finished improvements in the canny edges and the
-        //   boundary extraction
-
-        //if (true) {return;}
-
         /*
-        TODO: refactoring this to use color and texture
-        (need to add use of gradients within labeled regions to
-        improve the merging.
-        inspired by Alpert, Galun, Basri et al. (2007) though will
-        probably use a different distance and update after merge)
+        The use of gradient histograms as texture in this method was inspired by
+        HOGs in general and by Alpert, Galun, Basri et al. (2007).
         */
 
         //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
@@ -911,6 +894,101 @@ public class MSEREdges {
                 imgCp, 0);
             MiscDebug.writeImage(imgCp, "_" + ts + "_MERGED_");
         }
+    }
+
+    /**
+     * NOT READY FOR USE
+     *
+     * moderate merging of the labeled regions is performed
+     * to remove noisey edges.  Note that the color filters
+     * may need to be revised with more testing.
+     *
+     */
+    private void mergeRegions() {
+
+        /*
+        The use of gradient histograms as texture in this method was inspired by
+        HOGs in general and by Alpert, Galun, Basri et al. (2007).
+        */
+
+        //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
+        if (!state.equals(STATE.EDGES_EXTRACTED)) {
+            throw new IllegalStateException("error in algorithm.  expecting"
+                + " edges were extracted.");
+        }
+
+        assert(labeledSets != null);
+        assert(edgeList != null);
+        assert(labeledSets.size() == edgeList.size());
+
+        if (sobelScores == null) {
+            sobelScores = createSobelScores();
+        }
+
+        HGS hgs = new HGS(sobelScores, 1, 6, 12);
+        HCPT hcpt = new HCPT(ptImg, 1, 6, 12);
+
+        TIntObjectMap<GroupPixelHSV2> clrs = new TIntObjectHashMap<GroupPixelHSV2>();
+
+        int w = gsImg.getWidth();
+        int h = gsImg.getHeight();
+
+        for (int label = 0; label < labeledSets.size(); ++label) {
+            TIntSet set = labeledSets.get(label);
+            GroupPixelHSV2 hsv = new GroupPixelHSV2();
+            hsv.calculateColors(set, clrImg);
+            clrs.put(label, hsv);
+        }
+        /*
+        TODO: refactoring this method
+        
+        visit pattern:
+           -- calculate all adjacent label differences.
+           -- merge the smallest difference
+        caveats:
+           -- hsv differences for black-ish and white-ish need 
+              corrections.  2 very dark regions that need to merge
+              might have large artificial hue diferences.
+              the color space that accounts for that best is probably
+              simply the SSD of rgb.
+        
+        similarty (or diffeence) calculated from: hsv, rgb, and greyscale
+            and color gradients.  the rgb will be substituted for hsv for
+            white-ish and black-osh.
+            (will probably scale these to integer range 0 to 255 to use
+             the bucket min heap)
+        
+        first, logging the all labels to find the values of those that clearly
+            need to merge.
+        */
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+
+        TIntIntMap pointIndexMap = new TIntIntHashMap();
+        for (int i = 0; i < labeledSets.size(); ++i) {
+            TIntSet pixIdxs = labeledSets.get(i);
+            TIntIterator iter = pixIdxs.iterator();
+            while (iter.hasNext()) {
+                int pixIdx = iter.next();
+                pointIndexMap.put(pixIdx, i);
+            }
+        }
+        
+        // -- making adjacency map using edgeList ---
+        TIntObjectMap<VeryLongBitString> adjMap = imageProcessor
+            .createAdjacencyMap(pointIndexMap, edgeList, w, h);
+
+        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
+
+        //DEBUG: needed just for logging
+        TIntObjectMap<PairInt> centroidsMap = new TIntObjectHashMap<PairInt>();
+        
+        //if (debug) {
+        //    Image imgCp = clrImg.copyImage();
+        //    ImageIOHelper.addAlternatingColorCurvesToImage3(edgeList,
+        //        imgCp, 0);
+        //    MiscDebug.writeImage(imgCp, "_" + ts + "_MERGED_");
+        //}
     }
 
     /**
@@ -1620,8 +1698,6 @@ public class MSEREdges {
 
         for (int msz : mszs) {
 
-            // make a pass through results to find any sets that do not have
-            //  embedded points and re-submit those if any
             List<TIntSet> contigousSets2 = new ArrayList<TIntSet>();
             List<TIntSet> edgeLists2 = new ArrayList<TIntSet>();
             TIntSet reassign = new TIntHashSet();
@@ -1914,40 +1990,6 @@ public class MSEREdges {
                 adjLabels.add(pixIdx2);
             }
         }
-    }
-
-    private ArrayDeque<Integer> populateByNumberOfNeighbors(
-        TIntObjectMap<TIntSet> unassignedMap) {
-
-        int n = unassignedMap.size();
-
-        int[] pixIdxs = new int[n];
-        int[] nN = new int[n];
-
-        TIntObjectIterator<TIntSet> iter = unassignedMap.iterator();
-
-        for (int count = 0; count < n; ++count) {
-            iter.advance();
-            int pixIdx = iter.key();
-            pixIdxs[count] = pixIdx;
-            nN[count] = iter.value().size();
-        }
-
-        QuickSort.sortBy1stArg(nN, pixIdxs);
-
-        ArrayDeque<Integer> queue = new ArrayDeque<Integer>();
-
-        for (int i = (n - 1); i > -1; --i) {
-
-            int nP = nN[i];
-            if (nP == 0) {
-                break;
-            }
-
-            queue.add(Integer.valueOf(pixIdxs[i]));
-        }
-
-        return queue;
     }
 
     private GreyscaleImage copyAndShift(GreyscaleImage polarImage, int valueShift) {
