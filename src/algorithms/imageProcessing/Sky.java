@@ -1,8 +1,11 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.PerimeterFinder;
+import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.features.mser.MSEREdges;
 import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.list.TIntList;
@@ -377,13 +380,103 @@ public class Sky {
     }
     
     /**
+     * uses findSkyAssumingHorizon() to find the sky and then extracts the 
+     * outer boundary ordered clockwise, and returns only the points between
+     * the image boundaries.
+     * 
+     * Note, that for some images, more information is needed to determine
+     * foreground and clouds.
+     * 
+     * @return 
+     */
+    public PairIntArray extractSkyline() {
+        
+        List<SkyObject> skyObjs = findSkyAssumingHorizon(true);
+        if (skyObjs == null || skyObjs.isEmpty()) {
+            return null;
+        }
+        
+        PerimeterFinder2 finder = new PerimeterFinder2();
+        
+        Set<PairInt> sky = skyObjs.get(0).points;
+    
+        PairIntArray boundary = finder.extractOrderedBorder(sky);
+    
+        // -- find the smallest x, largest y image boundary point
+        //    and the largest x, largest y image boundary point
+        //    and extract the subset between them.
+        
+        int w = mserEdges.getClrImg().getWidth();
+        int h = mserEdges.getClrImg().getHeight();
+        
+        //max x and smallest y
+        int minX_0 = Integer.MAX_VALUE;
+        int maxY_0 = Integer.MIN_VALUE;
+        int idx0 = -1;
+        
+        int maxX_1 = Integer.MIN_VALUE;
+        int maxY_1 = Integer.MIN_VALUE;
+        int idx1 = -1;
+        
+        for (int i = 0; i < boundary.getN(); ++i) {
+            int x = boundary.getX(i);
+            int y = boundary.getY(i);
+            
+            if (x > 0 && y > 0 && x < (w - 1) && y < (h - 1)) {
+                continue;
+            }
+            
+            if (x < minX_0) {
+                minX_0 = x;
+                maxY_0 = y;
+                idx0 = i;
+            } else if (x == minX_0 && y > maxY_0) {
+                minX_0 = x;
+                maxY_0 = y;
+                idx0 = i;
+            }
+            
+            if (x > maxX_1) {
+                maxX_1 = x;
+                maxY_1 = y;
+                idx1 = i;
+            } else if (x == maxX_1 && y > maxY_1) {
+                maxX_1 = x;
+                maxY_1 = y;
+                idx1 = i;
+            }
+        }
+        if (idx0 == -1 || idx1 == -1) {
+            return boundary;
+        }
+        
+        // trim from idx0 to idx1, so shift idx0 to front to make it easier
+        boundary.rotateLeft(idx0);
+        
+        int end = idx1 - idx0;
+        PairIntArray skyline = boundary.copyRange(0, end);
+        
+        return skyline;
+    }
+    
+    /**
      * NOTE: improvements in segmentation may improve this method for sky and
      * filtering out foreground in the future.
      * 
      * @return 
      */
     public List<SkyObject> findSkyAssumingHorizon() {
-        
+        return findSkyAssumingHorizon(false);
+    }
+    
+    /**
+     * NOTE: improvements in segmentation may improve this method for sky and
+     * filtering out foreground in the future.
+     * 
+     * @return 
+     */
+    public List<SkyObject> findSkyAssumingHorizon(boolean addOnlyContiguous) {
+     
         /*
         essentially, using level sets for binarization of the image into sky
         and non sky.   
@@ -603,53 +696,107 @@ public class Sky {
                     //    regarding reflection filter for green
                     return null;
                 }
+                
+                if (addOnlyContiguous) {
 
-                //TODO: consider how to correct for sky reflected in water
-                //  (see test image for stinson beach)
-                iter = topSkyIndexes.iterator();
-                while (iter.hasNext()) {
-                    int idx = iter.next();
-                    float[] norm = normPTCHs.get(idx).a;
-                    // collect the sky w/o green that has similar intensity
-                    if (norm[3] < 0.03 && norm[0] < 0.1) {
-                        int avg = topAvgGrey.get(idx);
-                        filtered.add(idx);
+                    filtered.add(maxAvgIdx);
+                    
+                } else {
+                    
+                    //TODO: consider how to correct for sky reflected in water
+                    //  (see test image for stinson beach)
+                    iter = topSkyIndexes.iterator();
+                    while (iter.hasNext()) {
+                        int idx = iter.next();
+                        float[] norm = normPTCHs.get(idx).a;
+                        // collect the sky w/o green that has similar intensity
+                        if (norm[3] < 0.03 && norm[0] < 0.1) {
+                            int avg = topAvgGrey.get(idx);
+                            filtered.add(idx);
+                        }
                     }
                 }
             } else {
-                /*
-                ptImg values for histogram bins:
-                 0:  red = 0 - 18
-                 1:  orange = 18 - 40
-                 2:  yellow = 41 - 60ish
-                 3:  green = 61 - 106
-                 4:  blue = 107 - 192
-                 5:  purple = 193 - 255
-                 */
-
-                //TODO: this section needs to be corrected
                 
-                // filtering for all red or blue and red
-                //    (mostly, trying to remove anything resembling the
-                //    removed foreground)
-                iter = topSkyIndexes.iterator();
-                while (iter.hasNext()) {
-                    int idx = iter.next();
-                    int[] hist = ptCHs.get(idx).a;
-                    boolean keep = true;
-                    for (int i = 0; i < rmvd.size(); ++i) {
-                        int rIdx = rmvd.get(i);
-                        int[] rHist = ptCHs.get(rIdx).a;
-                        float intersection = clrHist.intersection(hist, rHist);
-                        System.out.println(" inter=" + intersection + " "
-                            + Arrays.toString(hist));
-                        if (intersection > 0.5) {
-                            keep = false;
-                            break;
+                //TODO: this section needs to be corrected
+               
+                if (addOnlyContiguous) {
+                    // choose brightest of blue or red if doesn't resemble
+                    //     foreground
+                    if (maxAvgIdx > -1) {
+                        
+                        filtered.add(maxAvgIdx);
+                        
+                    } else {
+                        
+                        /*
+                        ptImg values for histogram bins:
+                         0:  red = 0 - 18
+                         1:  orange = 18 - 40
+                         2:  yellow = 41 - 60ish
+                         3:  green = 61 - 106
+                         4:  blue = 107 - 192
+                         5:  purple = 193 - 255
+                         */
+                        int maxAvgRedIdx = -1;
+                        int maxAvgRed = Integer.MIN_VALUE;
+                        iter = topSkyIndexes.iterator();
+                        while (iter.hasNext()) {
+                            int idx = iter.next();
+                            int[] hist = ptCHs.get(idx).a;
+                            boolean keep = true;
+                            for (int i = 0; i < rmvd.size(); ++i) {
+                                int rIdx = rmvd.get(i);
+                                int[] rHist = ptCHs.get(rIdx).a;
+                                float intersection = clrHist.intersection(hist, rHist);
+                                System.out.println(" inter=" + intersection + " "
+                                    + Arrays.toString(hist));
+                                if (intersection > 0.5) {
+                                    keep = false;
+                                    break;
+                                }
+                            }
+                            if (keep) {
+                                float[] norm = normPTCHs.get(idx).a;
+                                if (norm[0] > 0.1 || norm[1] > 0.1) {
+                                    int avg = topAvgGrey.get(idx);
+                                    if (maxAvgRedIdx == -1) {
+                                        maxAvgRedIdx = idx;
+                                        maxAvgRed = avg;    
+                                    } else if (maxAvgRed < avg) {
+                                        maxAvgRedIdx = idx;
+                                        maxAvgRed = avg;
+                                    }
+                                }
+                            }
                         }
+                        filtered.add(maxAvgRedIdx);
                     }
-                    if (keep) {
-                        filtered.add(idx);
+                    
+                } else {
+                
+                    // filtering for all red or blue and red
+                    //    (mostly, trying to remove anything resembling the
+                    //    removed foreground)
+                    iter = topSkyIndexes.iterator();
+                    while (iter.hasNext()) {
+                        int idx = iter.next();
+                        int[] hist = ptCHs.get(idx).a;
+                        boolean keep = true;
+                        for (int i = 0; i < rmvd.size(); ++i) {
+                            int rIdx = rmvd.get(i);
+                            int[] rHist = ptCHs.get(rIdx).a;
+                            float intersection = clrHist.intersection(hist, rHist);
+                            System.out.println(" inter=" + intersection + " "
+                                + Arrays.toString(hist));
+                            if (intersection > 0.5) {
+                                keep = false;
+                                break;
+                            }
+                        }
+                        if (keep) {
+                            filtered.add(idx);
+                        }
                     }
                 }
             }   

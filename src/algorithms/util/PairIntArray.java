@@ -361,6 +361,34 @@ public class PairIntArray {
         QuickSort.sortBy1stArg(x, y, 0, n - 1);
     }
     
+    /**
+     * copy inclusively the range startIdx through stopIdx.
+     * @param startIdx first index copied
+     * @param stopIdx last index copied
+     * @return 
+     */
+    public PairIntArray copyRange(int startIdx, int stopIdx) {
+        
+        if (startIdx < 0 || startIdx >= stopIdx) {
+            throw new IllegalArgumentException("startIdx must be in range and "
+                + " < stopIdx");
+        }
+        if (stopIdx < 0 || stopIdx > (n - 1)) {
+            throw new IllegalArgumentException("stopIdx must be in range");
+        }
+        
+        int len = stopIdx - startIdx + 1;
+        
+        PairIntArray sub = new PairIntArray(len);
+        
+        sub.insertSpaceAtTopOfArrays(len);
+        System.arraycopy(x, startIdx, sub.x, 0, len);
+        System.arraycopy(y, startIdx, sub.y, 0, len);
+        sub.n = len;
+        
+        return sub;
+    }
+    
     public PairIntArray copy() {
         
         PairIntArray clone = new PairIntArray(n);

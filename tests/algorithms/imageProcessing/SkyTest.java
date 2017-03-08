@@ -2,6 +2,7 @@ package algorithms.imageProcessing;
 
 import algorithms.imageProcessing.Sky.SkyObject;
 import algorithms.misc.MiscDebug;
+import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import java.util.List;
 import junit.framework.TestCase;
@@ -115,14 +116,12 @@ public class SkyTest extends TestCase {
 
             Sky sky = new Sky(img);
             sky.setToDebug(fileName1Root);
-            List<SkyObject> skyList = sky
-                //.findSky();
-                .findSkyAssumingHorizon();
+            
+            /*
+            List<SkyObject> skyList = sky.findSkyAssumingHorizon();
             
             assertNotNull(skyList);
-            
-            //MiscDebug.writeImage(skyMask, "_" + fileName1Root + "_SKY_MASK_");
-        
+                    
             if (skyList != null) {
                 for (int j = 0; j < skyList.size(); ++j) {
                     SkyObject obj = skyList.get(j);
@@ -133,6 +132,14 @@ public class SkyTest extends TestCase {
                         "_SKY_" + j);
                 }
             }
+            */
+            
+            PairIntArray skyline = sky.extractSkyline();
+            Image imgCp = img.copyToGreyscale2().copyToColorGreyscale();
+            ImageIOHelper.addCurveToImage(skyline, imgCp, 
+                1, 0, 255, 0);
+            MiscDebug.writeImage(imgCp, "_"+ fileName1Root + 
+                "_skyline_");
         }
     }
     
