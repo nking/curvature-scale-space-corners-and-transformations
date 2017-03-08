@@ -50,6 +50,7 @@ public class SkyTest extends TestCase {
         
         "sky_with_rainbow.jpg",
         "sky_with_rainbow2.jpg"
+        
     };
     
     private String[] sunFileNames = new String[] {
@@ -64,7 +65,7 @@ public class SkyTest extends TestCase {
         "sky_with_rainbow2.jpg"   // dark
     };
     
-    public void estFindSky() throws Exception {
+    public void testFindSky() throws Exception {
         
         int maxDimension = 256;//512;
 

@@ -835,9 +835,9 @@ public class Sky {
             while (iter.hasNext()) {
                 int idx = iter.next();
                 int[] hist = ptCHs.get(idx).a;
-                //System.out.println("  top " + Arrays.toString(hist) + ""
-                //    + "  inten=" + topAvgGrey.get(idx)
-                //    + "  xy=" + topXYs.get(idx));
+                System.out.println("  top " + Arrays.toString(hist) + ""
+                    + "  inten=" + topAvgGrey.get(idx)
+                    + "  xy=" + topXYs.get(idx));
             }
         }
         
@@ -851,17 +851,16 @@ public class Sky {
         TIntObjectMap<PairInt> bottomXYs = calcCentroids(labeledSets, 
             bottomBorderIndexes, gsImg.getWidth());
         
-        if (debug) {
+        if (false && debug) {
             TIntIterator iter = bottomBorderIndexes.iterator();
             while (iter.hasNext()) {
                 int idx = iter.next();
                 int[] hist = ptCHs.get(idx).a;
-                //System.out.println("  bot " + Arrays.toString(hist) + ""
-                //    + "  inten=" + bottomAvgGrey.get(idx)
-                //    + "  xy=" + bottomXYs.get(idx));
+                System.out.println("  bot " + Arrays.toString(hist) + ""
+                    + "  inten=" + bottomAvgGrey.get(idx)
+                    + "  xy=" + bottomXYs.get(idx));
             }
         }
-        
         
         SkyObject sun = findSun();
         
@@ -916,13 +915,26 @@ public class Sky {
                     //    histograms with green and darker for blue skies
                     int avg = topAvgGrey.get(idx);
                     if (avg > maxAvgIfBlue) {
+                        
+                        // prefer those without any purple if exist
+                        boolean doNotSet = maxAvgIdx > -1 && 
+                            normPTCHs.get(maxAvgIdx).a[5] == 0.0 &&
+                            norm[5] > 0;
+                        
+                        if (!doNotSet) {
+                            maxAvgIfBlue = avg;
+                            maxAvgIdx = idx;
+                        }
+                        
+                    } else if (norm[5] == 0.0 && maxAvgIdx > -1 && 
+                        normPTCHs.get(maxAvgIdx).a[5] > 0.0) {
                         maxAvgIfBlue = avg;
                         maxAvgIdx = idx;
                     }
                 }
             }
             
-            if (debug) {
+            if (false && debug) {
                 iter = rmvd.iterator();
                 while (iter.hasNext()) {
                     int idx = iter.next();
@@ -931,9 +943,17 @@ public class Sky {
                         + "  inten=" + topAvgGrey.get(idx)
                         + "  xy=" + topXYs.get(idx));
                 }
+            
+                System.out.println("allAreBlue=" + allAreBlue
+                    + " maxAvgIdx=" + maxAvgIdx + 
+                    " maxAvgIfBlue=" + maxAvgIfBlue);
             }
             
-            if (allAreBlue) {
+            boolean blueSkies = (sun != null) && (maxAvgIfBlue > 0);
+            
+            System.out.println("blueSkies=" + blueSkies);
+            
+            if (allAreBlue || blueSkies) {
 
                 if (maxAvgIdx == -1) {
                     // possibly an error in algorithm above, espec. 
@@ -964,6 +984,8 @@ public class Sky {
                  5:  purple = 193 - 255
                  */
 
+                //TODO: this section needs to be corrected
+                
                 // filtering for all red or blue and red
                 //    (mostly, trying to remove anything resembling the
                 //    removed foreground)
@@ -993,9 +1015,7 @@ public class Sky {
         // TODO: 
         //    looking at properties of filtered indexes and bottom indexes
         //      and their intersection with remaining sets to see if there
-        //      are clear ways to continue adding sky sets
-        
-        
+        //      are clear ways to continue adding sky sets        
         
 
         Set<PairInt> skyPoints = createPoints(labeledSets, filtered, 

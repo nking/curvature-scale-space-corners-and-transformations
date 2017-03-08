@@ -672,11 +672,11 @@ public class MSEREdges {
                 int clrMode2 = isBlack(clr2) ? 1 :
                     (isWhite(clr2) ? 2 : 0);
             
-                System.out.format(
-                    "%s to %s : clr1M=%d clr2M=%d "
-                    + " hsvDiff=%.3f rgbDiff=%.3f hgsI=%.3f\n",
-                    xy1.toString(), xy2.toString(), 
-                    clrMode1, clrMode2, hsvDiff, rgbDiff, hgsInter);
+                //System.out.format(
+                //    "%s to %s : clr1M=%d clr2M=%d "
+                //    + " hsvDiff=%.3f rgbDiff=%.3f hgsI=%.3f\n",
+                //    xy1.toString(), xy2.toString(), 
+                //    clrMode1, clrMode2, hsvDiff, rgbDiff, hgsInter);
             
                 if (clrMode1 == 0 && clrMode2 == 0) {
                     if (hsvDiff > 0.09 || hgsInter < 0.89 || rgbDiff > 0.1) {
@@ -695,7 +695,7 @@ public class MSEREdges {
                     continue;
                 }
                 
-                System.out.println("  merging");
+                //System.out.println("  merging");
                 
                 // -- merge the adjacent into the current label ---
                 
