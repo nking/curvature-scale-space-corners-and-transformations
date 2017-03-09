@@ -3,12 +3,10 @@ package algorithms.compGeometry;
 import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.TObjectIntMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.map.hash.TObjectIntHashMap;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import junit.framework.TestCase;
 
@@ -92,6 +90,64 @@ public class PerimeterFinder2Test extends TestCase {
         finder = new PerimeterFinder2();
         PairIntArray results = finder.extractOrderedBorder(
             contiguousPoints);
+        
+        /*
+            0 1 2 3 4 5 6 7 8 9
+        12                @
+        11              @ @
+        10            @ @
+         9  @ @ @ @ @ @ @ @ @ @
+         8  @ * * @ @ @ @ @ * @ 
+         7  @ * @ @       @ * @ 
+         6  @ @ @         @ @ @
+         5  @ @             @ @
+         4  @               @ @
+         3  @               @ @
+         2                  @ @
+         1                    @
+         0                    @
+
+            0 1 2 3 4 5 6 7 8 9
+        */
+        System.out.println("results=" + results.toString());
+        
+        expected = new PairIntArray();
+        expected.add(0, 3); expected.add(0, 4); expected.add(0, 5); 
+        expected.add(0, 6); expected.add(0, 7); expected.add(0, 8);
+        expected.add(0, 9); expected.add(1, 9); expected.add(2, 9);
+        expected.add(3, 9); expected.add(4, 9); 
+        expected.add(5, 10); expected.add(6, 11); expected.add(7, 12); 
+        expected.add(7, 11); expected.add(6, 10);
+        expected.add(7, 9); expected.add(8, 9); expected.add(9, 9);
+        expected.add(9, 8); expected.add(9, 7); 
+        expected.add(9, 6); expected.add(9, 5); 
+        expected.add(9, 4); expected.add(9, 3); expected.add(9, 2);
+        expected.add(9, 1); expected.add(9, 0); 
+        expected.add(8, 2); expected.add(8, 3); expected.add(8, 4);
+        expected.add(8, 5);
+        expected.add(7, 6); expected.add(7, 7); 
+        expected.add(6, 8); expected.add(5, 8); expected.add(4, 8); 
+        expected.add(3, 7); expected.add(2, 6); expected.add(1, 5);
+
+        assertEquals(expected.getN(), results.getN());
+        
+        for (int i = 0; i < expected.getN(); ++i) {
+            //System.out.println("i=" + i + " " +
+            //    expected.getX(i) + " " + expected.getY(i));
+            assertEquals(expected.getX(i), results.getX(i));
+            assertEquals(expected.getY(i), results.getY(i));
+        }
+        
+        // --- same test with pixel indexes
+        int w = 30;
+        int h = 30;
+        TIntSet cSets = new TIntHashSet();
+        Set<PairInt> set = getSet1();
+        for (PairInt p : set) {
+            int pixIdx = (p.getY() * w) + p.getX();
+            cSets.add(pixIdx);
+        }
+        results = finder.extractOrderedBorder(cSets, w, h);
         
         /*
             0 1 2 3 4 5 6 7 8 9

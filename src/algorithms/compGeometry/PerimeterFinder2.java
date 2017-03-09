@@ -1,10 +1,7 @@
 package algorithms.compGeometry;
 
 import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
-import algorithms.imageProcessing.PostLineThinnerCorrections;
 import algorithms.imageProcessing.SpurRemover;
-import algorithms.imageProcessing.ZhangSuenLineThinner;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.search.NearestNeighbor2D;
@@ -15,23 +12,17 @@ import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
-import java.util.logging.Logger;
-import org.aspectj.org.eclipse.jdt.internal.compiler.util.Messages;
 
 /**
  * class to hold some of the newer methods
@@ -400,18 +391,6 @@ public class PerimeterFinder2 {
         ImageProcessor imp = new ImageProcessor();
         imp.applyThinning(boundary, minMaxXY[1] + 1, 
             minMaxXY[3] + 1, true);
-        
-        //ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
-        //lt.applyLineThinner(b, 
-        //    minMaxXY[0] - 1, minMaxXY[1] + 1, 
-        //    minMaxXY[2] - 1, minMaxXY[3] + 1);
-        
-
-        //NOTE: this is a corrector and thinner so sometimes
-        //   adds points
-        //PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
-        //pltc._correctForArtifacts(b, minMaxXY[1] + 3, 
-        //    minMaxXY[3] + 3);
         
         SpurRemover spurRm = new SpurRemover();
         spurRm.remove(b, minMaxXY[1] + 3, 
@@ -994,7 +973,7 @@ public class PerimeterFinder2 {
             plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],
                 xminmxyminmiac[2], xminmxyminmiac[3],
                 xp, yp, xPolygon, yPolygon, "ordered bounds");
-            
+
             n = contiguousShapePoints.size();
             xp = new int[n];
             yp = new int[n];
@@ -1007,7 +986,7 @@ public class PerimeterFinder2 {
             plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],
                 xminmxyminmiac[2], xminmxyminmiac[3],
                 xp, yp, xPolygon, yPolygon, "filled shape");
-            
+
             plotter.writeFile2();
 
             System.out.println("output=" + output.toString());
@@ -1015,6 +994,50 @@ public class PerimeterFinder2 {
 
         }
     }
+    
+    private void debug(TIntSet contiguousShapePoints,
+        PairIntArray output, int imgWidth) {
+        try {
+
+            int[] xPolygon = null;
+            int[] yPolygon = null;
+            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+            int[] minMaxXY = MiscMath.findMinMaxXY(
+                contiguousShapePoints, imgWidth);
+            int[] xp, yp;
+            int n, count;
+
+            n = output.getN();
+            xp = new int[n];
+            yp = new int[n];
+            for (int i = 0; i < output.getN(); ++i) {
+                xp[i] = output.getX(i);
+                yp[i] = output.getY(i);
+            }
+            plotter.addPlot(minMaxXY[0], minMaxXY[1], minMaxXY[2], 
+                minMaxXY[3], xp, yp, xPolygon, yPolygon, "ordered bounds");
+            
+            n = contiguousShapePoints.size();
+            xp = new int[n];
+            yp = new int[n];
+            int i = 0;
+            TIntIterator iter = contiguousShapePoints.iterator();
+            while (iter.hasNext()) {
+                int pixIdx = iter.next();
+                yp[i] = pixIdx/imgWidth;
+                xp[i] = pixIdx - (yp[i] * imgWidth);
+                ++i;
+            }
+            plotter.addPlot(minMaxXY[0], minMaxXY[1], minMaxXY[2], minMaxXY[3],
+                xp, yp, xPolygon, yPolygon, "filled shape");
+            
+            plotter.writeFile2();
+
+            System.out.println("output=" + output.toString());
+        } catch (Throwable t) {
+
+        }
+    }    
 
     private void debug(Set<PairInt> contiguousShapePoints,
         Set<PairInt> boundary, PairIntArray output) {
@@ -1073,6 +1096,65 @@ public class PerimeterFinder2 {
         }
     }
 
+    private void debug(TIntSet contiguousShapePoints, TIntSet boundary, 
+        PairIntArray output, int imgWidth) {
+        
+        try {
+
+            int[] xPolygon = null;
+            int[] yPolygon = null;
+            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+            int[] minMaxXY = MiscMath.findMinMaxXY(
+                contiguousShapePoints, imgWidth);
+            int[] xp, yp;
+            int n, count;
+
+            n = output.getN();
+            xp = new int[n];
+            yp = new int[n];
+            for (int i = 0; i < output.getN(); ++i) {
+                xp[i] = output.getX(i);
+                yp[i] = output.getY(i);
+            }
+            plotter.addPlot(minMaxXY[0], minMaxXY[1], minMaxXY[2], minMaxXY[3],
+                xp, yp, xPolygon, yPolygon, "ordered bounds");
+            
+            n = boundary.size();
+            xp = new int[n];
+            yp = new int[n];
+            int i = 0;
+            TIntIterator iter = boundary.iterator();
+            while (iter.hasNext()) {
+                int pixIdx = iter.next();
+                yp[i] = pixIdx/imgWidth;
+                xp[i] = pixIdx - (yp[i] * imgWidth);
+                ++i;
+            }
+            plotter.addPlot(minMaxXY[0], minMaxXY[1], minMaxXY[2], minMaxXY[3],
+                xp, yp, xPolygon, yPolygon, "boundary");
+            
+            n = contiguousShapePoints.size();
+            xp = new int[n];
+            yp = new int[n];
+            i = 0;
+            iter = boundary.iterator();
+            while (iter.hasNext()) {
+                int pixIdx = iter.next();
+                yp[i] = pixIdx/imgWidth;
+                xp[i] = pixIdx - (yp[i] * imgWidth);
+                ++i;
+            }
+            plotter.addPlot(minMaxXY[0], minMaxXY[1], minMaxXY[2], minMaxXY[3],
+                xp, yp, xPolygon, yPolygon, "filled shape");
+            
+            plotter.writeFile2();
+
+            System.out.println("output=" + output.toString());
+        } catch (Throwable t) {
+
+        }
+    }
+    
     private void debugPrint(PairIntArray ob1, PairIntArray ob2, 
         PairIntArray output) {
         
@@ -1272,6 +1354,43 @@ public class PerimeterFinder2 {
         
         return minP;
     }
+    
+    private int findSmallestXY(TIntSet pixIdxs, int imgWidth) {
+
+        if (pixIdxs.isEmpty()) {
+            return -1;
+        }
+        
+        int minPX = -1;
+        int minPY = -1;
+        
+        TIntIterator iter = pixIdxs.iterator();
+        while (iter.hasNext()) {
+            int pixIdx = iter.next();
+            int y = pixIdx/imgWidth;
+            int x = pixIdx - (y * imgWidth);
+            if (minPX == -1) {
+                minPX = x;
+                minPY = y;
+            } else if (x < minPX) {
+                minPX = x;
+                minPY = y;
+            } else if (x == minPX) {
+                if (y < minPY) {
+                    minPX = x;
+                    minPY = y;
+                }
+            }
+        }
+        
+        if (minPY == -1) {
+            throw new IllegalStateException("no minimum was found");
+        }
+        
+        int minP = (minPY * imgWidth) + minPX;
+        
+        return minP;
+    }
 
     private VeryLongBitString[] createPointNeighborArray(
         List<PairInt> points, TObjectIntMap<PairInt> pointIndexes) {
@@ -1298,6 +1417,42 @@ public class PerimeterFinder2 {
                 PairInt p2 = new PairInt(x2, y2);
                 if (pointIndexes.containsKey(p2)) {
                     out[i].setBit(pointIndexes.get(p2));
+                }
+            }
+        }
+        
+        return out;
+    }
+    
+    private VeryLongBitString[] createPointNeighborArray(
+        int[] pixIdxs, TIntIntMap pointIndexes, int imgWidth, int imgHeight) {
+        
+        int n = pixIdxs.length;
+        
+        VeryLongBitString[] out = new VeryLongBitString[n];
+                
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        for (int i = 0; i < n; ++i) {
+            
+            int pixIdx = pixIdxs[i];
+            
+            out[i] = new VeryLongBitString(n);
+                  
+            int y = pixIdx/imgWidth;
+            int x = pixIdx - (y * imgWidth);
+                        
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                if (x2 < 0 || y2 < 0 || (x2 >= (imgWidth - 1)) || 
+                    (y2 >= (imgHeight - 1))) {
+                    continue;
+                }
+                int pixIdx2 = (y2 * imgWidth) + x2;
+                if (pointIndexes.containsKey(pixIdx2)) {
+                    out[i].setBit(pointIndexes.get(pixIdx2));
                 }
             }
         }
@@ -1361,4 +1516,282 @@ public class PerimeterFinder2 {
         
         return false;
     }
+    
+    private boolean isAdjacent(int x0, int y0, int x, int y) {
+
+        int diffX = Math.abs(x0 - x);
+        int diffY = Math.abs(y0 - y);
+        if ((diffX == 1 && diffY <= 1) || (diffY == 1 && diffX <= 1)) {
+            return true;
+        } 
+        
+        return false;
+    }
+
+    /**
+     * NOT READY FOR USE...needs alot more testing.
+     * 
+     * given a set of contiguous points, fills in embedded points
+     * and then extracts the outer boundary points, and then
+     * orders the outer boundary points.
+     * For best results, the contiguous points might need to be pre-processed
+     * to smooth the curve and in some cases, one might want to separate the
+     * region into more than one where the region is thin enough to prevent
+     * two pixel paths through it as needed by a spatially sequential closed curve.
+     * 
+     * NOTE: it is up to the invoker to 
+     * give the method a point set which is contiguous.
+     * 
+     * @param contiguousPoints
+     * @return 
+     */
+    public PairIntArray extractOrderedBorder(TIntSet contiguousPoints, 
+        int imgWidth, int imgHeight) {
+       
+        if (contiguousPoints.size() < 4) {
+            PairIntArray output = new PairIntArray(contiguousPoints.size());
+            TIntIterator iter = contiguousPoints.iterator();
+            while (iter.hasNext()) {
+                int pixIdx = iter.next();
+                int y = pixIdx/imgWidth;
+                int x = pixIdx - (y * imgWidth);
+                output.add(x, y);
+            }
+            return output;
+        }
+                
+        //O(8*N)
+        TIntSet embedded = new TIntHashSet();
+        TIntSet boundary = new TIntHashSet();
+        extractBorder2(contiguousPoints, embedded, boundary, imgWidth);
+        TIntSet set2 = new TIntHashSet(contiguousPoints);
+        set2.addAll(embedded);
+        
+        if (boundary == null || boundary.size() == 0) {
+            return null;
+        }
+        
+        /*
+        the algorithm finds the leftmost and smallest xy point in the boundary, 
+        then traverses its unadded boundary neighbors to find the neighbor 
+        with the smallest clockwise angle from it and previous point.
+        For the case that an immediate unadded boundary neighbor is not present
+        as is the case at the end of a single pixel wide spike, for example,
+        the algorithm walks back up the output list looking for a point which
+        has an unadded boundary neighbor and continues from there.
+        
+        note also, the junctions are found ahead of time and removed
+        from the junctionSet and they are added back afterwrds to the output array.
+        corners are a subset of junctions and they are excluded by the small
+        clockwise angle ordering, but if they are not added on a closed
+        curve return to that region, they are added later.
+        
+        NOTE: for best results, the user might want to have pre-processed the
+        points to remove such features.
+        */
+        
+        //using a list so can use bit vectors for quick set intersections
+        int[] boundaryArray = boundary.toArray(new int[boundary.size()]);
+                 
+         // key = pixIdx
+        TIntIntMap pointIndexes = new TIntIntHashMap();
+     
+        for (int i = 0; i < boundaryArray.length; ++i) {
+            pointIndexes.put(boundaryArray[i], i);
+        }
+        
+        // index = index of boundaryArray, item = bitstring with neighbors set
+        //                              where bits are indexes in boundaryArray
+        VeryLongBitString[] pointNeighbors = createPointNeighborArray(
+            boundaryArray, pointIndexes, imgWidth, imgHeight);
+        
+        // corner junctions as indexes of boundaryArray
+        TIntSet junctions = findJunctions(pointNeighbors);
+  
+        PairIntArray orderedOutput = new PairIntArray(boundary.size());
+        
+        TIntSet remaining = new TIntHashSet(boundary);
+                
+        int currPix = findSmallestXY(remaining, imgWidth);
+        remaining.remove(currPix);
+        int currY = currPix/imgWidth;
+        int currX = currPix - (currY * imgWidth);
+        orderedOutput.add(currX, currY);
+        junctions.remove(pointIndexes.get(currPix));
+        
+        // fake point for angle calc refs.  since curr is smallest x, should be
+        // safe to make a point to left of it.
+        int prevPixX = currX - 1;
+        int prevPixY = currY;
+        
+        // idx w.r.t. orderedOutput.  used for walking back up array
+        int outIdx = -1;
+        
+        while (!remaining.isEmpty()) {
+       
+            // among the neighbors of curr that are in remaining, chose
+            // the one which has the smallest clockwise angle w/ prev and curr
+            
+            double minAngle = Double.MAX_VALUE;
+            int minPX = -1;
+            int minPY = -1;
+            int minP = -1;
+            
+            int x = currX;
+            int y = currY;
+            int prevX = prevPixX;
+            int prevY = prevPixY;
+            
+            // these are indexes in boundaryArray
+            int[] currNbrs = pointNeighbors[pointIndexes.get(currPix)].getSetBits();
+            
+            for (int nbrIdx : currNbrs) {
+                int pixIdx2 = boundaryArray[nbrIdx];
+                if (!remaining.contains(pixIdx2)) {
+                    continue;
+                }
+                int y2 = pixIdx2/imgWidth;
+                int x2 = pixIdx2 - (y2 * imgWidth);
+                assert(!(prevX == x2 && prevY == y2));
+                double angle = LinesAndAngles.calcClockwiseAngle(
+                    prevX, prevY, x2, y2, x, y);
+                if (Double.isNaN(angle)) {
+                    // can occur is prev==p or p2==p
+                    throw new IllegalStateException("error: unexpected NaN, "
+                        + " due to equal points");
+                }
+
+                if (angle < minAngle) {
+                    minAngle = angle;
+                    minP = pixIdx2;
+                    minPX = x2;
+                    minPY = y2;
+                }
+            }
+            
+            if (minP == -1) {
+                
+                // when remaining.size is >= (bounds.size - junctions.size)
+                //   start checking for whether have reached the starting
+                //   point, and look for whether the remaining points are
+                //   junctions that need to be inserted in their 90 degree 
+                //   positions.
+                if (remaining.size() <= (boundaryArray.length - junctions.size())) {
+                    if (isAdjacent(currX, currY, orderedOutput.getX(0), 
+                        orderedOutput.getY(0))) {
+                        
+                        // remIdxs holds indexes of boudaryArray
+                        TIntSet remIdxs = new TIntHashSet();
+                        TIntIterator iter3 = remaining.iterator();
+                        while (iter3.hasNext()) {
+                            int pixIdx3 = iter3.next();
+                            remIdxs.add(pointIndexes.get(pixIdx3));
+                        }
+                        remIdxs.removeAll(junctions);
+                        if (remIdxs.isEmpty()) {
+                            break;
+                        }
+                    }
+                }
+                
+                // walk back up the output to try previous points, looking for
+                //   one w/ an unassigned neighbor
+                outIdx--;
+                
+                if (outIdx < 1) {
+                    
+                    int nj = junctions.size();
+                    int nb = boundaryArray.length;
+                    
+                    debug(contiguousPoints, boundary, orderedOutput, imgWidth);
+                    
+                    System.out.println("output.n=" 
+                        + orderedOutput.getN() 
+                        + " rem.n=" + remaining.size() + " " + 
+                        boundary.size());
+                    
+                    throw new IllegalStateException("Error in closed curve shape.");
+                }
+                
+                currX = orderedOutput.getX(outIdx);
+                currY = orderedOutput.getY(outIdx);
+                currPix = (currY * imgWidth) + currX;
+                
+                prevPixX = orderedOutput.getX(outIdx - 1);
+                prevPixY = orderedOutput.getY(outIdx - 1);
+                       
+                continue;
+            }
+            
+            assert(minP != -1);
+            
+            prevPixX = currX;
+            prevPixY = currY;
+            currX = minPX;
+            currY = minPY;
+            currPix = (currY * imgWidth) + currX;
+            
+            outIdx = orderedOutput.getN();
+            
+            remaining.remove(currPix);
+            orderedOutput.add(currX, currY);
+            junctions.remove(pointIndexes.get(currPix));
+        }
+        
+        if (!junctions.isEmpty()) {
+            //insert between junction neigbhors
+            //TODO: this could be improved, but for now, will use
+            //  a pattern that has worse case runtime near
+            //  O(junctions.size * output.size)
+            TIntIterator iter = junctions.iterator();
+            while (iter.hasNext()) {
+                int jIdx = iter.next();
+                
+                int pixIdx = boundaryArray[jIdx];
+                
+                int[] nbrs = pointNeighbors[jIdx].getSetBits();
+                TIntSet nbrsSet = new TIntHashSet();
+                for (int nbrIdx : nbrs) {
+                    nbrsSet.add(boundaryArray[nbrIdx]);
+                }
+                
+                // add junction after first of it's neighbors it finds
+                boolean found = false;
+                for (int ii = 0; ii < orderedOutput.getN(); ++ii) {
+                    
+                    int nbrX = orderedOutput.getX(ii);
+                    int nbrY = orderedOutput.getY(ii);
+                    int nbr = (nbrY * imgWidth) + nbrX;
+                    
+                    if (nbrsSet.contains(nbr)) {
+                        // this cannot be last point, because other neighbor
+                        // would have been found before, so can assume
+                        // the next point is one of the other neighbors
+                        assert(ii < (orderedOutput.getN() - 1));
+                    
+                        int x2 = orderedOutput.getX(ii + 1);
+                        int y2 = orderedOutput.getY(ii + 1);
+                        
+                        int diffX = Math.abs(x2 - nbrX);
+                        int diffY = Math.abs(y2 - nbrY);
+                        assert((diffX == 0 && diffY == 1) || 
+                            (diffX == 1 && diffY == 0));
+                        
+                        int pixIdx2 = (y2 * imgWidth) + x2;
+                        
+                        assert(nbrsSet.contains(pixIdx2));
+                        
+                        orderedOutput.insert(ii, nbrX, nbrY);
+                        
+                        found = true;
+                        break;
+                    }
+                }
+                assert(found);
+            }
+        }
+
+        return orderedOutput;    
+    }   
+    
 }
