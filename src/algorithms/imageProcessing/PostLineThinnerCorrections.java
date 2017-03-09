@@ -5825,6 +5825,29 @@ public class PostLineThinnerCorrections {
             Integer.toString(nCorrections));
     }
     
+    public void extremeThinning(GreyscaleImage input) {
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        final int w = input.getWidth();
+        final int h = input.getHeight();
+        
+        Set<PairInt> points = imageProcessor.readNonZeroPixels(input);
+    
+        Set<PairInt> cp = new HashSet<PairInt>(points);
+        
+        extremeStaircaseRemover(points, w, h);
+        extremeCornerRemover(points, w, h);
+        SpurRemover spurRemover = new SpurRemover();
+        spurRemover.remove(points, w, h);
+                
+        cp.removeAll(points);
+        
+        for (PairInt p : cp) {
+            input.setValue(p.getX(), p.getY(), 0);
+        }
+    }
+    
     /**
      * use with caution.  it has a small window it uses to determine which
      * pixel to remove.  

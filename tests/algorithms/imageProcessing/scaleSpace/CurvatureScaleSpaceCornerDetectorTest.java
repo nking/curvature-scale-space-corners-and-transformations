@@ -127,12 +127,8 @@ ImageIOHelper.writeOutputImage(dirPath + "/sp1.png", cImg);
         ImageExt img = ImageIOHelper.readImageExt(filePath);
         
         CurvatureScaleSpaceImageMaker imgMaker
-            = new CurvatureScaleSpaceImageMaker(img);
+            = new CurvatureScaleSpaceImageMaker(img, true);
                 
-        imgMaker.useLineDrawingMode();
-        
-        imgMaker.initialize();
-        
         assertFalse(imgMaker.getClosedCurves().isEmpty());
         
         PairIntArray edge = imgMaker.getClosedCurves().get(0);

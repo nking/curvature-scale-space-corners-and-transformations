@@ -33,13 +33,7 @@ public class ContourFinderTest extends TestCase {
         
         CurvatureScaleSpaceImageMaker instance = 
             new CurvatureScaleSpaceImageMaker(img);
-        
-        instance.useLineDrawingMode();
-                
-        instance.initialize();
-        
-        assertTrue(instance.getInitialized());
-                
+                                                
         List<PairIntArray> curves = instance.getClosedCurves();
         
         //Collections.sort(curves, new PairIntArrayComparator());
@@ -58,8 +52,7 @@ public class ContourFinderTest extends TestCase {
         List<CurvatureScaleSpaceContour> result = contourFinder.findContours(
             scaleSpaceImage, 0);
         
-        debugPlot(result, ImageIOHelper.readImageExt(filePath),
-            instance.getTrimmedXOffset(), instance.getTrimmedYOffset());
+        debugPlot(result, ImageIOHelper.readImageExt(filePath), 0, 0);
         
         assertTrue(result.size() >= 3);
         
@@ -154,11 +147,7 @@ public class ContourFinderTest extends TestCase {
         
         CurvatureScaleSpaceImageMaker instance = 
             new CurvatureScaleSpaceImageMaker(img);
-                
-        instance.initialize();
-        
-        assertTrue(instance.getInitialized());
-                
+                        
         List<PairIntArray> curves = instance.getClosedCurves();
         
         //Collections.sort(curves, new PairIntArrayComparator());

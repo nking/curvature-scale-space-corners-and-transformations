@@ -129,10 +129,6 @@ public class NextContourTest {
         CurvatureScaleSpaceImageMaker instance
             = new CurvatureScaleSpaceImageMaker(img);
 
-        instance.initialize();
-        
-        instance.useLineDrawingMode();
-        
         List<PairIntArray> curves = instance.getClosedCurves();
 
         for (int i = 0; i < curves.size(); i++) {

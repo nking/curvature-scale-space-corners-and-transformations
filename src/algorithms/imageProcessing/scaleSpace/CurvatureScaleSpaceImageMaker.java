@@ -1,14 +1,31 @@
 package algorithms.imageProcessing.scaleSpace;
 
+import algorithms.compGeometry.PerimeterFinder2;
+import algorithms.connected.ConnectedValuesFinder;
+import algorithms.imageProcessing.EdgeExtractorWithJunctions;
+import algorithms.imageProcessing.EdgeFilterProducts;
+import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
+import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.imageProcessing.PostLineThinnerCorrections;
 import algorithms.imageProcessing.SIGMA;
+import algorithms.imageProcessing.SpurRemover;
+import algorithms.imageProcessing.features.mser.MSEREdges;
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.set.TIntSet;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.logging.Logger;
 
 /**
  given an image, creates scale space maps to find inflection points
@@ -24,35 +41,143 @@ import java.util.Map;
  * 
  * @author nichole
  */
-public final class CurvatureScaleSpaceImageMaker extends 
-    AbstractCurvatureScaleSpaceMapper {
+public final class CurvatureScaleSpaceImageMaker {
+    
+    protected CurvatureScaleSpaceMapperState state = 
+        CurvatureScaleSpaceMapperState.UNINITIALIZED;
     
     /**
-     * array of closed curve edges which are a subset of the list, 'edges'.
-     * NOTE, the closedCurves coordinates here are referenced by the return 
-     * value of createInflectionContours();
+     * array of closed curve clockwise ordered edges;
      */
     protected List<PairIntArray> closedCurves = 
         new ArrayList<PairIntArray>();
     
+    protected boolean useLineDrawingMode = false;
+    
+    protected EdgeFilterProducts filterProducts = null;
+    
+    protected Logger log = Logger.getLogger(this.getClass().getName());
+    
     public CurvatureScaleSpaceImageMaker(ImageExt input) {
         
-        super(input);        
+        initialize(input);
     }
     
-    public CurvatureScaleSpaceImageMaker(ImageExt input, 
-        List<PairIntArray> theEdges) {
+    public CurvatureScaleSpaceImageMaker(ImageExt input, boolean useLineDrawingMode) {
         
-        super(input, theEdges);
+        this.useLineDrawingMode = useLineDrawingMode;
+        
+        initialize(input);
     }
     
-    @Override
-    protected void initialize() {
+    protected void initialize(ImageExt img) {
         
-        super.initialize();
-        
-        createListOfClosedCurves();
-        
+        if (state.ordinal() < 
+            CurvatureScaleSpaceMapperState.INITIALIZED.ordinal()) {
+            
+            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+            
+            int w = img.getWidth();
+            int h = img.getHeight();
+            
+            // extract closed curve edges
+            
+            if (useLineDrawingMode) {
+                GreyscaleImage img2 = img.copyToGreyscale2();
+                img2.multiply(255);
+                ImageProcessor imageProcessor = new ImageProcessor();             
+                
+                img2 = imageProcessor.closing(img2);
+                                
+                //NOTE: might need further thinning
+                imageProcessor.applyThinning(img2, false);
+                PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
+                pltc.extremeThinning(img2);
+                                
+                ConnectedValuesFinder finder = new ConnectedValuesFinder(img2);
+                finder.setToUse8Neighbors();
+                finder.findGroupsNotThisValue(0);
+                
+                PerimeterFinder2 finder2 = new PerimeterFinder2();
+                
+                int n = finder.getNumberOfGroups();
+                
+                System.out.println("found " + n + " contiguous groups in image");
+                
+                for (int i = 0; i < n; ++i) {
+                    
+                    TIntSet boundaryPoints = finder.getXY(i);
+                       
+                    if (isOnImageBounds(boundaryPoints, w, h)) {
+                        continue;
+                    }
+                                                                                
+                    PairIntArray ordered = null;
+                    try {
+                        ordered = finder2.orderTheBoundary(
+                            boundaryPoints, w, h);
+                    } catch (Exception e) {
+                        continue;
+                    }
+                    
+                    {//DEBUG
+                        Image tmp = img2.copyToColorGreyscale();
+                        ImageIOHelper.addCurveToImage(ordered, tmp, 0, 255, 0, 0);
+                        MiscDebug.writeImage(tmp, "_ord_" + MiscDebug.getCurrentTimeFormatted());
+                    }              
+                    
+                    // NOTE: ordered is clockwise, but other code expects 
+                    //  CCW, so reversing for now
+                    ordered.reverse();
+                    
+                    PairIntArrayWithColor closedCurve = new PairIntArrayWithColor(
+                        ordered);
+                    closedCurve.setAsClosedCurve();
+
+                    closedCurves.add(closedCurve);
+                }
+                
+            } else {
+                MSEREdges mserEdges = new MSEREdges(img);
+                mserEdges.setToLowerContrast();
+                mserEdges.extractEdges();
+                List<TIntSet> labeledSets = mserEdges.getLabeledSets();
+            
+                PerimeterFinder2 finder2 = new PerimeterFinder2();
+
+                for (int i = 0; i < labeledSets.size(); ++i) {
+
+                    TIntSet set = labeledSets.get(i);
+
+                    if (isOnImageBounds(set, w, h)) {
+                        continue;
+                    }
+                    
+                    PairIntArray ordered = null;
+                    try {
+                        ordered = finder2.orderTheBoundary(
+                            set, w, h);
+                    } catch (Exception e) {
+                        continue;
+                    }
+                    
+                    // NOTE: ordered is clockwise, but other code expects 
+                    //  CCW, so reversing for now
+                    ordered.reverse();
+                    
+                    PairIntArrayWithColor closedCurve = new PairIntArrayWithColor(
+                        ordered);
+                    closedCurve.setAsClosedCurve();
+
+                    closedCurves.add(closedCurve);
+                }
+            }
+            
+            state = CurvatureScaleSpaceMapperState.EDGES_EXTRACTED;
+
+            state = CurvatureScaleSpaceMapperState.INITIALIZED;
+        }
+                
     } 
     
     /**
@@ -74,9 +199,9 @@ public final class CurvatureScaleSpaceImageMaker extends
         Map<PairIntArray, Map<Float, ScaleSpaceCurve> > scaleSpaceMaps
             = new HashMap<PairIntArray, Map<Float, ScaleSpaceCurve> >();
                 
-        for (int i = 0; i < edges.size(); i++) {
+        for (int i = 0; i < closedCurves.size(); i++) {
             
-            PairIntArray edge = edges.get(i);
+            PairIntArray edge = closedCurves.get(i);
             
             Map<Float, ScaleSpaceCurve> scaleSpaceMap = 
                 createScaleSpaceMetricsForEdge2(edge);
@@ -187,9 +312,7 @@ public final class CurvatureScaleSpaceImageMaker extends
     public ScaleSpaceCurveImage convertScaleSpaceMapToSparseImage(
         Map<Float, ScaleSpaceCurve> scaleSpaceMap, int edgeNumber,
         int edgeLength) {
-        
-        initialize();
-        
+                
         /*       |    *
           sigma  |   * *     **
                  |   * *     **
@@ -243,28 +366,24 @@ public final class CurvatureScaleSpaceImageMaker extends
         
         return scaleSpaceMap;
     }
-
-    protected void createListOfClosedCurves() {
-        
-        // parse edges to find only the closed curves 
-        
-        if (state.ordinal() < CurvatureScaleSpaceMapperState.INITIALIZED.ordinal()) {
-            initialize();
-        }
-        
-        closedCurves.clear();
-        
-        for (PairIntArray edge : edges) {
-            if (edge instanceof PairIntArrayWithColor) {
-                if (((PairIntArrayWithColor)edge).isClosedCurve()) {
-                    closedCurves.add(edge);
-                }
-            }
-        }
-    }
     
     public List<PairIntArray> getClosedCurves() {
         return closedCurves;
+    }
+
+    private boolean isOnImageBounds(TIntSet set, int w, int h) {
+
+        TIntIterator iter = set.iterator();
+        while (iter.hasNext()) {
+            int pixIdx = iter.next();
+            int y = pixIdx/w;
+            int x = pixIdx - (y * w);
+            if (x == 0 || y == 0 || (x == (w - 1)) || (y == (h - 1))) {
+                return true;
+            }
+        }
+        
+        return false;
     }
     
     public static class DescendingScaleSpaceComparator implements 

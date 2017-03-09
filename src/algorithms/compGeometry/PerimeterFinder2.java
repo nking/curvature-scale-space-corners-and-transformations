@@ -1147,8 +1147,8 @@ public class PerimeterFinder2 {
             plotter.addPlot(minMaxXY[0], minMaxXY[1], minMaxXY[2], minMaxXY[3],
                 xp, yp, xPolygon, yPolygon, "filled shape");
             
-            plotter.writeFile2();
-
+            String file = plotter.writeFile2();
+            System.out.println("wrote debug file=" + file);
             System.out.println("output=" + output.toString());
         } catch (Throwable t) {
 
@@ -1546,7 +1546,7 @@ public class PerimeterFinder2 {
      * @return 
      */
     public PairIntArray extractOrderedBorder(TIntSet contiguousPoints, 
-        int imgWidth, int imgHeight) {
+        int imgWidth, int imgHeight) throws Exception {
        
         if (contiguousPoints.size() < 4) {
             PairIntArray output = new PairIntArray(contiguousPoints.size());
@@ -1570,6 +1570,12 @@ public class PerimeterFinder2 {
         if (boundary == null || boundary.size() == 0) {
             return null;
         }
+        
+        return orderTheBoundary(boundary, imgWidth, imgHeight);
+    }
+     
+    public PairIntArray orderTheBoundary(TIntSet boundary, int imgWidth, 
+        int imgHeight) throws Exception {
         
         /*
         the algorithm finds the leftmost and smallest xy point in the boundary, 
@@ -1703,14 +1709,14 @@ public class PerimeterFinder2 {
                     int nj = junctions.size();
                     int nb = boundaryArray.length;
                     
-                    debug(contiguousPoints, boundary, orderedOutput, imgWidth);
+                    debug(boundary, boundary, orderedOutput, imgWidth);
                     
                     System.out.println("output.n=" 
                         + orderedOutput.getN() 
                         + " rem.n=" + remaining.size() + " " + 
                         boundary.size());
                     
-                    throw new IllegalStateException("Error in closed curve shape.");
+                    throw new Exception("Error in closed curve shape.");
                 }
                 
                 currX = orderedOutput.getX(outIdx);

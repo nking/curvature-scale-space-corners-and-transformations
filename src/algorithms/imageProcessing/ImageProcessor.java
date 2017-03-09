@@ -7670,6 +7670,7 @@ if (sum > 511) {
                     for (int x = 1; x < (img.getWidth() - 1); ++x) {
                         for (int y = 1; y < (img.getHeight() - 1); ++y) {
                             int v = img.getValue(x, y);
+ 
                             if (v == 0) {
                                 continue;
                             }
@@ -7677,6 +7678,7 @@ if (sum > 511) {
                                 && allAreNotPresent(img, x, y, tmpD)) {
                                 if (!ImageSegmentation.doesDisconnect(out,
                                     neighborCoordOffsets, x, y)) {
+                                    
                                     out.setValue(x, y, 0);
                                     nEdited++;
                                 }
@@ -7696,6 +7698,7 @@ if (sum > 511) {
         Set<PairInt> points = readNonZeroPixels(img);
         
         if (usePLTC) {
+            //NOTE: there is an error in here that can remove a bridge
             PostLineThinnerCorrections pLTC = new PostLineThinnerCorrections();
             pLTC._correctForArtifacts(points, img.getWidth(), 
                 img.getHeight());
@@ -7794,6 +7797,86 @@ if (sum > 511) {
         }
     }
     
+    /**
+     * apply 8 hit or miss filters iteratively until convergence to thin the
+     * image.  the operation is performed on all pixels with value > 0.
+     */
+    public void applyThinning(TIntSet pixIdxs, int imageWidth, int imageHeight) {
+
+        //from https://en.wikipedia.org/wiki/Hit-or-miss_transform
+        // and thinning
+        TIntSet out = new TIntHashSet(pixIdxs);
+
+        // x,y pairs are sequential in these
+        int[] c1 = new int[]{0, 0, -1, -1, 0, -1, 1, -1};
+        int[] d1 = new int[]{-1, 1, 0, 1, 1, 1};
+        int[] c2 = new int[]{-1, 0, 0, 0, -1, -1, 0, -1};
+        int[] d2 = new int[]{0, 1, 1, 1, 1, 0};
+
+        /*
+            - - -        - -
+              +        + + -
+            + + +      + +        
+        */
+        PairInt[][] neighborCoordOffsets
+            = AbstractLineThinner.createCoordinatePointsForEightNeighbors(
+            0, 0);
+
+        int nEdited = 0;
+        int nIter = 0;
+        do {
+            nEdited = 0;
+
+            // test c1, d1 and it rotated by 90 3 times
+            // test c2, d2 and it rotated by 90 3 times
+            // need to alternate direction of approach
+            for (int t = 0; t < 2; ++t) {
+                int[] tmpC;
+                int[] tmpD;
+                if (t == 0) {
+                    tmpC = Arrays.copyOf(c1, c1.length);
+                    tmpD = Arrays.copyOf(d1, d1.length);
+                } else {
+                    tmpC = Arrays.copyOf(c2, c2.length);
+                    tmpD = Arrays.copyOf(d2, d2.length);
+                }
+                for (int r = 0; r < 4; ++r) {
+                    if (r > 0) {
+                        rotatePairsBy90(tmpC);
+                        rotatePairsBy90(tmpD);
+                    }
+                    
+                    TIntIterator iter = pixIdxs.iterator();
+                    while (iter.hasNext()) {
+                        int pixIdx = iter.next();
+                        int y = pixIdx/imageWidth;
+                        int x = pixIdx - (y * imageWidth);
+                        if (allArePresent(pixIdxs, x, y, tmpC, imageWidth,
+                            imageHeight)
+                            && allAreNotPresent(pixIdxs, x, y, tmpD, imageWidth,
+                            imageHeight)) {
+                            if (!ImageSegmentation.doesDisconnect(out,
+                                neighborCoordOffsets, x, y, imageWidth, 
+                                imageHeight)) {
+                                out.remove(pixIdx);
+                                nEdited++;
+                            }
+                        }
+                    }
+                    
+                    //MiscDebug.writeImage(out, "_thin_");
+                }
+                
+                pixIdxs.clear();
+                pixIdxs.addAll(out);
+            }
+            nIter++;
+        } while (nEdited > 0);
+                
+        pixIdxs.clear();
+        pixIdxs.addAll(out);
+    }
+    
     private void rotatePairsBy90(int[] xy) {
          
         /*
@@ -7818,6 +7901,24 @@ if (sum > 511) {
             xy[i] = -y;
             xy[i + 1] = x;
         }
+    }
+    
+    private boolean allArePresent(TIntSet pixIdxs, int x, int y, int[] xy,
+        int imgWidth, int imgHeight) {
+        
+        for (int k = 0; k < xy.length; k += 2) {
+            int tx = x + xy[k];
+            int ty = y + xy[k + 1];
+            if (tx < 0 || ty < 0 || (tx > (imgWidth - 1)) || (ty > (imgHeight - 1))) {
+                continue;
+            }
+            int pixIdx2 = (ty * imgWidth) + tx;
+            if (!pixIdxs.contains(pixIdx2)) {
+                return false;
+            }
+        }
+        
+        return true;
     }
     
     private boolean allArePresent(GreyscaleImage img, int x, int y, int[] xy) {
@@ -7865,6 +7966,24 @@ if (sum > 511) {
             int tx = x + xy[k];
             int ty = y + xy[k + 1];
             if (points.contains(new PairInt(tx, ty))) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    private boolean allAreNotPresent(TIntSet pixIdxs, int x, int y, int[] xy,
+        int imgWidth, int imgHeight) {
+        
+        for (int k = 0; k < xy.length; k += 2) {
+            int tx = x + xy[k];
+            int ty = y + xy[k + 1];
+            if (tx < 0 || ty < 0 || (tx > (imgWidth - 1)) || (ty > (imgHeight - 1))) {
+                continue;
+            }
+            int pixIdx2 = (ty * imgWidth) + tx;
+            if (pixIdxs.contains(pixIdx2)) {
                 return false;
             }
         }

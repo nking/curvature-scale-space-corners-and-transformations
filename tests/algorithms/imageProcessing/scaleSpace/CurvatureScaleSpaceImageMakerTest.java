@@ -60,14 +60,8 @@ public class CurvatureScaleSpaceImageMakerTest extends TestCase {
         ImageExt img = ImageIOHelper.readImageExt(filePath);
         
         CurvatureScaleSpaceImageMaker instance = 
-            new CurvatureScaleSpaceImageMaker(img);
-        
-        instance.useLineDrawingMode();
-                
-        instance.initialize();
-        
-        assertTrue(instance.getInitialized());
-        
+            new CurvatureScaleSpaceImageMaker(img, true);
+                                        
         PolygonAndPointPlotter plotterC = new PolygonAndPointPlotter();
         
         List<PairIntArray> curves = instance.getClosedCurves();
@@ -171,13 +165,7 @@ public class CurvatureScaleSpaceImageMakerTest extends TestCase {
         ImageExt img = ImageIOHelper.readImageExt(filePath);
         
         CurvatureScaleSpaceImageMaker instance = 
-            new CurvatureScaleSpaceImageMaker(img);
-        
-        instance.useLineDrawingMode();
-        
-        instance.initialize();
-        
-        assertTrue(instance.getInitialized());
+            new CurvatureScaleSpaceImageMaker(img, true);
                 
         PolygonAndPointPlotter plotterC = new PolygonAndPointPlotter();
         
@@ -291,79 +279,6 @@ public class CurvatureScaleSpaceImageMakerTest extends TestCase {
             addToPlot(plotterC, x, y);
         }
         int z = 1;
-    }
-    
-    public void testAlternateConstructor() throws Exception {
-
-        // assert that using the image maker with already extracted edges,
-        //   produces same results as when it invokes the edge extractor.
-
-        String filePath = ResourceFinder.findFileInTestResources(
-            "closed_curve_translate_scale_rotate60.png");
-        
-        ImageExt img = ImageIOHelper.readImageExt(filePath);
-        
-        CurvatureScaleSpaceImageMaker instance = 
-            new CurvatureScaleSpaceImageMaker(img);
-        
-        instance.useLineDrawingMode();
-        
-        instance.initialize();
-        
-        assertTrue(instance.getInitialized());
-                        
-        List<PairIntArray> curves = instance.getClosedCurves();
-        
-        
-        CurvatureScaleSpaceImageMaker instance2 = 
-            new CurvatureScaleSpaceImageMaker(img, curves);
-        
-        instance2.useLineDrawingMode();
-        
-        instance2.initialize();
-        
-        assertTrue(instance2.getInitialized());
-                
-        List<PairIntArray> curves2 = instance2.getClosedCurves();
-        
-        assertTrue(curves.size() == curves2.size());
-        
-        for (int ii = 0; ii < curves.size(); ii++) {
-            
-            PairIntArray edge = curves.get(ii);
-            
-            Map<Float, ScaleSpaceCurve> result = 
-                instance.createScaleSpaceMetricsForEdge2(edge);
-            
-            ScaleSpaceCurveImage scaleSpaceCurveImage = 
-                instance.convertScaleSpaceMapToSparseImage(result, ii, 
-                edge.getN());
-            
-            
-            PairIntArray edge2 = curves2.get(ii);
-            
-            Map<Float, ScaleSpaceCurve> result2 = 
-                instance2.createScaleSpaceMetricsForEdge2(edge2);
-            
-            ScaleSpaceCurveImage scaleSpaceCurveImage2 = 
-                instance2.convertScaleSpaceMapToSparseImage(result2, ii, 
-                edge2.getN());
-            
-            
-            float[] sigmas = scaleSpaceCurveImage.getImageSigmas();
-            float[] sigmas2 = scaleSpaceCurveImage2.getImageSigmas();
-            
-            float[][] scaleImage = scaleSpaceCurveImage.getScaleSpaceImage();
-            float[][] scaleImage2 = scaleSpaceCurveImage2.getScaleSpaceImage();
-            
-            assertTrue(Arrays.equals(sigmas, sigmas2));
-            
-            assertTrue(scaleImage.length == scaleImage2.length);
-            
-            for (int i = 0; i < scaleImage.length; i++) {
-                assertTrue(Arrays.equals(scaleImage[i], scaleImage2[i]));
-            }
-        }
     }
     
     public static void main(String[] args) {
