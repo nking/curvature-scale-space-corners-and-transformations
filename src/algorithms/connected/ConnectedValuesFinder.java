@@ -1,8 +1,10 @@
-package algorithms.imageProcessing;
+package algorithms.connected;
 
 import algorithms.disjointSets.DisjointSet2Helper;
 import algorithms.disjointSets.DisjointSet2Node;
+import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.misc.Misc;
+import algorithms.util.PairInt;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.TIntIntMap;
@@ -14,6 +16,7 @@ import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 
 /**
@@ -27,7 +30,7 @@ import java.util.logging.Logger;
  * 
  * @author nichole
  */
-public class ConnectedPointsFinder {
+public class ConnectedValuesFinder {
     
     private final DisjointSet2Helper disjointSetHelper;
     
@@ -48,6 +51,10 @@ public class ConnectedPointsFinder {
     
     protected int minimumNumberInCluster = 3;
     
+    protected final GreyscaleImage img;
+    
+    protected final TIntSet exclude;
+    
     private final int imgWidth;
     private final int imgHeight;
     
@@ -55,11 +62,34 @@ public class ConnectedPointsFinder {
     
     protected boolean debug = false;
 
-    public ConnectedPointsFinder(int imageWidth, int imageHeight) {
+    public ConnectedValuesFinder(final GreyscaleImage input) {
         
-        imgWidth = imageWidth;
+        this.img = input;
         
-        imgHeight = imageHeight;
+        this.log = Logger.getLogger(this.getClass().getName());
+        
+        this.exclude = new TIntHashSet();
+        
+        imgWidth = input.getWidth();
+        
+        imgHeight = input.getHeight();
+        
+        pixNodes = new TIntObjectHashMap<DisjointSet2Node<Integer>>();
+    
+        disjointSetHelper = new DisjointSet2Helper();
+    }
+    
+    public ConnectedValuesFinder(final GreyscaleImage input, TIntSet mask) {
+        
+        this.img = input;
+        
+        this.log = Logger.getLogger(this.getClass().getName());
+        
+        this.exclude = new TIntHashSet(mask);
+        
+        imgWidth = input.getWidth();
+        
+        imgHeight = input.getHeight();
         
         pixNodes = new TIntObjectHashMap<DisjointSet2Node<Integer>>();
     
@@ -80,54 +110,82 @@ public class ConnectedPointsFinder {
     
     /**
      * find the groups of connected points in pixIdxs where connected
-     * means is adjacent to another point in the group, making the group
-     * contiguous.  The adjacency by default is using the 4 neighbor
+     * means is adjacent to another point in the group and having this 
+     * pixelValue.  The adjacency by default is using the 4 neighbor
      * pattern search unless the user has set that to 8 neighbors.
      * The runtime complexity is essentially O(pixIdxs.size()).
      * 
-     * @param pixIdxs 
+     * @param pixelValue 
      */
-    public void findConnectedPointGroups(TIntSet pixIdxs) {
+    public void findGroups(int pixelValue) {
     
-        initMap(pixIdxs);
+        notValue = false;
         
-        findClustersIterative(pixIdxs);
+        initMap();
+        
+        findClustersIterative(pixelValue);
+        
+        prune();        
+    }
+    
+    /**
+     * find the groups of connected points in pixIdxs where connected
+     * means is adjacent to another point in the group and re any points that do
+     * not have this pixelValue.  The adjacency by default is using the 4 neighbor
+     * pattern search unless the user has set that to 8 neighbors.
+     * The runtime complexity is essentially O(pixIdxs.size()).
+     * 
+     * @param pixelValue 
+     */
+    public void findGroupsNotThisValue(int pixelValue) {
+    
+        notValue = true;
+        
+        initMap();
+        
+        findClustersIterative(pixelValue);
         
         prune();        
     }
 
-    protected void findClustersIterative(TIntSet pixIdxs) {
+    protected void findClustersIterative(int pixelValue) {
         
-        if (pixIdxs.isEmpty()) {
-            return;
-        }
-                
         int[] dxs;
         int[] dys;
         if (use4Neighbors) {
             dxs = Misc.dx4;
             dys = Misc.dy4;
         } else {
-            dxs = Misc.dx8;
-            dys = Misc.dy8;
-        }
-        
-        TIntSet visited = new TIntHashSet();
-        
-        TIntIterator iter = pixIdxs.iterator();
-        while (iter.hasNext()) {
-
-            int uPoint = iter.next();
+            /*
+            for 8 neighbor, can use 4 offsets instead of 8 if visiting all pix
             
-            if (visited.contains(uPoint)) {
+             2  *  *  *       (2,0) 1:2,1:1,2:1
+             1  *  *  +       (1,1) 0:1,0:0,1:0,2:0,2:1,2:2,1:2,0:2
+             0  *  *  *       (2,1) 1:1,1:0,2:0,3:0,3:1,3:2,2:2,1:2
+                0  1  2             X: 1:1,1:0,2:0, 1:2
+                                    use: +1,-1  +1,0  +1,+1  0:1
+            */
+            dxs = new int[]{1,  1, 1, 0};
+            dys = new int[]{-1, 0, 1, 1};
+        }        
+                
+        for (int uPoint = 0; uPoint < img.getNPixels(); ++uPoint) {
+            
+            if (exclude.contains(uPoint)) {
+                continue;
+            }
+            
+            int uPixValue = img.getValue(uPoint);
+            
+            if ((notValue && (uPixValue == pixelValue)) ||
+                (!notValue && (uPixValue != pixelValue))) {
+                                
                 continue;
             }
             
             int uY = uPoint/imgWidth;
             int uX = uPoint - (uY * imgWidth);
-                        
-            //(1 + frac)*O(N) where frac is the fraction added back to stack
-            
+                                    
             for (int i = 0; i < dxs.length; ++i) {
                 
                 int vX = uX + dxs[i];
@@ -140,18 +198,20 @@ public class ConnectedPointsFinder {
             
                 int vPoint = (vY * imgWidth) + vX;
 
-                if (vPoint == uPoint) {
+                if (exclude.contains(vPoint)) {
                     continue;
                 }
+                
+                int vPixValue = img.getValue(vPoint);
 
-                if (!pixIdxs.contains(vPoint)) {
+                if ((notValue && (vPixValue == pixelValue)) ||
+                    (!notValue && (vPixValue != pixelValue))) {
+
                     continue;
                 }
 
                 processPair(uPoint, vPoint);
-            }
-            
-            visited.add(uPoint);
+            }            
         }
     }
     
@@ -287,14 +347,15 @@ public class ConnectedPointsFinder {
         return set;
     }
 
-    private void initMap(TIntSet pixIdxs) {
+    private void initMap() {
         
         pixNodes.clear();
         
-        TIntIterator iter = pixIdxs.iterator();
-        while (iter.hasNext()) {
-            
-            int pixIdx = iter.next();
+        for (int pixIdx = 0; pixIdx < img.getNPixels(); ++pixIdx) {
+                        
+            if (exclude.contains(pixIdx)) {
+                continue;
+            }
             
             Integer index = Integer.valueOf(pixIdx);
             

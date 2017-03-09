@@ -6,7 +6,7 @@ import algorithms.bipartite.MinHeapForRT2012;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.CannyEdgeColorAdaptive;
 import algorithms.imageProcessing.ColorHistogram;
-import algorithms.imageProcessing.ConnectedPointsFinder;
+import algorithms.connected.ConnectedPointsFinder;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.GroupPixelHSV;
 import algorithms.imageProcessing.GroupPixelHSV2;

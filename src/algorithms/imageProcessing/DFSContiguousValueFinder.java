@@ -19,6 +19,7 @@ import java.util.logging.Logger;
  * under MIT License (MIT), Nichole King 2013
  * 
  * @author nichole
+ * @deprecated consider using ConnectedValuesFinder
  */
 public class DFSContiguousValueFinder {
     

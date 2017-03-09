@@ -1,4 +1,4 @@
-package algorithms.imageProcessing;
+package algorithms.connected;
 
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
