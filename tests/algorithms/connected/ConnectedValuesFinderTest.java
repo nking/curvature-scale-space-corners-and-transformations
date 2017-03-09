@@ -3,6 +3,7 @@ package algorithms.connected;
 import algorithms.util.ResourceFinder;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.imageProcessing.ImageProcessor;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
@@ -79,6 +80,26 @@ public class ConnectedValuesFinderTest extends TestCase {
         GreyscaleImage img = ImageIOHelper.readImageAsBinary(filePath);
         
         ConnectedValuesFinder finder = new ConnectedValuesFinder(img);
+
+        finder.findGroups(0);
+                
+        assertTrue(finder.getNumberOfGroups() == 1);
+    }
+    
+    public void testInBL2003Sky_2() throws Exception {
+                
+        //TODO update this
+        
+        String filePath = ResourceFinder.findFileInTestResources("test_mask_0.png");
+        
+        GreyscaleImage img = ImageIOHelper.readImageAsBinary(filePath);
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        int[] imgValues = imageProcessor.convertToInt(img);
+        
+        ConnectedValuesFinder finder = new ConnectedValuesFinder(imgValues,
+            img.getWidth(), img.getHeight());
 
         finder.findGroups(0);
                 

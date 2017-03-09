@@ -3,7 +3,6 @@ package algorithms.compGeometry;
 import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import gnu.trove.iterator.TIntIterator;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.HashSet;
@@ -49,7 +48,7 @@ public class PerimeterFinder2Test extends TestCase {
         
     }
     
-    public void test1() {
+    public void test1() throws Exception {
         
         PerimeterFinder2 finder = new PerimeterFinder2();
         

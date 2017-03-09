@@ -244,6 +244,22 @@ public class ImageProcessor {
     }
     
     /**
+     * create  a int array from the image (the image is not scaled).
+     * @param img
+     * @return 
+     */
+    public int[] convertToInt(GreyscaleImage img) {
+        
+        int[] a = new int[img.getNPixels()];
+        
+        for (int i = 0; i < a.length; ++i) {
+            a[i] = img.getValue(i);
+        }
+        
+        return a;
+    }
+    
+    /**
      * using the binary results from createBinarySobelForPolarTheta
      * and the greyscale results from sobel operator,
      * scale the greyscale sobel so that the maximum value is 1.f,
@@ -4826,55 +4842,6 @@ if (sum > 511) {
 
     }
 
-    /**
-     * find contiguous zeros in image and if the number of pixels in a groups
-     * is less than contiguousZerosLimit, fill in the pixels with the
-     * value of the neighboring pixels.
-     * NOTE: this is set to use the 4-neighbor region, but can be set to use
-     * 8-neighbors if needed.
-     */
-    public void fillInPixels(GreyscaleImage img, final int valueToFill,
-        final int contiguousZerosLimit) {
-
-        DFSContiguousValueFinder finder = new DFSContiguousValueFinder(img);
-        finder.setMinimumNumberInCluster(1);
-        finder.findGroups(valueToFill);
-
-        int nGroups = finder.getNumberOfGroups();
-
-        for (int i = 0; i < nGroups; ++i) {
-
-            int n = finder.getNumberofGroupMembers(i);
-
-            if (n <= contiguousZerosLimit) {
-
-                PairIntArray group = finder.getXY(i);
-
-                // find the adjacent non-zero pixels to these
-                Set<PairInt> neighbors = new HashSet<PairInt>();
-                for (int j = 0; j < group.getN(); ++j)  {
-                    getNeighborsNotThisValue(img, group.getX(j), group.getY(j),
-                        valueToFill, neighbors);
-                }
-
-                // get thier average intensities
-                double avgV = 0;
-                for (PairInt p : neighbors) {
-                    int v = img.getValue(p.getX(), p.getY());
-                    avgV += v;
-                }
-                avgV /= (double)neighbors.size();
-                int vRepl = Math.round((float)avgV);
-                for (int j = 0; j < group.getN(); ++j)  {
-                    int x = group.getX(j);
-                    int y = group.getY(j);
-                    img.setValue(x, y, vRepl);
-                }
-            }
-        }
-
-    }
-
     public void getNeighborsNotThisValue(GreyscaleImage input, int x, int y,
         final int value, Set<PairInt> outputNeighbors) {
 
@@ -8611,7 +8578,7 @@ if (sum > 511) {
                     continue;
                 }
                 //(dx * dy(dy) - dy * dx(dx)) / (dx(dx)*dx(dx) + dy(dy)*dy(dy))^1.5
-                curvature[i][j] = (float)(
+                curvature[i][j] = (
                     (dx[i][j] * dy2[i][j] - dy[i][j] * dx2[i][j])
                     / (dx2dx2 + dy2dy2));
                     /// Math.pow((dx2dx2 + dy2dy2), 1.5));

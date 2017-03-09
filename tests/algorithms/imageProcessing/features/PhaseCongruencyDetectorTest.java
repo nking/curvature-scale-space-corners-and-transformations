@@ -218,28 +218,6 @@ public class PhaseCongruencyDetectorTest extends TestCase {
             edgeImage = imageSegmentation.fillInGapsOf1(edgeImage,
                 new TIntHashSet(), 255);
 
-// TODO: edit performSegmentationWithColorEdges
-            List<Set<PairInt>> segmentedPoints =
-                imageSegmentation.performSegmentationWithColorEdges(img,
-                edgeImage, SegmentationMergeThreshold.DEFAULT, fileName);
-
-            List<PairIntArray> perimeters = BlobsAndPerimeters.extractBoundsOfBlobs(
-                segmentedPoints, false, false, 1, img.getWidth(), img.getHeight());
-
-            if (selectIdx > -1) {
-                ImageProcessor imageProcessor = new ImageProcessor();
-                for (int jj = (selectIdx - 1); jj > -1; --jj) {
-                    perimeters = imageProcessor.unbinZeroPointLists(perimeters, 2);
-                    //Image outImg = transformed.get(jj);
-                    //ImageIOHelper.addAlternatingColorCurvesToImage(perimeters, outImg);
-                    //MiscDebug.writeImage(outImg, "_final_edges_" + (jj + 1) + "_" + fileName);
-                }
-            }
-
-            Image outImg = ImageIOHelper.readImage(filePath);
-            ImageIOHelper.addAlternatingColorCurvesToImage(perimeters, outImg, 2);
-            MiscDebug.writeImage(outImg, "_final_edges_" + fileName);
-
             } catch (Throwable t) {
                 int z = 1;
             }

@@ -4,7 +4,6 @@ import algorithms.disjointSets.DisjointSet2Helper;
 import algorithms.disjointSets.DisjointSet2Node;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.misc.Misc;
-import algorithms.util.PairInt;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.TIntIntMap;
@@ -14,9 +13,7 @@ import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 import java.util.logging.Logger;
 
 /**
@@ -51,7 +48,9 @@ public class ConnectedValuesFinder {
     
     protected int minimumNumberInCluster = 3;
     
+    // only one of these will be instantiated
     protected final GreyscaleImage img;
+    protected final int[] imgValues;
     
     protected final TIntSet exclude;
     
@@ -65,6 +64,8 @@ public class ConnectedValuesFinder {
     public ConnectedValuesFinder(final GreyscaleImage input) {
         
         this.img = input;
+        
+        this.imgValues = null;
         
         this.log = Logger.getLogger(this.getClass().getName());
         
@@ -83,6 +84,8 @@ public class ConnectedValuesFinder {
         
         this.img = input;
         
+        this.imgValues = null;
+        
         this.log = Logger.getLogger(this.getClass().getName());
         
         this.exclude = new TIntHashSet(mask);
@@ -90,6 +93,26 @@ public class ConnectedValuesFinder {
         imgWidth = input.getWidth();
         
         imgHeight = input.getHeight();
+        
+        pixNodes = new TIntObjectHashMap<DisjointSet2Node<Integer>>();
+    
+        disjointSetHelper = new DisjointSet2Helper();
+    }
+    
+    public ConnectedValuesFinder(int[] imgValues, 
+        int imgWidth, int imgHeight) {
+        
+        this.imgValues = imgValues;
+        
+        this.img = null;
+        
+        this.log = Logger.getLogger(this.getClass().getName());
+        
+        this.exclude = new TIntHashSet();
+        
+        this.imgWidth = imgWidth;
+        
+        this.imgHeight = imgHeight;
         
         pixNodes = new TIntObjectHashMap<DisjointSet2Node<Integer>>();
     
@@ -168,14 +191,17 @@ public class ConnectedValuesFinder {
             dxs = new int[]{1,  1, 1, 0};
             dys = new int[]{-1, 0, 1, 1};
         }        
+        
+        int n = (img != null) ? img.getNPixels() : imgValues.length;
                 
-        for (int uPoint = 0; uPoint < img.getNPixels(); ++uPoint) {
+        for (int uPoint = 0; uPoint < n; ++uPoint) {
             
             if (exclude.contains(uPoint)) {
                 continue;
             }
             
-            int uPixValue = img.getValue(uPoint);
+            int uPixValue = (img != null) ? img.getValue(uPoint) : 
+                imgValues[uPoint];
             
             if ((notValue && (uPixValue == pixelValue)) ||
                 (!notValue && (uPixValue != pixelValue))) {
@@ -202,7 +228,8 @@ public class ConnectedValuesFinder {
                     continue;
                 }
                 
-                int vPixValue = img.getValue(vPoint);
+                int vPixValue = (img != null) ? img.getValue(vPoint) :
+                    imgValues[vPoint];
 
                 if ((notValue && (vPixValue == pixelValue)) ||
                     (!notValue && (vPixValue != pixelValue))) {
@@ -349,9 +376,11 @@ public class ConnectedValuesFinder {
 
     private void initMap() {
         
+        int n = (img != null) ? img.getNPixels() : imgValues.length;
+        
         pixNodes.clear();
         
-        for (int pixIdx = 0; pixIdx < img.getNPixels(); ++pixIdx) {
+        for (int pixIdx = 0; pixIdx < n; ++pixIdx) {
                         
             if (exclude.contains(pixIdx)) {
                 continue;
