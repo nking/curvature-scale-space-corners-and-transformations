@@ -2,10 +2,8 @@ package algorithms.imageProcessing.features;
 
 import algorithms.QuickSort;
 import algorithms.compGeometry.FurthestPair;
-import algorithms.compGeometry.NearestPoints;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.ColorHistogram;
-import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
@@ -22,6 +20,8 @@ import algorithms.imageProcessing.features.mser.Canonicalizer.RegionPoints;
 import algorithms.imageProcessing.features.mser.MSER;
 import algorithms.imageProcessing.features.mser.MSER.Threshold;
 import algorithms.imageProcessing.features.mser.Region;
+import algorithms.imageProcessing.features.orb.ORB;
+import algorithms.imageProcessing.features.orb.ORBWrapper;
 import algorithms.imageProcessing.matching.MSERMatcher;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.imageProcessing.util.GroupAverageColors;
@@ -29,10 +29,8 @@ import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
-import algorithms.search.NearestNeighbor2D;
 import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
-import algorithms.util.PairIntArray;
 import com.climbwithyourfeet.clustering.DTClusterFinder;
 import gnu.trove.iterator.TIntIntIterator;
 import gnu.trove.iterator.TIntIterator;
@@ -58,7 +56,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.Stack;
 
 /**
  * a class that finds a template object in another image where the

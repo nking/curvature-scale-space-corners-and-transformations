@@ -1,15 +1,13 @@
-package algorithms.imageProcessing.features;
+package algorithms.imageProcessing.features.orb;
 
 import algorithms.QuickSort;
 import algorithms.imageProcessing.ATrousWaveletTransform;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
-import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MedianTransform;
 import algorithms.imageProcessing.StructureTensor;
 import algorithms.imageProcessing.util.MatrixUtil;
-import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;

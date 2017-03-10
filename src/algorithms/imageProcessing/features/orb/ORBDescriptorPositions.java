@@ -1,5 +1,4 @@
-
-package algorithms.imageProcessing.features;
+package algorithms.imageProcessing.features.orb;
 
 /**
  * content of file orb_descriptor_positions.txt from scipy library.

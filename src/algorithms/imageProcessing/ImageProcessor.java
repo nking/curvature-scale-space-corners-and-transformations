@@ -2,7 +2,7 @@ package algorithms.imageProcessing;
 
 import algorithms.MultiArrayMergeSort;
 import algorithms.compGeometry.PerimeterFinder2;
-import algorithms.imageProcessing.features.ORB;
+import algorithms.imageProcessing.features.orb.ORB;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.MiscMath;

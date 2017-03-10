@@ -1,10 +1,7 @@
-
-package algorithms.imageProcessing.features;
+package algorithms.imageProcessing.features.orb;
 
 import algorithms.imageProcessing.Image;
-import algorithms.imageProcessing.ImageIOHelper;
-import algorithms.imageProcessing.features.ORB.Descriptors;
-import algorithms.misc.MiscDebug;
+import algorithms.imageProcessing.features.orb.ORB.Descriptors;
 import algorithms.util.PairInt;
 import algorithms.util.TwoDFloatArray;
 import algorithms.util.VeryLongBitString;
