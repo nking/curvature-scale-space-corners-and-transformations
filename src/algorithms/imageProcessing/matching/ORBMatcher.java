@@ -1,7 +1,6 @@
 package algorithms.imageProcessing.matching;
 
 import algorithms.QuickSort;
-import algorithms.imageProcessing.VanishingPoints;
 import algorithms.imageProcessing.features.orb.ORB;
 import algorithms.util.PairInt;
 import algorithms.util.VeryLongBitString;
@@ -33,26 +32,6 @@ import java.util.Set;
  */
 public class ORBMatcher {
 
-    // vanishing points for dataset2
-    private VanishingPoints vp2 = null;
-
-    public void setVanishingPointsForSet2(VanishingPoints vp) {
-        vp2 = vp;
-    }
-
-    public static double distance(int x, int y, PairInt b) {
-        int diffX = x - b.getX();
-        int diffY = y - b.getY();
-        double dist = Math.sqrt(diffX * diffX + diffY * diffY);
-        return dist;
-    }
-
-    public static int distance(PairInt p1, PairInt p2) {
-        int diffX = p1.getX() - p2.getX();
-        int diffY = p1.getY() - p2.getY();
-        return (int) Math.sqrt(diffX * diffX + diffY * diffY);
-    }
-
     /**
      * greedy matching of d1 to d2 by min cost, with unique mappings for
      * all indexes.
@@ -63,6 +42,7 @@ public class ORBMatcher {
      * d2 which are matched.
      */
     public static int[][] matchDescriptors(VeryLongBitString[] d1, VeryLongBitString[] d2, List<PairInt> keypoints1, List<PairInt> keypoints2) {
+    
         int n1 = d1.length;
         int n2 = d2.length;
         //[n1][n2]
@@ -157,6 +137,19 @@ public class ORBMatcher {
             results[i][1] = matches.get(i).getY();
         }
         return results;
+    }
+    
+    public static double distance(int x, int y, PairInt b) {
+        int diffX = x - b.getX();
+        int diffY = y - b.getY();
+        double dist = Math.sqrt(diffX * diffX + diffY * diffY);
+        return dist;
+    }
+
+    public static int distance(PairInt p1, PairInt p2) {
+        int diffX = p1.getX() - p2.getX();
+        int diffY = p1.getY() - p2.getY();
+        return (int) Math.sqrt(diffX * diffX + diffY * diffY);
     }
 
 }

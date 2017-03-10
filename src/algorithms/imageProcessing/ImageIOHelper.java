@@ -12,6 +12,7 @@ import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import algorithms.util.ScatterPointPlotterPNG;
 import com.climbwithyourfeet.clustering.util.MiscMath;
+import gnu.trove.TIntCollection;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.TIntObjectMap;
@@ -977,7 +978,7 @@ public class ImageIOHelper {
      * @param gClr
      * @param bClr 
      */
-    public static void addCurveToImage(TIntSet pixIdxs, Image input, 
+    public static void addCurveToImage(TIntCollection pixIdxs, Image input, 
         int nExtraForDot, int rClr, int gClr, int bClr) {
         
         if (pixIdxs == null || input == null) {
