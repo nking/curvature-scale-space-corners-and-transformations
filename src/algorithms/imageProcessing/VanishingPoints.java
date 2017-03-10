@@ -25,6 +25,10 @@ import java.util.Set;
  * a class to hold various methods for determining vanishing lines
  * and to hold the resulting vanishing points.
  * 
+ * NOTE: should add an MSER implementation in here.  see snapshots in 
+ * docs/colorSegmentation3.pdf to see how well the MSER regions
+ * find the major vanishing lines.
+ * 
  * The points require a 3d model so methods may be added for them
  * at a later time. 
  * meanwhile, the user can retrieve the vanishing points 
