@@ -3,7 +3,6 @@ package algorithms.imageProcessing.matching;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.SIGMA;
-import static algorithms.imageProcessing.matching.ORBMatcher.maxNumberOfGaps;
 import algorithms.util.PairIntArray;
 import gnu.trove.map.TIntObjectMap;
 import java.util.List;
@@ -32,6 +31,12 @@ import java.util.Map;
 import java.util.Set;
 
 /**
+ * NOTE: not ready for use.   was an experiment before segmentation
+ * was improved with MSER and before started using HOGs.
+ * This will be re-done with the better segmentation and then
+ * the better segmentation + HOGs, HCPT, color histograms, etc.
+ * The current MSER matcher uses everything except shape.
+ * 
  * uses PartialShapeMatcher and search patterns to
  * find the best fitting match between a
  * group of adjacent segmented cells
@@ -713,4 +718,67 @@ System.out.println("min: cost=" + minCost + " count=" + np +
         }
 
     }
+    
+    private int maxNumberOfGaps(PairIntArray bounds,
+        PartialShapeMatcher.Result r) {
+
+        TIntSet mIdxs = new TIntHashSet(r.getNumberOfMatches());
+        for (int i = 0; i < r.getNumberOfMatches(); ++i) {
+            mIdxs.add(r.getIdx1(i));
+        }
+
+        int maxGapStartIdx = -1;
+        int maxGap = 0;
+        int cStartIdx = -1;
+        int cGap = 0;
+
+        // handling for startIdx of 0 to check for wraparound
+        // of gap at end of block
+        int gap0 = 0;
+
+        for (int i = 0; i < bounds.getN(); ++i) {
+            if (!mIdxs.contains(i)) {
+                // is a gap
+                if (cStartIdx == -1) {
+                    cStartIdx = i;
+                }
+                cGap++;
+                if (i == (bounds.getN() - 1)) {
+                    if (gap0 > 0) {
+                        // 0 1 2 3 4 5
+                        // g g     g g
+                        // gap0=2
+                        // cGap=2 cStartIdx=4
+                        if (cStartIdx > (gap0 - 1)) {
+                            gap0 += cGap;
+                        }
+                    }
+                    if (cGap > maxGap) {
+                        maxGap = cGap;
+                        maxGapStartIdx = cStartIdx;
+                    }
+                    if (gap0 > maxGap) {
+                        maxGap = gap0;
+                        maxGapStartIdx = 0;
+                    }
+                }
+            } else {
+                // is not a gap
+                if (cStartIdx > -1) {
+                    if (cGap > maxGap) {
+                        maxGap = cGap;
+                        maxGapStartIdx = cStartIdx;
+                    }
+                    if (cStartIdx == 0) {
+                        gap0 = cGap;
+                    }
+                    cStartIdx = -1;
+                    cGap = 0;
+                }
+            }
+        }
+
+        return maxGap;
+    }
+
 }
