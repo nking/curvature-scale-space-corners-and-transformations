@@ -41,6 +41,11 @@ import java.util.logging.Logger;
  */
 public class AStar {
 
+    //TODO: make a constructor that supplies the largest distance possible
+    //    between 2 points, and replace the
+    //    Heap w/ MinHeapForRT2012 which has an O(N) bucket queue internally
+    //    as one implementation.
+    
     protected boolean calculateHeuristics = false;
 
     // key is total estimate from srcIdx to destIdx for the given refIdx
