@@ -8,9 +8,14 @@ import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.features.orb.ORB;
+import algorithms.imageProcessing.features.orb.ORB.Descriptors;
 import algorithms.misc.MiscDebug;
+import algorithms.util.CorrespondencePlotter;
+import algorithms.util.PairInt;
+import algorithms.util.QuadInt;
 import algorithms.util.ResourceFinder;
 import gnu.trove.list.TIntList;
+import java.util.List;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 
@@ -105,6 +110,13 @@ public class ORBMatcherTest extends TestCase {
             //orb2.overrideToUseSingleScale();
             orb2.detectAndExtract();
             
+            Descriptors d1 = orb1.getDescriptorsList().get(0);
+            Descriptors d2 = orb2.getDescriptorsList().get(0);
+            List<PairInt> kp1 = orb1.getKeyPointListColMaj(0);
+            List<PairInt> kp2 = orb2.getKeyPointListColMaj(0);
+            QuadInt[] matched = ORBMatcher.matchDescriptors(
+                d1, d2, kp1, kp1);
+            
             {//DEBUG
                 Image tmp1 = img1.copyToGreyscale2().copyToColorGreyscale();
                 for (int ii = 0; ii < 1; ++ii) {
@@ -119,6 +131,17 @@ public class ORBMatcherTest extends TestCase {
                     ImageIOHelper.addCurveToImage(pixIdxs, tmp2, 1, 255, 0, 0);
                 }
                 MiscDebug.writeImage(tmp2, "_kp_" + fileName2Root);
+                CorrespondencePlotter plotter = 
+                    new CorrespondencePlotter(tmp1, tmp2);
+                for (int ii = 0; ii < matched.length; ++ii) {
+                    int x1 = matched[ii].getA();
+                    int y1 = matched[ii].getB();
+                    int x2 = matched[ii].getC();
+                    int y2 = matched[ii].getD();
+                    plotter.drawLineInAlternatingColors(x1, y1, 
+                        x2, y2, 1);
+                }
+                plotter.writeImage("_corres_" + fileName1Root);
             }
             
             
@@ -134,6 +157,12 @@ public class ORBMatcherTest extends TestCase {
             orb2.overrideToUseSingleScale();
             orb2.detectAndExtract();
             
+            d1 = orb1.getDescriptorsList().get(0);
+            d2 = orb2.getDescriptorsList().get(0);
+            kp1 = orb1.getKeyPointListColMaj(0);
+            kp2 = orb2.getKeyPointListColMaj(0);
+            matched = ORBMatcher.matchDescriptors(d1, d2, kp1, kp2);
+            
             {//DEBUG
                 Image tmp1 = lch1[1].copyToColorGreyscale();
                 for (int ii = 0; ii < 1; ++ii) {
@@ -148,6 +177,17 @@ public class ORBMatcherTest extends TestCase {
                     ImageIOHelper.addCurveToImage(pixIdxs, tmp2, 1, 255, 0, 0);
                 }
                 MiscDebug.writeImage(tmp2, "_kp_C_" + fileName2Root);
+                CorrespondencePlotter plotter = 
+                    new CorrespondencePlotter(tmp1, tmp2);
+                for (int ii = 0; ii < matched.length; ++ii) {
+                    int x1 = matched[ii].getA();
+                    int y1 = matched[ii].getB();
+                    int x2 = matched[ii].getC();
+                    int y2 = matched[ii].getD();
+                    plotter.drawLineInAlternatingColors(x1, y1, 
+                        x2, y2, 1);
+                }
+                plotter.writeImage("_corres_C_" + fileName1Root);
             }
             
         }

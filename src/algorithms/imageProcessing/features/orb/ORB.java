@@ -1437,6 +1437,7 @@ public class ORB {
 
         log.fine("nKP=" + nKP);
 
+        // each item is a 256 length bit string
         VeryLongBitString[] descriptors = new VeryLongBitString[nKP];
 
         double pr0, pc0, pr1, pc1;

@@ -6,6 +6,7 @@ import algorithms.imageProcessing.features.orb.ORB;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.QuadInt;
 import algorithms.util.VeryLongBitString;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -71,15 +72,27 @@ public class ORBMatcher {
      * @param d2
      * @param keypoints2
      * @param keypoints1
-     * @return matches - two dimensional int array of indexes in d1 and
-     * d2 which are matched.
+     * @return matches array of objects encapsulating a pair of
+     * matched points
      */
-    public static int[][] matchDescriptors(ORB.Descriptors[] d1, ORB.Descriptors[] d2, List<PairInt> keypoints1, List<PairInt> keypoints2) {
-        if (d1.length != d2.length) {
-            throw new IllegalArgumentException("d1 and d2 must" + " be same length");
+    public static QuadInt[] matchDescriptors(ORB.Descriptors d1, 
+        ORB.Descriptors d2, List<PairInt> keypoints1, 
+        List<PairInt> keypoints2) {
+        
+        int n1 = d1.descriptors.length;
+        int n2 = d2.descriptors.length;
+        if (n1 == 0 || n2 == 0) {
+            return null;
         }
-        int n1 = d1[0].descriptors.length;
-        int n2 = d2[0].descriptors.length;
+        
+        if (d1.descriptors[0].getCapacity() != d2.descriptors[0].getCapacity()) {
+            throw new IllegalArgumentException("d1 and d2 must have same bitstring" 
+                + " capacities (== 256) " + 
+                d1.descriptors[0].getCapacity() + " " +
+                d2.descriptors[0].getCapacity()
+            );
+        }
+        
         if (n1 != keypoints1.size()) {
             throw new IllegalArgumentException("number of descriptors in " + " d1 bitstrings must be same as keypoints1 length");
         }
@@ -87,7 +100,8 @@ public class ORBMatcher {
             throw new IllegalArgumentException("number of descriptors in " + " d2 bitstrings must be same as keypoints2 length");
         }
         //[n1][n2]
-        int[][] cost = ORB.calcDescriptorCostMatrix(d1, d2);
+        int[][] cost = ORB.calcDescriptorCostMatrix(
+            d1.descriptors, d2.descriptors);
         
         // pairs of indexes of matches
         int[][] matches = greedyMatch(keypoints1, keypoints2, cost);
@@ -95,13 +109,22 @@ public class ORBMatcher {
         // ransac to remove outliers
         PairIntArray outputLeftXY = new PairIntArray(matches.length);
         PairIntArray outputRightXY = new PairIntArray(matches.length);
-        EpipolarTransformationFit fit = removeOutliersWithRANSAC(matches, 
+        EpipolarTransformationFit fit 
+            = removeOutliersWithRANSAC(matches, 
             keypoints1, keypoints2, outputLeftXY, outputRightXY);
         
-        // use transformation to include other unmatched within tolerance
+        //TODO: consider using a transformation to include other unmatched within tolerance
         
-        
-        throw new UnsupportedOperationException("not yet implemented");
+        QuadInt[] qs = new QuadInt[outputLeftXY.getN()];
+        for (int i = 0; i < outputLeftXY.getN(); ++i) {
+            QuadInt q = new QuadInt(
+                outputLeftXY.getX(i), outputLeftXY.getY(i), 
+                outputRightXY.getX(i), outputRightXY.getY(i)
+            );
+            qs[i] = q;
+        }
+
+        return qs;        
     }
 
     /**

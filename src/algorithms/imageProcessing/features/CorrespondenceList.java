@@ -1,6 +1,5 @@
 package algorithms.imageProcessing.features;
 
-import algorithms.QuickSort;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.util.PairInt;
 import algorithms.util.QuadInt;
@@ -26,7 +25,6 @@ public class CorrespondenceList {
     private final List<PairInt> points1;
     private final List<PairInt> points2;
     
-    // this might be emoty
     private final TDoubleList cost12 = new TDoubleArrayList();
     
     //TODO: refactor so matches1 and 2 are constructed in class, not injected
