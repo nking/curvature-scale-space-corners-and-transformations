@@ -1,8 +1,11 @@
 package algorithms.imageProcessing.matching;
 
 import algorithms.QuickSort;
+import algorithms.imageProcessing.features.RANSACSolver;
 import algorithms.imageProcessing.features.orb.ORB;
+import algorithms.imageProcessing.transform.EpipolarTransformationFit;
 import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
 import algorithms.util.VeryLongBitString;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -85,39 +88,75 @@ public class ORBMatcher {
         }
         //[n1][n2]
         int[][] cost = ORB.calcDescriptorCostMatrix(d1, d2);
+        
+        // pairs of indexes of matches
         int[][] matches = greedyMatch(keypoints1, keypoints2, cost);
-        // greedy or optimal match can be performed here.
-        // NOTE: some matching problems might benefit from using the spatial
-        //   information at the same time.  for those, will consider adding
-        //   an evaluation term for these descriptors to a specialization of
-        //   PartialShapeMatcher.java
-        return matches;
+        
+        // ransac to remove outliers
+        PairIntArray outputLeftXY = new PairIntArray(matches.length);
+        PairIntArray outputRightXY = new PairIntArray(matches.length);
+        EpipolarTransformationFit fit = removeOutliersWithRANSAC(matches, 
+            keypoints1, keypoints2, outputLeftXY, outputRightXY);
+        
+        // use transformation to include other unmatched within tolerance
+        
+        
+        throw new UnsupportedOperationException("not yet implemented");
     }
 
+    /**
+     * finds best match for each point if a close second best does not exist,
+     * then sorts by lowest cost to keep the unique best starter points.
+     * returns matching indexes (no ransac performed in this method)
+     * @param keypoints1
+     * @param keypoints2
+     * @param cost
+     * @return 
+     */
     private static int[][] greedyMatch(List<PairInt> keypoints1,
         List<PairInt> keypoints2, int[][] cost) {
+        
         int n1 = keypoints1.size();
         int n2 = keypoints2.size();
-        // for the greedy match, separating the index information from the cost
-        // and then sorting by cost
-        int nTot = n1 * n2;
-        PairInt[] indexes = new PairInt[nTot];
-        int[] costs = new int[nTot];
+        
+        /*
+        -- for each keypoint, finding best match, but only keeping it if there is
+           no close 2nd best.
+        -- sorting the results by lowest cost and keepint the unique of those.
+        -- return correspondence
+        */
+        
+        // using a ratio of 0.8 or 0.9 for 2nd best.
+        // see Mikolajczyk and Schmid 2005 and the Brown & Lowe paper
+        int[] bestMatch = findGreedyBestIsolated(cost, 0.8f);
+        assert(bestMatch.length == n1);
+        
+        int nBest = 0;
+        for (int idx : bestMatch) {
+            if (idx > -1) {
+                nBest++;
+            }
+        }
+        
+        PairInt[] indexes = new PairInt[nBest];
+        int[] costs = new int[nBest];
         int count = 0;
-        for (int i = 0; i < n1; ++i) {
-            for (int j = 0; j < n2; ++j) {
-                indexes[count] = new PairInt(i, j);
-                costs[count] = cost[i][j];
+        for (int idx1 = 0; idx1 < n1; ++idx1) {
+            int idx2 = bestMatch[idx1];
+            if (idx2 > -1) {
+                indexes[count] = new PairInt(idx1, idx2);
+                costs[count] = cost[idx1][idx2];
                 count++;
             }
         }
-        assert (count == nTot);
+        
+        assert (count == nBest);
         QuickSort.sortBy1stArg(costs, indexes);
         Set<PairInt> set1 = new HashSet<PairInt>();
         Set<PairInt> set2 = new HashSet<PairInt>();
         List<PairInt> matches = new ArrayList<PairInt>();
         // visit lowest costs (== differences) first
-        for (int i = 0; i < nTot; ++i) {
+        for (int i = 0; i < nBest; ++i) {
             PairInt index12 = indexes[i];
             int idx1 = index12.getX();
             int idx2 = index12.getY();
@@ -139,6 +178,58 @@ public class ORBMatcher {
         return results;
     }
     
+    private static int[] findGreedyBestIsolated(int[][] cost, float ratioLimit) {
+        int n1 = cost.length;
+        int n2 = cost[0].length;
+        
+        int[] bestMatch = new int[n1];
+        for (int i = 0; i < n1; ++i) {
+            int bc = Integer.MAX_VALUE;
+            int bc2 = Integer.MAX_VALUE;
+            int bcIdx = -1;
+            int bc2Idx = -1;
+            for (int j = 0; j < n2; ++j) {
+                int c = cost[i][j];
+                if (c >= bc2) {
+                    continue;
+                }
+                if (c < bc) {
+                    bc2 = bc;
+                    bc2Idx = bcIdx;
+                    bc = c;
+                    bcIdx = j;
+                } else if (c == bc) {
+                    if (c < bc2) {
+                        bc2 = bc;
+                        bc2Idx = bcIdx;
+                        bc = c;
+                        bcIdx = j;
+                    } else {
+                        assert(c == bc2 && bc == bc2);
+                    }
+                } else {
+                    // c > bc
+                    if (c < bc2) {
+                        bc2 = c;
+                        bc2Idx = j;
+                    }
+                }
+            }
+            if (bc2Idx == -1) {
+                bestMatch[i] = bcIdx;
+            } else {
+                float ratio = (float)bc/(float)bc2;
+                if (ratio < 0.8) {
+                    bestMatch[i] = bcIdx;
+                } else {
+                    bestMatch[i] = -1;
+                }
+            }
+        }
+        
+        return bestMatch;
+    }  
+    
     public static double distance(int x, int y, PairInt b) {
         int diffX = x - b.getX();
         int diffY = y - b.getY();
@@ -150,6 +241,30 @@ public class ORBMatcher {
         int diffX = p1.getX() - p2.getX();
         int diffY = p1.getY() - p2.getY();
         return (int) Math.sqrt(diffX * diffX + diffY * diffY);
+    }
+
+    private static EpipolarTransformationFit 
+        removeOutliersWithRANSAC(int[][] matches, 
+        List<PairInt> keypoints1, List<PairInt> keypoints2,
+        PairIntArray outputLeftXY, PairIntArray outputRightXY) {
+        
+        int n0 = matches.length;
+        
+        PairIntArray matchedLeftXY = new PairIntArray(n0);
+        PairIntArray matchedRightXY = new PairIntArray(n0);
+        for (int i = 0; i < n0; ++i) {
+            int idx1 = matches[i][0];
+            int idx2 = matches[i][1];
+            matchedLeftXY.add(keypoints1.get(idx1));
+            matchedRightXY.add(keypoints2.get(idx2));
+        }
+        
+        RANSACSolver solver = new RANSACSolver();
+        
+        EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
+            matchedLeftXY, matchedRightXY, outputLeftXY, outputRightXY);
+
+        return fit;        
     }
 
 }
