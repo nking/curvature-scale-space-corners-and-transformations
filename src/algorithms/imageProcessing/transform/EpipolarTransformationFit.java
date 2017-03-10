@@ -70,4 +70,15 @@ public class EpipolarTransformationFit extends AbstractTransformationFit {
     public void setFundamentalMatrix(SimpleMatrix theFM) {
         fundamentalMatrix = theFM;
     }
+
+    @Override
+    public String toString() {
+        String str = super.toString();
+        StringBuilder sb = new StringBuilder(str);
+        sb.append(" effecTol=").append(effectiveTolerance)
+            .append(" effecTolStDv=").append(effectiveToleranceStdv);
+        return sb.toString();
+    }
+    
+    
 }

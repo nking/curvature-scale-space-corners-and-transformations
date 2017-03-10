@@ -283,7 +283,7 @@ public class RANSACSolver {
             
             consensusFit = fit;
         }
-        
+    
         // write to output and convert the coordinate indexes to the original point indexes
         List<Integer> inlierIndexes = consensusFit.getInlierIndexes();
         for (int i = 0; i < inlierIndexes.size(); ++i) {
@@ -340,8 +340,8 @@ public class RANSACSolver {
         
         float[] xErrors = new float[xy1.getN()];
         float[] yErrors = new float[xy1.getN()];
-        Arrays.fill(xErrors, Float.MIN_VALUE);
-        Arrays.fill(yErrors, Float.MIN_VALUE);
+        Arrays.fill(xErrors, Float.MAX_VALUE);
+        Arrays.fill(yErrors, Float.MAX_VALUE);
         
         float[] outputDist = new float[2];
         
@@ -372,10 +372,10 @@ public class RANSACSolver {
             
                 float d1 = Math.abs(outputDist[0]);
                 float d2 = Math.abs(outputDist[1]);
-                if (xErrors[j] < d1) {
+                if (xErrors[j] > d1) {
                     xErrors[j] = d1;
                 }
-                if (yErrors[j] < d2) {
+                if (yErrors[j] > d2) {
                     yErrors[j] = d2;
                 }
             }

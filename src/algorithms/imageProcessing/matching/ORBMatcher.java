@@ -113,6 +113,10 @@ public class ORBMatcher {
             = removeOutliersWithRANSAC(matches, 
             keypoints1, keypoints2, outputLeftXY, outputRightXY);
         
+        if (fit == null) {
+            return null;
+        }
+        
         //TODO: consider using a transformation to include other unmatched within tolerance
         
         QuadInt[] qs = new QuadInt[outputLeftXY.getN()];
@@ -124,6 +128,8 @@ public class ORBMatcher {
             qs[i] = q;
         }
 
+        System.out.println("fit=" + fit.toString());
+        
         return qs;        
     }
 
