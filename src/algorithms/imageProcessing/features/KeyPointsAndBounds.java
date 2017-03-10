@@ -10,6 +10,7 @@ import java.util.Set;
  * regions of each group.
  * 
  * @author nichole
+ * @deprecated
  */
 public class KeyPointsAndBounds {
     

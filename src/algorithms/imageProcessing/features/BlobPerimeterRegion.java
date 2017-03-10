@@ -10,6 +10,7 @@ import java.util.Set;
 /**
  *
  * @author nichole
+ * @deprecated 
  */
 public class BlobPerimeterRegion extends CornerRegion {
     

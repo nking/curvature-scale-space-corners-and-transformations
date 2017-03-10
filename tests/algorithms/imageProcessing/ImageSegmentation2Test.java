@@ -1,24 +1,13 @@
 package algorithms.imageProcessing;
 
-import algorithms.imageProcessing.features.BlobPerimeterCornerHelper;
-import algorithms.imageProcessing.features.CornerRegion;
-import algorithms.misc.Histogram;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
-import algorithms.util.PairIntArray;
-import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
-import static org.junit.Assert.*;
 
 /**
  *

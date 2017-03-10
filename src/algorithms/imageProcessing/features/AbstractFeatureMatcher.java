@@ -22,6 +22,7 @@ import java.util.logging.Logger;
 /**
  *
  * @author nichole
+ * @deprecated 
  */
 public abstract class AbstractFeatureMatcher {
     

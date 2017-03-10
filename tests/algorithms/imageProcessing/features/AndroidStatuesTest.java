@@ -1298,7 +1298,7 @@ public class AndroidStatuesTest extends TestCase {
 
         log.info("fileName1Root=" + fileName1Root);
 
-        EpipolarColorSegmentedSolver solver = new EpipolarColorSegmentedSolver(img1, img2, settings);
+        /*EpipolarColorSegmentedSolver solver = new EpipolarColorSegmentedSolver(img1, img2, settings);
 
         boolean solved = solver.solve();
 
@@ -1306,7 +1306,7 @@ public class AndroidStatuesTest extends TestCase {
 
         //MiscDebug.writeImagesInAlternatingColor(img1, img2, stats,
         //    fileName1Root + "_matched_non_euclid", 2);
-
+        */
     }
 
      public static void main(String[] args) {

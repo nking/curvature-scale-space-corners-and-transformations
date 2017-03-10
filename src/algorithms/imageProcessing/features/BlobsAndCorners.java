@@ -19,6 +19,7 @@ import java.util.Set;
  * contours of the perimeters
  *
  * @author nichole
+ * @deprecated 
  */
 public class BlobsAndCorners  {
         

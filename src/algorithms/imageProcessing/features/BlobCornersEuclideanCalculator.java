@@ -22,6 +22,7 @@ import java.util.logging.Logger;
  * using methods specific to corners on closed curves.
  *
  * @author nichole
+ * @deprecated 
  */
 public class BlobCornersEuclideanCalculator {
 

@@ -24,6 +24,7 @@ import java.util.logging.Logger;
  * class for extracting blobs and their perimeters.
  *
  * @author nichole
+ * @deprecated 
  */
 public class BlobsAndPerimeters {
 

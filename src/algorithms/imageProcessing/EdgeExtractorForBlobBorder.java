@@ -21,6 +21,7 @@ import java.util.logging.Logger;
  * @see AbstractEdgeExtractor
 
  * @author nichole
+ * @deprecated 
  */
 public class EdgeExtractorForBlobBorder {
             

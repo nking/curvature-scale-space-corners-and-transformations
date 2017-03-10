@@ -11,6 +11,7 @@ import java.util.logging.Logger;
 /**
  *
  * @author nichole
+ * @deprecated 
  */
 public class SegmentedImageHelper {
 

@@ -21,6 +21,7 @@ import java.util.logging.Logger;
  * transformations and evaluate them against all points.
  *
  * @author nichole
+ * @deprecated 
  */
 public class BlobCornersEuclideanCalculator2 {
 
