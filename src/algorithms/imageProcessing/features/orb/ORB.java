@@ -616,7 +616,7 @@ public class ORB {
 
             float[][] octaveImage = pyramidImages[octave].a;
 
-            TDoubleList orientations = cornerOrientations(octaveImage,
+            TDoubleList orientations = calculateOrientations(octaveImage,
                 kp0s, kp1s);
 
             // transform keypoints to full size coordinate reference frame
@@ -1241,7 +1241,7 @@ public class ORB {
      *    orientations : (N, 1) array
                Orientations of corners in the range [-pi, pi].
      */
-    public TDoubleList cornerOrientations(float[][] octaveImage,
+    public TDoubleList calculateOrientations(float[][] octaveImage,
         TIntList keypoints0, TIntList keypoints1) {
 
         //same as mask, same 0's and 1's:
@@ -1277,7 +1277,7 @@ public class ORB {
         double curr_pixel;
         double m01, m10, m01_tmp;
 
-        for (i = 0; i < keypoints0.size(); ++i) {
+        for (i = 0; i < nCorners; ++i) {
             r0 = keypoints0.get(i);
             c0 = keypoints1.get(i);
 
@@ -1377,20 +1377,12 @@ public class ORB {
      * @param keypoints0
      * @param keypoints1
      * @param orientations
-     * @param useDefaultSize
      * @param scale
      * @return the encapsulated descriptors and mask
      */
     protected Descriptors extractOctaveDescriptor(float[][] octaveImage,
         TIntList keypoints0, TIntList keypoints1,
         TDoubleList orientations, float scale) {
-
-        if (POS0 == null) {
-            POS0 = ORBDescriptorPositions.POS0;
-        }
-        if (POS1 == null) {
-            POS1 = ORBDescriptorPositions.POS1;
-        }
 
         assert(orientations.size() == keypoints0.size());
         assert(orientations.size() == keypoints1.size());
@@ -1423,7 +1415,7 @@ public class ORB {
      */
     private VeryLongBitString[] orbLoop(float[][] octaveImage, TIntList keypoints0,
         TIntList keypoints1, TDoubleList orientations, float scale) {
-
+      
         assert(orientations.size() == keypoints0.size());
 
         if (POS0 == null) {

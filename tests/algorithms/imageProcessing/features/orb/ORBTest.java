@@ -35,7 +35,7 @@ public class ORBTest extends TestCase {
     public ORBTest() {
     }
     
-    public void estPeakLocalMax() {
+    public void testPeakLocalMax() {
         
         /*
         using a test embedded in scipy code.
@@ -138,7 +138,7 @@ public class ORBTest extends TestCase {
         }
     }
     
-    public void estCornerPeaks() {
+    public void testCornerPeaks() {
         
         GreyscaleImage image = new GreyscaleImage(12, 12);
         
@@ -309,7 +309,7 @@ public class ORBTest extends TestCase {
         assertTrue(expected.isEmpty());
         
         TDoubleList orientation = 
-            orb.cornerOrientations(img, keypoints0, keypoints1);
+            orb.calculateOrientations(img, keypoints0, keypoints1);
         
         assertEquals(keypoints0.size(), orientation.size());
         Map<PairInt, Integer> expectedOrientations = new HashMap<PairInt, Integer>();
@@ -364,7 +364,7 @@ public class ORBTest extends TestCase {
         */
     }
     
-    public void estTensor() {
+    public void testTensor() {
         
         /*
         >>> from skimage.feature import structure_tensor
@@ -442,7 +442,7 @@ public class ORBTest extends TestCase {
         assertTrue((Math.round(axx[3][1])/factor - 1.) < 0.01);
     }
     
-    public void estCornerHarris() {
+    public void testCornerHarris() {
         
         int sz = 10;
         
@@ -519,7 +519,7 @@ public class ORBTest extends TestCase {
         assertTrue(expected.isEmpty());
     }
     
-    public void estKeypoints_1() throws Exception {
+    public void testKeypoints_1() throws Exception {
         
         String fileName = "susan-in_plus.png";  
         String filePath = ResourceFinder.findFileInTestResources(fileName);
@@ -556,7 +556,7 @@ public class ORBTest extends TestCase {
         
     }
     
-    public void estKeypoints_2() throws Exception {
+    public void testKeypoints_2() throws Exception {
         
         String fileName = "susan-in_plus.png";  
         String filePath = ResourceFinder.findFileInTestResources(fileName);
@@ -590,7 +590,7 @@ public class ORBTest extends TestCase {
         
     }
     
-    public void estKeypoints_3() throws Exception {
+    public void testKeypoints_3() throws Exception {
         
         //NOTE: can see there may still be errors in the code
         // or need to allow relaxation of border distance
@@ -621,7 +621,7 @@ public class ORBTest extends TestCase {
         
     }
     
-    public void estKeypoints_4() throws Exception {
+    public void testKeypoints_4() throws Exception {
         
         String fileName = "blox.gif";
         String filePath = ResourceFinder.findFileInTestResources(fileName);
@@ -651,7 +651,7 @@ public class ORBTest extends TestCase {
         MiscDebug.writeImage(img0, "orb_keypoints_04");        
     }
     
-    public void estKeypoints_5() throws Exception {
+    public void testKeypoints_5() throws Exception {
         
         //NOTE: can see there may still be errors in the code
         // or need to allow relaxation of border distance
@@ -682,7 +682,7 @@ public class ORBTest extends TestCase {
         
     }
     
-    public void estKeypoints_6() throws Exception {
+    public void testKeypoints_6() throws Exception {
         
         //NOTE: can see there may still be errors in the code
         // or need to allow relaxation of border distance
@@ -713,7 +713,7 @@ public class ORBTest extends TestCase {
         
     }
     
-    public void estKeypoints_7() throws Exception {
+    public void testKeypoints_7() throws Exception {
         
         //NOTE: can see there may still be errors in the code
         // or need to allow relaxation of border distance
@@ -751,7 +751,7 @@ public class ORBTest extends TestCase {
         
     }
      
-    public void estKeypoints_8() throws Exception {
+    public void testKeypoints_8() throws Exception {
         
         //NOTE: can see there may still be errors in the code
         // or need to allow relaxation of border distance
@@ -783,7 +783,7 @@ public class ORBTest extends TestCase {
         
     }
      
-    public void estKeypoints_9() throws Exception {
+    public void testKeypoints_9() throws Exception {
         
         //NOTE: can see there may still be errors in the code
         // or need to allow relaxation of border distance
@@ -821,7 +821,7 @@ public class ORBTest extends TestCase {
         
     }
     
-    public void estKeypoints_10() throws Exception {
+    public void testKeypoints_10() throws Exception {
         
         //NOTE: can see there may still be errors in the code
         // or need to allow relaxation of border distance
@@ -855,7 +855,7 @@ public class ORBTest extends TestCase {
         
     }
    
-    public void estKeypoints_11() throws Exception {
+    public void testKeypoints_11() throws Exception {
         
         //NOTE: can see there may still be errors in the code
         // or need to allow relaxation of border distance
@@ -888,7 +888,7 @@ public class ORBTest extends TestCase {
         
     }
    
-    public void estKeypoints_12() throws Exception {
+    public void testKeypoints_12() throws Exception {
         
         //NOTE: can see there may still be errors in the code
         // or need to allow relaxation of border distance
@@ -946,12 +946,25 @@ public class ORBTest extends TestCase {
         int w = img.getWidth();
         int h = img.getHeight();
         
+        /*
+        Using the transformer here on even length image produces an
+        image with some small differences that lead to large differences
+        in the descriptors.
+        The costMatrix is however 0 when better transformations are used as
+        in the image read in from file.
+        
+        
         Transformer tr = new Transformer();
         TransformationParameters params = new TransformationParameters();
         params.setOriginX(w/2);
         params.setOriginY(w/2);
         params.setRotationInDegrees(90);        
         Image img90 = tr.applyTransformation(img, params, w, h);
+        */
+        String fileName = "test_img_r90.png";  
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
+        Image img90 = ImageIOHelper.readImageAsGrayScale(filePath);
+        
         
         MiscDebug.writeImage(img, "_orig_");
         MiscDebug.writeImage(img90, "_rotated_");
@@ -987,15 +1000,13 @@ public class ORBTest extends TestCase {
             desc00.descriptors, desc90.descriptors);
 
         int c00 = costMatrix[0][0];
-        
-   //TODO: fix error w/ desriptor calc or costMatrix
-        
+        //System.out.println("c00=" + c00);         
         // ideally, this would be 0, but there
         // is a difference in calculated orientation
         // of 93 degrees rather than 90 degrees
         // due to even sized image and rotation of integer size pizels.
         assertTrue(c00 < 0.11*256.);
-       //32.29  32,30     
+       
         int np = 1;
         orb = new ORB(img.copyToGreyscale2(), np);
         orb.overrideToUseSmallestPyramid();
