@@ -4,13 +4,16 @@ import algorithms.QuickSort;
 import algorithms.imageProcessing.ATrousWaveletTransform;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MedianTransform;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.StructureTensor;
 import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
 import algorithms.util.TwoDFloatArray;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.list.TDoubleList;
@@ -550,8 +553,8 @@ public class ORB {
             PairInt p = points[i];
             int x = p.getX();
             int y = p.getY();
-            kpc0s.add(x);
-            kpc1s.add(y);
+            kpc1s.add(x);
+            kpc0s.add(y);
         }
 
         // then filter
@@ -594,9 +597,10 @@ public class ORB {
                     c1 = harrisResponse[0].length - 1;
                 }
                 PairInt p = new PairInt(c0, c1);
-                if (!set.contains(p)) {
-                    set.add(p);
+                if (set.contains(p)) {
+                    continue;
                 }
+                set.add(p);
                 kp0s.add(c0);
                 kp1s.add(c1);
             }
@@ -842,8 +846,8 @@ public class ORB {
         r2.keypoints0 = keypoints0;
         r2.keypoints1 = keypoints1;
         
-        /*
-        {//DEBUG
+        
+        /*{//DEBUG
             Image dbg = new Image(harrisResponse[0].length,
                 harrisResponse.length);
             float[] tmp = new float[dbg.getNPixels()];
@@ -859,15 +863,19 @@ public class ORB {
                     dbg.setRGB(i, 255, 255, 255);
                 }
             }
+            PairIntArray tmp2 = new PairIntArray(keypoints0.size());
             for (int i = 0; i < keypoints0.size(); ++i) {
-                int y = keypoints1.get(i);
-                int x = keypoints0.get(i);
-                dbg.setRGB(y, x, 255, 0, 0);
+                int x = keypoints1.get(i);
+                int y = keypoints0.get(i);
+                tmp2.add(x, y);
             }
+            ImageIOHelper.addCurveToImage(tmp2, dbg, 2, 255, 0, 0);
             MiscDebug.writeImage(dbg, "_hr_" + 
                 MiscDebug.getCurrentTimeFormatted());
-        }
-        */
+            System.out.println("nKP=" + keypoints0.size() + " for octave=" + 
+                octave);
+        }*/
+        
         
         return r2;
     }
