@@ -116,7 +116,7 @@ public class ORBMatcherTest extends TestCase {
             List<PairInt> kp1 = orb1.getKeyPointListColMaj(0);
             List<PairInt> kp2 = orb2.getKeyPointListColMaj(0);
             QuadInt[] matched = ORBMatcher.matchDescriptors(
-                d1, d2, kp1, kp1);
+                d1, d2, kp1, kp2);
             
             {//DEBUG
                 Image tmp1 = img1.copyToGreyscale2().copyToColorGreyscale();
@@ -146,13 +146,13 @@ public class ORBMatcherTest extends TestCase {
             }
             
             
-            ORB orb1c = new ORB(lch1[1], 500);
+            ORB orb1c = new ORB(lch1[1], np);
             //orb1c.overrideToAlsoCreate1stDerivKeypoints();
             //orb1c.overrideToCreateCurvaturePoints();
             orb1c.overrideToUseSingleScale();
             orb1c.detectAndExtract();
 
-            ORB orb2c = new ORB(lch2[1], 500);
+            ORB orb2c = new ORB(lch2[1], np);
             //orb2c.overrideToAlsoCreate1stDerivKeypoints();
             //orb2c.overrideToCreateCurvaturePoints();
             orb2c.overrideToUseSingleScale();

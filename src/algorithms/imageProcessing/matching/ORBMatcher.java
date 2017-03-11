@@ -106,6 +106,22 @@ public class ORBMatcher {
         // pairs of indexes of matches
         int[][] matches = greedyMatch(keypoints1, keypoints2, cost);
         
+        if (matches.length < 7) {
+            //TODO: add a euclidean matching here
+            QuadInt[] qs = new QuadInt[matches.length];
+            for (int i = 0; i < matches.length; ++i) {
+                int idx1 = matches[i][0];
+                int idx2 = matches[i][1];
+                QuadInt q = new QuadInt(
+                    keypoints1.get(idx1).getX(), keypoints1.get(idx1).getY(),
+                    keypoints2.get(idx2).getX(), keypoints2.get(idx2).getY()
+                );
+                qs[i] = q;
+            }
+            
+            return qs;
+        }
+        
         // ransac to remove outliers
         PairIntArray outputLeftXY = new PairIntArray(matches.length);
         PairIntArray outputRightXY = new PairIntArray(matches.length);
