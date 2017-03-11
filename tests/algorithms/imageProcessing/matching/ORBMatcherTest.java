@@ -7,6 +7,7 @@ import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.SIGMA;
+import algorithms.imageProcessing.features.HOGs;
 import algorithms.imageProcessing.features.orb.ORB;
 import algorithms.imageProcessing.features.orb.ORB.Descriptors;
 import algorithms.misc.MiscDebug;
@@ -14,6 +15,7 @@ import algorithms.util.CorrespondencePlotter;
 import algorithms.util.PairInt;
 import algorithms.util.QuadInt;
 import algorithms.util.ResourceFinder;
+import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TIntList;
 import java.util.ArrayList;
 import java.util.List;
@@ -57,8 +59,8 @@ public class ORBMatcherTest extends TestCase {
             "checkerboard_01.jpg",
             "checkerboard_02.jpg"};
 
-        //for (int i = 0; i < filePairs.length; ++i) {
-        for (int i = 3; i < 4; ++i) {
+        for (int i = 0; i < filePairs.length; ++i) {
+        //for (int i = 2; i < 3; ++i) {
 
             String fileName1 = filePairs[i][0];
 
@@ -115,8 +117,23 @@ public class ORBMatcherTest extends TestCase {
             Descriptors d2 = orb2.getDescriptorsList().get(0);
             List<PairInt> kp1 = orb1.getKeyPointListColMaj(0);
             List<PairInt> kp2 = orb2.getKeyPointListColMaj(0);
-            QuadInt[] matched = ORBMatcher.matchDescriptors(
-                d1, d2, kp1, kp2);
+            QuadInt[] matched;
+            
+            if (i == 2) {
+                
+                HOGs hogs1 = new HOGs(img1GS, 1, 6);
+                HOGs hogs2 = new HOGs(img2GS, 1, 6);
+                TDoubleList orientations1 = orb1.getOrientationsList().get(0);
+                TDoubleList orientations2 = orb2.getOrientationsList().get(0);
+                
+                matched = ORBMatcher.matchDescriptors(d1, d2, kp1, kp2,
+                    hogs1, hogs2, orientations1, orientations2);
+            
+            } else {
+            
+                matched = ORBMatcher.matchDescriptors(
+                    d1, d2, kp1, kp2);
+            }
             
             {//DEBUG
                 Image tmp1 = img1.copyToGreyscale2().copyToColorGreyscale();
@@ -150,22 +167,42 @@ public class ORBMatcherTest extends TestCase {
             //orb1c.overrideToAlsoCreate1stDerivKeypoints();
             //orb1c.overrideToCreateCurvaturePoints();
             orb1c.overrideToUseSingleScale();
+            orb1c.overrideToNotCreateATrousKeypoints();
             orb1c.detectAndExtract();
 
             ORB orb2c = new ORB(lch2[1], np);
             //orb2c.overrideToAlsoCreate1stDerivKeypoints();
             //orb2c.overrideToCreateCurvaturePoints();
             orb2c.overrideToUseSingleScale();
+            orb2c.overrideToNotCreateATrousKeypoints();
             orb2c.detectAndExtract();
             
             Descriptors d1c = orb1c.getDescriptorsList().get(0);
             Descriptors d2c = orb2c.getDescriptorsList().get(0);
             List<PairInt> kp1c = orb1c.getKeyPointListColMaj(0);
             List<PairInt> kp2c = orb2c.getKeyPointListColMaj(0);
-            matched = ORBMatcher.matchDescriptors(d1c, d2c, kp1c, kp2c);
+            if (i == 2) {
+                
+                HOGs hogs1 = new HOGs(lch1[1], 1, 6);
+                HOGs hogs2 = new HOGs(lch2[1], 1, 6);
+                TDoubleList orientations1 = orb1.getOrientationsList().get(0);
+                TDoubleList orientations2 = orb2.getOrientationsList().get(0);
+                
+                matched = ORBMatcher.matchDescriptors(d1c, d2c, kp1c, kp2c,
+                    hogs1, hogs2, orientations1, orientations2);
+            
+            } else {
+            
+                matched = ORBMatcher.matchDescriptors(
+                    d1c, d2c, kp1c, kp2c);
+            }
             
             {//DEBUG
                 Image tmp1 = lch1[1].copyToColorGreyscale();
+                for (int ii = 0; ii < tmp1.getNPixels(); ++ii) {
+                    tmp1.setRGB(ii, tmp1.getR(ii) + 100, 
+                        tmp1.getG(ii) + 100, tmp1.getB(ii) + 100);
+                }
                 for (int ii = 0; ii < 1; ++ii) {
                     TIntList pixIdxs = orb1.getKeyPointListPix(ii);
                     ImageIOHelper.addCurveToImage(pixIdxs, tmp1, 1, 255, 0, 0);
@@ -173,6 +210,10 @@ public class ORBMatcherTest extends TestCase {
                 MiscDebug.writeImage(tmp1, "_kp_C_" + fileName1Root);
                 
                 Image tmp2 = lch2[1].copyToColorGreyscale();
+                for (int ii = 0; ii < tmp2.getNPixels(); ++ii) {
+                    tmp2.setRGB(ii, tmp2.getR(ii) + 100, 
+                        tmp2.getG(ii) + 100, tmp2.getB(ii) + 100);
+                }
                 for (int ii = 0; ii < 1; ++ii) {
                     TIntList pixIdxs = orb2.getKeyPointListPix(ii);
                     ImageIOHelper.addCurveToImage(pixIdxs, tmp2, 1, 255, 0, 0);
