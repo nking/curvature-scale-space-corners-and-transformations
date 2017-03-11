@@ -15,6 +15,7 @@ import algorithms.util.PairInt;
 import algorithms.util.QuadInt;
 import algorithms.util.ResourceFinder;
 import gnu.trove.list.TIntList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
@@ -145,23 +146,23 @@ public class ORBMatcherTest extends TestCase {
             }
             
             
-            orb1 = new ORB(lch1[1], 500);
-            //orb1.overrideToAlsoCreate1stDerivKeypoints();
-            //orb1.overrideToCreateCurvaturePoints();
-            orb1.overrideToUseSingleScale();
-            orb1.detectAndExtract();
+            ORB orb1c = new ORB(lch1[1], 500);
+            //orb1c.overrideToAlsoCreate1stDerivKeypoints();
+            //orb1c.overrideToCreateCurvaturePoints();
+            orb1c.overrideToUseSingleScale();
+            orb1c.detectAndExtract();
 
-            orb2 = new ORB(lch2[1], 500);
-            //orb2.overrideToAlsoCreate1stDerivKeypoints();
-            //orb2.overrideToCreateCurvaturePoints();
-            orb2.overrideToUseSingleScale();
-            orb2.detectAndExtract();
+            ORB orb2c = new ORB(lch2[1], 500);
+            //orb2c.overrideToAlsoCreate1stDerivKeypoints();
+            //orb2c.overrideToCreateCurvaturePoints();
+            orb2c.overrideToUseSingleScale();
+            orb2c.detectAndExtract();
             
-            d1 = orb1.getDescriptorsList().get(0);
-            d2 = orb2.getDescriptorsList().get(0);
-            kp1 = orb1.getKeyPointListColMaj(0);
-            kp2 = orb2.getKeyPointListColMaj(0);
-            matched = ORBMatcher.matchDescriptors(d1, d2, kp1, kp2);
+            Descriptors d1c = orb1c.getDescriptorsList().get(0);
+            Descriptors d2c = orb2c.getDescriptorsList().get(0);
+            List<PairInt> kp1c = orb1c.getKeyPointListColMaj(0);
+            List<PairInt> kp2c = orb2c.getKeyPointListColMaj(0);
+            matched = ORBMatcher.matchDescriptors(d1c, d2c, kp1c, kp2c);
             
             {//DEBUG
                 Image tmp1 = lch1[1].copyToColorGreyscale();
@@ -190,6 +191,40 @@ public class ORBMatcherTest extends TestCase {
                 plotter.writeImage("_corres_C_" + fileName1Root);
             }
             
+            // combining the descriptors
+            List<Descriptors> d1CombList = new ArrayList<Descriptors>();
+            d1CombList.add(d1);
+            d1CombList.add(d1c);
+            List<Descriptors> d2CombList = new ArrayList<Descriptors>();
+            d2CombList.add(d2);
+            d2CombList.add(d2c);
+            
+            Descriptors d1Comb = ORB.combineDescriptors(d1CombList);
+            Descriptors d2Comb = ORB.combineDescriptors(d2CombList);
+            kp1.addAll(kp1c);
+            kp2.addAll(kp2c);
+            matched = ORBMatcher.matchDescriptors(d1Comb, d2Comb, kp1, kp2);
+            
+            {//DEBUG
+                Image tmp1 = img1GS.copyToColorGreyscale();
+                ImageIOHelper.addCurveToImage(kp1, tmp1, 1, 255, 0, 0);
+                MiscDebug.writeImage(tmp1, "_kp_comb_" + fileName1Root);
+                
+                Image tmp2 = img2GS.copyToColorGreyscale();
+                ImageIOHelper.addCurveToImage(kp2, tmp2, 1, 255, 0, 0);
+                MiscDebug.writeImage(tmp2, "_kp_comb_" + fileName2Root);
+                CorrespondencePlotter plotter = 
+                    new CorrespondencePlotter(tmp1, tmp2);
+                for (int ii = 0; ii < matched.length; ++ii) {
+                    int x1 = matched[ii].getA();
+                    int y1 = matched[ii].getB();
+                    int x2 = matched[ii].getC();
+                    int y2 = matched[ii].getD();
+                    plotter.drawLineInAlternatingColors(x1, y1, 
+                        x2, y2, 1);
+                }
+                plotter.writeImage("_corres_comb_" + fileName1Root);
+            }
         }
     }
 

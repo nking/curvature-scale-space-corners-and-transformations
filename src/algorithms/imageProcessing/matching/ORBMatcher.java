@@ -116,9 +116,7 @@ public class ORBMatcher {
         if (fit == null) {
             return null;
         }
-        
-        //TODO: consider using a transformation to include other unmatched within tolerance
-        
+                
         QuadInt[] qs = new QuadInt[outputLeftXY.getN()];
         for (int i = 0; i < outputLeftXY.getN(); ++i) {
             QuadInt q = new QuadInt(
