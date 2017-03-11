@@ -115,9 +115,9 @@ public class SkyTest extends TestCase {
             }
 
             Sky sky = new Sky(img);
-            sky.setToDebug(fileName1Root);
+            //sky.setToDebug(fileName1Root);
             
-            /*
+            
             List<SkyObject> skyList = sky.findSkyAssumingHorizon();
             
             assertNotNull(skyList);
@@ -132,14 +132,15 @@ public class SkyTest extends TestCase {
                         "_SKY_" + j);
                 }
             }
-            */
             
+            /*
             PairIntArray skyline = sky.extractSkyline();
             Image imgCp = img.copyToGreyscale2().copyToColorGreyscale();
             ImageIOHelper.addCurveToImage(skyline, imgCp, 
                 1, 0, 255, 0);
             MiscDebug.writeImage(imgCp, "_"+ fileName1Root + 
                 "_skyline_");
+            */
         }
     }
     

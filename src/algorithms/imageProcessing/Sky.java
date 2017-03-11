@@ -380,6 +380,7 @@ public class Sky {
     }
     
     /**
+     * NOT READY FOR USE
      * uses findSkyAssumingHorizon() to find the sky and then extracts the 
      * outer boundary ordered clockwise, and returns only the points between
      * the image boundaries.
@@ -450,13 +451,26 @@ public class Sky {
             return boundary;
         }
         
+        // TODO: edit here
+                
         // trim from idx0 to idx1, so shift idx0 to front to make it easier
-        boundary.rotateLeft(idx0);
-        
-        int end = idx1 - idx0;
-        PairIntArray skyline = boundary.copyRange(0, end);
-        
-        return skyline;
+        if (idx0 < idx1) {
+            
+            boundary.rotateLeft(idx0);
+
+            int end = idx1 - idx0;
+
+            PairIntArray skyline = boundary.copyRange(0, end);
+
+            return skyline;
+            
+        } else {
+            
+            System.out.println("idx0=" + idx0 + " idx1=" + idx1 
+                 + " n=" +  boundary.getN());
+            
+            return boundary;
+        }
     }
     
     /**

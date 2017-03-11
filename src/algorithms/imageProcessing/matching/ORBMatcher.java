@@ -107,7 +107,7 @@ public class ORBMatcher {
         int[][] matches = greedyMatch(keypoints1, keypoints2, cost);
         
         if (matches.length < 7) {
-            //TODO: add a euclidean matching here
+            
             QuadInt[] qs = new QuadInt[matches.length];
             for (int i = 0; i < matches.length; ++i) {
                 int idx1 = matches[i][0];
@@ -118,7 +118,7 @@ public class ORBMatcher {
                 );
                 qs[i] = q;
             }
-            
+
             return qs;
         }
         
@@ -169,8 +169,8 @@ public class ORBMatcher {
         -- return correspondence
         */
         
-        // using a ratio of 0.8 or 0.9 for 2nd best.
-        // see Mikolajczyk and Schmid 2005 and the Brown & Lowe paper
+        //nearest neighbor distance ratio (Mikolajczyk and Schmid 2005):
+        // using a ratio of 0.8 or 0.9.
         int[] bestMatch = findGreedyBestIsolated(cost, 0.8f);
         assert(bestMatch.length == n1);
         
@@ -308,6 +308,10 @@ public class ORBMatcher {
             matchedLeftXY, matchedRightXY, outputLeftXY, outputRightXY);
 
         return fit;        
+    }
+
+    private static int[][] attemptMatchesUsingEuclidean(int[][] matches, List<PairInt> keypoints1, List<PairInt> keypoints2, int[][] cost) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
 }
