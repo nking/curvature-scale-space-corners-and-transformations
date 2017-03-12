@@ -1,10 +1,8 @@
 package algorithms.imageProcessing;
 
-import algorithms.CountingSort;
 import algorithms.misc.Histogram;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -555,6 +553,13 @@ public class OtsuThresholding {
                 maxTrace = trace;
                 maxPair = pair;
             }
+        }
+        
+        if (maxPair == null) {
+            if (pSet.isEmpty()) {
+                return 0;
+            }
+            maxPair = pSet.iterator().next();
         }
         
         double thresh = (maxPair.getX() * binWidth) + min;

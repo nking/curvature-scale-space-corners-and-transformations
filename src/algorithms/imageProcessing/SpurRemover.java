@@ -29,7 +29,7 @@ public class SpurRemover {
      * 
      * @param points 
      */
-    public void remove(Set<PairInt> curve, int imageWidth, int imageHeight) {
+    public void remove(Set<PairInt> points, int imageWidth, int imageHeight) {
         
         int nChanged = 0;
         int nMaxIter = 10;
@@ -39,7 +39,7 @@ public class SpurRemover {
         
 if (debug) {        
 Image img3 = new Image(imageWidth, imageHeight);
-for (PairInt p : curve) {
+for (PairInt p : points) {
     img3.setRGB(p.getX(), p.getY(), 255, 0, 0);
 }
 MiscDebug.writeImage(img3, "spur_removal_" + nIter + "_" 
@@ -48,49 +48,48 @@ MiscDebug.writeImage(img3, "spur_removal_" + nIter + "_"
 
             nChanged = 0;
             
-            nChanged += pattern0(curve, imageWidth, imageHeight);
+            nChanged += pattern0(points, imageWidth, imageHeight);
 
-            nChanged += pattern00(curve, imageWidth, imageHeight);
+            nChanged += pattern00(points, imageWidth, imageHeight);
 
-            nChanged += pattern1(curve, imageWidth, imageHeight);
+            nChanged += pattern1(points, imageWidth, imageHeight);
 
-            nChanged += pattern2(curve, imageWidth, imageHeight);
+            nChanged += pattern2(points, imageWidth, imageHeight);
 
-            nChanged += pattern3(curve, imageWidth, imageHeight);
+            nChanged += pattern3(points, imageWidth, imageHeight);
 
-            nChanged += pattern4(curve, imageWidth, imageHeight);
+            nChanged += pattern4(points, imageWidth, imageHeight);
             
-            nChanged += pattern5(curve, imageWidth, imageHeight);
+            nChanged += pattern5(points, imageWidth, imageHeight);
             
-            nChanged += pattern6(curve, imageWidth, imageHeight);
+            nChanged += pattern6(points, imageWidth, imageHeight);
             
-            nChanged += pattern7(curve, imageWidth, imageHeight);
+            nChanged += pattern7(points, imageWidth, imageHeight);
             
-            nChanged += pattern8(curve, imageWidth, imageHeight);
+            nChanged += pattern8(points, imageWidth, imageHeight);
             
-            nChanged += pattern9(curve, imageWidth, imageHeight);
+            nChanged += pattern9(points, imageWidth, imageHeight);
             
-            nChanged += pattern10(curve, imageWidth, imageHeight);
+            nChanged += pattern10(points, imageWidth, imageHeight);
             
-            nChanged += pattern11(curve, imageWidth, imageHeight);
+            nChanged += pattern11(points, imageWidth, imageHeight);
             
-            nChanged += pattern13(curve, imageWidth, imageHeight);
+            nChanged += pattern13(points, imageWidth, imageHeight);
                         
             if ((nIter & 1) == 1) {
                 // not technically a spur:
                 nChanged += 
-                    PostLineThinnerCorrections.correctForHoleArtifacts00_10(
-                    curve, imageWidth, imageHeight);
+                    PostLineThinnerCorrections.correctForHoleArtifacts00_10(points, imageWidth, imageHeight);
             }
             
-            nChanged += curveCorrection12(curve, imageWidth, imageHeight);
+            nChanged += curveCorrection12(points, imageWidth, imageHeight);
             
             ++nIter;
         }
         
 if (debug) {        
 Image img3 = new Image(imageWidth, imageHeight);
-for (PairInt p : curve) {
+for (PairInt p : points) {
     img3.setRGB(p.getX(), p.getY(), 255, 0, 0);
 }
 MiscDebug.writeImage(img3, "spur_removal_" + nIter + "_" 

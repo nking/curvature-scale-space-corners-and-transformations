@@ -898,7 +898,7 @@ public class CannyEdgeFilterAdaptive {
                 tmp.setValue(i, 1);
             }
         }
-        imageProcessor.applyThinning(tmp, false);
+        imageProcessor.applyThinning(tmp);
         
         for (int i = 0; i < tmp.getNPixels(); ++i) {
             if (tmp.getValue(i) == 0) {

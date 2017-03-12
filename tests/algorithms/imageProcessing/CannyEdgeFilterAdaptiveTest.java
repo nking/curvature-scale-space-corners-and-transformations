@@ -67,41 +67,6 @@ public class CannyEdgeFilterAdaptiveTest extends TestCase {
         }       
     }
     
-    public void test1() throws Exception {
-        
-        //String fileName = "blox.gif";
-        //String fileName = "lab.gif";
-        //String fileName = "house.gif";
-        //String fileName = "susan-in_plus.png";
-        String fileName = "africa2.png";
-        //String fileName = "lena.jpg";
-        String filePath = ResourceFinder.findFileInTestResources(fileName);
-        
-        GreyscaleImage img = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();
-       
-        CannyEdgeFilterAdaptive canny1 = new CannyEdgeFilterAdaptive();        
-        canny1.setToUseLineDrawingMode();;
-        //canny1.setToDebug();
-        canny1.applyFilter(img);
-        for (int i = 0; i < img.getNPixels(); ++i) {
-            if (img.getValue(i) > 0) {
-                img.setValue(i, 255);
-            }
-        }
-        MiscDebug.writeImage(img, "_gradient_canny_adaptive_");
-        
-        EdgeExtractorWithJunctions extractor = new EdgeExtractorWithJunctions(img);
-        List<PairIntArray> edges = extractor.findEdges();
-        int n = 0;
-        for (PairIntArray edge : edges) {
-            if (edge.getN() > 3) {
-                n++;
-            }
-        }
-        Map<Integer, Set<Integer>> junctionMap = extractor.getJunctionMap();
-        //assertEquals(1, n);
-    }
-    
     public void test2() throws Exception {
         
         Set<String> testFiles = new HashSet<String>();

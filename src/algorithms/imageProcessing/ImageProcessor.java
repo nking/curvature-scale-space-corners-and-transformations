@@ -7561,16 +7561,6 @@ if (sum > 511) {
             }
         }
         
-        PostLineThinnerCorrections pLTC = new PostLineThinnerCorrections();
-        pLTC._correctForArtifacts(points, n0, n1);
-        for (int i = 0; i < n0; ++i) {
-            for (int j = 0; j < n1; ++j) {
-                PairInt p = new PairInt(i, j);
-                if (!points.contains(p)) {
-                    img.setValue(i, j, 0);
-                }
-            }
-        }
     }
 
     /**
@@ -7579,15 +7569,6 @@ if (sum > 511) {
      * @param img
      */
     public void applyThinning(GreyscaleImage img) {
-        applyThinning(img, true);
-    }
-    
-    /**
-     * apply 8 hit or miss filters iteratively until convergence to thin the
-     * image.  the operation is performed on all pixels with value > 0.
-     * @param img
-     */
-    public void applyThinning(GreyscaleImage img, boolean usePLTC) {
 
         //from https://en.wikipedia.org/wiki/Hit-or-miss_transform
         // and thinning
@@ -7661,31 +7642,13 @@ if (sum > 511) {
         } while (nEdited > 0);
                 
         img.resetTo(out);
-        
-        Set<PairInt> points = readNonZeroPixels(img);
-        
-        if (usePLTC) {
-            //NOTE: there is an error in here that can remove a bridge
-            PostLineThinnerCorrections pLTC = new PostLineThinnerCorrections();
-            pLTC._correctForArtifacts(points, img.getWidth(), 
-                img.getHeight());
-            for (int i = 0; i < img.getWidth(); ++i) {
-                for (int j = 0; j < img.getHeight(); ++j) {
-                    PairInt p = new PairInt(i, j);
-                    if (!points.contains(p)) {
-                        img.setValue(i, j, 0);
-                    }
-                }
-            }
-        }
     }
     
     /**
      * apply 8 hit or miss filters iteratively until convergence to thin the
      * image.  the operation is performed on all pixels with value > 0.
      */
-    public void applyThinning(Set<PairInt> points, int imageWidth, int imageHeight,
-        boolean usePostCorrections) {
+    public void applyThinning(Set<PairInt> points, int imageWidth, int imageHeight) {
 
         //from https://en.wikipedia.org/wiki/Hit-or-miss_transform
         // and thinning
@@ -7758,10 +7721,6 @@ if (sum > 511) {
         points.clear();
         points.addAll(out);
      
-        if (usePostCorrections) {
-            PostLineThinnerCorrections pLTC = new PostLineThinnerCorrections();
-            pLTC._correctForArtifacts(points, imageWidth, imageHeight);
-        }
     }
     
     /**

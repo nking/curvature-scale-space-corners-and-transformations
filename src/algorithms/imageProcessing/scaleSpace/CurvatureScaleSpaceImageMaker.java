@@ -2,7 +2,6 @@ package algorithms.imageProcessing.scaleSpace;
 
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.connected.ConnectedValuesFinder;
-import algorithms.imageProcessing.EdgeExtractorWithJunctions;
 import algorithms.imageProcessing.EdgeFilterProducts;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
@@ -12,7 +11,6 @@ import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.PostLineThinnerCorrections;
 import algorithms.imageProcessing.SIGMA;
-import algorithms.imageProcessing.SpurRemover;
 import algorithms.imageProcessing.features.mser.MSEREdges;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairIntArray;
@@ -24,7 +22,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.logging.Logger;
 
 /**
@@ -90,7 +87,7 @@ public final class CurvatureScaleSpaceImageMaker {
                 img2 = imageProcessor.closing(img2);
                                 
                 //NOTE: might need further thinning
-                imageProcessor.applyThinning(img2, false);
+                imageProcessor.applyThinning(img2);
                 PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
                 pltc.extremeThinning(img2);
                                 
@@ -140,14 +137,14 @@ public final class CurvatureScaleSpaceImageMaker {
             } else {
                 MSEREdges mserEdges = new MSEREdges(img);
                 mserEdges.setToLowerContrast();
-                mserEdges.extractEdges();
-                List<TIntSet> labeledSets = mserEdges.getLabeledSets();
+                mserEdges.mergeAndExtractEdges();
+                List<TIntSet> edgeSets = mserEdges.getEdges();
             
                 PerimeterFinder2 finder2 = new PerimeterFinder2();
 
-                for (int i = 0; i < labeledSets.size(); ++i) {
+                for (int i = 0; i < edgeSets.size(); ++i) {
 
-                    TIntSet set = labeledSets.get(i);
+                    TIntSet set = edgeSets.get(i);
 
                     if (isOnImageBounds(set, w, h)) {
                         continue;

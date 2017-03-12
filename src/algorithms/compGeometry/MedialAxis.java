@@ -4,7 +4,9 @@ import algorithms.compGeometry.voronoi.VoronoiFortunesSweep;
 import algorithms.compGeometry.voronoi.VoronoiFortunesSweep.GraphEdge;
 import algorithms.compGeometry.voronoi.VoronoiFortunesSweep.Site;
 import algorithms.imageProcessing.BresenhamsLine;
+import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.PostLineThinnerCorrections;
+import algorithms.imageProcessing.SpurRemover;
 import algorithms.imageProcessing.ZhangSuenLineThinner;
 import algorithms.misc.MiscMath;
 import algorithms.mst.PrimsMST;
@@ -623,14 +625,20 @@ public class MedialAxis {
         
         Set<PairInt> b = new HashSet<PairInt>(boundary);
         
+        ImageProcessor imp = new ImageProcessor();
+        imp.applyThinning(b, minMaxXY[1] + 1, 
+            minMaxXY[3] + 1);
+        
+        //SpurRemover spurRm = new SpurRemover();
+        //spurRm.remove(b, minMaxXY[1] + 3, 
+        //    minMaxXY[3] + 3);
+        
+        /*
         ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
         lt.applyLineThinner(b, 
             minMaxXY[0] - 1, minMaxXY[1] + 1, 
             minMaxXY[2] - 1, minMaxXY[3] + 1);
-        
-        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
-        pltc._correctForArtifacts(b, minMaxXY[1] + 3, 
-            minMaxXY[3] + 3);
+        */
             
         // store the removed points
         removedPoints.addAll(boundary);

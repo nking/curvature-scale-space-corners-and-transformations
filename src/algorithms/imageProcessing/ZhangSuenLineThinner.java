@@ -44,21 +44,13 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
             }
         }
         applyLineThinner(points, 0, w2 - 1, 0, h2 - 1);
+                
         input2.fill(0);
         for (PairInt p : points) {
             input2.setValue(p.getX(), p.getY(), 1);
         }
 
-        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
-        if (edgeGuideImage != null) {
-            if (input2.getXRelativeOffset() == 1 && input2.getYRelativeOffset() == 1) {
-                GreyscaleImage gXY2 = addOnePixelBorders(edgeGuideImage);
-                pltc.setEdgeGuideImage(gXY2);
-            } else {
-                pltc.setEdgeGuideImage(edgeGuideImage);
-            }
-        }
-        pltc.correctForArtifacts(input2);
+        
                 
         GreyscaleImage input3 = hasABorderPixel ? removeOnePixelBorders(input2)
             : input2;

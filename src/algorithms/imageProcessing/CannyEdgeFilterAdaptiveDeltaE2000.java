@@ -819,20 +819,7 @@ public class CannyEdgeFilterAdaptiveDeltaE2000 {
         int n0 = gradientXY.getWidth();
         int n1 = gradientXY.getHeight();
         
-        // if there are too many points in correctedPoints, then
-        // the image is probably still filled with pixels noise or textures
-        // so do not perform line thinning in that case.
         int nP = correctedPoints.size();
-        float frac = (float)nP/(float)(n0 * n1);
-        if (nP < 30000) {
-            PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
- //           pltc.correctForHolePattern100(correctedPoints, n0, n1);            
-            pltc.correctForLineHatHoriz(correctedPoints, n0, n1);
-            pltc.correctForLineHatVert(correctedPoints, n0, n1);
-            pltc.correctForLineSpurHoriz(correctedPoints, n0, n1);
-            pltc.correctForLineSpurVert(correctedPoints, n0, n1);
-            pltc.correctForIsolatedPixels(correctedPoints);
-        }
         
         GreyscaleImage out = gradientXY.createWithDimensions();
         int[][] morphInput = new int[out.getWidth()][out.getHeight()];
@@ -856,10 +843,12 @@ public class CannyEdgeFilterAdaptiveDeltaE2000 {
             }
         }
         if (useLineThinner) {
-            //ImageProcessor imageProcessor = new ImageProcessor();
-            //imageProcessor.applyThinning(out);
-            ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
-            lt.applyFilter(out);
+            //ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
+            //lt.applyFilter(out);
+            
+            ImageProcessor imp = new ImageProcessor();
+            imp.applyThinning(out);
+        
         }
         
         gradientXY.resetTo(out);

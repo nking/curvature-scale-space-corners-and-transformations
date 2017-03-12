@@ -1,22 +1,21 @@
 package algorithms.imageProcessing.scaleSpace;
 
+import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.CannyEdgeFilterAdaptive;
 import algorithms.imageProcessing.ClosedCurveAndJunctionFinder;
-import algorithms.imageProcessing.EdgeExtractorWithJunctions;
+import algorithms.imageProcessing.EdgeExtractorSimple;
 import algorithms.imageProcessing.EdgeFilterProducts;
 import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.IEdgeExtractor;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
-import algorithms.util.PairInt;
+import algorithms.imageProcessing.features.mser.MSEREdges;
 import algorithms.util.PairIntArray;
+import algorithms.util.PairIntArrayWithColor;
+import gnu.trove.set.TIntSet;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.logging.Logger;
 
 /**
@@ -37,11 +36,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
      * is present whether it is a closed curve or not can be checked.
      */
     protected List<PairIntArray> edges = new ArrayList<PairIntArray>();
-    
-    protected boolean doNormalizeByHistogram = false;
-    
-    protected boolean doNotFindJunctions = false;
-    
+            
     protected boolean useLineDrawingMode = false;
         
     protected final int trimmedXOffset;
@@ -50,22 +45,6 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
             
     protected EdgeFilterProducts filterProducts = null;
     
-    /**
-     * map with key = center of junction pixel coordinates; 
-     * value = set of adjacent pixels when there are more than the preceding 
-     * and next.
-     */
-    protected Map<Integer, Set<Integer>> junctionMap = new HashMap<Integer, Set<Integer>>();
-
-    /**
-     * map with key = pixel coordinates of all pixels involved in junctions;
-     * value = PairInt holding index of edge that pixel is located in and
-     * holding the index within that edge of the pixel.
-     * for example, a pixel located in edges(0) at offset=100
-     * would have PairInt(0, 100) as a value.
-     */
-    protected Map<Integer, PairInt> junctionLocationMap = new HashMap<Integer, PairInt>();
-     
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
     /**
@@ -131,18 +110,6 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         state = CurvatureScaleSpaceMapperState.INITIALIZED;
     }
 
-    /**
-     * apply histogram normalization before processing.  For some images, this
-     * will increase the contrast of fainter features.
-     */
-    public void dotPerformHistogramEqualization() {
-        this.doNormalizeByHistogram = true;
-    }
-    
-    public void doNotFindJunctions() {
-        doNotFindJunctions = true;
-    }
-    
     public void useLineDrawingMode() {
         useLineDrawingMode = true;
     }
@@ -152,10 +119,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         if (state.ordinal() < 
             CurvatureScaleSpaceMapperState.INITIALIZED.ordinal()) {
             
-            // (1) apply an edge filter
-            applyEdgeFilter();
-            
-            // (2) extract edges and create junction maps
+            // extract edges
             extractEdges();
             
             //TODO: note that there may be a need to search for closed
@@ -168,13 +132,10 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         }
     }
     
-    protected void applyEdgeFilter() {
+    protected void extractEdgesLineMode() {
         
         CannyEdgeFilterAdaptive filter = new CannyEdgeFilterAdaptive();
 
-        if (doNormalizeByHistogram) {
-            filter.setToPerformHistogramEqualization();
-        }
         if (useLineDrawingMode) {
             filter.setToUseLineDrawingMode();
         }
@@ -182,45 +143,58 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         filter.applyFilter(img);
         
         filterProducts = filter.getFilterProducts();
-                                        
+        
+        edges.clear();
+        
+        EdgeExtractorSimple extractor = new EdgeExtractorSimple(
+            filterProducts.getGradientXY());
+        
+        extractor.extractEdges();
+        
+        edges.addAll(extractor.getEdges());
+        
         state = CurvatureScaleSpaceMapperState.EDGE_FILTERED;
     }
     
     protected void extractEdges() {
-        
-        IEdgeExtractor contourExtractor;
-        
-        contourExtractor = new EdgeExtractorWithJunctions(img);
-        
-        //TODO: for closed curves, might consider always ordering them the
-        // same here (counter clock wise)
-        
-        List<PairIntArray> tmpEdges = contourExtractor.findEdges();
+        if (useLineDrawingMode) {
+            extractEdgesLineMode();
+        } else {
+            extractEdgesNotLineMode();
+        }
+    }
+    
+    protected void extractEdgesNotLineMode() {
        
         edges.clear();
-        edges.addAll(tmpEdges);
         
-        if (!doNotFindJunctions && (contourExtractor instanceof 
-            EdgeExtractorWithJunctions)) {
+        int w = originalImg.getWidth();
+        int h = originalImg.getHeight();
 
-            junctionMap.clear();
-            junctionLocationMap.clear();
-            
-            Map<Integer, Set<Integer>> jm
-                = ((EdgeExtractorWithJunctions) contourExtractor)
-                .getJunctionMap();
-
-            if (!jm.isEmpty()) {
-
-                junctionMap.putAll(jm);
-
-                junctionLocationMap.putAll(
-                    ((EdgeExtractorWithJunctions) contourExtractor)
-                    .getLocatorForJunctionAssociatedPoints()
-                );
+        MSEREdges mserEdges = new MSEREdges(this.originalImg);
+        mserEdges.setToLowerContrast();
+        mserEdges.mergeAndExtractEdges();
+        this.filterProducts = mserEdges.getEdgeFilterProducts();
+        List<TIntSet> edgeSets = mserEdges.getEdges();
+        PerimeterFinder2 finder2 = new PerimeterFinder2();
+        for (int i = 0; i < edgeSets.size(); ++i) {
+            TIntSet set = edgeSets.get(i);            
+            PairIntArray ordered = null;
+            try {
+                ordered = finder2.orderTheBoundary(
+                    set, w, h);
+            } catch (Exception e) {
+                log.severe(e.getMessage());
+                continue;
             }
+
+            PairIntArrayWithColor closedCurve = new PairIntArrayWithColor(
+                ordered);
+            closedCurve.setAsClosedCurve();
+
+            edges.add(closedCurve);
         }
-        
+                       
         state = CurvatureScaleSpaceMapperState.EDGES_EXTRACTED;
         
         log.fine("edges extracted");
@@ -285,10 +259,6 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
    
     public EdgeFilterProducts getEdgeFilterProducts() {
         return filterProducts;
-    }
-    
-    public Map<Integer, Set<Integer>> getJunctionMap() {        
-        return junctionMap;
     }
     
     /*

@@ -6,7 +6,6 @@ import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
 import algorithms.util.PairIntArray;
-import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -54,7 +53,7 @@ public class CornersOfHouseTest extends TestCase {
         
         CurvatureScaleSpaceCornerDetector detector = new
             CurvatureScaleSpaceCornerDetector(img);
-       
+        
         detector.findCorners();
         
         PairIntArray corners = detector.getCorners();
@@ -104,6 +103,7 @@ public class CornersOfHouseTest extends TestCase {
         ImageIOHelper.addCurveToImage(expectedCorners, img2, 2, 255, 0, 255);
         MiscDebug.writeImage(img2, "corners_house_EXPECTED.png");
 
+        /*
         GreyscaleImage img3 = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();        
         
         PhaseCongruencyDetector phaseCDetector = new PhaseCongruencyDetector();
@@ -124,8 +124,8 @@ public class CornersOfHouseTest extends TestCase {
             }
         }
         ImageIOHelper.addCurveToImage(pCorners, out2, 2, 255, 0, 0);
-        MiscDebug.writeImage(out2, "_phase_congruency_corners_houzse_");  
-        
+        MiscDebug.writeImage(out2, "_phase_congruency_corners_house_");  
+        */
     }
     
     protected PairIntArray getExpectedHouseCorners() {

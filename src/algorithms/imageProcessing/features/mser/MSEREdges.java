@@ -7,6 +7,7 @@ import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.CannyEdgeColorAdaptive;
 import algorithms.imageProcessing.ColorHistogram;
 import algorithms.connected.ConnectedPointsFinder;
+import algorithms.imageProcessing.EdgeFilterProducts;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.GroupPixelHSV;
 import algorithms.imageProcessing.GroupPixelHSV2;
@@ -118,12 +119,14 @@ public class MSEREdges {
     private GreyscaleImage sobelScores = null;
 
     private GreyscaleImage cannyEdges = null;
+    
+    private EdgeFilterProducts edgeProducts = null;
 
     private long ts = 0;
 
     private STATE state = null;
 
-    public MSEREdges(ImageExt img) {
+    public MSEREdges(Image img) {
 
         ImageProcessor imageProcesor = new ImageProcessor();
 
@@ -1259,7 +1262,8 @@ public class MSEREdges {
         CannyEdgeColorAdaptive canny2 = new CannyEdgeColorAdaptive();
         canny2.overrideToNotUseLineThinner();
         canny2.applyFilter(clrImg);
-        GreyscaleImage scaled = canny2.getFilterProducts().getGradientXY();
+        this.edgeProducts = canny2.getFilterProducts();
+        GreyscaleImage scaled = edgeProducts.getGradientXY();
         scaled.multiply(255/scaled.max());
         //MiscDebug.writeImage(scaled, debugLabel
         //    + "_lc_edges_");
@@ -2155,4 +2159,7 @@ public class MSEREdges {
 
     }
     
+    public EdgeFilterProducts getEdgeFilterProducts() {
+        return edgeProducts;
+    }
 }

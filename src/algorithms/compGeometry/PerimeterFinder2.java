@@ -390,7 +390,7 @@ public class PerimeterFinder2 {
         
         ImageProcessor imp = new ImageProcessor();
         imp.applyThinning(boundary, minMaxXY[1] + 1, 
-            minMaxXY[3] + 1, true);
+            minMaxXY[3] + 1);
         
         SpurRemover spurRm = new SpurRemover();
         spurRm.remove(b, minMaxXY[1] + 3, 
@@ -1576,6 +1576,9 @@ public class PerimeterFinder2 {
      
     public PairIntArray orderTheBoundary(TIntSet boundary, int imgWidth, 
         int imgHeight) throws Exception {
+        
+        //TODO:fix bug
+        
         
         /*
         the algorithm finds the leftmost and smallest xy point in the boundary, 
