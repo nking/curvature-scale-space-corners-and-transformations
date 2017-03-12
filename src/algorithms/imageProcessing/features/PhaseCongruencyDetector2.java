@@ -579,21 +579,7 @@ public class PhaseCongruencyDetector2 {
         private final double[] threshold;
         
         private int[][] thinned = null;
-                
-        private List<PairIntArray> edgeList = null;
-        
-        private Set<PairInt> junctions = null;
-        
-        private Set<PairInt> corners = null;
-        
-        /**
-         * a map with key being a hough line set of points and value being
-         * the theta and radius for the hough line.  Note that the coordinates
-         * in the key are using the same notation as the thinnedImage, that is,
-         * a[row][col], but pairint.x is row, and pairint.y is col.
-         */
-        private Map<Set<PairInt>, PairInt> houghLines = null;
-        
+                  
         private PhaseCongruencyParameters parameters = null;
         
         /**
@@ -693,101 +679,8 @@ public class PhaseCongruencyDetector2 {
             return maximumMoment;
         }
 
-        /**
-         * set the edge list extracted from the thinned image using coordinates
-         * that are in the reference frame of the GreyscaleIamge instance.
-         * Note that the closed curves are converted to instances of
-         * PairIntArrayWithColor.
-         * @param theEdgeList 
-         */
-        private void setEdges(List<PairIntArray> theEdgeList) {
-            
-            this.edgeList = new ArrayList<PairIntArray>();
-            
-            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-            
-            for (PairIntArray p : theEdgeList) {
-                
-                PairIntArray cp = p.copy();
-                if (curveHelper.isAdjacent(p, 0, p.getN() - 1, 1)) {
-                    cp = new PairIntArrayWithColor(cp);
-                }
-                this.edgeList.add(cp);
-            }
-        }
-
-        /**
-         * set the junction points found in the edge list.  Note that the
-         * points should be using coordinates that are in the reference frame 
-         * of the GreyscaleIamge instance.
-         * @param theJunctions 
-         */
-        private void setJunctions(Set<PairInt> theJunctions) {
-            this.junctions = new HashSet<PairInt>(theJunctions);
-        }
-
-        /**
-         * set the corners found in the edge list.  Note that the points should 
-         * be using coordinates that are in the reference frame of the 
-         * GreyscaleIamge instance.
-         * @param theCorners 
-         */
-        private void setCorners(Set<PairInt> theCorners) {
-            this.corners = new HashSet<PairInt>(theCorners);
-        }
-
-        /**
-         * get the list of extracted edges as points that are in the reference 
-         * frame of the GreyscaleImage instance.
-         * @return the edgeList
-         */
-        public List<PairIntArray> getEdgeList() {
-            return edgeList;
-        }
-
-        /**
-         * get the set of junction points found within the edges in the reference
-         * frame of the GreyscaleIamge instance.
-         * @return the junctions
-         */
-        public Set<PairInt> getJunctions() {
-            return junctions;
-        }
-
-        /**
-         * get the corners found in the edges as set of points that are in the
-         * reference frame of the GreyscaleImage instance.
-         * @return the corners
-         */
-        public Set<PairInt> getCorners() {
-            return corners;
-        }
-        
         public PhaseCongruencyParameters getParameters() {
             return parameters;
-        }
-
-        /**
-         a map with key being a hough line set of points and value being
-         the theta and radius for the hough line.  Note that the
-         setter has placed the coordinates into the coordinate reference
-         frame of the GreyscaleImage instance.
-         @param lines 
-         */
-        public void setHoughLines(Map<Set<PairInt>, PairInt> lines) {
-            
-             this.houghLines = new HashMap<Set<PairInt>, PairInt>(lines);
-        }
-        
-        /**
-         * a map with key being a hough line set of points and value being
-         * the theta and radius for the hough line.  Note that the coordinates
-         * in the key are using the same notation GreyscaleImage instance, 
-         * that x and y are the same as in the image
-         * @return 
-         */
-        public Map<Set<PairInt>, PairInt> getHoughLines() {
-            return houghLines;
         }
 
         private void setParameters(int nScale, int minWavelength, float mult, 

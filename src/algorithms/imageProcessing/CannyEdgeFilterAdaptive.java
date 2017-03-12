@@ -187,7 +187,7 @@ public class CannyEdgeFilterAdaptive {
         if (lineDrawingMode) {
             useAdaptive2Layer = true;
             useAdaptiveThreshold = false;
-            apply2LayerFilter(input, new HashSet<PairInt>(), input);
+            //apply2LayerFilter(input, new HashSet<PairInt>(), input);
             if (debug) {
                 GreyscaleImage imgcp = input.copyImage();
                 for (int i = 0; i < imgcp.getNPixels(); ++i) {
@@ -199,18 +199,41 @@ public class CannyEdgeFilterAdaptive {
                 MiscDebug.writeImage(imgcp, "_after_2_layer_");
             }
             
-            filterProducts = createDiffOfGaussians(input);
+            ImageProcessor imageProcessor = new ImageProcessor();
+            
+            GreyscaleImage in = imageProcessor.closing(input);
+            imageProcessor.blur(in, SIGMA.ZEROPOINTFIVE);
+            
+            filterProducts = createGradient(in);
+            
+            in = filterProducts.getGradientXY();
+            in = imageProcessor.closing(in);
+            filterProducts.getGradientXY().resetTo(in);
+            
             approxProcessedSigma = Math.sqrt(
                 approxProcessedSigma*approxProcessedSigma + (0.678*0.678));
             
             if (debug) {
-                MiscDebug.writeImage(filterProducts.getGradientXY(), "_gXY_");
+                GreyscaleImage tmp = filterProducts.getGradientXY().copyImage();
+                tmp.multiply(255.f);
+                MiscDebug.writeImage(tmp, "_gXY_");
                 MiscDebug.writeImage(filterProducts.getTheta(), "_theta_");
             }
             
             if (useLineThinner) {
-                ImageProcessor imageProcessor = new ImageProcessor();
+                
                 imageProcessor.applyThinning(filterProducts.getGradientXY());
+                
+                PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
+                
+                //ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
+                //lt.applyFilter(filterProducts.getGradientXY());
+            }
+            
+            if (debug) {
+                GreyscaleImage tmp = filterProducts.getGradientXY().copyImage();
+                tmp.multiply(255.f);
+                MiscDebug.writeImage(tmp, "_gXY2_");
             }
                         
             input.resetTo(filterProducts.getGradientXY());
@@ -465,9 +488,7 @@ public class CannyEdgeFilterAdaptive {
             MiscDebug.writeImage(gradientXY, "_before_2layer_");
             MiscDebug.writeImage(img2, "_in_2layer_");
         }
-        
-        applyPostLineThinningCorrections(img2);
-        
+                
         gradientXY.resetTo(img2);
         
         if (debug) {
@@ -513,9 +534,7 @@ public class CannyEdgeFilterAdaptive {
             if (debug) {
                 MiscDebug.writeImage(gradientXY, "_after_restore_junctions_");
             }
-            
-            applyPostLineThinningCorrections(gradientXY);
-            
+                        
             if (debug) {
                 MiscDebug.writeImage(gradientXY, "_after_linethinning_2_");
             }

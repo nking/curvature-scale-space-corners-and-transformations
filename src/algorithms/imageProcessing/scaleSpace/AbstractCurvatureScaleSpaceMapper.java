@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.scaleSpace;
 
 import algorithms.compGeometry.PerimeterFinder2;
+import algorithms.connected.ConnectedPointsFinder;
 import algorithms.imageProcessing.CannyEdgeFilterAdaptive;
 import algorithms.imageProcessing.ClosedCurveAndJunctionFinder;
 import algorithms.imageProcessing.EdgeExtractorSimple;
@@ -13,9 +14,11 @@ import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.PostLineThinnerCorrections;
 import algorithms.imageProcessing.SpurRemover;
 import algorithms.imageProcessing.features.mser.MSEREdges;
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
 import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -40,11 +43,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
     protected List<PairIntArray> edges = new ArrayList<PairIntArray>();
             
     protected boolean useLineDrawingMode = false;
-        
-    protected final int trimmedXOffset;
-    
-    protected final int trimmedYOffset;
-            
+                        
     protected EdgeFilterProducts filterProducts = null;
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
@@ -61,13 +60,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         
         ImageProcessor imageProcessor = new ImageProcessor();
         
-        originalImg = (ImageExt)input.copyImage();
-            
-        int[] offsetXY = imageProcessor.shrinkImageToFirstNonZeros(img);
-        
-        trimmedXOffset = offsetXY[0];
-        
-        trimmedYOffset = offsetXY[1];
+        originalImg = (ImageExt)input.copyImage();            
     }
     
     public AbstractCurvatureScaleSpaceMapper(GreyscaleImage input) {
@@ -77,12 +70,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         ImageProcessor imageProcessor = new ImageProcessor();
 
         originalImg = ImageIOHelper.convertImage(input);
-            
-        int[] offsetXY = imageProcessor.shrinkImageToFirstNonZeros(img);
         
-        trimmedXOffset = offsetXY[0];
-        
-        trimmedYOffset = offsetXY[1];
     }
     
     /**
@@ -101,12 +89,6 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         
         originalImg = (ImageExt)input.copyImage();
         
-        int[] offsetXY = ImageProcessor.shrinkImageToFirstNonZeros(img);
-        
-        trimmedXOffset = offsetXY[0];
-        
-        trimmedYOffset = offsetXY[1];
-        
         this.edges = new ArrayList<PairIntArray>(theEdges);
         
         state = CurvatureScaleSpaceMapperState.INITIALIZED;
@@ -123,13 +105,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
             
             // extract edges
             extractEdges();
-            
-            //TODO: note that there may be a need to search for closed
-            //      curves in the EdgeContourExtractor instead of here
-            //      in order to create shapes instead of creating
-            //      lines preferentially.
-            markTheClosedCurves();
-            
+                        
             state = CurvatureScaleSpaceMapperState.INITIALIZED;
         }
     }
@@ -141,20 +117,52 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         if (useLineDrawingMode) {
             filter.setToUseLineDrawingMode();
         }
+        //filter.setToDebug();
         
         filter.applyFilter(img);
         
         filterProducts = filter.getFilterProducts();
         
+        GreyscaleImage gXY = filterProducts.getGradientXY();
+        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
+        pltc.extremeStaircaseRemover(gXY);
+        
+        //GreyscaleImage tmp = gXY.copyImage();
+        //tmp.multiply(255.f);
+        //MiscDebug.writeImage(tmp, "_GXY_" + MiscDebug.getCurrentTimeFormatted());
+        
         edges.clear();
         
-        EdgeExtractorSimple extractor = new EdgeExtractorSimple(
-            filterProducts.getGradientXY());
+        TIntSet nzs = new TIntHashSet();
+        for (int i = 0; i < gXY.getNPixels(); ++i) {
+            if (gXY.getValue(i) > 0) {
+                nzs.add(i);
+            }
+        }
         
-        extractor.extractEdges();
+        ConnectedPointsFinder cFinder = new ConnectedPointsFinder(gXY.getWidth(), 
+            gXY.getHeight());
+        cFinder.setToUse8Neighbors();
+        cFinder.findConnectedPointGroups(nzs);
+       
+        PerimeterFinder2 finder2 = new PerimeterFinder2();
         
-        edges.addAll(extractor.getEdges());
-        
+        for (int i = 0; i < cFinder.getNumberOfGroups(); ++i) {
+            TIntSet set = cFinder.getXY(i);
+            PairIntArray ordered = null;
+            try {
+                ordered = finder2.orderTheBoundary(set, gXY.getWidth(), 
+                    gXY.getHeight());
+            } catch (Exception e) {
+                continue;
+            }
+            PairIntArrayWithColor closedCurve 
+                = new PairIntArrayWithColor(ordered);
+            closedCurve.setAsClosedCurve();
+            
+            edges.add(closedCurve);
+        }
+                
         state = CurvatureScaleSpaceMapperState.EDGE_FILTERED;
     }
     
@@ -207,15 +215,6 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         
         log.fine("edges extracted");
     }
-
-    protected void markTheClosedCurves() {
-        
-        ClosedCurveAndJunctionFinder ccjFinder = 
-            new ClosedCurveAndJunctionFinder();
-        
-        ccjFinder.findClosedCurves(edges);
-       
-    }
   
     public List<PairIntArray> getEdges() {
         return edges;
@@ -255,14 +254,6 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
 
     public Image getOriginalImage() {
         return originalImg;
-    }
-    
-    public int getTrimmedXOffset() {
-        return trimmedXOffset;
-    }
-    
-    public int getTrimmedYOffset() {
-        return trimmedYOffset;
     }
    
     public EdgeFilterProducts getEdgeFilterProducts() {

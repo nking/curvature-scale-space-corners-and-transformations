@@ -110,6 +110,7 @@ ImageIOHelper.writeOutputImage(flPath, eImg);
 ImageIOHelper.writeOutputImage(dirPath + "/sp1.png", cImg);
         ImageDisplayer.displayImage("edge", eImg);
         ImageDisplayer.displayImage("convolved edge", cImg);        
+    
     }
     
     public void testScaleSpaceImagesFigure3() throws Exception {

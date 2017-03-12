@@ -7455,6 +7455,19 @@ if (sum > 511) {
                     if (y2 < 0 || y2 > (h - 1)) {
                         continue;
                     }
+                    /*if (x == 0 && x2 == 0) {
+                        continue;
+                    }
+                    if (y == 0 && y2 == 0) {
+                        continue;
+                    }
+                    if (x == (w - 1) && x2 == (w - 1)) {
+                        continue;
+                    }
+                    if (y == (h - 1) && y2 == (h - 1)) {
+                        continue;
+                    }*/
+                    
                     out.setValue(x2, y2, v);
                 }
             }
@@ -7595,6 +7608,10 @@ if (sum > 511) {
         int nIter = 0;
         do {
             nEdited = 0;
+            
+            //GreyscaleImage tmp = out.copyImage();
+            //tmp.multiply(255.f);
+            //MiscDebug.writeImage(tmp, "_editing_" + MiscDebug.getCurrentTimeFormatted());
 
             // test c1, d1 and it rotated by 90 3 times
             // test c2, d2 and it rotated by 90 3 times

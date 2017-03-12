@@ -163,8 +163,6 @@ public class CurvatureScaleSpaceCornerDetector extends
         /*for (int i = 0; i < cornersForMatching.getN(); i++) {
             int x = cornersForMatching.getX(i);
             int y = cornersForMatching.getY(i);
-            x += this.trimmedXOffset;
-            y += this.trimmedYOffset;
             co.add(x, y);
         }*/
 
@@ -180,8 +178,6 @@ MultiArrayMergeSort.sortByYThenX(cp);
         for (int i = 0; i < corners.getN(); i++) {
             int x = corners.getX(i);
             int y = corners.getY(i);
-            x += this.trimmedXOffset;
-            y += this.trimmedYOffset;
             co.add(x, y);
         }
 
@@ -201,8 +197,6 @@ MultiArrayMergeSort.sortByYThenX(cp);
             for (int j = 0; j < edge.getN(); j++) {
                 int x = edge.getX(j);
                 int y = edge.getY(j);
-                x += this.trimmedXOffset;
-                y += this.trimmedYOffset;
                 ce.add(x, y);
             }
 
@@ -235,7 +229,8 @@ MultiArrayMergeSort.sortByYThenX(cp);
         return set;
     }
     
-     public Set<CornerRegion> getEdgeCornerRegionsInOriginalReferenceFrame() {
+    //TODO: edit...no longer using trimmed images or offsets
+    public Set<CornerRegion> getEdgeCornerRegionsInOriginalReferenceFrame() {
         
         Set<CornerRegion> set = new HashSet<CornerRegion>();
         
@@ -243,8 +238,8 @@ MultiArrayMergeSort.sortByYThenX(cp);
             for (CornerRegion cr : entry.getValue()) {
                 CornerRegion crCopy = cr.copy();
                 for (int i = 0; i < cr.getX().length; ++i) {
-                    int x = cr.getX()[i] + this.trimmedXOffset;
-                    int y = cr.getY()[i] + this.trimmedYOffset;
+                    int x = cr.getX()[i];
+                    int y = cr.getY()[i];
                     crCopy.set(i, cr.getK()[i], x, y);
                 }
                 set.add(crCopy);
@@ -254,6 +249,7 @@ MultiArrayMergeSort.sortByYThenX(cp);
         return set;
     }
      
+    //TODO: edit...no longer using trimmed images or offsets
     public Set<CornerRegion> getEdgeCornerRegionsInOriginalReferenceFrame(
         boolean removeAmbiguousPeaks) {
         
@@ -268,8 +264,8 @@ MultiArrayMergeSort.sortByYThenX(cp);
         for (CornerRegion cr : set) {
             CornerRegion crCopy = cr.copy();
             for (int i = 0; i < crCopy.getX().length; ++i) {
-                int x = crCopy.getX()[i] + this.trimmedXOffset;
-                int y = crCopy.getY()[i] + this.trimmedYOffset;
+                int x = crCopy.getX()[i];
+                int y = crCopy.getY()[i];
                 crCopy.set(i, crCopy.getK()[i], x, y);
             }
             edited.add(crCopy);
@@ -324,7 +320,7 @@ MultiArrayMergeSort.sortByYThenX(cp);
             double trace = m.trace();
         
             double dt = det/trace;
-            System.out.println("det/trace=" + dt);
+            //System.out.println("det/trace=" + dt);
             if (Double.isFinite(dt) && dt > 10) {
                 keep.add(x, y);
             }

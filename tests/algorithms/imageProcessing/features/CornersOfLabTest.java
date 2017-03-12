@@ -108,27 +108,6 @@ public class CornersOfLabTest extends TestCase {
         // nScle=4; minWave=4; k=10 is good
         GreyscaleImage img3 = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();        
         
-        PhaseCongruencyDetector phaseCDetector = new PhaseCongruencyDetector();
-        phaseCDetector.setToCreateCorners();                
-        PhaseCongruencyDetector.PhaseCongruencyProducts products =
-            phaseCDetector.phaseCongMono(img3);
-        assertNotNull(products);
-        Set<PairInt> pCorners = products.getCorners();
-        Image out2 = img3.copyToColorGreyscale();
-        out2 = out2.createWithDimensions();
-        out2.fill(255, 255, 255);
-        GreyscaleImage out3 = img3.createWithDimensions();
-        for (int i = 0; i < out2.getWidth(); ++i) {
-            for (int j = 0; j < out2.getHeight(); ++j) {
-                if (products.getThinned()[j][i] > 0) {
-                    out2.setRGB(i, j, 0, 0, 255);
-                }
-                out3.setValue(i, j, (int)(255.*products.getPhaseCongruency()[j][i]));
-            }
-        }
-        ImageIOHelper.addCurveToImage(pCorners, out2, 2, 255, 0, 0);
-        MiscDebug.writeImage(out3, "_phase_congruency_lab_"); 
-        MiscDebug.writeImage(out2, "_phase_congruency_corners_lab_");  
         
     }
     

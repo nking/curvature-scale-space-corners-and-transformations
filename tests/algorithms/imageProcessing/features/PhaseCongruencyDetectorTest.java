@@ -44,7 +44,6 @@ public class PhaseCongruencyDetectorTest extends TestCase {
             GreyscaleImage img = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();
 
             PhaseCongruencyDetector phaseCDetector = new PhaseCongruencyDetector();
-            phaseCDetector.setToCreateCorners();
             PhaseCongruencyDetector.PhaseCongruencyProducts products =
                 phaseCDetector.phaseCongMono(img);
 

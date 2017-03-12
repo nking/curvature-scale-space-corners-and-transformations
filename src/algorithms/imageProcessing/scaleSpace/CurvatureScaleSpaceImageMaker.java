@@ -1,7 +1,9 @@
 package algorithms.imageProcessing.scaleSpace;
 
 import algorithms.compGeometry.PerimeterFinder2;
+import algorithms.connected.ConnectedPointsFinder;
 import algorithms.connected.ConnectedValuesFinder;
+import algorithms.imageProcessing.CannyEdgeFilterAdaptive;
 import algorithms.imageProcessing.EdgeFilterProducts;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
@@ -17,6 +19,7 @@ import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -80,55 +83,52 @@ public final class CurvatureScaleSpaceImageMaker {
             // extract closed curve edges
             
             if (useLineDrawingMode) {
+                
                 GreyscaleImage img2 = img.copyToGreyscale2();
-                img2.multiply(255);
-                ImageProcessor imageProcessor = new ImageProcessor();             
                 
-                img2 = imageProcessor.closing(img2);
-                                
-                //NOTE: might need further thinning
-                imageProcessor.applyThinning(img2);
+                CannyEdgeFilterAdaptive filter = new CannyEdgeFilterAdaptive();
+                filter.setToUseLineDrawingMode();
+                //filter.setToDebug();
+                filter.applyFilter(img2);
+        
+                filterProducts = filter.getFilterProducts();
+        
+                GreyscaleImage gXY = filterProducts.getGradientXY();
                 PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
-                pltc.extremeThinning(img2);
-                                
-                ConnectedValuesFinder finder = new ConnectedValuesFinder(img2);
-                finder.setToUse8Neighbors();
-                finder.findGroupsNotThisValue(0);
-                
+                pltc.extremeStaircaseRemover(gXY);
+
+                //GreyscaleImage tmp = gXY.copyImage();
+                //tmp.multiply(255.f);
+                //MiscDebug.writeImage(tmp, "_GXY_" + MiscDebug.getCurrentTimeFormatted());
+
+                TIntSet nzs = new TIntHashSet();
+                for (int i = 0; i < gXY.getNPixels(); ++i) {
+                    if (gXY.getValue(i) > 0) {
+                        nzs.add(i);
+                    }
+                }
+
+                ConnectedPointsFinder cFinder = new ConnectedPointsFinder(gXY.getWidth(), 
+                    gXY.getHeight());
+                cFinder.setToUse8Neighbors();
+                cFinder.findConnectedPointGroups(nzs);
+
                 PerimeterFinder2 finder2 = new PerimeterFinder2();
-                
-                int n = finder.getNumberOfGroups();
-                
-                System.out.println("found " + n + " contiguous groups in image");
-                
-                for (int i = 0; i < n; ++i) {
-                    
-                    TIntSet boundaryPoints = finder.getXY(i);
-                       
-                    if (isOnImageBounds(boundaryPoints, w, h)) {
+
+                for (int i = 0; i < cFinder.getNumberOfGroups(); ++i) {
+                    TIntSet set = cFinder.getXY(i);
+                    if (isOnImageBounds(set, w, h)) {
                         continue;
                     }
-                                                                                
                     PairIntArray ordered = null;
                     try {
-                        ordered = finder2.orderTheBoundary(
-                            boundaryPoints, w, h);
+                        ordered = finder2.orderTheBoundary(set, gXY.getWidth(), 
+                            gXY.getHeight());
                     } catch (Exception e) {
                         continue;
                     }
-                    
-                    {//DEBUG
-                        Image tmp = img2.copyToColorGreyscale();
-                        ImageIOHelper.addCurveToImage(ordered, tmp, 0, 255, 0, 0);
-                        MiscDebug.writeImage(tmp, "_ord_" + MiscDebug.getCurrentTimeFormatted());
-                    }              
-                    
-                    // NOTE: ordered is clockwise, but other code expects 
-                    //  CCW, so reversing for now
-                    ordered.reverse();
-                    
-                    PairIntArrayWithColor closedCurve = new PairIntArrayWithColor(
-                        ordered);
+                    PairIntArrayWithColor closedCurve 
+                        = new PairIntArrayWithColor(ordered);
                     closedCurve.setAsClosedCurve();
 
                     closedCurves.add(closedCurve);

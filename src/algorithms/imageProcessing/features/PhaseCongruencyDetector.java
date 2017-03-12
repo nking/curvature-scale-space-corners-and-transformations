@@ -3,7 +3,6 @@ package algorithms.imageProcessing.features;
 import algorithms.QuickSort;
 import algorithms.imageProcessing.AdaptiveThresholding;
 import algorithms.imageProcessing.DistanceTransform;
-import algorithms.imageProcessing.EdgeExtractorSimple;
 import algorithms.imageProcessing.FilterGrid;
 import algorithms.imageProcessing.FilterGrid.FilterGridProducts;
 import algorithms.imageProcessing.GreyscaleImage;
@@ -15,8 +14,6 @@ import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.MorphologicalFilter;
 import algorithms.imageProcessing.NonMaximumSuppression;
 import algorithms.imageProcessing.PeriodicFFT;
-import algorithms.imageProcessing.PostLineThinnerCorrections;
-import algorithms.imageProcessing.scaleSpace.CSSCornerMaker;
 import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Complex;
 import algorithms.misc.ComplexModifiable;
@@ -25,7 +22,6 @@ import algorithms.misc.HistogramHolder;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
-import algorithms.util.CornerArray;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -34,11 +30,8 @@ import com.climbwithyourfeet.clustering.DTClusterFinder;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -58,18 +51,7 @@ import java.util.logging.Logger;
  * methods which for blurry edges, especially, produce a double response in
  * the gradient image).
  * </pre>
- * Currently, the corners are produced using curvature scale curvature
- * calculations for the extracted edge points.
- * Alternative corner methods may be offered in the future.
- * Note that edge detector follows the codes referenced below.
- * Also note that the Peter Kovesi implementation of Phase Congruency detector
- * before this version which uses monogenic filters, produced a corner map using
- * minimum moments from the phase congruency energy over 6 angles.  That method
- * may be implemented separately from this class in the future because
- * the corners produced from it look very good (but are at the expense of a
- * longer runtime).
- * Note, line drawings and images which are solid shapes are probably best
- * handled by the CannyEdgeDetectorFilterAdpative with setToUseLineDrawingMode().
+ * 
  * For further reading other than the references below, a summary of band-pass
  * quadrature filters is in
  * https://www.utc.fr/~dboukerr/Papers/Qf_JMIV_2004.pdf
@@ -196,8 +178,6 @@ public class PhaseCongruencyDetector {
 
     final private static double epsilon = 1E-4;
 
-    private boolean determineCorners = false;
-
     private boolean doPlot = false;
 
     private boolean extractNoise = false;
@@ -275,10 +255,6 @@ public class PhaseCongruencyDetector {
 
     public void setToDebug() {
         doPlot = true;
-    }
-
-    public void setToCreateCorners() {
-        this.determineCorners = true;
     }
 
     /**
@@ -1079,114 +1055,11 @@ public class PhaseCongruencyDetector {
             products.setSubsetNoise(subsetNoise);
         }
 
-        //TODO: these convenience methods do not belong in this class...
-        if (determineCorners) {
-
-            calculateCorners(products, img);
-        }
-
         long t1 = System.currentTimeMillis();
 
         System.out.println(((t1 - t0)*1E-3) + " seconds for phasecongmono");
 
         return products;
-    }
-
-    protected void calculateCorners(PhaseCongruencyProducts products,
-        GreyscaleImage img) {
-
-        // only computing curvature for edge points
-        int[][] edgeImage = products.getThinned();
-
-        int nRows = edgeImage.length;
-        int nCols = edgeImage[0].length;
-
-        EdgeExtractorSimple edgeExtractor = new EdgeExtractorSimple(edgeImage);
-        edgeExtractor.extractEdges();
-
-        Set<PairInt> junctions = edgeExtractor.getJunctions();
-
-        List<PairIntArray> theEdges = edgeExtractor.getEdges();
-
-        // ---- placing these in coordinate reference frame of images -------
-        //      column major notation
-        Set<PairInt> tmp = new HashSet<PairInt>();
-        for (PairInt p : junctions) {
-            tmp.add(new PairInt(p.getY(), p.getX()));
-        }
-        junctions = tmp;
-
-        // edges are in row major notation, so switching to column major
-        for (PairIntArray edge : theEdges) {
-            for (int i = 0; i < edge.getN(); ++i) {
-                int x = edge.getX(i);
-                int y = edge.getY(i);
-                edge.set(i, y, x);
-            }
-        }
-
-        // ----corners are then in the coordinate reference frame of images -------
-        // column major notation
-        CSSCornerMaker cornerMaker = new CSSCornerMaker(img.getWidth(), img.getHeight());
-        cornerMaker.doNotStoreCornerRegions();
-
-        List<CornerArray> cornerList =
-            cornerMaker.findCornersInScaleSpaceMaps(theEdges);
-
-        /*
-        // quick addition of filter for localizability
-        {
-            GreyscaleImage pcImg = new GreyscaleImage(nCols, nRows);
-            GreyscaleImage thetaImg = new GreyscaleImage(nCols, nRows);
-            for (int i = 0; i < nRows; ++i) {
-                for (int j = 0; j < nCols; ++j) {
-                    pcImg.setValue(j, i,
-                        (int)Math.round(255. * products.getPhaseCongruency()[i][j]));
-                    thetaImg.setValue(j, i,
-                        (int)Math.round(products.getOrientation()[i][j]));
-                }
-            }
-            cornerList = FeatureHelper.filterByLocalizability(img, pcImg, thetaImg,
-                cornerList);
-        }
-        */
-
-        /*
-        filter out small curvature:
-        see line 64 of comments in CornerRegion.java.
-        for curvature smaller than 0.2 won't see changes in slope in the
-             neighboring 2 points on either side.
-        */
-        Map<PairInt, Float> cornerMap = new HashMap<PairInt, Float>();
-        for (int i = 0; i < cornerList.size(); ++i) {
-            CornerArray ca = cornerList.get(i);
-            for (int idx = 0; idx < ca.getN(); ++idx) {
-                float curvature = ca.getCurvature(idx);
-
-                if (Math.abs(curvature) > 0.05) {// should not set above 0.07...
-
-                    cornerMap.put(
-                        new PairInt(Math.round(ca.getX(idx)),
-                        Math.round(ca.getY(idx))),
-                        Float.valueOf(ca.getCurvature(idx)));
-                }
-            }
-        }
-
-        Set<PairInt> outputCorners = new HashSet<PairInt>(cornerMap.keySet());
-        outputCorners.addAll(junctions);
-
-        // this sets the edges, junctions and corners in the GreyscaleImage reference frame
-        products.setEdges(theEdges);
-        products.setJunctions(junctions);
-        products.setCorners(outputCorners);
-
-        /*
-        Image imgCp = img.copyToColorGreyscale();
-        ImageIOHelper.addAlternatingColorCurvesToImage(theEdges, imgCp, 0, 0, 0);
-        ImageIOHelper.addCurveToImage(outputCorners, imgCp, 3, 255, 0, 0);
-        MiscDebug.writeImage(imgCp, "_CORNERS_0");
-        */
     }
 
     private double[][] copy(double[][] a) {
@@ -1438,15 +1311,6 @@ public class PhaseCongruencyDetector {
         
         private int[][] thinnedLowNoise = null;
 
-        // col major notation
-        private List<PairIntArray> edgeList = null;
-
-        // col major notation
-        private Set<PairInt> junctions = null;
-
-        // col major notation
-        private Set<PairInt> corners = null;
-
         /**
          * noisey pixels are found during the 2 level threshold hysteresis
          * phase and they sometimes contain textures such as vegetation or
@@ -1599,76 +1463,6 @@ public class PhaseCongruencyDetector {
          */
         public double getThreshold() {
             return threshold;
-        }
-
-        /**
-         * set the edge list extracted from the thinned image using coordinates
-         * that are in the reference frame of the GreyscaleImage instance.
-         * Note that the closed curves are converted to instances of
-         * PairIntArrayWithColor.
-         * @param theEdgeList
-         */
-        private void setEdges(List<PairIntArray> theEdgeList) {
-
-            this.edgeList = new ArrayList<PairIntArray>();
-
-            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-
-            for (PairIntArray p : theEdgeList) {
-
-                PairIntArray cp = p.copy();
-                if (curveHelper.isAdjacent(p, 0, p.getN() - 1, 1)) {
-                    cp = new PairIntArrayWithColor(cp);
-                }
-                this.edgeList.add(cp);
-            }
-        }
-
-        /**
-         * set the junction points found in the edge list.  Note that the
-         * points should be using coordinates that are in the reference frame
-         * of the GreyscaleImage instance, col major notation.
-         * @param theJunctions
-         */
-        private void setJunctions(Set<PairInt> theJunctions) {
-            this.junctions = new HashSet<PairInt>(theJunctions);
-        }
-
-        /**
-         * set the corners found in the edge list.  Note that the points should
-         * be using coordinates that are in the reference frame of the
-         * GreyscaleImage instance.
-         * @param theCorners
-         */
-        private void setCorners(Set<PairInt> theCorners) {
-            this.corners = new HashSet<PairInt>(theCorners);
-        }
-
-        /**
-         * get the list of extracted edges as points that are in the reference
-         * frame of the GreyscaleImage instance, col major notation.
-         * @return the edgeList
-         */
-        public List<PairIntArray> getEdgeList() {
-            return edgeList;
-        }
-
-        /**
-         * get the set of junction points found within the edges in the reference
-         * frame of the GreyscaleImage instance, col major notation
-         * @return the junctions
-         */
-        public Set<PairInt> getJunctions() {
-            return junctions;
-        }
-
-        /**
-         * get the corners found in the edges as set of points that are in the
-         * reference frame of the GreyscaleImage instance, col major notation.
-         * @return the corners
-         */
-        public Set<PairInt> getCorners() {
-            return corners;
         }
 
         public PhaseCongruencyParameters getParameters() {

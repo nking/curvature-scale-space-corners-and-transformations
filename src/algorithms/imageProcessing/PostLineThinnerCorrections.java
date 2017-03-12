@@ -1251,6 +1251,34 @@ public class PostLineThinnerCorrections {
         
         return nCorrections;
     }
+    
+    /**
+     * use with caution
+     * @param img
+     */
+    public void extremeStaircaseRemover(GreyscaleImage img) {
+        
+        Set<PairInt> points = new HashSet<PairInt>();
+        
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            if (img.getValue(i) > 0) {
+                points.add(new PairInt(img.getCol(i), img.getRow(i)));
+            }
+        }
+        
+        Set<PairInt> cp = new HashSet<PairInt>(points);
+        
+        extremeStaircaseRemover(points, img.getWidth(), img.getHeight());
+        
+        extremeCornerRemover(points, img.getWidth(), img.getHeight());
+        
+        cp.removeAll(points);
+        
+        for (PairInt p : cp) {
+            img.setValue(p.getX(), p.getY(), 0);
+        }
+        
+    }
 
     /**
      * use with caution

@@ -25,6 +25,33 @@ public class SpurRemover {
     /**
      * an incomplete set of patterns are applied to the curve to remove spurs
      * that are longer than a pixel and are 1 pixel wide.  this method is not
+     * complete. 
+     * 
+     * @param img 
+     */
+    public void remove(GreyscaleImage img) {
+      
+        Set<PairInt> points = new HashSet<PairInt>();
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            if (img.getValue(i) > 0) {
+                points.add(new PairInt(img.getCol(i), img.getRow(i)));
+            }
+        }
+        
+        Set<PairInt> cp = new HashSet<PairInt>(points);
+        
+        remove(points, img.getWidth(), img.getHeight());
+        
+        cp.removeAll(points);
+        
+        for (PairInt p : cp) {
+            img.setValue(p.getX(), p.getY(), 0);
+        }
+    }
+    
+    /**
+     * an incomplete set of patterns are applied to the curve to remove spurs
+     * that are longer than a pixel and are 1 pixel wide.  this method is not
      * complete.
      * 
      * @param points 

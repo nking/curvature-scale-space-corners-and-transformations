@@ -106,25 +106,6 @@ public class CornersOfSUSANTest extends TestCase {
         
         GreyscaleImage img3 = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();        
        
-        PhaseCongruencyDetector phaseCDetector = new PhaseCongruencyDetector();
-        phaseCDetector.setToCreateCorners();                
-        PhaseCongruencyDetector.PhaseCongruencyProducts products =
-            phaseCDetector.phaseCongMono(img3);
-        assertNotNull(products);
-        Set<PairInt> pCorners = products.getCorners();
-        Image out2 = img3.copyToColorGreyscale();
-        out2 = out2.createWithDimensions();
-        out2.fill(255, 255, 255);
-        for (int i = 0; i < out2.getWidth(); ++i) {
-            for (int j = 0; j < out2.getHeight(); ++j) {
-                if (products.getThinned()[j][i] > 0) {
-                    out2.setRGB(i, j, 0, 0, 255);
-                }
-            }
-        }
-        ImageIOHelper.addCurveToImage(pCorners, out2, 2, 255, 0, 0);
-        MiscDebug.writeImage(out2, 
-            "_phase_congruency_corners_SUSAN_");  
         
     }
     
