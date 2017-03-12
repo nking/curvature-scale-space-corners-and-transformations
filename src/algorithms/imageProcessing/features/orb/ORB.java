@@ -84,7 +84,16 @@ from the scipy code.
  
 Note: to include color information, consider combining the results of the
 a greyscale ORB with the results of a "C" from LCH colorspace and/or another
-* color transformation that uses a chromaticity transformation to distinguish colors.
+* color transformation that uses a chromaticity transformation 
+* to distinguish colors.  
+* For the later, would need to make a separate ORB because the
+* differences in the "H", that is polar theta, would need
+* to use a threshold of 20 degrees or so and a result of binary
+* difference, and would need a correction for wrap around the
+* circular coordinate space, so the keypoint extraction would
+* need to be adjusted for that.  The main reason for such 
+* consideration is to be able to distinguish between colors whose
+* combinations are the same in greyscale color.
 
 NOTE, have chosen to keep the results (which are available publicly via getters)
 in Lists in which each list index is a scale in the pyramidal decimation
