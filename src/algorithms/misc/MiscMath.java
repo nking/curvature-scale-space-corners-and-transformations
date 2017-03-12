@@ -3,7 +3,6 @@ package algorithms.misc;
 import algorithms.CountingSort;
 import algorithms.MultiArrayMergeSort;
 import algorithms.compGeometry.FurthestPair;
-import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceContour;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.matching.ORBMatcher;
@@ -260,46 +259,6 @@ public class MiscMath {
             }
         }
         return min;
-    }
-    
-    public static float[] findMaxXY(CornerRegion[] a, int len) {
-        
-        float maxX = Float.MIN_VALUE;
-        float maxY = Float.MIN_VALUE;
-        
-        for (int i = 0; i < len; i++) {
-            CornerRegion c = a[i];
-            float x = c.getX()[c.getKMaxIdx()];
-            float y = c.getY()[c.getKMaxIdx()];
-            if (x > maxX) {
-                maxX = x;
-            }
-            if (y > maxY) {
-                maxY = y;
-            }
-        }
-        
-        return new float[]{maxX, maxY};
-    }
-    
-    public static float[] findMinXY(CornerRegion[] a, int len) {
-        
-        float minX = Float.MAX_VALUE;
-        float minY = Float.MAX_VALUE;
-        
-        for (int i = 0; i < len; i++) {
-            CornerRegion c = a[i];
-            float x = c.getX()[c.getKMaxIdx()];
-            float y = c.getY()[c.getKMaxIdx()];
-            if (x < minX) {
-                minX = x;
-            }
-            if (y < minY) {
-                minY = y;
-            }
-        }
-        
-        return new float[]{minX, minY};
     }
     
     public static float findMin(float[] a, int nIndexes) {
@@ -2131,48 +2090,6 @@ public class MiscMath {
         return min;
     }
 
-    public static <T extends CornerRegion> float[] findMinXY(List<List<T>> crLists) {
-        
-        float minX = Float.MAX_VALUE;
-        float minY = Float.MAX_VALUE;
-        
-        for (List<T> list : crLists) {
-            for (CornerRegion cr : list) {
-                float x = cr.getX()[cr.getKMaxIdx()];
-                float y = cr.getY()[cr.getKMaxIdx()];
-                if (x < minX) {
-                    minX = x;
-                }
-                if (y < minY) {
-                    minY = y;
-                }
-            }
-        }
-        
-        return new float[]{minX, minY};
-    }
-    
-    public static <T extends CornerRegion> float[] findMaxXY(List<List<T>> crLists) {
-        
-        float maxX = Float.MIN_VALUE;
-        float maxY = Float.MIN_VALUE;
-        
-        for (List<T> list : crLists) {
-            for (CornerRegion cr : list) {
-                float x = cr.getX()[cr.getKMaxIdx()];
-                float y = cr.getY()[cr.getKMaxIdx()];
-                if (x > maxX) {
-                    maxX = x;
-                }
-                if (y > maxY) {
-                    maxY = y;
-                }
-            }
-        }
-        
-        return new float[]{maxX, maxY};
-    }
-    
     public static float[] findMinXY2(List<List<CurvatureScaleSpaceContour>> crLists) {
         
         float minX = Float.MAX_VALUE;
@@ -2214,45 +2131,7 @@ public class MiscMath {
         
         return new float[]{maxX, maxY};
     }
-
-    public static int[] findMinXY2(CornerRegion[] cr) {
-        
-        int minX = Integer.MAX_VALUE;
-        int minY = Integer.MAX_VALUE;
-        
-        for (CornerRegion c : cr) {
-            int x = c.getX()[c.getKMaxIdx()];
-            int y = c.getY()[c.getKMaxIdx()];
-            if (x < minX) {
-                minX = x;
-            }
-            if (y < minY) {
-                minY = y;
-            }
-        }
-        
-        return new int[]{minX, minY};
-    }
     
-    public static int[] findMaxXY2(CornerRegion[] cr) {
-        
-        int maxX = Integer.MIN_VALUE;
-        int maxY = Integer.MIN_VALUE;
-        
-        for (CornerRegion c : cr) {
-            int x = c.getX()[c.getKMaxIdx()];
-            int y = c.getY()[c.getKMaxIdx()];
-            if (x > maxX) {
-                maxX = x;
-            }
-            if (y > maxY) {
-                maxY = y;
-            }
-        }
-        
-        return new int[]{maxX, maxY};
-    }
-
     /**
      * computes n!/(k!(n-k)!) and if result overflows a long, returns Long.MAX_VALUE.
      * 

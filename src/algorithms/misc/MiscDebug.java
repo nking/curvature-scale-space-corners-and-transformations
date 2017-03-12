@@ -3,7 +3,6 @@ package algorithms.misc;
 import algorithms.CountingSort;
 import algorithms.compGeometry.convexHull.GrahamScan;
 import algorithms.imageProcessing.CIEChromaticity;
-import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.imageProcessing.features.CorrespondenceList;
 import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceContour;
 import algorithms.imageProcessing.features.FeatureComparisonStat;
@@ -331,83 +330,6 @@ public class MiscDebug {
             Image img2 = ImageIOHelper.convertImage(img);
 
             ImageIOHelper.addAlternatingColorCurvesToImage(edges, img2);
-            
-            if (!fileName.contains("\\.")) {
-                fileName = fileName + ".png";
-            }
-            String dirPath = algorithms.util.ResourceFinder.findDirectory("bin");
-            String sep = System.getProperty("file.separator");
-            ImageIOHelper.writeOutputImage(dirPath + sep + fileName, img2);
-            
-        } catch (IOException e) {
-            
-        }
-    }
-    
-    public static void writeEdgesAndCorners(List<PairIntArray> edges, 
-        List<List<CornerRegion>> corners, int nExtraForDot,
-        GreyscaleImage img, String fileName) {
-        try {
-            
-            Image img2 = ImageIOHelper.convertImage(img);
-            
-            ImageIOHelper.addAlternatingColorCurvesToImage2(edges, img2, 0);
-
-            int w = img.getWidth();
-            int h = img.getHeight();
-            
-            if (nExtraForDot > 0) {
-                // draw a larger white square below it to help visibility
-                int nE = nExtraForDot + 1;
-                for (int i = 0; i < corners.size(); i++) {
-                    List<CornerRegion> cornerRegions = corners.get(i);
-                    for (int ii = 0; ii < cornerRegions.size(); ii++) {
-                        CornerRegion cr = cornerRegions.get(ii);
-                        int col = cr.getX()[cr.getKMaxIdx()];
-                        int row = cr.getY()[cr.getKMaxIdx()];
-                        for (int dx = (-1 * nE); dx < (nE + 1); dx++) {
-                            int xx = col + dx;
-                            if ((xx < 0) || (xx > (w - 1))) {
-                                continue;
-                            }
-                            for (int dy = (-1 * nE); dy < (nE + 1); ++dy) {
-                                int yy = row + dy;
-                                if ((yy < 0) || (yy > (h - 1))) {
-                                    continue;
-                                }
-                                img2.setRGB(xx, yy, 255, 255, 255);
-                            }
-                        }                
-                    }
-                }
-            }
-
-            int clr = 0;
-            for (int i = 0; i < corners.size(); i++) {
-
-                int c = getNextColorRGB(clr);
-                
-                List<CornerRegion> cornerRegions = corners.get(i);
-                for (int ii = 0; ii < cornerRegions.size(); ii++) {
-                    CornerRegion cr = cornerRegions.get(ii);
-                    int col = cr.getX()[cr.getKMaxIdx()];
-                    int row = cr.getY()[cr.getKMaxIdx()];
-                    for (int dx = (-1 * nExtraForDot); dx < (nExtraForDot + 1); dx++) {
-                        int xx = col + dx;
-                        if ((xx < 0) || (xx > (w - 1))) {
-                            continue;
-                        }
-                        for (int dy = (-1 * nExtraForDot); dy < (nExtraForDot + 1); ++dy) {
-                            int yy = row + dy;
-                            if ((yy < 0) || (yy > (h - 1))) {
-                                continue;
-                            }
-                            img2.setRGB(xx, yy, c);
-                        }
-                    }                
-                }
-                clr++;
-            }
             
             if (!fileName.contains("\\.")) {
                 fileName = fileName + ".png";
@@ -1107,83 +1029,6 @@ public class MiscDebug {
              e.printStackTrace();
             log.severe("ERROR: " + e.getMessage());
         }
-    }
-
-    public static void printCornerRegion(CornerRegion[] cr) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < cr.length; ++i) {
-            if (cr[i] == null) {
-                continue;
-            }
-            sb.append(Integer.valueOf(i)).append(") ").append(cr[i].toString());
-        }
-        
-        log.info(sb.toString());
-    }
-
-    public static void display(CornerRegion cornerRegion1, 
-        CornerRegion cornerRegion2, GreyscaleImage img1Grey, 
-        GreyscaleImage img2Grey, String index, int halfWidthOfDisplay) 
-        throws CornerRegion.CornerRegionDegneracyException, IOException {
-        
-        int sWidth = 2*halfWidthOfDisplay;
-        int sHeight = 2*halfWidthOfDisplay;
-        
-        int kMaxIdx = cornerRegion1.getKMaxIdx();
-        int x1 = cornerRegion1.getX()[kMaxIdx];
-        int y1 = cornerRegion1.getY()[kMaxIdx];
-        float orientation1 = cornerRegion1.getRelativeOrientationInDegrees();
-        String label1 = String.format("[%s] (%d,%d) %.1f degrees", index, x1, y1, 
-            orientation1);
-        
-        GreyscaleImage sImg1 = img1Grey.subImage(x1, y1, sWidth, sHeight);
-        
-        kMaxIdx = cornerRegion2.getKMaxIdx();
-        int x2 = cornerRegion2.getX()[kMaxIdx];
-        int y2 = cornerRegion2.getY()[kMaxIdx];
-        float orientation2 = cornerRegion2.getRelativeOrientationInDegrees();
-        String label2 = String.format("[%s] (%d,%d) %.1f degrees", index, x2, y2, 
-            orientation2);
-        
-        GreyscaleImage sImg2 = img2Grey.subImage(x2, y2, sWidth, sHeight);
-        
-        ImageDisplayer.displayImage(label1, sImg1);
-        ImageDisplayer.displayImage(label2, sImg2);        
-    }
-    
-    public static <T extends CornerRegion> void writeImage(Collection<T> cornerRegions, 
-        Image img, String fileSuffix) throws IOException {
-       
-        int rClr = 255;
-        int gClr = 0;
-        int bClr = 0;
-        
-        for (T cr : cornerRegions) {
-            int kMaxIdx = cr.getKMaxIdx();
-            int x = cr.getX()[kMaxIdx];
-            int y = cr.getY()[kMaxIdx];
-            float k = cr.getK()[kMaxIdx];
-            int pointSize = 1;//+ Math.round((k - 0.1f)/0.1f);
-            if (pointSize < 0) {
-                pointSize = 1;
-            }
-            
-            for (int dx = (-1*pointSize); dx < (pointSize + 1); dx++) {
-                float xx = x + dx;
-                if ((xx > -1) && (xx < (img.getWidth() - 1))) {
-                    for (int dy = (-1*pointSize); dy < (pointSize + 1); dy++) {
-                        float yy = y + dy;
-                        if ((yy > -1) && (yy < (img.getHeight() - 1))) {
-                            img.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
-                        }
-                    }
-                }
-            }
-        }
-        
-        String dirPath = algorithms.util.ResourceFinder.findDirectory("bin");
-        String sep = System.getProperty("file.separator");
-        ImageIOHelper.writeOutputImage(dirPath + sep + fileSuffix + ".png", img);
     }
 
     public static void writeImage(Set<PairInt> points, Image img, 

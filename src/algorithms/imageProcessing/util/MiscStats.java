@@ -2,7 +2,6 @@ package algorithms.imageProcessing.util;
 
 import algorithms.compGeometry.PointInPolygon;
 import algorithms.imageProcessing.features.FeatureComparisonStat;
-import algorithms.imageProcessing.features.FeatureMatcher;
 import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
@@ -948,82 +947,6 @@ public class MiscStats {
                 
         params.clear();
         params.addAll(paramsList2);
-    }
-    
-    public static TransformationParameters calculateTransformation(int binFactor1, 
-        int binFactor2, List<FeatureComparisonStat> compStats, 
-        float[] outputScaleRotTransXYStDev, boolean removeIntensityOutliers) {
-        
-        assert (compStats.isEmpty() == false);
-        
-        Logger log = Logger.getLogger(MiscStats.class.getName());
-                
-        if (removeIntensityOutliers) {
-            log.info("filter for intensity outliers");
-            FeatureMatcher.removeIntensityOutliers(compStats);
-        }
-        
-        if (compStats.size() < 2) {
-            return null;
-        }
-        
-        MatchedPointsTransformationCalculator tc = 
-            new MatchedPointsTransformationCalculator();
-        
-        int centroidX1 = 0;
-        int centroidY1 = 0;
-        
-        PairIntArray matchedXY1 = new PairIntArray();
-        PairIntArray matchedXY2 = new PairIntArray();
-        
-        float[] weights = new float[compStats.size()];
-        
-        double sum = 0;
-        
-        for (int i = 0; i < compStats.size(); ++i) {
-            
-            FeatureComparisonStat compStat = compStats.get(i);
-            
-            int x1 = compStat.getImg1Point().getX() * binFactor1;
-            int y1 = compStat.getImg1Point().getY() * binFactor1;
-            
-            matchedXY1.add(x1, y1);
-            
-            int x2 = compStat.getImg2Point().getX() * binFactor2;
-            int y2 = compStat.getImg2Point().getY() * binFactor2;
-            
-            matchedXY2.add(x2, y2);
-            
-            weights[i] = compStat.getSumIntensitySqDiff();
-            
-            sum += weights[i];
-        }
-
-        if (sum > 0) {
-            
-            double tot = 0;
-
-            for (int i = 0; i < compStats.size(); ++i) {
-
-                double div = (sum - weights[i]) / ((compStats.size() - 1) * sum);
-
-                weights[i] = (float) div;
-
-                tot += div;
-            }
- 
-            assert(Math.abs(tot - 1.) < 0.03);
-            
-        } else {
-            float a = 1.f/weights.length;
-            Arrays.fill(weights, a);
-        }
-                
-        TransformationParameters params = tc.calulateEuclidean(matchedXY1, 
-            matchedXY2, weights, centroidX1, centroidY1, 
-            outputScaleRotTransXYStDev);
-        
-        return params;
     }
 
     /**

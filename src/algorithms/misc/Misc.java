@@ -1,6 +1,5 @@
 package algorithms.misc;
 
-import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -401,36 +400,6 @@ public class Misc {
         }
 
         return map;
-    }
-
-    public static PairInt[] convert(CornerRegion[] c) {
-        
-        PairInt[] output = new PairInt[c.length];
-        
-        for (int i = 0; i < c.length; ++i) {
-            
-            CornerRegion cr = c[i];
-            int x = cr.getX()[cr.getKMaxIdx()];
-            int y = cr.getY()[cr.getKMaxIdx()];
-            output[i] = new PairInt(x, y);
-        }
-        
-        return output;
-    }
-    
-    public static PairInt[] convert(List<CornerRegion> c) {
-        
-        PairInt[] output = new PairInt[c.size()];
-        
-        for (int i = 0; i < c.size(); ++i) {
-            
-            CornerRegion cr = c.get(i);
-            int x = cr.getX()[cr.getKMaxIdx()];
-            int y = cr.getY()[cr.getKMaxIdx()];
-            output[i] = new PairInt(x, y);
-        }
-        
-        return output;
     }
     
     public static int[][] populateNeighborOffsets(int radius) {

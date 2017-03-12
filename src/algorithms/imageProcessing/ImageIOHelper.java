@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import algorithms.imageProcessing.features.BlobPerimeterRegion;
 import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.imageProcessing.features.FeatureComparisonStat;
 import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceContour;
@@ -846,21 +845,6 @@ public class ImageIOHelper {
         PairFloatArray xy = getXYOfContourPeaks(contours, xOffset, yOffset);
         
         writeLabeledPoints(xy, xOffset, yOffset, "infl pts", fileName);
-    }
-    
-    public static void writeLabeledRegions(
-        List<BlobPerimeterRegion> regions, int xOffset, int yOffset,
-        String fileName) throws IOException {
-        
-        PairFloatArray xy = new PairFloatArray(regions.size());
-        
-        for (int i = 0; i < regions.size(); ++i) {
-            BlobPerimeterRegion bpr = regions.get(i);
-            xy.add(bpr.getX()[1], bpr.getY()[1]);
-        }
-        
-        writeLabeledPoints(xy, xOffset, yOffset, "infl pts", fileName);
-        
     }
     
     public static void writeLabeledCornerRegions(
@@ -2231,33 +2215,6 @@ public class ImageIOHelper {
             int[] c = getNextRGB(i);
             
             addContoursToImage(cssC, img, xOffset, yOffset, nExtraForDot, 
-                c[0], c[1], c[2]);
-        }
-        
-        //Logger.getLogger(ImageIOHelper.class.getName()).info(sb.toString());
-    }
-
-    public static void addAlternatingColorRegionsToImage(
-        List<BlobPerimeterRegion> regions, ImageExt img, 
-        int xOffset, int yOffset, int nExtraForDot) {
-        
-        //StringBuilder sb = new StringBuilder();
-        
-        for (int i = 0; i < regions.size(); i++) {
-            
-            BlobPerimeterRegion br = regions.get(i);
-            
-            /*sb.append("[").append(Integer.toString(i))
-                .append("] idx=")
-                .append(Integer.toString(br.getIndexWithinCurve()))
-                .append(" ");*/
-            
-            int[] c = getNextRGB(i);
-
-            int x = br.getX()[1];
-            int y = br.getY()[1];
-            
-            addPointToImage(x, y, img, xOffset, yOffset, nExtraForDot, 
                 c[0], c[1], c[2]);
         }
         

@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.util.List;
 
 /**
+ * NOT READY FOR USE. 
+ * 
  * a wrapper to allow a user to run parts of the application from a command
  * line interface (for corner detection).
  * 

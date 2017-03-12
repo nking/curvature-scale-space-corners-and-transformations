@@ -1,31 +1,22 @@
 package algorithms.imageProcessing.scaleSpace;
 
 import algorithms.QuickSort;
-import algorithms.imageProcessing.EdgeExtractorSimple;
-import algorithms.imageProcessing.Image;
-import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageStatisticsHelper;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
-import algorithms.misc.Misc;
-import algorithms.misc.MiscDebug;
 import algorithms.util.CornerArray;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**

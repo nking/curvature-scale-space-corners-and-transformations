@@ -2,7 +2,6 @@ package algorithms.imageProcessing;
 
 import algorithms.compGeometry.convexHull.GrahamScanPairInt;
 import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
-import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceContour;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
@@ -809,23 +808,6 @@ public class MiscellaneousCurveHelper {
         }
 
         return xMinIdx;
-    }
-    
-    public <T extends CornerRegion> double[] calculateXYCentroids0(List<T> list) {
-        
-        double xc = 0;
-        double yc = 0;
-
-        for (CornerRegion cr : list) {
-            double x = cr.getX()[cr.getKMaxIdx()];
-            double y = cr.getY()[cr.getKMaxIdx()];
-            xc += x;
-            yc += y;
-        }
-        xc /= (double)list.size();
-        yc /= (double)list.size();
-
-        return new double[]{xc, yc};
     }
     
     public double[] calculateXYCentroids1(List<CurvatureScaleSpaceContour> list) {

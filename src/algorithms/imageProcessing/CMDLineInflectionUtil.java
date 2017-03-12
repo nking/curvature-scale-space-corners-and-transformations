@@ -12,6 +12,8 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
+ * NOT READY FOR USE
+ * 
  * a wrapper to allow a user to run parts of the application from a command
  * line interface (for inflection detection and image transformation calculation).
  * 
@@ -97,10 +99,10 @@ public class CMDLineInflectionUtil {
         }
     }
     
-    private void writeEdges(List<PairIntArray> edges1, PairIntArray[] edges1Tr, 
+    private void writeEdges(List<PairIntArray> edges1, List<PairIntArray> edges1Tr, 
         String imageFileName1, String imageFileName2) throws IOException {
         
-        if (edges1.size() != edges1Tr.length) {
+        if (edges1.size() != edges1Tr.size()) {
             throw new IllegalStateException(
                 "each curve in edges1 must have a parallel curve "
                 + "with the same number of points in edges1Tr");
@@ -127,7 +129,7 @@ public class CMDLineInflectionUtil {
                                     
                 PairIntArray edge1 = edges1.get(i);
 
-                PairIntArray edge1Tr = edges1Tr[i];
+                PairIntArray edge1Tr = edges1Tr.get(i);
 
                 if (edge1.getN() != edge1Tr.getN()) {
                 throw new IllegalStateException(
@@ -362,10 +364,9 @@ public class CMDLineInflectionUtil {
             if (xy2 == null) {
                 xy2 = new PairIntArray();
             }
-          
-            PairIntArray[] edges1Tr = transformer.applyTransformation(
-                transformationParams, 
-                edges1.toArray(new PairIntArray[edges1.size()]));
+            
+            List<PairIntArray> edges1Tr = transformer.applyTransformation(
+                transformationParams, edges1);
             
             List<PairIntArray> edges2 = 
                 mapper.getEdges2InOriginalReferenceFrame();
