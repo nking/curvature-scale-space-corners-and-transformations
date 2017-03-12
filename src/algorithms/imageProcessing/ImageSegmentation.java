@@ -5,7 +5,6 @@ import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.compGeometry.HoughTransform;
 import algorithms.compGeometry.NearestPointsInLists;
-import algorithms.compGeometry.PerimeterFinder;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.compGeometry.clustering.KMeansPlusPlus;
 import algorithms.compGeometry.clustering.KMeansPlusPlusColor;

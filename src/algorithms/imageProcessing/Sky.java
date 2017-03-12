@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import algorithms.compGeometry.PerimeterFinder;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.features.mser.MSEREdges;
 import algorithms.util.OneDIntArray;
