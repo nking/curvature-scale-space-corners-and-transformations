@@ -200,25 +200,11 @@ public class ORBMatcherTest extends TestCase {
             
             {//DEBUG
                 Image tmp1 = lch1[1].copyToColorGreyscale();
-                for (int ii = 0; ii < tmp1.getNPixels(); ++ii) {
-                    tmp1.setRGB(ii, tmp1.getR(ii) + 100, 
-                        tmp1.getG(ii) + 100, tmp1.getB(ii) + 100);
-                }
-                for (int ii = 0; ii < 1; ++ii) {
-                    TIntList pixIdxs = orb1.getKeyPointListPix(ii);
-                    ImageIOHelper.addCurveToImage(pixIdxs, tmp1, 1, 255, 0, 0);
-                }
+                ImageIOHelper.addCurveToImage(kp1c, tmp1, 1, 255, 0, 0);
                 MiscDebug.writeImage(tmp1, "_kp_C_" + fileName1Root);
                 
                 Image tmp2 = lch2[1].copyToColorGreyscale();
-                for (int ii = 0; ii < tmp2.getNPixels(); ++ii) {
-                    tmp2.setRGB(ii, tmp2.getR(ii) + 100, 
-                        tmp2.getG(ii) + 100, tmp2.getB(ii) + 100);
-                }
-                for (int ii = 0; ii < 1; ++ii) {
-                    TIntList pixIdxs = orb2.getKeyPointListPix(ii);
-                    ImageIOHelper.addCurveToImage(pixIdxs, tmp2, 1, 255, 0, 0);
-                }
+                ImageIOHelper.addCurveToImage(kp2c, tmp2, 1, 255, 0, 0);
                 MiscDebug.writeImage(tmp2, "_kp_C_" + fileName2Root);
                 CorrespondencePlotter plotter = 
                     new CorrespondencePlotter(tmp1, tmp2);
@@ -366,7 +352,7 @@ public class ORBMatcherTest extends TestCase {
             List<PairInt> kp1 = orb1.getKeyPointListColMaj(0);
             List<PairInt> kp2 = orb2.getKeyPointListColMaj(0);
             
-            ORB orb1c = new ORB(lch1[1], np);
+            ORB orb1c = new ORB(lch1[2], np);
             //orb1c.overrideToAlsoCreate1stDerivKeypoints();
             //orb1c.overrideToCreateCurvaturePoints();
             orb1c.overrideToUseSingleScale();
@@ -480,27 +466,18 @@ public class ORBMatcherTest extends TestCase {
             
             {//DEBUG
                 Image tmp1 = lch1[1].copyToColorGreyscale();
-                for (int ii = 0; ii < tmp1.getNPixels(); ++ii) {
-                    tmp1.setRGB(ii, tmp1.getR(ii) + 100, 
-                        tmp1.getG(ii) + 100, tmp1.getB(ii) + 100);
-                }
                 ImageIOHelper.addCurveToImage(kp1c, tmp1, 1, 255, 0, 0);
                 
                 Image tmp2 = lch2[1].copyToColorGreyscale();
-                for (int ii = 0; ii < tmp2.getNPixels(); ++ii) {
-                    tmp2.setRGB(ii, tmp2.getR(ii) + 100, 
-                        tmp2.getG(ii) + 100, tmp2.getB(ii) + 100);
-                }
-                
                 ImageIOHelper.addCurveToImage(kp2c, tmp2, 1, 255, 0, 0);
                 
                 CorrespondencePlotter plotter = 
                     new CorrespondencePlotter(tmp1, tmp2);
-                for (int ii = 0; ii < matched.length; ++ii) {
-                    int x1 = matched[ii].getA();
-                    int y1 = matched[ii].getB();
-                    int x2 = matched[ii].getC();
-                    int y2 = matched[ii].getD();
+                for (int ii = 0; ii < matchedC.length; ++ii) {
+                    int x1 = matchedC[ii].getA();
+                    int y1 = matchedC[ii].getB();
+                    int x2 = matchedC[ii].getC();
+                    int y2 = matchedC[ii].getD();
                     double[] xy2Tr = tr.applyTransformation(paramsRev, x2, y2);
                     
                     plotter.drawLineInAlternatingColors(x1, y1, 
@@ -513,17 +490,17 @@ public class ORBMatcherTest extends TestCase {
             
             {//DEBUG
                 Image tmp1 = img1GS.copyToColorGreyscale();
-                ImageIOHelper.addCurveToImage(kp1, tmp1, 1, 255, 0, 0);
+                ImageIOHelper.addCurveToImage(kp1Comb, tmp1, 1, 255, 0, 0);
                 
                 Image tmp2 = img2GS.copyToColorGreyscale();
                 ImageIOHelper.addCurveToImage(kp2Comb, tmp2, 1, 255, 0, 0);
                 CorrespondencePlotter plotter = 
                     new CorrespondencePlotter(tmp1, tmp2);
-                for (int ii = 0; ii < matched.length; ++ii) {
-                    int x1 = matched[ii].getA();
-                    int y1 = matched[ii].getB();
-                    int x2 = matched[ii].getC();
-                    int y2 = matched[ii].getD();
+                for (int ii = 0; ii < matchedComb.length; ++ii) {
+                    int x1 = matchedComb[ii].getA();
+                    int y1 = matchedComb[ii].getB();
+                    int x2 = matchedComb[ii].getC();
+                    int y2 = matchedComb[ii].getD();
                     double[] xy2Tr = tr.applyTransformation(paramsRev, x2, y2);
                     
                     plotter.drawLineInAlternatingColors(x1, y1, 

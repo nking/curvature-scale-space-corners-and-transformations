@@ -4,16 +4,12 @@ import algorithms.QuickSort;
 import algorithms.imageProcessing.ATrousWaveletTransform;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
-import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MedianTransform;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.StructureTensor;
 import algorithms.imageProcessing.util.MatrixUtil;
-import algorithms.misc.MiscDebug;
-import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
-import algorithms.util.PairIntArray;
 import algorithms.util.TwoDFloatArray;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.list.TDoubleList;
@@ -87,7 +83,8 @@ Have also edited alot of the ordering of logic, but the core content is still ad
 from the scipy code.
  
 Note: to include color information, consider combining the results of the
-a greyscale ORB with the results of a "C" from LCH colorspace.
+a greyscale ORB with the results of a "C" from LCH colorspace and/or another
+* color transformation that uses a chromaticity transformation to distinguish colors.
 
 NOTE, have chosen to keep the results (which are available publicly via getters)
 in Lists in which each list index is a scale in the pyramidal decimation
