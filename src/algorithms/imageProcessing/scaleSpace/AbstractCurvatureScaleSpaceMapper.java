@@ -10,6 +10,8 @@ import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.PostLineThinnerCorrections;
+import algorithms.imageProcessing.SpurRemover;
 import algorithms.imageProcessing.features.mser.MSEREdges;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
@@ -176,9 +178,15 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         mserEdges.mergeAndExtractEdges();
         this.filterProducts = mserEdges.getEdgeFilterProducts();
         List<TIntSet> edgeSets = mserEdges.getEdges();
+        
+        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
+        
         PerimeterFinder2 finder2 = new PerimeterFinder2();
         for (int i = 0; i < edgeSets.size(); ++i) {
-            TIntSet set = edgeSets.get(i);            
+            TIntSet set = edgeSets.get(i); 
+            
+            pltc.extremeStaircaseRemover(set, w, h);
+            
             PairIntArray ordered = null;
             try {
                 ordered = finder2.orderTheBoundary(

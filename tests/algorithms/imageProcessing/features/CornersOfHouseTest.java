@@ -92,7 +92,7 @@ public class CornersOfHouseTest extends TestCase {
         List<PairIntArray> edges = detector.getEdgesInOriginalReferenceFrame();
         corners = detector.getCornersInOriginalReferenceFrame();
         ImageIOHelper.addAlternatingColorCurvesToImage(edges, image);
-        ImageIOHelper.addCurveToImage(corners, image, 2, 255, 0, 0);
+        ImageIOHelper.addCurveToImage(corners, image, 0, 255, 0, 0);
         MiscDebug.writeImage(image, "corners_house.png");
      
         Image img2 = detector.getImage().copyToColorGreyscale();

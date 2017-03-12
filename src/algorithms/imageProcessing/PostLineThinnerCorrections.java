@@ -4,6 +4,9 @@ import algorithms.CountingSort;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -129,6 +132,80 @@ public class PostLineThinnerCorrections {
     }
     
     protected void reverseXs(
+        final TIntSet zeroes, final TIntSet ones, TIntSet changeToZeroes, 
+        final TIntSet changeToOnes, int w, int h) {
+
+        int[] xy = new int[2];
+        
+        // ----- change the sign of x to handle other direction -----
+        TIntSet tmp;
+        TIntSet set;
+        TIntIterator iter;
+        for (int i = 0; i < 4; ++i) {
+            tmp = new TIntHashSet();
+            switch (i) {
+                case 0:
+                    set = zeroes;
+                    break;
+                case 1:
+                    set = ones;
+                    break;
+                case 2:
+                    set = changeToZeroes;
+                    break;
+                default:
+                    set = changeToOnes;
+                    break;
+            }
+            iter = set.iterator();
+            while (iter.hasNext()) {
+                int ePixIdx = iter.next();
+                decodePixelOffsets(ePixIdx, w, xy);
+                tmp.add(encodePixelOffsets(-xy[0], xy[1], w));
+            }
+            set.clear();
+            set.addAll(tmp);
+        }
+    }
+    
+    protected void reverseYs(
+        final TIntSet zeroes, final TIntSet ones, TIntSet changeToZeroes, 
+        final TIntSet changeToOnes, int w, int h) {
+
+        int[] xy = new int[2];
+        
+        // ----- change the sign of y to handle other direction -----
+        TIntSet tmp;
+        TIntSet set;
+        TIntIterator iter;
+        for (int i = 0; i < 4; ++i) {
+            tmp = new TIntHashSet();
+            switch (i) {
+                case 0:
+                    set = zeroes;
+                    break;
+                case 1:
+                    set = ones;
+                    break;
+                case 2:
+                    set = changeToZeroes;
+                    break;
+                default:
+                    set = changeToOnes;
+                    break;
+            }
+            iter = set.iterator();
+            while (iter.hasNext()) {
+                int ePixIdx = iter.next();
+                decodePixelOffsets(ePixIdx, w, xy);
+                tmp.add(encodePixelOffsets(xy[0], -xy[1], w));
+            }
+            set.clear();
+            set.addAll(tmp);
+        }
+    }
+    
+    protected void reverseXs(
         final Set<PairInt> zeroes, final Set<PairInt> ones, 
         Set<PairInt> changeToZeroes, final Set<PairInt> changeToOnes) {
         
@@ -198,6 +275,39 @@ public class PostLineThinnerCorrections {
         
     }
     
+    private int rotate90ThreeTimes(
+        TIntSet pixIdxs, int imageWidth, int imageHeight,
+        final TIntSet zeroes, final TIntSet ones, TIntSet changeToZeroes, 
+        final TIntSet changeToOnes) {
+        
+        // ----- change the sign of x to handle other direction -----
+        reverseXs(zeroes, ones, changeToZeroes, changeToOnes, imageWidth, imageHeight);
+        
+        int nCorrections = 0;
+        
+        nCorrections += replacePattern(
+            pixIdxs, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+             
+        // ----- change the sign of y to handle other direction -----
+        reverseYs(zeroes, ones, changeToZeroes, changeToOnes, imageWidth, imageHeight);
+        
+        nCorrections += replacePattern(
+            pixIdxs, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        // ----- change the sign of x to handle another direction -----
+        reverseXs(zeroes, ones, changeToZeroes, changeToOnes, imageWidth, imageHeight);
+                   
+        nCorrections += replacePattern(
+            pixIdxs, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        return nCorrections;
+    }
+    
+    
+    // the points which would be changed to zeroes or changed to ones are returned.
     private int rotate90ThreeTimes(
         Set<PairInt> points, int imageWidth, int imageHeight,
         final LinkedHashSet<PairInt> zeroes, final LinkedHashSet<PairInt> ones, 
@@ -326,6 +436,71 @@ public class PostLineThinnerCorrections {
         for (PairInt p2 : tmpPointsAdded) {
             points.add(p2);
         }
+        
+        return nCorrections;
+    }
+    
+    private int replacePattern(
+        TIntSet pixIdxs, int imageWidth, int imageHeight,
+        final TIntSet zeroes, final TIntSet ones, 
+        final TIntSet changeToZeroes, final TIntSet changeToOnes) {
+        
+        int w = imageWidth;
+        int h = imageHeight;
+
+        TIntSet tmpPointsRemoved = new TIntHashSet();
+        TIntSet tmpPointsAdded = new TIntHashSet();
+    
+        int[] xyOff = new int[2];
+        
+        TIntIterator iter = pixIdxs.iterator();
+        while (iter.hasNext()) {
+
+            int pixIdx = iter.next();
+        
+            boolean foundPattern = foundPattern(pixIdx, pixIdxs, imageWidth,
+                imageHeight, zeroes, ones, tmpPointsRemoved, tmpPointsAdded);
+            
+            if (!foundPattern) {
+                continue;
+            }
+                        
+            int row = pixIdx/imageWidth;
+            int col = pixIdx - (row * imageWidth);
+            
+            TIntIterator iter2 = changeToZeroes.iterator();
+            while (iter2.hasNext()) {
+                int ePixIdx2 = iter2.next();
+                decodePixelOffsets(ePixIdx2, imageWidth, xyOff);
+                int x2 = col + xyOff[0];
+                int y2 = row + xyOff[1];
+                if ((x2 < 0) || (y2 < 0) || (x2 > (w - 1)) || (y2 > (h - 1))) {
+                    continue;
+                }
+                int pixIdx3 = (y2 * w) + x2; 
+                tmpPointsAdded.remove(pixIdx3);              
+                tmpPointsRemoved.add(pixIdx3);
+            }
+
+            iter2 = changeToOnes.iterator();
+            while (iter2.hasNext()) {
+                int ePixIdx2 = iter2.next();
+                decodePixelOffsets(ePixIdx2, imageWidth, xyOff);
+                int x2 = col + xyOff[0];
+                int y2 = row + xyOff[1];
+                if ((x2 < 0) || (y2 < 0) || (x2 > (w - 1)) || (y2 > (h - 1))) {
+                    continue;
+                }
+                int pixIdx3 = (y2 * w) + x2;
+                tmpPointsRemoved.remove(pixIdx3);
+                tmpPointsAdded.add(pixIdx3);
+            }
+        }
+        
+        int nCorrections = tmpPointsRemoved.size() + tmpPointsAdded.size();
+        
+        pixIdxs.removeAll(tmpPointsRemoved);
+        pixIdxs.addAll(tmpPointsAdded);
         
         return nCorrections;
     }
@@ -882,6 +1057,58 @@ public class PostLineThinnerCorrections {
         return true;
     }
     
+    private boolean foundPattern(int pixIdx, TIntSet pixIdxs, 
+        int imageWidth, int imageHeight, TIntSet zeroes, TIntSet ones, 
+        TIntSet tmpPointsRemoved, TIntSet tmpPointsAdded) {
+        
+        boolean isRemoved = tmpPointsRemoved.contains(pixIdx);
+        if (isRemoved) {
+            return false;
+        }
+        
+        int w = imageWidth;
+        int h = imageHeight;
+                    
+        int row = pixIdx/w;
+        int col = pixIdx - (row * w);
+        
+        int[] xyOff = new int[2];
+        
+        TIntIterator iter = zeroes.iterator();
+        while (iter.hasNext()) {
+            int ePixIdx2 = iter.next();
+            decodePixelOffsets(ePixIdx2, w, xyOff);
+            int x2 = col + xyOff[0];
+            int y2 = row + xyOff[1];
+            if ((x2 < 0) || (y2 < 0) || (x2 > (w - 1)) || (y2 > (h - 1))) {
+                return false;
+            }
+            int pixIdx3 = (y2 * w) + x2;
+            if (!tmpPointsRemoved.contains(pixIdx3)
+                && (pixIdxs.contains(pixIdx3) || tmpPointsAdded.contains(pixIdx3))) {
+                return false;
+            }
+        }
+
+        iter = ones.iterator();
+        while (iter.hasNext()) {
+            int ePixIdx2 = iter.next();
+            decodePixelOffsets(ePixIdx2, w, xyOff);
+            int x2 = col + xyOff[0];
+            int y2 = row + xyOff[1];
+            if ((x2 < 0) || (y2 < 0) || (x2 > (w - 1)) || (y2 > (h - 1))) {
+                return false;
+            }
+            int pixIdx3 = (y2 * w) + x2;
+            if (tmpPointsRemoved.contains(pixIdx3) ||
+                (!pixIdxs.contains(pixIdx3) && !tmpPointsAdded.contains(pixIdx3))) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
     
     public static int correctForHoleArtifacts00_10(Set<PairInt> points, int imageWidth, 
         int imageHeight) {
@@ -1084,16 +1311,27 @@ public class PostLineThinnerCorrections {
     
         Set<PairInt> cp = new HashSet<PairInt>(points);
         
-        extremeStaircaseRemover(points, w, h);
-        extremeCornerRemover(points, w, h);
-        SpurRemover spurRemover = new SpurRemover();
-        spurRemover.remove(points, w, h);
-                
+        extremeThinning(points, w, h);
+    
         cp.removeAll(points);
         
         for (PairInt p : cp) {
             input.setValue(p.getX(), p.getY(), 0);
         }
+    }
+    
+    /**
+     * NOTE: only use on closed curves because it has
+     * a spur remover that will remove an entire line if
+     * it's not closed.
+     * @param input 
+     */
+    public void extremeThinning(Set<PairInt> points, int w, int h) {
+            
+        extremeStaircaseRemover(points, w, h);
+        extremeCornerRemover(points, w, h);
+        SpurRemover spurRemover = new SpurRemover();
+        spurRemover.remove(points, w, h);                
     }
     
     /**
@@ -1151,6 +1389,70 @@ public class PostLineThinnerCorrections {
             Integer.toString(nCorrections));
     }
     
+    /**
+     * use with caution.  it has a small window it uses to determine which
+     * pixel to remove.  
+     * if precision is needed, consider the zig-zag methods because they
+     * use larger windows and patterns.
+     * @param pixIdxs
+     * @param imageWidth
+     * @param imageHeight 
+     */
+    public void extremeStaircaseRemover(TIntSet pixIdxs, int imageWidth, 
+        int imageHeight) {
+       
+        /*       
+            0  0  0         2
+            0  #< #         1
+            #  #*           0
+                           -1
+           -1  0  1  2  3        
+        */
+        TIntSet ones = new TIntHashSet();
+        TIntSet zeroes = new TIntHashSet();
+        TIntSet changeToZeroes = new TIntHashSet();
+        TIntSet changeToOnes = new TIntHashSet();
+    
+        int w = imageWidth;
+        
+        /*       
+            0  0  0         2
+            0  #< #         1
+            #  #*           0
+                           -1
+           -1  0  1  2  3        
+        */
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(encodePixelOffsets(-1, -2, w));//new PairInt(-1, -2));
+        zeroes.add(encodePixelOffsets(0, -2, w));//new PairInt(0, -2));
+        zeroes.add(encodePixelOffsets(1, -2, w));//new PairInt(1, -2));
+        
+        ones.add(encodePixelOffsets(-1, 0, w));//new PairInt(-1, 0)); 
+        ones.add(encodePixelOffsets(0, 0, w));//new PairInt(0, 0));
+        ones.add(encodePixelOffsets(0, -1, w));//new PairInt(0, -1));
+        ones.add(encodePixelOffsets(1, -1, w));//new PairInt(1, -1));
+        
+        changeToZeroes.add(encodePixelOffsets(0, -1, w));//new PairInt(0, -1));
+                    
+        int nCorrections = 0;
+       
+        nCorrections += replacePattern(pixIdxs, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+
+        nCorrections += rotate90ThreeTimes(pixIdxs, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
+            Integer.toString(nCorrections));
+    }
+    
+    /**
+     * removes spurs, that is anything with only one neighbor.
+     * Note that the last "stump" of a spur may need to be removed with 
+     * another method, maybe even RemoveSpurs class.
+     * @param points
+     * @return 
+     */
     public static Set<PairInt> removeStragglers(Set<PairInt> points) {
         
         // remove anything with only one neighbor
@@ -1301,4 +1603,31 @@ public class PostLineThinnerCorrections {
         return output;
     }
     
+    protected int encodePixelOffsets(int x, int y, int imageWidth) {
+        
+        int xt = (x < 0) ? ( (-1*x << 1) | 1) : (x << 1);
+        
+        int yt = (y < 0) ? ( (-1*y << 1) | 1) : (y << 1);
+        
+        imageWidth <<= 1;
+        
+        int pixIdxT = (yt * imageWidth) + xt;
+        
+        return pixIdxT;
+    }
+    
+    protected void decodePixelOffsets(int encodedPixIdx, int imageWidth,
+        int[] outputXY) {
+        
+        imageWidth <<= 1;
+        
+        int yt = encodedPixIdx/imageWidth;
+        int xt = encodedPixIdx - (yt * imageWidth);
+        
+        int x = ((xt & 1) == 1 ) ? -1*(xt >> 1) : xt >> 1;
+        int y = ((yt & 1) == 1 ) ? -1*(yt >> 1) : yt >> 1;
+        
+        outputXY[0] = x;
+        outputXY[1] = y;
+    }
 }

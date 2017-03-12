@@ -204,7 +204,7 @@ public class MSEREdges {
 
         System.out.format("%.3f sec for merge\n",
             (((float)ts1 - ts0)/1000.f));
-
+        
         if (debug) {
             printEdges();
         }
