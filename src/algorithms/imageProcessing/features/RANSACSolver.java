@@ -372,10 +372,10 @@ public class RANSACSolver {
             
                 float d1 = Math.abs(outputDist[0]);
                 float d2 = Math.abs(outputDist[1]);
-                if (xErrors[j] == Float.MAX_VALUE || xErrors[i] < d1) {
+                if (xErrors[j] == Float.MAX_VALUE || xErrors[j] < d1) {
                     xErrors[j] = d1;
                 }
-                if (yErrors[j] == Float.MAX_VALUE || yErrors[i] < d2) {
+                if (yErrors[j] == Float.MAX_VALUE || yErrors[j] < d2) {
                     yErrors[j] = d2;
                 }
             }
