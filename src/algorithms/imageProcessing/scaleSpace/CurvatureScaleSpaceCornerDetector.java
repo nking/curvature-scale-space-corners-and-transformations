@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import org.ejml.simple.SimpleMatrix;
 
 /**
  * The code is implemented from interpreting several papers by the authors
@@ -133,6 +134,8 @@ public class CurvatureScaleSpaceCornerDetector extends
             int y = entry.getKey().getY();
             corners.add(x, y);
         }
+        
+        filterForLocalizability(corners);
         
     }
     
@@ -295,6 +298,73 @@ MultiArrayMergeSort.sortByYThenX(cp);
         }
         
         return set;
+    }
+
+    /**
+     * Determine whether to remove a feature that is difficult to localize.
+     * The method follows Szeliski "Computer Vision: Algorithms and Applications" 
+     * equation 4.11, (det(A)/trace(A)) > 10 which is the harmonic mean of
+     * the auto-correlation matrix.  references Brown, Szeliski, and Winder, 2005.
+     * 
+     * @param corners 
+     */
+    private void filterForLocalizability(PairIntArray corners) {
+        
+        PairIntArray keep = new PairIntArray(corners.getN());
+        for (int i = 0; i < corners.getN(); ++i) {
+            int x = corners.getX(i);
+            int y = corners.getY(i);
+            
+            SimpleMatrix m = createAutoCorrelationMatrix(x, y);
+        
+            double det = m.determinant();
+            double trace = m.trace();
+        
+            double dt = det/trace;
+            System.out.println("det/trace=" + dt);
+            if (Double.isFinite(dt) && dt > 10) {
+                keep.add(x, y);
+            }
+        }
+        
+        corners.removeRange(0, corners.getN() - 1);
+        corners.addAll(keep);
+    }
+
+    private SimpleMatrix createAutoCorrelationMatrix(int x, int y) {
+        
+        int w = img.getWidth();
+        int h = img.getHeight();        
+        
+        int hw = 2;
+                
+        float vc = img.getValue(x, y);
+        
+        SimpleMatrix a = new SimpleMatrix(2 * hw + 1, 2 * hw + 1);
+        
+        for (int xOff = -hw; xOff <= hw; ++xOff) {
+            int x2 = x + xOff;
+            if (x2 < 0) {
+                x2 = 0;
+            } else if (x2 > (w - 1)) {
+                x2 = w - 1;
+            }
+            
+            for (int yOff = -hw; yOff <= hw; ++yOff) {
+                int y2 = y + yOff;
+                if (y2 < 0) {
+                    y2 = 0;
+                } else if (y2 > (h - 1)) {
+                    y2 = h - 1;
+                }
+                
+                float v = img.getValue(x2, y2);
+                
+                a.set(yOff + hw, xOff + hw, v - vc);                
+            }
+        }
+        
+        return a;
     }
     
 }
