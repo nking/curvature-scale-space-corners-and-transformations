@@ -1,7 +1,6 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.MultiArrayMergeSort;
-import algorithms.compGeometry.MedialAxis;
 import algorithms.compGeometry.RotatedOffsets;
 import algorithms.imageProcessing.BetweenClassColorStats;
 import algorithms.imageProcessing.BetweenClassColorStats.AllClassInterStats;
@@ -10,16 +9,13 @@ import algorithms.imageProcessing.CannyEdgeFilterAdaptive;
 import algorithms.imageProcessing.CannyEdgeFilterAdaptiveDeltaE2000;
 import algorithms.imageProcessing.EdgeFilterProducts;
 import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.IntraClassColorStats;
 import algorithms.imageProcessing.SIGMA;
-import algorithms.imageProcessing.features.orb.ORB.Descriptors;
 import algorithms.imageProcessing.features.ObjectMatcher.Settings;
-import algorithms.imageProcessing.features.orb.ORB;
 import algorithms.imageProcessing.segmentation.ColorSpace;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.imageProcessing.segmentation.NormalizedCuts;
@@ -35,12 +31,8 @@ import algorithms.util.PairIntArray;
 import algorithms.util.PairIntPair;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
-import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIterator;
-import gnu.trove.list.TDoubleList;
-import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.set.TIntSet;
@@ -1317,206 +1309,6 @@ public class AndroidStatuesTest extends TestCase {
             e.printStackTrace();
             System.err.println(e.getMessage());
             fail(e.getMessage());
-        }
-    }
-
-    public void estColor() throws Exception {
-
-        //String fileName1 = "android_statues_02.jpg";
-        //String fileName2 = "android_statues_04.jpg";
-        String fileName1 = "android_statues_02_gingerbreadman.jpg";
-        String fileName2 = "android_statues_04_gingerbreadman.jpg";
-        int idx = fileName1.lastIndexOf(".");
-        String fileName1Root = fileName1.substring(0, idx);
-        idx = fileName2.lastIndexOf(".");
-        String fileName2Root = fileName2.substring(0, idx);
-
-        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
-        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-        ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
-
-        CIEChromaticity cieC = new CIEChromaticity();
-        int binnedImageMaxDimension = 512;
-        int binFactor1 = (int) Math.ceil(
-            Math.max((float) img1.getWidth() / (float)binnedImageMaxDimension,
-            (float) img1.getHeight() / (float)binnedImageMaxDimension));
-        int binFactor2 = (int) Math.ceil(
-            Math.max((float) img2.getWidth() / (float)binnedImageMaxDimension,
-            (float) img2.getHeight() / (float)binnedImageMaxDimension));
-        ImageProcessor imageProcessor = new ImageProcessor();
-        ImageExt imgBinned1 = imageProcessor.binImage(img1, binFactor1);
-        ImageExt imgBinned2 = imageProcessor.binImage(img2, binFactor2);
-
-        /*
-        HistogramEqualizationForColor hEq = new HistogramEqualizationForColor(imgBinned1);
-        hEq.applyFilter();
-        hEq = new HistogramEqualizationForColor(imgBinned2);
-        hEq.applyFilter();
-        */
-        RotatedOffsets rotatedOffsets = RotatedOffsets.getInstance();
-        GreyscaleImage redBinnedImg1 = imgBinned1.copyRedToGreyscale();
-        GreyscaleImage greenBinnedImg1 = imgBinned1.copyGreenToGreyscale();
-        GreyscaleImage blueBinnedImg1 = imgBinned1.copyBlueToGreyscale();
-        GreyscaleImage redBinnedImg2 = imgBinned2.copyRedToGreyscale();
-        GreyscaleImage greenBinnedImg2 = imgBinned2.copyGreenToGreyscale();
-        GreyscaleImage blueBinnedImg2 = imgBinned2.copyBlueToGreyscale();
-        GreyscaleImage gsImg1 = imgBinned1.copyToGreyscale();
-        GreyscaleImage gsImg2 = imgBinned2.copyToGreyscale();
-        IntensityClrFeatures clrFeaturesBinned1 = new IntensityClrFeatures(gsImg1.copyImage(),
-            5, rotatedOffsets);
-        IntensityClrFeatures clrFeaturesBinned2 = new IntensityClrFeatures(gsImg2.copyImage(),
-            5, rotatedOffsets);
-        IntensityFeatures features1 = new IntensityFeatures(5, true, rotatedOffsets);
-        IntensityFeatures features2 = new IntensityFeatures(5, true, rotatedOffsets);
-
-        /*
-        looking at trace/determinant of autocorrelation
-        and eigenvalues of greyscale, autocorrelation, and lab colors for
-        selected points in both images
-
-        statues subsets:
-
-        0 (64, 100) (96, 109)
-        1 (67, 103) (103, 111)
-        2 (68, 78)  (113, 86)
-        3 (66, 49)  (106, 50)
-        4 (92, 108) (157, 118)
-        5 (92, 111) (160, 122)   delta e = 28.9
-        6 (69, 129) (108, 142)   delta e = 26.4
-
-        is the edelta for the gingerbread man's white stripes and shadows
-        the same for shadow and higher illumination?
-        */
-        // single values of edelta
-        List<PairInt> points1 = new ArrayList<PairInt>();
-        List<PairInt> points2 = new ArrayList<PairInt>();
-        points1.add(new PairInt(64, 100)); points2.add(new PairInt(96, 109));
-        points1.add(new PairInt(67, 103)); points2.add(new PairInt(103, 111));
-        points1.add(new PairInt(68, 78)); points2.add(new PairInt(113, 86));
-        points1.add(new PairInt(66, 49)); points2.add(new PairInt(106, 50));
-        points1.add(new PairInt(92, 108)); points2.add(new PairInt(157, 118));
-        points1.add(new PairInt(92, 111)); points2.add(new PairInt(160, 122));
-        points1.add(new PairInt(69, 129)); points2.add(new PairInt(108, 142));
-        // this one is too look at localizability:
-        points1.add(new PairInt(46, 65)); points2.add(new PairInt(6, 4));
-
-        int n = points1.size();
-        for (int i = 0; i < n; ++i) {
-
-            StringBuilder sb = new StringBuilder();
-
-            PairInt p1 = points1.get(i);
-            PairInt p2 = points2.get(i);
-            sb.append(p1.toString()).append(p2.toString());
-
-            int r1 = redBinnedImg1.getValue(p1.getX(), p1.getY());
-            int g1 = greenBinnedImg1.getValue(p1.getX(), p1.getY());
-            int b1 = blueBinnedImg1.getValue(p1.getX(), p1.getY());
-            int r2 = redBinnedImg2.getValue(p2.getX(), p2.getY());
-            int g2 = greenBinnedImg2.getValue(p2.getX(), p2.getY());
-            int b2 = blueBinnedImg2.getValue(p2.getX(), p2.getY());
-
-            float[] lab1 = cieC.rgbToCIELAB(r1, g1, b1);
-            float[] lab2 = cieC.rgbToCIELAB(r2, g2, b2);
-            float[] cieXY1 = cieC.rgbToCIEXYZ(r1, g1, b1);
-            float[] cieXY2 = cieC.rgbToCIEXYZ(r2, g2, b2);
-            double deltaE = cieC.calcDeltaECIE94(lab1, lab2);
-
-            sb.append(String.format("  dE=%.1f", (float)deltaE));
-
-            int rot1 = clrFeaturesBinned1.calculateOrientation(p1.getX(), p1.getY());
-            int rot2 = clrFeaturesBinned2.calculateOrientation(p2.getX(), p2.getY());
-
-            IntensityDescriptor desc_l1 = clrFeaturesBinned1.extractIntensityLOfCIELAB(
-                redBinnedImg1, greenBinnedImg1, blueBinnedImg1, p1.getX(), p1.getY(),
-                rot1);
-
-            IntensityDescriptor desc_a1 = clrFeaturesBinned1.extractIntensityAOfCIELAB(
-                redBinnedImg1, greenBinnedImg1, blueBinnedImg1, p1.getX(), p1.getY(),
-                rot1);
-
-            IntensityDescriptor desc_b1 = clrFeaturesBinned1.extractIntensityBOfCIELAB(
-                redBinnedImg1, greenBinnedImg1, blueBinnedImg1, p1.getX(), p1.getY(),
-                rot1);
-
-            IntensityDescriptor desc_l2 = clrFeaturesBinned2.extractIntensityLOfCIELAB(
-                redBinnedImg2, greenBinnedImg2, blueBinnedImg2, p2.getX(), p2.getY(),
-                rot2);
-
-            IntensityDescriptor desc_a2 = clrFeaturesBinned2.extractIntensityAOfCIELAB(
-                redBinnedImg2, greenBinnedImg2, blueBinnedImg2, p2.getX(), p2.getY(),
-                rot2);
-
-            IntensityDescriptor desc_b2 = clrFeaturesBinned2.extractIntensityBOfCIELAB(
-                redBinnedImg2, greenBinnedImg2, blueBinnedImg2, p2.getX(), p2.getY(),
-                rot2);
-
-            IntensityDescriptor desc1 = features1.extractIntensity(gsImg1,
-                p1.getX(), p1.getY(), rot1);
-
-            IntensityDescriptor desc2 = features2.extractIntensity(gsImg2,
-                p2.getX(), p2.getY(), rot2);
-
-            double det, trace;
-            SimpleMatrix a_l1 = clrFeaturesBinned1.createAutoCorrelationMatrix(desc_l1);
-            det = a_l1.determinant();
-            trace = a_l1.trace();
-            sb.append(String.format("\n  L1_det(A)/trace=%.1f", (float)(det/trace)));
-            SimpleMatrix a_l2 = clrFeaturesBinned2.createAutoCorrelationMatrix(desc_l2);
-            det = a_l2.determinant();
-            trace = a_l2.trace();
-            sb.append(String.format("  L2_det(A)/trace=%.1f", (float)(det/trace)));
-
-            try {
-                sb.append("\n  eigen values:\n");
-                SimpleEVD eigen1 = a_l1.eig();
-                for (int j = 0; j < eigen1.getNumberOfEigenvalues(); ++j) {
-                    Complex64F eigen = eigen1.getEigenvalue(j);
-                    sb.append(String.format("    [1] %d %.1f %.1f\n", j,
-                        (float)eigen.getReal(), (float)eigen.getMagnitude()));
-                }
-                sb.append("\n");
-                SimpleEVD eigen2 = a_l2.eig();
-                for (int j = 0; j < eigen2.getNumberOfEigenvalues(); ++j) {
-                    Complex64F eigen = eigen2.getEigenvalue(j);
-                    sb.append(String.format("    [1] %d %.1f %.1f\n", j,
-                        (float)eigen.getReal(), (float)eigen.getMagnitude()));
-                }
-            } catch (Throwable t) {
-            }
-
-            if (desc1 != null && desc2 != null) {
-                SimpleMatrix gs_l1 = features1.createAutoCorrelationMatrix(desc1);
-                det = gs_l1.determinant();
-                trace = gs_l1.trace();
-                sb.append(String.format("\n  Grey_det(A)/trace=%.1f", (float)(det/trace)));
-                SimpleMatrix gs_l2 = features2.createAutoCorrelationMatrix(desc2);
-                det = gs_l2.determinant();
-                trace = gs_l2.trace();
-                sb.append(String.format("  Grey_det(A)/trace=%.1f", (float)(det/trace)));
-
-                try {
-                    sb.append("\n  eigen values:\n");
-                    SimpleEVD eigen1 = gs_l1.eig();
-                    for (int j = 0; j < eigen1.getNumberOfEigenvalues(); ++j) {
-                        Complex64F eigen = eigen1.getEigenvalue(j);
-                        sb.append(String.format("    [1] %d %.1f %.1f\n", j,
-                            (float) eigen.getReal(), (float) eigen.getMagnitude()));
-                    }
-                    sb.append("\n");
-                    SimpleEVD eigen2 = gs_l2.eig();
-                    for (int j = 0; j < eigen2.getNumberOfEigenvalues(); ++j) {
-                        Complex64F eigen = eigen2.getEigenvalue(j);
-                        sb.append(String.format("    [2] %d %.1f %.1f\n", j,
-                            (float) eigen.getReal(), (float) eigen.getMagnitude()));
-                    }
-                } catch (Throwable t) {
-                }
-
-            }
-
-            log.info(sb.toString());
         }
     }
 

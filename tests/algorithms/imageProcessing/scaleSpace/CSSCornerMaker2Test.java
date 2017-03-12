@@ -5,7 +5,6 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.SIGMA;
-import algorithms.imageProcessing.features.FeatureHelper;
 import algorithms.imageProcessing.features.PhaseCongruencyDetector;
 import algorithms.misc.MiscDebug;
 import algorithms.util.CornerArray;
@@ -115,37 +114,6 @@ public class CSSCornerMaker2Test extends TestCase {
         
         MiscDebug.writeImage(tmp, "_EDGES_");
         
-        cornerList = FeatureHelper.filterByLocalizability(img, pcImg, thetaImg, 
-            cornerList);
-        
-        int s0 = 0;
-        int s1 = 0;
-        int s2 = 0;
-        // assert min number of corners
-        for (int ii = 0; ii < cornerList.size(); ++ii) {
-            
-            CornerArray corners = cornerList.get(ii);
-            PairIntArray edge = theEdges.get(ii);
-            
-            for (int i = 0; i < edge.getN(); ++i) {
-                int x = edge.getX(i);
-                int y = edge.getY(i);
-                if (x==22 && y==88) {
-                    s0 = corners.getN();
-                    break;
-                } else if (x==20 && y==20) {
-                    s1 = corners.getN();
-                    break;
-                } else if (x==61 && y==50) {
-                    s2 = corners.getN();
-                    break;
-                }
-            }
-        }
-        
-        assertTrue(s0 >= 4);
-        assertTrue(s1 >= 3);
-        assertTrue(s2 >= 1);
     }
     
     public void est1() throws Exception {

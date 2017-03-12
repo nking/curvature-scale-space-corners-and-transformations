@@ -11,8 +11,6 @@ import algorithms.compGeometry.clustering.KMeansPlusPlusColor;
 import algorithms.connected.ConnectedValuesFinder;
 import algorithms.imageProcessing.util.GroupAverageColors;
 import algorithms.imageProcessing.ImageProcessor.Colors;
-import algorithms.imageProcessing.features.BlobMedialAxes;
-import algorithms.imageProcessing.features.IntensityClrFeatures;
 import algorithms.imageProcessing.features.PhaseCongruencyDetector;
 import algorithms.imageProcessing.features.UnsupervisedTextureFinder;
 import algorithms.imageProcessing.features.UnsupervisedTextureFinder.TexturePatchesAndResponse;
@@ -6294,19 +6292,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             + " nIter=" + nIter);
     }
 
-    private void mergeAdjacentIfSimilar(ImageExt input, List<Set<PairInt>>
-        segmentedCellList, double deltaELimit, boolean useDeltaE2000,
-        String debugTag) {
-
-        SegmentedCellMerger scm = new SegmentedCellMerger(input,
-            segmentedCellList, useDeltaE2000, (float)deltaELimit, debugTag);
-
-        scm.merge();
-
-        segmentedCellList.clear();
-        segmentedCellList.addAll(scm.getSegmentedCellList());
-    }
-
     /**
      * a merge algorithm that looks at the colors of the adjacent pixels individually,
      * then performs stats on all adjacent for two sets to determine if the
@@ -9492,69 +9477,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             t -= 360;
         }
         return t;
-    }
-
-    public static class BoundingRegions {
-        private final List<PairIntArray> perimeterList;
-        private final BlobMedialAxes bma;
-        private final Map<PairInt, Integer> pointIndexMap;
-        public BoundingRegions(List<PairIntArray> perimeters, BlobMedialAxes
-            skeletons, Map<PairInt, Integer> pointIndexMap) {
-            this.perimeterList = perimeters;
-            this.bma = skeletons;
-            this.pointIndexMap = pointIndexMap;
-        }
-        public List<PairIntArray> getPerimeterList() {
-            return perimeterList;
-        }
-        public BlobMedialAxes getBlobMedialAxes() {
-            return bma;
-        }
-        public Map<PairInt, Integer> getPointIndexMap() {
-            return pointIndexMap;
-        }
-
-        /**
-         * update the internal datasets
-         * @param removeIndexes an ascending list of unique indexes to remove
-         */
-        public void removeIndexes(final List<Integer> removeIndexes) {
-
-            /*
-            updating: Map<PairInt, Integer> pointIndexMap
-            convert to List<Set<PairInt>>
-            perform removal of indexes,
-            then re-populate pointIndexMap
-            */
-            List<Set<PairInt>> indexPoints = new ArrayList<Set<PairInt>>();
-            for (int i = 0; i < perimeterList.size(); ++i) {
-                indexPoints.add(new HashSet<PairInt>());
-            }
-            for (Entry<PairInt, Integer> entry : pointIndexMap.entrySet()) {
-                PairInt p = entry.getKey();
-                int idx = entry.getValue().intValue();
-                indexPoints.get(idx).add(p);
-            }
-            for (int i = (removeIndexes.size() - 1); i > -1; --i) {
-                int rmIdx = removeIndexes.get(i);
-                indexPoints.remove(rmIdx);
-            }
-            pointIndexMap.clear();
-            for (int i = 0; i < indexPoints.size(); ++i) {
-                Integer key = Integer.valueOf(i);
-                Set<PairInt> points = indexPoints.get(i);
-                for (PairInt p : points) {
-                    pointIndexMap.put(p, key);
-                }
-            }
-
-            for (int i = (removeIndexes.size() - 1); i > -1; --i) {
-                int rmIdx = removeIndexes.get(i);
-                perimeterList.remove(rmIdx);
-            }
-
-            bma.removeIndexes(removeIndexes);
-        }
     }
 
     /**

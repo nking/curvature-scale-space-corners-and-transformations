@@ -19,6 +19,9 @@ import java.util.Set;
 import org.ejml.simple.SimpleMatrix;
 
 /**
+ * NOTE: this implementation needs to be improved but it is low priority.
+ * Meanwhile, the keypoints made in ORB.java are available for use.
+ * 
  * The code is implemented from interpreting several papers by the authors
  * Farzin Mokhtarian and Alan Mackworth.
  *

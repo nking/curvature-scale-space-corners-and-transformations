@@ -1,9 +1,7 @@
 package algorithms.imageProcessing.transform;
 
-import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.features.FeatureComparisonStat;
-import algorithms.imageProcessing.features.IntensityClrFeatures;
 import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.util.PairFloatArray;
 import algorithms.imageProcessing.util.MatrixUtil;
