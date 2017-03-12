@@ -1446,8 +1446,8 @@ public class PerimeterFinder2 {
             for (int k = 0; k < dxs.length; ++k) {
                 int x2 = x + dxs[k];
                 int y2 = y + dys[k];
-                if (x2 < 0 || y2 < 0 || (x2 >= (imgWidth - 1)) || 
-                    (y2 >= (imgHeight - 1))) {
+                if (x2 < 0 || y2 < 0 || (x2 > (imgWidth - 1)) || 
+                    (y2 > (imgHeight - 1))) {
                     continue;
                 }
                 int pixIdx2 = (y2 * imgWidth) + x2;
@@ -1577,9 +1577,6 @@ public class PerimeterFinder2 {
     public PairIntArray orderTheBoundary(TIntSet boundary, int imgWidth, 
         int imgHeight) throws Exception {
         
-        //TODO:fix bug
-        
-        
         /*
         the algorithm finds the leftmost and smallest xy point in the boundary, 
         then traverses its unadded boundary neighbors to find the neighbor 
@@ -1656,6 +1653,7 @@ public class PerimeterFinder2 {
             
             for (int nbrIdx : currNbrs) {
                 int pixIdx2 = boundaryArray[nbrIdx];
+                
                 if (!remaining.contains(pixIdx2)) {
                     continue;
                 }
@@ -1676,6 +1674,9 @@ public class PerimeterFinder2 {
                     minPX = x2;
                     minPY = y2;
                 }
+                
+                //System.out.format("(%d,%d) (%d,%d) (%d,%d) angle=%.4f  minP=%d\n",
+                //    prevX, prevY, x, y, x2, y2, (float)angle, minP);
             }
             
             if (minP == -1) {
