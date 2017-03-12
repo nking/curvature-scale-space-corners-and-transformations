@@ -10,6 +10,7 @@ import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -48,6 +49,33 @@ public class Transformer {
         
         return applyTransformation(rotInRadians, scale, translationX,
             translationY, centroidX, centroidY, edges);
+     }
+     
+     /**
+     * transform the given edges using the given parameters.
+     * Note, the rotation is applied in a clockwise
+      * direction (which is in the -z direction using right hand rule).
+      * 
+     * @param params
+     * @param points
+     * @return 
+     */
+     public void applyTransformation(TransformationParameters params,
+        Collection<PairInt> points) {
+        
+        if (params == null) {
+            throw new IllegalArgumentException("params cannot be null");
+        }
+         
+        double rotInRadians = params.getRotationInRadians();
+        double scale = params.getScale();        
+        double translationX = params.getTranslationX();
+        double translationY = params.getTranslationY();
+        double centroidX = params.getOriginX();
+        double centroidY = params.getOriginY();
+        
+        applyTransformation(rotInRadians, scale, translationX,
+            translationY, centroidX, centroidY, points);
      }
      
      /**
@@ -223,7 +251,8 @@ public class Transformer {
      /**
       * transform the given edge using the given parameters. 
       * 
-      * @param rotInRadians rotation in radians.  Note, the rotation is applied in a clockwise
+      * @param rotInRadians rotation in radians.  
+      * Note, the rotation is applied in a clockwise
       * direction (which is in the -z direction using right hand rule).
       * @param scale
       * @param translationX translation along x axis in pixels
@@ -258,6 +287,7 @@ public class Transformer {
         yr_0 = yc*scale + (-((x0-xc)*scale*math.sin(theta)) + ((y0-yc)*scale*math.cos(theta)))
 
         yt_0 = yr_0 + transY = y1
+        
         */
         
         PairIntArray te = new PairIntArray();
@@ -339,6 +369,51 @@ public class Transformer {
         return output;
     }
     
+    private void applyTransformation(double rotInRadians, 
+        double scale, double translationX, double translationY, 
+        double centroidX, double centroidY, Collection<PairInt> points) {
+
+        if (points == null) {
+            throw new IllegalArgumentException("points cannot be null");
+        }
+        
+        double cos = Math.cos(rotInRadians);
+        double sin = Math.sin(rotInRadians);
+                
+        /*
+        scale, rotate, then translate.
+        
+        xr_0 = xc*scale + (((x0-xc)*scale*math.cos(theta)) + ((y0-yc)*scale*math.sin(theta)))
+
+        xt_0 = xr_0 + transX = x1
+
+        yr_0 = yc*scale + (-((x0-xc)*scale*math.sin(theta)) + ((y0-yc)*scale*math.cos(theta)))
+
+        yt_0 = yr_0 + transY = y1
+        */
+        
+        for (PairInt p : points) {
+
+            double x = p.getX();
+            double y = p.getY();
+
+            double xr = centroidX * scale + ((x - centroidX) * scale * cos) 
+                + ((y - centroidY) * scale * sin);
+
+            double yr = centroidY * scale + (-(x - centroidX) * scale * sin) 
+                + ((y - centroidY) * scale * cos);
+
+            double xt = xr + translationX;
+            double yt = yr + translationY;
+
+            int xte = (int)Math.round(xt);
+            int yte = (int)Math.round(yt);
+            
+            p.setX(xte);
+            p.setY(yte);
+        }          
+    }
+        
     /**
       * transform the given edge using the given parameters. 
       * 
@@ -1020,5 +1095,5 @@ public class Transformer {
         params.setTranslationY((float)xyT2[1]);
         
     }
-    
+
 }
