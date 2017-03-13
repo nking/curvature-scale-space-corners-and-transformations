@@ -1,21 +1,17 @@
 package algorithms.imageProcessing.scaleSpace;
 
 import algorithms.MultiArrayMergeSort;
-import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
-import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -42,27 +38,15 @@ public final class CurvatureScaleSpaceInflectionMapper {
     protected boolean useLineDrawingMode = false;
     protected boolean doRefineTransformations = false;
     protected boolean initialized = false;
+
+    protected CSSContourInflectionMaker cssIM1 = null;
+    protected CSSContourInflectionMaker cssIM2 = null;
     
-    protected List<PairIntArray> edges1 = null;
-    protected List<PairIntArray> edges2 = null;
-    protected List<List<CurvatureScaleSpaceContour>> contourLists1 = new ArrayList<List<CurvatureScaleSpaceContour>>();
-    protected List<List<CurvatureScaleSpaceContour>> contourLists2 = new ArrayList<List<CurvatureScaleSpaceContour>>();
     protected Map<Integer, PairIntArray> matchedXY1ByEdgeInOrigRefFrame = null;
     protected Map<Integer, PairIntArray> matchedXY2ByEdgeInOrigRefFrame = null;
     protected Map<Integer, List<Float>> matchedXY1ByEdgeWeights = null;
     protected Map<Integer, List<Float>> matchedXY2ByEdgeWeights = null;
-    
-    protected final ImageExt image1;
-    protected final ImageExt image2;
-    // for debugging, keeping a reference of originals
-    protected final Image originalImage1;
-    protected final Image originalImage2;
-
-    public final int image1OriginalWidth;
-    public final int image1OriginalHeight;
-    protected final int image2OriginalWidth;
-    protected final int image2OriginalHeight;
-
+   
     /**
      * matched points from the contour lists of image 1 (matched to the same
      * in image 2) with coordinates being in the reference frames of the
@@ -96,11 +80,6 @@ public final class CurvatureScaleSpaceInflectionMapper {
      * indexes for edges from edges2 which produced matching contours
      */
     protected int[] matchedEdge2Indexes = null;
-    protected int offsetImageX1 = 0;
-    protected int offsetImageY1 = 0;
-    protected int offsetImageX2 = 0;
-    protected int offsetImageY2 = 0;
-    protected boolean useOutdoorMode = false;
 
     protected TransformationParameters bestFittingParameters = null;
 
@@ -117,8 +96,13 @@ public final class CurvatureScaleSpaceInflectionMapper {
     private List<CurvatureScaleSpaceContour> matchedContours2 = new
         ArrayList<CurvatureScaleSpaceContour>();
 
-    public void useOutdoorMode() {
-        useOutdoorMode = true;
+    private final ImageExt image1;
+    private final ImageExt image2;
+    
+    public CurvatureScaleSpaceInflectionMapper(ImageExt image1, ImageExt image2) {
+
+        this.image1 = image1;
+        this.image2 = image2;
     }
 
     public void useLineDrawingLineMode() {
@@ -141,41 +125,13 @@ public final class CurvatureScaleSpaceInflectionMapper {
 
         initialized = true;
 
-        createEdges1();
-
-        populateContours(edges1, contourLists1);
-
-        /*
-        note that when modifying the contour lists in any way, one has to
-        maintain decreasing order by sigma and when sigma is equal, the
-        order must be by increasing scale free parameter.
-        two of the search methods in the matcher depend upon those properties.
-         */
-
-        createEdges2();
-
-        populateContours(edges2, contourLists2);
-
+        this.cssIM1 = new CSSContourInflectionMaker(image1);
+        
+        this.cssIM2 = new CSSContourInflectionMaker(image2);
+        
     }
 
-//TMP DEBUGGING
-public GreyscaleImage debugImg1 = null;
-public GreyscaleImage debugImg2 = null;
-
-    public CurvatureScaleSpaceInflectionMapper(ImageExt image1, ImageExt image2) {
-
-        this.image1 = image1;
-        this.image2 = image2;
-
-        originalImage1 = (ImageExt)image1.copyImage();
-        originalImage2 = (ImageExt)image2.copyImage();
-
-        image1OriginalWidth = image1.getWidth();
-        image1OriginalHeight = image1.getHeight();
-        image2OriginalWidth = image2.getWidth();
-        image2OriginalHeight = image2.getHeight();
-    }
-
+    
     protected TransformationParameters createEuclideanTransformationImpl() {
 
         if (bestFittingParameters == null) {
@@ -233,31 +189,6 @@ public GreyscaleImage debugImg2 = null;
         return image2;
     }
 
-    Image getOriginalImage1() {
-        return originalImage1;
-    }
-
-    Image getOriginalImage2() {
-        return originalImage2;
-    }
-
-    protected void createEdges1() {
-
-        CurvatureScaleSpaceImageMaker imgMaker 
-            = new CurvatureScaleSpaceImageMaker(image1, useLineDrawingMode);
-
-        edges1 = getEdges(imgMaker);
-    }
-
-    protected void createEdges2() {
-
-        CurvatureScaleSpaceImageMaker imgMaker 
-            = new CurvatureScaleSpaceImageMaker(image2, useLineDrawingMode);
-
-        edges2 = getEdges(imgMaker);
-
-    }
-
     /**
      * NOT READY FOR USE
      */
@@ -302,7 +233,15 @@ public GreyscaleImage debugImg2 = null;
         Map<Integer, Double> i2CostMap = new HashMap<Integer, Double>();
 
         boolean alreadySorted = true;
+        
+        List<List<CurvatureScaleSpaceContour>> contourLists1 = cssIM1.getContours();
+        
+        List<List<CurvatureScaleSpaceContour>> contourLists2 = cssIM2.getContours();
 
+        List<PairIntArray> edges1 = cssIM1.getEdges();
+        
+        List<PairIntArray> edges2 = cssIM2.getEdges();
+        
         for (int i1 = 0; i1 < contourLists1.size(); ++i1) {
 
             List<CurvatureScaleSpaceContour> contours1 = contourLists1.get(i1);
@@ -314,15 +253,11 @@ public GreyscaleImage debugImg2 = null;
             double bestScale = 1;
             double bestCost = Double.MAX_VALUE;
 
-if (debug && (debugImg1 != null)){
-Image img3 = new Image(debugImg1.getWidth(), debugImg1.getHeight());
+if (debug){
+Image img3 = cssIM1.getImage().createWithDimensions();
 for (int j = 0; j < edges1.get(i1).getN(); ++j) {
     int x = edges1.get(i1).getX(j);
     int y = edges1.get(i1).getY(j);
-    /*if (i > 0) {
-        x += xOffset;
-        y += yOffset;
-    }*/
     if (j == 0 || (j == (edges1.get(i1).getN() - 1))) {
         ImageIOHelper.addPointToImage(x, y, img3, 0, 200, 150, 0);
     } else {
@@ -338,15 +273,12 @@ MiscDebug.writeImage(img3, "edge1_" + i1);
                 CSSContourMatcherWrapper matcher =
                     new CSSContourMatcherWrapper(contours1, contours2,
                     alreadySorted);
-if (debug && (i1 == 0) && (debugImg2 != null)){
-Image img3 = new Image(debugImg2.getWidth(), debugImg2.getHeight());
+if (debug){
+Image img3 = cssIM2.getImage().createWithDimensions();
 for (int j = 0; j < edges2.get(i2).getN(); ++j) {
     int x = edges2.get(i2).getX(j);
     int y = edges2.get(i2).getY(j);
-    /*if (i > 0) {
-        x += xOffset;
-        y += yOffset;
-    }*/
+    
     if (j == 0 || (j == (edges2.get(i2).getN() - 1))) {
         ImageIOHelper.addPointToImage(x, y, img3, 0, 200, 150, 0);
     } else {
@@ -355,9 +287,6 @@ for (int j = 0; j < edges2.get(i2).getN(); ++j) {
 }
 MiscDebug.writeImage(img3, "edge2_" + i2);
 }
-log.info("i1=" + i1 + " i2=" + i2);
-log.info("offsetImage 1=(" + offsetImageX1 + "," + offsetImageY1 + ")");
-log.info("offsetImage 2=(" + offsetImageX2 + "," + offsetImageY2 + ")");
 
                 boolean didMatch = matcher.matchContours();
 
@@ -394,12 +323,12 @@ PairIntArray txy1 = new PairIntArray(m1.size());
 PairIntArray txy2 = new PairIntArray(m2.size());
 List<Float> tweights1 = new ArrayList<Float>();
 List<Float> tweights2 = new ArrayList<Float>();
-extract(m1, txy1, tweights1, offsetImageX1, offsetImageY1);
-extract(m2, txy2, tweights2, offsetImageX2, offsetImageY2);
+extract(m1, txy1, tweights1);
+extract(m2, txy2, tweights2);
 MiscDebug.writeImage(txy1, ImageIOHelper.convertImage(debugImg1), "check_1_xy_edge_" + edgeIdx1 + "_" + flNumber);
 MiscDebug.writeImage(txy2, ImageIOHelper.convertImage(debugImg2), "check_2_xy_edge_" + edgeIdx2 + "_" + flNumber);
-MiscDebug.debugPlot(contours1, ImageIOHelper.convertImage(debugImg1), offsetImageX1, offsetImageY1, "1_edge_" + edgeIdx1 + "_" + String.valueOf(flNumber));
-MiscDebug.debugPlot(contours2, ImageIOHelper.convertImage(debugImg2), offsetImageX2, offsetImageY2, "2_edge_" + edgeIdx1 + "_" + String.valueOf(flNumber));
+MiscDebug.debugPlot(contours1, ImageIOHelper.convertImage(debugImg1), "1_edge_" + edgeIdx1 + "_" + String.valueOf(flNumber));
+MiscDebug.debugPlot(contours2, ImageIOHelper.convertImage(debugImg2), "2_edge_" + edgeIdx1 + "_" + String.valueOf(flNumber));
 int z = 1;
 } catch (IOException ex) {
 
@@ -443,16 +372,16 @@ int z = 1;
                 List<Float> weights1 = new ArrayList<Float>();
                 List<Float> weights2 = new ArrayList<Float>();
 
-                //xy1 and xy2 have the image offsets added
-                extract(bestM1, xy1, weights1, offsetImageX1, offsetImageY1);
-                extract(bestM2, xy2, weights2, offsetImageX2, offsetImageY2);
+                extract(bestM1, xy1, weights1);
+                extract(bestM2, xy2, weights2);
 
                 if (xy1.getN() < 3) {
                     continue;
                 }
 /*
 try {
-    MiscDebug.writeImage(xy1, (ImageExt)image1.copyImage(),
+    Image tmp = cssIM1.getImage().copyImage();
+    MiscDebug.writeImage(xy1, tmp,
         "check_1_xy_" + MiscDebug.getCurrentTimeFormatted());
 } catch (IOException ex) {
     Logger.getLogger(CurvatureScaleSpaceInflectionMapper.class.getName()).log(Level.SEVERE, null, ex);
@@ -460,11 +389,6 @@ try {
 */
                 MatchedPointsTransformationCalculator tc = new
                     MatchedPointsTransformationCalculator();
-
-                /*
-                the xy1, xy2 coordinates are w.r.t. the original image coordinate
-                reference frame (the offsets have been added back in).
-                */
 
                 TransformationParameters params = null;
 
@@ -489,10 +413,10 @@ try {
 /*
 try {
     int flNumber = MiscDebug.getCurrentTimeFormatted();
-    MiscDebug.writeImage(xy1, (ImageExt)image1.copyImage(),
-        "check_1_xy_" + flNumber);
-    MiscDebug.writeImage(xy2, (ImageExt)image2.copyImage(),
-        "check_2_xy_" + flNumber);
+    Image tmp1 = cssIM1.getImage().copyImage();
+    Image tmp2 = cssIM2.getImage().copyImage();
+    MiscDebug.writeImage(xy1, tmp1, "check_1_xy_" + flNumber);
+    MiscDebug.writeImage(xy2, tmp2, "check_2_xy_" + flNumber);
     Transformer transformer = new Transformer();
     PairIntArray xy1Tr = transformer.applyTransformation(params, xy1);
     MiscDebug.writeImage(xy1Tr, (ImageExt)image2.copyImage(),
@@ -663,6 +587,12 @@ try {
     public TransformationParameters createEuclideanTransformation() {
 
         initialize();
+        
+        List<List<CurvatureScaleSpaceContour>> contourLists1 =
+            cssIM1.getContours();
+        
+        List<List<CurvatureScaleSpaceContour>> contourLists2 =
+            cssIM2.getContours();
 
         if (contourLists2.isEmpty() || contourLists1.isEmpty()) {
             return null;
@@ -674,8 +604,7 @@ try {
     }
 
     private void extract(List<CurvatureScaleSpaceContour> contours,
-        PairIntArray outputXY, List<Float> outputSigmaWeights,
-        final int imageOffsetX, final int imageOffsetY) {
+        PairIntArray outputXY, List<Float> outputSigmaWeights) {
 
         float sumSigma = 0;
 
@@ -688,8 +617,8 @@ try {
                 CurvatureScaleSpaceImagePoint spaceImagePoint =
                     c.getPeakDetails()[j];
 
-                int x = spaceImagePoint.getXCoord() + imageOffsetX;
-                int y = spaceImagePoint.getYCoord() + imageOffsetY;
+                int x = spaceImagePoint.getXCoord();
+                int y = spaceImagePoint.getYCoord();
 
                 outputXY.add(x, y);
                 outputSigmaWeights.add(Float.valueOf(c.getPeakSigma()));
@@ -697,7 +626,6 @@ try {
                 sumSigma += c.getPeakSigma();
             }
         }
-
 
         for (int i = 0; i < outputSigmaWeights.size(); ++i) {
             float w = outputSigmaWeights.get(i)/sumSigma;
@@ -758,54 +686,6 @@ try {
         }
     }
 
-    /**
-     * when peak details has more than one point, this averages them and
-     * replaces the details with a single point.
-     * @param contours
-     */
-    protected void correctPeaks(List<CurvatureScaleSpaceContour> contours,
-        PairIntArray edge) {
-
-        if (contours == null) {
-            throw new IllegalArgumentException("contours cannot be null");
-        }
-
-        if (contours.isEmpty()) {
-            return;
-        }
-
-        // the contours extracted from scale space images using a factor of
-        // 2^(1/8) for recursive convolution tend to not have a single peak,
-        // so the correction here for the single peak case is not usually
-        // needed.  for that rare case, the avg of the other peak is stored
-        // instead of both points
-
-        for (int i = 0; i < contours.size(); i++) {
-
-            CurvatureScaleSpaceContour c1 = contours.get(i);
-
-            if (c1.getPeakDetails().length > 1) {
-                CurvatureScaleSpaceImagePoint p0 = c1.getPeakDetails()[0];
-                CurvatureScaleSpaceImagePoint p1 = c1.getPeakDetails()[1];
-
-                int iMid = (p0.getCoordIdx() + p1.getCoordIdx())/2;
-
-                float s = p0.getSigma();
-                float tAvg = (p0.getScaleFreeLength() + p1.getScaleFreeLength())/2.f;
-
-                int xMid = edge.getX(iMid);
-                int yMid = edge.getY(iMid);
-
-                CurvatureScaleSpaceImagePoint pMid =
-                    new CurvatureScaleSpaceImagePoint(s, tAvg, xMid, yMid, iMid);
-                CurvatureScaleSpaceImagePoint[] p =
-                    new CurvatureScaleSpaceImagePoint[]{pMid};
-                c1.setPeakDetails(p);
-                contours.set(i, c1);
-            }
-        }
-    }
-
     public PairIntArray getMatchedXY1() {
         return matchedXY1;
     }
@@ -823,187 +703,72 @@ try {
     }
 
     public List<List<CurvatureScaleSpaceContour>> getContours1() {
-        return contourLists1;
+        return cssIM1.getContours();
     }
 
     public List<List<CurvatureScaleSpaceContour>> getContours2() {
-        return contourLists2;
+        return cssIM2.getContours();
     }
 
     protected List<PairIntArray> getEdges1() {
-        return edges1;
+        return cssIM1.getEdges();
     }
 
     protected List<PairIntArray> getEdges2() {
-        return edges2;
+        return cssIM2.getEdges();
     }
 
-    public List<PairIntArray> getEdges1InOriginalReferenceFrame() {
-
-        List<PairIntArray> oe = new ArrayList<PairIntArray>();
-
-        for (int i = 0; i < edges1.size(); i++) {
-            PairIntArray edge = edges1.get(i).copy();
-            for (int j = 0; j < edge.getN(); j++) {
-                edge.set(j, edge.getX(j) + offsetImageX1,
-                    edge.getY(j) + offsetImageY1);
-            }
-            oe.add(edge);
-        }
-        return oe;
-    }
-
-    protected PairIntArray[] getEdges1InOriginalReferenceFrameArray() {
+    protected PairIntArray[] getEdges1Array() {
+        List<PairIntArray> edges1 = cssIM1.getEdges();
         PairIntArray[] oe = new PairIntArray[edges1.size()];
         for (int i = 0; i < edges1.size(); i++) {
             PairIntArray edge = edges1.get(i).copy();
-            for (int j = 0; j < edge.getN(); j++) {
-                edge.set(j, edge.getX(j) + offsetImageX1,
-                    edge.getY(j) + offsetImageY1);
-            }
+            
             oe[i] = edge;
         }
         return oe;
     }
 
-    public List<PairIntArray> getEdges2InOriginalReferenceFrame() {
-        List<PairIntArray> oe = new ArrayList<PairIntArray>();
-        for (int i = 0; i < edges2.size(); i++) {
-            PairIntArray edge = edges2.get(i).copy();
-            for (int j = 0; j < edge.getN(); j++) {
-                edge.set(j, edge.getX(j) + offsetImageX2,
-                    edge.getY(j) + offsetImageY2);
-            }
-            oe.add(edge);
-        }
-        return oe;
-    }
-
-    protected PairIntArray[] getEdges2InOriginalReferenceFrameArray() {
+    protected PairIntArray[] getEdges2InArray() {
+        List<PairIntArray> edges2 = cssIM2.getEdges();
         PairIntArray[] oe = new PairIntArray[edges2.size()];
         for (int i = 0; i < edges2.size(); i++) {
             PairIntArray edge = edges2.get(i).copy();
-            for (int j = 0; j < edge.getN(); j++) {
-                edge.set(j, edge.getX(j) + offsetImageX2,
-                    edge.getY(j) + offsetImageY2);
-            }
+            
             oe[i] = edge;
         }
         return oe;
     }
 
-    protected PairIntArray[] getMatchedEdges1InOriginalReferenceFrameArray() {
+    protected PairIntArray[] getMatchedEdges1() {
         if (matchedEdge1Indexes == null) {
             return new PairIntArray[0];
         }
         PairIntArray[] oe = new PairIntArray[matchedEdge1Indexes.length];
+        List<PairIntArray> edges1 = cssIM1.getEdges();
         for (int i = 0; i < matchedEdge1Indexes.length; i++) {
             int eIdx = matchedEdge1Indexes[i];
             PairIntArray edge = edges1.get(eIdx).copy();
-            for (int j = 0; j < edge.getN(); j++) {
-                edge.set(j, edge.getX(j) + offsetImageX1,
-                    edge.getY(j) + offsetImageY1);
-            }
+            
             oe[i] = edge;
         }
         return oe;
     }
 
-    protected PairIntArray[] getMatchedEdges2InOriginalReferenceFrameArray() {
+    protected PairIntArray[] getMatchedEdges2() {
         if (matchedEdge2Indexes == null) {
             return new PairIntArray[0];
         }
         PairIntArray[] oe = new PairIntArray[matchedEdge2Indexes.length];
+        List<PairIntArray> edges2 = cssIM2.getEdges();
         for (int i = 0; i < matchedEdge2Indexes.length; i++) {
             int eIdx = matchedEdge2Indexes[i];
+            
             PairIntArray edge = edges2.get(eIdx).copy();
-            for (int j = 0; j < edge.getN(); j++) {
-                edge.set(j, edge.getX(j) + offsetImageX2,
-                    edge.getY(j) + offsetImageY2);
-            }
+            
             oe[i] = edge;
         }
         return oe;
-    }
-
-    int getOffsetImageX1() {
-        return offsetImageX1;
-    }
-
-    int getOffsetImageY1() {
-        return offsetImageY1;
-    }
-
-    int getOffsetImageX2() {
-        return offsetImageX2;
-    }
-
-    int getOffsetImageY2() {
-        return offsetImageY2;
-    }
-
-    private void populateContours(List<PairIntArray> edges,
-        List<List<CurvatureScaleSpaceContour>> contours) {
-
-        CurvatureScaleSpaceCurvesMaker csscMaker = new CurvatureScaleSpaceCurvesMaker();
-
-        // if use 2^(1/8) as a sigma factor should result in an error less than 10%
-        // in determing the peak of a contour.  smaller factors have smaller
-        // errors than that.
-        float factor = (float)Math.pow(2, 1./32.);
-
-        for (int i = 0; i < edges.size(); i++) {
-
-            PairIntArray edge = edges.get(i);
-
-            Map<Float, ScaleSpaceCurve> scaleSpaceMap =
-                csscMaker.createScaleSpaceMetricsForEdge(edge, factor,
-                SIGMA.ONE, SIGMA.TWOHUNDREDANDFIFTYSIX);
-
-            ScaleSpaceCurveImage scaleSpaceImage =
-                csscMaker.convertScaleSpaceMapToSparseImage(
-                scaleSpaceMap, i, edge.getN());
-
- try {
- String fileSuffix = "edge_" + i + "_" + MiscDebug.getCurrentTimeFormatted();
- MiscDebug.printScaleSpaceCurve(scaleSpaceImage, fileSuffix);
- int z = 1;
- } catch (IOException ex) {
- }
-
-            ContourFinder contourFinder = new ContourFinder();
-
-            List<CurvatureScaleSpaceContour> result = contourFinder.findContours(scaleSpaceImage, i);
-
-            correctPeaks(result, edge);
-
-            removeRedundant(result);
-
-            boolean reversed = contourFinder.reverseIfClockwise(result, edge);
-
-            if (reversed) {
-                log.info("EDGES: contour isCW=true");
-
-                // these are extracted from contourFinder in order of decreasing
-                // sigma already, so only need to be sorted if the list was
-                // reversed
-                Collections.sort(result, new DescendingSigmaComparator());
-            }
-
-            //MiscDebug.debugPlot(result, (ImageExt) image1.copyImage(), offsetImageX1, offsetImageY1,
-            //    "_1_" + MiscDebug.getCurrentTimeFormatted());
-
-            contours.add(result);
-        }
-
-        if (contours.isEmpty()) {
-            log.info("no contours found in image 1");
-            return;
-        }
-        if (edges.size() > 1) {
-            Collections.sort(contours, new DescendingSigmaComparator2());
-        }
-
     }
 
     public List<CurvatureScaleSpaceContour> getMatchedContours1() {
@@ -1034,29 +799,6 @@ try {
             indexes[i] = new PairInt(idx1.get(i), idx2.get(i));
         }
         return indexes;
-    }
-
-    private static void removeRedundant(List<CurvatureScaleSpaceContour> contours) {
-
-        Set<Integer> indexes = new HashSet<Integer>();
-        List<Integer> remove = new ArrayList<Integer>();
-
-        for (int i = 0; i < contours.size(); ++i) {
-            CurvatureScaleSpaceContour contour = contours.get(i);
-            for (CurvatureScaleSpaceImagePoint ip : contour.getPeakDetails()) {
-                Integer idx = Integer.valueOf(ip.getCoordIdx());
-                if (indexes.contains(idx)) {
-                    remove.add(i);
-                } else {
-                    indexes.add(idx);
-                }
-            }
-        }
-
-        for (int i = (remove.size() - 1); i > -1; --i) {
-            int idx = remove.get(i);
-            contours.remove(idx);
-        }
     }
 
     private float findMaxSigmaOfFirstPeaks(

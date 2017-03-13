@@ -82,7 +82,7 @@ public class CurvatureScaleSpaceCurvesMaker {
 
             hasInflectionPoints = (curve.getKIsZeroIdxSize() > 0);
             
-            log.fine("sigma=" + sigma + " nZeros=" + curve.getKIsZeroIdxSize());
+            //log.info("sigma=" + sigma + " nZeros=" + curve.getKIsZeroIdxSize());
 
             if (hasInflectionPoints) {
                 
@@ -100,6 +100,11 @@ public class CurvatureScaleSpaceCurvesMaker {
     /**
      * create a scale space curve image from the given sigma scale space inflection
      * points.
+     * The points for which "t" and sigma are extracted are the inflection points,
+     * that is, the zero-crossings in "t" versus curvature, that is, where 
+     * the curvature is zero.
+     * (The number of inflection points decreases as sigma increases.)
+     * 
      * <pre>
      *        |    *
      * sigma  |   * *     **
@@ -109,7 +114,7 @@ public class CurvatureScaleSpaceCurvesMaker {
      * </pre>
      * @param scaleSpaceMap
      * @param edgeNumber a number placed in the ScaleSpaceCurveImage to help
-     * identify the edge.
+     * identify the edge for debugging.
      * @param edgeLength the length of the edge.  this is the number of points
      * that went into the scale free length axis.
      * @return 
@@ -137,7 +142,7 @@ public class CurvatureScaleSpaceCurvesMaker {
         Iterator<Map.Entry<Float, ScaleSpaceCurve> > iter = 
             sortedMap.entrySet().iterator();
         
-        int rowIdx = 0;
+        int sImageRowIdx = 0;
         
         ScaleSpaceCurveImage spaceImage = new ScaleSpaceCurveImage(
             sortedMap.size());
@@ -169,14 +174,14 @@ public class CurvatureScaleSpaceCurvesMaker {
                 row[i] = t;                
             }
             
-            spaceImage.setRow(rowIdx, row);
+            spaceImage.setRow(sImageRowIdx, row);
             
-            spaceImage.setSigma(rowIdx, sigma);
+            spaceImage.setSigma(sImageRowIdx, sigma);
             
-            spaceImage.setXYCoords(rowIdx, scaleSpaceCurve.getKIsZeroX(),
+            spaceImage.setXYCoords(sImageRowIdx, scaleSpaceCurve.getKIsZeroX(),
                 scaleSpaceCurve.getKIsZeroY());
             
-            rowIdx++;
+            sImageRowIdx++;
         }
         
         return spaceImage;

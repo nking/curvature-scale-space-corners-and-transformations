@@ -49,6 +49,8 @@ public class ContourFinder {
     public List<CurvatureScaleSpaceContour> findContours(
         ScaleSpaceCurveImage scaleSpaceImage, int edgeNumber) {
 
+//TODO: review this...may need refactoring
+        
         List<CurvatureScaleSpaceContour> contours = new ArrayList<CurvatureScaleSpaceContour>();
 
         if ((scaleSpaceImage == null)

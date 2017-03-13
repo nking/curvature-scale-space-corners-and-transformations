@@ -12,6 +12,7 @@ import algorithms.imageProcessing.ImageDisplayer;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import static algorithms.imageProcessing.ImageIOHelper.getNextColorRGB;
+import algorithms.imageProcessing.scaleSpace.ScaleSpaceCurve;
 import algorithms.imageProcessing.scaleSpace.ScaleSpaceCurveImage;
 import algorithms.util.Errors;
 import algorithms.util.PairFloatArray;
@@ -34,6 +35,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.ejml.simple.SimpleMatrix;
@@ -1617,6 +1620,110 @@ public class MiscDebug {
         }
         
         return plotter.writeFile(lbl);
+    }
+
+    /**
+     * 
+     * @param scaleSpaceMap
+     * @param fileSuffix
+     * @param sigmaIndexDelta set this to 1 to plot every curve, set it to 2
+     * to plot every other curve, etc.
+     * 
+     * @throws IOException 
+     */
+    public static void printScaleSpaceMap(Map<Float, ScaleSpaceCurve> scaleSpaceMap, 
+        String fileSuffix, int sigmaIndexDelta) throws IOException {
+        
+        PolygonAndPointPlotter plotterC = new PolygonAndPointPlotter();
+        PolygonAndPointPlotter plotterX = new PolygonAndPointPlotter();
+        PolygonAndPointPlotter plotterY = new PolygonAndPointPlotter();
+
+        // would like to print in order of key, sigma, so putting all into
+        //   a tree that uses sort by key
+        TreeMap<Float, ScaleSpaceCurve> sortedMap 
+            = new TreeMap<Float, ScaleSpaceCurve>(scaleSpaceMap);
+        
+        final int delta = sigmaIndexDelta - 1;
+        int ds = 0;
+        
+        // print the contour scale space images
+        for (Entry<Float, ScaleSpaceCurve> entry : sortedMap.entrySet()) {
+
+            while (ds < delta) {
+                ds++;
+                continue;
+            }
+            ds = 0;
+            
+            Float sigma = entry.getKey();
+            ScaleSpaceCurve scaleSpaceCurveSigma = entry.getValue();
+
+            if (scaleSpaceCurveSigma == null || scaleSpaceCurveSigma.getSize() < 2) {
+                continue;
+            }
+            
+            String sLabel = String.format(" sigma=%.2f", sigma.floatValue());
+
+            float[] xPoints = new float[scaleSpaceCurveSigma.getSize()];
+            float[] yPoints = new float[xPoints.length];
+            for (int ii = 0; ii < xPoints.length; ii++) {
+                xPoints[ii] = ii;
+            }
+            float xMin = 0;
+            float xMax = 1.1f * algorithms.misc.MiscMath.findMax(xPoints);
+            float yMin, yMax;
+
+            // ============ draw X(t,sigma) =============
+            for (int ii = 0; ii < xPoints.length; ++ii) {
+                yPoints[ii] = scaleSpaceCurveSigma.getX(ii);
+            }
+            yMin = 0.9f * algorithms.misc.MiscMath.findMin(yPoints);
+            yMax = 1.1f * algorithms.misc.MiscMath.findMax(yPoints);
+
+            plotterX.addPlot(
+                0, xMax, yMin, yMax,
+                null, null, xPoints, yPoints,
+                "t vs. X(t, sigma) " + sLabel);
+            
+            for (int ii = 0; ii < xPoints.length; ii++) {
+                yPoints[ii] = scaleSpaceCurveSigma.getK(ii);
+            }
+            yMin = algorithms.misc.MiscMath.findMin(yPoints);
+            if (yMin < 0) {
+                yMin *= 1.1;
+            } else {
+                yMin *= 0.9;
+            }
+            yMax = algorithms.misc.MiscMath.findMax(yPoints);
+            // ==== k vs t
+            plotterC.addPlot(
+                xMin, xMax, yMin, yMax,
+                null, null, xPoints, yPoints,
+                "t vs. curvature " + sLabel);
+
+            // ============ draw Y(t,sigma) =============
+            Arrays.fill(yPoints, 0);
+            for (int ii = 0; ii < xPoints.length; ii++) {
+                yPoints[ii] = scaleSpaceCurveSigma.getY(ii);
+            }
+
+            yMin = algorithms.misc.MiscMath.findMin(yPoints);
+            if (yMin < 0) {
+                yMin *= 1.1;
+            } else {
+                yMin *= 0.9;
+            }
+            yMax = 1.1f * algorithms.misc.MiscMath.findMax(yPoints);
+
+            plotterY.addPlot(
+                xMin, xMax, yMin, yMax,
+                xPoints, yPoints, xPoints, yPoints,
+                "t vs. Y(t, sigma) " + sLabel);
+        }
+        
+        String filePathC = plotterC.writeFile("C_" + fileSuffix);
+        String filePathX = plotterX.writeFile("X_" + fileSuffix);
+        String filePath3 = plotterY.writeFile("Y_" + fileSuffix);
     }
     
 }
