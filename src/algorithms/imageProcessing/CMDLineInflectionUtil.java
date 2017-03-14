@@ -345,8 +345,7 @@ public class CMDLineInflectionUtil {
              TransformationParameters transformationParams = 
                 mapper.createEuclideanTransformation();
             
-            List<PairIntArray> edges1 = 
-                mapper.getEdges1InOriginalReferenceFrame();
+            List<PairIntArray> edges1 = mapper.getEdges1();
 
             Transformer transformer = new Transformer();
             
@@ -368,8 +367,7 @@ public class CMDLineInflectionUtil {
             List<PairIntArray> edges1Tr = transformer.applyTransformation(
                 transformationParams, edges1);
             
-            List<PairIntArray> edges2 = 
-                mapper.getEdges2InOriginalReferenceFrame();
+            List<PairIntArray> edges2 = mapper.getEdges2();
             
             if (writeTextOutput) {
 

@@ -710,11 +710,11 @@ try {
         return cssIM2.getContours();
     }
 
-    protected List<PairIntArray> getEdges1() {
+    public List<PairIntArray> getEdges1() {
         return cssIM1.getEdges();
     }
 
-    protected List<PairIntArray> getEdges2() {
+    public List<PairIntArray> getEdges2() {
         return cssIM2.getEdges();
     }
 

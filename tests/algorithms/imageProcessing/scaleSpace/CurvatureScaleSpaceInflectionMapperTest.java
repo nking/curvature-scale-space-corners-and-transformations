@@ -61,8 +61,7 @@ public class CurvatureScaleSpaceInflectionMapperTest extends TestCase {
 
         assertTrue(Math.abs(scale - 1.3) < 0.15);
 
-        List<PairIntArray> edges1 = 
-            mapper.getEdges1InOriginalReferenceFrame();
+        List<PairIntArray> edges1 = mapper.getEdges1();
         int nPointsInEdges1 = 0;
         for (int i = 0; i < edges1.size(); i++) {
             nPointsInEdges1 += edges1.get(i).getN();
@@ -199,8 +198,7 @@ public class CurvatureScaleSpaceInflectionMapperTest extends TestCase {
 
         assertTrue(Math.abs(scale - 1.3) < 0.15);
 
-        List<PairIntArray> edges1 = 
-            mapper.getEdges1InOriginalReferenceFrame();
+        List<PairIntArray> edges1 = mapper.getEdges1();
         int nPointsInEdges1 = 0;
         for (int i = 0; i < edges1.size(); i++) {
             nPointsInEdges1 += edges1.get(i).getN();

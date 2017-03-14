@@ -105,14 +105,14 @@ public class InflectionMapperOneObjectTest extends TestCase {
 
                 double scale = transformationParams.getScale();
 
-                int nEdges2 = mapper.getEdges2InOriginalReferenceFrame().size();
+                int nEdges2 = mapper.getEdges2().size();
                 PairIntArray[] edges2 =
-                    mapper.getEdges2InOriginalReferenceFrame().toArray(
+                    mapper.getEdges2().toArray(
                     new PairIntArray[nEdges2]);
 
-                int nEdges1 = mapper.getEdges1InOriginalReferenceFrame().size();
+                int nEdges1 = mapper.getEdges1().size();
                 PairIntArray[] edges1 =
-                    mapper.getEdges1InOriginalReferenceFrame().toArray(
+                    mapper.getEdges1().toArray(
                     new PairIntArray[nEdges1]);
 
                 Transformer transformer = new Transformer();

@@ -75,8 +75,6 @@ public class InflectionMapperTwoObjectTest extends TestCase {
 
                 //TODO: this needs revision:
                 //mapper.setToRefineTransformations();
-mapper.debugImg1 = img1.copyToGreyscale();
-mapper.debugImg2 = img2.copyToGreyscale();
                 TransformationParameters transformationParams = 
                     mapper.createEuclideanTransformation();
 
@@ -86,9 +84,9 @@ mapper.debugImg2 = img2.copyToGreyscale();
 
                 double scale = transformationParams.getScale();
                 
-                int nEdges1 = mapper.getEdges1InOriginalReferenceFrame().size();
+                int nEdges1 = mapper.getEdges1().size();
                 PairIntArray[] edges1 = 
-                    mapper.getEdges1InOriginalReferenceFrame().toArray(
+                    mapper.getEdges1().toArray(
                     new PairIntArray[nEdges1]);
 
                 Transformer transformer = new Transformer();

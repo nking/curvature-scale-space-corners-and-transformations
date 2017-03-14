@@ -50,13 +50,13 @@ public class MinMaxPeakFinder {
         TIntList peaks = new TIntArrayList(minMaxIdxs.length/2);
 
         // choose candidates from minMaxIndexes that are
-        //     >= factorAboveMin one adjacent min
+        //     >= factorAboveMin for one adjacent minima
         for (int ii = 0; ii < minMaxIdxs.length; ii++) {
 
             int idx = minMaxIdxs[ii];
 
             if (idx > -1) {
-                // this is maximum
+                // this is a maxima
 
                 boolean found = false;
                 
