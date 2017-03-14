@@ -68,7 +68,7 @@ public class ScaleSpaceCurveImage {
             throw new IllegalStateException("sigmaIndex is out of bounds");
         }
         
-        this.xCoords[sigmaIndex] = theXCoords;
+        this.xCoords[sigmaIndex] = theXCoords;       
         
         this.yCoords[sigmaIndex] = theYCoords;
     }

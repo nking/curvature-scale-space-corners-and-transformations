@@ -2,26 +2,30 @@ package algorithms.imageProcessing.scaleSpace;
 
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.misc.MiscDebug;
-import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
-import algorithms.util.ScatterPointPlotterPNG;
+import gnu.trove.list.TFloatList;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TFloatArrayList;
+import gnu.trove.list.array.TIntArrayList;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * class to identity contours in scale space images.
+ * class to identify contours in scale space images.
  *
  * @author nichole
  */
 public class ContourFinder {
 
-    private double thresholdFactor = 0.15;
+    //private double thresholdFactor = 0.1;
 
     protected Logger log = null;
 
@@ -49,8 +53,6 @@ public class ContourFinder {
     public List<CurvatureScaleSpaceContour> findContours(
         ScaleSpaceCurveImage scaleSpaceImage, int edgeNumber) {
 
-//TODO: review this...may need refactoring
-        
         List<CurvatureScaleSpaceContour> contours = new ArrayList<CurvatureScaleSpaceContour>();
 
         if ((scaleSpaceImage == null)
@@ -60,11 +62,10 @@ public class ContourFinder {
 
         ScaleSpaceCurveImage space = scaleSpaceImage.copy();
 
-        double lowLimit = space.getImageSigmas()[0] * thresholdFactor;
-        //TODO: consider a low limit of sigma=3
-        if (lowLimit < 3) {
-            lowLimit = 3;
-        }
+        double lowLimit = 3;//space.getImageSigmas()[0] * thresholdFactor;
+        //if (lowLimit < 2) {
+        //    lowLimit = 2;
+        //}
 
         // find the first contour at this height and extract it from the
         // dataset, nulling
@@ -84,10 +85,11 @@ public class ContourFinder {
 
             while (extract) {
 
+                // this holds where the inflection point peaks in sigma
                 CurvatureScaleSpaceContour contour = extractNextContour(
                     scaleSpaceImage, i);
 
-                if (contour != null) {
+                if (contour != null) {   
 
                     contours.add(contour);
 
@@ -145,7 +147,7 @@ public class ContourFinder {
         if (tPoint < 0) {
             return null;
         }
-
+        
         int nToRight = 0;
 
         for (int i = (tIndex + 1);
@@ -165,7 +167,7 @@ public class ContourFinder {
             float t = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tIndex];
 
             if (t < 0) {
-                // this has alredy been extracted, so return null
+                // this has already been extracted, so return null
                 return null;
             }
 
@@ -205,7 +207,10 @@ public class ContourFinder {
          or the left of a left and right of a peak.
          */
         boolean isASinglePeak = false;
-
+        
+        int leftIndexBelow = -1;
+        int rightIndexBelow = -1;
+            
         if (sigmaIndex == (scaleSpaceImage.getImageSigmas().length - 1)) {
 
             // if there's a -1 to the right it's a single point, else, it
@@ -223,8 +228,8 @@ public class ContourFinder {
             // under the current peak that are left and right of it.
             // if the right is closer than the next point on this same level,
             // the current point is a peak
-            int leftIndexBelow = -1;
-            int rightIndexBelow = -1;
+            leftIndexBelow = -1;
+            rightIndexBelow = -1;
             float minDiffLeftBelow = Float.MAX_VALUE;
             float minDiffRightBelow = Float.MAX_VALUE;
 
@@ -253,7 +258,7 @@ public class ContourFinder {
                     }
                 }
             }
-
+           
             int start = (tIndex > 0) ? (tIndex - 1) : tIndex;
             for (int j = start; j < t.length; j++) {
                 if (t[j] < 0) {
@@ -335,29 +340,38 @@ public class ContourFinder {
 
             contour.setEdgeNumber(scaleSpaceImage.getEdgeNumber());
 
-            float t0 = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tIndex];
-            float t1 = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tIndex + 1];
+            int tL = (leftIndexBelow > -1) ? leftIndexBelow : tIndex;
+            int tR = (rightIndexBelow > -1) ? rightIndexBelow : tIndex + 1;
+            
+            float t0 = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tL];
+            float t1 = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tR];
+            if (t0 < 0 || t1 < 0) {
+                // revert to orig offsets
+                tL = tIndex;
+                tR = tIndex + 1;
+                t0 = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tL];
+                t1 = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tR];
+            }
 
             int idx0 = Math.round(t0 * scaleSpaceImage.getEdgeSize());
             int idx1 = Math.round(t1 * scaleSpaceImage.getEdgeSize());
 
             CurvatureScaleSpaceImagePoint point0
                 = new CurvatureScaleSpaceImagePoint(sigma, t0,
-                    scaleSpaceImage.getXCoord(sigmaIndex, tIndex),
-                    scaleSpaceImage.getYCoord(sigmaIndex, tIndex), idx0);
+                    scaleSpaceImage.getXCoord(sigmaIndex, tL),
+                    scaleSpaceImage.getYCoord(sigmaIndex, tL), idx0);
 
             CurvatureScaleSpaceImagePoint point1
                 = new CurvatureScaleSpaceImagePoint(sigma, t1,
-                    scaleSpaceImage.getXCoord(sigmaIndex, tIndex + 1),
-                    scaleSpaceImage.getYCoord(sigmaIndex, tIndex + 1), idx1);
+                    scaleSpaceImage.getXCoord(sigmaIndex, tR),
+                    scaleSpaceImage.getYCoord(sigmaIndex, tR), idx1);
 
             CurvatureScaleSpaceImagePoint[] peakPoints
                 = new CurvatureScaleSpaceImagePoint[]{point0, point1};
 
             contour.setPeakDetails(peakPoints);
 
-            removeContourFromImage(scaleSpaceImage, sigmaIndex, tIndex,
-                tIndex + 1);
+            removeContourFromImage(scaleSpaceImage, sigmaIndex, tL, tR);
 
             return contour;
         }
@@ -445,7 +459,7 @@ public class ContourFinder {
         if (rightIndex == -1) {
             rightIndex = leftIndex;
         }
-
+        
         removeContourFromImage(scaleSpaceImage, sigmaIndex + 1, leftIndex,
             rightIndex);
     }
@@ -470,60 +484,96 @@ public class ContourFinder {
         float tLeft = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tLeftIndex];
         float tRight = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tRightIndex];
 
-        for (int i = sigmaIndex; i < scaleSpaceImage.getImageSigmas().length; i++) {
+        // null the given left and right
+        if (tLeftIndex > -1) {
+            scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tLeftIndex] = -1;
+        }
+        if (tRightIndex > -1) {
+            scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tRightIndex] = -1;
+        }
+        boolean isEmpty = true;
+        for (float tt : scaleSpaceImage.getScaleSpaceImage()[sigmaIndex]) {
+            if (!(tt < 0)) {
+                isEmpty = false;
+                break;
+            }
+        }
+        if (isEmpty) {
+            scaleSpaceImage.getScaleSpaceImage()[sigmaIndex] = new float[0];
+        }
+        
+        // TODO: should improve the scaleSpaceImage datastructures one day if
+        //    use increases...
+        
+        TIntList cLeftIdxs = new TIntArrayList(5);
+        TIntList cRightIdxs = new TIntArrayList(5);
+        
+        for (int i = (sigmaIndex + 1); i < scaleSpaceImage.getImageSigmas().length; i++) {
 
+            if (tLeftIndex == -1 && tRightIndex == -1) {
+                break;
+            }
+            
             float[] t = scaleSpaceImage.getScaleSpaceImage()[i];
 
-            int leftIndex = -1;
-            int rightIndex = -1;
-            float minDiffLeft = Float.MAX_VALUE;
-            float minDiffRight = Float.MAX_VALUE;
-
-            for (int j = 0; j < t.length; j++) {
-
-                if (t[j] < 0) {
-                    continue;
+            if (t.length == 0) {
+                break;
+            }
+            
+            // looking for the points nearest to tLeft and tRight directly
+            // under them and scanning left and right as a pair of points.
+            //    caveat is that the contour may be near wrap around bounds 
+            //    of space image so one of the sides may disappear.
+            cLeftIdxs.clear();
+            cRightIdxs.clear();          
+            
+            findClosest2(t, tLeft,  tLeftIndex, cLeftIdxs);
+            findClosest2(t, tRight, tRightIndex, cRightIdxs);
+                        
+            // choose the closest to both if they don't intersect and if right idx > left idx.
+            // accept the first combination w/ diff idxs and right > left
+            // 0, 0
+            // 0, 1
+            // 1, 0
+            // 1, 1
+            tLeftIndex = -1;
+            tRightIndex = -1;
+            boolean found = false;
+            for (int ii = 0; ii < cLeftIdxs.size(); ++ii) {
+                int lIdx = cLeftIdxs.get(ii);
+                for (int jj = 0; jj < cRightIdxs.size(); ++jj) {
+                    int rIdx = cRightIdxs.get(jj);
+                    if (lIdx != rIdx && rIdx > lIdx) {
+                        tLeft = t[lIdx];
+                        tLeftIndex = lIdx;
+                        tRight = t[rIdx];
+                        tRightIndex = rIdx;
+                        found = true;
+                        break;
+                    }
                 }
-
-                float lD = tLeft - t[j];
-                float rD = t[j] - tRight;
-
-                if (lD < 0) {
-                    lD *= -1;
-                }
-                if (rD < 0) {
-                    rD *= -1;
-                }
-
-                if (lD < minDiffLeft) {
-                    minDiffLeft = lD;
-                    leftIndex = j;
-                }
-
-                if ((rD < minDiffRight) && (j > leftIndex)) {
-                    minDiffRight = rD;
-                    rightIndex = j;
+                if (found) {
+                    break;
                 }
             }
-
-            // TODO: improve correction for wrap around.
-            // Also, this only includes peaks found at end, not beginning.
-            if ((leftIndex > -1) && (leftIndex == (t.length - 1))
-                && (t[leftIndex] >= 0.9)
+            
+            //NOTE: have dropped a correction for wrap around
+            /*
+            if ((tLeftIndex > -1) && (tLeftIndex == (t.length - 1))
+                && (t[tLeftIndex] >= 0.9)
                 && (t[0] < 0.1)) {
-                rightIndex = 0;
+                tRightIndex = 0;
+            }
+            */
+            
+            if (tLeftIndex > -1) {
+                t[tLeftIndex] = -1;
+            }
+            if (tRightIndex > -1) {
+                t[tRightIndex] = -1;
             }
 
-            if (leftIndex > -1) {
-                tLeft = t[leftIndex];
-                t[leftIndex] = -1;
-            }
-            if (rightIndex > -1) {
-                tRight = t[rightIndex];
-                t[rightIndex] = -1;
-            }
-
-            boolean isEmpty = true;
+            isEmpty = true;
             for (float tt : t) {
                 if (!(tt < 0)) {
                     isEmpty = false;
@@ -531,7 +581,7 @@ public class ContourFinder {
                 }
             }
             if (isEmpty) {
-                scaleSpaceImage.getScaleSpaceImage()[sigmaIndex] = new float[0];
+                scaleSpaceImage.getScaleSpaceImage()[i] = new float[0];
             }
         }
     }
@@ -792,7 +842,7 @@ public class ContourFinder {
          plotter.plotLabeledPoints(0.9f*xmn, 1.1f*xmx, 0.9f*ymn, 1.1f*ymx, x, y, "isCW="+Boolean.toString(isCW), "X", "Y");
          plotter.writeFile(MiscDebug.getCurrentTimeFormatted());
          } catch (IOException e){}
-         */
+        */
 
         if (isCW) {
             didReverse = true;
@@ -823,5 +873,94 @@ public class ContourFinder {
             result.set(j, reversed);
         }
 
+    }
+
+    private void findClosest2(float[] t, final float tPrev, final int tPrevIdx, 
+        TIntList outputIdxs) {
+        
+        if (tPrevIdx == -1 || t.length == 0) {
+            return;
+        }
+
+        float minDiff1 = Float.MAX_VALUE;
+        float minDiff2 = Float.MAX_VALUE;
+        int minIdx1 = -1;
+        int minIdx2 = -1;
+        
+        // scan to smaller indexes then larger
+        
+        int j0 = (tPrevIdx < t.length) ? tPrevIdx : t.length - 1;
+        
+        for (int j = j0; j > -1; --j) {
+            
+            if (t[j] < 0) {
+                continue;
+            }
+            
+            float diff = Math.abs(tPrev - t[j]);
+            
+            if (minIdx2 > -1) {
+                // have filled both.  break if diff is larger
+                if (diff > minDiff2) {
+                    break;
+                }
+            } 
+            
+            if (diff <= minDiff1) {
+                minDiff2 = minDiff1;
+                minIdx2 = minIdx1;
+                minDiff1 = diff;
+                minIdx1 = j;
+            } else if (diff < minDiff2) {
+                minDiff2 = diff;
+                minIdx2 = j;
+            }
+        }
+        
+        // use to exit loop early
+        float minDiffUp1 = Float.MAX_VALUE;
+        float minDiffUp2 = Float.MAX_VALUE;
+        
+        j0 = ((tPrevIdx + 1) < t.length) ? (tPrevIdx + 1) : (t.length - 1);
+        
+        for (int j = j0; j < t.length; ++j) {
+            
+            if (t[j] < 0) {
+                continue;
+            }
+            
+            float diff = Math.abs(tPrev - t[j]);
+            
+            if (minDiffUp2 < Float.MAX_VALUE) {
+                // have filled both.  break if diff is larger
+                if (diff > minDiffUp2) {
+                    break;
+                }
+            }
+            
+            if (diff <= minDiff1) {
+                minDiff2 = minDiff1;
+                minIdx2 = minIdx1;
+                minDiff1 = diff;
+                minIdx1 = j;
+            } else if (diff < minDiff2) {
+                minDiff2 = diff;
+                minIdx2 = j;
+            }
+            
+            if (diff <= minDiffUp1) {
+                minDiffUp2 = minDiffUp1;
+                minDiffUp1 = diff;
+            } else if (diff < minDiffUp2) {
+                minDiffUp2 = diff;
+            }
+        }
+        
+        if (minIdx1 > -1) {
+            outputIdxs.add(minIdx1);
+        }
+        if (minIdx2 > -1) {
+            outputIdxs.add(minIdx2);
+        }   
     }
 }

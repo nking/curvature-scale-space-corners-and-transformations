@@ -7,6 +7,7 @@ import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
+import algorithms.misc.MinMaxPeakFinder;
 import algorithms.util.CornerArray;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
@@ -402,11 +403,11 @@ public class CSSCornerMaker {
 
         float[] outputLowThreshold = new float[1];
 
-        List<Integer> minimaAndMaximaIndexes = findMinimaAndMaximaInCurvature(
+        int[] minimaAndMaximaIdxs = findMinimaAndMaximaInCurvature(
             k, outputLowThreshold);
 
         List<Integer> maxCandidateCornerIndexes = findCandidateCornerIndexes(
-            k, minimaAndMaximaIndexes, outputLowThreshold[0],
+            k, minimaAndMaximaIdxs, outputLowThreshold[0],
             this.factorIncreaseForCurvatureMinimum);
 
         CornerArray xy = new CornerArray(scaleSpaceCurve.getSIGMA(), 
@@ -452,11 +453,11 @@ public class CSSCornerMaker {
      * @param outputLowThreshold array of size 1 to receive the low threshold used.
      * @return list of indexes of minima and maxima (minima have negative values).
      */
-    public static List<Integer> findMinimaAndMaximaInCurvature(float[] k,
+    public static int[] findMinimaAndMaximaInCurvature(float[] k,
         float[] outputLowThreshold) {
 
         if ((k == null) || (k.length < 5)) {
-            return new ArrayList<Integer>();
+            return new int[0];
         }
 
         for (int ii = 1; ii < k.length; ii++) {
@@ -466,7 +467,7 @@ public class CSSCornerMaker {
         }
 
         if (k.length < 3) {
-            return new ArrayList<Integer>();
+            return new int[0];
         }
  
         // get quartiles of non-zero values
@@ -477,7 +478,7 @@ public class CSSCornerMaker {
             }
         }
         if (nz < 4) {
-            return new ArrayList<Integer>();
+            return new int[0];
         }
         float[] kNZ = new float[nz];
         nz = 0;
@@ -494,7 +495,7 @@ public class CSSCornerMaker {
             0, 2 * kQuartiles[2], k, Errors.populateYErrorsBySqrt(k));
 
         if (h.getXHist().length < 2) {
-            return new ArrayList<Integer>();
+            return new int[0];
         }
 
         /*
@@ -524,7 +525,7 @@ public class CSSCornerMaker {
         }
 
         if (sum1 == 0) {
-            return new ArrayList<Integer>();
+            return new int[0];
         }
 
         float divSum = (float)sum0/(float)sum1;
@@ -548,36 +549,11 @@ public class CSSCornerMaker {
         the minima have -1*index within k
         and the maxima keep their positive values of the index within k.
         */
-        List<Integer> minMaxIndexes = new ArrayList<Integer>();
+        MinMaxPeakFinder minMaxFinder = new MinMaxPeakFinder();
+        
+        int[] minMaxIdxs = minMaxFinder.findMinimaMaxima(k, outputLowThreshold[0]);
 
-        float lastK = k[0];
-        boolean incr = true;
-        for (int ii = 1; ii < k.length; ii++) {
-
-            float currentK = k[ii];
-
-            if ((currentK < lastK) && incr) {
-                if (k[ii - 1] > outputLowThreshold[0]) {
-                    minMaxIndexes.add(Integer.valueOf(ii - 1));
-                }
-                incr = false;
-            } else if ((currentK > lastK) && !incr) {
-                // values below outputLowThreshold[0] are handled by
-                // callers.  TODO: redesign the caller and this method
-                // to not need to understand peculiarities of the data.
-                minMaxIndexes.add(Integer.valueOf(-1*(ii - 1)));
-                incr = true;
-            }
-
-            lastK = currentK;
-        }
-
-        if (incr) {
-            // add the last point
-             minMaxIndexes.add(Integer.valueOf(k.length - 1));
-        }
-
-        return minMaxIndexes;
+        return minMaxIdxs;
     }
 
     /**
@@ -736,14 +712,14 @@ public class CSSCornerMaker {
      * indexes with respect to the k array.
      *
      * @param k
-     * @param minMaxIndexes
+     * @param minMaxIdxs
      * @param lowThreshold
      * @param curvatureFactor2 factor which is multiplied by 2.0 to result
      * in the factor above minimum for a value to be significant.
      * @return
      */
     public static List<Integer> findCandidateCornerIndexes(float[] k,
-        List<Integer> minMaxIndexes, float lowThreshold, float curvatureFactor2) {
+        int[] minMaxIdxs, float lowThreshold, float curvatureFactor2) {
 
         // find peaks where k[ii] is > factorAboveMin* adjacent local minima
 
@@ -763,9 +739,9 @@ public class CSSCornerMaker {
 
         // choose candidates from minMaxIndexes that are
         //     >= factorAboveMin one adjacent min
-        for (int ii = 0; ii < minMaxIndexes.size(); ii++) {
+        for (int ii = 0; ii < minMaxIdxs.length; ii++) {
 
-            int idx = minMaxIndexes.get(ii).intValue();
+            int idx = minMaxIdxs[ii];
 
             if (idx > -1) {
                 // this is maximum
@@ -774,7 +750,7 @@ public class CSSCornerMaker {
                 
                 // compare to preceding minimum
                 for (int iii = (ii - 1); iii > -1; iii--) {
-                    int idx2 = minMaxIndexes.get(iii).intValue();
+                    int idx2 = minMaxIdxs[iii];
                     if (idx2 < 0) {
                         float compare = k[-1*idx2];
                         if (compare < lowThreshold) {
@@ -794,8 +770,8 @@ public class CSSCornerMaker {
                 }
 
                 //compare to proceeding minimum
-                for (int iii = (ii + 1); iii < minMaxIndexes.size(); iii++) {
-                    int idx2 = minMaxIndexes.get(iii).intValue();
+                for (int iii = (ii + 1); iii < minMaxIdxs.length; iii++) {
+                    int idx2 = minMaxIdxs[iii];
                     if (idx2 < 0) {
                         float compare = k[-1*idx2];
                         if (compare < lowThreshold) {

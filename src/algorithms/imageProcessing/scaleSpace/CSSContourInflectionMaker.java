@@ -11,7 +11,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -239,6 +238,10 @@ public final class CSSContourInflectionMaker {
 
     }
  
+    /**
+     * get the inflection scale space peaks
+     * @return 
+     */
     public List<List<CurvatureScaleSpaceContour>> getContours() {
         return contourLists;
     }

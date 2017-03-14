@@ -11,6 +11,14 @@ import algorithms.util.PairFloat;
  * which has been convolved with a Gaussian and so the exact location is not
  * the same.  The coordinates provided are useful for debugging.
  * 
+ * The data are originally derived from inflection points, that is, 
+ * points on an edge with curvature == zero when crossing between positive and
+ * negative curvature edge points.
+ * This instance holds the location of where the inflection point last appears
+ * in a gaussian curve convolved by increasing sigma. A sigma larger than the
+ * peak sigma in this instance produces a convolved curve in which the inflection
+ * is no longer present.
+ * 
  * @author nichole
  */
 public class CurvatureScaleSpaceContour {

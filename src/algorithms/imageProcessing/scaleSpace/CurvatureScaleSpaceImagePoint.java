@@ -24,7 +24,7 @@ public class CurvatureScaleSpaceImagePoint {
         xCoord = theXCoordinate;
         
         yCoord = theYCoordinate;
-        
+               
         coordIdx = theIndex;
         
         sigma = theSigma;

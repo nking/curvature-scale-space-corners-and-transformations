@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.Matrix;
 import no.uib.cipr.matrix.MatrixEntry;
 import no.uib.cipr.matrix.VectorEntry;
@@ -274,6 +275,52 @@ public class MatrixUtil {
                     sum += (m[row][mcol] * n[mcol][ncol]);                    
                 }
                 c[row][ncol] = sum;
+            }            
+        }
+
+        return c;
+    }
+    
+    public static no.uib.cipr.matrix.DenseMatrix multiply(
+        no.uib.cipr.matrix.Matrix m, no.uib.cipr.matrix.Matrix n) {
+
+        if (m == null || m.numRows() == 0 || m.numColumns() == 0) {
+            throw new IllegalArgumentException("m cannot be null or empty");
+        }
+        if (n == null || n.numRows() == 0 || n.numColumns() == 0) {
+            throw new IllegalArgumentException("n cannot be null or empty");
+        }
+        
+        int mrows = m.numRows();
+
+        int mcols = m.numColumns();
+
+        int nrows = n.numRows();
+        
+        int ncols = n.numColumns();
+        
+        if (mcols != nrows) {
+            throw new IllegalArgumentException(
+                "the number of columns in m must equal the number of rows in n");
+        }
+        
+        /*
+        a b c      p0 p1 p2
+        d e f      p3 p4 p5
+                   p6 p7 p8        
+        a*p0+... a*p a*p
+        d*p0+... d*p d*p
+        */
+        
+        no.uib.cipr.matrix.DenseMatrix c = new DenseMatrix(mrows, ncols);
+        
+        for (int row = 0; row < mrows; row++) {
+            for (int ncol = 0; ncol < ncols; ncol++) {
+                double sum = 0;                
+                for (int mcol = 0; mcol < mcols; mcol++) {
+                    sum += (m.get(row, mcol) * n.get(mcol, ncol));                    
+                }
+                c.set(row, ncol, sum);
             }            
         }
 
