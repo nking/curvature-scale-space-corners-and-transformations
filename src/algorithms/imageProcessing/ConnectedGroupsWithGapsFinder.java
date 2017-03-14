@@ -43,7 +43,7 @@ public class ConnectedGroupsWithGapsFinder {
      */
     protected Map<Integer, Integer> inputIndexToGroupIndexMap = new HashMap<Integer, Integer>();
     
-    protected Logger log = Logger.getLogger(DFSConnectedGroupsFinder2.class.getName());
+    protected Logger log = Logger.getLogger(this.getClass().getName());
     
     protected boolean debug = false;
     

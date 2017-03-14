@@ -29,7 +29,7 @@ public class DFSConnectedGroupsFinder extends AbstractDFSConnectedGroupsFinder {
     }
     
     Logger constructLogger() {
-        return Logger.getLogger(DFSConnectedGroupsFinder2.class.getName());
+        return Logger.getLogger(this.getClass().getName());
     }
     
     public void setMinimumNumberInCluster(int n) {

@@ -76,6 +76,9 @@ import thirdparty.ods.XFastTrie;
 import thirdparty.ods.XFastTrieNode;
 
 /**
+ * Many methods in here will be removed soon.
+ * Meanwhile, see MSEREdges.java for segmentation.
+ * 
  * class holding several different image segmentation methods.  Note that
  * some other techniques involving contrast for example, are elsewhere.
  *
@@ -3720,120 +3723,7 @@ public class ImageSegmentation {
 
         return binCenters;
     }
-
-    /**
-     * segmentation algorithm using cieXY and rgb to make pixel categories,
-     * and grow lists, then histograms to rescale.
-     *
-     * @param input
-     * @return
-     */
-    public GreyscaleImage createGreyscale3(ImageExt input) {
-
-        Set<PairInt> blackPixels = new HashSet<PairInt>();
-
-        Map<PairInt, Float> colorPixelMap = new HashMap<PairInt, Float>();
-
-        Set<PairInt> unassignedPixels = new HashSet<PairInt>();
-
-        populatePixelLists2(input, blackPixels, colorPixelMap, unassignedPixels);
-
-        int nTotC = blackPixels.size() + colorPixelMap.size() + unassignedPixels.size();
-        assert(nTotC == input.getNPixels());
-
-        // grow black pixels from unassigned pixels if within a tolerance of rgb
-        growPixelsWithinRGBTolerance(input, blackPixels, unassignedPixels, 10);
-
-        // then grow colorPixelMap from unassignedPixels if within a tolerance of rgb
-        Set<PairInt> addToColor = findPixelsWithinRGBTolerance(input,
-            colorPixelMap.keySet(), unassignedPixels, 10);//5
-
-        // reassign colorPixelMap to averaged color for adjacent thetas within tolerance
-        // (1) try just colorPixelMap for this step
-        // (2) try adding addToColor to colorPixelMap for this step
-        //    Map<PairInt, Float> colorPixelMap2 = createPolarCIEXYMap(input, addToColor);
-        //    colorPixelMap.putAll(colorPixelMap2);
-
-        int toleranceInValue = determineToleranceForIllumCorr(colorPixelMap, nTotC);
-
-        if (toleranceInValue > -1 && !colorPixelMap.isEmpty()) {
-            // use higher > 1 when bp/cp2 >> 1
-            if ((blackPixels.size()/addToColor.size()) > 10) {
-                correctForIllumination(input, 2, colorPixelMap);
-            } else {
-                correctForIllumination(input, toleranceInValue, colorPixelMap);
-            }
-        }
-/*
-ImageExt tmpInput = input.copyToImageExt();
-for (PairInt p : unassignedPixels) {
-tmpInput.setRGB(p.getX(), p.getY(), 255, 0, 0);
-}
-MiscDebug.writeImage(tmpInput, "_after_illumc0_unassigned_pix" + MiscDebug.getCurrentTimeFormatted());
-MiscDebug.writeImage(input, "_after_illumc0_" + MiscDebug.getCurrentTimeFormatted());
-*/
-        Map<PairInt, Float> colorPixelMap2 = createPolarCIEXYMap(input, addToColor);
-        if (toleranceInValue > -1 && !colorPixelMap2.isEmpty()) {
-            correctForIllumination(input, toleranceInValue, colorPixelMap2);
-        }
-/*
-tmpInput = input.copyToImageExt();
-for (PairInt p : colorPixelMap2.keySet()) {
-tmpInput.setRGB(p.getX(), p.getY(), 255, 0, 0);
-}
-MiscDebug.writeImage(tmpInput, "_after2_illumc0_pix" + MiscDebug.getCurrentTimeFormatted());
-MiscDebug.writeImage(input, "_after2_illumc0_" + MiscDebug.getCurrentTimeFormatted());
-*/
-        Map<PairInt, Float> colorPixelMap3 = createPolarCIEXYMap(input, unassignedPixels);
-        toleranceInValue = determineToleranceForIllumCorr(colorPixelMap3, nTotC);
-        if (toleranceInValue > -1 && !colorPixelMap3.isEmpty()) {
-            if ((toleranceInValue == 1) &&
-                ((blackPixels.size()/colorPixelMap2.size()) > 10)) {
-                if ((blackPixels.size()/colorPixelMap.size()) > 10) {
-                    toleranceInValue = 10;
-                } else {
-                    toleranceInValue = 2;
-                }
-            }
-            correctForIllumination(input, toleranceInValue, colorPixelMap3);
-        }
-/*tmpInput = input.copyToImageExt();
-for (PairInt p : colorPixelMap3.keySet()) {
-tmpInput.setRGB(p.getX(), p.getY(), 255, 0, 0);
-}
-MiscDebug.writeImage(tmpInput, "_after3_illumc0_pix" + MiscDebug.getCurrentTimeFormatted());
-MiscDebug.writeImage(input, "_after3_illumc0_" + MiscDebug.getCurrentTimeFormatted());
-*/
-        if (nTotC != blackPixels.size()) {
-            //TODO: not sure will use this... might consider same method w/ rgb
-            toleranceInValue = 2;
-            correctForIllumination(input, blackPixels, toleranceInValue);
-        }
-
-        GreyscaleImage img = input.copyToGreyscale();
-
-        MiscDebug.writeImage(img, "_before_greyscale_bins_" + MiscDebug.getCurrentTimeFormatted());
-
-        float[] cValues = new float[input.getNPixels()];
-        for (int i = 0; i < input.getNPixels(); ++i) {
-            int v = img.getValue(i);
-            cValues[i] = v;
-        }
-
-        int[] binCenters = determineGreyscaleBinCenters(cValues);
-
-        assignToNearestCluster(img, binCenters);
-        MiscDebug.writeImage(img, "_after_greyscale_bins_" + MiscDebug.getCurrentTimeFormatted());
-
-        for (PairInt p : blackPixels) {
-            img.setValue(p.getX(), p.getY(), 0);
-        }
-
-MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
-
-        return img;
-    }
-
+    
     public GreyscaleImage createCombinedWaveletBased(Image img) {
         return createCombinedWaveletBased(img.copyRedToGreyscale(),
             img.copyGreenToGreyscale(), img.copyBlueToGreyscale());
@@ -5016,76 +4906,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         //MiscDebug.writeImage(imgCp, "polarciexy_" + MiscDebug.getCurrentTimeFormatted());
 
         return thetaMap;
-    }
-
-    private void correctForIllumination(ImageExt input, Set<PairInt> points,
-        int toleranceInValue) {
-
-        if (points.isEmpty() || (toleranceInValue == 0)) {
-            return;
-        }
-
-        Map<PairInt, Float> thetaMap = createPolarCIEXYMap(input, points);
-
-        correctForIllumination(input, toleranceInValue, thetaMap);
-    }
-
-    private void correctForIllumination(ImageExt input,
-        int toleranceInValue, Map<PairInt, Float> thetaMap) {
-
-        /*
-        in CIE XY color space, reassign colors:
-
-        for points:
-        -- convert to polar theta in CIE XY space and plot in image
-           as greyscale without changes.
-
-        -- DFS traversal through the theta values of pixels in points
-           to make contigous groups of pixels that are within a tolerance of
-           theta value of one another.
-
-        -- reassign the average rgb color to those pixels in a group
-        */
-
-        int w = input.getWidth();
-        int h = input.getHeight();
-
-        // find pixels similar in color that are contiguous
-
-        DFSConnectedGroupsFinder2 groupFinder = new DFSConnectedGroupsFinder2();
-        groupFinder.findConnectedPointGroups(thetaMap, 360, toleranceInValue,
-            w, h, false);
-
-        int nGroups = groupFinder.getNumberOfGroups();
-
-        // calc avg rgb of each contiguous group and reset rgb of all in group
-        // to the avg
-
-        for (int i = 0; i < nGroups; ++i) {
-
-            Set<PairInt> group = groupFinder.getXY(i);
-
-            if (group.size() == 1) {
-                continue;
-            }
-
-            float sumR = 0;
-            float sumG = 0;
-            float sumB = 0;
-            for (PairInt p : group) {
-                int pixIdx = input.getInternalIndex(p.getX(), p.getY());
-                sumR += input.getR(pixIdx);
-                sumG += input.getG(pixIdx);
-                sumB += input.getB(pixIdx);
-            }
-            int avgR = Math.round(sumR/(float)group.size());
-            int avgG = Math.round(sumG/(float)group.size());
-            int avgB = Math.round(sumB/(float)group.size());
-
-            for (PairInt p : group) {
-                input.setRGB(p.getX(), p.getY(), avgR, avgG, avgB);
-            }
-        }
     }
 
     private int determineToleranceForIllumCorr(Map<PairInt, Float> thetaMap,
@@ -9180,52 +9000,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         return new int[]{stdDevR, stdDevG, stdDevB};
     }
 
-    /**
-     * phase angle image normalized to values between 0 and 255 is used to
-     * modify img.
-     *
-     * @param img
-     * @param phaseAngleInt
-     * @return
-     */
-    private ImageExt modifyWithPhaseAngle(ImageExt img, GreyscaleImage 
-        phaseAngleImg) {
-
-        int w = img.getWidth();
-        int h = img.getHeight();
-
-        GreyscaleImage paImg = new GreyscaleImage(w, h);
-        for (int i = 0; i < w; ++i) {
-            for (int j = 0; j < h; ++j) {
-                int v = phaseAngleImg.getValue(i, j);
-                paImg.setValue(i, j, v);
-            }
-        }
-
-        ImageExt img2 = img.copyToImageExt();
-
-        ImageProcessor imageProcessor = new ImageProcessor();
-        List<Set<PairInt>> contigSets = imageProcessor.
-            findConnectedSameValueGroups(paImg);
-
-        for (int i = 0; i < contigSets.size(); ++i) {
-            Set<PairInt> set = contigSets.get(i);
-            if (set.size() < 2) {
-                continue;
-            }
-            GroupPixelRGB0 avgClrs = new GroupPixelRGB0();
-            avgClrs.calculateColors(set, img, 0, 0);
-            int r = Math.round(avgClrs.getAvgRed());
-            int g = Math.round(avgClrs.getAvgGreen());
-            int b = Math.round(avgClrs.getAvgBlue());
-            for (PairInt p : set) {
-                img2.setRGB(p.getX(), p.getY(), r, g, b);
-            }
-        }
-
-        return img2;
-    }
-
     public EdgeFilterProducts packageToEdgeProduct(
         PhaseCongruencyDetector.PhaseCongruencyProducts pr) {
         
@@ -12058,119 +11832,6 @@ int z = 1;
         return labels;
     }
     
-    /**
-     * NOT READY FOR USE.
-     * a segmentation method that uses monogenic phase congruency
-     * to create a phase angle image, then uses SLIC super pixels
-     * to make an over-segmented image, then creates a color phase
-     * angle image as input to normalized cuts.
-     * NOTE that this is tailored for images
-     * binned to near size 256 on a side.
-     *
-     * @param img
-     * @return
-     */
-    public int[] objectSegmentation2(ImageExt img) {
-
-        long ts = MiscDebug.getCurrentTimeFormatted();
-
-        //0=canny LAB, 1=canny gs, 2=phase cong monogenic
-        int gradientMethod = 2;
-
-        EdgeFilterProducts products = 
-            createGradient(img, gradientMethod, ts);
-        
-        ImageExt imgCp = img.copyToImageExt();
-
-        int w = img.getWidth();
-        int h = img.getHeight();
-
-        ImageExt imgCp2 = modifyWithPhaseAngle(imgCp, products.getPhaseAngle());
-
-        // substituting phase angle for gradient
-        GreyscaleImage gradient = products.getPhaseAngle();
-
-        // extrapolate boundaries at nclusters=x1
-        //   NOTE: this method is tailored for images
-        //   binned to size near 256 on a side, so will
-        //   need to add comments and maybe a wrapper to
-        //   make sure that is true
-        float nPix = img.getNPixels();
-        int x1 = 10;//17;//11; 17
-        float f10 = (float)w/(float)x1;
-        f10 *= f10;
-        float f11 = (float)h/(float)x1;
-        f11 *= f11;
-        int n10 = Math.round(nPix/f10);
-        int n11 = Math.round(nPix/f11);
-        //==> nClusters = nPix/((w/x0)^2)
-        //==> nClusters = nPix/((h/x0)^2)
-        log.fine("  n1=" + n10 + "," + n11);
-        int nc = (n10+n11)/2;
-        SLICSuperPixels slic = new SLICSuperPixels(imgCp2, nc);
-        slic.setGradient(gradient);
-        slic.calculate();
-        int[] labels = slic.getLabels();
-
-        List<Set<PairInt>> contigSets0 = LabelToColorHelper
-            .extractContiguousLabelPoints(imgCp2, labels);
-
-        ImageExt img3 = imgCp2.createWithDimensions();
-        ImageIOHelper.addAlternatingColorLabelsToRegion(img3, labels);
-        String str = Integer.toString(nc);
-        str = (str.length() < 3) ? "0" + str : str;
-        MiscDebug.writeImage(img3, "_slic_" + ts + "_" + str);
-
-        MiscDebug.writeImage(imgCp2, "_rgb_pq_" + ts + "_" + str);
-
-        //NOTE: imgCp2 needs to include more information to keep
-        //  boundaries more cleanly.
-        //  the phase angle modification was helpful, but
-        //  more is needed
-
-        NormalizedCuts normCuts = new NormalizedCuts();
-        normCuts.setColorSpaceToHSV();
-        //thresh = 0.05;
-        //sigma = 0.1;
-        normCuts.setThreshold(0.065);
-        labels = normCuts.normalizedCut(imgCp2, labels);
-
-        img3 = imgCp2.createWithDimensions();
-        ImageIOHelper.addAlternatingColorLabelsToRegion(img3, labels);
-        MiscDebug.writeImage(img3, "_norm_" + ts + "_" + str);
-
-        List<Set<PairInt>> contigSets = LabelToColorHelper
-            .extractContiguousLabelPoints(imgCp2, labels);
-
-        img3 = imgCp2.createWithDimensions();
-        ImageIOHelper.addAlternatingColorLabelsToRegion(img3, labels);
-        MiscDebug.writeImage(img3, "_norm_2_" + ts + "_" + str);
-
-        return labels;
-
-        /*
-        ImageExt img3 = img.copyToImageExt();
-        ImageIOHelper.addAlternatingColorLabelsToRegion(img3, labels);
-        String str = Integer.toString(nc);
-        str = (str.length() < 3) ? "0" + str : str;
-        MiscDebug.writeImage(img3, "_slic_" + ts + "_" + str);
-
-        List<Set<PairInt>> contigSets = LabelToColorHelper
-            .extractContiguousLabelPoints(img, labels);
-
-        int sizeLimit = 31;
-        if (img.getNPixels() < 100) {
-            sizeLimit = 5;
-        }
-        imgCp = img.copyToImageExt();
-        // a safe limit for HSV is 0.025 to not overrun object bounds
-        labels = mergeByColor(imgCp, contigSets, ColorSpace.HSV, 0.095f);//0.1f);
-        mergeSmallSegments(imgCp, labels, sizeLimit, ColorSpace.HSV);
-
-        return labels;
-        */
-    }
-
     private TIntSet findIntersection(GreyscaleImage gradient,
         int[] labels) {
 
