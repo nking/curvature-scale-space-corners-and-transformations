@@ -2,7 +2,9 @@ package algorithms.imageProcessing.util;
 
 import algorithms.misc.Complex;
 import algorithms.util.PairInt;
+import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -13,9 +15,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import no.uib.cipr.matrix.DenseMatrix;
+import no.uib.cipr.matrix.EVD;
 import no.uib.cipr.matrix.Matrix;
 import no.uib.cipr.matrix.MatrixEntry;
+import no.uib.cipr.matrix.NotConvergedException;
 import no.uib.cipr.matrix.SVD;
 import no.uib.cipr.matrix.VectorEntry;
 import no.uib.cipr.matrix.sparse.FlexCompColMatrix;
@@ -115,7 +121,7 @@ public class MatrixUtil {
             for (int j = 0; j < m.numColumns(); ++j) {
                 double v0 = m.get(i, j);
                 double v1 = n.get(i, j);
-                output.set(i, j, v0 + v1);
+                output.set(i, j, v0 - v1);
             }
         }
         
@@ -133,6 +139,119 @@ public class MatrixUtil {
         for (int i = 0; i < len; i++) {
             m[i] += n;
         }
+    }
+    
+    /**
+     * performs eigenvalue decomposition, checks the matrix products and returns
+     * those vectors that pass the product tests.
+     * Also returns their eigenvalues.
+     * new Object[]{rightEigenVector, eigenValues] as
+     * DenseMatrix and TDoubleList.
+     * @param m
+     * @return 
+     */
+    public static Object[] eigWithErrorFilter(DenseMatrix m) {
+        
+        EVD evd;
+        try {
+            evd = EVD.factorize(m);
+        } catch (NotConvergedException ex) {
+            Logger.getLogger(MatrixUtil.class.getName()).log(
+                Level.SEVERE, null, ex);
+            return null;
+        }
+        
+        DenseMatrix rightEigenVectors = evd.getRightEigenvectors();
+        
+        //System.out.println("a=\n" + m.toString());
+        //System.out.println("left e=\n" + evd.getLeftEigenvectors().toString());
+        //System.out.println("right e=\n" + rightEigenVectors.toString());
+        
+        //System.out.println("leftT * M * right=\n" +
+        //    MatrixUtil.multiply(leftEigenVectors.transpose(),
+        //        MatrixUtil.multiply(m, rightEigenVectors)));
+        
+        double[] eigenValues = evd.getRealEigenvalues();
+        
+        DenseMatrix d = new DenseMatrix(eigenValues.length, eigenValues.length);
+        for (int i = 0; i < eigenValues.length; ++i) {
+            d.set(i, i, eigenValues[i]);
+        }
+        
+        /*
+        The right eigenvector v(j) of A satisfies
+                          A * v(j) = lambda(j) * v(j)
+         where lambda(j) is its eigenvalue.
+        */
+        // A * V
+        DenseMatrix check0_right = MatrixUtil.multiply(m, rightEigenVectors);
+        // D * V
+        DenseMatrix check1_right = MatrixUtil.multiply(rightEigenVectors, d);
+                
+        //System.out.println("check0_right=\n" + check0_right);
+        //System.out.println("check1_right=\n" + check1_right);
+
+        TIntList indexes = check(check0_right, check1_right);
+        
+        DenseMatrix rightVectors2 = new DenseMatrix(rightEigenVectors.numRows(),
+            indexes.size());
+        TDoubleList eigenValues2 = new TDoubleArrayList(indexes.size());
+        int col2 = 0;
+        for (int i = 0; i < indexes.size(); ++i) {
+            
+            int col = indexes.get(i);
+            
+            eigenValues2.add(eigenValues[col]);
+            
+            for (int row = 0; row < rightEigenVectors.numRows(); ++row) {
+                rightVectors2.set(row, col2, 
+                    rightEigenVectors.get(row, col));
+            }
+            
+            col2++;
+        }
+        
+        return new Object[]{rightVectors2, eigenValues2};
+    }
+    
+    // this is adapted from JAMA matrix test http://math.nist.gov/javanumerics/jama/
+    // Jama-1.0.3.zip
+    private static TIntList check(DenseMatrix m, DenseMatrix n) {
+    
+        TIntList indexes = new TIntArrayList();
+        
+        double eps = Math.pow(2.0, -52.0);
+        
+        if (m.norm(Matrix.Norm.Frobenius) == 0. && 
+            n.norm(Matrix.Norm.Frobenius) < 10 * eps) {
+            return indexes;
+        }
+        if (n.norm(Matrix.Norm.Frobenius) == 0. && 
+            m.norm(Matrix.Norm.Frobenius) < 10 * eps) {
+            return indexes;
+        }
+        
+        double mNorm = Math.max(m.norm(Matrix.Norm.One), 
+            n.norm(Matrix.Norm.Frobenius));
+        for (int i = 0; i < m.numRows(); ++i) {
+            for (int j = 0; j < m.numColumns(); ++j) {
+                double v0 = m.get(i, j);
+                double v1 = n.get(i, j);
+                double diff = Math.abs(v0 - v1);
+                if (diff < 1000 * eps) {
+                    indexes.add(j);
+                }
+            }
+        }
+        
+        DenseMatrix diff = MatrixUtil.subtract(m, n);
+        //System.out.println("diff=\n" + diff.toString());
+        if (diff.norm(Matrix.Norm.One) > 1000 * eps * mNorm) {
+            System.err.println("The norm of (X-Y) is too large: " + 
+                Double.toString(MatrixUtil.subtract(m, n)
+                        .norm(Matrix.Norm.Frobenius)));
+        }
+        return indexes;
     }
     
     public static double[] multiply(double[][] m, double[] n) {
