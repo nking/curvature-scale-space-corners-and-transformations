@@ -73,10 +73,16 @@ public class LinearAlgebraTest extends TestCase {
         // values are.
         // Because the test for right eigen vector below fails for the
         //    first 2 columns of the resulting A * right eigen vector,
-        //    that would suggest the bug is somewhere in the linalg jars
-        //    in this project.
-        //    Best practices are to use the eigen vectors with the largest
-        //        eigenvalues when only a subset are needed
+        //    that would suggest an error in the calculation of the 
+        //    2nd eigen vector at least.
+        // may need to add to MtJ, access to error bounds for the eigen values
+        // (e.g. http://www.netlib.org/lapack/lug/node89.html)
+        /*
+          http://www.netlib.org/lapack/lug/node90.html
+        ..."if [an eigenvalue] is close to other eigenvalues, 
+            its corresponding eigenvector zi may be inaccurate."
+        */
+        
         DenseMatrix rightEigenVectors = evd.getRightEigenvectors();
         
         System.out.println("a=\n" + m.toString());
