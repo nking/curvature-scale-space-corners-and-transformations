@@ -189,13 +189,14 @@ public class MatrixUtil {
         /*
         The right eigenvector v(j) of A satisfies
                           A * v(j) = lambda(j) * v(j)
-         where lambda(j) is its eigenvalue.
+        where lambda(j) is its eigenvalue.
         
         NOTE: to create a method which returns the imaginary portion of a
         complex solution, the left check is:
         The left eigenvector u(j) of A satisfies
                        u(j)**H * A = lambda(j) * u(j)**H
         where u(j)**H denotes the conjugate-transpose of u(j).
+        u is the left eigen vector and lambda is the eigen values.
         */
         // A * V
         DenseMatrix check0_right = MatrixUtil.multiply(m, rightEigenVectors);
