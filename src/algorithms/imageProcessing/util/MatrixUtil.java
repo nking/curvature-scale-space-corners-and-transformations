@@ -2,10 +2,15 @@ package algorithms.imageProcessing.util;
 
 import algorithms.misc.Complex;
 import algorithms.util.PairInt;
+import gnu.trove.iterator.TIntIterator;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.set.TDoubleSet;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TDoubleHashSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -18,11 +23,13 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import no.uib.cipr.matrix.DenseMatrix;
+import no.uib.cipr.matrix.DenseVector;
 import no.uib.cipr.matrix.EVD;
 import no.uib.cipr.matrix.Matrix;
 import no.uib.cipr.matrix.MatrixEntry;
 import no.uib.cipr.matrix.NotConvergedException;
 import no.uib.cipr.matrix.SVD;
+import no.uib.cipr.matrix.Vector;
 import no.uib.cipr.matrix.VectorEntry;
 import no.uib.cipr.matrix.sparse.FlexCompColMatrix;
 import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
@@ -147,6 +154,7 @@ public class MatrixUtil {
      * Also returns their eigenvalues.
      * new Object[]{rightEigenVector, eigenValues] as
      * DenseMatrix and TDoubleList.
+     * Note that the results are also filtered for uniqueness.
      * @param m
      * @return 
      */
@@ -191,16 +199,31 @@ public class MatrixUtil {
         //System.out.println("check0_right=\n" + check0_right);
         //System.out.println("check1_right=\n" + check1_right);
 
-        TIntList indexes = check(check0_right, check1_right);
+        TIntSet columns = check(check0_right, check1_right);
+        
+        // filter for unique eigen vectors and values
+        TIntSet rm = new TIntHashSet();
+        TDoubleSet exists = new TDoubleHashSet();
+        TIntIterator iter = columns.iterator();
+        while (iter.hasNext()) {
+            int col = iter.next();
+            double ev = eigenValues[col];
+            if (exists.contains(ev)) {
+                rm.add(col);
+            } else {
+                exists.add(ev);
+            }
+        }
+        columns.removeAll(rm);
         
         DenseMatrix rightVectors2 = new DenseMatrix(rightEigenVectors.numRows(),
-            indexes.size());
-        TDoubleList eigenValues2 = new TDoubleArrayList(indexes.size());
+            columns.size());
+        TDoubleList eigenValues2 = new TDoubleArrayList(columns.size());
         int col2 = 0;
-        for (int i = 0; i < indexes.size(); ++i) {
-            
-            int col = indexes.get(i);
-            
+        
+        iter = columns.iterator();
+        while (iter.hasNext()) {
+            int col = iter.next();            
             eigenValues2.add(eigenValues[col]);
             
             for (int row = 0; row < rightEigenVectors.numRows(); ++row) {
@@ -216,31 +239,37 @@ public class MatrixUtil {
     
     // this is adapted from JAMA matrix test http://math.nist.gov/javanumerics/jama/
     // Jama-1.0.3.zip
-    private static TIntList check(DenseMatrix m, DenseMatrix n) {
-    
-        TIntList indexes = new TIntArrayList();
+    private static TIntSet check(DenseMatrix m, DenseMatrix n) {
         
+        TIntSet columns = new TIntHashSet();
+            
         double eps = Math.pow(2.0, -52.0);
         
         if (m.norm(Matrix.Norm.Frobenius) == 0. && 
             n.norm(Matrix.Norm.Frobenius) < 10 * eps) {
-            return indexes;
+            return columns;
         }
         if (n.norm(Matrix.Norm.Frobenius) == 0. && 
             m.norm(Matrix.Norm.Frobenius) < 10 * eps) {
-            return indexes;
+            return columns;
         }
         
         double mNorm = Math.max(m.norm(Matrix.Norm.One), 
             n.norm(Matrix.Norm.Frobenius));
-        for (int i = 0; i < m.numRows(); ++i) {
-            for (int j = 0; j < m.numColumns(); ++j) {
+        double c2 = 1000 * eps * mNorm;
+        
+        DenseVector d = new DenseVector(m.numRows());
+        
+        for (int j = 0; j < m.numColumns(); ++j) {
+            for (int i = 0; i < m.numRows(); ++i) {
                 double v0 = m.get(i, j);
                 double v1 = n.get(i, j);
-                double diff = Math.abs(v0 - v1);
-                if (diff < 1000 * eps) {
-                    indexes.add(j);
-                }
+                double diff = v0 - v1;
+                d.set(i, diff);
+            }
+            double c = d.norm(Vector.Norm.One);            
+            if (c < c2) {
+                columns.add(j);
             }
         }
         
@@ -251,7 +280,7 @@ public class MatrixUtil {
                 Double.toString(MatrixUtil.subtract(m, n)
                         .norm(Matrix.Norm.Frobenius)));
         }
-        return indexes;
+        return columns;
     }
     
     public static double[] multiply(double[][] m, double[] n) {

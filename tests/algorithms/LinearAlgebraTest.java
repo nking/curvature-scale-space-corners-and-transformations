@@ -1,6 +1,7 @@
 package algorithms;
 
 import algorithms.imageProcessing.util.MatrixUtil;
+import gnu.trove.list.TDoubleList;
 import java.util.Arrays;
 import java.util.Map;
 import junit.framework.TestCase;
@@ -93,7 +94,6 @@ public class LinearAlgebraTest extends TestCase {
         System.out.println("left e=\n" + leftEigenVectors.toString());
         System.out.println("right e=\n" + rightEigenVectors.toString());
         
-        // 
         System.out.println("leftT * M * right=\n" +
             MatrixUtil.multiply(leftEigenVectors.transpose(),
                 MatrixUtil.multiply(m, rightEigenVectors)));
@@ -106,23 +106,10 @@ public class LinearAlgebraTest extends TestCase {
         System.out.println(expectedEigVec);
         //System.out.println("result vector=" + v.toString();
         
-        /*
-        double[][] expectedRightVec = getExpectedRealVectors0();
-        for (int i = 0; i < expectedRightVec.length; ++i) {
-            for (int j = 0; j < expectedRightVec[0].length; ++j) {
-                double v = rightEigenVectors.get(i, j);
-                double ve = expectedRightVec[i][j];
-                double diff = Math.abs(v - ve);
-                System.out.println("diff=" + diff);
-                assertTrue(diff < 0.05);
-            }
-        }*/
-        
         DenseMatrix d = new DenseMatrix(eigenValues.length, eigenValues.length);
         for (int i = 0; i < eigenValues.length; ++i) {
             d.set(i, i, eigenValues[i]);
         }
-        
         
         /*
         The right eigenvector v(j) of A satisfies
@@ -142,11 +129,11 @@ public class LinearAlgebraTest extends TestCase {
         System.out.println("check0_right=\n" + check0_right);
         System.out.println("check1_right=\n" + check1_right);
 
-        /*try {
-            check(check0_right, check1_right);
-        } catch (java.lang.RuntimeException e) {
-            fail(e.getMessage());
-        }*/
+        Object[] vecAndValues = MatrixUtil.eigWithErrorFilter(m);
+        assertNotNull(vecAndValues);
+        DenseMatrix filteredVecs = (DenseMatrix) vecAndValues[0];
+        TDoubleList filteredValues = (TDoubleList) vecAndValues[1];
+        assertEquals(2, filteredValues.size());
     }
 
     /*
