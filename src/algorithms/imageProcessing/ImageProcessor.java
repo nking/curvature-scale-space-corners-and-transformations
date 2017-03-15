@@ -8830,6 +8830,27 @@ if (sum > 511) {
         return img2;
     }
     
+    public TIntSet convertPointsToIndexes(Set<PairInt> points, int width) {
+        TIntSet set = new TIntHashSet(points.size());
+        for (PairInt p : points) {
+            int pixIdx = (p.getY() * width) + p.getX();
+            set.add(pixIdx);
+        }
+        return set;
+    }
+    
+    public Set<PairInt> convertIndexesToPoints(TIntSet pixIdxs, int width) {
+        Set<PairInt> set = new HashSet<PairInt>();
+        TIntIterator iter = pixIdxs.iterator();
+        while (iter.hasNext()) {
+            int pixIdx = iter.next();
+            int y = pixIdx/width;
+            int x = pixIdx - (pixIdx * width);
+            set.add(new PairInt(x, y));
+        }
+        return set;
+    }
+    
     /**
      Find peaks in an image as coordinate list 
      Peaks are the local maxima in a region of `2 * min_distance + 1`

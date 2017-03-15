@@ -190,40 +190,7 @@ public class PhaseCongruencyDetectorTest extends TestCase {
             }
         }
     }
-
-    // use of phase congruency on grey, r-g, g-b, and r-b then combining all results
-    // the phase ongruency is performed on small overlapping regions.
-    public void est3() throws Exception {
-
-        String[] fileNames = new String[]{
-            //"seattle.jpg",
-            "merton_college_I_001.jpg",
-            // "lena.jpg",
-            // "campus_010.jpg",
-            //"android_statues_01.jpg",
-            //"android_statues_02.jpg",
-            //"android_statues_03.jpg",
-            //"android_statues_04.jpg"
-        };
-
-        ImageSegmentation imageSegmentation = new ImageSegmentation();
-
-        ImageProcessor imageProcessor = new ImageProcessor();
-
-        for (String fileName : fileNames) {
-
-            System.out.println("fileName=" + fileName);
-
-            String filePath = ResourceFinder.findFileInTestResources(fileName);
-
-            ImageExt img = ImageIOHelper.readImageExt(filePath);
-
-            GreyscaleImage combined = imageSegmentation.createColorEdges_1(img, 100);
-
-            MiscDebug.writeImage(combined, "_combined_" + fileName);
-        }
-    }
-
+    
     public void testUnsupervisedTextureExtraction() throws Exception {
 
         String[] fileNames = new String[]{

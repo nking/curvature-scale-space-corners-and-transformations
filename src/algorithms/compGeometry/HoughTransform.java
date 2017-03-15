@@ -1,8 +1,6 @@
 package algorithms.compGeometry;
 
 import algorithms.MultiArrayMergeSort;
-import algorithms.imageProcessing.DFSSimilarThetaRadiusGroupsFinder;
-import algorithms.imageProcessing.DFSConnectedHoughTransformGroupsFinder;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.util.AngleUtil;
@@ -257,136 +255,6 @@ public class HoughTransform {
     }
     
     /**
-     * given the theta values and a set of point coordinates, 
-     * finds contiguous groups of points with the same theta and distance
-     * from origin and returns them as lists of contiguous sets of such
-     * points.
-     * 
-     * should be able to find where the lines connect too as unassigned 
-     * adjacent points to the line sets that have values in between
-     * two lines... that will be another method
-     * 
-     * unfortunately, this method is not returning the best of results because
-     * the angles in the theta map are determined from a very local 
-     * neighborhood when the gradient is made and so even a thinned line has
-     * a line with a large range in theta (as large as 20 degrees in a 
-     * straight line) and hence the radius calculations have a large range too.
-     * Instead, the user should prefer to use
-     * Map<Set<PairInt>, PairInt> findContiguousLines(Set<PairInt> points,
-        int minimumGroupSize) 
-     * which has a larger factor times semi-linear runtime complexity, but the 
-     * results should be better.
-     * 
-     * @param points
-     * @param theta360
-     * 
-     * @return map with key = group of connected points having same theta and
-     * radius, value = pairint of the theta and radius for the group.
-     */
-    public Map<Set<PairInt>, PairInt> findContiguousLines(Set<PairInt> points, 
-        GreyscaleImage theta360) {
-        
-        Map<PairInt, PairInt> pointTRMap = calculatehHoughTransforms(points, 
-            theta360);
-        
-        /*
-        String[] fileNames = new String[]{"mask_01.png", "mask_02.png", 
-            "mask_03.png", "mask_04.png", "mask_05.png", "mask_06.png", 
-            "mask_07.png", "mask_08.png", "mask_09.png", "mask_10.png",
-            "mask_11.png", "mask_12.png"};
-        try {
-            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
-            for (String fileName : fileNames) {
-                 String filePath = ResourceFinder.getAFilePathInTmpData(fileName);
-                 GreyscaleImage mask = ImageIOHelper.readImageAsGreyscaleFullRange(filePath);
-                 Set<PairInt> edgePoints = new HashSet<PairInt>();
-                 for (int i = 0; i < mask.getNPixels(); ++i) {
-                     if (mask.getValue(i) > 127) {
-                         PairInt p2 = new PairInt(mask.getCol(i), mask.getRow(i));
-                         if (pointTRMap.containsKey(p2)) {
-                             edgePoints.add(p2);
-                         }
-                     }
-                 }
-                 float[] theta = new float[edgePoints.size()];
-                 float[] radius = new float[theta.length];
-                 int count = 0;
-                 for (PairInt p : edgePoints) {
-                     PairInt tr = pointTRMap.get(p);
-                     //theta[count] = tr.getX();
-                     //theta[count] = theta360.getValue(p);
-                     //radius[count] = tr.getY();
-                     theta[count] = p.getX();
-                     radius[count] = p.getY();
-                     count++;
-                 }
-                 float[] xPolygon = null; 
-                 float[] yPolygon = null;
-                 float minRadius = MiscMath.findMin(radius);
-                 float maxRadius = MiscMath.findMax(radius);
-                 float minX = MiscMath.findMin(theta);
-                 float maxX = MiscMath.findMax(theta);
-                 plotter.addPlot(minX - 1, maxX + 1, minRadius - 1, maxRadius + 1, theta,
-                     radius, xPolygon, yPolygon, "theta vs radius");
-            }
-            String filePath = plotter.writeFile();
-            int z = 1;
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.err.println(e.getMessage());
-        }
-        */  
-        
-        // edit theta in pointTRMap to only use angles between 0 and 180 to
-        // remove ambiguous edits made to theta360 or artifacts from the making
-        // of the gradient
-        for (Entry<PairInt, PairInt> entry : pointTRMap.entrySet()) {
-            PairInt tr = entry.getValue();
-            int t = tr.getY();
-            if (t > 179) {
-                tr.setY(t - 180);
-            }
-        }
-        
-        DFSConnectedHoughTransformGroupsFinder finder = 
-            new DFSConnectedHoughTransformGroupsFinder();
-        
-        finder.setMinimumNumberInCluster(1);
-        
-        int thetaTolerance = 10;
-        int radiusTolerance = 2;
-        int wrapAroundValue = 180;
-        
-        finder.findConnectedPointGroups(pointTRMap, thetaTolerance,
-            radiusTolerance, wrapAroundValue);
-        
-        Map<Set<PairInt>, PairInt> output = new HashMap<Set<PairInt>, PairInt>();
-        
-        for (int i = 0; i < finder.getNumberOfGroups(); ++i) {
-            
-            Set<PairInt> group = finder.getXY(i);
-            
-            if (group.size() < 2) {
-                continue;
-            }
-            
-            int averageTheta = 0;
-            int averageRadius = 0;
-            for (PairInt p : group) {
-                PairInt tr = pointTRMap.get(p);
-                averageTheta += tr.getX();
-                averageRadius += tr.getY();
-            }
-            averageTheta /= group.size();
-            averageRadius /= group.size();
-            
-            output.put(group, new PairInt(averageTheta, averageRadius));
-        }
-        
-        return output;
-    }
-    
-    /**
      * runtime complexity is O(N * lg_2(N)).
      * @param thetaRadiusPixMap
      * @return 
@@ -415,17 +283,6 @@ public class HoughTransform {
         }
         
         return outSortedKeys;
-    }
-    
-    public HoughTransformLines createPixTRMapsFromSorted(List<PairInt> sortedTRKeys,
-        Map<PairInt, Set<PairInt>> thetaRadiusPixMap, 
-        List<Set<PairInt>> outputSortedGroups) {
-        
-        int thetaTol = 2;
-        int radiusTol = 8;
-        
-        return createPixTRMapsFromSorted(sortedTRKeys, thetaRadiusPixMap, 
-            thetaTol, radiusTol);
     }
 
     /**
@@ -692,36 +549,5 @@ public class HoughTransform {
             return sortedLineGroups;
         }
     }
-    
-    /**
-     * runtime complexity is approx O(N_pix * lg_2(N_pix)).
-     * @param sortedTRKeys
-     * @param thetaRadiusPixMap
-     * @param thetaTol
-     * @param radiusTol
-     * @return 
-     */
-    public HoughTransformLines createPixTRMapsFromSorted(List<PairInt> sortedTRKeys,
-        Map<PairInt, Set<PairInt>> thetaRadiusPixMap, 
-        int thetaTol, int radiusTol) {
-        
-        // using a DFS visitor pattern and a tolerance for contiguous neighbor
-        // grouping to aggretate the (theta, radius) solutions of adjacent
-        // points
-        DFSSimilarThetaRadiusGroupsFinder groupFinder = new 
-            DFSSimilarThetaRadiusGroupsFinder();
-        
-        boolean allowGaps = true;
-        
-        // note that thetaRadiusPixMap is altered by this method
-        Map<PairInt, PairInt> pixToTRMap = groupFinder.findConnectedPointGroups(
-            sortedTRKeys, thetaRadiusPixMap, thetaTol, radiusTol, allowGaps);
-        
-        List<Set<PairInt>> sortedGroups = groupFinder.getSortedGroupsOfPoints();
-        
-        HoughTransformLines htl = new HoughTransformLines(pixToTRMap, sortedGroups);
-        
-        return htl;
-    }
-    
+   
 }

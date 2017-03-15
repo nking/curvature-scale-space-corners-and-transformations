@@ -1,11 +1,12 @@
 package algorithms.imageProcessing.matching;
 
 import algorithms.compGeometry.PerimeterFinder2;
-import algorithms.imageProcessing.DFSConnectedGroupsFinder;
+import algorithms.connected.ConnectedPointsFinder;
 import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.features.CorrespondenceList;
 import algorithms.imageProcessing.features.HCPT;
 import algorithms.imageProcessing.features.HGS;
@@ -255,7 +256,7 @@ public class MSERMatcher {
 
     private void debugPrint3(List<List<Obj>> list, GreyscaleImage img0, 
         GreyscaleImage img1, float scale0, float scale1, String lbl) {
-
+        
         for (int i = 0; i < list.size(); ++i) {
             
             List<Obj> objs = list.get(i);
@@ -295,7 +296,7 @@ public class MSERMatcher {
             }
         }
         
-        set0 = reduceToContiguous(set0);
+        set0 = reduceToContiguous(set0, gsI0.getWidth(), gsI0.getHeight());
         
         Set<PairInt> set1 = new HashSet<PairInt>();
         iter = obj.cr1.labels.iterator();
@@ -309,7 +310,7 @@ public class MSERMatcher {
             }
         }
         
-        set1 = reduceToContiguous(set1);
+        set1 = reduceToContiguous(set1, gsI1.getWidth(), gsI1.getHeight());
         
         PerimeterFinder2 finder = new PerimeterFinder2();
         PairIntArray p = finder.extractOrderedBorder(set0);
@@ -334,11 +335,16 @@ public class MSERMatcher {
         return out;        
     }
 
-    private Set<PairInt> reduceToContiguous(Set<PairInt> set) {
+    private Set<PairInt> reduceToContiguous(Set<PairInt> set, int width,
+        int height) {
         
-        DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
+        //TODO: convert user of this method to pixels indexes
+        ImageProcessor imageProcessor = new ImageProcessor();
+        TIntSet pixSet = imageProcessor.convertPointsToIndexes(set, width);
+        
+        ConnectedPointsFinder finder = new ConnectedPointsFinder(width, height);        
         finder.setMinimumNumberInCluster(1);
-        finder.findConnectedPointGroups(set);
+        finder.findConnectedPointGroups(pixSet);
         if (finder.getNumberOfGroups() == 1) {
             return new HashSet<PairInt>(set);
         }
@@ -352,7 +358,8 @@ public class MSERMatcher {
                 maxIdx = i;
             }
         }
-        return finder.getXY(maxIdx);
+        return imageProcessor.convertIndexesToPoints(
+            finder.getXY(maxIdx), width);
     }
 
     //double[]{intersectionSSD, f0, f1, count};

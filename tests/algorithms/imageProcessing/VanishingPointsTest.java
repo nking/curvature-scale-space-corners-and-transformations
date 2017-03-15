@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.features.mser.MSEREdges;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
@@ -7,6 +8,8 @@ import algorithms.util.QuadInt;
 import algorithms.util.ResourceFinder;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.TIntObjectMap;
+import gnu.trove.set.TIntSet;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -215,26 +218,21 @@ System.out.println("index i=" + i);
 
             img = imageProcessor.binImage(img, binFactor1);
 
-            CannyEdgeFilterAdaptiveDeltaE2000 canny =
-                new CannyEdgeFilterAdaptiveDeltaE2000();
-            //canny.overrideToUseAdaptiveThreshold();
-            //canny.setToDebug();
-            canny.applyFilter(img.copyToImageExt());
-            EdgeFilterProducts products = canny.getFilterProducts();        
+            MSEREdges mserEdges = new MSEREdges(img);
+            mserEdges.setToLowerContrast();
+            mserEdges.mergeAndExtractEdges();
+            List<TIntSet> pointSets = mserEdges.getLabeledSets();
+            List<Set<PairInt>> contigSets = new ArrayList<Set<PairInt>>(pointSets.size());
+            for (TIntSet set : pointSets) {
+                Set<PairInt> set2 = imageProcessor.convertIndexesToPoints(set, 
+                    img.getWidth());
+                contigSets.add(set2);
+            }
             
-            int[] labels4 = imageSegmentation.objectSegmentation(img, products);
-
+            EdgeFilterProducts products = mserEdges.getEdgeFilterProducts();       
+            
             ImageExt img11 = img.createWithDimensions();
-            ImageIOHelper.addAlternatingColorLabelsToRegion(
-                img11, labels4);
-            MiscDebug.writeImage(img11, "_final_" + fileName1Root);
-            //LabelToColorHelper.applyLabels(img, labels4);
-            //MiscDebug.writeImage(img, "_final_" + fileName1Root);
 
-            List<Set<PairInt>> contigSets = 
-                LabelToColorHelper.extractContiguousLabelPoints(
-                img, labels4);
-                
             VanishingPoints vp2 = new VanishingPoints();
             vp2.setToDebug();
             //vp2.dbgImg = img.copyImage();

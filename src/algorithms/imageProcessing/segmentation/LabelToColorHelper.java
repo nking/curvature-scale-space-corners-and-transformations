@@ -1,9 +1,10 @@
 package algorithms.imageProcessing.segmentation;
 
-import algorithms.imageProcessing.DFSConnectedGroupsFinder;
+import algorithms.connected.ConnectedPointsFinder;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
+import algorithms.imageProcessing.ImageProcessor;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
@@ -125,18 +126,28 @@ public class LabelToColorHelper {
     private static List<Set<PairInt>> extractContiguousLabelPoints(Image img, 
         TIntObjectMap<Set<PairInt>> lMap) {
         
+        //TODO: convert user of this method to pixels indexes
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
         List<Set<PairInt>> out = new ArrayList<Set<PairInt>>();
               
         TIntObjectIterator<Set<PairInt>> iter = lMap.iterator();
         for (int i = 0; i < lMap.size(); ++i) {
+            
             iter.advance();
+            
             Set<PairInt> set = iter.value();
-            DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
+            TIntSet pixSet = imageProcessor.convertPointsToIndexes(set, img.getWidth());
+            
+            ConnectedPointsFinder finder = new ConnectedPointsFinder(img.getWidth(), 
+                img.getHeight());
             // setting is for 4 neighbors
             finder.setMinimumNumberInCluster(1);
-            finder.findConnectedPointGroups(set);
+            finder.findConnectedPointGroups(pixSet);
             for (int j = 0; j < finder.getNumberOfGroups(); ++j) {
-                Set<PairInt> group = finder.getXY(j);
+                TIntSet pixGroup = finder.getXY(j);
+                Set<PairInt> group = imageProcessor.convertIndexesToPoints(pixSet, 
+                    img.getWidth());
                 out.add(group);
             }
         }

@@ -230,30 +230,6 @@ public class ObjectMatcher {
         }
     }
 
-    private TIntObjectMap<Set<PairInt>> segment(ImageExt img,
-        Set<PairInt> shape) {
-
-        ImageSegmentation imageSegmentation = new ImageSegmentation();
-
-        int[] labels = imageSegmentation.objectSegmentation(img);
-
-        TIntObjectMap<Set<PairInt>> labeledSets =
-            LabelToColorHelper.extractLabelPoints(img, labels);
-
-        for (int i = 0; i < labels.length; ++i) {
-            int x = img.getCol(i);
-            int y = img.getRow(i);
-
-            PairInt p = new PairInt(x, y);
-            if (!shape.contains(p)) {
-                int label = labels[i];
-                labeledSets.remove(label);
-            }
-        }
-
-        return labeledSets;
-    }
-
     private List<Region> combine(List<List<Region>> regions, int w, int h) {
 
         int[] xy = new int[2];

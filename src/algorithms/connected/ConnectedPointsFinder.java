@@ -93,7 +93,7 @@ public class ConnectedPointsFinder {
         
         findClustersIterative(pixIdxs);
         
-        prune();        
+        prune();      
     }
 
     protected void findClustersIterative(TIntSet pixIdxs) {
