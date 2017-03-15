@@ -83,9 +83,6 @@ public class LinearAlgebraTest extends TestCase {
         ..."if [an eigenvalue] is close to other eigenvalues, 
             its corresponding eigenvector zi may be inaccurate."
 
-          The results for this test suggest that a quick test of the
-          right and left products equality A*V and D*V should be
-          checked before the eigenvectors are used and returned.
         */
         
         DenseMatrix rightEigenVectors = evd.getRightEigenvectors();
@@ -129,7 +126,7 @@ public class LinearAlgebraTest extends TestCase {
         System.out.println("check0_right=\n" + check0_right);
         System.out.println("check1_right=\n" + check1_right);
 
-        Object[] vecAndValues = MatrixUtil.eigWithErrorFilter(m);
+        Object[] vecAndValues = MatrixUtil.eigenWithErrorFilter(m);
         assertNotNull(vecAndValues);
         DenseMatrix filteredVecs = (DenseMatrix) vecAndValues[0];
         TDoubleList filteredValues = (TDoubleList) vecAndValues[1];

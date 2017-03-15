@@ -150,7 +150,7 @@ public class MatrixUtil {
     
     /**
      * performs eigenvalue decomposition, checks the matrix products and returns
-     * those vectors that pass the product tests.
+     * those real vectors that pass the real product tests.
      * Also returns their eigenvalues.
      * new Object[]{rightEigenVector, eigenValues] as
      * DenseMatrix and TDoubleList.
@@ -158,7 +158,7 @@ public class MatrixUtil {
      * @param m
      * @return 
      */
-    public static Object[] eigWithErrorFilter(DenseMatrix m) {
+    public static Object[] eigenWithErrorFilter(DenseMatrix m) {
         
         EVD evd;
         try {
@@ -190,6 +190,12 @@ public class MatrixUtil {
         The right eigenvector v(j) of A satisfies
                           A * v(j) = lambda(j) * v(j)
          where lambda(j) is its eigenvalue.
+        
+        NOTE: to create a method which returns the imaginary portion of a
+        complex solution, the left check is:
+        The left eigenvector u(j) of A satisfies
+                       u(j)**H * A = lambda(j) * u(j)**H
+        where u(j)**H denotes the conjugate-transpose of u(j).
         */
         // A * V
         DenseMatrix check0_right = MatrixUtil.multiply(m, rightEigenVectors);
@@ -199,6 +205,7 @@ public class MatrixUtil {
         //System.out.println("check0_right=\n" + check0_right);
         //System.out.println("check1_right=\n" + check1_right);
 
+        // get columns of vectors passing product test
         TIntSet columns = check(check0_right, check1_right);
         
         // filter for unique eigen vectors and values
@@ -273,13 +280,6 @@ public class MatrixUtil {
             }
         }
         
-        DenseMatrix diff = MatrixUtil.subtract(m, n);
-        //System.out.println("diff=\n" + diff.toString());
-        if (diff.norm(Matrix.Norm.One) > 1000 * eps * mNorm) {
-            System.err.println("The norm of (X-Y) is too large: " + 
-                Double.toString(MatrixUtil.subtract(m, n)
-                        .norm(Matrix.Norm.Frobenius)));
-        }
         return columns;
     }
     
