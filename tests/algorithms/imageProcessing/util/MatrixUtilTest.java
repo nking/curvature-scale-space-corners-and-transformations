@@ -10,11 +10,11 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
+import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.MatrixEntry;
 import no.uib.cipr.matrix.sparse.FlexCompColMatrix;
 import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
 import static org.junit.Assert.*;
-import org.ejml.simple.*;
     
 /**
  *
@@ -47,8 +47,8 @@ public class MatrixUtilTest extends TestCase {
         1000*2 + 100*3 + 10*4    1000*1 +  100*0 + 10*0
         */
        
-        double[][] m = MatrixUtil.dot(new SimpleMatrix(m1), 
-            new SimpleMatrix(m2));
+        double[][] m = MatrixUtil.dot(new DenseMatrix(m1), 
+            new DenseMatrix(m2));
         
         assertTrue(m.length == 2);
         assertTrue(m[0].length == 2);
@@ -240,7 +240,7 @@ public class MatrixUtilTest extends TestCase {
     
     public void testScaleToUnitVariance() throws Exception {
         
-        SimpleMatrix[] dataAndClasses = readIrisDataset();
+        DenseMatrix[] dataAndClasses = readIrisDataset();
         
         double v0 = dataAndClasses[0].get(0, 0);
         double v1 = dataAndClasses[0].get(1, 0);
@@ -252,7 +252,7 @@ public class MatrixUtilTest extends TestCase {
         assertTrue(Math.abs(v2 - expected[2]) <  0.05*Math.abs(expected[2]));
         assertTrue(Math.abs(v3 - expected[3]) <  0.05*Math.abs(expected[3]));
         
-        SimpleMatrix normData = MatrixUtil.scaleToUnitStandardDeviation(
+        DenseMatrix normData = MatrixUtil.scaleToUnitStandardDeviation(
             dataAndClasses[0]);
         
         /*
@@ -276,7 +276,7 @@ public class MatrixUtilTest extends TestCase {
         // assert mean = 0
         // assert var = 1
         
-        int n = normData.numCols();
+        int n = normData.numColumns();
         int nRows = normData.numRows();
                 
         double[] mean = new double[nRows];
@@ -306,14 +306,14 @@ public class MatrixUtilTest extends TestCase {
     
     public void testCreateLDATrasformation() throws Exception {
         
-        SimpleMatrix[] dataAndClasses = readIrisDataset();
-        SimpleMatrix classes = dataAndClasses[1].copy();
+        DenseMatrix[] dataAndClasses = readIrisDataset();
+        DenseMatrix classes = dataAndClasses[1].copy();
         
-        SimpleMatrix w = MatrixUtil.createLDATransformation(dataAndClasses[0], 
+        DenseMatrix w = MatrixUtil.createLDATransformation(dataAndClasses[0], 
             dataAndClasses[1]);
         
         assertEquals(2, w.numRows());
-        assertEquals(4, w.numCols());
+        assertEquals(4, w.numColumns());
         
         assertTrue(Math.abs(w.get(0, 0) - 0.15) < 0.01);
         assertTrue(Math.abs(w.get(0, 1) - 0.148) < 0.01);
@@ -326,16 +326,16 @@ public class MatrixUtilTest extends TestCase {
         assertTrue(Math.abs(w.get(1, 3) - 0.750) < 0.01);
         
         
-        SimpleMatrix normData = MatrixUtil.scaleToUnitStandardDeviation(dataAndClasses[0]);
+        DenseMatrix normData = MatrixUtil.scaleToUnitStandardDeviation(dataAndClasses[0]);
                                
         // transforms from integer classes to zero based counting with delta of 1
         // for example:  [1, 2, 5, ...] becomes [0, 1, 2, ...]
         int nClasses = MatrixUtil.transformToZeroBasedClasses(classes);
         
-        SimpleMatrix w2 = MatrixUtil.createLDATransformation2(normData, classes, nClasses);
+        DenseMatrix w2 = MatrixUtil.createLDATransformation2(normData, classes, nClasses);
         
         assertEquals(2, w2.numRows());
-        assertEquals(4, w2.numCols());
+        assertEquals(4, w2.numColumns());
         
         assertTrue(Math.abs(w2.get(0, 0) - 0.15) < 0.01);
         assertTrue(Math.abs(w2.get(0, 1) - 0.148) < 0.01);
@@ -349,18 +349,18 @@ public class MatrixUtilTest extends TestCase {
         
         
         int nr = w2.numRows();
-        int nc = w2.numCols();
+        int nc = w2.numColumns();
         int nr2 = normData.numRows();
-        int nc2 = normData.numCols();        
+        int nc2 = normData.numColumns();        
         // 2 X 150
-        SimpleMatrix dataTransformed = new SimpleMatrix(MatrixUtil.dot(w, normData));
+        DenseMatrix dataTransformed = new DenseMatrix(MatrixUtil.dot(w, normData));
         
         float minX = Float.MAX_VALUE;
         float maxX = Float.MIN_VALUE;
         float minY = Float.MAX_VALUE;
         float maxY = Float.MIN_VALUE;
         int[] countClasses = new int[nClasses];
-        for (int col = 0; col < dataTransformed.numCols(); ++col) {
+        for (int col = 0; col < dataTransformed.numColumns(); ++col) {
             int k = (int)Math.round(classes.get(0, col));
             countClasses[k]++;
             float x = (float)dataTransformed.get(0, col);
@@ -386,7 +386,7 @@ public class MatrixUtilTest extends TestCase {
             float[] xPoint = new float[countClasses[k]];
             float[] yPoint = new float[countClasses[k]];
             int count = 0;
-            for (int col = 0; col < dataTransformed.numCols(); ++col) {
+            for (int col = 0; col < dataTransformed.numColumns(); ++col) {
                 if ((int)Math.round(classes.get(0, col)) != k) {
                     continue;
                 }
@@ -420,9 +420,9 @@ public class MatrixUtilTest extends TestCase {
         assertTrue(Math.abs(dataTransformed.get(1, 2) - -0.084) < 0.01);
 
         // --- to make a transformation usable on features not normalized:
-        SimpleMatrix w3 = MatrixUtil.createLDATransformation(
+        DenseMatrix w3 = MatrixUtil.createLDATransformation(
             dataAndClasses[0], dataAndClasses[1]);
-        SimpleMatrix dataTransformed3 = new SimpleMatrix(MatrixUtil.dot(w3, 
+        DenseMatrix dataTransformed3 = new DenseMatrix(MatrixUtil.dot(w3, 
             dataAndClasses[0]));
         
         minX = Float.MAX_VALUE;
@@ -430,7 +430,7 @@ public class MatrixUtilTest extends TestCase {
         minY = Float.MAX_VALUE;
         maxY = Float.MIN_VALUE;
         countClasses = new int[nClasses];
-        for (int col = 0; col < dataTransformed3.numCols(); ++col) {
+        for (int col = 0; col < dataTransformed3.numColumns(); ++col) {
             int k = (int)Math.round(classes.get(0, col));
             countClasses[k]++;
             float x = (float)dataTransformed3.get(0, col);
@@ -456,7 +456,7 @@ public class MatrixUtilTest extends TestCase {
             float[] xPoint = new float[countClasses[k]];
             float[] yPoint = new float[countClasses[k]];
             int count = 0;
-            for (int col = 0; col < dataTransformed3.numCols(); ++col) {
+            for (int col = 0; col < dataTransformed3.numColumns(); ++col) {
                 if ((int)Math.round(classes.get(0, col)) != k) {
                     continue;
                 }
@@ -629,10 +629,10 @@ public class MatrixUtilTest extends TestCase {
     
     public void testCreatePCATrasformation() throws Exception {
         
-        SimpleMatrix[] dataAndClasses = readHalfMoonDataset();
-        SimpleMatrix classes = dataAndClasses[1].copy();
+        DenseMatrix[] dataAndClasses = readHalfMoonDataset();
+        DenseMatrix classes = dataAndClasses[1].copy();
         
-        SimpleMatrix w = MatrixUtil.createRBFKernelPCATransformation2(
+        DenseMatrix w = MatrixUtil.createRBFKernelPCATransformation2(
             dataAndClasses[0]);
         
         float minX = Float.MAX_VALUE;
@@ -640,7 +640,7 @@ public class MatrixUtilTest extends TestCase {
         float minY = Float.MAX_VALUE;
         float maxY = Float.MIN_VALUE;
         
-        int n = w.numCols();
+        int n = w.numColumns();
         
         float[] xPoint = new float[n];
         float[] yPoint = new float[n];
@@ -682,8 +682,8 @@ public class MatrixUtilTest extends TestCase {
         need to redo tests and revisit the code
         */
         
-        SimpleMatrix[] dataAndClasses = readSegmentationDataset();
-        SimpleMatrix classes = dataAndClasses[1].copy();
+        DenseMatrix[] dataAndClasses = readSegmentationDataset();
+        DenseMatrix classes = dataAndClasses[1].copy();
         
         int nClasses = 2;
               
@@ -694,12 +694,12 @@ public class MatrixUtilTest extends TestCase {
         int[] countClasses = new int[nClasses];
         
         // --- to make a transformation usable on features not normalized:
-        SimpleMatrix w3 = MatrixUtil.createLDATransformation(
+        DenseMatrix w3 = MatrixUtil.createLDATransformation(
             dataAndClasses[0], dataAndClasses[1]);
-        SimpleMatrix dataTransformed3 = new SimpleMatrix(MatrixUtil.dot(w3, 
+        DenseMatrix dataTransformed3 = new DenseMatrix(MatrixUtil.dot(w3, 
             dataAndClasses[0]));
         
-        for (int col = 0; col < dataTransformed3.numCols(); ++col) {
+        for (int col = 0; col < dataTransformed3.numColumns(); ++col) {
             int k = (int)Math.round(classes.get(0, col));
             countClasses[k]++;
             float x = (float)dataTransformed3.get(0, col);
@@ -725,7 +725,7 @@ public class MatrixUtilTest extends TestCase {
             float[] xPoint = new float[countClasses[k]];
             float[] yPoint = new float[countClasses[k]];
             int count = 0;
-            for (int col = 0; col < dataTransformed3.numCols(); ++col) {
+            for (int col = 0; col < dataTransformed3.numColumns(); ++col) {
                 if ((int)Math.round(classes.get(0, col)) != k) {
                     continue;
                 }
@@ -744,7 +744,7 @@ public class MatrixUtilTest extends TestCase {
         int z = 1;
     }
     
-    private SimpleMatrix[] readSegmentationDataset() throws Exception {
+    private DenseMatrix[] readSegmentationDataset() throws Exception {
         
         BufferedReader bReader = null;
         FileReader reader = null;
@@ -756,8 +756,8 @@ public class MatrixUtilTest extends TestCase {
             
             bReader = new BufferedReader(reader);
             
-            SimpleMatrix data = new SimpleMatrix(4, 28);
-            SimpleMatrix classes = new SimpleMatrix(1, 28);
+            DenseMatrix data = new DenseMatrix(4, 28);
+            DenseMatrix classes = new DenseMatrix(1, 28);
             
             String line = bReader.readLine();
             line = bReader.readLine();
@@ -789,7 +789,7 @@ public class MatrixUtilTest extends TestCase {
                 count++;
             }
             
-            return new SimpleMatrix[]{data, classes};
+            return new DenseMatrix[]{data, classes};
             
         } catch (IOException e) {
             log.severe(e.getMessage());
@@ -805,7 +805,7 @@ public class MatrixUtilTest extends TestCase {
         return null;
     }
     
-    private SimpleMatrix[] readIrisDataset() throws Exception {
+    private DenseMatrix[] readIrisDataset() throws Exception {
         
         BufferedReader bReader = null;
         FileReader reader = null;
@@ -817,8 +817,8 @@ public class MatrixUtilTest extends TestCase {
             
             bReader = new BufferedReader(reader);
             
-            SimpleMatrix data = new SimpleMatrix(4, 150);
-            SimpleMatrix classes = new SimpleMatrix(1, 150);
+            DenseMatrix data = new DenseMatrix(4, 150);
+            DenseMatrix classes = new DenseMatrix(1, 150);
             
             String line = bReader.readLine();
             
@@ -850,7 +850,7 @@ public class MatrixUtilTest extends TestCase {
                 count++;
             }
             
-            return new SimpleMatrix[]{data, classes};
+            return new DenseMatrix[]{data, classes};
             
         } catch (IOException e) {
             log.severe(e.getMessage());
@@ -866,10 +866,10 @@ public class MatrixUtilTest extends TestCase {
         return null;
     }
     
-    private SimpleMatrix[] readHalfMoonDataset() throws Exception {
+    private DenseMatrix[] readHalfMoonDataset() throws Exception {
         
-        SimpleMatrix data = new SimpleMatrix(2, 100);
-        SimpleMatrix classes = new SimpleMatrix(1, 100);
+        DenseMatrix data = new DenseMatrix(2, 100);
+        DenseMatrix classes = new DenseMatrix(1, 100);
         
         data.set( 0 , 0 , 0.871318704123 );
         data.set( 1 , 0 , 0.490717552004 );
@@ -1172,6 +1172,6 @@ public class MatrixUtilTest extends TestCase {
         classes.set( 0 , 97 , 0 );
         classes.set( 0 , 98 , 1 );
         classes.set( 0 , 99 , 1 );
-        return new SimpleMatrix[]{data, classes};
+        return new DenseMatrix[]{data, classes};
     }
 }

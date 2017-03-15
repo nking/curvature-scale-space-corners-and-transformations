@@ -7,8 +7,8 @@ import algorithms.imageProcessing.segmentation.SLICSuperPixels;
 import algorithms.util.ResourceFinder;
 import java.io.IOException;
 import junit.framework.TestCase;
+import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
-import org.ejml.simple.SimpleMatrix;
 
 /**
  *
@@ -17,67 +17,6 @@ import org.ejml.simple.SimpleMatrix;
 public class RegionAdjacencyGraphColorTest extends TestCase {
     
     public RegionAdjacencyGraphColorTest() {
-    }
-    
-    public void estEig() throws Exception {
-        
-        /*
-        no.uib.cipr.matrix
-        */
-        
-        /*
-        looking at LA4J tests for eidgen decomposition and
-        comparing results to EJML to see how to extract the vectors and
-        values
-        */
-        double[][] input = new double[][]{
-                {16.0, -11.0, 99.0},
-                {7.0, -2.0, -42.0},
-                {8.0, -1.0, -7.0}
-        };
-        double[][] inputCp = new double[][]{
-                {16.0, -11.0, 99.0},
-                {7.0, -2.0, -42.0},
-                {8.0, -1.0, -7.0}
-        };
-        double[][][] output = new double[][][]{
-                {
-                        {0.982, 0.644, -0.353},
-                        {-0.026, -0.896, -2.320},
-                        {0.187, -0.359, -0.186}
-                },
-                {
-                        {35.149, 0.0, 0.0},
-                        {0.0, -23.856, 0.0},
-                        {0.0, 0.0, -4.293}
-                }
-        };
-        
-        SimpleMatrix ejmlM = new SimpleMatrix(input);
-        org.ejml.interfaces.decomposition.EigenDecomposition ejmlEVD = ejmlM.eig().getEVD();
-        for (int i = 0; i < ejmlEVD.getNumberOfEigenvalues(); ++i) {
-            System.out.println("EJML eigenvector i=" + i + " " + 
-                ejmlEVD.getEigenVector(i));
-        }
-        for (int i = 0; i < ejmlEVD.getNumberOfEigenvalues(); ++i) {
-            System.out.println("EJML eigenvalue i=" + i + " " + 
-                ejmlEVD.getEigenvalue(i));
-        }
-        
-         /*
-        double[][][] output = new double[][][]{
-                {
-                        {0.982, 0.644, -0.353},
-                        {-0.026, -0.896, -2.320},
-                        {0.187, -0.359, -0.186}
-                },
-                {
-                        {35.149, 0.0, 0.0},
-                        {0.0, -23.856, 0.0},
-                        {0.0, 0.0, -4.293}
-                }
-        };
-        */       
     }
     
     public void testLinAlg() throws IOException, Exception {

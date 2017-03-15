@@ -500,10 +500,6 @@
         <mkdir dir="${classes.dir}/tmp" />
         <unjar src="${lib.dir}/com.climbwithyourfeet.clustering.jar" dest="${classes.dir}/tmp"/>
         <move file="${classes.dir}/tmp/LICENSE.txt" tofile="${classes.dir}/tmp/Clustering_LICENSE.txt"/>
-        <unjar src="${lib.dir}/ejml-0.29.jar" dest="${classes.dir}/tmp"/>
-        <unjar src="${lib.dir}/LAML-1.6.2.jar" dest="${classes.dir}/tmp"/>
-        <unjar src="${lib.dir}/jfreechart-1.0.19.jar" dest="${classes.dir}/tmp"/>
-        <unjar src="${lib.dir}/jcommon-1.0.23.jar" dest="${classes.dir}/tmp"/>
         <unjar src="${lib.dir}/trove4j-3.0.3.jar" dest="${classes.dir}/tmp"/>
         
         <!-- jfree needs the servlet jar -->
@@ -514,10 +510,7 @@
             <fileset dir="${resources.dir}" includes="*.html"/>
             <fileset dir="${basedir}" includes="LICENSE.txt"/>
             <fileset dir="${basedir}" includes="README.txt"/>
-            <fileset dir="${lib.dir}" includes="EJML_LICENSE.txt"/>
-            <fileset dir="${lib.dir}" includes="LAML_LICENSE.txt"/>
             <fileset dir="${lib.dir}" includes="TROVE4J_LICENSE.txt"/>
-            <fileset dir="${lib.dir}" includes="JFREECHART_LICENSE.txt"/>
             <fileset dir="${classes.dir}/tmp" includes="**"/>
         </jar>
         

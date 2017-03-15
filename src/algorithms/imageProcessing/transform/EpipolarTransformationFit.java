@@ -2,7 +2,7 @@ package algorithms.imageProcessing.transform;
 
 import algorithms.imageProcessing.matching.ErrorType;
 import java.util.List;
-import org.ejml.simple.SimpleMatrix;
+import no.uib.cipr.matrix.DenseMatrix;
 
 /**
  *
@@ -12,12 +12,12 @@ public class EpipolarTransformationFit extends AbstractTransformationFit {
     
     private final ErrorType errorType;
     
-    private SimpleMatrix fundamentalMatrix;
+    private DenseMatrix fundamentalMatrix;
 
     private float effectiveTolerance = -1;
     private float effectiveToleranceStdv = -1;
     
-    public EpipolarTransformationFit(SimpleMatrix theFundamentalMatrix,
+    public EpipolarTransformationFit(DenseMatrix theFundamentalMatrix,
         List<Integer> theInlierIndexes, ErrorType theErrorType,
         List<Double> theErrors, double theTolerance) {
         
@@ -56,7 +56,7 @@ public class EpipolarTransformationFit extends AbstractTransformationFit {
         this.effectiveToleranceStdv = effectiveTolStdev;
     }
     
-    public SimpleMatrix getFundamentalMatrix() {
+    public DenseMatrix getFundamentalMatrix() {
         return fundamentalMatrix;
     }
 
@@ -67,7 +67,7 @@ public class EpipolarTransformationFit extends AbstractTransformationFit {
         return errorType;
     }
     
-    public void setFundamentalMatrix(SimpleMatrix theFM) {
+    public void setFundamentalMatrix(DenseMatrix theFM) {
         fundamentalMatrix = theFM;
     }
 

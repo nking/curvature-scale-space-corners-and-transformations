@@ -1,8 +1,9 @@
 package algorithms.imageProcessing.util;
 
-import algorithms.MultiArrayMergeSort;
 import algorithms.misc.Complex;
 import algorithms.util.PairInt;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -15,11 +16,11 @@ import java.util.Set;
 import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.Matrix;
 import no.uib.cipr.matrix.MatrixEntry;
+import no.uib.cipr.matrix.SVD;
 import no.uib.cipr.matrix.VectorEntry;
 import no.uib.cipr.matrix.sparse.FlexCompColMatrix;
 import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
 import no.uib.cipr.matrix.sparse.SparseVector;
-import org.ejml.simple.*;
 
 /**
  *
@@ -94,6 +95,31 @@ public class MatrixUtil {
         }
 
         return c;
+    }
+    
+    public static DenseMatrix subtract(DenseMatrix m, DenseMatrix n) {
+
+        if (m == null) {
+            throw new IllegalArgumentException("m cannot be null or empty");
+        }
+        if (n == null) {
+            throw new IllegalArgumentException("n cannot be null or empty");
+        }
+        if (m.numRows() != n.numRows() || m.numColumns() != n.numColumns()) {
+            throw new IllegalArgumentException("m and n must be same length");
+        }
+        
+        DenseMatrix output = new DenseMatrix(m.numRows(), m.numColumns());
+        
+        for (int i = 0; i < m.numRows(); ++i) {
+            for (int j = 0; j < m.numColumns(); ++j) {
+                double v0 = m.get(i, j);
+                double v1 = n.get(i, j);
+                output.set(i, j, v0 + v1);
+            }
+        }
+        
+        return output;
     }
     
     public static void add(int[] m, int n) {
@@ -281,8 +307,8 @@ public class MatrixUtil {
         return c;
     }
     
-    public static no.uib.cipr.matrix.DenseMatrix multiply(
-        no.uib.cipr.matrix.Matrix m, no.uib.cipr.matrix.Matrix n) {
+    public static DenseMatrix multiply(
+        Matrix m, Matrix n) {
 
         if (m == null || m.numRows() == 0 || m.numColumns() == 0) {
             throw new IllegalArgumentException("m cannot be null or empty");
@@ -672,8 +698,8 @@ public class MatrixUtil {
         return c;
     }
     
-    public static double[][] convertToRowMajor(SimpleMatrix a) {
-        int nc = a.numCols();
+    public static double[][] convertToRowMajor(DenseMatrix a) {
+        int nc = a.numColumns();
         int nr = a.numRows();
         double[][] out = new double[nr][];
         for (int i = 0; i < nr; ++i) {
@@ -685,7 +711,7 @@ public class MatrixUtil {
         return out;
     }
     
-    public static double[][] dot(SimpleMatrix m1, SimpleMatrix m2) {
+    public static double[][] dot(DenseMatrix m1, DenseMatrix m2) {
         
         if (m1 == null) {
             throw new IllegalArgumentException("m1 cannot be null");
@@ -693,10 +719,10 @@ public class MatrixUtil {
         if (m2 == null) {
             throw new IllegalArgumentException("m2 cannot be null");
         }
-        int cCols = m2.numCols();
+        int cCols = m2.numColumns();
         int cRows = m1.numRows();
         
-        if (m1.numCols() != m2.numRows()) {
+        if (m1.numColumns() != m2.numRows()) {
             throw new IllegalArgumentException(
                 "the number of columns in m1 != number of rows in m2");
         }
@@ -718,9 +744,9 @@ public class MatrixUtil {
         row=0, col=0:nCols0  times and plus col=(cAdd=1), row=0:nRows1 --> stored in row, row + (cAdd=0)
         */
         
-        for (int colAdd = 0; colAdd < m2.numCols(); colAdd++) {
+        for (int colAdd = 0; colAdd < m2.numColumns(); colAdd++) {
             for (int row = 0; row < m1.numRows(); ++row) {
-                for (int col = 0; col < m1.numCols(); col++) {
+                for (int col = 0; col < m1.numColumns(); col++) {
                     double a = m1.get(row, col);
                     double b = m2.get(col, colAdd);
                     m[row][colAdd] += (a * b);
@@ -730,7 +756,7 @@ public class MatrixUtil {
 
         return m;
     }
-    
+        
     /**
      * apply dot operator to m1 and m2 which are formatted using same as 
      * SimpleMatrix, that is [row][col].
@@ -906,297 +932,6 @@ public class MatrixUtil {
         return c;
     }
     
-    /**
-     * find best separation of classes given the data and return the
-     * transformation.
-     * adapted from http://sebastianraschka.com/Articles/2014_python_lda.html
-     * 
-     * To apply the results to a data matrix, use y = W^T * X where W is
-     * the returned matrix (i.e., MatrixUtil.dot(w, data))
-     * Note, X internally has been scaled to unit standard deviation.
-     * @param data
-     * @param classes
-     * @return 
-     */
-    public static SimpleMatrix createLDATransformation(SimpleMatrix data,
-        SimpleMatrix classes) {
-        
-        int n = data.numCols();
-        
-        if (classes.numCols() != n) {
-            throw new IllegalArgumentException(
-                "data and classes must have some number of data columns");
-        }
-                
-        SimpleMatrix normData = scaleToUnitStandardDeviation(data);
-       
-        int nRows = normData.numRows();
-        
-        assert(nRows == data.numRows());
-        
-        // transforms from integer classes to zero based counting with delta of 1
-        // for example:  [1, 2, 5, ...] becomes [0, 1, 2, ...]
-        int nClasses = transformToZeroBasedClasses(classes);
-        
-        return createLDATransformation2(normData, classes, nClasses);
-    }
-    
-    
-    /**
-     * find best separation of classes given the scaled data and zero 
-     * based classes return the transformation.
-     * adapted from http://sebastianraschka.com/Articles/2014_python_lda.html
-     * 
-     * To apply the results to a data matrix, use y = W^T * X where W is
-     * the returned matrix (i.e., MatrixUtil.dot(w, normData))
-     * @param normData  data scaled to mean of 0 and a standard deviation of 1
-     * @param classes zero based transformed classes
-     * @return 
-     */
-    @SuppressWarnings({"rawtypes"})
-    public static SimpleMatrix createLDATransformation2(SimpleMatrix normData,
-        SimpleMatrix classes, int nClasses) {
-        
-        // number of data of feature sets
-        int n = normData.numCols();
-        
-        if (classes.numCols() != n) {
-            throw new IllegalArgumentException(
-                "data and classes must have some number of data columns");
-        }
-        
-        //Logger log = Logger.getLogger(MatrixUtil.class.getName());
-               
-        // number of features:
-        int nRows = normData.numRows();
-                        
-        double[][] mean = new double[nClasses][nRows];
-        int[][] count = new int[nClasses][nRows];
-        for (int k = 0; k < nClasses; ++k) {
-            mean[k] = new double[nRows];
-            count[k] = new int[nRows];
-        }
-        for (int i = 0; i < n; ++i) {
-            int k = (int)Math.round(classes.get(0, i));
-            for (int j = 0; j < nRows; ++j) {
-                mean[k][j] += normData.get(j, i);
-                count[k][j]++;
-            }
-        }
-        
-        for (int k = 0; k < nClasses; ++k) {
-            for (int j = 0; j < nRows; ++j) {
-                mean[k][j] /= (double)count[k][j];
-            }
-            //log.info(String.format("mean vector class %d = %s", k, 
-            //    Arrays.toString(mean[k])));
-        }
-        
-        // ----- calculate the scatter within each class --------
-        double[][] scatWithinClass = new double[nRows][nRows];
-        for (int j = 0; j < nRows; ++j) {
-            scatWithinClass[j] = new double[nRows];
-        }
-            
-        for (int k = 0; k < nClasses; ++k) {
-            
-            double[][] scatWithinClassPerClass = new double[nRows][nRows];
-            for (int j = 0; j < nRows; ++j) {
-                scatWithinClassPerClass[j] = new double[nRows];
-            }
-             
-            for (int i = 0; i < n; ++i) {
-                if (((int)Math.round(classes.get(0, i))) != k) {
-                    continue;
-                }
-                double[] diff = new double[nRows];
-                for (int j = 0; j < nRows; ++j) {
-                    diff[j] = normData.get(j, i) - mean[k][j];
-                }
-                // calc (row-mv).dot((row-mv).T)
-                double[][] dTdotD = arrayTransposeDotArray(diff);
-                
-                // add to scatWithinClassPerClass
-                for (int j = 0; j < nRows; ++j) {
-                    for (int jj = 0; jj < nRows; ++jj) {
-                        scatWithinClassPerClass[j][jj] += dTdotD[j][jj];
-                    }
-                    //System.out.println(Arrays.toString(scatWithinClassPerClass[j]));
-                }
-            }
-            
-            // add scatWithinClassPerClass to scatWithinClass
-            for (int j = 0; j < nRows; ++j) {
-                for (int jj = 0; jj < nRows; ++jj) {
-                    scatWithinClass[j][jj] += scatWithinClassPerClass[j][jj];
-                }
-                //System.out.println(Arrays.toString(scatWithinClass[j]));
-            }
-        }
-        
-        double[] overallMean = new double[nRows];
-        for (int k = 0; k < nClasses; ++k) {
-            for (int j = 0; j < nRows; ++j) {
-                overallMean[j] += mean[k][j];
-            }
-        }
-        for (int j = 0; j < nRows; ++j) {
-            overallMean[j] /= (double)nClasses;
-        }
-        
-        // ------- calculate the between class scatter matrix -------
-        double[][] scatBetweenClass = new double[nRows][nRows];
-        for (int j = 0; j < nRows; ++j) {
-            scatBetweenClass[j] = new double[nRows];
-        }
-        
-        // mean is length nClasses by nRows
-        // overall_mean is length nRows
-        
-        double[] diff = new double[nRows];
-        
-        for (int k = 0; k < nClasses; ++k) {
-            
-            int countN = 0;
-            Arrays.fill(diff, 0);
-            for (int j = 0; j < nRows; ++j) {                                
-                diff[j] = mean[k][j] - overallMean[j];
-                countN += count[k][j];
-            }
-                       
-            // calc (mean_vec - overall_mean).dot((mean_vec - overall_mean).T)
-            double[][] dTdotD = arrayTransposeDotArray(diff);
-            
-            //S_B += n * (mean_vec - overall_mean).dot((mean_vec - overall_mean).T)
-            // add to scatBetweenClass
-            for (int j = 0; j < nRows; ++j) {
-                for (int jj = 0; jj < nRows; ++jj) {
-                    scatBetweenClass[j][jj] += (countN * dTdotD[j][jj]);
-                }
-                //System.out.println(Arrays.toString(scatBetweenClass[j]));
-            }
-        }
-        
-        //for (int j = 0; j < nRows; ++j) {
-        //    System.out.println(Arrays.toString(scatBetweenClass[j]));
-        //}
-        
-        // --- solve for the generalized eigenvalue, S_W^-1 * S_B ----
-        SimpleMatrix sw = new SimpleMatrix(scatWithinClass);
-        SimpleMatrix sb = new SimpleMatrix(scatBetweenClass);
-        
-        double[][] invSWDotSB = dot(sw.invert(), sb);
-        SimpleMatrix m = new SimpleMatrix(invSWDotSB);
-        SimpleEVD evd = m.eig();
-        
-        int nEigen = evd.getNumberOfEigenvalues();
-        
-        int[] indexes = new int[nEigen];
-        double[] eigenValues = new double[nEigen];
-        double[][] eigenVectors = new double[nEigen][nRows];
-        for (int i = 0; i < nEigen; ++i) {
-            indexes[i] = i;
-            eigenValues[i] = evd.getEigenvalue(i).getMagnitude();
-            SimpleMatrix ev = evd.getEigenVector(i);
-            // seems to be an NPE here occasionally
-            try {
-                int nr = ev.numRows();
-                eigenVectors[i] = new double[nr];
-                for (int j = 0; j < ev.numRows(); ++j) {
-                    eigenVectors[i][j] = ev.get(j, 0);
-                }
-                //log.info("eigenvalue " + i + " = " + evd.getEigenvalue(i));
-                //log.info("eigenvector=" + evd.getEigenVector(i));
-            } catch (NullPointerException npe) {
-                eigenValues[i] = Double.MIN_VALUE;
-                eigenVectors[i] = new double[nRows];
-            }
-        }
-        
-        // ----- sort by decreasing eigen value -----
-        MultiArrayMergeSort.sortByDecr(eigenValues, indexes);
-        
-        SimpleMatrix w = new SimpleMatrix(2, nRows);
-        for (int i = 0; i < 2; ++i) {
-            int index = indexes[i];
-            double[] eV = eigenVectors[index];
-            for (int col = 0; col < eV.length; ++col) {
-                w.set(i, col, eV[col]);
-            }
-        }
-        
-        //log.info("w=" + w);
-        
-        return w;
-    }
-    
-    @SuppressWarnings({"rawtypes"})
-    private static EigenValuesAndVectors stepwiseKPCA(double[][] distsq, double gamma, 
-        int nComponents) {
-        
-        double[][] k = copy(distsq);
-        
-        int n = k.length;
-        
-        for (int i = 0; i < n; ++i) {
-            for (int j = 0; j < k[i].length; ++j) {
-                k[i][j] = Math.exp(-gamma * k[i][j]);
-            }
-        }
-        
-        double[][] oneN = new double[n][];
-        double[][] kNorm = new double[n][];
-        double v = 1./(double)n;
-        for (int i = 0; i < n; ++i) {
-            kNorm[i] = new double[n];
-            oneN[i] = new double[n];
-            Arrays.fill(oneN[i], v);
-        }
-        
-        //K_norm = K - one_n.dot(K) - K.dot(one_n) + one_n.dot(K).dot(one_n)
-        
-        double[][] t1 = dot(oneN, k);
-        double[][] t2 = dot(k, oneN);
-        double[][] t3 = dot(t1, oneN);
-
-        for (int i = 0; i < n; ++i) {
-            for (int j = 0; j < k[i].length; ++j) {
-                kNorm[i][j] = k[i][j] - t1[i][j] - t2[i][j] + t3[i][j];
-            }
-        }
-        
-        SimpleEVD evd = new SimpleMatrix(kNorm).eig();
-        
-        int nEigen = evd.getNumberOfEigenvalues();
-        
-        int[] indexes = new int[nEigen];
-        double[] eigenValues = new double[nEigen];
-        double[][] eigenVectors = new double[nEigen][2];
-        for (int i = 0; i < nEigen; ++i) {
-            eigenValues[i] = evd.getEigenvalue(i).getMagnitude();
-            SimpleMatrix ev = evd.getEigenVector(i);
-            eigenVectors[i] = new double[ev.numRows()];
-            for (int j = 0; j < ev.numRows(); ++j) {
-                eigenVectors[i][j] = ev.get(j, 0);
-            }
-            indexes[i] = i;
-            //log.info("eigenvalue " + i + " = " + evd.getEigenvalue(i));
-            //log.info("eigenvector=" + evd.getEigenVector(i));
-        }
-        
-        // ----- sort by decreasing eigen value -----
-        MultiArrayMergeSort.sortByDecr(eigenValues, indexes);
-        
-        EigenValuesAndVectors eev = new EigenValuesAndVectors(nComponents);
-        
-        for (int i = 0; i < nComponents; ++i) {
-            int index = indexes[i];
-            double[] eV = eigenVectors[index];
-            eev.setEigenValueAndVector(i, eigenValues[index], eV);
-        }
-        
-        return eev;
-    }
 
     public static double[] multiply(Matrix a, double[] b) {
         
@@ -1238,6 +973,32 @@ public class MatrixUtil {
         return c;
     }
     
+    public static void multiply(Matrix a, double b) {
+        
+        if (a == null || a.numRows() == 0) {
+            throw new IllegalArgumentException("m cannot be null or empty");
+        }
+        
+        Iterator<MatrixEntry> iter = a.iterator();
+        while (iter.hasNext()) {
+            MatrixEntry entry = iter.next();
+            entry.set(entry.get() * b);
+        }
+        
+    }
+
+    public static double trace(double[][] d) {
+        
+        double sum = 0;
+        
+        int n = Math.min(d.length, d[0].length);
+        for (int i = 0; i < n; ++i) {
+            sum += d[i][i];
+        }
+        
+        return sum;
+    }
+    
     public static class EigenValuesAndVectors {
         private final double[] eigenValues;
         private final double[][] eigenVectors;
@@ -1274,179 +1035,6 @@ public class MatrixUtil {
         }
         
         return m;
-    }
-    
-    /**
-     * perform kernal pca upon given data using a gaussian radial basis
-     * kernel to find the best transformation that leads to 
-     * transformed points which maximize the variance along the new axes.
-     * To apply the results to a data matrix, use y = W^T * X where W is
-     * the returned matrix (i.e., MatrixUtil.dot(w, normData))
-     * Note, X internally has been scaled to unit standard deviation.
-     * 
-     * adapted from
-     * http://sebastianraschka.com/Articles/2014_kernel_pca.html
-     
-     * @param data
-     */
-    public static SimpleMatrix createRBFKernelPCATransformation(SimpleMatrix data) {
-        
-        int n = data.numCols();
-        int nRows = data.numRows();
-        
-        if (nRows != 2) {
-            throw new IllegalArgumentException("data.nRows must be 2");
-        }
-        
-        SimpleMatrix normData = scaleToUnitStandardDeviation(data);
-        
-        return createRBFKernelPCATransformation2(normData);
-    }
-    
-    /**
-     * perform kernal pca upon given data using a gaussian radial basis
-     * kernel to find the best transformation that leads to 
-     * transformed points which maximize the variance along the new axes.
-     * To apply the results to a data matrix, use y = W^T * X where W is
-     * the returned matrix (i.e., MatrixUtil.dot(w, normData)).
-     * 
-     * TODO: Note, it's using a fixed gamma of 15 instead of fitting for the best
-     * gamma, so should be corrected one day for real use.
-     * 
-     * adapted from
-     * http://sebastianraschka.com/Articles/2014_kernel_pca.html
-     
-     * @param normData
-     */
-    public static SimpleMatrix createRBFKernelPCATransformation2(SimpleMatrix normData) {
-        
-        int n = normData.numCols();
-        int nRows = normData.numRows();
-        
-        if (nRows != 2) {
-            throw new IllegalArgumentException("data.nRows must be 2");
-        }
-        
-        double[][] distSq = new double[n][n];
-        for (int i = 0; i < n; ++i) {
-            distSq[i] = new double[n];            
-            for (int j = 0; j < i; ++j) {
-                distSq[i][j] = distSq[j][i];
-            }
-            double x1 = normData.get(0, i);
-            double y1 = normData.get(1, i);            
-            for (int j = (i + 1); j < n; ++j) {
-                double x2 = normData.get(0, j);
-                double y2 = normData.get(1, j);
-                double diffX = x1 - x2;
-                double diffY = y1 - y2;
-                distSq[i][j] = (diffX * diffX + diffY * diffY);
-            }
-        }
-        
-        //TODO: make a version that finds best gamma here
-        
-        EigenValuesAndVectors eev = stepwiseKPCA(distSq, 15, 2);
-                
-        SimpleMatrix w = new SimpleMatrix(eev.getNumberOfComponents(), 
-            eev.getLengthOfVector());
-        
-        for (int i = 0; i < eev.getNumberOfComponents(); ++i) {
-            double eigenValue = eev.getEigenValue(i);
-            double[] eV = eev.getEigenVector(i);
-            for (int col = 0; col < eV.length; ++col) {
-                double v = eV[col]/eigenValue;
-                w.set(i, col, v);
-            }
-        }
-        
-        return w;
-    }
-    
-    /**
-     * perform linear pca upon given data to find the best transformation that leads to 
-     * transformed points which maximize the variance along the new axes.
-     * 
-     * To apply the results to a data matrix, use y = W^T * X where W is
-     * the returned matrix (i.e., MatrixUtil.dot(w, normData))
-     * Note, X internally has been scaled to unit standard deviation.
-     * 
-     * adapted from
-     * http://sebastianraschka.com/Articles/2014_kernel_pca.html
-     * 
-     * @param data
-     */
-    public static SimpleMatrix createPCATransformation(SimpleMatrix data) {
-        
-        int n = data.numCols();
-                
-        // ----- calculate covariance matrix -------------
-        
-        SimpleMatrix normData = scaleToUnitStandardDeviation(data);
-       
-        return createPCATransformation2(normData);
-    }
-
-    /**
-     * perform linear pca upon given normalized data to find the best transformation that leads to 
-     * transformed points which maximize the variance along the new axes.
-     * To apply the results to a data matrix, use y = W^T * X where W is
-     * the returned matrix (i.e., MatrixUtil.dot(w, normData))
-     * 
-     * adapted from
-     * http://sebastianraschka.com/Articles/2014_kernel_pca.html
-     * 
-     * @param normData
-     */
-    @SuppressWarnings({"rawtypes"})
-    public static SimpleMatrix createPCATransformation2(SimpleMatrix normData) {
-        
-        int n = normData.numCols();
-                
-        // ----- calculate covariance matrix -------------
-        
-        int nRows = normData.numRows();
-                      
-        double[][] c = dot(normData, normData.transpose());
-        SimpleMatrix m = new SimpleMatrix(c.length, c[0].length);
-        for (int i = 0; i < c.length; ++i) {
-            for (int j = 0; j < c[i].length; ++j) {
-                m.set(i, j, c[i][j]/(double)n);
-            }
-        }
-        
-        SimpleEVD evd = m.eig();
-        
-        int nEigen = evd.getNumberOfEigenvalues();
-        
-        int[] indexes = new int[nEigen];
-        double[] eigenValues = new double[nEigen];
-        double[][] eigenVectors = new double[nEigen][nRows];
-        for (int i = 0; i < nEigen; ++i) {
-            eigenValues[i] = evd.getEigenvalue(i).getMagnitude();
-            SimpleMatrix ev = evd.getEigenVector(i);
-            eigenVectors[i] = new double[ev.numRows()];
-            for (int j = 0; j < ev.numRows(); ++j) {
-                eigenVectors[i][j] = ev.get(j, 0);
-            }
-            indexes[i] = i;
-            //log.info("eigenvalue " + i + " = " + evd.getEigenvalue(i));
-            //log.info("eigenvector=" + evd.getEigenVector(i));
-        }
-        
-        // ----- sort by decreasing eigen value -----
-        MultiArrayMergeSort.sortByDecr(eigenValues, indexes);
-        
-        SimpleMatrix w = new SimpleMatrix(2, nRows);
-        for (int i = 0; i < 2; ++i) {
-            int index = indexes[i];
-            double[] eV = eigenVectors[index];
-            for (int col = 0; col < eV.length; ++col) {
-                w.set(i, col, eV[col]);
-            }
-        }
-     
-        return w;
     }
     
     /**
@@ -1495,9 +1083,9 @@ public class MatrixUtil {
      * @param a
      * @return 
      */
-    public static SimpleMatrix scaleToUnitStandardDeviation(SimpleMatrix a) {
+    public static DenseMatrix scaleToUnitStandardDeviation(DenseMatrix a) {
         
-        int n = a.numCols();
+        int n = a.numColumns();
         int nRows = a.numRows();
                 
         double[] mean = new double[nRows];
@@ -1530,7 +1118,7 @@ public class MatrixUtil {
         transformation for no rotation:  x*s - xc*s
            (data - mean) * scaleFactor
         */        
-        SimpleMatrix a2 = new SimpleMatrix(nRows, a.numCols());
+        DenseMatrix a2 = new DenseMatrix(nRows, a.numColumns());
         for (int i = 0; i < n; ++i) {            
             for (int j = 0; j < nRows; ++j) {
                 double centered = a.get(j, i) - mean[j];
@@ -1548,9 +1136,9 @@ public class MatrixUtil {
      * @param a
      * @return 
      */
-    public static SimpleMatrix scaleToUnitStandardDeviation2(SimpleMatrix a) {
+    public static DenseMatrix scaleToUnitStandardDeviation2(DenseMatrix a) {
         
-        int n = a.numCols();
+        int n = a.numColumns();
         int nRows = a.numRows();
                 
         double[] mean = new double[nRows];
@@ -1584,7 +1172,7 @@ public class MatrixUtil {
         transformation for no rotation:  x*s - xc*s
            (data - mean) * scaleFactor
         */        
-        SimpleMatrix a2 = new SimpleMatrix(nRows, a.numCols());
+        DenseMatrix a2 = new DenseMatrix(nRows, a.numColumns());
         for (int i = 0; i < n; ++i) {            
             for (int j = 0; j < nRows; ++j) {
                 double centered = a.get(j, i) - mean[j];
@@ -1596,7 +1184,7 @@ public class MatrixUtil {
         return a2;
     }
     
-    public static double[] extractRawPitchRollFromRotation(SimpleMatrix rotMatrix) {
+    public static double[] extractRawPitchRollFromRotation(DenseMatrix rotMatrix) {
         
         double yaw = Math.atan2(rotMatrix.get(1, 0), rotMatrix.get(0, 0));
         
@@ -1609,16 +1197,16 @@ public class MatrixUtil {
         return new double[]{yaw, pitch, roll};
     }
     
-    public static SimpleMatrix calculateRotationMatrix(double yaw,
+    public static DenseMatrix calculateRotationMatrix(double yaw,
         double pitch, double roll) {
                 
-        SimpleMatrix rot = new SimpleMatrix(3, 3);
+        DenseMatrix rot = new DenseMatrix(3, 3);
         
         return calculateRotationMatrix(rot, yaw, pitch, roll);
     }
     
-    protected static SimpleMatrix calculateRotationMatrix(
-        SimpleMatrix m, double yaw, double pitch, double roll) {
+    protected static DenseMatrix calculateRotationMatrix(
+        DenseMatrix m, double yaw, double pitch, double roll) {
                         
         m.set(0, 0, Math.cos(yaw) * Math.cos(pitch));
         m.set(0, 1, 
@@ -1670,11 +1258,11 @@ public class MatrixUtil {
      * @param classes
      * @return 
      */
-    public static int transformToZeroBasedClasses(SimpleMatrix classes) {
+    public static int transformToZeroBasedClasses(DenseMatrix classes) {
         
         Set<Integer> set = new HashSet<Integer>();        
         
-        for (int i = 0; i < classes.numCols(); ++i) {
+        for (int i = 0; i < classes.numColumns(); ++i) {
             double v = classes.get(0, i);
             set.add(Integer.valueOf((int)Math.round(v)));
         }
@@ -1688,7 +1276,7 @@ public class MatrixUtil {
             transformIndexMap.put(sorted.get(i), Integer.valueOf(i));
         }
         
-        for (int i = 0; i < classes.numCols(); ++i) {
+        for (int i = 0; i < classes.numColumns(); ++i) {
             double v = classes.get(0, i);
             int key = (int)Math.round(v);
             int v2 = transformIndexMap.get(Integer.valueOf(key));
@@ -1696,5 +1284,257 @@ public class MatrixUtil {
         }
         
         return set.size();
+    }
+    
+    /**
+     * extract the null space from the SVD matrix.
+     * The null space the non-zero vector x in which 
+     * all solutions to the original matrix A * x = 0.
+     * 
+     * @param svd
+     * @return 
+     */
+    public static DenseMatrix nullSpace(SVD svd) {
+        
+        /*
+        SVD is the result of A = U * SIGMA * VT
+        
+            A is a real m-by-n matrix.
+            SIGMA is an m-by-n matrix which is zero except for its min(m,n) 
+                 diagonal elements.
+            U is an m-by-m orthogonal matrix.
+            VT (V transposed) is an n-by-n orthogonal matrix.
+            
+            The diagonal elements of SIGMA are the singular values of A; 
+                they are real and non-negative, and are returned in 
+                descending order. 
+            The first min(m,n) columns of U and V are the left and right 
+                singular vectors of A.
+
+            The routine returns VT, not V.
+        
+        The (right) null space of A is the columns of V corresponding to
+        singular values equal to zero. 
+        The left null space of A is the rows of U corresponding to
+        singular values equal to zero 
+        (or the columns of U corresponding to singular values equal to
+        zero, transposed).
+        */
+        
+        double tol = singularThreshold(svd);
+        
+        //NXN
+        DenseMatrix vT = svd.getVt();
+        
+        int N = vT.numColumns();
+        
+        // null space nRows = M (which is size of U)
+        // null space nCols N - the number of items in s above tol.
+        
+        // s sometimes has fewer than N items if the last are all zeroes
+        double[] s = svd.getS();
+                
+        // indexes in s that are zero or < tol
+        TIntList zeroIdxs = new TIntArrayList();
+        
+        for (int i = 0; i < N; ++i) {
+            if (i >= (s.length)) {
+                zeroIdxs.add(i);
+            } else {
+                if (s[i] < tol) {
+                    zeroIdxs.add(i);
+                }
+            }
+        }
+        
+        DenseMatrix nullSpace = new DenseMatrix(N, zeroIdxs.size());
+        
+        /*
+        v0=Type = dense real , numRows = 5 , numCols = 5
+         -0.194   0.298  -0.473   0.087  -0.801
+          0.388  -0.597  -0.323   0.621  -0.058
+         -0.452   0.084   0.585   0.655  -0.134
+         -0.710  -0.131  -0.525   0.086   0.443
+          0.322   0.728  -0.233   0.413   0.376
+                           /|\
+                            |
+                           z0      z1      z2
+        */
+        
+        int r = 0;
+        for (int i0 = 0; i0 < zeroIdxs.size(); ++i0) {
+            int vCol = zeroIdxs.get(i0);
+            // extract column vCol from vT and store it as column r in nullSpace
+            for (int vRow = 0; vRow < vT.numRows(); ++vRow) {
+                double v = vT.get(vRow, vCol);
+                nullSpace.set(vRow, r, v);
+            }
+            ++r;
+        }
+        
+        return nullSpace;
+    }
+    
+    /**
+     * Returns a reasonable threshold for singular values.<br><br>
+     *
+     * tol = max (size (A)) * largest sigma * eps;
+     * 
+     * The implementation is adapted from the EJML project
+     * https://github.com/lessthanoptimal/ejml/blob/69baa142637e2adf45d90722cf785fabe3d74fe0/main/dense64/src/org/ejml/ops/SingularOps.java
+     * 
+     * which has copyright:
+     * Copyright (c) 2009-2014, Peter Abeles. All Rights Reserved.
+     *
+     * This file is part of Efficient Java Matrix Library (EJML).
+     *
+     * Licensed under the Apache License, Version 2.0 (the "License");
+     * you may not use this file except in compliance with the License.
+     * You may obtain a copy of the License at
+     *
+     *   http://www.apache.org/licenses/LICENSE-2.0
+     *
+     * Unless required by applicable law or agreed to in writing, software
+     * distributed under the License is distributed on an "AS IS" BASIS,
+     * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     * See the License for the specific language governing permissions and
+     * limitations under the License.
+     * 
+     * @param svd
+     * @return 
+     */
+    public static double singularThreshold(SVD svd) {
+        
+        double largest = 0;
+        
+        double w[] = svd.getS();
+
+        int N = w.length;
+
+        for( int j = 0; j < N; j++ ) {
+            if( w[j] > largest)
+                largest = w[j];
+        }
+
+        int M = Math.max(svd.getU().numColumns(), svd.getU().numRows());
+        
+        return M * largest * Math.pow(2,-52);
+    }
+    
+    public static DenseMatrix extractAColumn(DenseMatrix m, int column) {
+        
+        DenseMatrix a = new DenseMatrix(m.numRows(), 1);
+        for (int i = 0; i < m.numRows(); ++i) {
+            a.set(i, 0, m.get(i, column));
+        }
+        
+        return a;
+    }
+    
+    public static DenseMatrix extractARow(DenseMatrix m, int row) {
+        
+        DenseMatrix a = new DenseMatrix(1, m.numColumns());
+        for (int i = 0; i < m.numColumns(); ++i) {
+            a.set(0, i, m.get(row, i));
+        }
+        
+        return a;
+    }
+    
+    /**
+     * using cofactors and minors of the matrix, return the determinant.
+     * in practice one can use any row as the primary set of cofactors or
+     * any column.  this method may be optimized in the future, but for now,
+     * uses the first column as the cofactors.
+     *
+     * e.g.    | 1  -5  2 |         | 3 4 |         | 7 4 |         | 7 3 |
+     *         | 7   3  4 |  =  1 * | 1 5 |  +  5 * | 2 5 |  +  2 * | 2 1 |  = 11 
+        + 135 + 2 = 148
+     *         | 2   1  5 |
+     */
+    public static double determinant(Matrix m) {
+
+        double[][] a = no.uib.cipr.matrix.Matrices.getArray(m);
+        
+        return determinant(a);
+    }
+    
+    /**
+     * using cofactors and minors of the matrix, return the determinant.
+     * in practice one can use any row as the primary set of cofactors or
+     * any column.  this method may be optimized in the future, but for now,
+     * uses the first column as the cofactors.
+     *
+     * e.g.    | 1  -5  2 |         | 3 4 |         | 7 4 |         | 7 3 |
+     *         | 7   3  4 |  =  1 * | 1 5 |  +  5 * | 2 5 |  +  2 * | 2 1 |  = 11 
+        + 135 + 2 = 148
+     *         | 2   1  5 |
+     */
+    public static double determinant(double[][] m) {
+
+        if (m == null || m.length == 0) {
+            throw new IllegalArgumentException("m cannot be null or empty");
+        }
+        if (m.length != m[0].length) {
+            throw new IllegalArgumentException("m must be a square");
+        }
+        if (m.length == 1) {
+            return m[0][0];
+        } else if (m.length == 2) {
+            double s = ( m[0][0]*m[1][1] ) - ( m[0][1]*m[1][0] );
+            return s;
+        } else {
+            double s = 0.0;
+            // use 1st row as cofactors and minors
+            for (int i = 0; i < m.length; i++) {
+
+                double[][] n = copyExcept(m, i, 0);
+                
+                double tmp = m[i][0] * determinant(n);
+                                
+                if ((i & 1) == 0) {
+                    s +=  tmp;
+                } else {
+                    s -=  tmp;
+                }
+            }
+            return s;
+        }
+    }
+    
+    /**
+     * create copy of matrix m except row and col
+     * @param m
+     * @param i
+     * @param i0
+     * @return
+     */
+    private static double[][] copyExcept(double[][] m, int col, int row) {
+
+        double[][] n = new double[m.length - 1][m.length - 1];
+
+        int nr = 0;
+        int nc = 0;
+
+        for (int mCol = 0; mCol < m.length; mCol++) {
+            if (mCol == col) {
+                continue;
+            }
+
+            n[nc] = new double[m.length - 1];
+            
+            nr = 0;
+            for (int mRow = 0; mRow < m[0].length; mRow++) {
+                if (mRow == row) {
+                    continue;
+                }
+
+                n[nc][nr] = m[mCol][mRow];
+                nr++;
+            }
+            nc++;
+        }
+
+        return n;
     }
 }

@@ -1,11 +1,10 @@
 package algorithms.imageProcessing.scaleSpace;
 
 import algorithms.MultiArrayMergeSort;
-import algorithms.compGeometry.NearestPoints;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.features.CornerRegion;
-import algorithms.imageProcessing.util.PairIntWithIndex;
+import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.util.CornerArray;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairInt;
@@ -16,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import org.ejml.simple.SimpleMatrix;
+import no.uib.cipr.matrix.DenseMatrix;
 
 /**
  * NOTE: this implementation needs to be improved but it is low priority.
@@ -314,10 +313,11 @@ MultiArrayMergeSort.sortByYThenX(cp);
             int x = corners.getX(i);
             int y = corners.getY(i);
             
-            SimpleMatrix m = createAutoCorrelationMatrix(x, y);
+            DenseMatrix m = createAutoCorrelationMatrix(x, y);
         
-            double det = m.determinant();
-            double trace = m.trace();
+            double[][] d = no.uib.cipr.matrix.Matrices.getArray(m);
+            double det = MatrixUtil.determinant(d);
+            double trace = MatrixUtil.trace(d);
         
             double dt = det/trace;
             //System.out.println("det/trace=" + dt);
@@ -330,7 +330,7 @@ MultiArrayMergeSort.sortByYThenX(cp);
         corners.addAll(keep);
     }
 
-    private SimpleMatrix createAutoCorrelationMatrix(int x, int y) {
+    private DenseMatrix createAutoCorrelationMatrix(int x, int y) {
         
         int w = img.getWidth();
         int h = img.getHeight();        
@@ -339,7 +339,7 @@ MultiArrayMergeSort.sortByYThenX(cp);
                 
         float vc = img.getValue(x, y);
         
-        SimpleMatrix a = new SimpleMatrix(2 * hw + 1, 2 * hw + 1);
+        DenseMatrix a = new DenseMatrix(2 * hw + 1, 2 * hw + 1);
         
         for (int xOff = -hw; xOff <= hw; ++xOff) {
             int x2 = x + xOff;

@@ -15,8 +15,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.ejml.simple.*;
+import no.uib.cipr.matrix.DenseMatrix;
+import no.uib.cipr.matrix.NotConvergedException;
+import no.uib.cipr.matrix.SVD;
 
 /**
  * class to solve for the epipoles for two images with stereo projection
@@ -159,7 +162,7 @@ public class EpipolarTransformer {
      * @param pointsRightXY
      * @return 
      */
-    public SimpleMatrix calculateEpipolarProjection(
+    public DenseMatrix calculateEpipolarProjection(
         PairIntArray pointsLeftXY,  PairIntArray pointsRightXY) {
 
         if (pointsLeftXY == null) {
@@ -197,8 +200,8 @@ public class EpipolarTransformer {
      * @param theRightXY
      * @return
      */
-    public SimpleMatrix calculateEpipolarProjection(
-        SimpleMatrix theLeftXY, SimpleMatrix theRightXY) {
+    public DenseMatrix calculateEpipolarProjection(
+        DenseMatrix theLeftXY, DenseMatrix theRightXY) {
 
         if (theLeftXY == null) {
             throw new IllegalArgumentException("theLeftXY cannot be null");
@@ -206,33 +209,33 @@ public class EpipolarTransformer {
         if (theRightXY == null) {
             throw new IllegalArgumentException("refactorRightXY cannot be null");
         }
-        if (theLeftXY.numCols()!= theRightXY.numCols()) {
+        if (theLeftXY.numColumns()!= theRightXY.numColumns()) {
             throw new IllegalArgumentException(
                 "theLeftXY and theRightXY must be same size");
         }
 
-        if (theLeftXY.numCols() == 7) {
+        if (theLeftXY.numColumns() == 7) {
             throw new IllegalArgumentException(
                 "for 7 points, use calculateEpipolarProjectionFor7Points");
         }
 
-        if (theLeftXY.numCols() < 7) {
+        if (theLeftXY.numColumns() < 7) {
             // cannot use this algorithm.
             throw new IllegalArgumentException(
                 "the algorithms require 7 or more points."
-                + " refactorLeftXY.n=" +theLeftXY.numCols());
+                + " refactorLeftXY.n=" +theLeftXY.numColumns());
         }
 
         //the matrix convention is [mRows][nCols]
 
-        SimpleMatrix fundamentalMatrix = calculateFundamentalMatrix(theLeftXY, 
+        DenseMatrix fundamentalMatrix = (DenseMatrix) calculateFundamentalMatrix(theLeftXY, 
             theRightXY).transpose();
 
         return fundamentalMatrix;
     }
 
-    protected SimpleMatrix calculateFundamentalMatrix(SimpleMatrix leftXY,
-        SimpleMatrix rightXY) {
+    protected DenseMatrix calculateFundamentalMatrix(DenseMatrix leftXY,
+        DenseMatrix rightXY) {
 
         //x is xy[0], y is xy[1], xy[2] is all 1's
         NormalizedXY normalizedXY1 = normalize(leftXY);
@@ -247,7 +250,7 @@ public class EpipolarTransformer {
 
     (1) SVD of matrix A (as is done in 8-point algorithm)
         giving a matrix of rank 7
-    (2) The homogeneous system AX = 0 is called the null space of matrix A.
+    (2) The homogeneous system AX = 0 : X is the null space of matrix A.
         The system is nullable because rank 7 < number of columns, 9.
 
         The nullable system must have a solution other than trivial where
@@ -297,7 +300,7 @@ public class EpipolarTransformer {
      * @param pointsRightXY
      * @return
      */
-    public List<SimpleMatrix> calculateEpipolarProjectionFor7Points(
+    public List<DenseMatrix> calculateEpipolarProjectionFor7Points(
         PairIntArray pointsLeftXY, PairIntArray pointsRightXY) {
 
         if (pointsLeftXY == null) {
@@ -332,8 +335,8 @@ public class EpipolarTransformer {
      * @return
      */
     @SuppressWarnings({"unchecked"})
-    public List<SimpleMatrix> calculateEpipolarProjectionFor7Points(
-        SimpleMatrix theLeftXY, SimpleMatrix theRightXY) {
+    public List<DenseMatrix> calculateEpipolarProjectionFor7Points(
+        DenseMatrix theLeftXY, DenseMatrix theRightXY) {
 
         if (theLeftXY == null) {
             throw new IllegalArgumentException("refactorLeftXY cannot be null");
@@ -345,16 +348,16 @@ public class EpipolarTransformer {
             throw new IllegalArgumentException(
                 "theLeftXY and theRightXY must be same size");
         }
-        if (theLeftXY.numCols() != theRightXY.numCols()) {
+        if (theLeftXY.numColumns() != theRightXY.numColumns()) {
             throw new IllegalArgumentException(
                 "theLeftXY and theRightXY must be same size");
         }
 
-        if (theLeftXY.numCols() != 7) {
+        if (theLeftXY.numColumns() != 7) {
             // cannot use this algorithm.
             throw new IllegalArgumentException(
                 "the 7-point problem requires 7 points."
-                + " theLeftXY.n=" + theLeftXY.numCols());
+                + " theLeftXY.n=" + theLeftXY.numColumns());
         }
 
         //x is xy[0], y is xy[1], xy[2] is all 1's
@@ -365,17 +368,18 @@ public class EpipolarTransformer {
         double[][] m = createFundamentalMatrix(
             normalizedXY1.getXy(), normalizedXY2.getXy());
 
-        SimpleMatrix aMatrix = new SimpleMatrix(m);
-        SimpleSVD<SimpleMatrix> svd = null;
+        DenseMatrix aMatrix = new DenseMatrix(m);
+        SVD svd = null;
         
         try {
-            svd = aMatrix.svd();
+            svd = SVD.factorize(aMatrix);
         } catch (Throwable t) {
             System.err.println(t.getMessage());
             return null;
         }
-        
-        SimpleMatrix nullSpace = svd.nullSpace();
+
+        // nCols = 9        
+        DenseMatrix nullSpace = MatrixUtil.nullSpace(svd);
 
         double[][] ff1 = new double[3][3];
         double[][] ff2 = new double[3][3];
@@ -392,33 +396,35 @@ public class EpipolarTransformer {
             ff2[i][2] = nullSpace.get((i * 3) + 2, 1);
         }
 
-        SimpleMatrix[] solutions = solveFor7Point(ff1, ff2);
+        DenseMatrix[] solutions = solveFor7Point(ff1, ff2);
 
         //denormalize:  F = (T_1)^T * F * T_2
         //    T_1 is normalizedXY1.getNormalizationMatrix();
         //    T2 is normalizedXY2.getNormalizationMatrix();
 
-        List<SimpleMatrix> denormalizedSolutions = new ArrayList<SimpleMatrix>();
+        List<DenseMatrix> denormalizedSolutions = new ArrayList<DenseMatrix>();
 
-        SimpleMatrix t1Transpose = normalizedXY1.getNormalizationMatrix().transpose();
-        SimpleMatrix t2 = normalizedXY2.getNormalizationMatrix();
+        DenseMatrix t1Transpose = (DenseMatrix) normalizedXY1
+            .getNormalizationMatrix().transpose();
+        DenseMatrix t2 = normalizedXY2.getNormalizationMatrix();
 
-        for (SimpleMatrix solution : solutions) {
+        for (DenseMatrix solution : solutions) {
 
             if (solution == null) {
                 continue;
             }
 
-            SimpleMatrix denormFundamentalMatrix = t1Transpose.mult(
-                solution.mult(t2));
+            DenseMatrix denormFundamentalMatrix = 
+                MatrixUtil.multiply(t1Transpose,
+                    MatrixUtil.multiply(solution, t2));
 
-            denormFundamentalMatrix = denormFundamentalMatrix.scale(
-                1./denormFundamentalMatrix.get(2, 2));
+            double s = 1./denormFundamentalMatrix.get(2, 2);
+            MatrixUtil.multiply(denormFundamentalMatrix, s);
 
-            denormFundamentalMatrix = denormFundamentalMatrix.transpose();
+            denormFundamentalMatrix = (DenseMatrix) denormFundamentalMatrix.transpose();
 
             /*
-            SimpleMatrix validated = validateSolution(denormFundamentalMatrix);
+            DenseMatrix validated = validateSolution(denormFundamentalMatrix);
 
             if (validated != null) {
                 denormalizedSolutions.add(validated);
@@ -500,8 +506,8 @@ public class EpipolarTransformer {
     * Otherwise it is called cheirality-preserving.
     */
     @SuppressWarnings({"unchecked"})
-    private SimpleMatrix validateSolution(SimpleMatrix solution, SimpleMatrix leftXY,
-        SimpleMatrix rightXY) {
+    private DenseMatrix validateSolution(DenseMatrix solution, DenseMatrix leftXY,
+        DenseMatrix rightXY) {
 
         /*
         function OK = signs_OK(F,x1,x2)
@@ -524,18 +530,18 @@ public class EpipolarTransformer {
 
         double[] testE1 = leftRightEpipoles[0];
 
-        SimpleMatrix l1 = leftXY.copy();
+        DenseMatrix l1 = leftXY.copy();
         for (int row = 0; row < testE1.length; ++row){
-            for (int col = 0; col < l1.numCols(); ++col) {
+            for (int col = 0; col < l1.numColumns(); ++col) {
                 double value = testE1[row] * l1.get(row, col);
                 l1.set(row, col, value);
             }
         }
 
-        double[] sum = new double[l1.numCols()];
-        SimpleMatrix t1 = solution.mult(rightXY);
+        double[] sum = new double[l1.numColumns()];
+        DenseMatrix t1 = MatrixUtil.multiply(solution, rightXY);
         for (int row = 0; row < testE1.length; ++row){
-            for (int col = 0; col < t1.numCols(); ++col) {
+            for (int col = 0; col < t1.numColumns(); ++col) {
                 double value = l1.get(row, col) * t1.get(row, col);
                 t1.set(row, col, value);
                 sum[col] += value;
@@ -551,7 +557,7 @@ public class EpipolarTransformer {
         return solution;
     }
 
-    SimpleMatrix[] solveFor7Point(double[][] ff1, double[][] ff2) {
+    DenseMatrix[] solveFor7Point(double[][] ff1, double[][] ff2) {
 
         double a0 = calculateCubicRoot3rdOrderCoefficientFor7Point(ff1, ff2);
         double a1 = calculateCubicRoot2ndOrderCoefficientFor7Point(ff1, ff2);
@@ -565,7 +571,7 @@ public class EpipolarTransformer {
             m[i] = new double[3];
         }
 
-        SimpleMatrix[] solutions = new SimpleMatrix[roots.length];
+        DenseMatrix[] solutions = new DenseMatrix[roots.length];
 
         for (int i = 0; i < roots.length; i++) {
 
@@ -579,7 +585,7 @@ public class EpipolarTransformer {
                 }
             }
 
-            solutions[i] = new SimpleMatrix(m);
+            solutions[i] = new DenseMatrix(m);
         }
 
         return solutions;
@@ -735,7 +741,7 @@ public class EpipolarTransformer {
     }
 
     @SuppressWarnings({"unchecked"})
-    SimpleMatrix calculateFundamentalMatrix(NormalizedXY normalizedXY1,
+    DenseMatrix calculateFundamentalMatrix(NormalizedXY normalizedXY1,
         NormalizedXY normalizedXY2) {
 
         //build the fundamental matrix
@@ -751,19 +757,26 @@ public class EpipolarTransformer {
            result has mRows = number of data points
                       nCols = 9
         */
-        SimpleMatrix aMatrix = new SimpleMatrix(m);
-        SimpleSVD<SimpleMatrix> svd = aMatrix.svd();
-        SimpleMatrix V = svd.getV();
+        DenseMatrix aMatrix = new DenseMatrix(m);
+        SVD svd = null;
+        try {
+            svd = SVD.factorize(aMatrix);
+        } catch (NotConvergedException e) {
+            log.severe(e.getMessage());
+            return null;
+        }
+        
+        DenseMatrix V = svd.getVt();
 
-        // creates U as 9 x nXY1 matrix
-        //         D as length 9 array
-        //         V as 9 x 9 matrix
+        // creates U as nXY1 x nXY1 matrix  (MXM)
+        //         D as length 9 array      (NXN)
+        //         V as 9 x 9 matrix        (NXN)
 
         // mRows = 9; nCols = 9
+      
+        // reshape V to 3x3  (just the last column)
 
-        // reshape V to 3x3
-
-        int vNCols = V.numCols();
+        int vNCols = V.numColumns();
 
         double[][] ff = new double[3][3];
         for (int i = 0; i < 3; i++) {
@@ -772,7 +785,7 @@ public class EpipolarTransformer {
             ff[i][1] = V.get((i * 3) + 1, vNCols - 1);
             ff[i][2] = V.get((i * 3) + 2, vNCols - 1);
         }
-        SimpleMatrix fMatrix = new SimpleMatrix(ff);
+        DenseMatrix fMatrix = new DenseMatrix(ff);
 
         /* make the fundamental matrix have a rank of 2
         by performing a svd and then reconstructing with the two largest
@@ -782,31 +795,38 @@ public class EpipolarTransformer {
         From [U,D,V] we create:
             F = U * diag([D(1,1) D(2,2) 0]) * V^T, where V^T is V transposed.
         */
-        svd = fMatrix.svd();
-
+        try {
+            svd = SVD.factorize(fMatrix);
+        } catch (NotConvergedException e) {
+            log.severe(e.getMessage());
+            return null;
+        }
+        
         // creates U as 3 x 3 matrix
         //         D as length 3 array
         //         V as 3 x 3 matrix
 
-        SimpleMatrix d = svd.getW();
-
-        // remove the smallest singular value from D, making it rank 2
-        double[] keep = new double[]{d.get(0, 0), d.get(1, 1), d.get(2, 2)};
-        Arrays.sort(keep);
-        d.set(0, 0, keep[2]);
-        d.set(1, 1, keep[1]);
-        d.set(2, 2, 0);
+        double[] sDiag = svd.getS();
+        
+        // keep the largest 2 valus in sDiag to make the diagonal rank 2
+        DenseMatrix d = new DenseMatrix(3, 3);
+        if (sDiag.length > 0) {
+            d.set(0, 0, sDiag[0]);
+        }
+        if (sDiag.length > 1) {
+            d.set(1, 1, sDiag[1]);
+        }
 
         /*
         multiply the terms:
              F = dot(U, dot(diag(D),V^T))
         */
-        SimpleMatrix dDotV = d.mult(svd.getV().transpose());
+        DenseMatrix dDotV = MatrixUtil.multiply(d, svd.getVt().transpose());
 
         // 3x3
-        SimpleMatrix theFundamentalMatrix = svd.getU().mult(dDotV);
+        DenseMatrix theFundamentalMatrix = MatrixUtil.multiply(svd.getU(), dDotV);
 
-        SimpleMatrix denormFundamentalMatrix =
+        DenseMatrix denormFundamentalMatrix =
             denormalizeTheFundamentalMatrix(theFundamentalMatrix,
                 normalizedXY1, normalizedXY2);
 
@@ -814,8 +834,8 @@ public class EpipolarTransformer {
     }
 
     @SuppressWarnings({"unchecked"})
-    SimpleMatrix denormalizeTheFundamentalMatrix(
-        SimpleMatrix normalizedFundamentalMatrix,
+    DenseMatrix denormalizeTheFundamentalMatrix(
+        DenseMatrix normalizedFundamentalMatrix,
         NormalizedXY normalizedLeftXY, NormalizedXY normalizedRightXY) {
 
         /*
@@ -825,14 +845,16 @@ public class EpipolarTransformer {
             and T2 is normalizedXY2.getNormalizationMatrix();
         */
 
-        SimpleMatrix t1Transpose = normalizedLeftXY.getNormalizationMatrix().transpose();
-        SimpleMatrix t2 = normalizedRightXY.getNormalizationMatrix();
+        DenseMatrix t1Transpose = (DenseMatrix) normalizedLeftXY
+            .getNormalizationMatrix().transpose();
+        DenseMatrix t2 = normalizedRightXY.getNormalizationMatrix();
 
-        SimpleMatrix denormFundamentalMatrix = t1Transpose.mult(
-            normalizedFundamentalMatrix.mult(t2));
+        DenseMatrix denormFundamentalMatrix = 
+            MatrixUtil.multiply(t1Transpose,
+                MatrixUtil.multiply(normalizedFundamentalMatrix, t2));
 
-        denormFundamentalMatrix = denormFundamentalMatrix.scale(
-            1./denormFundamentalMatrix.get(2, 2));
+        double factor = 1./denormFundamentalMatrix.get(2, 2);
+        MatrixUtil.multiply(denormFundamentalMatrix, factor);
 
         return denormFundamentalMatrix;
     }
@@ -845,7 +867,7 @@ public class EpipolarTransformer {
      * @return
      */
     @SuppressWarnings({"unchecked"})
-    NormalizedXY normalize(SimpleMatrix xy) {
+    NormalizedXY normalize(DenseMatrix xy) {
 
         /*
         uTransposed = T * u
@@ -867,7 +889,7 @@ public class EpipolarTransformer {
         double[] centroidXY = curveHelper.calculateXYCentroids(xy);
 
         double mean = 0;
-        int n = xy.numCols();
+        int n = xy.numColumns();
         for (int i = 0; i < n; i++) {
             double diffX = xy.get(0, i) - centroidXY[0];
             double diffY = xy.get(1, i) - centroidXY[1];
@@ -882,10 +904,10 @@ public class EpipolarTransformer {
         */
         double scaleFactor = Math.sqrt(2)/mean;
 
-        SimpleMatrix tMatrix = createScaleTranslationMatrix(scaleFactor, 
+        DenseMatrix tMatrix = createScaleTranslationMatrix(scaleFactor, 
             centroidXY[0], centroidXY[1]);
         
-        SimpleMatrix normXY = new SimpleMatrix(MatrixUtil.dot(tMatrix, xy));
+        DenseMatrix normXY = new DenseMatrix(MatrixUtil.dot(tMatrix, xy));
         
         NormalizedXY normalizedXY = new NormalizedXY();
         normalizedXY.setCentroidXY(centroidXY);
@@ -903,7 +925,7 @@ public class EpipolarTransformer {
      * @param centroidY
      * @return 
      */
-    protected SimpleMatrix createScaleTranslationMatrix(double scale, 
+    protected DenseMatrix createScaleTranslationMatrix(double scale, 
         double centroidX, double centroidY) {
         
         /*
@@ -959,7 +981,7 @@ public class EpipolarTransformer {
         t[0] = new double[]{scale,       0,     -centroidX*scale};
         t[1] = new double[]{0,           scale, -centroidY*scale};
         t[2] = new double[]{0,           0,           1};
-        SimpleMatrix tMatrix = new SimpleMatrix(t);
+        DenseMatrix tMatrix = new DenseMatrix(t);
 
         return tMatrix;
     }
@@ -969,9 +991,9 @@ public class EpipolarTransformer {
      * @param xyPairs
      * @return
      */
-    public SimpleMatrix rewriteInto3ColumnMatrix(PairFloatArray xyPairs) {
+    public DenseMatrix rewriteInto3ColumnMatrix(PairFloatArray xyPairs) {
 
-        SimpleMatrix xy = new SimpleMatrix(3, xyPairs.getN());
+        DenseMatrix xy = new DenseMatrix(3, xyPairs.getN());
 
         // rewrite xyPairs into a matrix of size 3 X xy.getN();
         // row 0 is x
@@ -991,9 +1013,9 @@ public class EpipolarTransformer {
      * @param xyPairs
      * @return
      */
-    public SimpleMatrix rewriteInto3ColumnMatrix(List<PairInt> xyPairs) {
+    public DenseMatrix rewriteInto3ColumnMatrix(List<PairInt> xyPairs) {
 
-        SimpleMatrix xy = new SimpleMatrix(3, xyPairs.size());
+        DenseMatrix xy = new DenseMatrix(3, xyPairs.size());
 
         // rewrite xyPairs into a matrix of size 3 X xy.getN();
         // row 0 is x
@@ -1014,9 +1036,9 @@ public class EpipolarTransformer {
      * @param xyPairs
      * @return
      */
-    public SimpleMatrix rewriteFirstItemInto3ColumnMatrix(List<List<PairInt>> xyPairs) {
+    public DenseMatrix rewriteFirstItemInto3ColumnMatrix(List<List<PairInt>> xyPairs) {
 
-        SimpleMatrix xy = new SimpleMatrix(3, xyPairs.size());
+        DenseMatrix xy = new DenseMatrix(3, xyPairs.size());
 
         // rewrite xyPairs into a matrix of size 3 X xy.getN();
         // row 0 is x
@@ -1038,9 +1060,9 @@ public class EpipolarTransformer {
      * @param xyPairs
      * @return
      */
-    public SimpleMatrix rewriteInto3ColumnMatrix(PairIntArray xyPairs) {
+    public DenseMatrix rewriteInto3ColumnMatrix(PairIntArray xyPairs) {
 
-        SimpleMatrix xy = new SimpleMatrix(3, xyPairs.getN());
+        DenseMatrix xy = new DenseMatrix(3, xyPairs.getN());
 
         // rewrite xyPairs into a matrix of size 3 X xy.getN();
         // row 0 is x
@@ -1062,8 +1084,8 @@ public class EpipolarTransformer {
      * second is y.
      * @return
      */
-    double[][] createFundamentalMatrix(SimpleMatrix normXY1,
-        SimpleMatrix normXY2) {
+    double[][] createFundamentalMatrix(DenseMatrix normXY1,
+        DenseMatrix normXY2) {
 
         if (normXY1 == null) {
             throw new IllegalArgumentException("normXY1 cannot be null");
@@ -1071,12 +1093,12 @@ public class EpipolarTransformer {
         if (normXY2 == null) {
             throw new IllegalArgumentException("normXY2 cannot be null");
         }
-        if (normXY1.numCols() != normXY2.numCols()) {
+        if (normXY1.numColumns() != normXY2.numColumns()) {
             throw new IllegalArgumentException(
             "the number of columns in normXY1 != number of cols in normXY2");
         }
 
-        int nXY1 = normXY1.numCols();
+        int nXY1 = normXY1.numColumns();
 
         /*
         (2) each row in matrix A:
@@ -1110,7 +1132,7 @@ public class EpipolarTransformer {
      * @return
      */
     @SuppressWarnings({"unchecked"})
-    double[][] calculateEpipoles(SimpleMatrix fundamentalMatrix) {
+    double[][] calculateEpipoles(DenseMatrix fundamentalMatrix) {
 
         /*
         The representation of lines in homogeneous projective coordinates
@@ -1135,15 +1157,22 @@ public class EpipolarTransformer {
              e2 = last column of U divided by it's last item
 
         */
-        SimpleSVD<SimpleMatrix> svdE = fundamentalMatrix.svd();
-        SimpleMatrix V = svdE.getV().transpose();
-        double[] e1 = new double[V.numCols()];
+        SVD svdE;
+        try {
+            svdE = SVD.factorize(fundamentalMatrix);
+        } catch (NotConvergedException ex) {
+            Logger.getLogger(EpipolarTransformer.class.getName())
+                .log(Level.SEVERE, null, ex);
+            return null;
+        }
+        DenseMatrix V = (DenseMatrix) svdE.getVt().transpose();
+        double[] e1 = new double[V.numColumns()];
         double e1Div = V.get(2, 2);
         for (int i = 0; i < e1.length; i++) {
             e1[i] = V.get(i, 2)/e1Div;
         }
-        SimpleMatrix U = svdE.getU();
-        double[] e2 = new double[U.numCols()];
+        DenseMatrix U = svdE.getU();
+        double[] e2 = new double[U.numColumns()];
         double e2Div = U.get(2, 2);
         for (int i = 0; i < e2.length; i++) {
             e2[i] = U.get(i, 2)/e2Div;
@@ -1208,7 +1237,8 @@ public class EpipolarTransformer {
             outputDistances.set(i, Double.valueOf(err));
         }
         
-        EpipolarFeatureTransformationFit fit = new EpipolarFeatureTransformationFit(
+        EpipolarFeatureTransformationFit fit = 
+            new EpipolarFeatureTransformationFit(
             distanceErrors.getFundamentalMatrix(),
             outputInliers, fcs,
             distanceErrors.getErrorType(), outputDistances, 
@@ -1223,11 +1253,11 @@ public class EpipolarTransformer {
          * 3 dimensional matrix, with column 0 being x, column 1 being y,
          * and the last column is place holder 1's
          */
-        private SimpleMatrix xy = null;
+        private DenseMatrix xy = null;
 
         private double[] centroidXY = null;
 
-        private SimpleMatrix normalizationMatrix = null;
+        private DenseMatrix normalizationMatrix = null;
 
         /**
          * @return the centroidXY
@@ -1246,33 +1276,33 @@ public class EpipolarTransformer {
         /**
          * @return the factor
          */
-        public SimpleMatrix getNormalizationMatrix() {
+        public DenseMatrix getNormalizationMatrix() {
             return normalizationMatrix;
         }
 
         /**
          * @param normMatrix holding the scale and offsets to apply to x, y
          */
-        public void setNormMatrix(SimpleMatrix normMatrix) {
+        public void setNormMatrix(DenseMatrix normMatrix) {
             this.normalizationMatrix = normMatrix;
         }
 
         /**
          * @return the xy
          */
-        public SimpleMatrix getXy() {
+        public DenseMatrix getXy() {
             return xy;
         }
 
         /**
          * @param xy the xy to set
          */
-        public void setXy(SimpleMatrix xy) {
+        public void setXy(DenseMatrix xy) {
             this.xy = xy;
         }
     }
 
-    public PairIntArray getEpipolarLine(SimpleMatrix epipolarLines, int imgWidth,
+    public PairIntArray getEpipolarLine(DenseMatrix epipolarLines, int imgWidth,
         int imgHeight, int pointNumber) {
 
         int n = imgWidth/10;
@@ -1311,7 +1341,7 @@ public class EpipolarTransformer {
      * @return
      */
     public EpipolarTransformationFit calculateEpipolarDistanceError(
-        SimpleMatrix fm, SimpleMatrix leftPoints, SimpleMatrix rightPoints, 
+        DenseMatrix fm, DenseMatrix leftPoints, DenseMatrix rightPoints, 
         double tolerance) {
         
         if (fm == null) {
@@ -1323,8 +1353,8 @@ public class EpipolarTransformer {
         if (rightPoints == null) {
             throw new IllegalArgumentException("rightPoints cannot be null");
         }
-        int nRows = leftPoints.getMatrix().getNumRows();
-        if (nRows != rightPoints.getMatrix().getNumRows()) {
+        int nRows = leftPoints.numRows();
+        if (nRows != rightPoints.numRows()) {
             throw new IllegalArgumentException("matrices must have same number of rows");
         }
 
@@ -1364,7 +1394,7 @@ public class EpipolarTransformer {
                 ErrorType.DIST_TO_EPIPOLAR_LINE, new ArrayList<Double>(), tolerance);
         }
 
-        fit.setNMaxMatchable(leftPoints.numCols());
+        fit.setNMaxMatchable(leftPoints.numColumns());
 
         return fit;
     }
@@ -1378,7 +1408,7 @@ public class EpipolarTransformer {
      * @return
      */
     public EpipolarTransformationFit calculateEpipolarDistanceErrorThenFilter(
-        SimpleMatrix fm, SimpleMatrix leftPoints, SimpleMatrix rightPoints, 
+        DenseMatrix fm, DenseMatrix leftPoints, DenseMatrix rightPoints, 
         double tolerance) {
         
         if (fm == null) {
@@ -1390,8 +1420,8 @@ public class EpipolarTransformer {
         if (rightPoints == null) {
             throw new IllegalArgumentException("rightPoints cannot be null");
         }
-        int nRows = leftPoints.getMatrix().getNumRows();
-        if (nRows != rightPoints.getMatrix().getNumRows()) {
+        int nRows = leftPoints.numRows();
+        if (nRows != rightPoints.numRows()) {
             throw new IllegalArgumentException("matrices must have same number of rows");
         }
 
@@ -1434,7 +1464,7 @@ public class EpipolarTransformer {
                 ErrorType.DIST_TO_EPIPOLAR_LINE, new ArrayList<Double>(), tolerance);
         }
 
-        fit.setNMaxMatchable(leftPoints.numCols());
+        fit.setNMaxMatchable(leftPoints.numColumns());
 
         return fit;
     }
@@ -1451,8 +1481,8 @@ public class EpipolarTransformer {
      * @return
      */
     public PairFloatArray calculateDistancesFromEpipolar(
-        SimpleMatrix fm, SimpleMatrix matchedLeftPoints,
-        SimpleMatrix matchedRightPoints) {
+        DenseMatrix fm, DenseMatrix matchedLeftPoints,
+        DenseMatrix matchedRightPoints) {
 
         if (fm == null) {
             throw new IllegalArgumentException("fm cannot be null");
@@ -1463,8 +1493,8 @@ public class EpipolarTransformer {
         if (matchedRightPoints == null) {
             throw new IllegalArgumentException("rightPoints cannot be null");
         }
-        int nRows = matchedLeftPoints.getMatrix().getNumRows();
-        if (nRows != matchedRightPoints.getMatrix().getNumRows()) {
+        int nRows = matchedLeftPoints.numRows();
+        if (nRows != matchedRightPoints.numRows()) {
             throw new IllegalArgumentException("matrices must have same number of rows");
         }
         
@@ -1474,17 +1504,18 @@ public class EpipolarTransformer {
         u_2 = (x_2, y_2, 1)^T
         */
 
-        int n = matchedLeftPoints.numCols();
+        int n = matchedLeftPoints.numColumns();
 
         PairFloatArray distances = new PairFloatArray(n);
 
-        SimpleMatrix rightEpipolarLines = fm.mult(matchedLeftPoints);
+        DenseMatrix rightEpipolarLines = MatrixUtil.multiply(fm, matchedLeftPoints);
 
-        SimpleMatrix leftEpipolarLines = fm.transpose().mult(matchedRightPoints);
+        DenseMatrix leftEpipolarLines = MatrixUtil.multiply(fm.transpose(),
+            matchedRightPoints);
 
         float[] output = new float[2];
         
-        for (int i = 0; i < matchedLeftPoints.numCols(); i++) {
+        for (int i = 0; i < matchedLeftPoints.numColumns(); i++) {
 
             calculatePerpDistFromLines(matchedLeftPoints, 
                 matchedRightPoints, rightEpipolarLines, leftEpipolarLines,
@@ -1496,9 +1527,9 @@ public class EpipolarTransformer {
         return distances;
     }
     
-    public void calculatePerpDistFromLines(SimpleMatrix leftPoints, 
-        SimpleMatrix rightPoints, SimpleMatrix epipolarLinesFromLeft,
-        SimpleMatrix epipolarLinesFromRight, int leftIdx, int rightIdx,
+    public void calculatePerpDistFromLines(DenseMatrix leftPoints, 
+        DenseMatrix rightPoints, DenseMatrix epipolarLinesFromLeft,
+        DenseMatrix epipolarLinesFromRight, int leftIdx, int rightIdx,
         float[] output) {
         
         double a = epipolarLinesFromLeft.get(0, leftIdx);
@@ -1529,8 +1560,8 @@ public class EpipolarTransformer {
         output[1] = (float)d;
     }
     
-    public EpipolarTransformationFit calculateErrorThenFilter(SimpleMatrix fm,
-        SimpleMatrix x1, SimpleMatrix x2, ErrorType errorType, double tolerance) {
+    public EpipolarTransformationFit calculateErrorThenFilter(DenseMatrix fm,
+        DenseMatrix x1, DenseMatrix x2, ErrorType errorType, double tolerance) {
          
         if (errorType.equals(ErrorType.SAMPSONS)) {
             return calculateSampsonsErrorThenFilter(fm, x1, x2, tolerance);
@@ -1539,8 +1570,8 @@ public class EpipolarTransformer {
         }
     }
     
-    public EpipolarTransformationFit calculateError(SimpleMatrix fm,
-        SimpleMatrix x1, SimpleMatrix x2, ErrorType errorType, double tolerance) {
+    public EpipolarTransformationFit calculateError(DenseMatrix fm,
+        DenseMatrix x1, DenseMatrix x2, ErrorType errorType, double tolerance) {
          
         if (errorType.equals(ErrorType.SAMPSONS)) {
             return calculateSampsonsError(fm, x1, x2, tolerance);
@@ -1549,8 +1580,8 @@ public class EpipolarTransformer {
         }
     }
     
-    public EpipolarTransformationFit calculateSampsonsError(SimpleMatrix fm,
-        SimpleMatrix x1, SimpleMatrix x2, double tolerance) {
+    public EpipolarTransformationFit calculateSampsonsError(DenseMatrix fm,
+        DenseMatrix x1, DenseMatrix x2, double tolerance) {
         
         if (fm == null) {
             throw new IllegalArgumentException("fm cannot be null");
@@ -1561,10 +1592,10 @@ public class EpipolarTransformer {
         if (x2 == null) {
             throw new IllegalArgumentException("x2 cannot be null");
         }
-        if (fm.numRows() != 3 || fm.numCols() != 3) {
+        if (fm.numRows() != 3 || fm.numColumns() != 3) {
             throw new IllegalArgumentException("fm should have 3 rows and 3 columns");
         }
-        if (x1.numRows() != x2.numRows() || x1.numCols() != x2.numCols()) {
+        if (x1.numRows() != x2.numRows() || x1.numColumns() != x2.numColumns()) {
             throw new IllegalArgumentException("x1 and x2 must be same sizes");
         }
         
@@ -1581,35 +1612,35 @@ public class EpipolarTransformer {
         List<Integer> outputInliers = new ArrayList<Integer>();
         List<Double> outputDistances = new ArrayList<Double>();
                 
-        SimpleMatrix fmT = fm.transpose();
+        DenseMatrix fmT = (DenseMatrix) fm.transpose();
                 
-        int n = x1.numCols();
+        int n = x1.numColumns();
         
         // 1 x n
-        SimpleMatrix x2tFx1 = new SimpleMatrix(1, n);
+        DenseMatrix x2tFx1 = new DenseMatrix(1, n);
         
         boolean extractRow = false;
         for (int col = 0; col < n; ++col) {
             // 3 x 1 ==> T ==> 1 x 3
-            SimpleMatrix x2T_i = x2.extractVector(extractRow, col).transpose();
+            DenseMatrix x2T_i = (DenseMatrix) MatrixUtil.extractAColumn(x2, col).transpose();
             
             // x2T_i * F is 1X3 * 3X3 = 1X3
-            SimpleMatrix x2T_iF = x2T_i.mult(fm);
+            DenseMatrix x2T_iF = MatrixUtil.multiply(x2T_i, fm);
             
             // 3 x 1
-            SimpleMatrix x1_i = x1.extractVector(extractRow, col);
+            DenseMatrix x1_i = MatrixUtil.extractAColumn(x1, col);
             
             // x2T_iF * x1_i is 1X3 * 3X1 = 1X1
-            SimpleMatrix result = x2T_iF.mult(x1_i);
+            DenseMatrix result = MatrixUtil.multiply(x2T_iF, x1_i);
             
-            x2tFx1.set(0, col, result.get(0, 0));            
+            x2tFx1.set(0, col, result.get(0, 0));        
         }
         
         //Fx1 = F * x1  is 3X3 * 3Xn = 3Xn
-        SimpleMatrix fx1 = fm.mult(x1);
+        DenseMatrix fx1 = MatrixUtil.multiply(fm, x1);
         
         //Ftx2 = F' * x2  is 3x3 * 3xn = 3xn
-        SimpleMatrix ftx2 = fmT.mult(x2);
+        DenseMatrix ftx2 = MatrixUtil.multiply(fmT, x2);
         
         for (int col = 0; col < n; ++col) {
             double x2tFx1_j = x2tFx1.get(0, col);
@@ -1640,14 +1671,14 @@ public class EpipolarTransformer {
         EpipolarTransformationFit fit = new EpipolarTransformationFit(fm,
             outputInliers, ErrorType.SAMPSONS, outputDistances, tolerance);
     
-        fit.setNMaxMatchable(x1.numCols());
+        fit.setNMaxMatchable(x1.numColumns());
         
         return fit;
     }
     
     //follow errors w/ filter for degeneracy
-    public EpipolarTransformationFit calculateSampsonsErrorThenFilter(SimpleMatrix fm,
-        SimpleMatrix x1, SimpleMatrix x2, double tolerance) {
+    public EpipolarTransformationFit calculateSampsonsErrorThenFilter(DenseMatrix fm,
+        DenseMatrix x1, DenseMatrix x2, double tolerance) {
         
         if (fm == null) {
             throw new IllegalArgumentException("fm cannot be null");
@@ -1658,10 +1689,10 @@ public class EpipolarTransformer {
         if (x2 == null) {
             throw new IllegalArgumentException("x2 cannot be null");
         }
-        if (fm.numRows() != 3 || fm.numCols() != 3) {
+        if (fm.numRows() != 3 || fm.numColumns() != 3) {
             throw new IllegalArgumentException("fm should have 3 rows and 3 columns");
         }
-        if (x1.numRows() != x2.numRows() || x1.numCols() != x2.numCols()) {
+        if (x1.numRows() != x2.numRows() || x1.numColumns() != x2.numColumns()) {
             throw new IllegalArgumentException("x1 and x2 must be same sizes");
         }
         
@@ -1678,35 +1709,36 @@ public class EpipolarTransformer {
         List<Integer> outputInliers = new ArrayList<Integer>();
         List<Double> outputDistances = new ArrayList<Double>();
                 
-        SimpleMatrix fmT = fm.transpose();
+        DenseMatrix fmT = (DenseMatrix) fm.transpose();
                 
-        int n = x1.numCols();
+        int n = x1.numColumns();
         
         // 1 x n
-        SimpleMatrix x2tFx1 = new SimpleMatrix(1, n);
+        DenseMatrix x2tFx1 = new DenseMatrix(1, n);
         
         boolean extractRow = false;
         for (int col = 0; col < n; ++col) {
             // 3 x 1 ==> T ==> 1 x 3
-            SimpleMatrix x2T_i = x2.extractVector(extractRow, col).transpose();
+            DenseMatrix x2T_i = (DenseMatrix) MatrixUtil.extractAColumn(x2, col)
+                .transpose();
             
             // x2T_i * F is 1X3 * 3X3 = 1X3
-            SimpleMatrix x2T_iF = x2T_i.mult(fm);
+            DenseMatrix x2T_iF = MatrixUtil.multiply(x2T_i, fm);
             
             // 3 x 1
-            SimpleMatrix x1_i = x1.extractVector(extractRow, col);
+            DenseMatrix x1_i = MatrixUtil.extractAColumn(x1, col);
             
             // x2T_iF * x1_i is 1X3 * 3X1 = 1X1
-            SimpleMatrix result = x2T_iF.mult(x1_i);
+            DenseMatrix result = MatrixUtil.multiply(x2T_iF, x1_i);
             
             x2tFx1.set(0, col, result.get(0, 0));            
         }
         
         //Fx1 = F * x1  is 3X3 * 3Xn = 3Xn
-        SimpleMatrix fx1 = fm.mult(x1);
+        DenseMatrix fx1 = MatrixUtil.multiply(fm, x1);
         
         //Ftx2 = F' * x2  is 3x3 * 3xn = 3xn
-        SimpleMatrix ftx2 = fmT.mult(x2);
+        DenseMatrix ftx2 = MatrixUtil.multiply(fmT, x2);
         
         for (int col = 0; col < n; ++col) {
             double x2tFx1_j = x2tFx1.get(0, col);
@@ -1740,12 +1772,12 @@ public class EpipolarTransformer {
         EpipolarTransformationFit fit = new EpipolarTransformationFit(fm,
             outputInliers, ErrorType.SAMPSONS, outputDistances, tolerance);
     
-        fit.setNMaxMatchable(x1.numCols());
+        fit.setNMaxMatchable(x1.numColumns());
         
         return fit;
     }
     
-    private void filterForDegenerate(SimpleMatrix xy1,
+    private void filterForDegenerate(DenseMatrix xy1,
         List<Integer> outputInliers, List<Double> outputDistances) {
         
         Map<PairInt, List<Integer>> pointIndexes = new HashMap<PairInt, List<Integer>>();
@@ -1811,7 +1843,7 @@ public class EpipolarTransformer {
     * Note that the essential matrix is the transformation matrix between points
     */
     /*
-    public SimpleMatrix[] calculatePFromEssential(SimpleMatrix essentialMatrix) {
+    public DenseMatrix[] calculatePFromEssential(DenseMatrix essentialMatrix) {
     }
     */
 

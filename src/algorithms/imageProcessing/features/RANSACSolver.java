@@ -3,6 +3,7 @@ package algorithms.imageProcessing.features;
 import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
 import algorithms.imageProcessing.transform.EpipolarTransformer;
+import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.imageProcessing.util.RANSACAlgorithmIterations;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
@@ -11,7 +12,7 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
-import org.ejml.simple.SimpleMatrix;
+import no.uib.cipr.matrix.DenseMatrix;
 
 /**
  * given matched point lists, determine the best epipolar solution using a
@@ -65,10 +66,10 @@ public class RANSACSolver {
 
         EpipolarTransformer spTransformer = new EpipolarTransformer();
         
-        SimpleMatrix input1 =
+        DenseMatrix input1 =
             spTransformer.rewriteInto3ColumnMatrix(matchedLeftXY);
 
-        SimpleMatrix input2 =
+        DenseMatrix input2 =
             spTransformer.rewriteInto3ColumnMatrix(matchedRightXY);
         
         return calculateEpipolarProjection(input1, input2,
@@ -87,7 +88,7 @@ public class RANSACSolver {
      * @return
      */
     public EpipolarTransformationFit calculateEpipolarProjection(
-        SimpleMatrix matchedLeftXY, SimpleMatrix matchedRightXY,
+        DenseMatrix matchedLeftXY, DenseMatrix matchedRightXY,
         PairIntArray outputLeftXY, PairIntArray outputRightXY) {
 
         if (matchedLeftXY == null) {
@@ -96,13 +97,13 @@ public class RANSACSolver {
         if (matchedRightXY == null) {
             throw new IllegalArgumentException("matchedRightXY cannot be null");
         }
-        if (matchedLeftXY.numCols() < 7) {
+        if (matchedLeftXY.numColumns() < 7) {
             // cannot use this algorithm.
             throw new IllegalArgumentException(
                 "the algorithms require 7 or more points."
-                + " matchedLeftXY.n=" + matchedLeftXY.numCols());
+                + " matchedLeftXY.n=" + matchedLeftXY.numColumns());
         }
-        if (matchedLeftXY.numCols() != matchedRightXY.numCols()) {
+        if (matchedLeftXY.numColumns() != matchedRightXY.numColumns()) {
             throw new IllegalArgumentException(
                 "matchedLeftXY and right bmust be the same size");
         }
@@ -125,7 +126,7 @@ public class RANSACSolver {
 
         int nSet = 7;
 
-        int nPoints = matchedLeftXY.numCols();
+        int nPoints = matchedLeftXY.numColumns();
         
         ErrorType errorType = ErrorType.SAMPSONS;
 
@@ -158,8 +159,8 @@ public class RANSACSolver {
         
         int[] selectedIndexes = new int[nSet];
         
-        SimpleMatrix sampleLeft = new SimpleMatrix(3, nSet);
-        SimpleMatrix sampleRight = new SimpleMatrix(3, nSet);
+        DenseMatrix sampleLeft = new DenseMatrix(3, nSet);
+        DenseMatrix sampleRight = new DenseMatrix(3, nSet);
         
         while ((nIter < nMaxIter) && (nIter < 2000)) {
             
@@ -183,7 +184,7 @@ public class RANSACSolver {
             }
 
             // determine matrix from 7 points.
-            List<SimpleMatrix> fms =
+            List<DenseMatrix> fms =
                 spTransformer.calculateEpipolarProjectionFor7Points(sampleLeft, 
                     sampleRight);
 
@@ -195,7 +196,7 @@ public class RANSACSolver {
             // use point dist to epipolar lines to estimate errors of sample
             EpipolarTransformationFit fit = null;
             
-            for (SimpleMatrix fm : fms) {
+            for (DenseMatrix fm : fms) {
                 EpipolarTransformationFit fitI = 
                     spTransformer.calculateError(fm, matchedLeftXY, 
                         matchedRightXY, errorType, tolerance);
@@ -219,7 +220,7 @@ public class RANSACSolver {
             // recalculate nMaxIter
             if ((bestFit != null) && ((nIter % 10) == 0)) {
                 double ratio = (double)bestFit.getInlierIndexes().size()
-                    /(double)matchedLeftXY.numCols();
+                    /(double)matchedLeftXY.numColumns();
                 if (ratio >= 0.0000001 && (ratio <= 1.0)) {
                     nMaxIter = nEstimator.estimateNIterFor99PercentConfidence(nPoints, 
                         nSet, ratio);
@@ -236,8 +237,8 @@ public class RANSACSolver {
         // entire fit using only the inliers to determine the fundamental
         // matrix.
         int n = bestFit.getInlierIndexes().size();
-        SimpleMatrix inliersLeftXY = new SimpleMatrix(3, n);
-        SimpleMatrix inliersRightXY = new SimpleMatrix(3, n);
+        DenseMatrix inliersLeftXY = new DenseMatrix(3, n);
+        DenseMatrix inliersRightXY = new DenseMatrix(3, n);
         
         int count = 0;
         for (Integer idx : bestFit.getInlierIndexes()) {
@@ -253,15 +254,15 @@ public class RANSACSolver {
 
         EpipolarTransformationFit consensusFit = null;
         
-        if (inliersRightXY.numCols() == 7) {
+        if (inliersRightXY.numColumns() == 7) {
             
-            List<SimpleMatrix> fms = spTransformer.calculateEpipolarProjectionFor7Points(
+            List<DenseMatrix> fms = spTransformer.calculateEpipolarProjectionFor7Points(
                 inliersLeftXY, inliersRightXY);
             if (fms == null || fms.isEmpty()) {
                 return null;
             }
             EpipolarTransformationFit fit = null;
-            for (SimpleMatrix fm : fms) {
+            for (DenseMatrix fm : fms) {
                 EpipolarTransformationFit fitI = 
                     spTransformer.calculateError(fm, matchedLeftXY, 
                         matchedRightXY, errorType, tolerance);
@@ -273,7 +274,7 @@ public class RANSACSolver {
             
         } else {
             
-            SimpleMatrix fm = 
+            DenseMatrix fm = 
                 spTransformer.calculateEpipolarProjection(
                 inliersLeftXY, inliersRightXY);
             
@@ -320,7 +321,7 @@ public class RANSACSolver {
         return consensusFit;
     }
 
-    private float[] calculateErrorsAsOffsets(SimpleMatrix fm,
+    private float[] calculateErrorsAsOffsets(DenseMatrix fm,
         PairIntArray xy1, PairIntArray xy2, int tolerance) {
 
         /*
@@ -336,7 +337,7 @@ public class RANSACSolver {
                 
         EpipolarTransformer eTransformer = new EpipolarTransformer();
         
-        SimpleMatrix m1m = eTransformer.rewriteInto3ColumnMatrix(xy1);
+        DenseMatrix m1m = eTransformer.rewriteInto3ColumnMatrix(xy1);
         
         float[] xErrors = new float[xy1.getN()];
         float[] yErrors = new float[xy1.getN()];
@@ -359,10 +360,10 @@ public class RANSACSolver {
                 xy2Offset.add(x, y);
             }
          
-            SimpleMatrix m2m = eTransformer.rewriteInto3ColumnMatrix(xy2Offset);
+            DenseMatrix m2m = eTransformer.rewriteInto3ColumnMatrix(xy2Offset);
         
-            SimpleMatrix m2EpipolarLines = fm.mult(m1m);
-            SimpleMatrix m1EpipolarLines = fm.transpose().mult(m2m);
+            DenseMatrix m2EpipolarLines = MatrixUtil.multiply(fm, m1m);
+            DenseMatrix m1EpipolarLines = MatrixUtil.multiply(fm, m2m);
 
             for (int j = 0; j < xy2Offset.getN(); ++j) {
                 eTransformer.calculatePerpDistFromLines(

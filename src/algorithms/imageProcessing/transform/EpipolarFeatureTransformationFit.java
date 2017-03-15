@@ -4,7 +4,7 @@ import algorithms.imageProcessing.features.FeatureComparisonStat;
 import algorithms.imageProcessing.matching.ErrorType;
 import java.util.ArrayList;
 import java.util.List;
-import org.ejml.simple.SimpleMatrix;
+import no.uib.cipr.matrix.DenseMatrix;
 
 /**
  *
@@ -14,7 +14,7 @@ public class EpipolarFeatureTransformationFit extends EpipolarTransformationFit 
     
     private final List<FeatureComparisonStat> fcs;
     
-    public EpipolarFeatureTransformationFit(SimpleMatrix theFundamentalMatrix,
+    public EpipolarFeatureTransformationFit(DenseMatrix theFundamentalMatrix,
         List<Integer> theInlierIndexes, List<FeatureComparisonStat> stats,
         ErrorType theErrorType,
         List<Double> theErrors, double theTolerance) {

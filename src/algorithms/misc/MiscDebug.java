@@ -36,7 +36,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.ejml.simple.SimpleMatrix;
+import no.uib.cipr.matrix.DenseMatrix;
 
 /**
  *
@@ -543,14 +543,14 @@ public class MiscDebug {
         return null;
     }
 
-    public static void plotPoints(GreyscaleImage image, SimpleMatrix points, 
+    public static void plotPoints(GreyscaleImage image, DenseMatrix points, 
         int nExtraForDot, String fileNameSuffix) {
         
         Image img = image.copyToColorGreyscale();
         int w = img.getWidth();
         int h = img.getHeight();
         
-        int n = points.numCols();
+        int n = points.numColumns();
         
         for (int i = 0; i < n; ++i) {
             int x = (int)Math.round(points.get(0, i));

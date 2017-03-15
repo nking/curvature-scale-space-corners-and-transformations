@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Logger;
-import org.ejml.simple.SimpleMatrix;
+import no.uib.cipr.matrix.DenseMatrix;
 
 /**
  * given matched point lists, determine the best epipolar solution using a
@@ -120,8 +120,8 @@ public class RANSACMultiplicitySolver {
         PairIntArray originalLeftXY = new PairIntArray(nAllMultiplicity);
         PairIntArray originalRightXY = new PairIntArray(nAllMultiplicity);
         
-        SimpleMatrix evalAllLeft = new SimpleMatrix(3, nAllMultiplicity);
-        SimpleMatrix evalAllRight = new SimpleMatrix(3, nAllMultiplicity);
+        DenseMatrix evalAllLeft = new DenseMatrix(3, nAllMultiplicity);
+        DenseMatrix evalAllRight = new DenseMatrix(3, nAllMultiplicity);
         int count = 0;
         for (int i = 0; i < matchedLeftXY.size(); ++i) {
             PairInt lft = matchedLeftXY.get(i);
@@ -155,8 +155,8 @@ public class RANSACMultiplicitySolver {
                     
         int[] selectedIndexes = new int[nSet];
         
-        SimpleMatrix sampleLeft = new SimpleMatrix(3, nSet);
-        SimpleMatrix sampleRight = new SimpleMatrix(3, nSet);
+        DenseMatrix sampleLeft = new DenseMatrix(3, nSet);
+        DenseMatrix sampleRight = new DenseMatrix(3, nSet);
         
         log.info("nPoints=" + nPoints + " n including multiplicity=" + nAllMultiplicity);
         
@@ -194,7 +194,8 @@ public class RANSACMultiplicitySolver {
             }
            
             // determine matrix from 7 points.
-            List<SimpleMatrix> fms = spTransformer.calculateEpipolarProjectionFor7Points(
+            List<DenseMatrix> fms = 
+                spTransformer.calculateEpipolarProjectionFor7Points(
                 sampleLeft, sampleRight);
             
             if (fms == null || fms.isEmpty()) {
@@ -205,7 +206,7 @@ public class RANSACMultiplicitySolver {
             // use Sampson's to estimate errors of sample
             EpipolarTransformationFit fit = null;
             
-            for (SimpleMatrix fm : fms) {
+            for (DenseMatrix fm : fms) {
                 EpipolarTransformationFit fitI = 
                     spTransformer.calculateErrorThenFilter(fm, 
                         evalAllLeft, evalAllRight, errorType, tolerance);
@@ -247,8 +248,8 @@ public class RANSACMultiplicitySolver {
         }
                 
         // calculate fundamental matrix using filtered consensus
-        SimpleMatrix inliersLeftXY = new SimpleMatrix(3, matchedLRM.size());
-        SimpleMatrix inliersRightXY = new SimpleMatrix(3, matchedLRM.size());
+        DenseMatrix inliersLeftXY = new DenseMatrix(3, matchedLRM.size());
+        DenseMatrix inliersRightXY = new DenseMatrix(3, matchedLRM.size());
         
         count = 0;
         for (Integer index : matchedLRM) {
@@ -267,15 +268,15 @@ public class RANSACMultiplicitySolver {
         
         EpipolarTransformationFit consensusFit = null;
         
-        if (inliersRightXY.numCols() == 7) {
+        if (inliersRightXY.numColumns() == 7) {
             
-            List<SimpleMatrix> fms = spTransformer.calculateEpipolarProjectionFor7Points(
+            List<DenseMatrix> fms = spTransformer.calculateEpipolarProjectionFor7Points(
                 inliersLeftXY, inliersRightXY);
             if (fms == null || fms.isEmpty()) {
                 return null;
             }
             EpipolarTransformationFit fit = null;
-            for (SimpleMatrix fm : fms) {
+            for (DenseMatrix fm : fms) {
                 EpipolarTransformationFit fitI = 
                     spTransformer.calculateErrorThenFilter(fm,
                         inliersLeftXY, inliersRightXY, errorType, tolerance);
@@ -287,7 +288,7 @@ public class RANSACMultiplicitySolver {
             
         } else {
             
-            SimpleMatrix fm = spTransformer.calculateEpipolarProjection(
+            DenseMatrix fm = spTransformer.calculateEpipolarProjection(
                 inliersLeftXY, inliersRightXY);
             
             EpipolarTransformationFit fit = 
@@ -316,7 +317,7 @@ public class RANSACMultiplicitySolver {
     }
 
     private Set<Integer> filterForDegeneracy(EpipolarTransformationFit fit, 
-        SimpleMatrix allLeft, SimpleMatrix allRight) {
+        DenseMatrix allLeft, DenseMatrix allRight) {
         
         Set<Integer> matchedLRM = new HashSet<Integer>();
         
