@@ -1,3 +1,0 @@
-JFree Chart uses GNU Lesser General Public Licence
-
-http://www.gnu.org/licenses/lgpl.txt

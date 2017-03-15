@@ -3,7 +3,6 @@ package algorithms.mst;
 import algorithms.util.PairInt;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
-import algorithms.util.ScatterPointPlotterPNG;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntIntMap;
@@ -367,9 +366,9 @@ public class TSPPrimsMSTTest extends TestCase {
         System.out.println("tsp tour=" +
             Arrays.toString(tour));
         
-        ScatterPointPlotterPNG plotter = new
+        /*ScatterPointPlotterPNG plotter = new
             ScatterPointPlotterPNG();
-        
+        */
         float[] xPoints = new float[pointList.size() + 1];
         float[] yPoints = new float[pointList.size() + 1];
         float[] xPointsE = new float[pointList.size() + 1];
@@ -386,12 +385,13 @@ public class TSPPrimsMSTTest extends TestCase {
             yPointsE[i] = p.getY();
         }
         
+        /*
         plotter.plotLabeledPoints(0, 8000, 0, 5500, 
             xPoints, yPoints, 
             Integer.toString(100), "X", "Y");
     
         plotter.writeFile(100);
-        
+        */
         PolygonAndPointPlotter plotter2 = 
             new PolygonAndPointPlotter();
         plotter2.addPlot(xPoints, yPoints, 

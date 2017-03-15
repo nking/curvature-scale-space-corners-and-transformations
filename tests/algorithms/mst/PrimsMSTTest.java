@@ -2,7 +2,6 @@ package algorithms.mst;
 
 import algorithms.compGeometry.convexHull.PolarAngleQuickSort;
 import algorithms.util.PairInt;
-import algorithms.util.ScatterPointPlotterPNG;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntIntHashMap;
@@ -481,7 +480,7 @@ public class PrimsMSTTest extends TestCase {
         Map<PairInt, Integer> pointMap, int plotNumber) 
         throws Exception {
       
-        ScatterPointPlotterPNG plotter = new
+        /*ScatterPointPlotterPNG plotter = new
             ScatterPointPlotterPNG();
         
         float[] xPoints = new float[points.size()];
@@ -499,7 +498,7 @@ public class PrimsMSTTest extends TestCase {
             "X", "Y");
     
         plotter.writeFile(plotNumber);
-        
+        */
         print(walk, points, pointMap);
     }
     

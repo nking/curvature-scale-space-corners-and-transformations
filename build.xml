@@ -35,7 +35,6 @@
     <!-- =========== the application file directories ========-->
     <property name="src.dir"             value="${basedir}/src"/>
     <property name="resources.dir"       value="${basedir}/resources"/>
-    <property name="aspects.dir"         value="${basedir}/aspects"/>
     <property name="lib.dir"             value="${basedir}/lib"/>
     <property name="classes.dir"         value="${basedir}/bin"/>
     <property name="src.out.dir"         value="${classes.dir}/classes"/>
@@ -70,9 +69,6 @@
         <echo message="runDependency               run dependency analysis on packages (requires graphviz and jdepend)"/>
         <echo message="runClassDependency          run dependency analysis on a class(requires jdk8)"/>
         <echo message="javadoc:                    create javadocs"/>
-        <echo message="runTestsWithAspects:        run tests with aspects"/>
-        <echo message="runTestWithAspects:         run test with aspects, use -Dtest=fqn"/>
-        <echo message="debugTestWithAspects:       debug a test with aspects"/>
         <echo message="runThresh                   run code to create thresholded image to help make skyline test comparison images"/>
         <echo message="package                     create a standalone executable in dist/scalespace.jar"/>
     </target>
@@ -107,9 +103,6 @@
         <delete dir="${doc.dir}/api"/>
         <delete>
             <fileset dir="${classes.dir}" />
-            <fileset dir="${aspects.dir}"
-                includes="**/*.class"
-                excludes="*.jar" />
         </delete>
         <delete>
             <fileset dir="${log.dir}" includes="*" />
@@ -214,216 +207,7 @@
     </target> 
 
     <target name="runCoverage" depends="clean,debug,compile,compileTests,coverage,report"/>
-
-    <target name="runTestsWithAspects" depends="clean,debug,compile,compileTests"
-        description="run image processing tests with debugging output" >
-        
-        <record name="${logfile}" append="yes" loglevel="info"/>
-
-        <echo message="COMPILE debug=${compile.debug}"/>
-        
-    	<taskdef resource="org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties"
-    	    classpath="${lib.dir}/aspectjtools-1.8.0.jar" />
-        
-        <!-- compile aspect .aj files -->
-        <fileset id="ajFileSet" dir="${aspects.dir}">
-            <include name="**/CurvatureAspect.aj"/>
-        </fileset>
-        
-        <pathconvert pathsep="${line.separator}" property="ajFiles" refid="ajFileSet"/>
-        <echo file="${aspects.dir}/aj-files_processing_debug.txt" >${ajFiles}</echo>
-
-        <iajc source="1.6" destDir="${src.out.dir}"  verbose="true" >
-            <argfiles>
-                <pathelement location="${aspects.dir}/aj-files_processing_debug.txt"/>
-            </argfiles>
-            <inpath>
-                <pathelement location="${src.out.dir}"/>
-                <pathelement location="${lib.dir}/ejml-0.29.jar"/>
-                <pathelement location="${lib.dir}/LAML-1.6.2.jar"/>
-                <pathelement location="${lib.dir}/jfreechart-1.0.19.jar"/>
-                <pathelement location="${lib.dir}/jcommon-1.0.23.jar"/>
-                <pathelement location="${lib.dir}/com.climbwithyourfeet.clustering.jar"/>
-                <pathelement location="${lib.dir}/trove4j-3.0.3.jar"/>
-                <!-- jfreechart needs the servlet jar -->
-                <pathelement location="${lib.dir}/servlet-api-2.5.jar"/>
-            </inpath>
-            <classpath>
-                <pathelement location="${lib.dir}/aspectjrt-1.8.0.jar"/>
-            </classpath>
-        </iajc>
-
-        <junit fork="true" showoutput="false" filtertrace="off" printsummary="yes" 
-           haltonerror="true" haltonfailure="true">
-        	<jvmarg line="-javaagent:${lib.dir}/aspectjweaver-1.8.0.jar"/>
-            
-            <assertions enablesystemassertions="true">
-                <enable/>
-            </assertions>
-            
-            <classpath>
-                <pathelement location="${lib.dir}/aspectjrt-1.8.0.jar"/>
-                <pathelement location="${lib.dir}/aspectjweaver-1.8.0.jar"/>
-                <pathelement location="${basedir}/res/META-INF/"/>
-                <pathelement location="${tests.out.dir}"/>
-                <path refid="test.classpath"/>
-            </classpath>
-
-            <formatter type="plain" usefile="true"/>
-
-            <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
-
-            <jvmarg value="-XX:-UseSplitVerifier" />
-
-            <jvmarg value="-enableassertions" />
-
-            <!-- avoiding classpath clashes with tests in the submodule by
-            limiting the tests run here -->
-            <batchtest fork="true" todir="${tests.out.dir}">
-                <fileset dir="${tests.out.dir}">
-                    <include name="**/*CurvatureTest.class"/>
-                	<exclude name= "**/*$*.class"/>
-                </fileset>
-            </batchtest>
-        </junit>
-    </target>
     
-    <target name="runTestWithAspects" depends="clean,debug,compile,compileTests" 
-        description="run an image processing test w/ the debug aspects" >
-        
-        <!-- note, may need to reweave with each run -->
-        <fail unless="test">
-            Set class to test.  example: -Dtest=algorithms.spatial.indexing.zoomtable.URIPrefixSymbolTableTest
-        </fail>
-
-        <record name="${logfile}" append="yes" loglevel="info"/>
-
-        <echo message="COMPILE debug=${compile.debug}"/>
-        
-        <taskdef resource="org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties"
-            classpath="${lib.dir}/aspectjtools-1.8.0.jar" />
-
-        <!-- compile aspect .aj files -->
-        <fileset id="ajFileSet" dir="${aspects.dir}">
-            <include name="**/CurvatureAspect.aj"/>
-        </fileset>
-        
-        <pathconvert pathsep="${line.separator}" property="ajFiles" refid="ajFileSet"/>
-        <echo file="${aspects.dir}/aj-files_processing_debug.txt">${ajFiles}</echo>
-
-    	<!--
-    	compile aspects alone to classes binary directory
-    	-->
-        <iajc source="1.6" destDir="${src.out.dir}"  
-            verbose="false" showWeaveInfo="false" debug="false">
-            
-            <!--
-            -XX:-UseSplitVerifier
-            -noverify
-            -->
-            
-            <argfiles>
-                <pathelement location="${aspects.dir}/aj-files_processing_debug.txt"/>
-            </argfiles>
-        	<inpath>
-      		<pathelement location="${src.out.dir}"/>
-                <pathelement location="${lib.dir}/ejml-0.29.jar"/>
-                <pathelement location="${lib.dir}/LAML-1.6.2.jar"/>
-                <pathelement location="${lib.dir}/jfreechart-1.0.19.jar"/>
-                <pathelement location="${lib.dir}/jcommon-1.0.23.jar"/>
-                <pathelement location="${lib.dir}/com.climbwithyourfeet.clustering.jar"/>
-                <pathelement location="${lib.dir}/trove4j-3.0.3.jar"/>
-                <!-- jree needs the servlet jar -->
-                <pathelement location="${lib.dir}/servlet-api-2.5.jar"/>
-        	</inpath>
-            <classpath>
-                <pathelement location="${lib.dir}/aspectjrt-1.8.0.jar"/>
-            </classpath>
-        </iajc>
-
-        <java classname="${test}" fork="true" failonerror="true">
-            <jvmarg value="-enableassertions"/>
-            <jvmarg value="-Xms512m"/>
-            <jvmarg value="-Xmx1024m"/>
-            <jvmarg line="-javaagent:${lib.dir}/aspectjweaver-1.8.0.jar"/>
-            <jvmarg value="-XX:-UseSplitVerifier" />
-            <jvmarg value="-noverify" />
-            <sysproperty key="java.util.logging.config.file" 
-                value="${classes.dir}/classes/logging.properties"/>
-            <classpath>
-                <pathelement location="${lib.dir}/aspectjrt-1.8.0.jar"/>
-                <pathelement location="${lib.dir}/aspectjweaver-1.8.0.jar"/>
-                <pathelement location="${basedir}/res/META-INF/"/>
-                <pathelement location="${tests.out.dir}"/>
-                <path refid="test.classpath"/>
-            </classpath>
-        </java>
-    </target>
-    
-    <target name="debugTestWithAspects" depends="clean,debug,compile,compileTests" 
-        description="compile and then use load-time weaving" >
-        
-        <!-- note, may need to reweave with each run -->
-        <fail unless="test">
-            Set class to test.  example: -Dtest=algorithms.spatial.indexing.zoomtable.URIPrefixSymbolTableTest
-        </fail>
-
-        <record name="${logfile}" append="yes" loglevel="info"/>
-
-        <echo message="COMPILE debug=${compile.debug}"/>
-        
-        <taskdef resource="org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties"
-            classpath="${lib.dir}/aspectjtools-1.8.0.jar" />
-
-        <!-- compile aspect .aj files -->
-        <fileset id="ajFileSet" dir="${aspects.dir}">
-            <include name="**/CurvatureAspect.aj"/>
-        </fileset>
-        
-        <pathconvert pathsep="${line.separator}" property="ajFiles" refid="ajFileSet"/>
-        <echo file="${aspects.dir}/aj-files_processing_debug.txt">${ajFiles}</echo>
-
-    	<!--
-    	compile aspects alone to classes binary directory
-    	-->
-        <iajc source="1.6" destDir="${src.out.dir}"  verbose="false" >
-            <argfiles>
-                <pathelement location="${aspects.dir}/aj-files_processing_debug.txt"/>
-            </argfiles>
-            <inpath>
-                <pathelement location="${src.out.dir}"/>
-                <pathelement location="${lib.dir}/ejml-0.29.jar"/>
-                <pathelement location="${lib.dir}/LAML-1.6.2.jar"/>
-                <pathelement location="${lib.dir}/jfreechart-1.0.19.jar"/>
-                <pathelement location="${lib.dir}/jcommon-1.0.23.jar"/>
-                <pathelement location="${lib.dir}/com.climbwithyourfeet.clustering.jar"/>
-                <pathelement location="${lib.dir}/trove4j-3.0.3.jar"/>
-                <!-- jfreechart needs the servlet jar -->
-                <pathelement location="${lib.dir}/servlet-api-2.5.jar"/>
-            </inpath>
-            <classpath>
-                <pathelement location="${lib.dir}/aspectjrt-1.8.0.jar"/>
-            </classpath>
-        </iajc>
-           
-        <java classname="${test}" fork="true" failonerror="true">
-            <jvmarg value="-enableassertions"/>
-            <jvmarg value="-Xms512m"/>
-            <jvmarg value="-Xmx1024m"/>
-            <jvmarg line="-Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y -XX:-UseSplitVerifier"/>
-            <jvmarg line="-javaagent:${lib.dir}/aspectjweaver-1.8.0.jar"/>
-            <jvmarg value="-XX:-UseSplitVerifier" />
-            <sysproperty key="java.util.logging.config.file" value="${classes.dir}/classes/logging.properties"/>
-            <classpath>
-                <pathelement location="${lib.dir}/aspectjrt-1.8.0.jar"/>
-                <pathelement location="${lib.dir}/aspectjweaver-1.8.0.jar"/>
-                <pathelement location="${basedir}/res/META-INF/"/>
-                <pathelement location="${tests.out.dir}"/>
-                <path refid="test.classpath"/>
-            </classpath>
-        </java>
-    </target>
-
     <target name="dtraceImageProcessing" if="junit.present" 
         depends="prepare,clean,debug,compile,JUnit,compileTests">
 

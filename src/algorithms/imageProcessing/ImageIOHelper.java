@@ -9,7 +9,6 @@ import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
-import algorithms.util.ScatterPointPlotterPNG;
 import com.climbwithyourfeet.clustering.util.MiscMath;
 import gnu.trove.TIntCollection;
 import gnu.trove.iterator.TIntIterator;
@@ -836,55 +835,6 @@ public class ImageIOHelper {
                 }
             }
         }
-    }
-
-    public static void writeLabeledContours(
-        List<CurvatureScaleSpaceContour> contours, int xOffset, int yOffset,
-        String fileName) throws IOException {
-        
-        PairFloatArray xy = getXYOfContourPeaks(contours, xOffset, yOffset);
-        
-        writeLabeledPoints(xy, xOffset, yOffset, "infl pts", fileName);
-    }
-    
-    public static void writeLabeledCornerRegions(
-        List<CornerRegion> regions, int xOffset, int yOffset,
-        String fileName) throws IOException {
-        
-        PairFloatArray xy = new PairFloatArray(regions.size());
-        
-        for (int i = 0; i < regions.size(); ++i) {
-            CornerRegion bpr = regions.get(i);
-            xy.add(bpr.getX()[bpr.getKMaxIdx()], bpr.getY()[bpr.getKMaxIdx()]);
-        }
-        
-        writeLabeledPoints(xy, xOffset, yOffset, "infl pts", fileName);
-        
-    }
-    
-    public static void writeLabeledPoints(PairFloatArray xy, int xOffset, 
-        int yOffset, String label, String fileName) throws IOException {
-                
-        ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();
-                
-        float[] x = Arrays.copyOf(xy.getX(), xy.getN());
-        float[] y = Arrays.copyOf(xy.getY(), xy.getN());
-        
-        float xmn = MiscMath.findMin(x);
-        float xmx = MiscMath.findMax(x);
-        float ymn = MiscMath.findMin(y);
-        float ymx = MiscMath.findMax(y);
-        
-        float xRange = xmx - xmn;
-        float yRange = ymx - ymn;
-        xmn -= 0.1*xRange;
-        xmx += 0.1*xRange;
-        ymn -= 0.1*yRange;
-        ymx += 0.1*yRange;
-        
-        plotter.plotLabeledPoints(xmn, xmx, ymn, ymx, x, y, label, "X", "Y");
-    
-        plotter.writeToFile(fileName);
     }
     
     private static PairFloatArray getXYOfContourPeaks(

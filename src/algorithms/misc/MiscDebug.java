@@ -2,13 +2,11 @@ package algorithms.misc;
 
 import algorithms.CountingSort;
 import algorithms.compGeometry.convexHull.GrahamScan;
-import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.features.CorrespondenceList;
 import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceContour;
 import algorithms.imageProcessing.features.FeatureComparisonStat;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
-import algorithms.imageProcessing.ImageDisplayer;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import static algorithms.imageProcessing.ImageIOHelper.getNextColorRGB;
@@ -21,7 +19,6 @@ import algorithms.util.PairIntArray;
 import algorithms.util.PointPairInt;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
-import algorithms.util.ScatterPointPlotterPNG;
 import gnu.trove.list.TIntList;
 import java.awt.Color;
 import java.io.IOException;
@@ -546,191 +543,6 @@ public class MiscDebug {
         return null;
     }
 
-    /**
-     * a debug method to print scatter diagrams and histograms if needed
-     * of the colors in search of best indicator that blue or red skies
-     * have many clouds.
-     * @param points
-     * @param colorImg
-     * @param xOffset
-     * @param yOffset
-     */
-    public static void plotSkyColor(Set<PairInt> points, ImageExt colorImg, 
-        int xOffset, int yOffset) {
-
-        int n = points.size();
-        
-        CIEChromaticity cieC = new CIEChromaticity();
-        
-        float[] cieX = new float[n];
-        float[] cieY = new float[n];
-        float[] hue = new float[n];
-        float[] saturation = new float[n];
-        float[] brightness = new float[n];
-        float[] r = new float[n];
-        float[] g = new float[n];
-        float[] b = new float[n];
-        
-        int i = 0;
-        for (PairInt p : points) {
-            int x = p.getX() + xOffset;
-            int y = p.getY() + yOffset;
-            
-            int idx = colorImg.getInternalIndex(x, y);
-
-            int rr = colorImg.getR(idx);
-            int gg = colorImg.getG(idx);
-            int bb = colorImg.getB(idx);
-                        
-            r[i] = rr;
-            g[i] = gg;
-            b[i] = bb;
-            
-            float[] cieXY = cieC.rgbToXYChromaticity(rr, gg, bb);
-            cieX[i] = cieXY[0];
-            cieY[i] = cieXY[1];
-            
-            float[] hsb = new float[3];
-            Color.RGBtoHSB(rr, gg, bb, hsb);
-            hue[i] = hsb[0];
-            saturation[i] = hsb[1];
-            brightness[i] = hsb[2];
-            
-            i++;
-        }
-        
-        int plotNumber = getCurrentTimeFormatted();
-        
-        try {
-            ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();
-            
-            plotter.plot(0.2f, 0.6f, 0.2f, 0.6f, 
-                cieX, cieY, "CIE X vs Y", "CIEX", "CIEY");
-            plotter.writeFile(Integer.valueOf(plotNumber));
-            
-            plotter = new ScatterPointPlotterPNG();
-            plotter.plot(0.0f, 256f, 0.0f, 1.1f, 
-                b, brightness, "B vs brightness", "B", "brightness");
-            plotter.writeFile(Integer.valueOf(plotNumber + 1));
-            
-            plotter = new ScatterPointPlotterPNG();
-            plotter.plot(0.0f, 256f, 0.0f, 1.1f, 
-                r, brightness, "R vs brightness", "R", "brightness");
-            plotter.writeFile(Integer.valueOf(plotNumber + 2));
-            
-            plotter = new ScatterPointPlotterPNG();
-            plotter.plot(0.0f, 256f, 0.0f, 256f, 
-                b, r, "B vs R", "B", "R");
-            plotter.writeFile(Integer.valueOf(plotNumber + 3));
-            
-            plotter = new ScatterPointPlotterPNG();
-            plotter.plot(0.0f, 1.1f, 0.0f, 1.1f, 
-                hue, saturation, "hue vs saturation", "hue", "saturation");
-            plotter.writeFile(Integer.valueOf(plotNumber + 4));
-            
-            plotter = new ScatterPointPlotterPNG();
-            plotter.plot(0.0f, 0.8f, 0.0f, 1.1f, 
-                cieX, brightness, "CIE X vs brightness", "CIEX", "brightness");
-            plotter.writeFile(Integer.valueOf(plotNumber + 5));
-            
-            plotter = new ScatterPointPlotterPNG();
-            plotter.plot(0.0f, 0.9f, 0.0f, 1.1f, 
-                cieY, brightness, "CIE Y vs brightness", "CIEY", "brightness");
-            plotter.writeFile(Integer.valueOf(plotNumber + 6));
-                        
-            // for hue histograms, because it's space is formed in 0 to 360 degrees,
-            // need to wrap around the bins.
-            // for that reason, will look for an empty bin and cut and merge
-            // the wrap
-            
-            HistogramHolder hueHist = Histogram.createSimpleHistogram(
-                0.f, 1.0f, 10, hue, Errors.populateYErrorsBySqrt(hue));
-                        
-            int[] yh = Arrays.copyOf(hueHist.getYHist(), hueHist.getYHist().length);
-            int zeroBinIdx = -1;
-            for (int ii = 0; ii < yh.length; ii++) {
-                if (yh[ii] == 0) {
-                    zeroBinIdx = ii;
-                    break;
-                }
-            }
-            if (zeroBinIdx > -1) {
-                int[] yShifted = new int[yh.length];
-                float[] yShiftedF = new float[yh.length];
-                int count = 0;
-                for (int ii = (zeroBinIdx + 1); ii < yh.length; ii++) {
-                    yShifted[count] = yh[ii];
-                    yShiftedF[count] = yh[ii];
-                    count++;
-                }
-                for (int ii = 0; ii <= zeroBinIdx; ii++) {
-                    yShifted[count] = yh[ii];
-                    yShiftedF[count] = yh[ii];
-                    count++;
-                }
-                hueHist.setYHist(yShifted);
-                hueHist.setYHistFloat(yShiftedF);
-            }
-            
-            float fwhmHue = Histogram.measureFWHMOfStrongestPeak(hueHist);
-            
-            hueHist.plotHistogram("hue shifted by " + (zeroBinIdx + 0) + " bins",
-                plotNumber);
-            
-            log.info("fwhm hue=" + fwhmHue);
-
-            HistogramHolder saturationHist = Histogram.createSimpleHistogram(
-                0.f, 1.0f, 10, 
-                saturation, Errors.populateYErrorsBySqrt(saturation));
-            
-            saturationHist.plotHistogram("saturation", plotNumber + 1);
-            
-            float[] fwhmSaturation = Histogram.measureFWHMOfAllPeaks(
-                saturationHist, 0.1f);
-            
-            log.info("fwhm saturation=" + Arrays.toString(fwhmSaturation));
-            
-        } catch (IOException e) {
-            
-            log.severe(e.getMessage());
-        }
-    }
-    
-    public static void plotPointSets(PairFloatArray set1, PairIntArray set2, 
-        int imageWidth1, int imageHeight1, int imageWidth2, int imageHeight2, 
-        int fileNumber) {
-        
-        float[] x1 = new float[set1.getN()];
-        float[] y1 = new float[x1.length];
-        for (int i = 0; i < set1.getN(); ++i) {
-            x1[i] = set1.getX(i);
-            y1[i] = set1.getY(i);
-        }
-        
-        float[] x2 = new float[set2.getN()];
-        float[] y2 = new float[x2.length];
-        for (int i = 0; i < set2.getN(); ++i) {
-            x2[i] = set2.getX(i);
-            y2[i] = set2.getY(i);
-        }
-        
-        try {
-            ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();
-            
-            plotter.plot(0, imageWidth1, 0, imageHeight1, 
-                x1, y1, "set1", "X", "Y");
-            plotter.writeFile(Integer.valueOf(fileNumber));
-            
-            plotter.plot(0, imageWidth2, 0, imageHeight2, 
-                x2, y2, "set2", "X", "Y");
-            plotter.writeFile(Integer.valueOf(fileNumber + 1));
-           
-        } catch (IOException e) {
-            
-            log.severe(e.getMessage());
-        }
-    }
-    
     public static void plotPoints(GreyscaleImage image, SimpleMatrix points, 
         int nExtraForDot, String fileNameSuffix) {
         
@@ -797,55 +609,6 @@ public class MiscDebug {
         }
     }
     
-    public static void plotPoints(Set<PairInt> set,
-        int imageWidth, int imageHeight, int fileNumber) {
-        
-        float[] x1 = new float[set.size()];
-        float[] y1 = new float[x1.length];
-        int i = 0;
-        for (PairInt p : set) {
-            x1[i] = p.getX();
-            y1[i] = p.getY();
-            i++;
-        }
-        
-        try {
-            ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();
-            
-            plotter.plot(0, imageWidth, 0, imageHeight, 
-                x1, y1, "points", "X", "Y");
-            plotter.writeFile(Integer.valueOf(fileNumber));
-            
-        } catch (IOException e) {
-            
-            log.severe(e.getMessage());
-        }
-    }
-
-    public static void plotPoints(PairIntArray points,
-        int imageWidth, int imageHeight, int fileNumber) {
-        
-        float[] x1 = new float[points.getN()];
-        float[] y1 = new float[x1.length];
-        for (int i = 0; i < points.getN(); ++i) {
-            x1[i] = points.getX(i);
-            y1[i] = points.getY(i);
-            i++;
-        }
-        
-        try {
-            ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();
-            
-            plotter.plot(0, imageWidth, 0, imageHeight, 
-                x1, y1, "points", "X", "Y");
-            plotter.writeFile(Integer.valueOf(fileNumber));
-            
-        } catch (IOException e) {
-            
-            log.severe(e.getMessage());
-        }
-    }
-
     public static int getCurrentTimeFormatted() {
         double t0 = System.currentTimeMillis();
         double t = t0 - ((int)(t0/1.E9)) * 1E9;
