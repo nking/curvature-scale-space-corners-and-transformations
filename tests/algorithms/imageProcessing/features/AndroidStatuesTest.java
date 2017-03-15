@@ -48,9 +48,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
-import org.ejml.data.Complex64F;
-import org.ejml.simple.SimpleEVD;
-import org.ejml.simple.SimpleMatrix;
 
 /**
  *

@@ -13,7 +13,7 @@ import java.security.SecureRandom;
 import java.util.List;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
-import org.ejml.simple.*;
+import no.uib.cipr.matrix.DenseMatrix;
 
 /**
  *
@@ -41,7 +41,7 @@ public class EpipolarTransformerTest extends TestCase {
         double centroidX = (w/2);
         double centroidY = (h/2);
         
-        SimpleMatrix tMatrix = sTransformer.createScaleTranslationMatrix(scale, 
+        DenseMatrix tMatrix = sTransformer.createScaleTranslationMatrix(scale, 
             centroidX, centroidY);
         
         double sqrtTwo = Math.sqrt(2);
@@ -51,7 +51,7 @@ public class EpipolarTransformerTest extends TestCase {
         */
         int nTests = 1;
         int nPoints = 100;
-        SimpleMatrix xy = new SimpleMatrix(3, nPoints);
+        DenseMatrix xy = new DenseMatrix(3, nPoints);
         double[][] xyExpectedTr = new double[2][nPoints];
         for (int j = 0; j < 2; ++j) {
             xyExpectedTr[j] = new double[nPoints];
@@ -95,15 +95,15 @@ public class EpipolarTransformerTest extends TestCase {
         
         EpipolarTransformer spTransformer = new EpipolarTransformer();
         
-        SimpleMatrix fm = spTransformer.calculateEpipolarProjection(
+        DenseMatrix fm = spTransformer.calculateEpipolarProjection(
             leftTrueMatches, rightTrueMatches);
 
         assertNotNull(fm);
         
         double tolerance = 3;
         
-        SimpleMatrix matchedLeftXY = spTransformer.rewriteInto3ColumnMatrix(leftTrueMatches);
-        SimpleMatrix matchedRightXY = spTransformer.rewriteInto3ColumnMatrix(rightTrueMatches);
+        DenseMatrix matchedLeftXY = spTransformer.rewriteInto3ColumnMatrix(leftTrueMatches);
+        DenseMatrix matchedRightXY = spTransformer.rewriteInto3ColumnMatrix(rightTrueMatches);
         EpipolarTransformationFit fit = spTransformer.calculateError(fm, matchedLeftXY, 
             matchedRightXY, ErrorType.DIST_TO_EPIPOLAR_LINE, tolerance);
         
@@ -149,7 +149,7 @@ public class EpipolarTransformerTest extends TestCase {
         
         EpipolarTransformer spTransformer = new EpipolarTransformer();
         
-        List<SimpleMatrix> fms =
+        List<DenseMatrix> fms =
             spTransformer.calculateEpipolarProjectionFor7Points(leftTrueMatches, 
             rightTrueMatches);
 
@@ -158,10 +158,10 @@ public class EpipolarTransformerTest extends TestCase {
         
         double tolerance = 3;
         
-        SimpleMatrix matchedLeftXY = spTransformer.rewriteInto3ColumnMatrix(leftTrueMatches);
-        SimpleMatrix matchedRightXY = spTransformer.rewriteInto3ColumnMatrix(rightTrueMatches);
+        DenseMatrix matchedLeftXY = spTransformer.rewriteInto3ColumnMatrix(leftTrueMatches);
+        DenseMatrix matchedRightXY = spTransformer.rewriteInto3ColumnMatrix(rightTrueMatches);
         EpipolarTransformationFit fit = null;
-        for (SimpleMatrix fm : fms) {
+        for (DenseMatrix fm : fms) {
             EpipolarTransformationFit fitI = 
                 spTransformer.calculateError(fm, matchedLeftXY, 
                     matchedRightXY, ErrorType.DIST_TO_EPIPOLAR_LINE, tolerance);
@@ -185,7 +185,7 @@ public class EpipolarTransformerTest extends TestCase {
         }
         
         EpipolarTransformationFit fit2 = null;
-        for (SimpleMatrix fm : fms) {
+        for (DenseMatrix fm : fms) {
             EpipolarTransformationFit fitI = 
                 spTransformer.calculateError(fm, matchedLeftXY, 
                     matchedRightXY, ErrorType.SAMPSONS, tolerance);
@@ -214,26 +214,26 @@ public class EpipolarTransformerTest extends TestCase {
     http://www.robots.ox.ac.uk/~vgg/data/data-mview.html
     */
     
-    private void overplotEpipolarLines(SimpleMatrix fm, PairFloatArray set1,
+    private void overplotEpipolarLines(DenseMatrix fm, PairFloatArray set1,
         PairFloatArray set2, Image img1, Image img2, int image1Width,
         int image1Height, int image2Width, int image2Height, String outfileNumber) 
         throws IOException {
 
         EpipolarTransformer st = new EpipolarTransformer();
         
-        SimpleMatrix input1 =
+        DenseMatrix input1 =
             st.rewriteInto3ColumnMatrix(set1);
 
-        SimpleMatrix input2 =
+        DenseMatrix input2 =
             st.rewriteInto3ColumnMatrix(set2);
 
-        for (int ii = 0; ii < input1.numCols(); ii++) {
+        for (int ii = 0; ii < input1.numColumns(); ii++) {
             double x = input1.get(0, ii);
             double y = input1.get(1, ii);
             ImageIOHelper.addPointToImage((float) x, (float) y, img1, 3,
                 255, 0, 0);
         }
-        for (int ii = 0; ii < input2.numCols(); ii++) {
+        for (int ii = 0; ii < input2.numColumns(); ii++) {
             double x2 = input2.get(0, ii);
             double y2 = input2.get(1, ii);
             ImageIOHelper.addPointToImage((float) x2, (float) y2, img2, 3,
@@ -243,9 +243,10 @@ public class EpipolarTransformerTest extends TestCase {
         EpipolarTransformer spTransformer = new EpipolarTransformer();
 
         Color clr = null;
-        for (int ii = 0; ii < input2.numCols(); ii++) {
+        for (int ii = 0; ii < input2.numColumns(); ii++) {
             clr = getColor(clr);
-            SimpleMatrix epipolarLinesInLeft = fm.transpose().mult(input2);
+            DenseMatrix epipolarLinesInLeft = 
+                MatrixUtil.multiply(fm.transpose(), input2);
             PairIntArray leftLine = spTransformer.getEpipolarLine(
                 epipolarLinesInLeft, image1Width, image1Height, ii);
             ImageIOHelper.addCurveToImage(leftLine, img1, 0,
@@ -253,9 +254,9 @@ public class EpipolarTransformerTest extends TestCase {
         }
 
         clr = null;
-        for (int ii = 0; ii < input1.numCols(); ii++) {
+        for (int ii = 0; ii < input1.numColumns(); ii++) {
             clr = getColor(clr);
-            SimpleMatrix epipolarLinesInRight = fm.mult(input1);
+            DenseMatrix epipolarLinesInRight = MatrixUtil.multiply(fm, input1);
             PairIntArray rightLine = spTransformer.getEpipolarLine(
                 epipolarLinesInRight, img2.getWidth(), img2.getHeight(), ii);
             ImageIOHelper.addCurveToImage(rightLine, img2, 0,

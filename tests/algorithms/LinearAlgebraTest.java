@@ -41,16 +41,6 @@ public class LinearAlgebraTest extends TestCase {
         
         String expectedEigVec = getExpectedVextors0();
         
-        /*{
-            SimpleMatrix m = new SimpleMatrix(a);
-            SimpleEVD evd = m.eig();
-            EigenDecomposition evdD = evd.getEVD();
-            SimpleMatrix d = new SimpleMatrix(org.ejml.ops.EigenOps.createMatrixD(evdD));
-            SimpleMatrix v = new SimpleMatrix(org.ejml.ops.EigenOps.createMatrixV(evdD));
-            System.out.println("Simple matrix V=\n" + 
-                v.toString());
-        }*/
-        
         /*EVD is LAPACK dgeev
         
         DGEEV computes for an N-by-N real nonsymmetric matrix A, the
@@ -354,7 +344,7 @@ public class LinearAlgebraTest extends TestCase {
                 Y.norm(Matrix.Norm.Frobenius))) {
             throw new RuntimeException("The norm of (X-Y) is too large: " + 
                 Double.toString(
-                    subtract(X, Y).norm(Matrix.Norm.Frobenius)));
+                    MatrixUtil.subtract(X, Y).norm(Matrix.Norm.Frobenius)));
         }
     }
     

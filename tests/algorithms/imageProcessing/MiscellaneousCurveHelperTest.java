@@ -12,8 +12,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
+import no.uib.cipr.matrix.DenseMatrix;
 import static org.junit.Assert.*;
-import org.ejml.simple.*;
 
 /**
  *
@@ -424,7 +424,7 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         double[][] xyM = new double[3][4];
         xyM[0] = new double[]{1, 9, 9, 1};
         xyM[1] = new double[]{1, 1, 5, 5};
-        SimpleMatrix xyMatrix = new SimpleMatrix(xyM);
+        DenseMatrix xyMatrix = new DenseMatrix(xyM);
         
         cenXY = helper.calculateXYCentroids(xyMatrix);
         assertTrue(cenXY[0] == 5.0);

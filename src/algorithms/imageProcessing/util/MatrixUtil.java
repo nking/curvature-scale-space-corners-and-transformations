@@ -759,7 +759,7 @@ public class MatrixUtil {
         
     /**
      * apply dot operator to m1 and m2 which are formatted using same as 
-     * SimpleMatrix, that is [row][col].
+     * DenseMatrix, that is row major [row][col].
      * @param m1
      * @param m2
      * @return 
@@ -1039,7 +1039,7 @@ public class MatrixUtil {
     
     /**
      * calculate the dot product of a.transpose with a.  the result is in the
-     * format that SimpleMatrix uses, double[][] is [row][col].
+     * format as DenseMatrix, row major double[][] is [row][col].
      * @param a
      * @return 
      */

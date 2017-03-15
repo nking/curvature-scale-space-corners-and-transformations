@@ -4,6 +4,7 @@ import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
 import algorithms.imageProcessing.transform.EpipolarTransformer;
+import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
@@ -12,7 +13,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
-import org.ejml.simple.SimpleMatrix;
+import no.uib.cipr.matrix.DenseMatrix;
 
 /**
  *
@@ -118,7 +119,7 @@ public class RANSACSolverTest extends TestCase {
         assertEquals(m1.getN(), out1.getN());
         assertEquals(m2.getN(), out2.getN());
         
-        SimpleMatrix fm = fit.getFundamentalMatrix();
+        DenseMatrix fm = fit.getFundamentalMatrix();
         
         System.out.print("fm.errors=");
         for (Double d : fit.getErrors()) {
@@ -133,11 +134,11 @@ public class RANSACSolverTest extends TestCase {
         
         EpipolarTransformer eTransformer = new EpipolarTransformer();
         
-        SimpleMatrix m1m = eTransformer.rewriteInto3ColumnMatrix(m1);
-        SimpleMatrix m2m = eTransformer.rewriteInto3ColumnMatrix(m2);
+        DenseMatrix m1m = eTransformer.rewriteInto3ColumnMatrix(m1);
+        DenseMatrix m2m = eTransformer.rewriteInto3ColumnMatrix(m2);
         
-        SimpleMatrix m2EpipolarLines = fm.mult(m1m);
-        SimpleMatrix m1EpipolarLines = fm.transpose().mult(m2m);
+        DenseMatrix m2EpipolarLines = MatrixUtil.multiply(fm, m1m);
+        DenseMatrix m1EpipolarLines = MatrixUtil.multiply(fm.transpose(), m2m);
 
         // the 2 distances:
         float[] outputDist = new float[2];
@@ -184,11 +185,11 @@ public class RANSACSolverTest extends TestCase {
         points1.add(577, 68);   points2.add(561, 76 + 100);
         points1.add(655, 426);  points2.add(665, 462 + 100);
         
-        SimpleMatrix p1m = eTransformer.rewriteInto3ColumnMatrix(points1);
-        SimpleMatrix p2m = eTransformer.rewriteInto3ColumnMatrix(points2);
+        DenseMatrix p1m = eTransformer.rewriteInto3ColumnMatrix(points1);
+        DenseMatrix p2m = eTransformer.rewriteInto3ColumnMatrix(points2);
         
-        SimpleMatrix p2EpipolarLines = fm.mult(p1m);
-        SimpleMatrix p1EpipolarLines = fm.transpose().mult(p2m);
+        DenseMatrix p2EpipolarLines = MatrixUtil.multiply(fm, p1m);
+        DenseMatrix p1EpipolarLines = MatrixUtil.multiply(fm.transpose(), p2m);
         
         for (int i = 0; i < points1.getN(); ++i) {
             int j = i;
@@ -233,7 +234,7 @@ public class RANSACSolverTest extends TestCase {
         assertEquals(m1.getN(), out1.getN());
         assertEquals(m2.getN(), out2.getN());
         
-        SimpleMatrix fm = fit.getFundamentalMatrix();
+        DenseMatrix fm = fit.getFundamentalMatrix();
         
         System.out.print("fm.errors=");
         for (Double d : fit.getErrors()) {
@@ -248,11 +249,11 @@ public class RANSACSolverTest extends TestCase {
         
         EpipolarTransformer eTransformer = new EpipolarTransformer();
         
-        SimpleMatrix m1m = eTransformer.rewriteInto3ColumnMatrix(m1);
-        SimpleMatrix m2m = eTransformer.rewriteInto3ColumnMatrix(m2);
+        DenseMatrix m1m = eTransformer.rewriteInto3ColumnMatrix(m1);
+        DenseMatrix m2m = eTransformer.rewriteInto3ColumnMatrix(m2);
         
-        SimpleMatrix m2EpipolarLines = fm.mult(m1m);
-        SimpleMatrix m1EpipolarLines = fm.transpose().mult(m2m);
+        DenseMatrix m2EpipolarLines = MatrixUtil.multiply(fm, m1m);
+        DenseMatrix m1EpipolarLines = MatrixUtil.multiply(fm.transpose(), m2m);
 
         // the 2 distances:
         float[] outputDist = new float[2];
@@ -291,11 +292,11 @@ public class RANSACSolverTest extends TestCase {
         points1.add(377, 138);    points2.add(112, 123 + 100);
         points1.add(358, 330);   points2.add(54, 312 + 100);
         
-        SimpleMatrix p1m = eTransformer.rewriteInto3ColumnMatrix(points1);
-        SimpleMatrix p2m = eTransformer.rewriteInto3ColumnMatrix(points2);
+        DenseMatrix p1m = eTransformer.rewriteInto3ColumnMatrix(points1);
+        DenseMatrix p2m = eTransformer.rewriteInto3ColumnMatrix(points2);
         
-        SimpleMatrix p2EpipolarLines = fm.mult(p1m);
-        SimpleMatrix p1EpipolarLines = fm.transpose().mult(p2m);
+        DenseMatrix p2EpipolarLines = MatrixUtil.multiply(fm, p1m);
+        DenseMatrix p1EpipolarLines = MatrixUtil.multiply(fm.transpose(), p2m);
         
         for (int i = 0; i < points1.getN(); ++i) {
             int j = i;
@@ -342,7 +343,7 @@ public class RANSACSolverTest extends TestCase {
         assertEquals(m1.getN(), out1.getN());
         assertEquals(m2.getN(), out2.getN());
         
-        SimpleMatrix fm = fit.getFundamentalMatrix();
+        DenseMatrix fm = fit.getFundamentalMatrix();
         
         System.out.print("fm.errors=");
         for (Double d : fit.getErrors()) {
@@ -357,11 +358,11 @@ public class RANSACSolverTest extends TestCase {
         
         EpipolarTransformer eTransformer = new EpipolarTransformer();
         
-        SimpleMatrix m1m = eTransformer.rewriteInto3ColumnMatrix(m1);
-        SimpleMatrix m2m = eTransformer.rewriteInto3ColumnMatrix(m2);
+        DenseMatrix m1m = eTransformer.rewriteInto3ColumnMatrix(m1);
+        DenseMatrix m2m = eTransformer.rewriteInto3ColumnMatrix(m2);
         
-        SimpleMatrix m2EpipolarLines = fm.mult(m1m);
-        SimpleMatrix m1EpipolarLines = fm.transpose().mult(m2m);
+        DenseMatrix m2EpipolarLines = MatrixUtil.multiply(fm, m1m);
+        DenseMatrix m1EpipolarLines = MatrixUtil.multiply(fm.transpose(), m2m);
 
         // the 2 distances:
         float[] outputDist = new float[2];
@@ -400,11 +401,11 @@ public class RANSACSolverTest extends TestCase {
         points1.add(131, 153);   points2.add(389, 156 + 100);
         points1.add(175, 350);   points2.add(439, 354 + 100);
         
-        SimpleMatrix p1m = eTransformer.rewriteInto3ColumnMatrix(points1);
-        SimpleMatrix p2m = eTransformer.rewriteInto3ColumnMatrix(points2);
+        DenseMatrix p1m = eTransformer.rewriteInto3ColumnMatrix(points1);
+        DenseMatrix p2m = eTransformer.rewriteInto3ColumnMatrix(points2);
         
-        SimpleMatrix p2EpipolarLines = fm.mult(p1m);
-        SimpleMatrix p1EpipolarLines = fm.transpose().mult(p2m);
+        DenseMatrix p2EpipolarLines = MatrixUtil.multiply(fm, p1m);
+        DenseMatrix p1EpipolarLines = MatrixUtil.multiply(fm.transpose(), p2m);
         
         for (int i = 0; i < points1.getN(); ++i) {
             int j = i;
@@ -449,7 +450,7 @@ public class RANSACSolverTest extends TestCase {
         assertEquals(m1.getN(), out1.getN());
         assertEquals(m2.getN(), out2.getN());
         
-        SimpleMatrix fm = fit.getFundamentalMatrix();
+        DenseMatrix fm = fit.getFundamentalMatrix();
         
         System.out.print("fm.errors=");
         for (Double d : fit.getErrors()) {
@@ -464,11 +465,11 @@ public class RANSACSolverTest extends TestCase {
         
         EpipolarTransformer eTransformer = new EpipolarTransformer();
         
-        SimpleMatrix m1m = eTransformer.rewriteInto3ColumnMatrix(m1);
-        SimpleMatrix m2m = eTransformer.rewriteInto3ColumnMatrix(m2);
+        DenseMatrix m1m = eTransformer.rewriteInto3ColumnMatrix(m1);
+        DenseMatrix m2m = eTransformer.rewriteInto3ColumnMatrix(m2);
         
-        SimpleMatrix m2EpipolarLines = fm.mult(m1m);
-        SimpleMatrix m1EpipolarLines = fm.transpose().mult(m2m);
+        DenseMatrix m2EpipolarLines = MatrixUtil.multiply(fm, m1m);
+        DenseMatrix m1EpipolarLines = MatrixUtil.multiply(fm.transpose(), m2m);
 
         // the 2 distances:
         float[] outputDist = new float[2];
@@ -507,11 +508,11 @@ public class RANSACSolverTest extends TestCase {
         points1.add(34, 130);   points2.add(166, 54 + 100);
         points1.add(91, 129);   points2.add(186, 57 + 100);
         
-        SimpleMatrix p1m = eTransformer.rewriteInto3ColumnMatrix(points1);
-        SimpleMatrix p2m = eTransformer.rewriteInto3ColumnMatrix(points2);
+        DenseMatrix p1m = eTransformer.rewriteInto3ColumnMatrix(points1);
+        DenseMatrix p2m = eTransformer.rewriteInto3ColumnMatrix(points2);
         
-        SimpleMatrix p2EpipolarLines = fm.mult(p1m);
-        SimpleMatrix p1EpipolarLines = fm.transpose().mult(p2m);
+        DenseMatrix p2EpipolarLines = MatrixUtil.multiply(fm, p1m);
+        DenseMatrix p1EpipolarLines = MatrixUtil.multiply(fm.transpose(), p2m);
         
         for (int i = 0; i < points1.getN(); ++i) {
             int j = i;
@@ -740,26 +741,26 @@ public class RANSACSolverTest extends TestCase {
         left.add(459, 354);   right.add(432, 525);
     }
     
-    private void overplotEpipolarLines(SimpleMatrix fm, PairIntArray set1,
+    private void overplotEpipolarLines(DenseMatrix fm, PairIntArray set1,
         PairIntArray set2, Image img1, Image img2, int image1Width,
         int image1Height, int image2Width, int image2Height, String outfileNumber) 
         throws IOException {
 
         EpipolarTransformer st = new EpipolarTransformer();
         
-        SimpleMatrix input1 =
+        DenseMatrix input1 =
             st.rewriteInto3ColumnMatrix(set1);
 
-        SimpleMatrix input2 =
+        DenseMatrix input2 =
             st.rewriteInto3ColumnMatrix(set2);
 
-        for (int ii = 0; ii < input1.numCols(); ii++) {
+        for (int ii = 0; ii < input1.numColumns(); ii++) {
             double x = input1.get(0, ii);
             double y = input1.get(1, ii);
             ImageIOHelper.addPointToImage((float) x, (float) y, img1, 3,
                 255, 0, 0);
         }
-        for (int ii = 0; ii < input2.numCols(); ii++) {
+        for (int ii = 0; ii < input2.numColumns(); ii++) {
             double x2 = input2.get(0, ii);
             double y2 = input2.get(1, ii);
             ImageIOHelper.addPointToImage((float) x2, (float) y2, img2, 3,
@@ -769,9 +770,10 @@ public class RANSACSolverTest extends TestCase {
         EpipolarTransformer spTransformer = new EpipolarTransformer();
 
         Color clr = null;
-        for (int ii = 0; ii < input2.numCols(); ii++) {
+        for (int ii = 0; ii < input2.numColumns(); ii++) {
             clr = getColor(clr);
-            SimpleMatrix epipolarLinesInLeft = fm.transpose().mult(input2);
+            DenseMatrix epipolarLinesInLeft = MatrixUtil.multiply(fm.transpose(),
+                input2);
             PairIntArray leftLine = spTransformer.getEpipolarLine(
                 epipolarLinesInLeft, image1Width, image1Height, ii);
             ImageIOHelper.addCurveToImage(leftLine, img1, 0,
@@ -779,9 +781,9 @@ public class RANSACSolverTest extends TestCase {
         }
 
         clr = null;
-        for (int ii = 0; ii < input1.numCols(); ii++) {
+        for (int ii = 0; ii < input1.numColumns(); ii++) {
             clr = getColor(clr);
-            SimpleMatrix epipolarLinesInRight = fm.mult(input1);
+            DenseMatrix epipolarLinesInRight = MatrixUtil.multiply(fm, input1);
             PairIntArray rightLine = spTransformer.getEpipolarLine(
                 epipolarLinesInRight, img2.getWidth(), img2.getHeight(), ii);
             ImageIOHelper.addCurveToImage(rightLine, img2, 0,
