@@ -32,8 +32,8 @@ import java.util.Set;
      * @param gradientXY 
      */
     public void setEdgeGuideImage(final GreyscaleImage gradientXY) {
-<span class="fc" id="L35">        this.edgeGuideImage = gradientXY;</span>
-<span class="fc" id="L36">    }</span>
+<span class="nc" id="L35">        this.edgeGuideImage = gradientXY;</span>
+<span class="nc" id="L36">    }</span>
     
     /**
      * for images which are already line drawings, that is images such as
@@ -862,7 +862,7 @@ import java.util.Set;
 <span class="fc" id="L862">        return false;</span>
     }
     
-    public PairInt[][] createCoordinatePointsForEightNeighbors(
+    public static PairInt[][] createCoordinatePointsForEightNeighbors(
         int col, int row) {
         
 <span class="fc" id="L868">        PairInt[][] set = new PairInt[3][];</span>
@@ -980,38 +980,38 @@ import java.util.Set;
 <span class="fc" id="L980">        boolean t16 = isPresent[1][0];</span>
 <span class="fc" id="L981">        boolean t17 = isPresent[2][0];</span>
         
-<span class="fc bfc" id="L983" title="All 12 branches covered.">        if ((t6) &amp;&amp; (t8) &amp;&amp; !(t7) &amp;&amp; (!(t11) || !(t16) || !(t12))) {</span>
-<span class="fc" id="L984">            return true;</span>
-<span class="fc bfc" id="L985" title="All 10 branches covered.">        } else if ((t6) &amp;&amp; (t12) &amp;&amp; !(t7) &amp;&amp; (!(t11) || !(t16))) {</span>
-<span class="fc" id="L986">            return true;</span>
-<span class="pc bpc" id="L987" title="1 of 12 branches missed.">        } else if ((t6) &amp;&amp; (t15) &amp;&amp; !(t11) &amp;&amp; (!(t16) || !(t12) || !(t7))) {</span>
+<span class="pc bpc" id="L983" title="7 of 12 branches missed.">        if ((t6) &amp;&amp; (t8) &amp;&amp; !(t7) &amp;&amp; (!(t11) || !(t16) || !(t12))) {</span>
+<span class="nc" id="L984">            return true;</span>
+<span class="pc bpc" id="L985" title="5 of 10 branches missed.">        } else if ((t6) &amp;&amp; (t12) &amp;&amp; !(t7) &amp;&amp; (!(t11) || !(t16))) {</span>
+<span class="nc" id="L986">            return true;</span>
+<span class="pc bpc" id="L987" title="5 of 12 branches missed.">        } else if ((t6) &amp;&amp; (t15) &amp;&amp; !(t11) &amp;&amp; (!(t16) || !(t12) || !(t7))) {</span>
 <span class="fc" id="L988">            return true;</span>
-<span class="fc bfc" id="L989" title="All 8 branches covered.">        } else if ((t6) &amp;&amp; (t16) &amp;&amp; !(t7) &amp;&amp; !(t11)) {</span>
-<span class="fc" id="L990">            return true;</span>
-<span class="fc bfc" id="L991" title="All 12 branches covered.">        } else if ((t6) &amp;&amp; (t17) &amp;&amp; ( (!(t7) || !(t12)) &amp;&amp; (!(t11) || !(t16)) )) {</span>
-<span class="fc" id="L992">            return true;</span>
-<span class="fc bfc" id="L993" title="All 10 branches covered.">        } else if ((t7) &amp;&amp; (t15) &amp;&amp; !(t11) &amp;&amp; (!(t12) || !(t16))) {</span>
-<span class="fc" id="L994">            return true;</span>
-<span class="fc bfc" id="L995" title="All 10 branches covered.">        } else if ((t7) &amp;&amp; (t17) &amp;&amp; !(t12) &amp;&amp; (!(t11) || !(t16))) {</span>
-<span class="fc" id="L996">            return true;</span>
-<span class="fc bfc" id="L997" title="All 8 branches covered.">        } else if ((t7) &amp;&amp; (t16) &amp;&amp; !(t11) &amp;&amp; !(t12)) {</span>
+<span class="pc bpc" id="L989" title="5 of 8 branches missed.">        } else if ((t6) &amp;&amp; (t16) &amp;&amp; !(t7) &amp;&amp; !(t11)) {</span>
+<span class="nc" id="L990">            return true;</span>
+<span class="pc bpc" id="L991" title="9 of 12 branches missed.">        } else if ((t6) &amp;&amp; (t17) &amp;&amp; ( (!(t7) || !(t12)) &amp;&amp; (!(t11) || !(t16)) )) {</span>
+<span class="nc" id="L992">            return true;</span>
+<span class="pc bpc" id="L993" title="3 of 10 branches missed.">        } else if ((t7) &amp;&amp; (t15) &amp;&amp; !(t11) &amp;&amp; (!(t12) || !(t16))) {</span>
+<span class="nc" id="L994">            return true;</span>
+<span class="pc bpc" id="L995" title="5 of 10 branches missed.">        } else if ((t7) &amp;&amp; (t17) &amp;&amp; !(t12) &amp;&amp; (!(t11) || !(t16))) {</span>
+<span class="nc" id="L996">            return true;</span>
+<span class="pc bpc" id="L997" title="1 of 8 branches missed.">        } else if ((t7) &amp;&amp; (t16) &amp;&amp; !(t11) &amp;&amp; !(t12)) {</span>
 <span class="fc" id="L998">            return true;</span>
-<span class="fc bfc" id="L999" title="All 10 branches covered.">        } else if ((t8) &amp;&amp; (t11) &amp;&amp; !(t7) &amp;&amp; (!(t12) || !(t16))) {</span>
-<span class="fc" id="L1000">            return true;</span>
-<span class="pc bpc" id="L1001" title="1 of 12 branches missed.">        } else if ((t8) &amp;&amp; (t17) &amp;&amp; !(t12) &amp;&amp; (!(t16) || !(t11) || !(t7))) {</span>
-<span class="fc" id="L1002">            return true;</span>
-<span class="fc bfc" id="L1003" title="All 8 branches covered.">        } else if ((t8) &amp;&amp; (t16) &amp;&amp; !(t7) &amp;&amp; !(t12)) {</span>
-<span class="fc" id="L1004">            return true;</span>
-<span class="fc bfc" id="L1005" title="All 12 branches covered.">        } else if ((t8) &amp;&amp; (t15) &amp;&amp; ( (!(t7) || !(t11)) &amp;&amp; (!(t12) || !(t16)) )) {</span>
-<span class="fc" id="L1006">            return true;</span>
-<span class="fc bfc" id="L1007" title="All 8 branches covered.">        } else if ((t11) &amp;&amp; (t12) &amp;&amp; !(t7) &amp;&amp; !(t16)) {</span>
-<span class="fc" id="L1008">            return true;</span>
-<span class="pc bpc" id="L1009" title="1 of 10 branches missed.">        } else if ((t11) &amp;&amp; (t17) &amp;&amp; !(t16) &amp;&amp; (!(t7) || !(t12))) {</span>
-<span class="fc" id="L1010">            return true;</span>
-<span class="pc bpc" id="L1011" title="1 of 10 branches missed.">        } else if ((t12) &amp;&amp; (t15) &amp;&amp; !(t16) &amp;&amp; (!(t7) || !(t11))) {</span>
-<span class="fc" id="L1012">            return true;</span>
-<span class="pc bpc" id="L1013" title="2 of 12 branches missed.">        } else if ((t15) &amp;&amp; (t17) &amp;&amp; !(t16) &amp;&amp; (!(t11) || !(t7) || !(t12))) {</span>
-<span class="fc" id="L1014">            return true;</span>
+<span class="pc bpc" id="L999" title="5 of 10 branches missed.">        } else if ((t8) &amp;&amp; (t11) &amp;&amp; !(t7) &amp;&amp; (!(t12) || !(t16))) {</span>
+<span class="nc" id="L1000">            return true;</span>
+<span class="pc bpc" id="L1001" title="7 of 12 branches missed.">        } else if ((t8) &amp;&amp; (t17) &amp;&amp; !(t12) &amp;&amp; (!(t16) || !(t11) || !(t7))) {</span>
+<span class="nc" id="L1002">            return true;</span>
+<span class="pc bpc" id="L1003" title="3 of 8 branches missed.">        } else if ((t8) &amp;&amp; (t16) &amp;&amp; !(t7) &amp;&amp; !(t12)) {</span>
+<span class="nc" id="L1004">            return true;</span>
+<span class="pc bpc" id="L1005" title="4 of 12 branches missed.">        } else if ((t8) &amp;&amp; (t15) &amp;&amp; ( (!(t7) || !(t11)) &amp;&amp; (!(t12) || !(t16)) )) {</span>
+<span class="nc" id="L1006">            return true;</span>
+<span class="pc bpc" id="L1007" title="5 of 8 branches missed.">        } else if ((t11) &amp;&amp; (t12) &amp;&amp; !(t7) &amp;&amp; !(t16)) {</span>
+<span class="nc" id="L1008">            return true;</span>
+<span class="pc bpc" id="L1009" title="7 of 10 branches missed.">        } else if ((t11) &amp;&amp; (t17) &amp;&amp; !(t16) &amp;&amp; (!(t7) || !(t12))) {</span>
+<span class="nc" id="L1010">            return true;</span>
+<span class="pc bpc" id="L1011" title="5 of 10 branches missed.">        } else if ((t12) &amp;&amp; (t15) &amp;&amp; !(t16) &amp;&amp; (!(t7) || !(t11))) {</span>
+<span class="nc" id="L1012">            return true;</span>
+<span class="pc bpc" id="L1013" title="7 of 12 branches missed.">        } else if ((t15) &amp;&amp; (t17) &amp;&amp; !(t16) &amp;&amp; (!(t11) || !(t7) || !(t12))) {</span>
+<span class="nc" id="L1014">            return true;</span>
         }
         
 <span class="fc" id="L1017">        return false;</span>
@@ -1035,84 +1035,143 @@ import java.util.Set;
         }
         
 <span class="fc bfc" id="L1037" title="All 2 branches covered.">        for (int i = 0; i &lt;= lastCol; i++) {</span>
-<span class="fc bfc" id="L1038" title="All 2 branches covered.">            if (input.getValue(i, lastRow) != 0) {</span>
-<span class="fc" id="L1039">                return true;</span>
+<span class="pc bpc" id="L1038" title="1 of 2 branches missed.">            if (input.getValue(i, lastRow) != 0) {</span>
+<span class="nc" id="L1039">                return true;</span>
             }
         }
         
 <span class="fc bfc" id="L1043" title="All 2 branches covered.">        for (int i = 0; i &lt;= lastRow; i++) {</span>
-<span class="fc bfc" id="L1044" title="All 2 branches covered.">            if (input.getValue(0, i) != 0) {</span>
-<span class="fc" id="L1045">                return true;</span>
+<span class="pc bpc" id="L1044" title="1 of 2 branches missed.">            if (input.getValue(0, i) != 0) {</span>
+<span class="nc" id="L1045">                return true;</span>
             }
         }
         
 <span class="fc bfc" id="L1049" title="All 2 branches covered.">        for (int i = 0; i &lt;= lastRow; i++) {</span>
-<span class="fc bfc" id="L1050" title="All 2 branches covered.">            if (input.getValue(lastCol, i) != 0) {</span>
-<span class="fc" id="L1051">                return true;</span>
+<span class="pc bpc" id="L1050" title="1 of 2 branches missed.">            if (input.getValue(lastCol, i) != 0) {</span>
+<span class="nc" id="L1051">                return true;</span>
             }
         }
         
 <span class="fc" id="L1055">        return false;</span>
     }
     
-    protected GreyscaleImage addOnePixelBorders(GreyscaleImage input) {
+    /**
+     * return true if at least one pixel is found on the border of the images
+     * to have a zero value.
+     * @param input
+     * @return 
+     */
+    protected boolean hasAtLeastOneBorderPixelInv(GreyscaleImage input) {
         
-<span class="fc" id="L1060">        int w = input.getWidth();</span>
-<span class="fc" id="L1061">        int h = input.getHeight();</span>
+<span class="nc" id="L1066">        int lastCol = input.getWidth() - 1;</span>
+<span class="nc" id="L1067">        int lastRow = input.getHeight() - 1;</span>
         
-<span class="fc" id="L1063">        GreyscaleImage output = new GreyscaleImage(w + 2, h + 2, input.getType());</span>
-<span class="fc" id="L1064">        output.setXRelativeOffset(1);</span>
-<span class="fc" id="L1065">        output.setYRelativeOffset(1);</span>
-        
-        //TODO: make a method internal to GreyscaleImage that uses
-        //   System.arrays.copy
-<span class="fc bfc" id="L1069" title="All 2 branches covered.">        for (int col = 0; col &lt; w; col++) {</span>
-<span class="fc bfc" id="L1070" title="All 2 branches covered.">            for (int row = 0; row &lt; h; row++) {</span>
-<span class="fc" id="L1071">                output.setValue(col + 1, row + 1, input.getValue(col, row));</span>
+<span class="nc bnc" id="L1069" title="All 2 branches missed.">        for (int i = 0; i &lt;= lastCol; i++) {</span>
+<span class="nc bnc" id="L1070" title="All 2 branches missed.">            if (input.getValue(i, 0) == 0) {</span>
+<span class="nc" id="L1071">                return true;</span>
             }
         }
         
-<span class="fc" id="L1075">        return output;</span>
+<span class="nc bnc" id="L1075" title="All 2 branches missed.">        for (int i = 0; i &lt;= lastCol; i++) {</span>
+<span class="nc bnc" id="L1076" title="All 2 branches missed.">            if (input.getValue(i, lastRow) == 0) {</span>
+<span class="nc" id="L1077">                return true;</span>
+            }
+        }
+        
+<span class="nc bnc" id="L1081" title="All 2 branches missed.">        for (int i = 0; i &lt;= lastRow; i++) {</span>
+<span class="nc bnc" id="L1082" title="All 2 branches missed.">            if (input.getValue(0, i) == 0) {</span>
+<span class="nc" id="L1083">                return true;</span>
+            }
+        }
+        
+<span class="nc bnc" id="L1087" title="All 2 branches missed.">        for (int i = 0; i &lt;= lastRow; i++) {</span>
+<span class="nc bnc" id="L1088" title="All 2 branches missed.">            if (input.getValue(lastCol, i) == 0) {</span>
+<span class="nc" id="L1089">                return true;</span>
+            }
+        }
+        
+<span class="nc" id="L1093">        return false;</span>
+    }
+    
+    protected GreyscaleImage addOnePixelBorders(GreyscaleImage input) {
+        
+<span class="fc" id="L1098">        int w = input.getWidth();</span>
+<span class="fc" id="L1099">        int h = input.getHeight();</span>
+        
+<span class="fc" id="L1101">        GreyscaleImage output = new GreyscaleImage(w + 2, h + 2, input.getType());</span>
+<span class="fc" id="L1102">        output.setXRelativeOffset(1);</span>
+<span class="fc" id="L1103">        output.setYRelativeOffset(1);</span>
+        
+        //TODO: make a method internal to GreyscaleImage that uses
+        //   System.arrays.copy
+<span class="fc bfc" id="L1107" title="All 2 branches covered.">        for (int col = 0; col &lt; w; col++) {</span>
+<span class="fc bfc" id="L1108" title="All 2 branches covered.">            for (int row = 0; row &lt; h; row++) {</span>
+<span class="fc" id="L1109">                output.setValue(col + 1, row + 1, input.getValue(col, row));</span>
+            }
+        }
+        
+<span class="fc" id="L1113">        return output;</span>
+    }
+    
+    protected GreyscaleImage addOnePixelBordersInv(GreyscaleImage input) {
+        
+<span class="nc" id="L1118">        GreyscaleImage img2 = addOnePixelBorders(input);</span>
+        
+<span class="nc" id="L1120">        int w2 = img2.getWidth();</span>
+<span class="nc" id="L1121">        int h2 = img2.getHeight();</span>
+        
+        // set borders to '255'
+<span class="nc bnc" id="L1124" title="All 2 branches missed.">        for (int i = 0; i &lt; img2.getWidth(); ++i) {</span>
+<span class="nc" id="L1125">            img2.setValue(i, 0, 255);</span>
+<span class="nc" id="L1126">            img2.setValue(i, h2 - 1, 255);</span>
+        }
+        
+<span class="nc bnc" id="L1129" title="All 2 branches missed.">        for (int i = 0; i &lt; img2.getHeight(); ++i) {</span>
+<span class="nc" id="L1130">            img2.setValue(0, i, 255);</span>
+<span class="nc" id="L1131">            img2.setValue(w2 - 1, i, 255);</span>
+        }
+        
+<span class="nc" id="L1134">        return img2;</span>
     }
 
     protected GreyscaleImage removeOnePixelBorders(GreyscaleImage input) {
         
-<span class="fc" id="L1080">        int w = input.getWidth();</span>
-<span class="fc" id="L1081">        int h = input.getHeight();</span>
+<span class="fc" id="L1139">        int w = input.getWidth();</span>
+<span class="fc" id="L1140">        int h = input.getHeight();</span>
         
-<span class="fc" id="L1083">        GreyscaleImage output = new GreyscaleImage(w - 2, h - 2);</span>
+<span class="fc" id="L1142">        GreyscaleImage output = new GreyscaleImage(w - 2, h - 2);</span>
         
         //TODO: make a method internal to GreyscaleImage that uses
         //   System.arrays.copy
-<span class="fc bfc" id="L1087" title="All 2 branches covered.">        for (int col = 0; col &lt; (w - 2); col++) {</span>
-<span class="fc bfc" id="L1088" title="All 2 branches covered.">            for (int row = 0; row &lt; (h - 2); row++) {</span>
-<span class="fc" id="L1089">                output.setValue(col, row, input.getValue(col + 1, row + 1));</span>
+<span class="fc bfc" id="L1146" title="All 2 branches covered.">        for (int col = 0; col &lt; (w - 2); col++) {</span>
+<span class="fc bfc" id="L1147" title="All 2 branches covered.">            for (int row = 0; row &lt; (h - 2); row++) {</span>
+<span class="fc" id="L1148">                output.setValue(col, row, input.getValue(col + 1, row + 1));</span>
             }
         }
         
-<span class="fc" id="L1093">        return output;</span>
+<span class="fc" id="L1152">        return output;</span>
     }
 
     private boolean[][] evaluate(PairInt[][] coords, 
         Set&lt;PairInt&gt; points, Set&lt;PairInt&gt; overridePointsRemoved, 
         Set&lt;PairInt&gt; overridePointsAdded) {
         
-<span class="fc" id="L1100">        boolean[][] isPresent = new boolean[coords.length][];</span>
+<span class="fc" id="L1159">        boolean[][] isPresent = new boolean[coords.length][];</span>
         
-<span class="fc bfc" id="L1102" title="All 2 branches covered.">        for (int i = 0; i &lt; coords.length; ++i) {</span>
+<span class="fc bfc" id="L1161" title="All 2 branches covered.">        for (int i = 0; i &lt; coords.length; ++i) {</span>
             
-<span class="fc" id="L1104">            isPresent[i] = new boolean[coords[i].length];</span>
+<span class="fc" id="L1163">            isPresent[i] = new boolean[coords[i].length];</span>
             
-<span class="fc bfc" id="L1106" title="All 2 branches covered.">            for (int j = 0; j &lt; coords[i].length; ++j) {</span>
+<span class="fc bfc" id="L1165" title="All 2 branches covered.">            for (int j = 0; j &lt; coords[i].length; ++j) {</span>
                 
-<span class="fc" id="L1108">                isPresent[i][j] = </span>
-<span class="fc bfc" id="L1109" title="All 2 branches covered.">                    (!overridePointsRemoved.contains(coords[i][j]) &amp;&amp;</span>
-<span class="fc bfc" id="L1110" title="All 2 branches covered.">                    (overridePointsAdded.contains(coords[i][j]) ||</span>
-<span class="fc bfc" id="L1111" title="All 2 branches covered.">                    points.contains(coords[i][j])));</span>
+<span class="fc" id="L1167">                isPresent[i][j] = </span>
+<span class="fc bfc" id="L1168" title="All 2 branches covered.">                    (!overridePointsRemoved.contains(coords[i][j]) &amp;&amp;</span>
+<span class="fc bfc" id="L1169" title="All 2 branches covered.">                    (overridePointsAdded.contains(coords[i][j]) ||</span>
+<span class="fc bfc" id="L1170" title="All 2 branches covered.">                    points.contains(coords[i][j])));</span>
             }
         }
         
-<span class="fc" id="L1115">        return isPresent;</span>
+<span class="fc" id="L1174">        return isPresent;</span>
     }
 
 }

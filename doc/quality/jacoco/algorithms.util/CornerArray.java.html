@@ -11,42 +11,62 @@ import java.util.Arrays;
  * 
  * @author nichole
  */
-public class CornerArray {
+<span class="pc bpc" id="L14" title="1 of 2 branches missed.">public class CornerArray {</span>
     
-<span class="fc" id="L16">    protected float[] x = null;</span>
+    protected final SIGMA sigma;
     
-<span class="fc" id="L18">    protected float[] y = null;</span>
+<span class="fc" id="L18">    protected PairIntArray xy = null;</span>
     
 <span class="fc" id="L20">    protected int[] idx = null;</span>
+        
+<span class="fc" id="L22">    protected float[] x1stDeriv = null;</span>
     
-<span class="fc" id="L22">    protected SIGMA[] sigma = null;</span>
+<span class="fc" id="L24">    protected float[] x2ndDeriv = null;</span>
     
-<span class="fc" id="L24">    protected int n = 0;</span>
+<span class="fc" id="L26">    protected float[] y1stDeriv = null;</span>
     
-<span class="fc" id="L26">    public CornerArray(int capacity) {</span>
-        
-<span class="fc" id="L28">        x = new float[capacity];</span>
-        
-<span class="fc" id="L30">        y = new float[capacity];</span>
-        
-<span class="fc" id="L32">        idx = new int[capacity];</span>
-        
-<span class="fc" id="L34">        sigma = new SIGMA[capacity];</span>
-<span class="fc" id="L35">    }</span>
+<span class="fc" id="L28">    protected float[] y2ndDeriv = null;</span>
     
-<span class="fc" id="L37">    public CornerArray() {</span>
+<span class="fc" id="L30">    protected boolean isFromClosedCurve = false;</span>
+    
+    //curvature:
+<span class="fc" id="L33">    protected float[] k = null;</span>
+    
+<span class="fc" id="L35">    protected int n = 0;</span>
+    
+<span class="fc" id="L37">    public CornerArray(SIGMA theSigma, int capacity) {</span>
         
-<span class="fc" id="L39">        x = new float[10];</span>
+<span class="fc" id="L39">        this.sigma = theSigma;</span>
         
-<span class="fc" id="L41">        y = new float[10];</span>
+<span class="fc" id="L41">        initArrays(capacity);</span>
+<span class="fc" id="L42">    }</span>
+    
+<span class="fc" id="L44">    public CornerArray(SIGMA theSigma) {</span>
         
-<span class="fc" id="L43">        idx = new int[10];</span>
+<span class="fc" id="L46">        this.sigma = theSigma;</span>
         
-<span class="fc" id="L45">        sigma = new SIGMA[10];</span>
-<span class="fc" id="L46">    }</span>
+<span class="fc" id="L48">        initArrays(10);</span>
+<span class="fc" id="L49">    }</span>
+    
+    private void initArrays(int capacity) {
+        
+<span class="fc" id="L53">        xy = new PairIntArray(capacity);</span>
+                
+<span class="fc" id="L55">        k = new float[capacity];</span>
+        
+<span class="fc" id="L57">        idx = new int[capacity];</span>
+        
+<span class="fc" id="L59">        x1stDeriv = new float[capacity];</span>
+    
+<span class="fc" id="L61">        x2ndDeriv = new float[capacity];</span>
+    
+<span class="fc" id="L63">        y1stDeriv = new float[capacity];</span>
+    
+<span class="fc" id="L65">        y2ndDeriv = new float[capacity];</span>
+<span class="fc" id="L66">    }</span>
     
     public int getN() {
-<span class="fc" id="L49">        return n;</span>
+<span class="fc" id="L69">        return n;</span>
     }
     
     /**
@@ -55,20 +75,30 @@ public class CornerArray {
      * (that is, anInt) values.
      * @param xPoint
      * @param yPoint
+     * @param curvature
+     * @param x1d
+     * @param x2d
+     * @param y1d
+     * @param y2d
      * @param anInt
-     * @param s 
      */
-    public void add(float xPoint, float yPoint, int anInt, SIGMA s) {
+    public void add(int xPoint, int yPoint, float curvature,
+        float x1d, float x2d, float y1d, float y2d, int anInt) {
         
-<span class="fc" id="L63">        expandIfNeeded(n + 1);</span>
+<span class="fc" id="L88">        expandIfNeeded(n + 1);</span>
         
-<span class="fc" id="L65">        x[n] = xPoint;</span>
-<span class="fc" id="L66">        y[n] = yPoint;</span>
-<span class="fc" id="L67">        idx[n] = anInt;</span>
-<span class="fc" id="L68">        sigma[n] = s;</span>
+<span class="pc bpc" id="L90" title="3 of 4 branches missed.">        assert(xy.getN() == n);</span>
         
-<span class="fc" id="L70">        n++;</span>
-<span class="fc" id="L71">    }</span>
+<span class="fc" id="L92">        xy.add(xPoint, yPoint);</span>
+<span class="fc" id="L93">        k[n] = curvature;</span>
+<span class="fc" id="L94">        x1stDeriv[n] = x1d;</span>
+<span class="fc" id="L95">        x2ndDeriv[n] = x2d;</span>
+<span class="fc" id="L96">        y1stDeriv[n] = y1d;</span>
+<span class="fc" id="L97">        y2ndDeriv[n] = y2d;</span>
+<span class="fc" id="L98">        idx[n] = anInt;</span>
+        
+<span class="fc" id="L100">        n++;</span>
+<span class="fc" id="L101">    }</span>
     
     /**
      * set a row of data in the instance (replacing existing at given index).  
@@ -78,22 +108,31 @@ public class CornerArray {
      * @param index
      * @param xPoint
      * @param yPoint
+     * @param curvature
+     * @param x1d
+     * @param x2d
+     * @param y1d
+     * @param y2d
      * @param anInt
-     * @param s 
      */
-    public void set(int index, float xPoint, float yPoint, int anInt, SIGMA s) {
+    public void set(int index, int xPoint, int yPoint, float curvature,
+        float x1d, float x2d, float y1d, float y2d, int anInt) {
         
-<span class="pc bpc" id="L86" title="1 of 2 branches missed.">        if (index &lt; 0) {</span>
-<span class="nc" id="L87">            throw new IllegalArgumentException(&quot;index is out of bounds of arrays&quot;);</span>
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">        if (index &lt; 0) {</span>
+<span class="nc" id="L122">            throw new IllegalArgumentException(&quot;index is out of bounds of arrays&quot;);</span>
         }
         
-<span class="fc" id="L90">        expandIfNeeded(index + 1);</span>
+<span class="fc" id="L125">        expandIfNeeded(index + 1);</span>
         
-<span class="fc" id="L92">        x[index] = xPoint;</span>
-<span class="fc" id="L93">        y[index] = yPoint;</span>
-<span class="fc" id="L94">        idx[index] = anInt;</span>
-<span class="fc" id="L95">        sigma[index] = s;</span>
-<span class="fc" id="L96">    }</span>
+<span class="fc" id="L127">        xy.set(index, xPoint, yPoint);</span>
+        
+<span class="fc" id="L129">        k[index] = curvature;</span>
+<span class="fc" id="L130">        x1stDeriv[index] = x1d;</span>
+<span class="fc" id="L131">        x2ndDeriv[index] = x2d;</span>
+<span class="fc" id="L132">        y1stDeriv[index] = y1d;</span>
+<span class="fc" id="L133">        y2ndDeriv[index] = y2d;</span>
+<span class="fc" id="L134">        idx[index] = anInt;</span>
+<span class="fc" id="L135">    }</span>
     
     /**
      * insert a row of data in the instance.  
@@ -103,105 +142,180 @@ public class CornerArray {
      * @param index
      * @param xPoint
      * @param yPoint
+     * @param curvature
+     * @param x1d
+     * @param x2d
+     * @param y1d
+     * @param y2d
      * @param anInt
-     * @param s 
      */
-    public void insert(int index, float xPoint, float yPoint, int anInt, SIGMA s) {
+    public void insert(int index, int xPoint, int yPoint, float curvature,
+        float x1d, float x2d, float y1d, float y2d, int anInt) {
         
-<span class="pc bpc" id="L111" title="2 of 4 branches missed.">        if (index &lt; 0 || (index &gt; n)) {</span>
-<span class="nc" id="L112">            throw new IllegalArgumentException(&quot;index is out of bounds of arrays&quot;);</span>
+<span class="nc bnc" id="L155" title="All 4 branches missed.">        if (index &lt; 0 || (index &gt; n)) {</span>
+<span class="nc" id="L156">            throw new IllegalArgumentException(&quot;index is out of bounds of arrays&quot;);</span>
         }
         
-<span class="fc" id="L115">        expandIfNeeded(n + 1);</span>
+<span class="nc bnc" id="L159" title="All 4 branches missed.">        assert(xy.getN() == n);</span>
+        
+<span class="nc" id="L161">        expandIfNeeded(n + 1);</span>
+        
+<span class="nc" id="L163">        xy.insert(index, xPoint, yPoint);</span>
         
         // move everything at index thru n-1 to higher index
-<span class="fc bfc" id="L118" title="All 2 branches covered.">        for (int i = n; i &gt; index; i--) {</span>
-<span class="fc" id="L119">            x[i] = x[i - 1];</span>
-<span class="fc" id="L120">            y[i] = y[i - 1];</span>
-<span class="fc" id="L121">            idx[i] = idx[i - 1];</span>
-<span class="fc" id="L122">            sigma[i] = sigma[i - 1];</span>
+<span class="nc bnc" id="L166" title="All 2 branches missed.">        for (int i = n; i &gt; index; i--) {</span>
+<span class="nc" id="L167">            k[i] = k[i - 1];</span>
+<span class="nc" id="L168">            x1stDeriv[i] = x1stDeriv[i - 1];</span>
+<span class="nc" id="L169">            x2ndDeriv[i] = x2ndDeriv[i - 1];</span>
+<span class="nc" id="L170">            y1stDeriv[i] = y1stDeriv[i - 1];</span>
+<span class="nc" id="L171">            y2ndDeriv[i] = y2ndDeriv[i - 1];</span>
+<span class="nc" id="L172">            idx[i] = idx[i - 1];</span>
         }
         
-<span class="fc" id="L125">        x[index] = xPoint;</span>
-<span class="fc" id="L126">        y[index] = yPoint;</span>
-<span class="fc" id="L127">        idx[index] = anInt;</span>
-<span class="fc" id="L128">        sigma[index] = s;</span>
+<span class="nc" id="L175">        k[index] = curvature;</span>
+<span class="nc" id="L176">        idx[index] = anInt;</span>
+<span class="nc" id="L177">        x1stDeriv[index] = x1d;</span>
+<span class="nc" id="L178">        x2ndDeriv[index] = x2d;</span>
+<span class="nc" id="L179">        y1stDeriv[index] = y1d;</span>
+<span class="nc" id="L180">        y2ndDeriv[index] = y2d;</span>
         
-<span class="fc" id="L130">        n++;</span>
-<span class="fc" id="L131">    }</span>
+<span class="nc" id="L182">        n++;</span>
+        
+<span class="nc bnc" id="L184" title="All 4 branches missed.">        assert(xy.getN() == n);</span>
+<span class="nc" id="L185">    }</span>
   
-    public float getX(int index) {
-<span class="pc bpc" id="L134" title="1 of 2 branches missed.">        if (index &gt; (n - 1)) {</span>
-<span class="nc" id="L135">            throw new IllegalArgumentException(&quot;index is out of range&quot;);</span>
+    public int getX(int index) {
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">        if (index &gt; (n - 1)) {</span>
+<span class="nc" id="L189">            throw new IllegalArgumentException(&quot;index is out of range&quot;);</span>
         }
-<span class="fc" id="L137">        return x[index];</span>
+<span class="fc" id="L191">        return xy.getX(index);</span>
     }
     
-    public float getY(int index) {
-<span class="pc bpc" id="L141" title="1 of 2 branches missed.">        if (index &gt; (n - 1)) {</span>
-<span class="nc" id="L142">            throw new IllegalArgumentException(&quot;index is out of range&quot;);</span>
+    public float getXFirstDeriv(int index) {
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">        if (index &gt; (n - 1)) {</span>
+<span class="nc" id="L196">            throw new IllegalArgumentException(&quot;index is out of range&quot;);</span>
         }
-<span class="fc" id="L144">        return y[index];</span>
+<span class="fc" id="L198">        return x1stDeriv[index];</span>
+    }
+    
+    public float getXSecondDeriv(int index) {
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">        if (index &gt; (n - 1)) {</span>
+<span class="nc" id="L203">            throw new IllegalArgumentException(&quot;index is out of range&quot;);</span>
+        }
+<span class="fc" id="L205">        return x2ndDeriv[index];</span>
+    }
+    
+    public int getY(int index) {
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">        if (index &gt; (n - 1)) {</span>
+<span class="nc" id="L210">            throw new IllegalArgumentException(&quot;index is out of range&quot;);</span>
+        }
+<span class="fc" id="L212">        return xy.getY(index);</span>
+    }
+    
+    public float getYFirstDeriv(int index) {
+<span class="pc bpc" id="L216" title="1 of 2 branches missed.">        if (index &gt; (n - 1)) {</span>
+<span class="nc" id="L217">            throw new IllegalArgumentException(&quot;index is out of range&quot;);</span>
+        }
+<span class="fc" id="L219">        return y1stDeriv[index];</span>
+    }
+    
+    public float getYSecondDeriv(int index) {
+<span class="pc bpc" id="L223" title="1 of 2 branches missed.">        if (index &gt; (n - 1)) {</span>
+<span class="nc" id="L224">            throw new IllegalArgumentException(&quot;index is out of range&quot;);</span>
+        }
+<span class="fc" id="L226">        return y2ndDeriv[index];</span>
+    }
+    
+    public float getCurvature(int index) {
+<span class="pc bpc" id="L230" title="1 of 2 branches missed.">        if (index &gt; (n - 1)) {</span>
+<span class="nc" id="L231">            throw new IllegalArgumentException(&quot;index is out of range&quot;);</span>
+        }
+<span class="fc" id="L233">        return k[index];</span>
     }
     
     public int getInt(int index) {
-<span class="pc bpc" id="L148" title="1 of 2 branches missed.">        if (index &gt; (n - 1)) {</span>
-<span class="nc" id="L149">            throw new IllegalArgumentException(&quot;index is out of range&quot;);</span>
+<span class="pc bpc" id="L237" title="1 of 2 branches missed.">        if (index &gt; (n - 1)) {</span>
+<span class="nc" id="L238">            throw new IllegalArgumentException(&quot;index is out of range&quot;);</span>
         }
-<span class="fc" id="L151">        return idx[index];</span>
+<span class="fc" id="L240">        return idx[index];</span>
     }
     
-    public SIGMA getSIGMA(int index) {
-<span class="pc bpc" id="L155" title="1 of 2 branches missed.">        if (index &gt; (n - 1)) {</span>
-<span class="nc" id="L156">            throw new IllegalArgumentException(&quot;index is out of range&quot;);</span>
-        }
-<span class="fc" id="L158">        return sigma[index];</span>
+    public SIGMA getSIGMA() {
+<span class="fc" id="L244">        return sigma;</span>
     }
     
-    public float[] getX() {
-<span class="fc" id="L162">        return x;</span>
+    public int[] getX() {
+<span class="nc" id="L248">        return xy.getX();</span>
     }
     
-    public float[] getY() {
-<span class="fc" id="L166">        return y;</span>
+    public float[] getXFirstDeriv() {
+<span class="nc" id="L252">        return x1stDeriv;</span>
+    }
+    
+    public float[] getXSecondDeriv() {
+<span class="nc" id="L256">        return x2ndDeriv;</span>
+    }
+    
+    public int[] getY() {
+<span class="nc" id="L260">        return xy.getY();</span>
+    }
+    
+    public float[] getYFirstDeriv() {
+<span class="nc" id="L264">        return y1stDeriv;</span>
+    }
+    
+    public float[] getYSecondDeriv() {
+<span class="nc" id="L268">        return y2ndDeriv;</span>
+    }
+    
+    public float[] getCurvature() {
+<span class="fc" id="L272">        return k;</span>
     }
     
     public int[] getYInt() {
-<span class="fc" id="L170">        return idx;</span>
+<span class="nc" id="L276">        return idx;</span>
     }
     
     protected void expandIfNeeded(int nTotal) {
         
-<span class="fc bfc" id="L175" title="All 2 branches covered.">        if (nTotal &gt; x.length) {</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">        if (nTotal &gt; k.length) {</span>
             
-<span class="fc" id="L177">            int n2 = x.length + 10;</span>
+<span class="fc" id="L283">            int n2 = k.length + 10;</span>
             
-<span class="pc bpc" id="L179" title="1 of 2 branches missed.">            if (nTotal &gt; n2) {</span>
-<span class="nc" id="L180">                n2 = nTotal;</span>
+<span class="pc bpc" id="L285" title="1 of 2 branches missed.">            if (nTotal &gt; n2) {</span>
+<span class="nc" id="L286">                n2 = nTotal;</span>
             }
             
-<span class="fc" id="L183">            x = Arrays.copyOf(x, n2);</span>
+<span class="fc" id="L289">            k = Arrays.copyOf(k, n2);</span>
             
-<span class="fc" id="L185">            y = Arrays.copyOf(y, n2);</span>
+<span class="fc" id="L291">            x1stDeriv = Arrays.copyOf(x1stDeriv, n2);</span>
             
-<span class="fc" id="L187">            idx = Arrays.copyOf(idx, n2);</span>
+<span class="fc" id="L293">            x2ndDeriv = Arrays.copyOf(x2ndDeriv, n2);</span>
             
-<span class="fc" id="L189">            sigma = Arrays.copyOf(sigma, n2);</span>
+<span class="fc" id="L295">            y1stDeriv = Arrays.copyOf(y1stDeriv, n2);</span>
+            
+<span class="fc" id="L297">            y2ndDeriv = Arrays.copyOf(y2ndDeriv, n2);</span>
+            
+<span class="fc" id="L299">            idx = Arrays.copyOf(idx, n2);            </span>
         }
-<span class="fc" id="L191">    }</span>
+<span class="fc" id="L301">    }</span>
     
     public CornerArray copy() {
         
-<span class="nc" id="L195">        CornerArray clone = new CornerArray(n);</span>
+<span class="nc" id="L305">        CornerArray clone = new CornerArray(sigma, n);</span>
         
-<span class="nc" id="L197">        System.arraycopy(x, 0, clone.x, 0, n);</span>
-<span class="nc" id="L198">        System.arraycopy(y, 0, clone.y, 0, n);</span>
-<span class="nc" id="L199">        System.arraycopy(idx, 0, clone.idx, 0, n);</span>
-<span class="nc" id="L200">        System.arraycopy(sigma, 0, clone.sigma, 0, n);</span>
+<span class="nc" id="L307">        clone.xy = xy.copy();</span>
         
-<span class="nc" id="L202">        clone.n = n;</span>
+<span class="nc" id="L309">        System.arraycopy(k, 0, clone.k, 0, n);</span>
+<span class="nc" id="L310">        System.arraycopy(idx, 0, clone.idx, 0, n);</span>
+<span class="nc" id="L311">        System.arraycopy(x1stDeriv, 0, clone.x1stDeriv, 0, n);</span>
+<span class="nc" id="L312">        System.arraycopy(x2ndDeriv, 0, clone.x2ndDeriv, 0, n);</span>
+<span class="nc" id="L313">        System.arraycopy(y1stDeriv, 0, clone.y1stDeriv, 0, n);</span>
+<span class="nc" id="L314">        System.arraycopy(y2ndDeriv, 0, clone.y2ndDeriv, 0, n);</span>
         
-<span class="nc" id="L204">        return clone;</span>
+<span class="nc" id="L316">        clone.n = n;</span>
+        
+<span class="nc" id="L318">        return clone;</span>
     }
     
     /**
@@ -211,48 +325,74 @@ public class CornerArray {
      */
     public void removeRange(int idxLo, int idxHi) {
         
-<span class="pc bpc" id="L214" title="2 of 4 branches missed.">        if ((idxLo &lt; 0) || (idxLo &gt; (n - 1))) {</span>
-<span class="nc" id="L215">            throw new IllegalArgumentException(&quot;idxLo is out of range&quot;);</span>
+<span class="nc bnc" id="L328" title="All 4 branches missed.">        if ((idxLo &lt; 0) || (idxLo &gt; (n - 1))) {</span>
+<span class="nc" id="L329">            throw new IllegalArgumentException(&quot;idxLo is out of range&quot;);</span>
         }
-<span class="pc bpc" id="L217" title="2 of 4 branches missed.">        if ((idxHi &lt; 0) || (idxHi &gt; (n - 1))) {</span>
-<span class="nc" id="L218">            throw new IllegalArgumentException(&quot;idxHi is out of range&quot;);</span>
+<span class="nc bnc" id="L331" title="All 4 branches missed.">        if ((idxHi &lt; 0) || (idxHi &gt; (n - 1))) {</span>
+<span class="nc" id="L332">            throw new IllegalArgumentException(&quot;idxHi is out of range&quot;);</span>
         }
-<span class="pc bpc" id="L220" title="1 of 2 branches missed.">        if (idxHi &lt; idxLo) {</span>
-<span class="nc" id="L221">            throw new IllegalArgumentException(&quot;idxHi has to be &gt;= idxLo&quot;);</span>
+<span class="nc bnc" id="L334" title="All 2 branches missed.">        if (idxHi &lt; idxLo) {</span>
+<span class="nc" id="L335">            throw new IllegalArgumentException(&quot;idxHi has to be &gt;= idxLo&quot;);</span>
         }
         
-<span class="fc" id="L224">        int nRemove = idxHi - idxLo + 1;</span>
+<span class="nc" id="L338">        xy.removeRange(idxLo, idxHi);</span>
+        
+<span class="nc" id="L340">        int nRemove = idxHi - idxLo + 1;</span>
 
-<span class="fc" id="L226">        int moveIdx = idxHi + 1;</span>
-<span class="fc bfc" id="L227" title="All 2 branches covered.">        if (moveIdx &lt;= (n - 1)) {</span>
-<span class="fc bfc" id="L228" title="All 2 branches covered.">            for (int moveToIdx = idxLo; moveToIdx &lt; (n - nRemove); moveToIdx++) {</span>
-<span class="fc" id="L229">                x[moveToIdx] = x[moveIdx];</span>
-<span class="fc" id="L230">                y[moveToIdx] = y[moveIdx];</span>
-<span class="fc" id="L231">                idx[moveToIdx] = idx[moveIdx];</span>
-<span class="fc" id="L232">                sigma[moveToIdx] = sigma[moveIdx];</span>
-<span class="fc" id="L233">                moveIdx++;</span>
+<span class="nc" id="L342">        int moveIdx = idxHi + 1;</span>
+<span class="nc bnc" id="L343" title="All 2 branches missed.">        if (moveIdx &lt;= (n - 1)) {</span>
+<span class="nc bnc" id="L344" title="All 2 branches missed.">            for (int moveToIdx = idxLo; moveToIdx &lt; (n - nRemove); moveToIdx++) {</span>
+<span class="nc" id="L345">                k[moveToIdx] = k[moveIdx];</span>
+<span class="nc" id="L346">                idx[moveToIdx] = idx[moveIdx];</span>
+<span class="nc" id="L347">                x1stDeriv[moveToIdx] = x1stDeriv[moveIdx];</span>
+<span class="nc" id="L348">                x2ndDeriv[moveToIdx] = x2ndDeriv[moveIdx];</span>
+<span class="nc" id="L349">                y1stDeriv[moveToIdx] = y1stDeriv[moveIdx];</span>
+<span class="nc" id="L350">                y2ndDeriv[moveToIdx] = y2ndDeriv[moveIdx];</span>
+<span class="nc" id="L351">                moveIdx++;</span>
             }
         }
         
         // not necessary, but easier debugging to reset the last nRemove to 0
-<span class="fc bfc" id="L238" title="All 2 branches covered.">        for (int i = (n - nRemove); i &lt; n; i++) {</span>
-<span class="fc" id="L239">            x[i] = 0;</span>
-<span class="fc" id="L240">            y[i] = 0;</span>
-<span class="fc" id="L241">            idx[i] = 0;</span>
-<span class="fc" id="L242">            sigma[i] = null;</span>
+<span class="nc bnc" id="L356" title="All 2 branches missed.">        for (int i = (n - nRemove); i &lt; n; i++) {</span>
+<span class="nc" id="L357">            k[i] = 0;</span>
+<span class="nc" id="L358">            idx[i] = 0;</span>
+<span class="nc" id="L359">            x1stDeriv[i] = 0;</span>
+<span class="nc" id="L360">            x2ndDeriv[i] = 0;</span>
+<span class="nc" id="L361">            y1stDeriv[i] = 0;</span>
+<span class="nc" id="L362">            y2ndDeriv[i] = 0;</span>
         }
         
-<span class="fc" id="L245">        n -= nRemove;</span>
-<span class="fc" id="L246">    }</span>
+<span class="nc" id="L365">        n -= nRemove;</span>
+<span class="nc" id="L366">    }</span>
+
+    public void setIsClosedCurve() {
+<span class="fc" id="L369">        this.isFromClosedCurve = true;</span>
+<span class="fc" id="L370">    }</span>
     
-    public String toString() {
-<span class="nc" id="L249">        StringBuilder sb = new StringBuilder();</span>
-<span class="nc bnc" id="L250" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="nc" id="L251">            sb.append(&quot;x=&quot;).append(x[i]).append(&quot;,y=&quot;).append(y[i])</span>
-<span class="nc" id="L252">                .append(&quot;,idx=&quot;).append(idx[i]).append(&quot;,sigma=&quot;).append(sigma[i])</span>
-<span class="nc" id="L253">                .append(&quot;\n&quot;);</span>
-        }
-<span class="nc" id="L255">        return sb.toString();</span>
+    public boolean isFromAClosedCurve() {
+<span class="fc" id="L373">        return isFromClosedCurve;</span>
     }
+    
+    public PairIntArray getXYCurve() {
+<span class="nc" id="L377">        return xy;</span>
+    }
+    
+    @Override
+    public String toString() {
+<span class="nc" id="L382">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L383">        sb.append(&quot;sigma=&quot;).append(sigma);</span>
+<span class="nc bnc" id="L384" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc" id="L385">            sb.append(&quot; &quot;).append(xy.toString())</span>
+<span class="nc" id="L386">                .append(&quot;,curvature=&quot;).append(k[i])</span>
+<span class="nc" id="L387">                .append(&quot;,x1stDeriv=&quot;).append(x1stDeriv[i])</span>
+<span class="nc" id="L388">                .append(&quot;,x2ndDeriv=&quot;).append(x2ndDeriv[i])</span>
+<span class="nc" id="L389">                .append(&quot;,y1stDeriv=&quot;).append(y1stDeriv[i])</span>
+<span class="nc" id="L390">                .append(&quot;,y2ndDeriv=&quot;).append(y2ndDeriv[i])</span>
+<span class="nc" id="L391">                .append(&quot;,idx=&quot;).append(idx[i])</span>
+<span class="nc" id="L392">                .append(&quot;\n&quot;);</span>
+        }
+<span class="nc" id="L394">        return sb.toString();</span>
+    }
+
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

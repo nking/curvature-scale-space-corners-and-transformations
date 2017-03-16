@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>GroupAverageColors.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.util</a> &gt; <span class="el_source">GroupAverageColors.java</span></div><h1>GroupAverageColors.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.util;
+
+import algorithms.imageProcessing.CIEChromaticity;
+import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
+import java.util.Collection;
+
+/**
+ *
+ * @author nichole
+ */
+public class GroupAverageColors {
+    
+    private int xCen;
+    private int yCen;
+    
+    private int rAvg;
+    private int gAvg;
+    private int bAvg;
+    
+    private float avgCIEL;
+    private float avgCIEA;
+    private float avgCIEB;
+    
+    public GroupAverageColors(Image img,
+<span class="nc" id="L29">        PairIntArray a) {</span>
+        
+<span class="nc" id="L31">        CIEChromaticity cieC = new CIEChromaticity();</span>
+            
+<span class="nc" id="L33">        MiscellaneousCurveHelper curveHelper =</span>
+            new MiscellaneousCurveHelper();
+        
+<span class="nc" id="L36">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+        
+<span class="nc" id="L38">        double[] xyCen = curveHelper.calculateXYCentroids(a);</span>
+                
+<span class="nc" id="L40">        this.xCen = (int)Math.round(xyCen[0]);</span>
+        
+<span class="nc" id="L42">        this.yCen = (int)Math.round(xyCen[1]);</span>
+                
+<span class="nc" id="L44">        int[] avgRGB = imageProcessor.getAverageRGB(img, a);</span>
+        
+<span class="nc" id="L46">        this.rAvg = avgRGB[0];</span>
+<span class="nc" id="L47">        this.gAvg = avgRGB[1];</span>
+<span class="nc" id="L48">        this.bAvg = avgRGB[2];</span>
+        
+<span class="nc" id="L50">        float[] lab = cieC.rgbToCIELAB(</span>
+            avgRGB[0], avgRGB[1], avgRGB[2]);
+                
+<span class="nc" id="L53">        this.avgCIEL = lab[0];</span>
+<span class="nc" id="L54">        this.avgCIEA = lab[1];</span>
+<span class="nc" id="L55">        this.avgCIEB = lab[2];</span>
+<span class="nc" id="L56">    }</span>
+    
+<span class="fc" id="L58">    public GroupAverageColors(Image img, Collection&lt;PairInt&gt; a) {</span>
+        
+<span class="fc" id="L60">        CIEChromaticity cieC = new CIEChromaticity();</span>
+            
+<span class="fc" id="L62">        MiscellaneousCurveHelper curveHelper =</span>
+            new MiscellaneousCurveHelper();
+        
+<span class="fc" id="L65">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+        
+<span class="fc" id="L67">        double[] xyCen = curveHelper.calculateXYCentroids(a);</span>
+                
+<span class="fc" id="L69">        this.xCen = (int)Math.round(xyCen[0]);</span>
+        
+<span class="fc" id="L71">        this.yCen = (int)Math.round(xyCen[1]);</span>
+                
+<span class="fc" id="L73">        int[] avgRGB = imageProcessor.getAverageRGB(img, a);</span>
+        
+<span class="fc" id="L75">        this.rAvg = avgRGB[0];</span>
+<span class="fc" id="L76">        this.gAvg = avgRGB[1];</span>
+<span class="fc" id="L77">        this.bAvg = avgRGB[2];</span>
+        
+<span class="fc" id="L79">        float[] lab = cieC.rgbToCIELAB(</span>
+            avgRGB[0], avgRGB[1], avgRGB[2]);
+                
+<span class="fc" id="L82">        this.avgCIEL = lab[0];</span>
+<span class="fc" id="L83">        this.avgCIEA = lab[1];</span>
+<span class="fc" id="L84">        this.avgCIEB = lab[2];</span>
+<span class="fc" id="L85">    }</span>
+    
+    public double calculateDeltaE2000(GroupAverageColors other) {
+        
+<span class="nc" id="L89">        CIEChromaticity cieC = new CIEChromaticity();</span>
+        
+<span class="nc" id="L91">        double delta = </span>
+<span class="nc" id="L92">            cieC.calcDeltaECIE2000(avgCIEL, avgCIEA, avgCIEB,</span>
+                other.avgCIEL, other.avgCIEA, other.avgCIEB);
+        
+<span class="nc" id="L95">        return delta;</span>
+    }
+
+    /**
+     * @return the xCen
+     */
+    public int getXCen() {
+<span class="nc" id="L102">        return xCen;</span>
+    }
+
+    /**
+     * @param xCen the xCen to set
+     */
+    public void setXCen(int xCen) {
+<span class="nc" id="L109">        this.xCen = xCen;</span>
+<span class="nc" id="L110">    }</span>
+
+    /**
+     * @return the yCen
+     */
+    public int getYCen() {
+<span class="nc" id="L116">        return yCen;</span>
+    }
+
+    /**
+     * @param yCen the yCen to set
+     */
+    public void setYCen(int yCen) {
+<span class="nc" id="L123">        this.yCen = yCen;</span>
+<span class="nc" id="L124">    }</span>
+
+    /**
+     * @return the rAvg
+     */
+    public int getR() {
+<span class="fc" id="L130">        return rAvg;</span>
+    }
+
+    /**
+     * @return the gAvg
+     */
+    public int getG() {
+<span class="fc" id="L137">        return gAvg;</span>
+    }
+
+    /**
+     * @return the bAvg
+     */
+    public int getB() {
+<span class="fc" id="L144">        return bAvg;</span>
+    }
+
+    /**
+     * @return the avgCIEL
+     */
+    public float getCIEL() {
+<span class="nc" id="L151">        return avgCIEL;</span>
+    }
+
+    /**
+     * @return the avgCIEA
+     */
+    public float getCIEA() {
+<span class="nc" id="L158">        return avgCIEA;</span>
+    }
+
+    /**
+     * @return the avgCIEB
+     */
+    public float getCIEB() {
+<span class="nc" id="L165">        return avgCIEB;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

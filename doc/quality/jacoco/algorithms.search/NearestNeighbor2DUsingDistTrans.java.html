@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>NearestNeighbor2DUsingDistTrans.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.search</a> &gt; <span class="el_source">NearestNeighbor2DUsingDistTrans.java</span></div><h1>NearestNeighbor2DUsingDistTrans.java</h1><pre class="source lang-java linenums">package algorithms.search;
+
+/**
+ * a nearest neighbor based on the distance
+ * transform.
+ * 
+ * @author nichole
+ */
+<span class="nc" id="L9">public class NearestNeighbor2DUsingDistTrans {</span>
+    
+    /*
+    
+    NOTE: can only be used to search for a point
+    that does not exist in the original set of points.
+    
+    - accepts integer arrays of x and y
+    - transforms if needed to make sure there is at least
+      a gap of 1 between each point.
+      - stores the scale factpr if any
+      - *NOTE that the runtime complexity for calculating the
+         distance transform is then max x times max y,
+         so this method should not be used on very large axes data.
+         - it's primarily interesting as an efficient means of
+           calculating distances for elongated data
+           (when shorter on one axis, the runtime complexity is
+           possibly better than the O(N^2) of brute force or the
+           O(N*log_2(N)) of a kdtree...for kNN queries setup).
+           the better performance for elongated data suggests this is useful
+           for some LDA problems.
+    - calculate distance transform.
+    
+    - nn queries:
+      - transform query coords to scaled reference frame.
+      - scan the 9 neighors to find minimum.  the neearest point
+       should be off in that direction offset by that amount.
+      - transform result back to original reference frame.
+    */
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

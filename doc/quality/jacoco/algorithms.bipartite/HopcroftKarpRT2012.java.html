@@ -1,0 +1,964 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>HopcroftKarpRT2012.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.bipartite</a> &gt; <span class="el_source">HopcroftKarpRT2012.java</span></div><h1>HopcroftKarpRT2012.java</h1><pre class="source lang-java linenums">package algorithms.bipartite;
+
+import algorithms.bipartite.MinCostUnbalancedAssignment.Forest;
+import algorithms.bipartite.MinCostUnbalancedAssignment.LeftNode;
+import algorithms.bipartite.MinCostUnbalancedAssignment.RightNode;
+import algorithms.bipartite.MinCostUnbalancedAssignment.PathNode;
+import static algorithms.bipartite.MinCostUnbalancedAssignment.extractNodes;
+import algorithms.imageProcessing.DoubleLinkedCircularList;
+import algorithms.imageProcessing.HeapNode;
+import algorithms.mst.PrimsMST;
+import algorithms.util.PairInt;
+import gnu.trove.iterator.TIntIntIterator;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntIntHashMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.logging.Logger;
+
+/**
+ * NOTE:  this class is NOT READY FOR USE YET.
+ * It needs an implementation of &quot;multi-level buckets&quot;
+ * to reduce the minHeap's extractMin and should possibly
+ * be refactored to use primitives.
+ * 
+ * @author nichole
+ */
+<span class="nc bnc" id="L36" title="All 2 branches missed.">public class HopcroftKarpRT2012 {</span>
+    
+<span class="nc" id="L38">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+    
+    /**
+     * NOT READY FOR USE.
+     runtime complexity O(m * sqrt(s)) where m is number of edges
+     and s is the size of the matching whose target size
+     may be less than the maximum matchable.
+     * It needs an implementation of &quot;multi-level buckets&quot;
+     * to reduce the minHeap's extractMin and should possibly
+     * be refactored to use primitives.
+     * @param g
+     * @return 
+     */
+    public TIntIntMap findMaxMatching(Graph g, int s) {
+    
+<span class="nc" id="L53">        TIntIntMap m = new TIntIntHashMap();</span>
+                 
+<span class="nc" id="L55">        ResidualDigraph rM = new ResidualDigraph(g, m);</span>
+        
+<span class="nc" id="L57">        int prevMSize = m.size();</span>
+        
+<span class="nc" id="L59">        int nIter = 0;</span>
+            
+        // estimate lambda for the dial array length by
+        // looking at the number of edges with more than
+        // one connection.
+<span class="nc" id="L64">        int lambda = estimateLambda(rM);</span>
+                
+        while (true) {
+                        
+<span class="nc" id="L68">            boolean augmented = buildForestAndAugment(rM, lambda);</span>
+
+<span class="nc bnc" id="L70" title="All 2 branches missed.">            if (!augmented) {</span>
+<span class="nc" id="L71">                return m;</span>
+            }
+            
+            /*            
+            let P = {P1, P2, ...Pk} be a maximum set of vertex-disjoint
+               shortest augmenting paths with respect to M
+            M = the symmetric difference between M and
+               (P1 union P2 union ...Pk)
+            
+            now applying the symmetric difference to m and m2
+            */
+            
+<span class="nc" id="L83">            TIntIntMap m2 = rM.extractMatchings();</span>
+                        
+            //announce(M is a matching)
+            
+<span class="nc" id="L87">            log.fine(&quot;nIter=&quot; + nIter + &quot; m2.size=&quot; + m2.size()</span>
+<span class="nc" id="L88">                + &quot; m.size=&quot; + m.size());</span>
+            
+<span class="nc bnc" id="L90" title="All 2 branches missed.">            if (m2.size() &gt;= s) {</span>
+<span class="nc" id="L91">                return m2;</span>
+            }
+            
+<span class="nc" id="L94">            TIntIntMap tmpM = new TIntIntHashMap(m);</span>
+            
+<span class="nc" id="L96">            TIntSet mR = new TIntHashSet(m.values());</span>
+            // if m2 has a match that does not conflict with m,
+            // add it to m (== vertex disjoint)
+
+<span class="nc" id="L100">            TIntIntIterator iter = m2.iterator();</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">            for (int i = m2.size(); i-- &gt; 0;) {</span>
+<span class="nc" id="L102">                iter.advance();</span>
+<span class="nc" id="L103">                int key = iter.key();</span>
+<span class="nc" id="L104">                int value = iter.value();</span>
+<span class="nc bnc" id="L105" title="All 4 branches missed.">                if (!tmpM.containsKey(key) &amp;&amp; !mR.contains(value)) {</span>
+<span class="nc" id="L106">                    tmpM.put(key, value);</span>
+                }
+<span class="nc" id="L108">            }</span>
+            
+<span class="nc" id="L110">            log.fine(&quot;union size=&quot; + tmpM.size());</span>
+            
+<span class="nc bnc" id="L112" title="All 2 branches missed.">            if (tmpM.size() &gt;= s) {</span>
+<span class="nc" id="L113">                return tmpM;</span>
+            }
+            
+            // remove the intersection of m and m2
+<span class="nc" id="L117">            iter = m.iterator();</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">            for (int i = m.size(); i-- &gt; 0;) {</span>
+<span class="nc" id="L119">                iter.advance();</span>
+<span class="nc" id="L120">                int key = iter.key();</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">                if (m2.containsKey(key) &amp;&amp;</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">                    m2.get(key)== iter.value()) {</span>
+<span class="nc" id="L123">                    tmpM.remove(key);</span>
+                }
+<span class="nc" id="L125">            }</span>
+            
+<span class="nc" id="L127">            m = tmpM;</span>
+<span class="nc" id="L128">            log.fine(&quot;symmetric diff of m and m2.size=&quot; + m.size());</span>
+            
+<span class="nc bnc" id="L130" title="All 2 branches missed.">            if (m.size() &gt;= s) {</span>
+<span class="nc" id="L131">                return m;</span>
+            }
+            
+<span class="nc bnc" id="L134" title="All 2 branches missed.">            if (prevMSize == m.size()) {</span>
+                // user estimate of matching size might be an
+                // overestimate.
+<span class="nc" id="L137">                log.warning(&quot;m.size=&quot; + m.size() + &quot; which is&quot;</span>
+                    + &quot; less than the requsted size s=&quot; +s);
+<span class="nc" id="L139">                return m;</span>
+            }
+            
+<span class="nc" id="L142">            rM = new ResidualDigraph(g, m);</span>
+            
+<span class="nc bnc" id="L144" title="All 4 branches missed.">            assert(prevMSize &lt; m.size());</span>
+            
+<span class="nc" id="L146">            prevMSize = m.size();</span>
+<span class="nc" id="L147">            ++nIter;            </span>
+<span class="nc" id="L148">        }        </span>
+    }
+    
+    private int estimateLambda(ResidualDigraph rM) {
+        //TODO: this may need to be revised
+<span class="nc" id="L153">        int n = 0;</span>
+
+<span class="nc" id="L155">        TIntObjectIterator&lt;TIntSet&gt; iter = rM.getForwardLinksRM().</span>
+<span class="nc" id="L156">            iterator();</span>
+
+<span class="nc bnc" id="L158" title="All 2 branches missed.">        for (int i = rM.getForwardLinksRM().size(); i-- &gt; 0;) {</span>
+<span class="nc" id="L159">            iter.advance();</span>
+<span class="nc" id="L160">            TIntSet set = iter.value();</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">            if (set.size() &gt; 1) {</span>
+<span class="nc" id="L162">                n++;</span>
+            }
+<span class="nc" id="L164">        }</span>
+<span class="nc" id="L165">        return (n + 2);</span>
+    }
+
+    /**
+     * find augmenting paths of minimal length.
+     * by building the shortest path forest.
+     * 
+     * implementing section 3.4, pg 22 of Ramshaw and Tarjan 2012.
+     * 
+     * @param rM the residual digraph built from the matching 
+     * graph M of graph G.
+     * 
+     * @return a forest of trees whose forest array indexes 
+     * are the path lengths and whose items hold at the root, the
+     * remaining maidens, that is unmatched left nodes (a.k.a. G's
+     * X nodes).
+     * @param lambda the length to use for a counting sort of
+     * augmenting path lengths
+     */
+    protected boolean buildForestAndAugment(
+        final ResidualDigraph rM, int lambda) {
+      
+<span class="nc" id="L187">        Forest forest = new Forest(lambda);</span>
+        
+<span class="nc" id="L189">        MinHeapForRT2012 heap = new MinHeapForRT2012(4, </span>
+<span class="nc" id="L190">            rM.countOfForwardBipartiteLinks());</span>
+        
+        /*
+        this class is invoked as the first step in a
+        hopcroft-karp matching algorithm and there are
+        at first no matching nodes,
+        so all X nodes are maiden nodes.
+        but other uses may give the method a residual graph
+        that has matched arcs in it.
+        
+        The code below treats each maiden X node as a single
+        source shortest path problem.
+           
+        Note that book-keeping for the predecessors requires
+        a copy be made upon insert of a node into the heap
+        so that all possible foward links are present in 
+        the heap.
+        */
+     
+        // init all nodes to inf length
+<span class="nc" id="L210">        PathNodes pathNodes = new PathNodes(rM.getNLeft(), </span>
+<span class="nc" id="L211">            rM.getNRight());</span>
+        
+<span class="nc" id="L213">        TIntObjectMap&lt;LeftNode&gt; leftNodes </span>
+<span class="nc" id="L214">            = pathNodes.getLeftNodes();</span>
+<span class="nc" id="L215">        TIntObjectMap&lt;RightNode&gt; rightNodes </span>
+<span class="nc" id="L216">            = pathNodes.getRightNodes();</span>
+       
+        /*
+        for the bfs and tracking &quot;visited&quot;, need to track
+        individually for each maiden as its own single shortest
+        path.  doing so for the right nodes
+        key = maiden node index (== X index)
+        value = visited nodes along key path
+        */
+<span class="nc" id="L225">        TIntObjectMap&lt;TIntSet&gt; vXY = </span>
+            new TIntObjectHashMap&lt;TIntSet&gt;();
+        
+<span class="nc" id="L228">        TIntSet augmentedLeft = new TIntHashSet();</span>
+<span class="nc" id="L229">        TIntSet augmentedRight = new TIntHashSet();</span>
+<span class="nc" id="L230">        long prevKey = -1;</span>
+<span class="nc" id="L231">        long lastAugKey = -1;</span>
+        
+        // married X nodes
+<span class="nc" id="L234">        TIntSet matchedLeft = new TIntHashSet(</span>
+<span class="nc" id="L235">            rM.getBackwardLinksRM().values());    </span>
+ 
+        // for all maidens
+        // set key to 0, then ScanAndAdd(index)
+<span class="nc" id="L239">        TIntSet maidens = new TIntHashSet();</span>
+<span class="nc bnc" id="L240" title="All 2 branches missed.">        for (int i = 0; i &lt; rM.getNLeft(); ++i) {</span>
+<span class="nc bnc" id="L241" title="All 2 branches missed.">            if (matchedLeft.contains(i)) {</span>
+<span class="nc" id="L242">                continue;</span>
+            }
+<span class="nc" id="L244">            maidens.add(i);</span>
+<span class="nc" id="L245">            LeftNode node = leftNodes.get(i);</span>
+<span class="nc" id="L246">            node.setKey(0);</span>
+<span class="nc" id="L247">            vXY.put(i, new TIntHashSet());</span>
+<span class="nc" id="L248">            prevKey = scanAndAdd(heap, forest, rM, </span>
+                rightNodes, node, prevKey,
+                augmentedLeft, augmentedRight, 
+<span class="nc" id="L251">                node, vXY.get(i));</span>
+<span class="nc bnc" id="L252" title="All 4 branches missed.">            assert(prevKey == 0L);</span>
+        }
+     
+<span class="nc" id="L255">        int nRight = rM.getNRight();</span>
+        
+<span class="nc" id="L257">        log.fine(&quot;done adding &quot; + maidens.size() + </span>
+            &quot; maiden nodes and their links to heap&quot;);
+        
+        // at this point, the maidens are all in index 0 of
+        // the forest trees.
+        
+<span class="nc" id="L263">        int nIter = 0;</span>
+        
+<span class="nc bnc" id="L265" title="All 2 branches missed.">        while (heap.getNumberOfNodes() &gt; 0) {</span>
+             
+            // in the heap are men not in the forest who are in
+            // an alternating path from a maiden.
+            // the key is the length of shortest path so far
+<span class="nc" id="L270">            PathNode y = (PathNode) heap.extractMin();</span>
+<span class="nc bnc" id="L271" title="All 4 branches missed.">            assert(y instanceof RightNode);</span>
+            
+<span class="nc" id="L273">            log.fine(&quot;heap.size=&quot; + heap.getNumberOfNodes());</span>
+            
+<span class="nc" id="L275">            log.fine(&quot;extractMin=&quot; + y.toString());</span>
+            
+<span class="nc" id="L277">            int yIdx = y.index;</span>
+        
+<span class="nc bnc" id="L279" title="All 2 branches missed.">            if (augmentedRight.contains(yIdx)) {</span>
+<span class="nc" id="L280">                continue;</span>
+            }
+            
+<span class="nc bnc" id="L283" title="All 4 branches missed.">            assert(y.topPredecessor != null);</span>
+            
+<span class="nc" id="L285">            int topIdx = y.topPredecessor.index;</span>
+            
+<span class="nc" id="L287">            long currentKey = forest.add(y, prevKey);</span>
+            
+<span class="nc bnc" id="L289" title="All 2 branches missed.">            if (currentKey &gt; prevKey) {</span>
+<span class="nc" id="L290">                log.fine(&quot;augment forest[&quot; + prevKey + &quot;] &quot;);</span>
+                //forest[0] are the maiden nodes alone
+<span class="nc bnc" id="L292" title="All 2 branches missed.">                if (prevKey &gt; 0) {</span>
+                    //debug(forest);
+<span class="nc" id="L294">                    augmentPath(rM, forest, prevKey, augmentedLeft,</span>
+                        augmentedRight);
+                }
+<span class="nc" id="L297">                forest.removeFirstItem((int)prevKey);</span>
+<span class="nc" id="L298">                lastAugKey = prevKey;</span>
+<span class="nc" id="L299">                prevKey = currentKey;</span>
+            }
+            
+            /*
+            if y is married then
+                x := wife of y;
+                set l(x) := l(y) and 
+                ScanAndAdd(x); 
+            else
+                exit(bachelor β := y reached); 
+            fi;
+            */
+            
+            // the married nodes are the keys in the backward
+            // links of the residual digraph
+<span class="nc bnc" id="L314" title="All 2 branches missed.">            if (rM.getBackwardLinksRM().containsKey(yIdx)) {</span>
+<span class="nc" id="L315">                int xIdx = rM.getBackwardLinksRM().get(yIdx);</span>
+<span class="nc" id="L316">                LeftNode xNode = leftNodes.get(xIdx);</span>
+                
+<span class="nc" id="L318">                xNode.setKey(y.getKey());</span>
+<span class="nc bnc" id="L319" title="All 2 branches missed.">                if (xNode.pathPredecessor == null) {</span>
+<span class="nc" id="L320">                    xNode.pathPredecessor = y;</span>
+<span class="nc" id="L321">                    xNode.topPredecessor = y.topPredecessor;</span>
+                }
+                 
+<span class="nc" id="L324">                currentKey = scanAndAdd(heap, forest, </span>
+                    rM, rightNodes, xNode, prevKey,
+                    augmentedLeft, augmentedRight, y.topPredecessor, 
+<span class="nc" id="L327">                    vXY.get(topIdx));</span>
+                
+<span class="nc bnc" id="L329" title="All 2 branches missed.">                if (currentKey &gt; prevKey) {</span>
+<span class="nc" id="L330">                    log.fine(&quot;augment forest[&quot; + prevKey + &quot;] &quot;);</span>
+<span class="nc bnc" id="L331" title="All 2 branches missed.">                    if (prevKey &gt; 0) {</span>
+                        //debug(forest);
+<span class="nc" id="L333">                        augmentPath(rM, forest, prevKey, augmentedLeft,</span>
+                            augmentedRight);
+                    }
+<span class="nc" id="L336">                    forest.removeFirstItem((int)prevKey);</span>
+<span class="nc" id="L337">                    lastAugKey = prevKey;</span>
+<span class="nc" id="L338">                    prevKey = currentKey;    </span>
+                }       
+                
+<span class="nc" id="L341">            } else {</span>
+                //exit(bachelor β := y reached);
+<span class="nc" id="L343">                log.fine(&quot;bachelor y=&quot; + y.toString());</span>
+                
+<span class="nc bnc" id="L345" title="All 2 branches missed.">                if (maidens.contains(topIdx)) {</span>
+<span class="nc" id="L346">                    maidens.remove(topIdx);                    </span>
+<span class="nc bnc" id="L347" title="All 2 branches missed.">                } else if (maidens.isEmpty()) {</span>
+<span class="nc" id="L348">                    log.fine(&quot;last maiden's bachelor reached&quot;);</span>
+                    //debug(forest);
+<span class="nc" id="L350">                    break;</span>
+                }
+            }
+        
+<span class="nc" id="L354">            log.fine(&quot;nIter=&quot; + nIter);</span>
+<span class="nc" id="L355">        }</span>
+        
+<span class="nc bnc" id="L357" title="All 2 branches missed.">        if (lastAugKey &lt; prevKey) {</span>
+<span class="nc" id="L358">            log.fine(&quot;augment forest[&quot; + prevKey + &quot;] &quot;);</span>
+<span class="nc bnc" id="L359" title="All 2 branches missed.">            if (prevKey &gt; 0) {</span>
+                //debug(forest);
+<span class="nc" id="L361">                augmentPath(rM, forest, prevKey, augmentedLeft,</span>
+                    augmentedRight);
+            }
+<span class="nc" id="L364">            lastAugKey = prevKey;</span>
+        }
+       
+<span class="nc" id="L367">        log.fine(&quot;lastAugKey=&quot; + lastAugKey);</span>
+        
+<span class="nc bnc" id="L369" title="All 4 branches missed.">        return !(augmentedLeft.isEmpty() &amp;&amp; augmentedRight.isEmpty());</span>
+    }
+
+    /**    
+    given a maiden (left) node, search forward links to 
+    right nodes in alternating paths
+    to insert right nodes into the heap
+    or update their heap keys for shorter paths.
+    
+    note that any yNodes inserted into the heap internally,
+    have their keys updated.
+    
+     * @param heap
+     * @param forest
+     * @param rM
+     * @param yNodes
+     * @param xNode 
+     */
+    private long scanAndAdd(MinHeapForRT2012 heap, Forest forest,
+        ResidualDigraph rM, TIntObjectMap&lt;RightNode&gt; yNodes, 
+        LeftNode xNode, long prevKey,
+        TIntSet augmentedLeft,
+        TIntSet augmentedRight,
+        LeftNode topNode, TIntSet visitedY) {
+
+<span class="nc" id="L394">        int xIdx = xNode.index;</span>
+      
+<span class="nc bnc" id="L396" title="All 2 branches missed.">        if (augmentedLeft.contains(xIdx)) {</span>
+<span class="nc" id="L397">            return prevKey;</span>
+        }
+        
+<span class="nc" id="L400">        long lX = xNode.getKey();</span>
+<span class="nc bnc" id="L401" title="All 4 branches missed.">        assert(lX &lt; Long.MAX_VALUE);</span>
+        
+<span class="nc" id="L403">        TIntSet forwardLinks </span>
+<span class="nc" id="L404">            = rM.getForwardLinksRM().get(xIdx);</span>
+        
+<span class="nc bnc" id="L406" title="All 2 branches missed.">        if (forwardLinks != null) {</span>
+<span class="nc" id="L407">            TIntIterator iter = forwardLinks.iterator();</span>
+<span class="nc bnc" id="L408" title="All 2 branches missed.">            while (iter.hasNext()) {</span>
+<span class="nc" id="L409">                int yIdx = iter.next();</span>
+<span class="nc bnc" id="L410" title="All 2 branches missed.">                if (visitedY.contains(yIdx) ||</span>
+<span class="nc bnc" id="L411" title="All 2 branches missed.">                    augmentedRight.contains(yIdx)) {</span>
+<span class="nc" id="L412">                    continue;</span>
+                }
+<span class="nc" id="L414">                visitedY.add(yIdx);</span>
+                
+                //link length = net cost of the edge 
+                //    (lp(x ⇒ y) = cp(X,Y))
+                //link length of backward link Y-&gt;X, is 0, lp(y ⇒ x) := 0.
+
+                // l(x) and l(y) are the keys in the heap node
+
+<span class="nc" id="L422">                RightNode yNode = yNodes.get(yIdx);</span>
+<span class="nc" id="L423">                long lOld = yNode.getKey();</span>
+<span class="nc bnc" id="L424" title="All 4 branches missed.">                assert(yNode.index == yIdx);</span>
+                
+                //L := l(x) + lp(x ⇒ y) 
+                //   = l(x) + cp(x, y)
+                //   = l(x) + c(x, y) − pd(x) + pd(y)
+                // from page 41 regarding first steps in FlowAssign:  
+                // &quot;We first perform some initialization. 
+                // Ignoring the edges weights, we use Hopcroft-Karp 
+                // to look for some matching of size t.&quot;
+                // so, c(x,y) which is the edge weight in Graph g,
+                // is 1 here by this statement.
+<span class="nc" id="L435">                int cp = 1;</span>
+
+<span class="nc" id="L437">                long ell = lX + cp;</span>
+<span class="nc bnc" id="L438" title="All 2 branches missed.">                if (ell &lt; lOld) {</span>
+<span class="nc bnc" id="L439" title="All 2 branches missed.">                    if (lOld == Long.MAX_VALUE) {</span>
+<span class="nc bnc" id="L440" title="All 4 branches missed.">                        assert(yNode instanceof RightNode);</span>
+<span class="nc" id="L441">                        yNode = (RightNode)yNode.copy();</span>
+<span class="nc" id="L442">                        yNode.pathPredecessor = xNode.copy();</span>
+<span class="nc bnc" id="L443" title="All 2 branches missed.">                        if (yNode.pathPredecessor.topPredecessor != null) {</span>
+<span class="nc bnc" id="L444" title="All 4 branches missed.">                            assert (yNode.pathPredecessor.topPredecessor.index ==</span>
+                                topNode.index);
+<span class="nc" id="L446">                            yNode.topPredecessor</span>
+                                = yNode.pathPredecessor.topPredecessor;
+                        } else {
+<span class="nc" id="L449">                            yNode.topPredecessor = topNode;</span>
+                        }
+<span class="nc" id="L451">                        yNode.setKey(ell);</span>
+<span class="nc" id="L452">                        heap.insert(yNode);</span>
+<span class="nc" id="L453">                        log.fine(String.format(&quot;HEAP insert: %s&quot;,</span>
+<span class="nc" id="L454">                            yNode.toString()));</span>
+                    } else {
+<span class="nc bnc" id="L456" title="All 2 branches missed.">                        int prev = </span>
+<span class="nc" id="L457">                            (yNode.pathPredecessor == null) ?</span>
+                            null :
+<span class="nc" id="L459">                            yNode.pathPredecessor.index;</span>
+<span class="nc bnc" id="L460" title="All 2 branches missed.">                        int top = </span>
+<span class="nc" id="L461">                            (yNode.topPredecessor == null) ?</span>
+                            null :
+<span class="nc" id="L463">                            yNode.topPredecessor.index;</span>
+<span class="nc bnc" id="L464" title="All 4 branches missed.">                        assert(prev != -1);</span>
+<span class="nc bnc" id="L465" title="All 4 branches missed.">                        assert(top != -1);</span>
+<span class="nc bnc" id="L466" title="All 2 branches missed.">                        if (prev != xIdx) {</span>
+<span class="nc" id="L467">                            yNode.pathPredecessor = xNode;</span>
+<span class="nc" id="L468">                            yNode.topPredecessor = xNode.topPredecessor;</span>
+                        }
+<span class="nc" id="L470">                        heap.decreaseKey(yNode, ell);</span>
+<span class="nc" id="L471">                        log.fine(String.format(&quot;HEAP decr: %s&quot;,</span>
+<span class="nc" id="L472">                            yNode.toString()));</span>
+                    }
+                }
+<span class="nc" id="L475">            }</span>
+        }
+        
+        //add x to the forest;
+<span class="nc" id="L479">        return forest.add(xNode, prevKey);</span>
+    }
+    
+    private void augmentPath(ResidualDigraph rM, Forest forest, 
+        long foresIdx, TIntSet augmentedLeft, 
+        TIntSet augmentedRight) {
+
+        /*
+        will extract the paths, that is the branches in the
+        tree forest[forestIdx]
+        and find a maximal set of compatible paths within
+        those.
+        
+        could use kruskal's or prims to create the set of
+        edges (created from building the minimum spanning tree).
+        then augment using each edge, but 
+        skipping those violating vertex-disjoint.
+        
+        since prim's runtime complexity is better for
+        |v| &lt; |E|, will use that.
+        
+        */
+        
+        // ---- extract the forest tree as edges ---
+        
+<span class="nc" id="L504">        DoubleLinkedCircularList tree = forest.get((int)foresIdx);</span>
+
+<span class="nc bnc" id="L506" title="All 4 branches missed.">        assert(tree != null);</span>
+        
+<span class="nc" id="L508">        Set&lt;PairInt&gt; edges = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L509">        long n = tree.getNumberOfNodes();</span>
+<span class="nc" id="L510">        HeapNode node = tree.getSentinel();</span>
+<span class="nc" id="L511">        log.fine(&quot;number of branches in tree=&quot; + n);</span>
+ 
+<span class="nc" id="L513">        int j = 0;</span>
+<span class="nc bnc" id="L514" title="All 2 branches missed.">        while (j &lt; n) {</span>
+<span class="nc" id="L515">            node = node.getLeft();</span>
+            
+<span class="nc" id="L517">            List&lt;PathNode&gt; path = MinCostUnbalancedAssignment.extractNodes((PathNode)node);</span>
+<span class="nc bnc" id="L518" title="All 2 branches missed.">            if (path.size() &lt; 2) {</span>
+<span class="nc" id="L519">                ++j;</span>
+<span class="nc" id="L520">                continue;</span>
+            }
+            //debugPath(path);
+            //discard if not vertex disjoint from augmented sets
+<span class="nc" id="L524">            boolean skip = false;</span>
+<span class="nc" id="L525">            List&lt;PairInt&gt; tmp = new ArrayList&lt;PairInt&gt;();</span>
+<span class="nc bnc" id="L526" title="All 2 branches missed.">            for (int ii = 0; ii &lt; (path.size() - 1); ++ii) {</span>
+<span class="nc" id="L527">                PathNode node1 = path.get(ii);</span>
+<span class="nc" id="L528">                PathNode node2 = path.get(ii + 1);</span>
+                // index1 is the left index of arc
+                // index2 is the right index of the arc
+                int idx1, idx2;
+<span class="nc bnc" id="L532" title="All 2 branches missed.">                if (node1 instanceof LeftNode) {</span>
+<span class="nc" id="L533">                    idx1 = node1.index;</span>
+<span class="nc" id="L534">                    idx2 = node2.index;</span>
+                } else {
+<span class="nc" id="L536">                    idx1 = node2.index;</span>
+<span class="nc" id="L537">                    idx2 = node1.index;</span>
+                }
+<span class="nc bnc" id="L539" title="All 2 branches missed.">                if (augmentedLeft.contains(idx1) ||</span>
+<span class="nc bnc" id="L540" title="All 2 branches missed.">                    augmentedRight.contains(idx2)) {</span>
+<span class="nc" id="L541">                    skip = true;</span>
+<span class="nc" id="L542">                    break;</span>
+                }
+<span class="nc" id="L544">                tmp.add(new PairInt(idx1, idx2));</span>
+            }
+<span class="nc bnc" id="L546" title="All 2 branches missed.">            if (!skip) {</span>
+<span class="nc" id="L547">                edges.addAll(tmp);</span>
+            }
+<span class="nc" id="L549">            ++j;</span>
+<span class="nc" id="L550">        }</span>
+        
+<span class="nc bnc" id="L552" title="All 2 branches missed.">        if (edges.isEmpty()) {</span>
+<span class="nc" id="L553">            return;</span>
+        }
+
+        List&lt;PairInt&gt; edges2;
+<span class="nc bnc" id="L557" title="All 2 branches missed.">        if (edges.size() &gt; 2) {</span>
+            //edges2 = filterUsingMST(edges);
+<span class="nc" id="L559">            edges2 = filter(edges);</span>
+        } else {
+<span class="nc" id="L561">            edges2 = new ArrayList&lt;PairInt&gt;(edges);</span>
+        }
+
+        //augment M along path;
+
+        //pg 11: &quot;But our augmenting paths will be paths 
+        //in an auxiliary graph called the residual digraph&quot;
+
+        //&quot;We augment along a tight augmenting path 
+        //by swapping the status of the edges that 
+        //underlie its links, saturating the idle edges
+        //and idling the saturated ones. This process 
+        //increases the size of the matching by exactly 1. 
+        //It marries off the maiden and bachelor at the 
+        //ends of the augmenting path, thus reducing the
+        //number of places where future augmenting paths 
+        //can start or end.
+
+        /*
+        separating edits into 2 lists:
+           undo &quot;saturated&quot; then make idle saturated
+        */
+<span class="nc" id="L583">        List&lt;PairInt&gt; undoSaturated = new ArrayList&lt;PairInt&gt;();</span>
+<span class="nc" id="L584">        List&lt;PairInt&gt; makeSaturated = new ArrayList&lt;PairInt&gt;();</span>
+        
+<span class="nc bnc" id="L586" title="All 2 branches missed.">        for (PairInt edge : edges2) {</span>
+<span class="nc" id="L587">            int leftIdx = edge.getX();</span>
+<span class="nc" id="L588">            int rightIdx = edge.getY();</span>
+<span class="nc bnc" id="L589" title="All 2 branches missed.">            if (rM.getBackwardLinksRM().containsKey(rightIdx)) {</span>
+<span class="nc" id="L590">                int bLeftIdx = rM.getBackwardLinksRM().get(</span>
+                    rightIdx);
+<span class="nc bnc" id="L592" title="All 2 branches missed.">                if (bLeftIdx == leftIdx) {</span>
+<span class="nc" id="L593">                    undoSaturated.add(edge);</span>
+                } else {
+<span class="nc" id="L595">                    makeSaturated.add(edge);</span>
+                }
+<span class="nc" id="L597">            } else {</span>
+<span class="nc" id="L598">                makeSaturated.add(edge);</span>
+            }
+<span class="nc" id="L600">        }</span>
+                
+<span class="nc bnc" id="L602" title="All 2 branches missed.">        for (PairInt edge : undoSaturated) {</span>
+
+<span class="nc" id="L604">            int leftIdx = edge.getX();</span>
+<span class="nc" id="L605">            int rightIdx = edge.getY();</span>
+
+            // remove backwards link and mapping
+<span class="nc" id="L608">            rM.getBackwardLinksRM().remove(rightIdx);</span>
+
+<span class="nc" id="L610">            TIntSet rIndexes = rM.getForwardLinksRM().get(leftIdx);</span>
+            // create a forward link        
+<span class="nc bnc" id="L612" title="All 2 branches missed.">            if (rIndexes == null) {</span>
+<span class="nc" id="L613">                rIndexes = new TIntHashSet();</span>
+<span class="nc" id="L614">                rM.getForwardLinksRM().put(leftIdx, rIndexes);</span>
+            }
+<span class="nc" id="L616">            rIndexes.add(rightIdx);</span>
+
+<span class="nc" id="L618">            log.fine(&quot;augmented to remove :&quot; + leftIdx </span>
+                + &quot; to &quot; + rightIdx);
+            
+<span class="nc" id="L621">            augmentedLeft.add(leftIdx);</span>
+<span class="nc" id="L622">            augmentedRight.add(rightIdx);</span>
+<span class="nc" id="L623">        }</span>
+        
+<span class="nc" id="L625">        TIntSet tmpAR = new TIntHashSet();</span>
+<span class="nc" id="L626">        TIntSet tmpAL = new TIntHashSet();</span>
+        
+<span class="nc bnc" id="L628" title="All 2 branches missed.">        for (PairInt edge : makeSaturated) {</span>
+
+<span class="nc" id="L630">            int rightIdx = edge.getY();</span>
+
+<span class="nc bnc" id="L632" title="All 2 branches missed.">            if (tmpAR.contains(rightIdx)) {</span>
+<span class="nc" id="L633">                continue;</span>
+            }
+            
+<span class="nc" id="L636">            int leftIdx = edge.getX();</span>
+            
+<span class="nc bnc" id="L638" title="All 2 branches missed.">            if (tmpAL.contains(leftIdx)) {</span>
+<span class="nc" id="L639">                continue;</span>
+            }
+            
+            // assert saturated mapping for right node doesn't exist
+<span class="nc bnc" id="L643" title="All 4 branches missed.">            assert(rM.getBackwardLinksRM().containsKey(rightIdx));</span>
+<span class="nc" id="L644">            int v2 = rM.getBackwardLinksRM().get(rightIdx);</span>
+            
+<span class="nc" id="L646">            TIntSet rIndexes = rM.getForwardLinksRM().get(leftIdx);</span>
+        
+<span class="nc bnc" id="L648" title="All 2 branches missed.">            boolean forwardFound = (rIndexes != null) &amp;&amp; </span>
+<span class="nc bnc" id="L649" title="All 2 branches missed.">                rIndexes.contains(rightIdx);</span>
+        
+<span class="nc bnc" id="L651" title="All 2 branches missed.">            if (forwardFound) {</span>
+                // remove existing &quot;idle&quot; forward link
+<span class="nc" id="L653">                rIndexes.remove(rightIdx);</span>
+
+                // create a backward link and matched mapping
+<span class="nc" id="L656">                rM.getBackwardLinksRM().put(rightIdx, leftIdx);</span>
+
+<span class="nc" id="L658">                log.fine(&quot;augmented to add :&quot; + leftIdx + &quot; to &quot; +</span>
+                    rightIdx);
+                
+<span class="nc" id="L661">                tmpAL.add(leftIdx);</span>
+<span class="nc" id="L662">                tmpAR.add(rightIdx);</span>
+            }
+<span class="nc" id="L664">        }</span>
+<span class="nc" id="L665">        augmentedRight.addAll(tmpAR);</span>
+<span class="nc" id="L666">        augmentedLeft.addAll(tmpAL);</span>
+       
+<span class="nc" id="L668">    }</span>
+    
+    private String debug(TIntSet aL, TIntSet aR) {
+<span class="nc" id="L671">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L672">        sb.append(&quot;aL=[&quot;);</span>
+<span class="nc" id="L673">        TIntIterator iter = aL.iterator();</span>
+<span class="nc bnc" id="L674" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
+<span class="nc" id="L675">            int idx = iter.next();</span>
+<span class="nc" id="L676">            sb.append(Integer.toString(idx)).append(&quot;,&quot;);</span>
+<span class="nc" id="L677">        }</span>
+<span class="nc" id="L678">        sb.append(&quot;]&quot;);</span>
+<span class="nc" id="L679">        sb.append(&quot; aR=[&quot;);</span>
+<span class="nc" id="L680">        iter = aR.iterator();</span>
+<span class="nc bnc" id="L681" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
+<span class="nc" id="L682">            int idx = iter.next();</span>
+<span class="nc" id="L683">            sb.append(Integer.valueOf(idx)).append(&quot;,&quot;);</span>
+<span class="nc" id="L684">        }</span>
+<span class="nc" id="L685">        sb.append(&quot;]&quot;);</span>
+<span class="nc" id="L686">        return sb.toString();</span>
+    }
+    
+    private List&lt;PairInt&gt; filterUsingMST(Set&lt;PairInt&gt; edges) {
+        
+        // ---- prepare edges as a single graph and
+        //      adjacency map to give to prim's
+        
+        // re-number the vertexes and make an adjacency map or matrix
+        // populate these from Set&lt;PairInt&gt; edges
+<span class="nc" id="L696">        int nVertexes = 0;</span>
+<span class="nc" id="L697">        TIntIntMap leftToNew = new TIntIntHashMap();</span>
+<span class="nc" id="L698">        TIntIntMap revLeftToNew = new TIntIntHashMap();</span>
+<span class="nc bnc" id="L699" title="All 2 branches missed.">        for (PairInt edge : edges) {</span>
+<span class="nc" id="L700">            int idx = edge.getX();</span>
+<span class="nc bnc" id="L701" title="All 2 branches missed.">            if (!leftToNew.containsKey(idx)) {</span>
+<span class="nc" id="L702">                leftToNew.put(idx, nVertexes);</span>
+<span class="nc" id="L703">                revLeftToNew.put(nVertexes, idx);</span>
+<span class="nc" id="L704">                nVertexes++;</span>
+            }
+<span class="nc" id="L706">        }</span>
+<span class="nc" id="L707">        int nL = nVertexes;        </span>
+<span class="nc" id="L708">        TIntIntMap rightToNew = new TIntIntHashMap();</span>
+<span class="nc" id="L709">        TIntIntMap revRightToNew = new TIntIntHashMap();</span>
+        
+<span class="nc bnc" id="L711" title="All 2 branches missed.">        for (PairInt edge : edges) {</span>
+<span class="nc" id="L712">            int idx = edge.getY();</span>
+<span class="nc bnc" id="L713" title="All 2 branches missed.">            if (!rightToNew.containsKey(idx)) {</span>
+<span class="nc" id="L714">                rightToNew.put(idx, nVertexes);</span>
+<span class="nc" id="L715">                revRightToNew.put(nVertexes, idx);</span>
+<span class="nc" id="L716">                nVertexes++;</span>
+            }
+<span class="nc" id="L718">        }</span>
+        
+<span class="nc" id="L720">        TIntObjectMap&lt;TIntIntMap&gt; adjCostMap =</span>
+            new TIntObjectHashMap&lt;TIntIntMap&gt;();
+        
+<span class="nc bnc" id="L723" title="All 2 branches missed.">        for (PairInt edge : edges) {</span>
+<span class="nc" id="L724">            int idx1 = edge.getX();</span>
+<span class="nc" id="L725">            idx1 = leftToNew.get(idx1);</span>
+<span class="nc" id="L726">            int idx2 = edge.getY();</span>
+<span class="nc" id="L727">            idx2 = rightToNew.get(idx2);</span>
+            
+<span class="nc" id="L729">            TIntIntMap map1 = adjCostMap.get(idx1);</span>
+<span class="nc bnc" id="L730" title="All 2 branches missed.">            if (map1 == null) {</span>
+<span class="nc" id="L731">                map1 = new TIntIntHashMap();</span>
+<span class="nc" id="L732">                adjCostMap.put(idx1, map1);</span>
+            }
+            // using a cost of 1 for all edges
+<span class="nc" id="L735">            map1.put(idx2, 1);</span>
+            
+<span class="nc" id="L737">            TIntIntMap map2 = adjCostMap.get(idx2);</span>
+<span class="nc bnc" id="L738" title="All 2 branches missed.">            if (map2 == null) {</span>
+<span class="nc" id="L739">                map2 = new TIntIntHashMap();</span>
+<span class="nc" id="L740">                adjCostMap.put(idx2, map2);</span>
+            }
+            // using a cost of 1 for all edges
+<span class="nc" id="L743">            map2.put(idx1, 1);</span>
+<span class="nc" id="L744">        }</span>
+                
+        // use prim's mst to make a maximal set of edges
+<span class="nc" id="L747">        PrimsMST prims = new PrimsMST();</span>
+<span class="nc" id="L748">        prims.calculateMinimumSpanningTree(</span>
+            nVertexes, adjCostMap); 
+<span class="nc" id="L750">        int[] prev = prims.getPrecessorArray();</span>
+<span class="nc" id="L751">        log.fine(&quot;predecessors=&quot; + Arrays.toString(prev));</span>
+        
+<span class="nc" id="L753">        edges.clear();</span>
+        
+<span class="nc bnc" id="L755" title="All 2 branches missed.">        for (int idx2 = 0; idx2 &lt; prev.length; ++idx2) {</span>
+<span class="nc" id="L756">            int idx1 = prev[idx2];</span>
+<span class="nc bnc" id="L757" title="All 2 branches missed.">            if (idx1 == -1) {</span>
+<span class="nc" id="L758">                continue;</span>
+            }
+            int t1, t2;
+<span class="nc bnc" id="L761" title="All 2 branches missed.">            if (idx2 &lt; nL) {</span>
+                //[left] = right
+<span class="nc" id="L763">                t1 = idx2;</span>
+<span class="nc" id="L764">                t2 = idx1;</span>
+            } else {
+                //[right] = left
+<span class="nc" id="L767">                t1 = idx1;</span>
+<span class="nc" id="L768">                t2 = idx2;</span>
+            }
+            
+<span class="nc" id="L771">            t1 = revLeftToNew.get(t1);            </span>
+<span class="nc" id="L772">            t2 = revRightToNew.get(t2);</span>
+         
+<span class="nc" id="L774">            log.fine(&quot; passed filter1: &quot; + t1 + &quot;:&quot; + t2);</span>
+            
+<span class="nc" id="L776">            edges.add(new PairInt(t1, t2));            </span>
+        }
+        
+<span class="nc" id="L779">        List&lt;PairInt&gt; edges2 = new ArrayList&lt;PairInt&gt;();</span>
+<span class="nc" id="L780">        int nIter = 0;</span>
+<span class="nc" id="L781">        int nc = 0;</span>
+<span class="nc bnc" id="L782" title="All 4 branches missed.">        while ((nIter == 0) || (nc &gt; 0)) {</span>
+<span class="nc" id="L783">            nIter++;</span>
+<span class="nc" id="L784">            TIntIntMap lF = new TIntIntHashMap();</span>
+<span class="nc" id="L785">            TIntIntMap rF = new TIntIntHashMap();</span>
+<span class="nc bnc" id="L786" title="All 2 branches missed.">            for (PairInt edge : edges) {</span>
+<span class="nc" id="L787">                int idx1 = edge.getX();</span>
+<span class="nc" id="L788">                int idx2 = edge.getY();</span>
+                
+<span class="nc bnc" id="L790" title="All 2 branches missed.">                if (!lF.containsKey(idx1)) {</span>
+<span class="nc" id="L791">                    lF.put(idx1, 1);</span>
+                } else {
+<span class="nc" id="L793">                    int count = lF.get(idx1);</span>
+<span class="nc" id="L794">                    lF.put(idx1, count + 1);</span>
+                }
+                
+<span class="nc bnc" id="L797" title="All 2 branches missed.">                if (!rF.containsKey(idx2)) {</span>
+<span class="nc" id="L798">                    rF.put(idx2, 1);</span>
+                } else {
+<span class="nc" id="L800">                    int count = rF.get(idx2);</span>
+<span class="nc" id="L801">                    rF.put(idx2, count + 1);</span>
+                }
+<span class="nc" id="L803">            }</span>
+            
+            // add to edges2  edges w/
+            // left indexes w/ frequency=1
+            // right indexes w/ frequency=1
+            // and remove those from edges
+            
+<span class="nc" id="L810">            nc = 0;</span>
+            
+<span class="nc" id="L812">            TIntIntIterator iter = lF.iterator();</span>
+<span class="nc bnc" id="L813" title="All 2 branches missed.">            for (int i = lF.size(); i-- &gt; 0;) {</span>
+<span class="nc" id="L814">                iter.advance();                </span>
+<span class="nc bnc" id="L815" title="All 2 branches missed.">                if (iter.value() == 1) {</span>
+<span class="nc" id="L816">                    int idx1 = iter.key();</span>
+<span class="nc" id="L817">                    PairInt p0 = null;</span>
+<span class="nc bnc" id="L818" title="All 2 branches missed.">                    for (PairInt p : edges) {</span>
+<span class="nc bnc" id="L819" title="All 2 branches missed.">                        if (p.getX() == idx1) {</span>
+<span class="nc" id="L820">                            p0 = p;</span>
+<span class="nc" id="L821">                            break;</span>
+                        }
+<span class="nc" id="L823">                    }</span>
+<span class="nc bnc" id="L824" title="All 4 branches missed.">                    assert (p0 != null);</span>
+<span class="nc" id="L825">                    edges2.add(p0);</span>
+<span class="nc" id="L826">                    edges.remove(p0);</span>
+<span class="nc" id="L827">                    nc++;</span>
+<span class="nc" id="L828">                }</span>
+            }
+            
+<span class="nc" id="L831">            TIntIntIterator iter2 = rF.iterator();</span>
+<span class="nc bnc" id="L832" title="All 2 branches missed.">            for (int i = rF.size(); i-- &gt; 0;) {</span>
+<span class="nc" id="L833">                iter2.advance();                </span>
+<span class="nc bnc" id="L834" title="All 2 branches missed.">                if (iter2.value() == 1) {</span>
+<span class="nc" id="L835">                    int idx2 = iter2.key();</span>
+<span class="nc" id="L836">                    PairInt p0 = null;</span>
+<span class="nc bnc" id="L837" title="All 2 branches missed.">                    for (PairInt p : edges) {</span>
+<span class="nc bnc" id="L838" title="All 2 branches missed.">                        if (p.getY() == idx2) {</span>
+<span class="nc" id="L839">                            p0 = p;</span>
+<span class="nc" id="L840">                            break;</span>
+                        }
+<span class="nc" id="L842">                    }</span>
+<span class="nc bnc" id="L843" title="All 2 branches missed.">                    if (p0 != null) {</span>
+<span class="nc" id="L844">                        edges2.add(p0);</span>
+<span class="nc" id="L845">                        edges.remove(p0);</span>
+<span class="nc" id="L846">                        nc++;</span>
+                    }
+<span class="nc" id="L848">                }</span>
+            }
+<span class="nc" id="L850">            log.fine(&quot;edges.size=&quot; + edges.size() + &quot; edges2.size=&quot;</span>
+<span class="nc" id="L851">                + edges2.size());</span>
+<span class="nc" id="L852">        }</span>
+        
+<span class="nc" id="L854">        edges2.addAll(edges);</span>
+
+<span class="nc" id="L856">        return edges2;</span>
+    }
+    
+    private List&lt;PairInt&gt; filter(Set&lt;PairInt&gt; edges) {
+        
+<span class="nc" id="L861">        List&lt;PairInt&gt; edges2 = new ArrayList&lt;PairInt&gt;();</span>
+<span class="nc" id="L862">        int nIter = 0;</span>
+<span class="nc" id="L863">        int nc = 0;</span>
+<span class="nc bnc" id="L864" title="All 4 branches missed.">        while ((nIter == 0) || (nc &gt; 0)) {</span>
+<span class="nc" id="L865">            nIter++;</span>
+<span class="nc" id="L866">            TIntIntMap lF = new TIntIntHashMap();</span>
+<span class="nc" id="L867">            TIntIntMap rF = new TIntIntHashMap();</span>
+<span class="nc bnc" id="L868" title="All 2 branches missed.">            for (PairInt edge : edges) {</span>
+<span class="nc" id="L869">                int idx1 = edge.getX();</span>
+<span class="nc" id="L870">                int idx2 = edge.getY();</span>
+<span class="nc bnc" id="L871" title="All 2 branches missed.">                if (lF.containsKey(idx1)) {</span>
+<span class="nc" id="L872">                    lF.put(idx1, 1);</span>
+                } else {
+<span class="nc" id="L874">                    int count = lF.get(idx1);</span>
+<span class="nc" id="L875">                    lF.put(idx1, count + 1);</span>
+                }
+                
+<span class="nc bnc" id="L878" title="All 2 branches missed.">                if (rF.containsKey(idx2)) {</span>
+<span class="nc" id="L879">                    rF.put(idx2, 1);</span>
+                } else {
+<span class="nc" id="L881">                    int count = rF.get(idx2);</span>
+<span class="nc" id="L882">                    rF.put(idx2, count + 1);</span>
+                }
+<span class="nc" id="L884">            }</span>
+            
+            // add to edges2  edges w/
+            // left indexes w/ frequency=1
+            // right indexes w/ frequency=1
+            // and remove those from edges
+            
+<span class="nc" id="L891">            nc = 0;</span>
+            
+<span class="nc" id="L893">            TIntIntIterator iter = lF.iterator();</span>
+<span class="nc bnc" id="L894" title="All 2 branches missed.">            for (int i = lF.size(); i-- &gt; 0;) {</span>
+<span class="nc" id="L895">                iter.advance();</span>
+<span class="nc bnc" id="L896" title="All 2 branches missed.">                if (iter.value() == 1) {</span>
+<span class="nc" id="L897">                    int idx1 = iter.key();</span>
+<span class="nc" id="L898">                    PairInt p0 = null;</span>
+<span class="nc bnc" id="L899" title="All 2 branches missed.">                    for (PairInt p : edges) {</span>
+<span class="nc bnc" id="L900" title="All 2 branches missed.">                        if (p.getX() == idx1) {</span>
+<span class="nc" id="L901">                            p0 = p;</span>
+<span class="nc" id="L902">                            break;</span>
+                        }
+<span class="nc" id="L904">                    }</span>
+<span class="nc bnc" id="L905" title="All 4 branches missed.">                    assert (p0 != null);</span>
+<span class="nc" id="L906">                    edges2.add(p0);</span>
+<span class="nc" id="L907">                    edges.remove(p0);</span>
+<span class="nc" id="L908">                    nc++;</span>
+<span class="nc" id="L909">                }</span>
+            }
+            
+<span class="nc" id="L912">            iter = rF.iterator();</span>
+<span class="nc bnc" id="L913" title="All 2 branches missed.">            for (int i = rF.size(); i-- &gt; 0;) {</span>
+<span class="nc" id="L914">                iter.advance();                </span>
+<span class="nc bnc" id="L915" title="All 2 branches missed.">                if (iter.value() == 1) {</span>
+<span class="nc" id="L916">                    int idx2 = iter.key();</span>
+<span class="nc" id="L917">                    PairInt p0 = null;</span>
+<span class="nc bnc" id="L918" title="All 2 branches missed.">                    for (PairInt p : edges) {</span>
+<span class="nc bnc" id="L919" title="All 2 branches missed.">                        if (p.getY() == idx2) {</span>
+<span class="nc" id="L920">                            p0 = p;</span>
+<span class="nc" id="L921">                            break;</span>
+                        }
+<span class="nc" id="L923">                    }</span>
+<span class="nc bnc" id="L924" title="All 2 branches missed.">                    if (p0 != null) {</span>
+<span class="nc" id="L925">                        edges2.add(p0);</span>
+<span class="nc" id="L926">                        edges.remove(p0);</span>
+<span class="nc" id="L927">                        nc++;</span>
+                    }
+<span class="nc" id="L929">                }</span>
+            }
+<span class="nc" id="L931">            log.fine(&quot;edges.size=&quot; + edges.size() + &quot; edges2.size=&quot;</span>
+<span class="nc" id="L932">                + edges2.size());</span>
+<span class="nc" id="L933">        }</span>
+        
+<span class="nc" id="L935">        edges2.addAll(edges);</span>
+
+<span class="nc" id="L937">        return edges2;</span>
+    }
+    
+    private void debug(Forest forest) {
+        
+<span class="nc bnc" id="L942" title="All 2 branches missed.">        for (Integer key : forest.getKeys()) {</span>
+
+<span class="nc" id="L944">            DoubleLinkedCircularList tree = forest.get(key.intValue());</span>
+            
+<span class="nc" id="L946">            long n = tree.getNumberOfNodes();</span>
+<span class="nc" id="L947">            HeapNode node = tree.getSentinel();</span>
+<span class="nc" id="L948">            int j = 0;</span>
+<span class="nc bnc" id="L949" title="All 2 branches missed.">            while (j &lt; n) {</span>
+<span class="nc" id="L950">                node = node.getLeft();</span>
+                
+<span class="nc" id="L952">                List&lt;PathNode&gt; path = extractNodes((PathNode)node);</span>
+<span class="nc" id="L953">                int n2 = path.size();</span>
+<span class="nc bnc" id="L954" title="All 2 branches missed.">                for (int ii = 0; ii &lt; n2; ++ii) {</span>
+<span class="nc" id="L955">                    PathNode node1 = path.get(ii);</span>
+<span class="nc" id="L956">                    log.info(&quot;forest[&quot; + key + &quot;] tree branch[&quot; </span>
+<span class="nc" id="L957">                        + j + &quot;] node[&quot; + ii + &quot;]=&quot; + node1.toString());</span>
+                }                    
+<span class="nc" id="L959">                j++;</span>
+<span class="nc" id="L960">            }</span>
+<span class="nc" id="L961">        }            </span>
+<span class="nc" id="L962">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -1,0 +1,702 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>OrderedClosedCurveCorrespondence.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.matching</a> &gt; <span class="el_source">OrderedClosedCurveCorrespondence.java</span></div><h1>OrderedClosedCurveCorrespondence.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.matching;
+
+import algorithms.util.PairIntArray;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.TreeMap;
+
+/**
+ * a class to handle additions and clockwise consistency checks
+ * to a growing correspondency list.
+ * The class is specialized for use with PartialShapeMatcher.java
+ * which has intervals it attempts to add to this structure in
+ * order of increasing cost.
+ * The intervals are given as ranges of indexes called idx1
+ * and the shape they match to is specified as an offset
+ * from the idx1 indexes.
+ * Each interval has a single offset which may be different
+ * from the offset in other intervals.
+ *
+ * NOTE: this class is not &quot;thread safe&quot;, that is, only a single thread should
+ * access it because it uses an internal cache that is not guarded..
+ * 
+ * @author nichole
+ */
+<span class="pc bpc" id="L28" title="1 of 2 branches missed.">class OrderedClosedCurveCorrespondence {</span>
+
+    // visit each interval in order of smallest cost,
+    // and only add the clockwise consistent intervals to a combined output
+<span class="fc" id="L32">    protected TreeMap&lt;Integer, SR&gt; t1 = new TreeMap&lt;Integer, SR&gt;();</span>
+
+<span class="fc" id="L34">    private int minLength = 3;</span>
+
+    // NOTE: this makes the code &quot;not thread safe&quot;
+<span class="fc" id="L37">    private int[] cachedIdx2 = new int[2];</span>
+    
+<span class="fc" id="L39">    private int nMatched = 0;</span>
+    
+<span class="fc" id="L41">    private boolean doStopAt90Percent = true;</span>
+    
+    // begin purely debug variables
+<span class="fc" id="L44">    private boolean debug = false;</span>
+<span class="fc" id="L45">    public PairIntArray dbg1 = null;</span>
+<span class="fc" id="L46">    public PairIntArray dbg2 = null;</span>
+<span class="fc" id="L47">    public int dp = 1;</span>
+    // end purely debug variables
+    
+    public void setToDebug() {
+<span class="nc" id="L51">        debug = true;</span>
+<span class="nc" id="L52">    }</span>
+    
+    public void setMinimumLength(int length) {
+<span class="fc" id="L55">        minLength = length;</span>
+<span class="fc" id="L56">    }</span>
+    
+    public void overrideStopAt90PercentMatched() {
+<span class="nc" id="L59">        this.doStopAt90Percent = false;</span>
+<span class="nc" id="L60">    }</span>
+
+    public void addIntervals(List&lt;SR&gt; intervals, int n1, int n2) {
+
+        // rule from PartialShapeMatcher is n1 &lt;= n2.
+<span class="fc" id="L65">        float nMaxMatchable = n1;</span>
+        
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        for (SR sr: intervals) {</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">            if (debug) {</span>
+<span class="nc" id="L69">                System.out.println(&quot;cost=&quot; + sr.calcSalukDist() + </span>
+                &quot; sr=&quot; + sr.startIdx1 + &quot; : &quot; + sr.stopIdx1);
+            }
+            
+<span class="fc" id="L73">            addInterval(sr, n1, n2);</span>
+            
+<span class="pc bpc" id="L75" title="1 of 4 branches missed.">            if (doStopAt90Percent &amp;&amp; (nMatched &gt; 0.9 * nMaxMatchable)) {</span>
+<span class="fc" id="L76">                return;</span>
+            }
+<span class="fc" id="L78">        }</span>
+
+<span class="fc" id="L80">    }</span>
+
+    public List&lt;SR&gt; getResultsAsList() {
+
+<span class="fc" id="L84">        List&lt;SR&gt; list = new ArrayList&lt;SR&gt;();</span>
+
+<span class="fc bfc" id="L86" title="All 2 branches covered.">        for (Entry&lt;Integer, SR&gt; entry : t1.entrySet()) {</span>
+<span class="fc" id="L87">            list.add(entry.getValue());</span>
+<span class="fc" id="L88">        }</span>
+
+<span class="fc" id="L90">        return list;</span>
+    }
+
+    
+   
+    private void print(SR sr, String label, int n2) {
+<span class="nc bnc" id="L96" title="All 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L97">            calculateIds2s(sr, n2);</span>
+<span class="nc" id="L98">            System.out.println(label + String.format(</span>
+            &quot;\n    --&gt;add p: %d %d : (%d, %d) : (%d, %d) off=%d\n&quot;, 
+<span class="nc" id="L100">            sr.startIdx1, sr.stopIdx1,</span>
+<span class="nc" id="L101">            dp*dbg1.getX(sr.startIdx1), dp*dbg1.getY(sr.startIdx1),</span>
+<span class="nc" id="L102">            dp*dbg1.getX(sr.stopIdx1), dp*dbg1.getY(sr.stopIdx1),</span>
+<span class="nc" id="L103">            sr.offsetIdx2)</span>
+<span class="nc" id="L104">            + String.format(</span>
+        &quot;    idx2s: %d %d : (%d, %d) : (%d, %d) \n&quot;, 
+<span class="nc" id="L106">            cachedIdx2[0], cachedIdx2[1],</span>
+<span class="nc" id="L107">            dp*dbg2.getX(cachedIdx2[0]), dp*dbg2.getY(cachedIdx2[0]),</span>
+<span class="nc" id="L108">            dp*dbg2.getX(cachedIdx2[1]), dp*dbg2.getY(cachedIdx2[1]))</span>
+            );
+        }
+<span class="nc" id="L111">    }</span>
+
+    private void addFirstInterval(SR sr) {
+
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">        if (!t1.isEmpty()) {</span>
+<span class="nc" id="L116">            throw new IllegalStateException(&quot;addFirstInterval &quot;</span>
+                + &quot; is meant for use with an empty tree&quot;);
+        }
+
+<span class="fc" id="L120">        Integer k1 = Integer.valueOf(sr.startIdx1);</span>
+<span class="fc" id="L121">        t1.put(k1, sr);</span>
+        
+<span class="fc" id="L123">        nMatched += sr.mLen;</span>
+<span class="fc" id="L124">    }</span>
+
+    /**
+     * add intervals to the clockwise ordered unique correspondence
+     * list intrnal to this instance.
+     * Note that each interval is expected to be clockwise consistent
+     * (stopIdx1 &gt; startIdx1) and the list of intervals is expected
+     * to be sorted so that the highest priority (== lowest cost)
+     * intervals are at the smallest list indexes, that is the
+     * list is increasing in cost with index.
+     * @param sr
+     * @param n1
+     * @param n2
+     */
+    public void addInterval(SR sr, int n1, int n2) {
+
+<span class="pc bpc" id="L140" title="3 of 4 branches missed.">        assert(sr.startIdx1 != sr.stopIdx1);</span>
+
+<span class="fc bfc" id="L142" title="All 2 branches covered.">        if (t1.isEmpty()) {</span>
+<span class="fc" id="L143">            addFirstInterval(sr);</span>
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">            if (debug) {</span>
+<span class="nc" id="L145">                print(sr, &quot;first : &quot;, n2);</span>
+            }
+<span class="fc" id="L147">            return;</span>
+        }
+
+        //assert clockwise consistent
+
+        //NOTE: if an interval is trimmed rather than discarded here
+        // because of clockwise consistency,
+        // then might need to consider re-doing the interval sort...
+        // (an adaptive optimal: if an interval is trimmed, might
+        // edit it in allResults list, re-sort and start again...
+        // will not do that here, but might consider a better way to have
+        // same result in the future).
+
+        /*
+        ---------------------
+        goal: to check that a new interval to insert into t1 is consistent
+              with t1 existing indexes in idx1 and in idx2
+              where consistency is clockwise ordering of both lists
+              and unique matchings.
+
+        first structures:
+            t1 is an ordered tree map w/ key = sr.startIdx1 of interval sr
+                and value = interval sr.
+
+        NOTE: some defintions w.r.t. TreeMap are
+            ceiling method returns a key-value mapping associated
+                with the least key greater than or equal to the given key,
+                or null if there is no such key.
+            floor method returns a key-value mapping associated
+                with the greatest key less than or equal to the given key,
+                or null if there is no such key
+
+        NOTE: to simplify the order checks of idx2, will add a phase
+            to idx2 when idx2 &lt; idx1.
+            For example, let n1=n2=10, and one pair has idx1=2 w/ idx2=9
+            then the next pair w/ idx1=3 maps to idx2=0,
+            but to keep idx2 increasing, will add n2 to make it 10.
+
+        NOTE: have added an exclusion clause that may need to be edited.
+            If a candidate interval will be adjacent to an existing interval
+            in t1 in terms of idx1, then idx2 must be adjacent also
+             within a pixel or so.
+            This is to prevent a large discontinuity.
+        
+        --------------------------------------------------------
+        case 0: sr.startIdx1 ceiling is null, that is, there are
+                no intervals in t1 at same or larger index position
+                than st.startIdx1
+                and there is at least 1 existing interval in t1.
+
+            content ordered by idx1
+                      t1  |  interval
+               ------------------------
+                          |
+                      -#- | [-#-]
+               startIdx1  | [sr]
+
+        --------------------------------------------------------
+        case 1: sr.startIdx1 ceiling is not null, that is, there are
+                intervals in t1 at same or larger index position
+                than st.startIdx1
+                and there are not intervals in t1 at a
+                smaller index position that st.startIdx1.
+
+            content ordered by idx1
+                      t1  |  interval
+               ------------------------
+                          |
+               startIdx1  | [sr]
+                      -#- | [-#-]
+
+        --------------------------------------------------------
+        case 2: sr.startIdx1 ceiling is not null, that is, there are
+                intervals in t1 at same or larger index position
+                than st.startIdx1
+                and there are intervals in t1 at a
+                smaller index position that st.startIdx1.
+
+            content ordered by idx1
+                      t1  |  interval
+               ------------------------
+                      -#- | [-#-]
+               startIdx1  | [sr]
+                      -#- | [-#-]
+
+        */
+        
+        // possibly intersecting, so remove complete intersection,
+        // or inconsistent intersection
+<span class="fc" id="L236">        Entry&lt;Integer, SR&gt; midE = t1.ceilingEntry(</span>
+<span class="fc" id="L237">            Integer.valueOf(sr.startIdx1));</span>
+<span class="fc bfc" id="L238" title="All 2 branches covered.">        if (isEmbeddedOrInconsistentWith(sr, midE, n2)) {</span>
+<span class="fc" id="L239">            return;</span>
+        }
+       
+        
+<span class="fc" id="L243">        Entry&lt;Integer, SR&gt; above = t1.floorEntry(</span>
+<span class="fc" id="L244">            Integer.valueOf(sr.startIdx1 - 1));</span>
+        //calculateIds2s(above.getValue(), n2);
+        //int aboveStrtIdx2 = cachedIdx2[0];
+        //int aboveStpIdx2 = cachedIdx2[1];
+<span class="fc bfc" id="L248" title="All 2 branches covered.">        if (isEmbeddedOrInconsistentWith(sr, above, n2)) {</span>
+<span class="fc" id="L249">            return;</span>
+        }
+        
+<span class="fc" id="L252">        Entry&lt;Integer, SR&gt; below = t1.ceilingEntry(</span>
+<span class="fc" id="L253">            Integer.valueOf(sr.stopIdx1 + 1));</span>
+        //calculateIds2s(below.getValue(), n2);
+        //int belowSrtIdx2 = cachedIdx2[0];
+        
+<span class="fc bfc" id="L257" title="All 2 branches covered.">        if (isEmbeddedOrInconsistentWith(sr, below, n2)) {</span>
+<span class="fc" id="L258">            return;</span>
+        }
+        
+<span class="fc bfc" id="L261" title="All 2 branches covered.">        if (sr.startIdx1 == 0) {</span>
+
+<span class="pc bpc" id="L263" title="1 of 2 branches missed.">            if (below == null) {</span>
+                // this can happen if there's only one item in t1 and
+                // sr has the same or smaller range than it.
+<span class="nc" id="L266">                return;</span>
+            }
+           
+            // case 1
+
+<span class="fc" id="L271">            addForCase1(sr, below, n2);</span>
+
+<span class="fc bfc" id="L273" title="All 2 branches covered.">        } else if (below == null) {</span>
+
+            // case 0
+
+            // no entries below sr are in t1
+
+<span class="pc bpc" id="L279" title="3 of 4 branches missed.">            assert(sr.startIdx1 &gt; 0);</span>
+            
+<span class="pc bpc" id="L281" title="1 of 2 branches missed.">            if (above == null) {</span>
+                // this can happen if there's only one item in t1 and
+                // sr has the same or smaller range than it.
+<span class="nc" id="L284">                return;</span>
+            }
+
+<span class="fc" id="L287">            addForCase0(sr, above, n2);</span>
+
+        } else {
+
+<span class="fc bfc" id="L291" title="All 2 branches covered.">            if (above == null) {</span>
+
+                // case 1
+
+                // there are no entries above sr in t1
+
+<span class="fc" id="L297">                addForCase1(sr, below, n2);</span>
+
+            } else {
+
+                // case 2
+
+<span class="fc" id="L303">                addForCase2(sr, above, below, n2);</span>
+            }
+        }
+<span class="fc" id="L306">    }</span>
+
+    private void addForCase0(SR sr, Entry&lt;Integer, SR&gt; above,
+        int n2) {
+
+        /*
+        (1) find t1 floor for sr.startIdx1 - 1.
+        (2) test that entire range is consistent
+            -- if floor stopIdx1 is &lt; sr.startIdx1
+               -- if floor stopIdx2 is &lt; sr.startIdx2
+                  can add interval
+        (3) iterate over each idx1,idx2 in sr interval
+            test for each ifx1,idx2
+            -- if idx1 &gt; floor stopIdx1
+               -- if idx2 &gt; floor stopIdx2
+                  can add interval
+        */
+
+<span class="pc bpc" id="L324" title="1 of 2 branches missed.">        if (excludeCase0(above.getValue(), sr, n2)) {</span>
+<span class="nc" id="L325">            return;</span>
+        }
+        
+<span class="fc bfc" id="L328" title="All 2 branches covered.">        if (case0AllConsistent(sr, above, n2)) {</span>
+<span class="fc" id="L329">            Integer k1 = Integer.valueOf(sr.startIdx1);</span>
+<span class="fc" id="L330">            t1.put(k1, sr);</span>
+<span class="fc" id="L331">            nMatched += sr.mLen;</span>
+<span class="pc bpc" id="L332" title="1 of 2 branches missed.">            if (debug) {</span>
+<span class="nc" id="L333">                print(sr, &quot;case 0&quot;, n2);</span>
+            }
+<span class="fc" id="L335">            return;</span>
+        }
+
+<span class="fc" id="L338">        SR floor = above.getValue();</span>
+<span class="fc" id="L339">        calculateIds2s(floor, n2);</span>
+<span class="fc" id="L340">        int floorStopIdx2 = cachedIdx2[1];</span>
+
+<span class="fc" id="L342">        TIntList subsetIdx1s = new TIntArrayList();</span>
+
+<span class="fc" id="L344">        populateCase0Idx1s(sr, floor.startIdx1, floorStopIdx2, </span>
+            subsetIdx1s, n2);
+
+<span class="fc" id="L347">        int ns = subsetIdx1s.size();</span>
+<span class="pc bpc" id="L348" title="1 of 2 branches missed.">        if (ns &lt; minLength) {</span>
+<span class="fc" id="L349">            return;</span>
+        }
+
+<span class="nc bnc" id="L352" title="All 4 branches missed.">        assert(assertContiguous(subsetIdx1s));</span>
+
+<span class="nc" id="L354">        sr.startIdx1 = subsetIdx1s.get(0);</span>
+<span class="nc" id="L355">        sr.stopIdx1 = subsetIdx1s.get(ns - 1);</span>
+<span class="nc" id="L356">        sr.mLen = sr.stopIdx1 - sr.startIdx1 + 1;</span>
+<span class="nc" id="L357">        sr.setChordSumNeedsUpdate(true);</span>
+<span class="nc bnc" id="L358" title="All 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L359">            print(sr, &quot;case 0 indiv&quot;, n2);</span>
+        }
+<span class="nc" id="L361">        Integer k1 = Integer.valueOf(sr.startIdx1);</span>
+<span class="nc" id="L362">        t1.put(k1, sr);</span>
+<span class="nc" id="L363">        nMatched += sr.mLen;</span>
+<span class="nc" id="L364">    }</span>
+
+    private void addForCase1(SR sr, Entry&lt;Integer, SR&gt; below,
+        int n2) {
+
+        /*
+               content ordered by idx1
+                      t1  |  interval
+               ------------------------
+                          |
+               startIdx1  | [sr]
+                      -#- | [-#-]
+
+        (1) find t1 ceiling for sr.stopIdx1 + 1.
+        (2) test that entire range is consistent
+            -- if ceiling startIdx2 is larger than sr.stopIdx2
+               return is consistent
+        (3) iterate over each idx1,idx2 in sr interval
+            test for each ifx1,idx2
+            -- if ceiling start idx2 is larger than idx2
+               return is consistent
+        */
+
+<span class="pc bpc" id="L387" title="1 of 2 branches missed.">        if (excludeCase1(below.getValue(), sr, n2)) {</span>
+<span class="nc" id="L388">            return;</span>
+        }
+        
+<span class="pc bpc" id="L391" title="1 of 2 branches missed.">        if (case1AllConsistent(sr, below, n2)) {</span>
+<span class="fc" id="L392">            Integer k1 = Integer.valueOf(sr.startIdx1);</span>
+<span class="fc" id="L393">            t1.put(k1, sr);</span>
+<span class="fc" id="L394">            nMatched += sr.mLen;</span>
+<span class="pc bpc" id="L395" title="1 of 2 branches missed.">            if (debug) {</span>
+<span class="nc" id="L396">                print(sr, &quot;case 1&quot;, n2);</span>
+            }
+<span class="fc" id="L398">            return;</span>
+        }
+
+<span class="nc" id="L401">        SR ceil = below.getValue();</span>
+<span class="nc" id="L402">        calculateIds2s(ceil, n2);</span>
+<span class="nc" id="L403">        int ceilStrtIdx2 = cachedIdx2[0];</span>
+
+<span class="nc" id="L405">        TIntList subsetIdx1s = new TIntArrayList();</span>
+
+<span class="nc" id="L407">        populateCase1Idx1s(sr, ceilStrtIdx2, subsetIdx1s, n2);</span>
+
+<span class="nc" id="L409">        int ns = subsetIdx1s.size();</span>
+<span class="nc bnc" id="L410" title="All 2 branches missed.">        if (ns &lt; minLength) {</span>
+<span class="nc" id="L411">            return;</span>
+        }
+
+<span class="nc bnc" id="L414" title="All 4 branches missed.">        assert(assertContiguous(subsetIdx1s));</span>
+
+<span class="nc" id="L416">        sr.startIdx1 = subsetIdx1s.get(0);</span>
+<span class="nc" id="L417">        sr.stopIdx1 = subsetIdx1s.get(ns - 1);</span>
+<span class="nc" id="L418">        sr.mLen = sr.stopIdx1 - sr.startIdx1 + 1;</span>
+<span class="nc" id="L419">        sr.setChordSumNeedsUpdate(true);</span>
+<span class="nc bnc" id="L420" title="All 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L421">            print(sr, &quot;case 1 indev&quot;, n2);</span>
+        }
+<span class="nc" id="L423">        Integer k1 = Integer.valueOf(sr.startIdx1);</span>
+<span class="nc" id="L424">        t1.put(k1, sr);</span>
+<span class="nc" id="L425">        nMatched += sr.mLen;</span>
+<span class="nc" id="L426">    }</span>
+
+    private boolean case0AllConsistent(SR sr,
+        Entry&lt;Integer, SR&gt; strt1Floor, int n2) {
+
+<span class="fc" id="L431">        SR floor = strt1Floor.getValue();</span>
+<span class="fc" id="L432">        calculateIds2s(floor, n2);</span>
+<span class="fc" id="L433">        int floorStopIdx2 = cachedIdx2[1];</span>
+
+<span class="fc" id="L435">        calculateIds2s(sr, n2);</span>
+<span class="fc" id="L436">        int startIdx2 = cachedIdx2[0];</span>
+
+        /*
+               content ordered by idx1
+                      t1  |  interval
+               ------------------------
+                          |
+                      -#- | [-#-]
+               startIdx1  | [sr]
+        */
+<span class="fc bfc" id="L446" title="All 2 branches covered.">        if (floor.stopIdx1 &lt; sr.startIdx1) {</span>
+<span class="fc bfc" id="L447" title="All 2 branches covered.">            if (floorStopIdx2 &lt; startIdx2) {</span>
+<span class="fc" id="L448">                return true;</span>
+            }
+        }
+
+<span class="fc" id="L452">        return false;</span>
+    }
+
+    private void populateCase0Idx1s(int offset,
+        TIntList inputIdx1s, int floorStopIdx1,
+        int floorStopIdx2, TIntList outSubsetIdx1s, int n2) {
+
+<span class="fc bfc" id="L459" title="All 2 branches covered.">        for (int i = 0; i &lt; inputIdx1s.size(); ++i) {</span>
+<span class="fc" id="L460">            int idx1 = inputIdx1s.get(i);</span>
+<span class="fc" id="L461">            int idx2 = idx1 + offset;</span>
+<span class="pc bpc" id="L462" title="1 of 2 branches missed.">            if (idx2 &lt; idx1) {</span>
+<span class="nc" id="L463">                idx2 += n2;</span>
+<span class="fc bfc" id="L464" title="All 2 branches covered.">            } else if (idx2 &gt; (n2 - 1)) {</span>
+<span class="fc" id="L465">                idx2 -= n2;</span>
+            }
+
+<span class="pc bpc" id="L468" title="1 of 2 branches missed.">            if (idx1 &gt; floorStopIdx1) {</span>
+<span class="fc bfc" id="L469" title="All 2 branches covered.">                if (idx2 &gt; floorStopIdx2) {</span>
+<span class="fc" id="L470">                    outSubsetIdx1s.add(idx1);</span>
+                }
+            }
+        }
+<span class="fc" id="L474">    }</span>
+
+    private void populateCase0Idx1s(SR sr, int floorStopIdx1,
+        int floorStopIdx2, TIntList outSubsetIdx1s, int n2) {
+
+<span class="fc" id="L479">        TIntList input = new TIntArrayList();</span>
+<span class="fc bfc" id="L480" title="All 2 branches covered.">        for (int idx1 = sr.startIdx1; idx1 &lt;= sr.stopIdx1; ++idx1) {</span>
+<span class="fc" id="L481">            input.add(idx1);</span>
+        }
+
+<span class="fc" id="L484">        populateCase0Idx1s(sr.offsetIdx2, input, floorStopIdx1,</span>
+            floorStopIdx2, outSubsetIdx1s, n2);
+<span class="fc" id="L486">    }</span>
+
+    private void populateCase1Idx1s(int offset,
+        TIntList inputIdx1s, int ceilStrtIdx2,
+        TIntList subsetIdx1s, int n2) {
+
+<span class="nc bnc" id="L492" title="All 2 branches missed.">        for (int i = 0; i &lt; inputIdx1s.size(); ++i) {</span>
+<span class="nc" id="L493">            int idx1 = inputIdx1s.get(i);</span>
+<span class="nc" id="L494">            int idx2 = idx1 + offset;</span>
+<span class="nc bnc" id="L495" title="All 2 branches missed.">            if (idx2 &lt; idx1) {</span>
+<span class="nc" id="L496">                idx2 += n2;</span>
+<span class="nc bnc" id="L497" title="All 2 branches missed.">            } else if (idx2 &gt; (n2 - 1)) {</span>
+<span class="nc" id="L498">                idx2 -= n2;</span>
+            }
+
+            /*
+            content ordered by idx1
+                      t1  |  interval
+               ------------------------
+                          |
+               startIdx1  | [sr]
+                      -#- | [-#-]
+            */
+
+<span class="nc bnc" id="L510" title="All 2 branches missed.">            if (ceilStrtIdx2 &gt; idx2) {</span>
+<span class="nc" id="L511">                subsetIdx1s.add(idx1);</span>
+            }
+        }
+<span class="nc" id="L514">    }</span>
+
+    private void populateCase1Idx1s(SR sr, int ceilStrtIdx2,
+        TIntList outSubsetIdx1s, int n2) {
+
+<span class="nc" id="L519">        TIntList input = new TIntArrayList();</span>
+<span class="nc bnc" id="L520" title="All 2 branches missed.">        for (int idx1 = sr.startIdx1; idx1 &lt;= sr.stopIdx1; ++idx1) {</span>
+<span class="nc" id="L521">            input.add(idx1);</span>
+        }
+
+<span class="nc" id="L524">        populateCase1Idx1s(sr.offsetIdx2, input, ceilStrtIdx2,</span>
+            outSubsetIdx1s, n2);
+<span class="nc" id="L526">    }</span>
+
+    private boolean assertContiguous(TIntList list) {
+
+<span class="nc bnc" id="L530" title="All 2 branches missed.">        if (list.size() &lt; 2) {</span>
+<span class="nc" id="L531">            return true;</span>
+        }
+
+<span class="nc" id="L534">        int prev = list.get(0);</span>
+<span class="nc bnc" id="L535" title="All 2 branches missed.">        for (int i = 1; i &lt; list.size(); ++i) {</span>
+<span class="nc" id="L536">            int v = list.get(i);</span>
+<span class="nc bnc" id="L537" title="All 2 branches missed.">            if (v == (prev + 1)) {</span>
+<span class="nc" id="L538">                prev = v;</span>
+<span class="nc" id="L539">                continue;</span>
+            }
+<span class="nc" id="L541">            return false;</span>
+        }
+
+<span class="nc" id="L544">        return true;</span>
+    }
+
+    private boolean case1AllConsistent(SR sr, Entry&lt;Integer, SR&gt; stp1Ceil,
+        int n2) {
+
+<span class="fc" id="L550">        SR ceil = stp1Ceil.getValue();</span>
+<span class="fc" id="L551">        calculateIds2s(ceil, n2);</span>
+<span class="fc" id="L552">        int ceilStrtIdx2 = cachedIdx2[0];</span>
+
+<span class="fc" id="L554">        calculateIds2s(sr, n2);</span>
+<span class="fc" id="L555">        int stpIdx2 = cachedIdx2[1];</span>
+
+<span class="pc bpc" id="L557" title="1 of 2 branches missed.">        return (ceilStrtIdx2 &gt; stpIdx2);</span>
+
+    }
+    
+    /**
+     * calculate the idx2s from idx1 and offset.
+     * can retrieve the result from cachedIdx2
+     * @param sr 
+     */
+    private void calculateIds2s(SR sr, int n2) {
+        
+<span class="fc" id="L568">        cachedIdx2[0] = sr.startIdx1 + sr.offsetIdx2;</span>
+<span class="fc" id="L569">        cachedIdx2[1] = sr.stopIdx1 + sr.offsetIdx2;</span>
+        
+<span class="pc bpc" id="L571" title="1 of 2 branches missed.">        if (cachedIdx2[0] &lt; sr.startIdx1) {</span>
+<span class="nc" id="L572">            cachedIdx2[0] += n2;</span>
+<span class="fc bfc" id="L573" title="All 2 branches covered.">        } else if (cachedIdx2[0] &gt; (n2 - 1)) {</span>
+<span class="fc" id="L574">            cachedIdx2[0] -= n2;</span>
+        }
+        
+<span class="pc bpc" id="L577" title="1 of 2 branches missed.">        if (cachedIdx2[1] &lt; sr.startIdx1) {</span>
+<span class="nc" id="L578">            cachedIdx2[1] += n2;</span>
+<span class="fc bfc" id="L579" title="All 2 branches covered.">        } else if (cachedIdx2[1] &gt; (n2 - 1)) {</span>
+<span class="fc" id="L580">            cachedIdx2[1] -= n2;</span>
+        }
+<span class="fc" id="L582">    }</span>
+
+    private void addForCase2(SR sr, Entry&lt;Integer, SR&gt; strt1Floor,
+        Entry&lt;Integer, SR&gt; stp1Ceil, int n2) {
+
+<span class="fc" id="L587">        SR floor = strt1Floor.getValue();</span>
+<span class="fc" id="L588">        calculateIds2s(floor, n2);</span>
+<span class="fc" id="L589">        int floorStopIdx2 = cachedIdx2[1];</span>
+        
+<span class="fc" id="L591">        TIntList subsetIdx1s = new TIntArrayList();</span>
+
+<span class="fc" id="L593">        populateCase0Idx1s(sr, floor.startIdx1, floorStopIdx2, subsetIdx1s, n2);</span>
+
+<span class="fc" id="L595">        int ns = subsetIdx1s.size();</span>
+<span class="pc bpc" id="L596" title="1 of 2 branches missed.">        if (ns &lt; minLength) {</span>
+<span class="fc" id="L597">            return;</span>
+        }
+
+<span class="nc bnc" id="L600" title="All 4 branches missed.">        assert(assertContiguous(subsetIdx1s));</span>
+
+<span class="nc" id="L602">        SR ceil = stp1Ceil.getValue();</span>
+<span class="nc" id="L603">        calculateIds2s(ceil, n2);</span>
+<span class="nc" id="L604">        int ceilStrtIdx2 = cachedIdx2[0];</span>
+
+<span class="nc" id="L606">        TIntList subsetIdx1s2 = new TIntArrayList();</span>
+
+<span class="nc" id="L608">        populateCase1Idx1s(sr.offsetIdx2, subsetIdx1s,</span>
+            ceilStrtIdx2, subsetIdx1s2, n2);
+
+<span class="nc" id="L611">        ns = subsetIdx1s2.size();</span>
+<span class="nc bnc" id="L612" title="All 2 branches missed.">        if (ns &lt; minLength) {</span>
+<span class="nc" id="L613">            return;</span>
+        }
+
+<span class="nc bnc" id="L616" title="All 4 branches missed.">        assert(assertContiguous(subsetIdx1s2));</span>
+
+<span class="nc" id="L618">        sr.startIdx1 = subsetIdx1s2.get(0);</span>
+<span class="nc" id="L619">        sr.stopIdx1 = subsetIdx1s2.get(ns - 1);</span>
+<span class="nc" id="L620">        sr.mLen = sr.stopIdx1 - sr.startIdx1 + 1;</span>
+<span class="nc" id="L621">        sr.setChordSumNeedsUpdate(true);</span>
+<span class="nc bnc" id="L622" title="All 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L623">            print(sr, &quot;case 2 indev&quot;, n2);</span>
+        }
+<span class="nc" id="L625">        Integer k1 = Integer.valueOf(sr.startIdx1);</span>
+<span class="nc" id="L626">        t1.put(k1, sr);</span>
+<span class="nc" id="L627">        nMatched += sr.mLen;</span>
+<span class="nc" id="L628">    }</span>
+
+    private boolean excludeCase0(SR above, SR sr, int n2) {
+                
+        // exclude if aboveStopIdx1 is near strt1
+        //  and strt2 is far from abovestp2
+<span class="fc" id="L634">        calculateIds2s(above, n2);</span>
+<span class="fc" id="L635">        int aboveStp2 = cachedIdx2[1];</span>
+<span class="pc bpc" id="L636" title="1 of 2 branches missed.">        if ((sr.startIdx1 - above.startIdx1) &lt; 2) {</span>
+<span class="nc" id="L637">            calculateIds2s(sr, n2);</span>
+<span class="nc" id="L638">            int strt2 = cachedIdx2[0];</span>
+<span class="nc" id="L639">            int stp2 = cachedIdx2[1];</span>
+<span class="nc bnc" id="L640" title="All 4 branches missed.">            if ((strt2 &lt; aboveStp2) || ((strt2 - aboveStp2) &gt; 2)) {</span>
+<span class="nc" id="L641">                print(sr, &quot;excluding by c0: &quot;, n2);         </span>
+<span class="nc" id="L642">                return true;</span>
+            }
+        }
+<span class="fc" id="L645">        return false;</span>
+    }
+    
+    private boolean excludeCase1(SR below, SR sr, int n2) {
+                
+        // exclude if below.startIdx is nearly adj ro sr.stp1
+        //  and belowstrtidx2 is far from stopIdx2
+<span class="fc" id="L652">        calculateIds2s(below, n2);</span>
+<span class="fc" id="L653">        int belowStrt2 = cachedIdx2[0];</span>
+<span class="fc bfc" id="L654" title="All 2 branches covered.">        if ((below.startIdx1 - sr.stopIdx1) &lt; 2) {</span>
+<span class="fc" id="L655">            calculateIds2s(sr, n2);</span>
+<span class="fc" id="L656">            int strt2 = cachedIdx2[0];</span>
+<span class="fc" id="L657">            int stp2 = cachedIdx2[1];</span>
+<span class="pc bpc" id="L658" title="2 of 4 branches missed.">            if ((belowStrt2 &lt; stp2) || ((belowStrt2 - stp2) &gt; 2)) {</span>
+<span class="nc" id="L659">                print(sr, &quot;excluding by c1: &quot;, n2);         </span>
+<span class="nc" id="L660">                return true;</span>
+            }
+        }
+<span class="fc" id="L663">        return false;</span>
+    }
+
+    private boolean isEmbeddedOrInconsistentWith(SR sr, 
+        Entry&lt;Integer, SR&gt; compE, int n2) {
+        
+<span class="fc bfc" id="L669" title="All 2 branches covered.">        if (compE == null) {</span>
+<span class="fc" id="L670">            return false;</span>
+        }
+        
+<span class="fc" id="L673">        calculateIds2s(sr, n2);</span>
+<span class="fc" id="L674">        int strtIdx2 = cachedIdx2[0];</span>
+<span class="fc" id="L675">        int stpIdx2 = cachedIdx2[1];</span>
+
+<span class="fc" id="L677">        SR comp = compE.getValue();</span>
+<span class="fc" id="L678">        calculateIds2s(comp, n2);</span>
+<span class="fc" id="L679">        int compStrtIdx2 = cachedIdx2[0];</span>
+<span class="fc" id="L680">        int compStpIdx2 = cachedIdx2[1];</span>
+
+<span class="fc bfc" id="L682" title="All 2 branches covered.">        if (comp.startIdx1 &lt; sr.startIdx1) {</span>
+<span class="fc bfc" id="L683" title="All 2 branches covered.">            if (!(compStrtIdx2 &lt; stpIdx2)) {</span>
+<span class="fc" id="L684">                return true;</span>
+            }
+<span class="fc bfc" id="L686" title="All 2 branches covered.">        } else if (comp.startIdx1 &gt; sr.startIdx1) {</span>
+<span class="fc bfc" id="L687" title="All 2 branches covered.">            if (!(compStrtIdx2 &gt; stpIdx2)) {</span>
+<span class="fc" id="L688">                return true;</span>
+            }
+        }
+<span class="fc bfc" id="L691" title="All 4 branches covered.">        if (sr.startIdx1 &gt;= comp.startIdx1 &amp;&amp; sr.stopIdx1 &lt;= comp.stopIdx1) {</span>
+<span class="fc" id="L692">            return true;</span>
+        }
+<span class="fc bfc" id="L694" title="All 4 branches covered.">        if (strtIdx2 &gt;= compStrtIdx2 &amp;&amp; stpIdx2 &lt;= compStpIdx2) {</span>
+<span class="fc" id="L695">            return true;</span>
+        }
+
+<span class="fc" id="L698">        return false;        </span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

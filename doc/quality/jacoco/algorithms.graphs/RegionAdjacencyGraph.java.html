@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>RegionAdjacencyGraph.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.graphs</a> &gt; <span class="el_source">RegionAdjacencyGraph.java</span></div><h1>RegionAdjacencyGraph.java</h1><pre class="source lang-java linenums">package algorithms.graphs;
+
+import algorithms.imageProcessing.ImageExt;
+import algorithms.misc.Misc;
+import algorithms.util.PairInt;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ *
+ * class to hold a list of region nodes and calculate an adjacency map.
+ * The classes that extend it hold the edge values.
+ * 
+ * @author nichole
+ */
+public class RegionAdjacencyGraph {
+    
+    //NOTE: may change o use more compact structures in future
+    protected final List&lt;Region&gt; regions;
+    
+    protected final Map&lt;Integer, Set&lt;Integer&gt;&gt; adjacencyMap;
+        
+    protected final int imageWidth;
+    protected final int imageHeight;
+    
+    //NOTE: these are transcribed to format [row][col]
+    protected final int[][] labels;
+        
+    /**
+     * constructor
+     * @param img 
+     * @param labels double array of labels for each pixel using the convention
+     * labels[pixelIndex].  Note that the largest label must be less than 
+     * the number of pixels in the image.
+     * Also note that labels isn't copied and will be modified as the graph changes.
+     */
+<span class="fc" id="L41">    public RegionAdjacencyGraph(ImageExt img, int[] labels1D) {</span>
+        
+<span class="fc" id="L43">        imageWidth = img.getWidth();</span>
+<span class="fc" id="L44">        imageHeight = img.getHeight();</span>
+        
+<span class="fc" id="L46">        this.labels = new int[imageHeight][];</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        for (int i = 0; i &lt; imageHeight; ++i) {</span>
+<span class="fc" id="L48">            labels[i] = new int[imageWidth];</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">            for (int j = 0; j &lt; imageWidth; ++j) {</span>
+<span class="fc" id="L50">                int pixIdx = img.getInternalIndex(j, i);</span>
+<span class="fc" id="L51">                labels[i][j] = labels1D[pixIdx];</span>
+            } 
+        } 
+        
+<span class="fc" id="L55">        this.regions = createRegionsList(img, labels);</span>
+        
+<span class="fc" id="L57">        this.adjacencyMap = createAdjacencyMap(this.regions);</span>
+<span class="fc" id="L58">    }</span>
+    
+    /*
+    public void mergeRegions(int regionIndex1, int regionIndex2) {
+
+        Region region1 = regions.get(regionIndex1);
+        
+        Region region2 = regions.get(regionIndex2);
+        
+        // update region2 pixel labels to regionIndex1
+        for (PairInt p : region2.getPoints()) {
+            labels[p.getX()][p.getY()] = regionIndex1;
+        }
+        
+        // update the regions
+        region1.mergeIntoThis(region2);
+        
+        Integer index1 = Integer.valueOf(regionIndex1);
+        Integer index2 = Integer.valueOf(regionIndex2);
+        
+        // update the adjacency map
+        Set&lt;Integer&gt; indexes1 = adjacencyMap.get(index1);
+        Set&lt;Integer&gt; indexes2 = adjacencyMap.get(index2);
+        indexes1.addAll(indexes2);
+        indexes1.remove(index2);
+        for (Integer index3 : indexes2) {
+            int idx3 = index3.intValue();
+            if (regionIndex1 == idx3 || regionIndex2 == idx3) {
+                continue;
+            }
+            Set&lt;Integer&gt; indexes4 = adjacencyMap.get(index3);
+            if (indexes4 != null) {
+                indexes4.remove(index2);
+                indexes4.add(index1);
+            }
+        }
+        adjacencyMap.remove(index2);
+    }
+    */
+ 
+    public Map&lt;Integer, Set&lt;Integer&gt;&gt; createAdjacencyMap(List&lt;Region&gt; aRegion) {
+        
+<span class="fc" id="L100">        Map&lt;Integer, Set&lt;Integer&gt;&gt; map = new HashMap&lt;Integer, Set&lt;Integer&gt;&gt;();</span>
+        
+<span class="fc" id="L102">        int[] dxs = Misc.dx8;</span>
+<span class="fc" id="L103">        int[] dys = Misc.dy8;</span>
+        
+<span class="fc" id="L105">        Map&lt;PairInt, Integer&gt; pToIMap = createPerimetersPointToIndexMap(aRegion);</span>
+        
+<span class="fc bfc" id="L107" title="All 2 branches covered.">        for (Map.Entry&lt;PairInt, Integer&gt; entry : pToIMap.entrySet()) {</span>
+            
+<span class="fc" id="L109">            PairInt p = entry.getKey();</span>
+            
+<span class="fc" id="L111">            Integer index = entry.getValue();</span>
+            
+<span class="fc" id="L113">            Set&lt;Integer&gt; indexes = map.get(index);</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">            if (indexes == null) {</span>
+<span class="fc" id="L115">                indexes = new HashSet&lt;Integer&gt;();</span>
+<span class="fc" id="L116">                map.put(index, indexes);</span>
+            }
+            
+<span class="fc" id="L119">            int x = p.getX();</span>
+<span class="fc" id="L120">            int y = p.getY();</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">            for (int k = 0; k &lt; dxs.length; ++k) {</span>
+<span class="fc" id="L122">                int x2 = x + dxs[k];</span>
+<span class="fc" id="L123">                int y2 = y + dys[k];</span>
+<span class="fc" id="L124">                PairInt p2 = new PairInt(x2, y2);</span>
+<span class="fc" id="L125">                Integer index2 = pToIMap.get(p2);</span>
+<span class="fc bfc" id="L126" title="All 4 branches covered.">                if ((index2 != null) &amp;&amp; !index.equals(index2)) {</span>
+<span class="fc" id="L127">                    indexes.add(index2);</span>
+                }
+            }
+<span class="fc" id="L130">        }</span>
+        
+<span class="fc" id="L132">        return map;</span>
+    }
+    
+    private Map&lt;PairInt, Integer&gt; createPerimetersPointToIndexMap(List&lt;Region&gt; regionsList) {
+        
+<span class="fc" id="L137">        Map&lt;PairInt, Integer&gt; map = new HashMap&lt;PairInt, Integer&gt;();</span>
+        
+<span class="fc bfc" id="L139" title="All 2 branches covered.">        for (int i = 0; i &lt; regionsList.size(); ++i) {</span>
+            
+<span class="fc" id="L141">            Integer index = Integer.valueOf(i);</span>
+            
+<span class="fc" id="L143">            Region region = regionsList.get(i);</span>
+            
+<span class="fc bfc" id="L145" title="All 2 branches covered.">            for (PairInt p : region.getPerimeter()) {</span>
+<span class="fc" id="L146">                map.put(p, index);</span>
+<span class="fc" id="L147">            }</span>
+        }
+        
+<span class="fc" id="L150">        return map;</span>
+    }
+    
+    /**
+     * @param img
+     * @param labels array of format [xcoord][ycoord] = label where label 
+     * is less than the number of pixels in an image.
+     * @return 
+     */
+    private List&lt;Region&gt; createRegionsList(ImageExt img, int[][] labels) {
+        
+<span class="fc" id="L161">        int nPix = img.getNPixels();</span>
+        
+<span class="fc" id="L163">        int w = img.getWidth();</span>
+<span class="fc" id="L164">        int h = img.getHeight();</span>
+        
+<span class="fc" id="L166">        int maxLabel = Integer.MIN_VALUE;</span>
+        
+<span class="fc bfc" id="L168" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">            for (int j = 0; j &lt; h; ++j) {</span>
+<span class="fc" id="L170">                int label = labels[j][i];</span>
+<span class="fc bfc" id="L171" title="All 2 branches covered.">                if (label &gt; maxLabel) {</span>
+<span class="fc" id="L172">                    maxLabel = label;</span>
+                }
+            }
+        }
+        
+<span class="fc" id="L177">        Map&lt;Integer, Set&lt;PairInt&gt;&gt; map = createRegionsMap(img, labels);</span>
+        
+<span class="fc" id="L179">        List&lt;Region&gt; regionList = new ArrayList&lt;Region&gt;();</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">        for (int i = 0; i &lt;= maxLabel; ++i) {</span>
+<span class="fc" id="L181">            Integer label = Integer.valueOf(i);</span>
+<span class="fc" id="L182">            Set&lt;PairInt&gt; set = map.get(label);</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">            if (set == null) {</span>
+<span class="fc" id="L184">                regionList.add(new Region(new HashSet&lt;PairInt&gt;()));</span>
+            } else {
+<span class="fc" id="L186">                regionList.add(new Region(set));</span>
+            }
+        }
+        
+<span class="fc" id="L190">        return regionList;</span>
+    }
+    
+    /**
+     * expecting labels[row][col], row major format
+     * @param img
+     * @param labels
+     * @return 
+     */
+    private Map&lt;Integer, Set&lt;PairInt&gt;&gt; createRegionsMap(ImageExt img, int[][] labels) {
+        
+<span class="fc" id="L201">        Map&lt;Integer, Set&lt;PairInt&gt;&gt; map = new HashMap&lt;Integer, Set&lt;PairInt&gt;&gt;();</span>
+        
+<span class="fc" id="L203">        int w = img.getWidth();</span>
+<span class="fc" id="L204">        int h = img.getHeight();</span>
+                
+<span class="fc bfc" id="L206" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">            for (int j = 0; j &lt; h; ++j) {</span>
+                
+<span class="fc" id="L209">                int label = labels[j][i];</span>
+<span class="fc" id="L210">                Integer index = Integer.valueOf(label);</span>
+                
+<span class="fc" id="L212">                Set&lt;PairInt&gt; set = map.get(index);</span>
+                
+<span class="fc bfc" id="L214" title="All 2 branches covered.">                if (set == null) {</span>
+<span class="fc" id="L215">                    set = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L216">                    map.put(index, set);</span>
+                }
+<span class="fc" id="L218">                set.add(new PairInt(i, j));</span>
+            }
+        }
+        
+<span class="fc" id="L222">        return map;</span>
+    }
+
+    public Set&lt;Integer&gt; getAdjacentIndexes(Integer index) {
+<span class="nc" id="L226">        return adjacencyMap.get(index);</span>
+    }
+    
+    public int getNumberOfRegions() {
+<span class="fc" id="L230">        return regions.size();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

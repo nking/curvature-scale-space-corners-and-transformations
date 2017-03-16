@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>PeriodicFFT.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">PeriodicFFT.java</span></div><h1>PeriodicFFT.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.misc.Complex;
+import algorithms.misc.MiscMath;
+import java.util.Arrays;
+
+/**
+ * adapted from 
+ * http://www.peterkovesi.com/matlabfns/FrequencyFilt/perfft2.m
+ * 
+ * The following comments are directly from the kovesi perfft2.m
+ * which was written for matlab.
+ * 
+ * &lt;pre&gt;
+ * PERFFT2  2D Fourier transform of Moisan's periodic image component
+ 
+  Usage: [P, S, p, s] = perfft2(im)
+ 
+  Argument:  im - Image to be transformed
+  Returns:    P - 2D fft of periodic image component
+              S - 2D fft of smooth component
+              p - Periodic component (spatial domain)
+              s - Smooth component (spatial domain)
+ 
+  Moisan's &quot;Periodic plus Smooth Image Decomposition&quot; decomposes an image 
+  into two components
+         im = p + s
+  where s is the 'smooth' component with mean 0 and p is the 'periodic'
+  component which has no sharp discontinuities when one moves cyclically across
+  the image boundaries.
+  
+  This wonderful decomposition is very useful when one wants to obtain an FFT of
+  an image with minimal artifacts introduced from the boundary discontinuities.
+  The image p gathers most of the image information but avoids periodization
+  artifacts.
+ 
+  The typical use of this function is to obtain a 'periodic only' fft of an
+  image 
+    &gt;&gt;  P = perfft2(im);
+ 
+  Displaying the amplitude spectrum of P will yield a clean spectrum without the
+  typical vertical-horizontal 'cross' arising from the image boundaries that you
+  would normally see.
+ 
+  Note if you are using the function to perform filtering in the frequency
+  domain you may want to retain s (the smooth component in the spatial domain)
+  and add it back to the filtered result at the end.  
+ 
+  The computational cost of obtaining the 'periodic only' FFT involves taking an
+  additional FFT.
+ 
+   Reference: 
+  This code is adapted from Lionel Moisan's Scilab function 'perdecomp.sci' 
+  &quot;Periodic plus Smooth Image Decomposition&quot; 07/2012 available at
+ 
+    http://www.mi.parisdescartes.fr/~moisan/p+s
+ 
+  Paper:
+  L. Moisan, &quot;Periodic plus Smooth Image Decomposition&quot;, Journal of
+  Mathematical Imaging and Vision, vol 39:2, pp. 161-179, 2011.
+ &lt;/pre&gt;
+ */
+<span class="pc bpc" id="L63" title="1 of 2 branches missed.">public class PeriodicFFT {</span>
+    
+    /**
+     * calculates the 2D fft of periodic image component and returns that and
+     * the 2D fft of smooth component.
+     * 
+     * perfft2 is ported from the python phasepack tools code which has the 
+     * following copyright:
+     * &lt;pre&gt;
+     * Authorship
+        ----------
+        These functions were originally written for MATLAB by Peter Kovesi, and
+        were ported to Python by Alistair Muldal. The original MATLAB code, as well as
+        further explanatory information and references are available from `Peter
+        Kovesi's website
+        &lt;http://www.csse.uwa.edu.au/~pk/Research/MatlabFns/index.html#phasecong&gt;`_.
+
+        MIT License
+        -----------
+        Permission is hereby  granted, free of charge, to any  person obtaining a copy
+        of this software and associated  documentation files (the &quot;Software&quot;), to deal
+        in the Software without restriction, subject to the following conditions:
+
+        The above copyright notice and this permission notice shall be included in all
+        copies or substantial portions of the Software.
+
+        The software is provided &quot;as is&quot;, without warranty of any kind.
+     * &lt;/pre&gt;
+     * Moisan's Periodic plus Smooth Image Decomposition. The image is
+     * decomposed into two parts:
+     *
+     * im = s + p
+     *
+     * where 's' is the 'smooth' component with mean 0, and 'p' is the
+     * 'periodic' component which has no sharp discontinuities when one moves
+     * cyclically across the image boundaries.
+     *
+     * useage: P, S = perfft2(im)
+     * 
+     * @param img 
+     * @param computeSpatial if set to true, returns new Complex[][][]{S, P, s, p}
+     * @return new Complex[][][]{S, P}
+     *    where S is the FFT of the smooth component
+     *          P is the FFT of the periodic component
+     *          s smooth component in the spatial domain
+     *          p periodic component in the spatial domain
+     *    *NOTE that the output data use the notation a[row]col]
+     */
+    public Complex[][][] perfft2(GreyscaleImage img, boolean computeSpatial) {
+                
+        // using notation in PhaseCongruencyDetector,
+        // that is, arrays are a[row][col]            
+<span class="fc" id="L115">        int nCols = img.getWidth();</span>
+<span class="fc" id="L116">        int nRows = img.getHeight();</span>
+        
+        /*
+        Compute the boundary image which is equal to the image discontinuity
+        values across the boundaries at the edges and is 0 elsewhere
+        s = np.zeros_like(im)
+        s[0, :] = im[0, :] - im[-1, :]
+        s[-1, :] = -s[0, :]
+        s[:, 0] = s[:, 0] + im[:, 0] - im[:, -1]
+        s[:, -1] = s[:, -1] - im[:, 0] + im[:, -1]
+        */
+        // using notation a[row][col]
+<span class="fc" id="L128">        double[][] s = new double[nRows][];</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">        for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc" id="L130">            s[row] = new double[nCols];</span>
+        }
+        
+<span class="fc bfc" id="L133" title="All 2 branches covered.">        for (int col = 0; col &lt; nCols; ++col) {</span>
+            //s[row=0, col=:] = im[row=0, col=:] - im[row=-1, col=:]
+<span class="fc" id="L135">            int v = img.getValue(col, 0) - img.getValue(col, nRows - 1);</span>
+<span class="fc" id="L136">            s[0][col] = v;</span>
+        }
+<span class="fc bfc" id="L138" title="All 2 branches covered.">        for (int col = 0; col &lt; nCols; ++col) {</span>
+            //s[row=-1, col=:] = -s[row=0, col=:]
+<span class="fc" id="L140">            double v = s[0][col];</span>
+<span class="fc" id="L141">            s[nRows - 1][col] = -v;</span>
+        }
+<span class="fc bfc" id="L143" title="All 2 branches covered.">        for (int row = 0; row &lt; nRows; ++row) {</span>
+            //s[:, 0] = s[:, 0]  + im[:, 0] - im[:, -1]
+<span class="fc" id="L145">            double v = s[row][0] + img.getValue(0, row) - img.getValue(nCols - 1, row);</span>
+<span class="fc" id="L146">            s[row][0] = v;</span>
+        }
+<span class="fc bfc" id="L148" title="All 2 branches covered.">        for (int row = 0; row &lt; nRows; ++row) {</span>
+            //s[row=:, col=-1] = s[row=:, col=-1] - im[row=:, col=0] + im[row=:, col=-1]
+<span class="fc" id="L150">            double v = s[row][nCols - 1] - img.getValue(0, row) + img.getValue(nCols - 1, row);</span>
+<span class="fc" id="L151">            s[row][nCols - 1] = v;</span>
+        }
+    
+<span class="fc" id="L154">        double twoPiDivNRows = 2. * Math.PI/(double)nRows;</span>
+<span class="fc" id="L155">        double twoPiDivNCols = 2. * Math.PI/(double)nCols;</span>
+        /*
+        Generate grid upon which to compute the filter for the boundary image in
+        the frequency domain.  Note that cos() is cyclic hence the grid values can
+        range from 0 .. 2*pi rather than 0 .. pi and then pi .. 0
+        
+        x, y = (2 * np.pi * np.arange(0, v) / float(v) for v in (cols, rows))
+        cx, cy = np.meshgrid(x, y)
+        */
+        // using notation a[row][col]
+<span class="fc" id="L165">        double[][] cy = new double[nRows][];</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">        for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc" id="L167">            cy[row] = new double[nCols];</span>
+<span class="fc" id="L168">            double v = twoPiDivNRows * row;</span>
+<span class="fc" id="L169">            Arrays.fill(cy[row], v);</span>
+        }
+<span class="fc" id="L171">        double[][] cx = new double[nRows][];</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">        for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc" id="L173">            cx[row] = new double[nCols];</span>
+        }
+<span class="fc bfc" id="L175" title="All 2 branches covered.">        for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L176">            double v = twoPiDivNCols * col;</span>
+<span class="fc bfc" id="L177" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc" id="L178">                cx[row][col] = v;</span>
+            }
+        }
+
+        /*
+        denom = (2. * (2. - np.cos(cx) - np.cos(cy)))
+        denom[0, 0] = 1.     # avoid / 0
+        
+        Generate FFT of smooth component
+        S = fft2(s)./denom
+        */
+        
+        // the fft algorithm using powers of 2 sizes is faster, so pad the data
+<span class="fc" id="L191">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+
+        // using notation a[row][col]
+        
+        //double normCofactor = 1./(2. * Math.PI);
+        
+<span class="fc" id="L197">        Complex[][] capS = imageProcessor.create2DFFT(s, false, true);</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">        for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">            for (int col = 0; col &lt; nCols; ++col) {</span>
+                double denom;
+<span class="fc bfc" id="L201" title="All 4 branches covered.">                if (col == 0 &amp;&amp; row == 0) {</span>
+<span class="fc" id="L202">                    denom = 1;</span>
+                } else {
+<span class="fc" id="L204">                    denom = 1./(2. * (2. - Math.cos(cx[row][col]) - Math.cos(cy[row][col])));</span>
+                }
+<span class="fc" id="L206">                capS[row][col] = capS[row][col].times(denom);</span>
+            }
+        }
+        
+        /*
+        % The (1,1) element of the filter will be 0 so S(1,1) may be Inf or NaN
+        S(1,1) = 0;          % Enforce 0 mean 
+        */
+<span class="fc" id="L214">        capS[0][0] = new Complex(0, 0);</span>
+        
+        /*
+        P = fft2(im) - S;    % FFT of periodic component
+        */
+        // initialize matrix of complex numbers as real numbers from image (imaginary are 0's)
+        // using notation a[row][col]
+<span class="fc" id="L221">        Complex[][] capP = imageProcessor.create2DFFTWithSwapMajor(img, false, true);</span>
+<span class="pc bpc" id="L222" title="3 of 4 branches missed.">        assert(capP.length == capS.length);</span>
+<span class="pc bpc" id="L223" title="3 of 4 branches missed.">        assert(capP[0].length == capS[0].length);</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">        for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc bfc" id="L225" title="All 2 branches covered.">            for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L226">                Complex v0 = capP[row][col];</span>
+<span class="fc" id="L227">                Complex s0 = capS[row][col];</span>
+<span class="fc" id="L228">                capP[row][col] = v0.minus(s0);</span>
+            }
+        }
+        
+<span class="fc bfc" id="L232" title="All 2 branches covered.">        if (computeSpatial) {</span>
+            //s = real(ifft2(S)); 
+            //p = im - s;
+            
+<span class="fc" id="L236">            double postNorm = nRows * nCols;</span>
+            
+<span class="fc" id="L238">            Complex[][] lowerCaseS = imageProcessor.create2DFFT(capS, false, false);</span>
+<span class="fc bfc" id="L239" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc bfc" id="L240" title="All 2 branches covered.">                for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L241">                    lowerCaseS[row][col] </span>
+<span class="fc" id="L242">                        = new Complex(lowerCaseS[row][col].re()/postNorm, 0);</span>
+                }
+            }
+
+<span class="fc" id="L246">            Complex[][] lowerCaseP = new Complex[lowerCaseS.length][];</span>
+<span class="fc bfc" id="L247" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc" id="L248">                lowerCaseP[row] = new Complex[nCols];</span>
+<span class="fc bfc" id="L249" title="All 2 branches covered.">                for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L250">                    lowerCaseP[row][col] = new Complex(</span>
+<span class="fc" id="L251">                        img.getValue(col, row) - lowerCaseS[row][col].re(), 0);</span>
+                }
+            }
+            
+<span class="fc" id="L255">            return new Complex[][][]{capS, capP, lowerCaseS, lowerCaseP};</span>
+        }
+        
+<span class="fc" id="L258">        return new Complex[][][]{capS, capP};</span>
+    }
+    
+    private void DEBUG(Complex[][] tmp, String label) {
+       
+        try {
+<span class="nc" id="L264">            algorithms.util.PolygonAndPointPlotter plotter</span>
+                = new algorithms.util.PolygonAndPointPlotter();
+
+<span class="nc" id="L267">            int nc = tmp[0].length;</span>
+<span class="nc" id="L268">            int nr = tmp.length;</span>
+
+<span class="nc" id="L270">            float[] x = new float[nc];</span>
+<span class="nc bnc" id="L271" title="All 2 branches missed.">            for (int ii = 0; ii &lt; nc; ++ii) {</span>
+<span class="nc" id="L272">                x[ii] = ii;</span>
+            }
+<span class="nc" id="L274">            float[] y = new float[nc];</span>
+<span class="nc" id="L275">            float[] xPolygon = null;</span>
+<span class="nc" id="L276">            float[] yPolygon = null;</span>
+
+            // plot rows 0.25*nRows, 0.5*nRows, and 0.75*nRows
+<span class="nc bnc" id="L279" title="All 2 branches missed.">            for (int nf = 1; nf &lt; 4; nf++) {</span>
+<span class="nc" id="L280">                int rowNumber = (int) (((float) nf) * 0.25f * nr);</span>
+<span class="nc bnc" id="L281" title="All 2 branches missed.">                for (int ii = 0; ii &lt; nc; ++ii) {</span>
+<span class="nc" id="L282">                    y[ii] = (float) tmp[rowNumber][ii].re();</span>
+                }
+<span class="nc" id="L284">                float minY = MiscMath.findMin(y);</span>
+<span class="nc" id="L285">                float maxY = MiscMath.findMax(y);</span>
+<span class="nc" id="L286">                plotter.addPlot(-1, nc + 1, minY, maxY, x, y, xPolygon,</span>
+                    yPolygon, label + &quot; row=&quot; + rowNumber + &quot; REAL&quot;);
+            }
+<span class="nc" id="L289">            float[] x2 = new float[nr];</span>
+<span class="nc bnc" id="L290" title="All 2 branches missed.">            for (int ii = 0; ii &lt; nr; ++ii) {</span>
+<span class="nc" id="L291">                x2[ii] = ii;</span>
+            }
+<span class="nc" id="L293">            float[] y2 = new float[nr];</span>
+            // plot cols 0.25*nCols, 0.5*nCols, and 0.75*nCols
+<span class="nc bnc" id="L295" title="All 2 branches missed.">            for (int nf = 1; nf &lt; 4; nf++) {</span>
+<span class="nc" id="L296">                int colNumber = (int) (((float) nf) * 0.25f * nc);</span>
+<span class="nc bnc" id="L297" title="All 2 branches missed.">                for (int ii = 0; ii &lt; nr; ++ii) {</span>
+<span class="nc" id="L298">                    y2[ii] = (float) tmp[ii][colNumber].re();</span>
+                }
+<span class="nc" id="L300">                float minY = MiscMath.findMin(y2);</span>
+<span class="nc" id="L301">                float maxY = MiscMath.findMax(y2);</span>
+<span class="nc" id="L302">                plotter.addPlot(-1, nr + 1, minY, maxY, x2, y2, xPolygon,</span>
+                    yPolygon, label + &quot; col=&quot; + colNumber + &quot; REAL&quot;);
+            }
+            
+            // do same for complex
+<span class="nc bnc" id="L307" title="All 2 branches missed.">            for (int nf = 1; nf &lt; 4; nf++) {</span>
+<span class="nc" id="L308">                int rowNumber = (int) (((float) nf) * 0.25f * nr);</span>
+<span class="nc bnc" id="L309" title="All 2 branches missed.">                for (int ii = 0; ii &lt; nc; ++ii) {</span>
+<span class="nc" id="L310">                    y[ii] = (float) tmp[rowNumber][ii].im();</span>
+                }
+<span class="nc" id="L312">                float minY = MiscMath.findMin(y);</span>
+<span class="nc" id="L313">                float maxY = MiscMath.findMax(y);</span>
+<span class="nc" id="L314">                plotter.addPlot(-1, nc + 1, minY, maxY, x, y, xPolygon,</span>
+                    yPolygon, label + &quot; row=&quot; + rowNumber + &quot; IMAGINARY&quot;);
+            }
+            
+<span class="nc" id="L318">            plotter.writeFile();</span>
+<span class="nc" id="L319">        } catch (Exception e) {</span>
+<span class="nc" id="L320">            int z = 1;</span>
+<span class="nc" id="L321">        }</span>
+<span class="nc" id="L322">        int z = 1;</span>
+<span class="nc" id="L323">    }</span>
+    
+    private void DEBUG(double[][] tmp, String label) {
+       
+        try {
+<span class="nc" id="L328">            algorithms.util.PolygonAndPointPlotter plotter</span>
+                = new algorithms.util.PolygonAndPointPlotter();
+
+<span class="nc" id="L331">            int nc = tmp[0].length;</span>
+<span class="nc" id="L332">            int nr = tmp.length;</span>
+
+<span class="nc" id="L334">            float[] x = new float[nc];</span>
+<span class="nc bnc" id="L335" title="All 2 branches missed.">            for (int ii = 0; ii &lt; nc; ++ii) {</span>
+<span class="nc" id="L336">                x[ii] = ii;</span>
+            }
+<span class="nc" id="L338">            float[] y = new float[nc];</span>
+<span class="nc" id="L339">            float[] xPolygon = null;</span>
+<span class="nc" id="L340">            float[] yPolygon = null;</span>
+
+            // plot rows 0.25*nRows, 0.5*nRows, and 0.75*nRows
+<span class="nc bnc" id="L343" title="All 2 branches missed.">            for (int nf = 1; nf &lt; 4; nf++) {</span>
+<span class="nc" id="L344">                int rowNumber = (int) (((float) nf) * 0.25f * nr);</span>
+<span class="nc bnc" id="L345" title="All 2 branches missed.">                for (int ii = 0; ii &lt; nc; ++ii) {</span>
+<span class="nc" id="L346">                    y[ii] = (float) tmp[rowNumber][ii];</span>
+                }
+<span class="nc" id="L348">                float minY = MiscMath.findMin(y);</span>
+<span class="nc" id="L349">                float maxY = MiscMath.findMax(y);</span>
+<span class="nc" id="L350">                plotter.addPlot(-1, nc + 1, minY, maxY, x, y, xPolygon,</span>
+                    yPolygon, label + &quot; row=&quot; + rowNumber);
+            }
+<span class="nc" id="L353">            plotter.writeFile();</span>
+<span class="nc" id="L354">        } catch (Exception e) {</span>
+<span class="nc" id="L355">        }</span>
+<span class="nc" id="L356">        int z = 1;</span>
+<span class="nc" id="L357">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

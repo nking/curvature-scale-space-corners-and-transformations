@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>EllipseHelper.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.features.mser</a> &gt; <span class="el_source">EllipseHelper.java</span></div><h1>EllipseHelper.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.features.mser;
+
+import algorithms.misc.MiscMath;
+import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ *
+ * @author nichole
+ */
+public class EllipseHelper {
+    
+    // note that this may include values that extend beyond the original image
+    // dimensions
+    private final PairIntArray ellipse;
+    
+    private final int x;
+    
+    private final int y;
+    
+    private final Bounds bounds;
+    
+    private final double minor;
+    private final double major;
+    private final double eccentricity;
+    private final double orientation;
+    private final PairInt[] semiAxesEndPoints;
+    
+    /**
+     * constructor w/ center x, y and coefficients 
+     * v0x, v1x, v0y, v1y, e0sq, e1sq that are
+     * the eigenvectors and values of the ellipse 
+     * calculated from the spatial moments of the ellipse.
+     * @param x
+     * @param y
+     * @param coeffs 
+     */
+<span class="nc" id="L42">    public EllipseHelper(int x, int y, double[] coeffs) {</span>
+        
+<span class="nc" id="L44">        double v0x = coeffs[0];</span>
+<span class="nc" id="L45">        double v1x = coeffs[1];</span>
+<span class="nc" id="L46">        double v0y = coeffs[2];</span>
+<span class="nc" id="L47">        double v1y = coeffs[3];</span>
+        
+<span class="nc" id="L49">        ellipse = new PairIntArray();</span>
+        
+<span class="nc" id="L51">        this.major = 2. * coeffs[4];</span>
+<span class="nc" id="L52">        this.minor = 2. * coeffs[5];</span>
+        
+<span class="nc" id="L54">        this.x = x;</span>
+<span class="nc" id="L55">        this.y = y;</span>
+        
+<span class="nc bnc" id="L57" title="All 2 branches missed.">        for (double t = 0.0; t &lt; 2.0 * Math.PI; t += 0.001) {</span>
+            
+<span class="nc" id="L59">            double mc = Math.cos(t);</span>
+<span class="nc" id="L60">            double ms = Math.sin(t);</span>
+            
+<span class="nc" id="L62">            int x2 = (int)Math.round(x + (mc * v0x + ms * v1x) * 2.0 + 0.5);</span>
+<span class="nc" id="L63">            int y2 = (int)Math.round(y + (mc * v0y + ms * v1y) * 2.0 + 0.5);</span>
+
+<span class="nc" id="L65">            ellipse.add(x2, y2);</span>
+        }
+        
+<span class="nc" id="L68">        eccentricity = Math.sqrt(major*major - minor*minor)/major;</span>
+    
+<span class="nc" id="L70">        double angle = Math.atan(coeffs[0]/coeffs[2]);</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">        if (angle &lt; 0) {</span>
+<span class="nc" id="L72">            angle += Math.PI;</span>
+        }
+<span class="nc" id="L74">        orientation = angle;</span>
+        
+<span class="nc" id="L76">        bounds = new Bounds(ellipse);</span>
+        
+<span class="nc" id="L78">        semiAxesEndPoints = calculateAxesEndpoints(v0x, v1x, v0y, v1y);</span>
+<span class="nc" id="L79">    }</span>
+    
+    private PairInt[] calculateAxesEndpoints(double v0x, double v1x, 
+        double v0y, double v1y) {
+        /*
+        orientation ref frame is 90 is 0,0 to 0,1 direction
+        and the orientation is the direction the semi-minor axis points along
+        its axis (not tangent to its axis).
+        
+                  .
+                X .       -
+                  .   -
+                  -...........
+              -
+          -         X
+           
+        apogee points are the semi-minor axes endpoints:
+        */
+<span class="fc" id="L97">        PairInt[] axesEndPoints = new PairInt[4];</span>
+<span class="fc" id="L98">        double ori = orientation;</span>
+        
+<span class="fc" id="L100">        double mc = Math.cos(ori - Math.PI/2.);</span>
+<span class="fc" id="L101">        double ms = Math.sin(ori - Math.PI/2.);</span>
+<span class="fc" id="L102">        int x1 = (int)Math.round(x - major * mc);</span>
+<span class="fc" id="L103">        int y1 = (int)Math.round(y + major * ms);</span>
+<span class="fc" id="L104">        int x2 = (int)Math.round(x + major * mc);</span>
+<span class="fc" id="L105">        int y2 = (int)Math.round(y - major * ms);</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        if (x1 &lt; 0) { x1 = 0;}</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">        if (y1 &lt; 0) { y1 = 0;}</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">        if (x2 &lt; 0) { x2 = 0;}</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">        if (y2 &lt; 0) { y2 = 0;}</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">        x1 = (x1 &gt;= bounds.maxCol) ? bounds.maxCol - 1 : x1;</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        y1 = (y1 &gt;= bounds.maxRow) ? bounds.maxRow - 1 : y1;</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        x2 = (x2 &gt;= bounds.maxCol) ? bounds.maxCol - 1 : x2;</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">        y2 = (y2 &gt;= bounds.maxRow) ? bounds.maxRow - 1 : y2;</span>
+<span class="fc" id="L114">        axesEndPoints[0] = new PairInt(x1, y1);</span>
+<span class="fc" id="L115">        axesEndPoints[1] = new PairInt(x2, y2);</span>
+        
+<span class="fc" id="L117">        mc = Math.cos(ori);</span>
+<span class="fc" id="L118">        ms = Math.sin(ori);</span>
+<span class="fc" id="L119">        x1 = (int)Math.round(x + minor * mc);</span>
+<span class="fc" id="L120">        y1 = (int)Math.round(y - minor * ms);</span>
+<span class="fc" id="L121">        x2 = (int)Math.round(x - minor * mc);</span>
+<span class="fc" id="L122">        y2 = (int)Math.round(y + minor * ms);</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">        if (x1 &lt; 0) { x1 = 0;}</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">        if (y1 &lt; 0) { y1 = 0;}</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">        if (x2 &lt; 0) { x2 = 0;}</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">        if (y2 &lt; 0) { y2 = 0;}</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">        x1 = (x1 &gt;= bounds.maxCol) ? bounds.maxCol - 1 : x1;</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">        y1 = (y1 &gt;= bounds.maxRow) ? bounds.maxRow - 1 : y1;</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">        x2 = (x2 &gt;= bounds.maxCol) ? bounds.maxCol - 1 : x2;</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">        y2 = (y2 &gt;= bounds.maxRow) ? bounds.maxRow - 1 : y2;</span>
+<span class="fc" id="L131">        axesEndPoints[2] = new PairInt(x1, y1);</span>
+<span class="fc" id="L132">        axesEndPoints[3] = new PairInt(x2, y2);</span>
+        
+<span class="fc" id="L134">        return axesEndPoints;</span>
+    }
+    
+    /**
+     * constructor w/ center x, y and points of the ellipse
+     * @param xy points of the ellipse
+     */
+<span class="fc" id="L141">    public EllipseHelper(int x, int y, PairIntArray xy) {</span>
+        
+<span class="fc" id="L143">        ellipse = xy;</span>
+<span class="fc" id="L144">        this.x = x;</span>
+<span class="fc" id="L145">        this.y = y;</span>
+<span class="fc" id="L146">        bounds = new Bounds(ellipse);</span>
+        
+        // use a Region to calculate the major and minor axes
+<span class="fc" id="L149">        Region r = new Region();</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">        for (int i = 0; i &lt; xy.getN(); ++i) {</span>
+<span class="fc" id="L151">            int x2 = xy.getX(i);</span>
+<span class="fc" id="L152">            int y2 = xy.getY(i);</span>
+<span class="fc" id="L153">            r.accumulate(x2, y2);</span>
+        }
+<span class="fc" id="L155">        double[] coeffs = r.calcParamTransCoeff();</span>
+<span class="fc" id="L156">        this.major = 2. * coeffs[4];</span>
+<span class="fc" id="L157">        this.minor = 2. * coeffs[5];</span>
+    
+<span class="fc" id="L159">        double angle = Math.atan(coeffs[0]/coeffs[2]);</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">        if (angle &lt; 0) {</span>
+<span class="fc" id="L161">            angle += Math.PI;</span>
+        }
+<span class="fc" id="L163">        orientation = angle;</span>
+        
+<span class="fc" id="L165">        eccentricity = Math.sqrt(major*major - minor*minor)/major;</span>
+    
+<span class="fc" id="L167">        double v0x = coeffs[0];</span>
+<span class="fc" id="L168">        double v1x = coeffs[1];</span>
+<span class="fc" id="L169">        double v0y = coeffs[2];</span>
+<span class="fc" id="L170">        double v1y = coeffs[3];</span>
+<span class="fc" id="L171">        semiAxesEndPoints = calculateAxesEndpoints(v0x, v1x, v0y, v1y);</span>
+<span class="fc" id="L172">    }</span>
+    
+    public double getEccentricity() {
+<span class="fc" id="L175">        return eccentricity;</span>
+    }
+    
+    public double getOrientation() {
+<span class="nc" id="L179">        return orientation;</span>
+    }
+    
+    public PairIntArray getEllipse() {
+<span class="fc" id="L183">        return ellipse;</span>
+    }
+    
+    /**
+     * test whether the point (xPoint, yPoint) is within or on the ellipse
+     * boundary.
+     * 
+     * @param xPoint
+     * @param yPoint
+     * @return 
+     */
+    public boolean isWithin(int xPoint, int yPoint) {
+                
+<span class="fc" id="L196">        return bounds.isWithin(xPoint, yPoint);</span>
+    }
+    
+    public double getMajorTimesMinor() {
+<span class="fc" id="L200">        return major * minor;</span>
+    }
+    
+    public boolean intersects(EllipseHelper other) {
+        
+<span class="pc bpc" id="L205" title="1 of 4 branches missed.">        if (other.bounds.maxRow &lt; bounds.minRow || </span>
+            other.bounds.minRow &gt; bounds.maxRow) {
+<span class="fc" id="L207">            return false;</span>
+        }
+<span class="pc bpc" id="L209" title="2 of 4 branches missed.">        if (other.bounds.maxCol &lt; bounds.minCol || </span>
+            other.bounds.minCol &gt; bounds.maxCol) {
+<span class="nc" id="L211">            return false;</span>
+        }
+<span class="fc" id="L213">        PairIntArray otherXY = other.getEllipse();</span>
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">        for (int i = 0; i &lt; otherXY.getN(); ++i) {</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">            if (bounds.isWithin(otherXY.getX(i), otherXY.getY(i))) {</span>
+<span class="fc" id="L216">                return true;</span>
+            }
+        }
+        
+        // check for whether one is embedded within the other
+        // and the coordinates of the ellipses do not intersect
+        // so wasn't detected yet
+<span class="nc bnc" id="L223" title="All 2 branches missed.">        if (surrounds(other)) {</span>
+<span class="nc" id="L224">            return true;</span>
+        }
+<span class="nc bnc" id="L226" title="All 2 branches missed.">        if (other.surrounds(this)) {</span>
+<span class="nc" id="L227">            return true;</span>
+        }
+        
+<span class="nc" id="L230">        return false;</span>
+    }
+    
+    public boolean surrounds(EllipseHelper other) {
+<span class="nc bnc" id="L234" title="All 8 branches missed.">        if (bounds.minRow &lt; other.bounds.minRow &amp;&amp;</span>
+            bounds.maxRow &gt; other.bounds.maxRow &amp;&amp;
+            bounds.minCol &lt; other.bounds.minCol &amp;&amp;
+            bounds.maxCol &gt; other.bounds.maxCol) {
+<span class="nc" id="L238">            return true;</span>
+        }
+<span class="nc" id="L240">        return false;</span>
+    }
+    
+    private class Bounds {
+        
+        final int minRow;
+        final int maxRow;
+        final TIntObjectMap&lt;PairInt&gt; rowBounds;
+    
+        final int minCol;
+        final int maxCol;
+        
+        public Bounds(PairIntArray xy) {
+            
+            int[] minMaxXY = MiscMath.findMinMaxXY(xy);
+            
+            this.minRow = minMaxXY[2];
+            this.maxRow = minMaxXY[3];
+            this.rowBounds = new TIntObjectHashMap&lt;PairInt&gt;();
+            
+            int minX = Integer.MAX_VALUE;
+            int maxX = Integer.MIN_VALUE;
+            
+            for (int i = 0; i &lt; xy.getN(); ++i) {
+                
+                int col = xy.getX(i);
+                
+                int row = xy.getY(i);
+                
+                PairInt xMinMax = rowBounds.get(row);
+                if (xMinMax == null) {
+                    xMinMax = new PairInt(col, col);
+                    rowBounds.put(row, xMinMax);
+                } else {
+                    if (col &lt; xMinMax.getX()) {
+                        xMinMax.setX(col);
+                    } else if (col &gt; xMinMax.getY()) {
+                        xMinMax.setY(col);
+                    }
+                }
+                
+                if (col &lt; minX) {
+                    minX = col;
+                }
+                if (col &gt; maxX) {
+                    maxX = col;
+                }
+            }
+            this.minCol = minX;
+            this.maxCol = maxX;
+        }
+        
+        boolean isWithin(int xPoint, int yPoint) {
+            
+            if (yPoint &lt; minRow || yPoint &gt; maxRow) {
+                return false;
+            }
+            if (xPoint &lt; minCol || xPoint &gt; maxCol) {
+                return false;
+            }
+            
+            PairInt xMinMax = rowBounds.get(yPoint);
+            assert(xMinMax != null);
+            
+            if (xPoint &lt; xMinMax.getX() || xPoint &gt; xMinMax.getY()) {
+                return false;
+            }
+            
+            return true;
+        }
+    
+        Set&lt;PairInt&gt; createEllipseFillingPoints() {
+            
+            Set&lt;PairInt&gt; points = new HashSet&lt;PairInt&gt;();
+        
+            for (int r = minRow; r &lt;= maxRow; ++r) {
+                PairInt xMinMax = rowBounds.get(r);
+                for (int c = xMinMax.getX(); c &lt;= xMinMax.getY(); ++c) {
+                    points.add(new PairInt(c, r));
+                }
+            }
+        
+            return points;
+        }
+    }
+    
+    public Set&lt;PairInt&gt; createEllipseFillingPoints() {
+<span class="nc" id="L327">        return bounds.createEllipseFillingPoints();</span>
+    }
+    
+    public int getSemiMinor() {
+<span class="fc" id="L331">        return (int)Math.round(minor);</span>
+    }
+    
+    public int getSemiMajor() {
+<span class="fc" id="L335">        return (int)Math.round(major);</span>
+    }
+    
+    public PairInt[] getSemiAxesEndoints() {
+<span class="nc" id="L339">        return semiAxesEndPoints;</span>
+    }
+    
+    public int[] getXYCenter() {
+<span class="fc" id="L343">        return new int[]{x, y};</span>
+    }
+    
+    public int[] getMinMaxXY() {
+<span class="nc" id="L347">        return new int[]{bounds.minCol, bounds.maxCol, bounds.minRow, </span>
+            bounds.maxRow};
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

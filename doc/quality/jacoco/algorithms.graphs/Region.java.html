@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Region.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.graphs</a> &gt; <span class="el_source">Region.java</span></div><h1>Region.java</h1><pre class="source lang-java linenums">package algorithms.graphs;
+
+import algorithms.misc.Misc;
+import algorithms.util.PairInt;
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ * a class to hold a set of points within a region and a set of points
+ * which are on the perimeter of the region.
+ * @author nichole
+ */
+public class Region {
+    
+    //NOTE: may change the internal data to use more compact strcutres in the future
+    
+    private final Set&lt;PairInt&gt; points;
+    
+    private final Set&lt;PairInt&gt; perimeter;
+    
+    /**
+     * constructor keeps the instance it is given, so copy it if needed before
+     * using this method
+     * @param thePoints 
+     */
+<span class="fc" id="L26">    public Region(Set&lt;PairInt&gt; thePoints) {</span>
+        
+<span class="fc" id="L28">        points = thePoints;</span>
+        
+<span class="fc" id="L30">        perimeter = findPerimeter(points);</span>
+        
+<span class="fc" id="L32">    }</span>
+    
+    /**
+     * add other region data into this one and clear the other region data.
+     * 
+     * @param other 
+     */
+    void mergeIntoThis(Region other) {
+        
+<span class="fc" id="L41">        this.points.addAll(other.points);</span>
+        
+        // merge perimeters
+<span class="fc" id="L44">        this.perimeter.addAll(other.perimeter);</span>
+        
+        // remove any in perimeer w/ 8 neighbors
+<span class="fc" id="L47">        Set&lt;PairInt&gt; rm = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L48">        int[] dxs = Misc.dx8;</span>
+<span class="fc" id="L49">        int[] dys = Misc.dy8;</span>
+        
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        for (PairInt p : this.perimeter) {</span>
+<span class="fc" id="L52">            int x = p.getX();</span>
+<span class="fc" id="L53">            int y = p.getY();</span>
+<span class="fc" id="L54">            int nN = 0;</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">            for (int k = 0; k &lt; dxs.length; ++k) {</span>
+<span class="fc" id="L56">                int x2 = x + dxs[k];</span>
+<span class="fc" id="L57">                int y2 = y + dys[k];</span>
+<span class="fc" id="L58">                PairInt p2 = new PairInt(x2, y2);</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">                if (points.contains(p2)) {</span>
+<span class="fc" id="L60">                    ++nN;</span>
+                }
+            }
+<span class="fc bfc" id="L63" title="All 2 branches covered.">            if (nN == 8) {</span>
+<span class="fc" id="L64">                rm.add(p);</span>
+            }
+<span class="fc" id="L66">        }</span>
+<span class="fc" id="L67">        this.perimeter.removeAll(rm);</span>
+        
+<span class="fc" id="L69">        other.points.clear();</span>
+<span class="fc" id="L70">        other.perimeter.clear();</span>
+<span class="fc" id="L71">    }</span>
+
+    private Set&lt;PairInt&gt; findPerimeter(Set&lt;PairInt&gt; set0) {
+        
+<span class="fc" id="L75">        Set&lt;PairInt&gt; set = new HashSet&lt;PairInt&gt;();</span>
+        
+<span class="fc" id="L77">        int[] dxs = Misc.dx8;</span>
+<span class="fc" id="L78">        int[] dys = Misc.dy8;</span>
+        
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        for (PairInt p : set0) {</span>
+<span class="fc" id="L81">            int x = p.getX();</span>
+<span class="fc" id="L82">            int y = p.getY();</span>
+<span class="fc" id="L83">            int nN = 0;</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">            for (int k = 0; k &lt; dxs.length; ++k) {</span>
+<span class="fc" id="L85">                int x2 = x + dxs[k];</span>
+<span class="fc" id="L86">                int y2 = y + dys[k];</span>
+<span class="fc" id="L87">                PairInt p2 = new PairInt(x2, y2);</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">                if (set0.contains(p2)) {</span>
+<span class="fc" id="L89">                    ++nN;</span>
+                }
+            }
+<span class="fc bfc" id="L92" title="All 2 branches covered.">            if (nN &lt; 8) {</span>
+<span class="fc" id="L93">                set.add(p);</span>
+            }
+<span class="fc" id="L95">        }</span>
+        
+<span class="fc" id="L97">        return set;</span>
+    }
+    
+    public int size() {
+<span class="fc" id="L101">        return points.size();</span>
+    }
+    
+    public boolean contains(PairInt p) {
+<span class="fc" id="L105">        return points.contains(p);</span>
+    }
+    
+    public boolean contains(int x, int y) {
+<span class="fc" id="L109">        return points.contains(new PairInt(x, y));</span>
+    }
+    
+    public boolean perimeterContains(PairInt p) {
+<span class="fc" id="L113">        return perimeter.contains(p);</span>
+    }
+    
+    public boolean perimeterContains(int x, int y) {
+<span class="fc" id="L117">        return perimeter.contains(new PairInt(x, y));</span>
+    }
+
+    /**
+     * @return the perimeter
+     */
+    public Set&lt;PairInt&gt; getPerimeter() {
+<span class="fc" id="L124">        return perimeter;</span>
+    }
+
+    /**
+     * @return the points
+     */
+    public Set&lt;PairInt&gt; getPoints() {
+<span class="nc" id="L131">        return points;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

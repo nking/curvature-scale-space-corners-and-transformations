@@ -160,7 +160,7 @@ simplified below.
 <span class="nc" id="L160">            throw new IllegalArgumentException(</span>
             &quot;expectedFractionTruePoints must be larger than 0 and less than 1&quot;);
         }
-<span class="pc bpc" id="L163" title="1 of 2 branches missed.">        if (nPoints &lt;= sampleSize) {</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">        if (nPoints &lt; sampleSize) {</span>
 <span class="nc" id="L164">            throw new IllegalArgumentException(&quot;nPoints must be larger than sampleSize&quot;);</span>
         }
         
@@ -171,18 +171,20 @@ simplified below.
 <span class="fc bfc" id="L171" title="All 2 branches covered.">        if (nTruePoints &gt;= sampleSize) {        </span>
 <span class="fc bfc" id="L172" title="All 2 branches covered.">            for (int i = 0; i &lt; sampleSize; ++i) {</span>
 <span class="fc" id="L173">                factor *= (nTruePoints - i)/(double)(nPoints - i);</span>
-            }
+            }            
         } else {
             //know that the number is still smaller than (1./nPoints)^sampleSize.
             //For nTruePoints of 1, looks like (1./nPoints)*(1./(nPoints-sampleSize))^(sampleSize-1)
 <span class="fc bfc" id="L178" title="All 2 branches covered.">            for (int i = 0; i &lt; (int)nTruePoints; ++i) {</span>
 <span class="fc" id="L179">                factor *= (nTruePoints - i)/(double)(nPoints - i);</span>
             }
-<span class="fc" id="L181">            int pow = (sampleSize - (int)nTruePoints);</span>
-<span class="fc" id="L182">            factor *= Math.pow((1./(nPoints - sampleSize)), pow);</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">            if (nPoints != sampleSize) {</span>
+<span class="fc" id="L182">                int pow = (sampleSize - (int)nTruePoints);</span>
+<span class="fc" id="L183">                factor *= Math.pow((1./(nPoints - sampleSize)), pow);</span>
+            }
         }
         
-<span class="fc" id="L185">        return factor;</span>
+<span class="fc" id="L187">        return factor;</span>
     }
     
     public double calculateTrueSampleProbabilityForMultiplyMatched(
@@ -249,18 +251,18 @@ simplified below.
         so should consider that for another method.
         */
         
-<span class="fc" id="L252">        double pSampleSingle = calculateTrueSampleProbability(nPoints, sampleSize, </span>
+<span class="fc" id="L254">        double pSampleSingle = calculateTrueSampleProbability(nPoints, sampleSize, </span>
             expectedFractionTruePoints);
         
-<span class="fc" id="L255">        double nCombinationsSingle = MiscMath.computeNDivKTimesNMinusK(nPoints, sampleSize);</span>
+<span class="fc" id="L257">        double nCombinationsSingle = MiscMath.computeNDivKTimesNMinusK(nPoints, sampleSize);</span>
         
-<span class="fc" id="L257">        double nCombinationsMultiple = </span>
-<span class="fc" id="L258">            MiscMath.computeNDivKTimesNMinusK(nAllMultiplicity, sampleSize);</span>
+<span class="fc" id="L259">        double nCombinationsMultiple = </span>
+<span class="fc" id="L260">            MiscMath.computeNDivKTimesNMinusK(nAllMultiplicity, sampleSize);</span>
         
-<span class="fc" id="L260">        double pSampleMultiple = pSampleSingle * </span>
+<span class="fc" id="L262">        double pSampleMultiple = pSampleSingle * </span>
             (nCombinationsSingle/nCombinationsMultiple);
 
-<span class="fc" id="L263">        return pSampleMultiple;</span>
+<span class="fc" id="L265">        return pSampleMultiple;</span>
     }
 
 }

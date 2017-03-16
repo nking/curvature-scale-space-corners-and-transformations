@@ -38,78 +38,141 @@ public class DoubleLinkedCircularList {
 <span class="fc" id="L38">    }</span>
 
     /**
-    * insert new key into circular doubly linked list to the 
-    * right&lt;-- change&gt; of the sentinel
-    * runtime is O(1)
-    *
+    * insert new key into circular doubly linked list,
+    * runtime is O(1),
+    * 
     * Example:
     *
-    *   --------------------------/\
-    *   |                          |
-    *   --&gt;[sentinel] --&gt; [9] --&gt; [1]
-    *   &lt;--           &lt;--     &lt;--
+        sentinel -&gt; 2nd inserted -&gt; 1st inserted -&gt; [ sentinel.right ]
+        sentinel &lt;- 2nd inserted &lt;- 1st inserted &lt;- [ sentinel.right ]
     *
+    * &lt;pre&gt;
+    * subsequent traversal by FIFO should use :
+    *    sentinel and proceed left n=number of items
+    * 
+    * subsequent traversal by LIFO should use :
+    *    sentinel and proceed right n=number of times
+    * 
+    * runtime complexity is O(1).
+    * &lt;/pre&gt;
     * @param node
     * @return inserted child node instance
     */
     public HeapNode insert(HeapNode node) {
-<span class="pc bpc" id="L56" title="1 of 2 branches missed.">        if (node == null) {</span>
-<span class="nc" id="L57">            throw new IllegalArgumentException(&quot;node cannot be null&quot;);</span>
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">        if (node == null) {</span>
+<span class="nc" id="L63">            throw new IllegalArgumentException(&quot;node cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L59" title="1 of 2 branches missed.">        if (node.getKey() == noValue) {</span>
-<span class="nc" id="L60">            throw new IllegalArgumentException(&quot;node must have key set&quot;);</span>
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">        if (node.getKey() == noValue) {</span>
+<span class="nc" id="L66">            throw new IllegalArgumentException(&quot;node must have key set&quot;);</span>
         }
         
         // nodes are inserted to the right of the sentinel.
                 
-<span class="fc" id="L65">        HeapNode rightOfSentinel = sentinel.getRight();</span>
+<span class="fc" id="L71">        HeapNode rightOfSentinel = sentinel.getRight();</span>
         
-<span class="fc" id="L67">        node.setRight(rightOfSentinel);</span>
-<span class="fc" id="L68">        rightOfSentinel.setLeft(node);</span>
-<span class="fc" id="L69">        sentinel.setRight(node);</span>
-<span class="fc" id="L70">        node.setLeft(sentinel);</span>
-<span class="fc" id="L71">        number++;</span>
+<span class="fc" id="L73">        node.setRight(rightOfSentinel);</span>
+<span class="fc" id="L74">        rightOfSentinel.setLeft(node);</span>
+<span class="fc" id="L75">        sentinel.setRight(node);</span>
+<span class="fc" id="L76">        node.setLeft(sentinel);</span>
+<span class="fc" id="L77">        number++;</span>
         
-<span class="fc" id="L73">        return node;</span>
+<span class="fc" id="L79">        return node;</span>
     }
 
+    /**
+     * remove first found node with key.
+     * runtime complexity is O(n).
+     * @param key
+     * @return 
+     */
     public boolean remove(long key) {
-<span class="fc" id="L77">        HeapNode cn = search(key);</span>
-<span class="fc" id="L78">        remove(cn);</span>
-<span class="pc bpc" id="L79" title="1 of 2 branches missed.">        return (cn != null);</span>
+<span class="fc" id="L89">        HeapNode cn = search(key);</span>
+<span class="fc" id="L90">        remove(cn);</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">        return (cn != null);</span>
     }
     
+    /**
+     * remove node by connecting it's relationships to one another and removing
+     * self.
+     * runtime complexity is O(1).
+     * @param node 
+     */
     public void remove(HeapNode node) {
-<span class="pc bpc" id="L83" title="1 of 2 branches missed.">    	if (node == null) {</span>
-<span class="nc" id="L84">    		return;</span>
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">    	if (node == null) {</span>
+<span class="nc" id="L102">    		return;</span>
     	}
-<span class="fc" id="L86">        node.getRight().setLeft(node.getLeft());</span>
-<span class="fc" id="L87">        node.getLeft().setRight(node.getRight());</span>
-        
-<span class="fc" id="L89">        HeapNode right = node.getRight();</span>
-<span class="fc" id="L90">        HeapNode left = node.getLeft();</span>
-        
-<span class="fc" id="L92">        right.setLeft(left);</span>
-<span class="fc" id="L93">        left.setRight(right);</span>
+<span class="fc" id="L104">        HeapNode right = node.getRight();</span>
+<span class="fc" id="L105">        HeapNode left = node.getLeft();</span>
+<span class="fc" id="L106">        right.setLeft(left);</span>
+<span class="fc" id="L107">        left.setRight(right);</span>
         
         // reset node's ends to a sentinel.  the user's of the class use that logic.
-<span class="fc" id="L96">        node.setRight(new HeapNode(sentinelKey));</span>
-<span class="fc" id="L97">        node.getRight().setRight(node);</span>
-<span class="fc" id="L98">        node.getRight().setLeft(node);</span>
-<span class="fc" id="L99">        node.setLeft(node.getRight());</span>
+<span class="fc" id="L110">        node.setRight(new HeapNode(sentinelKey));</span>
+<span class="fc" id="L111">        node.getRight().setRight(node);</span>
+<span class="fc" id="L112">        node.getRight().setLeft(node);</span>
+<span class="fc" id="L113">        node.setLeft(node.getRight());</span>
                 
-<span class="fc" id="L101">        number--;</span>
-<span class="fc" id="L102">    }</span>
+<span class="fc" id="L115">        number--;</span>
+<span class="fc" id="L116">    }</span>
+    
+    /**
+     * insert insertNode to a place after existingNode.  The method does not
+     * preserve left right relationships of insertNode, but preserves those of 
+     * existingNode.  It expects that existingNode is part of this instance's
+     * members and updates the number of items, for later use in traversals.
+     * &lt;pre&gt;
+     * Internally the insertNode is to the left of existingNode using the 
+     * convention of this class.
+     * 
+     * subsequent traversal by FIFO should use :
+    *    sentinel and proceed left n=number of items
+    * 
+    * subsequent traversal by LIFO should use :
+    *    sentinel and proceed right n=number of times
+     * 
+     * runtime complexity is O(1).
+     * &lt;/pre&gt;
+     * @param existingNode
+     * @param insertNode 
+     */
+    public void insertAfter(HeapNode existingNode, HeapNode insertNode) {
+        
+<span class="pc bpc" id="L140" title="2 of 4 branches missed.">        if (insertNode.getLeft() != null || insertNode.getRight() != null) {</span>
+<span class="nc" id="L141">            throw new IllegalArgumentException(&quot;insertNode's existing left or &quot;</span>
+                + &quot; right are written over, so remove those before using this &quot;
+                + &quot;method for clearer correct use&quot;);
+        }
+                
+<span class="fc" id="L146">        HeapNode left = existingNode.getLeft();</span>
+        
+<span class="fc" id="L148">        left.setRight(insertNode);</span>
+<span class="fc" id="L149">        insertNode.setLeft(left);</span>
+<span class="fc" id="L150">        existingNode.setLeft(insertNode);</span>
+<span class="fc" id="L151">        insertNode.setRight(existingNode);</span>
+        
+<span class="fc" id="L153">        number++;</span>
+<span class="fc" id="L154">    }</span>
+    
+    public long getNumberOfNodes() {
+<span class="fc" id="L157">        return number;</span>
+    }
    
+    /**
+     * runtime complexity is up to O(n), so if this method is often used,
+     * should choose another data structure for the logic.
+     * 
+     * @param key
+     * @return 
+     */
     public HeapNode search(long key) {
         
-<span class="fc" id="L106">        HeapNode cn = sentinel.getRight();</span>
+<span class="fc" id="L169">        HeapNode cn = sentinel.getRight();</span>
         
-<span class="fc bfc" id="L108" title="All 4 branches covered.">        while ((cn.getKey() != sentinel.getKey()) &amp;&amp; (cn.getKey() != key)) {</span>
-<span class="fc" id="L109">            cn = cn.getRight();</span>
+<span class="fc bfc" id="L171" title="All 4 branches covered.">        while ((cn.getKey() != sentinel.getKey()) &amp;&amp; (cn.getKey() != key)) {</span>
+<span class="fc" id="L172">            cn = cn.getRight();</span>
         }
         
-<span class="pc bpc" id="L112" title="1 of 4 branches missed.">        return ((cn.getKey() != noValue) &amp;&amp;  (cn.getKey() != sentinel.getKey()))</span>
+<span class="pc bpc" id="L175" title="1 of 4 branches missed.">        return ((cn.getKey() != noValue) &amp;&amp;  (cn.getKey() != sentinel.getKey()))</span>
             ? cn : null;
     }
 }

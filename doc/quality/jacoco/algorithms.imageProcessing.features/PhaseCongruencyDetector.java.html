@@ -1,0 +1,1857 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>PhaseCongruencyDetector.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.features</a> &gt; <span class="el_source">PhaseCongruencyDetector.java</span></div><h1>PhaseCongruencyDetector.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.features;
+
+import algorithms.QuickSort;
+import algorithms.imageProcessing.AdaptiveThresholding;
+import algorithms.imageProcessing.DistanceTransform;
+import algorithms.imageProcessing.FilterGrid;
+import algorithms.imageProcessing.FilterGrid.FilterGridProducts;
+import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.LowPassFilter;
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.imageProcessing.MorphologicalFilter;
+import algorithms.imageProcessing.NonMaximumSuppression;
+import algorithms.imageProcessing.PeriodicFFT;
+import algorithms.imageProcessing.util.PairIntWithIndex;
+import algorithms.misc.Complex;
+import algorithms.misc.ComplexModifiable;
+import algorithms.misc.Histogram;
+import algorithms.misc.HistogramHolder;
+import algorithms.misc.Misc;
+import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
+import algorithms.util.Errors;
+import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
+import algorithms.util.PairIntArrayWithColor;
+import com.climbwithyourfeet.clustering.DTClusterFinder;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+/**
+ An edge detector that uses principles of phase congruency to create an edge
+ * map and orientation and phase angle images.
+ * Phase congruency operates in the frequency domain of fourier transforms and
+ * with the inverse FFT produces an image that is summed over scales and
+ * cleaned of some of the noise.
+ * The phase congruency refers to the overlapping of sine waves at same phases
+ * in the frequency domain produced from feature edges in the spatial domain.
+ * &lt;pre&gt;
+ * The phase congruency method is thought to be better able to find edges
+ * under varying illumination conditions.  It also has the characteristic of
+ * producing a single response to an edge (in contrast to many spatial gradient
+ * methods which for blurry edges, especially, produce a double response in
+ * the gradient image).
+ * &lt;/pre&gt;
+ * 
+ * For further reading other than the references below, a summary of band-pass
+ * quadrature filters is in
+ * https://www.utc.fr/~dboukerr/Papers/Qf_JMIV_2004.pdf
+ *
+ * Listings of copyrights for the original source codes in languages Matlab and
+ * python follow:
+ *
+ adapted from
+  http://www.peterkovesi.com/matlabfns/PhaseCongruency/phasecongmono.m
+  which has copyright:
+  -------- begin Kovesi copyright --------
+  Copyright (c) 1996-2013 Peter Kovesi
+  Centre for Exploration Targeting
+  The University of Western Australia
+  peter.kovesi at uwa edu au
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the &quot;Software&quot;), to deal
+  in the Software without restriction, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  The Software is provided &quot;as is&quot;, without warranty of any kind.
+  -------- end Kovesi copyright --------
+ 
+ * useful also was the python phasepack port by Alistair Muldal
+ *  http://pydoc.net/Python/phasepack/1.4/phasepack.phasecongmono/
+ * which has the following copyright:
+ * # MIT License:
+-------- begin phasepack copyright --------
+# Permission is hereby  granted, free of charge, to any  person obtaining a
+# copy of this software and associated  documentation files (the &quot;Software&quot;),
+# to deal in the Software without restriction, subject to the following
+# conditions:
+
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+
+# The software is provided &quot;as is&quot;, without warranty of any kind.
+-------- end phasepack copyright --------
+* 
+% =========================================
+*
+% Notes on specifying parameters:
+%
+% The convolutions are done via the FFT.  Many of the parameters relate to the
+% specification of the filters in the frequency plane.  The values do not seem
+% to be very critical and the defaults are usually fine.  You may want to
+% experiment with the values of 'nscales' and 'k', the noise compensation
+% factor.
+*
+% Notes on filter settings to obtain even coverage of the spectrum
+% sigmaOnf       .85   mult 1.3
+% sigmaOnf       .75   mult 1.6     (filter bandwidth ~1 octave)
+% sigmaOnf       .65   mult 2.1
+% sigmaOnf       .55   mult 3       (filter bandwidth ~2 octaves)
+%
+% Note that better results are achieved using the large bandwidth filters.
+% I generally use a sigmaOnf value of 0.55 or even smaller.
+%
+% References:
+%
+%     Peter Kovesi, &quot;Image Features From Phase Congruency&quot;. Videre: A
+%     Journal of Computer Vision Research. MIT Press. Volume 1, Number 3,
+%     Summer 1999 http://mitpress.mit.edu/e-journals/Videre/001/v13.html
+*
+*     Michael Felsberg and Gerald Sommer, &quot;A New Extension of Linear Signal
+%     Processing for Estimating Local Properties and Detecting Features&quot;. DAGM
+%     Symposium 2000, Kiel
+%
+%     Michael Felsberg and Gerald Sommer. &quot;The Monogenic Signal&quot; IEEE
+%     Transactions on Signal Processing, 49(12):3136-3144, December 2001
+%
+%     Peter Kovesi, &quot;Phase Congruency Detects Corners and Edges&quot;. Proceedings
+%     DICTA 2003, Sydney Dec 10-12
+* 
+   Additions by Nichole King:
+    -- use of an adaptive binary threshold in a 2-layer filter.
+       That algorithm is in class AdaptiveThresholding.java and it is from
+       &quot;Efficient Implementation of Local Adaptive Thresholding
+       Techniques Using Integral Images&quot;
+           by Shafaita, Keysersa, and Breuelb
+    -- a flag 'extract noise' to extract the noise as a difference of the
+       result of k factors and to extract a subset of the noise as candidates
+       for finding textures.  It uses a  
+       density based clustering algorithm
+       http://nking.github.io/two-point-correlation/
+       which has an MIT license
+      ---- begin nking copyright ----
+      The MIT License (MIT)
+      Copyright (c) 2013-* Nichole King
+      http://nking.github.io/two-point-correlation/
+
+        Permission is hereby granted, free of charge, to any person obtaining 
+        a copy of this software and associated documentation files 
+        (the &quot;Software&quot;), to deal in the Software without restriction, 
+        including without limitation the rights to use, copy, modify, merge, 
+        publish, distribute, sublicense, and/or sell copies of the Software, 
+        and to permit persons to whom the Software is furnished to do so, 
+        subject to the following conditions:
+
+        The above copyright notice and this permission notice shall be included 
+        in all copies or substantial portions of the Software.
+        THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS 
+        OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+        MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
+        IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
+        CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
+        TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
+        SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+     ---- end nking copyright ---- 
+    
+     runtime complexity of majority of algorithm is a constant factor, that
+     depends upon parameters chosen, times O(N*lg_2(N)),
+     but each operation uses a transcendental function.
+
+     the advantage to using phase congruency is that it's possible to produce
+     consistent clean edges with less noise and representing a wide range in
+     intensity contrast.
+
+ */
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">public class PhaseCongruencyDetector {</span>
+
+    final private static double epsilon = 1E-4;
+
+<span class="fc" id="L181">    private boolean doPlot = false;</span>
+
+<span class="fc" id="L183">    private boolean extractNoise = false;</span>
+
+    /**
+     * number of wavelet scales.  a lower value reveals more fine
+     * scale features.  The default is 5.
+     */
+<span class="fc" id="L189">    private int nScale = 5;</span>
+    /**
+     * wavelength of smallest scale filter.  The default is 3.
+     */
+<span class="fc" id="L193">    private int minWavelength = 3;</span>
+    /**
+     * scaling factor between successive filters.  The default is 2.1.
+     */
+<span class="fc" id="L197">    private float mult = 2.1f;</span>
+    /**
+     * ratio of standard deviation of Gaussian describing the
+     * log Gabor's filter's transfer function in the frequency domain to the
+     * filter center frequency.  The default is 0.55f.
+     */
+<span class="fc" id="L203">    private float sigmaOnf = 0.55f;</span>
+    /**
+     * number of standard deviations of the noise energy beyond the
+     * mean at which we set the noise threshold point.  You may want to vary this
+       up to a value of 10 or 20 for noisy images.
+       The default is 5.
+     */
+<span class="fc" id="L210">    private int k = 5;//2;</span>
+    /**
+     * The fractional measure of frequency spread below which phase
+     * congruency values get penalized.  The default is 0.5f.
+     */
+<span class="fc" id="L215">    private float cutOff = 0.5f;</span>
+    /**
+     * Controls the sharpness of the transition in the sigmoid function
+     * used to weight phase congruency for frequency spread.  The default is 10.
+     */
+<span class="fc" id="L220">    private float g = 10;</span>
+    /**
+     * factor to apply to the calculated phase
+     * deviation result.  Increasing this sharpens the edge responses, but can
+     * also attenuate their magnitude if the gain is too large.  Sensible values
+     * to use lie in the range 1-2.  The default is 1.5f.
+     */
+<span class="fc" id="L227">    private float deviationGain = 1.5f;</span>
+    /**
+     * Parameter specifies method used to determine noise
+     * statistics: -1 use median of smallest scale filter responses;
+     * -2 use mode of smallest scale filter responses;
+     * 0 turns off all noise compensation; and
+     * &gt; 0 use noiseMethod value as the fixed noise threshold.
+     * The default is -1.
+     */
+<span class="fc" id="L236">    private int noiseMethod = -1;</span>
+    /**
+     * the low threshold fraction of 1
+     */
+<span class="fc" id="L240">    private double tLow = 0.1;</span>
+    /**
+     * the high threshold fraction of 1.  The default is 0.3.
+     * Note that this is ignored if useAdaptiveThreshold is true, which it is
+     * by default.
+     */
+<span class="fc" id="L246">    private double tHigh = 0.3;</span>
+    /**
+     * a flag indicating use of adaptive thresholds in the 2 layer filter
+     */
+<span class="fc" id="L250">    private boolean useAdaptiveThreshold = true;</span>
+
+<span class="fc" id="L252">    public PhaseCongruencyDetector() {</span>
+
+<span class="fc" id="L254">    }</span>
+
+    public void setToDebug() {
+<span class="fc" id="L257">        doPlot = true;</span>
+<span class="fc" id="L258">    }</span>
+
+    /**
+     * noise is extracted and textures are examined.  this
+     * feature name may change depending upon results in progress.
+     * Note that k must be the default of 5 or less for this feature.
+     */
+    public void setToExtractNoise() {
+<span class="pc bpc" id="L266" title="2 of 4 branches missed.">        if (k &gt; 5 || noiseMethod != -1) {</span>
+<span class="nc" id="L267">            throw new IllegalStateException(&quot;currently, the algorihm needs&quot;</span>
+                + &quot; k &lt;= 5 and noiseMethod == -1 for the differencing of pixels.  &quot;
+                + &quot; k=&quot; + k + &quot; and noiseMethod=&quot; + noiseMethod);
+        }
+<span class="fc" id="L271">        this.extractNoise = true;</span>
+<span class="fc" id="L272">    }</span>
+
+    /**
+     * set the number of wavelet scales.
+     * @param n number of wavelet scales.  a lower value reveals more fine
+     * scale features.  The default is 5.
+     */
+    public void setNScales(int n) {
+<span class="nc" id="L280">        nScale = n;</span>
+<span class="nc" id="L281">    }</span>
+
+    /**
+     * set the scale number of the smallest scale filter.
+     * @param m wavelength of smallest scale filter.  The default is 3.
+     */
+    public void setMinWavelength(int m) {
+<span class="nc" id="L288">        minWavelength = m;</span>
+<span class="nc" id="L289">    }</span>
+
+    /**
+     *
+     * @param f scaling factor between successive filters.  The default is 2.1.
+     */
+    public void setMult(float f) {
+<span class="nc" id="L296">        mult = f;</span>
+<span class="nc" id="L297">    }</span>
+
+    /**
+     *
+     * @param s ratio of standard deviation of Gaussian describing the
+     * log Gabor's filter's transfer function in the frequency domain to the
+     * filter center frequency.  The default is 0.55f.
+     */
+    public void setSigmaOnf(float s) {
+<span class="nc" id="L306">        sigmaOnf = s;</span>
+<span class="nc" id="L307">    }</span>
+
+    /**
+     *
+     * @param k number of standard deviations of the noise energy beyond the
+     * mean at which we set the noise threshold point.  You may want to vary
+     * this up to a value of 10 or 20 for noisy images.
+       The default is 5.
+     */
+    public void setK(int k) {
+<span class="pc bpc" id="L317" title="3 of 4 branches missed.">        if (extractNoise &amp;&amp; k &gt; 5) {</span>
+<span class="nc" id="L318">            throw new IllegalStateException(&quot;currently, the algorihm needs&quot;</span>
+                + &quot; k &lt;= 5 for the differencing of pixels requested by&quot;
+                + &quot; 'extractNoise'.&quot;);
+        }
+<span class="fc" id="L322">        this.k = k;</span>
+<span class="fc" id="L323">    }</span>
+
+    /**
+     *
+     * @param c The fractional measure of frequency spread below which phase
+     * congruency values get penalized.  The default is 0.5f.
+     */
+    public void setCutOff(float c) {
+<span class="nc" id="L331">        cutOff = c;</span>
+<span class="nc" id="L332">    }</span>
+
+    /**
+     *
+     * @param g Controls the sharpness of the transition in the sigmoid function
+     * used to weight phase congruency for frequency spread.  The default is 10.
+     */
+    public void setG(int g) {
+<span class="nc" id="L340">        this.g = g;</span>
+<span class="nc" id="L341">    }</span>
+
+    /**
+     *
+     * @param d Amplification to apply to the calculated phase
+     * deviation result.  Increasing this sharpens the edge responses, but can
+     * also attenuate their magnitude if the gain is too large.  Sensible values
+     * to use lie in the range 1-2.  The default is 1.5f.
+     */
+    public void setDevitionGain(float d) {
+<span class="nc" id="L351">        deviationGain = d;</span>
+<span class="nc" id="L352">    }</span>
+
+    /**
+     *
+     * @param m Parameter specifies method used to determine noise
+     * statistics: -1 use median of smallest scale filter responses;
+     * -2 use mode of smallest scale filter responses;
+     * 0 turns off all noise compensation; and
+     * &gt; 0 use noiseMethod value as the fixed noise threshold.
+     * The default is -1.
+     */
+    public void setNoiseMethod(int m) {
+<span class="nc bnc" id="L364" title="All 4 branches missed.">        if (extractNoise &amp;&amp; (m != -1)) {</span>
+<span class="nc" id="L365">            throw new IllegalStateException(&quot;the 'extract noise' feature is set&quot;</span>
+                + &quot; and this requires noiseMethod==-1.&quot;);
+        }
+<span class="nc" id="L368">        this.noiseMethod = m;</span>
+<span class="nc" id="L369">    }</span>
+
+    /**
+     *
+     * @param tLow the low threshold fraction of 1.
+     * The default is 0.1.
+     */
+    public void setLowThreshold(double tLow) {
+<span class="nc" id="L377">        this.tLow = tLow;</span>
+<span class="nc" id="L378">    }</span>
+
+    /**
+     *
+     * @param t the high threshold fraction of 1.  The default is 0.3.
+     * Note that this is ignored if useAdaptiveThreshold is true, which it is
+     * by default.
+     */
+    public void setHighThreshold(double t) {
+<span class="nc" id="L387">        this.tHigh = t;</span>
+<span class="nc" id="L388">    }</span>
+
+    /**
+     * turn off the use of adaptive thresholds in the 2 layer filter, and
+     * instead use tLow and tHigh only.
+     */
+    public void setToNotUseAdaptiveThreshold() {
+<span class="nc" id="L395">        this.useAdaptiveThreshold = false;</span>
+<span class="nc" id="L396">    }</span>
+
+    /**
+     * use the phase congruency method of transformations to create
+     * edge maps, orientation, phase angle and a suggested threshold.
+     * @param img
+     * @return
+       &lt;pre&gt;
+       NOTE: the return products use row major and column major notation, so
+       read the method products getters carefully.
+
+       Returned values:
+         phaseCongruency  - Phase congruency indicating edge significance
+                            (values are in range 0 to 1.)
+         orientation      - Orientation image in integer degrees 0-180,
+                            positive anticlockwise.
+                            0 corresponds to a vertical edge, 90 is horizontal.
+         phaseAngle       - Local weighted mean phase angle at every point in
+                            the image. A value of
+                                pi/2 corresponds to a bright line,
+                                0 corresponds to a step and
+                                -pi/2 is a dark line.
+         threshold        - Calculated noise threshold (can be useful for
+                            diagnosing noise characteristics of images).
+                            Once you know this you can then specify fixed
+                            thresholds and save some computation time.
+      &lt;/pre&gt;
+     */
+    public PhaseCongruencyProducts phaseCongMono(GreyscaleImage img) {
+
+<span class="fc" id="L426">        long t0 = System.currentTimeMillis();</span>
+
+<span class="fc" id="L428">        int nCols = img.getWidth();</span>
+<span class="fc" id="L429">        int nRows = img.getHeight();</span>
+
+        //Periodic Fourier transform of image, using default normalization
+        // perfft2 results use notation a[row][col]
+<span class="fc" id="L433">        PeriodicFFT perfft2 = new PeriodicFFT();</span>
+        //IM = perfft2(im);                   %
+        //S, P, s, p where S = FFT of smooth, P = FFT of periodic, s=spatial smooth, p = spatial p
+<span class="fc" id="L436">        Complex[][][] perfResults = perfft2.perfft2(img, false);</span>
+<span class="fc" id="L437">        Complex[][] capIm = perfResults[1];</span>
+
+        /*
+        sumAn  = zeros(rows,cols);          % Matrix for accumulating filter response
+                                            % amplitude values.
+        sumf   = zeros(rows,cols);          % ft is phase angle
+        sumh1  = zeros(rows,cols);
+        sumh2  = zeros(rows,cols);
+        */
+<span class="fc" id="L446">        double[][] sumAn = new double[nRows][];</span>
+<span class="fc" id="L447">        double[][] sumF = new double[sumAn.length][];</span>
+<span class="fc" id="L448">        double[][] sumH1 = new double[sumAn.length][];</span>
+<span class="fc" id="L449">        double[][] sumH2 = new double[sumAn.length][];</span>
+<span class="fc bfc" id="L450" title="All 2 branches covered.">        for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc" id="L451">            sumAn[row] = new double[nCols];</span>
+<span class="fc" id="L452">            sumF[row] = new double[nCols];</span>
+<span class="fc" id="L453">            sumH1[row] = new double[nCols];</span>
+<span class="fc" id="L454">            sumH2[row] = new double[nCols];</span>
+        }
+
+        /*
+        Generate grid data for constructing filters in the frequency domain
+        [radius, u1, u2] = filtergrid(rows, cols);
+        */
+        // results use notation a[row][col]
+<span class="fc" id="L462">        FilterGrid fg = new FilterGrid();</span>
+<span class="fc" id="L463">        FilterGridProducts fgProducts = fg.filtergrid(nRows, nCols);</span>
+
+        /*
+        Get rid of the 0 radius value in the middle (at top left corner after
+        fftshifting) so that taking the log of the radius, or dividing by the
+        radius, will not cause trouble.
+         radius(1,1) = 1;
+        */
+<span class="fc" id="L471">        fgProducts.getRadius()[0][0] = 1;</span>
+
+        /*
+         % Construct the monogenic filters in the frequency domain.  The two
+         % filters would normally be constructed as follows
+         %    H1 = i*u1./radius;
+         %    H2 = i*u2./radius;
+         % However the two filters can be packed together as a complex valued
+         % matrix, one in the real part and one in the imaginary part.  Do this by
+         % multiplying H2 by i and then adding it to H1 (note the subtraction
+         % because i*i = -1).  When the convolution is performed via the fft the
+         % real part of the result will correspond to the convolution with H1 and
+         % the imaginary part with H2.  This allows the two convolutions to be
+         % done as one in the frequency domain, saving time and memory.
+         H = (1i*u1 - u2)./radius;
+        */
+        // results use notation a[row][col]
+<span class="fc" id="L488">        double[][] u1 = fgProducts.getU1();</span>
+<span class="fc" id="L489">        double[][] u2 = fgProducts.getU2();</span>
+<span class="fc" id="L490">        double[][] radius = fgProducts.getRadius();</span>
+<span class="fc" id="L491">        Complex[][] capH = new Complex[nRows][];</span>
+<span class="fc bfc" id="L492" title="All 2 branches covered.">        for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc" id="L493">            capH[row] = new Complex[nCols];</span>
+<span class="fc bfc" id="L494" title="All 2 branches covered.">            for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L495">                double re = -u2[row][col]/radius[row][col];</span>
+<span class="fc" id="L496">                double im = u1[row][col]/radius[row][col];</span>
+<span class="fc" id="L497">                capH[row][col] = new Complex(re, im);</span>
+            }
+        }
+
+        /*
+         % First construct a low-pass filter that is as large as possible, yet falls
+         % away to zero at the boundaries.  All filters are multiplied by
+         % this to ensure no extra frequencies at the 'corners' of the FFT are
+         % incorporated as this can upset the normalisation process when
+         % calculating phase congruency
+         lp = lowpassfilter([rows,cols],.45,15);    % Radius .4, 'sharpness' 15
+        */
+        // results use notation a[row][col]
+<span class="fc" id="L510">        LowPassFilter lpFilter = new LowPassFilter();</span>
+<span class="fc" id="L511">        double[][] lp = lpFilter.lowpassfilter(nRows, nCols, 0.45f, 15);</span>
+
+<span class="fc" id="L513">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+
+<span class="fc" id="L515">        double[][] maxAN = null;</span>
+
+<span class="fc" id="L517">        double tau = noiseMethod;</span>
+        // keeping taus in case need to increase noise estimate
+<span class="fc" id="L519">        double sqml4 = Math.sqrt(Math.log(4));</span>
+<span class="fc" id="L520">        double logGaborDenom = 2. * Math.pow(Math.log(sigmaOnf), 2);</span>
+
+<span class="fc" id="L522">        double[][] width = new double[nRows][];</span>
+<span class="fc" id="L523">        double[][] weight = new double[nRows][];</span>
+<span class="fc bfc" id="L524" title="All 2 branches covered.">        for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc" id="L525">            width[row] = new double[nCols];</span>
+<span class="fc" id="L526">            weight[row] = new double[nCols];</span>
+        }
+
+<span class="fc bfc" id="L529" title="All 2 branches covered.">        for (int s = 0; s &lt; nScale; ++s) {</span>
+
+            // Centre frequency of filter.
+<span class="fc" id="L532">            double wavelength = minWavelength * Math.pow(mult, s);</span>
+
+<span class="fc" id="L534">            double fo = 1.0/wavelength;</span>
+
+            // use notation a[row][col]
+<span class="fc" id="L537">            double[][] logGabor = new double[nRows][];</span>
+<span class="fc bfc" id="L538" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc" id="L539">                logGabor[row] = new double[nCols];</span>
+<span class="fc bfc" id="L540" title="All 2 branches covered.">                for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L541">                    double v = Math.log(radius[row][col]/fo);</span>
+<span class="fc" id="L542">                    v *= v;</span>
+<span class="fc" id="L543">                    v = Math.exp(-v/logGaborDenom);</span>
+                    //logGabor = logGabor.*lp;
+<span class="fc" id="L545">                    logGabor[row][col] = lp[row][col] * v;</span>
+                }
+            }
+<span class="fc" id="L548">            logGabor[0][0] = 0;</span>
+
+            //DEBUG(logGabor, &quot;s=&quot; + s + &quot; logGabor*low pass filter&quot;, s);
+
+            // uses notation a[row][col]
+            //Bandpassed image in the frequency domain
+<span class="fc" id="L554">            Complex[][] capIMF = new Complex[nRows][];</span>
+<span class="fc bfc" id="L555" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc" id="L556">                capIMF[row] = new Complex[nCols];</span>
+<span class="fc bfc" id="L557" title="All 2 branches covered.">                for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L558">                   capIMF[row][col] = capIm[row][col].times(logGabor[row][col]);</span>
+                }
+            }
+
+            // uses notation a[row][col]
+            //  Bandpassed image in spatial domain.
+            //  f = real(ifft2(IMF));
+            // the functions used in other code are not normalized on fft,
+            // but are by inverse fft so need a combined division here by nomr=nRows*nCols
+<span class="fc" id="L567">            Complex[][] fComplex = imageProcessor.create2DFFT(capIMF, false, false);</span>
+
+<span class="fc" id="L569">            double norm = nRows * nCols;</span>
+
+            //h = ifft2(IMF.*H);
+<span class="fc" id="L572">            Complex[][] capIMFH = new Complex[nRows][];</span>
+<span class="fc bfc" id="L573" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc" id="L574">                capIMFH[row] = new Complex[nCols];</span>
+<span class="fc bfc" id="L575" title="All 2 branches covered.">                for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L576">                    capIMFH[row][col] = capIMF[row][col].times(capH[row][col]);</span>
+                }
+            }
+            // result needs to be divided by norm=nRows*nCols
+<span class="fc" id="L580">            Complex[][] h = imageProcessor.create2DFFT(capIMFH, false, false);</span>
+
+            /*
+            h1 = real(h);
+            h2 = imag(h);
+            An = sqrt(f.^2 + h1.^2 + h2.^2); % Amplitude of this scale component.
+            sumAn = sumAn + An;              % Sum of component amplitudes over scale.
+            sumf  = sumf  + f;
+            sumh1 = sumh1 + h1;
+            sumh2 = sumh2 + h2;
+            */
+            // uses notation a[row][col]
+<span class="fc" id="L592">            double[][] aN = new double[nRows][];</span>
+<span class="fc bfc" id="L593" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc" id="L594">                aN[row] = new double[nCols];</span>
+<span class="fc bfc" id="L595" title="All 2 branches covered.">                for (int col = 0; col &lt; nCols; ++col) {</span>
+                    // results of inverse transforms need normalization
+<span class="fc" id="L597">                    double f0 = fComplex[row][col].re()/norm;</span>
+<span class="fc" id="L598">                    double h1 = h[row][col].re()/norm;</span>
+<span class="fc" id="L599">                    double h2 = h[row][col].im()/norm;</span>
+<span class="fc" id="L600">                    aN[row][col] = Math.sqrt(f0*f0 + h1*h1 + h2*h2);</span>
+<span class="fc" id="L601">                    sumAn[row][col] += aN[row][col];</span>
+<span class="fc" id="L602">                    sumF[row][col] += f0;</span>
+<span class="fc" id="L603">                    sumH1[row][col] += h1;</span>
+<span class="fc" id="L604">                    sumH2[row][col] += h2;</span>
+                }
+            }
+
+            /*
+            At the smallest scale estimate noise characteristics from the
+            distribution of the filter amplitude responses stored in sumAn.
+            tau is the Rayleigh parameter that is used to describe the
+            distribution.
+            */
+<span class="fc bfc" id="L614" title="All 2 branches covered.">            if (s == 0) {</span>
+<span class="pc bpc" id="L615" title="1 of 2 branches missed.">                if (noiseMethod == -1) {</span>
+                    //Use median to estimate noise statistics
+                    //tau = median(sumAn(:))/sqrt(log(4));
+                    //TODO: could improve this below O(N*lg2(N)) with histograms
+                    //      and assumptions of bin sizes...when have an
+                    //      implementation of Multi-Level-Buckets, revisit this
+<span class="fc" id="L621">                    double median = MiscMath.findMedian(sumAn);</span>
+<span class="fc" id="L622">                    tau = median/sqml4;</span>
+<span class="pc bnc" id="L623" title="All 2 branches missed.">                } else if (noiseMethod == -2) {</span>
+                    //Use mode to estimate noise statistics
+                    //tau = rayleighmode(sumAn(:));
+<span class="nc" id="L626">                    tau = rayleighMode(sumAn);</span>
+                }
+<span class="fc" id="L628">                maxAN = aN;</span>
+            } else {
+                // Record maximum amplitude of components across scales.  This is needed
+                // to determine the frequency spread weighting.
+                //maxAN = max(maxAN, An);
+                // uses notation a[row][col]
+<span class="fc bfc" id="L634" title="All 2 branches covered.">                for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc bfc" id="L635" title="All 2 branches covered.">                    for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L636">                        maxAN[row][col] = Math.max(maxAN[row][col], aN[row][col]);</span>
+                    }
+                }
+            }
+
+            /*
+            Form weighting that penalizes frequency distributions that are
+            particularly narrow.  Calculate fractional 'width' of the frequencies
+            present by taking the sum of the filter response amplitudes and dividing
+            by the maximum component amplitude at each point on the image.  If
+            there is only one non-zero component width takes on a value of 0, if
+            all components are equal width is 1.
+            width = (sumAn./(maxAn + epsilon) - 1) / (nscale-1);
+
+            Now calculate the sigmoidal weighting function.
+            weight = 1.0 ./ (1 + exp( (cutOff - width)*g));
+            */
+            // uses notation a[row][col]
+
+<span class="fc" id="L655">            double dn = (double)nScale - 1.;</span>
+
+<span class="pc bpc" id="L657" title="1 of 2 branches missed.">            if (dn &gt; 0) {</span>
+<span class="fc bfc" id="L658" title="All 2 branches covered.">                for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc bfc" id="L659" title="All 2 branches covered.">                    for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L660">                        double a = sumAn[row][col]/(maxAN[row][col] + epsilon);</span>
+<span class="fc" id="L661">                        width[row][col] = (a - 1.)/dn;</span>
+<span class="fc" id="L662">                        double v = Math.exp(g*(cutOff - width[row][col]));</span>
+<span class="fc" id="L663">                        weight[row][col] = 1./(1. + v);</span>
+                    }
+                }
+            }
+        } // end for each scale
+
+        /*
+        Automatically determine noise threshold
+
+        Assuming the noise is Gaussian the response of the filters to noise will
+        form Rayleigh distribution.  We use the filter responses at the smallest
+        scale as a guide to the underlying noise level because the smallest scale
+        filters spend most of their time responding to noise, and only
+        occasionally responding to features. Either the median, or the mode, of
+        the distribution of filter responses can be used as a robust statistic to
+        estimate the distribution mean and standard deviation as these are related
+        to the median or mode by fixed constants.  The response of the larger
+        scale filters to noise can then be estimated from the smallest scale
+        filter response according to their relative bandwidths.
+
+        This code assumes that the expected reponse to noise on the phase
+        congruency calculation is simply the sum of the expected noise responses
+        of each of the filters.  This is a simplistic overestimate, however these
+        two quantities should be related by some constant that will depend on the
+        filter bank being used.  Appropriate tuning of the parameter 'k' will
+        allow you to produce the desired output. (though the value of k seems to
+        be not at all critical)
+        */
+
+        // uses notation a[row][col]
+        // ft is phase angle
+<span class="fc" id="L694">        double[][] orientation = new double[nRows][];</span>
+<span class="fc" id="L695">        double[][] ft = new double[nRows][];</span>
+<span class="fc" id="L696">        double[][] energy = new double[nRows][];</span>
+<span class="fc" id="L697">        double[][] pc = new double[nRows][];</span>
+<span class="fc bfc" id="L698" title="All 2 branches covered.">        for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc" id="L699">            orientation[row] = new double[nCols];</span>
+<span class="fc" id="L700">            ft[row] = new double[nCols];</span>
+<span class="fc" id="L701">            energy[row] = new double[nCols];</span>
+<span class="fc" id="L702">            pc[row] = new double[nCols];</span>
+        }
+
+<span class="fc bfc" id="L705" title="All 2 branches covered.">        for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc bfc" id="L706" title="All 2 branches covered.">            for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L707">                double gY = -sumH2[row][col];</span>
+<span class="fc" id="L708">                double gX = sumH1[row][col];</span>
+<span class="fc bfc" id="L709" title="All 2 branches covered.">                if (gY &lt; 0) {</span>
+<span class="fc" id="L710">                    gX *= -1;</span>
+<span class="fc" id="L711">                    gY *= -1;</span>
+                }
+<span class="fc" id="L713">                orientation[row][col] = Math.atan2(gY, gX);</span>
+<span class="pc bpc" id="L714" title="1 of 2 branches missed.">                if (orientation[row][col] == Math.PI) {</span>
+<span class="nc" id="L715">                    orientation[row][col] = 0;</span>
+                }
+                // orientation values now range 0 - pi
+                // Quantize to 0 - 180 degrees (for NONMAXSUP)
+<span class="fc" id="L719">                orientation[row][col] = (int)(orientation[row][col]*180./Math.PI);</span>
+
+<span class="fc" id="L721">                double h1Sq = sumH1[row][col];</span>
+<span class="fc" id="L722">                h1Sq *= h1Sq;</span>
+<span class="fc" id="L723">                double h2Sq = sumH2[row][col];</span>
+<span class="fc" id="L724">                h2Sq *= h2Sq;</span>
+
+                //Feature type - a phase angle -pi/2 to pi/2.
+<span class="fc" id="L727">                ft[row][col] = Math.atan2(sumF[row][col], Math.sqrt(h1Sq + h2Sq));</span>
+
+                //overall energy
+<span class="fc" id="L730">                double v0 = sumF[row][col];</span>
+<span class="fc" id="L731">                v0 *= v0;</span>
+<span class="fc" id="L732">                energy[row][col] = Math.sqrt(v0 + h1Sq + h2Sq);</span>
+            }
+        }
+
+        /*
+        % Compute phase congruency.  The original measure,
+        % PC = energy/sumAn
+        % is proportional to the weighted cos(phasedeviation).  This is not very
+        % localised so this was modified to
+        % PC = cos(phasedeviation) - |sin(phasedeviation)|
+        % (Note this was actually calculated via dot and cross products.)  This measure
+        % approximates
+        % PC = 1 - phasedeviation.
+
+        % However, rather than use dot and cross products it is simpler and more
+        % efficient to simply use acos(energy/sumAn) to obtain the weighted phase
+        % deviation directly.  Note, in the expression below the noise threshold is
+        % not subtracted from energy immediately as this would interfere with the
+        % phase deviation computation.  Instead it is applied as a weighting as a
+        % fraction by which energy exceeds the noise threshold.  This weighting is
+        % applied in addition to the weighting for frequency spread.  Note also the
+        % phase deviation gain factor which acts to sharpen up the edge response. A
+        % value of 1.5 seems to work well.  Sensible values are from 1 to about 2.
+
+        PC = weight.*max(1 - deviationGain*acos(energy./(sumAn + epsilon)),0) ...
+              .* max(energy-T,0)./(energy+epsilon);
+        */
+
+        double threshold;
+<span class="fc" id="L761">        double thresholdLowNz = -1;</span>
+<span class="pc bpc" id="L762" title="1 of 2 branches missed.">        if (noiseMethod &gt;= 0) {</span>
+            //fixed noise threshold
+<span class="nc" id="L764">            threshold = noiseMethod;</span>
+        } else {
+            //Estimate the effect of noise on the sum of the filter responses as
+            //the sum of estimated individual responses (this is a simplistic
+            //overestimate). As the estimated noise response at succesive scales
+            //is scaled inversely proportional to bandwidth we have a simple
+            //geometric sum.
+            //totalTau = tau * (1 - (1/mult)^nscale)/(1-(1/mult));
+<span class="fc" id="L772">            double totalTau = tau * (1. - Math.pow((1./mult), nScale))/(1. - (1./mult));</span>
+
+            // Calculate mean and std dev from tau using fixed relationship
+            // between these parameters and tau. See
+            // http://mathworld.wolfram.com/RayleighDistribution.html
+<span class="fc" id="L777">            double EstNoiseEnergyMean = totalTau * Math.sqrt(Math.PI/2.);</span>
+<span class="fc" id="L778">            double EstNoiseEnergySigma = totalTau * Math.sqrt((4. - Math.PI)/2.);</span>
+
+<span class="fc" id="L780">            threshold = Math.max(EstNoiseEnergyMean</span>
+                + ((float)k) * EstNoiseEnergySigma, epsilon);
+
+<span class="fc bfc" id="L783" title="All 2 branches covered.">            if (extractNoise) {</span>
+                // empirically, k=10 is chosen
+<span class="fc" id="L785">                thresholdLowNz = Math.max(EstNoiseEnergyMean</span>
+                    + 7.f * EstNoiseEnergySigma, epsilon);
+            }
+        }
+
+<span class="fc" id="L790">        double[][] lowNzFactors = null;</span>
+<span class="fc bfc" id="L791" title="All 2 branches covered.">        if (extractNoise) {</span>
+<span class="fc" id="L792">            lowNzFactors = new double[nRows][];</span>
+<span class="fc bfc" id="L793" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc" id="L794">                lowNzFactors[row] = new double[nCols];</span>
+            }
+        }
+
+<span class="fc bfc" id="L798" title="All 2 branches covered.">        for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc bfc" id="L799" title="All 2 branches covered.">            for (int col = 0; col &lt; nCols; ++col) {</span>
+
+<span class="fc" id="L801">                double eDiv = Math.acos(energy[row][col]/(sumAn[row][col] + epsilon));</span>
+
+<span class="fc" id="L803">                double a = weight[row][col]</span>
+<span class="fc" id="L804">                    * Math.max(1. - deviationGain * eDiv, 0)</span>
+                    / (energy[row][col] + epsilon);
+
+<span class="fc" id="L807">                double eMax = Math.max(energy[row][col] - threshold, 0);</span>
+
+<span class="fc" id="L809">                pc[row][col] = a * eMax;</span>
+
+<span class="fc bfc" id="L811" title="All 2 branches covered.">                if (extractNoise) {</span>
+<span class="fc" id="L812">                    lowNzFactors[row][col] = Math.max(energy[row][col] -</span>
+                        thresholdLowNz, 0);
+<span class="fc" id="L814">                    lowNzFactors[row][col] /= eMax;</span>
+                }
+            }
+        }
+
+<span class="fc" id="L819">        PhaseCongruencyProducts products = new PhaseCongruencyProducts(pc,</span>
+            orientation, ft, threshold);
+
+<span class="fc" id="L822">        NonMaximumSuppression ns = new NonMaximumSuppression();</span>
+
+<span class="fc" id="L824">        double[][] thinnedPC = ns.nonmaxsup(products.getPhaseCongruency(),</span>
+<span class="fc" id="L825">            products.getOrientation(), 1.2, new HashSet&lt;PairInt&gt;());</span>
+
+<span class="fc" id="L827">        products.setParameters(nScale, minWavelength, mult, sigmaOnf, k, cutOff,</span>
+            g, deviationGain, noiseMethod, tLow, tHigh);
+
+<span class="fc" id="L830">        int[][] thinned = createEdges(products.getPhaseCongruency(), thinnedPC,</span>
+<span class="fc" id="L831">            products.getPhaseAngle(), tLow, tHigh);</span>
+
+<span class="fc" id="L833">        products.setThinnedImage(thinned);</span>
+
+<span class="fc bfc" id="L835" title="All 2 branches covered.">        if (extractNoise) {</span>
+
+<span class="fc" id="L837">            int distMinimum = 70;</span>
+            
+            /*
+            using a higher k=7, subtracting the thinned results from the default
+            thinned image.
+            */
+
+<span class="fc" id="L844">            double[][] pcLowNz = copy(products.getPhaseCongruency());</span>
+<span class="fc bfc" id="L845" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc bfc" id="L846" title="All 2 branches covered.">                for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc bfc" id="L847" title="All 2 branches covered.">                    if (thinned[row][col] == 0) {</span>
+<span class="fc" id="L848">                        pcLowNz[row][col] = 0;</span>
+                    } else {
+<span class="fc" id="L850">                        pcLowNz[row][col] *= lowNzFactors[row][col];</span>
+                    }
+                }
+            }
+
+<span class="fc" id="L855">            int[][] thinnedLowNz = applyHysThresh(pcLowNz,</span>
+<span class="fc" id="L856">                products.getPhaseAngle(), tLow, tHigh, true);</span>
+
+<span class="fc" id="L858">            Set&lt;PairInt&gt; noisePoints = new HashSet&lt;PairInt&gt;();</span>
+
+<span class="fc" id="L860">            products.setNoiseyPixels(new HashSet&lt;PairInt&gt;());</span>
+            
+<span class="fc" id="L862">            int dtN = 0;</span>
+<span class="fc" id="L863">            int[][] dt = new int[nRows][];</span>
+<span class="fc bfc" id="L864" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc" id="L865">                dt[row] = new int[nCols];</span>
+<span class="fc bfc" id="L866" title="All 2 branches covered.">                for (int col = 0; col &lt; nCols; ++col) {</span>
+                    // where thinned is &gt; 0 and thinnedLowNz == 0 is a noise pixel
+<span class="fc" id="L868">                    int v = thinned[row][col] - thinnedLowNz[row][col];</span>
+<span class="fc bfc" id="L869" title="All 2 branches covered.">                    if (v &gt; 0) {</span>
+                        // noise = points in thinned, but not in low noise thinned
+<span class="fc" id="L871">                        noisePoints.add(new PairInt(row, col));</span>
+<span class="fc" id="L872">                        products.getNoiseyPixels().add(new PairInt(col, row));</span>
+                    } else {
+                        // points that are signal in both
+<span class="fc bfc" id="L875" title="All 2 branches covered.">                        if (thinnedLowNz[row][col] &gt; 0) {</span>
+<span class="fc" id="L876">                            dt[row][col] = 1;</span>
+<span class="fc" id="L877">                            dtN++;</span>
+                        }
+                    }
+                }
+            }
+
+<span class="fc" id="L883">            products.setThinnedLowNoise(thinnedLowNz);            </span>
+
+<span class="pc bpc" id="L885" title="1 of 2 branches missed.">            if (doPlot) {</span>
+<span class="fc" id="L886">                int count = 0;</span>
+<span class="fc" id="L887">                Image dbg0 = new Image(nCols, nRows);</span>
+<span class="fc bfc" id="L888" title="All 2 branches covered.">                for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc bfc" id="L889" title="All 2 branches covered.">                    for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L890">                        int v = thinnedLowNz[row][col];</span>
+<span class="fc bfc" id="L891" title="All 2 branches covered.">                        if (v &gt; 0) {</span>
+<span class="fc" id="L892">                            dbg0.setRGB(col, row, v, v, v);</span>
+                        }
+                    }
+                }
+<span class="fc bfc" id="L896" title="All 2 branches covered.">                for (PairInt p : noisePoints) {</span>
+<span class="fc" id="L897">                    int[] clr = ImageIOHelper.getNextRGB(count);</span>
+<span class="fc" id="L898">                    ImageIOHelper.addPointToImage(p.getY(), p.getX(), dbg0,</span>
+                        1, clr[0], clr[1], clr[2]);
+<span class="fc" id="L900">                    count++;</span>
+<span class="fc" id="L901">                }</span>
+<span class="fc" id="L902">                MiscDebug.writeImage(dbg0, &quot;_a_noise_&quot;);</span>
+            }
+
+            /*
+            -- finding distance to non-noise points of the thinned default image
+               from the noise points using a distance transform
+            -- sorting those points by decreasing distance.
+            */
+
+<span class="fc" id="L911">            DistanceTransform dTrans = new DistanceTransform();</span>
+<span class="fc" id="L912">            dt = dTrans.applyMeijsterEtAl(dt);</span>
+
+<span class="fc" id="L914">            Set&lt;PairIntWithIndex&gt; points2</span>
+                = new HashSet&lt;PairIntWithIndex&gt;();
+<span class="fc bfc" id="L916" title="All 2 branches covered.">            for (PairInt p : noisePoints) {</span>
+<span class="fc" id="L917">                points2.add(new PairIntWithIndex(p.getX(), p.getY(),</span>
+<span class="fc" id="L918">                    points2.size()));</span>
+<span class="fc" id="L919">            }</span>
+<span class="fc" id="L920">            DTClusterFinder&lt;PairIntWithIndex&gt; cFinder</span>
+                = new DTClusterFinder&lt;PairIntWithIndex&gt;(points2,
+                nRows + 1, nCols + 1);
+            //cFinder.setToDebug();
+<span class="fc" id="L924">            cFinder.setMinimumNumberInCluster(1);</span>
+<span class="fc" id="L925">            cFinder.calculateCriticalDensity();</span>
+<span class="fc" id="L926">            cFinder.findClusters();</span>
+<span class="fc" id="L927">            final int n = cFinder.getNumberOfClusters();</span>
+
+<span class="fc" id="L929">            float[] clusterSizes = new float[n];</span>
+<span class="fc" id="L930">            Image dbg = new Image(nCols, nRows);</span>
+<span class="fc bfc" id="L931" title="All 2 branches covered.">            for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L932">                Set&lt;PairIntWithIndex&gt; set = cFinder.getCluster(i);</span>
+<span class="fc" id="L933">                clusterSizes[i] = set.size();</span>
+<span class="fc" id="L934">                int[] clr = ImageIOHelper.getNextRGB(i);</span>
+<span class="fc bfc" id="L935" title="All 2 branches covered.">                for (PairIntWithIndex p : set) {</span>
+<span class="fc" id="L936">                    ImageIOHelper.addPointToImage(p.getY(), p.getX(), dbg,</span>
+                        1, clr[0], clr[1], clr[2]);
+<span class="fc" id="L938">                }</span>
+            }
+<span class="fc" id="L940">            MiscDebug.writeImage(dbg, &quot;_a_noise_clusters_&quot;);</span>
+            
+<span class="fc" id="L942">            HistogramHolder hist = Histogram.createSimpleHistogram(</span>
+                0, 40, 20, clusterSizes, 
+<span class="fc" id="L944">                Errors.populateYErrorsBySqrt(clusterSizes));</span>
+<span class="fc" id="L945">            int peakIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
+<span class="pc bpc" id="L946" title="3 of 4 branches missed.">            assert(peakIdx != -1); </span>
+<span class="fc" id="L947">            float sizeLimit = hist.getXHist()[peakIdx];</span>
+<span class="pc bpc" id="L948" title="1 of 2 branches missed.">            if (peakIdx &lt; (hist.getXHist().length - 2)) {</span>
+<span class="fc" id="L949">                sizeLimit = hist.getXHist()[peakIdx + 2];</span>
+            }
+            
+<span class="fc" id="L952">            System.out.println(&quot;nClusters=&quot; + n </span>
+<span class="fc" id="L953">                + &quot; peakHist y=&quot; + hist.getYHist()[peakIdx] </span>
+<span class="fc" id="L954">                + &quot; peakHist x=&quot; + hist.getXHist()[peakIdx] </span>
+<span class="fc" id="L955">                + &quot; nPix=&quot; + img.getNPixels() + </span>
+                &quot; peakX/nPix=&quot; + 
+<span class="fc" id="L957">                (float)hist.getXHist()[peakIdx]/(float)img.getNPixels() +</span>
+                &quot; peakY/nPix=&quot; + 
+<span class="fc" id="L959">                (float)hist.getYHist()[peakIdx]/(float)img.getNPixels()</span>
+                + &quot; peakY/peakX=&quot; +
+<span class="fc" id="L961">                (float)hist.getYHist()[peakIdx]/(float)hist.getXHist()[peakIdx]</span>
+            );
+            
+            try {
+<span class="fc" id="L965">                hist.plotHistogram(&quot;cluster sizes&quot;, &quot;_cluster_sizes_&quot;);</span>
+<span class="nc" id="L966">            } catch (IOException ex) {</span>
+<span class="nc" id="L967">                Logger.getLogger(PhaseCongruencyDetector.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L968">            }</span>
+
+<span class="fc" id="L970">            int[] dist = new int[n];           </span>
+<span class="fc" id="L971">            int[] indexes = new int[n];</span>
+<span class="fc" id="L972">            int count = 0;</span>
+<span class="fc bfc" id="L973" title="All 2 branches covered.">            for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L974">                Set&lt;PairIntWithIndex&gt; set = cFinder.getCluster(i);</span>
+<span class="fc bfc" id="L975" title="All 2 branches covered.">                if (set.size() &gt; sizeLimit) {</span>
+<span class="fc" id="L976">                    continue;</span>
+                }
+<span class="fc" id="L978">                int sumD = 0;</span>
+<span class="fc" id="L979">                int countD = 0;</span>
+<span class="fc bfc" id="L980" title="All 2 branches covered.">                for (PairIntWithIndex p : set) {</span>
+<span class="pc bpc" id="L981" title="2 of 4 branches missed.">                    if (noisePoints.contains(new PairInt(p.getX(), p.getY())) &amp;&amp; dt[p.getX()][p.getY()] &gt; 0) {</span>
+<span class="fc" id="L982">                        sumD += dt[p.getX()][p.getY()];</span>
+<span class="fc" id="L983">                        countD++;</span>
+                    }
+<span class="fc" id="L985">                }</span>
+<span class="pc bpc" id="L986" title="1 of 2 branches missed.">                if (countD &gt; 0) {</span>
+<span class="fc" id="L987">                    indexes[count] = i;</span>
+<span class="fc" id="L988">                    sumD /= countD;</span>
+<span class="fc" id="L989">                    dist[count] = sumD;</span>
+<span class="fc" id="L990">                    count++;</span>
+                }
+            }
+<span class="fc" id="L993">            indexes = Arrays.copyOf(indexes, count);</span>
+<span class="fc" id="L994">            dist = Arrays.copyOf(dist, count);</span>
+            
+            // sort by decr dist
+<span class="fc" id="L997">            QuickSort.descendingSort(dist, indexes);</span>
+            
+<span class="pc bpc" id="L999" title="1 of 2 branches missed.">            if (doPlot) {</span>
+                //histogram of point distances
+<span class="fc" id="L1001">                float[] values = new float[n];</span>
+<span class="fc bfc" id="L1002" title="All 2 branches covered.">                for (int i = 0; i &lt; dist.length; ++i) {</span>
+<span class="fc" id="L1003">                    values[i] = dist[i];</span>
+                }
+                //TODO: consider xmax based on image size
+<span class="fc" id="L1006">                hist = Histogram.createSimpleHistogram(</span>
+                    0, 400, 20, values,
+<span class="fc" id="L1008">                    Errors.populateYErrorsBySqrt(values));</span>
+
+                try {
+<span class="fc" id="L1011">                    hist.plotHistogram(&quot;dist from edges&quot;, &quot;_noise_distances_&quot;);</span>
+<span class="nc" id="L1012">                } catch (IOException ex) {</span>
+<span class="nc" id="L1013">                    Logger.getLogger(PhaseCongruencyDetector.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L1014">                }</span>
+            }
+
+<span class="fc" id="L1017">            int end = 100;</span>
+<span class="pc bpc" id="L1018" title="1 of 2 branches missed.">            if (dist.length &lt; end) {</span>
+<span class="fc" id="L1019">                end = dist.length;</span>
+            }
+<span class="fc" id="L1021">            System.out.println(&quot;dist[0]=&quot; + dist[0] + &quot; dist[end-1]=&quot; + dist[end-1]);</span>
+
+<span class="fc" id="L1023">            int np = 0;</span>
+
+<span class="fc" id="L1025">            List&lt;Set&lt;PairInt&gt;&gt; subsetNoise = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
+<span class="fc" id="L1026">            Image dbg0 = new Image(nCols, nRows);</span>
+<span class="pc bpc" id="L1027" title="1 of 2 branches missed.">            for (int i = 0; i &lt; end; ++i) {</span>
+<span class="fc bfc" id="L1028" title="All 2 branches covered.">                if (dist[i] &lt; distMinimum) {</span>
+<span class="fc" id="L1029">                    break;</span>
+                }
+<span class="fc" id="L1031">                int idx = indexes[i];</span>
+<span class="fc" id="L1032">                int[] clr = ImageIOHelper.getNextRGB(i);</span>
+<span class="fc" id="L1033">                Set&lt;PairIntWithIndex&gt; set = cFinder.getCluster(idx);</span>
+<span class="fc" id="L1034">                Set&lt;PairInt&gt; set2 = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc bfc" id="L1035" title="All 2 branches covered.">                for (PairIntWithIndex p : set) {</span>
+<span class="fc" id="L1036">                    ImageIOHelper.addPointToImage(p.getY(), p.getX(), dbg0,</span>
+                        1, clr[0], clr[1], clr[2]);
+<span class="fc" id="L1038">                    set2.add(new PairInt(p.getY(), p.getX()));</span>
+<span class="fc" id="L1039">                }</span>
+<span class="fc" id="L1040">                subsetNoise.add(set2);</span>
+<span class="fc" id="L1041">                np += set2.size();</span>
+            }
+<span class="fc bfc" id="L1043" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc bfc" id="L1044" title="All 2 branches covered.">                for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L1045">                    int v = thinnedLowNz[row][col];</span>
+<span class="fc bfc" id="L1046" title="All 2 branches covered.">                    if (v &gt; 0) {</span>
+<span class="fc" id="L1047">                        dbg0.setRGB(col, row, 255, 255, 255);</span>
+                    }
+                }
+            }
+<span class="fc" id="L1051">            MiscDebug.writeImage(dbg0, &quot;_a_texture_candidates_&quot;);</span>
+         
+<span class="fc" id="L1053">            System.out.println(&quot;np=&quot; + np);</span>
+            
+<span class="fc" id="L1055">            products.setSubsetNoise(subsetNoise);</span>
+        }
+
+<span class="fc" id="L1058">        long t1 = System.currentTimeMillis();</span>
+
+<span class="fc" id="L1060">        System.out.println(((t1 - t0)*1E-3) + &quot; seconds for phasecongmono&quot;);</span>
+
+<span class="fc" id="L1062">        return products;</span>
+    }
+
+    private double[][] copy(double[][] a) {
+<span class="fc" id="L1066">        double[][] cp = new double[a.length][];</span>
+<span class="fc bfc" id="L1067" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="fc" id="L1068">            cp[i] = Arrays.copyOf(a[i], a[i].length);</span>
+        }
+<span class="fc" id="L1070">        return cp;</span>
+    }
+
+    /**
+     * creating edges using thinned phase angle image.
+     * @param pc
+     * @param thinnedPC
+     * @param phaseAngle
+     * @param tLow
+     * @param tHigh
+     * @return
+     */
+    public int[][] createEdges(double[][] pc, double[][] thinnedPC,
+        double[][] phaseAngle, double tLow, double tHigh) {
+
+<span class="fc" id="L1085">        int nRows = phaseAngle.length;</span>
+<span class="fc" id="L1086">        int nCols = phaseAngle[0].length;</span>
+
+<span class="fc" id="L1088">        Set&lt;PairInt&gt; brightLinePoints = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L1089">        Set&lt;PairInt&gt; darkLinePoints = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L1090">        Set&lt;PairInt&gt; stepPoints = new HashSet&lt;PairInt&gt;();</span>
+
+<span class="fc" id="L1092">        double piDiv4 = Math.PI/4.;</span>
+<span class="fc" id="L1093">        double tolerance = piDiv4/2.;</span>
+
+<span class="fc bfc" id="L1095" title="All 2 branches covered.">        for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc bfc" id="L1096" title="All 2 branches covered.">            for (int col = 0; col &lt; nCols; ++col) {</span>
+
+<span class="fc bfc" id="L1098" title="All 2 branches covered.">                if (thinnedPC[row][col] &lt; tLow) {</span>
+<span class="fc" id="L1099">                    continue;</span>
+                }
+                // placing values closer to -pi/2 than 0 are darklines
+                //         values closer to +p1/2 than 0 are brightlines
+                //         else they are closer to 0 are steps
+<span class="fc" id="L1104">                double v = phaseAngle[row][col];</span>
+<span class="fc bfc" id="L1105" title="All 2 branches covered.">                if (Math.abs(-piDiv4 - v) &lt; tolerance) {</span>
+<span class="fc" id="L1106">                    darkLinePoints.add(new PairInt(row, col));</span>
+<span class="fc bfc" id="L1107" title="All 2 branches covered.">                } else if (Math.abs(piDiv4 - v) &lt; tolerance) {</span>
+<span class="fc" id="L1108">                    brightLinePoints.add(new PairInt(row, col));</span>
+                } else {
+<span class="fc" id="L1110">                    stepPoints.add(new PairInt(row, col));</span>
+                }
+            }
+        }
+
+        //DEBUG
+<span class="fc bfc" id="L1116" title="All 2 branches covered.">        if (doPlot) {</span>
+<span class="fc" id="L1117">            Image paImage = new Image(nCols, nRows);</span>
+<span class="fc" id="L1118">            int nExtraForDot = 0;</span>
+<span class="fc bfc" id="L1119" title="All 2 branches covered.">            for (PairInt p : brightLinePoints) {</span>
+<span class="fc" id="L1120">                int x = p.getY();</span>
+<span class="fc" id="L1121">                int y = p.getX();</span>
+<span class="fc" id="L1122">                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot,</span>
+                    0, 255, 0);
+<span class="fc" id="L1124">            }</span>
+<span class="fc bfc" id="L1125" title="All 2 branches covered.">            for (PairInt p : stepPoints) {</span>
+<span class="fc" id="L1126">                int x = p.getY();</span>
+<span class="fc" id="L1127">                int y = p.getX();</span>
+<span class="fc" id="L1128">                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot,</span>
+                    255, 0, 0);
+<span class="fc" id="L1130">            }</span>
+<span class="fc bfc" id="L1131" title="All 2 branches covered.">            for (PairInt p : darkLinePoints) {</span>
+<span class="fc" id="L1132">                int x = p.getY();</span>
+<span class="fc" id="L1133">                int y = p.getX();</span>
+<span class="fc" id="L1134">                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot,</span>
+                    127, 0, 255);
+<span class="fc" id="L1136">            }</span>
+<span class="fc" id="L1137">            MiscDebug.writeImage(paImage, &quot;_a_0_pa_components_&quot; +</span>
+<span class="fc" id="L1138">                MiscDebug.getCurrentTimeFormatted());</span>
+        }
+
+<span class="fc" id="L1141">        stepPoints.addAll(brightLinePoints);</span>
+<span class="fc" id="L1142">        stepPoints.addAll(darkLinePoints);</span>
+
+<span class="fc" id="L1144">        double[][] thinned1 = new double[nRows][nCols];</span>
+<span class="fc bfc" id="L1145" title="All 2 branches covered.">        for (int i = 0; i &lt; nRows; ++i) {</span>
+<span class="fc" id="L1146">            thinned1[i] = new double[nCols];</span>
+        }
+<span class="fc bfc" id="L1148" title="All 2 branches covered.">        for (PairInt p : stepPoints) {</span>
+<span class="fc" id="L1149">            thinned1[p.getX()][p.getY()] = pc[p.getX()][p.getY()];</span>
+<span class="fc" id="L1150">        }</span>
+<span class="fc" id="L1151">        stepPoints = null;</span>
+
+<span class="fc" id="L1153">        int[][] thinned = applyHysThresh(thinned1, phaseAngle, tLow, tHigh, true);</span>
+
+<span class="fc bfc" id="L1155" title="All 2 branches covered.">        if (doPlot) {</span>
+<span class="fc" id="L1156">            Image pImage = new Image(nCols, nRows);</span>
+<span class="fc" id="L1157">            Image tImage = new Image(nCols, nRows);</span>
+<span class="fc" id="L1158">            int nExtraForDot = 0;</span>
+<span class="fc bfc" id="L1159" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc bfc" id="L1160" title="All 2 branches covered.">                for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L1161">                    int v = (int)Math.round(255 * pc[row][col]);</span>
+<span class="fc bfc" id="L1162" title="All 2 branches covered.">                    if (thinned[row][col] &gt; 0) {</span>
+<span class="fc" id="L1163">                        ImageIOHelper.addPointToImage(col, row, pImage,</span>
+                            nExtraForDot, 255, 255, 255);
+<span class="fc" id="L1165">                        ImageIOHelper.addPointToImage(col, row, tImage,</span>
+                            nExtraForDot, v, v, v);
+                    } else {
+<span class="fc" id="L1168">                        ImageIOHelper.addPointToImage(col, row, tImage,</span>
+                            nExtraForDot, v, 0, 0);
+                    }
+                }
+            }
+<span class="fc" id="L1173">            MiscDebug.writeImage(pImage, &quot;_a_1_thinned_1_&quot; +</span>
+<span class="fc" id="L1174">                MiscDebug.getCurrentTimeFormatted());</span>
+<span class="fc" id="L1175">            MiscDebug.writeImage(tImage, &quot;_a_2_pc_1_&quot; +</span>
+<span class="fc" id="L1176">                MiscDebug.getCurrentTimeFormatted());</span>
+        }
+
+<span class="fc" id="L1179">        int[][] thinnedbw = new int[nRows][nCols];</span>
+<span class="fc bfc" id="L1180" title="All 2 branches covered.">        for (int i = 0; i &lt; nRows; ++i) {</span>
+<span class="fc" id="L1181">            thinnedbw[i] = new int[nCols];</span>
+<span class="fc bfc" id="L1182" title="All 2 branches covered.">            for (int j = 0; j &lt; nCols; ++j) {</span>
+<span class="fc bfc" id="L1183" title="All 2 branches covered.">                if (thinned[i][j] &gt; 0) {</span>
+<span class="fc" id="L1184">                    thinnedbw[i][j] = 1;</span>
+                }
+            }
+        }
+
+<span class="fc" id="L1189">        MorphologicalFilter mFilter = new MorphologicalFilter();</span>
+<span class="fc" id="L1190">        int[][] skel = mFilter.bwMorphThin(thinnedbw, Integer.MAX_VALUE);</span>
+
+<span class="fc" id="L1192">        Set&lt;PairInt&gt; points = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc bfc" id="L1193" title="All 2 branches covered.">        for (int i = 0; i &lt; nRows; ++i) {</span>
+<span class="fc bfc" id="L1194" title="All 2 branches covered.">            for (int j = 0; j &lt; nCols; ++j) {</span>
+<span class="fc" id="L1195">                int m = skel[i][j];</span>
+<span class="fc" id="L1196">                thinned[i][j] *= m;</span>
+<span class="fc bfc" id="L1197" title="All 2 branches covered.">                if (thinned[i][j] &gt; 0) {</span>
+<span class="fc" id="L1198">                    points.add(new PairInt(i, j));</span>
+                }
+            }
+        }
+
+        //DEBUG
+<span class="fc bfc" id="L1204" title="All 2 branches covered.">        if (doPlot) {</span>
+<span class="fc" id="L1205">            Image paImage = new Image(nCols, nRows);</span>
+<span class="fc" id="L1206">            int nExtraForDot = 0;</span>
+<span class="fc bfc" id="L1207" title="All 2 branches covered.">            for (PairInt p : points) {</span>
+<span class="fc" id="L1208">                int x = p.getY();</span>
+<span class="fc" id="L1209">                int y = p.getX();</span>
+<span class="fc" id="L1210">                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot,</span>
+                    255, 255, 255);
+<span class="fc" id="L1212">            }</span>
+<span class="fc" id="L1213">            MiscDebug.writeImage(paImage, &quot;_a_3_edge_from_phase_angle_thin_0_&quot; +</span>
+<span class="fc" id="L1214">                MiscDebug.getCurrentTimeFormatted());</span>
+        }
+
+        //ImageProcessor imageProcessor = new ImageProcessor();
+        //imageProcessor.applyThinning(points,nRows, nCols);
+
+        //pltc.correctForLineHatHoriz(points, nRows, nCols);
+        //pltc.correctForLineHatVert(points, nRows, nCols);
+
+        // there are a very small number of clumps thicker than 1 pixel.
+        //ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
+        //lt.applyLineThinner(points, 0, nRows - 1, 0, nCols - 1);
+
+        /*
+        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
+        pltc.correctForIsolatedPixels(stepPoints);
+
+        for (int i = 0; i &lt; nRows; ++i) {
+            Arrays.fill(thinned[i], 0);
+        }
+        for (PairInt p : points) {
+            thinned[p.getX()][p.getY()] = 255;
+        }
+
+        //DEBUG
+        if (doPlot) {
+            Image paImage = new Image(nCols, nRows);
+            int nExtraForDot = 0;
+            for (PairInt p : points) {
+                int x = p.getY();
+                int y = p.getX();
+                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot,
+                    255, 0, 0);
+            }
+            MiscDebug.writeImage(paImage, &quot;_a_3_edge_from_phase_angle_thin_1_&quot; +
+                MiscDebug.getCurrentTimeFormatted());
+        }
+        */
+
+<span class="fc" id="L1253">        return thinned;</span>
+    }
+
+    /**
+     * creating edges using thinned phase angle image.
+     * @param products
+     * @param tLow
+     * @param tHigh
+     */
+    private int countEdgePoints(PhaseCongruencyProducts products,
+        double[][] thinnedPC, double tLow, double tHigh) {
+
+<span class="nc" id="L1265">        double[][] phaseAngle = products.getPhaseAngle();</span>
+
+<span class="nc" id="L1267">        int nRows = phaseAngle.length;</span>
+<span class="nc" id="L1268">        int nCols = phaseAngle[0].length;</span>
+
+<span class="nc" id="L1270">        int count = 0;</span>
+
+<span class="nc bnc" id="L1272" title="All 2 branches missed.">        for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="nc bnc" id="L1273" title="All 2 branches missed.">            for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="nc bnc" id="L1274" title="All 2 branches missed.">                if (thinnedPC[row][col] &lt; tLow) {</span>
+<span class="nc" id="L1275">                    continue;</span>
+                }
+<span class="nc" id="L1277">                count++;</span>
+            }
+        }
+
+<span class="nc" id="L1281">        return count;</span>
+    }
+
+    public class PhaseCongruencyProducts {
+
+        /**
+         * indicates edge significance
+         */
+        private final double[][] phaseCongruency;
+
+        /**
+         * Orientation image in integer degrees 0-180 with positive anticlockwise.
+         */
+        private final double[][] orientation;
+
+        /**
+         * Local weighted mean phase angle at every point in the image.
+         * A value of pi/2 corresponds to a bright line, 0 corresponds to a
+         * step and -pi/2 is a dark line.
+         */
+        private final double[][] phaseAngle;
+
+        /**
+         * Calculated noise threshold (can be useful for diagnosing noise
+         * characteristics of images).  Once you know this you can then specify
+         * fixed thresholds and save some computation time.
+         */
+        private final double threshold;
+
+        private int[][] thinned = null;
+        
+        private int[][] thinnedLowNoise = null;
+
+        /**
+         * noisey pixels are found during the 2 level threshold hysteresis
+         * phase and they sometimes contain textures such as vegetation or
+         * bricks and sometimes contain edge points that should be restored
+         * before this stage.
+         */
+        private Set&lt;PairInt&gt; noiseyPixels = null;
+
+        /**
+         * these are a subset of noiseyPixels that are the smallest
+           clusters of points and furthest away from edges
+           in the lower noise image
+         */
+        private List&lt;Set&lt;PairInt&gt;&gt; subsetNoise = null;
+        
+        private PhaseCongruencyParameters parameters = null;
+
+        public PhaseCongruencyProducts(double[][] pc, double[][] or,
+            double[][] ft, double thr) {
+            this.phaseCongruency = copy(pc);
+            this.orientation = copy(or);
+            this.phaseAngle = copy(ft);
+            this.threshold = thr;
+        }
+
+        /**
+         * set the thinned phase congruence image, a.k.a. the edge image.
+         * the image should be in row-major notation.
+         * @param thImg
+         */
+        public void setThinnedImage(int[][] thImg) {
+            thinned = copy(thImg);
+        }
+        
+        /**
+         * set the thinned low noise image (created if the user specified
+         * 'extract noise').
+         * the image should be in row-major notation.
+         * @param thinnedLowNz 
+         */
+        private void setThinnedLowNoise(int[][] thinnedLowNz) {
+            thinnedLowNoise = thinnedLowNz;
+        }
+
+        /**
+         * get the thinned phase congruence image, a.k.a. the edge image.
+         * Note that the array is accessed as a[row][column], row major notation.
+         * @@return edgeImg
+         */
+        public int[][] getThinned() {
+            return thinned;
+        }
+        
+        /**
+         * get the thinned phase congruence image that was built if the
+         * user specified 'extract noise'.
+         * Note that the array is accessed as a[row][column], row major notation.
+         * @return 
+         */
+        public int[][] getThinnedLowNoise() {
+            return thinnedLowNoise;
+        }
+
+        /**
+         * @return noisey pixels are found by subtracting the resulting pc image
+         * made with the user given k from a default k which allows
+         * more noise into the image.  The resulting &quot;noisey&quot; pixels
+         * may be useful for designing texture filters to remove
+         * such pixels from better keypoints.
+         * Note that the coordinates are in the reference frame
+         * of the GreyscaleImage instance, col major notation.
+         */
+        public Set&lt;PairInt&gt; getNoiseyPixels(){
+            return noiseyPixels;
+        }
+        
+        /**
+         * @return the subset of noiseyPixels that are the smallest
+           clusters of points and furthest away from edges
+           in the lower noise image.
+           Note that the coordinates are in the reference frame
+         * of the GreyscaleImage instance, col major notation.
+         */
+        public List&lt;Set&lt;PairInt&gt;&gt; getSubsetNoise() {
+            return subsetNoise;
+        }
+
+        /**
+         * set pixels derived from the 'extract noise' feature of the phase
+         * congruency detector.
+         * Note that the
+         * points should be using coordinates that are in the reference frame
+         * of the GreyscaleImage instance, col major notation.
+         * @param pixels 
+         */
+        public void setNoiseyPixels(Set&lt;PairInt&gt; pixels){
+            noiseyPixels = pixels;
+        }
+
+        /**
+         * these are a subset of noiseyPixels that are the smallest
+           clusters of points and furthest away from edges
+           in the lower noise image.  Note that the
+         * points should be using coordinates that are in the reference frame
+         * of the GreyscaleImage instance, col major notation.
+         * @param subsetNoise 
+         */
+        private void setSubsetNoise(List&lt;Set&lt;PairInt&gt;&gt; subsetNoise) {
+            this.subsetNoise = subsetNoise;
+        }
+
+        /**
+         * return the gradient image produced by phase congruency as a double
+         * array of values in range 0 to 1.0.
+         * Note that the array is accessed as a[row][column], row major notation.
+         * @return the phaseCongruency
+         */
+        public double[][] getPhaseCongruency() {
+            return phaseCongruency;
+        }
+
+        /**
+         * return the orientation image.
+         * Note that the array is accessed as a[row][column], row major notation.
+         * @return the orientation
+         */
+        public double[][] getOrientation() {
+            return orientation;
+        }
+
+        /**
+         * return the phase angle image.
+         * &lt;pre&gt;
+         * Local weighted mean phase angle at every point in the image.
+         * A value of
+                pi/2 corresponds to a bright line,
+                0 corresponds to a step and
+                -pi/2 is a dark line.
+         * &lt;/pre&gt;
+         * Note that the array is accessed as a[row][column], row major notation
+         * @return the phaseAngle
+         */
+        public double[][] getPhaseAngle() {
+            return phaseAngle;
+        }
+
+        /**
+         *
+         * @return the threshold
+         */
+        public double getThreshold() {
+            return threshold;
+        }
+
+        public PhaseCongruencyParameters getParameters() {
+            return parameters;
+        }
+
+        private void setParameters(int nScale, int minWavelength, float mult,
+            float sigmaOnf, int k, float cutOff, float g, float deviationGain,
+            int noiseMethod, double tLow, double tHigh) {
+
+            this.parameters = new PhaseCongruencyParameters();
+
+            parameters.setParameters(nScale, minWavelength, mult, sigmaOnf, k,
+                cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
+        }
+
+        private void setParameters(PhaseCongruencyParameters params) {
+            this.parameters = params;
+        }
+
+    }
+
+    private Complex[][] copy(Complex[][] a) {
+
+<span class="nc" id="L1490">        Complex[][] b = new Complex[a.length][];</span>
+<span class="nc bnc" id="L1491" title="All 2 branches missed.">        for (int i = 0; i &lt; b.length; ++i) {</span>
+<span class="nc" id="L1492">            b[i] = Arrays.copyOf(a[i], a[i].length);</span>
+        }
+
+<span class="nc" id="L1495">        return b;</span>
+    }
+    private int[][] copy(int[][] a) {
+
+<span class="fc" id="L1499">        int[][] b = new int[a.length][];</span>
+<span class="fc bfc" id="L1500" title="All 2 branches covered.">        for (int i = 0; i &lt; b.length; ++i) {</span>
+<span class="fc" id="L1501">            b[i] = Arrays.copyOf(a[i], a[i].length);</span>
+        }
+
+<span class="fc" id="L1504">        return b;</span>
+    }
+
+    /**
+    adapted from Kovesis phasecongmono.m as documented in class comments above.
+
+      Mode is computed by forming a histogram of the data over 50 bins and then
+      finding the maximum value in the histogram.  Mean and standard deviation
+      can then be calculated from the mode as they are related by fixed
+      constants.
+
+      mean = mode * sqrt(pi/2)
+      std dev = mode * sqrt((4-pi)/2)
+
+      See
+      http://mathworld.wolfram.com/RayleighDistribution.html
+      http://en.wikipedia.org/wiki/Rayleigh_distribution
+
+     * @param data data assumed to come from a Rayleigh distribution
+     * @return
+     */
+    private double rayleighMode(double[][] data) {
+
+<span class="nc" id="L1527">        int nBins = 50;</span>
+
+<span class="nc" id="L1529">        float[] values = new float[data.length];</span>
+<span class="nc" id="L1530">        float max = Float.MIN_VALUE;</span>
+<span class="nc" id="L1531">        int count = 0;</span>
+<span class="nc bnc" id="L1532" title="All 2 branches missed.">        for (int j = 0; j &lt; data.length; ++j) {</span>
+<span class="nc bnc" id="L1533" title="All 2 branches missed.">            for (int i = 0; i &lt; data[j].length; ++i) {</span>
+<span class="nc" id="L1534">                values[count] = (float)data[j][i];</span>
+<span class="nc bnc" id="L1535" title="All 2 branches missed.">                if (values[count] &gt; max) {</span>
+<span class="nc" id="L1536">                    max = values[i];</span>
+                }
+<span class="nc" id="L1538">                count++;</span>
+            }
+        }
+<span class="nc" id="L1541">        float[] errs = Errors.populateYErrorsBySqrt(values);</span>
+
+<span class="nc" id="L1543">        HistogramHolder hist = Histogram.createSimpleHistogram(0, max, nBins,</span>
+            values, errs);
+
+<span class="nc" id="L1546">        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
+
+<span class="nc bnc" id="L1548" title="All 2 branches missed.">        if (yMaxIdx == -1) {</span>
+            //should not happen
+<span class="nc" id="L1550">            throw new IllegalStateException(&quot;Error in algorithm for extreme data case. &quot;</span>
+                + &quot; yMaxIdx=&quot; + yMaxIdx);
+<span class="nc bnc" id="L1552" title="All 2 branches missed.">        } else if (yMaxIdx == (hist.getXHist().length - 1)) {</span>
+<span class="nc" id="L1553">            return hist.getXHist()[yMaxIdx];</span>
+        }
+
+<span class="nc" id="L1556">        double rMode = (hist.getXHist()[yMaxIdx] + hist.getXHist()[yMaxIdx + 1])/2.;</span>
+
+<span class="nc" id="L1558">        return rMode;</span>
+    }
+
+    /**
+     * apply a 2 level threshold hysteresis filter to the image and use an
+     * association radius of 2 and value &gt; t1 from any pixel within a
+     * radius of 2 of a pixel with value &gt; t2.
+     *
+     * @param img the phase congruence image
+     * @param t1 low threshold
+     * @param t2 high threshold
+     * @param restore
+     * @return
+     */
+    int[][] applyHysThresh(double[][] img, double[][] pa, double t1, double t2,
+        boolean restore) {
+
+        // note that the kovesi code uses the octave bwselect and bwfill,
+        // which results in points &gt; t2 which is thresholding just for
+        // the high value.
+        // here instead will use an adaptive 2-layer threshold for values &gt; t1.
+
+<span class="fc" id="L1580">        int w = img.length;</span>
+<span class="fc" id="L1581">        int h = img[0].length;</span>
+<span class="fc" id="L1582">        int n = w * h;</span>
+
+<span class="pc bpc" id="L1584" title="2 of 4 branches missed.">        if (w &lt; 3 || h &lt; 3) {</span>
+<span class="nc" id="L1585">            throw new IllegalArgumentException(&quot;images should be &gt;= 3x3 in size&quot;);</span>
+        }
+
+<span class="fc" id="L1588">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+
+<span class="fc" id="L1590">        double[][] threshImg = null;</span>
+<span class="pc bpc" id="L1591" title="1 of 2 branches missed.">        if (useAdaptiveThreshold) {</span>
+<span class="fc" id="L1592">            AdaptiveThresholding th = new AdaptiveThresholding();</span>
+<span class="fc" id="L1593">            threshImg = th.createAdaptiveThresholdImage(img, 15, 0.2);</span>
+<span class="fc bfc" id="L1594" title="All 2 branches covered.">            if (doPlot) {//DEBUG</span>
+<span class="fc" id="L1595">                double[][] imgCp = imageProcessor.copy(img);</span>
+<span class="fc" id="L1596">                double[][] imgCp2 = imageProcessor.copy(threshImg);</span>
+<span class="fc bfc" id="L1597" title="All 2 branches covered.">                for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc bfc" id="L1598" title="All 2 branches covered.">                    for (int j = 0; j &lt; h; ++j) {</span>
+<span class="fc" id="L1599">                        double t = threshImg[i][j];</span>
+<span class="fc bfc" id="L1600" title="All 4 branches covered.">                        if (imgCp[i][j] &gt; t &amp;&amp; imgCp[i][j] &gt; t1) {</span>
+<span class="fc" id="L1601">                            imgCp[i][j] = 255.;</span>
+                        } else {
+<span class="fc" id="L1603">                            imgCp[i][j] = 0;</span>
+                        }
+<span class="fc" id="L1605">                        imgCp2[i][j] *= 255.;</span>
+                    }
+                }
+<span class="fc" id="L1608">                MiscDebug.writeImage(imgCp, &quot;img_a_thresholded_.png&quot;);</span>
+<span class="fc" id="L1609">                MiscDebug.writeImage(imgCp2, &quot;img_a_adaptive_threshold_.png&quot;);</span>
+            }
+        }
+
+<span class="fc" id="L1613">        int[] dxs = Misc.dx8;</span>
+<span class="fc" id="L1614">        int[] dys = Misc.dy8;</span>
+
+<span class="fc" id="L1616">        double tHigh = t2;</span>
+<span class="fc" id="L1617">        double tLow = t1;</span>
+
+<span class="pc bpc" id="L1619" title="1 of 2 branches missed.">        System.out.println(&quot;tHigh=&quot; + tHigh +</span>
+            &quot; replace with adaptive threshold image = &quot; + (threshImg != null));
+
+<span class="fc" id="L1622">        int[][] img2 = new int[w][];</span>
+<span class="fc bfc" id="L1623" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc" id="L1624">            img2[i] = new int[h];</span>
+        }
+
+        // store pixels w/ v &gt; tHigh
+        // and store any of it's neighbors w/ v &gt; tLow
+
+<span class="fc bfc" id="L1630" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
+<span class="fc bfc" id="L1631" title="All 2 branches covered.">            for (int y = 0; y &lt; h; ++y) {</span>
+
+<span class="fc" id="L1633">                double v = img[x][y];</span>
+
+                double tHigh0, tLow0;
+<span class="pc bpc" id="L1636" title="1 of 2 branches missed.">                if (threshImg != null) {</span>
+<span class="fc" id="L1637">                    tHigh0 = threshImg[x][y];</span>
+<span class="fc" id="L1638">                    tLow0 = tHigh0/2;</span>
+                } else {
+<span class="nc" id="L1640">                    tHigh0 = tHigh;</span>
+<span class="nc" id="L1641">                    tLow0 = tLow;</span>
+                }
+
+<span class="fc bfc" id="L1644" title="All 4 branches covered.">                if (v &lt; tHigh0 || v &lt; tLow) {</span>
+<span class="fc" id="L1645">                    continue;</span>
+                }
+
+<span class="fc" id="L1648">                img2[x][y] = 255;</span>
+
+                // store any adjacent w/ v &gt; tLow
+<span class="fc bfc" id="L1651" title="All 2 branches covered.">                for (int k = 0; k &lt; dxs.length; ++k) {</span>
+<span class="fc" id="L1652">                    int x2 = x + dxs[k];</span>
+<span class="fc" id="L1653">                    int y2 = y + dys[k];</span>
+<span class="pc bpc" id="L1654" title="4 of 8 branches missed.">                    if ((x2 &lt; 0) || (y2 &lt; 0) || (x2 &gt; (w - 1)) || (y2 &gt; (h - 1))) {</span>
+<span class="nc" id="L1655">                        continue;</span>
+                    }
+<span class="fc" id="L1657">                    double v2 = img[x2][y2];</span>
+<span class="fc bfc" id="L1658" title="All 2 branches covered.">                    if (v2 &gt; tLow0) {</span>
+<span class="fc" id="L1659">                        img2[x2][y2] = 255;</span>
+                    }
+                }
+            }
+        }
+
+<span class="fc" id="L1665">        return img2;</span>
+    }
+
+    private void DEBUG(Complex[][] tmp, String label) {
+
+        try {
+<span class="nc" id="L1671">            algorithms.util.PolygonAndPointPlotter plotter</span>
+                = new algorithms.util.PolygonAndPointPlotter();
+
+<span class="nc" id="L1674">            int nc = tmp[0].length;</span>
+<span class="nc" id="L1675">            int nr = tmp.length;</span>
+
+<span class="nc" id="L1677">            float[] x = new float[nc];</span>
+<span class="nc bnc" id="L1678" title="All 2 branches missed.">            for (int ii = 0; ii &lt; nc; ++ii) {</span>
+<span class="nc" id="L1679">                x[ii] = ii;</span>
+            }
+<span class="nc" id="L1681">            float[] y = new float[nc];</span>
+<span class="nc" id="L1682">            float[] xPolygon = null;</span>
+<span class="nc" id="L1683">            float[] yPolygon = null;</span>
+
+            // plot rows 0.25*nRows, 0.5*nRows, and 0.75*nRows
+<span class="nc bnc" id="L1686" title="All 2 branches missed.">            for (int nf = 1; nf &lt; 4; nf++) {</span>
+<span class="nc" id="L1687">                int rowNumber = (int) (((float) nf) * 0.25f * nr);</span>
+<span class="nc bnc" id="L1688" title="All 2 branches missed.">                for (int ii = 0; ii &lt; nc; ++ii) {</span>
+<span class="nc" id="L1689">                    y[ii] = (float) tmp[rowNumber][ii].re();</span>
+                }
+<span class="nc" id="L1691">                float minY = MiscMath.findMin(y);</span>
+<span class="nc" id="L1692">                float maxY = MiscMath.findMax(y);</span>
+<span class="nc" id="L1693">                plotter.addPlot(-1, nc + 1, minY, maxY, x, y, xPolygon,</span>
+                    yPolygon, label + &quot; row=&quot; + rowNumber + &quot; REAL&quot;);
+            }
+
+            // do same for complex
+<span class="nc bnc" id="L1698" title="All 2 branches missed.">            for (int nf = 1; nf &lt; 4; nf++) {</span>
+<span class="nc" id="L1699">                int rowNumber = (int) (((float) nf) * 0.25f * nr);</span>
+<span class="nc bnc" id="L1700" title="All 2 branches missed.">                for (int ii = 0; ii &lt; nc; ++ii) {</span>
+<span class="nc" id="L1701">                    y[ii] = (float) tmp[rowNumber][ii].im();</span>
+                }
+<span class="nc" id="L1703">                float minY = MiscMath.findMin(y);</span>
+<span class="nc" id="L1704">                float maxY = MiscMath.findMax(y);</span>
+<span class="nc" id="L1705">                plotter.addPlot(-1, nc + 1, minY, maxY, x, y, xPolygon,</span>
+                    yPolygon, label + &quot; row=&quot; + rowNumber + &quot; IMAGINARY&quot;);
+            }
+
+<span class="nc" id="L1709">            plotter.writeFile();</span>
+<span class="nc" id="L1710">        } catch (Exception e) {</span>
+<span class="nc" id="L1711">        }</span>
+<span class="nc" id="L1712">        int z = 1;</span>
+<span class="nc" id="L1713">    }</span>
+
+    private void DEBUG(double[][] tmp, String label, long fileNumber) {
+
+        try {
+<span class="nc" id="L1718">            algorithms.util.PolygonAndPointPlotter plotter</span>
+                = new algorithms.util.PolygonAndPointPlotter();
+
+<span class="nc" id="L1721">            int nc = tmp[0].length;</span>
+<span class="nc" id="L1722">            int nr = tmp.length;</span>
+
+<span class="nc" id="L1724">            float[] x = new float[nc];</span>
+<span class="nc bnc" id="L1725" title="All 2 branches missed.">            for (int ii = 0; ii &lt; nc; ++ii) {</span>
+<span class="nc" id="L1726">                x[ii] = ii;</span>
+            }
+<span class="nc" id="L1728">            float[] y = new float[nc];</span>
+<span class="nc" id="L1729">            float[] xPolygon = null;</span>
+<span class="nc" id="L1730">            float[] yPolygon = null;</span>
+
+<span class="nc" id="L1732">            float minY = (float)MiscMath.findMin(tmp);</span>
+<span class="nc" id="L1733">            float maxY = (float)MiscMath.findMax(tmp);</span>
+
+            // plot rows 0.25*nRows, 0.5*nRows, and 0.75*nRows
+<span class="nc bnc" id="L1736" title="All 2 branches missed.">            for (int nf = 1; nf &lt; 4; nf++) {</span>
+<span class="nc" id="L1737">                int rowNumber = (int) (((float) nf) * 0.25f * nr);</span>
+<span class="nc bnc" id="L1738" title="All 2 branches missed.">                for (int ii = 0; ii &lt; nc; ++ii) {</span>
+<span class="nc" id="L1739">                    y[ii] = (float) tmp[rowNumber][ii];</span>
+                }
+<span class="nc" id="L1741">                plotter.addPlot(-1, nc + 1, minY, maxY, x, y, xPolygon,</span>
+                    yPolygon, label + &quot; row=&quot; + rowNumber);
+            }
+<span class="nc" id="L1744">            plotter.writeFile(fileNumber);</span>
+<span class="nc" id="L1745">            MiscDebug.writeImage(tmp, label.replaceAll(&quot;\\s&quot;, &quot;&quot;) + &quot;.png&quot;);</span>
+<span class="nc" id="L1746">        } catch (Exception e) {</span>
+<span class="nc" id="L1747">        }</span>
+<span class="nc" id="L1748">        int z = 1;</span>
+<span class="nc" id="L1749">    }</span>
+
+    /**
+     * for single purpose use to examine the monogenic transform
+     * in domain space before inverse transform to frequency space.
+     * @param img
+     * @param minWavelength
+     * @param mult
+     * @param sigmaOnf
+     * @return
+     */
+    public static double[][] logGaborFreqDomainFilter(GreyscaleImage img,
+        final int minWavelength, final float mult, final float sigmaOnf,
+        int s) {
+
+<span class="nc" id="L1764">        int noiseMethod = -1;</span>
+
+<span class="nc" id="L1766">        int nCols = img.getWidth();</span>
+<span class="nc" id="L1767">        int nRows = img.getHeight();</span>
+
+<span class="nc" id="L1769">        FilterGrid fg = new FilterGrid();</span>
+<span class="nc" id="L1770">        FilterGrid.FilterGridProducts fgProducts = fg.filtergrid(nRows, nCols);</span>
+<span class="nc" id="L1771">        fgProducts.getRadius()[0][0] = 1;</span>
+<span class="nc" id="L1772">        double[][] radius = fgProducts.getRadius();</span>
+
+<span class="nc" id="L1774">        LowPassFilter lpFilter = new LowPassFilter();</span>
+<span class="nc" id="L1775">        double[][] lp = lpFilter.lowpassfilter(nRows, nCols, 0.45f, 15);</span>
+
+        // keeping taus in case need to increase noise estimate
+<span class="nc" id="L1778">        double logGaborDenom = 2. * Math.pow(Math.log(sigmaOnf), 2);</span>
+
+        // Centre frequency of filter.
+<span class="nc" id="L1781">        double wavelength = minWavelength * Math.pow(mult, s);</span>
+
+<span class="nc" id="L1783">        double fo = 1.0/wavelength;</span>
+
+        // use notation a[row][col]
+<span class="nc" id="L1786">        double[][] logGabor = new double[nRows][];</span>
+<span class="nc bnc" id="L1787" title="All 2 branches missed.">        for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="nc" id="L1788">            logGabor[row] = new double[nCols];</span>
+<span class="nc bnc" id="L1789" title="All 2 branches missed.">            for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="nc" id="L1790">                double v = Math.log(radius[row][col]/fo);</span>
+<span class="nc" id="L1791">                v *= v;</span>
+<span class="nc" id="L1792">                v = Math.exp(-v/logGaborDenom);</span>
+                //logGabor = logGabor.*lp;
+<span class="nc" id="L1794">                logGabor[row][col] = lp[row][col] * v;</span>
+            }
+        }
+<span class="nc" id="L1797">        logGabor[0][0] = 0;</span>
+
+<span class="nc" id="L1799">        return logGabor;</span>
+    }
+
+    /**
+     * for single purpose use to examine creating a filter that can be
+     * applied to other images in frequency domain space before
+     * transforming back to spatial domain.
+     * @param img
+     * @return row major result
+     */
+    public static Complex[][] createLowPassFreqDomainFilter(GreyscaleImage img) {
+
+<span class="fc" id="L1811">        int nCols = img.getWidth();</span>
+<span class="fc" id="L1812">        int nRows = img.getHeight();</span>
+
+<span class="fc" id="L1814">        FilterGrid fg = new FilterGrid();</span>
+<span class="fc" id="L1815">        FilterGrid.FilterGridProducts fgProducts = fg.filtergrid(nRows, nCols);</span>
+<span class="fc" id="L1816">        fgProducts.getRadius()[0][0] = 1;</span>
+<span class="fc" id="L1817">        double[][] radius = fgProducts.getRadius();</span>
+
+<span class="fc" id="L1819">        LowPassFilter lpFilter = new LowPassFilter();</span>
+<span class="fc" id="L1820">        double[][] lp = lpFilter.lowpassfilter(nRows, nCols, 0.45f, 15);</span>
+
+
+        //Periodic Fourier transform of image, using default normalization
+        // perfft2 results use notation a[row][col]
+<span class="fc" id="L1825">        PeriodicFFT perfft2 = new PeriodicFFT();</span>
+        //IM = perfft2(im);                   %
+        //S, P, s, p where S = FFT of smooth, P = FFT of periodic, s=spatial smooth, p = spatial p
+<span class="fc" id="L1828">        Complex[][][] perfResults = perfft2.perfft2(img, false);</span>
+<span class="fc" id="L1829">        Complex[][] capIm = perfResults[1];</span>
+
+<span class="fc" id="L1831">        ComplexModifiable sumAbs = new ComplexModifiable(0, 0);</span>
+<span class="fc bfc" id="L1832" title="All 2 branches covered.">        for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc bfc" id="L1833" title="All 2 branches covered.">            for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L1834">                capIm[row][col] = capIm[row][col].times(lp[row][col]);</span>
+<span class="fc" id="L1835">                sumAbs.plus(capIm[row][col]);</span>
+            }
+        }
+
+        //normalize this to sum of zero and unit standard deviation
+<span class="fc" id="L1840">        sumAbs.times(1./((double)nCols * nRows));</span>
+<span class="fc" id="L1841">        Complex mean = new Complex(sumAbs.re(), sumAbs.im());</span>
+<span class="fc" id="L1842">        Complex factor = new Complex(sumAbs.re(), sumAbs.im());</span>
+<span class="fc" id="L1843">        factor = factor.times(1./Math.sqrt(2));</span>
+
+<span class="pc bpc" id="L1845" title="1 of 2 branches missed.">        if (sumAbs.abs() != 0) {</span>
+<span class="fc bfc" id="L1846" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc bfc" id="L1847" title="All 2 branches covered.">                for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L1848">                    Complex v = capIm[row][col].minus(mean);</span>
+<span class="fc" id="L1849">                    capIm[row][col] = v.times(factor);</span>
+                }
+            }
+        }
+
+<span class="fc" id="L1854">        return capIm;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

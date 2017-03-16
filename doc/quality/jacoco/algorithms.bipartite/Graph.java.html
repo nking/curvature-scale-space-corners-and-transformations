@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Graph.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.bipartite</a> &gt; <span class="el_source">Graph.java</span></div><h1>Graph.java</h1><pre class="source lang-java linenums">package algorithms.bipartite;
+
+import algorithms.util.PairInt;
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
+
+/**
+ * class to hold a bipartite weighted graph.  Note that
+ * source and sink nodes are created and edges from 
+ * the source to left vertexes are created and assigned
+ * a cost of zero
+ * and edges from the right vertexes to the sink node
+ * are created and assigned a cost of zero.
+ * @author nichole
+ */
+public class Graph {
+    
+    /**
+     * left (==X) vertices in graph
+     */
+    private final int nLeft;
+
+    /**
+     * right (==Y) vertices in graph
+     */
+    private final int nRight;
+
+    /**
+     * &lt;pre&gt;
+     * |-
+     * &lt;/pre&gt;
+     */
+    private final int sourceNode;
+    
+    /**
+     * &lt;pre&gt;
+     * -|
+     * &lt;/pre&gt;
+     */
+    private int sinkNode;
+    
+    /**
+     * map of edge weights with key = pairint of left index and right index and
+     * value being the edge weight.
+     */
+<span class="fc" id="L46">    private TObjectIntHashMap&lt;PairInt&gt; edgeWeights</span>
+        = new TObjectIntHashMap&lt;PairInt&gt;();
+
+<span class="fc" id="L49">    private TObjectIntHashMap&lt;PairInt&gt; sourceEdgeWeights = null;</span>
+<span class="fc" id="L50">    private TObjectIntHashMap&lt;PairInt&gt; sinkEdgeWeights = null;</span>
+
+    public Graph(int nLeftVertices, int nRightVertices,
+        TObjectIntMap&lt;PairInt&gt; theEdgeWeights, 
+<span class="fc" id="L54">        boolean createSourceAndSinkEdges) {</span>
+        
+<span class="fc" id="L56">        this.nLeft = nLeftVertices;</span>
+<span class="fc" id="L57">        this.nRight = nRightVertices;</span>
+        
+<span class="fc" id="L59">        edgeWeights.putAll(theEdgeWeights);</span>
+        
+        /*
+        For each vertex x in X, there is a left-dummy arc |- -&gt; x, 
+           directed from the source node |- to the node x. 
+           The per-unit cost of a left-dummy arc is zero: 
+           c(|-, x) := 0. 
+        For each vertex y in Y , there is a right-dummy arc y -&gt; -|, 
+           directed from the node 
+           y to the sink node -| and of cost zero: 
+           c(y, -|) := 0.            
+        */
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        if (createSourceAndSinkEdges) {</span>
+<span class="fc" id="L72">            this.sourceNode = nLeft;</span>
+<span class="fc" id="L73">            this.sinkNode = nRight;</span>
+<span class="fc" id="L74">            sourceEdgeWeights = new TObjectIntHashMap&lt;PairInt&gt;();</span>
+<span class="fc" id="L75">            sinkEdgeWeights = new TObjectIntHashMap&lt;PairInt&gt;();</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">            for (int i = 0; i &lt; nLeft; ++i) {</span>
+<span class="fc" id="L77">                PairInt p = new PairInt(sourceNode, i);</span>
+<span class="fc" id="L78">                sourceEdgeWeights.put(p, 0);</span>
+            }
+<span class="fc bfc" id="L80" title="All 2 branches covered.">            for (int i = 0; i &lt; nLeft; ++i) {</span>
+<span class="fc" id="L81">                PairInt p = new PairInt(i, sinkNode);</span>
+<span class="fc" id="L82">                 sinkEdgeWeights.put(p, 0);</span>
+            }
+        } else {
+<span class="fc" id="L85">            this.sourceNode = -1;</span>
+<span class="fc" id="L86">            this.sinkNode = -1;</span>
+        }
+<span class="fc" id="L88">    }</span>
+    
+    /**
+     * @return the number of left vertices
+     */
+    public int getNLeft() {
+<span class="fc" id="L94">        return nLeft;</span>
+    }
+
+    /**
+     * @return the number of right vertices
+     */
+    public int getNRight() {
+<span class="fc" id="L101">        return nRight;</span>
+    }
+
+    /**
+     * @return the edgeWeights
+     */
+    public TObjectIntHashMap&lt;PairInt&gt; getEdgeWeights() {
+<span class="fc" id="L108">        return edgeWeights;</span>
+    }
+
+    /**
+     * @return the sourceEdgeWeights
+     */
+    public TObjectIntHashMap&lt;PairInt&gt; getSourceEdgeWeights() {
+<span class="nc" id="L115">        return sourceEdgeWeights;</span>
+    }
+
+    /**
+     * @return the sinkEdgeWeights
+     */
+    public TObjectIntHashMap&lt;PairInt&gt; getSinkEdgeWeights() {
+<span class="nc" id="L122">        return sinkEdgeWeights;</span>
+    }
+
+    /**
+     * @return the sourceNode
+     */
+    public int getSourceNode() {
+<span class="fc" id="L129">        return sourceNode;</span>
+    }
+
+    /**
+     * @return the sinkNode
+     */
+    public int getSinkNode() {
+<span class="nc" id="L136">        return sinkNode;</span>
+    }
+    
+    Graph copyToCreateSourceSink() {
+    
+<span class="nc bnc" id="L141" title="All 2 branches missed.">        if (sourceNode == -1) {</span>
+<span class="nc" id="L142">            Graph g = new Graph(nLeft, nRight, edgeWeights,</span>
+                true);
+<span class="nc" id="L144">            return g;</span>
+        }
+    
+<span class="nc" id="L147">        throw new IllegalStateException(&quot;currently, the &quot;</span>
+            + &quot;method is for use on graphs that were&quot;
+            + &quot; constructed without source and sink nodes&quot;);
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

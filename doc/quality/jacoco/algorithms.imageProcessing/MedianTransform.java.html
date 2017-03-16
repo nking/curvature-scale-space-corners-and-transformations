@@ -1,14 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>MedianTransform.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">MedianTransform.java</span></div><h1>MedianTransform.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
 import algorithms.misc.MedianSmooth;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
  *
  * @author nichole
  */
-<span class="pc bpc" id="L11" title="1 of 2 branches missed.">public class MedianTransform {</span>
+<span class="pc bpc" id="L10" title="1 of 2 branches missed.">public class MedianTransform {</span>
 
     /**
      * A computationally expensive multiscale median transform.
@@ -24,51 +23,51 @@ import java.util.List;
     public void multiscaleMedianTransform(GreyscaleImage input,
         List&lt;GreyscaleImage&gt; outputTransformed, List&lt;GreyscaleImage&gt; outputCoeff) {
 
-<span class="fc" id="L27">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
+<span class="fc" id="L26">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
 
-<span class="fc" id="L29">        GreyscaleImage img0 = input.copyImage();</span>
+<span class="fc" id="L28">        GreyscaleImage img0 = input.copyImage();</span>
 
-<span class="fc" id="L31">        int nr = (int)(Math.log(imgDimen)/Math.log(2));</span>
-<span class="fc" id="L32">        int s = 1;</span>
+<span class="fc" id="L30">        int nr = (int)(Math.log(imgDimen)/Math.log(2));</span>
+<span class="fc" id="L31">        int s = 1;</span>
 
-<span class="fc" id="L34">        MedianSmooth med = new MedianSmooth();</span>
+<span class="fc" id="L33">        MedianSmooth med = new MedianSmooth();</span>
         
-<span class="fc" id="L36">        outputTransformed.add(img0.copyToSignedImage());</span>
+<span class="fc" id="L35">        outputTransformed.add(img0.copyToSignedImage());</span>
         
-<span class="fc" id="L38">        outputCoeff.add(img0.createSignedWithDimensions());</span>
+<span class="fc" id="L37">        outputCoeff.add(img0.createSignedWithDimensions());</span>
 
-<span class="fc bfc" id="L40" title="All 2 branches covered.">        for (int j = 0; j &lt; (nr - 1); ++j) {</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        for (int j = 0; j &lt; (nr - 1); ++j) {</span>
 
-<span class="fc" id="L42">            int winL = 2*s + 1;</span>
+<span class="fc" id="L41">            int winL = 2*s + 1;</span>
 
-<span class="pc bpc" id="L44" title="1 of 2 branches missed.">            if ((outputTransformed.get(j).getWidth() &lt; winL) ||</span>
-<span class="pc bpc" id="L45" title="1 of 2 branches missed.">                (outputTransformed.get(j).getHeight() &lt; winL)) {</span>
-<span class="nc" id="L46">                break;</span>
+<span class="pc bpc" id="L43" title="1 of 2 branches missed.">            if ((outputTransformed.get(j).getWidth() &lt; winL) ||</span>
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">                (outputTransformed.get(j).getHeight() &lt; winL)) {</span>
+<span class="nc" id="L45">                break;</span>
             }
 
-<span class="fc" id="L49">            GreyscaleImage m = med.calculate(outputTransformed.get(j), winL, winL);</span>
+<span class="fc" id="L48">            GreyscaleImage m = med.calculate(outputTransformed.get(j), winL, winL);</span>
 
-<span class="fc" id="L51">            outputTransformed.add(m);</span>
+<span class="fc" id="L50">            outputTransformed.add(m);</span>
             
-<span class="fc" id="L53">            outputCoeff.add(outputTransformed.get(j).subtract(outputTransformed.get(j + 1)));</span>
+<span class="fc" id="L52">            outputCoeff.add(outputTransformed.get(j).subtract(outputTransformed.get(j + 1)));</span>
 
-<span class="fc" id="L55">            s = 2*s;</span>
+<span class="fc" id="L54">            s = 2*s;</span>
         }
         
-<span class="fc" id="L58">    }</span>
+<span class="fc" id="L57">    }</span>
 
     public GreyscaleImage reconstructMultiscaleMedianTransform(GreyscaleImage
         c0, List&lt;GreyscaleImage&gt; mmCoeff) {
 
-<span class="fc" id="L63">        int nr = mmCoeff.size();</span>
+<span class="fc" id="L62">        int nr = mmCoeff.size();</span>
 
-<span class="fc" id="L65">        GreyscaleImage output = c0.copyToSignedImage();</span>
+<span class="fc" id="L64">        GreyscaleImage output = c0.copyToSignedImage();</span>
 
-<span class="fc bfc" id="L67" title="All 2 branches covered.">        for (int j = 0; j &lt; nr; ++j) {</span>
-<span class="fc" id="L68">            output = output.add(mmCoeff.get(j));</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        for (int j = 0; j &lt; nr; ++j) {</span>
+<span class="fc" id="L67">            output = output.add(mmCoeff.get(j));</span>
         }
 
-<span class="fc" id="L71">        return output;</span>
+<span class="fc" id="L70">        return output;</span>
     }
 
     /**
@@ -76,64 +75,290 @@ import java.util.List;
      * but reconstruction from coefficients is not exact, so prefer
      * multiscalePyramidalMedianTransform(...) if exact is needed);
      * following pseudocode in http://www.multiresolution.com/svbook.pdf
-     * 
+     * &quot;Handbook of Astronomical Data Analysis&quot; by
+     * Jean-Luc Starck and Fionn Murtagh
      * @param input
      * @param outputTransformed
      * @param outputCoeff 
      */
-    public void multiscalePyramidalMedianTransform2(GreyscaleImage input,
+    public void multiscalePyramidalMedianTransform2(
+        GreyscaleImage input,
         List&lt;GreyscaleImage&gt; outputTransformed, List&lt;GreyscaleImage&gt; outputCoeff) {
 
-<span class="fc" id="L87">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
+<span class="fc" id="L88">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
 
-<span class="fc" id="L89">        GreyscaleImage img0 = input.copyImage();</span>
+<span class="fc" id="L90">        GreyscaleImage img0 = input.copyImage();</span>
 
-<span class="fc" id="L91">        int nr = (int)(Math.log(imgDimen)/Math.log(2));</span>
-<span class="fc" id="L92">        int s = 1;</span>
-<span class="fc" id="L93">        int winL = 2*s + 1;</span>
+<span class="fc" id="L92">        int nr = (int)(Math.log(imgDimen)/Math.log(2));</span>
+<span class="fc" id="L93">        int s = 1;</span>
+<span class="fc" id="L94">        int winL = 2*s + 1;</span>
         
-<span class="fc" id="L95">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="fc" id="L96">        ImageProcessor imageProcessor = new ImageProcessor();</span>
 
-<span class="fc" id="L97">        MedianSmooth med = new MedianSmooth();</span>
+<span class="fc" id="L98">        MedianSmooth med = new MedianSmooth();</span>
         
-<span class="fc" id="L99">        outputTransformed.add(img0.copyToSignedImage());</span>
+<span class="fc" id="L100">        outputTransformed.add(img0.copyToSignedImage());</span>
         
-<span class="fc" id="L101">        outputCoeff.add(img0.createSignedWithDimensions());</span>
+<span class="fc" id="L102">        outputCoeff.add(img0.createSignedWithDimensions());</span>
 
-<span class="fc bfc" id="L103" title="All 2 branches covered.">        for (int j = 0; j &lt; (nr - 1); ++j) {</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        for (int j = 0; j &lt; (nr - 1); ++j) {</span>
                        
-<span class="fc" id="L105">            GreyscaleImage cJ = outputTransformed.get(j);</span>
+<span class="fc" id="L106">            GreyscaleImage cJ = outputTransformed.get(j);</span>
             
-<span class="pc bpc" id="L107" title="2 of 4 branches missed.">            if ((cJ.getWidth() &lt; winL) || (cJ.getHeight() &lt; winL)) {</span>
-<span class="nc" id="L108">                break;</span>
+<span class="pc bpc" id="L108" title="2 of 4 branches missed.">            if ((cJ.getWidth() &lt; winL) || (cJ.getHeight() &lt; winL)) {</span>
+<span class="nc" id="L109">                break;</span>
             }
             
-<span class="fc" id="L111">            GreyscaleImage cJPlus1Ast = med.calculate(cJ, winL, winL);   </span>
+<span class="fc" id="L112">            GreyscaleImage cJPlus1Ast = med.calculate(cJ, winL, winL);   </span>
             
             // decimation:
-<span class="fc" id="L114">            GreyscaleImage cJPlus1 = imageProcessor.binImage(cJPlus1Ast, 2);</span>
+<span class="fc" id="L115">            GreyscaleImage cJPlus1 = imageProcessor.binImage(cJPlus1Ast, 2);</span>
             
-<span class="fc" id="L116">            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1Ast);</span>
+<span class="fc" id="L117">            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1Ast);</span>
             
-<span class="fc" id="L118">            outputTransformed.add(cJPlus1);</span>
+<span class="fc" id="L119">            outputTransformed.add(cJPlus1);</span>
             
-<span class="fc" id="L120">            outputCoeff.add(wJPlus1);</span>
+<span class="fc" id="L121">            outputCoeff.add(wJPlus1);</span>
             
-<span class="pc bpc" id="L122" title="3 of 4 branches missed.">            assert(cJ.getWidth() == wJPlus1.getWidth());</span>
+<span class="pc bpc" id="L123" title="3 of 4 branches missed.">            assert(cJ.getWidth() == wJPlus1.getWidth());</span>
         }
         
         // empty full size image
-<span class="fc" id="L126">        outputCoeff.remove(0);</span>
-<span class="fc" id="L127">    }</span>
+<span class="fc" id="L127">        outputCoeff.remove(0);</span>
+<span class="fc" id="L128">    }</span>
+    
+    /**
+     * pyramidal median transform (faster than multiscalePyramidalMedianTransform
+     * but reconstruction from coefficients is not exact, so prefer
+     * multiscalePyramidalMedianTransform(...) if exact is needed);
+     * following pseudocode in http://www.multiresolution.com/svbook.pdf
+     * &quot;Handbook of Astronomical Data Analysis&quot; by
+     * Jean-Luc Starck and Fionn Murtagh
+     * @param input
+     * @param outputTransformed
+     * @param decimationLimit a size for width and height at which
+     * to stop the decimation when the image is smaller than the
+     * size.  The method does not continue to make decimated
+     * images beyond this size limit. 
+     */
+    public void multiscalePyramidalMedianTransform2(
+        GreyscaleImage input,
+        List&lt;GreyscaleImage&gt; outputTransformed, int decimationLimit) {
+
+<span class="fc" id="L148">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
+
+<span class="fc" id="L150">        GreyscaleImage img0 = input.copyImage();</span>
+
+<span class="fc" id="L152">        int nr = (int)(Math.log(imgDimen)/Math.log(2));</span>
+<span class="fc" id="L153">        int s = 1;</span>
+<span class="fc" id="L154">        int winL = 2*s + 1;</span>
+        
+<span class="fc" id="L156">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+
+<span class="fc" id="L158">        MedianSmooth med = new MedianSmooth();</span>
+        
+<span class="fc" id="L160">        outputTransformed.add(img0.copyToSignedImage());</span>
+        
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">        for (int j = 0; j &lt; (nr - 1); ++j) {</span>
+                       
+<span class="fc" id="L164">            GreyscaleImage cJ = outputTransformed.get(j);</span>
+            
+<span class="pc bpc" id="L166" title="2 of 4 branches missed.">            if ((cJ.getWidth() &lt; winL) || (cJ.getHeight() &lt; winL)) {</span>
+<span class="nc" id="L167">                return;</span>
+            }
+<span class="fc bfc" id="L169" title="All 2 branches covered.">            if ((cJ.getWidth() &lt;= decimationLimit) &amp;&amp; </span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">                (cJ.getHeight() &lt;= decimationLimit)) {</span>
+<span class="fc" id="L171">                return;</span>
+            }
+            
+<span class="fc" id="L174">            GreyscaleImage cJPlus1Ast = med.calculate(cJ, winL, winL);   </span>
+            
+            // decimation:
+<span class="fc" id="L177">            GreyscaleImage cJPlus1 = imageProcessor.binImage(cJPlus1Ast, 2);</span>
+            
+<span class="fc" id="L179">            outputTransformed.add(cJPlus1);</span>
+        }
+<span class="nc" id="L181">    }</span>
+    
+    /**
+     * create a decimated image by using median transform to blur
+     * then bilinear downsampling to reduce the size.
+     * The parameter downSampleFactor is the factor to reduce the
+     * image size by.
+     * following pseudocode in http://www.multiresolution.com/svbook.pdf
+     * &quot;Handbook of Astronomical Data Analysis&quot; by
+     * Jean-Luc Starck and Fionn Murtagh
+     * @param input
+     * @param downSampleFactor the factor to reduce the input image size by
+     * (for example, size 1.5 would reduce the image width to size width/1.5).
+     * @param minValue if result is below this value, value is set to this
+     * @param maxValue if result is above this value, value is set to this
+     * @return 
+     */
+    public GreyscaleImage decimateImage(GreyscaleImage input,
+        float downSampleFactor, int minValue, int maxValue) {
+
+<span class="fc" id="L201">        int w2 = (int)(input.getWidth()/downSampleFactor);</span>
+<span class="fc" id="L202">        int h2 = (int)(input.getHeight()/downSampleFactor);</span>
+        
+<span class="pc bpc" id="L204" title="2 of 4 branches missed.">        if (w2 == 0 || h2 == 0) {</span>
+<span class="nc" id="L205">            throw new IllegalArgumentException(&quot;factor reduces image size to 0&quot;);</span>
+        }
+        
+<span class="fc" id="L208">        int winL = Math.round(2*downSampleFactor + 1);</span>
+        
+<span class="fc" id="L210">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+
+<span class="fc" id="L212">        MedianSmooth med = new MedianSmooth();</span>
+        
+<span class="fc" id="L214">        GreyscaleImage cJ = input.copyImage();</span>
+            
+<span class="fc" id="L216">        GreyscaleImage cJPlus1Ast = med.calculate(cJ, winL, winL);   </span>
+            
+        // decimation:
+<span class="fc" id="L219">        GreyscaleImage cJPlus1 = imageProcessor.bilinearDownSampling(</span>
+            cJPlus1Ast, w2, h2, minValue, maxValue);
+       
+<span class="fc" id="L222">        return cJPlus1;</span>
+    }
+    
+    /**
+     * pyramidal median transform for decimation of input image.
+     * The algorithm follows pseudocode in http://www.multiresolution.com/svbook.pdf
+     * &quot;Handbook of Astronomical Data Analysis&quot; by
+     * Jean-Luc Starck and Fionn Murtagh
+     * This method does not return the coefficients.
+     * @param input
+     * @param outputTransformed
+     */
+    public &lt;T extends Image&gt; void multiscalePyramidalMedianTransform2(
+        T input, List&lt;T&gt; outputTransformed) {
+
+<span class="fc" id="L237">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
+
+<span class="fc" id="L239">        Image img0 = input.copyImage();</span>
+
+<span class="fc" id="L241">        int nr = (int)(Math.log(imgDimen)/Math.log(2));</span>
+<span class="fc" id="L242">        int s = 1;</span>
+<span class="fc" id="L243">        int winL = 2*s + 1;</span>
+        
+<span class="fc" id="L245">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+
+<span class="fc" id="L247">        MedianSmooth med = new MedianSmooth();</span>
+        
+<span class="fc" id="L249">        outputTransformed.add((T) img0.copyImage());</span>
+
+<span class="fc bfc" id="L251" title="All 2 branches covered.">        for (int j = 0; j &lt; (nr - 1); ++j) {</span>
+                       
+<span class="fc" id="L253">            T cJ = outputTransformed.get(j);</span>
+            
+<span class="pc bpc" id="L255" title="2 of 4 branches missed.">            if ((cJ.getWidth() &lt; winL) || (cJ.getHeight() &lt; winL)) {</span>
+<span class="nc" id="L256">                break;</span>
+            }
+            
+            // calc for red, green and blue then combine
+<span class="fc" id="L260">            GreyscaleImage cJRed = cJ.copyRedToGreyscale();</span>
+<span class="fc" id="L261">            GreyscaleImage cJGreen = cJ.copyGreenToGreyscale();</span>
+<span class="fc" id="L262">            GreyscaleImage cJBlue = cJ.copyBlueToGreyscale();</span>
+            
+<span class="fc" id="L264">            GreyscaleImage cJPlus1AstRed = med.calculate(cJRed, winL, winL);   </span>
+<span class="fc" id="L265">            GreyscaleImage cJPlus1AstGreen = med.calculate(cJGreen, winL, winL);  </span>
+<span class="fc" id="L266">            GreyscaleImage cJPlus1AstBlue = med.calculate(cJBlue, winL, winL); </span>
+            
+            // decimation:
+<span class="fc" id="L269">            GreyscaleImage cJPlus1Red = imageProcessor.binImage(cJPlus1AstRed, 2);</span>
+<span class="fc" id="L270">            GreyscaleImage cJPlus1Green = imageProcessor.binImage(cJPlus1AstGreen, 2);</span>
+<span class="fc" id="L271">            GreyscaleImage cJPlus1Blue = imageProcessor.binImage(cJPlus1AstBlue, 2);</span>
+
+<span class="fc" id="L273">            T cJPlus1 = (T) cJ.createWithDimensions(cJPlus1Red.getWidth(), </span>
+<span class="fc" id="L274">                cJPlus1Red.getHeight());</span>
+<span class="fc bfc" id="L275" title="All 2 branches covered.">            for (int ii = 0; ii &lt; cJPlus1.getNPixels(); ++ii) {</span>
+<span class="fc" id="L276">                cJPlus1.setRGB(ii, cJPlus1Red.getValue(ii), </span>
+<span class="fc" id="L277">                    cJPlus1Green.getValue(ii), cJPlus1Blue.getValue(ii));</span>
+            }
+                        
+<span class="fc" id="L280">            outputTransformed.add(cJPlus1);                        </span>
+        }
+<span class="fc" id="L282">    }</span>
+    
+    /**
+     * pyramidal median transform for decimation of input image.
+     * The algorithm follows pseudocode in http://www.multiresolution.com/svbook.pdf
+     * &quot;Handbook of Astronomical Data Analysis&quot; by
+     * Jean-Luc Starck and Fionn Murtagh
+     * This method does not return the coefficients.
+     * @param input
+     * @param outputTransformed
+     * @param dimensionLimit a size for width and height at which
+     * to stop the decimation when the image is smaller than the
+     * size.  The method does not continue to make decimated
+     * images beyond this size limit.
+     */
+    public &lt;T extends Image&gt; void multiscalePyramidalMedianTransform2(
+        T input, List&lt;T&gt; outputTransformed, int dimensionLimit) {
+
+<span class="nc" id="L300">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
+
+<span class="nc" id="L302">        Image img0 = input.copyImage();</span>
+
+<span class="nc" id="L304">        int nr = (int)(Math.log(imgDimen)/Math.log(2));</span>
+<span class="nc" id="L305">        int s = 1;</span>
+<span class="nc" id="L306">        int winL = 2*s + 1;</span>
+        
+<span class="nc" id="L308">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+
+<span class="nc" id="L310">        MedianSmooth med = new MedianSmooth();</span>
+        
+<span class="nc" id="L312">        outputTransformed.add((T) img0.copyImage());</span>
+
+<span class="nc bnc" id="L314" title="All 2 branches missed.">        for (int j = 0; j &lt; (nr - 1); ++j) {</span>
+                       
+<span class="nc" id="L316">            T cJ = outputTransformed.get(j);</span>
+            
+<span class="nc bnc" id="L318" title="All 4 branches missed.">            if ((cJ.getWidth() &lt; winL) || (cJ.getHeight() &lt; winL)) {</span>
+<span class="nc" id="L319">                return;</span>
+            }
+            
+<span class="nc bnc" id="L322" title="All 2 branches missed.">            if ((cJ.getWidth() &lt;= dimensionLimit) &amp;&amp; </span>
+<span class="nc bnc" id="L323" title="All 2 branches missed.">                (cJ.getHeight() &lt;= dimensionLimit)) {</span>
+<span class="nc" id="L324">                return;</span>
+            }
+            
+            // calc for red, green and blue then combine
+<span class="nc" id="L328">            GreyscaleImage cJRed = cJ.copyRedToGreyscale();</span>
+<span class="nc" id="L329">            GreyscaleImage cJGreen = cJ.copyGreenToGreyscale();</span>
+<span class="nc" id="L330">            GreyscaleImage cJBlue = cJ.copyBlueToGreyscale();</span>
+            
+<span class="nc" id="L332">            GreyscaleImage cJPlus1AstRed = med.calculate(cJRed, winL, winL);   </span>
+<span class="nc" id="L333">            GreyscaleImage cJPlus1AstGreen = med.calculate(cJGreen, winL, winL);  </span>
+<span class="nc" id="L334">            GreyscaleImage cJPlus1AstBlue = med.calculate(cJBlue, winL, winL); </span>
+            
+            // decimation:
+<span class="nc" id="L337">            GreyscaleImage cJPlus1Red = imageProcessor.binImage(cJPlus1AstRed, 2);</span>
+<span class="nc" id="L338">            GreyscaleImage cJPlus1Green = imageProcessor.binImage(cJPlus1AstGreen, 2);</span>
+<span class="nc" id="L339">            GreyscaleImage cJPlus1Blue = imageProcessor.binImage(cJPlus1AstBlue, 2);</span>
+
+<span class="nc" id="L341">            T cJPlus1 = (T) cJ.createWithDimensions(cJPlus1Red.getWidth(), </span>
+<span class="nc" id="L342">                cJPlus1Red.getHeight());</span>
+<span class="nc bnc" id="L343" title="All 2 branches missed.">            for (int ii = 0; ii &lt; cJPlus1.getNPixels(); ++ii) {</span>
+<span class="nc" id="L344">                cJPlus1.setRGB(ii, cJPlus1Red.getValue(ii), </span>
+<span class="nc" id="L345">                    cJPlus1Green.getValue(ii), cJPlus1Blue.getValue(ii));</span>
+            }
+                        
+<span class="nc" id="L348">            outputTransformed.add(cJPlus1);                        </span>
+        }
+<span class="nc" id="L350">    }</span>
     
     /**
      * pyramidal median transform for exact reconstruction.
      * following pseudocode in http://www.multiresolution.com/svbook.pdf
+     * &quot;Handbook of Astronomical Data Analysis&quot; by
+     * Jean-Luc Starck and Fionn Murtagh
      * 
      * This method has a runtime complexity of 
      * n_iter * (O(N_pixels * 1.6) + 5*O(N_pixels))
      * where nIter = lg2(imageDimension) - 1 and N_pixels is decreasing
-     * in size by a factor of 4 for each iteration.
+     * in size by a factor of 2 for each iteration.
      * @param input
      * @param outputTransformed
      * @param outputCoeff 
@@ -141,54 +366,115 @@ import java.util.List;
     public void multiscalePyramidalMedianTransform(GreyscaleImage input,
         List&lt;GreyscaleImage&gt; outputTransformed, List&lt;GreyscaleImage&gt; outputCoeff) {
 
-<span class="fc" id="L144">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
+<span class="fc" id="L369">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
 
-<span class="fc" id="L146">        GreyscaleImage img0 = input.copyImage();</span>
+<span class="fc" id="L371">        GreyscaleImage img0 = input.copyImage();</span>
 
-<span class="fc" id="L148">        int nr = (int)(Math.log(imgDimen)/Math.log(2));</span>
-<span class="fc" id="L149">        int s = 1;</span>
-<span class="fc" id="L150">        int winL = 2*s + 1;</span>
+<span class="fc" id="L373">        int nr = (int)(Math.log(imgDimen)/Math.log(2));</span>
+<span class="fc" id="L374">        int s = 1;</span>
+<span class="fc" id="L375">        int winL = 2*s + 1;</span>
         
-<span class="fc" id="L152">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="fc" id="L377">        ImageProcessor imageProcessor = new ImageProcessor();</span>
 
-<span class="fc" id="L154">        MedianSmooth med = new MedianSmooth();</span>
+<span class="fc" id="L379">        MedianSmooth med = new MedianSmooth();</span>
         
-<span class="fc" id="L156">        outputTransformed.add(img0.copyToSignedImage());</span>
+<span class="fc" id="L381">        outputTransformed.add(img0.copyToSignedImage());</span>
         
-<span class="fc" id="L158">        outputCoeff.add(img0.createSignedWithDimensions());</span>
+<span class="fc" id="L383">        outputCoeff.add(img0.createSignedWithDimensions());</span>
 
-<span class="fc bfc" id="L160" title="All 2 branches covered.">        for (int j = 0; j &lt; (nr - 1); ++j) {</span>
+<span class="fc bfc" id="L385" title="All 2 branches covered.">        for (int j = 0; j &lt; (nr - 1); ++j) {</span>
                         
-<span class="fc" id="L162">            GreyscaleImage cJ = outputTransformed.get(j);</span>
+<span class="fc" id="L387">            GreyscaleImage cJ = outputTransformed.get(j);</span>
             
-<span class="pc bpc" id="L164" title="2 of 4 branches missed.">            if ((cJ.getWidth() &lt; winL) || (cJ.getHeight() &lt; winL)) {</span>
-<span class="nc" id="L165">                break;</span>
+<span class="pc bpc" id="L389" title="2 of 4 branches missed.">            if ((cJ.getWidth() &lt; winL) || (cJ.getHeight() &lt; winL)) {</span>
+<span class="nc" id="L390">                break;</span>
             }
             
             // median filter and decimation:
-<span class="fc" id="L169">            GreyscaleImage cJPlus1 = imageProcessor.binImage(</span>
-<span class="fc" id="L170">                med.calculate(cJ, winL, winL), 2);</span>
+<span class="fc" id="L394">            GreyscaleImage cJPlus1 = imageProcessor.binImage(</span>
+<span class="fc" id="L395">                med.calculate(cJ, winL, winL), 2);</span>
             
             //interpolation of cJPlus1 to size cJ
-<span class="fc" id="L173">            GreyscaleImage cJPlus1Ast = imageProcessor.expandBy2UsingBilinearInterp(</span>
-<span class="fc" id="L174">                cJPlus1, cJ.getWidth(), cJ.getHeight());</span>
+<span class="fc" id="L398">            GreyscaleImage cJPlus1Ast = imageProcessor.expandBy2UsingBilinearInterp(</span>
+<span class="fc" id="L399">                cJPlus1, cJ.getWidth(), cJ.getHeight());</span>
             
-<span class="fc" id="L176">            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1Ast);</span>
+<span class="fc" id="L401">            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1Ast);</span>
             
-<span class="fc" id="L178">            outputTransformed.add(cJPlus1);</span>
+<span class="fc" id="L403">            outputTransformed.add(cJPlus1);</span>
             
-<span class="fc" id="L180">            outputCoeff.add(wJPlus1);</span>
+<span class="fc" id="L405">            outputCoeff.add(wJPlus1);</span>
             
-<span class="pc bpc" id="L182" title="3 of 4 branches missed.">            assert(cJ.getWidth() == wJPlus1.getWidth());</span>
+<span class="pc bpc" id="L407" title="3 of 4 branches missed.">            assert(cJ.getWidth() == wJPlus1.getWidth());</span>
         }
         
         // empty full size image
-<span class="fc" id="L186">        outputCoeff.remove(0);</span>
-<span class="fc" id="L187">    }</span>
+<span class="fc" id="L411">        outputCoeff.remove(0);</span>
+<span class="fc" id="L412">    }</span>
+
+    /**
+     * pyramidal median transform for exact reconstruction.
+     * following pseudocode in http://www.multiresolution.com/svbook.pdf
+     * &quot;Handbook of Astronomical Data Analysis&quot; by
+     * Jean-Luc Starck and Fionn Murtagh
+     * 
+     * This method has a runtime complexity of 
+     * n_iter * (O(N_pixels * 1.6) + 5*O(N_pixels))
+     * where nIter = lg2(imageDimension) - 1 and N_pixels is decreasing
+     * in size by a factor of 2 for each iteration.
+     * @param input
+     * @param outputTransformed
+     * @param decimationLimit 
+     */
+    public void multiscalePyramidalMedianTransform(GreyscaleImage input,
+        List&lt;GreyscaleImage&gt; outputTransformed, int decimationLimit) {
+
+<span class="nc" id="L431">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
+
+<span class="nc" id="L433">        GreyscaleImage img0 = input.copyImage();</span>
+
+<span class="nc" id="L435">        int nr = (int)(Math.log(imgDimen)/Math.log(2));</span>
+<span class="nc" id="L436">        int s = 1;</span>
+<span class="nc" id="L437">        int winL = 2*s + 1;</span>
+        
+<span class="nc" id="L439">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+
+<span class="nc" id="L441">        MedianSmooth med = new MedianSmooth();</span>
+        
+<span class="nc" id="L443">        outputTransformed.add(img0.copyToSignedImage());</span>
+        
+<span class="nc bnc" id="L445" title="All 2 branches missed.">        for (int j = 0; j &lt; (nr - 1); ++j) {</span>
+                        
+<span class="nc" id="L447">            GreyscaleImage cJ = outputTransformed.get(j);</span>
+            
+<span class="nc bnc" id="L449" title="All 4 branches missed.">            if ((cJ.getWidth() &lt; winL) || (cJ.getHeight() &lt; winL)) {</span>
+<span class="nc" id="L450">                break;</span>
+            }
+<span class="nc bnc" id="L452" title="All 2 branches missed.">            if ((cJ.getWidth() &lt;= decimationLimit) &amp;&amp; </span>
+<span class="nc bnc" id="L453" title="All 2 branches missed.">                (cJ.getHeight() &lt;= decimationLimit)) {</span>
+<span class="nc" id="L454">                return;</span>
+            }
+            // median filter and decimation:
+<span class="nc" id="L457">            GreyscaleImage cJPlus1 = imageProcessor.binImage(</span>
+<span class="nc" id="L458">                med.calculate(cJ, winL, winL), 2);</span>
+            
+            //interpolation of cJPlus1 to size cJ
+<span class="nc" id="L461">            GreyscaleImage cJPlus1Ast = imageProcessor.expandBy2UsingBilinearInterp(</span>
+<span class="nc" id="L462">                cJPlus1, cJ.getWidth(), cJ.getHeight());</span>
+            
+<span class="nc" id="L464">            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1Ast);</span>
+            
+<span class="nc" id="L466">            outputTransformed.add(cJPlus1);</span>
+                        
+<span class="nc bnc" id="L468" title="All 4 branches missed.">            assert(cJ.getWidth() == wJPlus1.getWidth());</span>
+        }
+        
+<span class="nc" id="L471">    }</span>
 
     /**
      * reconstruct image from products of pyramidal median transform.
      * following pseudocode in http://www.multiresolution.com/svbook.pdf
+     * &quot;Handbook of Astronomical Data Analysis&quot; by
+     * Jean-Luc Starck and Fionn Murtagh
      * 
      * @param c0
      * @param mmCoeff
@@ -197,30 +483,30 @@ import java.util.List;
     public GreyscaleImage reconstructPyramidalMultiscaleMedianTransform(
         GreyscaleImage c0, List&lt;GreyscaleImage&gt; mmCoeff) {
 
-<span class="fc" id="L200">        int nr = mmCoeff.size();</span>
+<span class="fc" id="L486">        int nr = mmCoeff.size();</span>
 
-<span class="fc" id="L202">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="fc" id="L488">        ImageProcessor imageProcessor = new ImageProcessor();</span>
 
-<span class="fc" id="L204">        GreyscaleImage output = c0.copyToSignedImage();</span>
+<span class="fc" id="L490">        GreyscaleImage output = c0.copyToSignedImage();</span>
 
-<span class="fc bfc" id="L206" title="All 2 branches covered.">        for (int j = (nr - 1); j &gt; -1; --j) {</span>
+<span class="fc bfc" id="L492" title="All 2 branches covered.">        for (int j = (nr - 1); j &gt; -1; --j) {</span>
 
-<span class="fc" id="L208">            GreyscaleImage wJ = mmCoeff.get(j);</span>
+<span class="fc" id="L494">            GreyscaleImage wJ = mmCoeff.get(j);</span>
             
             // expand by factor of 2.
-<span class="fc" id="L211">            GreyscaleImage cJPrime = imageProcessor.expandBy2UsingBilinearInterp(</span>
-<span class="fc" id="L212">                output, wJ.getWidth(), wJ.getHeight());</span>
+<span class="fc" id="L497">            GreyscaleImage cJPrime = imageProcessor.expandBy2UsingBilinearInterp(</span>
+<span class="fc" id="L498">                output, wJ.getWidth(), wJ.getHeight());</span>
             
-<span class="fc" id="L214">            output = cJPrime.add(wJ);</span>
+<span class="fc" id="L500">            output = cJPrime.add(wJ);</span>
         }
 
-<span class="fc" id="L217">        return output;</span>
+<span class="fc" id="L503">        return output;</span>
     }
 
     public void multiscaleMedianWaveletTransform(GreyscaleImage input) {
 
         if (true) {
-<span class="nc" id="L223">            throw new UnsupportedOperationException(&quot;not yet implemented&quot;);</span>
+<span class="nc" id="L509">            throw new UnsupportedOperationException(&quot;not yet implemented&quot;);</span>
         }
         
         /*

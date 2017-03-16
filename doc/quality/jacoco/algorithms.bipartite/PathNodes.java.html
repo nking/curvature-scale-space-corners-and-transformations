@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>PathNodes.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.bipartite</a> &gt; <span class="el_source">PathNodes.java</span></div><h1>PathNodes.java</h1><pre class="source lang-java linenums">package algorithms.bipartite;
+
+import algorithms.bipartite.MinCostUnbalancedAssignment.LeftNode;
+import algorithms.bipartite.MinCostUnbalancedAssignment.RightNode;
+import algorithms.bipartite.MinCostUnbalancedAssignment.SinkNode;
+import algorithms.bipartite.MinCostUnbalancedAssignment.SourceNode;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+
+/**
+ *
+ * @author nichole
+ */
+public class PathNodes {
+    
+    private final TIntObjectMap&lt;RightNode&gt; rightNodes;
+    
+    private final TIntObjectMap&lt;LeftNode&gt; leftNodes;
+    
+    private final SourceNode sourceNode;
+        
+    private final SinkNode sinkNode;
+    
+<span class="fc" id="L24">    public PathNodes(int nLeft, int nRight) {</span>
+        
+<span class="fc" id="L26">        rightNodes = new TIntObjectHashMap&lt;RightNode&gt;();</span>
+<span class="fc" id="L27">        leftNodes = new TIntObjectHashMap&lt;LeftNode&gt;();</span>
+<span class="fc" id="L28">        sourceNode = new SourceNode();</span>
+<span class="fc" id="L29">        sinkNode = new SinkNode();</span>
+        
+<span class="fc" id="L31">        init(nLeft, nRight);</span>
+<span class="fc" id="L32">    }</span>
+    
+    private void init(int nLeft, int nRight) {
+     
+<span class="fc bfc" id="L36" title="All 2 branches covered.">        for (int i = 0; i &lt; nLeft; ++i) {</span>
+<span class="fc" id="L37">            LeftNode node = new LeftNode();</span>
+<span class="fc" id="L38">            node.setKey(Long.MAX_VALUE);</span>
+<span class="fc" id="L39">            node.index = i;</span>
+<span class="fc" id="L40">            leftNodes.put(i, node);</span>
+        }
+<span class="fc bfc" id="L42" title="All 2 branches covered.">        for (int i = 0; i &lt; nRight; ++i) {</span>
+<span class="fc" id="L43">            RightNode node = new RightNode();</span>
+<span class="fc" id="L44">            node.setKey(Long.MAX_VALUE);</span>
+<span class="fc" id="L45">            node.index = i;</span>
+<span class="fc" id="L46">            rightNodes.put(i, node);</span>
+        }
+        
+<span class="fc" id="L49">        sourceNode.setKey(Long.MAX_VALUE);</span>
+<span class="fc" id="L50">        sourceNode.index = nLeft;</span>
+        
+<span class="fc" id="L52">        sinkNode.setKey(Long.MAX_VALUE);</span>
+<span class="fc" id="L53">        sinkNode.index = nRight;       </span>
+<span class="fc" id="L54">    }</span>
+    
+    public void resetNodeExceptData(long key) {
+     
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        for (int i = 0; i &lt; leftNodes.size(); ++i) {</span>
+<span class="fc" id="L59">            LeftNode node = leftNodes.get(i);</span>
+            
+<span class="fc" id="L61">            node.resetExceptData();</span>
+            
+<span class="fc" id="L63">            node.setKey(key);</span>
+        }
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        for (int i = 0; i &lt; rightNodes.size(); ++i) {</span>
+<span class="fc" id="L66">            RightNode node = rightNodes.get(i);</span>
+<span class="fc" id="L67">            node.resetExceptData();</span>
+<span class="fc" id="L68">            node.setKey(key);</span>
+        }
+        
+<span class="fc" id="L71">        sourceNode.setKey(key);</span>
+        
+<span class="fc" id="L73">        sinkNode.setKey(key);</span>
+<span class="fc" id="L74">    }</span>
+
+    /**
+     * @return the rightNodes
+     */
+    public TIntObjectMap&lt;RightNode&gt; getRightNodes() {
+<span class="fc" id="L80">        return rightNodes;</span>
+    }
+
+    /**
+     * @return the leftNodes
+     */
+    public TIntObjectMap&lt;LeftNode&gt; getLeftNodes() {
+<span class="fc" id="L87">        return leftNodes;</span>
+    }
+
+    /**
+     * @return the sourceNode
+     */
+    public SourceNode getSourceNode() {
+<span class="fc" id="L94">        return sourceNode;</span>
+    }
+
+    /**
+     * @return the sinkNode
+     */
+    public SinkNode getSinkNode() {
+<span class="fc" id="L101">        return sinkNode;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

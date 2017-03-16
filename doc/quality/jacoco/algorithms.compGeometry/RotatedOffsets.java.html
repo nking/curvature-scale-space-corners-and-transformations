@@ -72,7 +72,7 @@ public class RotatedOffsets {
 <span class="fc" id="L72">    }</span>
 
     public static synchronized RotatedOffsets getInstance() {
-<span class="fc bfc" id="L75" title="All 2 branches covered.">        if (instance == null) {</span>
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">        if (instance == null) {</span>
 <span class="fc" id="L76">            instance = new RotatedOffsets();</span>
         }
 <span class="fc" id="L78">        return instance;</span>
@@ -116,7 +116,7 @@ public class RotatedOffsets {
     private void populateIfMissingX(int rotationInDegrees) {
 
 <span class="pc bpc" id="L118" title="1 of 2 branches missed.">        if (is64Bit) {</span>
-<span class="fc bfc" id="L119" title="All 2 branches covered.">            if (offsets360XL[rotationInDegrees] == null) {</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">            if (offsets360XL[rotationInDegrees] == null) {</span>
 <span class="fc" id="L120">                populateXOffsetsLong(rotationInDegrees);</span>
             }
         } else {
@@ -130,7 +130,7 @@ public class RotatedOffsets {
     private void populateIfMissingY(int rotationInDegrees) {
 
 <span class="pc bpc" id="L132" title="1 of 2 branches missed.">        if (is64Bit) {</span>
-<span class="fc bfc" id="L133" title="All 2 branches covered.">            if (offsets360YL[rotationInDegrees] == null) {</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">            if (offsets360YL[rotationInDegrees] == null) {</span>
 <span class="fc" id="L134">                populateYOffsetsLong(rotationInDegrees);</span>
             }
         } else {

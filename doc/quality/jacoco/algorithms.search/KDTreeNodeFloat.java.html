@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>KDTreeNodeFloat.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.search</a> &gt; <span class="el_source">KDTreeNodeFloat.java</span></div><h1>KDTreeNodeFloat.java</h1><pre class="source lang-java linenums">package algorithms.search;
+
+<span class="fc" id="L3">public class KDTreeNodeFloat {</span>
+
+<span class="fc" id="L5">	KDTreeNodeFloat right = null;</span>
+<span class="fc" id="L6">	KDTreeNodeFloat left = null;</span>
+<span class="fc" id="L7">	KDTreeNodeFloat parent = null;</span>
+	
+<span class="fc" id="L9">	float x = -1;</span>
+<span class="fc" id="L10">	float y = -1;</span>
+<span class="fc" id="L11">	float key = -1; // median value</span>
+<span class="fc" id="L12">	int nChildren = 0;</span>
+<span class="fc" id="L13">    int depth = 0;</span>
+    
+    /**
+     * @return the x
+     */
+    public float getX() {
+<span class="fc" id="L19">        return x;</span>
+    }
+    
+    /**
+     * @param theX
+     */
+    public void setX(float theX) {
+<span class="nc" id="L26">        x = theX;</span>
+<span class="nc" id="L27">    }</span>
+
+    /**
+     * @return the y
+     */
+    public float getY() {
+<span class="fc" id="L33">        return y;</span>
+    }
+    
+    /**
+     * @param theY
+     */
+    public void setY(float theY) {
+<span class="nc" id="L40">        y = theY;</span>
+<span class="nc" id="L41">    }</span>
+
+    /**
+     * @return the key
+     */
+    public float getKey() {
+<span class="fc" id="L47">        return key;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

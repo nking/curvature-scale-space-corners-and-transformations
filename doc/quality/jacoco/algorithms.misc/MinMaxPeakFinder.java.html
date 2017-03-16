@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>MinMaxPeakFinder.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.misc</a> &gt; <span class="el_source">MinMaxPeakFinder.java</span></div><h1>MinMaxPeakFinder.java</h1><pre class="source lang-java linenums">package algorithms.misc;
+
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
+import java.util.Arrays;
+
+/**
+ * find peaks in sequential data by finding the minima above  threshold and
+ * the maxima and then the maxima which are a gain factor above either
+ * adjacent minima.
+ * The success of the method depends upon a reasonable lowThreshold and
+ * gain.
+ * 
+ * NOTE: methods such as those in MedianSmooth could be used to find a
+ * windowed mean and max (and hence, standard deviation, but they are
+ * dependent upon the size of the window.  A peak that is a wide gradual
+ * plateau and a narrow window might miss the peak.
+ * 
+ * @author nichole
+ */
+<span class="fc" id="L21">public class MinMaxPeakFinder {</span>
+    
+    public int[] findPeaks(float[] values) {
+        
+<span class="nc" id="L25">        float[] a = Arrays.copyOf(values, values.length);</span>
+        
+<span class="nc" id="L27">        Arrays.sort(a);</span>
+        
+<span class="nc" id="L29">        float mean3Percent = 0;</span>
+<span class="nc" id="L30">        int end = Math.round(0.03f * values.length);</span>
+<span class="nc bnc" id="L31" title="All 2 branches missed.">        for (int i = 0; i &lt; end; ++i) {</span>
+<span class="nc" id="L32">            mean3Percent += a[i];</span>
+        }
+<span class="nc" id="L34">        mean3Percent /= (float)end;</span>
+        
+<span class="nc" id="L36">        return findPeaks(values, mean3Percent, 2.5f);</span>
+    }
+    
+    public int[] findPeaks(float[] values, float lowThreshold, 
+        float factorAboveMin) {
+        
+<span class="nc" id="L42">        int[] minMaxIdxs = findMinimaMaxima(values, lowThreshold);</span>
+        
+<span class="nc bnc" id="L44" title="All 2 branches missed.">        if (minMaxIdxs.length == 0) {</span>
+<span class="nc" id="L45">            return null;</span>
+<span class="nc bnc" id="L46" title="All 2 branches missed.">        } else if (minMaxIdxs.length == 1) {</span>
+<span class="nc" id="L47">            return minMaxIdxs;</span>
+        } 
+        
+<span class="nc" id="L50">        TIntList peaks = new TIntArrayList(minMaxIdxs.length/2);</span>
+
+        // choose candidates from minMaxIndexes that are
+        //     &gt;= factorAboveMin for one adjacent minima
+<span class="nc bnc" id="L54" title="All 2 branches missed.">        for (int ii = 0; ii &lt; minMaxIdxs.length; ii++) {</span>
+
+<span class="nc" id="L56">            int idx = minMaxIdxs[ii];</span>
+
+<span class="nc bnc" id="L58" title="All 2 branches missed.">            if (idx &gt; -1) {</span>
+                // this is a maxima
+
+<span class="nc" id="L61">                boolean found = false;</span>
+                
+                // compare to preceding minimum
+<span class="nc bnc" id="L64" title="All 2 branches missed.">                for (int iii = (ii - 1); iii &gt; -1; iii--) {</span>
+<span class="nc" id="L65">                    int idx2 = minMaxIdxs[iii];</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">                    if (idx2 &lt; 0) {</span>
+<span class="nc" id="L67">                        float compare = values[-1*idx2];</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">                        if (compare &lt; lowThreshold) {</span>
+                            // avoids divide by very small number sometimes
+<span class="nc" id="L70">                            compare = lowThreshold;</span>
+                        }
+<span class="nc bnc" id="L72" title="All 4 branches missed.">                        if (values[idx] &gt;= lowThreshold &amp;&amp; </span>
+                            values[idx] &gt;= factorAboveMin * compare) {
+                            
+<span class="nc" id="L75">                            peaks.add(idx);</span>
+<span class="nc" id="L76">                            found = true;</span>
+                        }
+                        break;
+                    }
+                }
+                
+<span class="nc bnc" id="L82" title="All 4 branches missed.">                if (found &amp;&amp; (ii &gt; 0)) {</span>
+<span class="nc" id="L83">                    continue;</span>
+                }
+
+                //compare to proceeding minimum
+<span class="nc bnc" id="L87" title="All 2 branches missed.">                for (int iii = (ii + 1); iii &lt; minMaxIdxs.length; iii++) {</span>
+<span class="nc" id="L88">                    int idx2 = minMaxIdxs[iii];</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">                    if (idx2 &lt; 0) {</span>
+<span class="nc" id="L90">                        float compare = values[-1*idx2];</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">                        if (compare &lt; lowThreshold) {</span>
+                            // avoids divide by very small number sometimes
+<span class="nc" id="L93">                            compare = lowThreshold;</span>
+                        }
+<span class="nc bnc" id="L95" title="All 4 branches missed.">                        if (values[idx] &gt;= lowThreshold </span>
+                            &amp;&amp; values[idx] &gt;= factorAboveMin * compare) {
+                            
+<span class="nc" id="L98">                            peaks.add(idx);</span>
+                        }
+                        
+                        break;
+                    }
+                }
+            }
+        }
+
+<span class="nc" id="L107">        return peaks.toArray(new int[peaks.size()]);</span>
+    }
+    
+    /**
+     * find the minima above lowThreshold and the maxima in values
+     * and return their indexes.  the negative values are -1*index for a minima
+     * while positive indexes are the indexes of maxima.
+     * 
+     * @param values
+     * @param lowThreshold
+     * @return 
+     */
+    public int[] findMinimaMaxima(float[] values, float lowThreshold) {
+        
+<span class="fc" id="L121">        TIntList minMaxIdxs = new TIntArrayList();</span>
+        
+<span class="fc" id="L123">        float lastK = values[0];</span>
+<span class="fc" id="L124">        boolean incr = true;</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">        for (int ii = 1; ii &lt; values.length; ii++) {</span>
+
+<span class="fc" id="L127">            float currentK = values[ii];</span>
+
+<span class="fc bfc" id="L129" title="All 4 branches covered.">            if ((currentK &lt; lastK) &amp;&amp; incr) {</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">                if (values[ii - 1] &gt; lowThreshold) {</span>
+<span class="fc" id="L131">                    minMaxIdxs.add(ii - 1);</span>
+                }
+<span class="fc" id="L133">                incr = false;</span>
+<span class="fc bfc" id="L134" title="All 4 branches covered.">            } else if ((currentK &gt; lastK) &amp;&amp; !incr) {</span>
+                // values below outputLowThreshold[0] are handled by
+                // callers.  TODO: redesign the caller and this method
+                // to not need to understand peculiarities of the data.
+<span class="fc" id="L138">                minMaxIdxs.add(-1*(ii - 1));</span>
+<span class="fc" id="L139">                incr = true;</span>
+            }
+
+<span class="fc" id="L142">            lastK = currentK;</span>
+        }
+
+<span class="fc bfc" id="L145" title="All 2 branches covered.">        if (incr) {</span>
+            // add the last point
+<span class="fc" id="L147">             minMaxIdxs.add(values.length - 1);</span>
+        }
+        
+<span class="fc" id="L150">        return minMaxIdxs.toArray(new int[minMaxIdxs.size()]);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

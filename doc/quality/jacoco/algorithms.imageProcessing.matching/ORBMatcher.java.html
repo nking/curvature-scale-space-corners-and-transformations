@@ -1,0 +1,571 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ORBMatcher.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.matching</a> &gt; <span class="el_source">ORBMatcher.java</span></div><h1>ORBMatcher.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.matching;
+
+import algorithms.QuickSort;
+import algorithms.imageProcessing.features.HOGs;
+import algorithms.imageProcessing.features.RANSACSolver;
+import algorithms.imageProcessing.features.orb.ORB;
+import algorithms.imageProcessing.transform.EpipolarTransformationFit;
+import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
+import algorithms.util.QuadInt;
+import algorithms.util.VeryLongBitString;
+import gnu.trove.list.TDoubleList;
+import gnu.trove.list.TFloatList;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TFloatArrayList;
+import gnu.trove.list.array.TIntArrayList;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * a class to hold various methods related to matching
+ * the descriptors of ORB.
+ * See also ObjectMatcher.
+ *
+ * ORB features can be used to match 2 images as long as the number of points
+ * that are possible true matches are larger than the number of points
+ * which are not matches in the images.  In other words, for the sparse
+ * feature matching approach of keypoints, need the number of possible true
+ * matches to be larger than the number of possible false matches.
+ * If that is not the case, such as in finding an object which has changed
+ * location, then the more dense approach of using blob detecter MSER is 
+ * recommended.
+ * 
+ * NOTE that methods are being added specifically for the sparse matching.
+ * 
+ * @see ORB
+ * @see ObjectMatcher
+ *
+ * @author nichole
+ */
+<span class="pc bpc" id="L43" title="1 of 2 branches missed.">public class ORBMatcher {</span>
+
+    /**
+     * greedy matching of d1 to d2 by min cost, with unique mappings for
+     * all indexes.
+     *
+     * @param d1
+     * @param d2
+     * @return matches - two dimensional int array of indexes in d1 and
+     * d2 which are matched.
+     */
+    public static int[][] matchDescriptors(VeryLongBitString[] d1, VeryLongBitString[] d2, List&lt;PairInt&gt; keypoints1, List&lt;PairInt&gt; keypoints2) {
+    
+<span class="nc" id="L56">        int n1 = d1.length;</span>
+<span class="nc" id="L57">        int n2 = d2.length;</span>
+        //[n1][n2]
+<span class="nc" id="L59">        int[][] cost = ORB.calcDescriptorCostMatrix(d1, d2);</span>
+<span class="nc" id="L60">        int[][] matches = greedyMatch(keypoints1, keypoints2, cost);</span>
+        // greedy or optimal match can be performed here.
+        // NOTE: some matching problems might benefit from using the spatial
+        //   information at the same time.  for those, will consider adding
+        //   an evaluation term for these descriptors to a specialization of
+        //   PartialShapeMatcher.java
+<span class="nc" id="L66">        return matches;</span>
+    }
+
+    /**
+     * greedy matching of d1 to d2 by min difference, with unique mappings for
+     * all indexes. NOTE that if 2 descriptors match equally well, either one
+     * might get the assignment. Consider using instead, matchDescriptors2 which
+     * matches by descriptor and relative spatial location.
+     *
+     * @param d1
+     * @param d2
+     * @param keypoints2
+     * @param keypoints1
+     * @param hogs1
+     * @param hogs2
+     * @param orientations1
+     * @param orientations2
+     * @return matches array of objects encapsulating a pair of matched points
+     */
+    public static QuadInt[] matchDescriptors(ORB.Descriptors d1,
+        ORB.Descriptors d2, List&lt;PairInt&gt; keypoints1,
+        List&lt;PairInt&gt; keypoints2, HOGs hogs1, HOGs hogs2,
+        TDoubleList orientations1, TDoubleList orientations2) {
+
+<span class="fc" id="L90">        int n1 = d1.descriptors.length;</span>
+<span class="fc" id="L91">        int n2 = d2.descriptors.length;</span>
+<span class="pc bpc" id="L92" title="2 of 4 branches missed.">        if (n1 == 0 || n2 == 0) {</span>
+<span class="nc" id="L93">            return null;</span>
+        }
+
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">        if (d1.descriptors[0].getCapacity() != d2.descriptors[0].getCapacity()) {</span>
+<span class="nc" id="L97">            throw new IllegalArgumentException(&quot;d1 and d2 must have same bitstring&quot;</span>
+                + &quot; capacities (== 256) &quot;
+<span class="nc" id="L99">                + d1.descriptors[0].getCapacity() + &quot; &quot;</span>
+<span class="nc" id="L100">                + d2.descriptors[0].getCapacity()</span>
+            );
+        }
+
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">        if (n1 != keypoints1.size()) {</span>
+<span class="nc" id="L105">            throw new IllegalArgumentException(&quot;number of descriptors in &quot; + &quot; d1 bitstrings must be same as keypoints1 length&quot;);</span>
+        }
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">        if (n2 != keypoints2.size()) {</span>
+<span class="nc" id="L108">            throw new IllegalArgumentException(&quot;number of descriptors in &quot; + &quot; d2 bitstrings must be same as keypoints2 length&quot;);</span>
+        }
+        //[n1][n2]
+<span class="fc" id="L111">        int[][] cost = ORB.calcDescriptorCostMatrix(</span>
+            d1.descriptors, d2.descriptors);
+
+        // pairs of indexes of matches
+<span class="fc" id="L115">        int[][] matches = greedyMatch(keypoints1, keypoints2, cost, </span>
+            hogs1, hogs2, orientations1, orientations2);
+
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">        if (matches.length &lt; 7) {</span>
+
+<span class="nc" id="L120">            QuadInt[] qs = new QuadInt[matches.length];</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">            for (int i = 0; i &lt; matches.length; ++i) {</span>
+<span class="nc" id="L122">                int idx1 = matches[i][0];</span>
+<span class="nc" id="L123">                int idx2 = matches[i][1];</span>
+<span class="nc" id="L124">                QuadInt q = new QuadInt(</span>
+<span class="nc" id="L125">                    keypoints1.get(idx1).getX(), keypoints1.get(idx1).getY(),</span>
+<span class="nc" id="L126">                    keypoints2.get(idx2).getX(), keypoints2.get(idx2).getY()</span>
+                );
+<span class="nc" id="L128">                qs[i] = q;</span>
+            }
+
+<span class="nc" id="L131">            return qs;</span>
+        }
+        
+        // ransac to remove outliers
+<span class="fc" id="L135">        PairIntArray outputLeftXY = new PairIntArray(matches.length);</span>
+<span class="fc" id="L136">        PairIntArray outputRightXY = new PairIntArray(matches.length);</span>
+<span class="fc" id="L137">        EpipolarTransformationFit fit </span>
+<span class="nc" id="L138">            = removeOutliersWithRANSAC(matches, </span>
+            keypoints1, keypoints2, outputLeftXY, outputRightXY);
+        
+<span class="nc bnc" id="L141" title="All 2 branches missed.">        if (fit == null) {</span>
+<span class="nc" id="L142">            return null;</span>
+        }
+                
+<span class="nc" id="L145">        QuadInt[] qs = new QuadInt[outputLeftXY.getN()];</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">        for (int i = 0; i &lt; outputLeftXY.getN(); ++i) {</span>
+<span class="nc" id="L147">            QuadInt q = new QuadInt(</span>
+<span class="nc" id="L148">                outputLeftXY.getX(i), outputLeftXY.getY(i), </span>
+<span class="nc" id="L149">                outputRightXY.getX(i), outputRightXY.getY(i)</span>
+            );
+<span class="nc" id="L151">            qs[i] = q;</span>
+        }
+
+<span class="nc" id="L154">        System.out.println(&quot;fit=&quot; + fit.toString());</span>
+        
+<span class="nc" id="L156">        return qs;</span>
+    }
+    
+    /**
+     * greedy matching of d1 to d2 by min difference, with unique mappings for
+     * all indexes.
+     * NOTE that if 2 descriptors match equally well, either one
+     * might get the assignment.
+     * Consider using instead, matchDescriptors2 which matches
+     * by descriptor and relative spatial location.
+     *
+     * @param d1
+     * @param d2
+     * @param keypoints2
+     * @param keypoints1
+     * @return matches array of objects encapsulating a pair of
+     * matched points
+     */
+    public static QuadInt[] matchDescriptors(ORB.Descriptors d1, 
+        ORB.Descriptors d2, List&lt;PairInt&gt; keypoints1, 
+        List&lt;PairInt&gt; keypoints2) {
+        
+<span class="fc" id="L178">        int n1 = d1.descriptors.length;</span>
+<span class="fc" id="L179">        int n2 = d2.descriptors.length;</span>
+<span class="pc bpc" id="L180" title="2 of 4 branches missed.">        if (n1 == 0 || n2 == 0) {</span>
+<span class="nc" id="L181">            return null;</span>
+        }
+        
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">        if (d1.descriptors[0].getCapacity() != d2.descriptors[0].getCapacity()) {</span>
+<span class="nc" id="L185">            throw new IllegalArgumentException(&quot;d1 and d2 must have same bitstring&quot; </span>
+                + &quot; capacities (== 256) &quot; + 
+<span class="nc" id="L187">                d1.descriptors[0].getCapacity() + &quot; &quot; +</span>
+<span class="nc" id="L188">                d2.descriptors[0].getCapacity()</span>
+            );
+        }
+        
+<span class="pc bpc" id="L192" title="1 of 2 branches missed.">        if (n1 != keypoints1.size()) {</span>
+<span class="nc" id="L193">            throw new IllegalArgumentException(&quot;number of descriptors in &quot; + &quot; d1 bitstrings must be same as keypoints1 length&quot;);</span>
+        }
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">        if (n2 != keypoints2.size()) {</span>
+<span class="nc" id="L196">            throw new IllegalArgumentException(&quot;number of descriptors in &quot; + &quot; d2 bitstrings must be same as keypoints2 length&quot;);</span>
+        }
+        //[n1][n2]
+<span class="fc" id="L199">        int[][] cost = ORB.calcDescriptorCostMatrix(</span>
+            d1.descriptors, d2.descriptors);
+        
+        // pairs of indexes of matches
+<span class="fc" id="L203">        int[][] matches = greedyMatch(keypoints1, keypoints2, cost);</span>
+        
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">        if (matches.length &lt; 7) {</span>
+            
+<span class="nc" id="L207">            QuadInt[] qs = new QuadInt[matches.length];</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">            for (int i = 0; i &lt; matches.length; ++i) {</span>
+<span class="nc" id="L209">                int idx1 = matches[i][0];</span>
+<span class="nc" id="L210">                int idx2 = matches[i][1];</span>
+<span class="nc" id="L211">                QuadInt q = new QuadInt(</span>
+<span class="nc" id="L212">                    keypoints1.get(idx1).getX(), keypoints1.get(idx1).getY(),</span>
+<span class="nc" id="L213">                    keypoints2.get(idx2).getX(), keypoints2.get(idx2).getY()</span>
+                );
+<span class="nc" id="L215">                qs[i] = q;</span>
+            }
+
+<span class="nc" id="L218">            return qs;</span>
+        }
+        
+        // ransac to remove outliers
+<span class="fc" id="L222">        PairIntArray outputLeftXY = new PairIntArray(matches.length);</span>
+<span class="fc" id="L223">        PairIntArray outputRightXY = new PairIntArray(matches.length);</span>
+<span class="fc" id="L224">        EpipolarTransformationFit fit </span>
+<span class="nc" id="L225">            = removeOutliersWithRANSAC(matches, </span>
+            keypoints1, keypoints2, outputLeftXY, outputRightXY);
+        
+<span class="nc bnc" id="L228" title="All 2 branches missed.">        if (fit == null) {</span>
+<span class="nc" id="L229">            return null;</span>
+        }
+                
+<span class="nc" id="L232">        QuadInt[] qs = new QuadInt[outputLeftXY.getN()];</span>
+<span class="nc bnc" id="L233" title="All 2 branches missed.">        for (int i = 0; i &lt; outputLeftXY.getN(); ++i) {</span>
+<span class="nc" id="L234">            QuadInt q = new QuadInt(</span>
+<span class="nc" id="L235">                outputLeftXY.getX(i), outputLeftXY.getY(i), </span>
+<span class="nc" id="L236">                outputRightXY.getX(i), outputRightXY.getY(i)</span>
+            );
+<span class="nc" id="L238">            qs[i] = q;</span>
+        }
+
+<span class="nc" id="L241">        System.out.println(&quot;fit=&quot; + fit.toString());</span>
+        
+<span class="nc" id="L243">        return qs;        </span>
+    }
+
+    /**
+     * finds best match for each point if a close second best does not exist,
+     * then sorts by lowest cost to keep the unique best starter points.
+     * returns matching indexes (no ransac performed in this method)
+     * @param keypoints1
+     * @param keypoints2
+     * @param cost
+     * @return 
+     */
+    private static int[][] greedyMatch(List&lt;PairInt&gt; keypoints1,
+        List&lt;PairInt&gt; keypoints2, int[][] cost) {
+        
+<span class="fc" id="L258">        int n1 = keypoints1.size();</span>
+<span class="fc" id="L259">        int n2 = keypoints2.size();</span>
+        
+        /*
+        -- for each keypoint, finding best match, but only keeping it if there is
+           no close 2nd best.
+        -- sorting the results by lowest cost and keepint the unique of those.
+        -- return correspondence
+        */
+        
+        //nearest neighbor distance ratio (Mikolajczyk and Schmid 2005):
+        // using a ratio of 0.8 or 0.9.
+<span class="fc" id="L270">        int[] bestMatch = findGreedyBestIsolated(cost, 0.8f);</span>
+<span class="pc bpc" id="L271" title="3 of 4 branches missed.">        assert(bestMatch.length == n1);</span>
+        
+<span class="fc" id="L273">        int nBest = 0;</span>
+<span class="fc bfc" id="L274" title="All 2 branches covered.">        for (int idx : bestMatch) {</span>
+<span class="fc bfc" id="L275" title="All 2 branches covered.">            if (idx &gt; -1) {</span>
+<span class="fc" id="L276">                nBest++;</span>
+            }
+        }
+        
+<span class="fc" id="L280">        PairInt[] indexes = new PairInt[nBest];</span>
+<span class="fc" id="L281">        int[] costs = new int[nBest];</span>
+<span class="fc" id="L282">        int count = 0;</span>
+<span class="fc bfc" id="L283" title="All 2 branches covered.">        for (int idx1 = 0; idx1 &lt; n1; ++idx1) {</span>
+<span class="fc" id="L284">            int idx2 = bestMatch[idx1];</span>
+<span class="fc bfc" id="L285" title="All 2 branches covered.">            if (idx2 &gt; -1) {</span>
+<span class="fc" id="L286">                indexes[count] = new PairInt(idx1, idx2);</span>
+<span class="fc" id="L287">                costs[count] = cost[idx1][idx2];</span>
+<span class="fc" id="L288">                count++;</span>
+            }
+        }
+        
+<span class="pc bpc" id="L292" title="3 of 4 branches missed.">        assert (count == nBest);</span>
+<span class="fc" id="L293">        QuickSort.sortBy1stArg(costs, indexes);</span>
+<span class="fc" id="L294">        Set&lt;PairInt&gt; set1 = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L295">        Set&lt;PairInt&gt; set2 = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L296">        List&lt;PairInt&gt; matches = new ArrayList&lt;PairInt&gt;();</span>
+        // visit lowest costs (== differences) first
+<span class="fc bfc" id="L298" title="All 2 branches covered.">        for (int i = 0; i &lt; nBest; ++i) {</span>
+<span class="fc" id="L299">            PairInt index12 = indexes[i];</span>
+<span class="fc" id="L300">            int idx1 = index12.getX();</span>
+<span class="fc" id="L301">            int idx2 = index12.getY();</span>
+<span class="fc" id="L302">            PairInt p1 = keypoints1.get(idx1);</span>
+<span class="fc" id="L303">            PairInt p2 = keypoints2.get(idx2);</span>
+<span class="pc bpc" id="L304" title="1 of 4 branches missed.">            if (set1.contains(p1) || set2.contains(p2)) {</span>
+<span class="fc" id="L305">                continue;</span>
+            }
+            //System.out.println(&quot;p1=&quot; + p1 + &quot; &quot; + &quot; p2=&quot; + p2 + &quot; cost=&quot; + costs[i]);
+<span class="fc" id="L308">            matches.add(index12);</span>
+<span class="fc" id="L309">            set1.add(p1);</span>
+<span class="fc" id="L310">            set2.add(p2);</span>
+        }
+<span class="fc" id="L312">        int[][] results = new int[matches.size()][2];</span>
+<span class="fc bfc" id="L313" title="All 2 branches covered.">        for (int i = 0; i &lt; matches.size(); ++i) {</span>
+<span class="fc" id="L314">            results[i][0] = matches.get(i).getX();</span>
+<span class="fc" id="L315">            results[i][1] = matches.get(i).getY();</span>
+        }
+<span class="fc" id="L317">        return results;</span>
+    }
+    
+    /**
+     * finds best match for each point if a close second best does not exist,
+     * then sorts by lowest cost to keep the unique best starter points.
+     * returns matching indexes (no ransac performed in this method)
+     * @param keypoints1
+     * @param keypoints2
+     * @param cost
+     * @return 
+     */
+    private static int[][] greedyMatch(List&lt;PairInt&gt; keypoints1,
+        List&lt;PairInt&gt; keypoints2, int[][] cost, HOGs hogs1, HOGs hogs2,
+        TDoubleList orientations1, TDoubleList orientations2) {
+        
+<span class="fc" id="L333">        int n1 = keypoints1.size();</span>
+<span class="fc" id="L334">        int n2 = keypoints2.size();</span>
+        
+        /*
+        -- for each keypoint, finding best match, but only keeping it if there is
+           no close 2nd best.
+        -- sorting the results by lowest cost and keepint the unique of those.
+        -- return correspondence
+        */
+        
+        //nearest neighbor distance ratio (Mikolajczyk and Schmid 2005):
+        // using a ratio of 0.8 or 0.9.
+<span class="fc" id="L345">        TIntList outputI1 = new TIntArrayList();</span>
+<span class="fc" id="L346">        TIntList outputI2 = new TIntArrayList();</span>
+<span class="fc" id="L347">        TFloatList outputCost = new TFloatArrayList();</span>
+        
+<span class="fc" id="L349">        findGreedyBest(cost, 0.8f,</span>
+            hogs1, hogs2, keypoints1, keypoints2,
+            orientations1, orientations2,
+            outputI1, outputI2, outputCost);
+                
+<span class="fc" id="L354">        int nBest = outputI1.size();</span>
+        
+<span class="fc" id="L356">        PairInt[] indexes = new PairInt[nBest];</span>
+<span class="fc" id="L357">        float[] costs = new float[nBest];</span>
+<span class="fc" id="L358">        int count = 0;</span>
+<span class="fc bfc" id="L359" title="All 2 branches covered.">        for (int i = 0; i &lt; nBest; ++i) {</span>
+<span class="fc" id="L360">            int idx1 = outputI1.get(i);</span>
+<span class="fc" id="L361">            int idx2 = outputI2.get(i);</span>
+<span class="pc bpc" id="L362" title="1 of 2 branches missed.">            if (idx2 &gt; -1) {</span>
+<span class="fc" id="L363">                indexes[count] = new PairInt(idx1, idx2);</span>
+<span class="fc" id="L364">                costs[count] = outputCost.get(i);</span>
+<span class="fc" id="L365">                count++;</span>
+            }
+        }
+        
+<span class="pc bpc" id="L369" title="3 of 4 branches missed.">        assert (count == nBest);</span>
+<span class="fc" id="L370">        QuickSort.sortBy1stArg(costs, indexes);</span>
+<span class="fc" id="L371">        Set&lt;PairInt&gt; set1 = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L372">        Set&lt;PairInt&gt; set2 = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L373">        List&lt;PairInt&gt; matches = new ArrayList&lt;PairInt&gt;();</span>
+        // visit lowest costs (== differences) first
+<span class="fc bfc" id="L375" title="All 2 branches covered.">        for (int i = 0; i &lt; nBest; ++i) {</span>
+<span class="fc" id="L376">            PairInt index12 = indexes[i];</span>
+<span class="fc" id="L377">            int idx1 = index12.getX();</span>
+<span class="fc" id="L378">            int idx2 = index12.getY();</span>
+<span class="fc" id="L379">            PairInt p1 = keypoints1.get(idx1);</span>
+<span class="fc" id="L380">            PairInt p2 = keypoints2.get(idx2);</span>
+<span class="pc bpc" id="L381" title="2 of 4 branches missed.">            if (set1.contains(p1) || set2.contains(p2)) {</span>
+<span class="nc" id="L382">                continue;</span>
+            }
+            //System.out.println(&quot;p1=&quot; + p1 + &quot; &quot; + &quot; p2=&quot; + p2 + &quot; cost=&quot; + costs[i]);
+<span class="fc" id="L385">            matches.add(index12);</span>
+<span class="fc" id="L386">            set1.add(p1);</span>
+<span class="fc" id="L387">            set2.add(p2);</span>
+        }
+<span class="fc" id="L389">        int[][] results = new int[matches.size()][2];</span>
+<span class="fc bfc" id="L390" title="All 2 branches covered.">        for (int i = 0; i &lt; matches.size(); ++i) {</span>
+<span class="fc" id="L391">            results[i][0] = matches.get(i).getX();</span>
+<span class="fc" id="L392">            results[i][1] = matches.get(i).getY();</span>
+        }
+<span class="fc" id="L394">        return results;</span>
+    }
+    
+    private static int[] findGreedyBestIsolated(int[][] cost, float ratioLimit) {
+<span class="fc" id="L398">        int n1 = cost.length;</span>
+<span class="fc" id="L399">        int n2 = cost[0].length;</span>
+        
+<span class="fc" id="L401">        int[] bestMatch = new int[n1];</span>
+<span class="fc bfc" id="L402" title="All 2 branches covered.">        for (int i = 0; i &lt; n1; ++i) {</span>
+<span class="fc" id="L403">            int bc = Integer.MAX_VALUE;</span>
+<span class="fc" id="L404">            int bc2 = Integer.MAX_VALUE;</span>
+<span class="fc" id="L405">            int bcIdx = -1;</span>
+<span class="fc" id="L406">            int bc2Idx = -1;</span>
+<span class="fc bfc" id="L407" title="All 2 branches covered.">            for (int j = 0; j &lt; n2; ++j) {</span>
+<span class="fc" id="L408">                int c = cost[i][j];</span>
+<span class="fc bfc" id="L409" title="All 2 branches covered.">                if (c &gt;= bc2) {</span>
+<span class="fc" id="L410">                    continue;</span>
+                }
+<span class="fc bfc" id="L412" title="All 2 branches covered.">                if (c &lt; bc) {</span>
+<span class="fc" id="L413">                    bc2 = bc;</span>
+<span class="fc" id="L414">                    bc2Idx = bcIdx;</span>
+<span class="fc" id="L415">                    bc = c;</span>
+<span class="fc" id="L416">                    bcIdx = j;</span>
+<span class="fc bfc" id="L417" title="All 2 branches covered.">                } else if (c == bc) {</span>
+<span class="pc bpc" id="L418" title="1 of 2 branches missed.">                    if (c &lt; bc2) {</span>
+<span class="fc" id="L419">                        bc2 = bc;</span>
+<span class="fc" id="L420">                        bc2Idx = bcIdx;</span>
+<span class="fc" id="L421">                        bc = c;</span>
+<span class="fc" id="L422">                        bcIdx = j;</span>
+                    } else {
+<span class="nc bnc" id="L424" title="All 6 branches missed.">                        assert(c == bc2 &amp;&amp; bc == bc2);</span>
+                    }
+                } else {
+                    // c &gt; bc
+<span class="pc bpc" id="L428" title="1 of 2 branches missed.">                    if (c &lt; bc2) {</span>
+<span class="fc" id="L429">                        bc2 = c;</span>
+<span class="fc" id="L430">                        bc2Idx = j;</span>
+                    }
+                }
+            }
+<span class="pc bpc" id="L434" title="1 of 2 branches missed.">            if (bc2Idx == -1) {</span>
+<span class="nc" id="L435">                bestMatch[i] = bcIdx;</span>
+            } else {
+<span class="fc" id="L437">                float ratio = (float)bc/(float)bc2;</span>
+<span class="fc bfc" id="L438" title="All 2 branches covered.">                if (ratio &lt; 0.8) {</span>
+<span class="fc" id="L439">                    bestMatch[i] = bcIdx;</span>
+                } else {
+<span class="fc" id="L441">                    bestMatch[i] = -1;</span>
+                }
+            }
+        }
+        
+<span class="fc" id="L446">        return bestMatch;</span>
+    }  
+    
+    private static void findGreedyBest(int[][] cost, float ratioLimit,
+        HOGs hogs1, HOGs hogs2, 
+        List&lt;PairInt&gt; keypoints1, List&lt;PairInt&gt; keypoints2,
+        TDoubleList orientations1, TDoubleList orientations2,
+        TIntList outputI1, TIntList outputI2, TFloatList outputCost) {
+        
+<span class="fc" id="L455">        int n1 = cost.length;</span>
+<span class="fc" id="L456">        int n2 = cost[0].length;</span>
+        
+<span class="fc" id="L458">        int[] h1 = new int[hogs1.getNumberOfBins()];</span>
+<span class="fc" id="L459">        int[] h2 = new int[h1.length];</span>
+                
+<span class="fc bfc" id="L461" title="All 2 branches covered.">        for (int i = 0; i &lt; n1; ++i) {</span>
+<span class="fc" id="L462">            float bc = Integer.MAX_VALUE;</span>
+<span class="fc" id="L463">            float bc2 = Integer.MAX_VALUE;</span>
+<span class="fc" id="L464">            int bcIdx = -1;</span>
+<span class="fc" id="L465">            int bc2Idx = -1;</span>
+            
+<span class="fc" id="L467">            int or1 = (int)Math.round(orientations1.get(i) * 180./Math.PI);</span>
+<span class="fc bfc" id="L468" title="All 2 branches covered.">            if (or1 &lt; 0) {</span>
+<span class="fc" id="L469">                or1 += 180;</span>
+            }
+<span class="fc" id="L471">            hogs1.extractFeature(keypoints1.get(i).getX(), </span>
+<span class="fc" id="L472">                keypoints1.get(i).getY(), h1);</span>
+            
+<span class="fc bfc" id="L474" title="All 2 branches covered.">            for (int j = 0; j &lt; n2; ++j) {</span>
+                
+<span class="fc" id="L476">                float c = cost[i][j]/255.f;</span>
+                
+<span class="fc" id="L478">                int or2 = (int)Math.round(orientations2.get(j) * 180./Math.PI);</span>
+<span class="fc bfc" id="L479" title="All 2 branches covered.">                if (or2 &lt; 0) {</span>
+<span class="fc" id="L480">                    or2 += 180;</span>
+                }
+<span class="fc" id="L482">                hogs2.extractFeature(keypoints2.get(j).getX(), </span>
+<span class="fc" id="L483">                    keypoints2.get(j).getY(), h2);</span>
+                
+<span class="fc" id="L485">                float intersection = hogs1.intersection(h1, or1, h2, or2);</span>
+                                
+<span class="fc" id="L487">                c += (1.f - intersection);</span>
+                
+<span class="fc bfc" id="L489" title="All 2 branches covered.">                if (c &gt;= bc2) {</span>
+<span class="fc" id="L490">                    continue;</span>
+                }
+<span class="fc bfc" id="L492" title="All 2 branches covered.">                if (c &lt; bc) {</span>
+<span class="fc" id="L493">                    bc2 = bc;</span>
+<span class="fc" id="L494">                    bc2Idx = bcIdx;</span>
+<span class="fc" id="L495">                    bc = c;</span>
+<span class="fc" id="L496">                    bcIdx = j;</span>
+<span class="pc bpc" id="L497" title="1 of 2 branches missed.">                } else if (c == bc) {</span>
+<span class="nc bnc" id="L498" title="All 2 branches missed.">                    if (c &lt; bc2) {</span>
+<span class="nc" id="L499">                        bc2 = bc;</span>
+<span class="nc" id="L500">                        bc2Idx = bcIdx;</span>
+<span class="nc" id="L501">                        bc = c;</span>
+<span class="nc" id="L502">                        bcIdx = j;</span>
+                    } else {
+<span class="nc bnc" id="L504" title="All 6 branches missed.">                        assert(c == bc2 &amp;&amp; bc == bc2);</span>
+                    }
+                } else {
+                    // c &gt; bc
+<span class="pc bpc" id="L508" title="1 of 2 branches missed.">                    if (c &lt; bc2) {</span>
+<span class="fc" id="L509">                        bc2 = c;</span>
+<span class="fc" id="L510">                        bc2Idx = j;</span>
+                    }
+                }
+            }
+<span class="pc bpc" id="L514" title="1 of 2 branches missed.">            if (bc2Idx == -1) {</span>
+<span class="nc" id="L515">                outputI1.add(i);</span>
+<span class="nc" id="L516">                outputI2.add(bcIdx);</span>
+<span class="nc" id="L517">                outputCost.add(bc);</span>
+            } else {
+<span class="fc" id="L519">                float ratio = bc/bc2;</span>
+<span class="fc bfc" id="L520" title="All 2 branches covered.">                if (ratio &lt; 0.8) {</span>
+<span class="fc" id="L521">                    outputI1.add(i);</span>
+<span class="fc" id="L522">                    outputI2.add(bcIdx);</span>
+<span class="fc" id="L523">                    outputCost.add(bc);</span>
+                }
+            }
+        }        
+<span class="fc" id="L527">    }  </span>
+    
+    public static double distance(int x, int y, PairInt b) {
+<span class="nc" id="L530">        int diffX = x - b.getX();</span>
+<span class="nc" id="L531">        int diffY = y - b.getY();</span>
+<span class="nc" id="L532">        double dist = Math.sqrt(diffX * diffX + diffY * diffY);</span>
+<span class="nc" id="L533">        return dist;</span>
+    }
+
+    public static int distance(PairInt p1, PairInt p2) {
+<span class="fc" id="L537">        int diffX = p1.getX() - p2.getX();</span>
+<span class="fc" id="L538">        int diffY = p1.getY() - p2.getY();</span>
+<span class="fc" id="L539">        return (int) Math.sqrt(diffX * diffX + diffY * diffY);</span>
+    }
+
+    private static EpipolarTransformationFit 
+        removeOutliersWithRANSAC(int[][] matches, 
+        List&lt;PairInt&gt; keypoints1, List&lt;PairInt&gt; keypoints2,
+        PairIntArray outputLeftXY, PairIntArray outputRightXY) {
+        
+<span class="fc" id="L547">        int n0 = matches.length;</span>
+        
+<span class="fc" id="L549">        PairIntArray matchedLeftXY = new PairIntArray(n0);</span>
+<span class="fc" id="L550">        PairIntArray matchedRightXY = new PairIntArray(n0);</span>
+<span class="fc bfc" id="L551" title="All 2 branches covered.">        for (int i = 0; i &lt; n0; ++i) {</span>
+<span class="fc" id="L552">            int idx1 = matches[i][0];</span>
+<span class="fc" id="L553">            int idx2 = matches[i][1];</span>
+<span class="fc" id="L554">            matchedLeftXY.add(keypoints1.get(idx1));</span>
+<span class="fc" id="L555">            matchedRightXY.add(keypoints2.get(idx2));</span>
+        }
+        
+<span class="fc" id="L558">        RANSACSolver solver = new RANSACSolver();</span>
+        
+<span class="nc" id="L560">        EpipolarTransformationFit fit = solver.calculateEpipolarProjection(</span>
+            matchedLeftXY, matchedRightXY, outputLeftXY, outputRightXY);
+
+<span class="nc" id="L563">        return fit;        </span>
+    }
+
+    private static int[][] attemptMatchesUsingEuclidean(int[][] matches, List&lt;PairInt&gt; keypoints1, List&lt;PairInt&gt; keypoints2, int[][] cost) {
+<span class="nc" id="L567">        throw new UnsupportedOperationException(&quot;Not supported yet.&quot;); //To change body of generated methods, choose Tools | Templates.</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

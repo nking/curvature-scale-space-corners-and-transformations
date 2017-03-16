@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>SR.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.matching</a> &gt; <span class="el_source">SR.java</span></div><h1>SR.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.matching;
+
+/**
+ *
+ * @author nichole
+ */
+<span class="fc" id="L7">class SR implements Comparable&lt;SR&gt; {</span>
+    
+    // range of match is idx1 thru idx2, inclusive and if idx2 &lt; idx1,
+    //   the interval has wrapped around the closed curve
+    int startIdx1;
+    int stopIdx1;
+    int offsetIdx2;
+    int row;
+    int mLen;
+    int nMax;
+    double diffChordSum;
+    double maxChordSum;
+<span class="fc" id="L19">    boolean chordSumNeedsUpdate = true;</span>
+
+    @Override
+    public boolean equals(Object obj) {
+<span class="nc bnc" id="L23" title="All 2 branches missed.">        if (!(obj instanceof SR)) {</span>
+<span class="nc" id="L24">            return false;</span>
+        }
+<span class="nc" id="L26">        SR other = (SR)obj;</span>
+<span class="nc bnc" id="L27" title="All 12 branches missed.">        return (other.startIdx1 == startIdx1 &amp;&amp; other.stopIdx1 == stopIdx1 &amp;&amp;</span>
+            other.mLen == mLen &amp;&amp; other.diffChordSum == diffChordSum &amp;&amp;
+            other.row == row &amp;&amp; other.offsetIdx2 == offsetIdx2);
+    }
+
+    @Override
+    public int hashCode() {
+<span class="nc" id="L34">        int hash = fnvHashCode();</span>
+<span class="nc" id="L35">        return hash;</span>
+    }
+    //Public domain:  http://www.isthe.com/chongo/src/fnv/hash_32a.c
+<span class="fc" id="L38">    protected static int fnv321aInit = 0x811c9dc5;</span>
+<span class="fc" id="L39">    protected static int fnv32Prime = 0x01000193;</span>
+    protected int fnvHashCode() {
+<span class="nc" id="L41">        int sum = fnv321aInit;</span>
+<span class="nc" id="L42">        sum ^= startIdx1;</span>
+<span class="nc" id="L43">        sum *= fnv32Prime;</span>
+<span class="nc" id="L44">        sum ^= stopIdx1;</span>
+<span class="nc" id="L45">        sum *= fnv32Prime;</span>
+<span class="nc" id="L46">        sum ^= offsetIdx2;</span>
+<span class="nc" id="L47">        sum *= fnv32Prime;</span>
+<span class="nc" id="L48">        sum ^= row;</span>
+<span class="nc" id="L49">        sum *= fnv32Prime;</span>
+<span class="nc" id="L50">        sum ^= mLen;</span>
+<span class="nc" id="L51">        sum *= fnv32Prime;</span>
+<span class="nc" id="L52">        sum ^= Double.hashCode(maxChordSum);</span>
+<span class="nc" id="L53">        sum *= fnv32Prime;</span>
+<span class="nc" id="L54">        return sum;</span>
+    }
+
+    @Override
+    public int compareTo(SR other) {
+        //to handle a changing maxDiffChordSum, will attempt to
+        // use the largest on both SR instances
+<span class="fc" id="L61">        double maxDiffChord = Math.max(maxChordSum, other.maxChordSum);</span>
+<span class="fc" id="L62">        double d1 = calcSalukDist(diffChordSum, maxDiffChord, mLen, nMax);</span>
+<span class="fc" id="L63">        double d2 = calcSalukDist(other.diffChordSum, maxDiffChord, </span>
+            other.mLen, other.nMax);
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">        if (d1 &lt; d2) {</span>
+<span class="nc" id="L66">            return -1;</span>
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">        } else if (d1 &gt; d2) {</span>
+<span class="nc" id="L68">            return 1;</span>
+        }
+<span class="fc" id="L70">        return 0;</span>
+    }
+
+    public void setChordSumNeedsUpdate(boolean needsUpdate) {
+<span class="fc" id="L74">        chordSumNeedsUpdate = needsUpdate;</span>
+<span class="fc" id="L75">    }</span>
+
+    double calcSalukDist() {
+<span class="fc" id="L78">        return calcSalukDist(diffChordSum, maxChordSum, </span>
+            (stopIdx1 - startIdx1 + 1), nMax);
+    }
+
+    double calcSalukDist(double compChord, double maxChord,
+        int length, int maxMatchable) {
+<span class="fc" id="L84">        double d = compChord/maxChord;</span>
+<span class="fc" id="L85">        double f = 1. - ((double)length/(double)maxMatchable);</span>
+<span class="fc" id="L86">        return f*f + d*d;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

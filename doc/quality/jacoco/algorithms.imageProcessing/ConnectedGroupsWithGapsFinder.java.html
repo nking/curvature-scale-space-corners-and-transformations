@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ConnectedGroupsWithGapsFinder.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">ConnectedGroupsWithGapsFinder.java</span></div><h1>ConnectedGroupsWithGapsFinder.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.compGeometry.ClosestPairBetweenSets;
+import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.imageProcessing.util.PairIntWithIndex;
+import algorithms.misc.Misc;
+import algorithms.util.PairInt;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Logger;
+
+/**
+ *  not yet tested or ready for use
+ * 
+ * if gapAllowed == 0, runtime complexity is 8 * O(N_all_points).
+ * if gapAllowed &gt; 0, runtime complexity depends upon the characteristics of the
+ * data: the min and max bounds are used to reduce comparisons, and the theta
+ * is used to filter also. the remaining list groups are compared using
+ * a closest pair between sets algorithm in pairs visited using a DFS patter,
+ * so the runtime complexity is then roughly
+ *   nListPairs * O(N_points_in_both_lists * lg_2(N_points_in_both_lists))
+ *   times a factor of about 6.
+ * 
+ * @author nichole
+ */
+public class ConnectedGroupsWithGapsFinder {
+    
+    /**
+     * an array to hold each grouped set of indexes as an item.
+     */
+<span class="nc" id="L36">    protected List&lt;Set&lt;Integer&gt;&gt; groupMembership = new ArrayList&lt;Set&lt;Integer&gt;&gt;();</span>
+        
+<span class="nc" id="L38">    protected int minimumNumberInCluster = 2;</span>
+    
+    /*
+     * map w/ key holding indexes for a point to the group it belongs to.
+     * note that the point index is relative to indexer.x and indexer.y
+     */
+<span class="nc" id="L44">    protected Map&lt;Integer, Integer&gt; inputIndexToGroupIndexMap = new HashMap&lt;Integer, Integer&gt;();</span>
+    
+<span class="nc" id="L46">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+    
+<span class="nc" id="L48">    protected boolean debug = false;</span>
+    
+<span class="nc" id="L50">    public ConnectedGroupsWithGapsFinder() {</span>
+                
+<span class="nc" id="L52">    }</span>
+    
+    public void setMinimumNumberInCluster(int n) {
+<span class="nc" id="L55">        this.minimumNumberInCluster = n;</span>
+<span class="nc" id="L56">    }</span>
+    
+    public void findConnectedGroups(List&lt;Set&lt;PairInt&gt;&gt; inputList, 
+        List&lt;Integer&gt; thetas, double allowedGap) {
+                
+<span class="nc" id="L61">        findClustersIterative(inputList, thetas, allowedGap);</span>
+        
+<span class="nc" id="L63">        prune();        </span>
+<span class="nc" id="L64">    }</span>
+      
+    protected void findClustersIterative(List&lt;Set&lt;PairInt&gt;&gt; inputList, 
+        List&lt;Integer&gt; thetas, double allowedGap) {
+        
+<span class="nc bnc" id="L69" title="All 2 branches missed.">        if (inputList.isEmpty()) {</span>
+<span class="nc" id="L70">            return;</span>
+        }
+        
+<span class="nc" id="L73">        int n = inputList.size();</span>
+<span class="nc" id="L74">        List&lt;Bounds&gt; bounds = new ArrayList&lt;Bounds&gt;();</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="nc" id="L76">            Collection&lt;PairInt&gt; groupI = inputList.get(i);</span>
+            //xMin, xMax, yMin, yMax
+<span class="nc" id="L78">            int[] minMaxXY = algorithms.misc.MiscMath.findMinMaxXY(groupI);</span>
+<span class="nc" id="L79">            Bounds b = new Bounds();</span>
+<span class="nc" id="L80">            b.minX = minMaxXY[0];</span>
+<span class="nc" id="L81">            b.maxX = minMaxXY[1];</span>
+<span class="nc" id="L82">            b.minY = minMaxXY[2];</span>
+<span class="nc" id="L83">            b.maxY = minMaxXY[3];</span>
+<span class="nc" id="L84">            bounds.add(b);</span>
+        }
+        
+<span class="nc" id="L87">        Set&lt;Integer&gt; visited = new HashSet&lt;Integer&gt;();</span>
+        
+<span class="nc" id="L89">        java.util.Stack&lt;Integer&gt; stack = new java.util.Stack&lt;Integer&gt;();</span>
+        
+<span class="nc" id="L91">        boolean foundANeighbor = false;</span>
+        
+<span class="nc bnc" id="L93" title="All 2 branches missed.">        for (int i = (n - 1); i &gt; 0; i--) {</span>
+<span class="nc" id="L94">            stack.add(Integer.valueOf(i));</span>
+        }
+               
+<span class="nc bnc" id="L97" title="All 2 branches missed.">        while (!stack.isEmpty()) {</span>
+
+<span class="nc" id="L99">            Integer uIndex = stack.pop();</span>
+            
+<span class="nc bnc" id="L101" title="All 2 branches missed.">            if (visited.contains(uIndex)) {</span>
+<span class="nc" id="L102">                continue;</span>
+            }
+            
+<span class="nc" id="L105">            int uIdx = uIndex.intValue();</span>
+
+<span class="nc" id="L107">            Set&lt;PairInt&gt; groupI = inputList.get(uIdx);</span>
+<span class="nc" id="L108">            Integer thetaI = thetas.get(uIdx);</span>
+<span class="nc" id="L109">            Bounds boundsI = bounds.get(uIdx);</span>
+            
+<span class="nc bnc" id="L111" title="All 2 branches missed.">            for (int vIdx = 0; vIdx &lt; n ; ++vIdx) {</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">                if (uIdx == vIdx) {</span>
+<span class="nc" id="L113">                    continue;</span>
+                }
+<span class="nc" id="L115">                Integer vIndex = Integer.valueOf(vIdx);</span>
+                
+<span class="nc" id="L117">                Bounds boundsJ = bounds.get(vIdx);</span>
+<span class="nc bnc" id="L118" title="All 8 branches missed.">                if ((boundsI.maxX &lt;  (boundsJ.minX - allowedGap)) || </span>
+                    (boundsI.minX &gt;  (boundsJ.maxX + allowedGap)) ||
+                    (boundsI.maxY &lt;  (boundsJ.minY - allowedGap)) || 
+                    (boundsI.minY &gt;  (boundsJ.maxY + allowedGap))
+                    ) {
+<span class="nc" id="L123">                    continue;</span>
+                }
+<span class="nc" id="L125">                Set&lt;PairInt&gt; groupJ = inputList.get(vIdx);</span>
+<span class="nc" id="L126">                Integer thetaJ = thetas.get(vIdx);</span>
+<span class="nc" id="L127">                double diff = AngleUtil.getAngleDifference(thetaI.floatValue(), </span>
+<span class="nc" id="L128">                    thetaJ.floatValue());</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">                if (Math.abs(diff) &gt; 44) {</span>
+<span class="nc" id="L130">                    continue;</span>
+                }
+<span class="nc" id="L132">                ClosestPairBetweenSets cpFinder = new ClosestPairBetweenSets();</span>
+<span class="nc" id="L133">                ClosestPairBetweenSets.ClosestPairInt cp = cpFinder.findClosestPair(groupI, groupJ);</span>
+<span class="nc" id="L134">                PairIntWithIndex p1 = cp.getPoint0();</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">                if (p1 == null) {</span>
+<span class="nc" id="L136">                    continue;</span>
+                }
+<span class="nc bnc" id="L138" title="All 2 branches missed.">                if (Math.sqrt(cp.getSeparationSquared()) &gt; allowedGap) {</span>
+<span class="nc" id="L139">                    continue;</span>
+                }
+            
+<span class="nc" id="L142">                processPair(uIdx, vIdx);</span>
+
+<span class="nc" id="L144">                stack.add(vIndex);</span>
+
+<span class="nc" id="L146">                foundANeighbor = true;</span>
+            }
+            
+<span class="nc bnc" id="L149" title="All 4 branches missed.">            if (!foundANeighbor &amp;&amp; (minimumNumberInCluster == 1)) {                </span>
+<span class="nc" id="L150">                process(uIdx);</span>
+            }
+            
+<span class="nc" id="L153">            visited.add(uIndex);</span>
+<span class="nc" id="L154">        }</span>
+<span class="nc" id="L155">    }</span>
+    
+    protected void processPair(Integer uIndex, Integer vIndex) {
+<span class="nc" id="L158">        Integer uGroupId = inputIndexToGroupIndexMap.get(uIndex);</span>
+<span class="nc" id="L159">        Integer vGroupId = inputIndexToGroupIndexMap.get(vIndex);</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">        if (uGroupId == null) {</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">            if (vGroupId == null) {</span>
+<span class="nc" id="L162">                uGroupId = Integer.valueOf(groupMembership.size());</span>
+<span class="nc" id="L163">                inputIndexToGroupIndexMap.put(uIndex, uGroupId);</span>
+<span class="nc" id="L164">                inputIndexToGroupIndexMap.put(vIndex, uGroupId);</span>
+<span class="nc" id="L165">                Set&lt;Integer&gt; set = new HashSet&lt;Integer&gt;();</span>
+<span class="nc" id="L166">                set.add(uIndex);</span>
+<span class="nc" id="L167">                set.add(vIndex);</span>
+<span class="nc" id="L168">                groupMembership.add(set);</span>
+<span class="nc" id="L169">            } else {</span>
+<span class="nc" id="L170">                groupMembership.get(vGroupId).add(uIndex);</span>
+<span class="nc" id="L171">                inputIndexToGroupIndexMap.put(uIndex, vGroupId);</span>
+            }
+        } else {
+<span class="nc bnc" id="L174" title="All 2 branches missed.">            if (vGroupId == null) {</span>
+<span class="nc" id="L175">                groupMembership.get(uGroupId).add(vIndex);</span>
+<span class="nc" id="L176">                inputIndexToGroupIndexMap.put(vIndex, uGroupId);</span>
+            } else {
+                // else vGroupId == uGroupId
+<span class="nc bnc" id="L179" title="All 2 branches missed.">                if (!vGroupId.equals(uGroupId)) {</span>
+                    // merge groups
+<span class="nc" id="L181">                    Set&lt;Integer&gt; uGroup = groupMembership.get(uGroupId);</span>
+<span class="nc" id="L182">                    Set&lt;Integer&gt; vGroup = groupMembership.get(vGroupId);</span>
+<span class="nc" id="L183">                    int nU = uGroup.size();</span>
+<span class="nc" id="L184">                    int nV = vGroup.size();</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">                    if (nU &gt;= nV) {</span>
+                        // merge v into u
+<span class="nc" id="L187">                        uGroup.addAll(vGroup);</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">                        for (Integer p : vGroup) {</span>
+<span class="nc" id="L189">                            inputIndexToGroupIndexMap.put(p, uGroupId);</span>
+<span class="nc" id="L190">                        }</span>
+<span class="nc" id="L191">                        vGroup.clear();</span>
+                    } else {
+                        // merge u into v
+<span class="nc" id="L194">                        vGroup.addAll(uGroup);</span>
+<span class="nc bnc" id="L195" title="All 2 branches missed.">                        for (Integer p : uGroup) {</span>
+<span class="nc" id="L196">                            inputIndexToGroupIndexMap.put(p, vGroupId);</span>
+<span class="nc" id="L197">                        }</span>
+<span class="nc" id="L198">                        uGroup.clear();</span>
+                    }
+                }
+            }
+        }
+<span class="nc" id="L203">    }</span>
+     
+    protected void process(Integer uIndex) {
+<span class="nc" id="L206">        Integer groupId = inputIndexToGroupIndexMap.get(uIndex);</span>
+<span class="nc bnc" id="L207" title="All 2 branches missed.">        if (groupId == null) {</span>
+<span class="nc" id="L208">            groupId = Integer.valueOf(groupMembership.size());</span>
+<span class="nc" id="L209">            inputIndexToGroupIndexMap.put(uIndex, groupId);</span>
+<span class="nc" id="L210">            Set&lt;Integer&gt; set = new HashSet&lt;Integer&gt;();</span>
+<span class="nc" id="L211">            set.add(uIndex);</span>
+<span class="nc" id="L212">            groupMembership.add(set);</span>
+        }
+<span class="nc" id="L214">    }</span>
+    
+    /**
+     * remove groups smaller than minimumNumberInCluster
+     */
+    protected void prune() {
+<span class="nc" id="L220">        log.finest(&quot;number of groups before prune=&quot; + groupMembership.size());</span>
+        //TODO: the data structures used could be written at the expense
+        // of space complexity to reduce changes needed when group number
+        // changes
+        /*
+         * [------] 0
+         * [------] 1 &lt;---- too few
+         * [------] 2
+         */
+        // iterate backwards so can move items up without conflict with iterator
+<span class="nc bnc" id="L230" title="All 2 branches missed.">        for (int i = groupMembership.size() - 1; i &gt; -1; i--) {</span>
+<span class="nc" id="L231">            Set&lt;Integer&gt; group = groupMembership.get(i);</span>
+<span class="nc" id="L232">            int count = group.size();</span>
+<span class="nc" id="L233">            log.finest(&quot;  group &quot; + i + &quot; has &quot; + count + &quot; members before prune (min=&quot; + minimumNumberInCluster + &quot;)&quot;);</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">            if (count &lt; minimumNumberInCluster) {</span>
+                // remove this group and move up all groups w/ index &gt; i by one index
+<span class="nc bnc" id="L236" title="All 2 branches missed.">                for (int j = i + 1; j &lt; groupMembership.size(); j++) {</span>
+<span class="nc" id="L237">                    int newGroupId = j - 1;</span>
+                    // update members in pointToGroupIndex
+<span class="nc" id="L239">                    Set&lt;Integer&gt; latest = groupMembership.get(j);</span>
+<span class="nc bnc" id="L240" title="All 2 branches missed.">                    for (Integer p : latest) {</span>
+<span class="nc" id="L241">                        inputIndexToGroupIndexMap.put(p, Integer.valueOf(newGroupId));</span>
+<span class="nc" id="L242">                    }</span>
+                }
+<span class="nc" id="L244">                Set&lt;Integer&gt; removed = groupMembership.remove(i);</span>
+            }
+        }
+<span class="nc" id="L247">        log.finest(&quot;number of groups after prune=&quot; + groupMembership.size());</span>
+<span class="nc" id="L248">    }</span>
+    
+    public int getNumberOfGroups() {
+<span class="nc" id="L251">        return groupMembership.size();</span>
+    }
+    
+    public Set&lt;Integer&gt; getGroupedIndexes(int groupId) {
+<span class="nc bnc" id="L255" title="All 2 branches missed.">        if (groupMembership.isEmpty()) {</span>
+<span class="nc" id="L256">            return new HashSet&lt;Integer&gt;();</span>
+        }
+<span class="nc bnc" id="L258" title="All 4 branches missed.">        if (groupId &gt; (groupMembership.size() - 1) || (groupId &lt; 0)) {</span>
+<span class="nc" id="L259">            throw new IllegalArgumentException(&quot;groupId=&quot; + groupId + &quot; is outside of range of nGroups=&quot; + groupMembership.size());</span>
+        }
+<span class="nc" id="L261">        Set&lt;Integer&gt; set = groupMembership.get(groupId);</span>
+<span class="nc" id="L262">        return set;</span>
+    }
+    
+    private class Bounds {
+        public int minX;
+        public int maxX;
+        public int minY;
+        public int maxY;
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

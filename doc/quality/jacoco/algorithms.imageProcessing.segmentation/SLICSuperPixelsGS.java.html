@@ -1,0 +1,695 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>SLICSuperPixelsGS.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.segmentation</a> &gt; <span class="el_source">SLICSuperPixelsGS.java</span></div><h1>SLICSuperPixelsGS.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.segmentation;
+
+import algorithms.QuickSort;
+import algorithms.bipartite.MinHeapForRT2012;
+import algorithms.imageProcessing.Gaussian1DFirstDeriv;
+import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.HeapNode;
+import algorithms.misc.Misc;
+import algorithms.util.PairInt;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.logging.Logger;
+
+/**
+ * a variant of kmeans whose goal is to make k super-pixels in the image
+ * based upon greyscale similarity and x,y proximity.
+ *
+ * The code implements the algorithm of:
+ * &quot;SLIC Superpixels Compared to State-of-the-Art Superpixel Methods&quot;
+   by Achanta, Appu Shaji,Smith,  Lucchi, Fua, and Su ̈sstrunk,
+ * but replaces the cielab colorspace with greyscale color space.
+ * 
+ * @author nichole
+ */
+<span class="nc bnc" id="L35" title="All 2 branches missed.">public class SLICSuperPixelsGS {</span>
+
+<span class="nc" id="L37">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+
+<span class="nc" id="L39">    protected int[] labels = null;</span>
+
+<span class="nc" id="L41">    protected double[] distances = null;</span>
+
+    protected final int k;
+
+    protected final int s;
+
+    protected final int nXs;
+
+    protected final int nYs;
+
+    protected final float[][] seedDescriptors;
+
+    protected final GreyscaleImage img;
+
+<span class="nc" id="L55">    protected double[][] gradient = null;</span>
+
+    protected final double threshold;
+
+    protected final double maxBrightness;
+
+    /**
+     * constructor for the super-pixel algorithm SLIC that uses the
+     * color space of greyscale and creates approximately nClusters (a.k.a.
+     * super-pixels).
+     * The number of
+     * clusters may be adjusted for even intervals over width and height.
+     * @param img
+     * @param nClusters
+     * @param clrNorm a smaller number than 10 finds details such as textures
+     * and a number closer to 40 produces very blocky segmentation mostly
+     * lacking curves. (NOTE: these numbers need to be updated for GS, but
+     * the directions of change are same).
+     */
+<span class="nc" id="L74">    public SLICSuperPixelsGS(GreyscaleImage img, int nClusters, double clrNorm) {</span>
+
+<span class="nc bnc" id="L76" title="All 4 branches missed.">        if (clrNorm &lt; 1 || (clrNorm &gt; 40)) {</span>
+<span class="nc" id="L77">            throw new IllegalArgumentException(&quot;clrNorm should be in range &quot;</span>
+                + &quot;1 to 40&quot;);
+        }
+
+<span class="nc" id="L81">        maxBrightness = clrNorm;</span>
+
+<span class="nc" id="L83">        double sampling = Math.sqrt(( (float)img.getNPixels()/(float)nClusters));</span>
+
+<span class="nc bnc" id="L85" title="All 2 branches missed.">        if (sampling &lt; 1) {</span>
+<span class="nc" id="L86">            sampling = 1;</span>
+        }
+
+<span class="nc" id="L89">        this.s = (int)Math.round(sampling);</span>
+
+<span class="nc" id="L91">        nXs = Math.round((float)img.getWidth()/(float)s);</span>
+<span class="nc" id="L92">        nYs = Math.round((float)img.getHeight()/(float)s);</span>
+<span class="nc" id="L93">        this.k = nXs * nYs;</span>
+
+<span class="nc" id="L95">        log.info(&quot;k = &quot; + k + &quot; s=&quot; + this.s + &quot; nXs=&quot; + nXs + &quot; nYs=&quot; + nYs);</span>
+
+<span class="nc" id="L97">        this.img = img;</span>
+
+        // v, x, y
+<span class="nc" id="L100">        seedDescriptors = new float[k][];</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">        for (int i = 0; i &lt; k; ++i) {</span>
+<span class="nc" id="L102">            seedDescriptors[i] = new float[3];</span>
+        }
+
+        // max error would be ( maxClr * maxClr * k) + 2*( s/2 * s/2 * k)
+<span class="nc" id="L106">        double maxError = 2*(maxBrightness * maxBrightness * k);</span>
+<span class="nc" id="L107">        maxError = Math.sqrt(maxError);</span>
+<span class="nc" id="L108">        threshold = 0.01 * maxError;</span>
+<span class="nc" id="L109">    }</span>
+
+    /**
+     * an optional method to set the gradient, else is
+     * calculated internal to the class and discarded.
+     * @param gradientImg
+     */
+    public void setGradient(GreyscaleImage gradientImg) {
+
+<span class="nc bnc" id="L118" title="All 2 branches missed.">        if (gradientImg.getNPixels() != img.getNPixels()</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">            || gradientImg.getWidth() != img.getWidth()</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">            || gradientImg.getHeight() != img.getHeight()) {</span>
+<span class="nc" id="L121">            throw new IllegalArgumentException(</span>
+                &quot;gradientImg must be same size as img&quot;);
+        }
+
+<span class="nc" id="L125">        int width = gradientImg.getWidth();</span>
+<span class="nc" id="L126">        int height = gradientImg.getHeight();</span>
+
+<span class="nc" id="L128">        gradient = new double[width][];</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">        for (int i = 0; i &lt; width; ++i) {</span>
+<span class="nc" id="L130">            gradient[i] = new double[height];</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">            for (int j = 0; j &lt; height; ++j) {</span>
+<span class="nc" id="L132">                gradient[i][j] = gradientImg.getValue(i, j);</span>
+            }
+        }
+<span class="nc" id="L135">    }</span>
+
+    /**
+     * constructor for the super-pixel algorithm SLIC that uses the default
+     * color space of greyscale and creates approximately nClusters (a.k.a.
+     * super-pixels).
+     * The number of
+     * clusters may be adjusted for even intervals over width and height.
+     * Uses a default clrNorm = 10;
+     * @param img
+     * @param nClusters
+     * 
+     */
+<span class="nc" id="L148">    public SLICSuperPixelsGS(GreyscaleImage img, int nClusters) {</span>
+
+<span class="nc bnc" id="L150" title="All 2 branches missed.">        if  (nClusters &gt; img.getNPixels()) {</span>
+<span class="nc" id="L151">            throw new IllegalArgumentException(</span>
+                &quot;nClusters must be smaller than number of pixels in img&quot;);
+        }
+
+<span class="nc" id="L155">        maxBrightness = 10;</span>
+
+        //TOOD: after have an implementation as authors suggest,
+        //  change to use deltaE instead of sqrt sum diffs of CIE lab
+        //  and compare differences in results and runtime (many more flops...)
+
+<span class="nc" id="L161">        double sampling = Math.sqrt(( (float)img.getNPixels()/(float)nClusters));</span>
+
+<span class="nc bnc" id="L163" title="All 2 branches missed.">        if (sampling &lt; 1) {</span>
+<span class="nc" id="L164">            sampling = 1;</span>
+        }
+
+<span class="nc" id="L167">        this.s = (int)Math.round(sampling);</span>
+
+<span class="nc" id="L169">        nXs = Math.round((float)img.getWidth()/(float)s);</span>
+<span class="nc" id="L170">        nYs = Math.round((float)img.getHeight()/(float)s);</span>
+<span class="nc" id="L171">        this.k = nXs * nYs;</span>
+
+<span class="nc" id="L173">        log.info(&quot;k = &quot; + k);</span>
+
+<span class="nc" id="L175">        this.img = img;</span>
+
+        // v, x, y
+<span class="nc" id="L178">        seedDescriptors = new float[k][];</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">        for (int i = 0; i &lt; k; ++i) {</span>
+<span class="nc" id="L180">            seedDescriptors[i] = new float[3];</span>
+        }
+
+        // max error would be ( maxClr * maxClr * k) + 2*( s/2 * s/2 * k)
+<span class="nc" id="L184">        double maxError = 2*(maxBrightness * maxBrightness * k);</span>
+<span class="nc" id="L185">        maxError = Math.sqrt(maxError);</span>
+<span class="nc" id="L186">        threshold = 0.01 * maxError;</span>
+<span class="nc" id="L187">    }</span>
+
+     public void calculate() {
+
+<span class="nc" id="L191">        init();</span>
+
+<span class="nc" id="L193">        int nIterMax = 20;</span>
+
+<span class="nc" id="L195">        int nIter = 0;</span>
+
+<span class="nc bnc" id="L197" title="All 2 branches missed.">        while (nIter &lt; nIterMax) {</span>
+
+<span class="nc" id="L199">            assignPixelsNearSeeds();</span>
+
+<span class="nc" id="L201">            double l2Norm = adjustClusterCenters();</span>
+
+<span class="nc" id="L203">            log.fine(&quot;l2Norm=&quot; + l2Norm + &quot; nIter=&quot; + nIter);</span>
+
+<span class="nc bnc" id="L205" title="All 2 branches missed.">            if (l2Norm &lt; threshold) {</span>
+<span class="nc" id="L206">                break;</span>
+            }
+
+<span class="nc" id="L209">            nIter++;</span>
+<span class="nc" id="L210">        }</span>
+
+<span class="nc" id="L212">        assignTheUnassigned();</span>
+
+        //ImageSegmentation imageSegmentation = new ImageSegmentation();
+        //imageSegmentation.replaceSinglePixelLabelsCIELAB(labels, img);
+
+<span class="nc" id="L217">    }</span>
+
+    protected void init() {
+
+<span class="nc bnc" id="L221" title="All 2 branches missed.">        if (labels != null) {</span>
+<span class="nc" id="L222">            throw new IllegalStateException(&quot;variables have been initialized&quot;);</span>
+        }
+
+<span class="nc" id="L225">        int nPix = img.getNPixels();</span>
+
+<span class="nc" id="L227">        labels = new int[nPix];</span>
+<span class="nc" id="L228">        Arrays.fill(labels, -1);</span>
+
+<span class="nc" id="L230">        distances = new double[nPix];</span>
+<span class="nc" id="L231">        Arrays.fill(distances, Double.MAX_VALUE);</span>
+
+        // init cluster centers, seedDescriptors for grid with cell size s
+<span class="nc" id="L234">        populateSeedDescriptors();</span>
+<span class="nc" id="L235">    }</span>
+
+    private void populateSeedDescriptors() {
+
+<span class="nc bnc" id="L239" title="All 2 branches missed.">        if (gradient == null) {</span>
+<span class="nc" id="L240">            gradient = calcGradient();</span>
+        }
+
+        /*
+        sampled on a regular grid spaced S pixels apart.
+        To produce roughly equally sized superpixels,
+        the grid interval is S.
+
+        ** The centers are moved to seed locations corresponding to the lowest
+        gradient position in a 3 X 3 neighborhood. This is done to avoid
+        centering a superpixel on an edge and to reduce the chance of
+        seeding a superpixel with a noisy pixel.
+        */
+
+<span class="nc" id="L254">        int w = img.getWidth();</span>
+<span class="nc" id="L255">        int h = img.getHeight();</span>
+
+        // determine the centers of each s x s cell within search range of 3x3 in gradient
+
+<span class="nc" id="L259">        final int sHalf = s/2;</span>
+        int dx, dy;
+<span class="nc bnc" id="L261" title="All 2 branches missed.">        if (s &lt; 3) {</span>
+<span class="nc" id="L262">            dx = 0;</span>
+<span class="nc" id="L263">            dy = 0;</span>
+        } else {
+<span class="nc" id="L265">            dx = 1;</span>
+<span class="nc" id="L266">            dy = 1;</span>
+        }
+
+        // kCurrent = (iNy * nX) + iNx;
+<span class="nc bnc" id="L270" title="All 2 branches missed.">        for (int iNy = 0; iNy &lt; nYs; ++iNy) {</span>
+
+<span class="nc" id="L272">            int y1 = sHalf + iNy*s;</span>
+<span class="nc bnc" id="L273" title="All 4 branches missed.">            if ((dy == 0) &amp;&amp; y1 &gt; (h - 1)) {</span>
+<span class="nc" id="L274">                y1 = h - 1;</span>
+            }
+
+<span class="nc bnc" id="L277" title="All 2 branches missed.">            for (int iNx = 0; iNx &lt; nXs; ++iNx) {</span>
+
+<span class="nc" id="L279">                int x1 = sHalf + iNx*s;</span>
+<span class="nc bnc" id="L280" title="All 4 branches missed.">                if ((dx == 0) &amp;&amp; x1 &gt; (w - 1)) {</span>
+<span class="nc" id="L281">                    x1 = w - 1;</span>
+                }
+
+<span class="nc" id="L284">                int kCurrent = (iNy * nXs) + iNx;</span>
+
+                // find smallest gradient within range (x1, y1) +-1 to set center for seed
+<span class="nc" id="L287">                double minG = Double.MAX_VALUE;</span>
+<span class="nc" id="L288">                int minX2 = -1;</span>
+<span class="nc" id="L289">                int minY2 = -1;</span>
+<span class="nc bnc" id="L290" title="All 2 branches missed.">                for (int x2 = (x1 - dx); x2 &lt;= (x1 + dx); ++x2) {</span>
+<span class="nc bnc" id="L291" title="All 4 branches missed.">                    if (x2 &lt; 0 || (x2 &gt; (w - 1))) {</span>
+<span class="nc" id="L292">                        continue;</span>
+                    }
+<span class="nc bnc" id="L294" title="All 2 branches missed.">                    for (int y2 = (y1 - dy); y2 &lt;= (y1 + dy); ++y2) {</span>
+<span class="nc bnc" id="L295" title="All 4 branches missed.">                        if (y2 &lt; 0 || (y2 &gt; (h - 1))) {</span>
+<span class="nc" id="L296">                            continue;</span>
+                        }
+<span class="nc" id="L298">                        double g = gradient[x2][y2];</span>
+<span class="nc bnc" id="L299" title="All 2 branches missed.">                        if (g &lt; minG) {</span>
+<span class="nc" id="L300">                            minG = g;</span>
+<span class="nc" id="L301">                            minX2 = x2;</span>
+<span class="nc" id="L302">                            minY2 = y2;</span>
+                        }
+                    }
+                }
+
+                // [v, x, y]
+<span class="nc" id="L308">                seedDescriptors[kCurrent][0] = img.getValue(minX2, minY2);</span>
+<span class="nc" id="L309">                seedDescriptors[kCurrent][1] = minX2;</span>
+<span class="nc" id="L310">                seedDescriptors[kCurrent][2] = minY2;</span>
+
+<span class="nc" id="L312">                int pixIdx2 = img.getInternalIndex(minX2, minY2);</span>
+<span class="nc" id="L313">                labels[pixIdx2] = kCurrent;</span>
+<span class="nc" id="L314">                distances[pixIdx2] = 0;</span>
+
+<span class="nc" id="L316">                log.fine(&quot;seed &quot; + kCurrent + &quot; x=&quot; + minX2 + &quot; y=&quot; + minY2);</span>
+            }
+        }
+<span class="nc" id="L319">    }</span>
+
+   /**
+    * O(N)
+    *
+    * @return
+    */
+   private double[][] calcGradient() {
+
+<span class="nc" id="L328">       int nPix = img.getNPixels();</span>
+<span class="nc" id="L329">       int width = img.getWidth();</span>
+<span class="nc" id="L330">       int height = img.getHeight();</span>
+
+<span class="nc" id="L332">       double[][] gradient = new double[width][];</span>
+<span class="nc bnc" id="L333" title="All 2 branches missed.">       for (int i = 0; i &lt; width; ++i) {</span>
+<span class="nc" id="L334">           gradient[i] = new double[height];</span>
+       }
+
+<span class="nc" id="L337">       float[] kernel = Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive();</span>
+
+<span class="nc" id="L339">       int h = (kernel.length - 1) &gt;&gt; 1;</span>
+
+       // TODO: edit to operate on one direction, then operate on that result
+       //        in other direction
+
+<span class="nc bnc" id="L344" title="All 2 branches missed.">       for (int i = 0; i &lt; nPix; ++i) {</span>
+<span class="nc" id="L345">           final int x1 = img.getCol(i);</span>
+<span class="nc" id="L346">           final int y1 = img.getRow(i);</span>
+
+<span class="nc" id="L348">           float vXSum = 0;</span>
+<span class="nc" id="L349">           float vYSum = 0;</span>
+
+<span class="nc bnc" id="L351" title="All 2 branches missed.">           for (int g = 0; g &lt; kernel.length; ++g) {</span>
+<span class="nc" id="L352">               float gg = kernel[g];</span>
+<span class="nc bnc" id="L353" title="All 2 branches missed.">               if (gg == 0) {</span>
+<span class="nc" id="L354">                   continue;</span>
+               }
+
+               int x2, y2;
+               // calc for X gradient first
+<span class="nc" id="L359">               int delta = g - h;</span>
+<span class="nc" id="L360">                x2 = x1 + delta;</span>
+<span class="nc" id="L361">                y2 = y1;</span>
+                // edge corrections.  use replication
+<span class="nc bnc" id="L363" title="All 2 branches missed.">                if (x2 &lt; 0) {</span>
+<span class="nc" id="L364">                    x2 = -1 * x2 - 1;</span>
+<span class="nc bnc" id="L365" title="All 2 branches missed.">                } else if (x2 &gt;= width) {</span>
+<span class="nc" id="L366">                    int diff = x2 - width;</span>
+<span class="nc" id="L367">                    x2 = width - diff - 1;</span>
+                }
+<span class="nc" id="L369">                vXSum += gg * img.getValue(x2, y2);</span>
+
+                // calc for y
+<span class="nc" id="L372">                y2 = y1 + delta;</span>
+<span class="nc" id="L373">                x2 = x1;</span>
+                // edge corrections.  use replication
+<span class="nc bnc" id="L375" title="All 2 branches missed.">                if (y2 &lt; 0) {</span>
+<span class="nc" id="L376">                    y2 = -1 * y2 - 1;</span>
+<span class="nc bnc" id="L377" title="All 2 branches missed.">                } else if (y2 &gt;= height) {</span>
+<span class="nc" id="L378">                    int diff = y2 - height;</span>
+<span class="nc" id="L379">                    y2 = height - diff - 1;</span>
+                }
+<span class="nc" id="L381">                vYSum += gg * img.getValue(x2, y2);</span>
+           }
+
+<span class="nc" id="L384">           double vC = Math.sqrt(vXSum * vXSum + vYSum * vYSum);</span>
+
+           // presumably, greyscale gradient is fine
+
+<span class="nc" id="L388">           gradient[x1][y1] = vC;</span>
+       }
+
+<span class="nc" id="L391">        return gradient;</span>
+    }
+
+    private void assignPixelsNearSeeds() {
+
+<span class="nc" id="L396">        int w = img.getWidth();</span>
+<span class="nc" id="L397">        int h = img.getHeight();</span>
+
+<span class="nc bnc" id="L399" title="All 2 branches missed.">        for (int kCurrent = 0; kCurrent &lt; k; ++kCurrent) {</span>
+
+<span class="nc" id="L401">            float[] desc1 = seedDescriptors[kCurrent];</span>
+<span class="nc" id="L402">            int x1 = (int) desc1[1];</span>
+<span class="nc" id="L403">            int y1 = (int) desc1[2];</span>
+
+<span class="nc bnc" id="L405" title="All 2 branches missed.">            for (int x2 = (x1 - s); x2 &lt;= (x1 + s); ++x2) {</span>
+<span class="nc bnc" id="L406" title="All 2 branches missed.">                for (int y2 = (y1 - s); y2 &lt;= (y1 + s); ++y2) {</span>
+
+<span class="nc bnc" id="L408" title="All 8 branches missed.">                    if (x2 &lt; 0 || y2 &lt; 0 || (x2 &gt; (w - 1)) || (y2 &gt; (h - 1))) {</span>
+<span class="nc" id="L409">                        continue;</span>
+                    }
+<span class="nc" id="L411">                    int pixIdx2 = img.getInternalIndex(x2, y2);</span>
+
+<span class="nc" id="L413">                    double dist = calcDist(desc1,</span>
+<span class="nc" id="L414">                        img.getValue(x2, y2), x2, y2);</span>
+
+<span class="nc bnc" id="L416" title="All 2 branches missed.">                    if (dist &lt; distances[pixIdx2]) {</span>
+<span class="nc" id="L417">                        distances[pixIdx2] = dist;</span>
+<span class="nc" id="L418">                        labels[pixIdx2] = kCurrent;</span>
+                    }
+                }
+            }
+        }
+
+<span class="nc" id="L424">    }</span>
+
+    private double adjustClusterCenters() {
+
+        // L2 norm is the residuals added in quadratur
+
+<span class="nc" id="L430">        double[][] meanDescriptors = new double[k][];</span>
+        // v, x, y
+<span class="nc bnc" id="L432" title="All 2 branches missed.">        for (int i = 0; i &lt; k; ++i) {</span>
+<span class="nc" id="L433">            meanDescriptors[i] = new double[3];</span>
+        }
+
+        // calculate new colors
+<span class="nc" id="L437">        int[] count = new int[k];</span>
+
+<span class="nc bnc" id="L439" title="All 2 branches missed.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
+<span class="nc" id="L440">            int label = labels[i];</span>
+<span class="nc bnc" id="L441" title="All 2 branches missed.">            if (label == -1) {</span>
+                // this is still unassigned
+<span class="nc" id="L443">                continue;</span>
+            }
+<span class="nc" id="L445">            int x = img.getCol(i);</span>
+<span class="nc" id="L446">            int y = img.getRow(i);</span>
+<span class="nc" id="L447">            int v = img.getValue(i);</span>
+
+<span class="nc" id="L449">            meanDescriptors[label][0] += v;</span>
+<span class="nc" id="L450">            meanDescriptors[label][1] += x;</span>
+<span class="nc" id="L451">            meanDescriptors[label][2] += y;</span>
+<span class="nc" id="L452">            count[label]++;</span>
+        }
+
+        // v, x, y
+<span class="nc" id="L456">        double[] sqDiffSum = new double[3];</span>
+
+        double diff;
+<span class="nc bnc" id="L459" title="All 2 branches missed.">        for (int kCurrent = 0; kCurrent &lt; k; ++kCurrent) {</span>
+<span class="nc bnc" id="L460" title="All 4 branches missed.">            assert(count[kCurrent] &gt; 0);</span>
+<span class="nc" id="L461">            float nc = count[kCurrent];</span>
+<span class="nc bnc" id="L462" title="All 2 branches missed.">            for (int m = 0; m &lt; 3; ++m) {</span>
+<span class="nc" id="L463">                meanDescriptors[kCurrent][m] /= nc;</span>
+<span class="nc" id="L464">                diff = meanDescriptors[kCurrent][m] - seedDescriptors[kCurrent][m];</span>
+<span class="nc" id="L465">                sqDiffSum[m] += (diff * diff);</span>
+            }
+        }
+
+<span class="nc" id="L469">        double l2Norm = 0;</span>
+<span class="nc bnc" id="L470" title="All 2 branches missed.">        for (double sd : sqDiffSum) {</span>
+<span class="nc" id="L471">            l2Norm += sd;</span>
+        }
+<span class="nc" id="L473">        l2Norm = Math.sqrt(l2Norm);</span>
+
+        // calc sqrt of sum of sq diffs with old centers and reset old centers
+<span class="nc bnc" id="L476" title="All 2 branches missed.">        for (int kCurrent = 0; kCurrent &lt; k; ++kCurrent) {</span>
+<span class="nc bnc" id="L477" title="All 2 branches missed.">            for (int m = 0; m &lt; 3; ++m) {</span>
+<span class="nc" id="L478">                seedDescriptors[kCurrent][m] = (float)meanDescriptors[kCurrent][m];</span>
+            }
+        }
+
+<span class="nc" id="L482">        return l2Norm;</span>
+    }
+    
+    private double calcDist(float[] desc1, int v, int x2, int y2) {
+
+<span class="nc" id="L487">        double dClrSq = 0;</span>
+<span class="nc" id="L488">        float diff = desc1[0] - v;</span>
+<span class="nc" id="L489">        dClrSq += (diff * diff);</span>
+
+<span class="nc" id="L491">        float diffX = desc1[1] - x2;</span>
+<span class="nc" id="L492">        float diffY = desc1[2] - y2;</span>
+<span class="nc" id="L493">        double dXYSq = diffX * diffX + diffY * diffY;</span>
+
+<span class="nc" id="L495">        double dComb = dClrSq + (dXYSq * maxBrightness * maxBrightness)/((float)s * s);</span>
+
+<span class="nc" id="L497">        dComb = Math.sqrt(dComb);</span>
+
+<span class="nc" id="L499">        return dComb;</span>
+    }
+
+    private void assignTheUnassigned() {
+        
+<span class="nc" id="L504">        TIntSet unassignedSet = new TIntHashSet();</span>
+        
+<span class="nc bnc" id="L506" title="All 2 branches missed.">        for (int pixIdx = 0; pixIdx &lt; img.getNPixels(); ++pixIdx) {</span>
+<span class="nc bnc" id="L507" title="All 2 branches missed.">            if (labels[pixIdx] == -1) {</span>
+<span class="nc" id="L508">                unassignedSet.add(pixIdx);</span>
+            }
+        }
+        
+<span class="nc" id="L512">        assignTheUnassigned(unassignedSet);</span>
+<span class="nc" id="L513">    }</span>
+
+    private void assignTheUnassigned(TIntSet unassignedSet) {
+
+<span class="nc" id="L517">        int w = img.getWidth();</span>
+<span class="nc" id="L518">        int h = img.getHeight();</span>
+<span class="nc" id="L519">        int n = img.getNPixels();</span>
+
+<span class="nc" id="L521">        //System.out.println(&quot;assign &quot; + unassignedSet.size() + &quot; out of &quot;</span>
+        //    + n + &quot; pixels&quot;);
+        
+        // key = pixel index of unassigned, value = adj pixels that are assigned
+<span class="nc" id="L525">        TIntObjectMap&lt;TIntSet&gt; adjAssignedMap = new TIntObjectHashMap&lt;TIntSet&gt;();</span>
+        
+        // key = pixel index of unassigned, value = adj pixels that are unassigned
+<span class="nc" id="L528">        TIntObjectMap&lt;TIntSet&gt; adjUnassignedMap = new TIntObjectHashMap&lt;TIntSet&gt;();</span>
+
+<span class="nc" id="L530">        int[] dxs = Misc.dx8;</span>
+<span class="nc" id="L531">        int[] dys = Misc.dy8;</span>
+
+<span class="nc" id="L533">        TIntIterator iter = unassignedSet.iterator();</span>
+<span class="nc bnc" id="L534" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
+<span class="nc" id="L535">            int pixIdx = iter.next();</span>
+<span class="nc" id="L536">            addNeighborLabelsForPoint(labels, adjAssignedMap, </span>
+                adjUnassignedMap, pixIdx, dxs, dys);
+<span class="nc" id="L538">        }</span>
+        
+        // using a min heap whose priority is to set the nodes
+        //    which have the largest number of assigned neighbors.
+        //    nAssigned=8 -&gt; key=8-nAssigned = 0.
+<span class="nc" id="L543">        MinHeapForRT2012 heap = new MinHeapForRT2012(9, n);</span>
+
+        // a map of nodes for the unassigned pixels
+<span class="nc" id="L546">        TIntObjectMap&lt;HeapNode&gt; unAMap = new TIntObjectHashMap&lt;HeapNode&gt;();</span>
+        
+<span class="nc" id="L548">        iter = unassignedSet.iterator();</span>
+<span class="nc bnc" id="L549" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
+            
+<span class="nc" id="L551">            int pixIdx = iter.next();</span>
+            
+<span class="nc" id="L553">            TIntSet neighbors = adjAssignedMap.get(pixIdx);</span>
+<span class="nc bnc" id="L554" title="All 4 branches missed.">            assert(neighbors != null);</span>
+            
+<span class="nc" id="L556">            int nNeigbhors = neighbors.size();</span>
+            
+<span class="nc" id="L558">            long key = 8 - nNeigbhors;</span>
+<span class="nc" id="L559">            HeapNode node = new HeapNode(key);</span>
+<span class="nc" id="L560">            node.setData(Integer.valueOf(pixIdx));</span>
+            
+<span class="nc" id="L562">            unAMap.put(pixIdx, node);</span>
+            
+<span class="nc" id="L564">            heap.insert(node);</span>
+<span class="nc" id="L565">        }</span>
+        
+<span class="nc bnc" id="L567" title="All 4 branches missed.">        assert(unassignedSet.size() == heap.getNumberOfNodes());</span>
+        
+<span class="nc bnc" id="L569" title="All 2 branches missed.">        while (heap.getNumberOfNodes() &gt; 0) {</span>
+                        
+<span class="nc" id="L571">            HeapNode node = heap.extractMin();</span>
+            
+<span class="nc bnc" id="L573" title="All 4 branches missed.">            assert(node != null);</span>
+            
+<span class="nc" id="L575">            int pixIdx = ((Integer)node.getData()).intValue();</span>
+            
+<span class="nc" id="L577">            TIntSet adjAssigned = adjAssignedMap.get(pixIdx);</span>
+<span class="nc bnc" id="L578" title="All 2 branches missed.">            if (adjAssigned.isEmpty()) {</span>
+<span class="nc" id="L579">                System.out.println(&quot;priority=&quot; + node.getKey()</span>
+                   + &quot; nUnassigned remaining=&quot; + 
+<span class="nc" id="L581">                    adjAssignedMap.size() + &quot; heap.n=&quot; +</span>
+<span class="nc" id="L582">                    heap.getNumberOfNodes());</span>
+            }
+<span class="nc bnc" id="L584" title="All 4 branches missed.">            assert(!adjAssigned.isEmpty());</span>
+        
+<span class="nc" id="L586">            int y1 = pixIdx/w;</span>
+<span class="nc" id="L587">            int x1 = pixIdx - (y1 * w);</span>
+            
+<span class="nc" id="L589">            double minD = Double.MAX_VALUE;</span>
+<span class="nc" id="L590">            int minLabel2 = -1;</span>
+
+<span class="nc" id="L592">            TIntIterator iter2 = adjAssigned.iterator();</span>
+<span class="nc bnc" id="L593" title="All 2 branches missed.">            while (iter2.hasNext()) {</span>
+<span class="nc" id="L594">                int pixIdx2 = iter2.next();</span>
+<span class="nc" id="L595">                int label2 = labels[pixIdx2];</span>
+                
+<span class="nc" id="L597">                double dist = calcDist(seedDescriptors[label2],</span>
+<span class="nc" id="L598">                    img.getValue(x1, y1), x1, y1);</span>
+                
+<span class="nc bnc" id="L600" title="All 2 branches missed.">                if (dist &lt; minD) {</span>
+<span class="nc" id="L601">                    minD = dist;</span>
+<span class="nc" id="L602">                    minLabel2 = label2;</span>
+                }
+<span class="nc" id="L604">            }</span>
+            
+<span class="nc" id="L606">            labels[pixIdx] = minLabel2;</span>
+<span class="nc" id="L607">            distances[pixIdx] = minD;</span>
+            
+<span class="nc" id="L609">            adjAssignedMap.remove(pixIdx);</span>
+            
+<span class="nc" id="L611">            unAMap.remove(pixIdx);</span>
+            
+            // update the adjacent unassigned pixels and their keys in heap.
+            // these pixels are not in adjLabels.
+<span class="nc" id="L615">            TIntSet adjUnassigned = adjUnassignedMap.get(pixIdx);</span>
+<span class="nc bnc" id="L616" title="All 2 branches missed.">            if (adjUnassigned == null) {</span>
+<span class="nc" id="L617">                continue;</span>
+            }
+<span class="nc" id="L619">            adjUnassignedMap.remove(pixIdx);</span>
+            
+<span class="nc" id="L621">            iter2 = adjUnassigned.iterator();</span>
+<span class="nc bnc" id="L622" title="All 2 branches missed.">            while (iter2.hasNext()) {</span>
+                
+                // this is an unassigned pixel
+<span class="nc" id="L625">                int pixIdx2 = iter2.next();</span>
+<span class="nc bnc" id="L626" title="All 4 branches missed.">                assert(pixIdx != pixIdx2);</span>
+                
+                // pixIdx should be in it's adj unassigned and then removed
+<span class="nc" id="L629">                TIntSet adj2 = adjUnassignedMap.get(pixIdx2);</span>
+<span class="nc bnc" id="L630" title="All 4 branches missed.">                assert(adj2 != null);</span>
+<span class="nc" id="L631">                boolean rmvd = adj2.remove(pixIdx);</span>
+<span class="nc bnc" id="L632" title="All 4 branches missed.">                assert(rmvd);</span>
+                
+                // add pixIdx to it's assigned pixels
+<span class="nc" id="L635">                adj2 = adjAssignedMap.get(pixIdx2);</span>
+<span class="nc bnc" id="L636" title="All 4 branches missed.">                assert(adj2 != null);</span>
+<span class="nc" id="L637">                adj2.add(pixIdx);</span>
+
+<span class="nc" id="L639">                HeapNode node2 = unAMap.get(pixIdx2);</span>
+<span class="nc bnc" id="L640" title="All 4 branches missed.">                assert(node2 != null);</span>
+<span class="nc" id="L641">                long key2 = 8 - adj2.size();</span>
+<span class="nc bnc" id="L642" title="All 4 branches missed.">                assert(key2 &gt; -1);</span>
+<span class="nc bnc" id="L643" title="All 2 branches missed.">                if (key2 &lt; node2.getKey()) {</span>
+<span class="nc" id="L644">                    heap.decreaseKey(node2, key2);</span>
+                }
+<span class="nc" id="L646">            }</span>
+<span class="nc" id="L647">        }</span>
+
+<span class="nc bnc" id="L649" title="All 4 branches missed.">        assert(adjAssignedMap.isEmpty());</span>
+<span class="nc" id="L650">    }</span>
+
+    private void addNeighborLabelsForPoint(int[] labels,
+        TIntObjectMap&lt;TIntSet&gt; adjAssignedMap, 
+        TIntObjectMap&lt;TIntSet&gt; adjUnassignedMap,
+        int pixIdx, int[] dxs, int[] dys) {
+
+<span class="nc" id="L657">        int w = img.getWidth();</span>
+<span class="nc" id="L658">        int h = img.getHeight();</span>
+
+<span class="nc" id="L660">        TIntSet adjLabels = adjAssignedMap.get(pixIdx);</span>
+<span class="nc" id="L661">        TIntSet adjULabels = adjUnassignedMap.get(pixIdx);</span>
+<span class="nc bnc" id="L662" title="All 2 branches missed.">        if (adjLabels == null) {</span>
+<span class="nc bnc" id="L663" title="All 4 branches missed.">            assert(adjULabels == null);</span>
+            
+<span class="nc" id="L665">            adjLabels = new TIntHashSet();</span>
+<span class="nc" id="L666">            adjAssignedMap.put(pixIdx, adjLabels);</span>
+            
+<span class="nc" id="L668">            adjULabels = new TIntHashSet();</span>
+<span class="nc" id="L669">            adjUnassignedMap.put(pixIdx, adjULabels);</span>
+        }
+        
+<span class="nc" id="L672">        int j = pixIdx/w;</span>
+<span class="nc" id="L673">        int i = pixIdx - (j * w);</span>
+
+<span class="nc bnc" id="L675" title="All 2 branches missed.">        for (int m = 0; m &lt; dxs.length; ++m) {</span>
+<span class="nc" id="L676">            int x2 = i + dxs[m];</span>
+<span class="nc" id="L677">            int y2 = j + dys[m];</span>
+<span class="nc bnc" id="L678" title="All 8 branches missed.">            if (x2 &lt; 0 || y2 &lt; 0 || (x2 &gt; (w - 1)) || (y2 &gt; (h - 1))) {</span>
+<span class="nc" id="L679">                continue;</span>
+            }
+<span class="nc" id="L681">            int pixIdx2 = (y2 * w) + x2;</span>
+<span class="nc bnc" id="L682" title="All 2 branches missed.">            if (labels[pixIdx2] == -1) {</span>
+<span class="nc" id="L683">                adjULabels.add(pixIdx2);</span>
+            } else {
+<span class="nc" id="L685">                adjLabels.add(pixIdx2);</span>
+            }
+        }
+<span class="nc" id="L688">    }</span>
+
+    public int[] getLabels() {
+<span class="nc" id="L691">        return labels;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

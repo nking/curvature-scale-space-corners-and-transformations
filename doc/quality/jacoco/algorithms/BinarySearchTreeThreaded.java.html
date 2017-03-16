@@ -1,0 +1,553 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>BinarySearchTreeThreaded.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms</a> &gt; <span class="el_source">BinarySearchTreeThreaded.java</span></div><h1>BinarySearchTreeThreaded.java</h1><pre class="source lang-java linenums">package algorithms;
+
+import algorithms.imageProcessing.HeapNode;
+import java.lang.reflect.Array;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Stack;
+
+/**
+ * Building upon the BinarySearchTree by adding
+ * double threading.
+ * 
+ * adapted from the follwoing: 
+ * http://adtinfo.org/libavl.html/TBST-Data-Types.html
+ * The GNU libavl 2.0.2 has the following license:
+ * http://adtinfo.org/libavl.html/Code-License.html
+ * which is 
+ * GNU General Public License as
+   published by the Free Software Foundation; either version 2.
+ * 
+ * TODO:
+ * The class is not completely tested yet.  Need to
+ * test more thoroughly for integrity of the bst 
+ * after root node deletions.
+ * 
+ * @author nichole
+ */
+<span class="pc bpc" id="L28" title="1 of 2 branches missed.">public class BinarySearchTreeThreaded&lt;T extends HeapNode&gt; {</span>
+
+    //TODO: note, have made a snall change which needs
+    // a careful look and possibly changes at compariions.
+    // the change was to allow nodes with the same key
+    // to be inserted (and no new nodes are created internally)
+    
+    /**
+     * tracks whether a node's left and right links 
+     * are child pointers or 
+     * threads for left and for right.
+     */
+<span class="fc" id="L40">    protected Map&lt;T, Integer&gt; threadMap = new HashMap&lt;T, Integer&gt;();</span>
+    
+<span class="fc" id="L42">    protected int n = 0;</span>
+    
+<span class="fc" id="L44">    protected T root = null;</span>
+    
+<span class="fc" id="L46">    public BinarySearchTreeThreaded() {</span>
+<span class="fc" id="L47">    }</span>
+    
+    /*
+    if the left subtree is empty, 
+        LLINK points to the in-order predecessor
+    if the right subtree is empty, 
+        RLINK points to the in-order successor.
+    */
+    private void setChildLinksState(T node, boolean leftIsAChild,
+        boolean rightIsAChild) {
+        /*
+        using set bit operations for states:
+        0 = both are unset.
+        1 = if set, left is left (child) node, else is
+                     in-order predecessor
+        2 = if set, right is right (child), else is 
+                     in-order successor
+        */
+<span class="fc" id="L65">        Integer v = threadMap.get(node);</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">        int vsets = (v == null) ? 0 : v.intValue();</span>
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">        if (leftIsAChild) {            </span>
+<span class="nc" id="L68">            vsets |= (1 &lt;&lt; 1);</span>
+        } else {
+            // unset bit 1
+<span class="fc" id="L71">            vsets &amp;= ~(1 &lt;&lt; 1);</span>
+        }
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">        if (rightIsAChild) {</span>
+<span class="nc" id="L74">            vsets |= (1 &lt;&lt; 2);</span>
+        } else {
+            // unset bit 1
+<span class="fc" id="L77">            vsets &amp;= ~(1 &lt;&lt; 2);</span>
+        }
+<span class="fc" id="L79">        threadMap.put(node, Integer.valueOf(vsets));</span>
+<span class="fc" id="L80">    }</span>
+    
+    private void setLeftIsAChild(T node, boolean leftIsAChild) {
+        /*
+        using set bit operations for states:
+        0 = both are unset.
+        1 = if set, left is left (child) node, else is
+                     in-order predecessor
+        2 = if set, right is right (child), else is 
+                     in-order successor
+        */
+<span class="fc" id="L91">        Integer v = threadMap.get(node);</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">        int vsets = (v == null) ? 0 : v.intValue();</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">        if (leftIsAChild) {            </span>
+<span class="fc" id="L94">            vsets |= (1 &lt;&lt; 1);</span>
+        } else {
+            // unset
+<span class="fc" id="L97">            vsets &amp;= ~(1 &lt;&lt; 1);</span>
+        }
+<span class="fc" id="L99">        threadMap.put(node, Integer.valueOf(vsets));</span>
+<span class="fc" id="L100">    }</span>
+    
+    private void setRightIsAChild(T node, boolean rightIsAChild) {
+        /*
+        using set bit operations for states:
+        0 = both are unset.
+        1 = if set, left is left (child) node, else is
+                     in-order predecessor
+        2 = if set, right is right (child), else is 
+                     in-order successor
+        */
+<span class="fc" id="L111">        Integer v = threadMap.get(node);</span>
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">        int vsets = (v == null) ? 0 : v.intValue();</span>
+        
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">        if (rightIsAChild) {</span>
+<span class="fc" id="L115">            vsets |= (1 &lt;&lt; 2);</span>
+        } else {
+            // unset
+<span class="nc" id="L118">            vsets &amp;= ~(1 &lt;&lt; 2);</span>
+        }
+<span class="fc" id="L120">        threadMap.put(node, Integer.valueOf(vsets));</span>
+<span class="fc" id="L121">    }</span>
+    
+    private boolean hasALeftChild(T node) {
+<span class="fc" id="L124">        Integer v = threadMap.get(node);</span>
+<span class="pc bpc" id="L125" title="3 of 4 branches missed.">        assert(v != null);</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">        return (v.intValue() &amp; (1 &lt;&lt; 1)) != 0;</span>
+    }
+    private boolean hasALeftChild(Integer v) {
+<span class="pc bpc" id="L129" title="3 of 4 branches missed.">        assert(v != null);</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">        return (v.intValue() &amp; (1 &lt;&lt; 1)) != 0;</span>
+    }
+    private boolean hasARightChild(T node) {
+<span class="fc" id="L133">        Integer v = threadMap.get(node);</span>
+<span class="pc bpc" id="L134" title="3 of 4 branches missed.">        assert(v != null);</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">        return (v.intValue() &amp; (1 &lt;&lt; 2)) != 0;</span>
+    }
+    private boolean hasARightChild(Integer v) {
+<span class="pc bpc" id="L138" title="3 of 4 branches missed.">        assert(v != null);</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">        return (v.intValue() &amp; (1 &lt;&lt; 2)) != 0;</span>
+    }
+    
+    //------- editing below for the threaded tree ------
+    public void insert(T insertNode) {
+<span class="fc" id="L144">        tblProbe(insertNode);               </span>
+<span class="fc" id="L145">    }</span>
+    
+    @SuppressWarnings({&quot;unchecked&quot;})
+    private void tblProbe(T item) {
+
+        //http://adtinfo.org/libavl.html/Inserting-into-a-TBST.html#256
+        
+<span class="pc bpc" id="L152" title="3 of 4 branches missed.">        assert(item != null);</span>
+        
+<span class="fc" id="L154">        threadMap.put(item, Integer.valueOf(0));</span>
+               
+        // insertion point
+<span class="fc" id="L157">        T p = root;</span>
+        // new node
+<span class="fc" id="L159">        T nn = null;</span>
+<span class="fc" id="L160">        int dir = 0;</span>
+        
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        if (root != null) {</span>
+            
+            while (true) {
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">                if (item.getKey() == p.getKey()) {</span>
+<span class="nc" id="L166">                    dir = 0;</span>
+<span class="nc" id="L167">                    break;</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">                } else if (item.getKey() &gt; p.getKey()) {</span>
+<span class="fc" id="L169">                    dir = 1;</span>
+                } else {
+<span class="fc" id="L171">                    dir = 0;</span>
+                }
+<span class="fc bfc" id="L173" title="All 2 branches covered.">                if (dir == 0) {</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">                    if (!hasALeftChild(p)) {</span>
+<span class="fc" id="L175">                        break;</span>
+                    }
+<span class="fc" id="L177">                    p = (T)p.getLeft();</span>
+                } else {
+<span class="fc bfc" id="L179" title="All 2 branches covered.">                    if (!hasARightChild(p)) {</span>
+<span class="fc" id="L180">                        break;</span>
+                    }
+<span class="fc" id="L182">                    p = (T)p.getRight();</span>
+                }
+            }
+        } else {
+<span class="fc" id="L186">            p = root;</span>
+<span class="fc" id="L187">            dir = 0;</span>
+        }
+       
+        //TODO: check this
+<span class="fc" id="L191">        boolean isRoot = false;</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">        if (p == null) {</span>
+<span class="fc" id="L193">            root = item;</span>
+<span class="fc" id="L194">            p = root;</span>
+<span class="fc" id="L195">            isRoot = true;</span>
+            // set item.right to null if default ever changes
+        }
+       
+<span class="fc" id="L199">        setChildLinksState(item, false, false);</span>
+        
+<span class="fc bfc" id="L201" title="All 2 branches covered.">        if (dir == 0) {</span>
+<span class="fc" id="L202">            item.setLeft(p.getLeft());</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">            if (!isRoot) {</span>
+<span class="fc" id="L204">                setLeftIsAChild(p, true);</span>
+<span class="fc" id="L205">                item.setRight(p);</span>
+            }
+<span class="fc" id="L207">            p.setLeft(item);</span>
+        } else {
+<span class="fc" id="L209">            item.setRight(p.getRight());</span>
+<span class="pc bpc" id="L210" title="1 of 2 branches missed.">            if (!isRoot) {</span>
+<span class="fc" id="L211">                setRightIsAChild(p, true);</span>
+<span class="fc" id="L212">                item.setLeft(p);</span>
+            }
+<span class="fc" id="L214">            p.setRight(item);</span>
+        }
+        
+<span class="fc" id="L217">        n++;</span>
+        
+<span class="pc bpc" id="L219" title="3 of 4 branches missed.">        assert(threadMap.size() == n);</span>
+<span class="fc" id="L220">    }</span>
+    
+    @SuppressWarnings({&quot;unchecked&quot;})
+    public T search(T item) {
+        
+<span class="pc bpc" id="L225" title="1 of 2 branches missed.">        if (root == null) {</span>
+<span class="nc" id="L226">            return null;</span>
+        }
+<span class="pc bpc" id="L228" title="1 of 2 branches missed.">        if (item == null) {</span>
+<span class="nc" id="L229">            return null;</span>
+        }
+        
+<span class="fc" id="L232">        T current = root;</span>
+        
+        while (true) {
+            
+<span class="fc" id="L236">            int dir = 0;</span>
+<span class="fc bfc" id="L237" title="All 2 branches covered.">            if (current.getKey() == item.getKey()) {</span>
+<span class="fc" id="L238">                return current;</span>
+            } 
+<span class="fc bfc" id="L240" title="All 2 branches covered.">            if (item.getKey() &gt; current.getKey()) {</span>
+<span class="fc" id="L241">                dir = 1;</span>
+            }
+<span class="fc bfc" id="L243" title="All 2 branches covered.">            if (dir == 0) {</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">                if (hasALeftChild(current)) {</span>
+<span class="fc" id="L245">                    current = (T)current.getLeft();</span>
+                } else {
+<span class="fc" id="L247">                    return null;</span>
+                }
+            } else {
+<span class="pc bpc" id="L250" title="1 of 2 branches missed.">                if (hasARightChild(current)) {</span>
+<span class="fc" id="L251">                    current = (T)current.getRight();</span>
+                } else {
+<span class="nc" id="L253">                    return null;</span>
+                }
+            }
+<span class="fc" id="L256">        }</span>
+    }
+    
+    /**
+     * finds node with equal key and its parent if there is one
+     * as []{foundNode, parentOfFoundNode}, else null if not found
+     * @param node
+     * @return 
+     */
+    @SuppressWarnings({&quot;unchecked&quot;})
+    private T[] searchForNodeAndParent(T item, int[] outDir) {
+        
+<span class="pc bpc" id="L268" title="1 of 2 branches missed.">        if (root == null) {</span>
+<span class="nc" id="L269">            return null;</span>
+        }
+        
+<span class="fc" id="L272">        T parent = null;</span>
+<span class="fc" id="L273">        T current = root;</span>
+<span class="fc" id="L274">        outDir[0] = 0;</span>
+        
+        // item is the node to delete
+        // p is the found node to delete
+        // q is the parent
+        
+        while (true) {
+    
+            //TODO: might want to consider changes to this
+            // if need to return the identical node
+<span class="fc bfc" id="L284" title="All 2 branches covered.">            if (current.getKey() == item.getKey()) {</span>
+<span class="fc" id="L285">                break;</span>
+            } 
+            
+<span class="fc bfc" id="L288" title="All 2 branches covered.">            if (item.getKey() &gt; current.getKey()) {</span>
+<span class="fc" id="L289">                outDir[0] = 1;</span>
+            } else {
+<span class="fc" id="L291">                outDir[0] = 0;</span>
+            }            
+            
+<span class="fc" id="L294">            parent = current;</span>
+            
+<span class="fc bfc" id="L296" title="All 2 branches covered.">            if (outDir[0] == 0) {</span>
+<span class="pc bpc" id="L297" title="1 of 2 branches missed.">                if (!hasALeftChild(current)) {</span>
+<span class="nc" id="L298">                    return null;</span>
+                }
+<span class="fc" id="L300">                current = (T)current.getLeft();</span>
+            } else {
+<span class="pc bpc" id="L302" title="1 of 2 branches missed.">                if (!hasARightChild(current)) {</span>
+<span class="nc" id="L303">                    return null;</span>
+                }
+<span class="fc" id="L305">                current = (T)current.getRight();</span>
+            }
+        }
+            
+<span class="fc" id="L309">        T[] results = (T[]) Array.newInstance(T.getType(), 2);</span>
+<span class="fc" id="L310">        results[0] = current;</span>
+<span class="fc" id="L311">        results[1] = parent;</span>
+<span class="fc" id="L312">        return results;</span>
+    }
+    
+    @SuppressWarnings({&quot;unchecked&quot;})
+    public T delete(T node) {
+        
+<span class="pc bpc" id="L318" title="1 of 2 branches missed.">        if (root == null) {</span>
+<span class="nc" id="L319">            return null;</span>
+        }
+        
+<span class="fc" id="L322">        Integer v = threadMap.get(node);</span>
+        
+<span class="pc bpc" id="L324" title="1 of 2 branches missed.">        if (v == null) {</span>
+<span class="nc" id="L325">            return null;</span>
+        }
+        
+<span class="fc" id="L328">        int[] dirA = new int[1];</span>
+                
+<span class="fc" id="L330">        T[] foundAndParent = searchForNodeAndParent(node, dirA);</span>
+        
+<span class="pc bpc" id="L332" title="1 of 2 branches missed.">        if (foundAndParent == null) {</span>
+<span class="nc" id="L333">            return null;</span>
+        }
+        
+<span class="fc" id="L336">        T current = foundAndParent[0];</span>
+        
+<span class="fc" id="L338">        v = threadMap.get(current);</span>
+        
+        // this is null for root
+<span class="fc" id="L341">        T parent = foundAndParent[1];</span>
+            
+<span class="fc bfc" id="L343" title="All 2 branches covered.">        if (!hasARightChild(v)) {</span>
+<span class="fc bfc" id="L344" title="All 2 branches covered.">            if (hasALeftChild(v)) {</span>
+                //http://adtinfo.org/libavl.html/Deleting-from-a-TBST.html#260
+                // case 1 of Right thread and Left child
+                
+                // p is node to delete
+                // q is parent
+<span class="fc" id="L350">                T t = (T)current.getLeft();</span>
+<span class="pc bpc" id="L351" title="2 of 4 branches missed.">                while ((t != null) &amp;&amp; hasARightChild(t)) {</span>
+<span class="nc bnc" id="L352" title="All 2 branches missed.">                    if (t.getRight() != null) {</span>
+<span class="nc" id="L353">                        t = (T)t.getRight();</span>
+                    } else {
+                        break;
+                    }
+                }
+                // current.right does not have a child link
+<span class="fc" id="L359">                t.setRight(current.getRight());</span>
+<span class="pc bpc" id="L360" title="1 of 2 branches missed.">                if (dirA[0] == 0) {</span>
+<span class="nc" id="L361">                    parent.setLeft(current.getLeft());</span>
+                } else {
+<span class="fc" id="L363">                    parent.setRight(current.getLeft());</span>
+                }
+<span class="fc" id="L365">            } else {</span>
+                //http://adtinfo.org/libavl.html/Deleting-from-a-TBST.html#260
+                // case 2 of Right thread and Left thread,
+                //   i.e. the node to delete is a leaf
+                
+                // p is node to delete
+                // q is parent
+                                
+<span class="pc bpc" id="L373" title="1 of 2 branches missed.">                if (dirA[0] == 0) {</span>
+<span class="fc" id="L374">                    parent.setLeft(current.getLeft());</span>
+                    //TODO: revisit this:
+<span class="pc bpc" id="L376" title="1 of 2 branches missed.">                    if (!parent.equals(root)) {</span>
+<span class="fc" id="L377">                        setLeftIsAChild(parent, false);</span>
+                    }
+                } else {
+<span class="nc" id="L380">                    parent.setRight(current.getRight());</span>
+                    //TODO: revisit this
+<span class="nc bnc" id="L382" title="All 2 branches missed.">                    if (!parent.equals(root)) {</span>
+<span class="nc" id="L383">                        setRightIsAChild(parent, false);</span>
+                    }
+                }
+            }
+        } else {
+            // current has a right child
+<span class="fc" id="L389">            T r = (T) current.getRight();</span>
+<span class="pc bpc" id="L390" title="1 of 2 branches missed.">            if (!hasALeftChild(r)) {</span>
+                //http://adtinfo.org/libavl.html/Deleting-from-a-TBST.html#260
+                // case 3 current right child has a left thread
+<span class="fc" id="L393">                r.setLeft(current.getLeft());</span>
+<span class="fc" id="L394">                boolean hasLeftChild = hasALeftChild(current);</span>
+<span class="fc" id="L395">                setLeftIsAChild(r, hasLeftChild);</span>
+<span class="pc bpc" id="L396" title="1 of 2 branches missed.">                if (hasLeftChild) {</span>
+<span class="nc" id="L397">                    T t = (T) r.getLeft();</span>
+<span class="nc bnc" id="L398" title="All 2 branches missed.">                    while (hasARightChild(t)) {</span>
+<span class="nc" id="L399">                        t = (T)t.getRight();</span>
+                    }
+<span class="nc" id="L401">                    t.setRight(r);</span>
+                }
+                
+<span class="fc bfc" id="L404" title="All 2 branches covered.">                if (parent == null) {</span>
+                    //NLK: added to handle root
+<span class="fc" id="L406">                    root = r;</span>
+                } else {
+<span class="pc bpc" id="L408" title="1 of 2 branches missed.">                    if (dirA[0] == 0) {</span>
+<span class="nc" id="L409">                        parent.setLeft(r);</span>
+                    } else {
+<span class="fc" id="L411">                        parent.setRight(r);</span>
+                    }
+                }
+<span class="fc" id="L414">            } else {</span>
+                //case 4:  current's right child has a left child
+<span class="nc" id="L416">                T s = null;</span>
+                while (true) {
+<span class="nc" id="L418">                    s = (T)r.getLeft();</span>
+<span class="nc bnc" id="L419" title="All 2 branches missed.">                    if (!hasALeftChild(s)) {</span>
+<span class="nc" id="L420">                        break;</span>
+                    }
+<span class="nc" id="L422">                    r = s;</span>
+                }
+            }
+        }
+        
+<span class="fc" id="L427">        threadMap.remove(current);</span>
+                
+<span class="fc" id="L429">        n--;</span>
+        
+<span class="pc bpc" id="L431" title="3 of 4 branches missed.">        assert(threadMap.size() == n);</span>
+        
+<span class="fc" id="L433">        return current;</span>
+    }
+    
+    //TODO:  create a balance method:
+    //http://adtinfo.org/libavl.html/Balancing-a-TBST.html
+    
+    public T minimum() {
+<span class="fc" id="L440">        return minimum(root);</span>
+    }
+    
+    @SuppressWarnings({&quot;unchecked&quot;})
+    protected T minimum(T x) {
+<span class="pc bpc" id="L445" title="1 of 2 branches missed.">        if (x == null) {</span>
+<span class="nc" id="L446">            return null;</span>
+        }
+<span class="fc" id="L448">        T nd = x;</span>
+<span class="fc bfc" id="L449" title="All 2 branches covered.">        while (hasALeftChild(nd)) {</span>
+<span class="fc" id="L450">            nd = (T) nd.getLeft();</span>
+        }
+<span class="fc" id="L452">        return nd;</span>
+    }
+    
+    public T maximum() {
+<span class="fc" id="L456">        return maximum(root);</span>
+    }
+    
+    @SuppressWarnings({&quot;unchecked&quot;})
+    protected T maximum(T x) {
+<span class="pc bpc" id="L461" title="1 of 2 branches missed.">        if (x == null) {</span>
+<span class="nc" id="L462">            return null;</span>
+        }
+<span class="fc" id="L464">        T nd = x;</span>
+<span class="fc bfc" id="L465" title="All 2 branches covered.">        while (hasARightChild(nd)) {</span>
+<span class="fc" id="L466">            nd = (T) nd.getRight();</span>
+        }
+<span class="fc" id="L468">        return nd;</span>
+    }
+    
+    /**
+     * smallest element in the tree with key greater
+     * than node.key.
+     * @param node
+     * @return 
+     */
+    @SuppressWarnings({&quot;unchecked&quot;})
+    public T successor(T node) {
+        
+<span class="fc bfc" id="L480" title="All 2 branches covered.">        if (hasARightChild(node)) {</span>
+<span class="fc" id="L481">            return minimum((T)node.getRight());</span>
+        }
+        // node has a right thread
+<span class="pc bpc" id="L484" title="1 of 2 branches missed.">        T s = (node.getRight() != null) ?</span>
+<span class="pc" id="L485">            (T) node.getRight() : null;</span>
+<span class="pc bpc" id="L486" title="1 of 2 branches missed.">        if (s == null) {</span>
+            // node is already the largest in the tree
+<span class="nc" id="L488">            return node;</span>
+        }
+<span class="fc" id="L490">        return s;</span>
+    }
+    
+    /*
+     * the largest element in the tree with key smaller 
+     * than node.key.
+     * 
+     * @param node
+     * @return 
+     */
+    @SuppressWarnings({&quot;unchecked&quot;})
+    public T predecessor(T node) {
+
+<span class="fc bfc" id="L503" title="All 2 branches covered.">        if (hasALeftChild(node)) {</span>
+<span class="fc" id="L504">            return maximum((T)node.getLeft());</span>
+        }
+        // node has a left thread
+<span class="pc bpc" id="L507" title="1 of 2 branches missed.">        T p = (node.getLeft() != null) ?</span>
+<span class="pc" id="L508">            (T) node.getLeft() : null;</span>
+<span class="pc bpc" id="L509" title="1 of 2 branches missed.">        if (p == null) {</span>
+            // node is already the smallest in the tree
+<span class="nc" id="L511">            return node;</span>
+        }
+<span class="fc" id="L513">        return p;</span>
+    }
+  
+    public int getNumberOfNodes() {
+<span class="fc" id="L517">        return n;</span>
+    }
+    
+    @SuppressWarnings({&quot;unchecked&quot;})
+    public T first(T node) {
+ 
+<span class="nc bnc" id="L523" title="All 4 branches missed.">        if (node == null || root == null) {</span>
+<span class="nc" id="L524">            return null;</span>
+        }
+        
+<span class="nc bnc" id="L527" title="All 2 branches missed.">        while (hasALeftChild(node)) {</span>
+<span class="nc" id="L528">            node = (T)node.getLeft();</span>
+        }
+        
+<span class="nc" id="L531">        return node;</span>
+    }
+    
+    @SuppressWarnings({&quot;unchecked&quot;})
+    public T next (T node) {
+  
+<span class="nc bnc" id="L537" title="All 2 branches missed.">        if (node == null) {</span>
+<span class="nc" id="L538">            return first(node);</span>
+<span class="nc bnc" id="L539" title="All 2 branches missed.">        } else if (!hasARightChild(node)) {</span>
+<span class="nc" id="L540">            node = (T)node.getRight();</span>
+<span class="nc" id="L541">            return node;</span>
+        } else {
+<span class="nc bnc" id="L543" title="All 2 branches missed.">            node = (node.getRight() != null) ?</span>
+<span class="nc" id="L544">                (T)node.getRight() : null;</span>
+<span class="nc bnc" id="L545" title="All 4 branches missed.">            while ((node != null) &amp;&amp; hasALeftChild(node)) {</span>
+<span class="nc" id="L546">                node = (T)node.getLeft();</span>
+            }
+<span class="nc" id="L548">            return node;</span>
+        }
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

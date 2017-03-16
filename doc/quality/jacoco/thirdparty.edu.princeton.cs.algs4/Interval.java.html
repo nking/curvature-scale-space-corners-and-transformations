@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Interval.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">thirdparty.edu.princeton.cs.algs4</a> &gt; <span class="el_source">Interval.java</span></div><h1>Interval.java</h1><pre class="source lang-java linenums">package thirdparty.edu.princeton.cs.algs4;
+
+/**
+ * from Interval.java in algs4.jar
+ * http://algs4.cs.princeton.edu/
+ * copyright for authors Robert Sedgewick and Kevin Wayne
+ * is GPLV3, http://algs4.cs.princeton.edu/faq/
+   (see bottom of this file)
+ * http://algs4.cs.princeton.edu/92search/QuadTree.java.html
+ * copyright for authors Robert Sedgewick and Kevin Wayne
+ * is GPLV3, http://algs4.cs.princeton.edu/faq/
+ */
+public class Interval&lt;T extends Comparable&lt;T&gt;&gt; implements 
+    Comparable&lt;Interval&lt;T&gt;&gt; {
+    
+    private final T min;    // min endpoint
+    private final T max;    // max endpoint
+
+<span class="fc" id="L19">    public Interval(T min, T max) {</span>
+<span class="pc bpc" id="L20" title="1 of 2 branches missed.">        if (less(max, min)) {</span>
+<span class="nc" id="L21">            throw new RuntimeException(</span>
+            &quot;Illegal argument: max=&quot; + max + &quot; min=&quot; + min);
+        }
+<span class="fc" id="L24">        this.min = min;</span>
+<span class="fc" id="L25">        this.max = max;</span>
+<span class="fc" id="L26">    }</span>
+
+    // return min endpoint
+    public T min() {
+<span class="fc" id="L30">        return min;</span>
+    }
+
+    // return max endpoint
+    public T max() {
+<span class="fc" id="L35">        return max;</span>
+    }
+
+    // is x between min and max
+    public boolean contains(T x) {
+<span class="nc bnc" id="L40" title="All 4 branches missed.">        return !less(x, min) &amp;&amp; !less(max, x);</span>
+    }
+
+    // does this interval a intersect interval b?
+    public boolean intersects(Interval&lt;T&gt; b) {
+<span class="fc" id="L45">        Interval&lt;T&gt; a  = this;</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        if (less(a.max, b.min)) return false;</span>
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (less(b.max, a.min)) return false;</span>
+<span class="fc" id="L48">        return true;</span>
+    }
+
+    // does this interval a equal interval b?
+    public boolean equals(Interval&lt;T&gt; b) {
+<span class="nc" id="L53">        Interval&lt;T&gt; a  = this;</span>
+<span class="nc bnc" id="L54" title="All 4 branches missed.">        return a.min.equals(b.min) &amp;&amp; a.max.equals(b.max);</span>
+    }
+
+
+    // comparison helper functions
+    private boolean less(T x, T y) {
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        return x.compareTo(y) &lt; 0;</span>
+    }
+
+    @Override
+    public int compareTo(Interval&lt;T&gt; other) {
+        
+        //other.max   min  max
+<span class="fc" id="L67">        int c1 = min().compareTo(other.max());</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        if (c1 &gt; 0) {</span>
+<span class="fc" id="L69">            return -c1;</span>
+        }
+        //    max  other.min
+<span class="fc" id="L72">        c1 = max().compareTo(other.min());</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        if (c1 &lt; 0) {</span>
+<span class="fc" id="L74">            return -c1;</span>
+        }
+        
+<span class="fc" id="L77">        return 0;</span>
+    }
+    
+    // return string representation
+    public String toString() {
+<span class="fc" id="L82">        return &quot;[&quot; + min + &quot;, &quot; + max + &quot;]&quot;;</span>
+    }
+
+    // test client
+    public static void main(String[] args) {
+<span class="nc" id="L87">        int n = Integer.parseInt(args[0]);</span>
+
+<span class="nc" id="L89">        Interval&lt;Integer&gt; a = new Interval&lt;Integer&gt;(5, 17);</span>
+<span class="nc" id="L90">        Interval&lt;Integer&gt; b = new Interval&lt;Integer&gt;(5, 17);</span>
+<span class="nc" id="L91">        Interval&lt;Integer&gt; c = new Interval&lt;Integer&gt;(5, 18);</span>
+<span class="nc" id="L92">        System.out.println(a.equals(b));</span>
+<span class="nc bnc" id="L93" title="All 2 branches missed.">        System.out.println(!a.equals(c));</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">        System.out.println(!b.equals(c));</span>
+
+
+        // generate n random points in [-1, 2] and compute
+        // fraction that lies in [0, 1]
+<span class="nc" id="L99">        Interval&lt;Double&gt; interval = new Interval&lt;Double&gt;(0.0, 1.0);</span>
+<span class="nc" id="L100">        int count = 0;</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc" id="L102">            double x = 3 * Math.random() - 1.0;</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">            if (interval.contains(x)) count++;</span>
+        }
+<span class="nc" id="L105">        System.out.println(&quot;fraction = &quot; + (1.0 * count / n));</span>
+<span class="nc" id="L106">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

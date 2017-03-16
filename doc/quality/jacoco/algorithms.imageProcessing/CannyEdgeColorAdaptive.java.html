@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CannyEdgeColorAdaptive.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">CannyEdgeColorAdaptive.java</span></div><h1>CannyEdgeColorAdaptive.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.misc.Misc;
+import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
+import java.util.logging.Logger;
+import java.util.HashSet;
+import algorithms.util.PairInt;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * NOTE: need to edit these comments.  for this color version of canny,
+ * using the &quot;L&quot; and &quot;C&quot; images of LCH CIELUV color space.
+ * May also add use of &quot;H&quot;...still experimenting.
+ * 
+ * 
+ * 
+ * The CannyEdge filter is an algorithm to operate on an image to
+ * replace objects with their edges.  
+ * 
+ * The class began by following the general advice given in
+ * &quot;Performance Analysis of Adaptive Canny Edge Detector 
+ * Using Bilateral Filter&quot; by Rashmi, Kumar, Jaiswal, and Saxena, 
+ * but made modifications afterwards and added a &quot;C&quot; gradient of colorspace
+ * LCH to the greyscale gradient.
+ * 
+ * Their paper has the following qualities: 
+ *&lt;pre&gt;
+ * -- instead of a Gaussian filter, uses a bilateral filter
+ * -- an adaptive threshold algorithm is used in the 2 layer filter
+ * 
+&lt;/pre&gt;
+ * This class uses 2 one dimensional binomial filters for smoothing.
+ * 
+ * &lt;pre&gt;
+ * Usage:
+ * Note, by default, a histogram equalization is not performed.
+ * By default, the number of neighbor histogram levels is 1 in the 
+ * adaptive thresholding.
+ * To use the filter in adaptive mode, use filter.overrideDefaultNumberOfLevels
+ * and a number 16 of higher is recommended.
+ * 
+ * To see a difference in the adaptive approach, run this class on the test
+ * image susan-in.gif using filter.overrideToUseAdaptiveThreshold() 
+ * 
+ * To adjust the filter to remove lower intensity edges, use
+ * filter.setOtsuScaleFactor.  The default factor is 0.45 
+ * (determined w/ a checkerboard image).
+ * For the Lena test image for example, one might prefer only the brightest
+ * edges, so use a higher setting than the default.
+ * 
+ * Not ready for use yet...
+ * 
+ * @author nichole
+ */
+public class CannyEdgeColorAdaptive {
+              
+    /** the factor that the low threshold is below the high threshold in the 
+    2 layer filter.
+    */
+<span class="fc" id="L64">    protected float factorBelowHighThreshold = 2.f;</span>
+           
+<span class="fc" id="L66">    private EdgeFilterProducts filterProducts = null;</span>
+              
+<span class="fc" id="L68">    private boolean performNonMaxSuppr = true;</span>
+    
+<span class="fc" id="L70">    private boolean debug = false;</span>
+    
+<span class="fc" id="L72">    private boolean restoreJunctions = true;</span>
+            
+    /**
+     * the sigma from the blur combined with the sigma present in the gradient
+     * are present in this variable by the end of processing.
+     * The variable is used to interpret resolution of theta angles, for example.
+     * The sigmas are combined using: sigma^2 = sigma_1^2 + sigma_2^2.
+     * The FWHM of a gaussian is approx 2.35 * sigma.
+     * (HWZI is about 5 * sigma, by the way).
+     * So, for the default use of the filter, a sigma of 1 combined with sqrt(1)/2
+     * results in a minimum resolution of 3 pixels, hence about 19 degrees.
+     */
+<span class="fc" id="L84">    private double approxProcessedSigma = 0;</span>
+    
+<span class="fc" id="L86">    private boolean useAdaptiveThreshold = false;</span>
+    
+<span class="fc" id="L88">    private boolean useAdaptive2Layer = true;</span>
+        
+<span class="fc" id="L90">    private float otsuScaleFactor = 0.75f;//0.65f;</span>
+    
+<span class="fc" id="L92">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+    
+<span class="fc" id="L94">    protected boolean useLineThinner = true;</span>
+    
+<span class="fc" id="L96">    public CannyEdgeColorAdaptive() {        </span>
+<span class="fc" id="L97">    }</span>
+    
+    public void setToDebug() {
+<span class="nc" id="L100">        debug = true;</span>
+<span class="nc" id="L101">    }</span>
+    
+    public void overrideToNotUseLineThinner() {
+<span class="fc" id="L104">        useLineThinner = false;</span>
+<span class="fc" id="L105">    }</span>
+    
+    /**
+     * to enable more complete contours, use this to restore pixels that were
+     * removed during non-maximum suppression that disconnected edges and
+     * have values above the low threshold of the 2 layer adaptive filter.
+     */
+    public void setToNotRestoreJunctions() {
+<span class="nc" id="L113">        restoreJunctions = false;</span>
+<span class="nc" id="L114">    }</span>
+    
+    /**
+     * by default this is 0.45.
+     * @param factor
+     */
+    public void setOtsuScaleFactor(float factor) {
+<span class="nc" id="L121">        otsuScaleFactor = factor;</span>
+<span class="nc" id="L122">    }</span>
+    
+    public void setToNotUseNonMaximumSuppression() {
+<span class="nc" id="L125">        performNonMaxSuppr = false;</span>
+<span class="nc" id="L126">    }</span>
+    
+    /**
+     * set this to use the adaptive threshold in the 2 layer
+     * filter.  it adjusts the threshold by regions of size
+     * 15.  Note that if the image has alot of noise, this
+     * will include alot of noise in the result.
+     */
+    public void overrideToUseAdaptiveThreshold() {
+<span class="nc" id="L135">        useAdaptiveThreshold = true;</span>
+<span class="nc" id="L136">    }</span>
+    
+    public void setToUseSingleThresholdIn2LayerFilter() {
+<span class="nc" id="L139">        useAdaptive2Layer = false;</span>
+<span class="nc" id="L140">    }</span>
+    
+    /**
+     * override the default factor of low threshold below high threshold, which
+     * is 2.
+     * @param factor 
+     */
+    public void override2LayerFactorBelowHighThreshold(float factor) {
+<span class="nc" id="L148">        factorBelowHighThreshold = factor;</span>
+<span class="nc" id="L149">    }</span>
+    
+    /**
+     * apply the filter.  note that unlike the other canny filters in this
+     * project, the input is not modified.
+     * @param input 
+     */
+    public void applyFilter(Image input) {
+        
+<span class="pc bpc" id="L158" title="2 of 4 branches missed.">        if (input.getWidth() &lt; 3 || input.getHeight() &lt; 3) {</span>
+<span class="nc" id="L159">            throw new IllegalArgumentException(&quot;images should be &gt;= 3x3 in size&quot;);</span>
+        }
+            
+<span class="fc" id="L162">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+        
+<span class="fc" id="L164">        GreyscaleImage[] lch = imageProcessor.createLCHForLUV(input);</span>
+        
+<span class="fc" id="L166">        CannyEdgeFilterAdaptive cannyL = new CannyEdgeFilterAdaptive();</span>
+<span class="fc" id="L167">        CannyEdgeFilterAdaptive cannyC = new CannyEdgeFilterAdaptive();</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">        if (!useLineThinner) {</span>
+<span class="fc" id="L169">            cannyL.overrideToNotUseLineThinner();</span>
+<span class="fc" id="L170">            cannyC.overrideToNotUseLineThinner();</span>
+        }
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">        if (useAdaptiveThreshold) {</span>
+<span class="nc" id="L173">            cannyL.overrideToUseAdaptiveThreshold();</span>
+<span class="nc" id="L174">            cannyC.overrideToUseAdaptiveThreshold();</span>
+        }
+        
+<span class="fc" id="L177">        cannyL.override2LayerFactorBelowHighThreshold(factorBelowHighThreshold);</span>
+<span class="fc" id="L178">        cannyC.override2LayerFactorBelowHighThreshold(factorBelowHighThreshold);</span>
+        
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">        if (!performNonMaxSuppr) {</span>
+<span class="nc" id="L181">            cannyL.setToNotUseNonMaximumSuppression();</span>
+<span class="nc" id="L182">            cannyC.setToNotUseNonMaximumSuppression();</span>
+        }
+        
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">        if (!restoreJunctions) {</span>
+<span class="nc" id="L186">            cannyL.setToNotRestoreJunctions();</span>
+<span class="nc" id="L187">            cannyC.setToNotRestoreJunctions();</span>
+        }
+        
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">        if (!useAdaptive2Layer) {</span>
+<span class="nc" id="L191">            cannyL.setToUseSingleThresholdIn2LayerFilter();</span>
+<span class="nc" id="L192">            cannyC.setToUseSingleThresholdIn2LayerFilter();</span>
+        }
+        
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">        if (!useLineThinner) {</span>
+<span class="fc" id="L196">            cannyL.overrideToNotUseLineThinner();</span>
+<span class="fc" id="L197">            cannyC.overrideToNotUseLineThinner();</span>
+        }
+        
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L201">            cannyL.setToDebug();</span>
+<span class="nc" id="L202">            cannyC.setToDebug();</span>
+        }
+        
+<span class="fc" id="L205">        cannyL.setOtsuScaleFactor(otsuScaleFactor);</span>
+        //cannyC.setOtsuScaleFactor(otsuScaleFactor);
+<span class="fc" id="L207">        cannyC.setOtsuScaleFactor(1.0f);  // less sensitive and less noisey</span>
+        
+<span class="fc" id="L209">        cannyL.applyFilter(lch[0]);</span>
+<span class="fc" id="L210">        cannyC.applyFilter(lch[1]);</span>
+        
+<span class="fc" id="L212">        EdgeFilterProducts edgeProductsL = cannyL.getFilterProducts();</span>
+<span class="fc" id="L213">        EdgeFilterProducts edgeProductsC = cannyC.getFilterProducts();</span>
+        
+        // DEBUG: temporary look at recalculating the L thresholds
+        //        to filter out scaled C values to reduce noise.
+        //        assuming not adaptive for now.
+<span class="fc" id="L218">        int tLowL = edgeProductsL.getGradientXY().min();</span>
+        
+<span class="fc" id="L220">        float lFactor = 255.f/(float)edgeProductsL.getGradientXY().max();</span>
+<span class="fc" id="L221">        float cFactor = 255.f/(float)edgeProductsC.getGradientXY().max();</span>
+        
+<span class="fc" id="L223">        GreyscaleImage combXY = edgeProductsL.getGradientXY()</span>
+<span class="fc" id="L224">            .createWithDimensions();</span>
+        
+<span class="fc" id="L226">        GreyscaleImage combX = edgeProductsL.getGradientX()</span>
+<span class="fc" id="L227">            .createWithDimensions();</span>
+        
+<span class="fc" id="L229">        GreyscaleImage combY = edgeProductsL.getGradientY()</span>
+<span class="fc" id="L230">            .createWithDimensions();</span>
+        
+<span class="fc" id="L232">        int n = combXY.getNPixels();</span>
+        
+        int v0, v1, v, vx, vy;
+<span class="fc bfc" id="L235" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L236">            v0 = edgeProductsL.getGradientXY().getValue(i);</span>
+<span class="fc" id="L237">            v1 = edgeProductsC.getGradientXY().getValue(i);</span>
+            
+<span class="fc" id="L239">            v0 = Math.round(v0 * lFactor);</span>
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">            if (v0 &gt; 255) {</span>
+<span class="nc" id="L241">                v0 = 255;</span>
+            }
+<span class="fc" id="L243">            v1 = Math.round(v1 * cFactor);</span>
+<span class="pc bpc" id="L244" title="1 of 2 branches missed.">            if (v1 &gt; 255) {</span>
+<span class="nc" id="L245">                v1 = 255;</span>
+            }
+            
+<span class="fc bfc" id="L248" title="All 2 branches covered.">            if (cFactor &gt; 1) {</span>
+<span class="pc bpc" id="L249" title="1 of 2 branches missed.">                if (v1 &lt; tLowL) {</span>
+<span class="nc" id="L250">                    v1 = 0;</span>
+                }
+            }
+                        
+            // choosing the largest of both instead of avg
+<span class="fc bfc" id="L255" title="All 2 branches covered.">            if (v0 &gt; v1) {</span>
+<span class="fc" id="L256">                v = v0;</span>
+<span class="fc" id="L257">                vx = edgeProductsL.getGradientX().getValue(i);</span>
+<span class="fc" id="L258">                vy = edgeProductsL.getGradientY().getValue(i);</span>
+            } else {
+<span class="fc" id="L260">                v = v1;</span>
+<span class="fc" id="L261">                vx = edgeProductsC.getGradientX().getValue(i);</span>
+<span class="fc" id="L262">                vy = edgeProductsC.getGradientY().getValue(i);</span>
+            }
+<span class="fc" id="L264">            combXY.setValue(i, v);</span>
+            
+<span class="fc" id="L266">            combX.setValue(i, vx);</span>
+<span class="fc" id="L267">            combY.setValue(i, vy);</span>
+        }
+        
+<span class="fc" id="L270">        GreyscaleImage combTheta = </span>
+<span class="fc" id="L271">            imageProcessor.computeTheta180(combX, combY);</span>
+        
+<span class="fc" id="L273">        EdgeFilterProducts efp = new EdgeFilterProducts();</span>
+<span class="fc" id="L274">        efp.setGradientX(combX);</span>
+<span class="fc" id="L275">        efp.setGradientY(combY);</span>
+<span class="fc" id="L276">        efp.setGradientXY(combXY);</span>
+<span class="fc" id="L277">        efp.setTheta(combTheta);</span>
+         
+<span class="fc" id="L279">        this.filterProducts = efp;</span>
+<span class="fc" id="L280">    }</span>
+   
+    /**
+     * get the filter products for gradient and orientation.
+     * note that the orientation image has values between 0 and 180.
+     * @return the filterProducts
+     */
+    public EdgeFilterProducts getFilterProducts() {
+<span class="fc" id="L288">        return filterProducts;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

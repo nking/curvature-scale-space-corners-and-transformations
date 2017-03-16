@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>RAGCSubGraph.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.graphs</a> &gt; <span class="el_source">RAGCSubGraph.java</span></div><h1>RAGCSubGraph.java</h1><pre class="source lang-java linenums">package algorithms.graphs;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import no.uib.cipr.matrix.MatrixEntry;
+import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
+
+/**
+ *
+ * @author nichole
+ */
+public class RAGCSubGraph {
+    
+    protected final List&lt;NormalizedCutsNode&gt; nodes;
+    
+    protected final FlexCompRowMatrix diffOrSum;
+        
+    public RAGCSubGraph(List&lt;NormalizedCutsNode&gt; theNodes, FlexCompRowMatrix
+<span class="fc" id="L21">        matrixOfDiffOrSim) {</span>
+        
+<span class="fc" id="L23">        this.nodes = theNodes;</span>
+        
+<span class="fc" id="L25">        this.diffOrSum = matrixOfDiffOrSim;        </span>
+<span class="fc" id="L26">    }</span>
+    
+    public int getNumberOfNodes() {
+<span class="fc" id="L29">        return nodes.size();</span>
+    }
+    
+    public RAGCSubGraph[] partition(boolean[] partitionCut) {
+        
+<span class="pc bpc" id="L34" title="1 of 2 branches missed.">        if (partitionCut.length != nodes.size()) {</span>
+<span class="nc" id="L35">            throw new IllegalArgumentException(</span>
+                &quot;partitionCute must be same length as nodes.size&quot;);
+        }
+        
+<span class="fc" id="L39">        List&lt;NormalizedCutsNode&gt; nodes1 = new ArrayList&lt;NormalizedCutsNode&gt;();</span>
+<span class="fc" id="L40">        List&lt;NormalizedCutsNode&gt; nodes2 = new ArrayList&lt;NormalizedCutsNode&gt;();</span>
+        
+<span class="fc" id="L42">        Map&lt;Integer, Integer&gt; map1 = new HashMap&lt;Integer, Integer&gt;();</span>
+<span class="fc" id="L43">        Map&lt;Integer, Integer&gt; map2 = new HashMap&lt;Integer, Integer&gt;();</span>
+        
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        for (int i = 0; i &lt; partitionCut.length; ++i) {</span>
+            
+<span class="fc" id="L47">            Integer index1 = Integer.valueOf(i);</span>
+            
+<span class="fc bfc" id="L49" title="All 2 branches covered.">            if (partitionCut[i]) {</span>
+<span class="fc" id="L50">                nodes1.add(nodes.get(i));</span>
+<span class="fc" id="L51">                map1.put(index1, Integer.valueOf(map1.size()));</span>
+            } else {
+<span class="fc" id="L53">                nodes2.add(nodes.get(i));</span>
+<span class="fc" id="L54">                map2.put(index1,Integer.valueOf(map2.size()));</span>
+            }
+        }
+        
+<span class="fc" id="L58">        int n1 = map1.size();</span>
+<span class="fc" id="L59">        int n2 = map2.size();</span>
+        
+<span class="fc" id="L61">        FlexCompRowMatrix w1 = new FlexCompRowMatrix(n1, n1);</span>
+<span class="fc" id="L62">        FlexCompRowMatrix w2 = new FlexCompRowMatrix(n2, n2);</span>
+        
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        for (MatrixEntry entry : diffOrSum) {</span>
+<span class="fc" id="L65">            int row = entry.row();</span>
+<span class="fc" id="L66">            int col = entry.column();</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">            if (row &gt; col) {</span>
+<span class="fc" id="L68">                continue;</span>
+            }
+<span class="fc" id="L70">            double v = entry.get();</span>
+<span class="fc" id="L71">            Integer rKey1 = Integer.valueOf(row);</span>
+<span class="fc" id="L72">            Integer cKey1 = Integer.valueOf(col);</span>
+            
+<span class="fc bfc" id="L74" title="All 2 branches covered.">            if (map1.containsKey(rKey1)) {</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">                if (!map1.containsKey(cKey1)) {</span>
+<span class="fc" id="L76">                    continue;</span>
+                }
+<span class="fc" id="L78">                Integer rKey2 = map1.get(rKey1);</span>
+<span class="fc" id="L79">                Integer cKey2 = map1.get(cKey1);</span>
+<span class="fc" id="L80">                w1.set(rKey2.intValue(), cKey2.intValue(), v);</span>
+<span class="fc" id="L81">                w1.set(cKey2.intValue(), rKey2.intValue(), v);</span>
+<span class="fc" id="L82">            } else {</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">                if (!map2.containsKey(cKey1)) {</span>
+<span class="fc" id="L84">                    continue;</span>
+                }
+<span class="fc" id="L86">                Integer rKey2 = map2.get(rKey1);</span>
+<span class="fc" id="L87">                Integer cKey2 = map2.get(cKey1);</span>
+<span class="fc" id="L88">                w2.set(rKey2.intValue(), cKey2.intValue(), v);</span>
+<span class="fc" id="L89">                w2.set(cKey2.intValue(), rKey2.intValue(), v);</span>
+            }
+<span class="fc" id="L91">        } </span>
+        
+<span class="fc" id="L93">        RAGCSubGraph g1 = new RAGCSubGraph(nodes1, w1);</span>
+<span class="fc" id="L94">        RAGCSubGraph g2 = new RAGCSubGraph(nodes2, w2);</span>
+        
+<span class="fc" id="L96">        return new RAGCSubGraph[]{g1, g2};</span>
+    }
+
+    public FlexCompRowMatrix getEdgeMatrix() {
+<span class="fc" id="L100">        return diffOrSum;</span>
+    }
+    
+    public List&lt;NormalizedCutsNode&gt; getNodes() {
+<span class="fc" id="L104">        return nodes;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

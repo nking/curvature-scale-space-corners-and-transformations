@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
+ * NOT READY FOR USE.
  * Find the closest pair of points between two sets of points by using divide and 
  * conquer to reduce the number of comparisons
  * 
@@ -19,6 +20,9 @@ import java.util.Set;
  * 
  * NOTE: this class has not been thoroughly tested yet.
  * 
+ * The case when set1 is completely embedded in set2 is not solved correctly,
+ * so need to revise this.
+ * 
  * @author nichole
  */
 public class ClosestPairBetweenSets {
@@ -26,8 +30,8 @@ public class ClosestPairBetweenSets {
     /**
      *
      */
-<span class="fc" id="L29">    public ClosestPairBetweenSets() {</span>
-<span class="fc" id="L30">    }</span>
+<span class="fc" id="L33">    public ClosestPairBetweenSets() {</span>
+<span class="fc" id="L34">    }</span>
     
     /**
      * find the closest pair within the two x,y sets of points.
@@ -40,36 +44,36 @@ public class ClosestPairBetweenSets {
     public ClosestPairInt findClosestPair(Set&lt;PairInt&gt; set1, Set&lt;PairInt&gt; set2) {
         //List&lt;Float&gt; xPoints, List&lt;Float&gt; yPoints) {
         
-<span class="pc bpc" id="L43" title="1 of 2 branches missed.">        if (set1 == null) {</span>
-<span class="nc" id="L44">	    	throw new IllegalArgumentException(&quot;set1 cannot be null&quot;);</span>
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (set1 == null) {</span>
+<span class="nc" id="L48">	    	throw new IllegalArgumentException(&quot;set1 cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L46" title="1 of 2 branches missed.">	    if (set2 == null) {</span>
-<span class="nc" id="L47">	    	throw new IllegalArgumentException(&quot;set2 cannot be null&quot;);</span>
+<span class="pc bpc" id="L50" title="1 of 2 branches missed.">	    if (set2 == null) {</span>
+<span class="nc" id="L51">	    	throw new IllegalArgumentException(&quot;set2 cannot be null&quot;);</span>
         }
                 
-<span class="fc" id="L50">        List&lt;PairIntWithIndex&gt; p = new ArrayList&lt;PairIntWithIndex&gt;();</span>
-<span class="fc" id="L51">        List&lt;PairIntWithIndex&gt; x = new ArrayList&lt;PairIntWithIndex&gt;();</span>
-<span class="fc" id="L52">        List&lt;PairIntWithIndex&gt; y = new ArrayList&lt;PairIntWithIndex&gt;();</span>
+<span class="fc" id="L54">        List&lt;PairIntWithIndex&gt; p = new ArrayList&lt;PairIntWithIndex&gt;();</span>
+<span class="fc" id="L55">        List&lt;PairIntWithIndex&gt; x = new ArrayList&lt;PairIntWithIndex&gt;();</span>
+<span class="fc" id="L56">        List&lt;PairIntWithIndex&gt; y = new ArrayList&lt;PairIntWithIndex&gt;();</span>
         
-<span class="fc bfc" id="L54" title="All 2 branches covered.">        for (PairInt ps1 : set1) {</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        for (PairInt ps1 : set1) {</span>
             // since the points xy are not going to be modified, can reuse xy
-<span class="fc" id="L56">            PairIntWithIndex xy = new PairIntWithIndex(ps1.getX(), ps1.getY(), 1);</span>
-<span class="fc" id="L57">            p.add(xy);</span>
-<span class="fc" id="L58">            y.add(xy);</span>
-<span class="fc" id="L59">        }</span>
-<span class="fc bfc" id="L60" title="All 2 branches covered.">        for (PairInt ps2 : set2) {</span>
+<span class="fc" id="L60">            PairIntWithIndex xy = new PairIntWithIndex(ps1.getX(), ps1.getY(), 1);</span>
+<span class="fc" id="L61">            p.add(xy);</span>
+<span class="fc" id="L62">            y.add(xy);</span>
+<span class="fc" id="L63">        }</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        for (PairInt ps2 : set2) {</span>
             // since the points xy are not going to be modified, can reuse xy
-<span class="fc" id="L62">            PairIntWithIndex xy = new PairIntWithIndex(ps2.getX(), ps2.getY(), 2);</span>
-<span class="fc" id="L63">            p.add(xy);</span>
-<span class="fc" id="L64">            y.add(xy);</span>
-<span class="fc" id="L65">        }</span>
+<span class="fc" id="L66">            PairIntWithIndex xy = new PairIntWithIndex(ps2.getX(), ps2.getY(), 2);</span>
+<span class="fc" id="L67">            p.add(xy);</span>
+<span class="fc" id="L68">            y.add(xy);</span>
+<span class="fc" id="L69">        }</span>
         
-<span class="fc" id="L67">        MergeSort.sortByXThenY(p);</span>
-<span class="fc" id="L68">        x.addAll(p);</span>
+<span class="fc" id="L71">        MergeSort.sortByXThenY(p);</span>
+<span class="fc" id="L72">        x.addAll(p);</span>
         
-<span class="fc" id="L70">        MergeSort.sortByYThenX(y);</span>
+<span class="fc" id="L74">        MergeSort.sortByYThenX(y);</span>
         
-<span class="fc" id="L72">        return divide(p, x, y);</span>
+<span class="fc" id="L76">        return divide(p, x, y);</span>
     }
                 
     /**
@@ -85,83 +89,83 @@ public class ClosestPairBetweenSets {
     protected ClosestPairInt divide(List&lt;PairIntWithIndex&gt; p, List&lt;PairIntWithIndex&gt; x, 
         List&lt;PairIntWithIndex&gt; y) {
         
-<span class="fc bfc" id="L88" title="All 2 branches covered.">        if (p.size() &lt;= 3) {</span>
-<span class="fc" id="L89">            return bruteForceMinDistance(p);</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        if (p.size() &lt;= 3) {</span>
+<span class="fc" id="L93">            return bruteForceMinDistance(p);</span>
         }
                             
-<span class="fc" id="L92">        int q = p.size() &gt;&gt; 1; // 0 1 *2*  3 4 5</span>
+<span class="fc" id="L96">        int q = p.size() &gt;&gt; 1; // 0 1 *2*  3 4 5</span>
 
-<span class="fc" id="L94">        List&lt;PairIntWithIndex&gt; pL = new ArrayList&lt;PairIntWithIndex&gt;(q);</span>
-<span class="fc" id="L95">        List&lt;PairIntWithIndex&gt; pR = new ArrayList&lt;PairIntWithIndex&gt;(q);</span>
+<span class="fc" id="L98">        List&lt;PairIntWithIndex&gt; pL = new ArrayList&lt;PairIntWithIndex&gt;(q);</span>
+<span class="fc" id="L99">        List&lt;PairIntWithIndex&gt; pR = new ArrayList&lt;PairIntWithIndex&gt;(q);</span>
         
-<span class="fc" id="L97">        Set&lt;PairIntWithIndex&gt; isInL = new HashSet&lt;PairIntWithIndex&gt;();</span>
+<span class="fc" id="L101">        Set&lt;PairIntWithIndex&gt; isInL = new HashSet&lt;PairIntWithIndex&gt;();</span>
         
-<span class="fc" id="L99">        List&lt;PairIntWithIndex&gt; xL = new ArrayList&lt;PairIntWithIndex&gt;(q);</span>
-<span class="fc" id="L100">        List&lt;PairIntWithIndex&gt; xR = new ArrayList&lt;PairIntWithIndex&gt;(q);</span>
-<span class="fc" id="L101">        List&lt;PairIntWithIndex&gt; yL = new ArrayList&lt;PairIntWithIndex&gt;(q);</span>
-<span class="fc" id="L102">        List&lt;PairIntWithIndex&gt; yR = new ArrayList&lt;PairIntWithIndex&gt;(q);</span>
+<span class="fc" id="L103">        List&lt;PairIntWithIndex&gt; xL = new ArrayList&lt;PairIntWithIndex&gt;(q);</span>
+<span class="fc" id="L104">        List&lt;PairIntWithIndex&gt; xR = new ArrayList&lt;PairIntWithIndex&gt;(q);</span>
+<span class="fc" id="L105">        List&lt;PairIntWithIndex&gt; yL = new ArrayList&lt;PairIntWithIndex&gt;(q);</span>
+<span class="fc" id="L106">        List&lt;PairIntWithIndex&gt; yR = new ArrayList&lt;PairIntWithIndex&gt;(q);</span>
         
         // p is already sorted by x, so fill in the subsets for p and x
-<span class="fc bfc" id="L105" title="All 2 branches covered.">        for (int i = 0; i &lt; q; ++i) {</span>
-<span class="fc" id="L106">            PairIntWithIndex pi = p.get(i);</span>
-<span class="fc" id="L107">            pL.add(pi);</span>
-<span class="fc" id="L108">            xL.add(pi);</span>
-<span class="fc" id="L109">            isInL.add(pi);</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">        for (int i = 0; i &lt; q; ++i) {</span>
+<span class="fc" id="L110">            PairIntWithIndex pi = p.get(i);</span>
+<span class="fc" id="L111">            pL.add(pi);</span>
+<span class="fc" id="L112">            xL.add(pi);</span>
+<span class="fc" id="L113">            isInL.add(pi);</span>
         }
-<span class="fc bfc" id="L111" title="All 2 branches covered.">        for (int i = q; i &lt; p.size(); ++i) {</span>
-<span class="fc" id="L112">            PairIntWithIndex pi = p.get(i);</span>
-<span class="fc" id="L113">            pR.add(pi);</span>
-<span class="fc" id="L114">            xR.add(pi);</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        for (int i = q; i &lt; p.size(); ++i) {</span>
+<span class="fc" id="L116">            PairIntWithIndex pi = p.get(i);</span>
+<span class="fc" id="L117">            pR.add(pi);</span>
+<span class="fc" id="L118">            xR.add(pi);</span>
         }
         
-<span class="fc bfc" id="L117" title="All 2 branches covered.">        for (int i = 0; i &lt; y.size(); ++i) {</span>
-<span class="fc" id="L118">            PairIntWithIndex yi = y.get(i);</span>
-<span class="fc bfc" id="L119" title="All 2 branches covered.">            if (isInL.contains(yi)) {</span>
-<span class="fc" id="L120">                yL.add(yi);</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">        for (int i = 0; i &lt; y.size(); ++i) {</span>
+<span class="fc" id="L122">            PairIntWithIndex yi = y.get(i);</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">            if (isInL.contains(yi)) {</span>
+<span class="fc" id="L124">                yL.add(yi);</span>
             } else {
-<span class="fc" id="L122">                yR.add(yi);</span>
+<span class="fc" id="L126">                yR.add(yi);</span>
             }
         }
         
         // use 2 recursive calls for conquer
 
         // find closest pair in pL w/ pL, xL, and yL
-<span class="fc" id="L129">        ClosestPairInt cpL = divide(pL, xL, yL);</span>
+<span class="fc" id="L133">        ClosestPairInt cpL = divide(pL, xL, yL);</span>
 
         // find closest pair in pP w/ pR, xR, and yR
-<span class="fc" id="L132">        ClosestPairInt cpR = divide(pR, xR, yR);</span>
+<span class="fc" id="L136">        ClosestPairInt cpR = divide(pR, xR, yR);</span>
 
-<span class="fc bfc" id="L134" title="All 2 branches covered.">        ClosestPairInt d = (cpL.separationSq &lt;= cpR.separationSq) ? cpL : cpR;</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">        ClosestPairInt d = (cpL.separationSq &lt;= cpR.separationSq) ? cpL : cpR;</span>
         
-<span class="fc bfc" id="L136" title="All 6 branches covered.">        if ((d.point0 == null) &amp;&amp; (pL.size() &lt; 4) &amp;&amp; (pR.size() &lt; 4)) {</span>
-<span class="fc bfc" id="L137" title="All 4 branches covered.">            if (hasAPoint(pL, 1) &amp;&amp; hasAPoint(pR, 2)) {</span>
-<span class="fc" id="L138">                List&lt;PairIntWithIndex&gt; list = new ArrayList&lt;PairIntWithIndex&gt;();</span>
-<span class="fc" id="L139">                list.addAll(pL);</span>
-<span class="fc" id="L140">                list.addAll(pR);</span>
-<span class="fc" id="L141">                d = bruteForceMinDistance(list);</span>
-<span class="pc bpc" id="L142" title="1 of 4 branches missed.">            } else if (hasAPoint(xL, 1) &amp;&amp; hasAPoint(xR, 2)) {</span>
-<span class="nc" id="L143">                List&lt;PairIntWithIndex&gt; list = new ArrayList&lt;PairIntWithIndex&gt;();</span>
-<span class="nc" id="L144">                list.addAll(xL);</span>
-<span class="nc" id="L145">                list.addAll(xR);</span>
-<span class="nc" id="L146">                d = bruteForceMinDistance(list);</span>
-<span class="pc bpc" id="L147" title="1 of 4 branches missed.">            } else if (hasAPoint(yL, 1) &amp;&amp; hasAPoint(yR, 2)) {</span>
-<span class="nc" id="L148">                List&lt;PairIntWithIndex&gt; list = new ArrayList&lt;PairIntWithIndex&gt;();</span>
-<span class="nc" id="L149">                list.addAll(yL);</span>
-<span class="nc" id="L150">                list.addAll(yR);</span>
-<span class="nc" id="L151">                d = bruteForceMinDistance(list);</span>
+<span class="pc bpc" id="L140" title="1 of 6 branches missed.">        if ((d.point0 == null) &amp;&amp; (pL.size() &lt; 4) &amp;&amp; (pR.size() &lt; 4)) {</span>
+<span class="pc bpc" id="L141" title="1 of 4 branches missed.">            if (hasAPoint(pL, 1) &amp;&amp; hasAPoint(pR, 2)) {</span>
+<span class="nc" id="L142">                List&lt;PairIntWithIndex&gt; list = new ArrayList&lt;PairIntWithIndex&gt;();</span>
+<span class="nc" id="L143">                list.addAll(pL);</span>
+<span class="nc" id="L144">                list.addAll(pR);</span>
+<span class="nc" id="L145">                d = bruteForceMinDistance(list);</span>
+<span class="pc bpc" id="L146" title="1 of 4 branches missed.">            } else if (hasAPoint(xL, 1) &amp;&amp; hasAPoint(xR, 2)) {</span>
+<span class="nc" id="L147">                List&lt;PairIntWithIndex&gt; list = new ArrayList&lt;PairIntWithIndex&gt;();</span>
+<span class="nc" id="L148">                list.addAll(xL);</span>
+<span class="nc" id="L149">                list.addAll(xR);</span>
+<span class="nc" id="L150">                d = bruteForceMinDistance(list);</span>
+<span class="pc bpc" id="L151" title="1 of 4 branches missed.">            } else if (hasAPoint(yL, 1) &amp;&amp; hasAPoint(yR, 2)) {</span>
+<span class="nc" id="L152">                List&lt;PairIntWithIndex&gt; list = new ArrayList&lt;PairIntWithIndex&gt;();</span>
+<span class="nc" id="L153">                list.addAll(yL);</span>
+<span class="nc" id="L154">                list.addAll(yR);</span>
+<span class="nc" id="L155">                d = bruteForceMinDistance(list);</span>
             }
         }
         
-<span class="fc" id="L155">        return combine(yL, yR, d, xL.get(xL.size() - 1), xR.get(0));            </span>
+<span class="fc" id="L159">        return combine(yL, yR, d, xL.get(xL.size() - 1), xR.get(0));            </span>
     }
     
     private boolean hasAPoint(List&lt;PairIntWithIndex&gt; list, int groupNumber) {
-<span class="fc bfc" id="L159" title="All 2 branches covered.">        for (PairIntWithIndex p : list) {</span>
-<span class="fc bfc" id="L160" title="All 2 branches covered.">            if (p.getPixIndex() == groupNumber) {</span>
-<span class="fc" id="L161">                return true;</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">        for (PairIntWithIndex p : list) {</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">            if (p.getPixIndex() == groupNumber) {</span>
+<span class="fc" id="L165">                return true;</span>
             }
-<span class="fc" id="L163">        }</span>
-<span class="fc" id="L164">        return false;</span>
+<span class="fc" id="L167">        }</span>
+<span class="fc" id="L168">        return false;</span>
     }
     
     /**
@@ -177,68 +181,68 @@ public class ClosestPairBetweenSets {
     protected ClosestPairInt combine(List&lt;PairIntWithIndex&gt; yL, List&lt;PairIntWithIndex&gt; yR, 
         ClosestPairInt d,  PairIntWithIndex leftMostL, PairIntWithIndex rightMostR) {
         
-<span class="fc" id="L180">        List&lt;PairIntWithIndex&gt; yPrime = new ArrayList&lt;PairIntWithIndex&gt;();</span>
+<span class="fc" id="L184">        List&lt;PairIntWithIndex&gt; yPrime = new ArrayList&lt;PairIntWithIndex&gt;();</span>
         
-<span class="fc" id="L182">        int delta = d.separationSq;</span>
+<span class="fc" id="L186">        int delta = d.separationSq;</span>
         
         // find the points in yL that have x within delta from leftMostL
         // traversing yL (rather than xL) to keep yPrime ordered
-<span class="fc bfc" id="L186" title="All 2 branches covered.">        for (int i = 0; i &lt; yL.size(); ++i) {</span>
-<span class="fc" id="L187">            float xPoint = yL.get(i).getX();</span>
-<span class="fc bfc" id="L188" title="All 2 branches covered.">            if ((leftMostL.getX() - xPoint) &lt;= delta) {</span>
-<span class="fc" id="L189">                yPrime.add(yL.get(i));</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">        for (int i = 0; i &lt; yL.size(); ++i) {</span>
+<span class="fc" id="L191">            float xPoint = yL.get(i).getX();</span>
+<span class="pc bpc" id="L192" title="1 of 2 branches missed.">            if ((leftMostL.getX() - xPoint) &lt;= delta) {</span>
+<span class="fc" id="L193">                yPrime.add(yL.get(i));</span>
             }
         }
         
         // find the points in yR that have x within delta from rightMostR
         // traversing yR (rather than xR) to keep yPrime ordered
-<span class="fc bfc" id="L195" title="All 2 branches covered.">        for (int i = 0; i &lt; yR.size(); ++i) {</span>
-<span class="fc" id="L196">            float xPoint = yR.get(i).getX();</span>
-<span class="fc bfc" id="L197" title="All 2 branches covered.">            if ((xPoint - rightMostR.getX()) &lt;= delta) {</span>
-<span class="fc" id="L198">                yPrime.add(yR.get(i));</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">        for (int i = 0; i &lt; yR.size(); ++i) {</span>
+<span class="fc" id="L200">            float xPoint = yR.get(i).getX();</span>
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">            if ((xPoint - rightMostR.getX()) &lt;= delta) {</span>
+<span class="fc" id="L202">                yPrime.add(yR.get(i));</span>
             }
         }
         
-<span class="fc" id="L202">        int idx0 = -1;</span>
-<span class="fc" id="L203">        int idx1 = -1;</span>
-<span class="fc" id="L204">        int minDistSq = Integer.MAX_VALUE;</span>
+<span class="fc" id="L206">        int idx0 = -1;</span>
+<span class="fc" id="L207">        int idx1 = -1;</span>
+<span class="fc" id="L208">        int minDistSq = Integer.MAX_VALUE;</span>
         
-<span class="fc bfc" id="L206" title="All 2 branches covered.">        for (int i = 0; i &lt; yPrime.size(); i++) {</span>
+<span class="fc bfc" id="L210" title="All 2 branches covered.">        for (int i = 0; i &lt; yPrime.size(); i++) {</span>
             
-<span class="fc" id="L208">            PairIntWithIndex yi = yPrime.get(i);</span>
+<span class="fc" id="L212">            PairIntWithIndex yi = yPrime.get(i);</span>
             
-<span class="fc bfc" id="L210" title="All 2 branches covered.">            for (int j = (i + 1); j &lt; (i + 8); j++) {</span>
-<span class="fc bfc" id="L211" title="All 2 branches covered.">                if (j &gt; (yPrime.size() - 1)) {</span>
-<span class="fc" id="L212">                    break;</span>
+<span class="fc bfc" id="L214" title="All 2 branches covered.">            for (int j = (i + 1); j &lt; (i + 8); j++) {</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">                if (j &gt; (yPrime.size() - 1)) {</span>
+<span class="fc" id="L216">                    break;</span>
                 }
                 
-<span class="fc" id="L215">                PairIntWithIndex yj = yPrime.get(j);</span>
+<span class="fc" id="L219">                PairIntWithIndex yj = yPrime.get(j);</span>
                 
                 // only compare if the indexes of yi and yj are different
-<span class="fc bfc" id="L218" title="All 2 branches covered.">                if (yi.getPixIndex() == yj.getPixIndex()) {</span>
-<span class="fc" id="L219">                    continue;</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">                if (yi.getPixIndex() == yj.getPixIndex()) {</span>
+<span class="fc" id="L223">                    continue;</span>
                 }
                 
-<span class="fc" id="L222">                int diffX = yi.getX() - yj.getX();</span>
-<span class="fc" id="L223">                int diffY = yi.getY() - yj.getY();</span>
+<span class="fc" id="L226">                int diffX = yi.getX() - yj.getX();</span>
+<span class="fc" id="L227">                int diffY = yi.getY() - yj.getY();</span>
                 
-<span class="fc" id="L225">                int distSq = (diffX * diffX) + (diffY * diffY);</span>
-<span class="fc bfc" id="L226" title="All 2 branches covered.">                if (distSq &lt; minDistSq) {</span>
-<span class="fc" id="L227">                    minDistSq = distSq;</span>
-<span class="fc" id="L228">                    idx0 = i;</span>
-<span class="fc" id="L229">                    idx1 = j;</span>
+<span class="fc" id="L229">                int distSq = (diffX * diffX) + (diffY * diffY);</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">                if (distSq &lt; minDistSq) {</span>
+<span class="fc" id="L231">                    minDistSq = distSq;</span>
+<span class="fc" id="L232">                    idx0 = i;</span>
+<span class="fc" id="L233">                    idx1 = j;</span>
                 }
             }
         }
        
-<span class="fc bfc" id="L234" title="All 2 branches covered.">        if (minDistSq == Integer.MAX_VALUE) {</span>
-<span class="fc" id="L235">            return d;</span>
+<span class="fc bfc" id="L238" title="All 2 branches covered.">        if (minDistSq == Integer.MAX_VALUE) {</span>
+<span class="fc" id="L239">            return d;</span>
         }
                 
-<span class="fc bfc" id="L238" title="All 2 branches covered.">        if (minDistSq &lt; delta) {</span>
-<span class="fc" id="L239">            return new ClosestPairInt(yPrime.get(idx0), yPrime.get(idx1), minDistSq);</span>
+<span class="pc bpc" id="L242" title="1 of 2 branches missed.">        if (minDistSq &lt; delta) {</span>
+<span class="nc" id="L243">            return new ClosestPairInt(yPrime.get(idx0), yPrime.get(idx1), minDistSq);</span>
         } else {
-<span class="fc" id="L241">            return d;</span>
+<span class="fc" id="L245">            return d;</span>
         }        
     }
     
@@ -249,52 +253,52 @@ public class ClosestPairBetweenSets {
      */
     protected ClosestPairInt bruteForceMinDistance(List&lt;PairIntWithIndex&gt; p) {
         
-<span class="pc bpc" id="L252" title="1 of 2 branches missed.">        if (p.size() &lt; 1) {</span>
-<span class="nc" id="L253">            return new ClosestPairInt(null, null, Integer.MAX_VALUE);</span>
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">        if (p.size() &lt; 1) {</span>
+<span class="nc" id="L257">            return new ClosestPairInt(null, null, Integer.MAX_VALUE);</span>
         }
         
-<span class="fc" id="L256">        int minDistSq = Integer.MAX_VALUE;</span>
-<span class="fc" id="L257">        int idx0 = -1;</span>
-<span class="fc" id="L258">        int idx1 = -1;</span>
+<span class="fc" id="L260">        int minDistSq = Integer.MAX_VALUE;</span>
+<span class="fc" id="L261">        int idx0 = -1;</span>
+<span class="fc" id="L262">        int idx1 = -1;</span>
 
-<span class="fc bfc" id="L260" title="All 2 branches covered.">        for (int i = 0; i &lt; p.size(); i++) {</span>
+<span class="fc bfc" id="L264" title="All 2 branches covered.">        for (int i = 0; i &lt; p.size(); i++) {</span>
             
-<span class="fc" id="L262">            PairIntWithIndex pi = p.get(i);</span>
+<span class="fc" id="L266">            PairIntWithIndex pi = p.get(i);</span>
             
-<span class="fc bfc" id="L264" title="All 2 branches covered.">            for (int j = i; j &lt; p.size(); j++) {</span>
-<span class="fc bfc" id="L265" title="All 2 branches covered.">                if (i == j) {</span>
-<span class="fc" id="L266">                    continue;</span>
+<span class="fc bfc" id="L268" title="All 2 branches covered.">            for (int j = i; j &lt; p.size(); j++) {</span>
+<span class="fc bfc" id="L269" title="All 2 branches covered.">                if (i == j) {</span>
+<span class="fc" id="L270">                    continue;</span>
                 }
                 
-<span class="fc" id="L269">                PairIntWithIndex pj = p.get(j);</span>
+<span class="fc" id="L273">                PairIntWithIndex pj = p.get(j);</span>
                 
-<span class="fc bfc" id="L271" title="All 2 branches covered.">                if (pi.getPixIndex() == pj.getPixIndex()) {</span>
-<span class="fc" id="L272">                    continue;</span>
+<span class="fc bfc" id="L275" title="All 2 branches covered.">                if (pi.getPixIndex() == pj.getPixIndex()) {</span>
+<span class="fc" id="L276">                    continue;</span>
                 }
                 
-<span class="fc" id="L275">                int diffX = pi.getX() - pj.getX();</span>
-<span class="fc" id="L276">                int diffY = pi.getY() - pj.getY();</span>
-<span class="fc" id="L277">                int distSq = (diffX * diffX) + (diffY * diffY);</span>
+<span class="fc" id="L279">                int diffX = pi.getX() - pj.getX();</span>
+<span class="fc" id="L280">                int diffY = pi.getY() - pj.getY();</span>
+<span class="fc" id="L281">                int distSq = (diffX * diffX) + (diffY * diffY);</span>
 
-<span class="fc bfc" id="L279" title="All 2 branches covered.">                if (distSq &lt; minDistSq) {</span>
-<span class="fc" id="L280">                    minDistSq = distSq;</span>
-<span class="fc" id="L281">                    idx0 = i;</span>
-<span class="fc" id="L282">                    idx1 = j;</span>
+<span class="fc bfc" id="L283" title="All 2 branches covered.">                if (distSq &lt; minDistSq) {</span>
+<span class="fc" id="L284">                    minDistSq = distSq;</span>
+<span class="fc" id="L285">                    idx0 = i;</span>
+<span class="fc" id="L286">                    idx1 = j;</span>
                 }
             }
         }
         
-<span class="fc bfc" id="L287" title="All 2 branches covered.">        if (idx0 == -1) {</span>
-<span class="fc" id="L288">            return new ClosestPairInt(null, null, Integer.MAX_VALUE);</span>
+<span class="fc bfc" id="L291" title="All 2 branches covered.">        if (idx0 == -1) {</span>
+<span class="fc" id="L292">            return new ClosestPairInt(null, null, Integer.MAX_VALUE);</span>
         }
                 
-<span class="fc" id="L291">        return new ClosestPairInt(p.get(idx0), p.get(idx1), minDistSq);</span>
+<span class="fc" id="L295">        return new ClosestPairInt(p.get(idx0), p.get(idx1), minDistSq);</span>
     }
 
     /**
      *
      */
-    public class ClosestPairInt {
+    public static class ClosestPairInt {
         PairIntWithIndex point0;
         PairIntWithIndex point1;
         int separationSq;

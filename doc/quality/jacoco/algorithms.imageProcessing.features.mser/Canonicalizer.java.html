@@ -1,0 +1,1132 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Canonicalizer.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.features.mser</a> &gt; <span class="el_source">Canonicalizer.java</span></div><h1>Canonicalizer.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.features.mser;
+
+import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.imageProcessing.transform.TransformationParameters;
+import algorithms.imageProcessing.transform.Transformer;
+import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.imageProcessing.util.PairIntWithIndex;
+import algorithms.misc.Misc;
+import algorithms.util.PairInt;
+import java.util.List;
+import algorithms.util.PairIntArray;
+import com.climbwithyourfeet.clustering.DTClusterFinder;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
+/**
+ * class to produce descriptors for MSER, usable for
+ * matching same objects in other images.
+ *
+ * @author nichole
+ */
+<span class="pc bpc" id="L36" title="1 of 2 branches missed.">public class Canonicalizer {</span>
+
+    /*
+    affine transformation
+       see
+          http://math.stackexchange.com/questions/310776/finding-the-affine-transformation-that-will-change-a-given-ellipse-into-the-unit
+
+    x(t) = xCenter + aParam*cos(alpha)*cos(t) − bParam*sin(alpha)*sin(t)
+    y(t) = yCenter + aParam*sin(alpha)*cos(t) + bParam*cos(alpha)*sin(t)
+
+    v0x = aParam * cos(alpha);
+    v1x = bParam * sin(alpha);
+    v0y = aParam * sin(alpha);
+    v1y = bParam * cos(alpha);
+
+    so the semi-major axis length = 2 * Math.max(v0x, v1x)
+    and the semi-minor axis length = 2 * Math.min(v0y, v1y)
+
+    NOTE, the canonicalization currently preserves the
+    ellipse shape, but transforms the coordinates to
+    an orientation of 90 degrees for comparison in
+    matching algorithms.
+
+    The matching algorithm is still in progress, but can see
+    -- might need canonicalization to be circular areas
+       after all.  the radius would be the minor axis length.
+       -- for the regions where minor axis length &lt; 16
+          should use a radius of 16.
+    -- if the canoicalization into circular areas is successful
+       at finding best true matches,
+       will try to reduce them all to radius of 16 and if that
+       is successful, then should be able to use the ORB descriptors
+       in plae of these.
+       the ORB descriptors are binary...comparisons
+       are very fast.
+    */
+
+    public static class RegionGeometry {
+        public int xC;
+        public int yC;
+        public double orientation;// determined from ellipse alpha
+        public double eccentricity;
+        public double minor;
+        public double major;
+        public double[] m;
+    }
+    
+    public static class RegionPoints {
+        
+        public RegionGeometry ellipseParams;
+        
+        // NOTE: this could probably be stored more efficiently
+        /**
+         * key = transformed xOffset, yOffset,
+         * value = coordinate in the original untransformed reference frame.
+         */
+        public Set&lt;PairInt&gt; points;
+
+        // orientations in degrees in range 0 to 180
+        public TIntList hogOrientations = new TIntArrayList();
+        
+        // temporary storage of original accumulated points to explore partial edges
+        public TIntList accX = new TIntArrayList();
+        public TIntList accY = new TIntArrayList();
+        
+    }
+
+    public static class CRegion {
+        
+        public RegionGeometry ellipseParams = new RegionGeometry();
+
+        public int hogOrientation;
+        
+        public double autocorrel;
+
+        // NOTE: this could probably be stored more efficiently
+        /**
+         * key = transformed xOffset, yOffset,
+         * value = coordinate in the original untransformed reference frame.
+         */
+        public Map&lt;PairInt, PairInt&gt; offsetsToOrigCoords;
+
+        /**
+         * when not empty, this holds label of segmented regions
+         */
+        public TIntSet labels = new TIntHashSet();
+        
+        public int dataIdx = -1;
+        
+        public void draw(Image img, int nExtraDot, int rClr, int gClr, int bClr) {
+
+            double mc = Math.cos(ellipseParams.orientation - Math.PI/2.);
+            double ms = Math.sin(ellipseParams.orientation - Math.PI/2.);
+            int x1 = (int)Math.round(ellipseParams.xC - ellipseParams.major * mc);
+            int y1 = (int)Math.round(ellipseParams.yC + ellipseParams.major * ms);
+            int x2 = (int)Math.round(ellipseParams.xC + ellipseParams.major * mc);
+            int y2 = (int)Math.round(ellipseParams.yC - ellipseParams.major * ms);
+            if (x1 &lt; 0) { x1 = 0;}
+            if (y1 &lt; 0) { y1 = 0;}
+            if (x2 &lt; 0) { x2 = 0;}
+            if (y2 &lt; 0) { y2 = 0;}
+            if (x1 &gt;= img.getWidth()) { x1 = img.getWidth() - 1;}
+            if (y1 &gt;= img.getHeight()) { y1 = img.getHeight() - 1;}
+            if (x2 &gt;= img.getWidth()) { x2 = img.getWidth() - 1;}
+            if (y2 &gt;= img.getHeight()) { y2 = img.getHeight() - 1;}
+
+            ImageIOHelper.drawLineInImage(x1, y1, x2, y2, img, nExtraDot,
+                rClr, gClr, bClr);
+
+            mc = Math.cos(ellipseParams.orientation);
+            ms = Math.sin(ellipseParams.orientation);
+            x1 = (int)Math.round(ellipseParams.xC + ellipseParams.minor * mc);
+            y1 = (int)Math.round(ellipseParams.yC - ellipseParams.minor * ms);
+            x2 = (int)Math.round(ellipseParams.xC - ellipseParams.minor * mc);
+            y2 = (int)Math.round(ellipseParams.yC + ellipseParams.minor * ms);
+            if (x1 &lt; 0) { x1 = 0;}
+            if (y1 &lt; 0) { y1 = 0;}
+            if (x2 &lt; 0) { x2 = 0;}
+            if (y2 &lt; 0) { y2 = 0;}
+            if (x1 &gt;= img.getWidth()) { x1 = img.getWidth() - 1;}
+            if (y1 &gt;= img.getHeight()) { y1 = img.getHeight() - 1;}
+            if (x2 &gt;= img.getWidth()) { x2 = img.getWidth() - 1;}
+            if (y2 &gt;= img.getHeight()) { y2 = img.getHeight() - 1;}
+
+            ImageIOHelper.drawLineInImage(x1, y1, x2, y2, img, nExtraDot,
+                rClr, gClr, bClr);
+
+        }
+
+        public void drawEachPixel(Image img, int nExtraDot, int rClr, int gClr, int bClr) {
+
+            for (Entry&lt;PairInt, PairInt&gt; entry : offsetsToOrigCoords.entrySet()) {
+            
+                PairInt p = entry.getValue();
+                
+                ImageIOHelper.addPointToImage(p.getX(), p.getY(), img, nExtraDot,
+                    rClr, gClr, bClr);
+            }
+        }
+        
+        @Override
+        public String toString() {
+
+            String str = String.format(
+                &quot;(%d, %d) ecc=%.3f angle=%.3f major=%d minor=%d area=%d&quot;,
+                ellipseParams.xC, ellipseParams.yC, 
+                (float)ellipseParams.eccentricity, (float)ellipseParams.orientation,
+                (int)Math.round(ellipseParams.major), 
+                (int)Math.round(ellipseParams.minor),
+                offsetsToOrigCoords.size());
+
+            return str;
+        }
+    }
+
+    /**
+     * NOTE, for best use, invoker should use this descriptor with
+     * an image processed to create a window average for each pixel.
+       For example:
+       SummedAreaTable sumTable = new SummedAreaTable();
+       GreyscaleImage imgM = sumTable.createAbsoluteSummedAreaTable(img);
+       imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM,
+            2*halfDimension + 1);
+     * @param regions
+     * @param meanWindowedImg
+     * @return
+     */
+    public TIntObjectMap&lt;CRegion&gt; canonicalizeRegions(List&lt;Region&gt; regions,
+        GreyscaleImage meanWindowedImg) {
+
+<span class="nc" id="L206">        TIntObjectMap&lt;CRegion&gt; output = new TIntObjectHashMap&lt;CRegion&gt;();</span>
+
+<span class="nc" id="L208">        int[] xyCen = new int[2];</span>
+    
+<span class="nc bnc" id="L210" title="All 2 branches missed.">        for (int i = 0; i &lt; regions.size(); ++i) {</span>
+
+<span class="nc" id="L212">            Region r = regions.get(i);</span>
+            
+<span class="nc" id="L214">            CRegion cRegion = canonicalizeRegion(r, meanWindowedImg);</span>
+            
+<span class="nc bnc" id="L216" title="All 2 branches missed.">            if (cRegion != null) {</span>
+<span class="nc" id="L217">                output.put(i, cRegion);</span>
+            }
+        }
+
+<span class="nc" id="L221">        return output;</span>
+    }
+    
+    /**
+     * uses RegionPoints.hogOrientations to make multiple cRegions for 
+     * each RegionPoints instance.  it also make a region for the mser
+     * ellipse derived orientation.
+     * 
+     * @param regions
+     * @param img
+     * @return 
+     */
+    public TIntObjectMap&lt;CRegion&gt; canonicalizeRegions4(
+        TIntObjectMap&lt;RegionPoints&gt; regions, GreyscaleImage img) {
+        
+<span class="fc" id="L236">        int addIdx = regions.size();</span>
+        
+<span class="fc" id="L238">        TIntObjectMap&lt;CRegion&gt; output = new TIntObjectHashMap&lt;CRegion&gt;();</span>
+
+<span class="fc" id="L240">        int[] xyCen = new int[2];</span>
+    
+<span class="fc" id="L242">        TIntObjectIterator&lt;RegionPoints&gt; iter = regions.iterator();</span>
+<span class="fc bfc" id="L243" title="All 2 branches covered.">        for (int i = 0; i &lt; regions.size(); ++i) {</span>
+<span class="fc" id="L244">            iter.advance();</span>
+            
+<span class="fc" id="L246">            int rIdx = iter.key();</span>
+<span class="fc" id="L247">            RegionPoints r = iter.value();</span>
+            
+<span class="fc" id="L249">            TIntSet orientations = new TIntHashSet(r.hogOrientations);</span>
+            
+            /*
+            NOTE that hog orientations have 90 pointing up and that is the
+            direction of the major axis of points, that is 90 degrees is
+            the direction from x,y = (0,0) to (1,0).
+            
+            NOTE also that the regionpoint ellipse orientation is the angle of the
+            minor axis of the ellipse, so 90 degrees must be subtracted from
+            it to use with the dominant orientations.
+            */
+            
+<span class="fc" id="L261">            int eAngle = (int)Math.round(r.ellipseParams.orientation * 180./Math.PI);</span>
+            // put into 0 to 180 ref frame
+<span class="pc bpc" id="L263" title="1 of 2 branches missed.">            if (eAngle &gt; 179) {</span>
+<span class="nc" id="L264">                eAngle -= 180;</span>
+            }
+            // put into ref frame of dominant orientations (major axis direction)
+<span class="fc" id="L267">            eAngle -= 90;</span>
+<span class="fc bfc" id="L268" title="All 2 branches covered.">            if (eAngle &lt; 0) {</span>
+<span class="fc" id="L269">                eAngle += 180;</span>
+            }
+<span class="fc" id="L271">            orientations.add(eAngle);</span>
+            
+<span class="fc" id="L273">            PairIntArray points = Misc.convertWithoutOrder(r.points);</span>
+            
+<span class="fc" id="L275">            TIntIterator iter2 = orientations.iterator();</span>
+<span class="fc bfc" id="L276" title="All 2 branches covered.">            while (iter2.hasNext()) {</span>
+                
+<span class="fc" id="L278">                int or = iter2.next();</span>
+            
+<span class="fc" id="L280">                double angle = or * (Math.PI/180.);</span>
+                    
+<span class="fc" id="L282">                Map&lt;PairInt, PairInt&gt; offsetToOrigMap = createOffsetToOrigMap(</span>
+                    r.ellipseParams.xC, r.ellipseParams.yC,
+<span class="fc" id="L284">                    points, img.getWidth(), img.getHeight(),</span>
+                    angle);
+
+<span class="fc" id="L287">                CRegion cRegion = new CRegion();</span>
+<span class="fc" id="L288">                cRegion.ellipseParams = r.ellipseParams;</span>
+<span class="fc" id="L289">                cRegion.offsetsToOrigCoords = offsetToOrigMap;</span>
+<span class="fc" id="L290">                cRegion.dataIdx = rIdx;</span>
+<span class="fc" id="L291">                cRegion.hogOrientation = or;</span>
+                
+<span class="fc bfc" id="L293" title="All 2 branches covered.">                if (output.containsKey(rIdx)) {</span>
+<span class="fc" id="L294">                    output.put(addIdx, cRegion);</span>
+<span class="fc" id="L295">                    addIdx++;</span>
+                } else {
+<span class="fc" id="L297">                    output.put(rIdx, cRegion);</span>
+                }
+<span class="fc" id="L299">            }</span>
+        }
+
+<span class="fc" id="L302">        return output;        </span>
+    }
+    
+    /**
+     * NOTE, for best use, invoker should use this descriptor with
+     * an image processed to create a window average for each pixel.
+       For example:
+       SummedAreaTable sumTable = new SummedAreaTable();
+       GreyscaleImage imgM = sumTable.createAbsoluteSummedAreaTable(img);
+       imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM,
+            2*halfDimension + 1);
+
+     * @return
+     */
+    public TIntObjectMap&lt;CRegion&gt; canonicalizeRegions3(
+        TIntObjectMap&lt;RegionPoints&gt; regions, GreyscaleImage img) {
+
+<span class="nc" id="L319">        TIntObjectMap&lt;CRegion&gt; output = new TIntObjectHashMap&lt;CRegion&gt;();</span>
+
+<span class="nc" id="L321">        int[] xyCen = new int[2];</span>
+    
+<span class="nc" id="L323">        TIntObjectIterator&lt;RegionPoints&gt; iter = regions.iterator();</span>
+<span class="nc bnc" id="L324" title="All 2 branches missed.">        for (int i = 0; i &lt; regions.size(); ++i) {</span>
+<span class="nc" id="L325">            iter.advance();</span>
+<span class="nc" id="L326">            int label = iter.key();</span>
+<span class="nc" id="L327">            RegionPoints r = iter.value();</span>
+            
+<span class="nc" id="L329">            Map&lt;PairInt, PairInt&gt; offsetToOrigMap = createOffsetToOrigMap(</span>
+                r.ellipseParams.xC, r.ellipseParams.yC,
+<span class="nc" id="L331">                Misc.convertWithoutOrder(r.points), img.getWidth(), img.getHeight(), </span>
+                r.ellipseParams.orientation);
+
+<span class="nc" id="L334">            CRegion cRegion = new CRegion();</span>
+<span class="nc" id="L335">            cRegion.ellipseParams = r.ellipseParams;</span>
+<span class="nc" id="L336">            cRegion.offsetsToOrigCoords = offsetToOrigMap;</span>
+            
+<span class="nc" id="L338">            output.put(label, cRegion);</span>
+        }
+
+<span class="nc" id="L341">        return output;</span>
+    }
+    
+    /**
+     * NOTE, for best use, invoker should use this descriptor with
+     * an image processed to create a window average for each pixel.
+       For example:
+       SummedAreaTable sumTable = new SummedAreaTable();
+       GreyscaleImage imgM = sumTable.createAbsoluteSummedAreaTable(img);
+       imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM,
+            2*halfDimension + 1);
+
+     * @return
+     */
+    public TIntObjectMap&lt;RegionPoints&gt; canonicalizeRegions2(List&lt;Region&gt; regions,
+        GreyscaleImage meanWindowedImg) {
+
+<span class="fc" id="L358">        TIntObjectMap&lt;RegionPoints&gt; output = new TIntObjectHashMap&lt;RegionPoints&gt;();</span>
+
+<span class="fc" id="L360">        int[] xyCen = new int[2];</span>
+    
+<span class="fc bfc" id="L362" title="All 2 branches covered.">        for (int i = 0; i &lt; regions.size(); ++i) {</span>
+
+<span class="fc" id="L364">            Region r = regions.get(i);</span>
+            
+<span class="fc" id="L366">            RegionPoints cRegion = canonicalizeRegion2(r, </span>
+<span class="fc" id="L367">                meanWindowedImg.getWidth(), meanWindowedImg.getHeight());</span>
+            
+<span class="fc" id="L369">            output.put(i, cRegion);</span>
+        }
+
+<span class="fc" id="L372">        return output;</span>
+    }
+    
+    /**
+     * NOTE, for best use, invoker should use this descriptor with
+     * an image processed to create a window average for each pixel.
+       For example:
+       SummedAreaTable sumTable = new SummedAreaTable();
+       GreyscaleImage imgM = sumTable.createAbsoluteSummedAreaTable(img);
+       imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM,
+            2*halfDimension + 1);
+
+     * @return
+     */
+    public CRegion canonicalizeRegion(Region r, GreyscaleImage meanWindowedImg) {
+
+<span class="nc" id="L388">        int imageWidth = meanWindowedImg.getWidth();</span>
+<span class="nc" id="L389">        int imageHeight = meanWindowedImg.getHeight();</span>
+
+<span class="nc" id="L391">        CRegion cRegion = canonicalizeRegion(r, imageWidth, imageHeight);</span>
+
+<span class="nc bnc" id="L393" title="All 2 branches missed.">        if (cRegion == null) {</span>
+<span class="nc" id="L394">            return null;</span>
+        }
+        
+<span class="nc" id="L397">        double autocorrel = calcAutoCorrel(meanWindowedImg, </span>
+            cRegion.ellipseParams.xC, cRegion.ellipseParams.yC, 
+            cRegion.offsetsToOrigCoords);
+
+<span class="nc" id="L401">        cRegion.autocorrel = Math.sqrt(autocorrel)/255.;</span>
+
+<span class="nc" id="L403">        return cRegion;</span>
+    }
+
+    /**
+     * 
+     * @param x
+     * @param y
+     * @param m ellipse coefficients derived from x,y moments.
+       double[]{v0x, v1x, v0y, v1y}
+     * @param imageWidth
+     * @param imageHeight
+     * @return 
+     */
+    public static PairIntArray createEllipse(int x, int y, 
+        double[] m, int imageWidth, int imageHeight) {
+
+<span class="fc" id="L419">        PairIntArray xy = new PairIntArray();</span>
+        
+<span class="pc bpc" id="L421" title="5 of 6 branches missed.">        assert(x &gt;= 0 &amp;&amp; x &lt; imageWidth);</span>
+<span class="pc bpc" id="L422" title="5 of 6 branches missed.">        assert(y &gt;= 0 &amp;&amp; y &lt; imageHeight);</span>
+
+        //v0x, v1x, v0y, v1y
+        //double[] m = r.calcParamTransCoeff();
+
+<span class="fc" id="L427">        double angle = Math.atan(m[0]/m[2]);</span>
+<span class="fc bfc" id="L428" title="All 2 branches covered.">        if (angle &lt; 0) {</span>
+<span class="fc" id="L429">            angle += Math.PI;</span>
+        }
+
+<span class="fc" id="L432">        double major = 2. * m[4];</span>
+<span class="fc" id="L433">        double minor = 2. * m[5];</span>
+
+<span class="fc" id="L435">        double ecc = Math.sqrt(major * major - minor * minor)/major;</span>
+<span class="pc bpc" id="L436" title="3 of 4 branches missed.">        assert(!Double.isNaN(ecc));</span>
+
+        // elliptical bounds
+        // find the ranges of the untransformed ellipse first
+<span class="fc bfc" id="L440" title="All 2 branches covered.">        for (double t = 0.0; t &lt; 2.0 * Math.PI; t += 0.001) {</span>
+<span class="fc" id="L441">            int xE = (int)Math.round(x +</span>
+<span class="fc" id="L442">                (Math.cos(t) * m[0] + Math.sin(t) * m[1]) * 2.0 + 0.5);</span>
+<span class="fc" id="L443">            int yE = (int)Math.round(y + (Math.cos(t) * m[2]</span>
+<span class="fc" id="L444">                + Math.sin(t) * m[3]) * 2.0 + 0.5);</span>
+<span class="fc bfc" id="L445" title="All 8 branches covered.">            if ((xE &gt;= 0) &amp;&amp; (xE &lt; imageWidth) &amp;&amp;</span>
+                (yE &gt;= 0) &amp;&amp; (yE &lt; imageHeight)) {
+<span class="fc" id="L447">                xy.add(xE, yE);</span>
+            }
+        }
+        
+<span class="fc" id="L451">        return xy;</span>
+    }   
+    
+    /**
+     * NOTE, for best use, invoker should use this descriptor with
+     * an image processed to create a window average for each pixel.
+       For example:
+       SummedAreaTable sumTable = new SummedAreaTable();
+       GreyscaleImage imgM = sumTable.createAbsoluteSummedAreaTable(img);
+       imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM,
+            2*halfDimension + 1);
+     * @param r
+     * @param imageWidth
+     * @param imageHeight
+     * @return
+     */
+    public RegionPoints canonicalizeRegion2(Region r, int imageWidth, 
+        int imageHeight) {
+
+<span class="fc" id="L470">        int[] xyCen = new int[2];</span>
+    
+<span class="fc" id="L472">        r.calculateXYCentroid(xyCen, imageWidth, imageHeight);</span>
+<span class="fc" id="L473">        int x = xyCen[0];</span>
+<span class="fc" id="L474">        int y = xyCen[1];</span>
+<span class="pc bpc" id="L475" title="5 of 6 branches missed.">        assert(x &gt;= 0 &amp;&amp; x &lt; imageWidth);</span>
+<span class="pc bpc" id="L476" title="5 of 6 branches missed.">        assert(y &gt;= 0 &amp;&amp; y &lt; imageHeight);</span>
+
+        //v0x, v1x, v0y, v1y
+<span class="fc" id="L479">        double[] m = r.calcParamTransCoeff();</span>
+
+<span class="fc" id="L481">        double angle = Math.atan(m[0]/m[2]);</span>
+<span class="fc bfc" id="L482" title="All 2 branches covered.">        if (angle &lt; 0) {</span>
+<span class="fc" id="L483">            angle += Math.PI;</span>
+        }
+
+<span class="fc" id="L486">        double major = 2. * m[4];</span>
+<span class="fc" id="L487">        double minor = 2. * m[5];</span>
+
+<span class="fc" id="L489">        double ecc = Math.sqrt(major * major - minor * minor)/major;</span>
+<span class="pc bpc" id="L490" title="3 of 4 branches missed.">        assert(!Double.isNaN(ecc));</span>
+
+        PairIntArray xy;
+
+<span class="fc" id="L494">        boolean createEllipse = true;</span>
+<span class="fc" id="L495">        double radius = minor;</span>
+<span class="fc bfc" id="L496" title="All 2 branches covered.">        if (radius &lt; 4) {</span>
+<span class="fc" id="L497">            radius = 4;</span>
+<span class="fc" id="L498">            createEllipse = false;</span>
+        }
+
+<span class="fc bfc" id="L501" title="All 2 branches covered.">        if (createEllipse) {</span>
+<span class="fc" id="L502">            xy = createEllipse(x, y, m, imageWidth, imageHeight);</span>
+        } else {
+<span class="fc" id="L504">            xy = new PairIntArray();</span>
+<span class="fc bfc" id="L505" title="All 2 branches covered.">            for (double t = 0.0; t &lt; 2.0 * Math.PI; t += 0.001) {</span>
+<span class="fc" id="L506">                double mc = Math.cos(t);</span>
+<span class="fc" id="L507">                double ms = Math.sin(t);</span>
+<span class="fc" id="L508">                int xE = (int)Math.round(x + (mc * radius));</span>
+<span class="fc" id="L509">                int yE = (int)Math.round(y + (ms * radius));</span>
+<span class="pc bpc" id="L510" title="4 of 8 branches missed.">                if ((xE &gt;= 0) &amp;&amp; (xE &lt; imageWidth) &amp;&amp;</span>
+                    (yE &gt;= 0) &amp;&amp; (yE &lt; imageHeight)) {
+<span class="fc" id="L512">                    xy.add(xE, yE);</span>
+                }
+            }
+        }
+        
+<span class="fc" id="L517">        fillInEllipse(xy);</span>
+        
+<span class="fc" id="L519">        RegionGeometry rg = new RegionGeometry();</span>
+<span class="fc" id="L520">        rg.eccentricity = ecc;</span>
+<span class="fc" id="L521">        rg.major = major;</span>
+<span class="fc" id="L522">        rg.minor = minor;</span>
+<span class="fc" id="L523">        rg.orientation = angle;</span>
+<span class="fc" id="L524">        rg.m = m;</span>
+<span class="fc" id="L525">        rg.xC = x;</span>
+<span class="fc" id="L526">        rg.yC = y;</span>
+<span class="fc" id="L527">        rg.m = m;</span>
+
+<span class="fc" id="L529">        RegionPoints regionPoints = new RegionPoints();</span>
+<span class="fc" id="L530">        regionPoints.ellipseParams = rg;</span>
+<span class="fc" id="L531">        regionPoints.points = Misc.convert(xy);</span>
+    
+<span class="fc" id="L533">        regionPoints.accX.addAll(r.accX);</span>
+<span class="fc" id="L534">        regionPoints.accY.addAll(r.accY);</span>
+        
+<span class="fc" id="L536">        return regionPoints;</span>
+    }
+    
+    /**
+     * NOTE, for best use, invoker should use this descriptor with
+     * an image processed to create a window average for each pixel.
+       For example:
+       SummedAreaTable sumTable = new SummedAreaTable();
+       GreyscaleImage imgM = sumTable.createAbsoluteSummedAreaTable(img);
+       imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM,
+            2*halfDimension + 1);
+
+       NOTE the field utocorrelation is not clculated here and my be removed.
+    
+     * @return
+     */
+    public CRegion canonicalizeRegion(Region r, int imageWidth, int imageHeight) {
+
+<span class="nc" id="L554">        int[] xyCen = new int[2];</span>
+    
+<span class="nc" id="L556">        r.calculateXYCentroid(xyCen, imageWidth, imageHeight);</span>
+<span class="nc" id="L557">        int x = xyCen[0];</span>
+<span class="nc" id="L558">        int y = xyCen[1];</span>
+<span class="nc bnc" id="L559" title="All 6 branches missed.">        assert(x &gt;= 0 &amp;&amp; x &lt; imageWidth);</span>
+<span class="nc bnc" id="L560" title="All 6 branches missed.">        assert(y &gt;= 0 &amp;&amp; y &lt; imageHeight);</span>
+
+        //v0x, v1x, v0y, v1y
+<span class="nc" id="L563">        double[] m = r.calcParamTransCoeff();</span>
+
+<span class="nc" id="L565">        double angle = Math.atan(m[0]/m[2]);</span>
+<span class="nc bnc" id="L566" title="All 2 branches missed.">        if (angle &lt; 0) {</span>
+<span class="nc" id="L567">            angle += Math.PI;</span>
+        }
+
+<span class="nc" id="L570">        double major = 2. * m[4];</span>
+<span class="nc" id="L571">        double minor = 2. * m[5];</span>
+
+<span class="nc" id="L573">        double ecc = Math.sqrt(major * major - minor * minor)/major;</span>
+<span class="nc bnc" id="L574" title="All 2 branches missed.">        if (Double.isNaN(ecc)) {</span>
+<span class="nc" id="L575">            return null;</span>
+        }
+
+        PairIntArray xy;
+
+<span class="nc" id="L580">        boolean createEllipse = true;</span>
+<span class="nc" id="L581">        double radius = minor;</span>
+<span class="nc bnc" id="L582" title="All 2 branches missed.">        if (radius &lt; 4) {</span>
+<span class="nc" id="L583">            radius = 4;</span>
+<span class="nc" id="L584">            createEllipse = false;</span>
+        }
+
+<span class="nc bnc" id="L587" title="All 2 branches missed.">        if (createEllipse) {</span>
+<span class="nc" id="L588">            xy = createEllipse(x, y, m, imageWidth, imageHeight);</span>
+        } else {
+<span class="nc" id="L590">            xy = new PairIntArray();</span>
+<span class="nc bnc" id="L591" title="All 2 branches missed.">            for (double t = 0.0; t &lt; 2.0 * Math.PI; t += 0.001) {</span>
+<span class="nc" id="L592">                double mc = Math.cos(t);</span>
+<span class="nc" id="L593">                double ms = Math.sin(t);</span>
+<span class="nc" id="L594">                int xE = (int)Math.round(x + (mc * radius));</span>
+<span class="nc" id="L595">                int yE = (int)Math.round(y + (ms * radius));</span>
+<span class="nc bnc" id="L596" title="All 8 branches missed.">                if ((xE &gt;= 0) &amp;&amp; (xE &lt; imageWidth) &amp;&amp;</span>
+                    (yE &gt;= 0) &amp;&amp; (yE &lt; imageHeight)) {
+<span class="nc" id="L598">                    xy.add(xE, yE);</span>
+                }
+            }
+        }
+
+<span class="nc" id="L603">        Map&lt;PairInt, PairInt&gt; offsetToOrigMap = createOffsetToOrigMap(x, y,</span>
+            xy, imageWidth, imageHeight, angle);
+
+<span class="nc" id="L606">        RegionGeometry rg = new RegionGeometry();</span>
+<span class="nc" id="L607">        rg.eccentricity = ecc;</span>
+<span class="nc" id="L608">        rg.major = major;</span>
+<span class="nc" id="L609">        rg.minor = minor;</span>
+<span class="nc" id="L610">        rg.orientation = angle;</span>
+<span class="nc" id="L611">        rg.xC = x;</span>
+<span class="nc" id="L612">        rg.yC = y;</span>
+<span class="nc" id="L613">        rg.m = m;</span>
+
+<span class="nc" id="L615">        CRegion cRegion = new CRegion();</span>
+<span class="nc" id="L616">        cRegion.ellipseParams = rg;</span>
+<span class="nc" id="L617">        cRegion.offsetsToOrigCoords = offsetToOrigMap;</span>
+
+<span class="nc" id="L619">        return cRegion;</span>
+    }
+    
+    public static RegionGeometry calculateEllipseParams(Region r, int imageWidth, int imageHeight) {
+
+<span class="fc" id="L624">        int[] xyCen = new int[2];</span>
+    
+<span class="fc" id="L626">        r.calculateXYCentroid(xyCen, imageWidth, imageHeight);</span>
+<span class="fc" id="L627">        int x = xyCen[0];</span>
+<span class="fc" id="L628">        int y = xyCen[1];</span>
+<span class="pc bpc" id="L629" title="5 of 6 branches missed.">        assert(x &gt;= 0 &amp;&amp; x &lt; imageWidth);</span>
+<span class="pc bpc" id="L630" title="5 of 6 branches missed.">        assert(y &gt;= 0 &amp;&amp; y &lt; imageHeight);</span>
+
+        //v0x, v1x, v0y, v1y
+<span class="fc" id="L633">        double[] m = r.calcParamTransCoeff();</span>
+
+<span class="fc" id="L635">        double angle = Math.atan(m[0]/m[2]);</span>
+<span class="fc bfc" id="L636" title="All 2 branches covered.">        if (angle &lt; 0) {</span>
+<span class="fc" id="L637">            angle += Math.PI;</span>
+        }
+
+<span class="fc" id="L640">        double major = 2. * m[4];</span>
+<span class="fc" id="L641">        double minor = 2. * m[5];</span>
+
+<span class="fc" id="L643">        double ecc = Math.sqrt(major * major - minor * minor)/major;</span>
+<span class="pc bpc" id="L644" title="1 of 2 branches missed.">        if (Double.isNaN(ecc)) {</span>
+<span class="nc" id="L645">            return null;</span>
+        }
+
+<span class="fc" id="L648">        RegionGeometry rg = new RegionGeometry();</span>
+<span class="fc" id="L649">        rg.eccentricity = ecc;</span>
+<span class="fc" id="L650">        rg.major = major;</span>
+<span class="fc" id="L651">        rg.minor = minor;</span>
+<span class="fc" id="L652">        rg.orientation = angle;</span>
+<span class="fc" id="L653">        rg.xC = x;</span>
+<span class="fc" id="L654">        rg.yC = y;</span>
+<span class="fc" id="L655">        rg.m = m;</span>
+        
+<span class="fc" id="L657">        return rg;</span>
+    }
+
+    /**
+     * create canonicalized regions containing coordinate maps that can be used
+     * to make descriptors.  Note that for best results, the pyramidImgs
+     * should have been pre-processed so that a pixel contains the mean of
+     * itself and its neighboring pixels.
+     * @param regions
+     * @param pyramidImgs
+     * @return
+     */
+    public List&lt;TIntObjectMap&lt;CRegion&gt;&gt; canonicalizeRegions(
+        List&lt;Region&gt; regions, List&lt;GreyscaleImage&gt; pyramidImgs) {
+
+<span class="nc" id="L672">        List&lt;TIntObjectMap&lt;CRegion&gt;&gt; output = new ArrayList&lt;TIntObjectMap&lt;CRegion&gt;&gt;();</span>
+
+<span class="nc" id="L674">        TIntObjectMap&lt;CRegion&gt; crMap0 = canonicalizeRegions(regions, pyramidImgs.get(0));</span>
+
+<span class="nc" id="L676">        output.add(crMap0);</span>
+
+<span class="nc" id="L678">        Transformer transformer = new Transformer();</span>
+
+        TIntObjectIterator&lt;CRegion&gt; iter0;
+<span class="nc" id="L681">        GreyscaleImage mImg0 = pyramidImgs.get(0);</span>
+
+<span class="nc bnc" id="L683" title="All 2 branches missed.">        for (int imgIdx = 1; imgIdx &lt; pyramidImgs.size(); ++imgIdx) {</span>
+
+<span class="nc" id="L685">            TIntObjectMap&lt;CRegion&gt; crMap = new TIntObjectHashMap&lt;CRegion&gt;();</span>
+<span class="nc" id="L686">            output.add(crMap);</span>
+
+<span class="nc" id="L688">            GreyscaleImage mImg = pyramidImgs.get(imgIdx);</span>
+<span class="nc" id="L689">            float scale = ((float)mImg0.getWidth()/(float)mImg.getWidth()) +</span>
+<span class="nc" id="L690">                ((float)mImg0.getHeight()/(float)mImg.getHeight());</span>
+<span class="nc" id="L691">            scale /= 2.f;</span>
+
+<span class="nc" id="L693">            iter0 = crMap0.iterator();</span>
+<span class="nc bnc" id="L694" title="All 2 branches missed.">            for (int i = 0; i &lt; crMap0.size(); ++i) {</span>
+<span class="nc" id="L695">                iter0.advance();</span>
+
+<span class="nc" id="L697">                int idx = iter0.key();</span>
+<span class="nc" id="L698">                CRegion cr = iter0.value();</span>
+
+<span class="nc" id="L700">                int xc2 = Math.round((float)cr.ellipseParams.xC/scale);</span>
+<span class="nc" id="L701">                int yc2 = Math.round((float)cr.ellipseParams.yC/scale);</span>
+
+<span class="nc bnc" id="L703" title="All 6 branches missed.">                if (xc2 &lt; 0 || yc2 &lt; 0 || xc2 &gt;= mImg.getWidth() ||</span>
+<span class="nc bnc" id="L704" title="All 2 branches missed.">                    yc2 &gt;= mImg.getHeight()) {</span>
+<span class="nc" id="L705">                    continue;</span>
+                }
+
+                // transform the elliptical range so that angle2 is pointing
+                // up in the image, that is angle2 = Math.PI/2
+                // pi/2 = deltaR + angle --&gt; deltaR = (pi/2) - angle
+<span class="nc" id="L711">                TransformationParameters params = new TransformationParameters();</span>
+<span class="nc" id="L712">                params.setOriginX(xc2);</span>
+<span class="nc" id="L713">                params.setOriginY(yc2);</span>
+<span class="nc" id="L714">                params.setScale(1.0f);</span>
+<span class="nc" id="L715">                params.setTranslationX(0);</span>
+<span class="nc" id="L716">                params.setTranslationY(0);</span>
+<span class="nc" id="L717">                params.setRotationInDegrees(AngleUtil.getAngleDifference(90.f,</span>
+                    (float)(cr.ellipseParams.orientation*180./Math.PI)));
+
+                // copy and reduce structure in size by scale factor
+<span class="nc" id="L721">                Map&lt;PairInt, PairInt&gt; offsetMap = new HashMap&lt;PairInt, PairInt&gt;();</span>
+
+<span class="nc" id="L723">                int vc = mImg.getValue(xc2, yc2);</span>
+<span class="nc" id="L724">                int nc = 0;</span>
+<span class="nc" id="L725">                double autocorSum = 0;</span>
+
+<span class="nc bnc" id="L727" title="All 2 branches missed.">                for (Map.Entry&lt;PairInt, PairInt&gt; entry : cr.offsetsToOrigCoords.entrySet()) {</span>
+
+<span class="nc" id="L729">                    PairInt pOrig = entry.getValue();</span>
+
+<span class="nc" id="L731">                    int xScaled = Math.round((float)pOrig.getX()/scale);</span>
+<span class="nc" id="L732">                    int yScaled = Math.round((float)pOrig.getY()/scale);</span>
+<span class="nc bnc" id="L733" title="All 2 branches missed.">                    if (xScaled == -1) {</span>
+<span class="nc" id="L734">                        xScaled = 0;</span>
+                    }
+<span class="nc bnc" id="L736" title="All 2 branches missed.">                    if (yScaled == -1) {</span>
+<span class="nc" id="L737">                        yScaled = 0;</span>
+                    }
+<span class="nc bnc" id="L739" title="All 2 branches missed.">                    if (xScaled == mImg.getWidth()) {</span>
+<span class="nc" id="L740">                        xScaled = mImg.getWidth() - 1;</span>
+                    }
+<span class="nc bnc" id="L742" title="All 2 branches missed.">                    if (yScaled == mImg.getHeight()) {</span>
+<span class="nc" id="L743">                        yScaled = mImg.getHeight() - 1;</span>
+                    }
+<span class="nc" id="L745">                    PairInt pOrigScaled = new PairInt(xScaled, yScaled);</span>
+
+                    // TODO: review this...should be the same as entry.getKey/scale
+                    // but slightly better integer rounding results
+<span class="nc" id="L749">                    double[] xyETr = transformer.applyTransformation(params,</span>
+                        xScaled, yScaled);
+
+<span class="nc" id="L752">                    int xETr = (int)Math.round(xyETr[0]);</span>
+<span class="nc" id="L753">                    int yETr = (int)Math.round(xyETr[1]);</span>
+
+<span class="nc bnc" id="L755" title="All 6 branches missed.">                    if ((xETr &gt;= 0) &amp;&amp; (xETr &lt; mImg.getWidth())</span>
+<span class="nc bnc" id="L756" title="All 2 branches missed.">                        &amp;&amp; (yETr &gt;= 0) &amp;&amp; (yETr &lt; mImg.getHeight())) {</span>
+
+<span class="nc" id="L758">                        PairInt pTrOffset = new PairInt(xETr - xc2, yETr - yc2);</span>
+
+<span class="nc bnc" id="L760" title="All 2 branches missed.">                        if (!offsetMap.containsKey(pTrOffset)) {</span>
+
+<span class="nc" id="L762">                            offsetMap.put(pTrOffset, pOrigScaled);</span>
+
+<span class="nc" id="L764">                            int diff = mImg.getValue(xETr, yETr) - vc;</span>
+
+<span class="nc" id="L766">                            autocorSum += (diff * diff);</span>
+<span class="nc" id="L767">                            nc++;</span>
+                        }
+                    }
+<span class="nc" id="L770">                }</span>
+<span class="nc" id="L771">                autocorSum /= (double)nc;</span>
+
+<span class="nc" id="L773">                double major = cr.ellipseParams.major/scale;</span>
+<span class="nc" id="L774">                double minor = cr.ellipseParams.minor/scale;</span>
+
+<span class="nc" id="L776">                double ecc = Math.sqrt(major * major - minor * minor)/major;</span>
+<span class="nc bnc" id="L777" title="All 4 branches missed.">                assert(!Double.isNaN(ecc));</span>
+
+<span class="nc" id="L779">                RegionGeometry rg = new RegionGeometry();</span>
+<span class="nc" id="L780">                rg.eccentricity = ecc;</span>
+<span class="nc" id="L781">                rg.major = major;</span>
+<span class="nc" id="L782">                rg.minor = minor;</span>
+<span class="nc" id="L783">                rg.orientation = cr.ellipseParams.orientation;</span>
+<span class="nc" id="L784">                rg.xC = xc2;</span>
+<span class="nc" id="L785">                rg.yC = yc2;</span>
+                //NOTE: these are not scaled:
+<span class="nc" id="L787">                rg.m = cr.ellipseParams.m;</span>
+                
+<span class="nc" id="L789">                CRegion cRegion = new CRegion();</span>
+<span class="nc" id="L790">                cRegion.ellipseParams = rg;</span>
+<span class="nc" id="L791">                cRegion.offsetsToOrigCoords = offsetMap;</span>
+<span class="nc" id="L792">                cRegion.autocorrel = Math.sqrt(autocorSum)/255.;</span>
+
+<span class="nc" id="L794">                crMap.put(idx, cRegion);</span>
+            }
+        }
+
+<span class="nc" id="L798">        return output;</span>
+    }
+
+    public PairIntArray calculateCentroids(List&lt;Region&gt; regions,
+        int[] greyscale, int imageWidth, int imageHeight) {
+
+        //return calculateIntensityCentroids(regions,
+        //    greyscale, imageWidth, imageHeight);
+
+<span class="nc" id="L807">        return extractRegionXYCenters(regions, imageWidth, imageHeight);</span>
+    }
+
+    PairIntArray extractRegionXYCenters(List&lt;Region&gt; regions,
+        int imageWidth, int imageHeight) {
+
+<span class="nc" id="L813">        int[] xyCen = new int[2];</span>
+
+<span class="nc" id="L815">        PairIntArray output = new PairIntArray(regions.size());</span>
+
+<span class="nc bnc" id="L817" title="All 2 branches missed.">        for (int i = 0; i &lt; regions.size(); ++i) {</span>
+<span class="nc" id="L818">            Region r = regions.get(i);</span>
+<span class="nc" id="L819">            r.calculateXYCentroid(xyCen, imageWidth, imageHeight);</span>
+
+<span class="nc" id="L821">            output.add(xyCen[0], xyCen[1]);</span>
+        }
+
+<span class="nc" id="L824">        return output;</span>
+    }
+
+    PairIntArray calculateIntensityCentroids(List&lt;Region&gt; regions,
+        int[] greyscale, int imageWidth, int imageHeight) {
+
+<span class="nc" id="L830">        int n = regions.size();</span>
+
+<span class="nc" id="L832">        PairIntArray output = new PairIntArray(n);</span>
+
+<span class="nc" id="L834">        int[] cenXY = new int[2];</span>
+
+<span class="nc bnc" id="L836" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
+
+<span class="nc" id="L838">            Region region = regions.get(i);</span>
+
+<span class="nc" id="L840">            region.calculateIntensityCentroid(greyscale, imageWidth,</span>
+                imageHeight, cenXY);
+
+<span class="nc" id="L843">            output.add(cenXY[0], cenXY[1]);</span>
+        }
+
+<span class="nc" id="L846">        return output;</span>
+    }
+
+    private PairIntArray calculateIntensityCentroids(List&lt;Region&gt; regions,
+        int radius, int[] greyscale, int imageWidth, int imageHeight) {
+
+<span class="nc" id="L852">        int n = regions.size();</span>
+
+<span class="nc" id="L854">        PairIntArray output = new PairIntArray(n);</span>
+
+<span class="nc" id="L856">        int[] cenXY = new int[2];</span>
+
+<span class="nc bnc" id="L858" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
+
+<span class="nc" id="L860">            Region r = regions.get(i);</span>
+
+<span class="nc" id="L862">            r.calculateIntensityCentroid(greyscale, imageWidth,</span>
+                imageHeight, cenXY, radius);
+
+<span class="nc" id="L865">            output.add(cenXY[0], cenXY[1]);</span>
+        }
+
+<span class="nc" id="L868">        return output;</span>
+    }
+
+    public static Map&lt;PairInt, PairInt&gt; createOffsetToOrigMap(
+        int x, int y, PairIntArray xy, int imgWidth, int imgHeight,
+        double orientation) {
+        
+<span class="fc" id="L875">        fillInEllipse(xy);</span>
+
+<span class="fc" id="L877">        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();</span>
+
+        // transform the elliptical range so that angle2 is pointing
+        // up in the image, that is angle2 = Math.PI/2
+        // pi/2 = deltaR + angle --&gt; deltaR = (pi/2) - angle
+<span class="fc" id="L882">        TransformationParameters params = new TransformationParameters();</span>
+<span class="fc" id="L883">        params.setOriginX(x);</span>
+<span class="fc" id="L884">        params.setOriginY(y);</span>
+<span class="fc" id="L885">        params.setScale(1.0f);</span>
+<span class="fc" id="L886">        params.setTranslationX(0);</span>
+<span class="fc" id="L887">        params.setTranslationY(0);</span>
+<span class="fc" id="L888">        params.setRotationInDegrees(AngleUtil.getAngleDifference(90.f,</span>
+            (float)(orientation*180./Math.PI)));
+
+<span class="fc" id="L891">        Map&lt;PairInt, PairInt&gt; offsetToOrigMap = new HashMap&lt;PairInt, PairInt&gt;();</span>
+
+<span class="fc" id="L893">        Transformer transformer = new Transformer();</span>
+    
+        // ellipse, rotated by orientation to create
+        //   x and y offsets from center that are comparable to
+        //   the same for CRegions in other dataset.
+<span class="fc" id="L898">        PairIntArray xyTr = transformer.applyTransformation(params, xy);</span>
+
+        // visit all points in region and transform them
+        // also determine the auto-correlation
+
+<span class="fc" id="L903">        int nc = 0;</span>
+<span class="fc bfc" id="L904" title="All 2 branches covered.">        for (int j = 0; j &lt; xy.getN(); ++j) {</span>
+            
+<span class="fc" id="L906">            int xp = xy.getX(j);</span>
+<span class="fc" id="L907">            int yp = xy.getY(j);</span>
+            
+<span class="fc" id="L909">            int xpTr = xyTr.getX(j);</span>
+<span class="fc" id="L910">            int ypTr = xyTr.getY(j);</span>
+            
+<span class="fc bfc" id="L912" title="All 2 branches covered.">            if (xpTr == -1) {</span>
+<span class="fc" id="L913">                xpTr = 0;</span>
+            }
+<span class="fc bfc" id="L915" title="All 2 branches covered.">            if (ypTr == -1) {</span>
+<span class="fc" id="L916">                ypTr = 0;</span>
+            }
+<span class="fc bfc" id="L918" title="All 2 branches covered.">            if (xpTr == imgWidth) {</span>
+<span class="fc" id="L919">                xpTr--;</span>
+            }
+<span class="fc bfc" id="L921" title="All 2 branches covered.">            if (ypTr == imgHeight) {</span>
+<span class="fc" id="L922">                ypTr--;</span>
+            }
+<span class="fc bfc" id="L924" title="All 8 branches covered.">            if (xpTr &lt; 0 || ypTr &lt; 0 || xpTr &gt;= imgWidth || ypTr &gt;= imgHeight) {</span>
+<span class="fc" id="L925">                continue;</span>
+            }
+            
+<span class="fc" id="L928">            PairInt pt = new PairInt(xpTr, ypTr);</span>
+<span class="fc bfc" id="L929" title="All 2 branches covered.">            if (visited.contains(pt)) {</span>
+<span class="fc" id="L930">                continue;</span>
+            }
+<span class="fc" id="L932">            visited.add(pt);</span>
+
+<span class="fc" id="L934">            PairInt pOffsets = new PairInt(xpTr - x, ypTr - y);</span>
+<span class="fc" id="L935">            offsetToOrigMap.put(pOffsets, new PairInt(xp, yp));</span>
+<span class="fc" id="L936">            nc++;</span>
+        }
+
+<span class="fc" id="L939">        return offsetToOrigMap;</span>
+    }
+    
+    public static double calcAutoCorrel(GreyscaleImage img, int x, int y, 
+        Map&lt;PairInt, PairInt&gt; offsetMap) {
+        
+<span class="fc" id="L945">        int vc = img.getValue(x, y);</span>
+        
+<span class="fc" id="L947">        int w = img.getWidth();</span>
+<span class="fc" id="L948">        int h = img.getHeight();</span>
+        
+<span class="fc" id="L950">        int nc = 0;</span>
+        
+<span class="fc" id="L952">        double autocorSum = 0;</span>
+        
+<span class="fc" id="L954">        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();</span>
+        
+<span class="fc bfc" id="L956" title="All 2 branches covered.">        for (Entry&lt;PairInt, PairInt&gt; entry : offsetMap.entrySet()) {</span>
+            
+<span class="fc" id="L958">            PairInt p = entry.getValue();</span>
+            
+<span class="fc" id="L960">            int x2 = p.getX();</span>
+            
+<span class="fc" id="L962">            int y2 = p.getY();</span>
+            
+<span class="pc bpc" id="L964" title="1 of 2 branches missed.">            if (x2 == w) {</span>
+<span class="nc" id="L965">                x2--;</span>
+            }
+<span class="pc bpc" id="L967" title="1 of 2 branches missed.">            if (y2 == h) {</span>
+<span class="nc" id="L968">                y2--;</span>
+            }
+            
+<span class="fc" id="L971">            PairInt p2 = new PairInt(x2, y2);</span>
+            
+<span class="pc bpc" id="L973" title="1 of 2 branches missed.">            if (visited.contains(p2)) {</span>
+<span class="nc" id="L974">                continue;</span>
+            }
+<span class="fc" id="L976">            visited.add(p2);</span>
+            
+<span class="fc" id="L978">            int v = img.getValue(x2, y2);</span>
+           
+<span class="fc" id="L980">            int diff = v - vc;</span>
+
+<span class="fc" id="L982">            autocorSum += (diff * diff);</span>
+<span class="fc" id="L983">            nc++;</span>
+<span class="fc" id="L984">        }</span>
+        
+<span class="fc" id="L986">        autocorSum /= (double)nc;</span>
+        
+<span class="fc" id="L988">        return autocorSum;</span>
+    }
+    
+    private static void fillInEllipse(PairIntArray xy) {
+
+        // key = row number, value = start and stop x range
+<span class="fc" id="L994">        TIntObjectMap&lt;PairInt&gt; rowColRange = new TIntObjectHashMap&lt;PairInt&gt;();</span>
+        
+<span class="fc" id="L996">        int minRow = Integer.MAX_VALUE;</span>
+<span class="fc" id="L997">        int maxRow = Integer.MIN_VALUE;</span>
+        
+<span class="fc bfc" id="L999" title="All 2 branches covered.">        for (int i = 0; i &lt; xy.getN(); ++i) {</span>
+            
+<span class="fc" id="L1001">            int row = xy.getY(i);</span>
+<span class="fc" id="L1002">            int col = xy.getX(i);</span>
+            
+<span class="fc" id="L1004">            PairInt xMinMax = rowColRange.get(row);</span>
+<span class="fc bfc" id="L1005" title="All 2 branches covered.">            if (xMinMax == null) {</span>
+<span class="fc" id="L1006">                xMinMax = new PairInt(col, col);</span>
+<span class="fc" id="L1007">                rowColRange.put(row, xMinMax);</span>
+            } else {
+<span class="fc bfc" id="L1009" title="All 2 branches covered.">                if (col &lt; xMinMax.getX()) {</span>
+<span class="fc" id="L1010">                    xMinMax.setX(col);</span>
+<span class="fc bfc" id="L1011" title="All 2 branches covered.">                } else if (col &gt; xMinMax.getY()) {</span>
+<span class="fc" id="L1012">                    xMinMax.setY(col);</span>
+                }
+            }
+            
+<span class="fc bfc" id="L1016" title="All 2 branches covered.">            if (row &lt; minRow) {</span>
+<span class="fc" id="L1017">                minRow = row;</span>
+            }
+<span class="fc bfc" id="L1019" title="All 2 branches covered.">            if (row &gt; maxRow) {</span>
+<span class="fc" id="L1020">                maxRow = row;</span>
+            }
+        }
+    
+<span class="fc bfc" id="L1024" title="All 2 branches covered.">        for (int i = minRow; i &lt;= maxRow; ++i) {</span>
+<span class="fc" id="L1025">            PairInt xMinMax = rowColRange.get(i);</span>
+            int x0, x1;
+<span class="fc bfc" id="L1027" title="All 2 branches covered.">            if (xMinMax == null) {</span>
+<span class="fc" id="L1028">                PairInt prev = null;</span>
+<span class="fc" id="L1029">                int off = 0;</span>
+<span class="fc bfc" id="L1030" title="All 2 branches covered.">                while (prev == null) {</span>
+<span class="fc" id="L1031">                    off--;</span>
+<span class="fc" id="L1032">                    prev = rowColRange.get(i + off);</span>
+                }
+<span class="fc" id="L1034">                PairInt next = null;</span>
+<span class="fc" id="L1035">                off = 0;</span>
+<span class="fc bfc" id="L1036" title="All 2 branches covered.">                while (next == null) {</span>
+<span class="fc" id="L1037">                    off++;</span>
+<span class="fc" id="L1038">                    next = rowColRange.get(i + off);</span>
+                }
+<span class="pc bpc" id="L1040" title="3 of 4 branches missed.">                assert(prev != null);</span>
+<span class="pc bpc" id="L1041" title="3 of 4 branches missed.">                assert(next != null);</span>
+<span class="fc" id="L1042">                x0 = Math.round(((float)prev.getX() + (float)next.getX())/2.f);</span>
+<span class="fc" id="L1043">                x1 = Math.round(((float)prev.getY() + (float)next.getY())/2.f);</span>
+<span class="fc" id="L1044">            } else {</span>
+<span class="fc" id="L1045">                x0 = xMinMax.getX();</span>
+<span class="fc" id="L1046">                x1 = xMinMax.getY();</span>
+            }
+<span class="fc bfc" id="L1048" title="All 2 branches covered.">            for (int x = (x0 + 1); x &lt; x1; ++x) {</span>
+<span class="fc" id="L1049">                xy.add(x, i);</span>
+            }
+        }
+<span class="fc" id="L1052">    }</span>
+     
+    public static void filterBySpatialProximity(float critDens, 
+        List&lt;Region&gt; regions, int width, int height) {
+        
+<span class="fc" id="L1057">        System.out.println(&quot;before spatial filter regions.n=&quot; + regions.size());</span>
+
+<span class="fc" id="L1059">        Set&lt;PairIntWithIndex&gt; points2</span>
+            = new HashSet&lt;PairIntWithIndex&gt;();
+       
+<span class="fc" id="L1062">        TIntObjectMap&lt;Canonicalizer.RegionGeometry&gt; rgMap </span>
+            = new TIntObjectHashMap&lt;Canonicalizer.RegionGeometry&gt;();
+        
+<span class="fc bfc" id="L1065" title="All 2 branches covered.">        for (int rIdx = 0; rIdx &lt; regions.size(); ++rIdx) {</span>
+
+<span class="fc" id="L1067">            Region region = regions.get(rIdx);</span>
+         
+<span class="fc" id="L1069">            Canonicalizer.RegionGeometry rg = Canonicalizer.calculateEllipseParams(</span>
+                region, width, height);
+            
+<span class="pc bpc" id="L1072" title="1 of 2 branches missed.">            if (rg == null) {</span>
+<span class="nc" id="L1073">                continue;</span>
+            }
+            
+<span class="fc" id="L1076">            PairIntWithIndex pii = new PairIntWithIndex(rg.xC, rg.yC, rIdx);</span>
+<span class="fc" id="L1077">            points2.add(pii);</span>
+            
+<span class="fc" id="L1079">            rgMap.put(rIdx, rg);</span>
+        }
+        
+<span class="fc" id="L1082">        DTClusterFinder&lt;PairIntWithIndex&gt; cFinder</span>
+            = new DTClusterFinder&lt;PairIntWithIndex&gt;(points2, width + 1, height + 1);
+<span class="fc" id="L1084">        cFinder.setMinimumNumberInCluster(2);</span>
+<span class="fc" id="L1085">        cFinder.setCriticalDensity(critDens);</span>
+<span class="fc" id="L1086">        cFinder.findClusters();</span>
+
+<span class="fc" id="L1088">        TIntList rm = new TIntArrayList();</span>
+        
+        //NOTE: may need to revise how to choose best region to keep.
+<span class="fc bfc" id="L1091" title="All 2 branches covered.">        for (int i = 0; i &lt; cFinder.getNumberOfClusters(); ++i) {</span>
+            
+<span class="fc" id="L1093">            Set&lt;PairIntWithIndex&gt; set = cFinder.getCluster(i);</span>
+            
+<span class="fc" id="L1095">            int maxArea = Integer.MIN_VALUE;</span>
+<span class="fc" id="L1096">            int maxAreaIdx = -1;</span>
+
+<span class="fc bfc" id="L1098" title="All 2 branches covered.">            for (PairIntWithIndex pii : set) {</span>
+<span class="fc" id="L1099">                int rIdx = pii.getPixIndex();</span>
+<span class="fc" id="L1100">                Canonicalizer.RegionGeometry rg = rgMap.get(rIdx);</span>
+<span class="pc bpc" id="L1101" title="1 of 2 branches missed.">                if (rg == null) {</span>
+<span class="nc" id="L1102">                    continue;</span>
+                }
+                //double area = rg.major * rg.minor;
+<span class="fc" id="L1105">                int area = regions.get(rIdx).accX.size();</span>
+                
+<span class="fc bfc" id="L1107" title="All 2 branches covered.">                if (area &gt; maxArea) {</span>
+<span class="fc" id="L1108">                    maxArea = area;</span>
+<span class="fc" id="L1109">                    maxAreaIdx = rIdx;</span>
+                }               
+<span class="fc" id="L1111">            }</span>
+<span class="pc bpc" id="L1112" title="3 of 4 branches missed.">            assert(maxAreaIdx &gt; -1);</span>
+<span class="fc bfc" id="L1113" title="All 2 branches covered.">            for (PairIntWithIndex pii : set) {</span>
+<span class="fc" id="L1114">                int rIdx = pii.getPixIndex();</span>
+<span class="fc bfc" id="L1115" title="All 2 branches covered.">                if (rIdx == maxAreaIdx) {</span>
+<span class="fc" id="L1116">                    continue;</span>
+                }
+<span class="fc" id="L1118">                rm.add(rIdx);</span>
+<span class="fc" id="L1119">            }</span>
+        }
+<span class="fc" id="L1121">        rm.sort();</span>
+        
+<span class="fc bfc" id="L1123" title="All 2 branches covered.">        for (int i = (rm.size() - 1); i &gt; -1; --i) {</span>
+<span class="fc" id="L1124">            int rmIdx = rm.get(i);</span>
+<span class="fc" id="L1125">            regions.remove(rmIdx);</span>
+        }
+        
+<span class="fc" id="L1128">        System.out.println(&quot;after spatial filter regions.n=&quot; + regions.size());</span>
+<span class="fc" id="L1129">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

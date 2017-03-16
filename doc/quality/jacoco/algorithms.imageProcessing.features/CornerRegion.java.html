@@ -132,8 +132,8 @@ public class CornerRegion {
     }
     
     public void setFlagThatNeighborsHoldDummyValues() {
-<span class="fc" id="L135">        dummyValuesInKNeighbors = true;</span>
-<span class="fc" id="L136">    }</span>
+<span class="nc" id="L135">        dummyValuesInKNeighbors = true;</span>
+<span class="nc" id="L136">    }</span>
     public boolean kValuesAreDummy() {
 <span class="nc" id="L138">        return dummyValuesInKNeighbors;</span>
     }
@@ -252,23 +252,23 @@ public class CornerRegion {
     }
     
     public void setIndexWithinCurve(int theIndex) {
-<span class="fc" id="L255">        idxWithinCurve = theIndex;</span>
-<span class="fc" id="L256">    }</span>
+<span class="nc" id="L255">        idxWithinCurve = theIndex;</span>
+<span class="nc" id="L256">    }</span>
     
     public int getIndexWithinCurve() {
-<span class="fc" id="L259">        return idxWithinCurve;</span>
+<span class="nc" id="L259">        return idxWithinCurve;</span>
     }
 
     public CornerRegion copy() {
         
-<span class="fc" id="L264">        CornerRegion cr = new CornerRegion(edgeListIdx, x.length, kMaxIdx);</span>
-<span class="fc" id="L265">        cr.orientation = orientation;</span>
-<span class="fc" id="L266">        cr.idxWithinCurve = idxWithinCurve;</span>
-<span class="fc" id="L267">        System.arraycopy(k, 0, cr.getK(), 0, k.length);</span>
-<span class="fc" id="L268">        System.arraycopy(x, 0, cr.getX(), 0, x.length);</span>
-<span class="fc" id="L269">        System.arraycopy(y, 0, cr.getY(), 0, y.length);</span>
+<span class="nc" id="L264">        CornerRegion cr = new CornerRegion(edgeListIdx, x.length, kMaxIdx);</span>
+<span class="nc" id="L265">        cr.orientation = orientation;</span>
+<span class="nc" id="L266">        cr.idxWithinCurve = idxWithinCurve;</span>
+<span class="nc" id="L267">        System.arraycopy(k, 0, cr.getK(), 0, k.length);</span>
+<span class="nc" id="L268">        System.arraycopy(x, 0, cr.getX(), 0, x.length);</span>
+<span class="nc" id="L269">        System.arraycopy(y, 0, cr.getY(), 0, y.length);</span>
         
-<span class="fc" id="L271">        return cr;</span>
+<span class="nc" id="L271">        return cr;</span>
     }
     
     @Override
@@ -293,12 +293,12 @@ public class CornerRegion {
             
 <span class="fc" id="L294">        CornerRegion other = (CornerRegion)obj;</span>
             
-<span class="fc bfc" id="L296" title="All 2 branches covered.">        if (x.length != other.getX().length) {</span>
-<span class="fc" id="L297">            return false;</span>
+<span class="pc bpc" id="L296" title="1 of 2 branches missed.">        if (x.length != other.getX().length) {</span>
+<span class="nc" id="L297">            return false;</span>
         }
         
-<span class="fc bfc" id="L300" title="All 2 branches covered.">        if (!Arrays.equals(x, other.getX())) {</span>
-<span class="fc" id="L301">            return false;</span>
+<span class="pc bpc" id="L300" title="1 of 2 branches missed.">        if (!Arrays.equals(x, other.getX())) {</span>
+<span class="nc" id="L301">            return false;</span>
         }
      
 <span class="fc" id="L304">        return Arrays.equals(y, other.getY());</span>
@@ -307,9 +307,9 @@ public class CornerRegion {
     @Override
     public int hashCode() {
 
-<span class="fc" id="L310">        int hash = fnvHashCode();</span>
+<span class="nc" id="L310">        int hash = fnvHashCode();</span>
 
-<span class="fc" id="L312">        return hash;</span>
+<span class="nc" id="L312">        return hash;</span>
     }
 
 <span class="fc" id="L315">    int fnv321aInit = 0x811c9dc5;</span>
@@ -326,38 +326,38 @@ public class CornerRegion {
      */
     protected int fnvHashCode() {
 
-<span class="fc" id="L329">        int sum = fnv321aInit;</span>
+<span class="nc" id="L329">        int sum = fnv321aInit;</span>
 
-<span class="fc" id="L331">        sum = includeInHashSum(sum, edgeListIdx);</span>
+<span class="nc" id="L331">        sum = includeInHashSum(sum, edgeListIdx);</span>
         
-<span class="fc" id="L333">        sum = includeInHashSum(sum, kMaxIdx);</span>
+<span class="nc" id="L333">        sum = includeInHashSum(sum, kMaxIdx);</span>
 
-<span class="fc bfc" id="L335" title="All 2 branches covered.">        for (int xCoord : x) {</span>
-<span class="fc" id="L336">            sum = includeInHashSum(sum, xCoord);</span>
+<span class="nc bnc" id="L335" title="All 2 branches missed.">        for (int xCoord : x) {</span>
+<span class="nc" id="L336">            sum = includeInHashSum(sum, xCoord);</span>
         }
-<span class="fc bfc" id="L338" title="All 2 branches covered.">        for (int yCoord : y) {</span>
-<span class="fc" id="L339">            sum = includeInHashSum(sum, yCoord);</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">        for (int yCoord : y) {</span>
+<span class="nc" id="L339">            sum = includeInHashSum(sum, yCoord);</span>
         }
-<span class="fc bfc" id="L341" title="All 2 branches covered.">        for (float kValue : k) {</span>
-<span class="fc" id="L342">            int kBits = Float.floatToIntBits(kValue);</span>
-<span class="fc" id="L343">            sum = includeInHashSum(sum, kBits);</span>
+<span class="nc bnc" id="L341" title="All 2 branches missed.">        for (float kValue : k) {</span>
+<span class="nc" id="L342">            int kBits = Float.floatToIntBits(kValue);</span>
+<span class="nc" id="L343">            sum = includeInHashSum(sum, kBits);</span>
         }
         
         // not including orientation which may or may not be set because it's
         // calculated only upon need
         
-<span class="fc" id="L349">        return sum;</span>
+<span class="nc" id="L349">        return sum;</span>
     }
 
     private int includeInHashSum(int sum, int variable) {
         
         // xor the bottom with the current octet.
-<span class="fc" id="L355">        sum ^= variable;</span>
+<span class="nc" id="L355">        sum ^= variable;</span>
 
         // multiply by the 32 bit FNV magic prime mod 2^32
-<span class="fc" id="L358">        sum *= fnv32Prime;</span>
+<span class="nc" id="L358">        sum *= fnv32Prime;</span>
         
-<span class="fc" id="L360">        return sum;</span>
+<span class="nc" id="L360">        return sum;</span>
     }
 
     public static class CornerRegionDegneracyException extends Exception {

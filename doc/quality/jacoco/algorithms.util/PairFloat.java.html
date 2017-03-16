@@ -27,5 +27,68 @@ public class PairFloat {
     public float getY() {
 <span class="fc" id="L28">        return y;</span>
     }
+    
+    @Override
+    public boolean equals(Object obj) {
+        
+<span class="pc bpc" id="L34" title="1 of 2 branches missed.">        if (!(obj instanceof PairFloat)) {</span>
+<span class="nc" id="L35">            return false;    </span>
+        }
+        
+<span class="fc" id="L38">        PairFloat other = (PairFloat)obj;</span>
+        
+<span class="pc bpc" id="L40" title="2 of 4 branches missed.">        return (x == other.getX()) &amp;&amp; (y == other.getY());</span>
+    }
+
+    @Override
+    public int hashCode() {
+        
+<span class="fc" id="L46">        int hash = fnvHashCode(this.x, this.y);</span>
+
+<span class="fc" id="L48">        return hash;</span>
+    }
+
+<span class="fc" id="L51">    protected static int fnv321aInit = 0x811c9dc5;</span>
+<span class="fc" id="L52">    protected static int fnv32Prime = 0x01000193;</span>
+
+    protected int fnvHashCode(float i0, float i1) {
+
+        /*
+         * hash = offset_basis
+         * for each octet_of_data to be hashed
+         *     hash = hash xor octet_of_data
+         *     hash = hash * FNV_prime
+         * return hash
+         *
+         * Public domain:  http://www.isthe.com/chongo/src/fnv/hash_32a.c
+         */
+
+<span class="fc" id="L66">        int hash = 0;</span>
+
+<span class="fc" id="L68">        int sum = fnv321aInit;</span>
+
+        // xor the bottom with the current octet.
+<span class="fc" id="L71">        sum ^= Float.floatToIntBits(i0);</span>
+
+        // multiply by the 32 bit FNV magic prime mod 2^32
+<span class="fc" id="L74">        sum *= fnv32Prime;</span>
+        
+<span class="fc" id="L76">        sum ^= Float.floatToIntBits(i1);</span>
+        
+<span class="fc" id="L78">        sum *= fnv32Prime;</span>
+        
+<span class="fc" id="L80">        hash = sum;</span>
+
+<span class="fc" id="L82">        return hash;</span>
+    }
+
+    @Override
+    public String toString() {
+        
+<span class="nc" id="L88">        StringBuilder sb = new StringBuilder(&quot;(&quot;);</span>
+<span class="nc" id="L89">        sb.append(Float.toString(x)).append(&quot;,&quot;).append(Float.toString(y)).append(&quot;)&quot;);</span>
+        
+<span class="nc" id="L91">        return sb.toString();</span>
+    }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

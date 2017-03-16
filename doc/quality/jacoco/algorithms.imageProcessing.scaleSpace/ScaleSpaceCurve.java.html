@@ -22,7 +22,7 @@ public class ScaleSpaceCurve {
 
     /*
     x and y points of the curve.  the color field in xy can be used to indicate
-    a closed curve.
+    a closed curve and ordered points.
     */
     private final PairIntArrayWithColor xy;
 
@@ -64,7 +64,7 @@ public class ScaleSpaceCurve {
             (PairIntArrayWithColor) curve : new PairIntArrayWithColor(curve);
         
 <span class="fc bfc" id="L66" title="All 2 branches covered.">        if (curveIsClosed) {</span>
-<span class="fc" id="L67">            xy.setColor(1);</span>
+<span class="fc" id="L67">            xy.setAsClosedCurve();</span>
         }
         
 <span class="fc" id="L70">        size = curve.getN();</span>
@@ -193,7 +193,7 @@ public class ScaleSpaceCurve {
     }
     
     public boolean curveIsClosed() {
-<span class="fc bfc" id="L196" title="All 2 branches covered.">        return (xy.getColor() == 1);</span>
+<span class="fc" id="L196">        return xy.isClosedCurve();</span>
     }
     
     public PairIntArray getXYCurve() {

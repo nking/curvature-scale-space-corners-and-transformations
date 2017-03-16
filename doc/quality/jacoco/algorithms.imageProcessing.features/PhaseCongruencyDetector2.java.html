@@ -1,0 +1,782 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>PhaseCongruencyDetector2.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.features</a> &gt; <span class="el_source">PhaseCongruencyDetector2.java</span></div><h1>PhaseCongruencyDetector2.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.features;
+
+import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.LowPassFilter;
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.imageProcessing.NonMaximumSuppression;
+import algorithms.imageProcessing.PolarFilterGrid;
+import algorithms.misc.Complex;
+import algorithms.misc.Histogram;
+import algorithms.misc.HistogramHolder;
+import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
+import algorithms.util.Errors;
+import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
+import algorithms.util.PairIntArrayWithColor;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Non-monogenic filter phase congruence edge detector.
+ * 
+ * Listings of copyrights for the original source codes in languages Matlab and 
+ * python follow:
+ * 
+ adapted from 
+  http://www.peterkovesi.com/matlabfns/PhaseCongruency/phasecong2.m
+  which has copyright:
+  Copyright (c) 1996-2009 Peter Kovesi
+% School of Computer Science &amp; Software Engineering
+% The University of Western Australia
+% http://www.csse.uwa.edu.au/
+  
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the &quot;Software&quot;), to deal
+  in the Software without restriction, subject to the following conditions:
+  
+  The above copyright notice and this permission notice shall be included in 
+  all copies or substantial portions of the Software.
+ 
+  The Software is provided &quot;as is&quot;, without warranty of any kind.
+ 
+ * useful also in looking at the python phasepack port by Alistair Muldal
+ *  http://pydoc.net/Python/phasepack/1.4/phasepack.phasecongmono/
+ * which has the following copyright:
+ * # MIT License:
+
+# Permission is hereby  granted, free of charge, to any  person obtaining a
+# copy of this software and associated  documentation files (the &quot;Software&quot;),
+# to deal in the Software without restriction, subject to the following
+# conditions:
+
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+
+# The software is provided &quot;as is&quot;, without warranty of any kind.
+*/
+<span class="fc" id="L64">public class PhaseCongruencyDetector2 {</span>
+    
+    final private static double epsilon = 1E-4;
+
+    /**
+     * an edge detector based upon the principal moments of phase congruency 
+     * to create an edge operator that is highly localized and has responses 
+     * that are invariant to image contrast. 
+     * @param img
+     * @param nScale number of wavelet scales.  a lower value reveals more fine 
+     * scale features.
+     * @param nOrient = 6.  Number of filter orientations.
+     * @param minWavelength wavelength of smallest scale filter
+     * @param mult scaling factor between successive filters
+     * @param sigmaOnf ratio of standard deviation of Gaussian describing the 
+     * log Gabor's filter's transfer function in the frequency domain to the 
+     * filter center frequency
+     * @param k number of standard deviations of the noise energy beyond the 
+     * mean at which we set the noise threshold point.  You may want to vary this
+       up to a value of 10 or 20 for noisy images.
+      
+     * @param cutOff The fractional measure of frequency spread below which phase 
+     * congruency values get penalized
+     * @param g Controls the sharpness of the transition in the sigmoid function 
+     * used to weight phase congruency for frequency spread. 
+     * 
+     * @return 
+       &lt;pre&gt;
+       NOTE: the return products use notation a[row][col]
+       Returned values:
+         phaseCongruency  - Phase congruency indicating edge significance 
+                            (values are in range 0 to 1.)
+         orientation      - Orientation image in integer degrees 0-180,
+                            positive anticlockwise.
+                            0 corresponds to a vertical edge, 90 is horizontal.
+         phaseAngle       - Local weighted mean phase angle at every point in 
+                            the image. A value of 
+                                pi/2 corresponds to a bright line, 
+                                0 corresponds to a step and 
+                                -pi/2 is a dark line.
+         threshold        - Calculated noise threshold (can be useful for
+                            diagnosing noise characteristics of images).  
+                            Once you know this you can then specify fixed 
+                            thresholds and save some computation time.
+      &lt;/pre&gt;
+     */    
+    public PhaseCongruencyProducts phaseCong(GreyscaleImage img,
+        final int nScale, final int nOrient, final int minWavelength, final float mult,
+        final float sigmaOnf,
+        int k, 
+        final float cutOff,
+        final float g, int noiseMethod, double tLow, double tHigh,
+        boolean doStoreConvolution) {
+        
+<span class="fc" id="L118">        long t0 = System.currentTimeMillis();</span>
+              
+<span class="fc" id="L120">        int nCols = img.getWidth();</span>
+<span class="fc" id="L121">        int nRows = img.getHeight();</span>
+        
+<span class="fc" id="L123">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+        
+        // result is in format a[row][col]
+<span class="fc" id="L126">        Complex[][] IMComplex = imageProcessor.create2DFFTWithSwapMajor(</span>
+            img, false, true); 
+        
+        // 3 dimensional sum of energy
+<span class="fc" id="L130">        double[][][] EnergyV = new double[3][][];</span>
+<span class="fc" id="L131">        double[][] pcSum = new double[nRows][];</span>
+<span class="fc" id="L132">        double[][] covx2 = new double[nRows][];</span>
+<span class="fc" id="L133">        double[][] covy2 = new double[nRows][];</span>
+<span class="fc" id="L134">        double[][] covxy = new double[nRows][];</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">        for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc" id="L136">            pcSum[row] = new double[nCols];</span>
+<span class="fc" id="L137">            covx2[row] = new double[nCols];</span>
+<span class="fc" id="L138">            covy2[row] = new double[nCols];</span>
+<span class="fc" id="L139">            covxy[row] = new double[nCols];</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">            for (int d = 0; d &lt; 3; ++d) {</span>
+<span class="fc" id="L141">                EnergyV[d] = new double[nRows][nCols];</span>
+<span class="fc" id="L142">                EnergyV[d][row] = new double[nCols];</span>
+            }
+        }
+        
+        // lists to contain convolution results and phase congruency images
+        // [nOrientation][nScale][nRows][nCols]
+<span class="fc" id="L148">        Complex[][][][] EO = new Complex[nOrient][][][];</span>
+<span class="fc" id="L149">        double[][][] PC = new double[nOrient][][];</span>
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">        for (int or = 9; or &lt; nOrient; ++or) {</span>
+<span class="nc" id="L151">            EO[or] = new Complex[nScale][][];</span>
+        }
+        
+<span class="fc" id="L154">        double[] threshold = new double[nOrient];</span>
+        
+<span class="fc" id="L156">        double tau = noiseMethod;</span>
+        // keeping taus in case need to increase noise estimate
+<span class="fc" id="L158">        double sqml4 = Math.sqrt(Math.log(4));</span>
+        
+        // Construct a bank of log-Gabor filters at different spatial scales
+        // Filters are constructed in terms of two components.
+        // 1) The radial component, which controls the frequency band that the
+        //    filter responds to
+        // 2) The angular component, which controls the orientation that the filter
+        //    responds to.
+        // The two components are multiplied together to construct the overall
+        // filter.
+        // Construct the radial filter components... First construct a low-pass
+        // filter that is as large as possible, yet falls away to zero at the
+        // boundaries. All log Gabor filters are multiplied by this to ensure no
+        // extra frequencies at the 'corners' of the FFT are incorporated as this
+        // seems to upset the normalisation process when calculating phase
+        // congruency.
+        
+        // results use notation a[row][col]
+<span class="fc" id="L176">        PolarFilterGrid fg = new PolarFilterGrid();</span>
+<span class="fc" id="L177">        PolarFilterGrid.FilterGridProducts fgProducts = fg.filtergrid(nRows, nCols);    </span>
+        
+<span class="fc" id="L179">        double[][] sinTheta = fgProducts.getSinTheta();</span>
+<span class="fc" id="L180">        double[][] cosTheta = fgProducts.getCosTheta();</span>
+<span class="fc" id="L181">        double[][] radius = fgProducts.getRadius();</span>
+        
+        // construct a low-pass filter that is as large as possible, yet falls
+        // away to zero at the boundaries.  All filters are multiplied by
+        // this to ensure no extra frequencies at the 'corners' of the FFT are
+        // incorporated as this can upset the normalisation process when
+        // calculating phase congruency
+        // lp = lowpassfilter([rows,cols],.45,15);    % Radius .4, 'sharpness' 15
+        // results use notation a[row][col]
+<span class="fc" id="L190">        LowPassFilter lpFilter = new LowPassFilter();</span>
+<span class="fc" id="L191">        double[][] lp = lpFilter.lowpassfilter(nRows, nCols, 0.45f, 15);</span>
+        
+<span class="fc" id="L193">        double[][][] logGabors = new double[nScale][][];</span>
+        
+<span class="fc" id="L195">        double logGaborDenom = 2. * Math.pow(Math.log(sigmaOnf), 2);</span>
+        
+<span class="fc bfc" id="L197" title="All 2 branches covered.">        for (int s = 0; s &lt; nScale; ++s) {</span>
+                                    
+            // Centre frequency of filter.
+<span class="fc" id="L200">            double wavelength = minWavelength * Math.pow(mult, s);</span>
+            
+<span class="fc" id="L202">            double fo = 1.0/wavelength;</span>
+                        
+            // use notation a[row][col]
+<span class="fc" id="L205">            double[][] logGabor = new double[nRows][];</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc" id="L207">                logGabor[row] = new double[nCols];</span>
+<span class="fc bfc" id="L208" title="All 2 branches covered.">                for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L209">                    double v = Math.log(radius[row][col]/fo);</span>
+<span class="fc" id="L210">                    v *= v;</span>
+<span class="fc" id="L211">                    v = Math.exp(-v/logGaborDenom);</span>
+                    //logGabor = logGabor.*lp;
+<span class="fc" id="L213">                    logGabor[row][col] = lp[row][col] * v;</span>
+                }
+            }
+<span class="fc" id="L216">            logGabor[0][0] = 0;</span>
+            
+<span class="fc" id="L218">            logGabors[s] = logGabor;</span>
+        }
+        
+<span class="fc bfc" id="L221" title="All 2 branches covered.">        for (int or = 0; or &lt; nOrient; ++or) {</span>
+                                
+<span class="fc" id="L223">            double angl = or * (Math.PI / nOrient);</span>
+<span class="fc" id="L224">            double cosAngl = Math.cos(angl);</span>
+<span class="fc" id="L225">            double sinAngl = Math.sin(angl);</span>
+            
+            //TODO: calc of dTheta can be simplified
+<span class="fc" id="L228">            double[][] dTheta = new double[nRows][];</span>
+<span class="fc" id="L229">            double[][] spread = new double[nRows][];</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc" id="L231">                dTheta[row] = new double[nCols];</span>
+<span class="fc" id="L232">                spread[row] = new double[nCols];</span>
+<span class="fc bfc" id="L233" title="All 2 branches covered.">                for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L234">                    double ds = sinTheta[row][col] * cosAngl </span>
+                        - cosTheta[row][col] * sinAngl;
+<span class="fc" id="L236">                    double dc = cosTheta[row][col] * cosAngl</span>
+                        + sinTheta[row][col] * sinAngl;
+<span class="fc" id="L238">                    double v = Math.abs(Math.atan2(ds, dc));</span>
+                    // np.clip(dtheta * norient / 2., a_min=0, a_max=np.pi, out=dtheta)
+<span class="fc" id="L240">                    v *= ((double)nOrient/2.);</span>
+<span class="fc bfc" id="L241" title="All 2 branches covered.">                    if (v &gt; Math.PI) {</span>
+<span class="fc" id="L242">                        v = Math.PI;</span>
+                    }
+<span class="fc" id="L244">                    dTheta[row][col] = v;</span>
+                    // v is in range -pi and pi.
+<span class="fc" id="L246">                    spread[row][col] = (Math.cos(v) + 1.)/2.;</span>
+                }
+            }
+            
+<span class="fc" id="L250">            double[][] An = new double[nRows][];</span>
+<span class="fc" id="L251">            double[][] sumE_ThisOrient = new double[nRows][];</span>
+<span class="fc" id="L252">            double[][] sumO_ThisOrient = new double[nRows][];</span>
+<span class="fc" id="L253">            double[][] sumAn_ThisOrient = new double[nRows][];</span>
+<span class="fc" id="L254">            double[][] Energy = new double[nRows][];</span>
+<span class="fc" id="L255">            double[][] XEnergy = new double[nRows][];</span>
+<span class="fc" id="L256">            double[][] MeanE = new double[nRows][];</span>
+<span class="fc" id="L257">            double[][] MeanO = new double[nRows][];</span>
+<span class="fc" id="L258">            double[][] filt = new double[nRows][];</span>
+<span class="fc bfc" id="L259" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc" id="L260">                An[row] = new double[nCols];</span>
+<span class="fc" id="L261">                sumE_ThisOrient[row] = new double[nCols];</span>
+<span class="fc" id="L262">                sumO_ThisOrient[row] = new double[nCols];</span>
+<span class="fc" id="L263">                sumAn_ThisOrient[row] = new double[nCols];</span>
+<span class="fc" id="L264">                Energy[row] = new double[nCols];</span>
+<span class="fc" id="L265">                filt[row] = new double[nCols];</span>
+<span class="fc" id="L266">                XEnergy[row] = new double[nCols];</span>
+<span class="fc" id="L267">                MeanE[row] = new double[nCols];</span>
+<span class="fc" id="L268">                MeanO[row] = new double[nCols];</span>
+            }
+            
+<span class="fc" id="L271">            Complex[][][] EOscale = new Complex[nScale][][];</span>
+            
+            // gets reset for each orientation:
+<span class="fc" id="L274">            double[][] maxAn = new double[nRows][];</span>
+<span class="fc bfc" id="L275" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc" id="L276">                maxAn[row] = new double[nCols];</span>
+            }
+            
+<span class="fc bfc" id="L279" title="All 2 branches covered.">            for (int s = 0; s &lt; nScale; ++s) {</span>
+                
+                // Multiply radial and angular components to get filter
+                // filt = logGabor[s] * spread
+                // Convolve image with even and odd filters
+                // thisEO = ifft2(IM * filt)
+                 
+<span class="fc" id="L286">                double[][] logGabor = logGabors[s];</span>
+<span class="fc" id="L287">                Complex[][] thisEO = new Complex[nRows][nCols];</span>
+<span class="fc bfc" id="L288" title="All 2 branches covered.">                for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc" id="L289">                    thisEO[row] = new Complex[nCols];</span>
+<span class="fc bfc" id="L290" title="All 2 branches covered.">                    for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L291">                        filt[row][col] = logGabor[row][col] * spread[row][col];</span>
+<span class="fc" id="L292">                        thisEO[row][col] = IMComplex[row][col].times(filt[row][col]);</span>
+                    }
+                }
+ 
+<span class="fc" id="L296">                thisEO = imageProcessor.create2DFFT(thisEO, false, false);</span>
+<span class="fc" id="L297">                double norm = 1./nRows * nCols;</span>
+<span class="fc bfc" id="L298" title="All 2 branches covered.">                for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc bfc" id="L299" title="All 2 branches covered.">                    for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L300">                        thisEO[row][col] = thisEO[row][col].times(norm);</span>
+                    }
+                }                
+                
+<span class="fc bfc" id="L304" title="All 2 branches covered.">                for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc bfc" id="L305" title="All 2 branches covered.">                    for (int col = 0; col &lt; nCols; ++col) {</span>
+                        
+<span class="fc" id="L307">                        Complex v0 = thisEO[row][col];</span>
+<span class="fc" id="L308">                        double vAbs = v0.abs();</span>
+                        
+<span class="fc" id="L310">                        An[row][col] += vAbs;</span>
+                        
+<span class="fc" id="L312">                        sumAn_ThisOrient[row][col] += vAbs;</span>
+<span class="fc" id="L313">                        sumE_ThisOrient[row][col] = v0.re();</span>
+<span class="fc" id="L314">                        sumO_ThisOrient[row][col] = v0.im();</span>
+                    }
+                }
+                       
+<span class="fc bfc" id="L318" title="All 2 branches covered.">                if (s == 0) {</span>
+<span class="pc bpc" id="L319" title="1 of 2 branches missed.">                    if (noiseMethod == -1) {</span>
+                        //Use median to estimate noise statistics
+                        //tau = median(sumAn(:))/sqrt(log(4));
+<span class="fc" id="L322">                        double median = MiscMath.findMedian(sumAn_ThisOrient);</span>
+<span class="fc" id="L323">                        tau = median/sqml4;</span>
+<span class="pc bnc" id="L324" title="All 2 branches missed.">                    } else if (noiseMethod == -2) {</span>
+                        //Use mode to estimate noise statistics
+                        //tau = rayleighmode(sumAn(:));
+<span class="nc" id="L327">                        tau = rayleighMode(sumAn_ThisOrient);</span>
+                    }
+<span class="fc" id="L329">                    maxAn = An;</span>
+                } else {
+                    // Record maximum amplitude of components across scales.  This is needed
+                    // to determine the frequency spread weighting.
+                    //maxAN = max(maxAN, An); 
+                    // uses notation a[row][col]
+<span class="fc bfc" id="L335" title="All 2 branches covered.">                    for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc bfc" id="L336" title="All 2 branches covered.">                        for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L337">                            maxAn[row][col] = Math.max(maxAn[row][col], An[row][col]);</span>
+                        }
+                    }
+                }
+                
+<span class="fc" id="L342">                EOscale[s] = thisEO;</span>
+                
+            } // end iter over nScale
+            
+            /*
+            # Accumulate total 3D energy vector data, this will be used to
+            # determine overall feature orientation and feature phase/type
+            EnergyV[:, :, 0] += sumE_ThisOrient
+            EnergyV[:, :, 1] += np.cos(angl) * sumO_ThisOrient
+            EnergyV[:, :, 2] += np.sin(angl) * sumO_ThisOrient
+
+            # Get weighted mean filter response vector, this gives the weighted
+            # mean phase angle.
+            XEnergy = np.sqrt(sumE_ThisOrient * sumE_ThisOrient +
+                              sumO_ThisOrient * sumO_ThisOrient) + epsilon
+            MeanE = sumE_ThisOrient / XEnergy
+            MeanO = sumO_ThisOrient / XEnergy
+            */
+<span class="fc bfc" id="L360" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc bfc" id="L361" title="All 2 branches covered.">                for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L362">                    double vE = sumE_ThisOrient[row][col];</span>
+<span class="fc" id="L363">                    double vO = sumO_ThisOrient[row][col];</span>
+<span class="fc" id="L364">                    EnergyV[0][row][col] += vE;</span>
+<span class="fc" id="L365">                    EnergyV[1][row][col] += (cosAngl * vO);</span>
+<span class="fc" id="L366">                    EnergyV[2][row][col] += (sinAngl * vO);</span>
+                    
+<span class="fc" id="L368">                    XEnergy[row][col] = Math.sqrt(vE * vE + vO * vO);</span>
+                    
+<span class="fc" id="L370">                    MeanE[row][col] = vE / XEnergy[row][col];</span>
+<span class="fc" id="L371">                    MeanO[row][col] = vO / XEnergy[row][col];</span>
+                }
+            }
+            
+            // Now calculate An(cos(phase_deviation)-| sin(phase_deviation))| by
+            // using dot and cross products between the weighted mean filter
+            // response vector and the individual filter response vectors at each
+            // scale. This quantity is phase congruency multiplied by An, which we
+            // call energy.
+<span class="fc bfc" id="L380" title="All 2 branches covered.">            for (int s = 0; s &lt; nScale; ++s) {</span>
+<span class="fc" id="L381">                Complex[][] eoS = EOscale[s];</span>
+<span class="fc bfc" id="L382" title="All 2 branches covered.">                for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc bfc" id="L383" title="All 2 branches covered.">                    for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L384">                        double e = eoS[row][col].re();</span>
+<span class="fc" id="L385">                        double o = eoS[row][col].im();</span>
+<span class="fc" id="L386">                        double vE = e * MeanE[row][col];</span>
+<span class="fc" id="L387">                        double vO = o * MeanO[row][col];</span>
+<span class="fc" id="L388">                        Energy[row][col] += vE + vO - Math.abs(vE - vO);</span>
+                    }
+                }
+            }
+            
+<span class="pc bpc" id="L393" title="1 of 2 branches missed.">            if (noiseMethod &gt;= 0) { </span>
+                //fixed noise threshold
+<span class="nc" id="L395">                threshold[or] = noiseMethod;</span>
+            } else {
+<span class="fc" id="L397">                double totalTau = tau * (1. - Math.pow((1./mult), nScale))/(1. - (1./mult));</span>
+<span class="fc" id="L398">                double EstNoiseEnergyMean = totalTau * Math.sqrt(Math.PI/2.);</span>
+<span class="fc" id="L399">                double EstNoiseEnergySigma = totalTau * Math.sqrt((4. - Math.PI)/2.);</span>
+<span class="fc" id="L400">                threshold[or] = Math.max(EstNoiseEnergyMean </span>
+                    + ((float)k) * EstNoiseEnergySigma, epsilon);
+            }
+            
+<span class="fc bfc" id="L404" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc bfc" id="L405" title="All 2 branches covered.">                for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L406">                    Energy[row][col] = Math.max(Energy[row][col] - threshold[or], 0);</span>
+                }
+            }
+          
+<span class="fc" id="L410">            double[][] width = new double[nRows][];</span>
+<span class="fc" id="L411">            double[][] weight = new double[nRows][];</span>
+<span class="fc" id="L412">            double[][] thisPC = new double[nRows][];</span>
+<span class="fc bfc" id="L413" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
+                
+<span class="fc" id="L415">                width[row] = new double[nCols];</span>
+<span class="fc" id="L416">                weight[row] = new double[nCols];</span>
+<span class="fc" id="L417">                thisPC[row] = new double[nCols];</span>
+                
+<span class="fc bfc" id="L419" title="All 2 branches covered.">                for (int col = 0; col &lt; nCols; ++col) {</span>
+                    
+<span class="fc" id="L421">                    width[row][col] = (sumAn_ThisOrient[row][col] / </span>
+                        (maxAn[row][col] + epsilon) - 1.) / ((double)nScale - 1.);
+                    
+<span class="fc" id="L424">                    weight[row][col] = 1. / (1. + Math.exp(g * (cutOff - width[row][col])));</span>
+                    
+<span class="fc" id="L426">                    thisPC[row][col] = weight[row][col] * Energy[row][col] / </span>
+                        sumAn_ThisOrient[row][col];
+                    
+<span class="fc" id="L429">                    pcSum[row][col] += thisPC[row][col];</span>
+                    
+<span class="fc" id="L431">                    double covx = thisPC[row][col] * cosAngl;</span>
+<span class="fc" id="L432">                    double covy = thisPC[row][col] * sinAngl;</span>
+<span class="fc" id="L433">                    covx2[row][col] += (covx * covx);</span>
+<span class="fc" id="L434">                    covy2[row][col] += (covy * covy);</span>
+<span class="fc" id="L435">                    covxy[row][col] += (covx * covy);</span>
+                }
+            }
+<span class="fc" id="L438">            PC[or] = thisPC;</span>
+<span class="fc" id="L439">            EO[or] = EOscale;</span>
+        }
+        
+<span class="fc" id="L442">        double[][] minMoment = new double[nRows][];</span>
+<span class="fc" id="L443">        double[][] maxMoment = new double[nRows][];</span>
+<span class="fc" id="L444">        double[][] orientation = new double[nRows][];</span>
+<span class="fc" id="L445">        double[][] phaseAngle = new double[nRows][];</span>
+<span class="fc bfc" id="L446" title="All 2 branches covered.">        for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc" id="L447">            minMoment[row] = new double[nCols];</span>
+<span class="fc" id="L448">            maxMoment[row] = new double[nCols];</span>
+<span class="fc" id="L449">            orientation[row] = new double[nCols];</span>
+<span class="fc" id="L450">            phaseAngle[row] = new double[nCols];</span>
+            
+<span class="fc bfc" id="L452" title="All 2 branches covered.">            for (int col = 0; col &lt; nCols; ++col) {</span>
+                
+<span class="fc" id="L454">                covx2[row][col] /= nOrient / 2.;</span>
+<span class="fc" id="L455">                covy2[row][col] /= nOrient / 2.;</span>
+<span class="fc" id="L456">                covxy[row][col] += 4. / nOrient;</span>
+                
+<span class="fc" id="L458">                double denom = Math.sqrt(</span>
+                    covxy[row][col] * covxy[row][col] + 
+                    (covx2[row][col] - covy2[row][col]) * 
+                    (covx2[row][col] - covy2[row][col])) + epsilon;
+                
+<span class="fc" id="L463">                minMoment[row][col] = (covx2[row][col] + covy2[row][col] - denom) </span>
+                    / 2.;
+                
+<span class="fc" id="L466">                maxMoment[row][col] = (covx2[row][col] + covy2[row][col] + denom) </span>
+                    / 2.;
+                
+<span class="fc" id="L469">                double e2 = EnergyV[2][row][col];</span>
+<span class="fc" id="L470">                double e1 = EnergyV[1][row][col];</span>
+                
+<span class="fc" id="L472">                double v = Math.atan2(e2, e1);</span>
+
+<span class="fc" id="L474">                orientation[row][col] = Math.round((v % Math.PI) * 180. / Math.PI);</span>
+<span class="fc bfc" id="L475" title="All 2 branches covered.">                if (orientation[row][col] &lt; 0) {</span>
+<span class="fc" id="L476">                    orientation[row][col] += 360;</span>
+                }
+                
+<span class="fc" id="L479">                double oddV = Math.sqrt(e1 * e1 + e2 * e2);</span>
+                
+                //TODO: does this need correction to 0:2PI?
+<span class="fc" id="L482">                phaseAngle[row][col] = Math.atan2(EnergyV[0][row][col], oddV);</span>
+            }
+        }
+        
+<span class="fc" id="L486">        PhaseCongruencyDetector pcDet0 = new PhaseCongruencyDetector();</span>
+        
+        // explore making edges using phase angle steps
+<span class="fc" id="L489">        NonMaximumSuppression ns = new NonMaximumSuppression();</span>
+<span class="fc" id="L490">        GreyscaleImage combinedPCImg = img.createWithDimensions();</span>
+<span class="fc" id="L491">        GreyscaleImage combinedThinnedImg = img.createWithDimensions();</span>
+        
+<span class="fc bfc" id="L493" title="All 2 branches covered.">        for (int or = 0; or &lt; nOrient; ++or) {</span>
+        
+<span class="fc" id="L495">            double[][] thinnedPC = ns.nonmaxsup(PC[or], </span>
+                orientation, 1.2, new HashSet&lt;PairInt&gt;()); 
+
+<span class="fc" id="L498">            int[][] thinned = pcDet0.createEdges(PC[or], </span>
+                thinnedPC, phaseAngle, tLow, tHigh);
+                            
+<span class="fc" id="L501">            GreyscaleImage pcImg = img.createWithDimensions();</span>
+<span class="fc" id="L502">            GreyscaleImage thinnedImg = img.createWithDimensions();</span>
+<span class="fc bfc" id="L503" title="All 2 branches covered.">            for (int i = 0; i &lt; thinnedImg.getWidth(); ++i) {</span>
+<span class="fc bfc" id="L504" title="All 2 branches covered.">                for (int j = 0; j &lt; thinnedImg.getHeight(); ++j) {</span>
+<span class="fc" id="L505">                    int vPC = (int)Math.round(255. * PC[or][j][i]);</span>
+<span class="fc bfc" id="L506" title="All 2 branches covered.">                    if (thinned[j][i] &gt; 0) {</span>
+<span class="fc" id="L507">                        thinnedImg.setValue(i, j, 255);</span>
+<span class="fc" id="L508">                        combinedThinnedImg.setValue(i, j, 255);</span>
+                    }
+<span class="fc" id="L510">                    pcImg.setValue(i, j, vPC);</span>
+<span class="fc bfc" id="L511" title="All 2 branches covered.">                    if (vPC &gt; combinedPCImg.getValue(i, j)) {</span>
+<span class="fc" id="L512">                        combinedPCImg.setValue(i, j, vPC);</span>
+                    }
+                }
+            }
+<span class="fc" id="L516">            MiscDebug.writeImage(thinnedImg, &quot;_thinned_&quot; + or + &quot;_&quot;); </span>
+<span class="fc" id="L517">            MiscDebug.writeImage(pcImg, &quot;_pc_&quot; + or + &quot;_&quot;);        </span>
+        }
+<span class="fc" id="L519">        MiscDebug.writeImage(combinedPCImg, &quot;_pc_combined_&quot;); </span>
+<span class="fc" id="L520">        MiscDebug.writeImage(combinedThinnedImg, &quot;_thinned_combined_&quot;); </span>
+        
+<span class="fc" id="L522">        long t1 = System.currentTimeMillis();</span>
+        
+<span class="fc" id="L524">        System.out.println(((t1 - t0)*1E-3) + &quot; seconds for phasecongmono&quot;);</span>
+        
+        PhaseCongruencyProducts products;
+        
+<span class="pc bpc" id="L528" title="1 of 2 branches missed.">        if (doStoreConvolution) {</span>
+<span class="nc" id="L529">            products = new PhaseCongruencyProducts(minMoment, maxMoment,</span>
+                PC, orientation, phaseAngle, threshold,
+                EO);
+        } else {
+<span class="fc" id="L533">            products = new PhaseCongruencyProducts(minMoment, maxMoment,</span>
+                PC, orientation, phaseAngle, threshold,
+                null);
+        }
+        
+<span class="fc" id="L538">        return products;</span>
+    }
+    
+    private double[][] copy(double[][] a) {
+<span class="fc" id="L542">        double[][] cp = new double[a.length][];</span>
+<span class="fc bfc" id="L543" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="fc" id="L544">            cp[i] = Arrays.copyOf(a[i], a[i].length);</span>
+        }
+<span class="fc" id="L546">        return cp;</span>
+    }
+    
+    public class PhaseCongruencyProducts {
+        
+        /**
+         * A list of phase congruency images (values between 0 and 1), one per
+            orientation accessed as [nOrientation[row][col]
+         */
+        private final double[][][] phaseCongruency;
+        
+        /**
+         * Orientation image in integer degrees 0-180 with positive anticlockwise.
+         */
+        private final double[][] orientation;
+        
+        /**
+         * Local weighted mean phase angle at every point in the image.  
+         * A value of pi/2 corresponds to a bright line, 0 corresponds to a 
+         * step and -pi/2 is a dark line.
+         */
+        private final double[][] phaseAngle;
+        
+        private final double[][] minimumMoment;
+        
+        private final double[][] maximumMoment;
+        
+        /**
+         * Calculated noise threshold (can be useful for diagnosing noise 
+         * characteristics of images).  Once you know this you can then specify 
+         * fixed thresholds and save some computation time.
+         * accessed by orientation number.
+         */
+        private final double[] threshold;
+        
+        private int[][] thinned = null;
+                  
+        private PhaseCongruencyParameters parameters = null;
+        
+        /**
+         * list of convolution results by scale and orientation angle
+         * accessed as [nOrientation][nScale][nRows][nCols] (NOTE that
+         * this can be null if user did not want to store it).
+         */
+        private final Complex[][][][] convolutionResults;
+                
+        public PhaseCongruencyProducts(double[][] theMinMoment, double[][] theMaxMoment,
+            double[][][] pcList, double[][] or, 
+            double[][] ft, double[] thr,
+            Complex[][][][] convolution) {
+            this.minimumMoment = copy(theMinMoment);
+            this.maximumMoment = copy(theMaxMoment);
+            this.phaseCongruency = pcList;
+            this.orientation = copy(or);
+            this.phaseAngle = copy(ft);
+            this.threshold = thr;
+            this.convolutionResults = convolution;
+        }
+        
+        /**
+         * set the thinned phase congruence image, a.k.a. the edge image.
+         * @param thImg 
+         */
+        public void setThinnedImage(int[][] thImg) {
+            thinned = copy(thImg);
+        }
+        
+        /**
+         * get the thinned phase congruence image, a.k.a. the edge image.
+         * Note that the array is accessed as a[row][column].
+         * @@return edgeImg 
+         */
+        public int[][] getThinned() {
+            return thinned;
+        }
+
+        /**
+         * return the gradient image produced by phase congruency as a double
+         * array of values in range 0 to 1.0.
+         * Note that the array is accessed as a[nOrientation][row][column].
+         * @return the phaseCongruency
+         */
+        public double[][][] getPhaseCongruency() {
+            return phaseCongruency;
+        }
+
+        /**
+         * return the orientation image.
+         * Note that the array is accessed as a[row][column].
+         * @return the orientation
+         */
+        public double[][] getOrientation() {
+            return orientation;
+        }
+
+        /**
+         * return the phase angle image.
+         * &lt;pre&gt;
+         * Local weighted mean phase angle at every point in the image. 
+         * A value of 
+                pi/2 corresponds to a bright line, 
+                0 corresponds to a step and 
+                -pi/2 is a dark line.
+         * &lt;/pre&gt;
+         * Note that the array is accessed as a[row][column].
+         * @return the phaseAngle
+         */
+        public double[][] getPhaseAngle() {
+            return phaseAngle;
+        }
+
+        /**
+         * @return the threshold
+         */
+        public double[] getThreshold() {
+            return threshold;
+        }
+        
+        /**
+         * Minimum moment of phase congruency covariance, which can be used as
+         a measure of corner strength
+         * @return the minimum moment
+         */
+        public double[][] getMinimumMoment() {
+            return minimumMoment;
+        }
+        
+        /**
+         * Maximum moment of phase congruency covariance, which can be used as
+           a measure of edge strength
+         * @return the minimum moment
+         */
+        public double[][] getMaximumMoment() {
+            return maximumMoment;
+        }
+
+        public PhaseCongruencyParameters getParameters() {
+            return parameters;
+        }
+
+        private void setParameters(int nScale, int minWavelength, float mult, 
+            float sigmaOnf, int k, float cutOff, float g, float deviationGain, 
+            int noiseMethod, double tLow, double tHigh) {
+            
+            this.parameters = new PhaseCongruencyParameters();
+            
+            parameters.setParameters(nScale, minWavelength, mult, sigmaOnf, k,
+                cutOff, g, deviationGain, noiseMethod, tLow, tHigh);            
+        }
+
+        /**
+         * list of convolution results by scale and orientation angle
+         * accessed as [nOrientation][nScale][nRows][nCols] (NOTE that
+         * this can be null if user did not want to store it).
+         * @return the convolutionResults
+         */
+        public Complex[][][][] getConvolutionResults() {
+            return convolutionResults;
+        }
+        
+    }
+
+    private Complex[][] copy(Complex[][] a) {
+        
+<span class="nc" id="L710">        Complex[][] b = new Complex[a.length][];</span>
+<span class="nc bnc" id="L711" title="All 2 branches missed.">        for (int i = 0; i &lt; b.length; ++i) {</span>
+<span class="nc" id="L712">            b[i] = Arrays.copyOf(a[i], a[i].length);</span>
+        }
+        
+<span class="nc" id="L715">        return b;</span>
+    }
+    private int[][] copy(int[][] a) {
+        
+<span class="nc" id="L719">        int[][] b = new int[a.length][];</span>
+<span class="nc bnc" id="L720" title="All 2 branches missed.">        for (int i = 0; i &lt; b.length; ++i) {</span>
+<span class="nc" id="L721">            b[i] = Arrays.copyOf(a[i], a[i].length);</span>
+        }
+        
+<span class="nc" id="L724">        return b;</span>
+    }
+    
+    /**
+    adapted from Kovesis phasecongmono.m as documented in class comments above.
+       
+      Mode is computed by forming a histogram of the data over 50 bins and then
+      finding the maximum value in the histogram.  Mean and standard deviation
+      can then be calculated from the mode as they are related by fixed
+      constants.
+     
+      mean = mode * sqrt(pi/2)
+      std dev = mode * sqrt((4-pi)/2)
+      
+      See
+      http://mathworld.wolfram.com/RayleighDistribution.html
+      http://en.wikipedia.org/wiki/Rayleigh_distribution
+      
+     * @param data data assumed to come from a Rayleigh distribution
+     * @return 
+     */
+    private double rayleighMode(double[][] data) {
+        
+<span class="nc" id="L747">        int nBins = 50;</span>
+        
+<span class="nc" id="L749">        float[] values = new float[data.length];</span>
+<span class="nc" id="L750">        float max = Float.MIN_VALUE;</span>
+<span class="nc" id="L751">        int count = 0;</span>
+<span class="nc bnc" id="L752" title="All 2 branches missed.">        for (int j = 0; j &lt; data.length; ++j) {</span>
+<span class="nc bnc" id="L753" title="All 2 branches missed.">            for (int i = 0; i &lt; data[j].length; ++i) {</span>
+<span class="nc" id="L754">                values[count] = (float)data[j][i];</span>
+<span class="nc bnc" id="L755" title="All 2 branches missed.">                if (values[count] &gt; max) {</span>
+<span class="nc" id="L756">                    max = values[i];</span>
+                }
+<span class="nc" id="L758">                count++;</span>
+            }
+        }
+<span class="nc" id="L761">        float[] errs = Errors.populateYErrorsBySqrt(values);</span>
+        
+<span class="nc" id="L763">        HistogramHolder hist = Histogram.createSimpleHistogram(0, max, nBins,</span>
+            values, errs);
+        
+<span class="nc" id="L766">        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
+        
+<span class="nc bnc" id="L768" title="All 2 branches missed.">        if (yMaxIdx == -1) {</span>
+            //should not happen
+<span class="nc" id="L770">            throw new IllegalStateException(&quot;Error in algorithm for extreme data case. &quot;</span>
+                + &quot; yMaxIdx=&quot; + yMaxIdx);
+<span class="nc bnc" id="L772" title="All 2 branches missed.">        } else if (yMaxIdx == (hist.getXHist().length - 1)) {</span>
+<span class="nc" id="L773">            return hist.getXHist()[yMaxIdx];</span>
+        }
+        
+<span class="nc" id="L776">        double rMode = (hist.getXHist()[yMaxIdx] + hist.getXHist()[yMaxIdx + 1])/2.;</span>
+        
+<span class="nc" id="L778">        return rMode;</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

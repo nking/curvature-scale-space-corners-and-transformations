@@ -20,81 +20,90 @@ import javax.swing.SwingUtilities;
     
     public static DisposableJFrame displayImage(final String title, final Image img) 
         throws IOException {
+<span class="fc" id="L23">        return displayImage(title, img, BufferedImage.TYPE_INT_RGB);</span>
+    }
+    
+    public static DisposableJFrame displayImageGrey(final String title, final Image img) 
+        throws IOException {
+<span class="nc" id="L28">        return displayImage(title, img, BufferedImage.TYPE_BYTE_GRAY);</span>
+    }
+    
+    public static DisposableJFrame displayImage(final String title, final Image img,
+        int imageType) throws IOException {
         
-<span class="pc bpc" id="L24" title="1 of 2 branches missed.">        if (img == null) {</span>
-<span class="nc" id="L25">            return null;</span>
+<span class="pc bpc" id="L34" title="1 of 2 branches missed.">        if (img == null) {</span>
+<span class="nc" id="L35">            return null;</span>
         }
         
-<span class="fc" id="L28">        int w = img.getWidth();</span>
-<span class="fc" id="L29">        int h = img.getHeight();</span>
+<span class="fc" id="L38">        int w = img.getWidth();</span>
+<span class="fc" id="L39">        int h = img.getHeight();</span>
         
-<span class="fc" id="L31">        final BufferedImage image = new BufferedImage(w, h, </span>
-            BufferedImage.TYPE_INT_RGB);
+<span class="fc" id="L41">        final BufferedImage image = new BufferedImage(w, h, imageType);</span>
         
-<span class="fc bfc" id="L34" title="All 2 branches covered.">        for (int i = 0; i &lt; w; i++) {</span>
-<span class="fc bfc" id="L35" title="All 2 branches covered.">            for (int j = 0; j &lt; h; j++) {</span>
-<span class="fc" id="L36">                int rgbValue = img.getRGB(i, j);                </span>
-<span class="fc" id="L37">                image.setRGB(i, j, rgbValue);</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">        for (int i = 0; i &lt; w; i++) {</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">            for (int j = 0; j &lt; h; j++) {</span>
+<span class="fc" id="L45">                int rgbValue = img.getRGB(i, j);                </span>
+<span class="fc" id="L46">                image.setRGB(i, j, rgbValue);</span>
             }
         }
        
-<span class="fc" id="L41">        return displayDisposableImage(title, image);</span>
+<span class="fc" id="L50">        return displayDisposableImage(title, image);</span>
     }
     
     public static DisposableJFrame displayImage(final String title, 
         final GreyscaleImage img) throws IOException {
         
-<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (img == null) {</span>
-<span class="nc" id="L48">            return null;</span>
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">        if (img == null) {</span>
+<span class="nc" id="L57">            return null;</span>
         }
         
-<span class="fc" id="L51">        int w = img.getWidth();</span>
-<span class="fc" id="L52">        int h = img.getHeight();</span>
+<span class="fc" id="L60">        int w = img.getWidth();</span>
+<span class="fc" id="L61">        int h = img.getHeight();</span>
         
-<span class="fc" id="L54">        final BufferedImage image = new BufferedImage(w, h, </span>
+<span class="fc" id="L63">        final BufferedImage image = new BufferedImage(w, h, </span>
             BufferedImage.TYPE_BYTE_GRAY);
         
-<span class="fc" id="L57">        WritableRaster raster = image.getRaster();</span>
+<span class="fc" id="L66">        WritableRaster raster = image.getRaster();</span>
         
-<span class="fc bfc" id="L59" title="All 2 branches covered.">        for (int i = 0; i &lt; w; i++) {</span>
-<span class="fc bfc" id="L60" title="All 2 branches covered.">            for (int j = 0; j &lt; h; j++) {</span>
-<span class="fc" id="L61">                int value = img.getValue(i, j);         </span>
-<span class="fc" id="L62">                raster.setSample(i, j, 0, value);</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        for (int i = 0; i &lt; w; i++) {</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">            for (int j = 0; j &lt; h; j++) {</span>
+<span class="fc" id="L70">                int value = img.getValue(i, j);         </span>
+<span class="fc" id="L71">                raster.setSample(i, j, 0, value);</span>
             }
         }
         
-<span class="fc" id="L66">        return displayDisposableImage(title, image);</span>
+<span class="fc" id="L75">        return displayDisposableImage(title, image);</span>
     }
 
     public static DisposableJFrame displayDisposableImage(final String title, 
         final BufferedImage image) throws IOException {
         
-<span class="pc bpc" id="L72" title="1 of 2 branches missed.">        if (image == null) {</span>
-<span class="nc" id="L73">            return null;</span>
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">        if (image == null) {</span>
+<span class="nc" id="L82">            return null;</span>
         }
        
         try {
             
-<span class="fc" id="L78">            boolean isDispatchThread = SwingUtilities.isEventDispatchThread();</span>
+<span class="fc" id="L87">            boolean isDispatchThread = SwingUtilities.isEventDispatchThread();</span>
               
-<span class="fc" id="L80">            log.fine(&quot;isDispatchThread=&quot; + isDispatchThread);</span>
+<span class="fc" id="L89">            log.fine(&quot;isDispatchThread=&quot; + isDispatchThread);</span>
 
-<span class="fc" id="L82">            DisposableJFrame rjf = new DisposableJFrame(image, title);</span>
+<span class="fc" id="L91">            DisposableJFrame rjf = new DisposableJFrame(image, title);</span>
             
-<span class="fc" id="L84">            javax.swing.SwingUtilities.invokeAndWait(rjf);</span>
+<span class="fc" id="L93">            javax.swing.SwingUtilities.invokeAndWait(rjf);</span>
 
-<span class="fc" id="L86">            return rjf;</span>
+<span class="fc" id="L95">            return rjf;</span>
             
-<span class="nc" id="L88">        } catch(Throwable t) {</span>
-<span class="nc" id="L89">            t.printStackTrace();</span>
-<span class="nc" id="L90">            String msg = t.getMessage();</span>
-<span class="nc" id="L91">            log.severe(msg);</span>
+<span class="nc" id="L97">        } catch(Throwable t) {</span>
+<span class="nc" id="L98">            t.printStackTrace();</span>
+<span class="nc" id="L99">            String msg = t.getMessage();</span>
+<span class="nc" id="L100">            log.severe(msg);</span>
         }
         
-<span class="nc" id="L94">        return null;</span>
+<span class="nc" id="L103">        return null;</span>
     }
    
-<span class="nc" id="L97">    public static class DisposableJFrame implements Runnable {</span>
+    public static class DisposableJFrame implements Runnable {
 
         protected final JFrame frame;
         protected final BufferedImage image;

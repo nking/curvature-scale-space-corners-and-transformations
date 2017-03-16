@@ -41,14 +41,19 @@ import java.util.logging.Logger;
  */
 public class AStar {
 
-<span class="fc" id="L44">    protected boolean calculateHeuristics = false;</span>
+    //TODO: make a constructor that supplies the largest distance possible
+    //    between 2 points, and replace the
+    //    Heap w/ MinHeapForRT2012 which has an O(N) bucket queue internally
+    //    as one implementation.
+    
+<span class="fc" id="L49">    protected boolean calculateHeuristics = false;</span>
 
     // key is total estimate from srcIdx to destIdx for the given refIdx
     //    (that is the distance from srcIdx to refIdx + refIdx + heuristic)
-<span class="fc" id="L48">    protected final Heap heap = new Heap();</span>
+<span class="fc" id="L53">    protected final Heap heap = new Heap();</span>
 
     // refs to nodes internal to heap for decrease key operations
-<span class="fc" id="L51">    protected HeapNode[] nodes = null;</span>
+<span class="fc" id="L56">    protected HeapNode[] nodes = null;</span>
 
     protected final PairInt[] points;
 
@@ -74,162 +79,162 @@ public class AStar {
        INITIALIZED, COMPLETE
     }
     
-<span class="fc" id="L77">    private State state = null;</span>
+<span class="fc" id="L82">    private State state = null;</span>
 
-<span class="fc" id="L79">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L84">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
 
     public AStar(final PairInt[] points, final List&lt;LinkedList&lt;Integer&gt;&gt; adjacencyList,
-<span class="fc" id="L82">        final int srcIndx, final int destIndx) {</span>
+<span class="fc" id="L87">        final int srcIndx, final int destIndx) {</span>
 
-<span class="pc bpc" id="L84" title="1 of 2 branches missed.">        if (points == null) {</span>
-<span class="nc" id="L85">            throw new IllegalArgumentException(&quot;points cannot be null&quot;);</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">        if (points == null) {</span>
+<span class="nc" id="L90">            throw new IllegalArgumentException(&quot;points cannot be null&quot;);</span>
         }
 
-<span class="fc" id="L88">        int n = points.length;</span>
+<span class="fc" id="L93">        int n = points.length;</span>
 
-<span class="pc bpc" id="L90" title="2 of 4 branches missed.">        if (adjacencyList == null || (adjacencyList.size() != n)) {</span>
-<span class="nc" id="L91">            throw new IllegalArgumentException(&quot;adjacencyList cannot be null and must&quot;</span>
+<span class="pc bpc" id="L95" title="2 of 4 branches missed.">        if (adjacencyList == null || (adjacencyList.size() != n)) {</span>
+<span class="nc" id="L96">            throw new IllegalArgumentException(&quot;adjacencyList cannot be null and must&quot;</span>
             + &quot; be same size as points&quot;);
         }
-<span class="pc bpc" id="L94" title="2 of 4 branches missed.">        if ((srcIndx &lt; 0) ||  (srcIndx &gt; (n - 1))) {</span>
-<span class="nc" id="L95">                throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L99" title="2 of 4 branches missed.">        if ((srcIndx &lt; 0) ||  (srcIndx &gt; (n - 1))) {</span>
+<span class="nc" id="L100">                throw new IllegalArgumentException(</span>
             &quot;srcIndx is out of bounds of vertices array&quot;);
         }
-<span class="pc bpc" id="L98" title="2 of 4 branches missed.">        if ((destIndx &lt; 0) ||  (destIndx &gt; (n - 1))) {</span>
-<span class="nc" id="L99">                throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L103" title="2 of 4 branches missed.">        if ((destIndx &lt; 0) ||  (destIndx &gt; (n - 1))) {</span>
+<span class="nc" id="L104">                throw new IllegalArgumentException(</span>
             &quot;destIndx is out of bounds of vertices array&quot;);
         }
 
-<span class="fc" id="L103">        this.points = points;</span>
-<span class="fc" id="L104">        this.adjList = new ArrayList&lt;LinkedList&lt;Integer&gt;&gt;();</span>
-<span class="fc bfc" id="L105" title="All 2 branches covered.">        for (LinkedList&lt;Integer&gt; list : adjacencyList) {</span>
-<span class="fc" id="L106">            adjList.add(new LinkedList&lt;Integer&gt;(list));</span>
-<span class="fc" id="L107">        }</span>
+<span class="fc" id="L108">        this.points = points;</span>
+<span class="fc" id="L109">        this.adjList = new ArrayList&lt;LinkedList&lt;Integer&gt;&gt;();</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">        for (LinkedList&lt;Integer&gt; list : adjacencyList) {</span>
+<span class="fc" id="L111">            adjList.add(new LinkedList&lt;Integer&gt;(list));</span>
+<span class="fc" id="L112">        }</span>
 
-<span class="fc" id="L109">        sourceIndx = srcIndx;</span>
-<span class="fc" id="L110">        destinationIndx = destIndx;</span>
+<span class="fc" id="L114">        sourceIndx = srcIndx;</span>
+<span class="fc" id="L115">        destinationIndx = destIndx;</span>
 
-<span class="fc" id="L112">        distFromS = new long[n];</span>
-<span class="fc" id="L113">        heuristics = new long[n];</span>
-<span class="fc" id="L114">        prevNode = new HeapNode[n];</span>
+<span class="fc" id="L117">        distFromS = new long[n];</span>
+<span class="fc" id="L118">        heuristics = new long[n];</span>
+<span class="fc" id="L119">        prevNode = new HeapNode[n];</span>
 
         // populate w/ straight line distances as needed:
-<span class="fc" id="L117">        Arrays.fill(heuristics, Long.MAX_VALUE);</span>
+<span class="fc" id="L122">        Arrays.fill(heuristics, Long.MAX_VALUE);</span>
 
-<span class="fc" id="L119">        initHeap();</span>
-<span class="fc" id="L120">    }</span>
+<span class="fc" id="L124">        initHeap();</span>
+<span class="fc" id="L125">    }</span>
 
     private void initHeap() {
         
-<span class="fc" id="L124">        int n = points.length;</span>
+<span class="fc" id="L129">        int n = points.length;</span>
 
-<span class="fc" id="L126">        nodes = new HeapNode[n];</span>
+<span class="fc" id="L131">        nodes = new HeapNode[n];</span>
 
         // initialize all except the source node as having infinite distance
-<span class="fc bfc" id="L129" title="All 2 branches covered.">        for (int i = 0; i &lt; points.length; ++i) {</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        for (int i = 0; i &lt; points.length; ++i) {</span>
 
-<span class="fc bfc" id="L131" title="All 2 branches covered.">            long dist = (i == sourceIndx) ? 0 : Long.MAX_VALUE;</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">            long dist = (i == sourceIndx) ? 0 : Long.MAX_VALUE;</span>
 
-<span class="fc" id="L133">            HeapNode node = new HeapNode(dist);</span>
-<span class="fc" id="L134">            node.setData(Integer.valueOf(i));</span>
+<span class="fc" id="L138">            HeapNode node = new HeapNode(dist);</span>
+<span class="fc" id="L139">            node.setData(Integer.valueOf(i));</span>
 
-<span class="fc" id="L136">            heap.insert(node);</span>
+<span class="fc" id="L141">            heap.insert(node);</span>
 
-<span class="fc" id="L138">            distFromS[i] = dist;</span>
+<span class="fc" id="L143">            distFromS[i] = dist;</span>
 
-<span class="fc" id="L140">            nodes[i] = node;</span>
+<span class="fc" id="L145">            nodes[i] = node;</span>
         }
         
-<span class="fc" id="L143">        state = State.INITIALIZED;</span>
-<span class="fc" id="L144">    }</span>
+<span class="fc" id="L148">        state = State.INITIALIZED;</span>
+<span class="fc" id="L149">    }</span>
 
     public int[] search() {
 
-<span class="fc" id="L148">        int count = 0;</span>
+<span class="fc" id="L153">        int count = 0;</span>
 
-<span class="fc" id="L150">        HeapNode uNode = heap.extractMin();</span>
+<span class="fc" id="L155">        HeapNode uNode = heap.extractMin();</span>
 
-<span class="fc bfc" id="L152" title="All 2 branches covered.">        while (uNode != null) {</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">        while (uNode != null) {</span>
 
-<span class="fc" id="L154">            int uIndx = ((Integer)uNode.getData()).intValue();</span>
+<span class="fc" id="L159">            int uIndx = ((Integer)uNode.getData()).intValue();</span>
             
             // null the entry in nodes so it isn't used in decrease key
-<span class="fc" id="L157">            nodes[uIndx] = null;</span>
+<span class="fc" id="L162">            nodes[uIndx] = null;</span>
             
-<span class="fc" id="L159">            LinkedList&lt;Integer&gt; adj = adjList.get(uIndx);</span>
+<span class="fc" id="L164">            LinkedList&lt;Integer&gt; adj = adjList.get(uIndx);</span>
 
-<span class="pc bpc" id="L161" title="1 of 2 branches missed.">            if (adj == null) {</span>
-<span class="nc" id="L162">                continue;</span>
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">            if (adj == null) {</span>
+<span class="nc" id="L167">                continue;</span>
             }
 
-<span class="fc" id="L165">            Integer vIndex = adj.poll();</span>
+<span class="fc" id="L170">            Integer vIndex = adj.poll();</span>
 
-<span class="fc bfc" id="L167" title="All 2 branches covered.">            while (vIndex != null) {</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">            while (vIndex != null) {</span>
 
-<span class="fc" id="L169">                int vIndx = vIndex.intValue();</span>
+<span class="fc" id="L174">                int vIndx = vIndex.intValue();</span>
 
-<span class="fc bfc" id="L171" title="All 4 branches covered.">                if ((distFromS[uIndx] == Long.MAX_VALUE) || </span>
+<span class="pc bpc" id="L176" title="1 of 4 branches missed.">                if ((distFromS[uIndx] == Long.MAX_VALUE) || </span>
                     (nodes[vIndx] == null)) {
                     
-<span class="fc" id="L174">                    vIndex = adj.poll();</span>
+<span class="fc" id="L179">                    vIndex = adj.poll();</span>
                     
-<span class="fc" id="L176">                    continue;</span>
+<span class="fc" id="L181">                    continue;</span>
                 }
 
-<span class="fc" id="L179">                long distUV = distBetween(uIndx, vIndx);</span>
+<span class="fc" id="L184">                long distUV = distBetween(uIndx, vIndx);</span>
 
-<span class="fc" id="L181">                long uDistPlusCost = (distFromS[uIndx] + distUV);</span>
+<span class="fc" id="L186">                long uDistPlusCost = (distFromS[uIndx] + distUV);</span>
 
-<span class="fc bfc" id="L183" title="All 2 branches covered.">                long vDist = (distFromS[vIndex] == Long.MAX_VALUE) ?</span>
-<span class="fc" id="L184">                    Long.MAX_VALUE : distFromS[vIndex];</span>
+<span class="fc bfc" id="L188" title="All 2 branches covered.">                long vDist = (distFromS[vIndex] == Long.MAX_VALUE) ?</span>
+<span class="fc" id="L189">                    Long.MAX_VALUE : distFromS[vIndex];</span>
 
                 // relax(u,v, wght)
-<span class="fc bfc" id="L187" title="All 2 branches covered.">                if (uDistPlusCost &lt; vDist) {</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">                if (uDistPlusCost &lt; vDist) {</span>
 
-<span class="fc" id="L189">                    long vDistFromSrc = distFromS[uIndx] + distUV;</span>
+<span class="fc" id="L194">                    long vDistFromSrc = distFromS[uIndx] + distUV;</span>
 
-<span class="fc" id="L191">                    long vDistPlusHeuristic = vDistFromSrc + heuristic(vIndx);</span>
+<span class="fc" id="L196">                    long vDistPlusHeuristic = vDistFromSrc + heuristic(vIndx);</span>
 
-<span class="fc" id="L193">                    HeapNode vNode = nodes[vIndx];</span>
+<span class="fc" id="L198">                    HeapNode vNode = nodes[vIndx];</span>
 
-<span class="pc bpc" id="L195" title="1 of 2 branches missed.">                    if (vDistPlusHeuristic &lt; vNode.getKey()) {</span>
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">                    if (vDistPlusHeuristic &lt; vNode.getKey()) {</span>
 
-<span class="fc" id="L197">                        heap.decreaseKey(vNode, vDistPlusHeuristic);</span>
+<span class="fc" id="L202">                        heap.decreaseKey(vNode, vDistPlusHeuristic);</span>
                         
-<span class="fc" id="L199">                        distFromS[vIndex] = vDistFromSrc;</span>
+<span class="fc" id="L204">                        distFromS[vIndex] = vDistFromSrc;</span>
 
-<span class="fc" id="L201">                        prevNode[vIndex] = uNode;</span>
+<span class="fc" id="L206">                        prevNode[vIndex] = uNode;</span>
 
-<span class="fc" id="L203">                        count++;</span>
+<span class="fc" id="L208">                        count++;</span>
 
                     } else {
 
-<span class="nc" id="L207">                        String str = String.format(</span>
+<span class="nc" id="L212">                        String str = String.format(</span>
                         &quot;did not decrease key for: u=%d v=%d uDist+distUV=%d vDist=%d currentVDistPlusHeuristic=%d rejected vDistPlusH=%d&quot;,
-<span class="nc" id="L209">                            uIndx, vIndx, (int)uDistPlusCost, (int)vDist,</span>
-<span class="nc" id="L210">                            (int)vNode.getKey(), (int)vDistPlusHeuristic);</span>
-<span class="nc" id="L211">                        System.err.println(str);</span>
+<span class="nc" id="L214">                            uIndx, vIndx, (int)uDistPlusCost, (int)vDist,</span>
+<span class="nc" id="L215">                            (int)vNode.getKey(), (int)vDistPlusHeuristic);</span>
+<span class="nc" id="L216">                        System.err.println(str);</span>
                     }
                 }
 
-<span class="fc" id="L215">                vIndex = adj.poll();</span>
-<span class="fc" id="L216">            }</span>
+<span class="fc" id="L220">                vIndex = adj.poll();</span>
+<span class="fc" id="L221">            }</span>
 
-<span class="fc" id="L218">            uNode = heap.extractMin();</span>
-<span class="fc" id="L219">        }</span>
+<span class="fc" id="L223">            uNode = heap.extractMin();</span>
+<span class="fc" id="L224">        }</span>
 
-<span class="fc bfc" id="L221" title="All 2 branches covered.">        if (count == 0) {</span>
+<span class="pc bpc" id="L226" title="1 of 2 branches missed.">        if (count == 0) {</span>
             
-<span class="fc" id="L223">            state = State.COMPLETE;</span>
+<span class="nc" id="L228">            state = State.COMPLETE;</span>
             
-<span class="fc" id="L225">            return null;</span>
+<span class="nc" id="L230">            return null;</span>
         }
 
-<span class="fc" id="L228">        int[] pathIndexes = getNodeIndexesToDestination();</span>
+<span class="fc" id="L233">        int[] pathIndexes = getNodeIndexesToDestination();</span>
 
-<span class="fc" id="L230">        state = State.COMPLETE;</span>
+<span class="fc" id="L235">        state = State.COMPLETE;</span>
         
-<span class="fc" id="L232">        return pathIndexes;</span>
+<span class="fc" id="L237">        return pathIndexes;</span>
     }
 
     /**
@@ -240,53 +245,53 @@ public class AStar {
      */
     protected long distBetween(int uIdx, int vIdx) {
 
-<span class="fc" id="L243">        int diffX = points[uIdx].getX() - points[vIdx].getX();</span>
-<span class="fc" id="L244">        int diffY = points[uIdx].getY() - points[vIdx].getY();</span>
+<span class="fc" id="L248">        int diffX = points[uIdx].getX() - points[vIdx].getX();</span>
+<span class="fc" id="L249">        int diffY = points[uIdx].getY() - points[vIdx].getY();</span>
 
-<span class="fc" id="L246">        long dist = (long)Math.round(diffX*diffX + diffY*diffY);</span>
+<span class="fc" id="L251">        long dist = (long)Math.round(diffX*diffX + diffY*diffY);</span>
 
-<span class="fc" id="L248">        return dist;</span>
+<span class="fc" id="L253">        return dist;</span>
     }
 
     private long heuristic(int vIndx) {
 
-<span class="fc bfc" id="L253" title="All 2 branches covered.">        if (heuristics[vIndx] == Long.MAX_VALUE) {</span>
+<span class="fc bfc" id="L258" title="All 2 branches covered.">        if (heuristics[vIndx] == Long.MAX_VALUE) {</span>
             // calc straight line distance from vIndx to destination
-<span class="fc" id="L255">            heuristics[vIndx] = distBetween(vIndx, destinationIndx);</span>
+<span class="fc" id="L260">            heuristics[vIndx] = distBetween(vIndx, destinationIndx);</span>
         }
 
-<span class="fc" id="L258">        return heuristics[vIndx];</span>
+<span class="fc" id="L263">        return heuristics[vIndx];</span>
     }
 
     private int[] getNodeIndexesToDestination() {
 
-<span class="fc" id="L263">        int[] destNodes = new int[prevNode.length];</span>
+<span class="fc" id="L268">        int[] destNodes = new int[prevNode.length];</span>
 
-<span class="fc" id="L265">        int count = prevNode.length - 1;</span>
-<span class="fc" id="L266">        int lastInd = destinationIndx;</span>
+<span class="fc" id="L270">        int count = prevNode.length - 1;</span>
+<span class="fc" id="L271">        int lastInd = destinationIndx;</span>
 
-<span class="fc" id="L268">        destNodes[count] = lastInd;</span>
+<span class="fc" id="L273">        destNodes[count] = lastInd;</span>
 
-<span class="fc" id="L270">        count--;</span>
+<span class="fc" id="L275">        count--;</span>
 
-<span class="fc bfc" id="L272" title="All 2 branches covered.">        while (lastInd != this.sourceIndx) {</span>
+<span class="fc bfc" id="L277" title="All 2 branches covered.">        while (lastInd != this.sourceIndx) {</span>
 
-<span class="fc" id="L274">            HeapNode destNode = prevNode[lastInd];</span>
+<span class="fc" id="L279">            HeapNode destNode = prevNode[lastInd];</span>
 
-<span class="fc bfc" id="L276" title="All 2 branches covered.">            if (destNode == null) {</span>
-<span class="fc" id="L277">                return null;</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">            if (destNode == null) {</span>
+<span class="fc" id="L282">                return null;</span>
             }
 
-<span class="fc" id="L280">            lastInd = ((Integer)destNode.getData()).intValue();</span>
+<span class="fc" id="L285">            lastInd = ((Integer)destNode.getData()).intValue();</span>
 
-<span class="fc" id="L282">            destNodes[count] = lastInd;</span>
+<span class="fc" id="L287">            destNodes[count] = lastInd;</span>
 
-<span class="fc" id="L284">            count--;</span>
-<span class="fc" id="L285">        }</span>
+<span class="fc" id="L289">            count--;</span>
+<span class="fc" id="L290">        }</span>
 
-<span class="fc" id="L287">        int[] out = Arrays.copyOfRange(destNodes, count + 1, prevNode.length);</span>
+<span class="fc" id="L292">        int[] out = Arrays.copyOfRange(destNodes, count + 1, prevNode.length);</span>
 
-<span class="fc" id="L289">        return out;</span>
+<span class="fc" id="L294">        return out;</span>
     }
 
     /**
@@ -311,35 +316,35 @@ public class AStar {
      */
     public int[] createSourceToSourcePath() {
         
-<span class="pc bpc" id="L314" title="1 of 2 branches missed.">        if (!state.equals(State.COMPLETE)) {</span>
-<span class="nc" id="L315">            search();</span>
+<span class="nc bnc" id="L319" title="All 2 branches missed.">        if (!state.equals(State.COMPLETE)) {</span>
+<span class="nc" id="L320">            search();</span>
         }
         
-<span class="fc" id="L318">        int[] distances = new int[distFromS.length];</span>
-<span class="fc" id="L319">        int[] indexes = new int[distances.length];</span>
+<span class="nc" id="L323">        int[] distances = new int[distFromS.length];</span>
+<span class="nc" id="L324">        int[] indexes = new int[distances.length];</span>
         
-<span class="fc" id="L321">        int count = 0;</span>
+<span class="nc" id="L326">        int count = 0;</span>
         
-<span class="fc bfc" id="L323" title="All 2 branches covered.">        for (int i = 0; i &lt; distFromS.length; ++i) {</span>
-<span class="fc" id="L324">            long d = distFromS[i];</span>
-<span class="fc bfc" id="L325" title="All 2 branches covered.">            if (d == Long.MAX_VALUE) {</span>
-<span class="fc" id="L326">                continue;</span>
+<span class="nc bnc" id="L328" title="All 2 branches missed.">        for (int i = 0; i &lt; distFromS.length; ++i) {</span>
+<span class="nc" id="L329">            long d = distFromS[i];</span>
+<span class="nc bnc" id="L330" title="All 2 branches missed.">            if (d == Long.MAX_VALUE) {</span>
+<span class="nc" id="L331">                continue;</span>
             }
-<span class="fc" id="L328">            distances[count] = (int)d;</span>
-<span class="fc" id="L329">            indexes[count] = i;</span>
-<span class="fc" id="L330">            count++;</span>
+<span class="nc" id="L333">            distances[count] = (int)d;</span>
+<span class="nc" id="L334">            indexes[count] = i;</span>
+<span class="nc" id="L335">            count++;</span>
         }
         
-<span class="pc bpc" id="L333" title="1 of 2 branches missed.">        if (count == 0) {</span>
-<span class="nc" id="L334">            return null;</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">        if (count == 0) {</span>
+<span class="nc" id="L339">            return null;</span>
         }
         
         //distances = Arrays.copyOf(distances, count);
-<span class="fc" id="L338">        indexes = Arrays.copyOf(indexes, count);</span>
+<span class="nc" id="L343">        indexes = Arrays.copyOf(indexes, count);</span>
         
         //MultiArrayMergeSort.sortByDecr(distances, indexes);
         
-<span class="fc" id="L342">        return indexes;</span>
+<span class="nc" id="L347">        return indexes;</span>
     }
 
 }

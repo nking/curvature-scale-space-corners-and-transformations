@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>RealDoubleFFT_Even_Odd.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">thirdparty.ca.uol.aig.fftpack</a> &gt; <span class="el_source">RealDoubleFFT_Even_Odd.java</span></div><h1>RealDoubleFFT_Even_Odd.java</h1><pre class="source lang-java linenums">package thirdparty.ca.uol.aig.fftpack;
+/**
+  * cosine FFT transform with odd wave numbers.
+
+    jfftpack is a Java version of fftpack. jfftpack is based
+on Paul N. Swarztraubre's Fortran code and Pekka Janhuen's
+C code. It is developed as part of my official duties as
+lead software engineer for SCUBA-2 FTS projects
+(www.roe.ac.uk/ukatc/projects/scubatwo/)
+
+The original fftpack was public domain, so jfftpack is
+public domain too. As such, this package is also released
+under GPL. This software is in no way certified or guaranteed.
+
+Notes:
+Please read the following documents for FFT formula if necessary
+http://www.netlib.org/fftpack/doc
+
+  * @author Baoshe Zhang
+  * @author Astronomical Instrument Group of University of Lethbridge.
+*/
+public class RealDoubleFFT_Even_Odd extends RealDoubleFFT_Mixed
+{
+/**
+  * &lt;em&gt;norm_factor&lt;/em&gt; can be used to normalize this FFT transform. This is because
+  * a call of forward transform (&lt;em&gt;ft&lt;/em&gt;) followed by a call of backward transform 
+  * (&lt;em&gt;bt&lt;/em&gt;) will multiply the input sequence by &lt;em&gt;norm_factor&lt;/em&gt;.
+*/
+     public double norm_factor;
+     protected double wavetable[];
+     protected int ndim;
+
+/**
+  * Construct a wavenumber table with size &lt;em&gt;n&lt;/em&gt;.
+  * The sequences with the same size can share a wavenumber table. The prime
+  * factorization of &lt;em&gt;n&lt;/em&gt; together with a tabulation of the trigonometric functions
+  * are computed and stored.
+  *
+  * @param  n  the size of a real data sequence. When &lt;em&gt;n&lt;/em&gt; is a multiplication of small
+  * numbers(4, 2, 3, 5), this FFT transform is very efficient.
+*/
+     public RealDoubleFFT_Even_Odd(int n)
+<span class="nc" id="L43">     {</span>
+<span class="nc" id="L44">          ndim = n;</span>
+<span class="nc" id="L45">          norm_factor = 4*n;</span>
+<span class="nc bnc" id="L46" title="All 4 branches missed.">          if(wavetable == null || wavetable.length !=(3*ndim+15))</span>
+          {
+<span class="nc" id="L48">              wavetable = new double[3*ndim + 15];</span>
+          }
+<span class="nc" id="L50">          cosqi(ndim, wavetable);</span>
+<span class="nc" id="L51">     }</span>
+
+/**
+  * Forward FFT transform of quarter wave data. It computes the coeffients in 
+  * cosine series representation with only odd wave numbers.
+  *
+  * @param x an array which contains the sequence to be transformed. After FFT,
+  * &lt;em&gt;x&lt;/em&gt; contains the transform coeffients.
+*/
+     public void ft(double x[])
+     {
+<span class="nc" id="L62">         cosqf(ndim, x, wavetable);</span>
+<span class="nc" id="L63">     }</span>
+
+/**
+  * Backward FFT transform of quarter wave data. It is the unnormalized inverse transform
+  * of &lt;em&gt;ft&lt;/em&gt;.
+  *
+  * @param x an array which contains the sequence to be tranformed. After FFT, &lt;em&gt;x&lt;/em&gt; contains
+  * the transform coeffients.
+*/
+     public void bt(double x[])
+     {
+<span class="nc" id="L74">         cosqb(ndim, x, wavetable);</span>
+<span class="nc" id="L75">     }</span>
+
+/*----------------------------------------------------------------------
+   cosqf1: further processing of forward cos-FFT with odd wave numbers.
+  ----------------------------------------------------------------------*/
+     void cosqf1(int n, double x[], double wtable[])
+     {
+         int     modn, i, k;
+         int     kc, np2, ns2;
+         double  xim1;
+
+<span class="nc" id="L86">         ns2=(n+1)/ 2;</span>
+<span class="nc" id="L87">         np2=n+2;</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">         for(k=1; k&lt;ns2; k++)</span>
+         {
+<span class="nc" id="L90">	     kc=n-k;</span>
+<span class="nc" id="L91">	     wtable[k+n]=x[k]+x[kc];</span>
+<span class="nc" id="L92">	     wtable[kc+n]=x[k]-x[kc];</span>
+         }
+<span class="nc" id="L94">         modn=n%2;</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">         if(modn==0) wtable[ns2+n]=x[ns2]+x[ns2];</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">         for(k=1; k&lt;ns2; k++)</span>
+         {
+<span class="nc" id="L98">	     kc=n-k;</span>
+<span class="nc" id="L99">	     x[k]=wtable[k-1]*wtable[kc+n]+wtable[kc-1]*wtable[k+n];</span>
+<span class="nc" id="L100">	     x[kc]=wtable[k-1]*wtable[k+n]-wtable[kc-1]*wtable[kc+n];</span>
+         }
+<span class="nc bnc" id="L102" title="All 2 branches missed.">         if(modn==0) x[ns2]=wtable[ns2-1]*wtable[ns2+n];</span>
+<span class="nc" id="L103">         rfftf1(n, x, wtable, n);</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">         for(i=2; i&lt;n; i+=2)</span>
+         {
+<span class="nc" id="L106">	     xim1=x[i-1]-x[i];</span>
+<span class="nc" id="L107">	     x[i]=x[i-1]+x[i];</span>
+<span class="nc" id="L108">	     x[i-1]=xim1;</span>
+         }
+<span class="nc" id="L110">     } </span>
+
+/*----------------------------------------------------------------------
+   cosqb1: further processing of backward cos-FFT with odd wave numbers.
+  ----------------------------------------------------------------------*/
+     void cosqb1(int n, double x[], double wtable[])
+     {
+         int     modn, i, k;
+         int     kc, ns2;
+         double  xim1;
+
+<span class="nc" id="L121">         ns2=(n+1)/ 2;</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">         for(i=2; i&lt;n; i+=2)</span>
+         {
+<span class="nc" id="L124">	     xim1=x[i-1]+x[i];</span>
+<span class="nc" id="L125">	     x[i]-=x[i-1];</span>
+<span class="nc" id="L126">	     x[i-1]=xim1;</span>
+         }
+<span class="nc" id="L128">         x[0]+=x[0];</span>
+<span class="nc" id="L129">         modn=n%2;</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">         if(modn==0) x[n-1]+=x[n-1];</span>
+<span class="nc" id="L131">         rfftb1(n, x, wtable, n);</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">         for(k=1; k&lt;ns2; k++)</span>
+         {
+<span class="nc" id="L134">	     kc=n-k;</span>
+<span class="nc" id="L135">	     wtable[k+n]=wtable[k-1]*x[kc]+wtable[kc-1]*x[k];</span>
+<span class="nc" id="L136">	     wtable[kc+n]=wtable[k-1]*x[k]-wtable[kc-1]*x[kc];</span>
+         }
+<span class="nc bnc" id="L138" title="All 2 branches missed.">         if(modn==0) x[ns2]=wtable[ns2-1]*(x[ns2]+x[ns2]);</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">         for(k=1; k&lt;ns2; k++)</span>
+         {
+<span class="nc" id="L141">	     kc=n-k;</span>
+<span class="nc" id="L142">	     x[k]=wtable[k+n]+wtable[kc+n];</span>
+<span class="nc" id="L143">	     x[kc]=wtable[k+n]-wtable[kc+n];</span>
+         }
+<span class="nc" id="L145">         x[0]+=x[0];</span>
+<span class="nc" id="L146">     }</span>
+
+/*-----------------------------------------------
+   cosqf: forward cosine FFT with odd wave numbers.
+  ----------------------------------------------*/
+     void cosqf(int n, double x[], final double wtable[])
+     {
+<span class="nc" id="L153">          final double sqrt2=1.4142135623731;</span>
+          double  tsqx;
+
+<span class="nc bnc" id="L156" title="All 2 branches missed.">          if(n&lt;2)</span>
+          {
+<span class="nc" id="L158">	      return;</span>
+          }
+<span class="nc bnc" id="L160" title="All 2 branches missed.">          else if(n==2)</span>
+          {
+<span class="nc" id="L162">	      tsqx=sqrt2*x[1];</span>
+<span class="nc" id="L163">	      x[1]=x[0]-tsqx;</span>
+<span class="nc" id="L164">	      x[0]+=tsqx;</span>
+          }
+          else
+          {
+<span class="nc" id="L168">              cosqf1(n, x, wtable);</span>
+          }
+<span class="nc" id="L170">     } </span>
+
+/*-----------------------------------------------
+   cosqb: backward cosine FFT with odd wave numbers.
+  ----------------------------------------------*/
+     void cosqb(int n, double x[], double wtable[])
+     {
+<span class="nc" id="L177">          final double tsqrt2=2.82842712474619;</span>
+          double  x1;
+
+<span class="nc bnc" id="L180" title="All 2 branches missed.">          if(n&lt;2)</span>
+          {
+<span class="nc" id="L182">	      x[0]*=4;</span>
+          }
+<span class="nc bnc" id="L184" title="All 2 branches missed.">          else if(n==2)</span>
+          {
+<span class="nc" id="L186">	      x1=4*(x[0]+x[1]);</span>
+<span class="nc" id="L187">	      x[1]=tsqrt2*(x[0]-x[1]);</span>
+<span class="nc" id="L188">	      x[0]=x1;</span>
+          }
+          else
+          {
+<span class="nc" id="L192">              cosqb1(n, x, wtable);</span>
+          }
+<span class="nc" id="L194">     }</span>
+
+/*-----------------------------------------------------------
+   cosqi: initialization of cosine FFT with odd wave numbers.
+  ----------------------------------------------------------*/
+     void cosqi(int n, double wtable[])
+     {
+<span class="nc" id="L201">         final double pih=Math.PI/2.0D; //1.57079632679491;</span>
+         int     k;
+         double  dt;
+<span class="nc" id="L204">         dt=pih / (double)n;</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">         for(k=0; k&lt;n; k++) wtable[k]=Math.cos((k+1)*dt);</span>
+<span class="nc" id="L206">         rffti1(n, wtable, n);</span>
+<span class="nc" id="L207">     }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -42,7 +42,7 @@ public class FixedSizeSortedVector&lt;T extends Comparable&lt;T&gt;&gt; {
 <span class="fc" id="L42">        n = 0;</span>
 
 <span class="fc" id="L44">        availSlot = -1;</span>
-
+       
 <span class="fc" id="L46">        a = (T[]) Array.newInstance(classTypeToHold, size);</span>
 
 <span class="fc" id="L48">    }</span>
@@ -74,8 +74,8 @@ public class FixedSizeSortedVector&lt;T extends Comparable&lt;T&gt;&gt; {
 
 <span class="fc" id="L75">            int compareIdx = n - 1;</span>
 
-<span class="pc bpc" id="L77" title="3 of 4 branches missed.">            if ((n == 1) &amp;&amp; (size == 1)) {</span>
-<span class="nc" id="L78">                compareIdx = 0;</span>
+<span class="pc bpc" id="L77" title="1 of 4 branches missed.">            if ((n == 1) &amp;&amp; (size == 1)) {</span>
+<span class="fc" id="L78">                compareIdx = 0;</span>
             }
 
 <span class="fc" id="L81">            int comp = value.compareTo(a[compareIdx]);</span>
@@ -176,7 +176,8 @@ public class FixedSizeSortedVector&lt;T extends Comparable&lt;T&gt;&gt; {
     /**
      * get the internal array for the sorted list.  note this is not a copy in
      * order to keep the use small, so do not edit it and continue to use
-     * the add method.
+     * the add method.  Note that the returned size may be smaller than
+     * capacity if the vector was not completely filled.
      *
      * runtime complexity is O(1)
      *
@@ -184,7 +185,7 @@ public class FixedSizeSortedVector&lt;T extends Comparable&lt;T&gt;&gt; {
      */
     public T[] getArray() {
 
-<span class="fc" id="L187">        return a;</span>
+<span class="fc" id="L188">        return a;</span>
     }
 
     /**
@@ -194,7 +195,15 @@ public class FixedSizeSortedVector&lt;T extends Comparable&lt;T&gt;&gt; {
      * @return
      */
     public int getNumberOfItems() {
-<span class="fc" id="L197">        return n;</span>
+<span class="fc" id="L198">        return n;</span>
+    }
+    
+    /**
+     * get the maximum size of the vector, given at instantiation.
+     * @return 
+     */
+    public int getFixedCapacity() {
+<span class="nc" id="L206">        return size;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>GroupPixelHSV2.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">GroupPixelHSV2.java</span></div><h1>GroupPixelHSV2.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.util.PairInt;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.set.TIntSet;
+import java.awt.Color;
+import java.util.Set;
+
+/**
+ *
+ * @author nichole
+ */
+public class GroupPixelHSV2 {
+    
+    private double sumR;
+    private double sumG;
+    private double sumB;
+    private double sumH;
+    private double sumS;
+    private double sumV;
+    private int nPoints;
+    
+<span class="fc" id="L23">    public GroupPixelHSV2() {</span>
+<span class="fc" id="L24">    }</span>
+
+    /**
+     * resets the internal sums to 0 and sets them with calculated HSB
+     * of points.
+     * 
+     * @param points
+     * @param img 
+     */
+    public void calculateColors(final Set&lt;PairInt&gt; points, ImageExt img) {
+        
+<span class="nc" id="L35">        float[] hsv = new float[3];</span>
+        
+<span class="nc" id="L37">        nPoints = 0;</span>
+<span class="nc" id="L38">        sumH = 0;</span>
+<span class="nc" id="L39">        sumS = 0;</span>
+<span class="nc" id="L40">        sumV = 0;</span>
+<span class="nc" id="L41">        sumR = 0;</span>
+<span class="nc" id="L42">        sumG = 0;</span>
+<span class="nc" id="L43">        sumB = 0;</span>
+        
+<span class="nc bnc" id="L45" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+            
+<span class="nc" id="L47">            int pixIdx = img.getInternalIndex(p);</span>
+            
+<span class="nc" id="L49">            int r = img.getR(pixIdx);</span>
+<span class="nc" id="L50">            int g = img.getG(pixIdx);</span>
+<span class="nc" id="L51">            int b = img.getB(pixIdx);</span>
+            
+<span class="nc" id="L53">            Color.RGBtoHSB(r, g, b, hsv);</span>
+            
+<span class="nc" id="L55">            sumH += hsv[0];</span>
+<span class="nc" id="L56">            sumS += hsv[1];</span>
+<span class="nc" id="L57">            sumV += hsv[2];</span>
+            
+<span class="nc" id="L59">            sumR += r;</span>
+<span class="nc" id="L60">            sumG += g;</span>
+<span class="nc" id="L61">            sumB += b;</span>
+<span class="nc" id="L62">        }</span>
+                
+<span class="nc" id="L64">        nPoints = points.size();</span>
+<span class="nc" id="L65">    }</span>
+    
+    /**
+     * resets the internal sums to 0 and sets them with calculated HSB
+     * of points.
+     * 
+     * @param pIdxs pixel indexes
+     * @param img 
+     */
+    public void calculateColors(final TIntSet pIdxs, ImageExt img) {
+        
+<span class="fc" id="L76">        float[] hsv = new float[3];</span>
+        
+<span class="fc" id="L78">        nPoints = 0;</span>
+<span class="fc" id="L79">        sumH = 0;</span>
+<span class="fc" id="L80">        sumS = 0;</span>
+<span class="fc" id="L81">        sumV = 0;</span>
+<span class="fc" id="L82">        sumR = 0;</span>
+<span class="fc" id="L83">        sumG = 0;</span>
+<span class="fc" id="L84">        sumB = 0;</span>
+        
+<span class="fc" id="L86">        TIntIterator iter = pIdxs.iterator();</span>
+        
+<span class="fc bfc" id="L88" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+            
+<span class="fc" id="L90">            int pixIdx = iter.next();</span>
+            
+<span class="fc" id="L92">            int r = img.getR(pixIdx);</span>
+<span class="fc" id="L93">            int g = img.getG(pixIdx);</span>
+<span class="fc" id="L94">            int b = img.getB(pixIdx);</span>
+            
+<span class="fc" id="L96">            Color.RGBtoHSB(r, g, b, hsv);</span>
+            
+<span class="fc" id="L98">            sumH += hsv[0];</span>
+<span class="fc" id="L99">            sumS += hsv[1];</span>
+<span class="fc" id="L100">            sumV += hsv[2];</span>
+        
+<span class="fc" id="L102">            sumR += r;</span>
+<span class="fc" id="L103">            sumG += g;</span>
+<span class="fc" id="L104">            sumB += b;</span>
+<span class="fc" id="L105">        }</span>
+                
+<span class="fc" id="L107">        nPoints = pIdxs.size();</span>
+<span class="fc" id="L108">    }</span>
+    
+    /**
+     * adds the calculated HSB of points to the current instance sums.
+     * 
+     * @param points
+     * @param img 
+     */
+    public void add(final Set&lt;PairInt&gt; points, ImageExt img) {
+        
+<span class="nc" id="L118">        float[] hsv = new float[3];</span>
+        
+<span class="nc bnc" id="L120" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+            
+<span class="nc" id="L122">            int pixIdx = img.getInternalIndex(p);</span>
+            
+<span class="nc" id="L124">            int r = img.getR(pixIdx);</span>
+<span class="nc" id="L125">            int g = img.getG(pixIdx);</span>
+<span class="nc" id="L126">            int b = img.getB(pixIdx);</span>
+            
+<span class="nc" id="L128">            Color.RGBtoHSB(r, g, b, hsv);</span>
+            
+<span class="nc" id="L130">            sumR += r;</span>
+<span class="nc" id="L131">            sumG += g;</span>
+<span class="nc" id="L132">            sumB += b;</span>
+                
+<span class="nc" id="L134">            sumH += hsv[0];</span>
+<span class="nc" id="L135">            sumS += hsv[1];</span>
+<span class="nc" id="L136">            sumV += hsv[2];</span>
+<span class="nc" id="L137">        }</span>
+                
+<span class="nc" id="L139">        nPoints += points.size();</span>
+<span class="nc" id="L140">    }</span>
+    
+    /**
+     * adds the calculated HSB of points to the current instance sums.
+     * 
+     * @param pIdxs pixel indexes
+     * @param img 
+     */
+    public void add(final TIntSet pIdxs, ImageExt img) {
+        
+<span class="nc" id="L150">        float[] hsv = new float[3];</span>
+        
+<span class="nc" id="L152">        TIntIterator iter = pIdxs.iterator();</span>
+        
+<span class="nc bnc" id="L154" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
+            
+<span class="nc" id="L156">            int pixIdx = iter.next();</span>
+            
+<span class="nc" id="L158">            int r = img.getR(pixIdx);</span>
+<span class="nc" id="L159">            int g = img.getG(pixIdx);</span>
+<span class="nc" id="L160">            int b = img.getB(pixIdx);</span>
+            
+<span class="nc" id="L162">            Color.RGBtoHSB(r, g, b, hsv);</span>
+            
+<span class="nc" id="L164">            sumR += r;</span>
+<span class="nc" id="L165">            sumG += g;</span>
+<span class="nc" id="L166">            sumB += b;</span>
+            
+<span class="nc" id="L168">            sumH += hsv[0];</span>
+<span class="nc" id="L169">            sumS += hsv[1];</span>
+<span class="nc" id="L170">            sumV += hsv[2];</span>
+<span class="nc" id="L171">        }</span>
+                
+<span class="nc" id="L173">        nPoints += pIdxs.size();</span>
+<span class="nc" id="L174">    }</span>
+    
+    /**
+     * adds the calculated HSB of points to the current instance sums.
+     * 
+     * @param other 
+     */
+    public void add(final GroupPixelHSV2 other) {
+        
+<span class="fc" id="L183">        sumR += other.sumR;</span>
+<span class="fc" id="L184">        sumG += other.sumG;</span>
+<span class="fc" id="L185">        sumB += other.sumB;</span>
+
+<span class="fc" id="L187">        sumH += other.sumH;</span>
+<span class="fc" id="L188">        sumS += other.sumS;</span>
+<span class="fc" id="L189">        sumV += other.sumV;</span>
+                
+<span class="fc" id="L191">        nPoints += other.nPoints;</span>
+<span class="fc" id="L192">    }</span>
+    
+    public void addPoint(final PairInt point, ImageExt img) {
+                            
+<span class="nc" id="L196">        int pixIdx = img.getInternalIndex(point);</span>
+
+<span class="nc" id="L198">        addPoint(pixIdx, img);</span>
+<span class="nc" id="L199">    }</span>
+    
+    public void addPoint(final int pixIdx, ImageExt img) {
+        
+<span class="nc" id="L203">        float[] hsv = new float[3];</span>
+          
+<span class="nc" id="L205">        int r = img.getR(pixIdx);</span>
+<span class="nc" id="L206">        int g = img.getG(pixIdx);</span>
+<span class="nc" id="L207">        int b = img.getB(pixIdx);</span>
+
+<span class="nc" id="L209">        Color.RGBtoHSB(r, g, b, hsv);</span>
+        
+<span class="nc" id="L211">        sumR += r;</span>
+<span class="nc" id="L212">        sumG += g;</span>
+<span class="nc" id="L213">        sumB += b;</span>
+
+<span class="nc" id="L215">        sumH += hsv[0];</span>
+<span class="nc" id="L216">        sumS += hsv[1];</span>
+<span class="nc" id="L217">        sumV += hsv[2];</span>
+<span class="nc" id="L218">        nPoints++;</span>
+<span class="nc" id="L219">    }</span>
+
+    /**
+     * @return the avgH
+     */
+    public float getAvgH() {
+<span class="fc" id="L225">        return (float)(sumH/(double)nPoints);</span>
+    }
+
+    /**
+     * @return the avgS
+     */
+    public float getAvgS() {
+<span class="fc" id="L232">        return (float)(sumS/(double)nPoints);</span>
+    }
+
+    /**
+     * @return the avgV
+     */
+    public float getAvgV() {
+<span class="fc" id="L239">        return (float)(sumV/(double)nPoints);</span>
+    }
+    
+    /**
+     * @return the avgR
+     */
+    public float getAvgR() {
+<span class="fc" id="L246">        return (float)(sumR/(double)nPoints);</span>
+    }
+    
+    /**
+     * @return the avgG
+     */
+    public float getAvgG() {
+<span class="fc" id="L253">        return (float)(sumG/(double)nPoints);</span>
+    }
+
+    /**
+     * @return the avgB
+     */
+    public float getAvgB() {
+<span class="fc" id="L260">        return (float)(sumB/(double)nPoints);</span>
+    }
+    
+    /**
+     * @return the nPoints
+     */
+    public int getNPoints() {
+<span class="nc" id="L267">        return nPoints;</span>
+    }
+
+    public float calculateDifference(GroupPixelHSV2 hsv2) {
+
+<span class="fc" id="L272">        float sumDiff = Math.abs(getAvgH() - hsv2.getAvgH()) +</span>
+<span class="fc" id="L273">            Math.abs(getAvgS() - hsv2.getAvgS()) + </span>
+<span class="fc" id="L274">            Math.abs(getAvgV() - hsv2.getAvgV());</span>
+    
+<span class="fc" id="L276">        sumDiff /= 3.f;</span>
+        
+<span class="fc" id="L278">        return sumDiff;</span>
+    }
+    
+    public float[] calculateDifferences(GroupPixelHSV2 hsv2) {
+
+<span class="nc" id="L283">        float[] a = new float[]{</span>
+<span class="nc" id="L284">            Math.abs(getAvgH() - hsv2.getAvgH()),</span>
+<span class="nc" id="L285">            Math.abs(getAvgS() - hsv2.getAvgS()), </span>
+<span class="nc" id="L286">            Math.abs(getAvgV() - hsv2.getAvgV())};</span>
+            
+<span class="nc" id="L288">        return a;</span>
+    }
+    
+    /**
+     * values are normalized from 0 to 255 to 0.f to 1.f
+     * @param hsv2
+     * @return 
+     */
+    public float calculateRGBDifference(GroupPixelHSV2 hsv2) {
+
+<span class="fc" id="L298">        float sumDiff = Math.abs(getAvgR() - hsv2.getAvgR()) +</span>
+<span class="fc" id="L299">            Math.abs(getAvgG() - hsv2.getAvgG()) + </span>
+<span class="fc" id="L300">            Math.abs(getAvgB() - hsv2.getAvgB());</span>
+    
+<span class="fc" id="L302">        sumDiff /= (255.f * 3.f);</span>
+        
+<span class="fc" id="L304">        return sumDiff;</span>
+    }
+    
+    /**
+     * values are normalized from 0 to 255 to 0.f to 1.f
+     * @param hsv2
+     * @return 
+     */
+    public float[] calculateRGBDifferences(GroupPixelHSV2 hsv2) {
+
+<span class="nc" id="L314">        float[] a = new float[]{</span>
+<span class="nc" id="L315">            Math.abs(getAvgR() - hsv2.getAvgR()),</span>
+<span class="nc" id="L316">            Math.abs(getAvgG() - hsv2.getAvgG()), </span>
+<span class="nc" id="L317">            Math.abs(getAvgB() - hsv2.getAvgB())};</span>
+        
+<span class="nc bnc" id="L319" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc" id="L320">            a[i] /= 255.f;</span>
+        }
+        
+<span class="nc" id="L323">        return a;</span>
+    }
+    
+    public boolean isGrey(int limit) {
+        
+<span class="fc" id="L328">        int r = Math.round(getAvgR());</span>
+<span class="fc" id="L329">        int g = Math.round(getAvgG());</span>
+<span class="fc" id="L330">        int b = Math.round(getAvgB());</span>
+        
+        // looking at whether color is grey
+<span class="fc" id="L333">        int avgRGB = (r + g + b)/3;</span>
+        
+        /*
+        System.out.format(&quot;    -&gt; (%d,%d,%d) %d,%d,%d\n&quot;,
+            r, g, b,
+            (Math.abs(r - avgRGB)),
+            (Math.abs(g - avgRGB)),
+            (Math.abs(b - avgRGB)));
+        */
+        
+<span class="fc bfc" id="L343" title="All 2 branches covered.">        if ((Math.abs(r - avgRGB) &lt; limit) &amp;&amp;</span>
+<span class="fc bfc" id="L344" title="All 2 branches covered.">            (Math.abs(g - avgRGB) &lt; limit) &amp;&amp;</span>
+<span class="fc bfc" id="L345" title="All 2 branches covered.">            (Math.abs(b - avgRGB) &lt; limit)) {</span>
+<span class="fc" id="L346">            return true;</span>
+        }
+        
+<span class="fc" id="L349">        return false;</span>
+    }
+
+    public boolean isGreen() {
+        
+<span class="nc" id="L354">        int r = Math.round(getAvgR());</span>
+<span class="nc" id="L355">        int g = Math.round(getAvgG());</span>
+<span class="nc" id="L356">        int b = Math.round(getAvgB());</span>
+    
+        //System.out.println(&quot;r=&quot; + r + &quot; g=&quot; + g + &quot; b=&quot; + b);
+        
+<span class="nc" id="L360">        int limit = 8;//3% of 256</span>
+        
+<span class="nc bnc" id="L362" title="All 4 branches missed.">        return ((g - r) &gt;= limit) &amp;&amp; ((g - b) &gt;= limit);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

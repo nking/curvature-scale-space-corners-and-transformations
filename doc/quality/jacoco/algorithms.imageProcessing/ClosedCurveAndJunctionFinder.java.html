@@ -52,15 +52,15 @@ public class ClosedCurveAndJunctionFinder {
 <span class="fc bfc" id="L52" title="All 2 branches covered.">            if (diffX &lt; 0) {</span>
 <span class="fc" id="L53">                diffX *= -1;</span>
             }
-<span class="fc bfc" id="L55" title="All 2 branches covered.">            if (diffX &gt; allowedGapPlusOne) {</span>
-<span class="fc" id="L56">                continue;</span>
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">            if (diffX &gt; allowedGapPlusOne) {</span>
+<span class="nc" id="L56">                continue;</span>
             }
 <span class="fc" id="L58">            int diffY = y0 - yn;</span>
 <span class="fc bfc" id="L59" title="All 2 branches covered.">            if (diffY &lt; 0) {</span>
 <span class="fc" id="L60">                diffY *= -1;</span>
             }
-<span class="fc bfc" id="L62" title="All 2 branches covered.">            if (diffY &gt; allowedGapPlusOne) {</span>
-<span class="fc" id="L63">                continue;</span>
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">            if (diffY &gt; allowedGapPlusOne) {</span>
+<span class="nc" id="L63">                continue;</span>
             }
             
             //  0  1  2  3
@@ -84,44 +84,44 @@ public class ClosedCurveAndJunctionFinder {
                 //append points starting with those closer to (xn, yn)
                 
 <span class="fc bfc" id="L86" title="All 2 branches covered.">                if (x0 &lt; xn) {</span>
-<span class="fc bfc" id="L87" title="All 2 branches covered.">                    if (y0 == yn) {</span>
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">                    if (y0 == yn) {</span>
                         //(1)
 <span class="fc bfc" id="L89" title="All 2 branches covered.">                        for (int x = (xn - 1); x &gt; x0; x--) {</span>
 <span class="fc" id="L90">                            edge.add(x, y0);</span>
                         }
-<span class="fc bfc" id="L92" title="All 2 branches covered.">                    } else if (y0 &lt; yn) {</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">                    } else if (y0 &lt; yn) {</span>
                         //(2)
-<span class="fc bfc" id="L94" title="All 2 branches covered.">                        for (int x = (xn - 1); x &gt; x0; x--) {</span>
-<span class="fc bfc" id="L95" title="All 2 branches covered.">                            for (int y = (yn - 1); y &gt; y0; y--) {</span>
-<span class="fc" id="L96">                                edge.add(x, y);</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">                        for (int x = (xn - 1); x &gt; x0; x--) {</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">                            for (int y = (yn - 1); y &gt; y0; y--) {</span>
+<span class="nc" id="L96">                                edge.add(x, y);</span>
                             }
                         }
                     } else {
                         //(3)
-<span class="fc bfc" id="L101" title="All 2 branches covered.">                        for (int x = (xn - 1); x &gt; x0; x--) {</span>
-<span class="pc bpc" id="L102" title="1 of 2 branches missed.">                            for (int y = yn + 1; y &lt; y0; y++) {</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">                        for (int x = (xn - 1); x &gt; x0; x--) {</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">                            for (int y = yn + 1; y &lt; y0; y++) {</span>
 <span class="nc" id="L103">                                edge.add(x, y);</span>
                             }
                         }
                     }
 <span class="fc bfc" id="L107" title="All 2 branches covered.">                } else if (x0 &gt; xn) {</span>
-<span class="fc bfc" id="L108" title="All 2 branches covered.">                    if (y0 == yn) {</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">                    if (y0 == yn) {</span>
                         //(4)
 <span class="fc bfc" id="L110" title="All 2 branches covered.">                        for (int x = (xn + 1); x &lt; x0; x++) {</span>
 <span class="fc" id="L111">                            edge.add(x, y0);</span>
                         }
-<span class="fc bfc" id="L113" title="All 2 branches covered.">                    } else if (yn &lt; y0) {</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">                    } else if (yn &lt; y0) {</span>
                         //(5)
-<span class="fc bfc" id="L115" title="All 2 branches covered.">                        for (int x = (xn + 1); x &lt; x0; x++) {</span>
-<span class="fc bfc" id="L116" title="All 2 branches covered.">                            for (int y = (yn + 1); y &lt; y0; y++) {</span>
-<span class="fc" id="L117">                                edge.add(x, y);</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">                        for (int x = (xn + 1); x &lt; x0; x++) {</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">                            for (int y = (yn + 1); y &lt; y0; y++) {</span>
+<span class="nc" id="L117">                                edge.add(x, y);</span>
                             }
                         }
                     } else {
                         //(6)
-<span class="fc bfc" id="L122" title="All 2 branches covered.">                        for (int x = (xn + 1); x &lt; x0; x++) {</span>
-<span class="fc bfc" id="L123" title="All 2 branches covered.">                            for (int y = (yn - 1); y &gt; y0; y--) {</span>
-<span class="fc" id="L124">                                edge.add(x, y);</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">                        for (int x = (xn + 1); x &lt; x0; x++) {</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">                            for (int y = (yn - 1); y &gt; y0; y--) {</span>
+<span class="nc" id="L124">                                edge.add(x, y);</span>
                             }
                         }
                     }
@@ -142,7 +142,7 @@ public class ClosedCurveAndJunctionFinder {
             }
             
 <span class="fc" id="L144">            PairIntArrayWithColor closedCurve = new PairIntArrayWithColor(edge);</span>
-<span class="fc" id="L145">            closedCurve.setColor(1);</span>
+<span class="fc" id="L145">            closedCurve.setAsClosedCurve();</span>
             
 <span class="fc" id="L147">            edges.set(i, closedCurve);</span>
         }

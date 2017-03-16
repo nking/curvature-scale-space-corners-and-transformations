@@ -786,7 +786,7 @@ public class LineThinnerTest extends TestCase {
         AbstractLineThinner lineThinner = new ZhangSuenLineThinner();
         
         PairInt[][] origCoords = 
-            lineThinner.createCoordinatePointsForEightNeighbors(1, 1);
+            AbstractLineThinner.createCoordinatePointsForEightNeighbors(1, 1);
         PairInt tmp15 = origCoords[0][0];
         PairInt tmp11 = origCoords[0][1];
         PairInt tmp6 = origCoords[0][2];
@@ -798,7 +798,7 @@ public class LineThinnerTest extends TestCase {
         PairInt tmp8 = origCoords[2][2];
         
         PairInt[][] coords = 
-            lineThinner.createCoordinatePointsForEightNeighbors(1, 1);
+            AbstractLineThinner.createCoordinatePointsForEightNeighbors(1, 1);
         
         assertTrue(coords[0][0].equals(new PairInt(0, 0)));
         assertTrue(coords[1][0].equals(new PairInt(1, 0)));

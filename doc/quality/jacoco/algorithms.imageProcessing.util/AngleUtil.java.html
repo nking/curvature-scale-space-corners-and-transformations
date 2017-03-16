@@ -177,39 +177,35 @@ import java.util.List;
                    90
         */
 
-        /*
-        logic below is for rot0 and rot1 between 0 and 360 so temporarily
-        reduce angles to those ranges then add back the corrections.
-        */
-<span class="fc" id="L184">        double twoPi = 360;</span>
+<span class="fc" id="L180">        double twoPi = 360;</span>
 
-<span class="fc bfc" id="L186" title="All 2 branches covered.">        if (rotDegrees0 &gt; rotDegrees1) {</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">        if (rotDegrees0 &gt; rotDegrees1) {</span>
             // add a phase to next value if it's closer to current with addition
-<span class="fc bfc" id="L188" title="All 2 branches covered.">            if ((rotDegrees0 - rotDegrees1) &gt; Math.abs(rotDegrees0 - (rotDegrees1 + twoPi))) {</span>
-<span class="fc" id="L189">                rotDegrees1 += twoPi;</span>
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">            if ((rotDegrees0 - rotDegrees1) &gt; Math.abs(rotDegrees0 - (rotDegrees1 + twoPi))) {</span>
+<span class="nc" id="L185">                rotDegrees1 += twoPi;</span>
             }
-<span class="fc bfc" id="L191" title="All 2 branches covered.">        } else if (rotDegrees1 &gt; rotDegrees0) {</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">        } else if (rotDegrees1 &gt; rotDegrees0) {</span>
             // add a phase to next value if it's closer to current with addition
-<span class="fc bfc" id="L193" title="All 2 branches covered.">            if ((rotDegrees1 - rotDegrees0) &gt; Math.abs(rotDegrees1 - (rotDegrees0 + twoPi))) {</span>
-<span class="fc" id="L194">                rotDegrees0 += twoPi;</span>
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">            if ((rotDegrees1 - rotDegrees0) &gt; Math.abs(rotDegrees1 - (rotDegrees0 + twoPi))) {</span>
+<span class="nc" id="L190">                rotDegrees0 += twoPi;</span>
             }
         }
 
-<span class="fc" id="L198">        return rotDegrees0 - rotDegrees1;</span>
+<span class="fc" id="L194">        return rotDegrees0 - rotDegrees1;</span>
     }
 
     public static float getAngleAverageInDegrees(float rotDegrees0, float rotDegrees1) {
 
-<span class="fc" id="L203">        double angleAvg = getAngleAverage(rotDegrees0, rotDegrees1, false);</span>
+<span class="fc" id="L199">        double angleAvg = getAngleAverage(rotDegrees0, rotDegrees1, false);</span>
 
-<span class="fc" id="L205">        return (float) angleAvg;</span>
+<span class="fc" id="L201">        return (float) angleAvg;</span>
     }
 
     public static double getAngleAverageInRadians(double rotation0, double rotation1) {
 
-<span class="fc" id="L210">        double angleAvg = getAngleAverage(rotation0, rotation1, true);</span>
+<span class="fc" id="L206">        double angleAvg = getAngleAverage(rotation0, rotation1, true);</span>
 
-<span class="fc" id="L212">        return angleAvg;</span>
+<span class="fc" id="L208">        return angleAvg;</span>
     }
 
     /**
@@ -228,9 +224,9 @@ import java.util.List;
                II  |  I
                    90
         */
-<span class="fc" id="L231">        double angleAvg = calcAngleAddition(rot0, rot1, useRadians)/2.;</span>
+<span class="fc" id="L227">        double angleAvg = calcAngleAddition(rot0, rot1, useRadians)/2.;</span>
 
-<span class="fc" id="L233">        return angleAvg;</span>
+<span class="fc" id="L229">        return angleAvg;</span>
     }
 
     /**
@@ -244,8 +240,8 @@ import java.util.List;
     public static double calcAngleAddition(double theta1, double theta2,
         boolean useRadians) {
 
-<span class="pc bpc" id="L247" title="2 of 4 branches missed.">        if (theta1 &lt; 0 || theta2 &lt; 0) {</span>
-<span class="nc" id="L248">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L243" title="2 of 4 branches missed.">        if (theta1 &lt; 0 || theta2 &lt; 0) {</span>
+<span class="nc" id="L244">            throw new IllegalArgumentException(</span>
                 &quot;theta1 and theta2 cannot be negative numbers&quot;);
         }
 
@@ -257,21 +253,21 @@ import java.util.List;
                    90
         */
 
-<span class="fc bfc" id="L260" title="All 2 branches covered.">        double twoPi = useRadians ? 2. * Math.PI : 360;</span>
+<span class="fc bfc" id="L256" title="All 2 branches covered.">        double twoPi = useRadians ? 2. * Math.PI : 360;</span>
 
-<span class="fc bfc" id="L262" title="All 2 branches covered.">        if (theta1 &gt; theta2) {</span>
+<span class="fc bfc" id="L258" title="All 2 branches covered.">        if (theta1 &gt; theta2) {</span>
             // add a phase to next value if it's closer to current with addition
-<span class="fc bfc" id="L264" title="All 2 branches covered.">            if ((theta1 - theta2) &gt; Math.abs(theta1 - (theta2 + twoPi))) {</span>
-<span class="fc" id="L265">                theta2 += twoPi;</span>
+<span class="pc bpc" id="L260" title="1 of 2 branches missed.">            if ((theta1 - theta2) &gt; Math.abs(theta1 - (theta2 + twoPi))) {</span>
+<span class="nc" id="L261">                theta2 += twoPi;</span>
             }
-<span class="fc bfc" id="L267" title="All 2 branches covered.">        } else if (theta2 &gt; theta1) {</span>
+<span class="fc bfc" id="L263" title="All 2 branches covered.">        } else if (theta2 &gt; theta1) {</span>
             // add a phase to next value if it's closer to current with addition
-<span class="fc bfc" id="L269" title="All 2 branches covered.">            if ((theta2 - theta1) &gt; Math.abs(theta2 - (theta1 + twoPi))) {</span>
-<span class="fc" id="L270">                theta1 += twoPi;</span>
+<span class="fc bfc" id="L265" title="All 2 branches covered.">            if ((theta2 - theta1) &gt; Math.abs(theta2 - (theta1 + twoPi))) {</span>
+<span class="fc" id="L266">                theta1 += twoPi;</span>
             }
         }
 
-<span class="fc" id="L274">        return theta1 + theta2;</span>
+<span class="fc" id="L270">        return theta1 + theta2;</span>
     }
 
     /**
@@ -289,8 +285,8 @@ import java.util.List;
     public static double calcAngleAddition(double theta1, double theta2,
         boolean useRadians, double[] outputQuadrantCorrected) {
 
-<span class="nc bnc" id="L292" title="All 4 branches missed.">        if (theta1 &lt; 0 || theta2 &lt; 0) {</span>
-<span class="nc" id="L293">            throw new IllegalArgumentException(</span>
+<span class="nc bnc" id="L288" title="All 4 branches missed.">        if (theta1 &lt; 0 || theta2 &lt; 0) {</span>
+<span class="nc" id="L289">            throw new IllegalArgumentException(</span>
                 &quot;theta1 and theta2 cannot be negative numbers&quot;);
         }
 
@@ -301,24 +297,24 @@ import java.util.List;
                II  |  I
                    90
         */
-<span class="nc bnc" id="L304" title="All 2 branches missed.">        double twoPi = useRadians ? 2. * Math.PI : 360;</span>
+<span class="nc bnc" id="L300" title="All 2 branches missed.">        double twoPi = useRadians ? 2. * Math.PI : 360;</span>
         
-<span class="nc bnc" id="L306" title="All 2 branches missed.">        if (theta1 &gt; theta2) {</span>
+<span class="nc bnc" id="L302" title="All 2 branches missed.">        if (theta1 &gt; theta2) {</span>
             // add a phase to next value if it's closer to current with addition
-<span class="nc bnc" id="L308" title="All 2 branches missed.">            if ((theta1 - theta2) &gt; Math.abs(theta1 - (theta2 + twoPi))) {</span>
-<span class="nc" id="L309">                theta2 += twoPi;</span>
+<span class="nc bnc" id="L304" title="All 2 branches missed.">            if ((theta1 - theta2) &gt; Math.abs(theta1 - (theta2 + twoPi))) {</span>
+<span class="nc" id="L305">                theta2 += twoPi;</span>
             }
-<span class="nc bnc" id="L311" title="All 2 branches missed.">        } else if (theta2 &gt; theta1) {</span>
+<span class="nc bnc" id="L307" title="All 2 branches missed.">        } else if (theta2 &gt; theta1) {</span>
             // add a phase to next value if it's closer to current with addition
-<span class="nc bnc" id="L313" title="All 2 branches missed.">            if ((theta2 - theta1) &gt; Math.abs(theta2 - (theta1 + twoPi))) {</span>
-<span class="nc" id="L314">                theta1 += twoPi;</span>
+<span class="nc bnc" id="L309" title="All 2 branches missed.">            if ((theta2 - theta1) &gt; Math.abs(theta2 - (theta1 + twoPi))) {</span>
+<span class="nc" id="L310">                theta1 += twoPi;</span>
             }
         }
         
-<span class="nc" id="L318">        outputQuadrantCorrected[0] = theta1;</span>
-<span class="nc" id="L319">        outputQuadrantCorrected[1] = theta2;</span>
+<span class="nc" id="L314">        outputQuadrantCorrected[0] = theta1;</span>
+<span class="nc" id="L315">        outputQuadrantCorrected[1] = theta2;</span>
         
-<span class="nc" id="L321">        return theta1 + theta2;</span>
+<span class="nc" id="L317">        return theta1 + theta2;</span>
     }
 
     /**
@@ -334,12 +330,12 @@ import java.util.List;
         double rotationInDegrees0, double rotationInDegrees1,
         double[] outputQuadrantCorrected) {
 
-<span class="nc" id="L337">        boolean useRadians = false;</span>
+<span class="nc" id="L333">        boolean useRadians = false;</span>
 
-<span class="nc" id="L339">        double sum = calcAngleAddition(rotationInDegrees0,</span>
+<span class="nc" id="L335">        double sum = calcAngleAddition(rotationInDegrees0,</span>
             rotationInDegrees1, useRadians, outputQuadrantCorrected);
 
-<span class="nc" id="L342">        return sum/2.;</span>
+<span class="nc" id="L338">        return sum/2.;</span>
     }
 
     /**
@@ -399,52 +395,52 @@ import java.util.List;
                  total += v[i] * ((1&lt;&lt;(n-i)) - n)/(n*(1&lt;&lt;(n-i)))
          */
 
-<span class="nc" id="L402">        MergeSort.sortByDecr(angles, 0, lastIndex);</span>
+<span class="nc" id="L398">        MergeSort.sortByDecr(angles, 0, lastIndex);</span>
 
         // visit in order of large values to low to store quadrant corrections
 
-<span class="nc" id="L406">        double[] quadrantCorrected = new double[2];</span>
+<span class="nc" id="L402">        double[] quadrantCorrected = new double[2];</span>
 
-<span class="nc" id="L408">        double avg = 0;</span>
-<span class="nc bnc" id="L409" title="All 2 branches missed.">        for (int i = 0; i &lt;= lastIndex; ++i) {</span>
+<span class="nc" id="L404">        double avg = 0;</span>
+<span class="nc bnc" id="L405" title="All 2 branches missed.">        for (int i = 0; i &lt;= lastIndex; ++i) {</span>
 
-<span class="nc" id="L411">            int v = angles[i];</span>
+<span class="nc" id="L407">            int v = angles[i];</span>
 
-<span class="nc bnc" id="L413" title="All 2 branches missed.">            if (i == 0) {</span>
-<span class="nc" id="L414">                avg = v;</span>
+<span class="nc bnc" id="L409" title="All 2 branches missed.">            if (i == 0) {</span>
+<span class="nc" id="L410">                avg = v;</span>
             } else {
-<span class="nc" id="L416">                double r1 = avg;</span>
-<span class="nc" id="L417">                avg = getAngleAverageInDegrees(r1, v, quadrantCorrected);</span>
+<span class="nc" id="L412">                double r1 = avg;</span>
+<span class="nc" id="L413">                avg = getAngleAverageInDegrees(r1, v, quadrantCorrected);</span>
 
-<span class="nc bnc" id="L419" title="All 2 branches missed.">                if (quadrantCorrected[0] != r1) {</span>
+<span class="nc bnc" id="L415" title="All 2 branches missed.">                if (quadrantCorrected[0] != r1) {</span>
                     // TODO: this branch might not occur...revisit logic
-<span class="nc" id="L421">                    angles[i - 1] = (int)Math.round(quadrantCorrected[0]);</span>
+<span class="nc" id="L417">                    angles[i - 1] = (int)Math.round(quadrantCorrected[0]);</span>
                 }
-<span class="nc bnc" id="L423" title="All 2 branches missed.">                if (quadrantCorrected[1] != v) {</span>
-<span class="nc" id="L424">                    angles[i] = (int)Math.round(quadrantCorrected[1]);</span>
+<span class="nc bnc" id="L419" title="All 2 branches missed.">                if (quadrantCorrected[1] != v) {</span>
+<span class="nc" id="L420">                    angles[i] = (int)Math.round(quadrantCorrected[1]);</span>
                 }
             }
         }
 
-<span class="nc" id="L429">        int n = lastIndex + 1;</span>
-<span class="nc bnc" id="L430" title="All 2 branches missed.">        for (int i = 0; i &lt;= lastIndex; ++i) {</span>
+<span class="nc" id="L425">        int n = lastIndex + 1;</span>
+<span class="nc bnc" id="L426" title="All 2 branches missed.">        for (int i = 0; i &lt;= lastIndex; ++i) {</span>
 
-<span class="nc" id="L432">            int v = angles[i];</span>
+<span class="nc" id="L428">            int v = angles[i];</span>
 
             float c0;
 
-<span class="nc bnc" id="L436" title="All 2 branches missed.">            if (i == 0) {</span>
-<span class="nc" id="L437">                c0 = 1 &lt;&lt; (n - 1);</span>
+<span class="nc bnc" id="L432" title="All 2 branches missed.">            if (i == 0) {</span>
+<span class="nc" id="L433">                c0 = 1 &lt;&lt; (n - 1);</span>
             } else {
-<span class="nc" id="L439">                c0 = 1 &lt;&lt; (n - i);</span>
+<span class="nc" id="L435">                c0 = 1 &lt;&lt; (n - i);</span>
             }
 
-<span class="nc" id="L442">            float add = v * (c0 - n) / (n * c0);</span>
+<span class="nc" id="L438">            float add = v * (c0 - n) / (n * c0);</span>
 
-<span class="nc" id="L444">            avg += add;</span>
+<span class="nc" id="L440">            avg += add;</span>
         }
 
-<span class="nc" id="L447">        return (float)avg;</span>
+<span class="nc" id="L443">        return (float)avg;</span>
     }
 
     /**
@@ -464,47 +460,47 @@ import java.util.List;
         // use CountingSort here for better performance.
         // CountingSort is O(maxValue) while MergeSort is O(N*lg_2(N))
 
-<span class="fc" id="L467">        MultiArrayMergeSort.sortByDecr(angles, valuesToMakeIntoWeights, 0, lastIndex);</span>
+<span class="nc" id="L463">        MultiArrayMergeSort.sortByDecr(angles, valuesToMakeIntoWeights, 0, lastIndex);</span>
 
         // visit in order of large values to low to store quadrant corrections
 
-<span class="fc" id="L471">        double sumWeights = 0;</span>
-<span class="fc" id="L472">        float avg = 0;</span>
-<span class="fc bfc" id="L473" title="All 2 branches covered.">        for (int i = 0; i &lt;= lastIndex; ++i) {</span>
+<span class="nc" id="L467">        double sumWeights = 0;</span>
+<span class="nc" id="L468">        float avg = 0;</span>
+<span class="nc bnc" id="L469" title="All 2 branches missed.">        for (int i = 0; i &lt;= lastIndex; ++i) {</span>
 
-<span class="fc" id="L475">            int angle1 = angles[i];</span>
+<span class="nc" id="L471">            int angle1 = angles[i];</span>
 
-<span class="fc bfc" id="L477" title="All 2 branches covered.">            if (i == 0) {</span>
+<span class="nc bnc" id="L473" title="All 2 branches missed.">            if (i == 0) {</span>
 
-<span class="fc" id="L479">                avg = angle1;</span>
+<span class="nc" id="L475">                avg = angle1;</span>
 
             } else {
 
-<span class="fc" id="L483">                float angle0 = avg;</span>
+<span class="nc" id="L479">                float angle0 = avg;</span>
 
                 // add a phase to next value if it's closer to current with addition
-<span class="fc bfc" id="L486" title="All 2 branches covered.">                if ((angle0 - angle1) &gt; Math.abs(angle0 - (angle1 + 360))) {</span>
-<span class="fc" id="L487">                    angle1 += 360;</span>
-<span class="fc" id="L488">                    angles[i] = Math.round(angle1);</span>
+<span class="nc bnc" id="L482" title="All 2 branches missed.">                if ((angle0 - angle1) &gt; Math.abs(angle0 - (angle1 + 360))) {</span>
+<span class="nc" id="L483">                    angle1 += 360;</span>
+<span class="nc" id="L484">                    angles[i] = Math.round(angle1);</span>
                 }
 
-<span class="fc" id="L491">                avg = (angle0 + angle1)/2.f;</span>
+<span class="nc" id="L487">                avg = (angle0 + angle1)/2.f;</span>
             }
 
-<span class="fc" id="L494">            sumWeights += valuesToMakeIntoWeights[i];</span>
+<span class="nc" id="L490">            sumWeights += valuesToMakeIntoWeights[i];</span>
         }
 
         // redo the mean using the quadrant corrected angles and the weights
-<span class="fc" id="L498">        float mean = 0;</span>
+<span class="nc" id="L494">        float mean = 0;</span>
 
-<span class="fc bfc" id="L500" title="All 2 branches covered.">        for (int i = 0; i &lt;= lastIndex; ++i) {</span>
+<span class="nc bnc" id="L496" title="All 2 branches missed.">        for (int i = 0; i &lt;= lastIndex; ++i) {</span>
 
-<span class="fc" id="L502">            double v = angles[i] * ((double)valuesToMakeIntoWeights[i]/sumWeights);</span>
+<span class="nc" id="L498">            double v = angles[i] * ((double)valuesToMakeIntoWeights[i]/sumWeights);</span>
 
-<span class="fc" id="L504">            mean += v;</span>
+<span class="nc" id="L500">            mean += v;</span>
         }
 
-<span class="fc" id="L507">        return mean;</span>
+<span class="nc" id="L503">        return mean;</span>
     }
 
     /**
@@ -525,49 +521,49 @@ import java.util.List;
         //TODO: because 360 is usually the max value, if N is &gt; 80, can
         // use CountingSort here for better performance.
         // CountingSort is O(maxValue) while MergeSort is O(N*lg_2(N))
-<span class="fc" id="L528">        QuickSort.descendingSort(angles);</span>
+<span class="fc" id="L524">        QuickSort.descendingSort(angles);</span>
 
-<span class="fc bfc" id="L530" title="All 2 branches covered.">        double twoPI = useRadians ? 2. * Math.PI : 360;</span>
+<span class="fc bfc" id="L526" title="All 2 branches covered.">        double twoPI = useRadians ? 2. * Math.PI : 360;</span>
         
         // visit in order of large values to low to store quadrant corrections
-<span class="fc" id="L533">        double avg = 0;</span>
-<span class="fc bfc" id="L534" title="All 2 branches covered.">        for (int i = 0; i &lt; angles.length; ++i) {</span>
+<span class="fc" id="L529">        double avg = 0;</span>
+<span class="fc bfc" id="L530" title="All 2 branches covered.">        for (int i = 0; i &lt; angles.length; ++i) {</span>
 
-<span class="fc" id="L536">            double angle1 = angles[i];</span>
+<span class="fc" id="L532">            double angle1 = angles[i];</span>
 
-<span class="fc bfc" id="L538" title="All 2 branches covered.">            if (i == 0) {</span>
+<span class="fc bfc" id="L534" title="All 2 branches covered.">            if (i == 0) {</span>
 
-<span class="fc" id="L540">                avg = angle1;</span>
+<span class="fc" id="L536">                avg = angle1;</span>
 
             } else {
 
-<span class="fc" id="L544">                double angle0 = avg;</span>
+<span class="fc" id="L540">                double angle0 = avg;</span>
 
                 // add a phase to next value if it's closer to current with addition
-<span class="fc bfc" id="L547" title="All 2 branches covered.">                if ((angle0 - angle1) &gt; Math.abs(angle0 - (angle1 + twoPI))) {</span>
-<span class="fc" id="L548">                    angle1 += twoPI;</span>
-<span class="fc bfc" id="L549" title="All 2 branches covered.">                    if (useRadians) {</span>
-<span class="fc" id="L550">                        angles[i] = angle1;</span>
+<span class="fc bfc" id="L543" title="All 2 branches covered.">                if ((angle0 - angle1) &gt; Math.abs(angle0 - (angle1 + twoPI))) {</span>
+<span class="fc" id="L544">                    angle1 += twoPI;</span>
+<span class="fc bfc" id="L545" title="All 2 branches covered.">                    if (useRadians) {</span>
+<span class="fc" id="L546">                        angles[i] = angle1;</span>
                     } else {
-<span class="fc" id="L552">                        angles[i] = Math.round(angle1);</span>
+<span class="fc" id="L548">                        angles[i] = Math.round(angle1);</span>
                     }
                 }
 
-<span class="fc" id="L556">                avg = (angle0 + angle1)/2.f;</span>
+<span class="fc" id="L552">                avg = (angle0 + angle1)/2.f;</span>
             }
         }
         
-<span class="fc" id="L560">        avg = 0;</span>
-<span class="fc bfc" id="L561" title="All 2 branches covered.">        for (double a : angles) {</span>
-<span class="fc" id="L562">            avg += a;</span>
+<span class="fc" id="L556">        avg = 0;</span>
+<span class="fc bfc" id="L557" title="All 2 branches covered.">        for (double a : angles) {</span>
+<span class="fc" id="L558">            avg += a;</span>
         }
-<span class="fc" id="L564">        avg /= (double)angles.length;</span>
+<span class="fc" id="L560">        avg /= (double)angles.length;</span>
         
-<span class="fc bfc" id="L566" title="All 2 branches covered.">        if (avg &gt; twoPI) {</span>
-<span class="fc" id="L567">            avg -= twoPI;</span>
+<span class="fc bfc" id="L562" title="All 2 branches covered.">        if (avg &gt; twoPI) {</span>
+<span class="fc" id="L563">            avg -= twoPI;</span>
         }
 
-<span class="fc" id="L570">        return avg;</span>
+<span class="fc" id="L566">        return avg;</span>
     }
 
     /**
@@ -579,43 +575,43 @@ import java.util.List;
     public static void correctForQuadrants(List&lt;Double&gt; thetas,
         boolean useRadians) {
 
-<span class="pc bpc" id="L582" title="1 of 4 branches missed.">        if (thetas == null || thetas.size() &lt; 2) {</span>
-<span class="fc" id="L583">            return;</span>
+<span class="nc bnc" id="L578" title="All 4 branches missed.">        if (thetas == null || thetas.size() &lt; 2) {</span>
+<span class="nc" id="L579">            return;</span>
         }
 
-<span class="fc" id="L586">        double[] angles = new double[thetas.size()];</span>
-<span class="fc" id="L587">        int[] indexes = new int[thetas.size()];</span>
+<span class="nc" id="L582">        double[] angles = new double[thetas.size()];</span>
+<span class="nc" id="L583">        int[] indexes = new int[thetas.size()];</span>
 
-<span class="fc bfc" id="L589" title="All 2 branches covered.">        for (int i = 0; i &lt; thetas.size(); ++i) {</span>
-<span class="fc" id="L590">            angles[i] = thetas.get(i).doubleValue();</span>
-<span class="fc" id="L591">            indexes[i] = i;</span>
+<span class="nc bnc" id="L585" title="All 2 branches missed.">        for (int i = 0; i &lt; thetas.size(); ++i) {</span>
+<span class="nc" id="L586">            angles[i] = thetas.get(i).doubleValue();</span>
+<span class="nc" id="L587">            indexes[i] = i;</span>
         }
 
-<span class="fc" id="L594">        MultiArrayMergeSort.sortByDecr(angles, indexes);</span>
+<span class="nc" id="L590">        MultiArrayMergeSort.sortByDecr(angles, indexes);</span>
 
-<span class="pc bpc" id="L596" title="1 of 2 branches missed.">        double twoPi = useRadians ? 2. * Math.PI : 360;</span>
+<span class="nc bnc" id="L592" title="All 2 branches missed.">        double twoPi = useRadians ? 2. * Math.PI : 360;</span>
         
-<span class="fc" id="L598">        double avg = 0;</span>
-<span class="fc bfc" id="L599" title="All 2 branches covered.">        for (int i = 0; i &lt; angles.length; ++i) {</span>
-<span class="fc" id="L600">            double angle1 = angles[i];</span>
-<span class="fc bfc" id="L601" title="All 2 branches covered.">            if (i == 0) {</span>
-<span class="fc" id="L602">                avg = angle1;</span>
+<span class="nc" id="L594">        double avg = 0;</span>
+<span class="nc bnc" id="L595" title="All 2 branches missed.">        for (int i = 0; i &lt; angles.length; ++i) {</span>
+<span class="nc" id="L596">            double angle1 = angles[i];</span>
+<span class="nc bnc" id="L597" title="All 2 branches missed.">            if (i == 0) {</span>
+<span class="nc" id="L598">                avg = angle1;</span>
             } else {
-<span class="fc" id="L604">                double angle0 = avg;</span>
-<span class="fc bfc" id="L605" title="All 2 branches covered.">                if ((angle0 - angle1) &gt; Math.abs(angle0 - (angle1 + twoPi))) {</span>
-<span class="fc" id="L606">                    angle1 += twoPi;</span>
-<span class="fc" id="L607">                    angles[i] = Math.round(angle1);</span>
+<span class="nc" id="L600">                double angle0 = avg;</span>
+<span class="nc bnc" id="L601" title="All 2 branches missed.">                if ((angle0 - angle1) &gt; Math.abs(angle0 - (angle1 + twoPi))) {</span>
+<span class="nc" id="L602">                    angle1 += twoPi;</span>
+<span class="nc" id="L603">                    angles[i] = Math.round(angle1);</span>
                 }
-<span class="fc" id="L609">                avg = (angle0 + angle1)/2.f;</span>
+<span class="nc" id="L605">                avg = (angle0 + angle1)/2.f;</span>
             }
         }
 
-<span class="fc bfc" id="L613" title="All 2 branches covered.">        for (int i = 0; i &lt; angles.length; ++i) {</span>
-<span class="fc" id="L614">            int idx = indexes[i];</span>
-<span class="fc" id="L615">            double v = angles[i];</span>
-<span class="fc" id="L616">            thetas.set(idx, v);</span>
+<span class="nc bnc" id="L609" title="All 2 branches missed.">        for (int i = 0; i &lt; angles.length; ++i) {</span>
+<span class="nc" id="L610">            int idx = indexes[i];</span>
+<span class="nc" id="L611">            double v = angles[i];</span>
+<span class="nc" id="L612">            thetas.set(idx, v);</span>
         }
-<span class="fc" id="L618">    }</span>
+<span class="nc" id="L614">    }</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>TSPPrimsMST.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.mst</a> &gt; <span class="el_source">TSPPrimsMST.java</span></div><h1>TSPPrimsMST.java</h1><pre class="source lang-java linenums">package algorithms.mst;
+
+import algorithms.QuickSort;
+import algorithms.Rotate;
+import algorithms.util.PairInt;
+import gnu.trove.iterator.TIntIntIterator;
+import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntIntHashMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import java.util.Arrays;
+
+/**
+ * adapted from Cormen et al. Introduction to Algorithms
+ *
+ * An approximate solution to the traveling salesman problem.
+ *
+ * Input:
+ *    -- G = (V, E) is a complete undirected graph
+ *    -- each edge (u, v) in E has a positive floating point 
+ *       number cost c(u, v)
+ * 
+ * Find a Hamiltonian cycle (= a tour of G, that is each node visited exactly
+ * once) w/ minimum cost.  Below, using
+ * notation that a subset of the edges called A will be associated with c(A) cost.
+  
+ * Uses a minimum spanning tree:
+ * Minimum spanning tree is the minimal network that spans all nodes in a tree
+ * and has the smallest cost (sum of edges).
+ *
+ * The MST is implemented from pseudo code in Cormen et al. Introduction to Algorithms and
+ * from http://en.wikipedia.org/wiki/Prim's_algorithm.
+   Useful also was
+  http://www.i-programmer.info/projects/61-algorithms/534-minimum-spanning-tree.html?start=1
+  
+       
+ * @author nichole
+ */
+<span class="pc bpc" id="L40" title="1 of 2 branches missed.">public class TSPPrimsMST {</span>
+       
+    /**
+     * NOT READY FOR USe YET
+     * 
+     * The approximate TSP tour calculated from given vertexes
+     * and adjacency map is refined to remove crossing 
+     * edges.  
+     * 
+     * NOTE: user must ensure that the range of keys
+     * in the adjCostMap is between 0 and nVertexes - 1.
+     *  
+     * @param coordinates
+     * @param adjCostMap key = vertex index1, 
+     *   value = map with key = index2 and value = 
+     *   cost for edge index1 to index2. 
+     */
+    public int[] approxTSPTour(
+        PairInt[] coordinates,
+        final TIntObjectMap&lt;TIntIntMap&gt; adjCostMap, 
+        boolean doSort) {
+        
+<span class="fc" id="L62">        final int nVertexes = coordinates.length;</span>
+        
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        if (!doSort) {</span>
+<span class="fc" id="L65">            return approxTSPTour(coordinates, adjCostMap);</span>
+        }
+        
+<span class="fc" id="L68">        PairInt[] coordinates2 = Arrays.copyOf(coordinates,</span>
+            coordinates.length);
+<span class="fc" id="L70">        int[] indexes = new int[coordinates.length];</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        for (int i = 0; i &lt; coordinates.length; ++i) {</span>
+<span class="fc" id="L72">            indexes[i] = i;</span>
+        }
+<span class="fc" id="L74">        QuickSort.sortByDecrYThenIncrX(coordinates2, indexes);</span>
+      
+<span class="fc" id="L76">        int[] revIndexes = new int[indexes.length];</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        for (int i = 0; i &lt; indexes.length; ++i) {</span>
+<span class="fc" id="L78">            int oIdx = indexes[i];</span>
+<span class="fc" id="L79">            revIndexes[oIdx] = i;</span>
+        }
+        
+<span class="fc" id="L82">        TIntObjectMap&lt;TIntIntMap&gt; adjCostMap2 = </span>
+            new TIntObjectHashMap&lt;TIntIntMap&gt;();
+<span class="fc" id="L84">        TIntObjectIterator&lt;TIntIntMap&gt; iter = adjCostMap.iterator();</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        for (int i = 0; i &lt; adjCostMap.size(); ++i) {</span>
+<span class="fc" id="L86">            iter.advance();</span>
+<span class="fc" id="L87">            int idx1 = iter.key();</span>
+<span class="fc" id="L88">            TIntIntMap map1 = iter.value();</span>
+<span class="fc" id="L89">            TIntIntIterator iter2 = map1.iterator();</span>
+            
+<span class="fc" id="L91">            int idx2 = revIndexes[idx1];</span>
+<span class="fc" id="L92">            TIntIntMap map2 = new TIntIntHashMap();</span>
+<span class="fc" id="L93">            adjCostMap2.put(idx2, map2);</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">            for (int j = 0; j &lt; map1.size(); ++j) {</span>
+<span class="fc" id="L95">                iter2.advance();</span>
+<span class="fc" id="L96">                int oIdx2 = iter2.key();</span>
+<span class="fc" id="L97">                int cost = iter2.value();</span>
+<span class="fc" id="L98">                map2.put(revIndexes[oIdx2], cost);</span>
+            }
+        }
+        
+<span class="fc" id="L102">        int[] tour = approxTSPTour(coordinates2, </span>
+            adjCostMap2);
+        
+        // transform the indexes back to original reference frame
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        for (int i = 0; i &lt; tour.length; ++i) {</span>
+<span class="fc" id="L107">            int vIdx = tour[i];</span>
+<span class="fc" id="L108">            tour[i] = indexes[vIdx];</span>
+        }
+        
+        // rotate 0 back to position 0
+<span class="fc" id="L112">        int zIdx = -1;</span>
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">        for (int i = 0; i &lt; tour.length; ++i) {</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">            if (tour[i] == 0) {</span>
+<span class="fc" id="L115">                zIdx = i;</span>
+<span class="fc" id="L116">                break;</span>
+            }
+        }
+<span class="pc bpc" id="L119" title="3 of 4 branches missed.">        assert(zIdx &gt; -1);</span>
+        
+<span class="fc" id="L121">        Rotate r = new Rotate();</span>
+<span class="fc" id="L122">        r.rotate(tour, zIdx);</span>
+        
+<span class="fc" id="L124">        int lastVOffset = tour.length - 1 - zIdx;</span>
+        // shift items below vOffset up by one
+<span class="fc bfc" id="L126" title="All 2 branches covered.">        for (int i = (lastVOffset + 1); i &lt; tour.length; ++i) {</span>
+<span class="fc" id="L127">            tour[i - 1] = tour[i];</span>
+        }
+<span class="fc" id="L129">        tour[tour.length - 1] = tour[0];</span>
+        
+<span class="fc" id="L131">        System.out.println(&quot;refined tour (in orig ref frame)=&quot; </span>
+<span class="fc" id="L132">            + Arrays.toString(tour));</span>
+        
+<span class="fc" id="L134">        return tour;</span>
+    }
+    
+    /**
+     * 
+     * @param nVertexes
+     * @param coordinates
+     * @param adjCostMap
+     * @param doSort
+     * @return 
+     */
+    private int[] approxTSPTour(PairInt[] coordinates,
+        final TIntObjectMap&lt;TIntIntMap&gt; adjCostMap) {
+        
+<span class="fc" id="L148">        final int nVertexes = coordinates.length;</span>
+        
+<span class="fc" id="L150">        int[] tour = approxTSPTour(nVertexes, adjCostMap);</span>
+     
+<span class="fc" id="L152">        System.out.println(&quot;approx tour=&quot; + Arrays.toString(tour));</span>
+    
+        //TODO: because sorting and MST are N log N which is
+        // fast for this algorithm, could experiment
+        // with different sorting methods quickly and return
+        // the best results.
+        // OR experiment with modifying the pre and post order
+        // MST merge of walks to also use a nearest neighbors to avoid large
+        // gaps.
+        
+        // uncross edges where feasible
+        
+<span class="fc" id="L164">        TourHandler tourHandler = new TourHandler(</span>
+            tour, adjCostMap, coordinates);
+        
+<span class="fc" id="L167">        tourHandler.modifyTourIntersectingEdges();</span>
+        
+<span class="fc" id="L169">        return tour;</span>
+    }
+
+    /**
+     * 
+     * NOT READY FOr USe YET
+     * The approximate TSP tour created from Prim's Minimum Spanning Tree is
+     * returned. Note that the result may contain crossing edges, hence not
+     * optimal.
+     *
+     * NOTE: user must ensure that the range of keys in the adjCostMap is
+     * between 0 and nVertexes - 1.
+     *
+     * @param nVertexes
+     * @param adjCostMap key = vertex index1, 
+     *   value = map with key = index2 and value = 
+     *   cost for edge index1 to index2. 
+     */
+    public int[] approxTSPTour(
+        final int nVertexes,
+        final TIntObjectMap&lt;TIntIntMap&gt; adjCostMap) {
+        
+        /* Approx TSP-Tour(G, c) {
+         *     -- select a vertex r in V[G] as the 'root' vertex
+         *     -- compute a minimum spanning tree T for G from root r using MST-PRIM(G, c, r)
+         *     -- let L be the list of vertices visited in a preorder tree walk of T
+         *     -- return the hamiltonian cycle H that visits the vertices in the order L 
+         */
+        
+<span class="fc" id="L198">        PrimsMST prims = new PrimsMST();</span>
+        
+<span class="fc" id="L200">        prims.calculateMinimumSpanningTree(nVertexes, </span>
+            adjCostMap);
+
+<span class="fc" id="L203">        int[] walk = prims.getPreOrderPostOrderWalk();</span>
+        
+<span class="fc" id="L205">        int[] tour = Arrays.copyOf(walk, walk.length + 1);</span>
+        
+<span class="fc" id="L207">        tour[tour.length - 1] = tour[0];</span>
+    
+<span class="fc" id="L209">        return tour;</span>
+    }
+
+    protected int distance(int x1, int y1, int x2, int y2) {
+<span class="nc" id="L213">        int diffX = x1 - x2;</span>
+<span class="nc" id="L214">        int diffY = y1 - y2;</span>
+<span class="nc" id="L215">        return diffX * diffX + diffY * diffY;</span>
+    }    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

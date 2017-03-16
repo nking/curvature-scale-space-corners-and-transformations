@@ -8,17 +8,17 @@ public class HeapNode {
 <span class="fc" id="L8">    private HeapNode left = null;</span>
 
     /* fields needed for a Fibonacci Heap Node */
-    private HeapNode parent;
-    private DoubleLinkedCircularList children;
+<span class="fc" id="L11">    private HeapNode parent = null;</span>
+<span class="fc" id="L12">    private DoubleLinkedCircularList children = null;</span>
     
+    /* field to carry data  */
+<span class="fc" id="L15">    private Object data = null;</span>
+
     /**
      * a.k.a. degree
      */
-<span class="fc" id="L17">    private int numberOfChildren = 0;</span>
-<span class="fc" id="L18">    private boolean mark = false;</span>
-
-    /* field to carry data  */
-<span class="fc" id="L21">    private Object data = null;</span>
+<span class="fc" id="L20">    private int numberOfChildren = 0;</span>
+<span class="fc" id="L21">    private boolean mark = false;</span>
 
 <span class="fc" id="L23">    public HeapNode() {</span>
 <span class="fc" id="L24">    }</span>
@@ -26,7 +26,7 @@ public class HeapNode {
 <span class="fc" id="L26">    public HeapNode(long key) {</span>
 <span class="fc" id="L27">        this.key = key;</span>
 <span class="fc" id="L28">    }</span>
-
+    
     /**
      * add node to list of children.  numberOfChildren is incremented.
      *
@@ -156,25 +156,25 @@ public class HeapNode {
 <span class="fc" id="L156">    }</span>
 
     /**
-     * @param left the left to set
+     * @param theLeft the left to set
      */
-    public void setLeft(HeapNode left) {
-<span class="fc" id="L162">        this.left = left;</span>
+    public void setLeft(HeapNode theLeft) {
+<span class="fc" id="L162">        left = theLeft;</span>
 <span class="fc" id="L163">    }</span>
 
     /**
-     * @param parent the parent to set
+     * @param theParent the parent to set
      */
-    public void setParent(HeapNode parent) {
-<span class="fc" id="L169">        this.parent = parent;</span>
+    public void setParent(HeapNode theParent) {
+<span class="fc" id="L169">        parent = theParent;</span>
 <span class="fc" id="L170">    }</span>
 
     /**
      * @param children the children to set
      */
     public void setChildren(DoubleLinkedCircularList children) {
-<span class="nc" id="L176">        this.children = children;</span>
-<span class="nc" id="L177">    }</span>
+<span class="fc" id="L176">        this.children = children;</span>
+<span class="fc" id="L177">    }</span>
 
     /**
      * @param numberOfChildren the numberOfChildren to set
@@ -196,20 +196,25 @@ public class HeapNode {
     public void setMark(boolean mark) {
 <span class="fc" id="L197">        this.mark = mark;</span>
 <span class="fc" id="L198">    }</span>
+
+    @SuppressWarnings({&quot;rawtypes&quot;})
+    public static Class getType() {
+<span class="fc" id="L202">        return HeapNode.class;</span>
+    }
     
     @Override
     public String toString() {
        
-<span class="fc" id="L203">        StringBuilder sb = new StringBuilder();</span>
-<span class="fc" id="L204">        sb.append(&quot;key=&quot;).append(Long.toString(key))</span>
-<span class="fc" id="L205">            .append(&quot; nChildren=&quot;).append(Integer.toString(numberOfChildren))</span>
-<span class="fc" id="L206">            .append(&quot; mark=&quot;).append(Boolean.toString(mark))</span>
-<span class="fc" id="L207">            .append(&quot; data=&quot;);</span>
-<span class="pc bpc" id="L208" title="1 of 2 branches missed.">            if (data != null) {</span>
-<span class="nc" id="L209">                sb.append(data.toString());</span>
+<span class="fc" id="L208">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L209">        sb.append(&quot;key=&quot;).append(Long.toString(key))</span>
+<span class="fc" id="L210">            .append(&quot; nChildren=&quot;).append(Integer.toString(numberOfChildren))</span>
+<span class="fc" id="L211">            .append(&quot; mark=&quot;).append(Boolean.toString(mark))</span>
+<span class="fc" id="L212">            .append(&quot; data=&quot;);</span>
+<span class="fc bfc" id="L213" title="All 2 branches covered.">            if (data != null) {</span>
+<span class="fc" id="L214">                sb.append(data.toString());</span>
             }
         
-<span class="fc" id="L212">        return sb.toString();</span>
+<span class="fc" id="L217">        return sb.toString();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

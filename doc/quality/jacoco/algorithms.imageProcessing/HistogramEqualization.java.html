@@ -76,10 +76,10 @@ public class HistogramEqualization {
 <span class="fc bfc" id="L76" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getWidth(); i++) {</span>
 <span class="fc bfc" id="L77" title="All 2 branches covered.">            for (int j = 0; j &lt; img.getHeight(); j++) {</span>
 <span class="fc" id="L78">                int a = img.getValue(i, j);</span>
-<span class="pc bpc" id="L79" title="1 of 2 branches missed.">                if (a &gt; 255) {</span>
-<span class="nc" id="L80">                    a = 255;</span>
-<span class="pc bpc" id="L81" title="1 of 2 branches missed.">                } else if (a &lt; 0) {</span>
-<span class="nc" id="L82">                    a = 0;</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">                if (a &gt; 255) {</span>
+<span class="fc" id="L80">                    a = 255;</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">                } else if (a &lt; 0) {</span>
+<span class="fc" id="L82">                    a = 0;</span>
                 }
 <span class="fc" id="L84">                aHist[a]++;</span>
             }
@@ -121,10 +121,10 @@ public class HistogramEqualization {
 <span class="fc bfc" id="L121" title="All 2 branches covered.">            for (int j = 0; j &lt; img.getHeight(); j++) {</span>
                 
 <span class="fc" id="L123">                int a = img.getValue(i, j);</span>
-<span class="pc bpc" id="L124" title="1 of 2 branches missed.">                if (a &gt; 255) {</span>
-<span class="nc" id="L125">                    a = 255;</span>
-<span class="pc bpc" id="L126" title="1 of 2 branches missed.">                } else if (a &lt; 0) {</span>
-<span class="nc" id="L127">                    a = 0;</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">                if (a &gt; 255) {</span>
+<span class="fc" id="L125">                    a = 255;</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">                } else if (a &lt; 0) {</span>
+<span class="fc" id="L127">                    a = 0;</span>
                 }
                 
 <span class="fc" id="L130">                long aC = aHistC[a];</span>

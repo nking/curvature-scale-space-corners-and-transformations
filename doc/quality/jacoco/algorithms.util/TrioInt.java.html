@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>TrioInt.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.util</a> &gt; <span class="el_source">TrioInt.java</span></div><h1>TrioInt.java</h1><pre class="source lang-java linenums">package algorithms.util;
+
+/**
+ *
+ * @author nichole
+ */
+public class TrioInt {
+    
+<span class="pc" id="L9">    private int x = Integer.MIN_VALUE;</span>
+<span class="pc" id="L10">    private int y = Integer.MIN_VALUE;</span>
+<span class="pc" id="L11">    private int z = Integer.MIN_VALUE;</span>
+    
+<span class="nc" id="L13">    public TrioInt() {</span>
+<span class="nc" id="L14">    }</span>
+<span class="fc" id="L15">    public TrioInt(int xPoint, int yPoint, int zPoint) {</span>
+<span class="fc" id="L16">        x = xPoint;</span>
+<span class="fc" id="L17">        y = yPoint;</span>
+<span class="fc" id="L18">        z = zPoint;</span>
+<span class="fc" id="L19">    }</span>
+    public void setX(int xPoint) {
+<span class="nc" id="L21">        x = xPoint;</span>
+<span class="nc" id="L22">    }</span>
+    public void setY(int yPoint) {
+<span class="nc" id="L24">        y = yPoint;</span>
+<span class="nc" id="L25">    }</span>
+    public void setZ(int zPoint) {
+<span class="nc" id="L27">        z = zPoint;</span>
+<span class="nc" id="L28">    }</span>
+    public int getX() {
+<span class="fc" id="L30">        return x;</span>
+    }
+    public int getY() {
+<span class="fc" id="L33">        return y;</span>
+    }
+    public int getZ() {
+<span class="fc" id="L36">        return z;</span>
+    }
+    
+    public TrioInt copy() {
+<span class="nc" id="L40">        TrioInt c = new TrioInt(x, y, z);</span>
+<span class="nc" id="L41">        return c;</span>
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (!(obj instanceof TrioInt)) {</span>
+<span class="nc" id="L48">            return false;    </span>
+        }
+        
+<span class="fc" id="L51">        TrioInt other = (TrioInt)obj;</span>
+        
+<span class="pc bpc" id="L53" title="3 of 6 branches missed.">        return (x == other.getX()) &amp;&amp; (y == other.getY()) &amp;&amp; (z == other.getZ());</span>
+    }
+
+    @Override
+    public int hashCode() {
+        
+<span class="fc" id="L59">        int hash = fnvHashCode(this.x, this.y, this.z);</span>
+
+<span class="fc" id="L61">        return hash;</span>
+    }
+
+<span class="fc" id="L64">    protected static int fnv321aInit = 0x811c9dc5;</span>
+<span class="fc" id="L65">    protected static int fnv32Prime = 0x01000193;</span>
+
+    protected int fnvHashCode(int i0, int i1, int i2) {
+
+        /*
+         * hash = offset_basis
+         * for each octet_of_data to be hashed
+         *     hash = hash xor octet_of_data
+         *     hash = hash * FNV_prime
+         * return hash
+         *
+         * Public domain:  http://www.isthe.com/chongo/src/fnv/hash_32a.c
+         */
+
+<span class="fc" id="L79">        int hash = 0;</span>
+
+<span class="fc" id="L81">        int sum = fnv321aInit;</span>
+
+        // xor the bottom with the current octet.
+<span class="fc" id="L84">        sum ^= i0;</span>
+
+        // multiply by the 32 bit FNV magic prime mod 2^32
+<span class="fc" id="L87">        sum *= fnv32Prime;</span>
+        
+<span class="fc" id="L89">        sum ^= i1;</span>
+        
+<span class="fc" id="L91">        sum *= fnv32Prime;</span>
+        
+<span class="fc" id="L93">        sum ^= i2;</span>
+        
+<span class="fc" id="L95">        sum *= fnv32Prime;</span>
+        
+<span class="fc" id="L97">        hash = sum;</span>
+
+<span class="fc" id="L99">        return hash;</span>
+    }
+
+    @Override
+    public String toString() {
+        
+<span class="nc" id="L105">        StringBuilder sb = new StringBuilder(&quot;(&quot;);</span>
+<span class="nc" id="L106">        sb.append(Integer.toString(x)).append(&quot;,&quot;)</span>
+<span class="nc" id="L107">            .append(Integer.toString(y)).append(&quot;)&quot;)</span>
+<span class="nc" id="L108">            .append(Integer.toString(z)).append(&quot;)&quot;);</span>
+        
+<span class="nc" id="L110">        return sb.toString();</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

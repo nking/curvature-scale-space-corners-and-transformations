@@ -1,0 +1,696 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>LinesFinder.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.matching</a> &gt; <span class="el_source">LinesFinder.java</span></div><h1>LinesFinder.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.matching;
+
+import algorithms.QuickSort;
+import algorithms.compGeometry.LinesAndAngles;
+import algorithms.compGeometry.PerimeterFinder2;
+import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.ImageSegmentation;
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
+import algorithms.util.LinearRegression;
+import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
+import gnu.trove.list.TFloatList;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TFloatArrayList;
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
+import gnu.trove.set.TIntSet;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
+/**
+ *
+ * @author nichole
+ */
+<span class="pc bpc" id="L39" title="1 of 2 branches missed.">public class LinesFinder {</span>
+    
+    /**
+     * array of x coordinates of points found as lines.  note that some of the
+     * short segments are parts of curves, indistinguishable unless larger 
+     * minimum line lengths are used to filter them out.
+     */
+<span class="fc" id="L46">    private TIntList xs = new TIntArrayList();</span>
+    
+    /**
+     * array of y coordinates of points found as lines.  note that some of the
+     * short segments are parts of curves, indistinguishable unless larger 
+     * minimum line lengths are used to filter them out.
+     */
+<span class="fc" id="L53">    private TIntList ys = new TIntArrayList();</span>
+    
+    /**
+     * map with key = unique segment index number, value =
+     * indexes of the xs and ys arrays which are a contiguous line segment.
+     */
+<span class="fc" id="L59">    private TIntObjectMap&lt;TIntList&gt; segmentIndexes = new TIntObjectHashMap&lt;TIntList&gt;();</span>
+    
+    /**
+     * map with key = unique index number, value = the polar theta in degrees
+     * and distance from origin for the line segment.
+     */
+<span class="fc" id="L65">    private TIntObjectMap&lt;PairInt&gt; segmentTRMap = new TIntObjectHashMap&lt;PairInt&gt;();</span>
+   
+    /**
+     * map with key = the polar theta in degrees
+     * and distance from origin for the line segment,
+     * value = segment indexes of lines with this combination of
+     * theta and radius.
+     */
+<span class="fc" id="L73">    private Map&lt;PairInt, TIntList&gt; trSegmentIndexesMap = new HashMap&lt;PairInt, TIntList&gt;();</span>
+    
+<span class="fc" id="L75">    private List&lt;PairInt&gt; orderedTRList = null;</span>
+<span class="fc" id="L76">    private List&lt;TIntList&gt; orderedTRXYIndexes = null;</span>
+    
+<span class="fc" id="L78">    private int lastSegIdx = -1;</span>
+    
+<span class="fc" id="L80">    private int lastCol = -1;</span>
+<span class="fc" id="L81">    private int lastRow = -1;</span>
+    
+<span class="fc" id="L83">    private int minLineLength = 20;</span>
+    
+<span class="fc" id="L85">    private boolean debug = false;</span>
+    
+<span class="fc" id="L87">    private float thresh = (float)(1.e-7);</span>
+    
+    /**
+     * if this is set, vertical lines found at polar radius 0 and width from
+     * origin are removed and so are horizontal lines found at polar radius
+     * and height from origin.
+     */
+    public void setToRemoveBorderLines(int lastColumn, int lastRow) {
+<span class="fc" id="L95">        this.lastCol = lastColumn;</span>
+<span class="fc" id="L96">        this.lastRow = lastRow;</span>
+<span class="fc" id="L97">    }</span>
+    
+    /**
+     * override the default minimum line length of 30 to the given value
+     * @param length 
+     */
+    public void overrideMinimumLineLength(int length) {
+<span class="nc" id="L104">        this.minLineLength = length;</span>
+<span class="nc" id="L105">    }</span>
+    
+    /**
+     * override default minimum length of 20, to this value
+     * @param length 
+     */
+    public void overrideMinimumLength(int length) {
+<span class="nc" id="L112">        minLineLength = length;</span>
+<span class="nc" id="L113">    }</span>
+   
+    /**
+     * override the default threshold of 1.e7.  the absolute average differernce
+     * of chords over a window size must be less than the threshold in order
+     * for the segment to be considered a line.  Increasing this number
+     * too much will possibly result in including curves.
+     * @param threshold 
+     */
+    public void overrideThreshold(float threshold) {
+<span class="nc" id="L123">        this.thresh = threshold;</span>
+<span class="nc" id="L124">    }</span>
+    
+    public void setToDebug() {
+<span class="fc" id="L127">        debug = true;</span>
+<span class="fc" id="L128">    }</span>
+    
+    public void find(List&lt;Set&lt;PairInt&gt;&gt; listOfContigousLabels) {
+                
+        // -- extract the boundaries of the sets
+        // -- find the lines around each boundary using shape fitting
+        // -- store results as member variables
+        
+<span class="pc bpc" id="L136" title="3 of 4 branches missed.">        assert(assertUniquePoints2(listOfContigousLabels));</span>
+        
+<span class="fc" id="L138">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+        
+<span class="fc" id="L140">        List&lt;PairIntArray&gt; listOfBounds = new ArrayList&lt;PairIntArray&gt;();</span>
+        
+        // extract ordered bounds
+<span class="fc" id="L143">        PerimeterFinder2 pFinder = new PerimeterFinder2();</span>
+<span class="fc" id="L144">        List&lt;PairIntArray&gt; extractedBounds = new ArrayList&lt;PairIntArray&gt;();</span>
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">        for (int i = 0; i &lt; listOfContigousLabels.size(); ++i) {</span>
+        //for (int i = 71; i &lt; 72; ++i) {
+<span class="fc" id="L147">            Set&lt;PairInt&gt; set = listOfContigousLabels.get(i);</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">            if (set.size() &lt; 3) {</span>
+<span class="nc" id="L149">                continue;</span>
+            }
+         
+<span class="nc" id="L152">            PairIntArray b = pFinder.extractOrderedBorder(</span>
+                new HashSet&lt;PairInt&gt;(set));
+<span class="nc bnc" id="L154" title="All 4 branches missed.">            if (b != null &amp;&amp; b.getN() &gt; 2) {</span>
+<span class="nc" id="L155">                listOfBounds.add(b);            </span>
+            }
+        }
+<span class="nc bnc" id="L158" title="All 4 branches missed.">        assert(assertUniquePoints(listOfBounds));</span>
+        
+<span class="nc" id="L160">Image dbg = new Image(256, 192);</span>
+<span class="nc" id="L161">ImageIOHelper.addAlternatingColorCurvesToImage(</span>
+listOfBounds, dbg, 0);
+<span class="nc" id="L163">MiscDebug.writeImage(dbg, &quot;_boundaries_&quot; +MiscDebug.getCurrentTimeFormatted());</span>
+
+<span class="nc" id="L165">        find1(listOfBounds);</span>
+<span class="nc" id="L166">    }</span>
+    
+    public void find1(List&lt;PairIntArray&gt; listOfOrderedBounds) {
+        
+        // -- find the lines around each boundary using shape fitting
+        // -- store results as lists of x, y 
+        //    and map with key=segIdx, value=list of x,y indexes
+        //    and map with key-segIdx, value = theta (float)
+        //    and map with key=segIdx, value = polar radius (int)
+        
+<span class="nc" id="L176">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+                
+        // extract ordered bounds
+<span class="nc" id="L179">        PerimeterFinder2 pFinder = new PerimeterFinder2();</span>
+<span class="nc" id="L180">        List&lt;PairIntArray&gt; extractedBounds = new ArrayList&lt;PairIntArray&gt;();</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">        for (int i = 0; i &lt; listOfOrderedBounds.size(); ++i) {</span>
+            
+<span class="nc" id="L183">            PairIntArray b = listOfOrderedBounds.get(i);</span>
+<span class="nc bnc" id="L184" title="All 4 branches missed.">            if (b == null || b.getN() &lt; 3) {</span>
+<span class="nc" id="L185">                continue;</span>
+            }
+        
+<span class="nc" id="L188">            LineFinder matcher = new LineFinder();</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">            if (debug) {</span>
+<span class="nc" id="L190">                matcher.setToDebug();</span>
+            }
+<span class="nc bnc" id="L192" title="All 2 branches missed.">            if (lastCol &gt; -1) {</span>
+<span class="nc" id="L193">                matcher.setToRemoveBorderLines(lastCol, lastRow);</span>
+            }
+            //matcher.overrideMinimumLineLength(minLineLength);
+            //matcher._overrideToThreshhold(thresh);
+<span class="nc" id="L197">            LineFinder.LineResult r = matcher.match(b);</span>
+<span class="nc" id="L198">            List&lt;PairInt&gt; lr = r.getLineIndexRanges();</span>
+            //System.out.println(&quot;reading nRanges=&quot; + lr.size());
+            
+<span class="nc bnc" id="L201" title="All 2 branches missed.">            for (int ii = 0; ii &lt; lr.size(); ++ii) {</span>
+<span class="nc" id="L202">                int startIdx = lr.get(ii).getX(); </span>
+<span class="nc" id="L203">                int stopIdx = lr.get(ii).getY(); </span>
+                
+<span class="nc bnc" id="L205" title="All 2 branches missed.">                if (debug) {</span>
+<span class="nc" id="L206">                    System.out.println(&quot;indexes: &quot; + startIdx + &quot;:&quot; + stopIdx </span>
+                        + &quot;   &quot; + &quot; segIdx=&quot; + ii +
+<span class="nc" id="L208">                        String.format(&quot; (%d,%d) to (%d,%d) &quot;,</span>
+<span class="nc" id="L209">                        b.getX(startIdx), b.getY(startIdx),</span>
+<span class="nc" id="L210">                        b.getX(stopIdx), b.getY(stopIdx))</span>
+                    );
+                }
+                
+<span class="nc" id="L214">                int lineX0 = b.getX(startIdx);</span>
+<span class="nc" id="L215">                int lineY0 = b.getY(startIdx);</span>
+<span class="nc" id="L216">                int lineX1 = b.getX(stopIdx);</span>
+<span class="nc" id="L217">                int lineY1 = b.getY(stopIdx);</span>
+
+<span class="nc bnc" id="L219" title="All 2 branches missed.">                if (debug) {</span>
+<span class="nc" id="L220">                    System.out.println(&quot;coords: (&quot; + lineX0 + &quot;,&quot; + lineY0 + &quot;) &quot;</span>
+                        + &quot; (&quot; + lineX1 + &quot;,&quot; + lineY1 + &quot;) &quot;);
+                }
+                
+<span class="nc" id="L224">                double polarR = curveHelper.distanceFromPointToALine(</span>
+                    lineX0, lineY0, lineX1, lineY1, 0, 0);
+<span class="nc" id="L226">                int radius = (int)Math.round(polarR);</span>
+                
+                // don't store lines on image boundaries if this is set
+<span class="nc bnc" id="L229" title="All 2 branches missed.">                if (lastCol &gt; -1) {</span>
+<span class="nc bnc" id="L230" title="All 2 branches missed.">                    if (radius &lt; 5) {</span>
+<span class="nc" id="L231">                        continue;</span>
+                    }
+                }
+                
+                // -180 to 180 are the ranges.  also need an offset by 90 perpendicular
+<span class="nc" id="L236">                double theta = Math.atan2(lineY1 - lineY0, lineX1 - lineX0);</span>
+<span class="nc" id="L237">                int thetaDeg = (int)Math.round(theta * 180./Math.PI);</span>
+                // perpendicular to slipe:
+<span class="nc" id="L239">                thetaDeg -= 90;</span>
+                // correction to place within range 0 to 180:
+<span class="nc bnc" id="L241" title="All 2 branches missed.">                if (thetaDeg &lt; 0) {</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">                    while (thetaDeg &lt; 0) {</span>
+                        // reverse the line direction
+<span class="nc" id="L244">                        thetaDeg += 180;</span>
+                    }
+<span class="nc bnc" id="L246" title="All 2 branches missed.">                } else if (thetaDeg == 180) {</span>
+<span class="nc" id="L247">                    thetaDeg = 0;</span>
+                }
+                
+<span class="nc bnc" id="L250" title="All 2 branches missed.">                if (debug) {</span>
+<span class="nc" id="L251">                    System.out.println(&quot;theta, radius: (&quot; + thetaDeg + &quot;,&quot; </span>
+                        + radius + &quot;)&quot;);
+                }
+
+                // don't store lines on image bundaries if this is set               
+<span class="nc bnc" id="L256" title="All 2 branches missed.">                if (lastCol &gt; -1) {</span>
+<span class="nc bnc" id="L257" title="All 6 branches missed.">                    if ((thetaDeg == 0 || thetaDeg == 180) &amp;&amp; </span>
+                        (radius &gt; (lastCol - 5))) {
+<span class="nc" id="L259">                        continue;</span>
+<span class="nc bnc" id="L260" title="All 6 branches missed.">                    } else if ((thetaDeg == 90 || thetaDeg == 270) </span>
+                        &amp;&amp; (radius &gt; (lastRow - 5))) {
+<span class="nc" id="L262">                        continue;</span>
+                    }
+                }
+                
+<span class="nc" id="L266">                lastSegIdx++;</span>
+                
+<span class="nc" id="L268">                PairInt tr = new PairInt(thetaDeg, radius);</span>
+<span class="nc" id="L269">                segmentTRMap.put(lastSegIdx, tr);</span>
+                
+<span class="nc bnc" id="L271" title="All 2 branches missed.">                if (debug) {</span>
+<span class="nc" id="L272">                    System.out.println(&quot;*coords: (&quot; + lineX0 + &quot;,&quot; + lineY0 + &quot;) &quot;</span>
+                        + &quot; (&quot; + lineX1 + &quot;,&quot; + lineY1 + &quot;) &quot;);
+                }
+                
+                int xsIdx;
+<span class="nc" id="L277">                TIntList idxs = new TIntArrayList();</span>
+<span class="nc bnc" id="L278" title="All 2 branches missed.">                for (int j = startIdx; j &lt;= stopIdx; ++j) {</span>
+<span class="nc" id="L279">                    int x = b.getX(j);</span>
+<span class="nc" id="L280">                    int y = b.getY(j);</span>
+<span class="nc" id="L281">                    xsIdx = xs.size();</span>
+<span class="nc" id="L282">                    xs.add(x);</span>
+<span class="nc" id="L283">                    ys.add(y);</span>
+<span class="nc" id="L284">                    idxs.add(xsIdx);</span>
+                }
+<span class="nc" id="L286">                segmentIndexes.put(lastSegIdx, idxs);</span>
+                
+<span class="nc" id="L288">                TIntList segIdxs = trSegmentIndexesMap.get(tr);</span>
+<span class="nc bnc" id="L289" title="All 2 branches missed.">                if (segIdxs == null) {</span>
+<span class="nc" id="L290">                    segIdxs = new TIntArrayList();</span>
+<span class="nc" id="L291">                    trSegmentIndexesMap.put(tr, segIdxs);</span>
+                }
+<span class="nc" id="L293">                segIdxs.add(lastSegIdx);</span>
+            }
+        }
+<span class="nc" id="L296">    }</span>
+    
+    /**
+     * for best results, consider the deltae2000 gradient
+     * which is used in ImageSegmentation.objectSegmentation
+     * @param gradient 
+     */
+    public void correctLinesWithGradient(GreyscaleImage gradient) {
+         
+<span class="nc bnc" id="L305" title="All 2 branches missed.">        if (orderedTRList == null) {</span>
+<span class="nc" id="L306">            groupWithinTolerance();</span>
+        }
+        
+<span class="nc" id="L309">        MiscDebug.writeImage(gradient, &quot;_gradient_&quot;);</span>
+    
+        // for each line 
+        //    extract a region + and minus 10 pixels
+        //    to a side in the gradient image and fit a
+        //    line to those pixels.
+        //    can use thiel sen, but there are probably
+        //    faster algorithms which also remove outliers.
+        //    -- can use the intensities for weights, but the
+        //       deltae gradient largely has same intensity
+        //       in most pixels...
+        
+<span class="nc" id="L321">        boolean changed = false;</span>
+        
+<span class="nc bnc" id="L323" title="All 2 branches missed.">        for (int i = 0; i &lt; orderedTRList.size(); ++i) {</span>
+<span class="nc" id="L324">            PairInt tr = orderedTRList.get(i);</span>
+<span class="nc" id="L325">            TIntList xyIdxs = orderedTRXYIndexes.get(i);</span>
+            //82, 48
+<span class="nc" id="L327">            int[] xyMinMax = findXYBounds(xyIdxs);</span>
+            //System.out.println(&quot;syminmax=&quot; + Arrays.toString(xyMinMax));    
+            //System.out.println(&quot;line: &quot; + tr);
+<span class="nc" id="L330">            double thetaR = tr.getX() * Math.PI/180.;</span>
+            // extract bounds += 10 pix from gradient
+            // perpendicular to endpoints
+<span class="nc" id="L333">            int d = 8;</span>
+<span class="nc" id="L334">            int dX = (int)Math.round(d * Math.cos(thetaR));</span>
+<span class="nc" id="L335">            int dY = (int)Math.round(d * Math.sin(thetaR));</span>
+<span class="nc" id="L336">            int x0 = xyMinMax[0] - dX;</span>
+<span class="nc bnc" id="L337" title="All 2 branches missed.">            if (x0 &lt; 0) { x0 = 0;}</span>
+<span class="nc" id="L338">            int x1 = xyMinMax[1] + dX;</span>
+<span class="nc bnc" id="L339" title="All 2 branches missed.">            if (x1 &gt; (xyMinMax[1] - 1)) { x1 = xyMinMax[1] - 1;}</span>
+<span class="nc" id="L340">            int y0 = xyMinMax[2] - dY;</span>
+<span class="nc bnc" id="L341" title="All 2 branches missed.">            if (y0 &lt; 0) { y0 = 0;}</span>
+<span class="nc" id="L342">            int y1 = xyMinMax[3] + dY;</span>
+<span class="nc bnc" id="L343" title="All 2 branches missed.">            if (y1 &gt; (xyMinMax[3] - 1)) { y1 = xyMinMax[3] - 1;}</span>
+
+<span class="nc" id="L345">            TFloatList xG = new TFloatArrayList();</span>
+<span class="nc" id="L346">            TFloatList yG = new TFloatArrayList();</span>
+
+<span class="nc bnc" id="L348" title="All 2 branches missed.">            for (int x = x0; x &lt;= x1; ++x) {</span>
+<span class="nc bnc" id="L349" title="All 2 branches missed.">                for (int y = y0; y &lt;= y1; ++y) {</span>
+<span class="nc" id="L350">                    int v = gradient.getValue(x, y);</span>
+<span class="nc bnc" id="L351" title="All 2 branches missed.">                    if (v &gt; 0) {</span>
+<span class="nc" id="L352">                        yG.add(y);</span>
+<span class="nc" id="L353">                        xG.add(x);</span>
+                    }
+                }
+            }
+
+<span class="nc bnc" id="L358" title="All 2 branches missed.">            if (xG.size() &lt; 4) {</span>
+<span class="nc" id="L359">                continue;</span>
+            }
+
+<span class="nc" id="L362">            LinearRegression lr = new LinearRegression();</span>
+<span class="nc" id="L363">            float[] yinterceptSlope </span>
+<span class="nc" id="L364">                = lr.calculateTheilSenEstimatorParams(</span>
+            //lr.plotTheLinearRegression(
+<span class="nc" id="L366">                xG.toArray(new float[xG.size()]), </span>
+<span class="nc" id="L367">                yG.toArray(new float[yG.size()]));</span>
+
+<span class="nc" id="L369">            System.out.println(&quot;yin and slope=&quot; + Arrays.toString(yinterceptSlope));</span>
+<span class="nc" id="L370">            int t = Math.round(yinterceptSlope[1]) - 90;</span>
+<span class="nc bnc" id="L371" title="All 2 branches missed.">            if (t &lt; 0) {</span>
+<span class="nc" id="L372">                t += 180;</span>
+            }
+<span class="nc" id="L374">            int r = Math.round(yinterceptSlope[0]);</span>
+
+<span class="nc" id="L376">            float dt = Math.abs(t - tr.getX());</span>
+<span class="nc" id="L377">            float dr = Math.abs(r - tr.getY());</span>
+            
+<span class="nc bnc" id="L379" title="All 4 branches missed.">            if ((dt &gt; 25) || (dr &gt; 25)) {</span>
+<span class="nc" id="L380">                continue;</span>
+            }
+
+<span class="nc bnc" id="L383" title="All 4 branches missed.">            if ((dt &gt; 0.5) || (dr &gt; 0.5)) {</span>
+<span class="nc" id="L384">                changed = true;</span>
+            }
+            
+<span class="nc" id="L387">            orderedTRList.set(i, new PairInt(t, r));</span>
+        }
+        
+<span class="nc bnc" id="L390" title="All 2 branches missed.">        if (changed) {</span>
+            // assuming not many lines and using
+            // an O(N^2) approach for the merging for now
+<span class="nc bnc" id="L393" title="All 2 branches missed.">            for (int i = (orderedTRList.size() - 1); i &gt; -1; --i) {</span>
+<span class="nc" id="L394">                PairInt tr = orderedTRList.get(i);</span>
+<span class="nc bnc" id="L395" title="All 2 branches missed.">                for (int j = 0; j &lt; (i - 1); ++j) {</span>
+<span class="nc" id="L396">                    PairInt tr2 = orderedTRList.get(j);</span>
+<span class="nc bnc" id="L397" title="All 2 branches missed.">                    if (tr2.equals(tr)) {</span>
+<span class="nc" id="L398">                        TIntList xyi = </span>
+<span class="nc" id="L399">                            orderedTRXYIndexes.get(i);</span>
+<span class="nc" id="L400">                        orderedTRXYIndexes.get(j)</span>
+<span class="nc" id="L401">                            .addAll(xyi);</span>
+<span class="nc" id="L402">                        orderedTRList.remove(i);</span>
+<span class="nc" id="L403">                        orderedTRXYIndexes.remove(i);</span>
+<span class="nc" id="L404">                        break;</span>
+                    }
+                }
+            }
+            // sort
+<span class="nc" id="L409">            sortOrderedLists();</span>
+        }
+<span class="nc" id="L411">    }</span>
+    
+    public void sortOrderedLists() {
+        
+<span class="nc bnc" id="L415" title="All 2 branches missed.">        if (orderedTRList == null) {</span>
+        
+<span class="nc" id="L417">            groupWithinTolerance();</span>
+        
+        } else {
+            
+<span class="nc" id="L421">            int[] indexes = new int[orderedTRList.size()];</span>
+<span class="nc" id="L422">            int[] np = new int[indexes.length];</span>
+            
+<span class="nc bnc" id="L424" title="All 2 branches missed.">            for (int i = 0; i &lt; np.length; ++i) {</span>
+<span class="nc" id="L425">                indexes[i] = i;</span>
+<span class="nc" id="L426">                np[i] = orderedTRXYIndexes.get(i).size();</span>
+            }
+<span class="nc" id="L428">            QuickSort.sortBy1stArg(np, indexes);</span>
+            
+<span class="nc" id="L430">            List&lt;PairInt&gt; otl = new ArrayList&lt;PairInt&gt;();</span>
+<span class="nc" id="L431">            List&lt;TIntList&gt; otiL = new ArrayList&lt;TIntList&gt;();</span>
+            
+<span class="nc bnc" id="L433" title="All 2 branches missed.">            for (int i = (np.length - 1); i &gt; -1; --i) {</span>
+<span class="nc" id="L434">                int idx = indexes[i];</span>
+<span class="nc" id="L435">                otl.add(orderedTRList.get(idx));</span>
+<span class="nc" id="L436">                otiL.add(orderedTRXYIndexes.get(idx));</span>
+            }
+<span class="nc" id="L438">            orderedTRList = otl;</span>
+<span class="nc" id="L439">            orderedTRXYIndexes = otiL;</span>
+        }
+<span class="nc" id="L441">    }</span>
+     
+    /**
+     * combine the entries for a theta and radius within theta tolerance
+     * and radius tolerance into lists.
+     */
+    public void groupWithinTolerance() {
+        
+<span class="nc" id="L449">        orderedTRList = new ArrayList&lt;PairInt&gt;();</span>
+<span class="nc" id="L450">        orderedTRXYIndexes = new ArrayList&lt;TIntList&gt;();</span>
+    
+<span class="nc" id="L452">        Map&lt;PairInt, TIntList&gt; trXYIndexesMap = new</span>
+            HashMap&lt;PairInt, TIntList&gt;();
+        
+<span class="nc" id="L455">        int n = trSegmentIndexesMap.size();</span>
+<span class="nc" id="L456">        PairInt[] trs = new PairInt[n];</span>
+<span class="nc" id="L457">        int[] nPoints = new int[n];</span>
+<span class="nc" id="L458">        int[] lIdxs = new int[n];</span>
+        
+<span class="nc" id="L460">        int count = 0;</span>
+<span class="nc bnc" id="L461" title="All 2 branches missed.">        for (Entry&lt;PairInt, TIntList&gt; entry : trSegmentIndexesMap.entrySet()) {</span>
+<span class="nc" id="L462">            PairInt tr = entry.getKey();            </span>
+<span class="nc" id="L463">            TIntList segIdxs = entry.getValue();</span>
+        
+<span class="nc" id="L465">            int np = 0;</span>
+<span class="nc bnc" id="L466" title="All 2 branches missed.">            for (int j = 0; j &lt; segIdxs.size(); ++j) {</span>
+<span class="nc" id="L467">                int segIdx = segIdxs.get(j);</span>
+<span class="nc" id="L468">                TIntList idxs = segmentIndexes.get(segIdx);</span>
+<span class="nc" id="L469">                np += idxs.size();</span>
+                
+<span class="nc" id="L471">                TIntList a = trXYIndexesMap.get(tr);</span>
+<span class="nc bnc" id="L472" title="All 2 branches missed.">                if (a == null) {</span>
+<span class="nc" id="L473">                    a = new TIntArrayList();</span>
+<span class="nc" id="L474">                    trXYIndexesMap.put(tr, a);</span>
+                }
+<span class="nc" id="L476">                a.addAll(idxs);</span>
+              
+                /*
+                for (int k = 0; k &lt; idxs.size(); ++k) {
+                    int idx = idxs.get(k);
+                    System.out.println(
+                        String.format(&quot;-- (%d,%d) &quot;,
+                        xs.get(idx), ys.get(idx))
+                    );
+                }
+                */
+            }
+<span class="nc" id="L488">            trs[count] = tr;</span>
+<span class="nc" id="L489">            nPoints[count] = np;</span>
+<span class="nc" id="L490">            lIdxs[count] = count;</span>
+<span class="nc" id="L491">            count++;</span>
+<span class="nc" id="L492">        }</span>
+<span class="nc" id="L493">        QuickSort.sortBy1stArg(nPoints, lIdxs);</span>
+                
+<span class="nc" id="L495">        Set&lt;PairInt&gt; skip = new HashSet&lt;PairInt&gt;();</span>
+        
+<span class="nc bnc" id="L497" title="All 2 branches missed.">        for (int i = (count - 1); i &gt; -1; --i) {</span>
+<span class="nc" id="L498">            int lIdx = lIdxs[i];</span>
+<span class="nc" id="L499">            int np = nPoints[i];</span>
+            
+<span class="nc" id="L501">            PairInt tr = trs[lIdx];</span>
+            
+<span class="nc bnc" id="L503" title="All 2 branches missed.">            if (skip.contains(tr)) {</span>
+<span class="nc" id="L504">                continue;</span>
+            }
+
+<span class="nc" id="L507">            TIntList xyList = new TIntArrayList();</span>
+
+<span class="nc" id="L509">            int sumT = 0;</span>
+<span class="nc" id="L510">            int sumR = 0;</span>
+<span class="nc" id="L511">            int sumN = 0;</span>
+           
+<span class="nc bnc" id="L513" title="All 2 branches missed.">            for (int t0 = tr.getX() - 2; t0 &lt;= tr.getX() + 2; ++t0) {</span>
+<span class="nc bnc" id="L514" title="All 2 branches missed.">                for (int r0 = tr.getY() - 2; r0 &lt;= tr.getY() + 2; ++r0) {</span>
+<span class="nc" id="L515">                    PairInt tr0 = new PairInt(t0, r0);</span>
+<span class="nc" id="L516">                    TIntList a = trXYIndexesMap.get(tr0);</span>
+<span class="nc bnc" id="L517" title="All 2 branches missed.">                    if (a == null) {</span>
+<span class="nc" id="L518">                        continue;</span>
+                    }
+                    
+                    /*for (int k = 0; k &lt; a.size(); ++k) {
+                        int idx = a.get(k);
+                        System.out.println(
+                        String.format(&quot;-- (%d,%d) tr=%s&quot;,
+                        xs.get(idx), ys.get(idx), tr0)
+                        );
+                    }*/
+                    
+<span class="nc" id="L529">                    xyList.addAll(a);</span>
+<span class="nc" id="L530">                    trXYIndexesMap.remove(tr0);</span>
+<span class="nc" id="L531">                    skip.add(tr0);</span>
+<span class="nc" id="L532">                    sumT += tr0.getX();</span>
+<span class="nc" id="L533">                    sumR += tr0.getY();</span>
+<span class="nc" id="L534">                    sumN++;</span>
+                }
+            }
+<span class="nc" id="L537">            sumR /= sumN;</span>
+<span class="nc" id="L538">            sumT /= sumN;</span>
+<span class="nc" id="L539">            PairInt tr0 = new PairInt(sumT, sumR);</span>
+<span class="nc" id="L540">            orderedTRList.add(tr0);</span>
+<span class="nc" id="L541">            orderedTRXYIndexes.add(xyList);</span>
+        }        
+<span class="nc" id="L543">    }</span>
+    
+    public void debugDraw(algorithms.imageProcessing.Image img) {
+        
+<span class="nc bnc" id="L547" title="All 2 branches missed.">        if (orderedTRList == null) {</span>
+<span class="nc" id="L548">            throw new IllegalStateException(&quot;groupWithinTolerance must be &quot;</span>
+                + &quot; invoked first&quot;);
+        }
+        
+<span class="nc" id="L552">        sortOrderedLists();</span>
+        
+<span class="nc" id="L554">        int w = img.getWidth();</span>
+<span class="nc" id="L555">        int h = img.getHeight();</span>
+          
+<span class="nc" id="L557">        boolean drawLines = false;</span>
+             
+        // TODO: consider revising this
+<span class="nc" id="L560">        int end = 15;</span>
+        //if (end &gt; (orderedTRList.size() - 1)) {
+<span class="nc" id="L562">            end = orderedTRList.size();</span>
+        //}
+<span class="nc bnc" id="L564" title="All 2 branches missed.">        for (int i = 0; i &lt; end; ++i) {</span>
+            
+<span class="nc" id="L566">            PairInt tr = orderedTRList.get(i);</span>
+<span class="nc" id="L567">            TIntList xyIdxs = orderedTRXYIndexes.get(i);</span>
+<span class="nc" id="L568">            int np = xyIdxs.size();</span>
+            
+<span class="nc" id="L570">            int clr = ImageIOHelper.getNextColorRGB(i);</span>
+            
+<span class="nc" id="L572">            System.out.println(&quot;np=&quot; + np + &quot; tr=&quot; + tr);</span>
+            
+<span class="nc bnc" id="L574" title="All 2 branches missed.">            if (drawLines) {</span>
+                
+<span class="nc" id="L576">                int[] eps = LinesAndAngles.calcPolarLineEndPoints(</span>
+<span class="nc" id="L577">                    tr.getX(), tr.getY(), img.getWidth(), img.getHeight());</span>
+
+                //System.out.println(&quot;tr=&quot; + tr.toString() + &quot; eps=&quot; +
+                //    Arrays.toString(eps) + &quot; w=&quot; + img.getWidth() + 
+                //    &quot; h=&quot; + img.getHeight());
+               
+<span class="nc" id="L583">                ImageIOHelper.drawLineInImage(</span>
+                    eps[0], eps[1], eps[2], eps[3], img, 1, 
+                    clr);
+                
+<span class="nc" id="L587">            } else {                </span>
+<span class="nc bnc" id="L588" title="All 2 branches missed.">                for (int k = 0; k &lt; xyIdxs.size(); ++k) {</span>
+<span class="nc" id="L589">                    int idx = xyIdxs.get(k);</span>
+<span class="nc" id="L590">                    int x = xs.get(idx);</span>
+<span class="nc" id="L591">                    int y = ys.get(idx);</span>
+<span class="nc" id="L592">                    ImageIOHelper.addPointToImage(x, y, img, 1, </span>
+                        clr);
+                    
+                }
+                //System.out.println(&quot;  tr=&quot; + tr + &quot; n=&quot; 
+                //    + xyIdxs.size() + &quot; i=&quot; + i + &quot; clr=&quot; + clr);
+            }
+        }
+<span class="nc" id="L600">    }</span>
+
+    private int[] findXYBounds(TIntList xyIdxs) {
+
+<span class="nc" id="L604">        int xMin = Integer.MAX_VALUE;</span>
+<span class="nc" id="L605">        int xMax = Integer.MIN_VALUE;</span>
+<span class="nc" id="L606">        int yMin = Integer.MAX_VALUE;</span>
+<span class="nc" id="L607">        int yMax = Integer.MIN_VALUE;</span>
+        
+<span class="nc bnc" id="L609" title="All 2 branches missed.">        for (int i = 0; i &lt; xyIdxs.size(); ++i) {</span>
+<span class="nc" id="L610">            int idx = xyIdxs.get(i);</span>
+<span class="nc" id="L611">            int x = xs.get(idx);</span>
+<span class="nc" id="L612">            int y = ys.get(idx);</span>
+<span class="nc bnc" id="L613" title="All 2 branches missed.">            if (x &lt; xMin) {</span>
+<span class="nc" id="L614">                xMin = x;</span>
+            }
+<span class="nc bnc" id="L616" title="All 2 branches missed.">            if (y &lt; yMin) {</span>
+<span class="nc" id="L617">                yMin = y;</span>
+            }
+<span class="nc bnc" id="L619" title="All 2 branches missed.">            if (x &gt; xMax) {</span>
+<span class="nc" id="L620">                xMax = x;</span>
+            }
+<span class="nc bnc" id="L622" title="All 2 branches missed.">            if (y &gt; yMax) {</span>
+<span class="nc" id="L623">                yMax = y;</span>
+            }
+        }
+        
+<span class="nc" id="L627">        return new int[]{xMin, xMax, yMin, yMax};</span>
+    }
+
+    private boolean assertUniquePoints2(List&lt;Set&lt;PairInt&gt;&gt; 
+        list) {
+
+<span class="nc" id="L633">        Set&lt;PairInt&gt; exists = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc bnc" id="L634" title="All 2 branches missed.">        for (int i = 0; i &lt; list.size(); ++i) {</span>
+<span class="nc" id="L635">            Set&lt;PairInt&gt; set = list.get(i);</span>
+<span class="nc bnc" id="L636" title="All 2 branches missed.">            for (PairInt p : set) {</span>
+<span class="nc bnc" id="L637" title="All 2 branches missed.">                if (exists.contains(p)) {</span>
+<span class="nc" id="L638">                    System.err.println(&quot;error: exists &quot; + p);</span>
+<span class="nc" id="L639">                    return false;</span>
+                }
+<span class="nc" id="L641">                exists.add(p);</span>
+<span class="nc" id="L642">            }</span>
+        }
+        
+<span class="nc" id="L645">        return true;</span>
+    }
+    
+    private boolean assertUniquePoints(
+        List&lt;PairIntArray&gt; listOfBounds) {
+
+<span class="nc" id="L651">        Set&lt;PairInt&gt; exists = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc bnc" id="L652" title="All 2 branches missed.">        for (int i = 0; i &lt; listOfBounds.size(); ++i) {</span>
+<span class="nc" id="L653">            PairIntArray a = listOfBounds.get(i);</span>
+<span class="nc bnc" id="L654" title="All 2 branches missed.">            for (int j = 0; j &lt; a.getN(); ++j) {</span>
+<span class="nc" id="L655">                PairInt p = new PairInt(a.getX(j), a.getY(j));</span>
+<span class="nc bnc" id="L656" title="All 2 branches missed.">                if (exists.contains(p)) {</span>
+<span class="nc" id="L657">          System.out.println(&quot;ERROR: exists &quot; + p);</span>
+<span class="nc" id="L658">                    return false;</span>
+                }
+<span class="nc" id="L660">                exists.add(p);</span>
+            }
+        }
+        
+<span class="nc" id="L664">        return true;</span>
+    }
+
+    /**
+     * @return the xs
+     */
+    public TIntList getXs() {
+<span class="nc" id="L671">        return xs;</span>
+    }
+
+    /**
+     * @return the ys
+     */
+    public TIntList getYs() {
+<span class="nc" id="L678">        return ys;</span>
+    }
+
+    /**
+     * @return the orderedTRList
+     */
+    public List&lt;PairInt&gt; getOrderedTRList() {
+<span class="nc" id="L685">        return orderedTRList;</span>
+    }
+
+    /**
+     * @return the orderedTRXYIndexes
+     */
+    public List&lt;TIntList&gt; getOrderedTRXYIndexes() {
+<span class="nc" id="L692">        return orderedTRXYIndexes;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

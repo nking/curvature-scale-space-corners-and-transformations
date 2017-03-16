@@ -1,0 +1,736 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>MSER.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.features.mser</a> &gt; <span class="el_source">MSER.java</span></div><h1>MSER.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.features.mser;
+
+import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.util.VeryLongBitString;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+MSER.java and Region.java are java ports of the C++ MSER
+implementation of MSER by Charles Dubout, charles.dubout@idiap.ch,
+downloaded from https://github.com/idiap/mser
+His C++ code is an implementation of  
+&quot;Linear Time Maximally Stable Extremal Regions&quot;,
+by D. Nistér and H. Stewénius, ECCV 2008.
+
+The C++ code has copyright:
+--------------------------
+GNU GENERAL PUBLIC LICENSE, Version 3
+
+Copyright (c) 2011 Idiap Research Institute, http://www.idiap.ch/.
+Written by Charles Dubout charles.dubout@idiap.ch.
+
+MSER is free software: you can redistribute it and/or modify it under the terms of the GNU
+General Public License version 3 as published by the Free Software Foundation.
+ MSER is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
+the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+Public License for more details.
+
+You should have received a copy of the GNU General Public License along with MSER. If not, see
+http://www.gnu.org/licenses/.
+--------------------------
+
+Linear time Maximally Stable Extremal Regions (MSER) implementation as described
+in D. Nistér and H. Stewénius, &quot;Linear Time Maximally Stable Extremal Regions&quot;,
+ECCV 2008.
+The functionality is similar to that of VLFeat MSER feature detector
+http://www.vlfeat.org/overview/mser.html but the code is several time faster.
+MSER is a blob detector, like the Laplacian of Gaussian used by the SIFT
+algorithm. It extracts stable connected regions of some level sets from an
+image, and optionally fits ellipses to them.
+
+The MSER class extracts maximally stable extremal regions
+from a grayscale (8 bits) image.
+note The MSER class is not reentrant, so if you want to
+extract regions in parallel, each
+thread needs to have its own MSER class instance.
+* 
+* The java port of the C++ code just quoted is from this project is
+* by author nichole.
+* 
+* ---------
+* details of the Nistér and H. Stewénius version of the MSER algorithm.
+* 
+* The authors use a flood fill style 
+* traversal rather than a watershed (watershed is the pattern used by
+* the original MSER authors, Matas et al.) to result in fewer computations and
+* a shorter stack (max size being 256 rather than nPixels, excepting the 
+* input itself).
+* From any starting pixel, a region is created and the adjacent pixels are explored.
+* Any adjacent pixel with a lower intensity gets immediate priority in processing
+* while the current gets put onto a queue.
+* No pixels are processed more than once and the exploration stops when
+* the greyscale level increases to pass the maximum value of 255.
+* 
+* processing involves comparison of an accumulated region to 
+* it's parent and child where the comparison is the fractional 
+* difference in the areas (to determine whether the current
+* region is a minimum in a small sample of the growth rate).
+* 
+* The worse case runtime complexity is
+      O((n + e) log(m))
+      where n is the number of pixels, 
+      m the number of grey-levels == 256, 
+      and e is the number of edges in the image graph 
+      (where e ≈ 2n for four-connected images). 
+
+* ------
+* author nichole ported the C++ code of Charles Dubout to java 
+* and added the use of bit vectors as 
+* recommended by Nister and Stewénius.
+* recently added the accumulated points also at the cost of space complexity
+* in order to use the Regions for patch matching and edges.
+*/
+public class MSER {
+
+    private int delta_;
+    private double minArea_;
+    private double maxArea_;
+    private double maxVariation_;
+    private double minDiversity_;
+    private boolean eight_;
+    
+<span class="fc" id="L95">    private List&lt;Region&gt; regionStack = new ArrayList&lt;Region&gt;();</span>
+
+    /**
+    constructor w/ the following default values:
+    @param[in] delta DELTA parameter of the MSER algorithm.
+               Roughly speaking, the stability of a
+	       region is the relative variation of the region
+               area when the intensity is changed by delta.
+               (default delta = 2.0)
+    @param[in] minArea Minimum area of any stable region
+               relative to the image domain area.
+               (double minArea = 0.0001)
+    @param[in] maxArea Maximum area of any stable region
+               relative to the image domain area.
+               (double maxArea = 0.5)
+    @param[in] maxVariation Maximum variation (absolute
+               stability score) of the regions.
+               (double maxVariation = 0.5)
+    @param[in] minDiversity Minimum diversity of the regions.
+               When the relative area of two
+     	       nested regions is below this threshold,
+               then only the most stable one is selected.
+               (double minDiversity = 0.33)
+    @param[in] eight Use 8-connected pixels instead of 4-connected.
+    */
+<span class="fc" id="L120">    public MSER() {</span>
+
+<span class="fc" id="L122">        int delta = 2;</span>
+<span class="fc" id="L123">        double minArea = 0.0001;</span>
+<span class="fc" id="L124">        double maxArea = 0.5;</span>
+<span class="fc" id="L125">        double maxVariation = 0.5;</span>
+<span class="fc" id="L126">        double minDiversity = 0.33;</span>
+<span class="fc" id="L127">        boolean eight = false;</span>
+
+<span class="fc" id="L129">        init(delta, minArea, maxArea, maxVariation, minDiversity, eight);</span>
+<span class="fc" id="L130">    }</span>
+
+    /**
+    @param delta DELTA parameter of the MSER algorithm.
+               Roughly speaking, the stability of a
+	       region is the relative variation of the region
+               area when the intensity is changed by delta.
+               (default delta = 2.0)
+    @param minArea Minimum area of any stable region
+               relative to the image domain area.
+               (double minArea = 0.0001)
+    @param maxArea Maximum area of any stable region
+               relative to the image domain area.
+               (double maxArea = 0.5)
+    @param maxVariation Maximum variation (absolute
+               stability score) of the regions.
+               (double maxVariation = 0.5)
+    @param minDiversity Minimum diversity of the regions.
+               When the relative area of two
+	       nested regions is below this threshold,
+               then only the most stable one is selected.
+               (double minDiversity = 0.33)
+    @param eight Use 8-connected pixels instead of 4-connected.
+    */
+    public MSER(int delta, double minArea, double maxArea,
+<span class="fc" id="L155">        double maxVariation, double minDiversity, boolean eight) {</span>
+
+<span class="fc" id="L157">        init(delta, minArea, maxArea, maxVariation, minDiversity, eight);</span>
+<span class="fc" id="L158">    }</span>
+
+    private void init(int delta, double minArea, double maxArea,
+        double maxVariation, double minDiversity,
+        boolean eight) {
+
+<span class="fc" id="L164">        this.eight_ = eight;</span>
+<span class="fc" id="L165">        this.delta_ = delta;</span>
+<span class="fc" id="L166">        this.minArea_ = minArea;</span>
+<span class="fc" id="L167">        this.maxArea_ = maxArea;</span>
+<span class="fc" id="L168">        this.maxVariation_ = maxVariation;</span>
+<span class="fc" id="L169">        this.minDiversity_ = minDiversity;</span>
+       
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">        if (delta &lt;= 0) {</span>
+<span class="nc" id="L172">            throw new IllegalArgumentException(&quot;delta must be &gt; 0&quot;);</span>
+        }
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">        if (minArea &lt; 0.0) {</span>
+<span class="nc" id="L175">            throw new IllegalArgumentException(&quot;minArea must be &gt;= 0&quot;);</span>
+        }
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">        if (maxArea &gt; 1.0) {</span>
+<span class="nc" id="L178">            throw new IllegalArgumentException(&quot;maxArea must be &lt;= 1&quot;);</span>
+        }
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">        if (minArea &gt;= maxArea) {</span>
+<span class="nc" id="L181">            throw new IllegalArgumentException(&quot;minArea must be &lt; maxArea&quot;);</span>
+        }
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">        if (maxVariation &lt;= 0.0) {</span>
+<span class="nc" id="L184">            throw new IllegalArgumentException(&quot;maxVariation must be &gt; 0&quot;);</span>
+        }
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">        if (minDiversity &lt; 0.0) {</span>
+<span class="nc" id="L187">            throw new IllegalArgumentException(&quot;minDiversity must be &lt; 0&quot;);</span>
+        }
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">        if (minDiversity &gt;= 1) {</span>
+<span class="nc" id="L190">            throw new IllegalArgumentException(&quot;minDiversity must be &lt; 1&quot;);</span>
+        }
+<span class="fc" id="L192">    }</span>
+
+    /**
+      Extracts maximally stable extremal regions from a
+      greyscale (8 bits) image.
+      @param bits array of 8 bit greyscale image values.  the maximum size
+      of the array is currently 2^27 -1, due to
+      internal data structures and encoding, but this may change.
+          
+      @param width Width of the image.
+      @param height Height of the image.
+      @param regions output Detected MSER.
+    */
+    public void operator(int[] bits, int width, int height,
+        List&lt;Region&gt; regions) {
+
+<span class="pc bpc" id="L208" title="1 of 2 branches missed.">        if (bits.length &gt; ((1 &lt;&lt; 27) - 1)) {</span>
+            
+<span class="nc" id="L210">            throw new IllegalArgumentException(&quot;bits.length must be less than &quot;</span>
+                + &quot; 27 bits currently.  just need to edit a variable to&quot;
+                + &quot; use long instead.  upper limit to bits.length would then&quot;
+                + &quot; be 31 bits - 1, limited by java language array length limit&quot;);
+        }
+        
+        // 1. Clear the accessible pixel mask,
+        //    the heap of boundary pixels and
+        //    the component stack. Push
+        //    a dummy-component onto the stack, with grey-level
+        //    higher than any allowed in the image.
+<span class="fc" id="L221">        VeryLongBitString accessible = new VeryLongBitString(width * height);</span>
+        
+        // priority queue of boundary pixels, priority = -greylevel
+<span class="fc" id="L224">        TIntList[] boundaryPixels = new TIntArrayList[256];</span>
+<span class="fc bfc" id="L225" title="All 2 branches covered.">        for (int i = 0; i &lt; 256; ++i) {</span>
+<span class="fc" id="L226">            boundaryPixels[i] = new TIntArrayList();</span>
+        }
+<span class="fc" id="L228">        VeryLongBitString boundaryPixelsIdx = new VeryLongBitString(256);</span>
+        
+<span class="fc" id="L230">        int priority = 256;</span>
+        
+        // stack of components (max size is number of grey levels, 256)
+<span class="fc" id="L233">        List&lt;Region&gt; regionStack = new ArrayList&lt;Region&gt;(256);</span>
+<span class="fc" id="L234">        regionStack.add(new Region());</span>
+
+        // 2. Make the source pixel (with its first edge) the current pixel, 
+        //    mark it as accessible and
+        //    store the grey-level of it in the variable current level.
+<span class="fc" id="L239">        int curPixel = 0;</span>
+<span class="fc" id="L240">        int curEdge = 0;</span>
+<span class="fc" id="L241">        int curLevel = bits[0];</span>
+        // set bit 0
+<span class="fc" id="L243">        accessible.setBit(0);</span>
+
+        // 3. Push an empty component with current level onto the component stack.
+        //step_3:
+<span class="fc" id="L247">        regionStack.add(new Region(curLevel, curPixel));</span>
+
+        // 4. Explore the remaining edges to the neighbors of the current pixel, 
+        // in order, as follows:
+        // For each neighbor, check if the neighbor is already accessible. 
+        //   If it is not, mark it as accessible and retrieve its grey-level. 
+        //     If the grey-level is not lower than the current one,
+        //       push it onto the heap of boundary pixels. 
+        //     else If the grey-level is lower than the current one, 
+        //       enter the current pixel back into the queue of boundary pixels 
+        //       for later processing (with the next edge number), 
+        //       consider the new pixel and its grey-level and go to 3.
+        while (true) {
+
+<span class="fc" id="L261">            int x = curPixel % width;</span>
+<span class="fc" id="L262">            int y = curPixel / width;</span>
+
+<span class="fc" id="L264">            boolean s3 = false;</span>
+
+<span class="fc bfc" id="L266" title="All 4 branches covered.">            for (; curEdge &lt; (eight_ ? 8 : 4); ++curEdge) {</span>
+
+<span class="fc" id="L268">                int neighborPixel = curPixel;</span>
+
+<span class="fc bfc" id="L270" title="All 2 branches covered.">                if (eight_) {</span>
+                    //pix = row * w + col
+<span class="fc bfc" id="L272" title="All 8 branches covered.">                    switch (curEdge) {</span>
+<span class="fc bfc" id="L273" title="All 2 branches covered.">                        case 0: if (x &lt; width - 1) neighborPixel = curPixel + 1; break;</span>
+<span class="fc bfc" id="L274" title="All 4 branches covered.">                        case 1: if ((x &lt; width - 1) &amp;&amp; (y &gt; 0)) neighborPixel = curPixel - width + 1; break;</span>
+<span class="fc bfc" id="L275" title="All 2 branches covered.">                        case 2: if (y &gt; 0) neighborPixel = curPixel - width; break;</span>
+<span class="fc bfc" id="L276" title="All 4 branches covered.">                        case 3: if ((x &gt; 0) &amp;&amp; (y &gt; 0)) neighborPixel = curPixel - width - 1; break;</span>
+<span class="fc bfc" id="L277" title="All 2 branches covered.">                        case 4: if (x &gt; 0) neighborPixel = curPixel - 1; break;</span>
+<span class="fc bfc" id="L278" title="All 4 branches covered.">                        case 5: if ((x &gt; 0) &amp;&amp; (y &lt; height - 1)) neighborPixel = curPixel + width - 1; break;</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">                        case 6: if (y &lt; height - 1) neighborPixel = curPixel + width; break;</span>
+<span class="fc bfc" id="L280" title="All 4 branches covered.">                        default: if ((x &lt; width - 1) &amp;&amp; (y &lt; height - 1)) neighborPixel = curPixel + width + 1; break;</span>
+                    }
+                } else {
+<span class="fc bfc" id="L283" title="All 4 branches covered.">                    switch (curEdge) {</span>
+<span class="fc bfc" id="L284" title="All 2 branches covered.">                        case 0: if (x &lt; width - 1) neighborPixel = curPixel + 1; break;</span>
+<span class="fc bfc" id="L285" title="All 2 branches covered.">                        case 1: if (y &lt; height - 1) neighborPixel = curPixel + width; break;</span>
+<span class="fc bfc" id="L286" title="All 2 branches covered.">                        case 2: if (x &gt; 0) neighborPixel = curPixel - 1; break;</span>
+<span class="fc bfc" id="L287" title="All 2 branches covered.">                        default: if (y &gt; 0) neighborPixel = curPixel - width; break;</span>
+                    }
+                }
+
+<span class="fc bfc" id="L291" title="All 2 branches covered.">                if (neighborPixel != curPixel</span>
+<span class="fc bfc" id="L292" title="All 2 branches covered.">                    &amp;&amp; accessible.isNotSet(neighborPixel)) {</span>
+
+<span class="fc" id="L294">                    int neighborLevel = bits[neighborPixel];</span>
+<span class="fc" id="L295">                    accessible.setBit(neighborPixel);</span>
+                    
+<span class="fc bfc" id="L297" title="All 2 branches covered.">                    if (neighborLevel &gt;= curLevel) {</span>
+             
+                        // implicitly '|' with curEdge=-1, then implicity read
+                        //   as next being 0
+<span class="fc" id="L301">                        boundaryPixels[neighborLevel].add(neighborPixel &lt;&lt; 4);</span>
+<span class="fc" id="L302">                        boundaryPixelsIdx.setBit(neighborLevel);</span>
+               
+<span class="fc bfc" id="L304" title="All 2 branches covered.">                        if (neighborLevel &lt; priority) {</span>
+                            // always handle a smaller grey level next
+<span class="fc" id="L306">                            priority = neighborLevel;</span>
+                        }
+                    } else {
+                        
+                        // always handle a smaller grey level next,
+                        // so process neighbor and put current level as priority
+
+<span class="fc" id="L313">                        boundaryPixels[curLevel].add((curPixel &lt;&lt; 4) | (curEdge + 1));</span>
+<span class="fc" id="L314">                        boundaryPixelsIdx.setBit(curLevel);</span>
+    
+<span class="fc bfc" id="L316" title="All 2 branches covered.">                        if (curLevel &lt; priority) {</span>
+<span class="fc" id="L317">                            priority = curLevel;</span>
+                        }
+<span class="fc" id="L319">                        curPixel = neighborPixel;</span>
+<span class="fc" id="L320">                        curEdge = 0;</span>
+<span class="fc" id="L321">                        curLevel = neighborLevel;</span>
+
+                        //continue step_3;
+<span class="fc" id="L324">                        s3 = true;</span>
+                        
+<span class="fc" id="L326">                        break;</span>
+                    }
+                }
+            } // end for loop over currEdge
+
+<span class="fc bfc" id="L331" title="All 2 branches covered.">            if (s3) {</span>
+
+<span class="fc" id="L333">                regionStack.add(new Region(curLevel, curPixel));</span>
+
+<span class="fc" id="L335">                continue;</span>
+            }
+
+            // 5. Accumulate the current pixel to the component at the top of the stack (water
+            // saturates the current pixel).
+<span class="fc" id="L340">            regionStack.get(regionStack.size() - 1).accumulate(x, y);</span>
+
+            // 6. Pop the heap of boundary pixels. If the heap is empty, 
+            //    we are done. 
+            //    If the returned pixel is at the same grey-level as the 
+            //    previous, go to 4.
+<span class="fc bfc" id="L346" title="All 2 branches covered.">            if (priority == 256) {</span>
+
+<span class="fc" id="L348">                regionStack.get(regionStack.size() - 1)</span>
+<span class="fc" id="L349">                    .detect(delta_, (int)(minArea_ * width * height),</span>
+                        (int)(maxArea_ * width * height),
+                        maxVariation_, minDiversity_, regions);
+
+<span class="fc" id="L353">                return;</span>
+            }
+
+<span class="fc" id="L356">            int sz = boundaryPixels[priority].size();  </span>
+<span class="fc" id="L357">            int highestPriorityBP = boundaryPixels[priority].removeAt(sz - 1);</span>
+<span class="fc bfc" id="L358" title="All 2 branches covered.">            if (boundaryPixels[priority].isEmpty()) {</span>
+<span class="fc" id="L359">                boundaryPixelsIdx.clearBit(priority);</span>
+            }
+<span class="fc" id="L361">            curPixel = highestPriorityBP &gt;&gt; 4;</span>
+<span class="fc" id="L362">            curEdge = highestPriorityBP &amp; 15;</span>
+           
+<span class="pc bpc" id="L364" title="1 of 4 branches missed.">            if (priority &lt; 256 &amp;&amp; boundaryPixels[priority].isEmpty()) {</span>
+<span class="fc" id="L365">                int prev = priority;</span>
+<span class="fc" id="L366">                priority = boundaryPixelsIdx.nextHighestBitSet(priority - 1);</span>
+
+<span class="fc bfc" id="L368" title="All 2 branches covered.">                if (priority == -1) {</span>
+<span class="pc bpc" id="L369" title="1 of 4 branches missed.">                    if (prev == 255 || accessible.getNSetBits() == bits.length) {</span>
+<span class="fc" id="L370">                        priority = 256;</span>
+                    } else {
+<span class="nc" id="L372">                        priority = 255;</span>
+                    }
+                }             
+            }
+           
+<span class="fc" id="L377">            int newPixelGreyLevel = bits[curPixel];</span>
+
+<span class="fc bfc" id="L379" title="All 2 branches covered.">            if (newPixelGreyLevel != curLevel) {</span>
+
+<span class="fc" id="L381">                curLevel = newPixelGreyLevel;</span>
+ 
+                // 7. The returned pixel is at a higher grey-level, so we must 
+                // now process all components on the component stack until we 
+                // reach the higher grey-level. This is done with the 
+                // processStack sub-routine, see below.
+                // Then go to 4.
+<span class="fc" id="L388">                processStack(newPixelGreyLevel, curPixel, regionStack);</span>
+            }
+<span class="fc" id="L390">        }// end outer while loop</span>
+    }
+
+    private void processStack(int newPixelGreyLevel, int pixel,
+        List&lt;Region&gt; regionStack) {
+
+        // 1. Process component on the top of the stack. The next grey-level
+        // is the minimum of newPixelGreyLevel and the grey-level for the
+        // second component on the stack.
+        do {
+            
+<span class="fc" id="L401">            Region top = regionStack.remove(regionStack.size() - 1);</span>
+
+            // 2. If newPixelGreyLevel is smaller than the grey-level on the 
+            //    second component on the stack, set the top of stack 
+            //    grey-level to newPixelGreyLevel and return from sub-routine
+            //    (This occurs when the new pixel is at a grey-level for which 
+            //    there is not yet a component instantiated, so we let the top 
+            //    of stack be that level by just changing its grey-level.
+<span class="fc" id="L409">            if (newPixelGreyLevel &lt; </span>
+<span class="fc bfc" id="L410" title="All 2 branches covered.">                regionStack.get(regionStack.size() - 1).level_) {</span>
+
+                // NOTE, this slight change in methods used by Charles Dubout results
+                // in the history of top being added to new node correclty
+                // without additional logic
+<span class="fc" id="L415">                regionStack.add(new Region(newPixelGreyLevel, pixel));</span>
+            
+<span class="fc" id="L417">                regionStack.get(regionStack.size() - 1).merge(top);</span>
+
+<span class="fc" id="L419">                return;</span>
+            }
+
+            // 3. Remove the top of stack and merge it into the second component
+            // on stack as follows:
+            // Add the first and second moment accumulators together and/or
+            // join the pixel lists.
+            // Either merge the histories of the components, or take the history
+            // from the winner. Note
+            // here that the top of stack should be considered one ’time-step’
+            // back, so its current
+            // size is part of the history. Therefore the top of stack would
+            // be the winner if its
+            // current size is larger than the previous size of second on stack.
+            
+<span class="fc" id="L434">            regionStack.get(regionStack.size() - 1).merge(top);</span>
+            
+        } // 4. If(newPixelGreyLevel&gt;top of stack grey-level) go to 1.
+<span class="fc" id="L437">        while (newPixelGreyLevel &gt; </span>
+<span class="pc bpc" id="L438" title="1 of 2 branches missed.">            regionStack.get(regionStack.size() - 1).level_);</span>
+<span class="fc" id="L439">    }</span>
+
+    /**
+     * given 8 bit image, calculate the MSER regions.
+     * @param img
+     * @return 
+     */
+    public List&lt;List&lt;Region&gt;&gt; findRegions(GreyscaleImage img) {
+
+<span class="nc" id="L448">        int width = img.getWidth();</span>
+<span class="nc" id="L449">        int height = img.getHeight();</span>
+
+<span class="nc" id="L451">        int[] greyscale = new int[width * height];</span>
+<span class="nc bnc" id="L452" title="All 2 branches missed.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
+<span class="nc" id="L453">            greyscale[i] = img.getValue(i);</span>
+        }
+    
+<span class="nc" id="L456">        return findRegions(greyscale, width, height);</span>
+    }
+    
+    /**
+     * given 8 bit image, calculate the MSER regions.
+     * @param img
+     * @return 
+     */
+    public List&lt;List&lt;Region&gt;&gt; findRegions(GreyscaleImage img,
+        int delta, double minArea, double maxArea, double maxVariation,
+        double minDiversity) {
+
+<span class="nc" id="L468">        int width = img.getWidth();</span>
+<span class="nc" id="L469">        int height = img.getHeight();</span>
+
+<span class="nc" id="L471">        int[] greyscale = new int[width * height];</span>
+<span class="nc bnc" id="L472" title="All 2 branches missed.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
+<span class="nc" id="L473">            greyscale[i] = img.getValue(i);</span>
+        }
+    
+<span class="nc" id="L476">        return findRegions(greyscale, width, height, delta, minArea, maxArea, </span>
+            maxVariation, minDiversity);
+    }
+    
+    public enum Threshold {
+        LEAST_SENSITIVE, LESS_SENSITIVE, SLIGHTLY_LESS_SENSITIVE, DEFAULT
+    }
+    
+    public static int[] readIntoArray(GreyscaleImage img) {
+        
+<span class="fc" id="L486">        int width = img.getWidth();</span>
+<span class="fc" id="L487">        int height = img.getHeight();</span>
+
+<span class="fc" id="L489">        int[] greyscale = new int[width * height];</span>
+<span class="fc bfc" id="L490" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
+<span class="fc" id="L491">            greyscale[i] = img.getValue(i);</span>
+        }
+        
+<span class="fc" id="L494">        return greyscale;</span>
+    }
+    
+    /**
+     * given 8 bit image, calculate the MSER regions.
+     * @param img
+     * @return 
+     */
+    public List&lt;List&lt;Region&gt;&gt; findRegions(GreyscaleImage img, Threshold 
+        threshold) {
+
+<span class="fc" id="L505">        int width = img.getWidth();</span>
+<span class="fc" id="L506">        int height = img.getHeight();</span>
+
+<span class="fc" id="L508">        int[] greyscale = new int[width * height];</span>
+<span class="fc bfc" id="L509" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
+<span class="fc" id="L510">            greyscale[i] = img.getValue(i);</span>
+        }
+    
+<span class="fc" id="L513">        return findRegions(greyscale, width, height, threshold);</span>
+    }
+    
+    public List&lt;List&lt;Region&gt;&gt; findRegions(int[] greyscale, int width,
+        int height) {
+<span class="nc" id="L518">        return findRegions(greyscale, width, height, </span>
+            Threshold.DEFAULT);
+    }
+    
+     /**
+     * given 8 bit image, calculate the MSER regions.
+     * @param greyscale greyscale intensities of the image written so
+     * that the array index is (row * imageWidth) + col.
+     * @param width image width
+     * @param height image height
+     * @return 2 lists of mser regions, one created from a non-inverted
+     * image and the other created from an inverted image.
+     */
+    public List&lt;List&lt;Region&gt;&gt; findRegions(int[] greyscale, int width,
+        int height, Threshold threshold) {
+        
+<span class="fc" id="L534">        int delta = 2;</span>
+        double minArea;
+<span class="fc" id="L536">        double maxArea = 0.25;//0.1;</span>
+<span class="fc" id="L537">        double maxVariation = 0.5;</span>
+<span class="fc" id="L538">        double minDiversity = 0.5;</span>
+<span class="fc bfc" id="L539" title="All 2 branches covered.">        if (threshold.equals(Threshold.LEAST_SENSITIVE)) {</span>
+<span class="fc" id="L540">            minArea = 0.1;</span>
+<span class="fc bfc" id="L541" title="All 2 branches covered.">        } else if (threshold.equals(Threshold.LESS_SENSITIVE)) {</span>
+<span class="fc" id="L542">            minArea = 0.01;</span>
+<span class="fc bfc" id="L543" title="All 2 branches covered.">        } else if (threshold.equals(Threshold.SLIGHTLY_LESS_SENSITIVE)) {</span>
+<span class="fc" id="L544">            minArea = 0.001;</span>
+        } else {
+<span class="fc" id="L546">            minArea = 0.0005;</span>
+        }
+
+<span class="fc" id="L549">        return findRegions(greyscale, width, height, delta, minArea, maxArea, </span>
+            maxVariation, minDiversity);
+        
+    }
+    
+    /**
+     * given 8 bit image, calculate the MSER regions.
+     * @param greyscale greyscale intensities of the image written so
+     * that the array index is (row * imageWidth) + col.
+     * @param width image width
+     * @param height image height
+     * @return  list of mser regions created from a non-inverted
+     */
+    public List&lt;Region&gt; findRegionsPos(int[] greyscale, int width,
+        int height, Threshold threshold) {
+        
+<span class="nc" id="L565">        int delta = 2;</span>
+        double minArea;
+<span class="nc" id="L567">        double maxArea = 0.25;//0.1;</span>
+<span class="nc" id="L568">        double maxVariation = 0.5;</span>
+<span class="nc" id="L569">        double minDiversity = 0.5;</span>
+<span class="nc bnc" id="L570" title="All 2 branches missed.">        if (threshold.equals(Threshold.LEAST_SENSITIVE)) {</span>
+<span class="nc" id="L571">            minArea = 0.1;</span>
+<span class="nc bnc" id="L572" title="All 2 branches missed.">        } else if (threshold.equals(Threshold.LESS_SENSITIVE)) {</span>
+<span class="nc" id="L573">            minArea = 0.01;</span>
+<span class="nc bnc" id="L574" title="All 2 branches missed.">        } else if (threshold.equals(Threshold.SLIGHTLY_LESS_SENSITIVE)) {</span>
+<span class="nc" id="L575">            minArea = 0.001;</span>
+        } else {
+<span class="nc" id="L577">            minArea = 0.0005;</span>
+        }
+        
+<span class="nc" id="L580">        MSER mser8 = new MSER(delta, minArea, maxArea, maxVariation, </span>
+            minDiversity, true);
+        
+<span class="nc" id="L583">        List&lt;Region&gt; regions = new ArrayList&lt;Region&gt;();</span>
+
+<span class="nc" id="L585">        mser8.operator(greyscale, width, height, regions);</span>
+        
+<span class="nc" id="L587">        long stop = System.currentTimeMillis();</span>
+
+        //System.out.println(
+        //    &quot;Extracted &quot; + (regions.get(0).size() + regions.get(1).size())
+        //    + &quot; regions  (&quot; + width + 'x' + height + &quot;) in &quot;
+        //    + ((stop - start) / 1000) + &quot;s.&quot;);
+
+<span class="nc" id="L594">        return regions;</span>
+        
+    }
+    
+    /**
+     * given 8 bit image, calculate the MSER regions.
+     * @param greyscale greyscale intensities of the image written so
+     * that the array index is (row * imageWidth) + col.
+     * Note, the input greyscale array is modified to invert it.
+     * @param width image width
+     * @param height image height
+     * @return  list of mser regions created from a inverted
+     */
+    public List&lt;Region&gt; findRegionsNeg(int[] greyscale, int width,
+        int height, Threshold threshold) {
+        
+<span class="fc" id="L610">        int delta = 2;</span>
+        double minArea;
+<span class="fc" id="L612">        double maxArea = 0.25;//0.1;</span>
+<span class="fc" id="L613">        double maxVariation = 0.5;</span>
+<span class="fc" id="L614">        double minDiversity = 0.5;</span>
+<span class="fc bfc" id="L615" title="All 2 branches covered.">        if (threshold.equals(Threshold.LEAST_SENSITIVE)) {</span>
+<span class="fc" id="L616">            minArea = 0.1;</span>
+<span class="pc bpc" id="L617" title="1 of 2 branches missed.">        } else if (threshold.equals(Threshold.LESS_SENSITIVE)) {</span>
+<span class="nc" id="L618">            minArea = 0.01;</span>
+<span class="pc bpc" id="L619" title="1 of 2 branches missed.">        } else if (threshold.equals(Threshold.SLIGHTLY_LESS_SENSITIVE)) {</span>
+<span class="fc" id="L620">            minArea = 0.001;</span>
+        } else {
+<span class="nc" id="L622">            minArea = 0.0005;</span>
+        }
+
+<span class="fc" id="L625">        MSER mser4 = new MSER(delta, minArea, maxArea, maxVariation, </span>
+            minDiversity, false);
+
+<span class="fc" id="L628">        List&lt;Region&gt; regions = new ArrayList&lt;Region&gt;();</span>
+   
+        // Invert the pixel values
+<span class="fc bfc" id="L631" title="All 2 branches covered.">        for (int i = 0; i &lt; width * height; ++i) {</span>
+<span class="fc" id="L632">            greyscale[i] = ~greyscale[i];</span>
+<span class="pc bpc" id="L633" title="1 of 2 branches missed.">            if (greyscale[i] &lt; 0) {</span>
+<span class="fc" id="L634">                greyscale[i] += 256;</span>
+            }
+        }
+
+<span class="fc" id="L638">        mser4.operator(greyscale, width, height, regions);</span>
+
+<span class="fc" id="L640">        long stop = System.currentTimeMillis();</span>
+
+        //System.out.println(
+        //    &quot;Extracted &quot; + (regions.get(0).size() + regions.get(1).size())
+        //    + &quot; regions  (&quot; + width + 'x' + height + &quot;) in &quot;
+        //    + ((stop - start) / 1000) + &quot;s.&quot;);
+
+<span class="fc" id="L647">        return regions;</span>
+    }
+    
+    /**
+     * given 8 bit image, calculate the MSER regions.
+     * @param greyscale greyscale intensities of the image written so
+     * that the array index is (row * imageWidth) + col.
+     * @param width image width
+     * @param height image height
+     * @param delta DELTA parameter of the MSER algorithm.
+               Roughly speaking, the stability of a
+	       region is the relative variation of the region
+               area when the intensity is changed by delta.
+               (default delta = 2.0)
+    @param minArea Minimum area of any stable region
+               relative to the image domain area.
+               (double minArea = 0.0001)
+    @param maxArea Maximum area of any stable region
+               relative to the image domain area.
+               (double maxArea = 0.5)
+    @param maxVariation Maximum variation (absolute
+               stability score) of the regions.
+               (double maxVariation = 0.5)
+    @param minDiversity Minimum diversity of the regions.
+               When the relative area of two
+	       nested regions is below this threshold,
+               then only the most stable one is selected.
+               (double minDiversity = 0.33)
+     * @return 2 lists of mser regions, one created from a non-inverted
+     * image and the other created from an inverted image.
+     */
+    public List&lt;List&lt;Region&gt;&gt; findRegions(int[] greyscale, int width,
+        int height, int delta, double minArea, double maxArea, double maxVariation,
+        double minDiversity) {
+
+        // Extract MSER
+<span class="fc" id="L683">        long start = System.currentTimeMillis();</span>
+
+<span class="fc" id="L685">        MSER mser8 = new MSER(delta, minArea, maxArea, maxVariation, </span>
+            minDiversity, true);
+<span class="fc" id="L687">        MSER mser4 = new MSER(delta, minArea, maxArea, maxVariation, </span>
+            minDiversity, false);
+
+<span class="fc" id="L690">        List&lt;List&lt;Region&gt;&gt; regions = new ArrayList&lt;List&lt;Region&gt;&gt;(2);</span>
+<span class="fc" id="L691">        regions.add(new ArrayList&lt;Region&gt;());</span>
+<span class="fc" id="L692">        regions.add(new ArrayList&lt;Region&gt;());</span>
+
+<span class="fc" id="L694">        mser8.operator(greyscale, width, height, regions.get(0));</span>
+   
+        // Invert the pixel values
+<span class="fc bfc" id="L697" title="All 2 branches covered.">        for (int i = 0; i &lt; width * height; ++i) {</span>
+<span class="fc" id="L698">            greyscale[i] = ~greyscale[i];</span>
+<span class="pc bpc" id="L699" title="1 of 2 branches missed.">            if (greyscale[i] &lt; 0) {</span>
+<span class="fc" id="L700">                greyscale[i] += 256;</span>
+            }
+        }
+
+<span class="fc" id="L704">        mser4.operator(greyscale, width, height, regions.get(1));</span>
+
+<span class="fc" id="L706">        long stop = System.currentTimeMillis();</span>
+
+        //System.out.println(
+        //    &quot;Extracted &quot; + (regions.get(0).size() + regions.get(1).size())
+        //    + &quot; regions  (&quot; + width + 'x' + height + &quot;) in &quot;
+        //    + ((stop - start) / 1000) + &quot;s.&quot;);
+
+<span class="fc" id="L713">        return regions;</span>
+    }
+}
+
+//--------------------------------------------------------------------------------------------------
+// Linear time Maximally Stable Extremal Regions implementation as described in D. Nistér and
+// H. Stewénius. Linear Time Maximally Stable Extremal Regions. Proceedings of the European
+// Conference on Computer Vision (ECCV), 2008.
+//
+// Copyright (c) 2011 Idiap Research Institute, http://www.idiap.ch/.
+// Written by Charles Dubout &lt;charles.dubout@idiap.ch&gt;.
+//
+// MSER is free software: you can redistribute it and/or modify it under the terms of the GNU
+// General Public License version 3 as published by the Free Software Foundation.
+//
+// MSER is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
+// the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+// Public License for more details.
+//
+// You should have received a copy of the GNU General Public License along with MSER. If not, see
+// &lt;http://www.gnu.org/licenses/&gt;.
+//--------------------------------------------------------------------------------------------------
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

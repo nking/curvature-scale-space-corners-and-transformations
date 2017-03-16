@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CorrespondenceList.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.features</a> &gt; <span class="el_source">CorrespondenceList.java</span></div><h1>CorrespondenceList.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.features;
 
+import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.util.PairInt;
+import algorithms.util.QuadInt;
+import gnu.trove.list.TDoubleList;
+import gnu.trove.list.array.TDoubleArrayList;
 import java.util.List;
+import java.util.ArrayList;
 
 /**
  *
@@ -20,86 +25,173 @@ public class CorrespondenceList {
     private final List&lt;PairInt&gt; points1;
     private final List&lt;PairInt&gt; points2;
     
+<span class="pc" id="L28">    private final TDoubleList cost12 = new TDoubleArrayList();</span>
+    
+    //TODO: refactor so matches1 and 2 are constructed in class, not injected
     public CorrespondenceList(float scale, int rotationInDegrees, 
         int translationX, int translationY, int rangeRotation,
         int rangeTranslationX, int rangeTranslationY, 
-<span class="nc" id="L26">        List&lt;PairInt&gt; matched1, List&lt;PairInt&gt; matched2) {</span>
+<span class="nc" id="L34">        List&lt;PairInt&gt; matched1, List&lt;PairInt&gt; matched2) {</span>
         
-<span class="nc" id="L28">        this.scale = scale;</span>
-<span class="nc" id="L29">        this.rotationInDegrees = rotationInDegrees;</span>
-<span class="nc" id="L30">        this.translationX = translationX;</span>
-<span class="nc" id="L31">        this.translationY = translationY;</span>
+<span class="nc" id="L36">        this.scale = scale;</span>
+<span class="nc" id="L37">        this.rotationInDegrees = rotationInDegrees;</span>
+<span class="nc" id="L38">        this.translationX = translationX;</span>
+<span class="nc" id="L39">        this.translationY = translationY;</span>
         
-<span class="nc" id="L33">        this.rangeRotation = rangeRotation;</span>
-<span class="nc" id="L34">        this.rangeTranslationX = rangeTranslationX;</span>
-<span class="nc" id="L35">        this.rangeTranslationY = rangeTranslationY;</span>
+<span class="nc" id="L41">        this.rangeRotation = rangeRotation;</span>
+<span class="nc" id="L42">        this.rangeTranslationX = rangeTranslationX;</span>
+<span class="nc" id="L43">        this.rangeTranslationY = rangeTranslationY;</span>
         
-<span class="nc" id="L37">        this.points1 = matched1;</span>
-<span class="nc" id="L38">        this.points2 = matched2;</span>
-<span class="nc" id="L39">    }</span>
-
+<span class="nc" id="L45">        this.points1 = matched1;</span>
+<span class="nc" id="L46">        this.points2 = matched2;</span>
+<span class="nc" id="L47">    }</span>
+    
+    public CorrespondenceList(TransformationParameters params, 
+<span class="nc" id="L50">        PairInt[] matched1, PairInt[] matched2) {</span>
+        
+<span class="nc" id="L52">        this.scale = params.getScale();</span>
+<span class="nc" id="L53">        this.rotationInDegrees = Math.round(params.getRotationInDegrees());</span>
+<span class="nc" id="L54">        this.translationX = Math.round(params.getTranslationX());</span>
+<span class="nc" id="L55">        this.translationY = Math.round(params.getTranslationY());</span>
+        
+<span class="nc" id="L57">        this.rangeRotation = Integer.MAX_VALUE;</span>
+<span class="nc" id="L58">        this.rangeTranslationX = Integer.MAX_VALUE;</span>
+<span class="nc" id="L59">        this.rangeTranslationY = Integer.MAX_VALUE;</span>
+        
+<span class="nc" id="L61">        this.points1 = new ArrayList&lt;PairInt&gt;();</span>
+<span class="nc" id="L62">        this.points2 = new ArrayList&lt;PairInt&gt;();</span>
+<span class="nc bnc" id="L63" title="All 2 branches missed.">        for (int i = 0; i &lt; matched1.length; ++i) {</span>
+<span class="nc" id="L64">            points1.add(matched1[i]);</span>
+<span class="nc" id="L65">            points2.add(matched2[i]);</span>
+        }
+<span class="nc" id="L67">    }</span>
+    
+<span class="fc" id="L69">    public CorrespondenceList(List&lt;QuadInt&gt; matched12) {</span>
+        
+<span class="fc" id="L71">        this.scale = Float.POSITIVE_INFINITY;</span>
+<span class="fc" id="L72">        this.rotationInDegrees = Integer.MIN_VALUE;</span>
+<span class="fc" id="L73">        this.translationX = Integer.MIN_VALUE;</span>
+<span class="fc" id="L74">        this.translationY = Integer.MIN_VALUE;</span>
+<span class="fc" id="L75">        this.rangeRotation = Integer.MAX_VALUE;</span>
+<span class="fc" id="L76">        this.rangeTranslationX = Integer.MAX_VALUE;</span>
+<span class="fc" id="L77">        this.rangeTranslationY = Integer.MAX_VALUE;</span>
+        
+<span class="fc" id="L79">        this.points1 = new ArrayList&lt;PairInt&gt;();</span>
+<span class="fc" id="L80">        this.points2 = new ArrayList&lt;PairInt&gt;();</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        for (int i = 0; i &lt; matched12.size(); ++i) {</span>
+<span class="fc" id="L82">            QuadInt q = matched12.get(i);</span>
+<span class="fc" id="L83">            points1.add(new PairInt(q.getA(), q.getB()));</span>
+<span class="fc" id="L84">            points2.add(new PairInt(q.getC(), q.getD()));</span>
+        }
+<span class="fc" id="L86">    }</span>
+    
+    public void addMatch(PairInt p1, PairInt p2, double cost) {
+<span class="nc" id="L89">        points1.add(p1);</span>
+<span class="nc" id="L90">        points2.add(p2);</span>
+<span class="nc" id="L91">        cost12.add(cost);</span>
+<span class="nc" id="L92">    }</span>
+    
+    /*
+     * sort point pairs by increasing cost.  NOTE that until the class
+     * is refactored, it is up to the user to ensure that the numbers
+     * of point and costs are the same.
+    public void sortByAscendingCost() {
+        
+        if (points1.size() != points2.size() || points1.size() != cost12.size()) {
+            throw new IllegalStateException(&quot;points lists and costs list must be same size&quot;);
+        }
+        int n = points1.size();
+        int[] indexes = new int[n];
+        for (int i = 0; i &lt; n; ++i) {
+            indexes[i] = i;
+        }
+        
+        QuickSort.sortBy1stArg(cost12, indexes);
+        
+        List&lt;PairInt&gt; m1 = new ArrayList&lt;PairInt&gt;(n);
+        List&lt;PairInt&gt; m2 = new ArrayList&lt;PairInt&gt;(n);
+        
+        for (int i = 0; i &lt; indexes.length; ++i) {
+            int idx = indexes[i];
+            m1.add(points1.get(idx));
+            m2.add(points2.get(idx));
+        }
+    }
+    */
+    
     /**
      * @return the scale
      */
     public float getScale() {
-<span class="nc" id="L45">        return scale;</span>
+<span class="nc" id="L126">        return scale;</span>
     }
 
     /**
      * @return the rotationInDegrees
      */
     public int getRotationInDegrees() {
-<span class="nc" id="L52">        return rotationInDegrees;</span>
+<span class="nc" id="L133">        return rotationInDegrees;</span>
     }
 
     /**
      * @return the translationX
      */
     public int getTranslationX() {
-<span class="nc" id="L59">        return translationX;</span>
+<span class="nc" id="L140">        return translationX;</span>
     }
 
     /**
      * @return the translationY
      */
     public int getTranslationY() {
-<span class="nc" id="L66">        return translationY;</span>
+<span class="nc" id="L147">        return translationY;</span>
     }
 
     /**
      * @return the rangeRotation
      */
     public int getRangeRotation() {
-<span class="nc" id="L73">        return rangeRotation;</span>
+<span class="nc" id="L154">        return rangeRotation;</span>
     }
 
     /**
      * @return the rangeTranslationX
      */
     public int getRangeTranslationX() {
-<span class="nc" id="L80">        return rangeTranslationX;</span>
+<span class="nc" id="L161">        return rangeTranslationX;</span>
     }
 
     /**
      * @return the rangeTranslationY
      */
     public int getRangeTranslationY() {
-<span class="nc" id="L87">        return rangeTranslationY;</span>
+<span class="nc" id="L168">        return rangeTranslationY;</span>
     }
 
     /**
      * @return the points1
      */
     public List&lt;PairInt&gt; getPoints1() {
-<span class="nc" id="L94">        return points1;</span>
+<span class="fc" id="L175">        return points1;</span>
     }
 
     /**
      * @return the points2
      */
     public List&lt;PairInt&gt; getPoints2() {
-<span class="nc" id="L101">        return points2;</span>
+<span class="fc" id="L182">        return points2;</span>
     }
-    
+   
+    public TransformationParameters getParameters() {
+        
+<span class="nc" id="L187">        TransformationParameters params =</span>
+            new TransformationParameters();
+<span class="nc" id="L189">        params.setRotationInDegrees(this.rotationInDegrees);</span>
+<span class="nc" id="L190">        params.setScale(this.scale);</span>
+<span class="nc" id="L191">        params.setTranslationX(this.translationX);</span>
+<span class="nc" id="L192">        params.setTranslationY(this.translationY);</span>
+        
+<span class="nc" id="L194">        return params;</span>
+    }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

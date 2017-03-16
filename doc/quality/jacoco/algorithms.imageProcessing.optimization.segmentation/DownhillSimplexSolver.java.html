@@ -1,0 +1,707 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>DownhillSimplexSolver.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.optimization.segmentation</a> &gt; <span class="el_source">DownhillSimplexSolver.java</span></div><h1>DownhillSimplexSolver.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.optimization.segmentation;
+
+import algorithms.imageProcessing.ImageExt;
+import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.imageProcessing.ImageSegmentation;
+import algorithms.misc.MiscDebug;
+import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * given training datasets, finds the best combination of
+ * the 4 parameters of a segmentation algorithm using
+ * a pattern of bisecting each parameter's range space sequentially until 
+ * the solution converges.
+ * It assumes the there is one global solution and no local minima.
+ * 
+ * NOTE: for the NelderMead algorithm to work as well as the
+ * bisection solver, the parameters need to be scaled such that
+ * the delta's in the &quot;actions&quot; are the needed size (and then
+ * transformed for use...).
+ * 
+ * @author nichole
+ */
+public class DownhillSimplexSolver {
+        
+<span class="nc" id="L31">    private final Parameter tLen = new Parameter(1, 40, 5);</span>
+    
+    private final Parameter tColor;
+    
+<span class="nc" id="L35">    private final Parameter tR = new Parameter(0.5f * 3.0f, </span>
+        1.05f * 3.0f, 0.125f);
+    
+<span class="nc" id="L38">    private final Parameter tSmallMerge = new Parameter(</span>
+        0.005f, 0.1f, 0.01f);
+    
+<span class="nc" id="L41">    private double difference = Double.MAX_VALUE;</span>
+    
+    private final int colorSpace;
+    
+    private final boolean reduceNoise;
+    
+    private SData[] trainingData;
+  
+    public DownhillSimplexSolver(boolean useHSV, 
+<span class="nc" id="L50">        boolean useLowNoiseEdges, SData[] trainingData) {</span>
+<span class="nc bnc" id="L51" title="All 2 branches missed.">        colorSpace = useHSV ? 1 : 0;</span>
+<span class="nc" id="L52">        reduceNoise = useLowNoiseEdges;</span>
+<span class="nc" id="L53">        this.trainingData = trainingData;</span>
+        
+<span class="nc bnc" id="L55" title="All 2 branches missed.">        if (useHSV) {</span>
+<span class="nc" id="L56">            tColor = new Parameter(0.05f, 0.4f, 0.05f);</span>
+        } else {
+<span class="nc" id="L58">            tColor = new Parameter(1.5f, 9.f, 0.1f);</span>
+        }
+<span class="nc" id="L60">    }</span>
+    
+    /*
+    4 params:                    range of values
+          int tLen,                   trying as an integer, but might need to use 1 to 0.1*nPixels.  try: 1 to 100   d=10, n=10
+          double tColor,              for clrSpace=0   2.3 to 9   (2.5 to 5.5 is more reasonable)                    d=0.5, n=13
+                                      for clrSpace=1   0.1 to 0.7                                                    d=0.05, n=12
+          double tR,                  for clrSpace=0   0.5*3.0 to 0.95*3.0                                           d=0.5*3, n=18
+                                      for clrSpace=1   0.5*3.0 to 0.95*3.0                                           d=0.5*3, n=18
+          double tSmallMerge,         0.01 to 0.1                                                                    d=0.01, n=10
+
+       *solve for using clrSpace = 0 then =1
+
+       *solve for this as true and false:
+          boolean reduceNoise,
+    */
+    
+    /**
+     * 
+     * @throws IOException exceptions are thrown for errors in finding or
+     * reading the training file data.
+     */
+    public SFit solve() throws IOException, Exception {
+        
+        //Parameter[] parameters = new Parameter[]{tLen, tColor, 
+        //    tR, tSmallMerge};
+     
+<span class="nc" id="L87">        SegmentationResults[] expected = readTrainingFiles();</span>
+        
+<span class="nc" id="L89">        List&lt;List&lt;PairIntArray&gt;&gt; edgesList = extractEdges();</span>
+        
+<span class="nc" id="L91">        SFit[] yFits = createStarterPoints(expected,</span>
+<span class="nc" id="L92">            extractEdges());</span>
+        
+        int tLenCurrent;
+        double tColorCurrent;
+        double tRCurrent;
+        double tSmallMergeCurrent;
+              
+        /*
+        solve for the best parameters for each then average results
+        or solve for best parameters in total.
+        */
+<span class="nc" id="L103">        float alpha = 1;   // &gt; 0</span>
+<span class="nc" id="L104">        float gamma = 2;   // &gt; 1</span>
+<span class="nc" id="L105">        float beta = 0.9f; // 0 &lt; beta &lt; 1</span>
+
+<span class="nc" id="L107">        boolean go = true;</span>
+
+<span class="nc" id="L109">        int nMaxIter = 100;</span>
+<span class="nc" id="L110">        int nIter = 0;</span>
+        
+<span class="nc" id="L112">        SFit prevBest = null;</span>
+
+<span class="nc bnc" id="L114" title="All 4 branches missed.">        while (go &amp;&amp; (nIter &lt; nMaxIter)) {</span>
+            
+<span class="nc" id="L116">            yFits = condense(yFits);</span>
+            
+<span class="nc bnc" id="L118" title="All 2 branches missed.">            if (yFits.length &lt; 3) {</span>
+<span class="nc" id="L119">                break;</span>
+            }
+            
+<span class="nc" id="L122">            sortFromMinToMax(yFits, 0, 2);</span>
+
+<span class="nc" id="L124">            int minSimplexIndex = 0;</span>
+<span class="nc" id="L125">            int maxSimplexIndex = 2;</span>
+<span class="nc" id="L126">            int midSimplexIndex = 1;</span>
+
+            // determine center for all points excepting the worse fit
+<span class="nc" id="L129">            double sumTLen = 0.0;</span>
+<span class="nc" id="L130">            double sumTColor = 0.0;</span>
+<span class="nc" id="L131">            double sumTR = 0.0;</span>
+<span class="nc" id="L132">            double sumTSmallMerge = 0.0;</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">            for (int i = 0; i &lt; yFits.length - 1; i++) {</span>
+<span class="nc" id="L134">                sumTLen += yFits[i].tLenF;</span>
+<span class="nc" id="L135">                sumTColor += yFits[i].tColorF;</span>
+<span class="nc" id="L136">                sumTR += yFits[i].tRF;</span>
+<span class="nc" id="L137">                sumTSmallMerge += yFits[i].tSmallMergeF;</span>
+            }
+<span class="nc" id="L139">            tLenCurrent = (int)Math.round(</span>
+                sumTLen / (yFits.length - 1));
+<span class="nc" id="L141">            tColorCurrent = sumTColor / (yFits.length - 1);</span>
+<span class="nc" id="L142">            tRCurrent = sumTR / (yFits.length - 1);</span>
+<span class="nc" id="L143">            tSmallMergeCurrent = sumTSmallMerge / (yFits.length - 1);</span>
+            
+            // &quot;Reflection&quot;
+<span class="nc" id="L146">            double tLenReflect = tLenCurrent - </span>
+                (alpha * (yFits[maxSimplexIndex].tLenF - 
+                tLenCurrent));
+<span class="nc" id="L149">            double tColorReflect = tColorCurrent - </span>
+                (alpha * (yFits[maxSimplexIndex].tColorF - 
+                tColorCurrent));
+<span class="nc" id="L152">            double tRReflect = tRCurrent - </span>
+                (alpha * (yFits[maxSimplexIndex].tRF - 
+                tRCurrent));
+<span class="nc" id="L155">            double tSmallMergeReflect = tSmallMergeCurrent - </span>
+                (alpha * (yFits[maxSimplexIndex].tSmallMergeF - 
+                tSmallMergeCurrent));
+<span class="nc" id="L158">            SFit yFitReflected = invoke(tLenReflect, tColorReflect, </span>
+                tRReflect, tSmallMergeReflect, expected, edgesList);
+            
+<span class="nc bnc" id="L161" title="All 18 branches missed.">            if ((yFitReflected.costF &lt; </span>
+                yFits[minSimplexIndex].costF)
+                &amp;&amp; 
+                ((tLenReflect &gt;= tLen.vFirst) 
+                    &amp;&amp; (tLenReflect &lt;= tLen.vLast) 
+                &amp;&amp; (tColorReflect &gt;= tColor.vFirst) &amp;&amp; 
+                    (tColorReflect &lt;= tColor.vLast)
+                &amp;&amp; (tRReflect &gt;= tR.vFirst) 
+                    &amp;&amp; (tRReflect &lt;= tR.vLast)
+                &amp;&amp; (tSmallMergeReflect &gt;= tSmallMerge.vFirst) 
+                    &amp;&amp; (tSmallMergeReflect &lt;= tSmallMerge.vLast)
+                )
+            ) {
+
+                // &quot;Expansion&quot;
+<span class="nc" id="L176">                double tLenExpansion = tLenReflect - </span>
+                    (gamma * (tLenCurrent - tLenReflect));
+<span class="nc" id="L178">                double tColorExpansion = tColorReflect - </span>
+                    (gamma * (tColorCurrent - tColorReflect));
+<span class="nc" id="L180">                double tRExpansion = tRReflect - </span>
+                    (gamma * (tRCurrent - tRReflect));
+<span class="nc" id="L182">                double tSmallMergeExpansion = tSmallMergeReflect - </span>
+                    (gamma * (tSmallMergeCurrent - tSmallMergeReflect));
+<span class="nc" id="L184">                SFit yFitExpansion = invoke(</span>
+                    tLenExpansion, tColorExpansion, 
+                    tRExpansion, tSmallMergeExpansion, 
+                    expected, edgesList);
+                
+<span class="nc bnc" id="L189" title="All 18 branches missed.">                if ((yFitExpansion.costF &lt; </span>
+                yFits[minSimplexIndex].costF)
+                &amp;&amp; 
+                ((tLenExpansion &gt;= tLen.vFirst) 
+                    &amp;&amp; (tLenExpansion &lt;= tLen.vLast) 
+                &amp;&amp; (tColorExpansion &gt;= tColor.vFirst) &amp;&amp; 
+                    (tColorExpansion &lt;= tColor.vLast)
+                &amp;&amp; (tRExpansion &gt;= tR.vFirst) 
+                    &amp;&amp; (tRExpansion &lt;= tR.vLast)
+                &amp;&amp; (tSmallMergeExpansion &gt;= tSmallMerge.vFirst)
+                    &amp;&amp; (tSmallMergeExpansion &lt;= tSmallMerge.vLast)
+                )
+            ) {
+<span class="nc" id="L202">                    yFits[maxSimplexIndex] = yFitExpansion;</span>
+                } else {
+<span class="nc" id="L204">                    yFits[maxSimplexIndex] = yFitReflected;</span>
+                }
+
+<span class="nc bnc" id="L207" title="All 18 branches missed.">            } else if (</span>
+                (yFitReflected.costF &gt; 
+                yFits[midSimplexIndex].costF)
+                &amp;&amp; 
+                ((tLenReflect &gt;= tLen.vFirst) 
+                    &amp;&amp; (tLenReflect &lt;= tLen.vLast) 
+                &amp;&amp; (tColorReflect &gt;= tColor.vFirst) &amp;&amp; 
+                    (tColorReflect &lt;= tColor.vLast)
+                &amp;&amp; (tRReflect &gt;= tR.vFirst) 
+                    &amp;&amp; (tRReflect &lt;= tR.vLast)
+                &amp;&amp; (tSmallMergeReflect &gt;= tSmallMerge.vFirst) 
+                    &amp;&amp; (tSmallMergeReflect &lt;= tSmallMerge.vLast)
+                )
+            ) {
+
+<span class="nc bnc" id="L222" title="All 18 branches missed.">                if ((yFitReflected.costF </span>
+                    &lt;= yFits[maxSimplexIndex].costF)
+                    &amp;&amp; 
+                    ((tLenReflect &gt;= tLen.vFirst) 
+                        &amp;&amp; (tLenReflect &lt;= tLen.vLast) 
+                    &amp;&amp; (tColorReflect &gt;= tColor.vFirst) &amp;&amp; 
+                        (tColorReflect &lt;= tColor.vLast)
+                    &amp;&amp; (tRReflect &gt;= tR.vFirst) 
+                        &amp;&amp; (tRReflect &lt;= tR.vLast)
+                    &amp;&amp; (tSmallMergeReflect &gt;= tSmallMerge.vFirst) 
+                        &amp;&amp; (tSmallMergeReflect &lt;= tSmallMerge.vLast)
+                )
+                ) {
+
+<span class="nc" id="L236">                    yFits[maxSimplexIndex] = yFitReflected;</span>
+                }
+
+                // &quot;Contraction&quot;
+<span class="nc" id="L240">                double tLenContraction =     </span>
+                    (beta * yFits[maxSimplexIndex].tLenF)     
+                    + (1 - beta) * tLenCurrent;
+<span class="nc" id="L243">                double tColorContraction =     </span>
+                    (beta * yFits[maxSimplexIndex].tColorF)     
+                    + (1 - beta) * tColorCurrent;
+<span class="nc" id="L246">                double tRContraction =     </span>
+                    (beta * yFits[maxSimplexIndex].tRF)     
+                    + (1 - beta) * tRCurrent;
+<span class="nc" id="L249">                double tSmallMergeContraction =     </span>
+                    (beta * yFits[maxSimplexIndex].tSmallMergeF)     
+                    + (1 - beta) * tSmallMergeCurrent;
+<span class="nc" id="L252">                SFit yFitContraction = invoke(</span>
+                    tLenContraction, tColorContraction, 
+                    tRContraction, tSmallMergeContraction, 
+                    expected, edgesList);
+<span class="nc bnc" id="L256" title="All 18 branches missed.">                if (yFitContraction.costF &gt; yFits[maxSimplexIndex].costF</span>
+                    &amp;&amp; 
+                    ((tLenContraction &gt;= tLen.vFirst) 
+                    &amp;&amp; (tLenContraction &lt;= tLen.vLast) 
+                    &amp;&amp; (tColorContraction &gt;= tColor.vFirst) &amp;&amp; 
+                        (tColorContraction &lt;= tColor.vLast)
+                    &amp;&amp; (tRContraction &gt;= tR.vFirst) 
+                        &amp;&amp; (tRContraction &lt;= tR.vLast)
+                    &amp;&amp; (tSmallMergeContraction &gt;= tSmallMerge.vFirst)
+                        &amp;&amp; (tSmallMergeContraction &lt;= tSmallMerge.vLast)
+                    )
+                ) {
+<span class="nc" id="L268">                    double tLenTmp = (yFits[midSimplexIndex].tLenF </span>
+                        + yFits[minSimplexIndex].tLenF)/2;
+<span class="nc" id="L270">                    double tColorTmp = (yFits[midSimplexIndex].tColorF </span>
+                        + yFits[minSimplexIndex].tColorF)/2;
+<span class="nc" id="L272">                    double tRTmp = (yFits[midSimplexIndex].tRF </span>
+                        + yFits[minSimplexIndex].tRF)/2;
+<span class="nc" id="L274">                    double tSmallMergeTmp = </span>
+                        (yFits[midSimplexIndex].tSmallMergeF 
+                        + yFits[minSimplexIndex].tSmallMergeF)/2;
+<span class="nc" id="L277">                    yFits[midSimplexIndex] = </span>
+<span class="nc" id="L278">                        invoke(tLenTmp, tColorTmp, </span>
+                            tRTmp, tSmallMergeTmp, expected, edgesList);
+<span class="nc" id="L280">                } else {</span>
+<span class="nc" id="L281">                    yFits[maxSimplexIndex] = yFitContraction;</span>
+                }
+
+<span class="nc bnc" id="L284" title="All 16 branches missed.">            } else if ((tLenReflect &gt;= tLen.vFirst)</span>
+                &amp;&amp; (tLenReflect &lt;= tLen.vLast)
+                &amp;&amp; (tColorReflect &gt;= tColor.vFirst)
+                &amp;&amp; (tColorReflect &lt;= tColor.vLast)
+                &amp;&amp; (tRReflect &gt;= tR.vFirst)
+                &amp;&amp; (tRReflect &lt;= tR.vLast)
+                &amp;&amp; (tSmallMergeReflect &gt;= tSmallMerge.vFirst)
+                &amp;&amp; (tSmallMergeReflect &lt;= tSmallMerge.vLast))
+             {
+<span class="nc" id="L293">                yFits[maxSimplexIndex] = yFitReflected;</span>
+            }
+
+<span class="nc bnc" id="L296" title="All 16 branches missed.">            if ((tLenCurrent &lt; tLen.vFirst)</span>
+                &amp;&amp; (tLenCurrent &gt; tLen.vLast)
+                &amp;&amp; (tColorCurrent &lt; tColor.vFirst)
+                &amp;&amp; (tColorCurrent &gt; tColor.vLast)
+                &amp;&amp; (tRCurrent &lt; tR.vFirst)
+                &amp;&amp; (tRCurrent &gt; tR.vLast)
+                &amp;&amp; (tSmallMergeCurrent &lt; tSmallMerge.vFirst)
+                &amp;&amp; (tSmallMergeCurrent &gt; tSmallMerge.vLast))
+             {
+<span class="nc" id="L305">                go = false;</span>
+            }
+            
+<span class="nc bnc" id="L308" title="All 2 branches missed.">            if (hasConverged(prevBest, yFits[0])) {</span>
+<span class="nc" id="L309">                go = false;</span>
+            } else {
+<span class="nc" id="L311">                prevBest = yFits[0].copy();</span>
+            }
+            
+<span class="nc bnc" id="L314" title="All 2 branches missed.">            if ((nIter % 1) == 0) {</span>
+<span class="nc" id="L315">                System.out.println(&quot;nIter=&quot; + nIter + &quot; &quot;</span>
+<span class="nc" id="L316">                    + yFits[0].toString());</span>
+            }
+            
+<span class="nc" id="L319">            nIter++;</span>
+<span class="nc" id="L320">        }</span>
+
+<span class="nc" id="L322">        System.out.println(&quot;nIter=&quot; + nIter + &quot; bestFit=&quot; +</span>
+<span class="nc" id="L323">            yFits[0].toString());</span>
+        
+        if (true) {
+<span class="nc" id="L326">            debugImages(yFits[0], edgesList);</span>
+        }
+        
+<span class="nc" id="L329">        return yFits[0];</span>
+    }
+        
+    private SegmentationResults[] readTrainingFiles() throws IOException {
+        
+<span class="nc" id="L334">        BerkeleySegmentationFileReader reader = new BerkeleySegmentationFileReader();</span>
+        
+<span class="nc" id="L336">        SegmentationResults[] output = new SegmentationResults[trainingData.length];</span>
+        
+<span class="nc bnc" id="L338" title="All 2 branches missed.">        for (int i = 0; i &lt; trainingData.length; ++i) {</span>
+            
+            //String rootName = trainingData[i].imgFileName.split(&quot;\\.&quot;)[0];
+<span class="nc" id="L341">            String segFilePath = trainingData[i].dirPath + &quot;/&quot; + trainingData[i].segFileName;</span>
+            
+<span class="nc" id="L343">            List&lt;Set&lt;PairInt&gt;&gt; set = reader.readFile(segFilePath);</span>
+            
+<span class="nc" id="L345">            output[i] = new SegmentationResults(set);</span>
+        }
+        
+<span class="nc" id="L348">        return output;</span>
+    }
+    
+    private List&lt;List&lt;PairIntArray&gt;&gt; extractEdges() throws Exception {
+        
+<span class="nc" id="L353">        List&lt;List&lt;PairIntArray&gt;&gt; output = new ArrayList&lt;List&lt;PairIntArray&gt;&gt;();</span>
+        
+<span class="nc" id="L355">        ImageSegmentation imageSegmentation = new ImageSegmentation();</span>
+                
+<span class="nc bnc" id="L357" title="All 2 branches missed.">        for (int i = 0; i &lt; trainingData.length; ++i) {</span>
+            
+<span class="nc" id="L359">            String rootName = trainingData[i].imgFileName.split(&quot;\\.&quot;)[0];</span>
+<span class="nc" id="L360">            String imgFilePath = trainingData[i].dirPath + &quot;/&quot; + trainingData[i].imgFileName;        </span>
+            
+<span class="nc" id="L362">            ImageExt img = ImageIOHelper.readImageExt(imgFilePath);</span>
+        
+<span class="nc" id="L364">            List&lt;PairIntArray&gt; edges = imageSegmentation.extractEdges(img, </span>
+                reduceNoise, rootName);
+            
+<span class="nc" id="L367">            output.add(edges);</span>
+        }
+        
+<span class="nc" id="L370">        return output;</span>
+    }
+    
+    private SFit invoke(double tLenValue, double tColorValue, 
+        double tRValue, double tSmallMergeValue, 
+        SegmentationResults[] expected,
+        List&lt;List&lt;PairIntArray&gt;&gt; edgesList) throws Exception {
+                
+<span class="nc" id="L378">        ImageSegmentation imageSegmentation = new ImageSegmentation();</span>
+        
+<span class="nc" id="L380">        double sumDifference = 0;</span>
+        
+<span class="nc" id="L382">        int dMax = 2;</span>
+        
+<span class="nc bnc" id="L384" title="All 2 branches missed.">        for (int i = 0; i &lt; trainingData.length; ++i) {</span>
+            
+<span class="nc" id="L386">            String rootName = trainingData[i].imgFileName.split(&quot;\\.&quot;)[0];</span>
+<span class="nc" id="L387">            String imgFilePath = trainingData[i].dirPath + &quot;/&quot; + trainingData[i].imgFileName;        </span>
+            
+<span class="nc" id="L389">            ImageExt img = ImageIOHelper.readImageExt(imgFilePath);</span>
+            
+<span class="nc" id="L391">            List&lt;Set&lt;PairInt&gt;&gt; results = </span>
+<span class="nc" id="L392">                imageSegmentation.createColorEdgeSegmentation(img, </span>
+<span class="nc" id="L393">                    edgesList.get(i),</span>
+<span class="nc" id="L394">                    colorSpace, (int)Math.round(tLenValue), tColorValue, tRValue, </span>
+                    reduceNoise, tSmallMergeValue, rootName);
+            
+<span class="nc bnc" id="L397" title="All 2 branches missed.">            if (results.size() &gt; 1) {</span>
+<span class="nc" id="L398">                SegmentationResults sr0 = new SegmentationResults(results);</span>
+
+<span class="nc" id="L400">                SegmentationResults exp = expected[i];</span>
+
+                // going to use 1 - fMeasure for now to convert
+                // the score into a cost
+<span class="nc" id="L404">                double fMeasure = sr0.evaluate(exp, dMax);</span>
+<span class="nc" id="L405">                sumDifference += (1. - fMeasure);</span>
+<span class="nc" id="L406">            } else {</span>
+                // no edges, so cost is maximum
+<span class="nc" id="L408">                sumDifference += 1;</span>
+            }
+        }
+   
+<span class="nc" id="L412">        SFit sFit = new SFit();</span>
+<span class="nc" id="L413">        sFit.tLenF = (int) Math.round(tLenValue);</span>
+<span class="nc" id="L414">        sFit.tColorF = tColorValue;</span>
+<span class="nc" id="L415">        sFit.tRF = tRValue;</span>
+<span class="nc" id="L416">        sFit.tSmallMergeF = tSmallMergeValue;</span>
+<span class="nc" id="L417">        sFit.colorSpaceF = this.colorSpace;</span>
+<span class="nc" id="L418">        sFit.reduceNoiseF = this.reduceNoise;</span>
+<span class="nc" id="L419">        sFit.costF = sumDifference;</span>
+      
+<span class="nc" id="L421">        return sFit;</span>
+    }
+
+    public float[] getParameters() {
+        
+<span class="nc" id="L426">        float[] output = new float[4];</span>
+<span class="nc" id="L427">        output[0] = tLen.getMidValue();</span>
+<span class="nc" id="L428">        output[1] = tColor.getMidValue();</span>
+<span class="nc" id="L429">        output[2] = tR.getMidValue();</span>
+<span class="nc" id="L430">        output[3] = tSmallMerge.getMidValue();</span>
+        
+<span class="nc" id="L432">        return output;</span>
+    }
+
+    private void sortFromMinToMax(SFit[] yFits, int p, int r) {
+
+<span class="nc bnc" id="L437" title="All 2 branches missed.">        if (p &lt; r) {</span>
+
+<span class="nc" id="L439">            int q = partition(yFits, p, r);</span>
+
+<span class="nc" id="L441">            sortFromMinToMax(yFits, p, q - 1);</span>
+
+<span class="nc" id="L443">            sortFromMinToMax(yFits, q + 1, r);</span>
+        }
+<span class="nc" id="L445">    }</span>
+    
+    int partition(SFit[] yFits, int p, int r) {
+
+<span class="nc" id="L449">        double xxp = yFits[r].costF;</span>
+
+<span class="nc" id="L451">        int i = p - 1;</span>
+
+<span class="nc bnc" id="L453" title="All 2 branches missed.">        for (int j = p; j &lt; r ; j++ ) {</span>
+            
+<span class="nc bnc" id="L455" title="All 2 branches missed.">            if (yFits[j].costF &lt;= xxp) {</span>
+
+<span class="nc" id="L457">                i++;</span>
+<span class="nc" id="L458">                SFit swap = yFits[i];</span>
+<span class="nc" id="L459">                yFits[i] = yFits[j];</span>
+<span class="nc" id="L460">                yFits[j] = swap;</span>
+            }
+        }
+<span class="nc" id="L463">        i++;</span>
+<span class="nc" id="L464">        SFit swap = yFits[i];</span>
+<span class="nc" id="L465">        yFits[i] = yFits[r];</span>
+<span class="nc" id="L466">        yFits[r] = swap;</span>
+
+<span class="nc" id="L468">        return i;</span>
+    }
+
+    private SFit[] createStarterPoints(
+        SegmentationResults[] expected, 
+        List&lt;List&lt;PairIntArray&gt;&gt; edgesList) throws Exception {
+        
+<span class="nc" id="L475">        int nStarterPoints = 16;</span>
+        
+<span class="nc" id="L477">        SFit[] sFits = new SFit[nStarterPoints];</span>
+    
+<span class="nc" id="L479">        Parameter[] parameters = new Parameter[]{</span>
+            tLen, tColor, tR, tSmallMerge};
+        
+<span class="nc" id="L482">        int nComb = 16;</span>
+<span class="nc" id="L483">        int[][] tIdxs = new int[nComb][];</span>
+<span class="nc" id="L484">        int[][] lowIdxs = new int[nComb][];</span>
+<span class="nc" id="L485">        int[][] highIdxs = new int[nComb][];</span>
+<span class="nc" id="L486">        int[][] loc = new int[nComb][];</span>
+<span class="nc bnc" id="L487" title="All 2 branches missed.">        for (int i = 0; i &lt; nComb; ++i) {</span>
+<span class="nc" id="L488">            tIdxs[i] = new int[4];</span>
+<span class="nc" id="L489">            lowIdxs[i] = new int[4];</span>
+<span class="nc" id="L490">            highIdxs[i] = new int[4];</span>
+<span class="nc" id="L491">            loc[i] = new int[4];</span>
+        }
+        
+<span class="nc" id="L494">        int count = 0;</span>
+<span class="nc bnc" id="L495" title="All 2 branches missed.">        for (int p0 = 0; p0 &lt; 2; ++p0) {</span>
+<span class="nc" id="L496">            int lowIdx0 = parameters[0].lowIdx;</span>
+<span class="nc" id="L497">            int highIdx0 = parameters[0].highIdx;</span>
+<span class="nc" id="L498">            int midIdx0 = (highIdx0 + lowIdx0) &gt;&gt; 1;</span>
+            int tIdx0;
+<span class="nc bnc" id="L500" title="All 2 branches missed.">            if (p0 == 0) {</span>
+<span class="nc" id="L501">                tIdx0 = (midIdx0 + lowIdx0) &gt;&gt; 1;</span>
+            } else {
+<span class="nc" id="L503">                tIdx0 = (midIdx0 + highIdx0) &gt;&gt; 1;</span>
+            }
+<span class="nc bnc" id="L505" title="All 2 branches missed.">            for (int p1 = 0; p1 &lt; 2; ++p1) {</span>
+<span class="nc" id="L506">                int lowIdx1 = parameters[1].lowIdx;</span>
+<span class="nc" id="L507">                int highIdx1 = parameters[1].highIdx;</span>
+<span class="nc" id="L508">                int midIdx1 = (highIdx1 + lowIdx1) &gt;&gt; 1;</span>
+                int tIdx1;
+<span class="nc bnc" id="L510" title="All 2 branches missed.">                if (p1 == 0) {</span>
+<span class="nc" id="L511">                    tIdx1 = (midIdx1 + lowIdx1) &gt;&gt; 1;</span>
+                } else {
+<span class="nc" id="L513">                    tIdx1 = (midIdx1 + highIdx1) &gt;&gt; 1;</span>
+                }
+<span class="nc bnc" id="L515" title="All 2 branches missed.">                for (int p2 = 0; p2 &lt; 2; ++p2) {</span>
+<span class="nc" id="L516">                    int lowIdx2 = parameters[2].lowIdx;</span>
+<span class="nc" id="L517">                    int highIdx2 = parameters[2].highIdx;</span>
+<span class="nc" id="L518">                    int midIdx2 = (highIdx2 + lowIdx2) &gt;&gt; 1;</span>
+                    int tIdx2;
+<span class="nc bnc" id="L520" title="All 2 branches missed.">                    if (p2 == 0) {</span>
+<span class="nc" id="L521">                        tIdx2 = (midIdx2 + lowIdx2) &gt;&gt; 1;</span>
+                    } else {
+<span class="nc" id="L523">                        tIdx2 = (midIdx2 + highIdx2) &gt;&gt; 1;</span>
+                    }
+<span class="nc bnc" id="L525" title="All 2 branches missed.">                    for (int p3 = 0; p3 &lt; 2; ++p3) {</span>
+<span class="nc" id="L526">                        int lowIdx3 = parameters[3].lowIdx;</span>
+<span class="nc" id="L527">                        int highIdx3 = parameters[3].highIdx;</span>
+<span class="nc" id="L528">                        int midIdx3 = (highIdx3 + lowIdx3) &gt;&gt; 1;</span>
+                        int tIdx3;
+<span class="nc bnc" id="L530" title="All 2 branches missed.">                        if (p3 == 0) {</span>
+<span class="nc" id="L531">                            tIdx3 = (midIdx3 + lowIdx3) &gt;&gt; 1;</span>
+                        } else {
+<span class="nc" id="L533">                            tIdx3 = (midIdx3 + highIdx3) &gt;&gt; 1;</span>
+                        }
+
+<span class="nc" id="L536">                        lowIdxs[count][0] = lowIdx0; </span>
+<span class="nc" id="L537">                        highIdxs[count][0] = highIdx0;</span>
+<span class="nc" id="L538">                        tIdxs[count][0] = tIdx0;</span>
+<span class="nc" id="L539">                        loc[count][0] = p0;</span>
+
+<span class="nc" id="L541">                        lowIdxs[count][1] = lowIdx1; </span>
+<span class="nc" id="L542">                        highIdxs[count][1] = highIdx1;</span>
+<span class="nc" id="L543">                        tIdxs[count][1] = tIdx1;</span>
+<span class="nc" id="L544">                        loc[count][1] = p1;</span>
+
+<span class="nc" id="L546">                        lowIdxs[count][2] = lowIdx2; </span>
+<span class="nc" id="L547">                        highIdxs[count][2] = highIdx2;</span>
+<span class="nc" id="L548">                        tIdxs[count][2] = tIdx2;</span>
+<span class="nc" id="L549">                        loc[count][2] = p2;</span>
+
+<span class="nc" id="L551">                        lowIdxs[count][3] = lowIdx3; </span>
+<span class="nc" id="L552">                        highIdxs[count][3] = highIdx3;</span>
+<span class="nc" id="L553">                        tIdxs[count][3] = tIdx3;</span>
+<span class="nc" id="L554">                        loc[count][3] = p3;</span>
+
+<span class="nc" id="L556">                        ++count;</span>
+                    }
+                }
+            }
+        }
+
+<span class="nc" id="L562">        count = 0;</span>
+<span class="nc bnc" id="L563" title="All 2 branches missed.">        for (int i = 0; i &lt; nComb; ++i) {</span>
+<span class="nc" id="L564">            sFits[count] = invoke(</span>
+<span class="nc" id="L565">                parameters[0].getValue(tIdxs[i][0]),</span>
+<span class="nc" id="L566">                parameters[1].getValue(tIdxs[i][1]),</span>
+<span class="nc" id="L567">                parameters[2].getValue(tIdxs[i][2]),</span>
+<span class="nc" id="L568">                parameters[3].getValue(tIdxs[i][3]),</span>
+                expected, edgesList);
+<span class="nc" id="L570">            count++;</span>
+        }
+
+<span class="nc" id="L573">        return sFits;</span>
+    }
+
+    private SFit[] condense(SFit[] yFits) {
+<span class="nc" id="L577">        SFit[] output = new SFit[yFits.length];</span>
+<span class="nc" id="L578">        int count = 0;</span>
+<span class="nc bnc" id="L579" title="All 2 branches missed.">        for (SFit sFit : yFits) {</span>
+<span class="nc bnc" id="L580" title="All 2 branches missed.">            if (sFit != null) {</span>
+<span class="nc" id="L581">                output[count] = sFit;</span>
+<span class="nc" id="L582">                count++;</span>
+            }
+        }
+<span class="nc bnc" id="L585" title="All 2 branches missed.">        if (count &lt; yFits.length) {</span>
+<span class="nc" id="L586">            output = Arrays.copyOf(output, count);</span>
+        }
+<span class="nc" id="L588">        return output;</span>
+    }
+
+    private boolean hasConverged(SFit prevBest, SFit sFit) {
+
+<span class="nc bnc" id="L593" title="All 2 branches missed.">        if (prevBest == null) {</span>
+<span class="nc" id="L594">            return false;</span>
+        }
+        
+        // quick check for exactly the same
+<span class="nc bnc" id="L598" title="All 2 branches missed.">        if (prevBest.tLenF == sFit.tLenF) {</span>
+<span class="nc bnc" id="L599" title="All 2 branches missed.">            if (prevBest.tColorF == sFit.tColorF) {</span>
+<span class="nc bnc" id="L600" title="All 2 branches missed.">                if (prevBest.tRF == sFit.tRF) {</span>
+<span class="nc bnc" id="L601" title="All 2 branches missed.">                    if (prevBest.tSmallMergeF == sFit.tSmallMergeF) {</span>
+<span class="nc bnc" id="L602" title="All 2 branches missed.">                        if (prevBest.costF == sFit.costF) {</span>
+<span class="nc" id="L603">                            return true;</span>
+                        }
+                    }
+                }
+            }
+        }
+        
+<span class="nc" id="L610">        return false;</span>
+    }
+
+    private void debugImages(SFit sFit, 
+        List&lt;List&lt;PairIntArray&gt;&gt; edgesList) throws Exception {
+              
+<span class="nc" id="L616">        ImageSegmentation imageSegmentation = new ImageSegmentation();</span>
+        
+<span class="nc" id="L618">        long ts = MiscDebug.getCurrentTimeFormatted();</span>
+                
+<span class="nc bnc" id="L620" title="All 2 branches missed.">        for (int i = 0; i &lt; trainingData.length; ++i) {</span>
+            
+<span class="nc" id="L622">            String rootName = trainingData[i].imgFileName.split(&quot;\\.&quot;)[0];</span>
+<span class="nc" id="L623">            String imgFilePath = trainingData[i].dirPath + &quot;/&quot; + trainingData[i].imgFileName;        </span>
+            
+<span class="nc" id="L625">            ImageExt img = ImageIOHelper.readImageExt(imgFilePath);</span>
+            
+<span class="nc" id="L627">            List&lt;Set&lt;PairInt&gt;&gt; results = </span>
+<span class="nc" id="L628">                imageSegmentation.createColorEdgeSegmentation(img, </span>
+<span class="nc" id="L629">                    edgesList.get(i),</span>
+                    colorSpace, sFit.tLenF, sFit.tColorF, sFit.tRF, 
+                    reduceNoise, sFit.tSmallMergeF, rootName);
+            
+<span class="nc" id="L633">            img = img.createWithDimensions();</span>
+            
+<span class="nc" id="L635">            MiscDebug.writeAlternatingColor(</span>
+                img, results, &quot;seg_&quot; + rootName + &quot;_&quot; + ts);
+        }
+<span class="nc" id="L638">    }</span>
+
+    private static class Parameter {
+        final float vFirst;
+        final float vLast;
+        final float deltaV;
+        int lowIdx = 0;
+        int highIdx;
+        
+        public Parameter(float startRange, float stopRange, float delta) {
+            vFirst = startRange;
+            vLast = stopRange;
+            deltaV = delta;
+            highIdx = Math.round((stopRange - startRange)/delta);
+            //0.1 to 0.7     d=0.05, n=13
+            // 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7
+            //  0   1    2    3   4    5    6   7   8   9   10   11   12
+        }
+        
+        public float getMidValue() {
+            int m = (lowIdx + highIdx) &gt;&gt; 1;
+            float v = (m * deltaV) + vFirst;
+            return v;
+        }
+        
+        public float getValue(int idx) {
+            float v = (idx * deltaV) + vFirst;
+            return v;
+        }
+    }
+      
+    public class SFit {
+        int tLenF;
+        double tColorF;
+        double tRF;
+        double tSmallMergeF;
+        int colorSpaceF;
+        double costF;
+        boolean reduceNoiseF;
+        public SFit copy() {
+            SFit cp = new SFit();
+            cp.tLenF = tLenF;
+            cp.tColorF = tColorF;
+            cp.tRF = tRF;
+            cp.tSmallMergeF = tSmallMergeF;
+            cp.colorSpaceF = colorSpaceF;
+            cp.reduceNoiseF = reduceNoiseF;
+            cp.costF = costF;
+            return cp;
+        }
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append(&quot;cost=&quot;).append(Double.toString(costF))
+                .append(&quot; tLen=&quot;).append(Integer.toString(tLenF))
+                .append(&quot; tColor=&quot;).append(Double.toString(tColorF))
+                .append(&quot; tSmallMerge=&quot;)
+                .append(Double.toString(tSmallMergeF))
+                .append(&quot; tR=&quot;)
+                .append(Double.toString(tRF))
+                .append(&quot; reduceNoiseF=&quot;)
+                .append(Boolean.toString(reduceNoiseF))
+                .append(&quot; colorSpace=&quot;)
+                .append(Double.toString(colorSpaceF))
+            ;
+            return sb.toString();
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

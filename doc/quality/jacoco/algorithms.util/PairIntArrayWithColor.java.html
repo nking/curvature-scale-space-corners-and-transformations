@@ -10,34 +10,43 @@ public class PairIntArrayWithColor extends PairIntArray {
     
     /**
      * a color for the array of points.  can be used to store a value that 
-     * is interpreted as a closed curve, for example.
+     * holds special meaning.
+     * have added logic for &quot;closed curve&quot; and &quot;ordered points&quot;
+     * 
+     * changing to use set bit and test bit
+     * &lt;pre&gt;
+     * set color:
+     *    color |= (1 &lt;&lt; 2)
+     * test color:
+     *     (color &amp; (1 &lt;&lt; x)) != 0
+     * &lt;/pre&gt;
      */
-<span class="pc" id="L15">    protected int color = 0;</span>
+<span class="pc" id="L24">    private int color = 0;</span>
     
-<span class="fc" id="L17">    public PairIntArrayWithColor(PairIntArray obj) {</span>
-<span class="fc" id="L18">        this.x = Arrays.copyOf(obj.x, obj.x.length);</span>
-<span class="fc" id="L19">        this.y = Arrays.copyOf(obj.y, obj.y.length);</span>
-<span class="fc" id="L20">        this.n = obj.n;</span>
-<span class="fc" id="L21">    }</span>
+<span class="fc" id="L26">    public PairIntArrayWithColor(PairIntArray obj) {</span>
+<span class="fc" id="L27">        this.x = Arrays.copyOf(obj.x, obj.x.length);</span>
+<span class="fc" id="L28">        this.y = Arrays.copyOf(obj.y, obj.y.length);</span>
+<span class="fc" id="L29">        this.n = obj.n;</span>
+<span class="fc" id="L30">    }</span>
     
     public PairIntArrayWithColor(int nPoints) {
-<span class="nc" id="L24">        super(nPoints);</span>
-<span class="nc" id="L25">    }</span>
+<span class="nc" id="L33">        super(nPoints);</span>
+<span class="nc" id="L34">    }</span>
     
-    public int getColor() {
-<span class="fc" id="L28">        return color;</span>
+    public boolean isClosedCurve() {
+<span class="pc bpc" id="L37" title="1 of 2 branches missed.">        return (color &amp; (1 &lt;&lt; 1)) != 0;</span>
     }
     
-    /**
-     * set the color for this set of points.  the field can be used to hold
-     * a value that's interpreted as the points being a closed curve, for
-     * example.
-     * 
-     * @param clr 
-     */
-    public void setColor(int clr) {
-<span class="fc" id="L39">        color = clr;</span>
-<span class="fc" id="L40">    }</span>
-     
+    public void setAsClosedCurve() {
+<span class="fc" id="L41">        color |= (1 &lt;&lt; 1);</span>
+<span class="fc" id="L42">    }</span>
+    
+    public boolean isOrderedCurve() {
+<span class="nc bnc" id="L45" title="All 2 branches missed.">        return (color &amp; (1 &lt;&lt; 2)) != 0;</span>
+    }
+    
+    public void setAsOrderedCurve() {
+<span class="fc" id="L49">        color |= (1 &lt;&lt; 2);</span>
+<span class="fc" id="L50">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -576,8 +576,8 @@ public class SLICSuperPixels {
         int h = img.getHeight();
         int n = img.getNPixels();
 
-        System.out.println("assign " + unassignedSet.size() + " out of "
-            + n + " pixels");
+        //System.out.println("assign " + unassignedSet.size() + " out of "
+        //    + n + " pixels");
         
         // key = pixel index of unassigned, value = adj pixels that are assigned
         TIntObjectMap<TIntSet> adjAssignedMap = new TIntObjectHashMap<TIntSet>();

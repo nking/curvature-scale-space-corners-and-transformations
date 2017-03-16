@@ -82,7 +82,7 @@ import java.util.logging.Logger;
 
 <span class="fc bfc" id="L83" title="All 2 branches covered.">            hasInflectionPoints = (curve.getKIsZeroIdxSize() &gt; 0);</span>
             
-<span class="fc" id="L85">            log.fine(&quot;sigma=&quot; + sigma + &quot; nZeros=&quot; + curve.getKIsZeroIdxSize());</span>
+            //log.info(&quot;sigma=&quot; + sigma + &quot; nZeros=&quot; + curve.getKIsZeroIdxSize());
 
 <span class="fc bfc" id="L87" title="All 2 branches covered.">            if (hasInflectionPoints) {</span>
                 
@@ -100,6 +100,11 @@ import java.util.logging.Logger;
     /**
      * create a scale space curve image from the given sigma scale space inflection
      * points.
+     * The points for which &quot;t&quot; and sigma are extracted are the inflection points,
+     * that is, the zero-crossings in &quot;t&quot; versus curvature, that is, where 
+     * the curvature is zero.
+     * (The number of inflection points decreases as sigma increases.)
+     * 
      * &lt;pre&gt;
      *        |    *
      * sigma  |   * *     **
@@ -109,7 +114,7 @@ import java.util.logging.Logger;
      * &lt;/pre&gt;
      * @param scaleSpaceMap
      * @param edgeNumber a number placed in the ScaleSpaceCurveImage to help
-     * identify the edge.
+     * identify the edge for debugging.
      * @param edgeLength the length of the edge.  this is the number of points
      * that went into the scale free length axis.
      * @return 
@@ -118,68 +123,68 @@ import java.util.logging.Logger;
         Map&lt;Float, ScaleSpaceCurve&gt; scaleSpaceMap, int edgeNumber,
         int edgeLength) {
         
-<span class="fc" id="L121">        SortedMap&lt;Float, ScaleSpaceCurve&gt; sortedMap = </span>
+<span class="fc" id="L126">        SortedMap&lt;Float, ScaleSpaceCurve&gt; sortedMap = </span>
             new TreeMap&lt;Float, ScaleSpaceCurve&gt;(
                 new CurvatureScaleSpaceImageMaker.DescendingScaleSpaceComparator());
         
-<span class="fc" id="L125">        sortedMap.putAll(scaleSpaceMap);</span>
+<span class="fc" id="L130">        sortedMap.putAll(scaleSpaceMap);</span>
         
-<span class="pc bpc" id="L127" title="1 of 2 branches missed.">        Float maxSigma = sortedMap.isEmpty() ? null : sortedMap.firstKey();</span>
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">        Float maxSigma = sortedMap.isEmpty() ? null : sortedMap.firstKey();</span>
         
-<span class="pc bpc" id="L129" title="1 of 2 branches missed.">        if ((maxSigma != null) &amp;&amp; </span>
-<span class="pc bpc" id="L130" title="1 of 2 branches missed.">            sortedMap.get(maxSigma).getKIsZeroIdxSize() == 0) {</span>
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">        if ((maxSigma != null) &amp;&amp; </span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">            sortedMap.get(maxSigma).getKIsZeroIdxSize() == 0) {</span>
             
-<span class="fc" id="L132">            sortedMap.remove(maxSigma);</span>
+<span class="fc" id="L137">            sortedMap.remove(maxSigma);</span>
             
-<span class="fc bfc" id="L134" title="All 2 branches covered.">            maxSigma = sortedMap.isEmpty() ? null : sortedMap.firstKey();</span>
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">            maxSigma = sortedMap.isEmpty() ? null : sortedMap.firstKey();</span>
         }
         
-<span class="fc" id="L137">        Iterator&lt;Map.Entry&lt;Float, ScaleSpaceCurve&gt; &gt; iter = </span>
-<span class="fc" id="L138">            sortedMap.entrySet().iterator();</span>
+<span class="fc" id="L142">        Iterator&lt;Map.Entry&lt;Float, ScaleSpaceCurve&gt; &gt; iter = </span>
+<span class="fc" id="L143">            sortedMap.entrySet().iterator();</span>
         
-<span class="fc" id="L140">        int rowIdx = 0;</span>
+<span class="fc" id="L145">        int sImageRowIdx = 0;</span>
         
-<span class="fc" id="L142">        ScaleSpaceCurveImage spaceImage = new ScaleSpaceCurveImage(</span>
-<span class="fc" id="L143">            sortedMap.size());</span>
+<span class="fc" id="L147">        ScaleSpaceCurveImage spaceImage = new ScaleSpaceCurveImage(</span>
+<span class="fc" id="L148">            sortedMap.size());</span>
         
-<span class="fc" id="L145">        spaceImage.setEdgeNumber(edgeNumber);</span>
+<span class="fc" id="L150">        spaceImage.setEdgeNumber(edgeNumber);</span>
         
-<span class="fc" id="L147">        spaceImage.setEdgeSize(edgeLength);</span>
+<span class="fc" id="L152">        spaceImage.setEdgeSize(edgeLength);</span>
         
-<span class="fc bfc" id="L149" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
             
-<span class="fc" id="L151">            Map.Entry&lt;Float, ScaleSpaceCurve&gt; entry = iter.next();</span>
+<span class="fc" id="L156">            Map.Entry&lt;Float, ScaleSpaceCurve&gt; entry = iter.next();</span>
             
-<span class="fc" id="L153">            float sigma = entry.getKey().floatValue();</span>
+<span class="fc" id="L158">            float sigma = entry.getKey().floatValue();</span>
             
-<span class="fc" id="L155">            ScaleSpaceCurve scaleSpaceCurve = entry.getValue();</span>
+<span class="fc" id="L160">            ScaleSpaceCurve scaleSpaceCurve = entry.getValue();</span>
             
-<span class="fc" id="L157">            int nPoints = scaleSpaceCurve.getSize();</span>
+<span class="fc" id="L162">            int nPoints = scaleSpaceCurve.getSize();</span>
                             
-<span class="fc" id="L159">            int nz = scaleSpaceCurve.getKIsZeroIdxSize();</span>
+<span class="fc" id="L164">            int nz = scaleSpaceCurve.getKIsZeroIdxSize();</span>
                 
-<span class="fc" id="L161">            float[] row = new float[nz];</span>
+<span class="fc" id="L166">            float[] row = new float[nz];</span>
                         
-<span class="fc bfc" id="L163" title="All 2 branches covered.">            for (int i = 0; i &lt; nz; i++) {</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">            for (int i = 0; i &lt; nz; i++) {</span>
 
-<span class="fc" id="L165">                int idx = scaleSpaceCurve.getKIsZeroIdx()[i];</span>
+<span class="fc" id="L170">                int idx = scaleSpaceCurve.getKIsZeroIdx()[i];</span>
 
-<span class="fc" id="L167">                float t = (float)idx/(float)nPoints;</span>
+<span class="fc" id="L172">                float t = (float)idx/(float)nPoints;</span>
                 
-<span class="fc" id="L169">                row[i] = t;                </span>
+<span class="fc" id="L174">                row[i] = t;                </span>
             }
             
-<span class="fc" id="L172">            spaceImage.setRow(rowIdx, row);</span>
+<span class="fc" id="L177">            spaceImage.setRow(sImageRowIdx, row);</span>
             
-<span class="fc" id="L174">            spaceImage.setSigma(rowIdx, sigma);</span>
+<span class="fc" id="L179">            spaceImage.setSigma(sImageRowIdx, sigma);</span>
             
-<span class="fc" id="L176">            spaceImage.setXYCoords(rowIdx, scaleSpaceCurve.getKIsZeroX(),</span>
-<span class="fc" id="L177">                scaleSpaceCurve.getKIsZeroY());</span>
+<span class="fc" id="L181">            spaceImage.setXYCoords(sImageRowIdx, scaleSpaceCurve.getKIsZeroX(),</span>
+<span class="fc" id="L182">                scaleSpaceCurve.getKIsZeroY());</span>
             
-<span class="fc" id="L179">            rowIdx++;</span>
-<span class="fc" id="L180">        }</span>
+<span class="fc" id="L184">            sImageRowIdx++;</span>
+<span class="fc" id="L185">        }</span>
         
-<span class="fc" id="L182">        return spaceImage;</span>
+<span class="fc" id="L187">        return spaceImage;</span>
     }
     
 }

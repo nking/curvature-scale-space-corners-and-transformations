@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>PriorityQueueThorup.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms</a> &gt; <span class="el_source">PriorityQueueThorup.java</span></div><h1>PriorityQueueThorup.java</h1><pre class="source lang-java linenums">package algorithms;
+
+/**
+ * a minimum priority queue that has 
+ * amortized runtime complexity of O(lg2(lg2(n)))
+ * for operation extractMin which is O(lg2)n)) in
+ * standard priority queue and min heap implementations.
+ * 
+ * This follows the paper of 
+ * &quot;&quot;On RAM Priority Queues
+ * by Thorup
+ * 
+ * An improvement to this can be implemented from
+ * the description of multi-level buckets in
+ * &quot;Simple Shortest Path Algorithm with Linear Average Time&quot;
+ * by Goldberg.
+ * 
+ * @author nichole
+ */
+<span class="nc" id="L20">public class PriorityQueueThorup {</span>
+    
+    /*
+    u = 2^w is the size of the universe and eps is any psitive constant
+    
+    pg 4
+    
+    priority qieie for small integers
+    
+    has n keys
+    
+    the insert and extractMin operations depend upon the bit size of
+    the numbers
+        ( w / log (n) ) bit integers 
+    the runtime complexity is O(log log n)
+    
+    O(log k)
+    two sorted lists of words that each have k keys in them at the most
+    
+    the two sorted lists can be merged into a single sorted list stored
+        in two words
+        
+    for n &gt;= k, given two lists of n integers that are (w/k) bit
+    spread over n/k words,
+    they can be merged into 2 * n / k words in time O(n/k * log k)
+    
+    &lt;
+    
+    */
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

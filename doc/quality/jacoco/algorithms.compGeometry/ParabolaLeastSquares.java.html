@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ParabolaLeastSquares.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.compGeometry</a> &gt; <span class="el_source">ParabolaLeastSquares.java</span></div><h1>ParabolaLeastSquares.java</h1><pre class="source lang-java linenums">package algorithms.compGeometry;
+
+import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.util.PairInt;
+import algorithms.util.PolynomialFitter;
+import java.util.Arrays;
+import java.util.Set;
+import no.uib.cipr.matrix.DenseMatrix;
+import no.uib.cipr.matrix.Matrix;
+import no.uib.cipr.matrix.QR;
+import no.uib.cipr.matrix.UpperTriangDenseMatrix;
+
+/**
+ 
+ y = ax^2 + bx + c
+
+ least squares fit is minimizing the sum of square of residuals
+
+ summation from i=1 to n points of
+     (y_i - (ax_i^2 + bx_i + c))^2
+
+ to minimize, need each partial deriv = 0,
+ that is d(eqn)/da = 0, etc
+
+ the 3 partial derivatives are summarized as
+
+     a * sum_i=1toN (x_i)^4 + b * sum_i=1toN (x_i)^3
+         + c * sum_i=1toN (x_i)^2
+         = sum_i=1toN (x_i)^2 * y_i
+
+     a * sum_i=1toN (x_i)^3 + b * sum_i=1toN (x_i)^2
+         + c * sum_i=1toN (x_i)
+         = sum_i=1toN (x_i) * y_i
+
+     a * sum_i=1toN (x_i)^2 + b * sum_i=1toN (x_i)^1
+         + c * n
+         = sum_i=1toN y_i
+
+     given a set of points, can calc moments
+       x    y    x^2    x^3    x^4    xy    yx^2
+     (when placed in a matrix, is known as Vandermonde)
+
+       sum each of those for the points
+
+       then can solve the 3 equations for a, b, c using linear algebra.
+       
+ * @author nichole
+ */
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">public class ParabolaLeastSquares {</span>
+ 
+    //x    y    x^2    x^3    x^4    xy    yx^2
+    protected final double[] moments_;
+    protected int n;
+    
+<span class="fc" id="L55">    private boolean debug = false;</span>
+    
+<span class="fc" id="L57">    public ParabolaLeastSquares() {</span>
+<span class="fc" id="L58">        moments_ = new double[7];</span>
+<span class="fc" id="L59">        n = 0;</span>
+<span class="fc" id="L60">    }</span>
+    
+    public void setToDebug() {
+<span class="nc" id="L63">        debug = true;</span>
+<span class="nc" id="L64">    }</span>
+    
+    public void accumulate(double x, double y) {
+<span class="fc" id="L67">        ++n;</span>
+        //x    y    x^2    x^3    x^4    xy    yx^2
+<span class="fc" id="L69">        moments_[0] += x;</span>
+<span class="fc" id="L70">        moments_[1] += y;</span>
+<span class="fc" id="L71">        double tmp = x * x;</span>
+<span class="fc" id="L72">        moments_[2] += tmp;</span>
+<span class="fc" id="L73">        tmp *= x;</span>
+<span class="fc" id="L74">        moments_[3] += tmp;</span>
+<span class="fc" id="L75">        tmp *= x;</span>
+<span class="fc" id="L76">        moments_[4] += tmp;</span>
+<span class="fc" id="L77">        moments_[5] += x * y;</span>
+<span class="fc" id="L78">        moments_[6] += y * x * x;</span>
+<span class="fc" id="L79">    }</span>
+    
+    public void accumulate(PairInt p) {
+<span class="fc" id="L82">        accumulate(p.getX(), p.getY());</span>
+<span class="fc" id="L83">    }</span>
+    
+    public void accumulate(Set&lt;PairInt&gt; set) {
+<span class="fc bfc" id="L86" title="All 2 branches covered.">        for (PairInt p : set) {</span>
+<span class="fc" id="L87">            accumulate(p);</span>
+<span class="fc" id="L88">        }</span>
+<span class="fc" id="L89">    }</span>
+    
+    double[][] getMatrixA() {
+        
+<span class="fc" id="L93">        double[][] A = new double[3][3];</span>
+<span class="fc" id="L94">        A[0] = new double[]{moments_[4], moments_[3], moments_[2] };</span>
+<span class="fc" id="L95">        A[1] = new double[]{moments_[3], moments_[2], moments_[0] };</span>
+<span class="fc" id="L96">        A[2] = new double[]{moments_[2], moments_[0], n};   </span>
+        
+<span class="fc" id="L98">        return A;</span>
+    }
+    
+    double[][] getRHS() {
+<span class="fc" id="L102">        double[][] Y = new double[3][1];</span>
+<span class="fc" id="L103">        Y[0] = new double[]{moments_[6]};</span>
+<span class="fc" id="L104">        Y[1] = new double[]{moments_[5]};</span>
+<span class="fc" id="L105">        Y[2] = new double[]{moments_[1]};</span>
+<span class="fc" id="L106">        return Y;</span>
+    }
+    
+    double[] getRHSVector() {
+<span class="fc" id="L110">        double[] Y = new double[]{moments_[6], moments_[5], moments_[1]};</span>
+<span class="fc" id="L111">        return Y;</span>
+    }
+    
+    /**
+    &lt;pre&gt;
+     solve for the coefficients of a parabola.
+     The results can be applied in the following way:
+         y = coeff[0]*x*x + x*coeff[1] + coeff[2]
+    &lt;/pre&gt;
+    @return
+    */
+    public float[] solve() {
+    
+        /*
+        a * sum_i=1toN (x_i)^4 + b * sum_i=1toN (x_i)^3
+             + c * sum_i=1toN (x_i)^2
+             = sum_i=1toN (x_i)^2 * y_i
+
+         a * sum_i=1toN (x_i)^3 + b * sum_i=1toN (x_i)^2
+             + c * sum_i=1toN (x_i)
+             = sum_i=1toN (x_i) * y_i
+
+         a * sum_i=1toN (x_i)^2 + b * sum_i=1toN (x_i)^1
+             + c * n
+             = sum_i=1toN y_i
+        
+        //x    y    x^2    x^3    x^4    xy    yx^2
+        
+        a * moments_[4] + b * moments_[3] + c * moments_[2] 
+            = moments_[6]
+
+        a * moments_[3] + b * moments_[2] + c * moments_[0]
+             = moments_[5]
+        
+        a * moments_[2] + b * moments_[0] + c*area 
+             = moments_[1]
+        
+        |a|
+        |b| = inv of coeff above * right sides 
+        |c|
+        */
+        
+        // helpful also was the Go solution of http://rosettacode.org/wiki/Polynomial_Fitting
+        
+<span class="fc" id="L155">        double[][] A = getMatrixA();</span>
+        
+<span class="fc" id="L157">        double[][] Y = getRHS();</span>
+        
+<span class="fc" id="L159">        Matrix mA = new DenseMatrix(A);</span>
+        
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L162">            System.out.println(&quot;row0=&quot; + Arrays.toString(A[0]));</span>
+<span class="nc" id="L163">            System.out.println(&quot;row1=&quot; + Arrays.toString(A[1]));</span>
+<span class="nc" id="L164">            System.out.println(&quot;row2=&quot; + Arrays.toString(A[2]));</span>
+        }
+        
+<span class="fc" id="L167">        QR qr = QR.factorize(mA);</span>
+<span class="fc" id="L168">        DenseMatrix q = qr.getQ();</span>
+<span class="fc" id="L169">        UpperTriangDenseMatrix r = qr.getR();</span>
+        
+<span class="fc" id="L171">        Matrix qT = q.transpose();</span>
+<span class="fc" id="L172">        double[] qTY = MatrixUtil.multiply(qT, getRHSVector());</span>
+<span class="fc" id="L173">        float[] c = new float[3];</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">        for (int i = (3 - 1); i &gt;= 0; i--) {</span>
+<span class="fc" id="L175">            c[i] = (float)qTY[i];</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">            for (int j = (i + 1); j &lt; 3; j++) {</span>
+<span class="fc" id="L177">                c[i] -= c[j] * r.get(i, j);</span>
+            }
+<span class="fc" id="L179">            c[i] /= r.get(i, i);</span>
+        }
+        
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">        if (debug) {</span>
+            
+<span class="nc" id="L184">            System.out.println(&quot;abc=&quot; + Arrays.toString(c));</span>
+        
+<span class="nc bnc" id="L186" title="All 2 branches missed.">            for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L187">                double s = 0;</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">                for (int j = 0; j &lt; 3; ++j) {</span>
+<span class="nc" id="L189">                    s += c[j] * A[i][j];</span>
+                }
+<span class="nc" id="L191">                System.out.println(&quot;sum=&quot; + s + &quot; rhs=&quot; + Y[i][0]);</span>
+            }
+        }
+        
+        //qr_res  = test of QR factorization, norm1(Q*R-A)/(n*eps)
+        
+<span class="fc" id="L197">        return c;</span>
+    }
+    
+    public static String plotFit(float[] coefficients, Set&lt;PairInt&gt; points, 
+        int plotXMax, int plotYMax, int plotNumber, String plotLabel) {
+    
+        //System.out.println(&quot;coeff=&quot; + Arrays.toString(coefficients));
+<span class="fc" id="L204">        float[] rev = reverse(coefficients);</span>
+        //System.out.println(&quot;rev=&quot; + Arrays.toString(rev));
+        
+<span class="fc" id="L207">        return PolynomialFitter.plotFit(rev, points, plotXMax, plotYMax, </span>
+            plotNumber, plotLabel);
+    }
+    
+    private static float[] reverse(float[] coeff) {
+<span class="pc bpc" id="L212" title="3 of 4 branches missed.">        assert(coeff.length == 3);</span>
+<span class="fc" id="L213">        float[] rev = new float[3];</span>
+<span class="fc" id="L214">        rev[0] = coeff[2];</span>
+<span class="fc" id="L215">        rev[1] = coeff[1];</span>
+<span class="fc" id="L216">        rev[2] = coeff[0];</span>
+<span class="fc" id="L217">        return rev;</span>
+    }
+    
+    public static double calcResiduals(float[] coefficients, Set&lt;PairInt&gt; points) {
+        
+<span class="fc" id="L222">        return PolynomialFitter.calcResiduals(reverse(coefficients), points);</span>
+    }
+    
+    public ParabolaLeastSquares copy() {
+<span class="fc" id="L226">        ParabolaLeastSquares cp = new ParabolaLeastSquares();</span>
+<span class="fc" id="L227">        System.arraycopy(moments_, 0, cp.moments_, 0, moments_.length);</span>
+<span class="fc" id="L228">        cp.n = n;</span>
+<span class="fc" id="L229">        return cp;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

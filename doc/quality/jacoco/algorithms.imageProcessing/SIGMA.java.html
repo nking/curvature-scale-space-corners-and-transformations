@@ -6,124 +6,127 @@
  */
 <span class="pc" id="L7">public enum SIGMA {</span>
     
-    //for result where convolution is mult by 1, sigma=0.42466090014400953
+    // NOTE: these enumerations are in order of value
+    
+    //for result where convolution is mult by 1, 
+    // sigma=0.42466090014400953
     // which is close to 0.5
     /*ZEROPOINTFOURTWOSEVEN,*/ 
-<span class="fc" id="L12">    ZEROPOINTFIVE, ZEROPOINTSEVENONE,</span>
-<span class="fc" id="L13">    ONE, ONESQRT2, ONEPOINTFIVE,</span>
-<span class="fc" id="L14">    TWO, ONEPOINTFIVESQRT2, TWOSQRT2,</span>
-<span class="fc" id="L15">    THREE,</span>
-<span class="fc" id="L16">    FOUR, FOURSQRT2,</span>
-<span class="fc" id="L17">    EIGHT, EIGHTSQRT2,</span>
-<span class="fc" id="L18">    SIXTEEN, SIXTEENSQRT2,</span>
-<span class="fc" id="L19">    THIRTYTWO, THIRTYTWOSQRT2,</span>
-<span class="fc" id="L20">    SIXTYFOUR, SIXTYFOURSQRT2,</span>
-<span class="fc" id="L21">    ONEHUNDREDANDTWENTYEIGHT, ONEHUNDREDANDTWENTYEIGHTSQRT2,</span>
-<span class="fc" id="L22">    TWOHUNDREDANDFIFTYSIX</span>
+<span class="fc" id="L15">    ZEROPOINTFIVE, ZEROPOINTSEVENONE,</span>
+<span class="fc" id="L16">    ONE, ONESQRT2, ONEPOINTFIVE,</span>
+<span class="fc" id="L17">    TWO, ONEPOINTFIVESQRT2, TWOSQRT2,</span>
+<span class="fc" id="L18">    THREE,</span>
+<span class="fc" id="L19">    FOUR, FOURSQRT2,</span>
+<span class="fc" id="L20">    EIGHT, EIGHTSQRT2,</span>
+<span class="fc" id="L21">    SIXTEEN, SIXTEENSQRT2,</span>
+<span class="fc" id="L22">    THIRTYTWO, THIRTYTWOSQRT2,</span>
+<span class="fc" id="L23">    SIXTYFOUR, SIXTYFOURSQRT2,</span>
+<span class="fc" id="L24">    ONEHUNDREDANDTWENTYEIGHT, ONEHUNDREDANDTWENTYEIGHTSQRT2,</span>
+<span class="fc" id="L25">    TWOHUNDREDANDFIFTYSIX</span>
     ;
     
     public static SIGMA resolve(String name) {
-<span class="nc bnc" id="L26" title="All 2 branches missed.">        for (SIGMA vs : SIGMA.values()) {</span>
-<span class="nc bnc" id="L27" title="All 2 branches missed.">            if (vs.name().equals(name)) {</span>
-<span class="nc" id="L28">                return vs;</span>
+<span class="nc bnc" id="L29" title="All 2 branches missed.">        for (SIGMA vs : SIGMA.values()) {</span>
+<span class="nc bnc" id="L30" title="All 2 branches missed.">            if (vs.name().equals(name)) {</span>
+<span class="nc" id="L31">                return vs;</span>
             }
         }
-<span class="nc" id="L31">        return null;</span>
+<span class="nc" id="L34">        return null;</span>
     }
     
     public static float getValue(SIGMA sigma) {
     
         /*if (sigma.ordinal() == SIGMA.ZEROPOINTFOURTWOSEVEN.ordinal()) {
             return 0.42466090014400953f;
-<span class="fc bfc" id="L38" title="All 2 branches covered.">        } else*/ if (sigma.ordinal() == SIGMA.ZEROPOINTFIVE.ordinal()) {</span>
-<span class="fc" id="L39">            return 0.5f;</span>
-<span class="fc bfc" id="L40" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ZEROPOINTSEVENONE.ordinal()) {</span>
-<span class="fc" id="L41">            return (float) (1./Math.sqrt(2));</span>
-<span class="fc bfc" id="L42" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONE.ordinal()) {</span>
-<span class="fc" id="L43">            return 1;</span>
-<span class="fc bfc" id="L44" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONESQRT2.ordinal()) {</span>
-<span class="fc" id="L45">            return (float)Math.sqrt(2);</span>
-<span class="fc bfc" id="L46" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONEPOINTFIVE.ordinal()) {</span>
-<span class="fc" id="L47">            return 1.5f;</span>
-<span class="fc bfc" id="L48" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.TWO.ordinal()) {</span>
-<span class="fc" id="L49">            return 2;</span>
-<span class="fc bfc" id="L50" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONEPOINTFIVESQRT2.ordinal()) {</span>
-<span class="fc" id="L51">            return 1.5f*(float)Math.sqrt(2);</span>
-<span class="fc bfc" id="L52" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.TWOSQRT2.ordinal()) {</span>
-<span class="fc" id="L53">            return 2*(float)Math.sqrt(2);</span>
-<span class="fc bfc" id="L54" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.THREE.ordinal()) {</span>
-<span class="fc" id="L55">            return 3;</span>
-<span class="fc bfc" id="L56" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.FOUR.ordinal()) {</span>
-<span class="fc" id="L57">            return 4;</span>
-<span class="fc bfc" id="L58" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.FOURSQRT2.ordinal()) {</span>
-<span class="fc" id="L59">            return 4*(float)Math.sqrt(2);</span>
-<span class="fc bfc" id="L60" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.EIGHT.ordinal()) {</span>
-<span class="fc" id="L61">            return 8;</span>
-<span class="fc bfc" id="L62" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.EIGHTSQRT2.ordinal()) {</span>
-<span class="fc" id="L63">            return 8*(float)Math.sqrt(2);</span>
-<span class="fc bfc" id="L64" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.SIXTEEN.ordinal()) {</span>
-<span class="fc" id="L65">            return 16;</span>
-<span class="fc bfc" id="L66" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.SIXTEENSQRT2.ordinal()) {</span>
-<span class="fc" id="L67">            return 16*(float)Math.sqrt(2);</span>
-<span class="fc bfc" id="L68" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.THIRTYTWO.ordinal()) {</span>
-<span class="fc" id="L69">            return 32;</span>
-<span class="fc bfc" id="L70" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.THIRTYTWOSQRT2.ordinal()) {</span>
-<span class="fc" id="L71">            return 32*(float)Math.sqrt(2);</span>
-<span class="fc bfc" id="L72" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.SIXTYFOUR.ordinal()) {</span>
-<span class="fc" id="L73">            return 64;</span>
-<span class="fc bfc" id="L74" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.SIXTYFOURSQRT2.ordinal()) {</span>
-<span class="fc" id="L75">            return 64*(float)Math.sqrt(2);</span>
-<span class="fc" id="L76">        } else if (sigma.ordinal() == </span>
-<span class="fc bfc" id="L77" title="All 2 branches covered.">            SIGMA.ONEHUNDREDANDTWENTYEIGHT.ordinal()) {</span>
-<span class="fc" id="L78">            return 128;</span>
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        } else*/ if (sigma.ordinal() == SIGMA.ZEROPOINTFIVE.ordinal()) {</span>
+<span class="fc" id="L42">            return 0.5f;</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ZEROPOINTSEVENONE.ordinal()) {</span>
+<span class="fc" id="L44">            return (float) (1./Math.sqrt(2));</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONE.ordinal()) {</span>
+<span class="fc" id="L46">            return 1;</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONESQRT2.ordinal()) {</span>
+<span class="fc" id="L48">            return (float)Math.sqrt(2);</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONEPOINTFIVE.ordinal()) {</span>
+<span class="fc" id="L50">            return 1.5f;</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.TWO.ordinal()) {</span>
+<span class="fc" id="L52">            return 2;</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONEPOINTFIVESQRT2.ordinal()) {</span>
+<span class="fc" id="L54">            return 1.5f*(float)Math.sqrt(2);</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.TWOSQRT2.ordinal()) {</span>
+<span class="fc" id="L56">            return 2*(float)Math.sqrt(2);</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.THREE.ordinal()) {</span>
+<span class="fc" id="L58">            return 3;</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.FOUR.ordinal()) {</span>
+<span class="fc" id="L60">            return 4;</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.FOURSQRT2.ordinal()) {</span>
+<span class="fc" id="L62">            return 4*(float)Math.sqrt(2);</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.EIGHT.ordinal()) {</span>
+<span class="fc" id="L64">            return 8;</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.EIGHTSQRT2.ordinal()) {</span>
+<span class="fc" id="L66">            return 8*(float)Math.sqrt(2);</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.SIXTEEN.ordinal()) {</span>
+<span class="fc" id="L68">            return 16;</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.SIXTEENSQRT2.ordinal()) {</span>
+<span class="fc" id="L70">            return 16*(float)Math.sqrt(2);</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.THIRTYTWO.ordinal()) {</span>
+<span class="fc" id="L72">            return 32;</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.THIRTYTWOSQRT2.ordinal()) {</span>
+<span class="fc" id="L74">            return 32*(float)Math.sqrt(2);</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.SIXTYFOUR.ordinal()) {</span>
+<span class="fc" id="L76">            return 64;</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.SIXTYFOURSQRT2.ordinal()) {</span>
+<span class="fc" id="L78">            return 64*(float)Math.sqrt(2);</span>
 <span class="fc" id="L79">        } else if (sigma.ordinal() == </span>
-<span class="fc bfc" id="L80" title="All 2 branches covered.">            SIGMA.ONEHUNDREDANDTWENTYEIGHTSQRT2.ordinal()) {</span>
-<span class="fc" id="L81">            return 128*(float)Math.sqrt(2);</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">            SIGMA.ONEHUNDREDANDTWENTYEIGHT.ordinal()) {</span>
+<span class="fc" id="L81">            return 128;</span>
 <span class="fc" id="L82">        } else if (sigma.ordinal() == </span>
-<span class="pc bpc" id="L83" title="1 of 2 branches missed.">            SIGMA.TWOHUNDREDANDFIFTYSIX.ordinal()) {</span>
-<span class="fc" id="L84">            return 256;</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">            SIGMA.ONEHUNDREDANDTWENTYEIGHTSQRT2.ordinal()) {</span>
+<span class="fc" id="L84">            return 128*(float)Math.sqrt(2);</span>
+<span class="fc" id="L85">        } else if (sigma.ordinal() == </span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">            SIGMA.TWOHUNDREDANDFIFTYSIX.ordinal()) {</span>
+<span class="fc" id="L87">            return 256;</span>
         }
         
-<span class="nc" id="L87">        throw new IllegalArgumentException(&quot;Programmer Error!  Didn't include &quot; </span>
-<span class="nc" id="L88">            + sigma.toString());</span>
+<span class="nc" id="L90">        throw new IllegalArgumentException(&quot;Programmer Error!  Didn't include &quot; </span>
+<span class="nc" id="L91">            + sigma.toString());</span>
     }
     
     public static SIGMA increment(SIGMA sigma) {
         
-<span class="pc bpc" id="L93" title="1 of 2 branches missed.">        if (sigma.ordinal() == (SIGMA.values().length - 1)) {</span>
-<span class="nc" id="L94">            return null;</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">        if (sigma.ordinal() == (SIGMA.values().length - 1)) {</span>
+<span class="nc" id="L97">            return null;</span>
         }
         
-<span class="fc" id="L97">        return SIGMA.values()[sigma.ordinal() + 1];</span>
+<span class="fc" id="L100">        return SIGMA.values()[sigma.ordinal() + 1];</span>
     }
   
     public static SIGMA divideBySQRT2(SIGMA sigma) {
         
-<span class="fc bfc" id="L102" title="All 2 branches covered.">        if (sigma.ordinal() == SIGMA.FOUR.ordinal()) {</span>
-<span class="fc" id="L103">            return SIGMA.TWOSQRT2;</span>
-<span class="fc bfc" id="L104" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.TWOSQRT2.ordinal()) {</span>
-<span class="fc" id="L105">            return SIGMA.TWO;</span>
-<span class="fc bfc" id="L106" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.TWO.ordinal()) {</span>
-<span class="fc" id="L107">            return SIGMA.ONESQRT2;</span>
-<span class="fc bfc" id="L108" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONESQRT2.ordinal()) {</span>
-<span class="fc" id="L109">            return SIGMA.ONE;</span>
-<span class="fc bfc" id="L110" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONE.ordinal()) {</span>
-<span class="fc" id="L111">            return SIGMA.ZEROPOINTSEVENONE;</span>
-<span class="fc bfc" id="L112" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONEPOINTFIVE.ordinal()) {</span>
-<span class="fc" id="L113">            return null;</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">        if (sigma.ordinal() == SIGMA.FOUR.ordinal()) {</span>
+<span class="nc" id="L106">            return SIGMA.TWOSQRT2;</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.TWOSQRT2.ordinal()) {</span>
+<span class="nc" id="L108">            return SIGMA.TWO;</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.TWO.ordinal()) {</span>
+<span class="nc" id="L110">            return SIGMA.ONESQRT2;</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.ONESQRT2.ordinal()) {</span>
+<span class="nc" id="L112">            return SIGMA.ONE;</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.ONE.ordinal()) {</span>
+<span class="nc" id="L114">            return SIGMA.ZEROPOINTSEVENONE;</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.ONEPOINTFIVE.ordinal()) {</span>
+<span class="nc" id="L116">            return null;</span>
             
-<span class="fc bfc" id="L115" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.THREE.ordinal()) {</span>
-<span class="fc" id="L116">            return SIGMA.ONEPOINTFIVESQRT2;</span>
-<span class="fc bfc" id="L117" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONEPOINTFIVESQRT2.ordinal()) {</span>
-<span class="fc" id="L118">            return SIGMA.ONEPOINTFIVE;</span>
-<span class="fc bfc" id="L119" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ZEROPOINTSEVENONE.ordinal()) {</span>
-<span class="fc" id="L120">            return SIGMA.ZEROPOINTFIVE;</span>
-<span class="pc bpc" id="L121" title="1 of 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.ZEROPOINTFIVE.ordinal()) {</span>
-<span class="fc" id="L122">            return null;</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.THREE.ordinal()) {</span>
+<span class="nc" id="L119">            return SIGMA.ONEPOINTFIVESQRT2;</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.ONEPOINTFIVESQRT2.ordinal()) {</span>
+<span class="nc" id="L121">            return SIGMA.ONEPOINTFIVE;</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.ZEROPOINTSEVENONE.ordinal()) {</span>
+<span class="nc" id="L123">            return SIGMA.ZEROPOINTFIVE;</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.ZEROPOINTFIVE.ordinal()) {</span>
+<span class="nc" id="L125">            return null;</span>
         }
    
-<span class="nc" id="L125">        throw new IllegalArgumentException(&quot;have not written the division for &quot;</span>
-<span class="nc" id="L126">            + sigma.toString());</span>
+<span class="nc" id="L128">        throw new IllegalArgumentException(&quot;have not written the division for &quot;</span>
+<span class="nc" id="L129">            + sigma.toString());</span>
     }
     
     public static SIGMA increaseToFactorBySQRT2(float sigma) {
@@ -131,56 +134,56 @@
         /*if (Math.abs(sigma - 0.4247f) &lt; 0.01) {
             //0.42466090014400953f
             return SIGMA.ZEROPOINTFOURTWOSEVEN;
-<span class="fc bfc" id="L134" title="All 2 branches covered.">        } else*/ if (Math.abs(sigma - 0.5f) &lt; 0.01f) {</span>
-<span class="fc" id="L135">            return SIGMA.ZEROPOINTFIVE;</span>
-<span class="fc bfc" id="L136" title="All 2 branches covered.">        } else if (Math.abs(sigma - 0.707106f) &lt; 0.01f) {</span>
-<span class="fc" id="L137">            return SIGMA.ZEROPOINTSEVENONE;</span>
-<span class="fc bfc" id="L138" title="All 2 branches covered.">        } else if (sigma == 1) {</span>
-<span class="fc" id="L139">            return SIGMA.ONE;</span>
-<span class="fc bfc" id="L140" title="All 2 branches covered.">        } else if (sigma == ((float)Math.sqrt(2))) {</span>
-<span class="fc" id="L141">            return SIGMA.ONESQRT2;</span>
-<span class="fc bfc" id="L142" title="All 2 branches covered.">        } else if (sigma == 2) {</span>
-<span class="fc" id="L143">            return SIGMA.TWO;</span>
-<span class="fc bfc" id="L144" title="All 2 branches covered.">        } else if (sigma == (2*(float)Math.sqrt(2))) {</span>
-<span class="fc" id="L145">            return SIGMA.TWOSQRT2;</span>
-<span class="fc bfc" id="L146" title="All 2 branches covered.">        } else if (sigma == 4) {</span>
-<span class="fc" id="L147">            return SIGMA.FOUR;</span>
-<span class="fc bfc" id="L148" title="All 2 branches covered.">        } else if (sigma == (4*(float)Math.sqrt(2))) {</span>
-<span class="fc" id="L149">            return SIGMA.FOURSQRT2;</span>
-<span class="fc bfc" id="L150" title="All 2 branches covered.">        } else if (sigma == 8) {</span>
-<span class="fc" id="L151">            return SIGMA.EIGHT;</span>
-<span class="fc bfc" id="L152" title="All 2 branches covered.">        } else if (sigma == (8*(float)Math.sqrt(2))) {</span>
-<span class="fc" id="L153">            return SIGMA.EIGHTSQRT2;</span>
-<span class="fc bfc" id="L154" title="All 2 branches covered.">        } else if (sigma == 16) {</span>
-<span class="fc" id="L155">            return SIGMA.SIXTEEN;</span>
-<span class="fc bfc" id="L156" title="All 2 branches covered.">        } else if (sigma == (16*(float)Math.sqrt(2))) {</span>
-<span class="fc" id="L157">            return SIGMA.SIXTEENSQRT2;</span>
-<span class="fc bfc" id="L158" title="All 2 branches covered.">        } else if (sigma == 32) {</span>
-<span class="fc" id="L159">            return SIGMA.THIRTYTWO;</span>
-<span class="pc bpc" id="L160" title="1 of 2 branches missed.">        } else if (sigma == (32*(float)Math.sqrt(2))) {</span>
-<span class="fc" id="L161">            return SIGMA.THIRTYTWOSQRT2;</span>
-<span class="nc bnc" id="L162" title="All 2 branches missed.">        } else if (sigma == 64) {</span>
-<span class="nc" id="L163">            return SIGMA.SIXTYFOUR;</span>
-<span class="nc bnc" id="L164" title="All 2 branches missed.">        } else if (sigma == (64*(float)Math.sqrt(2))) {</span>
-<span class="nc" id="L165">            return SIGMA.SIXTYFOURSQRT2;</span>
-<span class="nc bnc" id="L166" title="All 2 branches missed.">        } else if (sigma == 128) {</span>
-<span class="nc" id="L167">            return SIGMA.ONEHUNDREDANDTWENTYEIGHT;</span>
-<span class="nc bnc" id="L168" title="All 2 branches missed.">        } else if (sigma == (128*(float)Math.sqrt(2))) {</span>
-<span class="nc" id="L169">            return SIGMA.ONEHUNDREDANDTWENTYEIGHTSQRT2;</span>
-<span class="nc bnc" id="L170" title="All 2 branches missed.">        } else if (sigma == 256) {</span>
-<span class="nc" id="L171">            return SIGMA.TWOHUNDREDANDFIFTYSIX;</span>
-<span class="nc bnc" id="L172" title="All 2 branches missed.">        } else if (sigma &gt; 256) {</span>
-<span class="nc" id="L173">            return null;</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">        } else*/ if (Math.abs(sigma - 0.5f) &lt; 0.01f) {</span>
+<span class="fc" id="L138">            return SIGMA.ZEROPOINTFIVE;</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">        } else if (Math.abs(sigma - 0.707106f) &lt; 0.01f) {</span>
+<span class="fc" id="L140">            return SIGMA.ZEROPOINTSEVENONE;</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">        } else if (sigma == 1) {</span>
+<span class="fc" id="L142">            return SIGMA.ONE;</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">        } else if (sigma == ((float)Math.sqrt(2))) {</span>
+<span class="fc" id="L144">            return SIGMA.ONESQRT2;</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">        } else if (sigma == 2) {</span>
+<span class="fc" id="L146">            return SIGMA.TWO;</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">        } else if (sigma == (2*(float)Math.sqrt(2))) {</span>
+<span class="fc" id="L148">            return SIGMA.TWOSQRT2;</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">        } else if (sigma == 4) {</span>
+<span class="fc" id="L150">            return SIGMA.FOUR;</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">        } else if (sigma == (4*(float)Math.sqrt(2))) {</span>
+<span class="fc" id="L152">            return SIGMA.FOURSQRT2;</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">        } else if (sigma == 8) {</span>
+<span class="fc" id="L154">            return SIGMA.EIGHT;</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">        } else if (sigma == (8*(float)Math.sqrt(2))) {</span>
+<span class="fc" id="L156">            return SIGMA.EIGHTSQRT2;</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">        } else if (sigma == 16) {</span>
+<span class="fc" id="L158">            return SIGMA.SIXTEEN;</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">        } else if (sigma == (16*(float)Math.sqrt(2))) {</span>
+<span class="fc" id="L160">            return SIGMA.SIXTEENSQRT2;</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">        } else if (sigma == 32) {</span>
+<span class="fc" id="L162">            return SIGMA.THIRTYTWO;</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">        } else if (sigma == (32*(float)Math.sqrt(2))) {</span>
+<span class="fc" id="L164">            return SIGMA.THIRTYTWOSQRT2;</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">        } else if (sigma == 64) {</span>
+<span class="nc" id="L166">            return SIGMA.SIXTYFOUR;</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">        } else if (sigma == (64*(float)Math.sqrt(2))) {</span>
+<span class="nc" id="L168">            return SIGMA.SIXTYFOURSQRT2;</span>
+<span class="nc bnc" id="L169" title="All 2 branches missed.">        } else if (sigma == 128) {</span>
+<span class="nc" id="L170">            return SIGMA.ONEHUNDREDANDTWENTYEIGHT;</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">        } else if (sigma == (128*(float)Math.sqrt(2))) {</span>
+<span class="nc" id="L172">            return SIGMA.ONEHUNDREDANDTWENTYEIGHTSQRT2;</span>
+<span class="nc bnc" id="L173" title="All 2 branches missed.">        } else if (sigma == 256) {</span>
+<span class="nc" id="L174">            return SIGMA.TWOHUNDREDANDFIFTYSIX;</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">        } else if (sigma &gt; 256) {</span>
+<span class="nc" id="L176">            return null;</span>
         
-<span class="nc bnc" id="L175" title="All 2 branches missed.">        } else if (Math.abs(sigma - 0.5) &lt; 0.01) {</span>
-<span class="nc" id="L176">            return SIGMA.ZEROPOINTFIVE;</span>
-<span class="nc bnc" id="L177" title="All 2 branches missed.">        } else if (Math.abs(sigma - 1.5f*Math.sqrt(2)) &lt; 0.01) {</span>
-<span class="nc" id="L178">            return SIGMA.ONEPOINTFIVESQRT2;</span>
-<span class="nc bnc" id="L179" title="All 2 branches missed.">        } else if (sigma == 3) {</span>
-<span class="nc" id="L180">            return SIGMA.THREE;</span>
+<span class="nc bnc" id="L178" title="All 2 branches missed.">        } else if (Math.abs(sigma - 0.5) &lt; 0.01) {</span>
+<span class="nc" id="L179">            return SIGMA.ZEROPOINTFIVE;</span>
+<span class="nc bnc" id="L180" title="All 2 branches missed.">        } else if (Math.abs(sigma - 1.5f*Math.sqrt(2)) &lt; 0.01) {</span>
+<span class="nc" id="L181">            return SIGMA.ONEPOINTFIVESQRT2;</span>
+<span class="nc bnc" id="L182" title="All 2 branches missed.">        } else if (sigma == 3) {</span>
+<span class="nc" id="L183">            return SIGMA.THREE;</span>
         }
         
-<span class="nc" id="L183">        throw new IllegalArgumentException(&quot;have not written the increment for &quot;</span>
+<span class="nc" id="L186">        throw new IllegalArgumentException(&quot;have not written the increment for &quot;</span>
             + sigma);
     }
     

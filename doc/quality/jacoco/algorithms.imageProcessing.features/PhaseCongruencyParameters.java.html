@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>PhaseCongruencyParameters.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.features</a> &gt; <span class="el_source">PhaseCongruencyParameters.java</span></div><h1>PhaseCongruencyParameters.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.features;
+
+/**
+ *
+ * @author nichole
+ */
+<span class="fc" id="L7"> public class PhaseCongruencyParameters {</span>
+
+<span class="fc" id="L9">     private int nScale = 5;</span>
+<span class="fc" id="L10">     private int minWavelength = 3;</span>
+<span class="fc" id="L11">     private float mult = 2.1f;</span>
+<span class="fc" id="L12">     private float sigmaOnf = 0.55f;</span>
+<span class="fc" id="L13">     private int k = 5;//2;</span>
+<span class="fc" id="L14">     private float cutOff = 0.5f;</span>
+<span class="fc" id="L15">     private float g = 10;</span>
+<span class="fc" id="L16">     private float deviationGain = 1.5f;</span>
+<span class="fc" id="L17">     private int noiseMethod = -1;</span>
+<span class="fc" id="L18">     private double tLow = 0.0001;//0.1;</span>
+<span class="fc" id="L19">     private double tHigh = 0.1;//0.3;</span>
+
+     public void setParameters(int nScale, int minWavelength, float mult,
+         float sigmaOnf, int k, float cutOff, float g, float deviationGain,
+         int noiseMethod, double tLow, double tHigh) {
+         
+<span class="fc" id="L25">         this.nScale = nScale;</span>
+<span class="fc" id="L26">         this.minWavelength = minWavelength;</span>
+<span class="fc" id="L27">         this.mult = mult;</span>
+<span class="fc" id="L28">         this.sigmaOnf = sigmaOnf;</span>
+<span class="fc" id="L29">         this.k = k;</span>
+<span class="fc" id="L30">         this.cutOff = cutOff;</span>
+<span class="fc" id="L31">         this.g = g;</span>
+<span class="fc" id="L32">         this.deviationGain = deviationGain;</span>
+<span class="fc" id="L33">         this.noiseMethod = noiseMethod;</span>
+<span class="fc" id="L34">         this.tLow = tLow;</span>
+<span class="fc" id="L35">         this.tHigh = tHigh;</span>
+<span class="fc" id="L36">     }</span>
+
+    /**
+     * @return the nScale
+     */
+    public int getNScale() {
+<span class="nc" id="L42">        return nScale;</span>
+    }
+
+    /**
+     * @return the minWavelength
+     */
+    public int getMinWavelength() {
+<span class="nc" id="L49">        return minWavelength;</span>
+    }
+
+    /**
+     * @return the mult
+     */
+    public float getMult() {
+<span class="nc" id="L56">        return mult;</span>
+    }
+
+    /**
+     * @return the sigmaOnf
+     */
+    public float getSigmaOnf() {
+<span class="nc" id="L63">        return sigmaOnf;</span>
+    }
+
+    /**
+     * @return the k
+     */
+    public int getK() {
+<span class="nc" id="L70">        return k;</span>
+    }
+
+    /**
+     * @return the cutOff
+     */
+    public float getCutOff() {
+<span class="nc" id="L77">        return cutOff;</span>
+    }
+
+    /**
+     * @return the g
+     */
+    public float getG() {
+<span class="nc" id="L84">        return g;</span>
+    }
+
+    /**
+     * @return the deviationGain
+     */
+    public float getDeviationGain() {
+<span class="nc" id="L91">        return deviationGain;</span>
+    }
+
+    /**
+     * @return the noiseMethod
+     */
+    public int getNoiseMethod() {
+<span class="nc" id="L98">        return noiseMethod;</span>
+    }
+
+    /**
+     * @return the tLow
+     */
+    public double gettLow() {
+<span class="nc" id="L105">        return tLow;</span>
+    }
+
+    /**
+     * @return the tHigh
+     */
+    public double gettHigh() {
+<span class="nc" id="L112">        return tHigh;</span>
+    }
+
+    @Override
+    public String toString() {
+         
+<span class="nc" id="L118">         StringBuilder sb = new StringBuilder();</span>
+         
+<span class="nc" id="L120">         sb.append(&quot;nScale=&quot;).append(nScale)</span>
+<span class="nc" id="L121">             .append(&quot; minWavelength=&quot;).append(minWavelength)</span>
+<span class="nc" id="L122">             .append(&quot; mult=&quot;).append(mult)</span>
+<span class="nc" id="L123">             .append(&quot; sigmaOnf=&quot;).append(sigmaOnf)</span>
+<span class="nc" id="L124">             .append(&quot; k=&quot;).append(k)</span>
+<span class="nc" id="L125">             .append(&quot; cutOff=&quot;).append(cutOff)</span>
+<span class="nc" id="L126">             .append(&quot; g=&quot;).append(g)</span>
+<span class="nc" id="L127">             .append(&quot; deviationGain=&quot;).append(deviationGain)</span>
+<span class="nc" id="L128">             .append(&quot; noiseMethod=&quot;).append(noiseMethod)</span>
+<span class="nc" id="L129">             .append(&quot; tLow=&quot;).append(tLow)</span>
+<span class="nc" id="L130">             .append(&quot; tHigh=&quot;).append(tHigh);</span>
+         
+<span class="nc" id="L132">         return sb.toString();</span>
+     }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

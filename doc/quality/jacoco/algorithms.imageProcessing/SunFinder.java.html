@@ -1,428 +1,149 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>SunFinder.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">SunFinder.java</span></div><h1>SunFinder.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
-import algorithms.compGeometry.EllipseHelper;
-import algorithms.misc.Histogram;
-import algorithms.util.LinearRegression;
+import algorithms.QuickSort;
+import algorithms.imageProcessing.Sky.SkyObject;
+import algorithms.imageProcessing.features.mser.EllipseHelper;
+import algorithms.imageProcessing.features.mser.MSEREdges;
+import algorithms.imageProcessing.features.mser.Region;
+import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
-import java.util.logging.Logger;
 
 /**
- *
+ * class to find the sun in pictures.  it needs more images to test against.
+ * 
  * @author nichole
  */
-<span class="pc bpc" id="L17" title="1 of 2 branches missed.">public class SunFinder {</span>
+public class SunFinder {
     
-<span class="fc" id="L19">    private Set&lt;PairInt&gt; sunPoints = new HashSet&lt;PairInt&gt;();</span>
-    
-<span class="fc" id="L21">    private double[] sunCoeff = null;</span>
-    
-<span class="fc" id="L23">    private double pointDensity = 0;</span>
-    
-<span class="fc" id="L25">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+    //private Logger log = Logger.getLogger(this.getClass().getName());
 
-<span class="fc" id="L27">    public SunFinder() {</span>
-<span class="fc" id="L28">    }</span>
+<span class="fc" id="L26">    public SunFinder() {</span>
+<span class="fc" id="L27">    }</span>
     
-    /**
-     * find sun colored points by searching entire image.
-     * The sun's visible radius is the photosphere and that size is known so
-     * if the points returned are well fit by a circle
-     * or a fraction of a fittable circle, one gets a limit
-     * on scale in the image (knowledge of the camera and lens are needed too
-     * for projection).
-     * 
-     * @param colorImg
-     * @param xOffset
-     * @param yOffset
-     * @param skyIsDarkGrey 
-     */
-    public void findSunPhotosphere(ImageExt colorImg, int xOffset, 
-        int yOffset, boolean skyIsDarkGrey) {
+    public SkyObject findSun(MSEREdges mserEdges) {
         
-<span class="fc" id="L46">        SunColors sunColors = new SunColors();</span>
+<span class="fc" id="L31">        ImageExt img = mserEdges.getClrImg();</span>
         
-<span class="fc bfc" id="L48" title="All 2 branches covered.">        if (skyIsDarkGrey) {</span>
-<span class="fc" id="L49">            sunColors.useDarkSkiesLogic();</span>
-        }
+<span class="fc" id="L33">        List&lt;Region&gt; greyscaleNegative = mserEdges.getOrigGsPtRegions().get(1);</span>
         
-<span class="fc bfc" id="L52" title="All 2 branches covered.">        for (int col = 0; col &lt; colorImg.getWidth(); col++) {</span>
-<span class="fc bfc" id="L53" title="All 2 branches covered.">            for (int row = 0; row &lt; colorImg.getHeight(); row++) {</span>
-                
-<span class="fc" id="L55">                int idx = colorImg.getInternalIndex(col, row);</span>
-
-<span class="fc bfc" id="L57" title="All 2 branches covered.">                if (sunColors.isSunCenterColor(colorImg, idx)) {</span>
-<span class="fc" id="L58">                    sunPoints.add(new PairInt(col - xOffset, row - yOffset));</span>
-                }
-            }
-        }
+<span class="fc" id="L35">        SunColors sunColors = new SunColors();</span>
         
-<span class="fc" id="L63">        log.info(&quot;found &quot; + sunPoints.size() </span>
-<span class="fc" id="L64">            + &quot; sun points from image of width &quot; + colorImg.getWidth());</span>
-
-<span class="fc bfc" id="L66" title="All 2 branches covered.">        if (sunPoints.size() &lt; 6) {</span>
-<span class="fc" id="L67">            sunPoints.clear();</span>
-<span class="fc" id="L68">            return;</span>
-        }
+<span class="fc" id="L37">        List&lt;Set&lt;PairInt&gt;&gt; listOfSets = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
         
-        //fit ellipse to yellowPoints.  ellipse because of possible occlusion.
-<span class="fc" id="L72">        EllipseHelper ellipseHelper = new EllipseHelper();</span>
-<span class="fc" id="L73">        double[] params = ellipseHelper.fitEllipseToPoints(sunPoints);</span>
-        
-<span class="fc bfc" id="L75" title="All 2 branches covered.">        if (params == null) {</span>
-            // not close to an ellipse
-<span class="fc" id="L77">            sunPoints.clear();</span>
-<span class="fc" id="L78">            return;</span>
-        }
-        
-<span class="fc" id="L81">        float xc = (float)params[0];</span>
-<span class="fc" id="L82">        float yc = (float)params[1];</span>
-<span class="fc" id="L83">        float a = (float)params[2];</span>
-<span class="fc" id="L84">        float b = (float)params[3];</span>
-<span class="fc" id="L85">        float alpha = (float)params[4];</span>
-        
-<span class="fc" id="L87">        log.info(&quot;elliptical fit to yellow points: &quot; + Arrays.toString(params));</span>
-       
-        //TODO:  this may need adjustments.  top of sun rising over mountains..
-        /*if ((a/b) &gt; 6) {
-            return new HashSet&lt;PairInt&gt;();
-        }*/
-        
-<span class="fc" id="L94">        sunCoeff = params;</span>
-        
-<span class="fc" id="L96">        calculatePointDensity();</span>
-        
-<span class="fc" id="L98">        evaluatePointDensity();</span>
-        
-<span class="fc" id="L100">    }</span>
-    
-    private void calculatePointDensity() {
-<span class="pc bpc" id="L103" title="1 of 2 branches missed.">        if (sunCoeff != null) {</span>
-<span class="fc" id="L104">            pointDensity = (sunPoints.size()/(2*Math.PI*sunCoeff[2]*sunCoeff[3]));</span>
-        }
-<span class="fc" id="L106">    }</span>
-    
-    private void evaluatePointDensity() {
-        
-<span class="fc bfc" id="L110" title="All 2 branches covered.">        if (pointDensity &lt; 0.5) {</span>
-<span class="fc" id="L111">            sunPoints.clear();</span>
-<span class="pc bpc" id="L112" title="1 of 2 branches missed.">        } else if (sunCoeff == null) {</span>
-<span class="nc" id="L113">            sunPoints.clear();</span>
-<span class="pc bpc" id="L114" title="1 of 2 branches missed.">        } else if ((sunCoeff[2]/sunCoeff[3])&gt; 6) {</span>
-<span class="nc" id="L115">            sunPoints.clear();</span>
-        }
-<span class="fc" id="L117">    }</span>
-    
-    private void removePointsUnderSkyline(Set&lt;PairInt&gt; skyline, 
-        Set&lt;PairInt&gt; sunPoints, Set&lt;PairInt&gt; skyPoints, 
-        int width, int height) {
-                
-        //TODO:  needs alot of testing with images that are tilted and
-        // have sun in them.
-        
-<span class="fc" id="L126">        int[] dSkylineXY = determineChangeTowardsSkyline(skyline, sunPoints,</span>
-            skyPoints);
-        
-<span class="fc" id="L129">        int dSkylineX = Math.round(dSkylineXY[0]);</span>
-<span class="fc" id="L130">        int dSkylineY = Math.round(dSkylineXY[1]);</span>
-        
-<span class="pc bpc" id="L132" title="1 of 4 branches missed.">        if ((dSkylineX == 0) &amp;&amp; (dSkylineY == 0)) {</span>
-            // do nothing
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        for (int rIdx = 0; rIdx &lt; greyscaleNegative.size(); ++rIdx) {</span>
             
-<span class="fc bfc" id="L135" title="All 4 branches covered.">        } else if ((dSkylineX &gt;= 0) &amp;&amp; (dSkylineY &gt;= 0)) {</span>
-            
-<span class="fc bfc" id="L137" title="All 2 branches covered.">            for (PairInt s : skyline) {</span>
-<span class="fc" id="L138">                int vX = s.getX() + dSkylineX;</span>
-<span class="fc" id="L139">                int vY = s.getY() + dSkylineY;</span>
-<span class="fc bfc" id="L140" title="All 4 branches covered.">                while ((vX &lt; (width - 1)) &amp;&amp; (vY &lt; (height - 1))) {</span>
-<span class="fc" id="L141">                    PairInt p = new PairInt(vX, vY);</span>
-<span class="fc" id="L142">                    skyPoints.remove(p);</span>
-<span class="fc" id="L143">                    vX += dSkylineX;</span>
-<span class="fc" id="L144">                    vY += dSkylineY;</span>
-<span class="fc" id="L145">                }</span>
-<span class="fc" id="L146">            }</span>
-            
-<span class="pc bpc" id="L148" title="1 of 4 branches missed.">        } else if ((dSkylineX == -1) &amp;&amp; (dSkylineY &gt;= 0)) {</span>
-            
-<span class="fc bfc" id="L150" title="All 2 branches covered.">            for (PairInt s : skyline) {</span>
-<span class="fc" id="L151">                int vX = s.getX() + dSkylineX;</span>
-<span class="fc" id="L152">                int vY = s.getY() + dSkylineY;</span>
-<span class="pc bpc" id="L153" title="1 of 4 branches missed.">                while ((vX &gt; -1) &amp;&amp; (vY &lt; (height - 1))) {</span>
-<span class="fc" id="L154">                    PairInt p = new PairInt(vX, vY);</span>
-<span class="fc" id="L155">                    skyPoints.remove(p);</span>
-<span class="fc" id="L156">                    vX += dSkylineX;</span>
-<span class="fc" id="L157">                    vY += dSkylineY;</span>
-<span class="fc" id="L158">                }</span>
-<span class="fc" id="L159">            }</span>
-        
-<span class="pc bpc" id="L161" title="2 of 4 branches missed.">        } else if ((dSkylineX &gt;= 0) &amp;&amp; (dSkylineY == -1)) {</span>
-            
-<span class="fc bfc" id="L163" title="All 2 branches covered.">            for (PairInt s : skyline) {</span>
-<span class="fc" id="L164">                int vX = s.getX() + dSkylineX;</span>
-<span class="fc" id="L165">                int vY = s.getY() + dSkylineY;</span>
-<span class="fc bfc" id="L166" title="All 4 branches covered.">                while ((vX &lt; (width - 1)) &amp;&amp; (vY &gt; -1)) {</span>
-<span class="fc" id="L167">                    PairInt p = new PairInt(vX, vY);</span>
-<span class="fc" id="L168">                    skyPoints.remove(p);</span>
-<span class="fc" id="L169">                    vX += dSkylineX;</span>
-<span class="fc" id="L170">                    vY += dSkylineY;</span>
-<span class="fc" id="L171">                }</span>
-<span class="fc" id="L172">            }</span>
-            
-<span class="nc bnc" id="L174" title="All 4 branches missed.">        } else if ((dSkylineX == -1) &amp;&amp; (dSkylineY == -1)) {</span>
-            
-<span class="nc bnc" id="L176" title="All 2 branches missed.">            for (PairInt s : skyline) {</span>
-<span class="nc" id="L177">                int vX = s.getX() + dSkylineX;</span>
-<span class="nc" id="L178">                int vY = s.getY() + dSkylineY;</span>
-<span class="nc bnc" id="L179" title="All 4 branches missed.">                while ((vX &gt; -1) &amp;&amp; (vY &gt; -1)) {</span>
-<span class="nc" id="L180">                    PairInt p = new PairInt(vX, vY);</span>
-<span class="nc" id="L181">                    skyPoints.remove(p);</span>
-<span class="nc" id="L182">                    vX += dSkylineX;</span>
-<span class="nc" id="L183">                    vY += dSkylineY;</span>
-<span class="nc" id="L184">                }</span>
-<span class="nc" id="L185">            }</span>
-        
-        }
-<span class="fc" id="L188">    }</span>
-    
-    private int[] determineChangeTowardsSkyline(Set&lt;PairInt&gt; skyline, 
-        Set&lt;PairInt&gt; sunPoints, Set&lt;PairInt&gt; skyPoints) {
-        
-        //TODO:  needs alot of testing with images that are tilted and
-        // have sun in them.
-        
-        // need to fit a line to skyline to get the slope and hence
-        // know what is perpendicular to the skyline near the sun.
-        
-<span class="fc" id="L199">        int[] xsl = new int[skyline.size()];</span>
-<span class="fc" id="L200">        int[] ysl = new int[xsl.length];</span>
-<span class="fc" id="L201">        int i = 0;</span>
-<span class="fc bfc" id="L202" title="All 2 branches covered.">        for (PairInt p : skyline) {</span>
-<span class="fc" id="L203">            xsl[i] = p.getX();</span>
-<span class="fc" id="L204">            ysl[i] = p.getY();</span>
-<span class="fc" id="L205">            i++;</span>
-<span class="fc" id="L206">        }</span>
-        
-<span class="fc" id="L208">        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();</span>
-            
-<span class="fc" id="L210">        double[] skyXYCen = ch.calculateXYCentroids(skyPoints);</span>
-            
-<span class="fc" id="L212">        double[] sunXYCen = ch.calculateXYCentroids(sunPoints);</span>
-        
-<span class="fc" id="L214">        LinearRegression lr = new LinearRegression();</span>
-<span class="fc" id="L215">        float[] yInterceptAndSlope = lr.calculateTheilSenEstimatorParams(</span>
-            xsl, ysl);
-        
-<span class="fc" id="L218">        int dSkylineX = 0;</span>
-<span class="fc" id="L219">        int dSkylineY = 0;</span>
-        
-        /*
-        inf
-           1.7
-         |    1.0
-         |   /    0.57
-         | /     
-        @ ----- 0        
-        */
-        
-<span class="fc bfc" id="L230" title="All 2 branches covered.">        if (Math.abs(yInterceptAndSlope[1]) &lt; 0.57) {</span>
-            // ~ horizontal line, less than 30 degrees from horiz
-<span class="fc bfc" id="L232" title="All 2 branches covered.">            if (skyXYCen[1] &gt; sunXYCen[1]) {</span>
-<span class="fc" id="L233">                dSkylineY = -1;</span>
-            } else {
-<span class="fc" id="L235">                dSkylineY = 1;</span>
-            }
-<span class="pc bpc" id="L237" title="1 of 2 branches missed.">        } else if (Math.abs(yInterceptAndSlope[1]) &lt; 1.73) {</span>
-            // ~ diagonal line, between 30 degrees and 60 degrees from horiz
-<span class="nc bnc" id="L239" title="All 2 branches missed.">            if (skyXYCen[0] &gt; sunXYCen[0]) {</span>
-<span class="nc" id="L240">                dSkylineX = -1;</span>
-            } else {
-<span class="nc" id="L242">                dSkylineX = 1;</span>
-            }
-<span class="nc bnc" id="L244" title="All 2 branches missed.">            if (skyXYCen[1] &gt; sunXYCen[1]) {</span>
-<span class="nc" id="L245">                dSkylineY = -1;</span>
-            } else {
-<span class="nc" id="L247">                dSkylineY = 1;</span>
-            }
-        } else  {
-            // approx w/ a vertical line
-<span class="fc bfc" id="L251" title="All 2 branches covered.">            if (skyXYCen[0] &gt; sunXYCen[0]) {</span>
-<span class="fc" id="L252">                dSkylineX = -1;</span>
-            } else {
-<span class="fc" id="L254">                dSkylineX = 1;</span>
-            }
-        }
-        
-<span class="fc" id="L258">        return new int[]{dSkylineX, dSkylineY};</span>
-    }
-    
-    public void correctSkylineForSun( 
-        Set&lt;PairInt&gt; skyPoints, Image colorImg, int xOffset, int yOffset, 
-        GreyscaleImage gradientXY) {
-        
-<span class="fc" id="L265">        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();</span>
-<span class="fc" id="L266">        double[] xySunCen = ch.calculateXYCentroids(sunPoints);</span>
-        
-<span class="fc" id="L268">        int h = colorImg.getHeight();</span>
-<span class="fc" id="L269">        int w = colorImg.getWidth();</span>
-        
-<span class="fc" id="L271">        int srchRadius = 125;</span>
-        
-<span class="fc" id="L273">        int maxValue = Integer.MIN_VALUE;</span>
-        
-<span class="fc" id="L275">        Set&lt;PairInt&gt; pointsNearSun = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L41">            Region r = greyscaleNegative.get(rIdx);</span>
+           
+<span class="fc" id="L43">            Set&lt;PairInt&gt; set1 = null;</span>
                 
-<span class="fc" id="L277">        for (int col = ((int)xySunCen[0] - srchRadius); </span>
-<span class="fc bfc" id="L278" title="All 2 branches covered.">            col &lt; ((int)xySunCen[0] + srchRadius); col++) {</span>
-        
-<span class="fc" id="L280">            for (int row = ((int)xySunCen[1] - srchRadius); </span>
-<span class="fc bfc" id="L281" title="All 2 branches covered.">                row &lt; ((int)xySunCen[1] + srchRadius); row++) {</span>
-                
-<span class="fc bfc" id="L283" title="All 8 branches covered.">                if ((col &lt; 0) || (col &gt; (w - 1)) || (row &lt; 0) || (row &gt; (h - 1))) {</span>
-<span class="fc" id="L284">                    continue;</span>
-                }
-                
-<span class="fc" id="L287">                int v = gradientXY.getValue(col, row);</span>
-                
-<span class="fc bfc" id="L289" title="All 2 branches covered.">                if (v &gt; maxValue) {</span>
-<span class="fc" id="L290">                    maxValue = v;</span>
-                }
-                
-<span class="fc bfc" id="L293" title="All 2 branches covered.">                if (v &gt; 0) {</span>
-<span class="fc" id="L294">                    pointsNearSun.add(new PairInt(col, row));</span>
-                }
-            }
-        }
-        
-<span class="fc" id="L299">        PairIntArray valueCounts = </span>
-<span class="fc" id="L300">            Histogram.createADescendingSortByKeyArray(pointsNearSun, gradientXY);</span>
-<span class="fc" id="L301">        int countIsDoubledValue = maxValue;</span>
-<span class="fc" id="L302">        int lastCount = Integer.MAX_VALUE;</span>
-<span class="pc bpc" id="L303" title="1 of 2 branches missed.">        for (int i = 1; i &lt; valueCounts.getN(); i++) {</span>
-<span class="fc" id="L304">            int count = valueCounts.getY(i);</span>
-<span class="fc bfc" id="L305" title="All 2 branches covered.">            if ((count/lastCount) &gt;= 2) {</span>
-<span class="fc" id="L306">                countIsDoubledValue = valueCounts.getX(i);</span>
-<span class="fc" id="L307">                break;</span>
-            }
-<span class="fc" id="L309">            lastCount = count;</span>
-        }
-        
-<span class="pc bpc" id="L312" title="3 of 4 branches missed.">        assert(maxValue == valueCounts.getX(0));</span>
-        
-<span class="fc" id="L314">        int valueTolerance = 10;</span>
-<span class="pc bpc" id="L315" title="1 of 2 branches missed.">        if ((maxValue - countIsDoubledValue) &gt; valueTolerance) {</span>
-<span class="nc" id="L316">            valueTolerance = maxValue - countIsDoubledValue;</span>
-        }
-        
-<span class="fc" id="L319">        int minX = Integer.MAX_VALUE;</span>
-<span class="fc" id="L320">        int minY = Integer.MAX_VALUE;</span>
-<span class="fc" id="L321">        int maxX = Integer.MIN_VALUE;</span>
-<span class="fc" id="L322">        int maxY = Integer.MIN_VALUE;</span>
-        
-<span class="fc" id="L324">        Set&lt;PairInt&gt; set = new HashSet&lt;PairInt&gt;();</span>
-        
-<span class="fc" id="L326">        for (int col = ((int)xySunCen[0] - srchRadius); </span>
-<span class="fc bfc" id="L327" title="All 2 branches covered.">            col &lt; ((int)xySunCen[0] + srchRadius); col++) {</span>
-        
-<span class="fc" id="L329">            for (int row = ((int)xySunCen[1] - srchRadius); </span>
-<span class="fc bfc" id="L330" title="All 2 branches covered.">                row &lt; ((int)xySunCen[1] + srchRadius); row++) {</span>
-                
-<span class="fc bfc" id="L332" title="All 8 branches covered.">                if ((col &lt; 0) || (col &gt; (w - 1)) || (row &lt; 0) || (row &gt; (h - 1))) {</span>
-<span class="fc" id="L333">                    continue;</span>
-                }
-                
-<span class="fc" id="L336">                int v = gradientXY.getValue(col, row);</span>
-                
-<span class="fc bfc" id="L338" title="All 2 branches covered.">                if (Math.abs(v - maxValue) &lt; valueTolerance) {</span>
-                    
-<span class="fc" id="L340">                    set.add(new PairInt(col, row));</span>
-                    
-<span class="fc bfc" id="L342" title="All 2 branches covered.">                    if (col &lt; minX) {</span>
-<span class="fc" id="L343">                        minX = col;</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">            for (int i = 0; i &lt; r.accX.size(); ++i) {</span>
+<span class="fc" id="L46">                int x = r.accX.get(i);</span>
+<span class="fc" id="L47">                int y = r.accY.get(i);</span>
+<span class="fc" id="L48">                PairInt p = new PairInt(x, y);</span>
+<span class="fc" id="L49">                int pixIdx = img.getInternalIndex(p);</span>
+               
+<span class="fc bfc" id="L51" title="All 2 branches covered.">                if (sunColors.isSunCenterColor(img, pixIdx)) {</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">                    if (set1 == null) {</span>
+<span class="fc" id="L53">                        set1 = new HashSet&lt;PairInt&gt;();</span>
                     }
-<span class="fc bfc" id="L345" title="All 2 branches covered.">                    if (col &gt; maxX) {</span>
-<span class="fc" id="L346">                        maxX = col;</span>
-                    }
-<span class="fc bfc" id="L348" title="All 2 branches covered.">                    if (row &lt; minY) {</span>
-<span class="fc" id="L349">                        minY = row;</span>
-                    }
-<span class="fc bfc" id="L351" title="All 2 branches covered.">                    if (row &gt; maxY) {</span>
-<span class="fc" id="L352">                        maxY = row;</span>
-                    }
+<span class="fc" id="L55">                    set1.add(p);</span>
                 }
             }
-        }
-
-<span class="fc" id="L358">        debugPlot(set, colorImg, xOffset, yOffset, </span>
-            &quot;horizon_near_sun_before_thinning&quot;);
-        
-        // points in set now represent the skyline near the sun.
-        // the points are a line widened by convolution so need to be thinned
-        // to the line centroid.
-        // ErosionFilter isn't currently able to provide a line that is centered,
-        // it may be a line closer to one side than the other of the original
-        // thick band of points.
-        // so trying Zhang-Suen: 
-        
-<span class="fc" id="L369">        ZhangSuenLineThinner zsLT = new ZhangSuenLineThinner();</span>
-<span class="fc" id="L370">        zsLT.applyLineThinner(set, minX, maxX, minY, maxY);</span>
-        
-<span class="fc" id="L372">        ch.populateGapsWithInterpolation(set);</span>
-
-<span class="fc" id="L374">        debugPlot(set, colorImg, xOffset, yOffset,</span>
-            &quot;horizon_near_sun&quot;);
-
-        // if know skyline direction and any points are &quot;below&quot; set towards
-        // the skyline, those should be removed from skyPoints
-        
-<span class="fc" id="L380">        removePointsUnderSkyline(set, sunPoints, skyPoints, w, h);</span>
-
-<span class="fc" id="L382">        skyPoints.addAll(set);</span>
-<span class="fc" id="L383">        skyPoints.addAll(sunPoints);</span>
-        
-<span class="fc" id="L385">        debugPlot(skyPoints, colorImg, xOffset, yOffset,</span>
-            &quot;horizon_near_sun_final&quot;);
-<span class="fc" id="L387">    }</span>
-    
-    
-    public double getPointDensity() {
-<span class="nc" id="L391">        return pointDensity;</span>
-    }
-    
-    public double[] getSunEllipseCoeff() {
-<span class="fc" id="L395">        return sunCoeff;</span>
-    }
-    
-    public Set&lt;PairInt&gt; getSunPoints() {
-<span class="fc" id="L399">        return sunPoints;</span>
-    }
-    
-    void debugPlot(Set&lt;PairInt&gt; extSkyPoints, Image originalColorImage, 
-        int xOffset, int yOffset, String outputPrefixForFileName) {
-        
-        //plot is made in aspects
-        
-<span class="fc" id="L407">    }</span>
-
-    @Override
-    public String toString() {
-        
-<span class="fc" id="L412">        StringBuilder sb = new StringBuilder();</span>
-        
-<span class="fc" id="L414">        sb.append(&quot;Number of sunPoints=&quot;)</span>
-<span class="fc" id="L415">            .append(Integer.toString(sunPoints.size())).append(&quot;\n&quot;);</span>
-        
-<span class="fc bfc" id="L417" title="All 2 branches covered.">        if (sunCoeff != null) {</span>
-<span class="fc" id="L418">            sb.append(&quot;sun fit coeff=&quot;).append(Arrays.toString(sunCoeff))</span>
-<span class="fc" id="L419">                .append(&quot;\n&quot;);</span>
-<span class="fc" id="L420">            sb.append(&quot;sun point density=&quot;)</span>
-<span class="fc" id="L421">                .append(Double.toString(pointDensity)).append(&quot;\n&quot;);</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">            if (set1 != null) {</span>
+<span class="fc" id="L59">                listOfSets.add(set1);</span>
+            }
         }
         
-<span class="fc" id="L424">        return sb.toString();</span>
+<span class="fc" id="L63">        int nList = listOfSets.size();</span>
+<span class="fc" id="L64">        List&lt;EllipseHelper&gt; ehs = new ArrayList&lt;EllipseHelper&gt;(nList);</span>
+<span class="fc" id="L65">        List&lt;Set&lt;PairInt&gt;&gt; listOfSets2 = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        for (int i = 0; i &lt; listOfSets.size(); ++i) {</span>
+<span class="fc" id="L67">            Set&lt;PairInt&gt; points = listOfSets.get(i);</span>
+<span class="fc" id="L68">            EllipseHelper eh = createRegion(points);</span>
+<span class="fc" id="L69">            int n = points.size();</span>
+            
+<span class="fc bfc" id="L71" title="All 2 branches covered.">            if (n &lt; 9) {</span>
+<span class="fc" id="L72">                continue;</span>
+            }
+        
+<span class="fc" id="L75">            double area = 2. * Math.PI * eh.getMajorTimesMinor();</span>
+<span class="fc" id="L76">            double dens = (double)n/area;</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">            if (Double.isInfinite(dens)) {</span>
+<span class="nc" id="L78">                continue;</span>
+            }
+            //System.out.println(&quot;sunfinder: &quot; + Arrays.toString(eh.getXYCenter())
+            //    + &quot; dens=&quot; + dens + &quot; n=&quot; + n 
+            //    + &quot; ecc=&quot; + eh.getEccentricity() + &quot; minor=&quot; + 
+            //    eh.getSemiMinor() + &quot; major=&quot; + eh.getSemiMajor()
+            //);
+<span class="fc bfc" id="L85" title="All 6 branches covered.">            if (dens &gt; 0.1 &amp;&amp; eh.getEccentricity() &lt; 0.9 &amp;&amp; dens &gt; 0.375) {</span>
+<span class="fc" id="L86">                ehs.add(eh);</span>
+<span class="fc" id="L87">                listOfSets2.add(points);</span>
+            }
+        }
+        
+<span class="fc" id="L91">        nList = listOfSets2.size();</span>
+<span class="fc" id="L92">        float[] densities = new float[nList];</span>
+<span class="fc" id="L93">        float[] ellipticities = new float[nList];</span>
+<span class="fc" id="L94">        int[] ns = new int[nList];</span>
+<span class="fc" id="L95">        int[] indexes = new int[nList];</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        for (int i = 0; i &lt; nList; ++i) {</span>
+<span class="fc" id="L97">            Set&lt;PairInt&gt; points = listOfSets.get(i);</span>
+<span class="fc" id="L98">            EllipseHelper eh = createRegion(points);</span>
+<span class="fc" id="L99">            int n = points.size();</span>
+        
+<span class="fc" id="L101">            double area = 2. * Math.PI * eh.getMajorTimesMinor();</span>
+<span class="fc" id="L102">            double dens = (double)n/area;</span>
+<span class="fc" id="L103">            densities[i] = (float)dens;</span>
+<span class="fc" id="L104">            ellipticities[i] = (float)eh.getEccentricity();</span>
+<span class="fc" id="L105">            ns[i] = n;</span>
+<span class="fc" id="L106">            indexes[i] = i;</span>
+        }
+        
+<span class="fc" id="L109">        QuickSort.sortBy1stArg(densities, indexes);</span>
+        
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        for (int i = (ns.length - 1); i &gt; -1; --i) {</span>
+            
+<span class="fc" id="L113">            Set&lt;PairInt&gt; points = listOfSets2.get(i);</span>
+<span class="fc" id="L114">            EllipseHelper eh = ehs.get(i);</span>
+<span class="fc" id="L115">            double area = 2. * Math.PI * eh.getMajorTimesMinor();</span>
+<span class="fc" id="L116">            double dens = (double)points.size()/area;</span>
+        
+<span class="fc" id="L118">            System.out.println(Arrays.toString(eh.getXYCenter()) </span>
+<span class="fc" id="L119">                + &quot; n=&quot; + points.size()</span>
+                + &quot; area=&quot; + area + &quot; dens=&quot; + dens
+<span class="fc" id="L121">                + &quot; ecc=&quot; + eh.getEccentricity() + &quot; minor=&quot; + </span>
+<span class="fc" id="L122">                eh.getSemiMinor() + &quot; major=&quot; + eh.getSemiMajor()</span>
+            );
+        
+<span class="fc" id="L125">            SkyObject obj = new SkyObject();</span>
+<span class="fc" id="L126">            obj.points = points;</span>
+<span class="fc" id="L127">            obj.xyCenter = eh.getXYCenter();</span>
+<span class="fc" id="L128">            return obj;</span>
+        }
+        
+<span class="fc" id="L131">        System.out.println(&quot;did not find sun in image&quot;);</span>
+        
+<span class="fc" id="L133">        return null;        </span>
     }
+
+    private EllipseHelper createRegion(Set&lt;PairInt&gt; points) {
+
+<span class="fc" id="L138">        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();</span>
+<span class="fc" id="L139">        int[] xyCen = ch.calculateRoundedXYCentroids(points);</span>
     
+<span class="fc" id="L141">        PairIntArray xy = Misc.convertWithoutOrder(points);</span>
+        
+<span class="fc" id="L143">        EllipseHelper eh = new EllipseHelper(xyCen[0], xyCen[1], xy);</span>
+        
+<span class="fc" id="L145">        return eh;</span>
+    }
+  
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.util.List;
 
 /**
+ * NOT READY FOR USE. 
+ * 
  * a wrapper to allow a user to run parts of the application from a command
  * line interface (for corner detection).
  * 
@@ -16,213 +18,213 @@ import java.util.List;
  */
 public class CMDLineCornerDetector {
     
-<span class="fc" id="L19">    private static String sep = System.getProperty(&quot;file.separator&quot;);</span>
+<span class="fc" id="L21">    private static String sep = System.getProperty(&quot;file.separator&quot;);</span>
     
-<span class="fc" id="L21">    private static String eol = System.getProperty(&quot;line.separator&quot;);</span>
+<span class="fc" id="L23">    private static String eol = System.getProperty(&quot;line.separator&quot;);</span>
     
-<span class="fc" id="L23">    private static String cwd = System.getProperty(&quot;user.dir&quot;) + sep;</span>
+<span class="fc" id="L25">    private static String cwd = System.getProperty(&quot;user.dir&quot;) + sep;</span>
     
-<span class="fc" id="L25">    public CMDLineCornerDetector() {</span>
+<span class="fc" id="L27">    public CMDLineCornerDetector() {</span>
                         
-<span class="fc" id="L27">    }</span>
+<span class="fc" id="L29">    }</span>
     
     protected String checkFilePath(String filePath) {
         
-<span class="fc" id="L31">        filePath = filePath.trim();</span>
-<span class="pc bpc" id="L32" title="1 of 2 branches missed.">        if (!filePath.startsWith(sep)) {</span>
-<span class="fc" id="L33">            filePath = cwd+ filePath;</span>
+<span class="fc" id="L33">        filePath = filePath.trim();</span>
+<span class="pc bpc" id="L34" title="1 of 2 branches missed.">        if (!filePath.startsWith(sep)) {</span>
+<span class="fc" id="L35">            filePath = cwd+ filePath;</span>
         }
         
-<span class="fc" id="L36">        File file = new File(filePath);</span>
+<span class="fc" id="L38">        File file = new File(filePath);</span>
         
-<span class="pc bpc" id="L38" title="1 of 2 branches missed.">        if (!file.exists()) {</span>
-<span class="nc" id="L39">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L40" title="1 of 2 branches missed.">        if (!file.exists()) {</span>
+<span class="nc" id="L41">            throw new IllegalArgumentException(</span>
                 &quot;ERROR could not find file path: &quot; + filePath);
         }
         
-<span class="fc" id="L43">        return filePath;</span>
+<span class="fc" id="L45">        return filePath;</span>
     }    
 
     protected void writeCornersFile(PairIntArray corners, 
         String inputImageName) throws IOException {
         
-<span class="fc" id="L49">        String outFilePath = cwd + &quot;corners_&quot; + inputImageName + &quot;.tsv&quot;;</span>
+<span class="fc" id="L51">        String outFilePath = cwd + &quot;corners_&quot; + inputImageName + &quot;.tsv&quot;;</span>
         
-<span class="fc" id="L51">        FileWriter fw = null;</span>
-<span class="fc" id="L52">        BufferedWriter writer = null;</span>
+<span class="fc" id="L53">        FileWriter fw = null;</span>
+<span class="fc" id="L54">        BufferedWriter writer = null;</span>
         
         try {
-<span class="fc" id="L55">            File file = new File(outFilePath);</span>
-<span class="fc" id="L56">            file.delete();</span>
-<span class="fc" id="L57">            file.createNewFile();</span>
+<span class="fc" id="L57">            File file = new File(outFilePath);</span>
+<span class="fc" id="L58">            file.delete();</span>
+<span class="fc" id="L59">            file.createNewFile();</span>
 
-<span class="fc" id="L59">            fw = new FileWriter(file);</span>
-<span class="fc" id="L60">            writer = new BufferedWriter(fw);</span>
+<span class="fc" id="L61">            fw = new FileWriter(file);</span>
+<span class="fc" id="L62">            writer = new BufferedWriter(fw);</span>
             
-<span class="fc" id="L62">            writer.write(&quot;#corners in image &quot; + inputImageName);</span>
-<span class="fc" id="L63">            writer.write(eol);</span>
-<span class="fc" id="L64">            writer.write(&quot;#x\ty&quot;);</span>
+<span class="fc" id="L64">            writer.write(&quot;#corners in image &quot; + inputImageName);</span>
 <span class="fc" id="L65">            writer.write(eol);</span>
+<span class="fc" id="L66">            writer.write(&quot;#x\ty&quot;);</span>
+<span class="fc" id="L67">            writer.write(eol);</span>
             
-<span class="fc bfc" id="L67" title="All 2 branches covered.">            for (int i = 0; i &lt; corners.getN(); i++) {</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">            for (int i = 0; i &lt; corners.getN(); i++) {</span>
                 
-<span class="fc" id="L69">                String line = String.format(&quot;%d\t%d&quot;, corners.getX(i), </span>
-<span class="fc" id="L70">                    corners.getY(i));</span>
-<span class="fc" id="L71">                writer.write(line);</span>
-<span class="fc" id="L72">                writer.write(eol);</span>
+<span class="fc" id="L71">                String line = String.format(&quot;%d\t%d&quot;, corners.getX(i), </span>
+<span class="fc" id="L72">                    corners.getY(i));</span>
+<span class="fc" id="L73">                writer.write(line);</span>
+<span class="fc" id="L74">                writer.write(eol);</span>
                 
-<span class="fc bfc" id="L74" title="All 2 branches covered.">                if ((i % 10) == 0) {</span>
-<span class="fc" id="L75">                    writer.flush();</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">                if ((i % 10) == 0) {</span>
+<span class="fc" id="L77">                    writer.flush();</span>
                 }
             }
 
-<span class="fc" id="L79">            writer.flush();</span>
+<span class="fc" id="L81">            writer.flush();</span>
 
         } finally {
 
-<span class="pc bpc" id="L83" title="3 of 4 branches missed.">            if (writer != null) {</span>
-<span class="pc" id="L84">                writer.close();</span>
+<span class="pc bpc" id="L85" title="3 of 4 branches missed.">            if (writer != null) {</span>
+<span class="pc" id="L86">                writer.close();</span>
             }
-<span class="pc bpc" id="L86" title="3 of 4 branches missed.">            if (fw != null) {</span>
-<span class="pc" id="L87">                fw.close();</span>
+<span class="pc bpc" id="L88" title="3 of 4 branches missed.">            if (fw != null) {</span>
+<span class="pc" id="L89">                fw.close();</span>
             }
             
-<span class="pc" id="L90">            System.out.println(&quot;wrote: &quot; + outFilePath);</span>
-<span class="fc" id="L91">        }</span>
-<span class="fc" id="L92">    }</span>
+<span class="pc" id="L92">            System.out.println(&quot;wrote: &quot; + outFilePath);</span>
+<span class="fc" id="L93">        }</span>
+<span class="fc" id="L94">    }</span>
     
     public static void main(String[] args) {
         
-<span class="pc bpc" id="L96" title="2 of 4 branches missed.">        if (args == null || args.length == 0) {</span>
-<span class="nc" id="L97">            printUsage();</span>
-<span class="nc" id="L98">            return;</span>
+<span class="pc bpc" id="L98" title="2 of 4 branches missed.">        if (args == null || args.length == 0) {</span>
+<span class="nc" id="L99">            printUsage();</span>
+<span class="nc" id="L100">            return;</span>
         }
         
-<span class="fc" id="L101">        String filePath = null;</span>
-<span class="fc" id="L102">        boolean writeTextOutput = false;</span>
-<span class="fc" id="L103">        boolean writeImageOutput = false;</span>
-<span class="fc" id="L104">        boolean includeEdgesInImageOutput = false;</span>
-<span class="fc" id="L105">        boolean useLineDrawingMode = false;</span>
+<span class="fc" id="L103">        String filePath = null;</span>
+<span class="fc" id="L104">        boolean writeTextOutput = false;</span>
+<span class="fc" id="L105">        boolean writeImageOutput = false;</span>
+<span class="fc" id="L106">        boolean includeEdgesInImageOutput = false;</span>
+<span class="fc" id="L107">        boolean useLineDrawingMode = false;</span>
         
         //TODO:  tidy log statements and logging.properties and add a debug 
         //       flag to print details to stdout
         
-<span class="fc bfc" id="L110" title="All 2 branches covered.">        for (int i = 0; i &lt; args.length; i++) {</span>
-<span class="fc" id="L111">            String arg = args[i];</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        for (int i = 0; i &lt; args.length; i++) {</span>
+<span class="fc" id="L113">            String arg = args[i];</span>
             
-<span class="pc bpc" id="L113" title="1 of 2 branches missed.">            if (arg.equalsIgnoreCase(&quot;-image1=&quot;)) {</span>
-<span class="nc bnc" id="L114" title="All 2 branches missed.">                if (i &lt; (args.length - 1)) {</span>
-<span class="nc" id="L115">                    i++;</span>
-<span class="nc" id="L116">                    filePath = args[i];</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">            if (arg.equalsIgnoreCase(&quot;-image1=&quot;)) {</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">                if (i &lt; (args.length - 1)) {</span>
+<span class="nc" id="L117">                    i++;</span>
+<span class="nc" id="L118">                    filePath = args[i];</span>
                 }
-<span class="fc bfc" id="L118" title="All 2 branches covered.">            } else if (arg.startsWith(&quot;-image1=&quot;)) {</span>
-<span class="fc" id="L119">                int idx = args[i].indexOf(&quot;=&quot;);</span>
-<span class="pc bpc" id="L120" title="1 of 2 branches missed.">                if (idx &gt; -1) {</span>
-<span class="fc" id="L121">                    filePath =  args[i].substring(idx + 1);</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">            } else if (arg.startsWith(&quot;-image1=&quot;)) {</span>
+<span class="fc" id="L121">                int idx = args[i].indexOf(&quot;=&quot;);</span>
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">                if (idx &gt; -1) {</span>
+<span class="fc" id="L123">                    filePath =  args[i].substring(idx + 1);</span>
                 }
-<span class="fc bfc" id="L123" title="All 2 branches covered.">            } else if (arg.equalsIgnoreCase(&quot;-text_output&quot;)) {</span>
-<span class="fc" id="L124">                writeTextOutput = true;</span>
-<span class="fc bfc" id="L125" title="All 2 branches covered.">            } else if (arg.equalsIgnoreCase(&quot;-mark_image&quot;)) {</span>
-<span class="fc" id="L126">                writeImageOutput = true;</span>
-<span class="fc bfc" id="L127" title="All 2 branches covered.">            } else if (arg.equalsIgnoreCase(&quot;-include_edges&quot;)) {</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">            } else if (arg.equalsIgnoreCase(&quot;-text_output&quot;)) {</span>
+<span class="fc" id="L126">                writeTextOutput = true;</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">            } else if (arg.equalsIgnoreCase(&quot;-mark_image&quot;)) {</span>
 <span class="fc" id="L128">                writeImageOutput = true;</span>
-<span class="fc" id="L129">                includeEdgesInImageOutput = true;</span>
-<span class="pc bpc" id="L130" title="1 of 2 branches missed.">            } else if (arg.equalsIgnoreCase(&quot;-input_is_line_drawing&quot;)) {</span>
-<span class="fc" id="L131">                useLineDrawingMode = true;</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">            } else if (arg.equalsIgnoreCase(&quot;-include_edges&quot;)) {</span>
+<span class="fc" id="L130">                writeImageOutput = true;</span>
+<span class="fc" id="L131">                includeEdgesInImageOutput = true;</span>
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">            } else if (arg.equalsIgnoreCase(&quot;-input_is_line_drawing&quot;)) {</span>
+<span class="fc" id="L133">                useLineDrawingMode = true;</span>
             }
         }
         
-<span class="pc bpc" id="L135" title="1 of 2 branches missed.">        if (filePath == null) {</span>
-<span class="nc" id="L136">            System.err.println(&quot;-image1= is required&quot;);</span>
-<span class="nc" id="L137">            System.exit(1);</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">        if (filePath == null) {</span>
+<span class="nc" id="L138">            System.err.println(&quot;-image1= is required&quot;);</span>
+<span class="nc" id="L139">            System.exit(1);</span>
         }
         
-<span class="fc" id="L140">        CMDLineCornerDetector cmdLineInvoker = new CMDLineCornerDetector();</span>
+<span class="fc" id="L142">        CMDLineCornerDetector cmdLineInvoker = new CMDLineCornerDetector();</span>
               
-<span class="fc" id="L142">        filePath = cmdLineInvoker.checkFilePath(filePath);</span>
+<span class="fc" id="L144">        filePath = cmdLineInvoker.checkFilePath(filePath);</span>
        
         
-<span class="pc bpc" id="L145" title="1 of 2 branches missed.">        if (!writeImageOutput) {</span>
-<span class="nc" id="L146">            writeTextOutput = true;</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">        if (!writeImageOutput) {</span>
+<span class="nc" id="L148">            writeTextOutput = true;</span>
         }
         
-<span class="fc" id="L149">        String imageFileName = </span>
-<span class="fc" id="L150">            (new File(filePath)).toPath().getFileName().toString();</span>
-<span class="fc" id="L151">        imageFileName = imageFileName.substring(0, imageFileName.length() -4);</span>
+<span class="fc" id="L151">        String imageFileName = </span>
+<span class="fc" id="L152">            (new File(filePath)).toPath().getFileName().toString();</span>
+<span class="fc" id="L153">        imageFileName = imageFileName.substring(0, imageFileName.length() -4);</span>
         
-<span class="fc" id="L153">        ImageExt img = null;</span>
+<span class="fc" id="L155">        ImageExt img = null;</span>
         try {
-<span class="fc" id="L155">             img = ImageIOHelper.readImageExt(filePath);</span>
+<span class="fc" id="L157">             img = ImageIOHelper.readImageExt(filePath);</span>
              
-<span class="fc" id="L157">             CurvatureScaleSpaceCornerDetector detector = new </span>
+<span class="fc" id="L159">             CurvatureScaleSpaceCornerDetector detector = new </span>
                  CurvatureScaleSpaceCornerDetector(img);
                
-<span class="pc bpc" id="L160" title="1 of 2 branches missed.">             if (useLineDrawingMode) {</span>
-<span class="fc" id="L161">                 detector.useLineDrawingMode();</span>
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">             if (useLineDrawingMode) {</span>
+<span class="fc" id="L163">                 detector.useLineDrawingMode();</span>
              }
              
-<span class="fc" id="L164">             detector.findCorners();</span>
+<span class="fc" id="L166">             detector.findCorners();</span>
         
-<span class="fc" id="L166">             PairIntArray corners = </span>
-<span class="fc" id="L167">                 detector.getCornersInOriginalReferenceFrame();</span>
+<span class="fc" id="L168">             PairIntArray corners = </span>
+<span class="fc" id="L169">                 detector.getCornersInOriginalReferenceFrame();</span>
              
-<span class="pc bpc" id="L169" title="1 of 2 branches missed.">             if (writeTextOutput) {                 </span>
-<span class="fc" id="L170">                 cmdLineInvoker.writeCornersFile(corners, imageFileName);</span>
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">             if (writeTextOutput) {                 </span>
+<span class="fc" id="L172">                 cmdLineInvoker.writeCornersFile(corners, imageFileName);</span>
              }
              
-<span class="pc bpc" id="L173" title="1 of 2 branches missed.">             if (writeImageOutput) {</span>
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">             if (writeImageOutput) {</span>
                  
-<span class="fc" id="L175">                 Image image = ImageIOHelper.readImageAsGrayScale(filePath);</span>
+<span class="fc" id="L177">                 Image image = ImageIOHelper.readImageAsGrayScale(filePath);</span>
                                   
-<span class="pc bpc" id="L177" title="1 of 2 branches missed.">                 if (includeEdgesInImageOutput) {</span>
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">                 if (includeEdgesInImageOutput) {</span>
                      
-<span class="fc" id="L179">                     List&lt;PairIntArray&gt; edges = </span>
-<span class="fc" id="L180">                         detector.getEdgesInOriginalReferenceFrame();</span>
+<span class="fc" id="L181">                     List&lt;PairIntArray&gt; edges = </span>
+<span class="fc" id="L182">                         detector.getEdgesInOriginalReferenceFrame();</span>
                      
-<span class="fc" id="L182">                     ImageIOHelper.addAlternatingColorCurvesToImage(edges, </span>
+<span class="fc" id="L184">                     ImageIOHelper.addAlternatingColorCurvesToImage(edges, </span>
                          image);
                  }
                  
-<span class="fc" id="L186">                 ImageIOHelper.addCurveToImage(corners, image, 2, 255, 0, 0);</span>
+<span class="fc" id="L188">                 ImageIOHelper.addCurveToImage(corners, image, 2, 255, 0, 0);</span>
                  
-<span class="fc" id="L188">                 String outFilePath = cwd + &quot;corners_&quot; + imageFileName + &quot;.png&quot;;</span>
+<span class="fc" id="L190">                 String outFilePath = cwd + &quot;corners_&quot; + imageFileName + &quot;.png&quot;;</span>
                  
-<span class="fc" id="L190">                 ImageIOHelper.writeOutputImage(outFilePath, image);</span>
+<span class="fc" id="L192">                 ImageIOHelper.writeOutputImage(outFilePath, image);</span>
                  
-<span class="fc" id="L192">                 System.out.println(eol + &quot;wrote: &quot; + outFilePath);</span>
+<span class="fc" id="L194">                 System.out.println(eol + &quot;wrote: &quot; + outFilePath);</span>
              }
 
-<span class="fc" id="L195">             System.out.println(eol);</span>
+<span class="fc" id="L197">             System.out.println(eol);</span>
              
-<span class="nc" id="L197">        } catch (Exception e) {</span>
-<span class="nc" id="L198">            System.err.println(&quot;ERROR: &quot; + e.getMessage());</span>
-<span class="nc" id="L199">            System.exit(1);</span>
-<span class="fc" id="L200">        }</span>
-<span class="fc" id="L201">    }</span>
+<span class="nc" id="L199">        } catch (Exception e) {</span>
+<span class="nc" id="L200">            System.err.println(&quot;ERROR: &quot; + e.getMessage());</span>
+<span class="nc" id="L201">            System.exit(1);</span>
+<span class="fc" id="L202">        }</span>
+<span class="fc" id="L203">    }</span>
     
     public static void printUsage() {
                 
-<span class="nc" id="L205">        System.out.println(eol + &quot;Runner to invoke corner detection within an image.&quot;);</span>
-<span class="nc" id="L206">        System.out.println(eol + &quot;Required arguments:&quot;);</span>
-<span class="nc" id="L207">        System.out.println(&quot;  -image1=path_to_image&quot;);</span>
-<span class="nc" id="L208">        System.out.println(eol + &quot;Optional arguments:&quot;);</span>
-<span class="nc" id="L209">        System.out.println(&quot;  -text_output&quot;);</span>
-<span class="nc" id="L210">        System.out.println(&quot;      writes a file called corners.tsv in the&quot;);</span>
-<span class="nc" id="L211">        System.out.println(&quot;      current directory.&quot;);</span>
-<span class="nc" id="L212">        System.out.println(&quot;  -mark_image&quot;);</span>
-<span class="nc" id="L213">        System.out.println(&quot;      writes a file called corners.png in the&quot;);</span>
-<span class="nc" id="L214">        System.out.println(&quot;      current directory. It's the image with&quot;);</span>
-<span class="nc" id="L215">        System.out.println(&quot;      found corners overplotted.&quot;);</span>
-<span class="nc" id="L216">        System.out.println(&quot;  -include_edges&quot;);</span>
-<span class="nc" id="L217">        System.out.println(&quot;      in the written corners.png, includes the&quot;);</span>
-<span class="nc" id="L218">        System.out.println(&quot;      edges in the image.&quot;);</span>
-<span class="nc" id="L219">        System.out.println(&quot;  -input_is_line_drawing&quot;);</span>
-<span class="nc" id="L220">        System.out.println(&quot;      changes internal logic to handle an image&quot;);</span>
-<span class="nc" id="L221">        System.out.println(&quot;      of lines or solid blocks.&quot;);</span>
-<span class="nc" id="L222">        System.out.println(eol</span>
+<span class="nc" id="L207">        System.out.println(eol + &quot;Runner to invoke corner detection within an image.&quot;);</span>
+<span class="nc" id="L208">        System.out.println(eol + &quot;Required arguments:&quot;);</span>
+<span class="nc" id="L209">        System.out.println(&quot;  -image1=path_to_image&quot;);</span>
+<span class="nc" id="L210">        System.out.println(eol + &quot;Optional arguments:&quot;);</span>
+<span class="nc" id="L211">        System.out.println(&quot;  -text_output&quot;);</span>
+<span class="nc" id="L212">        System.out.println(&quot;      writes a file called corners.tsv in the&quot;);</span>
+<span class="nc" id="L213">        System.out.println(&quot;      current directory.&quot;);</span>
+<span class="nc" id="L214">        System.out.println(&quot;  -mark_image&quot;);</span>
+<span class="nc" id="L215">        System.out.println(&quot;      writes a file called corners.png in the&quot;);</span>
+<span class="nc" id="L216">        System.out.println(&quot;      current directory. It's the image with&quot;);</span>
+<span class="nc" id="L217">        System.out.println(&quot;      found corners overplotted.&quot;);</span>
+<span class="nc" id="L218">        System.out.println(&quot;  -include_edges&quot;);</span>
+<span class="nc" id="L219">        System.out.println(&quot;      in the written corners.png, includes the&quot;);</span>
+<span class="nc" id="L220">        System.out.println(&quot;      edges in the image.&quot;);</span>
+<span class="nc" id="L221">        System.out.println(&quot;  -input_is_line_drawing&quot;);</span>
+<span class="nc" id="L222">        System.out.println(&quot;      changes internal logic to handle an image&quot;);</span>
+<span class="nc" id="L223">        System.out.println(&quot;      of lines or solid blocks.&quot;);</span>
+<span class="nc" id="L224">        System.out.println(eol</span>
             + &quot;Note that default is to create corners.tsv in the currect directory&quot;);
-<span class="nc" id="L224">        System.out.println(eol);</span>
-<span class="nc" id="L225">    }</span>
+<span class="nc" id="L226">        System.out.println(eol);</span>
+<span class="nc" id="L227">    }</span>
     
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

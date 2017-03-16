@@ -2,7 +2,7 @@
 
 import algorithms.imageProcessing.matching.ErrorType;
 import java.util.List;
-import org.ejml.simple.SimpleMatrix;
+import no.uib.cipr.matrix.DenseMatrix;
 
 /**
  *
@@ -12,31 +12,74 @@ public class EpipolarTransformationFit extends AbstractTransformationFit {
     
     private final ErrorType errorType;
     
-    private SimpleMatrix fundamentalMatrix;
+    private DenseMatrix fundamentalMatrix;
 
-    public EpipolarTransformationFit(SimpleMatrix theFundamentalMatrix,
+<span class="fc" id="L17">    private float effectiveTolerance = -1;</span>
+<span class="fc" id="L18">    private float effectiveToleranceStdv = -1;</span>
+    
+    public EpipolarTransformationFit(DenseMatrix theFundamentalMatrix,
         List&lt;Integer&gt; theInlierIndexes, ErrorType theErrorType,
         List&lt;Double&gt; theErrors, double theTolerance) {
         
-<span class="fc" id="L21">        super(theInlierIndexes, theErrors, theTolerance);</span>
+<span class="fc" id="L24">        super(theInlierIndexes, theErrors, theTolerance);</span>
         
-<span class="fc" id="L23">        fundamentalMatrix = theFundamentalMatrix.copy();</span>
-<span class="fc" id="L24">        errorType = theErrorType;</span>
-<span class="fc" id="L25">    }</span>
+<span class="fc" id="L26">        fundamentalMatrix = theFundamentalMatrix.copy();</span>
+<span class="fc" id="L27">        errorType = theErrorType;</span>
+<span class="fc" id="L28">    }</span>
     
-    public SimpleMatrix getFundamentalMatrix() {
-<span class="fc" id="L28">        return fundamentalMatrix;</span>
+    public float getEffectiveTolerance() {
+<span class="nc" id="L31">        return effectiveTolerance;</span>
+    }
+    
+    public float getEffectiveToleranceStandardDeviation() {
+<span class="nc" id="L35">        return effectiveToleranceStdv;</span>
+    }
+    
+    /**
+     * set the tolerance of the resulting error of tolerance size offsets in the
+     * points that the fundamental matrix is derived from, where the
+     * errors were derived using Sampson's error distances from respective
+     * epipolar lines.
+     * Note that this is a small sampling of the projection of tolerance
+     * into the epipolar frame.  If the user has the camera matrix,
+     * tolerance could be used precisely with each point.
+     * 
+     * Without the camera matrix, the effectiveTolerance is useful in 
+     * thresholds for proximity to epipolar lines.
+     * 
+     * @param tol
+     * @param effectiveTol
+     * @param effectiveTolStdev 
+     */
+    public void setTolerance(float effectiveTol, float effectiveTolStdev) {
+<span class="nc" id="L55">        this.effectiveTolerance = effectiveTol;</span>
+<span class="nc" id="L56">        this.effectiveToleranceStdv = effectiveTolStdev;</span>
+<span class="nc" id="L57">    }</span>
+    
+    public DenseMatrix getFundamentalMatrix() {
+<span class="nc" id="L60">        return fundamentalMatrix;</span>
     }
 
     /**
      * @return the errorType
      */
     public ErrorType getErrorType() {
-<span class="fc" id="L35">        return errorType;</span>
+<span class="fc" id="L67">        return errorType;</span>
     }
     
-    public void setFundamentalMatrix(SimpleMatrix theFM) {
-<span class="nc" id="L39">        fundamentalMatrix = theFM;</span>
-<span class="nc" id="L40">    }</span>
+    public void setFundamentalMatrix(DenseMatrix theFM) {
+<span class="nc" id="L71">        fundamentalMatrix = theFM;</span>
+<span class="nc" id="L72">    }</span>
+
+    @Override
+    public String toString() {
+<span class="nc" id="L76">        String str = super.toString();</span>
+<span class="nc" id="L77">        StringBuilder sb = new StringBuilder(str);</span>
+<span class="nc" id="L78">        sb.append(&quot; effecTol=&quot;).append(effectiveTolerance)</span>
+<span class="nc" id="L79">            .append(&quot; effecTolStDv=&quot;).append(effectiveToleranceStdv);</span>
+<span class="nc" id="L80">        return sb.toString();</span>
+    }
+    
+    
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

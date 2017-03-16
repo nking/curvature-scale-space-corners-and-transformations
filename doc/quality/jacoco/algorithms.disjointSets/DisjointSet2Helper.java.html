@@ -28,8 +28,8 @@ import java.util.List;
      * &lt;pre&gt;
      * find the set representative for the given node.  As a side effect,
      * also updates x and all of it's ancestors with the found result so that
-     * they directly point to the top most parent ans subsequent lookups are
-     * faster.
+     * they directly point to the top most parent and subsequent lookups are
+     * faster (this is path compression).
      * runtime complexity:
      *     the method uses iteration.  
      *     if we represent x_height as the number of nodes between x's tree 
@@ -46,7 +46,7 @@ import java.util.List;
      * @return
      */
     public &lt;T&gt; DisjointSet2Node&lt;T&gt; findSet(DisjointSet2Node&lt;T&gt; x) {
-        
+                
         // iterative
 <span class="fc bfc" id="L51" title="All 2 branches covered.">        if (!x.equals(x.getParent())) {</span>
             
@@ -62,17 +62,15 @@ import java.util.List;
 <span class="fc bfc" id="L62" title="All 2 branches covered.">            for (DisjointSet2Node&lt;T&gt; node : update) {</span>
 <span class="fc" id="L63">                node.setParent(parent);</span>
 <span class="fc" id="L64">            }</span>
+  
         }
         
-<span class="fc" id="L67">        return x.getParent();</span>
+<span class="fc" id="L68">        return x.getParent();</span>
     }
     
     /**
-      implement part of path compression:
-          for each node in the path from x to root, reassign the parent as the 
-          root.
-          (the path compression then becomes useful on the next findSet for any 
-          mode along the path).
+      assigns to x and y the same parent from both of their parents, choosing
+      the one with largest rank.
           
        Runtime complexity is O(1).
        
@@ -82,26 +80,26 @@ import java.util.List;
      */
     private &lt;T&gt; DisjointSet2Node&lt;T&gt; link(DisjointSet2Node&lt;T&gt; x, DisjointSet2Node&lt;T&gt; y) {
         
-<span class="fc bfc" id="L85" title="All 2 branches covered.">        if (x.equals(y)) {</span>
-<span class="fc" id="L86">            return x;</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (x.equals(y)) {</span>
+<span class="fc" id="L84">            return x;</span>
         }
         
         DisjointSet2Node&lt;T&gt; parent;
-<span class="fc bfc" id="L90" title="All 2 branches covered.">        if (x.getRank() &gt;= y.getRank()) {</span>
-<span class="fc" id="L91">            parent = x;</span>
-<span class="fc" id="L92">            y.setParent(parent);</span>
-<span class="fc bfc" id="L93" title="All 2 branches covered.">            if (x.getRank() == y.getRank()) {</span>
-<span class="fc" id="L94">                parent.setRank(parent.getRank() + 1);</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">        if (x.getRank() &gt;= y.getRank()) {</span>
+<span class="fc" id="L89">            parent = x;</span>
+<span class="fc" id="L90">            y.setParent(parent);</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">            if (x.getRank() == y.getRank()) {</span>
+<span class="fc" id="L92">                parent.setRank(parent.getRank() + 1);</span>
             }
         } else {
-<span class="fc" id="L97">            parent = y;</span>
-<span class="fc" id="L98">            x.setParent(parent);</span>
+<span class="fc" id="L95">            parent = y;</span>
+<span class="fc" id="L96">            x.setParent(parent);</span>
         }
-<span class="fc" id="L100">        return parent;</span>
+<span class="fc" id="L98">        return parent;</span>
     }
     
     /**
-     * append the shorter list onto the end of the longer's list.
+     * append the shorter list onto the end of the longer list.
      * The amortized runtime complexity is O(1) due to the path compression
      * in findSet.
      * The method is also known as &quot;union-find&quot; because it uses findSet 
@@ -113,33 +111,33 @@ import java.util.List;
      */
     public &lt;T&gt; DisjointSet2Node&lt;T&gt; union(DisjointSet2Node&lt;T&gt; x, DisjointSet2Node&lt;T&gt; y) {
         
-<span class="fc" id="L116">        x = findSet(x);</span>
+<span class="fc" id="L114">        x = findSet(x);</span>
         
-<span class="fc" id="L118">        y = findSet(y);</span>
+<span class="fc" id="L116">        y = findSet(y);</span>
         
-<span class="fc" id="L120">        DisjointSet2Node&lt;T&gt; parent = link(x, y);</span>
+<span class="fc" id="L118">        DisjointSet2Node&lt;T&gt; parent = link(x, y);</span>
 
-<span class="fc" id="L122">        return parent;</span>
+<span class="fc" id="L120">        return parent;</span>
     }
     
     public static &lt;T&gt; String print(DisjointSet2Node&lt;T&gt; x) {
                 
-<span class="nc" id="L127">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L125">        StringBuilder sb = new StringBuilder();</span>
         
-<span class="nc" id="L129">        sb.append(x.toString());</span>
+<span class="nc" id="L127">        sb.append(x.toString());</span>
         
-<span class="nc" id="L131">        DisjointSet2Node&lt;T&gt; p = x.getParent();</span>
+<span class="nc" id="L129">        DisjointSet2Node&lt;T&gt; p = x.getParent();</span>
         
-<span class="nc bnc" id="L133" title="All 2 branches missed.">        while (p != null) {</span>
-<span class="nc" id="L134">            DisjointSet2Node&lt;T&gt; nextP = p.getParent();</span>
-<span class="nc bnc" id="L135" title="All 2 branches missed.">            if (nextP.equals(p)) {</span>
-<span class="nc" id="L136">                break;</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">        while (p != null) {</span>
+<span class="nc" id="L132">            DisjointSet2Node&lt;T&gt; nextP = p.getParent();</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">            if (nextP.equals(p)) {</span>
+<span class="nc" id="L134">                break;</span>
             }
-<span class="nc" id="L138">            sb.append(&quot;parent-&gt;&quot;).append(p.toString());</span>
-<span class="nc" id="L139">            p = nextP;</span>
-<span class="nc" id="L140">        }</span>
+<span class="nc" id="L136">            sb.append(&quot;parent-&gt;&quot;).append(p.toString());</span>
+<span class="nc" id="L137">            p = nextP;</span>
+<span class="nc" id="L138">        }</span>
         
-<span class="nc" id="L142">        return sb.toString();</span>
+<span class="nc" id="L140">        return sb.toString();</span>
     }
   
 }

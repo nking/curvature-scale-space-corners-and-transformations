@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>EuclideanEvaluator.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.transform</a> &gt; <span class="el_source">EuclideanEvaluator.java</span></div><h1>EuclideanEvaluator.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.transform;
+
+import algorithms.imageProcessing.features.FeatureComparisonStat;
+import algorithms.misc.MiscMath;
+import algorithms.search.NearestNeighbor2D;
+import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+/**
+ *
+ * @author nichole
+ */
+<span class="fc" id="L17">public class EuclideanEvaluator {</span>
+
+    public EuclideanTransformationFit evaluate(PairIntArray xy1, 
+        PairIntArray xy2, TransformationParameters params, int tolerance) {
+        
+<span class="pc bpc" id="L22" title="1 of 2 branches missed.">        if (xy1 == null) {</span>
+<span class="nc" id="L23">            throw new IllegalArgumentException(&quot;xy1 cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L25" title="1 of 2 branches missed.">        if (xy2 == null) {</span>
+<span class="nc" id="L26">            throw new IllegalArgumentException(&quot;xy2 cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L28" title="1 of 2 branches missed.">        if (params == null) {</span>
+<span class="nc" id="L29">            throw new IllegalArgumentException(&quot;params cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L31" title="1 of 2 branches missed.">        if (xy1.getN() != xy2.getN()) {</span>
+<span class="nc" id="L32">            throw new IllegalArgumentException(&quot;xy1 and xy2 must be same length&quot;);</span>
+        }
+        
+<span class="fc" id="L35">        int n = xy1.getN();</span>
+        
+<span class="fc" id="L37">        Transformer transformer = new Transformer();</span>
+            
+<span class="fc" id="L39">        PairIntArray xy1Tr = transformer.applyTransformation(params, xy1);</span>
+        
+<span class="fc" id="L41">        List&lt;Integer&gt; inlierIndexes = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc" id="L42">        List&lt;Double&gt; distances = new ArrayList&lt;Double&gt;();</span>
+        
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L45">            int x1 = xy1Tr.getX(i);</span>
+<span class="fc" id="L46">            int y1 = xy1Tr.getY(i);</span>
+            
+<span class="fc" id="L48">            int x2 = xy2.getX(i);</span>
+<span class="fc" id="L49">            int y2 = xy2.getY(i);</span>
+            
+<span class="fc" id="L51">            int diffX = x2 - x1;</span>
+<span class="fc" id="L52">            int diffY = y2 - y1;</span>
+            
+<span class="fc" id="L54">            double dist = Math.sqrt(diffX*diffX + diffY*diffY);</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">            if (dist &lt; tolerance) {</span>
+<span class="fc" id="L56">                inlierIndexes.add(Integer.valueOf(i));</span>
+<span class="fc" id="L57">                distances.add(Double.valueOf(dist));</span>
+            }
+        }
+        
+<span class="fc" id="L61">        EuclideanTransformationFit fit = new EuclideanTransformationFit(</span>
+<span class="fc" id="L62">            params.copy(), inlierIndexes, distances, tolerance);</span>
+        
+<span class="fc" id="L64">        return fit;</span>
+    }
+    
+    public EuclideanTransformationFit evaluate(List&lt;FeatureComparisonStat&gt; stats, 
+        TransformationParameters params, int tolerance) {
+        
+<span class="nc bnc" id="L70" title="All 2 branches missed.">        if (stats == null) {</span>
+<span class="nc" id="L71">            throw new IllegalArgumentException(&quot;xy1 cannot be null&quot;);</span>
+        }
+        
+<span class="nc" id="L74">        PairIntArray xy1 = new PairIntArray(stats.size());</span>
+<span class="nc" id="L75">        PairIntArray xy2 = new PairIntArray(stats.size());</span>
+        
+<span class="nc bnc" id="L77" title="All 2 branches missed.">        for (FeatureComparisonStat stat : stats) {</span>
+            
+<span class="nc" id="L79">            PairInt p1 = stat.getImg1Point().copy();</span>
+<span class="nc" id="L80">            PairInt p2 = stat.getImg2Point().copy();</span>
+            
+<span class="nc" id="L82">            xy1.add(p1.getX(), p1.getY());</span>
+<span class="nc" id="L83">            xy2.add(p2.getX(), p2.getY());</span>
+<span class="nc" id="L84">        }</span>
+        
+<span class="nc" id="L86">        return evaluate(xy1, xy2, params, tolerance);</span>
+    }
+   
+    /**
+     * transform the set templateSetToTransform by given parameters, then
+     * calculate the F1 score using precision and recall.
+     * 
+     * @param templateSetToTransform
+     * @param set2
+     * @param params
+     * @param tolerance
+     * @return 
+     */
+    public float transformAndCalculateF1Score(Set&lt;PairInt&gt; templateSetToTransform, 
+        Set&lt;PairInt&gt; set2, TransformationParameters params,
+        int tolerance) {
+        
+<span class="nc" id="L103">        Transformer transformer = new Transformer();</span>
+        
+<span class="nc" id="L105">        Set&lt;PairInt&gt; templateSet = transformer.applyTransformation2(</span>
+            params, templateSetToTransform);
+        
+<span class="nc" id="L108">        return calculateF1Score(templateSet, set2, tolerance);</span>
+    }
+    
+    public float calculateF1Score(Set&lt;PairInt&gt; templateSet, Set&lt;PairInt&gt; set2, 
+        int tolerance) {
+        
+        /* matching the aggregated adaptive means points to
+           the expected template points which have been transformed to the 
+           same reference frame.
+        
+        for metrics, the scores are 0 to 1 where 1 is best possible.
+            accuracy = (T_p + T_n)/(T_p + T_n + F_p + F_n)
+            precision = (T_p)/(T_p + F_p)
+            recall = (T_p)/(T_p + F_n)
+            F_1 = 2.* precision * recall/(precision + recall)
+
+        where T_p = expected matches and found them 
+              F_p = expected matches, but did not find them
+              F_n = expected no matches, but did find matches
+              T_n = expected no matches, and did not find them
+       
+        T_p, F_p : loop over trTemplateInner to find closest match within tolerance
+                   in aggInner.
+                   -- needs NearestNeighbor2D for aggInner points
+        F_n:     : all the points remaining in aggInner that were not matched
+        */
+        
+<span class="fc" id="L135">        int[] minMaxXY = MiscMath.findMinMaxXY(set2);</span>
+<span class="fc" id="L136">        int[] minMaxXY2 = MiscMath.findMinMaxXY(templateSet);</span>
+<span class="fc" id="L137">        int maxX = Math.max(minMaxXY[1], minMaxXY2[1]);</span>
+<span class="fc" id="L138">        int maxY = Math.max(minMaxXY[3], minMaxXY2[3]);</span>
+        
+<span class="fc" id="L140">        NearestNeighbor2D nn = new NearestNeighbor2D(set2, maxX, maxY);</span>
+        
+<span class="fc" id="L142">        Set&lt;PairInt&gt; matched = new HashSet&lt;PairInt&gt;();</span>
+        
+<span class="fc" id="L144">        int tPos = 0;</span>
+<span class="fc" id="L145">        int fPos = 0;</span>
+<span class="fc" id="L146">        int fNeg = 0;</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">        for (PairInt trP : templateSet) {</span>
+<span class="fc" id="L148">            Set&lt;PairInt&gt; closest = nn.findClosest(</span>
+<span class="fc" id="L149">                trP.getX(), trP.getY(), tolerance);</span>
+<span class="pc bpc" id="L150" title="1 of 4 branches missed.">            if (closest == null || closest.isEmpty()) {</span>
+<span class="fc" id="L151">                fPos++;</span>
+<span class="fc" id="L152">                continue;</span>
+            }
+<span class="fc" id="L154">            boolean found = false;</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">            for (PairInt p : closest) {</span>
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">                if (!matched.contains(p)) {</span>
+<span class="fc" id="L157">                    found = true;</span>
+<span class="fc" id="L158">                    matched.add(p);</span>
+<span class="fc" id="L159">                    tPos++;</span>
+<span class="fc" id="L160">                    break;</span>
+                }
+<span class="nc" id="L162">            }</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">            if (!found) {</span>
+<span class="nc" id="L164">                fPos++;</span>
+            }
+<span class="fc" id="L166">        }</span>
+        
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">        if (set2.size() &gt; tPos) {</span>
+<span class="fc" id="L169">            fNeg = set2.size() - tPos;</span>
+        }
+     
+<span class="fc" id="L172">        return fMeasure(tPos, fPos, fNeg, 1.0f);</span>
+    }
+    
+    protected float fMeasure(int tPos, int fPos, int fNeg, float beta) {
+        
+<span class="fc" id="L177">        float betaSq = beta * beta;</span>
+        
+<span class="fc" id="L179">        float precision = (float)tPos/(float)(tPos + fPos);</span>
+<span class="fc" id="L180">        float recall = (float)tPos/(float)(tPos + fNeg);</span>
+<span class="fc" id="L181">        float f = (1.f + betaSq) * precision * recall/((betaSq * precision) + recall);</span>
+
+<span class="fc" id="L183">        return f;</span>
+    }
+       
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CorrespondencePlotter.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.util</a> &gt; <span class="el_source">CorrespondencePlotter.java</span></div><h1>CorrespondencePlotter.java</h1><pre class="source lang-java linenums">package algorithms.util;
+
+import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.misc.MiscMath;
+import java.io.IOException;
+
+/**
+ * a helper class to visualize correspondence
+ * lists.
+ * An instance contains the transformations
+ * for the two difference datasets to place
+ * them in the output image reference frame.
+ * 
+ * @author nichole
+ */
+public class CorrespondencePlotter {
+   
+<span class="fc" id="L19">    private int spacerWidth = 50;</span>
+    
+    private final int width1;
+    private final int height1;
+    private final int width2;
+    private final int height2;
+    
+    private final int xOffset1;
+    private final int yOffset1;
+    private final int xOffset2;
+    private final int yOffset2;
+    
+    private final Image comb;
+    
+<span class="fc" id="L33">    private int prevClr = -1;</span>
+    
+<span class="fc" id="L35">    public CorrespondencePlotter(Image img1, Image img2) {</span>
+    
+<span class="fc" id="L37">        width1 = img1.getWidth();</span>
+<span class="fc" id="L38">        height1 = img1.getHeight();</span>
+        
+<span class="fc" id="L40">        width2 = img2.getWidth();</span>
+<span class="fc" id="L41">        height2 = img2.getHeight();</span>
+        
+<span class="fc" id="L43">        xOffset1 = spacerWidth;</span>
+<span class="fc" id="L44">        yOffset1 = spacerWidth;</span>
+        
+<span class="fc" id="L46">        xOffset2 = xOffset1 + width1 + spacerWidth;</span>
+<span class="fc" id="L47">        yOffset2 = spacerWidth;</span>
+        
+<span class="fc" id="L49">        int maxX = xOffset2 + width2 + spacerWidth;</span>
+<span class="fc" id="L50">        int maxY = Math.max(yOffset1 + height1, </span>
+            yOffset2 + height2) + spacerWidth;
+    
+<span class="fc" id="L53">        comb = new Image(maxX, maxY);</span>
+        
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        for (int i = 0; i &lt; img1.getWidth(); ++i) {</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">            for (int j = 0; j &lt; img1.getHeight(); ++j) {</span>
+<span class="fc" id="L57">                int x = i + xOffset1;</span>
+<span class="fc" id="L58">                int y = j + yOffset1;</span>
+<span class="fc" id="L59">                int rgb = img1.getRGB(i, j);</span>
+<span class="fc" id="L60">                comb.setRGB(x, y, rgb);</span>
+            }
+        }
+        
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        for (int i = 0; i &lt; img2.getWidth(); ++i) {</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">            for (int j = 0; j &lt; img2.getHeight(); ++j) {</span>
+<span class="fc" id="L66">                int x = i + xOffset2;</span>
+<span class="fc" id="L67">                int y = j + yOffset2;</span>
+<span class="fc" id="L68">                int rgb = img2.getRGB(i, j);</span>
+<span class="fc" id="L69">                comb.setRGB(x, y, rgb);</span>
+            }
+        }
+<span class="fc" id="L72">    }</span>
+    
+    public CorrespondencePlotter(PairIntArray 
+<span class="fc" id="L75">        boundary1, PairIntArray boundary2) {</span>
+        
+<span class="fc" id="L77">        width1 = 1 + MiscMath.findMax(boundary1.x, boundary1.getN());</span>
+<span class="fc" id="L78">        height1 = 1 + MiscMath.findMax(boundary1.y, boundary1.getN());</span>
+        
+<span class="fc" id="L80">        width2 = 1 + MiscMath.findMax(boundary2.x, boundary2.getN());</span>
+<span class="fc" id="L81">        height2 = 1 + MiscMath.findMax(boundary2.y, boundary2.getN());</span>
+        
+<span class="fc" id="L83">        xOffset1 = spacerWidth;</span>
+<span class="fc" id="L84">        yOffset1 = spacerWidth;</span>
+        
+<span class="fc" id="L86">        xOffset2 = xOffset1 + width1 + spacerWidth;</span>
+<span class="fc" id="L87">        yOffset2 = spacerWidth;</span>
+        
+<span class="fc" id="L89">        int maxX = xOffset2 + width2 + spacerWidth;</span>
+<span class="fc" id="L90">        int maxY = Math.max(yOffset1 + height1, </span>
+            yOffset2 + height2) + spacerWidth;
+    
+<span class="fc" id="L93">        comb = new Image(maxX, maxY);</span>
+
+<span class="fc bfc" id="L95" title="All 2 branches covered.">        for (int i = 0; i &lt; boundary1.getN(); ++i) {        </span>
+<span class="fc" id="L96">            int x = boundary1.getX(i) + xOffset1;</span>
+<span class="fc" id="L97">            int y = boundary1.getY(i) + yOffset1;</span>
+<span class="fc" id="L98">            comb.setRGB(x, y, 255, 255, 255);</span>
+        }
+        
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        for (int i = 0; i &lt; boundary2.getN(); ++i) {        </span>
+<span class="fc" id="L102">            int x = boundary2.getX(i) + xOffset2;</span>
+<span class="fc" id="L103">            int y = boundary2.getY(i) + yOffset2;</span>
+<span class="fc" id="L104">            comb.setRGB(x, y, 255, 255, 255);</span>
+        }
+<span class="fc" id="L106">    }</span>
+    
+    public void drawLineInAlternatingColors(
+        int x1, int y1, int x2, int y2,
+        int nExtraForDot) {
+        
+<span class="fc" id="L112">        x1 += xOffset1;</span>
+<span class="fc" id="L113">        y1 += yOffset1;</span>
+        
+<span class="fc" id="L115">        x2 += xOffset2;</span>
+<span class="fc" id="L116">        y2 += yOffset2;</span>
+        
+<span class="fc" id="L118">        prevClr++;</span>
+        
+<span class="fc" id="L120">        int[] clr = ImageIOHelper.getNextRGB(prevClr);</span>
+        
+<span class="fc" id="L122">        ImageIOHelper.drawLineInImage(x1, y1, x2, y2, </span>
+            comb, nExtraForDot, clr[0], clr[1], clr[2]);
+<span class="fc" id="L124">    }</span>
+    
+    public void drawLine(int x1, int y1, int x2, int y2,
+        int r, int g, int b, int nExtraForDot) {
+        
+<span class="nc" id="L129">        x1 += xOffset1;</span>
+<span class="nc" id="L130">        y1 += yOffset1;</span>
+        
+<span class="nc" id="L132">        x2 += xOffset2;</span>
+<span class="nc" id="L133">        y2 += yOffset2;</span>
+        
+<span class="nc" id="L135">        prevClr++;</span>
+                
+<span class="nc" id="L137">        ImageIOHelper.drawLineInImage(x1, y1, x2, y2, </span>
+            comb, nExtraForDot, r, g, b);
+<span class="nc" id="L139">    }</span>
+    
+    public String writeImage(String fileSuffix) throws IOException {
+        
+<span class="fc" id="L143">         String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+            
+<span class="fc" id="L145">         String filePath = dirPath + &quot;/img&quot; + fileSuffix </span>
+             + &quot;.png&quot;;
+            
+<span class="fc" id="L148">         ImageIOHelper.writeOutputImage(filePath, comb);</span>
+         
+<span class="fc" id="L150">         return filePath;</span>
+    }
+   
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

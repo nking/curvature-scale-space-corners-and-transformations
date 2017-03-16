@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>HCPT.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.features</a> &gt; <span class="el_source">HCPT.java</span></div><h1>HCPT.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.features;
+
+import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.misc.MiscMath;
+import algorithms.util.OneDIntArray;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ A class holding histograms of a polar theta color space greyscale image 
+ * and methods to extract
+ * features.
+ * The algorithm is similar to those mentioned in HOGs.java except
+ * that the histograms below have bins of color space and the added
+ * units are &quot;1&quot; unit of the pixel color.
+ 
+  @author nichole
+*/
+public class HCPT {
+   
+    private final int nBins;
+    
+    private final int N_PIX_PER_CELL_DIM;
+    
+    private final int N_CELLS_PER_BLOCK_DIM;
+    
+    // histogrm integral images with a windowed sum of N_PIX_PER_CELL_DIM
+    private final int[][] gHists;
+    
+    private final int w;
+    private final int h;
+    
+<span class="pc" id="L34">    private boolean debug = false;</span>
+    
+    //TODO: calculate the limits in nPixels this can handle due to
+    //   using integers instead of long for storage.
+    //  8.4 million pix, roughly 2900 X 2900
+    
+<span class="nc" id="L40">    public HCPT(GreyscaleImage img) {</span>
+        
+        // binWidth of 16
+<span class="nc" id="L43">        nBins = 16;</span>
+<span class="nc" id="L44">        N_PIX_PER_CELL_DIM = 4;</span>
+<span class="nc" id="L45">        N_CELLS_PER_BLOCK_DIM = 2;</span>
+<span class="nc" id="L46">        w = img.getWidth();</span>
+<span class="nc" id="L47">        h = img.getHeight();</span>
+        
+<span class="nc" id="L49">        gHists = init(img);</span>
+<span class="nc" id="L50">    }</span>
+    
+    public HCPT(GreyscaleImage img, int nCellsPerDim, int nPixPerCellDim,
+<span class="fc" id="L53">        int nBins) {</span>
+        
+        // binWidth of 16
+<span class="fc" id="L56">        this.nBins = nBins;</span>
+<span class="fc" id="L57">        N_PIX_PER_CELL_DIM = nPixPerCellDim;</span>
+<span class="fc" id="L58">        N_CELLS_PER_BLOCK_DIM = nCellsPerDim;</span>
+<span class="fc" id="L59">        w = img.getWidth();</span>
+<span class="fc" id="L60">        h = img.getHeight();</span>
+        
+<span class="fc" id="L62">        gHists = init(img);</span>
+<span class="fc" id="L63">    }</span>
+    
+    public void setToDebug() {
+<span class="nc" id="L66">        debug = true;</span>
+<span class="nc" id="L67">    }</span>
+    
+    private int[][] init(GreyscaleImage img) {
+       
+<span class="fc" id="L71">        PolarThetaIntegralHistograms gh = new PolarThetaIntegralHistograms();</span>
+        
+<span class="fc" id="L73">        int[][] histograms = gh.createHistograms(img, nBins);</span>
+
+        //apply a windowed avg across the integral image
+<span class="fc" id="L76">        gh.applyWindowedSum(histograms, w, h, N_PIX_PER_CELL_DIM);</span>
+        
+<span class="fc" id="L78">        return histograms;  </span>
+    }
+
+    /**
+     * NOT READY FOR USE
+     * 
+     * extract the block surrounding the feature.
+     * the number of pixels in a cell and the number of cells in block were set during
+     * construction.
+     * 
+     * @param x
+     * @param y
+     * @param outHist 
+     */
+    public void extractFeature(int x, int y, int[] outHist) {
+                
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">        if (outHist.length != nBins) {</span>
+<span class="nc" id="L95">            throw new IllegalArgumentException(&quot;outHist.length != nBins&quot;);</span>
+        }
+
+<span class="pc bpc" id="L98" title="4 of 8 branches missed.">        if (x &lt; 0 || y &lt; 0 || x &gt;= w || y &gt;= h) {</span>
+<span class="nc" id="L99">            throw new IllegalArgumentException(&quot;x or y is out of bounds of &quot;</span>
+                + &quot;original image&quot;);
+        }
+        
+        // uses the block normalization recomended by Dalal &amp; Triggs,
+        //   the summary of histogram counts over all cells
+        //   is used to normaliza each cell by that sum.
+        
+<span class="fc" id="L107">        int nH = N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM;</span>
+
+<span class="fc" id="L109">        double blockTotal = 0;        </span>
+                
+<span class="fc" id="L111">        List&lt;OneDIntArray&gt; cells = new ArrayList&lt;OneDIntArray&gt;(nH);</span>
+        
+<span class="fc bfc" id="L113" title="All 2 branches covered.">        for (int cX = 0; cX &lt; N_CELLS_PER_BLOCK_DIM; ++cX) {</span>
+            
+<span class="fc" id="L115">            int cXOff = -(N_CELLS_PER_BLOCK_DIM/2) + cX;</span>
+        
+<span class="fc" id="L117">            int x2 = x + (cXOff * N_PIX_PER_CELL_DIM);</span>
+            
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">            if ((x2 + N_PIX_PER_CELL_DIM - 1) &lt; 0) {</span>
+<span class="nc" id="L120">                break;</span>
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">            } else if (x2 &lt; 0) {</span>
+<span class="nc" id="L122">                x2 = 0;</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">            } else if (x2 &gt;= w) {</span>
+<span class="nc" id="L124">                break;</span>
+            }
+            
+<span class="fc bfc" id="L127" title="All 2 branches covered.">            for (int cY = 0; cY &lt; N_CELLS_PER_BLOCK_DIM; ++cY) {</span>
+                    
+<span class="fc" id="L129">                int cYOff = -(N_CELLS_PER_BLOCK_DIM/2) + cY;</span>
+                
+<span class="fc" id="L131">                int y2 = y + (cYOff * N_PIX_PER_CELL_DIM);</span>
+
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">                if ((y2 + N_PIX_PER_CELL_DIM - 1) &lt; 0) {</span>
+<span class="nc" id="L134">                    break;</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">                } else if (y2 &lt; 0) {</span>
+<span class="nc" id="L136">                    y2 = 0;</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">                } else if (y2 &gt;= h) {</span>
+<span class="nc" id="L138">                    break;</span>
+                }
+                                
+<span class="fc" id="L141">                int pixIdx = (y2 * w) + x2;</span>
+                
+<span class="fc" id="L143">                int[] out = Arrays.copyOf(gHists[pixIdx], gHists[pixIdx].length);</span>
+
+<span class="fc" id="L145">                cells.add(new OneDIntArray(out));</span>
+            
+<span class="fc" id="L147">                int t = sumCounts(out);</span>
+                
+<span class="fc" id="L149">                blockTotal += (t * t);</span>
+            }
+        }
+        
+<span class="fc" id="L153">        blockTotal /= (double)cells.size();</span>
+        
+<span class="fc" id="L155">        double norm = 1./Math.sqrt(blockTotal + 0.0001);</span>
+                
+<span class="fc" id="L157">        float maxBlock = (N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM) *</span>
+            (N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM) * 255,f;
+   
+<span class="fc" id="L160">        norm *= maxBlock;</span>
+        
+<span class="fc" id="L162">        Arrays.fill(outHist, 0, outHist.length, 0);</span>
+        
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        for (int i = 0; i &lt; cells.size(); ++i) {</span>
+<span class="fc" id="L165">            int[] a = cells.get(i).a;</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">            for (int j = 0; j &lt; a.length; ++j) {</span>
+                //v /= Math.sqrt(blockTotal + 0.0001);
+<span class="fc" id="L168">                a[j] = (int)Math.round(norm * a[j]);</span>
+            } 
+<span class="fc" id="L170">            add(outHist, a);</span>
+        }
+        
+        /*        
+        part of a block of 3 X 3 cells
+        
+           2        2        2        2
+           1        1        1        1
+           0        0        0        0
+          -9 -8 -7 -6 -5 -4 -3 -2 -1  *  1  2  3  4  5  6  7  9
+                                      *
+        */        
+<span class="fc" id="L182">    }</span>
+    
+    /**
+     * 
+     * calculate the intersection of histA and histB which have already
+     * been normalized to the same scale.
+     * A result of 0 is maximally dissimilar and a result of 1 is maximally similar.
+     * 
+     * The orientations are needed to compare the correct rotated bins to one another.
+     * Internally, orientation of 90 leads to no shift for rotation,
+     * and orientation near 0 results in rotation of nBins/2, etc...
+     * 
+     * Note that an orientation of 90 is a unit vector from x,y=0,0 to
+     * x,y=0,1.
+     * 
+     * @param histA
+     * @param histB
+     * @return 
+     */
+    public float intersection(int[] histA, int[] histB) {
+        
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">        if ((histA.length != histB.length)) {</span>
+<span class="nc" id="L204">            throw new IllegalArgumentException(</span>
+                &quot;histA and histB must be same dimensions&quot;);
+        }
+        
+<span class="fc" id="L208">        int nBins = histA.length;</span>
+        
+<span class="fc" id="L210">        int binWidth = 256/nBins;</span>
+        
+        /*
+        histograms are already normalized
+        
+        K(a,b) = 
+            (summation_over_i_from_1_to_n( min(a_i, b_i))
+             /
+            (min(summation_over_i(a_i), summation_over_i(b_i))
+        */
+            
+<span class="fc" id="L221">        float sum = 0;</span>
+<span class="fc" id="L222">        float sumA = 0;</span>
+<span class="fc" id="L223">        float sumB = 0;</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">        for (int j = 0; j &lt; nBins; ++j) {</span>
+            
+<span class="fc" id="L226">            float yA = histA[j];</span>
+<span class="fc" id="L227">            float yB = histB[j];</span>
+            
+<span class="fc" id="L229">            sum += Math.min(yA, yB);</span>
+<span class="fc" id="L230">            sumA += yA;</span>
+<span class="fc" id="L231">            sumB += yB;</span>
+            
+            //System.out.println(&quot; &quot; + yA + &quot; -- &quot; + yB + &quot; sum=&quot;+sum + &quot;, &quot; + sumA + &quot;,&quot; + sumB);
+        }
+        
+<span class="fc" id="L236">        float sim = sum / ((float)Math.min(sumA, sumB));</span>
+        
+<span class="fc" id="L238">        return sim;</span>
+    }
+    
+    /**
+     * CAVEAT: small amount of testing done, not yet throughly tested.
+     * 
+     * calculate the intersection of histA and histB which have already
+     * been normalized to the same scale.
+     * A result of 0 is maximally dissimilar and a result of 1 is maximally similar.
+     * 
+     * The orientations are needed to compare the correct rotated bins to one another.
+     * Internally, orientation of 90 leads to no shift for rotation,
+     * and orientation near 0 results in rotation of nBins/2, etc...
+     * 
+     * Note that an orientation of 90 is a unit vector from x,y=0,0 to
+     * x,y=0,1.
+     * 
+     * @param histA
+     * @param histB
+     * @return 
+     */
+    public float ssd(int[] histA, int[] histB) {
+        
+<span class="nc bnc" id="L261" title="All 2 branches missed.">        if ((histA.length != histB.length)) {</span>
+<span class="nc" id="L262">            throw new IllegalArgumentException(</span>
+                &quot;histA and histB must be same dimensions&quot;);
+        }
+        
+<span class="nc" id="L266">        double sumDiff = 0;</span>
+        
+<span class="nc" id="L268">        int nBins = histA.length;</span>
+        
+<span class="nc" id="L270">        int binWidth = 256/nBins;</span>
+        
+<span class="nc bnc" id="L272" title="All 2 branches missed.">        for (int j = 0; j &lt; nBins; ++j) {</span>
+            
+<span class="nc" id="L274">            float yA = histA[j];</span>
+<span class="nc" id="L275">            float yB = histB[j];</span>
+            
+<span class="nc" id="L277">            float diff = yA - yB;</span>
+            
+<span class="nc" id="L279">            sumDiff += (diff * diff);            </span>
+        }
+        
+<span class="nc" id="L282">        sumDiff /= (double)nBins;</span>
+        
+<span class="nc" id="L284">        float maxValue = Math.max(MiscMath.findMax(histA), </span>
+<span class="nc" id="L285">            MiscMath.findMax(histB));</span>
+        
+<span class="nc" id="L287">        sumDiff = Math.sqrt(sumDiff)/maxValue;</span>
+        
+<span class="nc" id="L289">        return (float)sumDiff;</span>
+    }
+
+    private int sumCounts(int[] hist) {
+        
+<span class="fc" id="L294">        int sum = 0;</span>
+<span class="fc bfc" id="L295" title="All 2 branches covered.">        for (int v : hist) {</span>
+<span class="fc" id="L296">            sum += v;</span>
+        }
+        
+<span class="fc" id="L299">        return sum;</span>
+    }
+     
+    private void add(int[] addTo, int[] addFrom) {
+<span class="fc bfc" id="L303" title="All 2 branches covered.">        for (int i = 0; i &lt; addTo.length; ++i) {</span>
+<span class="fc" id="L304">            addTo[i] += addFrom[i];</span>
+        }
+<span class="fc" id="L306">    }</span>
+    
+    private void add(long[] addTo, int[] addFrom) {
+<span class="nc bnc" id="L309" title="All 2 branches missed.">        for (int i = 0; i &lt; addTo.length; ++i) {</span>
+<span class="nc" id="L310">            addTo[i] += addFrom[i];</span>
+        }
+<span class="nc" id="L312">    }</span>
+    
+    public int getNumberOfBins() {
+<span class="fc" id="L315">        return nBins;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

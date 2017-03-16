@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>MinHeapForRT2012.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.bipartite</a> &gt; <span class="el_source">MinHeapForRT2012.java</span></div><h1>MinHeapForRT2012.java</h1><pre class="source lang-java linenums">package algorithms.bipartite;
+
+import algorithms.imageProcessing.DoubleLinkedCircularList;
+import algorithms.imageProcessing.HeapNode;
+import java.util.logging.Logger;
+
+/**
+ * a min heap for the MinCostUnbalancedAssignment.
+ * It uses the &quot;Dial algorithm&quot; pattern by default
+ * (which is similar to counting sort in part),
+ * but if the requested capacity is larger than
+ * 46300, a Fibonacci Heap is used internally instead.
+ * All operations for the &quot;Dial&quot; mode are essentially O(1),
+ * else, the extractMin operation is O(lg_2(N_nodes))
+ * for the internal Fibonacci heap.
+ * 
+ * NOTE: in the future, would like to include MLB for
+ * another option that improves the extractMin runtime
+ * complexity.
+ * 
+ * @author nichole
+ */
+public class MinHeapForRT2012 {
+
+<span class="fc" id="L25">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+    
+    // 0 = use Dial, 1 = use Fibonacci, 2 = use XFastTrie
+    private final int algorithm;
+    
+    private final DoubleLinkedCircularList[] heap0;
+    
+<span class="fc" id="L32">    private int lastKnownMinKey0 = 0;</span>
+    
+    // for use in tuning the capacity
+<span class="fc" id="L35">    private int lastKnownMaxKey0 = 0;</span>
+    
+<span class="fc" id="L37">    private long n0 = 0;</span>
+    
+    private final FibonacciHeapWrapper heap1;
+
+    private final XFastTrieWrapper heap2;
+    
+    void printLastKnownMinMax() {
+<span class="nc" id="L44">        log.fine(&quot;min=&quot; + lastKnownMinKey0</span>
+            + &quot; max=&quot; + lastKnownMaxKey0);
+<span class="nc" id="L46">    }</span>
+    
+    /**
+     * 
+     * @param capacity estimate of maximum value to store.
+     * @param approxN approximate number of nodes expected
+     * to be in the heap as a rough maximum at a given time.
+     * (it's used to help determine which algorithm to use
+     * internally).
+     * 
+     * If capacity is less than 46300 (might lower this as memory will begin
+     * to affect performance at high capacity),
+     * then a minimum priority monotonic bucket queue which uses the node keys 
+     * as priorities is used.  creation of the structure has runtime complexity 
+     * O(capacity), but thereafter, all operations are O(1).
+     * If capacity is higher than 46300, then the approxN is used to 
+     * decide between an XFastTrie and a FibonacciHeap.
+     * 
+     * TODO: implement a multi-level bucket such as Cherkassky, Goldberg,
+     * and Silverstein 1999 or Raman 1996 which has a faster extractMin
+     * than a Fibonacci Heap.
+     */
+<span class="fc" id="L68">    public MinHeapForRT2012(int capacity, int approxN) {</span>
+                
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        if (capacity &lt; 46300) {</span>
+        
+            // the 1 level Dial algorithm has O(1) inserts and
+            //    constant time extractMin.
+<span class="fc" id="L74">            algorithm = 0;</span>
+        
+<span class="fc" id="L76">            heap0 = new DoubleLinkedCircularList[capacity];</span>
+            
+<span class="fc" id="L78">            heap1 = null;</span>
+            
+<span class="fc" id="L80">            heap2 = null;</span>
+
+<span class="fc" id="L82">            log.fine(&quot;useDial=true cap=&quot; + capacity + &quot; approxN=&quot; + approxN);</span>
+            
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">        } else if (approxN &gt; ((1&lt;&lt;(6-1))-1)) {</span>
+            // wanting the base of the prefix tree to be filled
+            // to improve performance.   for larger N and
+            // this range of maxC the XFastTrie has better extractMin.
+            // could reduce the conditional to '5' instead of '6' 
+            
+<span class="fc" id="L90">            algorithm = 2;</span>
+            
+<span class="fc" id="L92">            heap2 = new XFastTrieWrapper(capacity);</span>
+            
+<span class="fc" id="L94">            heap0 = null;</span>
+            
+<span class="fc" id="L96">            heap1 = null;</span>
+            
+        } else {
+            
+<span class="nc" id="L100">            algorithm = 1;</span>
+        
+<span class="nc" id="L102">            heap0 = null;</span>
+            
+<span class="nc" id="L104">            heap1 = new FibonacciHeapWrapper(approxN, capacity);</span>
+        
+<span class="nc" id="L106">            heap2 = null;</span>
+        }
+<span class="fc" id="L108">    }</span>
+    
+    public void insert(HeapNode node) {
+        
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">        if (node.getKey() &lt; 0) {</span>
+<span class="nc" id="L113">            throw new IllegalArgumentException(&quot;key must be &gt;= 0&quot;);</span>
+        }
+        
+<span class="pc bpc" id="L116" title="1 of 3 branches missed.">        switch(algorithm) {</span>
+            case 0:
+<span class="fc" id="L118">                insert0(node);</span>
+<span class="fc" id="L119">                ++n0;</span>
+<span class="fc" id="L120">                break;</span>
+            case 1:
+<span class="nc" id="L122">                insert1(node);</span>
+<span class="nc" id="L123">                break;</span>
+            default:
+<span class="fc" id="L125">                insert2(node);</span>
+                break;
+        }
+<span class="fc" id="L128">    }</span>
+    
+    public HeapNode extractMin() {
+        
+<span class="pc bpc" id="L132" title="1 of 3 branches missed.">        switch(algorithm) {</span>
+            case 0:
+<span class="fc" id="L134">                return extractMin0();</span>
+            case 1:
+<span class="nc" id="L136">                return extractMin1();</span>
+            default:
+<span class="fc" id="L138">                return extractMin2();</span>
+        }
+        
+    }
+    
+    private HeapNode extractMin0() {
+    
+<span class="fc bfc" id="L145" title="All 2 branches covered.">        for (int i = lastKnownMinKey0; i &lt; heap0.length; ++i) {</span>
+<span class="fc" id="L146">            DoubleLinkedCircularList bucket = heap0[i];</span>
+<span class="fc bfc" id="L147" title="All 4 branches covered.">            if (bucket != null &amp;&amp; (bucket.getNumberOfNodes() &gt; 0)) {</span>
+<span class="fc" id="L148">                HeapNode node = bucket.getSentinel().getLeft();</span>
+<span class="fc" id="L149">                bucket.remove(node);</span>
+<span class="fc" id="L150">                lastKnownMinKey0 = i;</span>
+<span class="fc" id="L151">                n0--;</span>
+<span class="fc" id="L152">                return node;</span>
+            }
+        }
+        
+<span class="fc" id="L156">        return null;</span>
+    }
+    
+    private HeapNode extractMin1() {
+        
+<span class="nc" id="L161">        HeapNode node = heap1.extractMin();</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">        if (node != null) {</span>
+<span class="nc" id="L163">            return node;</span>
+        } else {
+<span class="nc" id="L165">            return null;</span>
+        }
+    }
+    
+    private HeapNode extractMin2() {        
+<span class="fc" id="L170">        return heap2.extractMin();</span>
+    }
+    
+    private void insert0(HeapNode node) {
+         
+<span class="fc" id="L175">        int key = (int)node.getKey();</span>
+        
+<span class="fc" id="L177">        DoubleLinkedCircularList bucket = heap0[key];</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">        if (bucket == null) {</span>
+<span class="fc" id="L179">            bucket = new DoubleLinkedCircularList();</span>
+<span class="fc" id="L180">            heap0[key] = bucket;</span>
+        }
+        
+<span class="fc" id="L183">        log.fine(&quot;insert into minHeap at key =&quot; + node.toString());</span>
+       
+<span class="fc" id="L185">        bucket.insert(node);</span>
+        
+<span class="fc bfc" id="L187" title="All 2 branches covered.">        if (key &lt; lastKnownMinKey0) {</span>
+<span class="fc" id="L188">            lastKnownMinKey0 = key;</span>
+        }
+<span class="fc bfc" id="L190" title="All 2 branches covered.">        if (key &gt; lastKnownMaxKey0) {</span>
+<span class="fc" id="L191">            lastKnownMaxKey0 = key;</span>
+        }
+<span class="fc" id="L193">    }</span>
+    
+    private void insert1(HeapNode node) {
+         
+<span class="nc" id="L197">        int key = (int)node.getKey();</span>
+        
+<span class="nc" id="L199">        heap1.insert(node);</span>
+        
+<span class="nc" id="L201">        log.fine(&quot;insert into minHeap at key =&quot; + key);        </span>
+<span class="nc" id="L202">    }</span>
+    
+    private void insert2(HeapNode node) {
+         
+<span class="fc" id="L206">        int key = (int)node.getKey();</span>
+        
+<span class="fc" id="L208">        heap2.insert(node);</span>
+        
+<span class="fc" id="L210">        log.fine(&quot;insert into minHeap at key =&quot; + key);        </span>
+<span class="fc" id="L211">    }</span>
+    
+    public void decreaseKey(HeapNode node, long key2) {
+    
+<span class="pc bpc" id="L215" title="1 of 3 branches missed.">        switch(algorithm) {</span>
+            case 0:
+<span class="fc" id="L217">                decreaseKey0(node, key2);</span>
+<span class="fc" id="L218">                break;</span>
+            case 1:
+<span class="nc" id="L220">                decreaseKey1(node, key2);</span>
+<span class="nc" id="L221">                break;</span>
+            default:
+<span class="fc" id="L223">                decreaseKey2(node, key2);</span>
+                break;
+        }
+<span class="fc" id="L226">    }</span>
+     
+    private void decreaseKey0(HeapNode node, long key2) {
+
+<span class="fc" id="L230">        log.fine(&quot;decreaseKey in minHeap from key=&quot; + </span>
+<span class="fc" id="L231">            node.getKey() + &quot; to key=&quot; + key2);</span>
+        
+<span class="fc" id="L233">        int prevKey = (int)node.getKey();</span>
+<span class="fc" id="L234">        heap0[prevKey].remove(node);</span>
+        
+<span class="fc" id="L236">        node.setKey(key2);</span>
+        
+<span class="fc" id="L238">        insert0(node);        </span>
+<span class="fc" id="L239">    }</span>
+    
+    private void decreaseKey1(HeapNode node, long key2) {
+
+<span class="nc" id="L243">        log.fine(&quot;decreaseKey in fibHeap from key=&quot; + </span>
+<span class="nc" id="L244">            node.getKey() + &quot; to key=&quot; + key2);</span>
+        
+<span class="nc" id="L246">        heap1.decreaseKey(node, key2);</span>
+<span class="nc" id="L247">    }</span>
+    
+    private void decreaseKey2(HeapNode node, long key2) {
+
+<span class="fc" id="L251">        log.fine(&quot;decreaseKey in fibHeap from key=&quot; + </span>
+<span class="fc" id="L252">            node.getKey() + &quot; to key=&quot; + key2);</span>
+        
+<span class="fc" id="L254">        heap2.decreaseKey(node, key2);</span>
+<span class="fc" id="L255">    }</span>
+    
+    public long getNumberOfNodes() {
+        
+<span class="pc bpc" id="L259" title="2 of 3 branches missed.">        switch(algorithm) {</span>
+            case 0:
+<span class="fc" id="L261">                return n0;</span>
+            case 1:
+<span class="nc" id="L263">                return heap1.getNumberOfNodes();</span>
+            default:
+<span class="nc" id="L265">                return heap2.getNumberOfNodes();</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

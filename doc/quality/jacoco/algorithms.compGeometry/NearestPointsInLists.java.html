@@ -1,0 +1,340 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>NearestPointsInLists.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.compGeometry</a> &gt; <span class="el_source">NearestPointsInLists.java</span></div><h1>NearestPointsInLists.java</h1><pre class="source lang-java linenums">package algorithms.compGeometry;
+
+import algorithms.util.PairInt;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.NavigableMap;
+import java.util.NavigableSet;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+
+/**
+ * Builds a data structure to make finding member points within
+ * a distance of a location faster than O(N^2).
+ * 
+ * The runtime complexity is O(N*lg2(N)) for the constructor
+ * and each search is O(lg2(N)) * at most 2*searchRadius.
+ * The search at worst is
+ * 4*O(lg_2(N)) + 4*searchRadius * (O(lg_2(N_x_set_size)) + 2 * searchRadius)
+ * 
+ * TODO: replace with a faster algorithm one day...
+ * 
+ * @author nichole
+ */
+<span class="pc bpc" id="L27" title="1 of 2 branches missed.">public class NearestPointsInLists {</span>
+    
+    /*
+    to make the inserts of new points faster, have switched from internal data
+    structures from ordered lists to sorted tree maps
+    
+    at construction time:
+       runtime complexity O(N*lg2(N))
+    search:
+       looks for the x key in the treemap and if not found, uses 
+       the tree map's higherEntry or lowerEntry, depending upon use.
+       iteration of the treemap once the existing key is found is done using
+           subMap or descendingMap
+    add point:
+       the new point gets added to the tree map
+    
+    Note that if the data were extremely sparsely populated and the image
+        had a very large width and small height, the ordered lists implementation
+        might be a better implementation because of the space complexity difference.
+    */
+    
+    private final TreeMap&lt;Integer, TreeSet&lt;Integer&gt;&gt; xy;
+    private final Map&lt;PairInt, Integer&gt; listIndexes;
+<span class="fc" id="L50">    private int minX = Integer.MAX_VALUE;</span>
+<span class="fc" id="L51">    private int maxX = Integer.MIN_VALUE;</span>
+    
+    /**
+     * constructor, runtime complexity is O(N*lg2(N))
+     * @param pointsList 
+     */
+<span class="fc" id="L57">    public NearestPointsInLists(List&lt;Set&lt;PairInt&gt;&gt; pointsList) {</span>
+       
+<span class="pc bpc" id="L59" title="1 of 2 branches missed.">        if (pointsList == null) {</span>
+<span class="nc" id="L60">            throw new IllegalStateException(&quot;pointsList cannot be null&quot;);</span>
+        }
+        
+<span class="fc" id="L63">        xy = new TreeMap&lt;Integer, TreeSet&lt;Integer&gt;&gt;();</span>
+        
+<span class="fc" id="L65">        listIndexes = new HashMap&lt;PairInt, Integer&gt;();</span>
+        
+<span class="fc" id="L67">        int n = pointsList.size();</span>
+        
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+            
+<span class="fc" id="L71">            Integer index = Integer.valueOf(i);</span>
+            
+<span class="fc" id="L73">            Set&lt;PairInt&gt; points = pointsList.get(i);</span>
+            
+<span class="fc bfc" id="L75" title="All 2 branches covered.">            for (PairInt p : points) {</span>
+                
+<span class="fc" id="L77">                Integer x = Integer.valueOf(p.getX());</span>
+<span class="fc" id="L78">                Integer y = Integer.valueOf(p.getY());</span>
+                
+<span class="fc" id="L80">                TreeSet&lt;Integer&gt; ySet = xy.get(x);</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">                if (ySet == null) {</span>
+<span class="fc" id="L82">                    ySet = new TreeSet&lt;Integer&gt;();</span>
+<span class="fc" id="L83">                    xy.put(x, ySet);</span>
+                }
+<span class="fc" id="L85">                ySet.add(y);</span>
+                
+<span class="fc" id="L87">                listIndexes.put(p.copy(), index);</span>
+                
+<span class="fc bfc" id="L89" title="All 2 branches covered.">                if (x &lt; minX) {</span>
+<span class="fc" id="L90">                    minX = x;</span>
+                }
+<span class="fc bfc" id="L92" title="All 2 branches covered.">                if (x &gt; maxX) {</span>
+<span class="fc" id="L93">                    maxX = x;</span>
+                }
+<span class="fc" id="L95">            }</span>
+        }        
+<span class="fc" id="L97">    }</span>
+    
+    /**
+     * add a point to the instance.
+     * runtime complexity is O(lg2(N)).
+     * @param p
+     * @param listIndex 
+     */
+    public void addPoint(PairInt p, int listIndex) {
+        
+<span class="nc" id="L107">        int x = p.getX();</span>
+        
+<span class="nc" id="L109">        Integer xKey = Integer.valueOf(x);</span>
+        
+<span class="nc" id="L111">        Integer yKey = Integer.valueOf(p.getY());</span>
+       
+<span class="nc" id="L113">        TreeSet&lt;Integer&gt; ySet = xy.get(xKey);</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">        if (ySet == null) {</span>
+<span class="nc" id="L115">            ySet = new TreeSet&lt;Integer&gt;();</span>
+<span class="nc" id="L116">            xy.put(xKey, ySet);</span>
+        }
+<span class="nc" id="L118">        ySet.add(yKey);</span>
+
+<span class="nc" id="L120">        listIndexes.put(p.copy(), Integer.valueOf(listIndex));</span>
+        
+<span class="nc bnc" id="L122" title="All 2 branches missed.">        if (x &lt; minX) {</span>
+<span class="nc" id="L123">            minX = x;</span>
+        }
+<span class="nc bnc" id="L125" title="All 2 branches missed.">        if (x &gt; maxX) {</span>
+<span class="nc" id="L126">            maxX = x;</span>
+        }
+<span class="nc" id="L128">    }</span>
+    
+    /**
+     * find points within radius of (xCenter, yCenter) in the contained points.
+     * runtime complexity is a little more than O(N*lg2(N)) and much less than
+     * O(N^2) and depends upon the radius and the number of unique x integers
+     * between xCenter +- radius, so is roughly O(N * radius * lg2(N)).
+     * @param xCenter
+     * @param yCenter
+     * @param radius
+     * @return 
+     */
+    public PairInt findClosest(int xCenter, int yCenter, float radius) {
+        
+<span class="nc" id="L142">        Map&lt;Integer, PairInt&gt; result = findNeighbors(xCenter, yCenter, radius);</span>
+        
+<span class="nc" id="L144">        PairInt minDistP = null;</span>
+<span class="nc" id="L145">        int minDistSq = Integer.MAX_VALUE;</span>
+        
+<span class="nc bnc" id="L147" title="All 2 branches missed.">        for (Entry&lt;Integer, PairInt&gt; entry : result.entrySet()) {</span>
+<span class="nc" id="L148">            PairInt p = entry.getValue();</span>
+<span class="nc" id="L149">            int diffX = p.getX() - xCenter;</span>
+<span class="nc" id="L150">            int diffY = p.getY() - yCenter;</span>
+<span class="nc" id="L151">            int distSq = (diffX*diffX) + (diffY*diffY);</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">            if (distSq &lt; minDistSq) {</span>
+<span class="nc" id="L153">                minDistSq = distSq;</span>
+<span class="nc" id="L154">                minDistP = p;</span>
+            }
+<span class="nc" id="L156">        }</span>
+        
+<span class="nc" id="L158">        return minDistP;</span>
+    }
+    
+    /**
+     * find points within radius of (xCenter, yCenter) in the contained points.
+     * runtime complexity is much less than
+     * O(N^2) and depends upon the radius and the number of unique x integers
+     * between xCenter +- radius.
+     * If the TreeSet iterator is O(1), then 
+     * at most, the runtime complexity is
+     *    4*O(lg_2(N)) + 4*searchRadius * (O(lg_2(N_x_set_size)) + 2 * searchRadius)
+     * @param xCenter
+     * @param yCenter
+     * @param radius
+     * @return 
+     */
+    public Map&lt;Integer, PairInt&gt; findNeighbors(int xCenter, int yCenter, float radius) {
+        
+<span class="fc" id="L176">        Map&lt;Integer, PairInt&gt; result = new HashMap&lt;Integer, PairInt&gt;();</span>
+<span class="fc" id="L177">        Map&lt;Integer, Integer&gt; resultSqDistances = new HashMap&lt;Integer, Integer&gt;();</span>
+        
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">        if (xy.size() == 0) {</span>
+<span class="nc" id="L180">            return result;</span>
+        }
+        
+<span class="fc" id="L183">        Integer yKey = Integer.valueOf(yCenter);</span>
+        
+        //collect smallest distances within r for a listIndex
+        
+<span class="fc" id="L187">        double rSq = Math.sqrt(2) * radius * radius;</span>
+        
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">        if (xCenter &lt;= minX) {</span>
+            
+            // search from first key forward
+            
+<span class="nc" id="L193">            Integer xKey = xy.firstKey();</span>
+            
+<span class="nc" id="L195">            NavigableMap&lt;Integer, TreeSet&lt;Integer&gt;&gt; navXMap </span>
+<span class="nc" id="L196">                = xy.tailMap(xKey, true);</span>
+            
+<span class="nc" id="L198">            searchX(xCenter, yCenter, xKey, yKey, navXMap, result, </span>
+                resultSqDistances, rSq);
+            
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">        } else if (xCenter &gt;= maxX) {</span>
+            
+            // search from last key backward
+            
+<span class="nc" id="L205">            Integer xKey = xy.lastKey();</span>
+            
+<span class="nc" id="L207">            NavigableMap&lt;Integer, TreeSet&lt;Integer&gt;&gt; navXMap </span>
+<span class="nc" id="L208">                = xy.headMap(xKey, true).descendingMap();</span>
+            
+<span class="nc" id="L210">            searchX(xCenter, yCenter, xKey, yKey, navXMap, result, </span>
+                resultSqDistances, rSq);
+            
+<span class="nc" id="L213">        } else {</span>
+            
+<span class="fc" id="L215">            Integer xKey = Integer.valueOf(xCenter);</span>
+                                
+            // O(lg_2(N)), but worse case is 2*O(lg_2(N))
+            // --- search backwards ----
+<span class="pc bpc" id="L219" title="1 of 2 branches missed.">            if (xy.get(xKey) == null) {</span>
+<span class="nc" id="L220">                Entry&lt;Integer, TreeSet&lt;Integer&gt;&gt; entry = xy.lowerEntry(xKey);</span>
+<span class="nc bnc" id="L221" title="All 4 branches missed.">                assert(entry != null);</span>
+<span class="nc" id="L222">                xKey = entry.getKey();</span>
+            }
+                        
+            //O(lg_2(N))
+<span class="fc" id="L226">            NavigableMap&lt;Integer, TreeSet&lt;Integer&gt;&gt; navXMap </span>
+<span class="fc" id="L227">                = xy.headMap(xKey, true).descendingMap();</span>
+            
+            //at most is 2*searchRadius * (O(lg_2(N_x_set_size)) + 2 * searchRadius)
+<span class="fc" id="L230">            searchX(xCenter, yCenter, xKey, yKey, navXMap, result, </span>
+                resultSqDistances, rSq);
+                               
+            // --- search forward ----
+<span class="fc" id="L234">            xKey = Integer.valueOf(xCenter);</span>
+<span class="pc bpc" id="L235" title="1 of 2 branches missed.">            if (xy.get(xKey) == null) {</span>
+<span class="nc" id="L236">                Entry&lt;Integer, TreeSet&lt;Integer&gt;&gt; entry = xy.higherEntry(xKey);</span>
+<span class="nc bnc" id="L237" title="All 4 branches missed.">                assert(entry != null);</span>
+<span class="nc" id="L238">                xKey = entry.getKey();</span>
+            }
+            
+<span class="fc" id="L241">            navXMap = xy.tailMap(xKey, true);</span>
+            
+<span class="fc" id="L243">            searchX(xCenter, yCenter, xKey, yKey, navXMap, result, </span>
+                resultSqDistances, rSq);
+        }
+        
+<span class="fc" id="L247">        return result;</span>
+    }
+
+    private void searchY(int yCenter, Integer x, NavigableSet&lt;Integer&gt; navYSet, 
+        Map&lt;Integer, PairInt&gt; result, Map&lt;Integer, Integer&gt; resultSqDistances, 
+        int diffX, double rSq) {
+        
+<span class="fc bfc" id="L254" title="All 2 branches covered.">        for (Integer y : navYSet) {</span>
+            
+<span class="fc" id="L256">            int diffY = Math.abs(y.intValue() - yCenter);</span>
+            
+<span class="fc" id="L258">            int distSq = (diffX * diffX) + (diffY * diffY);</span>
+<span class="pc bpc" id="L259" title="1 of 2 branches missed.">            if (distSq &gt; rSq) {</span>
+<span class="nc" id="L260">                break;</span>
+            }
+            
+<span class="fc" id="L263">            PairInt p = new PairInt(x.intValue(), y.intValue());</span>
+            
+<span class="fc" id="L265">            Integer listIndex = listIndexes.get(p);</span>
+            
+<span class="pc bpc" id="L267" title="3 of 4 branches missed.">            assert(listIndex != null);</span>
+
+<span class="fc bfc" id="L269" title="All 2 branches covered.">            if ((resultSqDistances.get(listIndex) == null)</span>
+<span class="pc bpc" id="L270" title="1 of 2 branches missed.">                || (distSq &lt; resultSqDistances.get(listIndex))) {</span>
+<span class="fc" id="L271">                result.put(listIndex, p);</span>
+<span class="fc" id="L272">                resultSqDistances.put(listIndex, Integer.valueOf(distSq));</span>
+            }
+<span class="fc" id="L274">        }        </span>
+<span class="fc" id="L275">    }</span>
+
+    /**
+     * runtime complexity is at most
+     * 2*searchRadius * (O(lg_2(N_x_set_size)) + 2 * searchRadius)
+     * 
+     * @param xCenter
+     * @param yCenter
+     * @param xKey
+     * @param yKey
+     * @param navXMap
+     * @param result
+     * @param resultSqDistances
+     * @param rSq 
+     */
+    private void searchX(int xCenter, int yCenter, Integer xKey, Integer yKey, 
+        NavigableMap&lt;Integer, TreeSet&lt;Integer&gt;&gt; navXMap, 
+        Map&lt;Integer, PairInt&gt; result, Map&lt;Integer, Integer&gt; resultSqDistances, 
+        double rSq) {
+        
+<span class="fc" id="L295">        double r = Math.sqrt(rSq);</span>
+        
+        /*
+        previous step is at most O(lg_2(N) + 2*searchRadius) to result in at
+        most 2*searchRadius entries in navXMap.
+        
+        The search within the 2*searchRadius entries in navXMap is at most
+           (O(lg_2(N_x_set_size)) + 2 * searchRadius).
+        
+        So the total runtime complexity at most for searchY is
+        2*searchRadius * (O(lg_2(N_x_set_size)) + 2 * searchRadius)
+        */
+        
+<span class="fc bfc" id="L308" title="All 2 branches covered.">        for (Entry&lt;Integer, TreeSet&lt;Integer&gt;&gt; entry : navXMap.entrySet()) {</span>
+<span class="fc" id="L309">            Integer x = entry.getKey();</span>
+<span class="fc" id="L310">            int diffX = Math.abs(x.intValue() - xCenter);</span>
+<span class="fc bfc" id="L311" title="All 2 branches covered.">            if (diffX &gt; r) {</span>
+<span class="fc" id="L312">                break;</span>
+            }
+<span class="fc" id="L314">            TreeSet&lt;Integer&gt; ySet = entry.getValue();</span>
+
+            // search backwards in y
+<span class="pc bpc" id="L317" title="1 of 2 branches missed.">            Integer y0 = ySet.contains(yKey) ? yKey : ySet.lower(yKey);</span>
+<span class="pc bpc" id="L318" title="1 of 2 branches missed.">            if (y0 != null) {</span>
+                
+<span class="fc" id="L320">                NavigableSet&lt;Integer&gt; navYSet =</span>
+<span class="fc" id="L321">                    ySet.headSet(y0, true).descendingSet();</span>
+
+<span class="fc" id="L323">                searchY(yCenter, x, navYSet, result, resultSqDistances, diffX,</span>
+                    rSq);
+            }
+            
+            // search forward in y
+<span class="fc" id="L328">            y0 = ySet.higher(yKey);</span>
+<span class="fc bfc" id="L329" title="All 2 branches covered.">            if (y0 != null) {</span>
+                
+<span class="fc" id="L331">                NavigableSet&lt;Integer&gt; navYSet = ySet.tailSet(y0, true);</span>
+
+<span class="fc" id="L333">                searchY(yCenter, x, navYSet, result, resultSqDistances, diffX,</span>
+                    rSq);
+            }
+<span class="fc" id="L336">        }</span>
+<span class="fc" id="L337">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

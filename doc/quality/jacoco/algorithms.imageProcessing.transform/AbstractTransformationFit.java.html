@@ -136,24 +136,79 @@ public abstract class AbstractTransformationFit implements ITransformationFit {
         // these are equivalent
 <span class="fc" id="L137">        return false;</span>
     }
+    
+    /*
+     * compare to other by the number of inliers, else if tie, compares
+     * mean of errors, else if tie, compares mean of standard deviation of mean
+     * of errors, else returns false.
+     * @param other
+     * @return
+     */
+    @Override
+    public boolean isBetterByCost(ITransformationFit other) {
+        
+<span class="nc bnc" id="L150" title="All 4 branches missed.">        if (other == null || !(other instanceof ITransformationFit)) {</span>
+<span class="nc" id="L151">            return true;</span>
+        }
+        
+<span class="nc bnc" id="L154" title="All 2 branches missed.">        if (this.inlierIndexes.size() &gt; other.getInlierIndexes().size()) {</span>
+<span class="nc" id="L155">            return true;</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">        } else if (this.inlierIndexes.size() &lt; other.getInlierIndexes().size()) {</span>
+<span class="nc" id="L157">            return false;</span>
+        }
+        
+<span class="nc" id="L160">        double sumError = 0;</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">        for (Double error : errors) {</span>
+<span class="nc" id="L162">            sumError += error.doubleValue();</span>
+<span class="nc" id="L163">        }</span>
+        
+<span class="nc" id="L165">        double sumErrorOther = 0;</span>
+<span class="nc bnc" id="L166" title="All 2 branches missed.">        for (Double error : other.getErrors()) {</span>
+<span class="nc" id="L167">            sumErrorOther += error.doubleValue();</span>
+<span class="nc" id="L168">        }</span>
+        
+<span class="nc bnc" id="L170" title="All 2 branches missed.">        if (sumError &lt; sumErrorOther) {</span>
+<span class="nc" id="L171">            return true;</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">        } else if (sumError &gt; sumErrorOther) {</span>
+<span class="nc" id="L173">            return false;</span>
+        }
+        
+<span class="nc bnc" id="L176" title="All 2 branches missed.">        if (this.inlierIndexes.size() &gt; other.getInlierIndexes().size()) {</span>
+<span class="nc" id="L177">            return true;</span>
+<span class="nc bnc" id="L178" title="All 2 branches missed.">        } else if (this.inlierIndexes.size() &lt; other.getInlierIndexes().size()) {</span>
+<span class="nc" id="L179">            return false;</span>
+        }
+        
+<span class="nc" id="L182">        calculateErrorStatistics();</span>
+        
+<span class="nc" id="L184">        other.calculateErrorStatistics();</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">        if (stDevFromMean &lt; other.getStDevFromMean()) {</span>
+<span class="nc" id="L186">            return true;</span>
+<span class="nc bnc" id="L187" title="All 2 branches missed.">        } else if (stDevFromMean &gt; other.getStDevFromMean()) {</span>
+<span class="nc" id="L188">            return false;</span>
+        }
+        
+        // these are equivalent
+<span class="nc" id="L192">        return false;</span>
+    }
 
     @Override
     public List&lt;Integer&gt; getInlierIndexes() {
-<span class="fc" id="L142">        return inlierIndexes;</span>
+<span class="fc" id="L197">        return inlierIndexes;</span>
     }
 
     @Override
     public String toString() {
         
-<span class="fc" id="L148">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L203">        StringBuilder sb = new StringBuilder();</span>
         
-<span class="fc" id="L150">        sb.append(&quot;nMatchedPoints=&quot;).append(Long.toString(inlierIndexes.size()))</span>
-<span class="fc" id="L151">            .append(&quot; nMaxMatchable=&quot;).append(Long.toString(nMaxMatchable))</span>
-<span class="fc" id="L152">            .append(&quot; tolerance=&quot;).append(Double.toString(tolerance))</span>
-<span class="fc" id="L153">            .append(&quot; meanDistFromModel=&quot;).append(Double.toString(meanError))</span>
-<span class="fc" id="L154">            .append(&quot; stDevFromMean=&quot;).append(Double.toString(stDevFromMean));</span>
+<span class="fc" id="L205">        sb.append(&quot;nMatchedPoints=&quot;).append(Long.toString(inlierIndexes.size()))</span>
+<span class="fc" id="L206">            .append(&quot; nMaxMatchable=&quot;).append(Long.toString(nMaxMatchable))</span>
+<span class="fc" id="L207">            .append(&quot; tolerance=&quot;).append(Double.toString(tolerance))</span>
+<span class="fc" id="L208">            .append(&quot; meanDistFromModel=&quot;).append(Double.toString(meanError))</span>
+<span class="fc" id="L209">            .append(&quot; stDevFromMean=&quot;).append(Double.toString(stDevFromMean));</span>
         
-<span class="fc" id="L156">        return sb.toString();</span>
+<span class="fc" id="L211">        return sb.toString();</span>
     }
 
     /**
@@ -161,7 +216,7 @@ public abstract class AbstractTransformationFit implements ITransformationFit {
      */
     @Override
     public List&lt;Double&gt; getErrors() {
-<span class="fc" id="L164">        return errors;</span>
+<span class="fc" id="L219">        return errors;</span>
     }
     
 }

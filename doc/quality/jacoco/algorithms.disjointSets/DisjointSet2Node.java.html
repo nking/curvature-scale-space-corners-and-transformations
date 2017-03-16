@@ -8,69 +8,99 @@
  */
 public class DisjointSet2Node&lt;T&gt; {
 
-    // the set member data to be held in a disjoint set
-<span class="fc" id="L12">    protected T member = null;</span>
+    /**
+     * the set member data to be held in a disjoint set
+     */
+<span class="fc" id="L14">    protected T member = null;</span>
     
-    // pointer to the set representative
-<span class="fc" id="L15">    protected DisjointSet2Node&lt;T&gt; parent = null;</span>
+    /**
+     * pointer to the set representative
+     */
+<span class="fc" id="L19">    protected DisjointSet2Node&lt;T&gt; parent = null;</span>
 
-    // upper bound of edges between this node and the longest path to it's descendants
-<span class="fc" id="L18">    protected int rank = 0;</span>
-
-<span class="fc" id="L20">    public DisjointSet2Node(T member) {</span>
-<span class="fc" id="L21">        this.member = member;</span>
-<span class="fc" id="L22">    }</span>
+    /**
+    upper bound of edges between this node and the longest path to it's descendants
+    */
+<span class="fc" id="L24">    protected int rank = 0;</span>
     
-<span class="fc" id="L24">    public DisjointSet2Node() {</span>
-<span class="fc" id="L25">    }</span>
+<span class="fc" id="L26">    protected Object data = null;</span>
+
+<span class="fc" id="L28">    public DisjointSet2Node(T member) {</span>
+<span class="fc" id="L29">        this.member = member;</span>
+<span class="fc" id="L30">    }</span>
+    
+<span class="fc" id="L32">    public DisjointSet2Node() {</span>
+<span class="fc" id="L33">    }</span>
    
+    /**
+     * get the member data
+     * @return 
+     */
     public T getMember() {
-<span class="fc" id="L28">        return member;</span>
+<span class="fc" id="L40">        return member;</span>
     }
 
     public void setMember(T member) {
-<span class="fc" id="L32">        this.member = member;</span>
-<span class="fc" id="L33">    }</span>
+<span class="fc" id="L44">        this.member = member;</span>
+<span class="fc" id="L45">    }</span>
+    
+    public void setDeta(Object data) {
+<span class="nc" id="L48">        this.data = data;</span>
+<span class="nc" id="L49">    }</span>
+    
+    public Object getObject() {
+<span class="nc" id="L52">        return data;</span>
+    }
 
+    /**
+     * get the set representative
+     * @return 
+     */
     public DisjointSet2Node&lt;T&gt; getParent() {
-<span class="fc" id="L36">        return parent;</span>
+<span class="fc" id="L60">        return parent;</span>
     }
 
     public void setParent(DisjointSet2Node&lt;T&gt; theParent) {
-<span class="fc" id="L40">        this.parent = theParent;</span>
-<span class="fc" id="L41">    }</span>
+<span class="fc" id="L64">        this.parent = theParent;</span>
+<span class="fc" id="L65">    }</span>
 
     public int getRank() {
-<span class="fc" id="L44">        return rank;</span>
+<span class="fc" id="L68">        return rank;</span>
     }
 
     public void setRank(int rank) {
-<span class="fc" id="L48">        this.rank = rank;</span>
-<span class="fc" id="L49">    }</span>
+<span class="fc" id="L72">        this.rank = rank;</span>
+<span class="fc" id="L73">    }</span>
 
     @Override
     public String toString() {
         
-<span class="nc" id="L54">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L78">        StringBuilder sb = new StringBuilder();</span>
         
-<span class="nc" id="L56">        sb.append(&quot;[member=&quot;);</span>
-<span class="nc bnc" id="L57" title="All 2 branches missed.">        if (member != null) {</span>
-<span class="nc" id="L58">            sb.append(member.toString());</span>
+<span class="nc" id="L80">        sb.append(&quot;[member=&quot;);</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">        if (member != null) {</span>
+<span class="nc" id="L82">            sb.append(member.toString());</span>
         }
-<span class="nc" id="L60">        sb.append(&quot;; &quot;);</span>
-<span class="nc" id="L61">        sb.append(&quot;rank=&quot;).append(Integer.toString(rank)).append(&quot;; &quot;);</span>
+<span class="nc" id="L84">        sb.append(&quot;; &quot;);</span>
+<span class="nc" id="L85">        sb.append(&quot;rank=&quot;).append(Integer.toString(rank)).append(&quot;; &quot;);</span>
         
-<span class="nc" id="L63">        sb.append(&quot;parent=&quot;);</span>
-<span class="nc bnc" id="L64" title="All 2 branches missed.">        if (parent != null) {</span>
-<span class="nc bnc" id="L65" title="All 2 branches missed.">            if (parent.equals(this)) {</span>
-<span class="nc" id="L66">                sb.append(&quot;self&quot;);</span>
+<span class="nc" id="L87">        sb.append(&quot;data=&quot;);</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">        if (data != null) {</span>
+<span class="nc" id="L89">            sb.append(data.toString());</span>
+        }
+<span class="nc" id="L91">        sb.append(&quot;; &quot;);</span>
+        
+<span class="nc" id="L93">        sb.append(&quot;parent=&quot;);</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">        if (parent != null) {</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">            if (parent.equals(this)) {</span>
+<span class="nc" id="L96">                sb.append(&quot;self&quot;);</span>
             } else {
-<span class="nc" id="L68">                sb.append(parent.toString());</span>
+<span class="nc" id="L98">                sb.append(parent.toString());</span>
             }
         }
-<span class="nc" id="L71">        sb.append(&quot;;] &quot;);</span>
+<span class="nc" id="L101">        sb.append(&quot;;] &quot;);</span>
         
-<span class="nc" id="L73">        return sb.toString();</span>
+<span class="nc" id="L103">        return sb.toString();</span>
     }
   
 }

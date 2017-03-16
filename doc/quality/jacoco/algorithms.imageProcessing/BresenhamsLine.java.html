@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>BresenhamsLine.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">BresenhamsLine.java</span></div><h1>BresenhamsLine.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.util.PairInt;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * algorithm to create a line of points between
+ * two points.
+ * 
+ * https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
+ * and
+ * http://rosettacode.org/wiki/Bitmap/Bresenham%27s_line_algorithm#Java
+ *
+ * the code below is adapted from
+ *    http://rosettacode.org/wiki/Bitmap/Bresenham%27s_line_algorithm#Java
+    which has copyright
+     GNU Free Documentation License 1.2 unless otherwise noted.
+
+ * 
+ */
+<span class="nc" id="L23">public class BresenhamsLine {</span>
+    
+    /**
+     * calculate points in the line between (x1, y1)
+     * and (x2, y2), inclusive, and add them to output
+     * using Bresenham's algorithm.
+     * The code is adapted from 
+     * http://rosettacode.org/wiki/Bitmap/Bresenham%27s_line_algorithm#Java
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param output
+     */
+    public static void createLinePoints(int x1, int y1,
+        int x2, int y2, Set&lt;PairInt&gt; output) {
+    
+<span class="fc" id="L40">        List&lt;PairInt&gt; output0 = new ArrayList&lt;PairInt&gt;();</span>
+        
+<span class="fc" id="L42">        createLinePoints(x1, y1, x2, y2, output0);</span>
+        
+<span class="fc" id="L44">        output.addAll(output0);</span>
+<span class="fc" id="L45">    }</span>
+    
+    /**
+     * calculate points in the line between (x1, y1)
+     * and (x2, y2), inclusive, and add them to output
+     * using Bresenham's algorithm.
+     * The code is adapted from 
+     * http://rosettacode.org/wiki/Bitmap/Bresenham%27s_line_algorithm#Java
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param output
+     */
+    public static void createLinePoints(int x1, int y1,
+        int x2, int y2, List&lt;PairInt&gt; output) {
+        
+        // delta of exact value and rounded value of the dependant variable
+<span class="fc" id="L63">        int d = 0;</span>
+ 
+<span class="fc" id="L65">        int dy = Math.abs(y2 - y1);</span>
+<span class="fc" id="L66">        int dx = Math.abs(x2 - x1);</span>
+ 
+<span class="fc" id="L68">        int dy2 = (dy &lt;&lt; 1); // slope scaling factors to avoid floating</span>
+<span class="fc" id="L69">        int dx2 = (dx &lt;&lt; 1); // point</span>
+ 
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        int ix = x1 &lt; x2 ? 1 : -1; // increment direction</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        int iy = y1 &lt; y2 ? 1 : -1;</span>
+ 
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        if (dy &lt;= dx) {</span>
+            for (;;) {
+<span class="fc" id="L76">                output.add(new PairInt(x1, y1));</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">                if (x1 == x2)</span>
+<span class="fc" id="L78">                    break;</span>
+<span class="fc" id="L79">                x1 += ix;</span>
+<span class="fc" id="L80">                d += dy2;</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">                if (d &gt; dx) {</span>
+<span class="fc" id="L82">                    y1 += iy;</span>
+<span class="fc" id="L83">                    d -= dx2;</span>
+                }
+            }
+        } else {
+            for (;;) {
+<span class="fc" id="L88">                output.add(new PairInt(x1, y1));</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">                if (y1 == y2)</span>
+<span class="fc" id="L90">                    break;</span>
+<span class="fc" id="L91">                y1 += iy;</span>
+<span class="fc" id="L92">                d += dx2;</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">                if (d &gt; dy) {</span>
+<span class="fc" id="L94">                    x1 += ix;</span>
+<span class="fc" id="L95">                    d -= dy2;</span>
+                }
+            }
+        }
+<span class="fc" id="L99">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

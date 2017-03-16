@@ -48,7 +48,7 @@ import java.util.logging.Logger;
     
     public static String findTestResourcesDirectory() throws IOException {
 
-<span class="nc" id="L51">        return findDirectory(&quot;testresources&quot;);</span>
+<span class="fc" id="L51">        return findDirectory(&quot;testresources&quot;);</span>
     }
 
     public static String findDirectory(String dirName) throws IOException {
@@ -138,27 +138,27 @@ import java.util.logging.Logger;
 
     public static String findTmpDataDirectory() throws IOException {
 
-<span class="nc" id="L141">        return findDirectory(&quot;tmpdata&quot;);</span>
+<span class="fc" id="L141">        return findDirectory(&quot;tmpdata&quot;);</span>
     }
 
     public static File findFileInTmpData(String fileName) throws IOException {
 
-<span class="nc" id="L146">        String filePath = getAFilePathInTmpData(fileName);</span>
+<span class="fc" id="L146">        String filePath = getAFilePathInTmpData(fileName);</span>
 
-<span class="nc" id="L148">        File fl = new File(filePath);</span>
-<span class="nc bnc" id="L149" title="All 2 branches missed.">        if (!fl.exists()) {</span>
+<span class="fc" id="L148">        File fl = new File(filePath);</span>
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">        if (!fl.exists()) {</span>
 <span class="nc" id="L150">            throw new IOException(&quot;could not find file at &quot; + filePath);</span>
         }
-<span class="nc" id="L152">        return fl;</span>
+<span class="fc" id="L152">        return fl;</span>
     }
 
     public static String getAFilePathInTmpData(String fileName) throws IOException {
 
-<span class="nc" id="L157">        String baseDir = findTmpDataDirectory();</span>
+<span class="fc" id="L157">        String baseDir = findTmpDataDirectory();</span>
 
-<span class="nc" id="L159">        String filePath = baseDir + sep + fileName;</span>
+<span class="fc" id="L159">        String filePath = baseDir + sep + fileName;</span>
 
-<span class="nc" id="L161">        return filePath;</span>
+<span class="fc" id="L161">        return filePath;</span>
     }
 
    public static String writeToCWD(String fileContent, String fileName) throws IOException {

@@ -61,45 +61,55 @@
 <span class="fc bfc" id="L61" title="All 2 branches covered.">        if (Math.abs(sigma - 0.4247f) &lt; 0.01) {</span>
             //0.42466090014400953f
 <span class="fc" id="L63">            return getBinomialKernelSigmaZeroPointFourTwoSeven();</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        } else if (Math.abs(sigma - SIGMA.getValue(SIGMA.ZEROPOINTFIVE)) &lt; 0.01) {</span>
+<span class="fc" id="L65">            return getBinomialKernelSigmaZeroPointFive();</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        } else if (Math.abs(sigma - SIGMA.getValue(SIGMA.ZEROPOINTSEVENONE)) &lt; 0.01) {</span>
+<span class="fc" id="L67">            return getBinomialKernelSigmaZeroPointSevenOne();</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        } else if (Math.abs(sigma - SIGMA.getValue(SIGMA.ONE)) &lt; 0.01) {</span>
+<span class="fc" id="L69">            return getBinomialKernelSigmaOne();</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        } else if (Math.abs(sigma - SIGMA.getValue(SIGMA.ONESQRT2)) &lt; 0.01) {</span>
+<span class="fc" id="L71">            return getBinomialKernelSigmaOneSQRT2();</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        } else if (Math.abs(sigma - SIGMA.getValue(SIGMA.ONEPOINTFIVE)) &lt; 0.01) {</span>
+<span class="fc" id="L73">            return getBinomialKernelSigmaOnePointFive();</span>
         }
         
-<span class="fc" id="L66">        return getKernel(sigma, 0);</span>
+<span class="fc" id="L76">        return getKernel(sigma, 0);</span>
     }
     
     public static float[] getKernel(float sigma, float mu) {
 
-<span class="fc" id="L71">        float normalization = (float)(sigma * Math.sqrt(2.f * Math.PI));</span>
+<span class="fc" id="L81">        float normalization = (float)(sigma * Math.sqrt(2.f * Math.PI));</span>
         
-<span class="fc" id="L73">        float hwi = estimateHWZI(sigma, 0.001f);</span>
-<span class="pc bpc" id="L74" title="1 of 2 branches missed.">        if (hwi &lt; 0) {</span>
-<span class="nc" id="L75">            hwi *= -1.f;</span>
+<span class="fc" id="L83">        float hwi = estimateHWZI(sigma, 0.001f);</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">        if (hwi &lt; 0) {</span>
+<span class="nc" id="L85">            hwi *= -1.f;</span>
         }
-<span class="fc" id="L77">        int halfWidthInPixels = (int)Math.ceil(hwi);</span>
+<span class="fc" id="L87">        int halfWidthInPixels = (int)Math.ceil(hwi);</span>
         
-<span class="fc" id="L79">        int start = -1*halfWidthInPixels;</span>
-<span class="fc" id="L80">        int stopExcl = halfWidthInPixels + 1;</span>
+<span class="fc" id="L89">        int start = -1*halfWidthInPixels;</span>
+<span class="fc" id="L90">        int stopExcl = halfWidthInPixels + 1;</span>
         
         float d, dsq;
        
-<span class="fc" id="L84">        int nPoints = stopExcl - start;</span>
+<span class="fc" id="L94">        int nPoints = stopExcl - start;</span>
         
-<span class="fc" id="L86">        float[] yPoints = new float[nPoints];</span>
-<span class="fc" id="L87">        int count = 0;</span>
-<span class="fc bfc" id="L88" title="All 2 branches covered.">        for (int i = start; i &lt; stopExcl; i++) {</span>
+<span class="fc" id="L96">        float[] yPoints = new float[nPoints];</span>
+<span class="fc" id="L97">        int count = 0;</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        for (int i = start; i &lt; stopExcl; i++) {</span>
             
-<span class="fc" id="L90">            float x = i;</span>
+<span class="fc" id="L100">            float x = i;</span>
             
-<span class="fc" id="L92">            d = (x - mu);</span>
-<span class="fc" id="L93">            dsq = d*d;</span>
+<span class="fc" id="L102">            d = (x - mu);</span>
+<span class="fc" id="L103">            dsq = d*d;</span>
             
-<span class="fc" id="L95">            float y = (float) Math.exp(-1.f * dsq/(2.f * sigma * sigma));</span>
+<span class="fc" id="L105">            float y = (float) Math.exp(-1.f * dsq/(2.f * sigma * sigma));</span>
             
-<span class="fc" id="L97">            yPoints[count] = y/normalization;</span>
+<span class="fc" id="L107">            yPoints[count] = y/normalization;</span>
                         
-<span class="fc" id="L99">            count++;</span>
+<span class="fc" id="L109">            count++;</span>
         }
                                 
-<span class="fc" id="L102">        return yPoints;</span>
+<span class="fc" id="L112">        return yPoints;</span>
     }
     
     /**
@@ -120,47 +130,47 @@
      */
     public static float[] getKernel(SIGMA sigma) {
         
-<span class="fc bfc" id="L123" title="All 2 branches covered.">        if (sigma.ordinal() == SIGMA.ZEROPOINTFIVE.ordinal()) {</span>
-<span class="fc" id="L124">            return getBinomialKernelSigmaZeroPointFive();</span>
-<span class="fc bfc" id="L125" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ZEROPOINTSEVENONE.ordinal()) {</span>
-<span class="fc" id="L126">            return getBinomialKernelSigmaZeroPointSevenOne();</span>
-<span class="fc bfc" id="L127" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONE.ordinal()) {</span>
-<span class="fc" id="L128">            return getBinomialKernelSigmaOne();</span>
-<span class="fc bfc" id="L129" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONESQRT2.ordinal()) {</span>
-<span class="fc" id="L130">            return getBinomialKernelSigmaOneSQRT2();</span>
-<span class="fc bfc" id="L131" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONEPOINTFIVE.ordinal()) {</span>
-<span class="fc" id="L132">            return getBinomialKernelSigmaOnePointFive();</span>
-<span class="fc bfc" id="L133" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.TWO.ordinal()) {</span>
-<span class="fc" id="L134">            return getKernelSigmaTwo();</span>
-<span class="fc bfc" id="L135" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.TWOSQRT2.ordinal()) {</span>
-<span class="fc" id="L136">            return getKernelSigmaTwoSQRT2();</span>
-<span class="fc bfc" id="L137" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.THREE.ordinal()) {</span>
-<span class="fc" id="L138">            return getKernelSigmaThree();</span>
-<span class="fc bfc" id="L139" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.FOUR.ordinal()) {</span>
-<span class="fc" id="L140">            return getKernelSigmaFour();</span>
-<span class="fc bfc" id="L141" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.FOURSQRT2.ordinal()) {</span>
-<span class="fc" id="L142">            return getKernelSigmaFourSQRT2();</span>
-<span class="fc bfc" id="L143" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.EIGHT.ordinal()) {</span>
-<span class="fc" id="L144">            return getKernelSigmaEight();</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">        if (sigma.ordinal() == SIGMA.ZEROPOINTFIVE.ordinal()) {</span>
+<span class="fc" id="L134">            return getBinomialKernelSigmaZeroPointFive();</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ZEROPOINTSEVENONE.ordinal()) {</span>
+<span class="fc" id="L136">            return getBinomialKernelSigmaZeroPointSevenOne();</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONE.ordinal()) {</span>
+<span class="fc" id="L138">            return getBinomialKernelSigmaOne();</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONESQRT2.ordinal()) {</span>
+<span class="fc" id="L140">            return getBinomialKernelSigmaOneSQRT2();</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONEPOINTFIVE.ordinal()) {</span>
+<span class="fc" id="L142">            return getBinomialKernelSigmaOnePointFive();</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.TWO.ordinal()) {</span>
+<span class="fc" id="L144">            return getKernelSigmaTwo();</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.TWOSQRT2.ordinal()) {</span>
+<span class="fc" id="L146">            return getKernelSigmaTwoSQRT2();</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.THREE.ordinal()) {</span>
+<span class="fc" id="L148">            return getKernelSigmaThree();</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.FOUR.ordinal()) {</span>
+<span class="fc" id="L150">            return getKernelSigmaFour();</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.FOURSQRT2.ordinal()) {</span>
+<span class="fc" id="L152">            return getKernelSigmaFourSQRT2();</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.EIGHT.ordinal()) {</span>
+<span class="fc" id="L154">            return getKernelSigmaEight();</span>
         } else {
-<span class="fc" id="L146">            return getKernel(SIGMA.getValue(sigma));</span>
+<span class="fc" id="L156">            return getKernel(SIGMA.getValue(sigma));</span>
         }
     }
     
     protected static float[] getBinomialKernel(SIGMA sigma) {
         
-<span class="fc bfc" id="L152" title="All 2 branches covered.">        if (sigma.ordinal() == SIGMA.ZEROPOINTFIVE.ordinal()) {</span>
-<span class="fc" id="L153">            return getBinomialKernelSigmaZeroPointFive();</span>
-<span class="fc bfc" id="L154" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ZEROPOINTSEVENONE.ordinal()) {</span>
-<span class="fc" id="L155">            return getBinomialKernelSigmaZeroPointSevenOne();</span>
-<span class="fc bfc" id="L156" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONE.ordinal()) {</span>
-<span class="fc" id="L157">            return getBinomialKernelSigmaOne();</span>
-<span class="fc bfc" id="L158" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONESQRT2.ordinal()) {</span>
-<span class="fc" id="L159">            return getBinomialKernelSigmaOneSQRT2();</span>
-<span class="fc bfc" id="L160" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONEPOINTFIVE.ordinal()) {</span>
-<span class="fc" id="L161">            return getBinomialKernelSigmaOnePointFive();</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        if (sigma.ordinal() == SIGMA.ZEROPOINTFIVE.ordinal()) {</span>
+<span class="fc" id="L163">            return getBinomialKernelSigmaZeroPointFive();</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ZEROPOINTSEVENONE.ordinal()) {</span>
+<span class="fc" id="L165">            return getBinomialKernelSigmaZeroPointSevenOne();</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONE.ordinal()) {</span>
+<span class="fc" id="L167">            return getBinomialKernelSigmaOne();</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONESQRT2.ordinal()) {</span>
+<span class="fc" id="L169">            return getBinomialKernelSigmaOneSQRT2();</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONEPOINTFIVE.ordinal()) {</span>
+<span class="fc" id="L171">            return getBinomialKernelSigmaOnePointFive();</span>
         } else {
-<span class="fc" id="L163">            return null;</span>
+<span class="fc" id="L173">            return null;</span>
         }
     }
     
@@ -168,32 +178,32 @@
      * for sigma = 0.42466090014400953, this results in multiplication by 1.
      */ 
     protected static float[] getBinomialKernelSigmaZeroPointFourTwoSeven() {
-<span class="fc" id="L171">        return new float[]{1};</span>
+<span class="fc" id="L181">        return new float[]{1};</span>
     }
     
     protected static float[] getBinomialKernelSigmaZeroPointFive() {
         // 1 1, normalization = 1/2^1 = 0.5 ... replacing w/ 1  8  1
-<span class="fc" id="L176">        float a = 1.f/9.f;</span>
-<span class="fc" id="L177">        return new float[]{a, 8*a, a};</span>
+<span class="fc" id="L186">        float a = 1.f/10.f;</span>
+<span class="fc" id="L187">        return new float[]{a, 8*a, a};</span>
     }
     
     protected static float[] getBinomialKernelSigmaZeroPointSevenOne() {
         // 1 2 1
         //return new float[]{0.25f, 0.5f, 0.25f};
-<span class="fc" id="L183">        return new float[]{0.3333333333333333f, 0.6666666666666666f,</span>
+<span class="fc" id="L193">        return new float[]{0.3333333333333333f, 0.6666666666666666f,</span>
             0.3333333333333333f};
     }
     
     protected static float[] getBinomialKernelSigmaOne() {
         // 1 4 6 4 1,
-<span class="fc" id="L189">        return new float[]{0.0625f, 0.25f, 0.375f, 0.25f, 0.0625f};</span>
+<span class="fc" id="L199">        return new float[]{0.0625f, 0.25f, 0.375f, 0.25f, 0.0625f};</span>
     }
     
     protected static float[] getBinomialKernelSigmaOneSQRT2() {
         // 1     8    28       56      70        56      28      8     1
         // norm = 1./2^8 = 0.00390625
-<span class="fc" id="L195">        float a = 1.f/256.f;</span>
-<span class="fc" id="L196">        return new float[]{a*1, a*8, a*28, a*56, </span>
+<span class="fc" id="L205">        float a = 1.f/256.f;</span>
+<span class="fc" id="L206">        return new float[]{a*1, a*8, a*28, a*56, </span>
             a*70, a*56, a*28, a*8, 
             a*1};
     }
@@ -202,13 +212,13 @@
         // 1  9    36     84      126            126     84      36      9     1
         // edited to:
         // 1  5    22     66      126   &lt;160&gt;    126     66      22      5     1
-<span class="fc" id="L205">        float a = 1.f/600.f;</span>
-<span class="fc" id="L206">        return new float[]{a, 5*a, 22*a, 66*a, 126*a, 160*a, 126*a, 66*a, 22*a,</span>
+<span class="fc" id="L215">        float a = 1.f/600.f;</span>
+<span class="fc" id="L216">        return new float[]{a, 5*a, 22*a, 66*a, 126*a, 160*a, 126*a, 66*a, 22*a,</span>
             5*a, a};
     }
   
     protected static float[] getKernelSigmaTwo() {
-<span class="fc" id="L211">        return new float[]{(float)6.691511E-5, (float)4.3634136E-4, </span>
+<span class="fc" id="L221">        return new float[]{(float)6.691511E-5, (float)4.3634136E-4, </span>
             0.0022159242f, 0.008764151f, 0.026995484f, 0.0647588f, 0.12098537f, 
             0.17603266f, 0.19947115f, 0.17603266f, 0.12098537f, 0.0647588f, 
             0.026995484f, 0.008764151f, 0.0022159242f, (float)4.3634136E-4, 
@@ -216,7 +226,7 @@
     }
     
     protected static float[] getKernelSigmaTwoSQRT2() {
-<span class="fc" id="L219">        return new float[]{(float)7.3284624E-5, (float)2.722854E-4, </span>
+<span class="fc" id="L229">        return new float[]{(float)7.3284624E-5, (float)2.722854E-4, </span>
             (float)8.927895E-4, 0.002583372f, 0.006596873f, 0.014866283f, 
             0.029565137f, 0.051888432f, 0.08036638f, 0.10984783f, 0.13250177f, 
             0.1410474f, 0.13250177f, 0.10984783f, 0.08036638f, 0.051888432f,
@@ -225,7 +235,7 @@
     }
     
     protected static float[] getKernelSigmaThree() {
-<span class="fc" id="L228">        return new float[]{(float)4.4610075E-5, (float)1.6009022E-4, </span>
+<span class="fc" id="L238">        return new float[]{(float)4.4610075E-5, (float)1.6009022E-4, </span>
             (float)5.1409315E-4, 0.0014772828f, 0.003798662f, 0.008740629f, 
             0.01799699f, 0.033159047f, 0.054670025f, 0.08065691f, 0.10648267f, 
             0.12579441f, 0.13298076f, 0.12579441f, 0.10648267f, 0.08065691f, 
@@ -235,7 +245,7 @@
     }
     
     protected static float[] getKernelSigmaFour() {
-<span class="fc" id="L238">        return new float[]{(float)8.814892E-5, (float)2.1817068E-4, </span>
+<span class="fc" id="L248">        return new float[]{(float)8.814892E-5, (float)2.1817068E-4, </span>
             (float)5.07262E-4, 0.0011079621f, 0.0022733908f, 0.0043820753f, 
             0.007934913f, 0.013497742f, 0.02156933f, 0.0323794f, 0.04566227f, 
             0.060492683f, 0.075284354f, 0.08801633f, 0.09666703f, 0.09973557f, 
@@ -246,7 +256,7 @@
     }
     
     protected static float[] getKernelSigmaFourSQRT2() {
-<span class="fc" id="L249">        return new float[]{(float)3.6642312E-5, (float)7.1742164E-5, </span>
+<span class="fc" id="L259">        return new float[]{(float)3.6642312E-5, (float)7.1742164E-5, </span>
             (float)1.361427E-4, (float)2.5040476E-4, (float)4.4639476E-4, 
             (float)7.713009E-4, 0.001291686f, 0.0020966139f, 0.0032984365f, 
             0.0050295154f, 0.0074331416f, 0.010647485f, 0.014782568f, 
@@ -261,7 +271,7 @@
     }
     
     protected static float[] getKernelSigmaEight() {
-<span class="fc" id="L264">        return new float[]{(float)4.407446E-5, (float)6.988269E-5, </span>
+<span class="fc" id="L274">        return new float[]{(float)4.407446E-5, (float)6.988269E-5, </span>
             (float)1.0908534E-4, (float)1.6763987E-4, (float)2.53631E-4, 
             (float)3.7778224E-4, (float)5.5398105E-4, (float)7.9976505E-4, 
             0.0011366954f, 0.0015905226f, 0.0021910376f, 0.0029714876f, 
@@ -281,7 +291,7 @@
     
     protected static double[] getHalfKernelUsingBinomialFilterSigmaOne() {
         // 1, 4, 6, 4, 1  with normalization = 16
-<span class="fc" id="L284">        return new double[]{0.0625f, 0.25f, 0.375f};</span>
+<span class="fc" id="L294">        return new double[]{0.0625f, 0.25f, 0.375f};</span>
     }
     
     /*&lt;pre&gt;
@@ -349,6 +359,8 @@
     sigma=8                    has n=256. if convolved w/ self =&gt; sigma=8*sqrt(2)
     sigma=8*sqrt               has n=512. if convolved w/ self =&gt; sigma=16
  
+    The resulting sigma is obtained with sigma^2 = sigma_1^2 + sigma_2^2
+    
   also, the sigma=3 chain, used in ECSS:
     sigma=3/2           has n=9.   if convolved w/ self =&gt; 3*sqrt(2)/2
     sigma=3*sqrt(2)/2   has n=18.  if convolved w/ self =&gt; sigma=3

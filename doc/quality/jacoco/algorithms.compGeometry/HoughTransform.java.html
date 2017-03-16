@@ -1,23 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>HoughTransform.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.compGeometry</a> &gt; <span class="el_source">HoughTransform.java</span></div><h1>HoughTransform.java</h1><pre class="source lang-java linenums">package algorithms.compGeometry;
 
 import algorithms.MultiArrayMergeSort;
-import algorithms.imageProcessing.features.CornerRegion;
-import algorithms.imageProcessing.DFSSimilarThetaRadiusGroupsFinder;
-import algorithms.imageProcessing.features.IntensityFeatures;
+import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Misc;
+import algorithms.util.LinearRegression;
+import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
+import gnu.trove.list.TIntList;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * a class for Hough transforms of simple geometric shapes.  currently a line
@@ -33,8 +35,8 @@ import java.util.logging.Logger;
  */
 public class HoughTransform {
 
-<span class="fc" id="L36">    public HoughTransform() {</span>
-<span class="fc" id="L37">    }</span>
+<span class="nc" id="L38">    public HoughTransform() {</span>
+<span class="nc" id="L39">    }</span>
 
     /**
      * given an edge of points, computes the Hough
@@ -48,6 +50,8 @@ public class HoughTransform {
      * 
      * Note that if the edge has less than 3 points, an empty map is returned.
      * 
+     * runtime complexity is O(N_edge_pts), but includes transcendental operations.
+     * 
      * @param edge a curve defined by the points within
      * @param imageWidth
      * @param imageHeight
@@ -56,245 +60,473 @@ public class HoughTransform {
     public Map&lt;PairInt, Set&lt;PairInt&gt;&gt; calculateLineGivenEdge(PairIntArray edge,
         int imageWidth, int imageHeight) {
         
-<span class="fc" id="L59">        Map&lt;PairInt, Set&lt;PairInt&gt;&gt; outputPolarCoordsPixMap = new HashMap&lt;PairInt, Set&lt;PairInt&gt;&gt;();</span>
+<span class="nc" id="L63">        Map&lt;PairInt, Set&lt;PairInt&gt;&gt; outputPolarCoordsPixMap = new HashMap&lt;PairInt, Set&lt;PairInt&gt;&gt;();</span>
         
-<span class="fc bfc" id="L61" title="All 2 branches covered.">        if (edge.getN() &lt; 3) {</span>
-<span class="fc" id="L62">            return outputPolarCoordsPixMap;</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">        if (edge.getN() &lt; 3) {</span>
+<span class="nc" id="L66">            return outputPolarCoordsPixMap;</span>
         }
         
         // theta is 0 to 360
-<span class="fc" id="L66">        Map&lt;Integer, Double&gt; cosineMap = Misc.getCosineThetaMapForTwoPI();</span>
-<span class="fc" id="L67">        Map&lt;Integer, Double&gt; sineMap = Misc.getSineThetaMapForTwoPI();</span>
+<span class="nc" id="L70">        Map&lt;Integer, Double&gt; cosineMap = Misc.getCosineThetaMapForTwoPI();</span>
+<span class="nc" id="L71">        Map&lt;Integer, Double&gt; sineMap = Misc.getSineThetaMapForTwoPI();</span>
         
-<span class="fc bfc" id="L69" title="All 2 branches covered.">        boolean curveIsClosed = (edge instanceof PairIntArrayWithColor) &amp;&amp;</span>
-<span class="pc bpc" id="L70" title="1 of 2 branches missed.">            (((PairIntArrayWithColor)edge).getColor() == 1);</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">        boolean curveIsClosed = (edge instanceof PairIntArrayWithColor) &amp;&amp;</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">            (((PairIntArrayWithColor)edge).isClosedCurve()) &amp;&amp;</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">            (edge.getN() &gt; 2);</span>
 
-<span class="fc" id="L72">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+<span class="nc" id="L77">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
                     
-<span class="fc" id="L74">        int n = edge.getN();</span>
+<span class="nc" id="L79">        int n = edge.getN();</span>
         
-<span class="fc bfc" id="L76" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
             
-<span class="fc" id="L78">            int x = edge.getX(i);</span>
-<span class="fc" id="L79">            int y = edge.getY(i);</span>
+<span class="nc" id="L83">            int x = edge.getX(i);</span>
+<span class="nc" id="L84">            int y = edge.getY(i);</span>
             
             int xp, yp, xn, yn;
             
-<span class="fc bfc" id="L83" title="All 2 branches covered.">            if (i == 0) {</span>
-<span class="fc bfc" id="L84" title="All 2 branches covered.">                if (curveIsClosed) {</span>
-<span class="fc" id="L85">                    xp = edge.getX(n - 1);</span>
-<span class="fc" id="L86">                    yp = edge.getY(n - 1);</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">            if (i == 0) {</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">                if (curveIsClosed) {</span>
+<span class="nc" id="L90">                    xp = edge.getX(n - 1);</span>
+<span class="nc" id="L91">                    yp = edge.getY(n - 1);</span>
                 } else {
                     // use replication for boundary
-<span class="fc" id="L89">                    xp = x;</span>
-<span class="fc" id="L90">                    yp = y;</span>
+<span class="nc" id="L94">                    xp = x;</span>
+<span class="nc" id="L95">                    yp = y;</span>
                 }
-<span class="fc" id="L92">                xn = edge.getX(i + 1);</span>
-<span class="fc" id="L93">                yn = edge.getY(i + 1);</span>
-<span class="fc bfc" id="L94" title="All 2 branches covered.">            } else if (i == (n - 1)) {</span>
-<span class="fc" id="L95">                xp = edge.getX(i - 1);</span>
-<span class="fc" id="L96">                yp = edge.getY(i - 1);</span>
-<span class="fc bfc" id="L97" title="All 2 branches covered.">                if (curveIsClosed) {</span>
-<span class="fc" id="L98">                    xn = edge.getX(0);</span>
-<span class="fc" id="L99">                    yn = edge.getY(0);</span>
+<span class="nc" id="L97">                xn = edge.getX(i + 1);</span>
+<span class="nc" id="L98">                yn = edge.getY(i + 1);</span>
+<span class="nc bnc" id="L99" title="All 2 branches missed.">            } else if (i == (n - 1)) {</span>
+<span class="nc" id="L100">                xp = edge.getX(i - 1);</span>
+<span class="nc" id="L101">                yp = edge.getY(i - 1);</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">                if (curveIsClosed) {</span>
+<span class="nc" id="L103">                    xn = edge.getX(0);</span>
+<span class="nc" id="L104">                    yn = edge.getY(0);</span>
                 } else {
-<span class="fc" id="L101">                    xn = x;</span>
-<span class="fc" id="L102">                    yn = y;</span>
+<span class="nc" id="L106">                    xn = x;</span>
+<span class="nc" id="L107">                    yn = y;</span>
                 }
             } else {
-<span class="fc" id="L105">                xp = edge.getX(i - 1);</span>
-<span class="fc" id="L106">                yp = edge.getY(i - 1);</span>
+<span class="nc" id="L110">                xp = edge.getX(i - 1);</span>
+<span class="nc" id="L111">                yp = edge.getY(i - 1);</span>
                 
-<span class="fc" id="L108">                xn = edge.getX(i + 1);</span>
-<span class="fc" id="L109">                yn = edge.getY(i + 1);</span>
+<span class="nc" id="L113">                xn = edge.getX(i + 1);</span>
+<span class="nc" id="L114">                yn = edge.getY(i + 1);</span>
             }
             
             // note, this is not the angle along the edge, it's perpendicular
             // to it, but the calculation is consistent
-<span class="fc" id="L114">            double t = curveHelper.calculateAngleTangentToMidpoint(xp, yp, x, y, </span>
+<span class="nc" id="L119">            double t = curveHelper.calculateAngleTangentToMidpoint(xp, yp, x, y, </span>
                 xn, yn); 
             
-<span class="fc" id="L117">            double tDegrees = t * 180./Math.PI;</span>
+<span class="nc" id="L122">            double tDegrees = t * 180./Math.PI;</span>
             
-<span class="fc" id="L119">            int tInt = (int)Math.round(tDegrees);</span>
+<span class="nc" id="L124">            int tInt = (int)Math.round(tDegrees);</span>
             
-<span class="pc bpc" id="L121" title="1 of 2 branches missed.">            if (tInt &gt; 359) {</span>
-<span class="nc" id="L122">                tInt = tInt - 360;</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">            if (tInt &gt; 359) {</span>
+<span class="nc" id="L127">                tInt = tInt - 360;</span>
             }
             
-<span class="fc" id="L125">            Integer theta = Integer.valueOf(tInt);</span>
+<span class="nc" id="L130">            Integer theta = Integer.valueOf(tInt);</span>
 
-<span class="fc" id="L127">            double ct = cosineMap.get(theta).doubleValue();</span>
-<span class="fc" id="L128">            double st = sineMap.get(theta).doubleValue();</span>
+<span class="nc" id="L132">            double ct = cosineMap.get(theta).doubleValue();</span>
+<span class="nc" id="L133">            double st = sineMap.get(theta).doubleValue();</span>
 
-<span class="fc" id="L130">            double r = (x * ct) + (y * st);</span>
+<span class="nc" id="L135">            double r = (x * ct) + (y * st);</span>
 
-<span class="fc bfc" id="L132" title="All 2 branches covered.">            if (r &lt; 0) {</span>
-<span class="fc" id="L133">                r *= -1;</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">            if (r &lt; 0) {</span>
+<span class="nc" id="L138">                r *= -1;</span>
             }
 
-<span class="fc" id="L136">            PairInt p = new PairInt(tInt, (int)Math.round(r));</span>
+<span class="nc" id="L141">            PairInt p = new PairInt(tInt, (int)Math.round(r));</span>
 
-<span class="fc" id="L138">            Set&lt;PairInt&gt; set = outputPolarCoordsPixMap.get(p);</span>
-<span class="fc bfc" id="L139" title="All 2 branches covered.">            if (set == null) {</span>
-<span class="fc" id="L140">                set = new HashSet&lt;PairInt&gt;();</span>
-<span class="fc" id="L141">                outputPolarCoordsPixMap.put(p, set);</span>
+<span class="nc" id="L143">            Set&lt;PairInt&gt; set = outputPolarCoordsPixMap.get(p);</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">            if (set == null) {</span>
+<span class="nc" id="L145">                set = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L146">                outputPolarCoordsPixMap.put(p, set);</span>
             }
-<span class="fc" id="L143">            set.add(new PairInt(x, y));</span>
+<span class="nc" id="L148">            set.add(new PairInt(x, y));</span>
         }
         
-<span class="fc" id="L146">        return outputPolarCoordsPixMap;</span>
+<span class="nc" id="L151">        return outputPolarCoordsPixMap;</span>
+    }
+   
+    /**
+     * given the theta values and a set of point coordinates, returns a map
+     * of the angle and distance from the image origin.
+     * 
+     * @param points
+     * @param theta360
+     * @return 
+     */
+    public Map&lt;PairInt, PairInt&gt; calculatehHoughTransforms(
+        Set&lt;PairInt&gt; points, GreyscaleImage theta360) {
+        
+        // theta is 0 to 360
+<span class="nc" id="L166">        Map&lt;Integer, Double&gt; cosineMap = Misc.getCosineThetaMapForTwoPI();</span>
+<span class="nc" id="L167">        Map&lt;Integer, Double&gt; sineMap = Misc.getSineThetaMapForTwoPI();</span>
+                        
+<span class="nc" id="L169">        Map&lt;PairInt, PairInt&gt; pointTRMap = new HashMap&lt;PairInt, PairInt&gt;();</span>
+                
+<span class="nc bnc" id="L171" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+        
+<span class="nc" id="L173">            int x = p.getX();</span>
+<span class="nc" id="L174">            int y = p.getY();</span>
+<span class="nc" id="L175">            int t = theta360.getValue(x, y);</span>
+            
+            /*if ((t - 90) &gt; 0) {
+                t -= 90;
+            } else if ((t + 90) &lt; 360) {
+                t += 90;
+            }*/
+           
+<span class="nc" id="L183">            Integer theta = Integer.valueOf(t);</span>
+            
+<span class="nc" id="L185">            double ct = cosineMap.get(theta).doubleValue();</span>
+<span class="nc" id="L186">            double st = sineMap.get(theta).doubleValue();</span>
+
+<span class="nc" id="L188">            double r = (x * ct) + (y * st);</span>
+
+<span class="nc bnc" id="L190" title="All 2 branches missed.">            if (r &lt; 0) {</span>
+<span class="nc" id="L191">                r *= -1;</span>
+            }
+
+<span class="nc" id="L194">            PairInt pTR = new PairInt(t, (int) Math.round(r));</span>
+
+<span class="nc" id="L196">            pointTRMap.put(p, pTR);</span>
+<span class="nc" id="L197">        }</span>
+        
+<span class="nc" id="L199">        return pointTRMap;</span>
     }
     
     /**
-     * given lists of corner regions, computes the Hough
-     * transform of lines and returns results lists of polar theta in degrees
-     * and radius as distance from
-     * the origin in pixels.
-     * Note that the angle is calculated for expectations of a
-     * counter clockwise ordered curve and the vector of the angle is 
-     * perpendicular to p1 (direction given by right hand rule).
-     * The angles are 0 to 360.
      * 
-     * Note that if the edge has less than 3 points, an empty map is returned.
-     * 
-     * @param cornerLists
-     * @param edges
-     * @return thetaRadiusPixCoords lists
+     * @param xCoords
+     * @param yCoords
+     * @param theta orientations of xCoords, yCoords in range 0 to 359,
+     * inclusive.
+     * @return 
      */
-    public List&lt;List&lt;PairInt&gt;&gt; calculateRoughHoughTransforms(
-        List&lt;List&lt;CornerRegion&gt;&gt; cornerLists, List&lt;PairIntArray&gt; edges) {
+    public Map&lt;PairInt, PairInt&gt; calculatehHoughTransforms(
+        TIntList xCoords, TIntList yCoords, TIntList theta) {
+        
+<span class="nc bnc" id="L213" title="All 2 branches missed.">        if (xCoords.size() == yCoords.size() || xCoords.size() == </span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">            theta.size()) {</span>
+<span class="nc" id="L215">            throw new IllegalArgumentException(&quot;xCoords, yCoords, and theta &quot;</span>
+                + &quot;must be same lengths&quot;);
+        }
         
         // theta is 0 to 360
-<span class="nc" id="L169">        Map&lt;Integer, Double&gt; cosineMap = Misc.getCosineThetaMapForTwoPI();</span>
-<span class="nc" id="L170">        Map&lt;Integer, Double&gt; sineMap = Misc.getSineThetaMapForTwoPI();</span>
+<span class="nc" id="L220">        Map&lt;Integer, Double&gt; cosineMap = Misc.getCosineThetaMapForTwoPI();</span>
+<span class="nc" id="L221">        Map&lt;Integer, Double&gt; sineMap = Misc.getSineThetaMapForTwoPI();</span>
                         
-<span class="nc" id="L172">        List&lt;List&lt;PairInt&gt;&gt; trLists = new ArrayList&lt;List&lt;PairInt&gt;&gt;();</span>
-        
-<span class="nc" id="L174">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+<span class="nc" id="L223">        Map&lt;PairInt, PairInt&gt; pointTRMap = new HashMap&lt;PairInt, PairInt&gt;();</span>
                 
-<span class="nc bnc" id="L176" title="All 2 branches missed.">        for (int cIdx = 0; cIdx &lt; cornerLists.size(); ++cIdx) {</span>
-        
-<span class="nc" id="L178">            PairIntArray edge = edges.get(cIdx);</span>
-<span class="nc" id="L179">            int nEdge = edge.getN();</span>
+<span class="nc bnc" id="L225" title="All 2 branches missed.">        for (int i = 0; i &lt; xCoords.size(); ++i) {</span>
+<span class="nc" id="L226">            int x = xCoords.get(i);</span>
+<span class="nc" id="L227">            int y = yCoords.get(i);</span>
+<span class="nc" id="L228">            int t = theta.get(i);</span>
             
-<span class="nc bnc" id="L181" title="All 2 branches missed.">            boolean curveIsClosed = (edge instanceof PairIntArrayWithColor) &amp;&amp;</span>
-<span class="nc bnc" id="L182" title="All 2 branches missed.">                (((PairIntArrayWithColor)edge).getColor() == 1);</span>
-
-<span class="nc" id="L184">            List&lt;CornerRegion&gt; cornerList = cornerLists.get(cIdx);</span>
+<span class="nc" id="L230">            Integer th = Integer.valueOf(t);</span>
             
-<span class="nc" id="L186">            List&lt;PairInt&gt; trList = new ArrayList&lt;PairInt&gt;();</span>
-            
-<span class="nc bnc" id="L188" title="All 2 branches missed.">            for (int i = 0; i &lt; cornerList.size(); ++i) {</span>
-            
-<span class="nc" id="L190">                CornerRegion cr = cornerList.get(i);</span>
-                
-<span class="nc" id="L192">                int eIdx = cr.getIndexWithinCurve();</span>
-<span class="nc bnc" id="L193" title="All 2 branches missed.">                if (eIdx == -1) {</span>
-<span class="nc" id="L194">                    continue;</span>
-                }
-<span class="nc" id="L196">                int x = cr.getX()[cr.getKMaxIdx()];</span>
-<span class="nc" id="L197">                int y = cr.getY()[cr.getKMaxIdx()];</span>
-                
-                int xp, yp, xn, yn;
+<span class="nc" id="L232">            double ct = cosineMap.get(th).doubleValue();</span>
+<span class="nc" id="L233">            double st = sineMap.get(th).doubleValue();</span>
 
-<span class="nc bnc" id="L201" title="All 2 branches missed.">                if (eIdx == 0) {</span>
-<span class="nc bnc" id="L202" title="All 2 branches missed.">                    if (curveIsClosed) {</span>
-<span class="nc" id="L203">                        xp = edge.getX(nEdge - 1);</span>
-<span class="nc" id="L204">                        yp = edge.getY(nEdge - 1);</span>
-                    } else {
-                        // use replication for boundary
-<span class="nc" id="L207">                        xp = x;</span>
-<span class="nc" id="L208">                        yp = y;</span>
-                    }
-<span class="nc" id="L210">                    xn = edge.getX(eIdx + 1);</span>
-<span class="nc" id="L211">                    yn = edge.getY(eIdx + 1);</span>
-<span class="nc bnc" id="L212" title="All 2 branches missed.">                } else if (eIdx == (nEdge - 1)) {</span>
-<span class="nc" id="L213">                    xp = edge.getX(eIdx - 1);</span>
-<span class="nc" id="L214">                    yp = edge.getY(eIdx - 1);</span>
-<span class="nc bnc" id="L215" title="All 2 branches missed.">                    if (curveIsClosed) {</span>
-<span class="nc" id="L216">                        xn = edge.getX(0);</span>
-<span class="nc" id="L217">                        yn = edge.getY(0);</span>
-                    } else {
-<span class="nc" id="L219">                        xn = x;</span>
-<span class="nc" id="L220">                        yn = y;</span>
-                    }
-                } else {
-<span class="nc" id="L223">                    xp = edge.getX(eIdx - 1);</span>
-<span class="nc" id="L224">                    yp = edge.getY(eIdx - 1);</span>
+<span class="nc" id="L235">            double r = (x * ct) + (y * st);</span>
 
-<span class="nc" id="L226">                    xn = edge.getX(eIdx + 1);</span>
-<span class="nc" id="L227">                    yn = edge.getY(eIdx + 1);</span>
-                }
-
-                // note, this is not the angle along the edge, it's perpendicular
-                // to it, but the calculation is consistent
-<span class="nc" id="L232">                double t = curveHelper.calculateAngleTangentToMidpoint(xp, yp, x, y,</span>
-                    xn, yn);
-
-<span class="nc" id="L235">                double tDegrees = t * 180. / Math.PI;</span>
-
-<span class="nc" id="L237">                int tInt = (int) Math.round(tDegrees);</span>
-
-<span class="nc bnc" id="L239" title="All 2 branches missed.">                if (tInt &gt; 359) {</span>
-<span class="nc" id="L240">                    tInt = tInt - 360;</span>
-                }
-
-<span class="nc" id="L243">                Integer theta = Integer.valueOf(tInt);</span>
-
-<span class="nc" id="L245">                double ct = cosineMap.get(theta).doubleValue();</span>
-<span class="nc" id="L246">                double st = sineMap.get(theta).doubleValue();</span>
-
-<span class="nc" id="L248">                double r = (x * ct) + (y * st);</span>
-
-<span class="nc bnc" id="L250" title="All 2 branches missed.">                if (r &lt; 0) {</span>
-<span class="nc" id="L251">                    r *= -1;</span>
-                }
-
-<span class="nc" id="L254">                PairInt p = new PairInt(tInt, (int) Math.round(r));</span>
-
-<span class="nc" id="L256">                trList.add(p);</span>
+<span class="nc bnc" id="L237" title="All 2 branches missed.">            if (r &lt; 0) {</span>
+<span class="nc" id="L238">                r *= -1;</span>
             }
-<span class="nc" id="L258">            trLists.add(trList);</span>
-        }
-        
-<span class="nc" id="L261">        return trLists;</span>
-    }
-    public List&lt;PairInt&gt; sortByVotes(Map&lt;PairInt, Set&lt;PairInt&gt;&gt; thetaRadiusPixMap) {
-        
-<span class="fc" id="L265">        int[] votes = new int[thetaRadiusPixMap.size()];</span>
-<span class="fc" id="L266">        int[] indexes = new int[votes.length];</span>
-<span class="fc" id="L267">        PairInt[] keys = new PairInt[votes.length];</span>
-        
-<span class="fc" id="L269">        int count = 0;</span>
-<span class="fc bfc" id="L270" title="All 2 branches covered.">        for (Entry&lt;PairInt, Set&lt;PairInt&gt;&gt; entry : thetaRadiusPixMap.entrySet()) {</span>
-<span class="fc" id="L271">            votes[count] = entry.getValue().size();</span>
-<span class="fc" id="L272">            keys[count] = entry.getKey();</span>
-<span class="fc" id="L273">            indexes[count] = count;</span>
-<span class="fc" id="L274">            count++;</span>
-<span class="fc" id="L275">        }</span>
-        
-<span class="fc" id="L277">        MultiArrayMergeSort.sortByDecr(votes, indexes);</span>
 
-<span class="fc" id="L279">        List&lt;PairInt&gt; outSortedKeys = new ArrayList&lt;PairInt&gt;();</span>
-        
-<span class="fc bfc" id="L281" title="All 2 branches covered.">        for (int i = 0; i &lt; indexes.length; ++i) {</span>
-<span class="fc" id="L282">            int idx = indexes[i];            </span>
-<span class="fc" id="L283">            outSortedKeys.add(keys[idx]);</span>
+<span class="nc" id="L241">            PairInt pTR = new PairInt(t, (int) Math.round(r));</span>
+
+<span class="nc" id="L243">            pointTRMap.put(new PairInt(x, y), pTR);</span>
         }
         
-<span class="fc" id="L286">        return outSortedKeys;</span>
+<span class="nc" id="L246">        return pointTRMap;</span>
+    }
+           
+    protected PairIntArray createLine(int len, int xOff, int yOff) {
+<span class="nc" id="L250">        PairIntArray a = new PairIntArray(len);</span>
+<span class="nc bnc" id="L251" title="All 2 branches missed.">        for (int i = 0; i &lt; len; ++i) {</span>
+<span class="nc" id="L252">            a.add(xOff + i, yOff + i);</span>
+        }
+<span class="nc" id="L254">        return a;</span>
     }
     
-    public HoughTransformLines createPixTRMapsFromSorted(List&lt;PairInt&gt; sortedTRKeys,
-        Map&lt;PairInt, Set&lt;PairInt&gt;&gt; thetaRadiusPixMap, 
-        List&lt;Set&lt;PairInt&gt;&gt; outputSortedGroups) {
+    /**
+     * runtime complexity is O(N * lg_2(N)).
+     * @param thetaRadiusPixMap
+     * @return 
+     */
+    public List&lt;PairInt&gt; sortByVotes(Map&lt;PairInt, Set&lt;PairInt&gt;&gt; thetaRadiusPixMap) {
         
-<span class="nc" id="L293">        int thetaTol = 2;</span>
-<span class="nc" id="L294">        int radiusTol = 8;</span>
+<span class="nc" id="L264">        int[] votes = new int[thetaRadiusPixMap.size()];</span>
+<span class="nc" id="L265">        int[] indexes = new int[votes.length];</span>
+<span class="nc" id="L266">        PairInt[] keys = new PairInt[votes.length];</span>
         
-<span class="nc" id="L296">        return createPixTRMapsFromSorted(sortedTRKeys, thetaRadiusPixMap, </span>
-            thetaTol, radiusTol);
+<span class="nc" id="L268">        int count = 0;</span>
+<span class="nc bnc" id="L269" title="All 2 branches missed.">        for (Entry&lt;PairInt, Set&lt;PairInt&gt;&gt; entry : thetaRadiusPixMap.entrySet()) {</span>
+<span class="nc" id="L270">            votes[count] = entry.getValue().size();</span>
+<span class="nc" id="L271">            keys[count] = entry.getKey();</span>
+<span class="nc" id="L272">            indexes[count] = count;</span>
+<span class="nc" id="L273">            count++;</span>
+<span class="nc" id="L274">        }</span>
+        
+<span class="nc" id="L276">        MultiArrayMergeSort.sortByDecr(votes, indexes);</span>
+
+<span class="nc" id="L278">        List&lt;PairInt&gt; outSortedKeys = new ArrayList&lt;PairInt&gt;();</span>
+        
+<span class="nc bnc" id="L280" title="All 2 branches missed.">        for (int i = 0; i &lt; indexes.length; ++i) {</span>
+<span class="nc" id="L281">            int idx = indexes[i];            </span>
+<span class="nc" id="L282">            outSortedKeys.add(keys[idx]);</span>
+        }
+        
+<span class="nc" id="L285">        return outSortedKeys;</span>
+    }
+
+    /**
+     * sets true and false in present array for presence in points set.
+       &lt;pre&gt;
+          19 20 21 22 23
+          14 15 16 17 18
+          10 11  @ 12 13    
+           5  6  7  8  9       
+           0  1  2  3  4
+       &lt;/pre&gt;
+     * @param x
+     * @param y
+     * @param points
+     * @param present 
+    */
+    private void populateNeighborhoodPresence(int x, int y, Set&lt;PairInt&gt; points, 
+        boolean[] present) {
+        
+<span class="nc" id="L305">        int count = 0;</span>
+<span class="nc bnc" id="L306" title="All 2 branches missed.">        for (int dy = -2; dy &lt;= 2; ++dy) {</span>
+<span class="nc" id="L307">            int y2 = y + dy;</span>
+<span class="nc bnc" id="L308" title="All 2 branches missed.">            for (int dx = -2; dx &lt;= 2; ++dx) {</span>
+<span class="nc bnc" id="L309" title="All 4 branches missed.">                if (dx == 0 &amp;&amp; dy == 0) {</span>
+<span class="nc" id="L310">                    continue;</span>
+                }
+<span class="nc" id="L312">                int x2 = x + dx;</span>
+<span class="nc" id="L313">                PairInt p = new PairInt(x2, y2);</span>
+<span class="nc bnc" id="L314" title="All 2 branches missed.">                if (points.contains(p)) {</span>
+<span class="nc" id="L315">                    present[count] = true;</span>
+                } else {
+<span class="nc" id="L317">                    present[count] = false;</span>
+                }
+<span class="nc" id="L319">                ++count;</span>
+            }
+        }
+<span class="nc" id="L322">    }</span>
+
+    /**
+     *  uses thiel sen estimator to calculate the slope and y intercept,
+     * then calculates the average distance of the points from the line
+     * and then the standard deviation of that average.  then removes
+     * outliers that are further from the line than meanTolerance
+     * and then recalculates.  Note that the argument set points is modified
+     * to remove outliers.
+     * @param linePoints input and output modified set
+     * @param roughTheta
+     * @param meanTolerance
+     * @param stDvTolerance
+     * @return 
+     */
+    private float[] calculateReducedLinePolarCoordsAndStats(
+        Set&lt;PairInt&gt; linePoints, Integer roughTheta) {
+        
+<span class="nc" id="L340">        PairFloatArray xy = new PairFloatArray();</span>
+        
+<span class="nc bnc" id="L342" title="All 2 branches missed.">        for (PairInt p : linePoints) {</span>
+<span class="nc" id="L343">            xy.add(p.getX(), p.getY());</span>
+<span class="nc" id="L344">        }</span>
+            
+<span class="nc" id="L346">        LinearRegression lReg = new LinearRegression();</span>
+        //lReg.plotTheLinearRegression(x, y);
+        
+        float[] yInterceptAndSlope;
+        
+<span class="nc bnc" id="L351" title="All 2 branches missed.">        if (xy.getN() &gt; 3162) {</span>
+        //if (xy.getN() &gt; 46340) {
+            // need to reduce the number of points
+            //TODO: replace with faster sampling
+<span class="nc" id="L355">            Random random = new Random(System.nanoTime());</span>
+<span class="nc" id="L356">            int n = 3162;</span>
+<span class="nc" id="L357">            float[] xs = new float[n];</span>
+<span class="nc" id="L358">            float[] ys = new float[n];</span>
+<span class="nc" id="L359">            Set&lt;Integer&gt; chosen = new HashSet&lt;Integer&gt;();</span>
+<span class="nc bnc" id="L360" title="All 2 branches missed.">            while (chosen.size() &lt; n) {</span>
+<span class="nc" id="L361">                int idx = random.nextInt(n);</span>
+<span class="nc" id="L362">                Integer index = Integer.valueOf(idx);</span>
+<span class="nc bnc" id="L363" title="All 2 branches missed.">                if (!chosen.contains(index)) {</span>
+<span class="nc" id="L364">                    xs[chosen.size()] = xy.getX(idx);</span>
+<span class="nc" id="L365">                    ys[chosen.size()] = xy.getY(idx);</span>
+<span class="nc" id="L366">                    chosen.add(index);</span>
+                }
+<span class="nc" id="L368">            }</span>
+<span class="nc" id="L369">            yInterceptAndSlope = lReg.calculateTheilSenEstimatorParams(xs, ys);</span>
+<span class="nc" id="L370">        } else {            </span>
+<span class="nc" id="L371">            float[] x = Arrays.copyOf(xy.getX(), xy.getN());</span>
+<span class="nc" id="L372">            float[] y = Arrays.copyOf(xy.getY(), xy.getN());</span>
+<span class="nc" id="L373">            yInterceptAndSlope = lReg.calculateTheilSenEstimatorParams(x, y);</span>
+        }
+        
+        double thetaRadians;
+<span class="nc" id="L377">        double rSum = 0;</span>
+        
+<span class="nc bnc" id="L379" title="All 2 branches missed.">        boolean isVertical = (yInterceptAndSlope[1] == Float.MAX_VALUE);</span>
+<span class="nc bnc" id="L380" title="All 2 branches missed.">        boolean isHorizontal = (yInterceptAndSlope[1] == 0); </span>
+        
+<span class="nc bnc" id="L382" title="All 2 branches missed.">        if (isVertical) {</span>
+<span class="nc" id="L383">            thetaRadians = Math.PI/2.;</span>
+<span class="nc" id="L384">            int count = 0;</span>
+<span class="nc bnc" id="L385" title="All 2 branches missed.">            for (PairInt p : linePoints) {</span>
+<span class="nc bnc" id="L386" title="All 2 branches missed.">                if ((count &amp; 1) == 1) {</span>
+<span class="nc" id="L387">                    continue;</span>
+                }
+<span class="nc" id="L389">                rSum += p.getX();</span>
+<span class="nc" id="L390">                ++count;</span>
+<span class="nc" id="L391">            }</span>
+<span class="nc" id="L392">            rSum /= count;</span>
+<span class="nc bnc" id="L393" title="All 2 branches missed.">        } else if (isHorizontal) {</span>
+<span class="nc" id="L394">            thetaRadians = 0;</span>
+<span class="nc" id="L395">            int count = 0;</span>
+<span class="nc bnc" id="L396" title="All 2 branches missed.">            for (PairInt p : linePoints) {</span>
+<span class="nc bnc" id="L397" title="All 2 branches missed.">                if ((count &amp; 1) == 1) {</span>
+<span class="nc" id="L398">                    continue;</span>
+                }
+<span class="nc" id="L400">                rSum += p.getY();</span>
+<span class="nc" id="L401">                ++count;</span>
+<span class="nc" id="L402">            }</span>
+<span class="nc" id="L403">            rSum /= count;</span>
+<span class="nc" id="L404">        } else {</span>
+<span class="nc" id="L405">            thetaRadians = Math.atan(yInterceptAndSlope[1]);</span>
+<span class="nc" id="L406">            double ct = Math.cos(thetaRadians);</span>
+<span class="nc" id="L407">            double st = Math.sin(thetaRadians);</span>
+<span class="nc" id="L408">            int count = 0;</span>
+<span class="nc bnc" id="L409" title="All 2 branches missed.">            for (PairInt p : linePoints) {</span>
+<span class="nc bnc" id="L410" title="All 2 branches missed.">                if ((count &amp; 1) == 1) {</span>
+<span class="nc" id="L411">                    continue;</span>
+                }
+<span class="nc" id="L413">                rSum += (p.getX() * ct) + (p.getY() * st);</span>
+<span class="nc" id="L414">                ++count;</span>
+<span class="nc" id="L415">            }</span>
+<span class="nc" id="L416">            rSum /= count;</span>
+        }
+        
+<span class="nc" id="L419">        int t = (int)Math.round(thetaRadians*180./Math.PI);</span>
+<span class="nc bnc" id="L420" title="All 2 branches missed.">        if (t &lt; 0) {</span>
+<span class="nc" id="L421">            t += 360;</span>
+        }
+        
+        // ----- evaluate ------
+        
+        /*
+        have y = m * x + k  where m is slope and k is yIntercept
+
+        point (x0, y0)
+
+        d = sqrt( 
+            (((x0 + m*y0 - m*k)/(m*m + 1)) - x0)^2 +
+            (((m*(x0 + m*y0 - m*k))/(m*m + 1)) + k - y0)^2
+        )
+        */
+        
+<span class="nc" id="L437">        float m = yInterceptAndSlope[1];</span>
+<span class="nc" id="L438">        float k = yInterceptAndSlope[0];</span>
+        float mn, stdv;
+            
+<span class="nc" id="L441">        double sum = 0;</span>
+<span class="nc" id="L442">        int count = 0;</span>
+<span class="nc" id="L443">        double[] d = new double[linePoints.size()];</span>
+<span class="nc" id="L444">        List&lt;PairInt&gt; points = new ArrayList&lt;PairInt&gt;(linePoints);</span>
+<span class="nc bnc" id="L445" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+<span class="nc" id="L446">            int x0 = p.getX();</span>
+<span class="nc" id="L447">            int y0 = p.getY();</span>
+<span class="nc bnc" id="L448" title="All 2 branches missed.">            if (isVertical) {</span>
+<span class="nc" id="L449">                d[count] = x0 - rSum;</span>
+<span class="nc bnc" id="L450" title="All 2 branches missed.">            } else if (isHorizontal) {</span>
+<span class="nc" id="L451">                d[count] = y0 - rSum;</span>
+            } else {
+                /*
+                m*x - y + yIntercept = 0
+                */
+<span class="nc" id="L456">                d[count] = Math.sqrt(Math.abs(m*x0 - y0 + k)/(m*m + 1));  </span>
+            }
+<span class="nc" id="L458">            sum += d[count];</span>
+<span class="nc" id="L459">            count++;</span>
+<span class="nc" id="L460">        }</span>
+<span class="nc" id="L461">        sum /= (double)linePoints.size();</span>
+<span class="nc" id="L462">        mn = (float)sum;</span>
+<span class="nc" id="L463">        sum = 0;</span>
+<span class="nc bnc" id="L464" title="All 2 branches missed.">        for (int i = 0; i &lt; d.length; ++i) {</span>
+<span class="nc" id="L465">            double diff = d[i] - mn;</span>
+<span class="nc" id="L466">            sum += (diff * diff);</span>
+<span class="nc" id="L467">            count++;</span>
+        }
+<span class="nc" id="L469">        stdv = (float)Math.sqrt(sum/((double)linePoints.size() - 1.));        </span>
+        
+<span class="nc bnc" id="L471" title="All 2 branches missed.">        if (stdv == 0) {</span>
+<span class="nc" id="L472">            return new float[]{t, (float)Math.abs(rSum), Math.abs(mn), stdv};</span>
+        }
+        
+        // TODO: might want to allow a tolerance to be passed in
+<span class="nc" id="L476">        double limit = stdv;</span>
+        // if it's highly inclined line, tolerance has to allow for step width
+<span class="nc bnc" id="L478" title="All 2 branches missed.">        if ((Math.abs(AngleUtil.getAngleDifference(t, 22.5f)) &lt; 12) || </span>
+<span class="nc bnc" id="L479" title="All 2 branches missed.">            (Math.abs(AngleUtil.getAngleDifference(t, 67.5f)) &lt; 12) ||</span>
+<span class="nc bnc" id="L480" title="All 2 branches missed.">            (Math.abs(AngleUtil.getAngleDifference(t, 112.5f)) &lt; 12) ||</span>
+<span class="nc bnc" id="L481" title="All 2 branches missed.">            (Math.abs(AngleUtil.getAngleDifference(t, 157.5f)) &lt; 12) ||</span>
+<span class="nc bnc" id="L482" title="All 2 branches missed.">            (Math.abs(AngleUtil.getAngleDifference(t, 202.5f)) &lt; 12) ||</span>
+<span class="nc bnc" id="L483" title="All 2 branches missed.">            (Math.abs(AngleUtil.getAngleDifference(t, 247.5f)) &lt; 12) ||</span>
+<span class="nc bnc" id="L484" title="All 2 branches missed.">            (Math.abs(AngleUtil.getAngleDifference(t, 292.5f)) &lt; 12) ||</span>
+<span class="nc bnc" id="L485" title="All 2 branches missed.">            (Math.abs(AngleUtil.getAngleDifference(t, 337.5f)) &lt; 12)</span>
+            ) {
+            //TODO:
+            // this picks up the meeting of lines at a corner, so
+            // may need revision
+<span class="nc" id="L490">            limit = 2*stdv;</span>
+        }
+<span class="nc bnc" id="L492" title="All 2 branches missed.">        if (limit &lt; 1) {</span>
+<span class="nc" id="L493">            limit = 1;</span>
+        }
+        
+<span class="nc" id="L496">        Set&lt;Integer&gt; remove = new HashSet&lt;Integer&gt;();</span>
+<span class="nc bnc" id="L497" title="All 2 branches missed.">        for (int i = 0; i &lt; d.length; ++i) {</span>
+<span class="nc" id="L498">            double diff = Math.abs(d[i] - mn);</span>
+<span class="nc bnc" id="L499" title="All 2 branches missed.">            if (diff &gt; limit) {</span>
+<span class="nc" id="L500">                remove.add(Integer.valueOf(i));</span>
+            }
+        }
+        
+        // --- recalc mean and stdev w/o outliers ----
+  //TODO: consider recalculating the slope and intercept w/ thiel sen
+<span class="nc" id="L506">        sum = 0;</span>
+<span class="nc" id="L507">        count = 0;</span>
+<span class="nc bnc" id="L508" title="All 2 branches missed.">        for (int i = 0; i &lt; d.length; ++i) {</span>
+<span class="nc bnc" id="L509" title="All 2 branches missed.">            if (remove.contains(Integer.valueOf(i))) {</span>
+<span class="nc" id="L510">                linePoints.remove(points.get(i));</span>
+<span class="nc" id="L511">                continue;</span>
+            }
+<span class="nc" id="L513">            sum += d[i];</span>
+<span class="nc" id="L514">            count++;</span>
+        }
+<span class="nc" id="L516">        sum /= (double)count;</span>
+<span class="nc" id="L517">        mn = (float)sum;</span>
+<span class="nc" id="L518">        count = 0;</span>
+<span class="nc" id="L519">        sum = 0;</span>
+<span class="nc bnc" id="L520" title="All 2 branches missed.">        for (int i = 0; i &lt; d.length; ++i) {</span>
+<span class="nc bnc" id="L521" title="All 2 branches missed.">            if (remove.contains(Integer.valueOf(i))) {</span>
+<span class="nc" id="L522">                continue;</span>
+            }
+<span class="nc" id="L524">            double diff = Math.abs(d[i] - mn);</span>
+<span class="nc" id="L525">            sum += (diff * diff);</span>
+<span class="nc" id="L526">            count++;</span>
+        }
+<span class="nc" id="L528">        stdv = (float)Math.sqrt(sum/((double)count - 1.));        </span>
+<span class="nc" id="L529">        return new float[]{t, (float)Math.abs(rSum), Math.abs(mn), stdv};</span>
     }
     
     public class HoughTransformLines {
@@ -317,29 +549,6 @@ public class HoughTransform {
             return sortedLineGroups;
         }
     }
-    
-    public HoughTransformLines createPixTRMapsFromSorted(List&lt;PairInt&gt; sortedTRKeys,
-        Map&lt;PairInt, Set&lt;PairInt&gt;&gt; thetaRadiusPixMap, 
-        int thetaTol, int radiusTol) {
-        
-        // using a DFS visitor pattern and a tolerance for contiguous neighbor
-        // grouping to aggretate the (theta, radius) solutions of adjacent
-        // points
-<span class="fc" id="L328">        DFSSimilarThetaRadiusGroupsFinder groupFinder = new </span>
-            DFSSimilarThetaRadiusGroupsFinder();
-        
-<span class="fc" id="L331">        boolean allowGaps = true;</span>
-        
-        // note that thetaRadiusPixMap is altered by this method
-<span class="fc" id="L334">        Map&lt;PairInt, PairInt&gt; pixToTRMap = groupFinder.findConnectedPointGroups(</span>
-            sortedTRKeys, thetaRadiusPixMap, thetaTol, radiusTol, allowGaps);
-        
-<span class="fc" id="L337">        List&lt;Set&lt;PairInt&gt;&gt; sortedGroups = groupFinder.getSortedGroupsOfPoints();</span>
-        
-<span class="fc" id="L339">        HoughTransformLines htl = new HoughTransformLines(pixToTRMap, sortedGroups);</span>
-        
-<span class="fc" id="L341">        return htl;</span>
-    }
-    
+   
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -1000,11 +1000,11 @@ public class RainbowFinder {
                         polyFitter0.accumulate(set);
                         coeff0 = polyFitter0.solve();
                         
-                        polyFitter0.plotFit(coeff0, set, img.getWidth(),
+                        ParabolaLeastSquares.plotFit(coeff0, set, img.getWidth(),
                             img.getHeight(), i, 
                             "rainbow points");
 
-                        double resid = polyFitter0.calcResiduals(coeff0, set);
+                        double resid = ParabolaLeastSquares.calcResiduals(coeff0, set);
                         
                         /*System.out.println("rainbow polynomial coefficients = " 
                             + Arrays.toString(coeff0));
@@ -1036,7 +1036,7 @@ public class RainbowFinder {
                                 Set<PairInt> tmp = new HashSet<PairInt>(set);
                                 tmp.addAll(chkSet);
                                 
-                                double resid2 = polyFitter2.calcResiduals(coeff2, 
+                                double resid2 = ParabolaLeastSquares.calcResiduals(coeff2, 
                                     tmp);
                                 
                                 //System.out.println("check " + " x=" + 

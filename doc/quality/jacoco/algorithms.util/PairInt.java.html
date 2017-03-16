@@ -6,8 +6,8 @@
  */
 public class PairInt {
     
-<span class="fc" id="L9">    private int x = Integer.MIN_VALUE;</span>
-<span class="fc" id="L10">    private int y = Integer.MIN_VALUE;</span>
+<span class="pc" id="L9">    private int x = Integer.MIN_VALUE;</span>
+<span class="pc" id="L10">    private int y = Integer.MIN_VALUE;</span>
     
 <span class="fc" id="L12">    public PairInt() {</span>
 <span class="fc" id="L13">    }</span>
@@ -15,46 +15,57 @@ public class PairInt {
 <span class="fc" id="L15">        x = xPoint;</span>
 <span class="fc" id="L16">        y = yPoint;</span>
 <span class="fc" id="L17">    }</span>
+    
+    /**
+     * constructor which rounds to the nearest integer
+     * @param xPoint
+     * @param yPoint 
+     */
+<span class="nc" id="L24">    public PairInt(double xPoint, double yPoint) {</span>
+<span class="nc" id="L25">        x = (int)Math.round(xPoint);</span>
+<span class="nc" id="L26">        y = (int)Math.round(yPoint);</span>
+<span class="nc" id="L27">    }</span>
+    
     public void setX(int xPoint) {
-<span class="fc" id="L19">        x = xPoint;</span>
-<span class="fc" id="L20">    }</span>
+<span class="fc" id="L30">        x = xPoint;</span>
+<span class="fc" id="L31">    }</span>
     public void setY(int yPoint) {
-<span class="fc" id="L22">        y = yPoint;</span>
-<span class="fc" id="L23">    }</span>
+<span class="fc" id="L33">        y = yPoint;</span>
+<span class="fc" id="L34">    }</span>
     public int getX() {
-<span class="fc" id="L25">        return x;</span>
+<span class="fc" id="L36">        return x;</span>
     }
     public int getY() {
-<span class="fc" id="L28">        return y;</span>
+<span class="fc" id="L39">        return y;</span>
     }
     
     public PairInt copy() {
-<span class="fc" id="L32">        PairInt c = new PairInt(x, y);</span>
-<span class="fc" id="L33">        return c;</span>
+<span class="fc" id="L43">        PairInt c = new PairInt(x, y);</span>
+<span class="fc" id="L44">        return c;</span>
     }
 
     @Override
     public boolean equals(Object obj) {
         
-<span class="pc bpc" id="L39" title="1 of 2 branches missed.">        if (!(obj instanceof PairInt)) {</span>
-<span class="nc" id="L40">            return false;    </span>
+<span class="pc bpc" id="L50" title="1 of 2 branches missed.">        if (!(obj instanceof PairInt)) {</span>
+<span class="nc" id="L51">            return false;    </span>
         }
         
-<span class="fc" id="L43">        PairInt other = (PairInt)obj;</span>
+<span class="fc" id="L54">        PairInt other = (PairInt)obj;</span>
         
-<span class="fc bfc" id="L45" title="All 4 branches covered.">        return (x == other.getX()) &amp;&amp; (y == other.getY());</span>
+<span class="fc bfc" id="L56" title="All 4 branches covered.">        return (x == other.getX()) &amp;&amp; (y == other.getY());</span>
     }
 
     @Override
     public int hashCode() {
         
-<span class="fc" id="L51">        int hash = fnvHashCode(this.x, this.y);</span>
+<span class="fc" id="L62">        int hash = fnvHashCode(this.x, this.y);</span>
 
-<span class="fc" id="L53">        return hash;</span>
+<span class="fc" id="L64">        return hash;</span>
     }
 
-<span class="fc" id="L56">    protected static int fnv321aInit = 0x811c9dc5;</span>
-<span class="fc" id="L57">    protected static int fnv32Prime = 0x01000193;</span>
+<span class="fc" id="L67">    protected static int fnv321aInit = 0x811c9dc5;</span>
+<span class="fc" id="L68">    protected static int fnv32Prime = 0x01000193;</span>
 
     protected int fnvHashCode(int i0, int i1) {
 
@@ -68,32 +79,32 @@ public class PairInt {
          * Public domain:  http://www.isthe.com/chongo/src/fnv/hash_32a.c
          */
 
-<span class="fc" id="L71">        int hash = 0;</span>
+<span class="fc" id="L82">        int hash = 0;</span>
 
-<span class="fc" id="L73">        int sum = fnv321aInit;</span>
+<span class="fc" id="L84">        int sum = fnv321aInit;</span>
 
         // xor the bottom with the current octet.
-<span class="fc" id="L76">        sum ^= i0;</span>
+<span class="fc" id="L87">        sum ^= i0;</span>
 
         // multiply by the 32 bit FNV magic prime mod 2^32
-<span class="fc" id="L79">        sum *= fnv32Prime;</span>
+<span class="fc" id="L90">        sum *= fnv32Prime;</span>
         
-<span class="fc" id="L81">        sum ^= i1;</span>
+<span class="fc" id="L92">        sum ^= i1;</span>
         
-<span class="fc" id="L83">        sum *= fnv32Prime;</span>
+<span class="fc" id="L94">        sum *= fnv32Prime;</span>
         
-<span class="fc" id="L85">        hash = sum;</span>
+<span class="fc" id="L96">        hash = sum;</span>
 
-<span class="fc" id="L87">        return hash;</span>
+<span class="fc" id="L98">        return hash;</span>
     }
 
     @Override
     public String toString() {
         
-<span class="fc" id="L93">        StringBuilder sb = new StringBuilder(&quot;(&quot;);</span>
-<span class="fc" id="L94">        sb.append(Integer.toString(x)).append(&quot;,&quot;).append(Integer.toString(y)).append(&quot;)&quot;);</span>
+<span class="fc" id="L104">        StringBuilder sb = new StringBuilder(&quot;(&quot;);</span>
+<span class="fc" id="L105">        sb.append(Integer.toString(x)).append(&quot;,&quot;).append(Integer.toString(y)).append(&quot;)&quot;);</span>
         
-<span class="fc" id="L96">        return sb.toString();</span>
+<span class="fc" id="L107">        return sb.toString();</span>
     }
     
 }

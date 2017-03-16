@@ -1,0 +1,400 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ConnectedValuesFinder.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.connected</a> &gt; <span class="el_source">ConnectedValuesFinder.java</span></div><h1>ConnectedValuesFinder.java</h1><pre class="source lang-java linenums">package algorithms.connected;
+
+import algorithms.disjointSets.DisjointSet2Helper;
+import algorithms.disjointSets.DisjointSet2Node;
+import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.misc.Misc;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntIntHashMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
+
+/**
+ * given a set of points, finds the connected among them and
+ * places them into groups.
+ * note that connected here means adjacent to one another and
+ * adjacent is defined by the default &quot;4 neighbor&quot; offsets,
+ * but can be overridden to use all 8 neighbors.
+ * 
+ * The runtime complexity is essentially O(N_points).
+ * 
+ * @author nichole
+ */
+<span class="pc bpc" id="L30" title="1 of 2 branches missed.">public class ConnectedValuesFinder {</span>
+    
+    private final DisjointSet2Helper disjointSetHelper;
+    
+    // key = pixIdx, value = disjoint set node with key pixIdx
+    private final TIntObjectMap&lt;DisjointSet2Node&lt;Integer&gt;&gt; pixNodes;
+
+<span class="pc" id="L37">    protected boolean notValue = false;</span>
+    
+    /**
+     * uses the 4 neighbor region if true, else the 8-neighbor region
+     */
+<span class="pc" id="L42">    protected boolean use4Neighbors = true;</span>
+    
+    /**
+     * a list to hold each group as an item.
+     */
+<span class="pc" id="L47">    protected List&lt;TIntSet&gt; groupList = null;</span>
+    
+<span class="pc" id="L49">    protected int minimumNumberInCluster = 3;</span>
+    
+    // only one of these will be instantiated
+    protected final GreyscaleImage img;
+    protected final int[] imgValues;
+    
+    protected final TIntSet exclude;
+    
+    private final int imgWidth;
+    private final int imgHeight;
+    
+<span class="pc" id="L60">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+    
+<span class="pc" id="L62">    protected boolean debug = false;</span>
+
+<span class="fc" id="L64">    public ConnectedValuesFinder(final GreyscaleImage input) {</span>
+        
+<span class="fc" id="L66">        this.img = input;</span>
+        
+<span class="fc" id="L68">        this.imgValues = null;</span>
+        
+<span class="fc" id="L70">        this.log = Logger.getLogger(this.getClass().getName());</span>
+        
+<span class="fc" id="L72">        this.exclude = new TIntHashSet();</span>
+        
+<span class="fc" id="L74">        imgWidth = input.getWidth();</span>
+        
+<span class="fc" id="L76">        imgHeight = input.getHeight();</span>
+        
+<span class="fc" id="L78">        pixNodes = new TIntObjectHashMap&lt;DisjointSet2Node&lt;Integer&gt;&gt;();</span>
+    
+<span class="fc" id="L80">        disjointSetHelper = new DisjointSet2Helper();</span>
+<span class="fc" id="L81">    }</span>
+    
+<span class="nc" id="L83">    public ConnectedValuesFinder(final GreyscaleImage input, TIntSet mask) {</span>
+        
+<span class="nc" id="L85">        this.img = input;</span>
+        
+<span class="nc" id="L87">        this.imgValues = null;</span>
+        
+<span class="nc" id="L89">        this.log = Logger.getLogger(this.getClass().getName());</span>
+        
+<span class="nc" id="L91">        this.exclude = new TIntHashSet(mask);</span>
+        
+<span class="nc" id="L93">        imgWidth = input.getWidth();</span>
+        
+<span class="nc" id="L95">        imgHeight = input.getHeight();</span>
+        
+<span class="nc" id="L97">        pixNodes = new TIntObjectHashMap&lt;DisjointSet2Node&lt;Integer&gt;&gt;();</span>
+    
+<span class="nc" id="L99">        disjointSetHelper = new DisjointSet2Helper();</span>
+<span class="nc" id="L100">    }</span>
+    
+    public ConnectedValuesFinder(int[] imgValues, 
+<span class="fc" id="L103">        int imgWidth, int imgHeight) {</span>
+        
+<span class="fc" id="L105">        this.imgValues = imgValues;</span>
+        
+<span class="fc" id="L107">        this.img = null;</span>
+        
+<span class="fc" id="L109">        this.log = Logger.getLogger(this.getClass().getName());</span>
+        
+<span class="fc" id="L111">        this.exclude = new TIntHashSet();</span>
+        
+<span class="fc" id="L113">        this.imgWidth = imgWidth;</span>
+        
+<span class="fc" id="L115">        this.imgHeight = imgHeight;</span>
+        
+<span class="fc" id="L117">        pixNodes = new TIntObjectHashMap&lt;DisjointSet2Node&lt;Integer&gt;&gt;();</span>
+    
+<span class="fc" id="L119">        disjointSetHelper = new DisjointSet2Helper();</span>
+<span class="fc" id="L120">    }</span>
+    
+    public void setDebug(boolean setDebugToTrue) {
+<span class="nc" id="L123">        this.debug = setDebugToTrue;</span>
+<span class="nc" id="L124">    }</span>
+
+    public void setMinimumNumberInCluster(int n) {
+<span class="nc" id="L127">        this.minimumNumberInCluster = n;</span>
+<span class="nc" id="L128">    }</span>
+    
+    public void setToUse8Neighbors() {
+<span class="nc" id="L131">        use4Neighbors = false;</span>
+<span class="nc" id="L132">    }</span>
+    
+    /**
+     * find the groups of connected points in pixIdxs where connected
+     * means is adjacent to another point in the group and having this 
+     * pixelValue.  The adjacency by default is using the 4 neighbor
+     * pattern search unless the user has set that to 8 neighbors.
+     * The runtime complexity is essentially O(pixIdxs.size()).
+     * 
+     * @param pixelValue 
+     */
+    public void findGroups(int pixelValue) {
+    
+<span class="fc" id="L145">        notValue = false;</span>
+        
+<span class="fc" id="L147">        initMap();</span>
+        
+<span class="fc" id="L149">        findClustersIterative(pixelValue);</span>
+        
+<span class="fc" id="L151">        prune();        </span>
+<span class="fc" id="L152">    }</span>
+    
+    /**
+     * find the groups of connected points in pixIdxs where connected
+     * means is adjacent to another point in the group and re any points that do
+     * not have this pixelValue.  The adjacency by default is using the 4 neighbor
+     * pattern search unless the user has set that to 8 neighbors.
+     * The runtime complexity is essentially O(pixIdxs.size()).
+     * 
+     * @param pixelValue 
+     */
+    public void findGroupsNotThisValue(int pixelValue) {
+    
+<span class="fc" id="L165">        notValue = true;</span>
+        
+<span class="fc" id="L167">        initMap();</span>
+        
+<span class="fc" id="L169">        findClustersIterative(pixelValue);</span>
+        
+<span class="fc" id="L171">        prune();        </span>
+<span class="fc" id="L172">    }</span>
+
+    protected void findClustersIterative(int pixelValue) {
+        
+        int[] dxs;
+        int[] dys;
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">        if (use4Neighbors) {</span>
+<span class="fc" id="L179">            dxs = Misc.dx4;</span>
+<span class="fc" id="L180">            dys = Misc.dy4;</span>
+        } else {
+            /*
+            for 8 neighbor, can use 4 offsets instead of 8 if visiting all pix
+            
+             2  *  *  *       (2,0) 1:2,1:1,2:1
+             1  *  *  +       (1,1) 0:1,0:0,1:0,2:0,2:1,2:2,1:2,0:2
+             0  *  *  *       (2,1) 1:1,1:0,2:0,3:0,3:1,3:2,2:2,1:2
+                0  1  2             X: 1:1,1:0,2:0, 1:2
+                                    use: +1,-1  +1,0  +1,+1  0:1
+            */
+<span class="nc" id="L191">            dxs = new int[]{1,  1, 1, 0};</span>
+<span class="nc" id="L192">            dys = new int[]{-1, 0, 1, 1};</span>
+        }        
+        
+<span class="fc bfc" id="L195" title="All 2 branches covered.">        int n = (img != null) ? img.getNPixels() : imgValues.length;</span>
+                
+<span class="fc bfc" id="L197" title="All 2 branches covered.">        for (int uPoint = 0; uPoint &lt; n; ++uPoint) {</span>
+            
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">            if (exclude.contains(uPoint)) {</span>
+<span class="nc" id="L200">                continue;</span>
+            }
+            
+<span class="fc bfc" id="L203" title="All 2 branches covered.">            int uPixValue = (img != null) ? img.getValue(uPoint) : </span>
+                imgValues[uPoint];
+            
+<span class="fc bfc" id="L206" title="All 8 branches covered.">            if ((notValue &amp;&amp; (uPixValue == pixelValue)) ||</span>
+                (!notValue &amp;&amp; (uPixValue != pixelValue))) {
+                                
+<span class="fc" id="L209">                continue;</span>
+            }
+            
+<span class="fc" id="L212">            int uY = uPoint/imgWidth;</span>
+<span class="fc" id="L213">            int uX = uPoint - (uY * imgWidth);</span>
+                                    
+<span class="fc bfc" id="L215" title="All 2 branches covered.">            for (int i = 0; i &lt; dxs.length; ++i) {</span>
+                
+<span class="fc" id="L217">                int vX = uX + dxs[i];</span>
+<span class="fc" id="L218">                int vY = uY + dys[i];</span>
+                
+<span class="fc bfc" id="L220" title="All 8 branches covered.">                if (vX &lt; 0 || vY &lt; 0 || (vX &gt;= (imgWidth - 1))</span>
+                    || (vY &gt;= (imgHeight - 1))) {
+<span class="fc" id="L222">                    continue;</span>
+                }
+            
+<span class="fc" id="L225">                int vPoint = (vY * imgWidth) + vX;</span>
+
+<span class="pc bpc" id="L227" title="1 of 2 branches missed.">                if (exclude.contains(vPoint)) {</span>
+<span class="nc" id="L228">                    continue;</span>
+                }
+                
+<span class="fc bfc" id="L231" title="All 2 branches covered.">                int vPixValue = (img != null) ? img.getValue(vPoint) :</span>
+                    imgValues[vPoint];
+
+<span class="fc bfc" id="L234" title="All 8 branches covered.">                if ((notValue &amp;&amp; (vPixValue == pixelValue)) ||</span>
+                    (!notValue &amp;&amp; (vPixValue != pixelValue))) {
+
+<span class="fc" id="L237">                    continue;</span>
+                }
+
+<span class="fc" id="L240">                processPair(uPoint, vPoint);</span>
+            }            
+        }
+<span class="fc" id="L243">    }</span>
+    
+    /*
+    private int[] debugCoords(int pixIdx) {
+        int y = pixIdx/this.imgWidth;
+        int x = pixIdx - (y * imgWidth);
+        return new int[]{x, y};
+    }*/
+  
+    protected void processPair(int uPoint, int vPoint) {
+        
+<span class="fc" id="L254">        DisjointSet2Node&lt;Integer&gt; uNode = pixNodes.get(uPoint); </span>
+<span class="fc" id="L255">        DisjointSet2Node&lt;Integer&gt; uParentNode </span>
+<span class="fc" id="L256">            = disjointSetHelper.findSet(uNode);</span>
+<span class="pc bpc" id="L257" title="3 of 4 branches missed.">        assert(uParentNode != null);</span>
+        
+<span class="fc" id="L259">        int uGroupId = uParentNode.getMember().intValue();</span>
+
+<span class="fc" id="L261">        DisjointSet2Node&lt;Integer&gt; vNode = pixNodes.get(vPoint); </span>
+<span class="fc" id="L262">        DisjointSet2Node&lt;Integer&gt; vParentNode </span>
+<span class="fc" id="L263">            = disjointSetHelper.findSet(vNode);</span>
+<span class="pc bpc" id="L264" title="3 of 4 branches missed.">        assert(vParentNode != null);</span>
+        
+<span class="fc" id="L266">        int vGroupId = vParentNode.getMember().intValue();</span>
+        
+<span class="fc" id="L268">        DisjointSet2Node&lt;Integer&gt; merged = </span>
+<span class="fc" id="L269">            disjointSetHelper.union(uParentNode, vParentNode);</span>
+        
+<span class="fc" id="L271">        pixNodes.put(uGroupId, merged);</span>
+        
+<span class="fc" id="L273">        pixNodes.put(vGroupId, merged);</span>
+<span class="fc" id="L274">    }</span>
+
+    public List&lt;TIntSet&gt; getGroupMembershipList() {
+<span class="nc" id="L277">        return groupList;</span>
+    }
+
+    public int getNumberOfGroups() {
+<span class="fc" id="L281">        return groupList.size();</span>
+    }
+
+    /**
+     * gather groups and remove those smaller than minimumNumberInCluster
+     */
+    protected void prune() {
+        
+        // key = repr node index, value = set of pixels w/ repr
+<span class="fc" id="L290">        TIntObjectMap&lt;TIntSet&gt; map = new TIntObjectHashMap&lt;TIntSet&gt;();</span>
+        
+<span class="fc" id="L292">        TIntObjectIterator&lt;DisjointSet2Node&lt;Integer&gt;&gt; iter =</span>
+<span class="fc" id="L293">            pixNodes.iterator();</span>
+<span class="fc bfc" id="L294" title="All 2 branches covered.">        for (int i = 0; i &lt; pixNodes.size(); ++i) {</span>
+            
+<span class="fc" id="L296">            iter.advance();</span>
+            
+<span class="fc" id="L298">            int pixIdx = iter.key();</span>
+<span class="fc" id="L299">            DisjointSet2Node&lt;Integer&gt; node = iter.value();</span>
+            
+<span class="fc" id="L301">            DisjointSet2Node&lt;Integer&gt; repr = disjointSetHelper.findSet(node);</span>
+            
+<span class="fc" id="L303">            int reprIdx = repr.getMember().intValue();</span>
+            
+<span class="fc" id="L305">            TIntSet set = map.get(reprIdx);</span>
+<span class="fc bfc" id="L306" title="All 2 branches covered.">            if (set == null) {</span>
+<span class="fc" id="L307">                set = new TIntHashSet();</span>
+<span class="fc" id="L308">                map.put(reprIdx, set);</span>
+            }
+<span class="fc" id="L310">            set.add(pixIdx);</span>
+        }
+        
+<span class="fc" id="L313">        log.finest(&quot;number of groups before prune=&quot; + map.size());</span>
+        
+        // rewrite the above into a list
+<span class="fc" id="L316">        List&lt;TIntSet&gt; groups = new ArrayList&lt;TIntSet&gt;();</span>
+        
+<span class="fc" id="L318">        TIntObjectIterator&lt;TIntSet&gt; iter2 = map.iterator();</span>
+<span class="fc bfc" id="L319" title="All 2 branches covered.">        for (int i = 0; i &lt; map.size(); ++i) {</span>
+<span class="fc" id="L320">            iter2.advance();</span>
+                        
+<span class="fc" id="L322">            TIntSet idxs = iter2.value();</span>
+            
+<span class="fc bfc" id="L324" title="All 2 branches covered.">            if (idxs.size() &gt;= minimumNumberInCluster) {</span>
+<span class="fc" id="L325">                groups.add(idxs);</span>
+            }
+        }
+        
+<span class="fc" id="L329">        this.groupList = groups;</span>
+        
+<span class="fc" id="L331">        log.finest(&quot;number of groups after prune=&quot; + groups.size());</span>
+<span class="fc" id="L332">    }</span>
+    
+    public TIntIntMap createPointIndexMap() {
+        
+<span class="nc" id="L336">        TIntIntMap ptIdxMap = new TIntIntHashMap();</span>
+        
+<span class="nc" id="L338">        int n = getNumberOfGroups();</span>
+<span class="nc bnc" id="L339" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
+            
+<span class="nc" id="L341">            TIntSet set = getXY(i);</span>
+            
+<span class="nc" id="L343">            TIntIterator iter = set.iterator();</span>
+<span class="nc bnc" id="L344" title="All 2 branches missed.">            while (iter.hasNext()) {</span>
+<span class="nc" id="L345">                int pixIdx = iter.next();</span>
+<span class="nc" id="L346">                ptIdxMap.put(pixIdx, i);</span>
+<span class="nc" id="L347">            }</span>
+        }
+        
+<span class="nc" id="L350">        return ptIdxMap;</span>
+    }
+
+
+    public int getNumberofGroupMembers(int groupId) {
+<span class="nc bnc" id="L355" title="All 2 branches missed.">        if (groupList.isEmpty()) {</span>
+<span class="nc" id="L356">            return 0;</span>
+        }
+<span class="nc bnc" id="L358" title="All 4 branches missed.">        if (groupId &gt; (groupList.size() - 1) || (groupId &lt; 0)) {</span>
+<span class="nc" id="L359">            throw new IllegalArgumentException(&quot;groupId=&quot; + groupId </span>
+<span class="nc" id="L360">                + &quot; is outside of range of nGroups=&quot; + groupList.size());</span>
+        }
+<span class="nc" id="L362">        return groupList.get(groupId).size();</span>
+    }
+
+    public TIntSet getXY(int groupId) {
+<span class="pc bpc" id="L366" title="1 of 2 branches missed.">        if (groupList.isEmpty()) {</span>
+<span class="nc" id="L367">            return new TIntHashSet();</span>
+        }
+<span class="pc bpc" id="L369" title="2 of 4 branches missed.">        if (groupId &gt; (groupList.size() - 1) || (groupId &lt; 0)) {</span>
+<span class="nc" id="L370">            throw new IllegalArgumentException(&quot;groupId=&quot; + groupId </span>
+<span class="nc" id="L371">                + &quot; is outside of range of nGroups=&quot; + groupList.size());</span>
+        }
+<span class="fc" id="L373">        TIntSet set = groupList.get(groupId);</span>
+<span class="fc" id="L374">        return set;</span>
+    }
+
+    private void initMap() {
+        
+<span class="fc bfc" id="L379" title="All 2 branches covered.">        int n = (img != null) ? img.getNPixels() : imgValues.length;</span>
+        
+<span class="fc" id="L381">        pixNodes.clear();</span>
+        
+<span class="fc bfc" id="L383" title="All 2 branches covered.">        for (int pixIdx = 0; pixIdx &lt; n; ++pixIdx) {</span>
+                        
+<span class="pc bpc" id="L385" title="1 of 2 branches missed.">            if (exclude.contains(pixIdx)) {</span>
+<span class="nc" id="L386">                continue;</span>
+            }
+            
+<span class="fc" id="L389">            Integer index = Integer.valueOf(pixIdx);</span>
+            
+<span class="fc" id="L391">            DisjointSet2Node&lt;Integer&gt; pNode =</span>
+<span class="fc" id="L392">                disjointSetHelper.makeSet(</span>
+                    new DisjointSet2Node&lt;Integer&gt;(index));
+            
+<span class="fc" id="L395">            pixNodes.put(pixIdx, pNode);</span>
+        }
+<span class="fc" id="L397">    }</span>
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

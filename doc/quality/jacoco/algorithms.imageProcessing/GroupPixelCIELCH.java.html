@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>GroupPixelCIELCH.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">GroupPixelCIELCH.java</span></div><h1>GroupPixelCIELCH.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.misc.Histogram;
+import algorithms.misc.HistogramHolder;
+import algorithms.misc.MiscMath;
+import algorithms.util.Errors;
+import algorithms.util.PairInt;
+import java.util.Set;
+
+/**
+ * cylindrical LUV
+ * 
+ * @author nichole
+ */
+public class GroupPixelCIELCH extends GroupPixelRGB0 {
+    
+    private float avgL;
+    private float stdDevL;
+    private float avgC;
+    private float stdDevC;
+    private float avgH;
+    private float stdDevH;
+    
+<span class="nc" id="L24">    public GroupPixelCIELCH(final Set&lt;PairInt&gt; points, ImageExt colorImage) {</span>
+               
+<span class="nc bnc" id="L26" title="All 2 branches missed.">        if (points == null) {</span>
+<span class="nc" id="L27">            throw new IllegalArgumentException(&quot;points cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L29" title="All 2 branches missed.">        if (colorImage == null) {</span>
+<span class="nc" id="L30">            throw new IllegalArgumentException(&quot;colorImage cannot be null&quot;);</span>
+        }
+        
+<span class="nc" id="L33">        calculateColors(points, colorImage, 0, 0);</span>
+        
+<span class="nc" id="L35">        CIEChromaticity cieC = new CIEChromaticity();</span>
+                
+        // compare to indiv determined LCH
+<span class="nc" id="L38">        float[] cieLCHAvg = cieC.rgbToCIELCH(</span>
+<span class="nc" id="L39">            Math.round(getAvgRed()), Math.round(getAvgGreen()), </span>
+<span class="nc" id="L40">            Math.round(getAvgBlue()));</span>
+        
+<span class="nc" id="L42">        this.nPoints = points.size();</span>
+        
+        // the angle component, h, needs wraparound corrections
+        //    so frequency has to be calculated for it first.
+        
+<span class="nc" id="L47">        float[] ls = new float[nPoints];</span>
+<span class="nc" id="L48">        float[] cs = new float[nPoints];</span>
+<span class="nc" id="L49">        float[] hs = new float[nPoints];</span>
+<span class="nc" id="L50">        double sumL = 0;</span>
+<span class="nc" id="L51">        double sumC = 0;</span>
+<span class="nc" id="L52">        int count = 0;</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+<span class="nc" id="L54">            int x = p.getX();</span>
+<span class="nc" id="L55">            int y = p.getY();</span>
+<span class="nc" id="L56">            float[] lch = cieC.rgbToCIELCH(colorImage.getR(x, y), </span>
+<span class="nc" id="L57">                colorImage.getG(x, y), colorImage.getB(x, y));</span>
+<span class="nc" id="L58">            ls[count] = lch[0];</span>
+<span class="nc" id="L59">            cs[count] = lch[1];</span>
+<span class="nc" id="L60">            hs[count] = lch[2];</span>
+            
+<span class="nc" id="L62">            sumL += lch[0];</span>
+<span class="nc" id="L63">            sumC += lch[1];</span>
+<span class="nc" id="L64">            count++;</span>
+<span class="nc" id="L65">        }</span>
+<span class="nc" id="L66">        this.avgL = (float)(sumL/nPoints);</span>
+<span class="nc" id="L67">        this.avgC = (float)(sumC/nPoints);</span>
+        
+<span class="nc" id="L69">        HistogramHolder hHist = Histogram.createSimpleHistogram(hs, </span>
+<span class="nc" id="L70">            Errors.populateYErrorsBySqrt(hs));</span>
+      
+<span class="nc" id="L72">        int wrapAround = 255;</span>
+        
+<span class="nc" id="L74">        int peakIdx = MiscMath.findYMaxIndex(hHist.getYHist());</span>
+<span class="nc" id="L75">        float peakValue = hHist.getXHist()[peakIdx];</span>
+<span class="nc" id="L76">        double sumH = 0;</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">        for (int i = 0; i &lt; hs.length; ++i) {</span>
+<span class="nc" id="L78">            float v = hs[i];</span>
+<span class="nc" id="L79">            float v2 = v + wrapAround; </span>
+<span class="nc bnc" id="L80" title="All 2 branches missed.">            if (Math.abs(v - peakValue) &lt;= Math.abs(v2 - peakValue)) {</span>
+<span class="nc" id="L81">                sumH += v;</span>
+            } else {
+<span class="nc" id="L83">                sumH += v2;</span>
+            }
+        }
+<span class="nc" id="L86">        this.avgH = (float)(sumH/nPoints);</span>
+        
+        /*
+        System.out.println(&quot;Lavg indiv = &quot; + avgL);
+        System.out.println(&quot;Cavg indiv = &quot; + avgC);
+        System.out.println(&quot;Havg indiv = &quot; + avgH);
+        
+        System.out.println(&quot;Lavg group = &quot; + cieLCHAvg[0]);
+        System.out.println(&quot;Cavg group = &quot; + cieLCHAvg[1]);
+        System.out.println(&quot;Havg group = &quot; + cieLCHAvg[2]);
+        */
+        
+<span class="nc" id="L98">        sumL = 0;</span>
+<span class="nc" id="L99">        sumC = 0;</span>
+<span class="nc" id="L100">        sumH = 0;</span>
+        
+<span class="nc bnc" id="L102" title="All 2 branches missed.">        for (int i = 0; i &lt; hs.length; ++i) {       </span>
+<span class="nc" id="L103">            float diffL = ls[i] - this.avgL;</span>
+<span class="nc" id="L104">            float diffC = cs[i] - this.avgC;</span>
+<span class="nc" id="L105">            sumL += (diffL * diffL);</span>
+<span class="nc" id="L106">            sumC += (diffC * diffC);</span>
+            
+            float diffH;
+<span class="nc" id="L109">            float v = hs[i];</span>
+<span class="nc" id="L110">            float v2 = v + wrapAround; </span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">            if (Math.abs(v - avgH) &lt;= Math.abs(v2 - avgH)) {</span>
+<span class="nc" id="L112">                diffH = v - avgH;</span>
+            } else {
+<span class="nc" id="L114">                diffH = v2 - avgH;</span>
+            }            
+<span class="nc" id="L116">            sumH += (diffH * diffH);</span>
+        }
+        
+<span class="nc" id="L119">        this.stdDevL = (float)Math.sqrt(sumL/(nPoints - 1.));</span>
+<span class="nc" id="L120">        this.stdDevC = (float)Math.sqrt(sumC/(nPoints - 1.));</span>
+<span class="nc" id="L121">        this.stdDevH = (float)Math.sqrt(sumH/(nPoints - 1.));</span>
+<span class="nc" id="L122">    }</span>
+    
+    /**
+     * calculate the difference in C and H between this and other and
+     * normalize the values to a sum of &quot;1&quot; using the range of values
+     * possible from the use of a standard illumant, D65.
+     * 
+     * @param other
+     * @return 
+     */
+    public float calcNormalizedCHDifference(GroupPixelCIELCH other) {
+       
+        /*
+        * using the standard illuminant of daylight, D65,
+        * the range of return values is
+        *   magnitude, C:  0 to 139 
+        *   angle,     H:  0 to 359, but image scales it to 255
+        */
+        
+<span class="nc" id="L141">        float d1 = calcDifferenceH(other)/255.f;</span>
+        
+<span class="nc" id="L143">        float d2 = calcDifferenceC(other)/139.f;</span>
+        
+<span class="nc" id="L145">        return 0.5f * (d1 + d2);</span>
+    }
+    
+    public float calcDifferenceC(GroupPixelCIELCH other) {
+                
+<span class="nc" id="L150">        return Math.abs(avgC - other.avgC);</span>
+    }
+
+    public float calcDifferenceH(GroupPixelCIELCH other) {
+        
+<span class="nc" id="L155">        int wrapAround = 255;</span>
+        
+<span class="nc" id="L157">        float v1 = avgH;</span>
+<span class="nc" id="L158">        float v3 = other.avgH;</span>
+        
+<span class="nc bnc" id="L160" title="All 2 branches missed.">        if (v1 &gt; v3) {</span>
+<span class="nc" id="L161">            float v4 = v3 + wrapAround;</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">            if (Math.abs(v1 - v3) &gt; Math.abs(v1 - v4)) {</span>
+<span class="nc" id="L163">                return Math.abs(v1 - v4);</span>
+            } else {
+<span class="nc" id="L165">                return Math.abs(v1 - v3);</span>
+            }
+        } else {
+<span class="nc" id="L168">            float v2 = v1 + wrapAround;</span>
+<span class="nc bnc" id="L169" title="All 2 branches missed.">            if (Math.abs(v1 - v3) &gt; Math.abs(v2 - v3)) {</span>
+<span class="nc" id="L170">                return Math.abs(v2 - v3);</span>
+            } else {
+<span class="nc" id="L172">                return Math.abs(v1 - v3);</span>
+            }
+        }
+    }
+
+    /**
+     * @return the avgL
+     */
+    public float getAvgL() {
+<span class="nc" id="L181">        return avgL;</span>
+    }
+
+    /**
+     * @return the stdDevL
+     */
+    public float getStdDevL() {
+<span class="nc" id="L188">        return stdDevL;</span>
+    }
+
+    /**
+     * @return the avgC
+     */
+    public float getAvgC() {
+<span class="nc" id="L195">        return avgC;</span>
+    }
+
+    /**
+     * @return the stdDevC
+     */
+    public float getStdDevC() {
+<span class="nc" id="L202">        return stdDevC;</span>
+    }
+
+    /**
+     * @return the avgH
+     */
+    public float getAvgH() {
+<span class="nc" id="L209">        return avgH;</span>
+    }
+
+    /**
+     * @return the stdDevH
+     */
+    public float getStdDevH() {
+<span class="nc" id="L216">        return stdDevH;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

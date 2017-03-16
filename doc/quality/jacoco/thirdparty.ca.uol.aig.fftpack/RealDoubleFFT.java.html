@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>RealDoubleFFT.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">thirdparty.ca.uol.aig.fftpack</a> &gt; <span class="el_source">RealDoubleFFT.java</span></div><h1>RealDoubleFFT.java</h1><pre class="source lang-java linenums">package thirdparty.ca.uol.aig.fftpack;
+/**
+  * FFT transform of a real periodic sequence.
+
+    jfftpack is a Java version of fftpack. jfftpack is based
+on Paul N. Swarztraubre's Fortran code and Pekka Janhuen's
+C code. It is developed as part of my official duties as
+lead software engineer for SCUBA-2 FTS projects
+(www.roe.ac.uk/ukatc/projects/scubatwo/)
+
+The original fftpack was public domain, so jfftpack is
+public domain too. As such, this package is also released
+under GPL. This software is in no way certified or guaranteed.
+
+Notes:
+Please read the following documents for FFT formula if necessary
+http://www.netlib.org/fftpack/doc
+
+  * @author Baoshe Zhang
+  * @author Astronomical Instrument Group of University of Lethbridge.
+*/
+public class RealDoubleFFT extends RealDoubleFFT_Mixed
+{
+/**
+  * &lt;em&gt;norm_factor&lt;/em&gt; can be used to normalize this FFT transform. This is because
+  * a call of forward transform (&lt;em&gt;ft&lt;/em&gt;) followed by a call of backward transform
+  * (&lt;em&gt;bt&lt;/em&gt;) will multiply the input sequence by &lt;em&gt;norm_factor&lt;/em&gt;.
+*/
+     public double norm_factor;
+     private double wavetable[];
+     private int ndim;
+
+/**
+  * Construct a wavenumber table with size &lt;em&gt;n&lt;/em&gt;.
+  * The sequences with the same size can share a wavenumber table. The prime
+  * factorization of &lt;em&gt;n&lt;/em&gt; together with a tabulation of the trigonometric functions
+  * are computed and stored.
+  *
+  * @param  n  the size of a real data sequence. When &lt;em&gt;n&lt;/em&gt; is a multiplication of small
+  * numbers (4, 2, 3, 5), this FFT transform is very efficient.
+*/
+     public RealDoubleFFT(int n)
+<span class="nc" id="L43">     {</span>
+<span class="nc" id="L44">          ndim = n;</span>
+<span class="nc" id="L45">          norm_factor = n;</span>
+<span class="nc bnc" id="L46" title="All 4 branches missed.">          if(wavetable == null || wavetable.length !=(2*ndim+15))</span>
+          {
+<span class="nc" id="L48">              wavetable = new double[2*ndim + 15];</span>
+          }
+<span class="nc" id="L50">          rffti(ndim, wavetable);</span>
+<span class="nc" id="L51">     }</span>
+
+/**
+  * Forward real FFT transform. It computes the discrete transform of a real data sequence.
+  *
+  * @param x an array which contains the sequence to be transformed. After FFT,
+  * &lt;em&gt;x&lt;/em&gt; contains the transform coeffients used to construct &lt;em&gt;n&lt;/em&gt; complex FFT coeffients.
+  * &lt;br&gt;
+  * The real part of the first complex FFT coeffients is &lt;em&gt;x&lt;/em&gt;[0]; its imaginary part
+  * is 0. If &lt;em&gt;n&lt;/em&gt; is even set &lt;em&gt;m&lt;/em&gt; = &lt;em&gt;n&lt;/em&gt;/2, if &lt;em&gt;n&lt;/em&gt; is odd set 
+  * &lt;em&gt;m&lt;/em&gt; = &lt;em&gt;n&lt;/em&gt;/2, then for
+  * &lt;br&gt;
+  * &lt;em&gt;k&lt;/em&gt; = 1, ..., &lt;em&gt;m&lt;/em&gt;-1 &lt;br&gt;
+  * the real part of &lt;em&gt;k&lt;/em&gt;-th complex FFT coeffients is &lt;em&gt;x&lt;/em&gt;[2*&lt;em&gt;k&lt;/em&gt;-1];
+  * &lt;br&gt;
+  * the imaginary part of &lt;em&gt;k&lt;/em&gt;-th complex FFT coeffients is &lt;em&gt;x&lt;/em&gt;[2*&lt;em&gt;k&lt;/em&gt;-2].
+  * &lt;br&gt;
+  * If &lt;em&gt;n&lt;/em&gt; is even,
+  * the real of part of (&lt;em&gt;n&lt;/em&gt;/2)-th complex FFT coeffients is &lt;em&gt;x&lt;/em&gt;[&lt;em&gt;n&lt;/em&gt;]; its imaginary part is 0.
+  * The remaining complex FFT coeffients can be obtained by the symmetry relation:
+  * the (&lt;em&gt;n&lt;/em&gt;-&lt;em&gt;k&lt;/em&gt;)-th complex FFT coeffient is the conjugate of &lt;em&gt;n&lt;/em&gt;-th complex FFT coeffient.
+  *
+*/
+     public void ft(double x[])
+     {
+<span class="nc bnc" id="L76" title="All 2 branches missed.">         if(x.length != ndim)</span>
+<span class="nc" id="L77">              throw new IllegalArgumentException(&quot;The length of data can not match that of the wavetable&quot;);</span>
+<span class="nc" id="L78">         rfftf(ndim, x, wavetable);</span>
+<span class="nc" id="L79">     }</span>
+
+/**
+  * Forward real FFT transform. It computes the discrete transform of a real data sequence.
+  *
+  * @param x an array which contains the sequence to be transformed. After FFT,
+  * &lt;em&gt;x&lt;/em&gt; contains the transform coeffients used to construct &lt;em&gt;n&lt;/em&gt; complex FFT coeffients.
+  * &lt;br&gt;
+  * @param y the first complex (&lt;em&gt;n&lt;/em&gt;+1)/2 (when &lt;em&gt;n&lt;/em&gt; is odd) or (&lt;em&gt;n&lt;/em&gt;/2+1) (when 
+  * &lt;em&gt;n&lt;/em&gt; is even) FFT coeffients.
+  * The remaining complex FFT coeffients can be obtained by the symmetry relation:
+  * the (&lt;em&gt;n&lt;/em&gt;-&lt;em&gt;k&lt;/em&gt;)-th complex FFT coeffient is the conjugate of &lt;em&gt;n&lt;/em&gt;-th complex FFT coeffient.
+  *
+*/
+     public void ft(double x[], Complex1D y)
+     {
+<span class="nc bnc" id="L95" title="All 2 branches missed.">         if(x.length != ndim)</span>
+<span class="nc" id="L96">              throw new IllegalArgumentException(&quot;The length of data can not match that of the wavetable&quot;);</span>
+<span class="nc" id="L97">         rfftf(ndim, x, wavetable);</span>
+
+<span class="nc bnc" id="L99" title="All 2 branches missed.">         if(ndim%2 == 0) </span>
+         {
+<span class="nc" id="L101">             y.x = new double[ndim/2 + 1];</span>
+<span class="nc" id="L102">             y.y = new double[ndim/2 + 1];</span>
+         }
+         else
+         {
+<span class="nc" id="L106">             y.x = new double[(ndim+1)/2];</span>
+<span class="nc" id="L107">             y.y = new double[(ndim+1)/2];</span>
+         }
+
+
+<span class="nc" id="L111">         y.x[0] = x[0];</span>
+<span class="nc" id="L112">         y.y[0] = 0.0D;</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">         for(int i=1; i&lt;(ndim+1)/2; i++)</span>
+         {
+<span class="nc" id="L115">             y.x[i] = x[2*i-1];</span>
+<span class="nc" id="L116">             y.y[i] = x[2*i];</span>
+         }
+<span class="nc bnc" id="L118" title="All 2 branches missed.">         if(ndim%2 == 0)</span>
+         {
+<span class="nc" id="L120">             y.x[ndim/2] = x[ndim-1];</span>
+<span class="nc" id="L121">             y.y[ndim/2] = 0.0D;</span>
+         }
+
+<span class="nc" id="L124">     }</span>
+
+/**
+  * Backward real FFT transform. It is the unnormalized inverse transform of &lt;em&gt;ft&lt;/em&gt;(double[]).
+  *
+  * @param x an array which contains the sequence to be transformed. After FFT,
+  * &lt;em&gt;x&lt;/em&gt; contains the transform coeffients. Also see the comments of &lt;em&gt;ft&lt;/em&gt;(double[])
+  * for the relation between &lt;em&gt;x&lt;/em&gt; and complex FFT coeffients.
+*/
+     public void bt(double x[])
+     {
+<span class="nc bnc" id="L135" title="All 2 branches missed.">         if(x.length != ndim)</span>
+<span class="nc" id="L136">              throw new IllegalArgumentException(&quot;The length of data can not match that of the wavetable&quot;);</span>
+<span class="nc" id="L137">         rfftb(ndim, x, wavetable);</span>
+<span class="nc" id="L138">     }</span>
+/**
+  * Backward real FFT transform. It is the unnormalized inverse transform of &lt;em&gt;ft&lt;/em&gt;(Complex1D, double[]).
+  *
+  * @param x  an array which contains the sequence to be transformed. When &lt;em&gt;n&lt;/em&gt; is odd, it contains the first 
+  * (&lt;em&gt;n&lt;/em&gt;+1)/2 complex data; when &lt;em&gt;n&lt;/em&gt; is even, it contains (&lt;em&gt;n&lt;/em&gt;/2+1) complex data.
+  * @param y  the real FFT coeffients.
+  * &lt;br&gt;
+  * Also see the comments of &lt;em&gt;ft&lt;/em&gt;(double[]) for the relation
+  * between &lt;em&gt;x&lt;/em&gt; and complex FFT coeffients.
+*/
+     public void bt(Complex1D x, double y[])
+     {
+<span class="nc bnc" id="L151" title="All 2 branches missed.">         if(ndim%2 == 0)</span>
+         {
+<span class="nc bnc" id="L153" title="All 2 branches missed.">             if(x.x.length != ndim/2+1)</span>
+<span class="nc" id="L154">                 throw new IllegalArgumentException(&quot;The length of data can not match that of the wavetable&quot;);</span>
+         }
+         else
+         {
+<span class="nc bnc" id="L158" title="All 2 branches missed.">             if(x.x.length != (ndim+1)/2)</span>
+<span class="nc" id="L159">                 throw new IllegalArgumentException(&quot;The length of data can not match that of the wavetable&quot;);</span>
+         }
+
+<span class="nc" id="L162">         y[0] = x.x[0];</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">         for(int i=1; i&lt;(ndim+1)/2; i++)</span>
+         {
+<span class="nc" id="L165">             y[2*i-1]=x.x[i];</span>
+<span class="nc" id="L166">             y[2*i]=x.y[i];</span>
+         }
+<span class="nc bnc" id="L168" title="All 2 branches missed.">         if(ndim%2 == 0)</span>
+         {
+<span class="nc" id="L170">             y[ndim-1]=x.x[ndim/2];</span>
+         }
+<span class="nc" id="L172">         rfftb(ndim, y, wavetable);</span>
+<span class="nc" id="L173">     }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

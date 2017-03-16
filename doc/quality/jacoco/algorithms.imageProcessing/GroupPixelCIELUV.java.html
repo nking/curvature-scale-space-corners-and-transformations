@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>GroupPixelCIELUV.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">GroupPixelCIELUV.java</span></div><h1>GroupPixelCIELUV.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.util.PairInt;
+import java.util.Collection;
+import java.util.Set;
+
+/**
+ *
+ * @author nichole
+ */
+public class GroupPixelCIELUV extends GroupPixelRGB0 {
+    
+    private float avgL;
+    private float stdDevL;
+    private float avgU;
+    private float stdDevU;
+    private float avgV;
+    private float stdDevV;
+    
+    public GroupPixelCIELUV(final Collection&lt;PairInt&gt; points, 
+<span class="nc" id="L21">        ImageExt colorImage) {</span>
+               
+<span class="nc bnc" id="L23" title="All 2 branches missed.">        if (points == null) {</span>
+<span class="nc" id="L24">            throw new IllegalArgumentException(&quot;points cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L26" title="All 2 branches missed.">        if (colorImage == null) {</span>
+<span class="nc" id="L27">            throw new IllegalArgumentException(&quot;colorImage cannot be null&quot;);</span>
+        }
+        
+<span class="nc" id="L30">        calculateColors(points, colorImage, 0, 0);</span>
+        
+<span class="nc" id="L32">        CIEChromaticity cieC = new CIEChromaticity();</span>
+<span class="nc" id="L33">        float[] cieLUVAvg = cieC.rgbToCIELUV(</span>
+<span class="nc" id="L34">            Math.round(getAvgRed()), </span>
+<span class="nc" id="L35">            Math.round(getAvgGreen()), </span>
+<span class="nc" id="L36">            Math.round(getAvgBlue()));</span>
+        
+<span class="nc" id="L38">        this.nPoints = points.size();</span>
+<span class="nc" id="L39">        this.avgL = cieLUVAvg[0];</span>
+<span class="nc" id="L40">        this.avgU = cieLUVAvg[1];</span>
+<span class="nc" id="L41">        this.avgV = cieLUVAvg[2];</span>
+        
+<span class="nc" id="L43">        double sumL = 0;</span>
+<span class="nc" id="L44">        double sumU = 0;</span>
+<span class="nc" id="L45">        double sumV = 0;</span>
+        
+<span class="nc bnc" id="L47" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+            
+<span class="nc" id="L49">            int x = p.getX();</span>
+<span class="nc" id="L50">            int y = p.getY();</span>
+            
+<span class="nc" id="L52">            float[] lab = cieC.rgbToCIELUV(</span>
+<span class="nc" id="L53">                colorImage.getR(x, y), colorImage.getG(x, y), </span>
+<span class="nc" id="L54">                colorImage.getB(x, y));</span>
+            
+<span class="nc" id="L56">            float diffL = lab[0] - cieLUVAvg[0];</span>
+<span class="nc" id="L57">            float diffU = lab[1] - cieLUVAvg[1];</span>
+<span class="nc" id="L58">            float diffV = lab[2] - cieLUVAvg[2];</span>
+            
+<span class="nc" id="L60">            sumL += (diffL * diffL);</span>
+<span class="nc" id="L61">            sumU += (diffU * diffU);</span>
+<span class="nc" id="L62">            sumV += (diffV * diffV);</span>
+<span class="nc" id="L63">        }</span>
+        
+<span class="nc" id="L65">        this.stdDevL = (float)Math.sqrt(sumL/(nPoints - 1.));</span>
+<span class="nc" id="L66">        this.stdDevU = (float)Math.sqrt(sumU/(nPoints - 1.));</span>
+<span class="nc" id="L67">        this.stdDevV = (float)Math.sqrt(sumV/(nPoints - 1.));</span>
+<span class="nc" id="L68">    }</span>
+    
+    /**
+     * calculate the difference in L, U, V between this and other and
+     * normalize the values to a sum of &quot;1&quot; using the range of values
+     * possible from the use of a standard illumant, D65.
+     * 
+     * @param other
+     * @return 
+     */
+    public float calcNormalizedDifference(GroupPixelCIELUV other) {
+       
+        /*
+        * using the standard illuminant of daylight, D65,
+        * the range of return values is
+        * L       0 to 104.5
+        * u   -86.9 to 183.8
+        * v  -141.4 to 112.3
+        */
+        
+<span class="nc" id="L88">        float[] diffs = calcDifference(other);</span>
+<span class="nc" id="L89">        diffs[0] /= 104.5f;</span>
+<span class="nc" id="L90">        diffs[1] /= (183.8f + 86.9f);</span>
+<span class="nc" id="L91">        diffs[2] /= (112.3f + 141.4f);</span>
+        
+<span class="nc" id="L93">        return (diffs[0] + diffs[1] + diffs[2])/3.f;</span>
+    }
+    
+    /**
+     * calculate the difference in L, U, V between this and other 
+     * using the DeltaE2000 formula.
+     * 
+     * @param other
+     * @return 
+     */
+    public float calcDeltaE2000(GroupPixelCIELUV other) {
+       
+<span class="nc" id="L105">        CIEChromaticity cieC = new CIEChromaticity();</span>
+        
+<span class="nc" id="L107">        double deltaE = cieC.calcDeltaECIE2000(</span>
+            avgL, avgU, avgV, other.avgL, other.avgU, other.avgV);
+    
+<span class="nc" id="L110">        return (float)deltaE;</span>
+    }
+    
+    /**
+     * calculate the absolute difference in L, U, V between this and other
+     * 
+     * @param other
+     * @return 
+     */
+    public float[] calcDifference(GroupPixelCIELUV other) {
+       
+<span class="nc" id="L121">        float[] diffs = new float[3];</span>
+<span class="nc" id="L122">        diffs[0] = Math.abs(avgL - other.getAvgL());</span>
+<span class="nc" id="L123">        diffs[1] = Math.abs(avgU - other.getAvgU());</span>
+<span class="nc" id="L124">        diffs[2] = Math.abs(avgV - other.getAvgV());</span>
+        
+<span class="nc" id="L126">        return diffs;</span>
+    }
+
+    /**
+     * @return the avgL
+     */
+    public float getAvgL() {
+<span class="nc" id="L133">        return avgL;</span>
+    }
+
+    /**
+     * @return the stdDevL
+     */
+    public float getStdDevL() {
+<span class="nc" id="L140">        return stdDevL;</span>
+    }
+
+    /**
+     * @return the avgU
+     */
+    public float getAvgU() {
+<span class="nc" id="L147">        return avgU;</span>
+    }
+
+    /**
+     * @return the stdDevU
+     */
+    public float getStdDevU() {
+<span class="nc" id="L154">        return stdDevU;</span>
+    }
+
+    /**
+     * @return the avgV
+     */
+    public float getAvgV() {
+<span class="nc" id="L161">        return avgV;</span>
+    }
+
+    /**
+     * @return the stdDevV
+     */
+    public float getStdDevV() {
+<span class="nc" id="L168">        return stdDevV;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

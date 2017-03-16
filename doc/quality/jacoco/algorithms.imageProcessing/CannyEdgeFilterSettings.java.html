@@ -4,71 +4,26 @@
  *
  * @author nichole
  */
-<span class="fc" id="L7">public class CannyEdgeFilterSettings {</span>
-    
-<span class="fc" id="L9">    private boolean useOutdoorMode = false;</span>
-    
-<span class="fc" id="L11">    private boolean doNotNormalizeByHistogram = false;</span>
-    
-<span class="fc" id="L13">    private boolean useLineDrawingMode = false;</span>
-    
-<span class="fc" id="L15">    private boolean overrideHighThreshold = false;</span>
-    
-<span class="fc" id="L17">    private int[] shrinkToSize = null;</span>
-    
-    /**
-     * field only used if overrideHighThreshold is true.
-     */
-<span class="fc" id="L22">    private float highThreshold = 0.0f;</span>
-    
-    public void setOverrideHighThreshold(float value) {
+<span class="nc" id="L7">public class CannyEdgeFilterSettings {</span>
         
-<span class="nc" id="L26">        overrideHighThreshold = true;</span>
-        
-<span class="nc" id="L28">        highThreshold = value;</span>
-<span class="nc" id="L29">    }</span>
+<span class="nc" id="L9">    private boolean doNormalizeByHistEqualization = false;</span>
     
-    public boolean getOverrideHighThreshold() {
-<span class="fc" id="L32">        return overrideHighThreshold;</span>
-    }
+<span class="nc" id="L11">    private boolean useLineDrawingMode = false;</span>
 
-    public void setUseOutdoorMode() {
-<span class="fc" id="L36">        this.useOutdoorMode = true;</span>
-<span class="fc" id="L37">    }</span>
-
-    public void setDoNotNormalizeByHistogram() {
-<span class="fc" id="L40">        this.doNotNormalizeByHistogram = true;</span>
-<span class="fc" id="L41">    }</span>
+    public void setToNormalizeByHistogram() {
+<span class="nc" id="L14">        this.doNormalizeByHistEqualization = true;</span>
+<span class="nc" id="L15">    }</span>
 
     public void setUseLineDrawingMode() {
-<span class="fc" id="L44">        this.useLineDrawingMode = true;</span>
-<span class="fc" id="L45">    }</span>
-
-    /**
-     * @return the highThreshold
-     */
-    public float getHighThreshold() {
-<span class="nc" id="L51">        return highThreshold;</span>
-    }
+<span class="nc" id="L18">        this.useLineDrawingMode = true;</span>
+<span class="nc" id="L19">    }</span>
     
-    public boolean getUseOutdoorMode() {
-<span class="fc" id="L55">        return useOutdoorMode;</span>
-    }
-    
-    public boolean getDoNotNormalizeByHistogram() {
-<span class="fc" id="L59">        return doNotNormalizeByHistogram;</span>
+    public boolean getNormalizeByHistogram() {
+<span class="nc" id="L22">        return doNormalizeByHistEqualization;</span>
     }
     
     public boolean getUseLineDrawingMode() {
-<span class="fc" id="L63">        return useLineDrawingMode;</span>
-    }
-    
-    public void setShrinkToSize(int xOffset, int yOffset, int width, int height) {
-<span class="nc" id="L67">        shrinkToSize = new int[]{xOffset, yOffset, width, height};</span>
-<span class="nc" id="L68">    }</span>
-    
-    public int[] getShrinkToSize() {
-<span class="fc" id="L71">        return shrinkToSize;</span>
+<span class="nc" id="L26">        return useLineDrawingMode;</span>
     }
     
 }

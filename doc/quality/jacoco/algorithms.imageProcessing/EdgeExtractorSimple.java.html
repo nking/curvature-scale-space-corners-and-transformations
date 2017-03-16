@@ -1,0 +1,676 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>EdgeExtractorSimple.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">EdgeExtractorSimple.java</span></div><h1>EdgeExtractorSimple.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.misc.Misc;
+import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
+import algorithms.util.PairIntArrayWithColor;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.Stack;
+
+/**
+ * The simplest edge extractor which does the following:
+ * &lt;pre&gt;
+ *     -- finds junctions and stores them in a set
+ *     -- dfs traversal of each point w/ pixel value &gt; 0.
+ *           searches for a neighbor and if junction is within
+ *           neighbors, terminates the curve and starts a new curve
+ *           with the next popped point, else adds one neighbor to
+ *           the curve and that to the stack.
+ *     -- joins curves whose endpoints are not adjacent to junctions and whose
+ *            endpoints are adjacent.
+ *     -- performs a correction for an artifact pattern in the edges that tends 
+ *        to be present due to the curve thinning plus concatenation operations 
+ *        on the given image.
+ * &lt;/pre&gt;
+ * 
+ * @author nichole
+ */
+<span class="pc bpc" id="L34" title="1 of 2 branches missed.">public class EdgeExtractorSimple {</span>
+    
+<span class="pc" id="L36">    private Set&lt;PairInt&gt; junctions = new HashSet&lt;PairInt&gt;();</span>
+    
+<span class="pc" id="L38">    private List&lt;PairIntArray&gt; theEdges = new ArrayList&lt;PairIntArray&gt;();</span>
+    
+<span class="pc" id="L40">    private final Set&lt;PairInt&gt; points = new HashSet&lt;PairInt&gt;();</span>
+    
+<span class="pc" id="L42">    private boolean finished = false;</span>
+    
+    private final int n0;
+    private final int n1;
+    
+<span class="fc" id="L47">    public EdgeExtractorSimple(int[][] edgeImage) {</span>
+        
+<span class="fc" id="L49">        n0 = edgeImage.length;</span>
+<span class="fc" id="L50">        n1 = edgeImage[0].length;</span>
+        
+<span class="fc bfc" id="L52" title="All 2 branches covered.">        for (int i = 0; i &lt; n0; ++i) {</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">            for (int j = 0; j &lt; n1; ++j) {</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">                if (edgeImage[i][j] == 0) {</span>
+<span class="fc" id="L55">                    continue;</span>
+                }
+<span class="fc" id="L57">                points.add(new PairInt(i, j));</span>
+            }
+        }
+        
+<span class="fc" id="L61">    }</span>
+    
+<span class="nc" id="L63">    public EdgeExtractorSimple(Set&lt;PairInt&gt; edgePoints, int imageWidth, int imageHeight) {</span>
+        
+<span class="nc" id="L65">        n0 = imageWidth;</span>
+<span class="nc" id="L66">        n1 = imageHeight;</span>
+<span class="nc" id="L67">        points.addAll(edgePoints);</span>
+<span class="nc" id="L68">    }</span>
+    
+<span class="nc" id="L70">    public EdgeExtractorSimple(GreyscaleImage img) {</span>
+        
+<span class="nc" id="L72">        n0 = img.getWidth();</span>
+<span class="nc" id="L73">        n1 = img.getHeight();</span>
+        
+<span class="nc bnc" id="L75" title="All 2 branches missed.">        for (int i = 0; i &lt; n0; ++i) {</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">            for (int j = 0; j &lt; n1; ++j) {</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">                if (img.getValue(i, j) == 0) {</span>
+<span class="nc" id="L78">                    continue;</span>
+                }
+<span class="nc" id="L80">                points.add(new PairInt(i, j));</span>
+            }
+        }
+        
+<span class="nc" id="L84">    }</span>
+    
+    public void extractEdges() {
+        
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">        if (finished) {</span>
+<span class="nc" id="L89">            throw new IllegalStateException(&quot;edges have already been extracted&quot;);</span>
+        }
+                
+<span class="fc" id="L92">        findJunctions();</span>
+        
+<span class="fc" id="L94">        findConnectedPoints();</span>
+        
+<span class="fc" id="L96">        joinEdges();</span>
+        
+<span class="fc" id="L98">        joinEdgesWithLJunctionSeparators();</span>
+                
+<span class="fc" id="L100">        setEdgesAsOrderedAndClosed();</span>
+                
+<span class="fc" id="L102">        finished = true;</span>
+<span class="fc" id="L103">    }</span>
+
+    private void findJunctions() {
+        
+<span class="fc" id="L107">        int[] dxs = Misc.dx8;</span>
+<span class="fc" id="L108">        int[] dys = Misc.dy8;</span>
+        
+        // any point having more than 2 neighbors is a junctions
+        
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        for (PairInt p : points) {</span>
+            
+<span class="fc" id="L114">            int x = p.getX();</span>
+<span class="fc" id="L115">            int y = p.getY();</span>
+            
+<span class="fc" id="L117">            int count = 0;</span>
+            
+<span class="fc bfc" id="L119" title="All 2 branches covered.">            for (int k = 0; k &lt; dxs.length; ++k) {</span>
+<span class="fc" id="L120">                int x2 = x + dxs[k];</span>
+<span class="fc" id="L121">                int y2 = y + dys[k];</span>
+<span class="fc" id="L122">                PairInt p2 = new PairInt(x2, y2);</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">                if (points.contains(p2)) {</span>
+<span class="fc" id="L124">                    count++;</span>
+                }
+            }
+            
+<span class="fc bfc" id="L128" title="All 2 branches covered.">            if (count &gt; 2) {</span>
+<span class="fc" id="L129">                junctions.add(p);</span>
+            }
+<span class="fc" id="L131">        }</span>
+<span class="fc" id="L132">    }</span>
+    
+    private void findConnectedPoints() {
+        
+<span class="fc" id="L136">        Stack&lt;PairInt&gt; stack = new Stack&lt;PairInt&gt;();</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">        for (PairInt p : points) {</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">            if (!junctions.contains(p)) {</span>
+<span class="fc" id="L139">                stack.add(p);</span>
+            }
+<span class="fc" id="L141">        }</span>
+        
+<span class="fc" id="L143">        Set&lt;PairInt&gt; added = new HashSet&lt;PairInt&gt;();</span>
+        
+<span class="fc" id="L145">        int[] dxs = Misc.dx8;</span>
+<span class="fc" id="L146">        int[] dys = Misc.dy8;</span>
+        
+<span class="fc" id="L148">        PairIntArray currentEdge = new PairIntArray();</span>
+        
+<span class="fc bfc" id="L150" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
+            
+<span class="fc" id="L152">            PairInt uPoint = stack.pop();</span>
+            
+<span class="fc bfc" id="L154" title="All 2 branches covered.">            if (added.contains(uPoint)) {</span>
+<span class="fc" id="L155">                continue;</span>
+            }
+                        
+<span class="fc" id="L158">            int x = uPoint.getX();</span>
+<span class="fc" id="L159">            int y = uPoint.getY();</span>
+            
+<span class="fc" id="L161">            currentEdge.add(x, y);</span>
+            
+<span class="fc" id="L163">            added.add(new PairInt(x, y));</span>
+            
+<span class="fc" id="L165">            boolean containsJunction = false;</span>
+            
+<span class="fc" id="L167">            PairInt aNeighbor = null;</span>
+                        
+<span class="fc bfc" id="L169" title="All 2 branches covered.">            for (int k = 0; k &lt; dxs.length; ++k) {</span>
+<span class="fc" id="L170">                int x2 = x + dxs[k];</span>
+<span class="fc" id="L171">                int y2 = y + dys[k];</span>
+<span class="fc" id="L172">                PairInt p2 = new PairInt(x2, y2);</span>
+<span class="fc bfc" id="L173" title="All 4 branches covered.">                if (!points.contains(p2) || added.contains(p2)) {</span>
+<span class="fc" id="L174">                    continue;</span>
+                }
+<span class="fc bfc" id="L176" title="All 2 branches covered.">                if (junctions.contains(p2)) {</span>
+<span class="fc" id="L177">                    containsJunction = true;</span>
+<span class="fc" id="L178">                    break;</span>
+                }
+<span class="fc bfc" id="L180" title="All 2 branches covered.">                if (aNeighbor == null) {</span>
+<span class="fc" id="L181">                    aNeighbor = p2;</span>
+                }
+            }
+            
+<span class="fc bfc" id="L185" title="All 4 branches covered.">            if (containsJunction || (aNeighbor == null)) {</span>
+                // store currentEdge and start a new one
+<span class="fc" id="L187">                theEdges.add(currentEdge);</span>
+<span class="fc" id="L188">                currentEdge = new PairIntArray();</span>
+            } else {
+<span class="fc" id="L190">                stack.add(aNeighbor);</span>
+            }            
+<span class="fc" id="L192">        }</span>
+        
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">        if (currentEdge.getN() &gt; 0) {</span>
+<span class="nc" id="L195">            theEdges.add(currentEdge);</span>
+        }
+<span class="fc" id="L197">    }</span>
+
+    public Set&lt;PairInt&gt; getJunctions() {
+<span class="fc" id="L200">        return junctions;</span>
+    }
+    
+    public List&lt;PairIntArray&gt; getEdges() {
+<span class="fc" id="L204">        return theEdges;</span>
+    }
+
+    /**
+     * join edges that are adjacent to one another, but not in junctions.
+     * runtime complexity is O(N_edges) + 
+     */
+    private void joinEdges() {
+        
+<span class="fc" id="L213">        Map&lt;PairInt, Integer&gt; endpointMap = createEndpointMap();</span>
+                
+        /*
+         * for each edge:
+              if endpoint is not a junction, store in endpoint map
+           for each edge:
+              if endpoint is not a junction:
+                  search for a neighbor in endpoint map and if found,
+                     aggregate line with current line
+                     remove both endpoints where lines are joining
+                     update the index for the other line endpoint in the map
+                     clear other line in edges
+            vist edges in reverse order and remove the empty entries.
+        */
+        
+<span class="fc" id="L228">        int[] dxs = Misc.dx8;</span>
+<span class="fc" id="L229">        int[] dys = Misc.dy8;</span>
+
+<span class="fc" id="L231">        PairInt[] eps = new PairInt[2];</span>
+        
+<span class="fc" id="L233">        Stack&lt;Integer&gt; stack = new Stack&lt;Integer&gt;();</span>
+<span class="fc bfc" id="L234" title="All 2 branches covered.">        for (int edgeIdx = (theEdges.size() - 1); edgeIdx &gt; -1; --edgeIdx) {</span>
+<span class="fc" id="L235">            stack.add(Integer.valueOf(edgeIdx));</span>
+        }
+        
+<span class="fc bfc" id="L238" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
+            
+<span class="fc" id="L240">            Integer edgeIndex = stack.pop();</span>
+<span class="fc" id="L241">            int edgeIdx = edgeIndex.intValue();</span>
+            
+<span class="fc" id="L243">            PairIntArray edge = theEdges.get(edgeIdx);</span>
+            
+<span class="fc" id="L245">            int n = edge.getN();</span>
+            
+<span class="fc bfc" id="L247" title="All 2 branches covered.">            if (n == 0) {</span>
+<span class="fc" id="L248">                continue;</span>
+            }
+            
+<span class="fc" id="L251">            eps[0] = new PairInt(edge.getX(0), edge.getY(0));</span>
+            
+<span class="fc bfc" id="L253" title="All 2 branches covered.">            eps[1] = (n == 1) ? null : new PairInt(edge.getX(n - 1), edge.getY(n - 1));</span>
+            
+<span class="fc" id="L255">            Set&lt;Integer&gt; addBackToStack = new HashSet&lt;Integer&gt;();</span>
+            
+<span class="fc bfc" id="L257" title="All 2 branches covered.">            for (PairInt ep : eps) {</span>
+                
+<span class="fc bfc" id="L259" title="All 2 branches covered.">                if (ep == null) {</span>
+<span class="fc" id="L260">                    continue;</span>
+                }
+                                 
+<span class="fc bfc" id="L263" title="All 2 branches covered.">                for (int k = 0; k &lt; dxs.length; ++k) {</span>
+
+<span class="fc" id="L265">                    int x2 = ep.getX() + dxs[k];</span>
+<span class="fc" id="L266">                    int y2 = ep.getY() + dys[k];</span>
+
+<span class="fc" id="L268">                    PairInt p2 = new PairInt(x2, y2);</span>
+
+<span class="fc" id="L270">                    Integer index2 = endpointMap.get(p2);</span>
+
+<span class="fc bfc" id="L272" title="All 4 branches covered.">                    if (index2 == null || edgeIndex.equals(index2)) {</span>
+<span class="fc" id="L273">                        continue;</span>
+                    }
+
+<span class="fc" id="L276">                    PairIntArray edge2 = theEdges.get(index2.intValue());</span>
+<span class="pc bpc" id="L277" title="3 of 4 branches missed.">                    assert(edge2.getN() &gt; 0);</span>
+
+<span class="fc" id="L279">                    int n2 = edge2.getN();</span>
+
+                    // join the 2 edges
+<span class="fc bfc" id="L282" title="All 2 branches covered.">                    if ((ep.getX() == edge.getX(0)) &amp;&amp; </span>
+<span class="fc bfc" id="L283" title="All 2 branches covered.">                        (ep.getY() == edge.getY(0))) {</span>
+
+<span class="fc bfc" id="L285" title="All 2 branches covered.">                        if ((p2.getX() == edge2.getX(0)) &amp;&amp; </span>
+<span class="fc bfc" id="L286" title="All 2 branches covered.">                            (p2.getY() == edge2.getY(0))) {</span>
+
+                            /*
+                            e1_2
+                            e1_1
+                            e1_0 *
+                                   * e2_0  e2_1  
+                            */
+
+<span class="fc bfc" id="L295" title="All 2 branches covered.">                            if (n2 &gt; 1) {</span>
+<span class="fc" id="L296">                                endpointMap.remove(p2);</span>
+                            }
+<span class="fc bfc" id="L298" title="All 2 branches covered.">                            if (n &gt; 1) {</span>
+<span class="fc" id="L299">                                endpointMap.remove(ep);</span>
+                            }
+<span class="fc" id="L301">                            PairInt otherEndpoint = new PairInt(</span>
+<span class="fc" id="L302">                                edge2.getX(n2 - 1), edge2.getY(n2 - 1));</span>
+<span class="fc" id="L303">                            edge.reverse();</span>
+<span class="fc" id="L304">                            edge.addAll(edge2);</span>
+<span class="fc" id="L305">                            theEdges.set(index2.intValue(), new PairIntArray());</span>
+
+<span class="pc bpc" id="L307" title="1 of 2 branches missed.">                            if (!junctions.contains(otherEndpoint)) {</span>
+<span class="fc" id="L308">                                endpointMap.put(otherEndpoint, edgeIndex);</span>
+                            }
+                            
+<span class="fc" id="L311">                            addBackToStack.add(edgeIndex);</span>
+
+<span class="fc" id="L313">                        } else {</span>
+                            // edge2 join is end
+<span class="pc bpc" id="L315" title="3 of 4 branches missed.">                            assert(p2.getX() == edge2.getX(n2 - 1));</span>
+<span class="pc bpc" id="L316" title="3 of 4 branches missed.">                            assert(p2.getY() == edge2.getY(n2 - 1));</span>
+
+                            /*
+                            e1_2
+                            e1_1
+                            e1_0 *
+                                   * e2_3  e2_2  e2_1  
+                            */
+
+<span class="pc bpc" id="L325" title="1 of 2 branches missed.">                            if (n2 &gt; 1) {</span>
+<span class="fc" id="L326">                                endpointMap.remove(p2);</span>
+                            }
+<span class="fc bfc" id="L328" title="All 2 branches covered.">                            if (n &gt; 1) {</span>
+<span class="fc" id="L329">                                endpointMap.remove(ep);</span>
+                            }
+<span class="fc" id="L331">                            PairInt otherEndpoint = new PairInt(</span>
+<span class="fc" id="L332">                                edge2.getX(0), edge2.getY(0));</span>
+<span class="fc" id="L333">                            edge.reverse();</span>
+<span class="fc" id="L334">                            edge2.reverse();</span>
+<span class="fc" id="L335">                            edge.addAll(edge2);</span>
+<span class="fc" id="L336">                            theEdges.set(index2.intValue(), new PairIntArray());</span>
+
+<span class="pc bpc" id="L338" title="1 of 2 branches missed.">                            if (!junctions.contains(otherEndpoint)) {</span>
+<span class="fc" id="L339">                                endpointMap.put(otherEndpoint, edgeIndex);</span>
+                            }
+                            
+<span class="fc" id="L342">                            addBackToStack.add(edgeIndex);</span>
+<span class="fc" id="L343">                        }</span>
+
+                    } else {
+                        // ep is at the end
+<span class="pc bpc" id="L347" title="3 of 4 branches missed.">                        assert(ep.getX() == edge.getX(n - 1));</span>
+<span class="pc bpc" id="L348" title="3 of 4 branches missed.">                        assert(ep.getY() == edge.getY(n - 1));</span>
+
+<span class="fc bfc" id="L350" title="All 2 branches covered.">                        if ((p2.getX() == edge2.getX(0)) &amp;&amp; </span>
+<span class="fc bfc" id="L351" title="All 2 branches covered.">                            (p2.getY() == edge2.getY(0))) {</span>
+
+                            /*
+                            e1_0
+                            e1_1
+                            e1_2 *
+                                   * e2_0  e2_1  
+                            */
+<span class="fc bfc" id="L359" title="All 2 branches covered.">                            if (n2 &gt; 1) {</span>
+<span class="fc" id="L360">                                endpointMap.remove(p2);</span>
+                            }
+<span class="pc bpc" id="L362" title="1 of 2 branches missed.">                            if (n &gt; 1) {</span>
+<span class="fc" id="L363">                                endpointMap.remove(ep);</span>
+                            }
+<span class="fc" id="L365">                            PairInt otherEndpoint = new PairInt(</span>
+<span class="fc" id="L366">                                edge2.getX(n2 - 1), edge2.getY(n2 - 1)); </span>
+<span class="fc" id="L367">                            edge.addAll(edge2);</span>
+<span class="fc" id="L368">                            theEdges.set(index2.intValue(), new PairIntArray());</span>
+
+<span class="pc bpc" id="L370" title="1 of 2 branches missed.">                            if (!junctions.contains(otherEndpoint)) {</span>
+<span class="fc" id="L371">                                endpointMap.put(otherEndpoint, edgeIndex);</span>
+                            }
+
+<span class="fc" id="L374">                            addBackToStack.add(edgeIndex);</span>
+                            
+<span class="fc" id="L376">                        } else {</span>
+
+                            // edge2 join is end
+<span class="pc bpc" id="L379" title="3 of 4 branches missed.">                            assert(p2.getX() == edge2.getX(n2 - 1));</span>
+<span class="pc bpc" id="L380" title="3 of 4 branches missed.">                            assert(p2.getY() == edge2.getY(n2 - 1));</span>
+
+                            /*
+                            e1_0
+                            e1_1
+                            e1_2 *
+                                   * e2_3  e2_2  
+                            */
+<span class="pc bpc" id="L388" title="1 of 2 branches missed.">                            if (n2 &gt; 1) {</span>
+<span class="fc" id="L389">                                endpointMap.remove(p2);</span>
+                            }
+<span class="pc bpc" id="L391" title="1 of 2 branches missed.">                            if (n &gt; 1) {</span>
+<span class="fc" id="L392">                                endpointMap.remove(ep);</span>
+                            }
+<span class="fc" id="L394">                            PairInt otherEndpoint = new PairInt(</span>
+<span class="fc" id="L395">                                edge2.getX(0), edge2.getY(0)); </span>
+<span class="fc" id="L396">                            edge2.reverse();</span>
+<span class="fc" id="L397">                            edge.addAll(edge2);</span>
+<span class="fc" id="L398">                            theEdges.set(index2.intValue(), new PairIntArray());</span>
+
+<span class="pc bpc" id="L400" title="1 of 2 branches missed.">                            if (!junctions.contains(otherEndpoint)) {</span>
+<span class="fc" id="L401">                                endpointMap.put(otherEndpoint, edgeIndex);</span>
+                            }
+                            
+<span class="fc" id="L404">                            addBackToStack.add(edgeIndex);</span>
+                        }
+                    }
+                }
+            }
+            
+<span class="fc" id="L410">            stack.addAll(addBackToStack);</span>
+<span class="fc" id="L411">        }</span>
+        
+<span class="fc bfc" id="L413" title="All 2 branches covered.">        for (int i = (theEdges.size() - 1); i &gt; -1; --i) {</span>
+            
+<span class="fc" id="L415">            PairIntArray edge = theEdges.get(i);</span>
+            
+<span class="fc bfc" id="L417" title="All 2 branches covered.">            if (edge.getN() == 0) {</span>
+<span class="fc" id="L418">                theEdges.remove(i);</span>
+            }
+        }
+        
+<span class="fc" id="L422">    }</span>
+
+    private void setEdgesAsOrderedAndClosed() {
+        
+<span class="fc" id="L426">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+        
+<span class="fc bfc" id="L428" title="All 2 branches covered.">        for (int i = 0; i &lt; theEdges.size(); ++i) {</span>
+            
+<span class="fc" id="L430">            PairIntArray edge = theEdges.get(i);</span>
+            
+<span class="fc" id="L432">            PairIntArrayWithColor e2 = new PairIntArrayWithColor(edge);</span>
+            
+<span class="fc" id="L434">            e2.setAsOrderedCurve();</span>
+            
+<span class="fc bfc" id="L436" title="All 2 branches covered.">            if (e2.getN() &gt; 2) {</span>
+<span class="fc bfc" id="L437" title="All 2 branches covered.">                if (curveHelper.isAdjacent(edge, 0, edge.getN() - 1)) {</span>
+<span class="fc" id="L438">                    e2.setAsClosedCurve();</span>
+                }
+            }
+            
+<span class="fc" id="L442">            theEdges.set(i, e2);</span>
+        }
+        
+<span class="fc" id="L445">    }</span>
+
+    private void joinEdgesWithLJunctionSeparators() {
+        
+        /*
+        goal: for junctions that only have 2 adjacent edges,
+            connect those edges and the junction between them.   
+        
+        place edges endpoints in a hashmap
+        
+        for each point in junctions
+            iterate over 8 neighbor coords and store the edge number
+               if adjacent.
+            if there are 2 adjcent edges
+               append them all
+               and update the endpoint hash map
+               and set the appended edge to a new empty one
+        
+        iterate over all edges backwards to remove the empty ones
+        */
+
+<span class="fc" id="L466">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+        
+<span class="fc" id="L468">        Map&lt;PairInt, Integer&gt; endpointMap = createEndpointMap();</span>
+        
+<span class="fc" id="L470">        int[] dxs = Misc.dx8;</span>
+<span class="fc" id="L471">        int[] dys = Misc.dy8;</span>
+        
+<span class="fc" id="L473">        Set&lt;PairInt&gt; removeJunctions = new HashSet&lt;PairInt&gt;();</span>
+        
+<span class="fc bfc" id="L475" title="All 2 branches covered.">        for (PairInt p : junctions) {</span>
+            
+<span class="fc" id="L477">            int x = p.getX();</span>
+<span class="fc" id="L478">            int y = p.getY();</span>
+            
+<span class="fc" id="L480">            Map&lt;Integer, Set&lt;PairInt&gt;&gt; indexPointMap = new HashMap&lt;Integer, Set&lt;PairInt&gt;&gt;();</span>
+<span class="fc bfc" id="L481" title="All 2 branches covered.">            for (int k = 0; k &lt; dxs.length;  ++k) {</span>
+<span class="fc" id="L482">                int x2 = x + dxs[k];</span>
+<span class="fc" id="L483">                int y2 = y + dys[k];</span>
+                
+<span class="fc" id="L485">                PairInt p2 = new PairInt(x2, y2);</span>
+                
+<span class="fc" id="L487">                Integer edge2Index = endpointMap.get(p2);</span>
+                
+<span class="fc bfc" id="L489" title="All 2 branches covered.">                if (edge2Index != null) {</span>
+<span class="fc" id="L490">                    Set&lt;PairInt&gt; indexPoints = indexPointMap.get(edge2Index);</span>
+<span class="fc bfc" id="L491" title="All 2 branches covered.">                    if (indexPoints == null) {</span>
+<span class="fc" id="L492">                        indexPoints = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L493">                        indexPointMap.put(edge2Index, indexPoints);</span>
+                    }
+<span class="fc" id="L495">                    indexPoints.add(p2);</span>
+                }
+            }
+<span class="fc bfc" id="L498" title="All 2 branches covered.">            if (indexPointMap.size() &lt; 2) {</span>
+<span class="fc" id="L499">                continue;</span>
+            }
+            
+<span class="fc" id="L502">            PairInt pEP1 = null;</span>
+<span class="fc" id="L503">            Integer index1 = null;</span>
+<span class="fc" id="L504">            PairInt pEP2 = null;</span>
+<span class="fc" id="L505">            Integer index2 = null;</span>
+<span class="fc bfc" id="L506" title="All 2 branches covered.">            for (Entry&lt;Integer, Set&lt;PairInt&gt;&gt; entry : indexPointMap.entrySet()) {</span>
+<span class="fc" id="L507">                Integer cIndex = entry.getKey();</span>
+<span class="fc" id="L508">                Set&lt;PairInt&gt; cPoints = entry.getValue();</span>
+<span class="fc" id="L509">                PairInt cPoint = null;</span>
+<span class="fc bfc" id="L510" title="All 2 branches covered.">                if (cPoints.size() == 1) {</span>
+<span class="fc" id="L511">                    cPoint = cPoints.iterator().next();</span>
+                } else {
+                    // choose closest and make sure it is on the end of its edge
+<span class="fc" id="L514">                    PairIntArray cEdge = theEdges.get(cIndex.intValue());</span>
+<span class="fc" id="L515">                    double minDistSq = Double.MAX_VALUE;</span>
+<span class="fc" id="L516">                    PairInt minDistP = null;</span>
+<span class="fc bfc" id="L517" title="All 2 branches covered.">                    for (PairInt p3 : cPoints) {</span>
+<span class="fc" id="L518">                        int diffX = p3.getX() - x;</span>
+<span class="fc" id="L519">                        int diffY = p3.getY() - y;</span>
+<span class="fc" id="L520">                        double distSq = diffX*diffX + diffY*diffY;</span>
+<span class="fc bfc" id="L521" title="All 2 branches covered.">                        if (distSq &lt; minDistSq) {</span>
+<span class="fc" id="L522">                            minDistSq = distSq;</span>
+<span class="fc" id="L523">                            minDistP = p3;</span>
+                        }
+<span class="fc" id="L525">                    }</span>
+<span class="fc" id="L526">                    int nc = cEdge.getN();</span>
+<span class="fc bfc" id="L527" title="All 4 branches covered.">                    if ( (minDistP.getX() == cEdge.getX(0) &amp;&amp; minDistP.getY() == cEdge.getY(0)) ||</span>
+<span class="pc bpc" id="L528" title="2 of 4 branches missed.">                        (minDistP.getX() == cEdge.getX(nc - 1) &amp;&amp; minDistP.getY() == cEdge.getY(nc - 1))) {</span>
+                        // points are ordered as needed
+<span class="fc" id="L530">                        cPoint = minDistP;</span>
+                    } else {
+<span class="nc bnc" id="L532" title="All 4 branches missed.">                        if ( (minDistP.getX() == cEdge.getX(1) &amp;&amp; minDistP.getY() == cEdge.getY(1))) {</span>
+                            // can swap 1 w/ 0 if  2 is adjacent to 0
+<span class="nc bnc" id="L534" title="All 2 branches missed.">                            if (curveHelper.isAdjacent(cEdge, 0, 2)) {</span>
+<span class="nc" id="L535">                                int x0 = cEdge.getX(0);</span>
+<span class="nc" id="L536">                                int y0 = cEdge.getY(0);</span>
+<span class="nc" id="L537">                                int x1 = cEdge.getX(1);</span>
+<span class="nc" id="L538">                                int y1 = cEdge.getY(1);</span>
+<span class="nc" id="L539">                                cEdge.set(0, x1, y1);</span>
+<span class="nc" id="L540">                                cEdge.set(1, x0, y0);</span>
+<span class="nc" id="L541">                                cPoint = minDistP;</span>
+<span class="nc" id="L542">                            }</span>
+<span class="nc bnc" id="L543" title="All 4 branches missed.">                        } else if (minDistP.getX() == cEdge.getX(nc - 2) &amp;&amp; minDistP.getY() == cEdge.getY(nc - 2)) {</span>
+                            // can swap (n-2) w/ (n-1) if  (n-3) is adjacent to (n-1)
+<span class="nc bnc" id="L545" title="All 2 branches missed.">                            if (curveHelper.isAdjacent(cEdge, nc - 1, nc - 3)) {</span>
+<span class="nc" id="L546">                                int x0 = cEdge.getX(nc - 1);</span>
+<span class="nc" id="L547">                                int y0 = cEdge.getY(nc - 1);</span>
+<span class="nc" id="L548">                                int x1 = cEdge.getX(nc - 3);</span>
+<span class="nc" id="L549">                                int y1 = cEdge.getY(nc - 3);</span>
+<span class="nc" id="L550">                                cEdge.set(nc - 1, x1, y1);</span>
+<span class="nc" id="L551">                                cEdge.set(nc - 3, x0, y0);</span>
+<span class="nc" id="L552">                                cPoint = minDistP;</span>
+                            }
+                        }
+                    }
+                }
+<span class="pc bpc" id="L557" title="1 of 2 branches missed.">                if (cPoint == null) {</span>
+                    // junction is more complex and needs special handling
+<span class="nc" id="L559">                    continue;</span>
+                }
+                
+<span class="fc bfc" id="L562" title="All 2 branches covered.">                if (index1 == null) {</span>
+<span class="fc" id="L563">                    pEP1 = cPoint;</span>
+<span class="fc" id="L564">                    index1 = cIndex;</span>
+                } else {
+<span class="fc" id="L566">                    pEP2 = cPoint;</span>
+<span class="fc" id="L567">                    index2 = cIndex;</span>
+                }
+<span class="fc" id="L569">            }</span>
+            
+<span class="fc" id="L571">            PairIntArray edge1 = theEdges.get(index1.intValue());</span>
+<span class="fc" id="L572">            int nEdge1 = edge1.getN();</span>
+<span class="fc" id="L573">            PairIntArray edge2 = theEdges.get(index2.intValue());</span>
+            
+<span class="fc bfc" id="L575" title="All 2 branches covered.">            boolean p1IsStart = (edge1.getX(0) == pEP1.getX() &amp;&amp; </span>
+<span class="fc bfc" id="L576" title="All 2 branches covered.">                edge1.getY(0) == pEP1.getY());</span>
+                
+<span class="fc bfc" id="L578" title="All 2 branches covered.">            boolean p2IsStart = (edge2.getX(0) == pEP2.getX() &amp;&amp; </span>
+<span class="fc bfc" id="L579" title="All 2 branches covered.">                edge2.getY(0) == pEP2.getY());</span>
+            
+            /*
+            cases:
+                [ 0  edge1 ... n-1]  J  [ 0  edge2 ... n-1] 
+                [ 0  edge1 ... n-1]  J  [ n-1 ... edge2  0] 
+                [ n-1 ... edge1  0]  J  [ 0  edge2 ... n-1]
+                [ n-1 ... edge1  0]  J  [ n-1 ... edge2  0] 
+            */
+            
+<span class="fc bfc" id="L589" title="All 4 branches covered.">            if (!p1IsStart &amp;&amp; p2IsStart) {</span>
+                // [ 0  edge1 ... n-1]  J  [ 0  edge2 ... n-1] 
+                
+<span class="fc" id="L592">                edge1.add(x, y);</span>
+<span class="fc" id="L593">                edge1.addAll(edge2);</span>
+                
+<span class="pc bpc" id="L595" title="1 of 4 branches missed.">            } else if (!p1IsStart &amp;&amp; !p2IsStart) {</span>
+                //[ 0  edge1 ... n-1]  J  [ n-1 ... edge2  0] 
+                
+<span class="fc" id="L598">                edge1.add(x, y);</span>
+<span class="fc" id="L599">                edge2.reverse();</span>
+<span class="fc" id="L600">                edge1.addAll(edge2);</span>
+               
+<span class="pc bpc" id="L602" title="1 of 4 branches missed.">            } else if (p1IsStart &amp;&amp; p2IsStart) {</span>
+                //[ n-1 ... edge1  0]  J  [ 0  edge2 ... n-1]
+                
+<span class="fc" id="L605">                edge1.reverse();</span>
+<span class="fc" id="L606">                edge1.add(x, y);</span>
+<span class="fc" id="L607">                edge1.addAll(edge2);</span>
+                
+            } else {
+                //[ n-1 ... edge1  0]  J  [ n-1 ... edge2  0] 
+                
+<span class="fc" id="L612">                edge1.reverse();</span>
+<span class="fc" id="L613">                edge1.add(x, y);</span>
+<span class="fc" id="L614">                edge2.reverse();</span>
+<span class="fc" id="L615">                edge1.addAll(edge2);</span>
+            }
+             
+<span class="fc" id="L618">            theEdges.set(index2.intValue(), new PairIntArray());</span>
+
+<span class="fc" id="L620">            nEdge1 = edge1.getN();</span>
+
+<span class="fc" id="L622">            endpointMap.remove(pEP1);</span>
+<span class="fc" id="L623">            endpointMap.remove(pEP2);</span>
+<span class="fc" id="L624">            PairInt ep2 = new PairInt(edge1.getX(nEdge1 - 1), edge1.getY(nEdge1 - 1));</span>
+<span class="fc" id="L625">            endpointMap.remove(ep2);</span>
+<span class="fc" id="L626">            endpointMap.put(ep2, index1);</span>
+            
+<span class="fc" id="L628">            removeJunctions.add(p);</span>
+<span class="fc" id="L629">        }</span>
+        
+<span class="fc" id="L631">        junctions.removeAll(removeJunctions);</span>
+        
+<span class="fc bfc" id="L633" title="All 2 branches covered.">        for (int i = (theEdges.size() - 1); i &gt; -1; --i) {</span>
+            
+<span class="fc" id="L635">            PairIntArray edge = theEdges.get(i);</span>
+            
+<span class="fc bfc" id="L637" title="All 2 branches covered.">            if (edge.getN() == 0) {</span>
+<span class="fc" id="L638">                theEdges.remove(i);</span>
+            }
+        }
+<span class="fc" id="L641">    }</span>
+
+    private Map&lt;PairInt, Integer&gt; createEndpointMap() {
+        
+<span class="fc" id="L645">        Map&lt;PairInt, Integer&gt; endpointMap = new HashMap&lt;PairInt, Integer&gt;();</span>
+        
+<span class="fc bfc" id="L647" title="All 2 branches covered.">        for (int edgeIdx = 0; edgeIdx &lt; theEdges.size(); ++edgeIdx) {</span>
+            
+<span class="fc" id="L649">            PairIntArray edge = theEdges.get(edgeIdx);</span>
+            
+<span class="fc" id="L651">            int n = edge.getN();</span>
+            
+<span class="pc bpc" id="L653" title="1 of 2 branches missed.">            if (n == 0) {</span>
+<span class="nc" id="L654">                continue;</span>
+            }
+                        
+<span class="fc" id="L657">            PairInt p0 = new PairInt(edge.getX(0), edge.getY(0));</span>
+            
+<span class="fc" id="L659">            PairInt p1 = new PairInt(edge.getX(n - 1), edge.getY(n - 1));</span>
+            
+<span class="fc" id="L661">            Integer index = Integer.valueOf(edgeIdx);</span>
+            
+<span class="pc bpc" id="L663" title="1 of 2 branches missed.">            if (!junctions.contains(p0)) {</span>
+<span class="fc" id="L664">                endpointMap.put(p0, index);</span>
+            }
+            
+<span class="pc bpc" id="L667" title="1 of 2 branches missed.">            if (!junctions.contains(p1)) {</span>
+<span class="fc" id="L668">                endpointMap.put(p1, index);</span>
+            }
+        }
+        
+<span class="fc" id="L672">        return endpointMap;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

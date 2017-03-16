@@ -1657,8 +1657,8 @@ public class MSEREdges {
         int h = clrImg.getHeight();
         int n = clrImg.getNPixels();
 
-        System.out.println("assign " + unassignedSet.size() + " out of "
-            + n + " pixels");
+        //System.out.println("assign " + unassignedSet.size() + " out of "
+        //    + n + " pixels");
         
         // key = pixel index of unassigned, value = adj pixels that are assigned
         TIntObjectMap<TIntSet> adjAssignedMap = new TIntObjectHashMap<TIntSet>();

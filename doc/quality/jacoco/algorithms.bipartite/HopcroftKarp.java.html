@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>HopcroftKarp.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.bipartite</a> &gt; <span class="el_source">HopcroftKarp.java</span></div><h1>HopcroftKarp.java</h1><pre class="source lang-java linenums">package algorithms.bipartite;
+
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.set.TIntSet;
+import java.util.Arrays;
+import java.util.logging.Logger;
+
+/**
+ * finds a maximum matching in a bipartite graph.
+ * Note that the graph does not hae edge weights.
+ * 
+ * useful reading is Cormen et al. &quot;Introduction to Algorithms&quot;
+ * pseudocode of Hopcroft-Karp.
+ * 
+ * Also helpful is 
+ * http://en.wikipedia.org/wiki/Hopcroft%E2%80%93Karp_algorithm
+ * and
+ * http://github.com/indy256/codelibrary/blob/master/java/src/MaxMatchingHopcroftKarp.java     * @param g
+
+ * The runtime complexity is O(sqrt(V) * E).
+ * 
+ * @author nichole
+ */
+<span class="fc" id="L24">public class HopcroftKarp {</span>
+    
+<span class="fc" id="L26">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+
+    /*
+    G is a directed bipartite graph (V, E) where V is composed
+    of left L and right R.
+    
+    a path is a sequence of edges.
+    an augmenting path in the matching M starts at an unmatched L
+    and ends at an unmatched vertex in R and in between alternates
+    between matched and unmatched edges, (members of E and E-M).
+    an augmenting path can be composed of only two vertices and the
+    edge between them.
+    
+    The shortest augmenting path has the fewest number of edges in it.
+    
+    And the symmetric difference of 2 sets is the points that are 
+    not in the intersection, but are in the union of them.
+    For example, sym diff of {1, 2, 3} and {3, 4} is {1, 2, 4}.
+    http://en.wikipedia.org/wiki/Symmetric_difference
+    
+    if M is a matching within G and P is an augmenting path,
+    then the symmetric difference of M with P is a matching
+    of size |M| + 1.
+    
+    input G
+    
+    M = 0
+    repeat
+        let P = {P1, P2, ...Pk} be a maximum set of vertex-disjoint
+            shortest augmenting paths with respect to M
+        M = the symmetric difference between M and
+            (P1 union P2 union ...Pk) 
+        until P = 0
+    return M
+    
+    finding the vertex-disjoint shortest paths,
+    using the pattern of single BFS followed by DFS, per L vertex
+        (see wikipedia).
+    
+    */
+    
+    /**
+     * implementing the version of Hopcroft-Karp that uses a
+     * single round of BFS followed by DFs to find the 
+     * shortest augmenting paths, all within a pattern
+     * of augmenting the matching M until no new augmenting
+     * paths can be found.  the matching M is returned.
+     * The code below follows:
+      http://github.com/indy256/codelibrary/blob/master/java/src/MaxMatchingHopcroftKarp.java     * @param g
+      which uses the unlicense:
+      http://github.com/indy256/codelibrary/blob/master/UNLICENSE
+     
+     * @return matching from perspective int[uIndex] = vIndex
+     */
+    public int[] hopcroftKarpV0(GraphWithoutWeights g) {
+       
+<span class="fc" id="L82">        int n1 = g.getNLeft();</span>
+<span class="fc" id="L83">        int n2 = g.getNRight();</span>
+        
+<span class="fc" id="L85">        int[] dist = new int[n1];</span>
+        
+<span class="fc" id="L87">        int[] match21 = new int[n2];</span>
+<span class="fc" id="L88">        Arrays.fill(match21, -1);</span>
+        
+        // forward matching indexes, opposite mapping of match21
+<span class="fc" id="L91">		int[] match12 = new int[n1];</span>
+<span class="fc" id="L92">        Arrays.fill(match12, -1);</span>
+        
+<span class="fc" id="L94">        for (int res = 0; ; ) {</span>
+			
+<span class="fc" id="L96">            bfs(g, match12, match21, dist);</span>
+			
+<span class="fc" id="L98">            boolean[] vis = new boolean[n1];</span>
+			
+<span class="fc" id="L100">            int f = 0;</span>
+			
+<span class="fc bfc" id="L102" title="All 2 branches covered.">            for (int u = 0; u &lt; n1; ++u) {</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">                if ((match12[u] == -1) &amp;&amp; </span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">                    dfs(g, vis, match12, match21, dist, u)) {</span>
+<span class="fc" id="L105">                    ++f;</span>
+                }
+            }
+
+<span class="fc bfc" id="L109" title="All 2 branches covered.">            if (f == 0) {</span>
+<span class="fc" id="L110">                return match12;</span>
+            }
+<span class="fc" id="L112">            res += f;</span>
+<span class="fc" id="L113">        }        </span>
+    }
+    
+    /**
+     * note, this depends upon g
+     * @param g
+     * @param match12
+     * @param match21
+     * @param dist 
+     */
+    private void bfs(GraphWithoutWeights g, int[] match12,
+        int[] match21, int[] dist) {
+<span class="fc" id="L125">        Arrays.fill(dist, -1);</span>
+<span class="fc" id="L126">        int n1 = g.getNLeft();</span>
+<span class="fc" id="L127">        int[] Q = new int[n1];</span>
+<span class="fc" id="L128">        int sizeQ = 0;</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">        for (int u = 0; u &lt; n1; ++u) {</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">            if (match12[u] == -1) {</span>
+<span class="fc" id="L131">                Q[sizeQ++] = u;</span>
+<span class="fc" id="L132">                dist[u] = 0;</span>
+            }
+        }
+<span class="fc bfc" id="L135" title="All 2 branches covered.">        for (int i = 0; i &lt; sizeQ; i++) {</span>
+<span class="fc" id="L136">            int u1 = Q[i];</span>
+<span class="fc" id="L137">            TIntSet neighbors = g.getAdjacencyMap().get(u1);</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">            if (neighbors == null) {</span>
+<span class="fc" id="L139">                continue;</span>
+            }
+<span class="fc" id="L141">            TIntIterator iter = neighbors.iterator();</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">            while (iter.hasNext()) {</span>
+<span class="fc" id="L143">                int vIdx = iter.next();</span>
+<span class="fc" id="L144">                log.fine(String.format(</span>
+<span class="fc" id="L145">                    &quot;bfs visiting (%d, %d)&quot;, u1, vIdx));</span>
+<span class="fc" id="L146">                int u2 = match21[vIdx];</span>
+<span class="fc bfc" id="L147" title="All 4 branches covered.">                if (u2 &gt; -1 &amp;&amp; dist[u2] &lt; 0) {</span>
+<span class="fc" id="L148">                    dist[u2] = dist[u1] + 1;</span>
+<span class="fc" id="L149">                    Q[sizeQ++] = u2;</span>
+                }
+<span class="fc" id="L151">            }</span>
+        }
+<span class="fc" id="L153">    }</span>
+
+    private boolean dfs(GraphWithoutWeights g, boolean[] vis, 
+        int[] match12, int[] match21, int[] dist, int u1) {
+
+<span class="fc" id="L158">        vis[u1] = true;</span>
+		
+<span class="fc" id="L160">        TIntSet neighbors = g.getAdjacencyMap().get(u1);</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">        if (neighbors != null) {</span>
+<span class="fc" id="L162">            TIntIterator iter = neighbors.iterator(); </span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">            while (iter.hasNext()) {</span>
+<span class="fc" id="L164">                int v = iter.next();</span>
+<span class="fc" id="L165">                log.fine(String.format(</span>
+<span class="fc" id="L166">                    &quot;DFS visiting (%d, %d)&quot;, u1, v));</span>
+<span class="fc" id="L167">                int u2 = match21[v];</span>
+<span class="fc" id="L168">                log.fine(String.format(&quot;u2=%d&quot;, u2));</span>
+<span class="fc bfc" id="L169" title="All 6 branches covered.">                if (u2 &lt; 0 || !vis[u2] &amp;&amp; (dist[u2] </span>
+                    == (dist[u1] + 1)) 
+<span class="fc bfc" id="L171" title="All 2 branches covered.">                    &amp;&amp; dfs(g, vis, match12, match21, dist, u2)) {</span>
+                    
+<span class="fc" id="L173">                    log.fine(String.format(&quot;m[%d]=%d&quot;, v, u1));</span>
+                    
+<span class="fc" id="L175">                    match21[v] = u1;</span>
+<span class="fc" id="L176">                    match12[u1] = v;</span>
+<span class="fc" id="L177">                    return true;</span>
+                }
+<span class="fc" id="L179">            }</span>
+        }
+        
+<span class="fc" id="L182">        return false;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

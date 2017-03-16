@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Queue.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">thirdparty.edu.princeton.cs.algs4</a> &gt; <span class="el_source">Queue.java</span></div><h1>Queue.java</h1><pre class="source lang-java linenums">package thirdparty.edu.princeton.cs.algs4;
+
+/******************************************************************************
+ *  Compilation:  javac Queue.java
+ *  Execution:    java Queue &lt; input.txt
+ *  Dependencies: StdIn.java StdOut.java
+ *  Data files:   http://algs4.cs.princeton.edu/13stacks/tobe.txt  
+ *
+ *  A generic queue, implemented using a linked list.
+ *
+ *  % java Queue &lt; tobe.txt 
+ *  to be or not to be (2 left on queue)
+
+    class downloaded from http://algs4.cs.princeton.edu/92search/
+    copyright for authors Robert Sedgewick and Kevin Wayne
+    is GPLV3, http://algs4.cs.princeton.edu/faq/
+ *
+ ******************************************************************************/
+
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
+/**
+ *  The &lt;tt&gt;Queue&lt;/tt&gt; class represents a first-in-first-out (FIFO)
+ *  queue of generic items.
+ *  It supports the usual &lt;em&gt;enqueue&lt;/em&gt; and &lt;em&gt;dequeue&lt;/em&gt;
+ *  operations, along with methods for peeking at the first item,
+ *  testing if the queue is empty, and iterating through
+ *  the items in FIFO order.
+ *  &lt;p&gt;
+ *  This implementation uses a singly-linked list with a static nested class for
+ *  linked-list nodes. See {@link LinkedQueue} for the version from the
+ *  textbook that uses a non-static nested class.
+ *  The &lt;em&gt;enqueue&lt;/em&gt;, &lt;em&gt;dequeue&lt;/em&gt;, &lt;em&gt;peek&lt;/em&gt;, &lt;em&gt;size&lt;/em&gt;, and &lt;em&gt;is-empty&lt;/em&gt;
+ *  operations all take constant time in the worst case.
+ *  &lt;p&gt;
+ *  For additional documentation, see &lt;a href=&quot;http://algs4.cs.princeton.edu/13stacks&quot;&gt;Section 1.3&lt;/a&gt; of
+ *  &lt;i&gt;Algorithms, 4th Edition&lt;/i&gt; by Robert Sedgewick and Kevin Wayne.
+ *
+ *  @author Robert Sedgewick
+ *  @author Kevin Wayne
+ *
+ *  @param &lt;Item&gt; the generic type of an item in this queue
+ */
+public class Queue&lt;Item&gt; implements Iterable&lt;Item&gt; {
+    private Node&lt;Item&gt; first;    // beginning of queue
+    private Node&lt;Item&gt; last;     // end of queue
+    private int n;               // number of elements on queue
+
+    // helper linked list class
+    private static class Node&lt;Item&gt; {
+        private Item item;
+        private Node&lt;Item&gt; next;
+    }
+
+    /**
+     * Initializes an empty queue.
+     */
+<span class="fc" id="L59">    public Queue() {</span>
+<span class="fc" id="L60">        first = null;</span>
+<span class="fc" id="L61">        last  = null;</span>
+<span class="fc" id="L62">        n = 0;</span>
+<span class="fc" id="L63">    }</span>
+
+    /**
+     * Returns true if this queue is empty.
+     *
+     * @return &lt;tt&gt;true&lt;/tt&gt; if this queue is empty; &lt;tt&gt;false&lt;/tt&gt; otherwise
+     */
+    public boolean isEmpty() {
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        return first == null;</span>
+    }
+
+    /**
+     * Returns the number of items in this queue.
+     *
+     * @return the number of items in this queue
+     */
+    public int size() {
+<span class="fc" id="L80">        return n;</span>
+    }
+
+    /**
+     * Returns the item least recently added to this queue.
+     *
+     * @return the item least recently added to this queue
+     * @throws NoSuchElementException if this queue is empty
+     */
+    public Item peek() {
+<span class="nc bnc" id="L90" title="All 2 branches missed.">        if (isEmpty()) throw new NoSuchElementException(&quot;Queue underflow&quot;);</span>
+<span class="nc" id="L91">        return first.item;</span>
+    }
+
+    /**
+     * Adds the item to this queue.
+     *
+     * @param  item the item to add
+     */
+    public void enqueue(Item item) {
+<span class="fc" id="L100">        Node&lt;Item&gt; oldlast = last;</span>
+<span class="fc" id="L101">        last = new Node&lt;Item&gt;();</span>
+<span class="fc" id="L102">        last.item = item;</span>
+<span class="fc" id="L103">        last.next = null;</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        if (isEmpty()) first = last;</span>
+<span class="fc" id="L105">        else           oldlast.next = last;</span>
+<span class="fc" id="L106">        n++;</span>
+<span class="fc" id="L107">    }</span>
+
+    /**
+     * Removes and returns the item on this queue that was least recently added.
+     *
+     * @return the item on this queue that was least recently added
+     * @throws NoSuchElementException if this queue is empty
+     */
+    public Item dequeue() {
+<span class="nc bnc" id="L116" title="All 2 branches missed.">        if (isEmpty()) throw new NoSuchElementException(&quot;Queue underflow&quot;);</span>
+<span class="nc" id="L117">        Item item = first.item;</span>
+<span class="nc" id="L118">        first = first.next;</span>
+<span class="nc" id="L119">        n--;</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">        if (isEmpty()) last = null;   // to avoid loitering</span>
+<span class="nc" id="L121">        return item;</span>
+    }
+
+    /**
+     * Returns a string representation of this queue.
+     *
+     * @return the sequence of items in FIFO order, separated by spaces
+     */
+    public String toString() {
+<span class="nc" id="L130">        StringBuilder s = new StringBuilder();</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">        for (Item item : this)</span>
+<span class="nc" id="L132">            s.append(item + &quot; &quot;);</span>
+<span class="nc" id="L133">        return s.toString();</span>
+    } 
+
+    /**
+     * Returns an iterator that iterates over the items in this queue in FIFO order.
+     *
+     * @return an iterator that iterates over the items in this queue in FIFO order
+     */
+    public Iterator&lt;Item&gt; iterator()  {
+<span class="fc" id="L142">        return new ListIterator&lt;Item&gt;(first);  </span>
+    }
+
+    // an iterator, doesn't implement remove() since it's optional
+    private class ListIterator&lt;Item&gt; implements Iterator&lt;Item&gt; {
+        private Node&lt;Item&gt; current;
+
+        public ListIterator(Node&lt;Item&gt; first) {
+            current = first;
+        }
+
+        public boolean hasNext()  { return current != null;                     }
+        public void remove()      { throw new UnsupportedOperationException();  }
+
+        public Item next() {
+            if (!hasNext()) throw new NoSuchElementException();
+            Item item = current.item;
+            current = current.next; 
+            return item;
+        }
+    }
+
+
+    /**
+     * Unit tests the &lt;tt&gt;Queue&lt;/tt&gt; data type.
+     */
+    public static void main(String[] args) {
+        
+        /*Queue&lt;String&gt; queue = new Queue&lt;String&gt;();
+        while (!StdIn.isEmpty()) {
+            String item = StdIn.readString();
+            if (!item.equals(&quot;-&quot;))
+                queue.enqueue(item);
+            else if (!queue.isEmpty())
+                StdOut.print(queue.dequeue() + &quot; &quot;);
+        }
+        System.out.println(&quot;(&quot; + queue.size() + &quot; left on queue)&quot;);
+        */
+<span class="nc" id="L180">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

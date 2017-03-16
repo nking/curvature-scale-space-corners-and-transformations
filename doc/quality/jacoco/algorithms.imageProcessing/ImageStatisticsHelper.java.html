@@ -53,11 +53,11 @@ import algorithms.imageProcessing.transform.Transformer;
     }
     
     public static int getMean(int[] a) {
-<span class="fc" id="L56">        long sum = 0;</span>
-<span class="fc bfc" id="L57" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
-<span class="fc" id="L58">            sum += a[i];</span>
+<span class="nc" id="L56">        long sum = 0;</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="nc" id="L58">            sum += a[i];</span>
         }
-<span class="fc" id="L60">        return (int)(sum/a.length);</span>
+<span class="nc" id="L60">        return (int)(sum/a.length);</span>
     }
     
     public static float getMean(float[] a) {
@@ -322,46 +322,46 @@ import algorithms.imageProcessing.transform.Transformer;
      */
     public static ImageStatistics examine(int[] pixValues, boolean useSturges) {
         
-<span class="fc" id="L325">        ImageStatistics stats = new ImageStatistics();</span>
+<span class="nc" id="L325">        ImageStatistics stats = new ImageStatistics();</span>
           
-<span class="fc" id="L327">        stats.setMedian(getMedian(pixValues));</span>
+<span class="nc" id="L327">        stats.setMedian(getMedian(pixValues));</span>
         
-<span class="fc" id="L329">        stats.setMean(getMean(pixValues));</span>
+<span class="nc" id="L329">        stats.setMean(getMean(pixValues));</span>
         
-<span class="fc" id="L331">        stats.setMin(MiscMath.findMin(pixValues));</span>
+<span class="nc" id="L331">        stats.setMin(MiscMath.findMin(pixValues));</span>
         
-<span class="fc" id="L333">        float xMax = MiscMath.findMax(pixValues);</span>
+<span class="nc" id="L333">        float xMax = MiscMath.findMax(pixValues);</span>
         
-<span class="fc" id="L335">        stats.setMax(xMax);</span>
+<span class="nc" id="L335">        stats.setMax(xMax);</span>
         
-<span class="fc" id="L337">        float[] pixValuesF = new float[pixValues.length];</span>
-<span class="fc bfc" id="L338" title="All 2 branches covered.">        for (int i = 0; i &lt; pixValuesF.length; ++i) {</span>
-<span class="fc" id="L339">            pixValuesF[i] = pixValues[i];</span>
+<span class="nc" id="L337">        float[] pixValuesF = new float[pixValues.length];</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">        for (int i = 0; i &lt; pixValuesF.length; ++i) {</span>
+<span class="nc" id="L339">            pixValuesF[i] = pixValues[i];</span>
         }
         
-<span class="fc" id="L342">        float[] simulatedErrors = Errors.populateYErrorsBySqrt(pixValuesF);</span>
+<span class="nc" id="L342">        float[] simulatedErrors = Errors.populateYErrorsBySqrt(pixValuesF);</span>
 
-<span class="pc bpc" id="L344" title="1 of 2 branches missed.">        HistogramHolder hist = useSturges ?</span>
-<span class="pc" id="L345">            Histogram.calculateSturgesHistogram(0.0f, 256.0f, pixValuesF, </span>
+<span class="nc bnc" id="L344" title="All 2 branches missed.">        HistogramHolder hist = useSturges ?</span>
+<span class="nc" id="L345">            Histogram.calculateSturgesHistogram(0.0f, 256.0f, pixValuesF, </span>
                 simulatedErrors)
-<span class="pc" id="L347">            : Histogram.createSimpleHistogram(0.0f, 256.0f,</span>
+<span class="nc" id="L347">            : Histogram.createSimpleHistogram(0.0f, 256.0f,</span>
                 10, pixValuesF, simulatedErrors);
         
         // think we probably want to remove the highest intensity bin, so
         // can think         
-<span class="fc" id="L352">        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
+<span class="nc" id="L352">        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
         
-<span class="fc" id="L354">        float mode = hist.getXHist()[yMaxIdx];</span>
+<span class="nc" id="L354">        float mode = hist.getXHist()[yMaxIdx];</span>
         
-<span class="fc" id="L356">        stats.setMode(mode);</span>
+<span class="nc" id="L356">        stats.setMode(mode);</span>
         
-<span class="fc" id="L358">        stats.setHistogram(hist);</span>
+<span class="nc" id="L358">        stats.setHistogram(hist);</span>
         
-<span class="fc" id="L360">        stats.setQuartiles(ImageStatisticsHelper.getQuartiles(pixValuesF));</span>
+<span class="nc" id="L360">        stats.setQuartiles(ImageStatisticsHelper.getQuartiles(pixValuesF));</span>
         
-<span class="fc" id="L362">        stats.setHistogramAreaFraction(hist.getHistArea(xMax, 2));</span>
+<span class="nc" id="L362">        stats.setHistogramAreaFraction(hist.getHistArea(xMax, 2));</span>
         
-<span class="fc" id="L364">        return stats;</span>
+<span class="nc" id="L364">        return stats;</span>
     }
     
     /**
@@ -379,46 +379,46 @@ import algorithms.imageProcessing.transform.Transformer;
     public static ImageStatistics examineImageBorders(final GreyscaleImage input,
         boolean useSturges) {
                         
-<span class="pc bpc" id="L382" title="1 of 2 branches missed.">        if (input.getWidth() &lt; 5) {</span>
+<span class="nc bnc" id="L382" title="All 2 branches missed.">        if (input.getWidth() &lt; 5) {</span>
 <span class="nc" id="L383">            return null;</span>
         }
         
         // if &lt;= 256x256, use whole image
-<span class="fc bfc" id="L387" title="All 2 branches covered.">        if ((input.getWidth() * input.getHeight()) &lt; 65537) {</span>
-<span class="fc" id="L388">            return examineImage(input, useSturges);</span>
+<span class="nc bnc" id="L387" title="All 2 branches missed.">        if ((input.getWidth() * input.getHeight()) &lt; 65537) {</span>
+<span class="nc" id="L388">            return examineImage(input, useSturges);</span>
         }
         
-<span class="fc" id="L391">        int width = 10;</span>
+<span class="nc" id="L391">        int width = 10;</span>
         
-<span class="pc bpc" id="L393" title="1 of 2 branches missed.">        if (input.getWidth() &lt; 20) {</span>
+<span class="nc bnc" id="L393" title="All 2 branches missed.">        if (input.getWidth() &lt; 20) {</span>
 <span class="nc" id="L394">            width = 1;</span>
-<span class="pc bpc" id="L395" title="1 of 2 branches missed.">        } else if (input.getWidth() &lt; 50) {</span>
+<span class="nc bnc" id="L395" title="All 2 branches missed.">        } else if (input.getWidth() &lt; 50) {</span>
 <span class="nc" id="L396">            width = 5;</span>
-<span class="pc bpc" id="L397" title="1 of 2 branches missed.">        } else if (input.getWidth() &lt; 1000) {</span>
-<span class="fc" id="L398">            width = 10;</span>
+<span class="nc bnc" id="L397" title="All 2 branches missed.">        } else if (input.getWidth() &lt; 1000) {</span>
+<span class="nc" id="L398">            width = 10;</span>
         } else {
             // choose 5 percent of image width or a default of 100 pixels?
 <span class="nc" id="L401">            width = 100;</span>
         }
         
-<span class="fc" id="L404">        return examineImageBorders(input, width, useSturges);</span>
+<span class="nc" id="L404">        return examineImageBorders(input, width, useSturges);</span>
     }
      
     public static int countPixels(final GreyscaleImage img, int lowValue, 
         int highValue) {
         
-<span class="fc" id="L410">        int c = 0;</span>
+<span class="nc" id="L410">        int c = 0;</span>
         
-<span class="fc bfc" id="L412" title="All 2 branches covered.">        for (int col = 0; col &lt; img.getWidth(); col++) {</span>
-<span class="fc bfc" id="L413" title="All 2 branches covered.">            for (int row = 0; row &lt; img.getHeight(); row++) {</span>
-<span class="fc" id="L414">                int v = img.getValue(col, row);</span>
-<span class="fc bfc" id="L415" title="All 4 branches covered.">                if ((v &gt;= lowValue) &amp;&amp; (v &lt;= highValue)) {</span>
-<span class="fc" id="L416">                    c++;</span>
+<span class="nc bnc" id="L412" title="All 2 branches missed.">        for (int col = 0; col &lt; img.getWidth(); col++) {</span>
+<span class="nc bnc" id="L413" title="All 2 branches missed.">            for (int row = 0; row &lt; img.getHeight(); row++) {</span>
+<span class="nc" id="L414">                int v = img.getValue(col, row);</span>
+<span class="nc bnc" id="L415" title="All 4 branches missed.">                if ((v &gt;= lowValue) &amp;&amp; (v &lt;= highValue)) {</span>
+<span class="nc" id="L416">                    c++;</span>
                 }
             }
         }
         
-<span class="fc" id="L421">        return c;</span>
+<span class="nc" id="L421">        return c;</span>
     }
 
     public static float[] calculateAvgCIEXY(ImageExt input, Set&lt;PairInt&gt; points) {

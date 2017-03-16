@@ -68,37 +68,37 @@ import java.io.IOException;
      */
     public float getHistAreaFractionOfTotal(float x0, float x1) {
         
-<span class="pc bpc" id="L71" title="1 of 2 branches missed.">        if (yHistFloat == null) {</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">        if (yHistFloat == null) {</span>
 <span class="nc" id="L72">            return 0;</span>
         }
         
-<span class="fc" id="L75">        float sumTot = 0;</span>
-<span class="fc" id="L76">        float sumR = 0;</span>
+<span class="nc" id="L75">        float sumTot = 0;</span>
+<span class="nc" id="L76">        float sumR = 0;</span>
         
         // trapezoidal rule for area under the curve
         
-<span class="fc bfc" id="L80" title="All 2 branches covered.">        for (int i = 0; i &lt; (xHist.length - 1); ++i) {</span>
+<span class="nc bnc" id="L80" title="All 2 branches missed.">        for (int i = 0; i &lt; (xHist.length - 1); ++i) {</span>
             
-<span class="fc" id="L82">            float yTerm = yHistFloat[i + 1] + yHistFloat[i];</span>
-<span class="fc" id="L83">            float xLen = xHist[i + 1] - xHist[i];</span>
-<span class="pc bpc" id="L84" title="1 of 2 branches missed.">            if (xLen &lt; 0) {</span>
+<span class="nc" id="L82">            float yTerm = yHistFloat[i + 1] + yHistFloat[i];</span>
+<span class="nc" id="L83">            float xLen = xHist[i + 1] - xHist[i];</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">            if (xLen &lt; 0) {</span>
 <span class="nc" id="L85">                xLen *= -1;</span>
             }
             
-<span class="fc" id="L88">            float v = (yTerm * xLen);</span>
+<span class="nc" id="L88">            float v = (yTerm * xLen);</span>
             
-<span class="fc" id="L90">            float x = xHist[i];</span>
+<span class="nc" id="L90">            float x = xHist[i];</span>
             
-<span class="fc" id="L92">            sumTot += v;</span>
+<span class="nc" id="L92">            sumTot += v;</span>
             
-<span class="pc bpc" id="L94" title="1 of 4 branches missed.">            if ((x &gt;= x0) &amp;&amp; (x &lt;= x1)) {</span>
-<span class="fc" id="L95">                sumR += v;</span>
+<span class="nc bnc" id="L94" title="All 4 branches missed.">            if ((x &gt;= x0) &amp;&amp; (x &lt;= x1)) {</span>
+<span class="nc" id="L95">                sumR += v;</span>
             }
         }
         
-<span class="fc" id="L99">        float frac = sumR / sumTot;</span>
+<span class="nc" id="L99">        float frac = sumR / sumTot;</span>
         
-<span class="fc" id="L101">        return frac;</span>
+<span class="nc" id="L101">        return frac;</span>
     }
     
     /**
@@ -155,23 +155,23 @@ import java.io.IOException;
     public String plotHistogram(String label, 
         long outputFileNumber) throws IOException {
                 
-<span class="fc" id="L158">        float[] xh = xHist;</span>
-<span class="fc" id="L159">        float[] yh = yHistFloat;</span>
+<span class="nc" id="L158">        float[] xh = xHist;</span>
+<span class="nc" id="L159">        float[] yh = yHistFloat;</span>
         
-<span class="fc" id="L161">        float yMin = MiscMath.findMin(yh);</span>
-<span class="fc" id="L162">        int yMaxIdx = MiscMath.findYMaxIndex(yh);</span>
-<span class="fc" id="L163">        float yMax = yh[yMaxIdx];</span>
+<span class="nc" id="L161">        float yMin = MiscMath.findMin(yh);</span>
+<span class="nc" id="L162">        int yMaxIdx = MiscMath.findYMaxIndex(yh);</span>
+<span class="nc" id="L163">        float yMax = yh[yMaxIdx];</span>
         
-<span class="fc" id="L165">        float xMin = MiscMath.findMin(xh);</span>
-<span class="fc" id="L166">        float xMax = MiscMath.findMax(xh);        </span>
+<span class="nc" id="L165">        float xMin = MiscMath.findMin(xh);</span>
+<span class="nc" id="L166">        float xMax = MiscMath.findMax(xh);        </span>
                 
-<span class="fc" id="L168">        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
+<span class="nc" id="L168">        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
 
-<span class="fc" id="L170">        plotter.addPlot(</span>
+<span class="nc" id="L170">        plotter.addPlot(</span>
             xMin, xMax, yMin, yMax,
             xh, yh, xh, yh, label);
 
-<span class="fc" id="L174">        return plotter.writeFile(outputFileNumber);</span>
+<span class="nc" id="L174">        return plotter.writeFile(outputFileNumber);</span>
     }
     
     public String plotHistogram(String label, 

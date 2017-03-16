@@ -35,13 +35,13 @@ import java.util.Arrays;
     }
     
     public void setStandardDeviations(float[] stDevsScaleRotTransXY) {
-<span class="fc" id="L38">        standardDeviationsScaleRotTransXY = new float[4];</span>
-<span class="fc" id="L39">        System.arraycopy(stDevsScaleRotTransXY, 0, </span>
+<span class="nc" id="L38">        standardDeviationsScaleRotTransXY = new float[4];</span>
+<span class="nc" id="L39">        System.arraycopy(stDevsScaleRotTransXY, 0, </span>
             standardDeviationsScaleRotTransXY, 0, stDevsScaleRotTransXY.length);
-<span class="fc" id="L41">    }</span>
+<span class="nc" id="L41">    }</span>
     
     public float[] getStandardDeviations() {
-<span class="fc" id="L44">        return standardDeviationsScaleRotTransXY;</span>
+<span class="nc" id="L44">        return standardDeviationsScaleRotTransXY;</span>
     }
     
     public void setNumberOfPointsUsed(int numberOfPoints) {
@@ -154,8 +154,8 @@ import java.util.Arrays;
 <span class="fc" id="L154">        cp.setOriginX(originX);</span>
 <span class="fc" id="L155">        cp.setOriginY(originY);</span>
 <span class="fc" id="L156">        cp.setNumberOfPointsUsed(n);</span>
-<span class="fc bfc" id="L157" title="All 2 branches covered.">        if (standardDeviationsScaleRotTransXY != null) {</span>
-<span class="fc" id="L158">            cp.setStandardDeviations(standardDeviationsScaleRotTransXY);</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">        if (standardDeviationsScaleRotTransXY != null) {</span>
+<span class="nc" id="L158">            cp.setStandardDeviations(standardDeviationsScaleRotTransXY);</span>
         }
         
 <span class="fc" id="L161">        return cp;</span>
@@ -164,53 +164,53 @@ import java.util.Arrays;
     @Override
     public boolean equals(Object obj) {
         
-<span class="pc bpc" id="L167" title="1 of 2 branches missed.">        if (!(obj instanceof TransformationParameters)) {</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">        if (!(obj instanceof TransformationParameters)) {</span>
 <span class="nc" id="L168">            return false;</span>
         }
         
-<span class="fc" id="L171">        TransformationParameters other = (TransformationParameters)obj;</span>
+<span class="nc" id="L171">        TransformationParameters other = (TransformationParameters)obj;</span>
         
-<span class="pc bpc" id="L173" title="6 of 12 branches missed.">        boolean paramsEqual = ((other.rotationInRadians == rotationInRadians) &amp;&amp;</span>
+<span class="nc bnc" id="L173" title="All 12 branches missed.">        boolean paramsEqual = ((other.rotationInRadians == rotationInRadians) &amp;&amp;</span>
             (other.translationX == translationX) &amp;&amp; 
             (other.translationY == translationY) &amp;&amp;
             (other.scale == scale) &amp;&amp;
             (other.originX == originX) &amp;&amp; (other.originY == originY)
             );
         
-<span class="pc bpc" id="L180" title="1 of 2 branches missed.">        if (!paramsEqual) {</span>
+<span class="nc bnc" id="L180" title="All 2 branches missed.">        if (!paramsEqual) {</span>
 <span class="nc" id="L181">            return false;</span>
         }
                 
-<span class="fc bfc" id="L184" title="All 2 branches covered.">        if ((standardDeviationsScaleRotTransXY != null) &amp;&amp; </span>
-<span class="pc bpc" id="L185" title="1 of 2 branches missed.">            (other.getStandardDeviations() == null)) {</span>
+<span class="nc bnc" id="L184" title="All 2 branches missed.">        if ((standardDeviationsScaleRotTransXY != null) &amp;&amp; </span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">            (other.getStandardDeviations() == null)) {</span>
 <span class="nc" id="L186">            return false;</span>
-<span class="fc bfc" id="L187" title="All 2 branches covered.">        } else if ((standardDeviationsScaleRotTransXY == null) &amp;&amp; </span>
-<span class="pc bpc" id="L188" title="1 of 2 branches missed.">            (other.getStandardDeviations() != null)) {</span>
+<span class="nc bnc" id="L187" title="All 2 branches missed.">        } else if ((standardDeviationsScaleRotTransXY == null) &amp;&amp; </span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">            (other.getStandardDeviations() != null)) {</span>
 <span class="nc" id="L189">            return false;</span>
-<span class="fc bfc" id="L190" title="All 2 branches covered.">        } else if ((standardDeviationsScaleRotTransXY != null) &amp;&amp; </span>
-<span class="pc bpc" id="L191" title="1 of 2 branches missed.">            (other.getStandardDeviations() != null)) {</span>
-<span class="fc" id="L192">            boolean sEquals = Arrays.equals(standardDeviationsScaleRotTransXY, </span>
-<span class="fc" id="L193">                other.getStandardDeviations());</span>
-<span class="fc bfc" id="L194" title="All 2 branches covered.">            if (!sEquals) {</span>
-<span class="fc" id="L195">                return false;</span>
+<span class="nc bnc" id="L190" title="All 2 branches missed.">        } else if ((standardDeviationsScaleRotTransXY != null) &amp;&amp; </span>
+<span class="nc bnc" id="L191" title="All 2 branches missed.">            (other.getStandardDeviations() != null)) {</span>
+<span class="nc" id="L192">            boolean sEquals = Arrays.equals(standardDeviationsScaleRotTransXY, </span>
+<span class="nc" id="L193">                other.getStandardDeviations());</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">            if (!sEquals) {</span>
+<span class="nc" id="L195">                return false;</span>
             }
         }
 
         //TODO: revist hashCode and equals w.r.t. standardDeviationsScaleRotTransXY and n
         
-<span class="pc bpc" id="L201" title="1 of 2 branches missed.">        return (n == other.getNumberOfPointsUsed());</span>
+<span class="nc bnc" id="L201" title="All 2 branches missed.">        return (n == other.getNumberOfPointsUsed());</span>
     }
 
     @Override
     public int hashCode() {
-<span class="fc" id="L206">        int hash = 7;</span>
-<span class="fc" id="L207">        hash = 31 * hash + Float.floatToIntBits(this.rotationInRadians);</span>
-<span class="fc" id="L208">        hash = 31 * hash + Float.floatToIntBits(this.translationX);</span>
-<span class="fc" id="L209">        hash = 31 * hash + Float.floatToIntBits(this.translationY);</span>
-<span class="fc" id="L210">        hash = 31 * hash + Float.floatToIntBits(this.scale);</span>
-<span class="fc" id="L211">        hash = 31 * hash + Float.floatToIntBits(this.originX);</span>
-<span class="fc" id="L212">        hash = 31 * hash + Float.floatToIntBits(this.originY);</span>
-<span class="fc" id="L213">        return hash;</span>
+<span class="nc" id="L206">        int hash = 7;</span>
+<span class="nc" id="L207">        hash = 31 * hash + Float.floatToIntBits(this.rotationInRadians);</span>
+<span class="nc" id="L208">        hash = 31 * hash + Float.floatToIntBits(this.translationX);</span>
+<span class="nc" id="L209">        hash = 31 * hash + Float.floatToIntBits(this.translationY);</span>
+<span class="nc" id="L210">        hash = 31 * hash + Float.floatToIntBits(this.scale);</span>
+<span class="nc" id="L211">        hash = 31 * hash + Float.floatToIntBits(this.originX);</span>
+<span class="nc" id="L212">        hash = 31 * hash + Float.floatToIntBits(this.originY);</span>
+<span class="nc" id="L213">        return hash;</span>
     }
 
     @Override
@@ -226,11 +226,11 @@ import java.util.Arrays;
 <span class="fc" id="L226">            .append(&quot; originX=&quot;).append(originX)</span>
 <span class="fc" id="L227">            .append(&quot; originY=&quot;).append(originY);</span>
         
-<span class="fc bfc" id="L229" title="All 2 branches covered.">        if (standardDeviationsScaleRotTransXY != null) {</span>
-<span class="fc" id="L230">            sb.append(&quot;\nstDevScale=&quot;).append(standardDeviationsScaleRotTransXY[0]);</span>
-<span class="fc" id="L231">            sb.append(&quot; stDevRot=&quot;).append(standardDeviationsScaleRotTransXY[1]);</span>
-<span class="fc" id="L232">            sb.append(&quot; stDevTransX=&quot;).append(standardDeviationsScaleRotTransXY[2]);</span>
-<span class="fc" id="L233">            sb.append(&quot; stDevTransY=&quot;).append(standardDeviationsScaleRotTransXY[3]);</span>
+<span class="pc bpc" id="L229" title="1 of 2 branches missed.">        if (standardDeviationsScaleRotTransXY != null) {</span>
+<span class="nc" id="L230">            sb.append(&quot;\nstDevScale=&quot;).append(standardDeviationsScaleRotTransXY[0]);</span>
+<span class="nc" id="L231">            sb.append(&quot; stDevRot=&quot;).append(standardDeviationsScaleRotTransXY[1]);</span>
+<span class="nc" id="L232">            sb.append(&quot; stDevTransX=&quot;).append(standardDeviationsScaleRotTransXY[2]);</span>
+<span class="nc" id="L233">            sb.append(&quot; stDevTransY=&quot;).append(standardDeviationsScaleRotTransXY[3]);</span>
         }
         
 <span class="pc bpc" id="L236" title="1 of 2 branches missed.">        if (n != -1) {</span>

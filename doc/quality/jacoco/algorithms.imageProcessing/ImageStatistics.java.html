@@ -53,7 +53,7 @@ public class ImageStatistics {
      * @return the mode
      */
     public double getMode() {
-<span class="fc" id="L56">        return mode;</span>
+<span class="nc" id="L56">        return mode;</span>
     }
 
     /**
@@ -67,7 +67,7 @@ public class ImageStatistics {
      * @return the median
      */
     public double getMedian() {
-<span class="fc" id="L70">        return median;</span>
+<span class="nc" id="L70">        return median;</span>
     }
 
     /**
@@ -162,20 +162,20 @@ public class ImageStatistics {
 <span class="fc" id="L162">            sb.append(&quot;histAreas=&quot;).append(Arrays.toString(histAreas)).append(&quot;\n&quot;);</span>
         }
         
-<span class="fc bfc" id="L165" title="All 2 branches covered.">        if (Double.compare(lowThresholdApplied, Double.MAX_VALUE) &lt; 0) {</span>
-<span class="fc" id="L166">            sb.append(&quot;lowThresholdApplied=&quot;).append(lowThresholdApplied);</span>
-<span class="fc" id="L167">            sb.append(&quot;\n&quot;);</span>
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">        if (Double.compare(lowThresholdApplied, Double.MAX_VALUE) &lt; 0) {</span>
+<span class="nc" id="L166">            sb.append(&quot;lowThresholdApplied=&quot;).append(lowThresholdApplied);</span>
+<span class="nc" id="L167">            sb.append(&quot;\n&quot;);</span>
         }
         
 <span class="fc" id="L170">        return sb.toString();</span>
     }
 
     public void setLowThresholdApplied(double lowThresh) {
-<span class="fc" id="L174">        lowThresholdApplied = lowThresh;</span>
-<span class="fc" id="L175">    }</span>
+<span class="nc" id="L174">        lowThresholdApplied = lowThresh;</span>
+<span class="nc" id="L175">    }</span>
     
     public double getLowThresholdApplied() {
-<span class="fc" id="L178">        return lowThresholdApplied;</span>
+<span class="nc" id="L178">        return lowThresholdApplied;</span>
     }
 
     /**
