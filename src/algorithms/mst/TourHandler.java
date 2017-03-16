@@ -26,7 +26,7 @@ import thirdparty.edu.princeton.cs.algs4.QuadTreeInterval2D;
 
 /**
  class to handle path sum and edits of
- a tour, used by TSPPrimsNST.
+ a tour, used by TSPPrimsMST.
   
  NOTE, the method and class
  are meant for single threaded use only due to
@@ -257,6 +257,16 @@ public class TourHandler {
         return output;
     }
     
+    //TODO: revisit this algorithm using the edge flipping pattern from one method of
+    // building Delaunay triangles... any 4 points under consideration for flipping should
+    // be convex and in counter clockwise order.
+    // also, can use a fast inCircle method:
+    //  when det is positive d is within circumcircle abc.  when det==0, all are cocircular
+    //                     det = | a_x   a_y  a_x^2 + a_y^2   1
+    //                           | b_x   b_y  b_x^2 + b_y^2   1
+    //                           | c_x   c_y  c_x^2 + c_y^2   1
+    //                           | d_x   d_y  d_x^2 + d_y^2   1
+    //
     public void modifyTourIntersectingEdges() {
  
         //TODO: revise nMaxIter
