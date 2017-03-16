@@ -36,33 +36,33 @@ import java.util.Set;
  *
  * @author nichole
  */
-<span class="pc bpc" id="L39" title="1 of 2 branches missed.">public class LinesFinder {</span>
+<span class="nc bnc" id="L39" title="All 2 branches missed.">public class LinesFinder {</span>
     
     /**
      * array of x coordinates of points found as lines.  note that some of the
      * short segments are parts of curves, indistinguishable unless larger 
      * minimum line lengths are used to filter them out.
      */
-<span class="fc" id="L46">    private TIntList xs = new TIntArrayList();</span>
+<span class="nc" id="L46">    private TIntList xs = new TIntArrayList();</span>
     
     /**
      * array of y coordinates of points found as lines.  note that some of the
      * short segments are parts of curves, indistinguishable unless larger 
      * minimum line lengths are used to filter them out.
      */
-<span class="fc" id="L53">    private TIntList ys = new TIntArrayList();</span>
+<span class="nc" id="L53">    private TIntList ys = new TIntArrayList();</span>
     
     /**
      * map with key = unique segment index number, value =
      * indexes of the xs and ys arrays which are a contiguous line segment.
      */
-<span class="fc" id="L59">    private TIntObjectMap&lt;TIntList&gt; segmentIndexes = new TIntObjectHashMap&lt;TIntList&gt;();</span>
+<span class="nc" id="L59">    private TIntObjectMap&lt;TIntList&gt; segmentIndexes = new TIntObjectHashMap&lt;TIntList&gt;();</span>
     
     /**
      * map with key = unique index number, value = the polar theta in degrees
      * and distance from origin for the line segment.
      */
-<span class="fc" id="L65">    private TIntObjectMap&lt;PairInt&gt; segmentTRMap = new TIntObjectHashMap&lt;PairInt&gt;();</span>
+<span class="nc" id="L65">    private TIntObjectMap&lt;PairInt&gt; segmentTRMap = new TIntObjectHashMap&lt;PairInt&gt;();</span>
    
     /**
      * map with key = the polar theta in degrees
@@ -70,21 +70,21 @@ import java.util.Set;
      * value = segment indexes of lines with this combination of
      * theta and radius.
      */
-<span class="fc" id="L73">    private Map&lt;PairInt, TIntList&gt; trSegmentIndexesMap = new HashMap&lt;PairInt, TIntList&gt;();</span>
+<span class="nc" id="L73">    private Map&lt;PairInt, TIntList&gt; trSegmentIndexesMap = new HashMap&lt;PairInt, TIntList&gt;();</span>
     
-<span class="fc" id="L75">    private List&lt;PairInt&gt; orderedTRList = null;</span>
-<span class="fc" id="L76">    private List&lt;TIntList&gt; orderedTRXYIndexes = null;</span>
+<span class="nc" id="L75">    private List&lt;PairInt&gt; orderedTRList = null;</span>
+<span class="nc" id="L76">    private List&lt;TIntList&gt; orderedTRXYIndexes = null;</span>
     
-<span class="fc" id="L78">    private int lastSegIdx = -1;</span>
+<span class="nc" id="L78">    private int lastSegIdx = -1;</span>
     
-<span class="fc" id="L80">    private int lastCol = -1;</span>
-<span class="fc" id="L81">    private int lastRow = -1;</span>
+<span class="nc" id="L80">    private int lastCol = -1;</span>
+<span class="nc" id="L81">    private int lastRow = -1;</span>
     
-<span class="fc" id="L83">    private int minLineLength = 20;</span>
+<span class="nc" id="L83">    private int minLineLength = 20;</span>
     
-<span class="fc" id="L85">    private boolean debug = false;</span>
+<span class="nc" id="L85">    private boolean debug = false;</span>
     
-<span class="fc" id="L87">    private float thresh = (float)(1.e-7);</span>
+<span class="nc" id="L87">    private float thresh = (float)(1.e-7);</span>
     
     /**
      * if this is set, vertical lines found at polar radius 0 and width from
@@ -92,9 +92,9 @@ import java.util.Set;
      * and height from origin.
      */
     public void setToRemoveBorderLines(int lastColumn, int lastRow) {
-<span class="fc" id="L95">        this.lastCol = lastColumn;</span>
-<span class="fc" id="L96">        this.lastRow = lastRow;</span>
-<span class="fc" id="L97">    }</span>
+<span class="nc" id="L95">        this.lastCol = lastColumn;</span>
+<span class="nc" id="L96">        this.lastRow = lastRow;</span>
+<span class="nc" id="L97">    }</span>
     
     /**
      * override the default minimum line length of 30 to the given value
@@ -124,8 +124,8 @@ import java.util.Set;
 <span class="nc" id="L124">    }</span>
     
     public void setToDebug() {
-<span class="fc" id="L127">        debug = true;</span>
-<span class="fc" id="L128">    }</span>
+<span class="nc" id="L127">        debug = true;</span>
+<span class="nc" id="L128">    }</span>
     
     public void find(List&lt;Set&lt;PairInt&gt;&gt; listOfContigousLabels) {
                 
@@ -133,18 +133,18 @@ import java.util.Set;
         // -- find the lines around each boundary using shape fitting
         // -- store results as member variables
         
-<span class="pc bpc" id="L136" title="3 of 4 branches missed.">        assert(assertUniquePoints2(listOfContigousLabels));</span>
+<span class="nc bnc" id="L136" title="All 4 branches missed.">        assert(assertUniquePoints2(listOfContigousLabels));</span>
         
-<span class="fc" id="L138">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+<span class="nc" id="L138">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
         
-<span class="fc" id="L140">        List&lt;PairIntArray&gt; listOfBounds = new ArrayList&lt;PairIntArray&gt;();</span>
+<span class="nc" id="L140">        List&lt;PairIntArray&gt; listOfBounds = new ArrayList&lt;PairIntArray&gt;();</span>
         
         // extract ordered bounds
-<span class="fc" id="L143">        PerimeterFinder2 pFinder = new PerimeterFinder2();</span>
-<span class="fc" id="L144">        List&lt;PairIntArray&gt; extractedBounds = new ArrayList&lt;PairIntArray&gt;();</span>
-<span class="pc bpc" id="L145" title="1 of 2 branches missed.">        for (int i = 0; i &lt; listOfContigousLabels.size(); ++i) {</span>
+<span class="nc" id="L143">        PerimeterFinder2 pFinder = new PerimeterFinder2();</span>
+<span class="nc" id="L144">        List&lt;PairIntArray&gt; extractedBounds = new ArrayList&lt;PairIntArray&gt;();</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">        for (int i = 0; i &lt; listOfContigousLabels.size(); ++i) {</span>
         //for (int i = 71; i &lt; 72; ++i) {
-<span class="fc" id="L147">            Set&lt;PairInt&gt; set = listOfContigousLabels.get(i);</span>
+<span class="nc" id="L147">            Set&lt;PairInt&gt; set = listOfContigousLabels.get(i);</span>
 <span class="nc bnc" id="L148" title="All 2 branches missed.">            if (set.size() &lt; 3) {</span>
 <span class="nc" id="L149">                continue;</span>
             }

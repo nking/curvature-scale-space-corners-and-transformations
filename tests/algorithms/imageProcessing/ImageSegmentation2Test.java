@@ -25,15 +25,15 @@ public class ImageSegmentation2Test extends TestCase {
 
         String[] fileNames = new String[]{
            "seattle.jpg", 
-           "tmp2.png", //snapshot from the paper
+         //  "tmp2.png", //snapshot from the paper
            "susan-in_plus.png", 
-           "lena.jpg",
+         /*  "lena.jpg",
            "campus_010.jpg", 
            "android_statues_01.jpg", 
            "android_statues_02.jpg", 
             "android_statues_03.jpg", 
             "android_statues_04.jpg"
-            
+          */  
         };
 
         ImageSegmentation imageSegmentation = new ImageSegmentation();

@@ -44,21 +44,21 @@ public class TrioInt {
     @Override
     public boolean equals(Object obj) {
         
-<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (!(obj instanceof TrioInt)) {</span>
+<span class="nc bnc" id="L47" title="All 2 branches missed.">        if (!(obj instanceof TrioInt)) {</span>
 <span class="nc" id="L48">            return false;    </span>
         }
         
-<span class="fc" id="L51">        TrioInt other = (TrioInt)obj;</span>
+<span class="nc" id="L51">        TrioInt other = (TrioInt)obj;</span>
         
-<span class="pc bpc" id="L53" title="3 of 6 branches missed.">        return (x == other.getX()) &amp;&amp; (y == other.getY()) &amp;&amp; (z == other.getZ());</span>
+<span class="nc bnc" id="L53" title="All 6 branches missed.">        return (x == other.getX()) &amp;&amp; (y == other.getY()) &amp;&amp; (z == other.getZ());</span>
     }
 
     @Override
     public int hashCode() {
         
-<span class="fc" id="L59">        int hash = fnvHashCode(this.x, this.y, this.z);</span>
+<span class="nc" id="L59">        int hash = fnvHashCode(this.x, this.y, this.z);</span>
 
-<span class="fc" id="L61">        return hash;</span>
+<span class="nc" id="L61">        return hash;</span>
     }
 
 <span class="fc" id="L64">    protected static int fnv321aInit = 0x811c9dc5;</span>
@@ -76,27 +76,27 @@ public class TrioInt {
          * Public domain:  http://www.isthe.com/chongo/src/fnv/hash_32a.c
          */
 
-<span class="fc" id="L79">        int hash = 0;</span>
+<span class="nc" id="L79">        int hash = 0;</span>
 
-<span class="fc" id="L81">        int sum = fnv321aInit;</span>
+<span class="nc" id="L81">        int sum = fnv321aInit;</span>
 
         // xor the bottom with the current octet.
-<span class="fc" id="L84">        sum ^= i0;</span>
+<span class="nc" id="L84">        sum ^= i0;</span>
 
         // multiply by the 32 bit FNV magic prime mod 2^32
-<span class="fc" id="L87">        sum *= fnv32Prime;</span>
+<span class="nc" id="L87">        sum *= fnv32Prime;</span>
         
-<span class="fc" id="L89">        sum ^= i1;</span>
+<span class="nc" id="L89">        sum ^= i1;</span>
         
-<span class="fc" id="L91">        sum *= fnv32Prime;</span>
+<span class="nc" id="L91">        sum *= fnv32Prime;</span>
         
-<span class="fc" id="L93">        sum ^= i2;</span>
+<span class="nc" id="L93">        sum ^= i2;</span>
         
-<span class="fc" id="L95">        sum *= fnv32Prime;</span>
+<span class="nc" id="L95">        sum *= fnv32Prime;</span>
         
-<span class="fc" id="L97">        hash = sum;</span>
+<span class="nc" id="L97">        hash = sum;</span>
 
-<span class="fc" id="L99">        return hash;</span>
+<span class="nc" id="L99">        return hash;</span>
     }
 
     @Override

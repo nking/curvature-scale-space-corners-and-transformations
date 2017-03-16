@@ -371,7 +371,7 @@ import java.util.List;
 <span class="pc bpc" id="L371" title="6 of 12 branches missed.">        if (r &lt; 0 || r &gt; 255 || g &lt; 0 || g &gt; 255 || b &lt; 0 || b &gt; 255) {</span>
 <span class="nc" id="L372">            throw new IllegalArgumentException(&quot;r, g, and b must be 0 to 255&quot;);</span>
         }
-<span class="fc bfc" id="L374" title="All 6 branches covered.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
+<span class="pc bpc" id="L374" title="2 of 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
 <span class="fc" id="L375">            return new float[]{0, 0, 0};</span>
         }
         
@@ -676,7 +676,7 @@ import java.util.List;
      */
     public float[] _rgbToCIEXYZ(int r, int g, int b) {
 
-<span class="pc bpc" id="L679" title="1 of 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
+<span class="pc bpc" id="L679" title="5 of 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
 <span class="nc" id="L680">            return new float[]{0, 0, 0};</span>
         }
         

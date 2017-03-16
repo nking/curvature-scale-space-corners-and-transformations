@@ -431,15 +431,15 @@ import java.util.Random;
      * @throws NullPointerException if &lt;tt&gt;a&lt;/tt&gt; is &lt;tt&gt;null&lt;/tt&gt;
      */
     public static void shuffle(int[] a) {
-<span class="nc bnc" id="L434" title="All 2 branches missed.">        if (a == null) throw new NullPointerException(&quot;argument array is null&quot;);</span>
-<span class="nc" id="L435">        int n = a.length;</span>
-<span class="nc bnc" id="L436" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="nc" id="L437">            int r = i + uniform(n-i);     // between i and n-1</span>
-<span class="nc" id="L438">            int temp = a[i];</span>
-<span class="nc" id="L439">            a[i] = a[r];</span>
-<span class="nc" id="L440">            a[r] = temp;</span>
+<span class="pc bpc" id="L434" title="1 of 2 branches missed.">        if (a == null) throw new NullPointerException(&quot;argument array is null&quot;);</span>
+<span class="fc" id="L435">        int n = a.length;</span>
+<span class="fc bfc" id="L436" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L437">            int r = i + uniform(n-i);     // between i and n-1</span>
+<span class="fc" id="L438">            int temp = a[i];</span>
+<span class="fc" id="L439">            a[i] = a[r];</span>
+<span class="fc" id="L440">            a[r] = temp;</span>
         }
-<span class="nc" id="L442">    }</span>
+<span class="fc" id="L442">    }</span>
 
 
     /**

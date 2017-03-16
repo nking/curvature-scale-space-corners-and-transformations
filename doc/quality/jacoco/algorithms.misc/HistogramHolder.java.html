@@ -38,7 +38,7 @@ import java.io.IOException;
             
 <span class="fc" id="L39">            int partition = (int)(x/binSize);</span>
             
-<span class="fc bfc" id="L41" title="All 2 branches covered.">            if (partition &gt; (nPartitions - 1)) {</span>
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">            if (partition &gt; (nPartitions - 1)) {</span>
 <span class="fc" id="L42">                partition = nPartitions - 1;</span>
             }
             
@@ -321,40 +321,40 @@ import java.io.IOException;
     @Override
     public String toString() {
         
-<span class="fc" id="L324">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L324">        StringBuilder sb = new StringBuilder();</span>
         
-<span class="fc" id="L326">        sb.append(&quot;histogram=[&quot;);</span>
+<span class="nc" id="L326">        sb.append(&quot;histogram=[&quot;);</span>
         
-<span class="fc bfc" id="L328" title="All 2 branches covered.">        for (int i = 0; i &lt; xHist.length; i++) {</span>
+<span class="nc bnc" id="L328" title="All 2 branches missed.">        for (int i = 0; i &lt; xHist.length; i++) {</span>
             
-<span class="fc" id="L330">            sb.append(&quot;(&quot;).append(xHist[i]).append(&quot;, &quot;);</span>
+<span class="nc" id="L330">            sb.append(&quot;(&quot;).append(xHist[i]).append(&quot;, &quot;);</span>
             
-<span class="pc bpc" id="L332" title="1 of 2 branches missed.">            if (yHist != null) {</span>
-<span class="fc" id="L333">                sb.append(yHist[i]);</span>
+<span class="nc bnc" id="L332" title="All 2 branches missed.">            if (yHist != null) {</span>
+<span class="nc" id="L333">                sb.append(yHist[i]);</span>
             } else {
 <span class="nc" id="L335">                sb.append(yHistFloat[i]);</span>
             }
-<span class="fc" id="L337">            sb.append(&quot;) &quot;);</span>
+<span class="nc" id="L337">            sb.append(&quot;) &quot;);</span>
             
         }
         
-<span class="fc" id="L341">        sb.append(&quot;]\n&quot;);</span>
+<span class="nc" id="L341">        sb.append(&quot;]\n&quot;);</span>
         
-<span class="pc bpc" id="L343" title="1 of 2 branches missed.">        if (xErrors != null) {</span>
+<span class="nc bnc" id="L343" title="All 2 branches missed.">        if (xErrors != null) {</span>
             
-<span class="fc" id="L345">            sb.append(&quot;histogram errors=[&quot;);</span>
+<span class="nc" id="L345">            sb.append(&quot;histogram errors=[&quot;);</span>
             
-<span class="fc bfc" id="L347" title="All 2 branches covered.">            for (int i = 0; i &lt; xErrors.length; i++) {</span>
+<span class="nc bnc" id="L347" title="All 2 branches missed.">            for (int i = 0; i &lt; xErrors.length; i++) {</span>
 
-<span class="fc" id="L349">                sb.append(&quot;(&quot;).append(xErrors[i]).append(&quot;, &quot;);</span>
+<span class="nc" id="L349">                sb.append(&quot;(&quot;).append(xErrors[i]).append(&quot;, &quot;);</span>
 
-<span class="fc" id="L351">                sb.append(yErrors[i]).append(&quot;) &quot;);</span>
+<span class="nc" id="L351">                sb.append(yErrors[i]).append(&quot;) &quot;);</span>
             }
             
-<span class="fc" id="L354">            sb.append(&quot;]\n&quot;);</span>
+<span class="nc" id="L354">            sb.append(&quot;]\n&quot;);</span>
         }      
         
-<span class="fc" id="L357">        return sb.toString();</span>
+<span class="nc" id="L357">        return sb.toString();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

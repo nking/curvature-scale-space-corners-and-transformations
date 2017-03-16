@@ -14,6 +14,8 @@ import static org.junit.Assert.*;
  */
 public class PeriodicFFTTest extends TestCase {
 
+    private boolean displayImages = false;
+    
     public PeriodicFFTTest(String testName) {
         super(testName);
     }
@@ -42,6 +44,7 @@ public class PeriodicFFTTest extends TestCase {
             }
         }
         
+        if (displayImages)
         ImageDisplayer.displayImage(fileName, img);
                         
         Complex[][] ccOut = imageProcessor.create2DFFTWithSwapMajor(img, true);
@@ -61,7 +64,8 @@ public class PeriodicFFTTest extends TestCase {
                 int re = (int)ccOut[row][col].re();
                 img1.setValue(col, row, re);
             }
-        }                           
+        }           
+        if (displayImages)
         ImageDisplayer.displayImage("FFT of " + fileName, img1);
 
         // ---- inverse FFT -------
@@ -82,6 +86,7 @@ public class PeriodicFFTTest extends TestCase {
                 img1.setValue(col, row, re);
             }
         }
+        if (displayImages)
         ImageDisplayer.displayImage("FFT^-1 of FFT " + fileName, img1);
         
         int maxDiff = Integer.MIN_VALUE;
@@ -121,6 +126,7 @@ public class PeriodicFFTTest extends TestCase {
             GreyscaleImage imgT = img.createFullRangeIntWithDimensions();
             imageProcessor.writeToImageWithSwapMajor(imgT, t);
                        
+            if (displayImages)
             ImageDisplayer.displayImage(label, imgT);
             
             double min = Double.MAX_VALUE;
@@ -201,6 +207,7 @@ public class PeriodicFFTTest extends TestCase {
         }
         HistogramEqualization hEq = new HistogramEqualization(perSpatialImg);
         hEq.applyFilter();
+        if (displayImages)
         ImageDisplayer.displayImage("perioidic spatial", perSpatialImg);
         
         GreyscaleImage smoothSpatialImg = new GreyscaleImage(img.getWidth(), img.getHeight(),
@@ -213,6 +220,7 @@ public class PeriodicFFTTest extends TestCase {
         }
         hEq = new HistogramEqualization(smoothSpatialImg);
         hEq.applyFilter();
+        if (displayImages)
         ImageDisplayer.displayImage("smooth spatial", smoothSpatialImg);
         
         GreyscaleImage fftPeriodicImg = new GreyscaleImage(img.getWidth(), img.getHeight(),
@@ -223,6 +231,7 @@ public class PeriodicFFTTest extends TestCase {
                 fftPeriodicImg.setValue(col, row, (int)re);
             }
         }
+        if (displayImages)
         ImageDisplayer.displayImage("FFT of periodic", fftPeriodicImg);
         
         GreyscaleImage fftSmoothImg = new GreyscaleImage(img.getWidth(), img.getHeight(),
@@ -233,6 +242,7 @@ public class PeriodicFFTTest extends TestCase {
                 fftSmoothImg.setValue(col, row, (int)re);
             }
         }
+        if (displayImages)
         ImageDisplayer.displayImage("FFT of smooth", fftSmoothImg);
         
         int z = 1;
@@ -254,6 +264,7 @@ public class PeriodicFFTTest extends TestCase {
         ImageProcessor imageProcessor = new ImageProcessor();
         imageProcessor.apply2DFFT(img, true);
         
+        if (displayImages)
         ImageDisplayer.displayImage("FFT of checkerboard", img);
         
         
@@ -284,6 +295,7 @@ public class PeriodicFFTTest extends TestCase {
                 img2.setValue(col, row, scaled[idx]);
             }
         }
+        if (displayImages)
         ImageDisplayer.displayImage("log of Periodic FFT of checkerboard", img2);
         
         GreyscaleImage img3 = new GreyscaleImage(img.getWidth(), img.getHeight(),
@@ -297,6 +309,7 @@ public class PeriodicFFTTest extends TestCase {
         HistogramEqualization hEq = new HistogramEqualization(img3);
         hEq.applyFilter();
         
+        if (displayImages)
         ImageDisplayer.displayImage("Periodic FFT of checkerboard", img3);
         
     }

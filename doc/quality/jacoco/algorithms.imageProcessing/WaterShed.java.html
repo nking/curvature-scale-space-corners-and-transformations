@@ -151,14 +151,14 @@ import java.util.Map.Entry;
 
 <span class="fc bfc" id="L152" title="All 2 branches covered.">            if (index.equals(sentinelInt)) {</span>
 
-<span class="fc bfc" id="L154" title="All 2 branches covered.">                if (!queue.isEmpty()) {</span>
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">                if (!queue.isEmpty()) {</span>
 
-<span class="fc" id="L156">                    queue.add(sentinelInt);</span>
+<span class="nc" id="L156">                    queue.add(sentinelInt);</span>
 
                     //any point originally lacking lower intensity neighbors,
                     //now gets a larger distance
 
-<span class="fc" id="L161">                    dist++;</span>
+<span class="nc" id="L161">                    dist++;</span>
                 }
 
                 continue;
@@ -178,14 +178,14 @@ import java.util.Map.Entry;
 <span class="fc" id="L178">                    continue;</span>
                 }
 
-<span class="fc bfc" id="L181" title="All 4 branches covered.">                if ((img.getValue(x, y) == img.getValue(x2, y2)) &amp;&amp;</span>
+<span class="pc bpc" id="L181" title="1 of 4 branches missed.">                if ((img.getValue(x, y) == img.getValue(x2, y2)) &amp;&amp;</span>
                     (lc[x2][y2] == 0)) {
 
-<span class="fc" id="L184">                    int idx2 = img.getIndex(x2, y2);</span>
+<span class="nc" id="L184">                    int idx2 = img.getIndex(x2, y2);</span>
 
-<span class="fc" id="L186">                    queue.add(Integer.valueOf(idx2));</span>
+<span class="nc" id="L186">                    queue.add(Integer.valueOf(idx2));</span>
 
-<span class="fc" id="L188">                    lc[x2][y2] = -1;</span>
+<span class="nc" id="L188">                    lc[x2][y2] = -1;</span>
                 }
             }
 <span class="fc" id="L191">        }</span>
@@ -304,11 +304,11 @@ import java.util.Map.Entry;
 <span class="fc" id="L304">                        DisjointSet2Node&lt;PairInt&gt; qParent = disjointSetHelper.findSet(</span>
 <span class="fc" id="L305">                            parentMap.get(qPoint));</span>
 
-<span class="fc bfc" id="L307" title="All 2 branches covered.">                        if (qParent.getMember().getX() &lt; reprPoint.getX()) {</span>
+<span class="pc bpc" id="L307" title="1 of 2 branches missed.">                        if (qParent.getMember().getX() &lt; reprPoint.getX()) {</span>
 <span class="fc" id="L308">                            reprPoint = qPoint;</span>
-<span class="fc bfc" id="L309" title="All 2 branches covered.">                        } else if ((qParent.getMember().getX() == reprPoint.getX())</span>
-<span class="fc bfc" id="L310" title="All 2 branches covered.">                            &amp;&amp; (qParent.getMember().getY() &lt; reprPoint.getY())) {</span>
-<span class="fc" id="L311">                            reprPoint = qPoint;</span>
+<span class="nc bnc" id="L309" title="All 2 branches missed.">                        } else if ((qParent.getMember().getX() == reprPoint.getX())</span>
+<span class="nc bnc" id="L310" title="All 2 branches missed.">                            &amp;&amp; (qParent.getMember().getY() &lt; reprPoint.getY())) {</span>
+<span class="nc" id="L311">                            reprPoint = qPoint;</span>
                         }
 <span class="fc" id="L313">                        qPoints.add(qPoint);</span>
                     }

@@ -50,10 +50,6 @@ public class ImageHelperForTests {
         
         ImageProcessor ImageProcessor = new ImageProcessor();
         
-        int[] offsetXY = ImageProcessor.shrinkImageToFirstNonZeros(img);
-        trimmedXOffset = offsetXY[0];
-        trimmedYOffset = offsetXY[1];
-        
         CannyEdgeFilterAdaptive filter = new CannyEdgeFilterAdaptive();
         
         CannyEdgeFilterSettings settings = getCannyEdgeFilterSettings();

@@ -263,9 +263,9 @@ public class CIEChromaticityTest extends TestCase {
         String dirPath = ResourceFinder.findDirectory("bin");
         String filePath2 = dirPath + "/tmp.png";
             
-        ImageDisplayer.displayImage("points", img1);
+        //ImageDisplayer.displayImage("points", img1);
         ImageIOHelper.writeOutputImage(filePath2, img1);
-        int z = 1;
+        
     }
     
     public void testDeltaE2000() throws Exception {

@@ -12,6 +12,8 @@ import junit.framework.TestCase;
  */
 public class MedianTransformTest extends TestCase {
 
+    private boolean displayImages = false;
+    
     public MedianTransformTest(String testName) {
         super(testName);
     }
@@ -37,6 +39,7 @@ public class MedianTransformTest extends TestCase {
         GreyscaleImage r = mt.reconstructMultiscaleMedianTransform(
             transformed.get(transformed.size() - 1), coeffs);
         
+        if (displayImages)
         ImageDisplayer.displayImage("reconstructed ", r);
         
         // --------
@@ -50,6 +53,7 @@ public class MedianTransformTest extends TestCase {
         GreyscaleImage r1 = mt.reconstructPyramidalMultiscaleMedianTransform(
             transformed1.get(transformed1.size() - 1), coeffs1);
         
+        if (displayImages)
         ImageDisplayer.displayImage("inexact pyramidal med trans reconstructed ", r1);
         
         // --------
@@ -63,6 +67,7 @@ public class MedianTransformTest extends TestCase {
         GreyscaleImage r2 = mt.reconstructPyramidalMultiscaleMedianTransform(
             transformed2.get(transformed2.size() - 1), coeffs2);
         
+        if (displayImages)
         ImageDisplayer.displayImage("exact pyramidal med trans reconstructed ", r2);
         
     }

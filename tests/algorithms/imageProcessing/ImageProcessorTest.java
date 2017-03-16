@@ -241,28 +241,7 @@ public class ImageProcessorTest extends TestCase {
              }
         }
     }
-      
-    public void testShrinkImageToFirstNonZeros() {
-        
-        int w = 10;
-        int h = 10;
-        int border = 1;
-        GreyscaleImage image = new GreyscaleImage(w, h);
-        
-        for (int col = 0 + border; col < (w - border); col++) {
-             for (int row = 0 + border; row < (h - border); row++) {
-                 image.setValue(col, row, 1);
-             }
-        }
-        
-        ImageProcessor instance = new ImageProcessor();
-        int[] offsetXY = instance.shrinkImageToFirstNonZeros(image);
-        
-        // added a buffer of 1 around each border
-        assertTrue(image.getWidth() == (w - 2*border + 2));
-        assertTrue(image.getHeight() == (h - 2*border + 2));
-    }
-
+     
     public void testBinImageToKeepZeros() throws Exception {
         
         int w0 = 4;
@@ -413,128 +392,6 @@ public class ImageProcessorTest extends TestCase {
         }
     }
     
-    public void testUnbinMask() throws Exception {
-       
-        int w0 = 4;
-        int h0 = 6;
-        int xOff = 2;
-        int yOff = 10;
-        
-        int binFactor = 2;
-        
-        int w1 = w0/binFactor;
-        int h1 = h0/binFactor;
-        
-        GreyscaleImage originalTheta = new GreyscaleImage(w0, h0);
-        originalTheta.setXRelativeOffset(xOff);
-        originalTheta.setYRelativeOffset(yOff);
-        
-        GreyscaleImage mask = new GreyscaleImage(w1, h1);
-        mask.setXRelativeOffset(xOff/binFactor);
-        mask.setYRelativeOffset(yOff/binFactor);
-        
-        /*
-        @ @ 
-        1  
-        2
-        */
-        for (int col = 0; col < mask.getWidth(); col++) {
-            for (int row = 0; row < mask.getHeight(); row++) {
-                if (row == 0) {
-                    mask.setValue(col, row, 0);
-                } else {
-                    mask.setValue(col, row, 4);
-                }
-            }
-        }
-        
-        ImageProcessor ImageProcessor = new ImageProcessor();
-        GreyscaleImage out = ImageProcessor.unbinMask(mask, binFactor, originalTheta);
-        
-        assertTrue(out.getWidth() == originalTheta.getWidth());
-        assertTrue(out.getHeight() == originalTheta.getHeight());
-        assertTrue(out.getXRelativeOffset() == originalTheta.getXRelativeOffset());
-        assertTrue(out.getYRelativeOffset() == originalTheta.getYRelativeOffset());
-        
-        for (int col = 0; col < out.getWidth(); col++) {
-            for (int row = 0; row < out.getHeight(); row++) {
-                if ((row == 0) || (row == 1)) {
-                    assertTrue(out.getValue(col, row) == 0);
-                } else {
-                    assertTrue(out.getValue(col, row) == 4);
-                }
-            }
-        }
-    }
-    
-    public void testUnbinMask2() throws Exception {
-       
-        int w0 = 5;
-        int h0 = 7;
-        int xOff = 2;
-        int yOff = 10;
-        
-        int binFactor = 2;
-        
-        int w1 = w0/binFactor;
-        int h1 = h0/binFactor;
-        
-        GreyscaleImage originalTheta = new GreyscaleImage(w0, h0);
-        originalTheta.setXRelativeOffset(xOff);
-        originalTheta.setYRelativeOffset(yOff);
-        
-        GreyscaleImage mask = new GreyscaleImage(w1, h1);
-        mask.setXRelativeOffset(xOff/binFactor);
-        mask.setYRelativeOffset(yOff/binFactor);
-        
-        /*
-        @ @ 
-        1  
-        2
-        */
-        for (int col = 0; col < mask.getWidth(); col++) {
-            for (int row = 0; row < mask.getHeight(); row++) {
-                if (row == 0) {
-                    mask.setValue(col, row, 0);
-                } else {
-                    mask.setValue(col, row, 4);
-                }
-            }
-        }
-        
-        ImageProcessor ImageProcessor = new ImageProcessor();
-        GreyscaleImage out = ImageProcessor.unbinMask(mask, binFactor, originalTheta);
-        
-        assertTrue(out.getWidth() == originalTheta.getWidth());
-        assertTrue(out.getHeight() == originalTheta.getHeight());
-        assertTrue(out.getXRelativeOffset() == originalTheta.getXRelativeOffset());
-        assertTrue(out.getYRelativeOffset() == originalTheta.getYRelativeOffset());
-        
-        for (int col = 0; col < out.getWidth(); col++) {
-            for (int row = 0; row < out.getHeight(); row++) {
-                if ((row == 0) || (row == 1)) {
-                    assertTrue(out.getValue(col, row) == 0);
-                } else {
-                    assertTrue(out.getValue(col, row) == 4);
-                }
-            }
-        }
-    }
-    
-    public void testPrintImageColorContrastStats() throws Exception {
-        
-        //SKY avg: 161 min=35 max=124
-        String filePath = ResourceFinder.findFileInTestResources(
-            "venturi_mountain_j6_0001.png");
-        
-        Image img = ImageIOHelper.readImage(filePath);
-                        
-        ImageProcessor ImageProcessor = new ImageProcessor();
-        
-        ImageProcessor.printImageColorContrastStats(img, 161, 501);
-        
-    }
-    
     public void estFFT2D() throws Exception {
         
         /*
@@ -549,13 +406,15 @@ public class ImageProcessorTest extends TestCase {
         //GreyscaleImage r = mt.reconstructPyramidalMultiscaleMedianTransform(
         //    transformed.get(transformed.size() - 1), coeffs);
         
-        for (int i = 0; i < transformed.size(); ++i) {
-            ImageDisplayer.displayImage("transformed " + i, transformed.get(i));
+        if (displayImages) {
+            for (int i = 0; i < transformed.size(); ++i) {
+                ImageDisplayer.displayImage("transformed " + i, transformed.get(i));
+            }
+            for (int i = 0; i < coeffs.size(); ++i) {
+                ImageDisplayer.displayImage("coeffs " + i, coeffs.get(i));
+            }
+            ImageDisplayer.displayImage("reconstructed ", r);
         }
-        for (int i = 0; i < coeffs.size(); ++i) {
-            ImageDisplayer.displayImage("coeffs " + i, coeffs.get(i));
-        }
-        ImageDisplayer.displayImage("reconstructed ", r);
         
         int z = 1;
         */

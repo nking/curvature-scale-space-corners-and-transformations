@@ -986,33 +986,33 @@ import java.util.logging.Logger;
     public void transformToOrigin(int originX, int originY, 
         TransformationParameters params) {
         
-<span class="fc" id="L989">        double ox = params.getOriginX();</span>
-<span class="fc" id="L990">        double oy = params.getOriginY();</span>
+<span class="nc" id="L989">        double ox = params.getOriginX();</span>
+<span class="nc" id="L990">        double oy = params.getOriginY();</span>
         
-<span class="fc" id="L992">        MatchedPointsTransformationCalculator tc = new MatchedPointsTransformationCalculator();</span>
-<span class="fc" id="L993">        TransformationParameters revParams = tc.swapReferenceFrames(params);</span>
+<span class="nc" id="L992">        MatchedPointsTransformationCalculator tc = new MatchedPointsTransformationCalculator();</span>
+<span class="nc" id="L993">        TransformationParameters revParams = tc.swapReferenceFrames(params);</span>
 
-<span class="fc" id="L995">        double tx = revParams.getTranslationX();</span>
-<span class="fc" id="L996">        double ty = revParams.getTranslationY();</span>
+<span class="nc" id="L995">        double tx = revParams.getTranslationX();</span>
+<span class="nc" id="L996">        double ty = revParams.getTranslationY();</span>
         
-<span class="fc" id="L998">        double cosine = Math.cos(revParams.getRotationInRadians());</span>
-<span class="fc" id="L999">        double sine = Math.sin(revParams.getRotationInRadians());</span>
-<span class="fc" id="L1000">        double scale = revParams.getScale();</span>
+<span class="nc" id="L998">        double cosine = Math.cos(revParams.getRotationInRadians());</span>
+<span class="nc" id="L999">        double sine = Math.sin(revParams.getRotationInRadians());</span>
+<span class="nc" id="L1000">        double scale = revParams.getScale();</span>
         
-<span class="fc" id="L1002">        double deltaX = (ox * scale) + ((tx - ox) * scale * cosine) + ((ty - oy) * scale * sine);</span>
-<span class="fc" id="L1003">        double deltaY = (oy * scale) + (-(tx - ox) * scale * sine) + ((ty - oy) * scale * cosine);</span>
+<span class="nc" id="L1002">        double deltaX = (ox * scale) + ((tx - ox) * scale * cosine) + ((ty - oy) * scale * sine);</span>
+<span class="nc" id="L1003">        double deltaY = (oy * scale) + (-(tx - ox) * scale * sine) + ((ty - oy) * scale * cosine);</span>
         
-<span class="fc" id="L1005">        double txP = revParams.getTranslationX() - deltaX;</span>
-<span class="fc" id="L1006">        double tyP = revParams.getTranslationY() - deltaY;</span>
+<span class="nc" id="L1005">        double txP = revParams.getTranslationX() - deltaX;</span>
+<span class="nc" id="L1006">        double tyP = revParams.getTranslationY() - deltaY;</span>
         
-<span class="fc" id="L1008">        double[] xyT2 = applyTransformation(params, txP, tyP);</span>
+<span class="nc" id="L1008">        double[] xyT2 = applyTransformation(params, txP, tyP);</span>
       
-<span class="fc" id="L1010">        params.setOriginX(originX);</span>
-<span class="fc" id="L1011">        params.setOriginY(originY);</span>
-<span class="fc" id="L1012">        params.setTranslationX((float)xyT2[0]);</span>
-<span class="fc" id="L1013">        params.setTranslationY((float)xyT2[1]);</span>
+<span class="nc" id="L1010">        params.setOriginX(originX);</span>
+<span class="nc" id="L1011">        params.setOriginY(originY);</span>
+<span class="nc" id="L1012">        params.setTranslationX((float)xyT2[0]);</span>
+<span class="nc" id="L1013">        params.setTranslationY((float)xyT2[1]);</span>
         
-<span class="fc" id="L1015">    }</span>
+<span class="nc" id="L1015">    }</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

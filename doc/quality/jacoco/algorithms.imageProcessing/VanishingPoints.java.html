@@ -36,32 +36,32 @@ import java.util.Set;
  * 
  * @author nichole
  */
-<span class="pc bpc" id="L39" title="1 of 2 branches missed.">public class VanishingPoints {</span>
+<span class="nc bnc" id="L39" title="All 2 branches missed.">public class VanishingPoints {</span>
         
-<span class="fc" id="L41">    private boolean debug = false;</span>
+<span class="nc" id="L41">    private boolean debug = false;</span>
     
     /*
     key = segment idx,
        value = line endpoints and vanishing point
     */
-<span class="fc" id="L47">    private TIntObjectMap&lt;QuadInt&gt; vanishingLines =</span>
+<span class="nc" id="L47">    private TIntObjectMap&lt;QuadInt&gt; vanishingLines =</span>
         new TIntObjectHashMap&lt;QuadInt&gt;();
     
     public PairInt[] points;
     
     public void setToDebug() {
-<span class="fc" id="L53">        debug = true;</span>
-<span class="fc" id="L54">    }</span>
-<span class="fc" id="L55">public Image dbgImg = null;    </span>
+<span class="nc" id="L53">        debug = true;</span>
+<span class="nc" id="L54">    }</span>
+<span class="nc" id="L55">public Image dbgImg = null;    </span>
     public void find(List&lt;Set&lt;PairInt&gt;&gt; listOfContigousLabels,
         int imageWidth, int imageHeight) {
         
-<span class="fc" id="L59">        LinesFinder finder = new LinesFinder();</span>
-<span class="pc bpc" id="L60" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="fc" id="L61">            finder.setToDebug();</span>
+<span class="nc" id="L59">        LinesFinder finder = new LinesFinder();</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L61">            finder.setToDebug();</span>
         }
         
-<span class="fc" id="L64">        finder.setToRemoveBorderLines(imageWidth - 1, imageHeight - 1);</span>
+<span class="nc" id="L64">        finder.setToRemoveBorderLines(imageWidth - 1, imageHeight - 1);</span>
 <span class="nc" id="L65">        finder.find(listOfContigousLabels);</span>
 <span class="nc" id="L66">        finder.groupWithinTolerance();</span>
 

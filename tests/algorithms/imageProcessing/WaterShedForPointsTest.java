@@ -613,7 +613,7 @@ public class WaterShedForPointsTest extends TestCase {
 
     }
 
-    public void testOnImage() throws Exception {
+    public void estOnImage() throws Exception {
 
         String[] fileRoots = new String[]{"v_blob_1","v_blob_10"};
 
@@ -686,6 +686,5 @@ public class WaterShedForPointsTest extends TestCase {
             ImageIOHelper.writeOutputImage(bin + "/" + fileRoot + "_ws.png", imgW);
         }
     }
-
 
 }

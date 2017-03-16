@@ -290,7 +290,7 @@ public class KMeansPlusPlus {
 
 <span class="fc bfc" id="L291" title="All 2 branches covered.">        for (int i = 0; i &lt; nSeeds; i++) {</span>
 <span class="fc" id="L292">            float diff = seedVariances[i] - sumVariance[i];</span>
-<span class="fc bfc" id="L293" title="All 2 branches covered.">            if (diff &lt; 0 ) {</span>
+<span class="pc bpc" id="L293" title="1 of 2 branches missed.">            if (diff &lt; 0 ) {</span>
 <span class="fc" id="L294">                allAreBelowCriticalLimit = false;</span>
             }
             
@@ -472,7 +472,7 @@ public class KMeansPlusPlus {
     }
     
     public int[] getImgPixelSeedIndexes() {
-<span class="fc" id="L475">        return lastImgSeedIndexes;</span>
+<span class="nc" id="L475">        return lastImgSeedIndexes;</span>
     }
 
     public int[] getNumberOfPointsPerSeedCell() {
@@ -568,7 +568,7 @@ public class KMeansPlusPlus {
         }
         
 <span class="fc" id="L570">        long v = nDistrC[idx];</span>
-<span class="pc bfc" id="L571" title="All 2 branches covered.">        for (int i = (idx - 1); i &gt; -1; --i) {</span>
+<span class="pc bpc" id="L571" title="1 of 2 branches missed.">        for (int i = (idx - 1); i &gt; -1; --i) {</span>
 <span class="pc bpc" id="L572" title="1 of 2 branches missed.">            if (nDistrC[i] == v) {</span>
 <span class="nc" id="L573">                idx = i;</span>
             } else {

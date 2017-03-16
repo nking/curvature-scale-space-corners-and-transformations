@@ -20,7 +20,7 @@ import javax.swing.SwingUtilities;
     
     public static DisposableJFrame displayImage(final String title, final Image img) 
         throws IOException {
-<span class="fc" id="L23">        return displayImage(title, img, BufferedImage.TYPE_INT_RGB);</span>
+<span class="nc" id="L23">        return displayImage(title, img, BufferedImage.TYPE_INT_RGB);</span>
     }
     
     public static DisposableJFrame displayImageGrey(final String title, final Image img) 
@@ -31,23 +31,23 @@ import javax.swing.SwingUtilities;
     public static DisposableJFrame displayImage(final String title, final Image img,
         int imageType) throws IOException {
         
-<span class="pc bpc" id="L34" title="1 of 2 branches missed.">        if (img == null) {</span>
+<span class="nc bnc" id="L34" title="All 2 branches missed.">        if (img == null) {</span>
 <span class="nc" id="L35">            return null;</span>
         }
         
-<span class="fc" id="L38">        int w = img.getWidth();</span>
-<span class="fc" id="L39">        int h = img.getHeight();</span>
+<span class="nc" id="L38">        int w = img.getWidth();</span>
+<span class="nc" id="L39">        int h = img.getHeight();</span>
         
-<span class="fc" id="L41">        final BufferedImage image = new BufferedImage(w, h, imageType);</span>
+<span class="nc" id="L41">        final BufferedImage image = new BufferedImage(w, h, imageType);</span>
         
-<span class="fc bfc" id="L43" title="All 2 branches covered.">        for (int i = 0; i &lt; w; i++) {</span>
-<span class="fc bfc" id="L44" title="All 2 branches covered.">            for (int j = 0; j &lt; h; j++) {</span>
-<span class="fc" id="L45">                int rgbValue = img.getRGB(i, j);                </span>
-<span class="fc" id="L46">                image.setRGB(i, j, rgbValue);</span>
+<span class="nc bnc" id="L43" title="All 2 branches missed.">        for (int i = 0; i &lt; w; i++) {</span>
+<span class="nc bnc" id="L44" title="All 2 branches missed.">            for (int j = 0; j &lt; h; j++) {</span>
+<span class="nc" id="L45">                int rgbValue = img.getRGB(i, j);                </span>
+<span class="nc" id="L46">                image.setRGB(i, j, rgbValue);</span>
             }
         }
        
-<span class="fc" id="L50">        return displayDisposableImage(title, image);</span>
+<span class="nc" id="L50">        return displayDisposableImage(title, image);</span>
     }
     
     public static DisposableJFrame displayImage(final String title, 

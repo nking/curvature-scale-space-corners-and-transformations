@@ -578,7 +578,7 @@ public class WaterShedTest extends TestCase {
 
     }
 
-    public void testOnImage() throws Exception {
+    public void estOnImage() throws Exception {
 
         String bin = ResourceFinder.findDirectory("bin");
 

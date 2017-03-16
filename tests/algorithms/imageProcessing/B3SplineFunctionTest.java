@@ -195,65 +195,6 @@ public class B3SplineFunctionTest extends TestCase {
         c2F = outputCoeff2.get(outputCoeff2.size() - 1);
         
         assertEquals(outputCoeff.size(), outputCoeff2.size());
-        
-        MatchedPointsTransformationCalculator tc = 
-            new MatchedPointsTransformationCalculator();        
-        TransformationParameters revParams = tc.swapReferenceFrames(params90);
-        transformer.transformToOrigin(0, 0, revParams);
-        GreyscaleImage c1FTr = c1F.copyToFullRangeIntImage();
-        c1FTr = transformer.applyTransformation(c1FTr, revParams, 
-            c1FTr.getHeight(), c1FTr.getWidth());
-        assertEquals(c2F.getWidth(), c1FTr.getWidth());
-        assertEquals(c2F.getHeight(), c1FTr.getHeight());
-        
-        plot = false;
-        for (int row = 0; row < c2F.getHeight(); ++row) {
-            for (int col = 0; col < c2F.getWidth(); ++col) {
-                int v1 = c1FTr.getValue(col, row);
-                int v2 = c2F.getValue(col, row);
-                int diffV = v1 - v2;
-                if (diffV != 0) {
-                    //System.out.println("("+col + "," + row + ") diffV=" + diffV);
-                    plot = true;
-                }
-            }
-        }
-        if (plot) {
-            MiscDebug.writeImage(c1FTr, "1-2D_atrous_rot90");
-            MiscDebug.writeImage(c2F, "1-2D_atrous_rot0");
-        }
-        //assertFalse(plot);
-        
-        // ------ the segmentation ----
-        img1 = ImageIOHelper.readImageExt(filePath1);
-        img1R90 = (ImageExt) transformer.applyTransformation(img1,
-            params90, img1.getHeight(), img1.getWidth());
-        ImageSegmentation imageSegmentation = new ImageSegmentation();
-        GreyscaleImage c1SegTr = imageSegmentation.createGreyscale5(img1R90.copyToGreyscale());
-        
-        GreyscaleImage c1Seg = imageSegmentation.createGreyscale5(img1.copyToGreyscale());
-        
-        c1SegTr = transformer.applyTransformation(c1SegTr, revParams, 
-            c1SegTr.getHeight(), c1SegTr.getWidth());
-        assertEquals(c1Seg.getWidth(), c1SegTr.getWidth());
-        assertEquals(c1Seg.getHeight(), c1SegTr.getHeight());
-        
-        plot = false;
-        for (int row = 0; row < c1Seg.getHeight(); ++row) {
-            for (int col = 0; col < c1Seg.getWidth(); ++col) {
-                int v1 = c1SegTr.getValue(col, row);
-                int v2 = c1Seg.getValue(col, row);
-                int diffV = v1 - v2;
-                if (diffV != 0) {
-                    //System.out.println("("+col + "," + row + ") diffV=" + diffV);
-                    plot = true;
-                }
-            }
-        }
-        if (plot) {
-            MiscDebug.writeImage(c1SegTr, "1-2D_atrous_rot90_seg");
-            MiscDebug.writeImage(c1Seg, "1-2D_atrous_rot0_seg");
-        }
-        //assertFalse(plot);
+      
     }
 }

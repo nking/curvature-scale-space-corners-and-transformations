@@ -276,9 +276,9 @@ import java.util.logging.Logger;
 
 <span class="fc" id="L277">        final int sHalf = s/2;</span>
         int dx, dy;
-<span class="pc bpc" id="L279" title="1 of 2 branches missed.">        if (s &lt; 3) {</span>
-<span class="nc" id="L280">            dx = 0;</span>
-<span class="nc" id="L281">            dy = 0;</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">        if (s &lt; 3) {</span>
+<span class="fc" id="L280">            dx = 0;</span>
+<span class="fc" id="L281">            dy = 0;</span>
         } else {
 <span class="fc" id="L283">            dx = 1;</span>
 <span class="fc" id="L284">            dy = 1;</span>
@@ -288,15 +288,15 @@ import java.util.logging.Logger;
 <span class="fc bfc" id="L288" title="All 2 branches covered.">        for (int iNy = 0; iNy &lt; nYs; ++iNy) {</span>
 
 <span class="fc" id="L290">            int y1 = sHalf + iNy*s;</span>
-<span class="pc bpc" id="L291" title="3 of 4 branches missed.">            if ((dy == 0) &amp;&amp; y1 &gt; (h - 1)) {</span>
-<span class="nc" id="L292">                y1 = h - 1;</span>
+<span class="fc bfc" id="L291" title="All 4 branches covered.">            if ((dy == 0) &amp;&amp; y1 &gt; (h - 1)) {</span>
+<span class="fc" id="L292">                y1 = h - 1;</span>
             }
 
 <span class="fc bfc" id="L295" title="All 2 branches covered.">            for (int iNx = 0; iNx &lt; nXs; ++iNx) {</span>
 
 <span class="fc" id="L297">                int x1 = sHalf + iNx*s;</span>
-<span class="pc bpc" id="L298" title="3 of 4 branches missed.">                if ((dx == 0) &amp;&amp; x1 &gt; (w - 1)) {</span>
-<span class="nc" id="L299">                    x1 = w - 1;</span>
+<span class="fc bfc" id="L298" title="All 4 branches covered.">                if ((dx == 0) &amp;&amp; x1 &gt; (w - 1)) {</span>
+<span class="fc" id="L299">                    x1 = w - 1;</span>
                 }
 
 <span class="fc" id="L302">                int kCurrent = (iNy * nXs) + iNx;</span>

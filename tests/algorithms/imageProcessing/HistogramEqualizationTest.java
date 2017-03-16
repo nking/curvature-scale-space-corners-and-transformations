@@ -14,6 +14,8 @@ public class HistogramEqualizationTest extends TestCase {
     public HistogramEqualizationTest() {
     }
     
+    private boolean displayImages = false;
+    
     private GreyscaleImage getTestImage() {
         
         int[][] d = new int[8][8];
@@ -237,6 +239,7 @@ public class HistogramEqualizationTest extends TestCase {
         HistogramEqualization heq = new HistogramEqualization(img);
         heq.applyFilter();
         
+        if (displayImages)
         ImageDisplayer.displayImage("histogram equalized", img);
         
     }

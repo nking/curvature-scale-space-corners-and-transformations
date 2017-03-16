@@ -34,49 +34,49 @@ import java.util.logging.Logger;
  * 
  * @author nichole
  */
-<span class="pc bpc" id="L37" title="1 of 2 branches missed.">public class KMeansPlusPlusColor {</span>
+<span class="nc bnc" id="L37" title="All 2 branches missed.">public class KMeansPlusPlusColor {</span>
     
-<span class="fc" id="L39">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="nc" id="L39">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
             
     /**
      * final solution for centers of groups (== seed centers)
      * in [0][index where 0 is for r and [1][index] where 1 is for g
      * and [2][index] is for b
      */
-<span class="fc" id="L46">    protected int[][] center = null;</span>
-<span class="fc" id="L47">    protected int[] numberOfPointsPerSeedCell = null;</span>
+<span class="nc" id="L46">    protected int[][] center = null;</span>
+<span class="nc" id="L47">    protected int[] numberOfPointsPerSeedCell = null;</span>
     
-<span class="fc" id="L49">    protected int[] lastImgSeedIndexes = null;</span>
+<span class="nc" id="L49">    protected int[] lastImgSeedIndexes = null;</span>
         
     /**
      * this is k and is chosen by the user
      */
-<span class="fc" id="L54">    protected int nSeeds = 0;</span>
+<span class="nc" id="L54">    protected int nSeeds = 0;</span>
     
     // After final iteration, standard deviations are stored in seedVariances 
     // instead of variances
-<span class="fc" id="L58">    protected float[] seedVariances = null;</span>
+<span class="nc" id="L58">    protected float[] seedVariances = null;</span>
     
     protected final static int nMaxIter = 100;
     protected final static int nMaxIter2 = 200;
-<span class="fc" id="L62">    protected int nIter = 0;</span>
+<span class="nc" id="L62">    protected int nIter = 0;</span>
     
-<span class="fc" id="L64">    protected int imgModeIdx = -1;</span>
+<span class="nc" id="L64">    protected int imgModeIdx = -1;</span>
     
-<span class="fc" id="L66">    protected TrioInt[] imageColorsAscending = null;</span>
-<span class="fc" id="L67">    protected int[] imageColorsAscendingCounts = null;</span>
+<span class="nc" id="L66">    protected TrioInt[] imageColorsAscending = null;</span>
+<span class="nc" id="L67">    protected int[] imageColorsAscendingCounts = null;</span>
     
     private final ThreadLocalRandom sr;
     
-<span class="fc" id="L71">    public KMeansPlusPlusColor() {</span>
-<span class="fc" id="L72">         sr = ThreadLocalRandom.current();</span>
-<span class="fc" id="L73">    }</span>
+<span class="nc" id="L71">    public KMeansPlusPlusColor() {</span>
+<span class="nc" id="L72">         sr = ThreadLocalRandom.current();</span>
+<span class="nc" id="L73">    }</span>
     
     protected void init(int k) {
-<span class="fc" id="L76">        this.nSeeds = k;</span>
-<span class="fc" id="L77">        this.nIter = 0;</span>
-<span class="fc" id="L78">        this.seedVariances = new float[nSeeds];</span>
-<span class="fc" id="L79">    }</span>
+<span class="nc" id="L76">        this.nSeeds = k;</span>
+<span class="nc" id="L77">        this.nIter = 0;</span>
+<span class="nc" id="L78">        this.seedVariances = new float[nSeeds];</span>
+<span class="nc" id="L79">    }</span>
     
     /**
      * note that an internal method binPoints makes an assumption that the
@@ -89,28 +89,28 @@ import java.util.logging.Logger;
     public void computeMeans(int k, Image img) throws IOException, 
         NoSuchAlgorithmException {
          
-<span class="fc" id="L92">        init(k);</span>
+<span class="nc" id="L92">        init(k);</span>
         
         // starter seeds, sorted by increasing value
         // [r,g,b][index]
-<span class="fc" id="L96">        int[][] seeds = createStartSeeds(img);</span>
+<span class="nc" id="L96">        int[][] seeds = createStartSeeds(img);</span>
 
-<span class="fc" id="L98">        int[] imgSeedIndexes = null;</span>
+<span class="nc" id="L98">        int[] imgSeedIndexes = null;</span>
 
-<span class="fc" id="L100">        boolean hasConverged = false;</span>
+<span class="nc" id="L100">        boolean hasConverged = false;</span>
         
-<span class="fc" id="L102">        int nIter2 = 0;</span>
+<span class="nc" id="L102">        int nIter2 = 0;</span>
         
-<span class="pc bpc" id="L104" title="2 of 6 branches missed.">        while (!hasConverged &amp;&amp; (nIter &lt; nMaxIter) &amp;&amp; (nIter2 &lt; nMaxIter2)) {</span>
+<span class="nc bnc" id="L104" title="All 6 branches missed.">        while (!hasConverged &amp;&amp; (nIter &lt; nMaxIter) &amp;&amp; (nIter2 &lt; nMaxIter2)) {</span>
             
-<span class="fc" id="L106">            imgSeedIndexes = binPoints(img, seeds);</span>
+<span class="nc" id="L106">            imgSeedIndexes = binPoints(img, seeds);</span>
             
-<span class="fc" id="L108">            Set&lt;Integer&gt; zeroSumIndexes = new HashSet&lt;Integer&gt;();</span>
+<span class="nc" id="L108">            Set&lt;Integer&gt; zeroSumIndexes = new HashSet&lt;Integer&gt;();</span>
             
-<span class="fc" id="L110">            int[][] tmpSeeds = calculateMeanOfSeedPoints(img, imgSeedIndexes, </span>
+<span class="nc" id="L110">            int[][] tmpSeeds = calculateMeanOfSeedPoints(img, imgSeedIndexes, </span>
                 zeroSumIndexes);
            
-<span class="pc bpc" id="L113" title="1 of 2 branches missed.">            if (tmpSeeds == null) {</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">            if (tmpSeeds == null) {</span>
 <span class="nc" id="L114">                nIter2++;</span>
 <span class="nc" id="L115">                nIter = 0;</span>
 <span class="nc" id="L116">                lastImgSeedIndexes = null;</span>
@@ -124,20 +124,20 @@ import java.util.logging.Logger;
 <span class="nc" id="L124">                continue;</span>
             }
             
-<span class="fc" id="L127">            seeds = tmpSeeds;</span>
+<span class="nc" id="L127">            seeds = tmpSeeds;</span>
 
-<span class="fc" id="L129">            hasConverged = calculateVarianceFromSeedCenters(img, seeds, </span>
+<span class="nc" id="L129">            hasConverged = calculateVarianceFromSeedCenters(img, seeds, </span>
                 imgSeedIndexes);
 
-<span class="fc" id="L132">            nIter++;</span>
-<span class="fc" id="L133">        }</span>
+<span class="nc" id="L132">            nIter++;</span>
+<span class="nc" id="L133">        }</span>
 
         // store final numbers
-<span class="fc" id="L136">        center = seeds;</span>
+<span class="nc" id="L136">        center = seeds;</span>
 
         // calculate final stats
-<span class="fc" id="L139">        calculateFinalStats(img, imgSeedIndexes);</span>
-<span class="fc" id="L140">    }</span>
+<span class="nc" id="L139">        calculateFinalStats(img, imgSeedIndexes);</span>
+<span class="nc" id="L140">    }</span>
 
     /**
      * choose seeds sequentially by distance weighted probabilities.  Note that
@@ -151,63 +151,63 @@ import java.util.logging.Logger;
     private int[][] createStartSeeds(Image img) throws NoSuchAlgorithmException {
 
         // [(r,g, or b)][index]
-<span class="fc" id="L154">        int[][] seed = new int[3][nSeeds];</span>
-<span class="fc bfc" id="L155" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; ++i) {</span>
-<span class="fc" id="L156">            seed[i] = new int[nSeeds];</span>
+<span class="nc" id="L154">        int[][] seed = new int[3][nSeeds];</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L156">            seed[i] = new int[nSeeds];</span>
         }
                         
-<span class="fc" id="L159">        int selectedPixIdx = getModeIdx(img);</span>
+<span class="nc" id="L159">        int selectedPixIdx = getModeIdx(img);</span>
 
-<span class="fc" id="L161">        TrioInt clr = calculateRGB(img, selectedPixIdx);</span>
-<span class="fc" id="L162">        seed[0][0] = clr.getX();</span>
-<span class="fc" id="L163">        seed[1][0] = clr.getY();</span>
-<span class="fc" id="L164">        seed[2][0] = clr.getZ();</span>
+<span class="nc" id="L161">        TrioInt clr = calculateRGB(img, selectedPixIdx);</span>
+<span class="nc" id="L162">        seed[0][0] = clr.getX();</span>
+<span class="nc" id="L163">        seed[1][0] = clr.getY();</span>
+<span class="nc" id="L164">        seed[2][0] = clr.getZ();</span>
            
-<span class="fc" id="L166">        log.fine(String.format(&quot;choose seed %d) r=%d  g=%d  b=%d&quot;, 0, </span>
-<span class="fc" id="L167">            seed[0][0], seed[1][0], seed[2][0]));</span>
+<span class="nc" id="L166">        log.fine(String.format(&quot;choose seed %d) r=%d  g=%d  b=%d&quot;, 0, </span>
+<span class="nc" id="L167">            seed[0][0], seed[1][0], seed[2][0]));</span>
                 
-<span class="fc" id="L169">        int nPix = img.getNPixels();</span>
+<span class="nc" id="L169">        int nPix = img.getNPixels();</span>
       
-<span class="fc bfc" id="L171" title="All 2 branches covered.">        for (int n = 1; n &lt; nSeeds; n++) {</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">        for (int n = 1; n &lt; nSeeds; n++) {</span>
             
-<span class="fc" id="L173">            Set&lt;TrioInt&gt; colorsAlreadyChosen = new HashSet&lt;TrioInt&gt;();</span>
-<span class="fc bfc" id="L174" title="All 2 branches covered.">            for (int seedIndex = 0; seedIndex &lt; n; seedIndex++) {</span>
-<span class="fc" id="L175">                colorsAlreadyChosen.add(new TrioInt(seed[0][seedIndex], </span>
+<span class="nc" id="L173">            Set&lt;TrioInt&gt; colorsAlreadyChosen = new HashSet&lt;TrioInt&gt;();</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">            for (int seedIndex = 0; seedIndex &lt; n; seedIndex++) {</span>
+<span class="nc" id="L175">                colorsAlreadyChosen.add(new TrioInt(seed[0][seedIndex], </span>
                     seed[1][seedIndex], seed[2][seedIndex]));
             }
             
-<span class="fc" id="L179">            int[] distOfSeedsX = new int[nPix];</span>
-<span class="fc" id="L180">            int[] distOfSeedsY = new int[nPix];</span>
-<span class="fc" id="L181">            int[] distOfSeedsZ = new int[nPix];</span>
-<span class="fc" id="L182">            int[] indexOfDistOfSeedsX = new int[nPix];</span>
-<span class="fc" id="L183">            int[] indexOfDistOfSeedsY = new int[nPix];</span>
-<span class="fc" id="L184">            int[] indexOfDistOfSeedsZ = new int[nPix];</span>
+<span class="nc" id="L179">            int[] distOfSeedsX = new int[nPix];</span>
+<span class="nc" id="L180">            int[] distOfSeedsY = new int[nPix];</span>
+<span class="nc" id="L181">            int[] distOfSeedsZ = new int[nPix];</span>
+<span class="nc" id="L182">            int[] indexOfDistOfSeedsX = new int[nPix];</span>
+<span class="nc" id="L183">            int[] indexOfDistOfSeedsY = new int[nPix];</span>
+<span class="nc" id="L184">            int[] indexOfDistOfSeedsZ = new int[nPix];</span>
             
-<span class="fc" id="L186">            populateDistanceArrays(img, colorsAlreadyChosen, </span>
+<span class="nc" id="L186">            populateDistanceArrays(img, colorsAlreadyChosen, </span>
                 distOfSeedsX, indexOfDistOfSeedsX,
                 distOfSeedsY, indexOfDistOfSeedsY,
                 distOfSeedsZ, indexOfDistOfSeedsZ
             );
             
             // thi selects until one not already selected is found
-<span class="fc" id="L193">            TrioInt selectedColor = </span>
-<span class="fc" id="L194">                chooseRandomlyFromNumbersPresentByProbability(img,</span>
+<span class="nc" id="L193">            TrioInt selectedColor = </span>
+<span class="nc" id="L194">                chooseRandomlyFromNumbersPresentByProbability(img,</span>
                 distOfSeedsX, indexOfDistOfSeedsX,
                 distOfSeedsY, indexOfDistOfSeedsY,
                 distOfSeedsZ, indexOfDistOfSeedsZ,
                 colorsAlreadyChosen);
             
-<span class="fc" id="L200">            seed[0][n] = selectedColor.getX();</span>
-<span class="fc" id="L201">            seed[1][n] = selectedColor.getY();</span>
-<span class="fc" id="L202">            seed[2][n] = selectedColor.getZ();</span>
+<span class="nc" id="L200">            seed[0][n] = selectedColor.getX();</span>
+<span class="nc" id="L201">            seed[1][n] = selectedColor.getY();</span>
+<span class="nc" id="L202">            seed[2][n] = selectedColor.getZ();</span>
             
-<span class="fc" id="L204">            log.fine(String.format(&quot;choose seed %d) r=%d g=%d b=%d&quot;, n, </span>
-<span class="fc" id="L205">                seed[0][n], seed[1][n], seed[2][n]));            </span>
+<span class="nc" id="L204">            log.fine(String.format(&quot;choose seed %d) r=%d g=%d b=%d&quot;, n, </span>
+<span class="nc" id="L205">                seed[0][n], seed[1][n], seed[2][n]));            </span>
         }
         
-<span class="fc" id="L208">        QuickSort.sortByDimension1FirstSecondThird(seed);</span>
+<span class="nc" id="L208">        QuickSort.sortByDimension1FirstSecondThird(seed);</span>
     
-<span class="fc" id="L210">        return seed;</span>
+<span class="nc" id="L210">        return seed;</span>
     }
     
     /**
@@ -224,43 +224,43 @@ import java.util.logging.Logger;
     protected int[][] calculateMeanOfSeedPoints(final Image img, 
         final int[] imgSeedIndexes, Set&lt;Integer&gt; outputZeroSums) {
 
-<span class="fc" id="L227">        int[][] sum = new int[3][nSeeds];</span>
-<span class="fc bfc" id="L228" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; ++i) {</span>
-<span class="fc" id="L229">            sum[i] = new int[nSeeds];</span>
+<span class="nc" id="L227">        int[][] sum = new int[3][nSeeds];</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L229">            sum[i] = new int[nSeeds];</span>
         }
-<span class="fc" id="L231">        int[] nSum = new int[nSeeds];</span>
+<span class="nc" id="L231">        int[] nSum = new int[nSeeds];</span>
 
-<span class="fc bfc" id="L233" title="All 2 branches covered.">        for (int pixIdx = 0; pixIdx &lt; img.getNPixels(); pixIdx++) {</span>
+<span class="nc bnc" id="L233" title="All 2 branches missed.">        for (int pixIdx = 0; pixIdx &lt; img.getNPixels(); pixIdx++) {</span>
 
-<span class="fc" id="L235">            int seedIndex = imgSeedIndexes[pixIdx];</span>
+<span class="nc" id="L235">            int seedIndex = imgSeedIndexes[pixIdx];</span>
 
-<span class="fc" id="L237">            TrioInt clr = calculateRGB(img, pixIdx);</span>
-<span class="fc" id="L238">            sum[0][seedIndex] += clr.getX();</span>
-<span class="fc" id="L239">            sum[1][seedIndex] += clr.getY();</span>
-<span class="fc" id="L240">            sum[2][seedIndex] += clr.getZ();</span>
+<span class="nc" id="L237">            TrioInt clr = calculateRGB(img, pixIdx);</span>
+<span class="nc" id="L238">            sum[0][seedIndex] += clr.getX();</span>
+<span class="nc" id="L239">            sum[1][seedIndex] += clr.getY();</span>
+<span class="nc" id="L240">            sum[2][seedIndex] += clr.getZ();</span>
         
-<span class="fc" id="L242">            nSum[seedIndex]++;</span>
+<span class="nc" id="L242">            nSum[seedIndex]++;</span>
         }
         
-<span class="fc bfc" id="L245" title="All 2 branches covered.">        for (int i = 0; i &lt; nSeeds; i++) {</span>
+<span class="nc bnc" id="L245" title="All 2 branches missed.">        for (int i = 0; i &lt; nSeeds; i++) {</span>
             
-<span class="pc bpc" id="L247" title="1 of 2 branches missed.">            if (nSum[i] == 0) {</span>
+<span class="nc bnc" id="L247" title="All 2 branches missed.">            if (nSum[i] == 0) {</span>
 <span class="nc" id="L248">                outputZeroSums.add(Integer.valueOf(i));</span>
             } else {
-<span class="fc" id="L250">                sum[0][i] /= nSum[i];</span>
-<span class="fc" id="L251">                sum[1][i] /= nSum[i];</span>
-<span class="fc" id="L252">                sum[2][i] /= nSum[i];</span>
+<span class="nc" id="L250">                sum[0][i] /= nSum[i];</span>
+<span class="nc" id="L251">                sum[1][i] /= nSum[i];</span>
+<span class="nc" id="L252">                sum[2][i] /= nSum[i];</span>
             }
 
-<span class="fc" id="L255">            log.fine(String.format(&quot;seed mean = %d) r'=%d g'=%d b=%d number of points=%d&quot;, </span>
-<span class="fc" id="L256">                i, sum[0][i], sum[1][i], sum[2][i], nSum[i]));</span>
+<span class="nc" id="L255">            log.fine(String.format(&quot;seed mean = %d) r'=%d g'=%d b=%d number of points=%d&quot;, </span>
+<span class="nc" id="L256">                i, sum[0][i], sum[1][i], sum[2][i], nSum[i]));</span>
         }
         
-<span class="pc bpc" id="L259" title="1 of 2 branches missed.">        if (outputZeroSums.size() &gt; 0) {</span>
+<span class="nc bnc" id="L259" title="All 2 branches missed.">        if (outputZeroSums.size() &gt; 0) {</span>
 <span class="nc" id="L260">            return null;</span>
         }
 
-<span class="fc" id="L263">        return sum;</span>
+<span class="nc" id="L263">        return sum;</span>
     }
 
     /**
@@ -277,43 +277,43 @@ import java.util.logging.Logger;
     protected boolean calculateVarianceFromSeedCenters(final Image img,
         int[][] seed, int[] imgSeedIndexes) {
         
-<span class="fc bfc" id="L280" title="All 2 branches covered.">        if (lastImgSeedIndexes == null) {</span>
-<span class="fc" id="L281">            lastImgSeedIndexes = imgSeedIndexes;</span>
-<span class="fc" id="L282">            return false;</span>
+<span class="nc bnc" id="L280" title="All 2 branches missed.">        if (lastImgSeedIndexes == null) {</span>
+<span class="nc" id="L281">            lastImgSeedIndexes = imgSeedIndexes;</span>
+<span class="nc" id="L282">            return false;</span>
         }
         
-<span class="fc" id="L285">        boolean hasChanged = false;</span>
-<span class="fc bfc" id="L286" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
-<span class="fc bfc" id="L287" title="All 2 branches covered.">            if (lastImgSeedIndexes[i] != imgSeedIndexes[i]) {</span>
-<span class="fc" id="L288">                hasChanged = true;</span>
-<span class="fc" id="L289">                break;</span>
+<span class="nc" id="L285">        boolean hasChanged = false;</span>
+<span class="nc bnc" id="L286" title="All 2 branches missed.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
+<span class="nc bnc" id="L287" title="All 2 branches missed.">            if (lastImgSeedIndexes[i] != imgSeedIndexes[i]) {</span>
+<span class="nc" id="L288">                hasChanged = true;</span>
+<span class="nc" id="L289">                break;</span>
             }
         }
-<span class="fc bfc" id="L292" title="All 2 branches covered.">        if (!hasChanged) {</span>
-<span class="fc" id="L293">            return true;</span>
+<span class="nc bnc" id="L292" title="All 2 branches missed.">        if (!hasChanged) {</span>
+<span class="nc" id="L293">            return true;</span>
         }
         
-<span class="fc" id="L296">        float[] sumVariance = new float[nSeeds];</span>
-<span class="fc" id="L297">        int[] nSumVariance = new int[nSeeds];</span>
+<span class="nc" id="L296">        float[] sumVariance = new float[nSeeds];</span>
+<span class="nc" id="L297">        int[] nSumVariance = new int[nSeeds];</span>
 
-<span class="fc bfc" id="L299" title="All 2 branches covered.">        for (int xyIndex = 0; xyIndex &lt; img.getNPixels(); xyIndex++) {</span>
+<span class="nc bnc" id="L299" title="All 2 branches missed.">        for (int xyIndex = 0; xyIndex &lt; img.getNPixels(); xyIndex++) {</span>
 
-<span class="fc" id="L301">            int seedIndex = imgSeedIndexes[xyIndex];</span>
+<span class="nc" id="L301">            int seedIndex = imgSeedIndexes[xyIndex];</span>
                         
-<span class="fc" id="L303">            int diffR = img.getR(xyIndex) - seed[0][seedIndex];</span>
-<span class="fc" id="L304">            int diffG = img.getG(xyIndex) - seed[1][seedIndex];</span>
-<span class="fc" id="L305">            int diffB = img.getB(xyIndex) - seed[2][seedIndex];</span>
+<span class="nc" id="L303">            int diffR = img.getR(xyIndex) - seed[0][seedIndex];</span>
+<span class="nc" id="L304">            int diffG = img.getG(xyIndex) - seed[1][seedIndex];</span>
+<span class="nc" id="L305">            int diffB = img.getB(xyIndex) - seed[2][seedIndex];</span>
             
-<span class="fc" id="L307">            int d = diffR * diffR + diffG * diffG + diffB * diffB;</span>
+<span class="nc" id="L307">            int d = diffR * diffR + diffG * diffG + diffB * diffB;</span>
             
-<span class="fc" id="L309">            sumVariance[seedIndex] += d;</span>
+<span class="nc" id="L309">            sumVariance[seedIndex] += d;</span>
             
-<span class="fc" id="L311">            nSumVariance[seedIndex]++;</span>
+<span class="nc" id="L311">            nSumVariance[seedIndex]++;</span>
         }
 
-<span class="fc bfc" id="L314" title="All 2 branches covered.">        for (int i = 0; i &lt; sumVariance.length; i++) {</span>
-<span class="pc bpc" id="L315" title="1 of 2 branches missed.">            if ((float)nSumVariance[i] &gt; 0) {</span>
-<span class="fc" id="L316">                sumVariance[i] /= (float)nSumVariance[i];</span>
+<span class="nc bnc" id="L314" title="All 2 branches missed.">        for (int i = 0; i &lt; sumVariance.length; i++) {</span>
+<span class="nc bnc" id="L315" title="All 2 branches missed.">            if ((float)nSumVariance[i] &gt; 0) {</span>
+<span class="nc" id="L316">                sumVariance[i] /= (float)nSumVariance[i];</span>
             } else {
 <span class="nc" id="L318">                sumVariance[i] = 0;</span>
             }
@@ -321,65 +321,65 @@ import java.util.logging.Logger;
 
         // store in the instance fields
 
-<span class="fc" id="L324">        boolean allAreBelowCriticalLimit = true;</span>
+<span class="nc" id="L324">        boolean allAreBelowCriticalLimit = true;</span>
 
-<span class="fc bfc" id="L326" title="All 2 branches covered.">        for (int i = 0; i &lt; nSeeds; i++) {</span>
+<span class="nc bnc" id="L326" title="All 2 branches missed.">        for (int i = 0; i &lt; nSeeds; i++) {</span>
             
-<span class="fc" id="L328">            float diff = seedVariances[i] - sumVariance[i];</span>
+<span class="nc" id="L328">            float diff = seedVariances[i] - sumVariance[i];</span>
             
-<span class="fc bfc" id="L330" title="All 2 branches covered.">            if (diff &lt; 0 ) {</span>
-<span class="fc" id="L331">                allAreBelowCriticalLimit = false;</span>
+<span class="nc bnc" id="L330" title="All 2 branches missed.">            if (diff &lt; 0 ) {</span>
+<span class="nc" id="L331">                allAreBelowCriticalLimit = false;</span>
             }
             
-<span class="fc" id="L334">            seedVariances[i] = sumVariance[i];</span>
+<span class="nc" id="L334">            seedVariances[i] = sumVariance[i];</span>
         }
         
-<span class="fc" id="L337">        lastImgSeedIndexes = imgSeedIndexes;</span>
+<span class="nc" id="L337">        lastImgSeedIndexes = imgSeedIndexes;</span>
 
-<span class="fc" id="L339">        return allAreBelowCriticalLimit;</span>
+<span class="nc" id="L339">        return allAreBelowCriticalLimit;</span>
     }
     
     protected void calculateFinalStats(final Image img, 
         final int[] imgSeedIndexes) {
 
-<span class="fc" id="L345">        float[] sumStDev = new float[nSeeds];</span>
-<span class="fc" id="L346">        int[] nSumStDev = new int[nSeeds];</span>
+<span class="nc" id="L345">        float[] sumStDev = new float[nSeeds];</span>
+<span class="nc" id="L346">        int[] nSumStDev = new int[nSeeds];</span>
 
-<span class="fc bfc" id="L348" title="All 2 branches covered.">        for (int xyIndex = 0; xyIndex &lt; img.getNPixels(); xyIndex++) {</span>
+<span class="nc bnc" id="L348" title="All 2 branches missed.">        for (int xyIndex = 0; xyIndex &lt; img.getNPixels(); xyIndex++) {</span>
 
-<span class="fc" id="L350">            int seedIndex = imgSeedIndexes[xyIndex];</span>
+<span class="nc" id="L350">            int seedIndex = imgSeedIndexes[xyIndex];</span>
 
-<span class="fc" id="L352">            int diffR = img.getR(xyIndex) - center[0][seedIndex];</span>
-<span class="fc" id="L353">            int diffG = img.getG(xyIndex) - center[1][seedIndex];</span>
-<span class="fc" id="L354">            int diffB = img.getB(xyIndex) - center[2][seedIndex];</span>
+<span class="nc" id="L352">            int diffR = img.getR(xyIndex) - center[0][seedIndex];</span>
+<span class="nc" id="L353">            int diffG = img.getG(xyIndex) - center[1][seedIndex];</span>
+<span class="nc" id="L354">            int diffB = img.getB(xyIndex) - center[2][seedIndex];</span>
             
-<span class="fc" id="L356">            int d = diffR * diffR + diffG * diffG + diffB * diffB;</span>
+<span class="nc" id="L356">            int d = diffR * diffR + diffG * diffG + diffB * diffB;</span>
             
-<span class="fc" id="L358">            sumStDev[seedIndex] += d;</span>
+<span class="nc" id="L358">            sumStDev[seedIndex] += d;</span>
             
-<span class="fc" id="L360">            nSumStDev[seedIndex]++;</span>
+<span class="nc" id="L360">            nSumStDev[seedIndex]++;</span>
         }
 
-<span class="fc bfc" id="L363" title="All 2 branches covered.">        for (int i = 0; i &lt; sumStDev.length; i++) {</span>
+<span class="nc bnc" id="L363" title="All 2 branches missed.">        for (int i = 0; i &lt; sumStDev.length; i++) {</span>
 
-<span class="pc bpc" id="L365" title="1 of 2 branches missed.">            if ((float)(nSumStDev[i] - 1) &gt; 0) {</span>
+<span class="nc bnc" id="L365" title="All 2 branches missed.">            if ((float)(nSumStDev[i] - 1) &gt; 0) {</span>
                 // divide by N-1 rather because mean was calc'ed from the data
-<span class="fc" id="L367">                sumStDev[i] = </span>
-<span class="fc" id="L368">                    (float)Math.sqrt(sumStDev[i]/(float)(nSumStDev[i] - 1.));</span>
+<span class="nc" id="L367">                sumStDev[i] = </span>
+<span class="nc" id="L368">                    (float)Math.sqrt(sumStDev[i]/(float)(nSumStDev[i] - 1.));</span>
             } else {
 <span class="nc" id="L370">                sumStDev[i] = 0;</span>
             }
-<span class="fc" id="L372">            seedVariances[i] = sumStDev[i];</span>
+<span class="nc" id="L372">            seedVariances[i] = sumStDev[i];</span>
 
-<span class="fc" id="L374">            log.fine(String.format(&quot;seed %d) r=%d g=%d b=%d stDev=%.2f number of points=%d&quot;, </span>
-<span class="fc" id="L375">                i, center[0][i], center[1][i], center[2][i], seedVariances[i], nSumStDev[i]));</span>
+<span class="nc" id="L374">            log.fine(String.format(&quot;seed %d) r=%d g=%d b=%d stDev=%.2f number of points=%d&quot;, </span>
+<span class="nc" id="L375">                i, center[0][i], center[1][i], center[2][i], seedVariances[i], nSumStDev[i]));</span>
             
         }
 
-<span class="fc" id="L379">        lastImgSeedIndexes = imgSeedIndexes;</span>
+<span class="nc" id="L379">        lastImgSeedIndexes = imgSeedIndexes;</span>
         
-<span class="fc" id="L381">        numberOfPointsPerSeedCell = nSumStDev;</span>
-<span class="fc" id="L382">    }</span>
+<span class="nc" id="L381">        numberOfPointsPerSeedCell = nSumStDev;</span>
+<span class="nc" id="L382">    }</span>
     
      /**
      *
@@ -389,26 +389,26 @@ import java.util.logging.Logger;
      */
     protected int[] binPoints(final Image img, int[][] seed) throws IOException {
         
-<span class="pc bpc" id="L392" title="1 of 2 branches missed.">        if (img == null) {</span>
+<span class="nc bnc" id="L392" title="All 2 branches missed.">        if (img == null) {</span>
 <span class="nc" id="L393">            throw new IllegalArgumentException(&quot;img cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L395" title="1 of 2 branches missed.">        if (seed == null) {</span>
+<span class="nc bnc" id="L395" title="All 2 branches missed.">        if (seed == null) {</span>
 <span class="nc" id="L396">            throw new IllegalArgumentException(&quot;seed cannot be null&quot;);</span>
         }
         
-<span class="fc" id="L399">        int[] seedNumber = new int[img.getNPixels()];</span>
+<span class="nc" id="L399">        int[] seedNumber = new int[img.getNPixels()];</span>
         
-<span class="fc bfc" id="L401" title="All 2 branches covered.">        for (int pixIdx = 0; pixIdx &lt; img.getNPixels(); pixIdx++) {</span>
+<span class="nc bnc" id="L401" title="All 2 branches missed.">        for (int pixIdx = 0; pixIdx &lt; img.getNPixels(); pixIdx++) {</span>
 
-<span class="fc" id="L403">            TrioInt clr = calculateRGB(img, pixIdx);</span>
+<span class="nc" id="L403">            TrioInt clr = calculateRGB(img, pixIdx);</span>
 
-<span class="fc" id="L405">            int seedIdx = findNearestNeighbor(seed, clr.getX(), clr.getY(),</span>
-<span class="fc" id="L406">                clr.getZ());</span>
+<span class="nc" id="L405">            int seedIdx = findNearestNeighbor(seed, clr.getX(), clr.getY(),</span>
+<span class="nc" id="L406">                clr.getZ());</span>
      
-<span class="fc" id="L408">            seedNumber[pixIdx] = seedIdx;</span>
+<span class="nc" id="L408">            seedNumber[pixIdx] = seedIdx;</span>
         }
 
-<span class="fc" id="L411">        return seedNumber;</span>
+<span class="nc" id="L411">        return seedNumber;</span>
     }
     
     /**
@@ -446,53 +446,53 @@ import java.util.logging.Logger;
         // find the value for the position once the position has been 
         // drawn randomly
         
-<span class="fc" id="L449">        long nDistDistrX = 0;</span>
-<span class="fc" id="L450">        long[] nDistrXC = new long[distOfSeedsX.length];</span>
-<span class="fc bfc" id="L451" title="All 2 branches covered.">        for (int i = 0; i &lt; distOfSeedsX.length; i++) {            </span>
-<span class="fc" id="L452">            int nValues = distOfSeedsX[i];</span>
+<span class="nc" id="L449">        long nDistDistrX = 0;</span>
+<span class="nc" id="L450">        long[] nDistrXC = new long[distOfSeedsX.length];</span>
+<span class="nc bnc" id="L451" title="All 2 branches missed.">        for (int i = 0; i &lt; distOfSeedsX.length; i++) {            </span>
+<span class="nc" id="L452">            int nValues = distOfSeedsX[i];</span>
             // value should be present nValues number of times
-<span class="fc" id="L454">            nDistDistrX += nValues;</span>
-<span class="fc" id="L455">            nDistrXC[i] = nDistDistrX;</span>
+<span class="nc" id="L454">            nDistDistrX += nValues;</span>
+<span class="nc" id="L455">            nDistrXC[i] = nDistDistrX;</span>
         }
-<span class="fc" id="L457">        long nDistDistrY = 0;</span>
-<span class="fc" id="L458">        long[] nDistrYC = new long[distOfSeedsY.length];</span>
-<span class="fc bfc" id="L459" title="All 2 branches covered.">        for (int i = 0; i &lt; distOfSeedsY.length; i++) {            </span>
-<span class="fc" id="L460">            int nValues = distOfSeedsY[i];</span>
-<span class="fc" id="L461">            nDistDistrY += nValues;</span>
-<span class="fc" id="L462">            nDistrYC[i] = nDistDistrY;</span>
+<span class="nc" id="L457">        long nDistDistrY = 0;</span>
+<span class="nc" id="L458">        long[] nDistrYC = new long[distOfSeedsY.length];</span>
+<span class="nc bnc" id="L459" title="All 2 branches missed.">        for (int i = 0; i &lt; distOfSeedsY.length; i++) {            </span>
+<span class="nc" id="L460">            int nValues = distOfSeedsY[i];</span>
+<span class="nc" id="L461">            nDistDistrY += nValues;</span>
+<span class="nc" id="L462">            nDistrYC[i] = nDistDistrY;</span>
         }
-<span class="fc" id="L464">        long nDistDistrZ = 0;</span>
-<span class="fc" id="L465">        long[] nDistrZC = new long[distOfSeedsZ.length];</span>
-<span class="fc bfc" id="L466" title="All 2 branches covered.">        for (int i = 0; i &lt; distOfSeedsZ.length; i++) {            </span>
-<span class="fc" id="L467">            int nValues = distOfSeedsZ[i];</span>
-<span class="fc" id="L468">            nDistDistrZ += nValues;</span>
-<span class="fc" id="L469">            nDistrZC[i] = nDistDistrZ;</span>
+<span class="nc" id="L464">        long nDistDistrZ = 0;</span>
+<span class="nc" id="L465">        long[] nDistrZC = new long[distOfSeedsZ.length];</span>
+<span class="nc bnc" id="L466" title="All 2 branches missed.">        for (int i = 0; i &lt; distOfSeedsZ.length; i++) {            </span>
+<span class="nc" id="L467">            int nValues = distOfSeedsZ[i];</span>
+<span class="nc" id="L468">            nDistDistrZ += nValues;</span>
+<span class="nc" id="L469">            nDistrZC[i] = nDistDistrZ;</span>
         }
         
-<span class="pc bpc" id="L472" title="1 of 2 branches missed.">        if (nDistDistrX &lt; 1) {</span>
+<span class="nc bnc" id="L472" title="All 2 branches missed.">        if (nDistDistrX &lt; 1) {</span>
 <span class="nc" id="L473">            throw new IllegalStateException(&quot;distOfSeeds is in error:]n&quot; + </span>
 <span class="nc" id="L474">                Arrays.toString(distOfSeedsX));</span>
         }
-<span class="pc bpc" id="L476" title="1 of 2 branches missed.">        if (nDistDistrY &lt; 1) {</span>
+<span class="nc bnc" id="L476" title="All 2 branches missed.">        if (nDistDistrY &lt; 1) {</span>
 <span class="nc" id="L477">            throw new IllegalStateException(&quot;distOfSeeds is in error:]n&quot; + </span>
 <span class="nc" id="L478">                Arrays.toString(distOfSeedsX));</span>
         }
-<span class="pc bpc" id="L480" title="1 of 2 branches missed.">        if (nDistDistrZ &lt; 1) {</span>
+<span class="nc bnc" id="L480" title="All 2 branches missed.">        if (nDistDistrZ &lt; 1) {</span>
 <span class="nc" id="L481">            throw new IllegalStateException(&quot;distOfSeeds is in error:]n&quot; + </span>
 <span class="nc" id="L482">                Arrays.toString(distOfSeedsX));</span>
         }
                 
-<span class="fc" id="L485">        TrioInt chosenIndexColors = null;</span>
+<span class="nc" id="L485">        TrioInt chosenIndexColors = null;</span>
                 
-<span class="fc bfc" id="L487" title="All 2 branches covered.">        while ((chosenIndexColors == null) || </span>
-<span class="pc bpc" id="L488" title="1 of 2 branches missed.">            colorsAlreadyChosen.contains(chosenIndexColors)) {</span>
+<span class="nc bnc" id="L487" title="All 2 branches missed.">        while ((chosenIndexColors == null) || </span>
+<span class="nc bnc" id="L488" title="All 2 branches missed.">            colorsAlreadyChosen.contains(chosenIndexColors)) {</span>
             
             long nDistDistr;
             int[] distOfSeeds;
             int[] indexOfDistOfSeeds;
             long[] nDistrC;
             
-<span class="fc" id="L495">            int xYZ = sr.nextInt(3);</span>
+<span class="nc" id="L495">            int xYZ = sr.nextInt(3);</span>
             
             /*
             NOTE: could choose randomly from all three and chose the one
@@ -500,35 +500,35 @@ import java.util.logging.Logger;
             from getModeIdx method.
             */
             
-<span class="fc bfc" id="L503" title="All 3 branches covered.">            switch (xYZ) {</span>
+<span class="nc bnc" id="L503" title="All 3 branches missed.">            switch (xYZ) {</span>
                 case 0:
-<span class="fc" id="L505">                    nDistDistr = nDistDistrX;</span>
-<span class="fc" id="L506">                    distOfSeeds = distOfSeedsX;</span>
-<span class="fc" id="L507">                    indexOfDistOfSeeds = indexOfDistOfSeedsX;</span>
-<span class="fc" id="L508">                    nDistrC = nDistrXC;</span>
-<span class="fc" id="L509">                    break;</span>
+<span class="nc" id="L505">                    nDistDistr = nDistDistrX;</span>
+<span class="nc" id="L506">                    distOfSeeds = distOfSeedsX;</span>
+<span class="nc" id="L507">                    indexOfDistOfSeeds = indexOfDistOfSeedsX;</span>
+<span class="nc" id="L508">                    nDistrC = nDistrXC;</span>
+<span class="nc" id="L509">                    break;</span>
                 case 1:
-<span class="fc" id="L511">                    nDistDistr = nDistDistrY;</span>
-<span class="fc" id="L512">                    distOfSeeds = distOfSeedsY;</span>
-<span class="fc" id="L513">                    indexOfDistOfSeeds = indexOfDistOfSeedsY;</span>
-<span class="fc" id="L514">                    nDistrC = nDistrYC;</span>
-<span class="fc" id="L515">                    break;</span>
+<span class="nc" id="L511">                    nDistDistr = nDistDistrY;</span>
+<span class="nc" id="L512">                    distOfSeeds = distOfSeedsY;</span>
+<span class="nc" id="L513">                    indexOfDistOfSeeds = indexOfDistOfSeedsY;</span>
+<span class="nc" id="L514">                    nDistrC = nDistrYC;</span>
+<span class="nc" id="L515">                    break;</span>
                 default:
-<span class="fc" id="L517">                    nDistDistr = nDistDistrZ;</span>
-<span class="fc" id="L518">                    distOfSeeds = distOfSeedsZ;</span>
-<span class="fc" id="L519">                    indexOfDistOfSeeds = indexOfDistOfSeedsZ;</span>
-<span class="fc" id="L520">                    nDistrC = nDistrZC;</span>
+<span class="nc" id="L517">                    nDistDistr = nDistDistrZ;</span>
+<span class="nc" id="L518">                    distOfSeeds = distOfSeedsZ;</span>
+<span class="nc" id="L519">                    indexOfDistOfSeeds = indexOfDistOfSeedsZ;</span>
+<span class="nc" id="L520">                    nDistrC = nDistrZC;</span>
                     break;
             }
             
-<span class="fc" id="L524">            long chosen = sr.nextLong(nDistDistr);</span>
+<span class="nc" id="L524">            long chosen = sr.nextLong(nDistDistr);</span>
 
-<span class="fc" id="L526">            int chosenIdx = findChosen(nDistrC, chosen);</span>
-<span class="fc" id="L527">            int pixIdx = indexOfDistOfSeeds[chosenIdx];</span>
-<span class="fc" id="L528">            chosenIndexColors = calculateRGB(img, pixIdx);            </span>
-<span class="fc" id="L529">        }</span>
+<span class="nc" id="L526">            int chosenIdx = findChosen(nDistrC, chosen);</span>
+<span class="nc" id="L527">            int pixIdx = indexOfDistOfSeeds[chosenIdx];</span>
+<span class="nc" id="L528">            chosenIndexColors = calculateRGB(img, pixIdx);            </span>
+<span class="nc" id="L529">        }</span>
         
-<span class="fc" id="L531">        return chosenIndexColors;</span>
+<span class="nc" id="L531">        return chosenIndexColors;</span>
     }
     
     /**
@@ -603,7 +603,7 @@ import java.util.logging.Logger;
      * @return 
      */
     public int[][] getCenters() {
-<span class="fc" id="L606">        return this.center;</span>
+<span class="nc" id="L606">        return this.center;</span>
     }
 
     public int[] getNumberOfPointsPerSeedCell() {
@@ -612,52 +612,52 @@ import java.util.logging.Logger;
 
     private int getModeIdx(Image img) {
         
-<span class="pc bpc" id="L615" title="1 of 2 branches missed.">        if (imgModeIdx &gt; -1) {</span>
+<span class="nc bnc" id="L615" title="All 2 branches missed.">        if (imgModeIdx &gt; -1) {</span>
 <span class="nc" id="L616">            return imgModeIdx;</span>
         }
         
-<span class="fc" id="L619">        Map&lt;TrioInt, Integer&gt; counts = new HashMap&lt;TrioInt, Integer&gt;();</span>
-<span class="fc" id="L620">        int maxCounts = 0;</span>
-<span class="fc" id="L621">        int maxCountsIdx = -1;</span>
+<span class="nc" id="L619">        Map&lt;TrioInt, Integer&gt; counts = new HashMap&lt;TrioInt, Integer&gt;();</span>
+<span class="nc" id="L620">        int maxCounts = 0;</span>
+<span class="nc" id="L621">        int maxCountsIdx = -1;</span>
         
-<span class="fc bfc" id="L623" title="All 2 branches covered.">        for (int idx = 0; idx &lt; img.getNPixels(); idx++) {</span>
+<span class="nc bnc" id="L623" title="All 2 branches missed.">        for (int idx = 0; idx &lt; img.getNPixels(); idx++) {</span>
             
-<span class="fc" id="L625">            TrioInt clr = calculateRGB(img, idx);</span>
+<span class="nc" id="L625">            TrioInt clr = calculateRGB(img, idx);</span>
             
-<span class="fc" id="L627">            Integer value = counts.get(clr);</span>
-<span class="fc bfc" id="L628" title="All 2 branches covered.">            int f = (value == null) ? 1 : (value.intValue() + 1);</span>
-<span class="fc" id="L629">            counts.put(clr, Integer.valueOf(f));</span>
-<span class="fc bfc" id="L630" title="All 2 branches covered.">            if (f &gt; maxCounts) {</span>
-<span class="fc" id="L631">                maxCounts = f;</span>
-<span class="fc" id="L632">                maxCountsIdx = idx;</span>
+<span class="nc" id="L627">            Integer value = counts.get(clr);</span>
+<span class="nc bnc" id="L628" title="All 2 branches missed.">            int f = (value == null) ? 1 : (value.intValue() + 1);</span>
+<span class="nc" id="L629">            counts.put(clr, Integer.valueOf(f));</span>
+<span class="nc bnc" id="L630" title="All 2 branches missed.">            if (f &gt; maxCounts) {</span>
+<span class="nc" id="L631">                maxCounts = f;</span>
+<span class="nc" id="L632">                maxCountsIdx = idx;</span>
             }
         }
         
-<span class="pc bpc" id="L636" title="1 of 2 branches missed.">        if (counts.size() &lt; nSeeds) {</span>
+<span class="nc bnc" id="L636" title="All 2 branches missed.">        if (counts.size() &lt; nSeeds) {</span>
 <span class="nc" id="L637">            throw new IllegalStateException(&quot;there are only &quot; + counts.size() +</span>
                 &quot; unique chromaticity values in the image, so cannot form &quot; 
                 + nSeeds + &quot; clusters.&quot;);
         }
         
-<span class="fc" id="L642">        imgModeIdx = maxCountsIdx;</span>
+<span class="nc" id="L642">        imgModeIdx = maxCountsIdx;</span>
         
-<span class="fc" id="L644">        int[] colorCounts = new int[counts.size()];</span>
-<span class="fc" id="L645">        TrioInt[] colors = new TrioInt[counts.size()];</span>
-<span class="fc" id="L646">        int count = 0;</span>
-<span class="fc bfc" id="L647" title="All 2 branches covered.">        for (Entry&lt;TrioInt, Integer&gt; entry : counts.entrySet()) {</span>
-<span class="fc" id="L648">            colorCounts[count] = entry.getValue();</span>
-<span class="fc" id="L649">            colors[count] = entry.getKey();</span>
-<span class="fc" id="L650">            count++;</span>
-<span class="fc" id="L651">        }</span>
-<span class="fc" id="L652">        QuickSort.sortBy1stArg(colorCounts, colors);</span>
+<span class="nc" id="L644">        int[] colorCounts = new int[counts.size()];</span>
+<span class="nc" id="L645">        TrioInt[] colors = new TrioInt[counts.size()];</span>
+<span class="nc" id="L646">        int count = 0;</span>
+<span class="nc bnc" id="L647" title="All 2 branches missed.">        for (Entry&lt;TrioInt, Integer&gt; entry : counts.entrySet()) {</span>
+<span class="nc" id="L648">            colorCounts[count] = entry.getValue();</span>
+<span class="nc" id="L649">            colors[count] = entry.getKey();</span>
+<span class="nc" id="L650">            count++;</span>
+<span class="nc" id="L651">        }</span>
+<span class="nc" id="L652">        QuickSort.sortBy1stArg(colorCounts, colors);</span>
         
-<span class="fc" id="L654">        this.imageColorsAscending = colors;</span>
-<span class="fc" id="L655">        this.imageColorsAscendingCounts = colorCounts;</span>
+<span class="nc" id="L654">        this.imageColorsAscending = colors;</span>
+<span class="nc" id="L655">        this.imageColorsAscendingCounts = colorCounts;</span>
         
         // can return any of the pixels with mode colors since he algorithm
         // uses distance from colors rather than location in x,y coordinates.
         
-<span class="fc" id="L660">        return maxCountsIdx;</span>
+<span class="nc" id="L660">        return maxCountsIdx;</span>
     }
 
     private int[][] replaceZeroSumIndexes(Image img, int[][] seeds, 
@@ -799,87 +799,87 @@ import java.util.logging.Logger;
             
         */
         
-<span class="fc bfc" id="L802" title="All 2 branches covered.">        for (int pixIdx = 0; pixIdx &lt; img.getNPixels(); pixIdx++) {</span>
+<span class="nc bnc" id="L802" title="All 2 branches missed.">        for (int pixIdx = 0; pixIdx &lt; img.getNPixels(); pixIdx++) {</span>
             
-<span class="fc" id="L804">            TrioInt clr = calculateRGB(img, pixIdx);</span>
+<span class="nc" id="L804">            TrioInt clr = calculateRGB(img, pixIdx);</span>
             
-<span class="fc" id="L806">            TrioInt seed = findNearestNeighbor(seeds, clr.getX(), </span>
-<span class="fc" id="L807">                clr.getY(), clr.getZ());</span>
+<span class="nc" id="L806">            TrioInt seed = findNearestNeighbor(seeds, clr.getX(), </span>
+<span class="nc" id="L807">                clr.getY(), clr.getZ());</span>
 
-<span class="fc" id="L809">            int diffR = clr.getX() - seed.getX();</span>
-<span class="fc" id="L810">            int diffG = clr.getY() - seed.getY();</span>
-<span class="fc" id="L811">            int diffB = clr.getZ() - seed.getZ();</span>
+<span class="nc" id="L809">            int diffR = clr.getX() - seed.getX();</span>
+<span class="nc" id="L810">            int diffG = clr.getY() - seed.getY();</span>
+<span class="nc" id="L811">            int diffB = clr.getZ() - seed.getZ();</span>
 
-<span class="fc" id="L813">            distOfSeedsX[pixIdx] = diffR * diffR;</span>
-<span class="fc" id="L814">            distOfSeedsY[pixIdx] = diffG * diffG;</span>
-<span class="fc" id="L815">            distOfSeedsZ[pixIdx] = diffB * diffB;</span>
+<span class="nc" id="L813">            distOfSeedsX[pixIdx] = diffR * diffR;</span>
+<span class="nc" id="L814">            distOfSeedsY[pixIdx] = diffG * diffG;</span>
+<span class="nc" id="L815">            distOfSeedsZ[pixIdx] = diffB * diffB;</span>
             
-<span class="fc" id="L817">            indexOfDistOfSeedsX[pixIdx] = pixIdx;</span>
-<span class="fc" id="L818">            indexOfDistOfSeedsY[pixIdx] = pixIdx;</span>
-<span class="fc" id="L819">            indexOfDistOfSeedsZ[pixIdx] = pixIdx;</span>
+<span class="nc" id="L817">            indexOfDistOfSeedsX[pixIdx] = pixIdx;</span>
+<span class="nc" id="L818">            indexOfDistOfSeedsY[pixIdx] = pixIdx;</span>
+<span class="nc" id="L819">            indexOfDistOfSeedsZ[pixIdx] = pixIdx;</span>
         }
             
-<span class="fc" id="L822">    }</span>
+<span class="nc" id="L822">    }</span>
 
     private TrioInt calculateRGB(Image img, int pixIdx) {
         
-<span class="fc" id="L826">        int r = img.getR(pixIdx);</span>
-<span class="fc" id="L827">        int g = img.getG(pixIdx);</span>
-<span class="fc" id="L828">        int b = img.getB(pixIdx);</span>
+<span class="nc" id="L826">        int r = img.getR(pixIdx);</span>
+<span class="nc" id="L827">        int g = img.getG(pixIdx);</span>
+<span class="nc" id="L828">        int b = img.getB(pixIdx);</span>
 
-<span class="fc" id="L830">        return new TrioInt(r, g, b);</span>
+<span class="nc" id="L830">        return new TrioInt(r, g, b);</span>
     }
 
     private int findNearestNeighbor(int[][] seed, int xs, int ys, int zs) {
         
         //TODO: adapt the KD-Tree to three dimensions
-<span class="fc" id="L836">        return findNearestNeighborBruteForce(seed, xs, ys, zs);</span>
+<span class="nc" id="L836">        return findNearestNeighborBruteForce(seed, xs, ys, zs);</span>
     }
     
     private int findNearestNeighborBruteForce(int[][] seed, int xs, int ys, 
         int zs) {
         
-<span class="fc" id="L842">        long minDistSq = Long.MAX_VALUE;</span>
-<span class="fc" id="L843">        int minDistIdx = -1;</span>
+<span class="nc" id="L842">        long minDistSq = Long.MAX_VALUE;</span>
+<span class="nc" id="L843">        int minDistIdx = -1;</span>
         
-<span class="fc bfc" id="L845" title="All 2 branches covered.">        for (int i = 0; i &lt; seed[0].length; ++i) {</span>
-<span class="fc" id="L846">            int diffX = seed[0][i] - xs;</span>
-<span class="fc" id="L847">            int diffY = seed[1][i] - ys;</span>
-<span class="fc" id="L848">            int diffZ = seed[2][i] - zs;</span>
-<span class="fc" id="L849">            long distSq = diffX * diffX + diffY * diffY + diffZ * diffZ;</span>
-<span class="fc bfc" id="L850" title="All 2 branches covered.">            if (distSq &lt; minDistSq) {</span>
-<span class="fc" id="L851">                minDistSq = distSq;</span>
-<span class="fc" id="L852">                minDistIdx = i;</span>
+<span class="nc bnc" id="L845" title="All 2 branches missed.">        for (int i = 0; i &lt; seed[0].length; ++i) {</span>
+<span class="nc" id="L846">            int diffX = seed[0][i] - xs;</span>
+<span class="nc" id="L847">            int diffY = seed[1][i] - ys;</span>
+<span class="nc" id="L848">            int diffZ = seed[2][i] - zs;</span>
+<span class="nc" id="L849">            long distSq = diffX * diffX + diffY * diffY + diffZ * diffZ;</span>
+<span class="nc bnc" id="L850" title="All 2 branches missed.">            if (distSq &lt; minDistSq) {</span>
+<span class="nc" id="L851">                minDistSq = distSq;</span>
+<span class="nc" id="L852">                minDistIdx = i;</span>
             }
         }
         
-<span class="fc" id="L856">        return minDistIdx;</span>
+<span class="nc" id="L856">        return minDistIdx;</span>
     }
 
     private TrioInt findNearestNeighbor(Set&lt;TrioInt&gt; seeds, int xs, int ys, int zs) {
         
         //TODO: adapt the KD-Tree to three dimensions
-<span class="fc" id="L862">        return findNearestNeighborBruteForce(seeds, xs, ys, zs);</span>
+<span class="nc" id="L862">        return findNearestNeighborBruteForce(seeds, xs, ys, zs);</span>
     }
     
     private TrioInt findNearestNeighborBruteForce(Set&lt;TrioInt&gt; seeds, int xs, int ys, 
         int zs) {
         
-<span class="fc" id="L868">        long minDistSq = Long.MAX_VALUE;</span>
-<span class="fc" id="L869">        TrioInt minDistClr = null;</span>
+<span class="nc" id="L868">        long minDistSq = Long.MAX_VALUE;</span>
+<span class="nc" id="L869">        TrioInt minDistClr = null;</span>
         
-<span class="fc bfc" id="L871" title="All 2 branches covered.">        for (TrioInt seed : seeds) {</span>
-<span class="fc" id="L872">            int diffX = seed.getX() - xs;</span>
-<span class="fc" id="L873">            int diffY = seed.getY() - ys;</span>
-<span class="fc" id="L874">            int diffZ = seed.getZ() - zs;</span>
-<span class="fc" id="L875">            long distSq = diffX * diffX + diffY * diffY + diffZ * diffZ;</span>
-<span class="fc bfc" id="L876" title="All 2 branches covered.">            if (distSq &lt; minDistSq) {</span>
-<span class="fc" id="L877">                minDistSq = distSq;</span>
-<span class="fc" id="L878">                minDistClr = seed;</span>
+<span class="nc bnc" id="L871" title="All 2 branches missed.">        for (TrioInt seed : seeds) {</span>
+<span class="nc" id="L872">            int diffX = seed.getX() - xs;</span>
+<span class="nc" id="L873">            int diffY = seed.getY() - ys;</span>
+<span class="nc" id="L874">            int diffZ = seed.getZ() - zs;</span>
+<span class="nc" id="L875">            long distSq = diffX * diffX + diffY * diffY + diffZ * diffZ;</span>
+<span class="nc bnc" id="L876" title="All 2 branches missed.">            if (distSq &lt; minDistSq) {</span>
+<span class="nc" id="L877">                minDistSq = distSq;</span>
+<span class="nc" id="L878">                minDistClr = seed;</span>
             }
-<span class="fc" id="L880">        }</span>
+<span class="nc" id="L880">        }</span>
         
-<span class="fc" id="L882">        return minDistClr;</span>
+<span class="nc" id="L882">        return minDistClr;</span>
     }
     
     private int findChosen(long[] nDistrC, long chosen) {
@@ -887,7 +887,7 @@ import java.util.logging.Logger;
         // find bin where cosen is found.
         // the next bin is too high in value
         
-<span class="fc" id="L890">        int idx = Arrays.binarySearch(nDistrC, chosen);</span>
+<span class="nc" id="L890">        int idx = Arrays.binarySearch(nDistrC, chosen);</span>
         
         //nDistrC is ordered by increasing value, but there may be more than
         // one sequential item with same value (if a point is a seed, for
@@ -895,28 +895,28 @@ import java.util.logging.Logger;
         // so need to search before found bin also to find earliest bin.
         
         // if it's negative, (-(insertion point) - 1)
-<span class="pc bpc" id="L898" title="1 of 2 branches missed.">        if (idx &lt; 0) {</span>
+<span class="nc bnc" id="L898" title="All 2 branches missed.">        if (idx &lt; 0) {</span>
             // idx = -*idx2 - 1
-<span class="fc" id="L900">            idx = -1*(idx + 1);</span>
+<span class="nc" id="L900">            idx = -1*(idx + 1);</span>
         }
-<span class="pc bpc" id="L902" title="1 of 2 branches missed.">        if (idx &gt; (nDistrC.length - 1)) {</span>
+<span class="nc bnc" id="L902" title="All 2 branches missed.">        if (idx &gt; (nDistrC.length - 1)) {</span>
 <span class="nc" id="L903">            idx = nDistrC.length - 1;</span>
         }
         
-<span class="fc" id="L906">        long v = nDistrC[idx];</span>
-<span class="pc bpc" id="L907" title="1 of 2 branches missed.">        for (int i = (idx - 1); i &gt; -1; --i) {</span>
-<span class="pc bpc" id="L908" title="1 of 2 branches missed.">            if (nDistrC[i] == v) {</span>
+<span class="nc" id="L906">        long v = nDistrC[idx];</span>
+<span class="nc bnc" id="L907" title="All 2 branches missed.">        for (int i = (idx - 1); i &gt; -1; --i) {</span>
+<span class="nc bnc" id="L908" title="All 2 branches missed.">            if (nDistrC[i] == v) {</span>
 <span class="nc" id="L909">                idx = i;</span>
             } else {
                 break;
             }
         }
         
-<span class="fc" id="L915">        return idx;</span>
+<span class="nc" id="L915">        return idx;</span>
     }
     
     public int[] getImgPixelSeedIndexes() {
-<span class="fc" id="L919">        return lastImgSeedIndexes;</span>
+<span class="nc" id="L919">        return lastImgSeedIndexes;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

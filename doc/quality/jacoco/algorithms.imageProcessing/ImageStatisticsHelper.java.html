@@ -289,8 +289,8 @@ import algorithms.imageProcessing.transform.Transformer;
         
 <span class="fc" id="L290">        float[] simulatedErrors = Errors.populateYErrorsBySqrt(pixValues);</span>
 
-<span class="fc bfc" id="L292" title="All 2 branches covered.">        HistogramHolder hist = useSturges ?</span>
-<span class="fc" id="L293">            Histogram.calculateSturgesHistogram(0.0f, 256.0f, pixValues, </span>
+<span class="pc bpc" id="L292" title="1 of 2 branches missed.">        HistogramHolder hist = useSturges ?</span>
+<span class="pc" id="L293">            Histogram.calculateSturgesHistogram(0.0f, 256.0f, pixValues, </span>
                 simulatedErrors)
 <span class="fc" id="L295">            : Histogram.createSimpleHistogram(0.0f, 256.0f,</span>
                 10, pixValues, simulatedErrors);
