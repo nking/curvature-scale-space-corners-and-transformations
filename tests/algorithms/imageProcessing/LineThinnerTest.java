@@ -102,16 +102,7 @@ public class LineThinnerTest extends TestCase {
         GreyscaleImage input = getTestRectangle();
         
         GreyscaleImage input2 = input.copyImage();
-                
-        ErosionFilter instance = new ErosionFilter();
-        
-        instance.applyFilter(input);
-        
-        System.out.println("erosion:");
-        printImage(input);
-        
-        GreyscaleImage input3 = input2.copyImage();
-        
+               
         ZhangSuenLineThinner instance2 = new ZhangSuenLineThinner();
         
         instance2.applyFilter(input2);
@@ -155,13 +146,6 @@ public class LineThinnerTest extends TestCase {
         
         GreyscaleImage input3 = input.copyImage();
         
-        ErosionFilter instance = new ErosionFilter();
-        
-        instance.applyFilter(input);
-        
-        System.out.println("erosion:");
-        printImage(input);
-       
         //-----------------------------------------------------
         ZhangSuenLineThinner instance2 = new ZhangSuenLineThinner();
         
@@ -700,87 +684,6 @@ public class LineThinnerTest extends TestCase {
         return input;
     }
 
-    public void testPrefillGapsSurroundedByNeighbors() {
-        /*2   @
-          1 @ C @
-          0   @
-            0 1 2
-        */
-        GreyscaleImage input = new GreyscaleImage(4, 4);
-        input.setValue(0, 1, 1);
-        input.setValue(1, 2, 1);
-        input.setValue(2, 1, 1);
-        input.setValue(1, 0, 1);
-        ErosionFilter instance = new ErosionFilter();
-        instance.prefillGapsSurroundedByNeighbors(input);
-        assertTrue(input.getValue(1, 1) == 1);
-    }
-
-    public void testHasImmediateFourNeighbors() {
-        
-        /*2   @
-          1 @ C @
-          0   @
-            0 1 2
-        */
-        
-        GreyscaleImage input = new GreyscaleImage(4, 4);
-        input.setValue(1, 0, 1);
-        input.setValue(0, 1, 1);
-        input.setValue(1, 1, 1);
-        input.setValue(2, 1, 1);
-        input.setValue(1, 2, 1);
-        int col = 1;
-        int row = 1;
-        ErosionFilter instance = new ErosionFilter();
-        boolean expResult = true;
-        boolean result = instance.hasImmediateFourNeighbors(input, col, row);
-        assertEquals(expResult, result);
-        
-        /*2   @
-          1   C @
-          0   @
-            0 1 2
-        */
-        input = new GreyscaleImage(4, 4);
-        input.setValue(1, 0, 1);
-        input.setValue(1, 1, 1);
-        input.setValue(2, 1, 1);
-        input.setValue(1, 2, 1);
-        col = 1;
-        row = 1;
-        instance = new ErosionFilter();
-        expResult = false;
-        result = instance.hasImmediateFourNeighbors(input, col, row);
-        assertEquals(expResult, result);
-    }
-
-    public void testIsTheEndOfAOnePixelLine() {
-        /*
-            #
-          . @ .
-          . C .
-          . . .
-        */
-        GreyscaleImage input = new GreyscaleImage(4, 4);
-        input.setValue(1, 1, 1);
-        input.setValue(1, 2, 1);
-        input.setValue(1, 3, 1);
-        int col = 1;
-        int row = 1;
-        ErosionFilter instance = new ErosionFilter();
-        boolean expResult = true;
-        boolean result = instance.isTheEndOfAOnePixelLine(input, col, row);
-        assertEquals(expResult, result);
-        
-        input.setValue(0, 2, 1);
-        input.setValue(2, 2, 1);
-        instance = new ErosionFilter();
-        expResult = false;
-        result = instance.isTheEndOfAOnePixelLine(input, col, row);
-        assertEquals(expResult, result);
-    }
-    
     public void testRotate90() throws Exception {
         
         AbstractLineThinner lineThinner = new ZhangSuenLineThinner();

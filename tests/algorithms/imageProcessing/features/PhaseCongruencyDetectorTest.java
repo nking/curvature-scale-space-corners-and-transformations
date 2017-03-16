@@ -127,69 +127,6 @@ public class PhaseCongruencyDetectorTest extends TestCase {
         }
     }
 
-    public void est2() throws Exception {
-
-        String[] fileNames = new String[]{
-            //"seattle.jpg",
-            "merton_college_I_001.jpg",
-            //"merton_college_I_002.jpg",
-            //"lena.jpg",
-            //"campus_010.jpg",
-            //"android_statues_01.jpg",
-            //"android_statues_02.jpg",
-            //"android_statues_03.jpg",
-            //"android_statues_04.jpg"
-        };
-
-        ImageSegmentation imageSegmentation = new ImageSegmentation();
-
-        boolean doDecimate = true;
-        int minDimension = 300;//512;//300;
-
-        for (String fileName : fileNames) {
-            try {
-            System.out.println("fileName=" + fileName);
-
-            String filePath = ResourceFinder.findFileInTestResources(fileName);
-
-            ImageExt img = ImageIOHelper.readImageExt(filePath);
-            List<ImageExt> transformed = null;
-
-            int selectIdx = -1;
-
-            if (doDecimate) {
-                MedianTransform mt = new MedianTransform();
-                transformed = new ArrayList<ImageExt>();
-                //List<ImageExt> coeffs = new ArrayList<ImageExt>();
-                //mt.multiscalePyramidalMedianTransform(img, transformed, coeffs);
-                mt.<ImageExt>multiscalePyramidalMedianTransform2(img, transformed);
-                //GreyscaleImage r = mt.reconstructPyramidalMultiscaleMedianTransform(
-                //    transformed.get(transformed.size() - 1), coeffs);
-
-                // choose the first image which is smaller than 300 x 300
-                for (int j = 0; j < transformed.size(); ++j) {
-                    ImageExt tr = transformed.get(j);
-                    //MiscDebug.writeImage(tr, "_tr_" + j);
-                    if (selectIdx == -1) {
-                        if (tr.getWidth() <= minDimension && tr.getHeight() <= minDimension) {
-                            selectIdx = j;
-                            img = transformed.get(selectIdx);
-                        }
-                    }
-                }
-            }
-
-            GreyscaleImage edgeImage = imageSegmentation.createColorEdges(img);
-
-            edgeImage = imageSegmentation.fillInGapsOf1(edgeImage,
-                new TIntHashSet(), 255);
-
-            } catch (Throwable t) {
-                int z = 1;
-            }
-        }
-    }
-
     public void testUnsupervisedTextureExtraction() throws Exception {
 
         String[] fileNames = new String[]{
