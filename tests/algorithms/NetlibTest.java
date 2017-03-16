@@ -12,6 +12,7 @@ import junit.framework.TestCase;
  * 
  * below are edits to work with version 1.1.2
  */
+@SuppressWarnings({"rawtypes"})
 public class NetlibTest extends TestCase {
     
   public void test() {

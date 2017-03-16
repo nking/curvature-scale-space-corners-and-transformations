@@ -8,13 +8,21 @@ public class XFastTrieNode<T> extends BinaryTrieNode<T> {
     
     int prefix;
 
+    @SuppressWarnings({"unchecked"})
     @Override
     public boolean equals(Object u) {
         
-        boolean t0 = (u instanceof XFastTrieNode<?>)
-             && this.prefix == ((XFastTrieNode<T>) u).prefix;
+        if (!(u instanceof XFastTrieNode<?>)) {
+            return false;
+        }
         
-        return t0;
+        XFastTrieNode<T> uu = (XFastTrieNode<T>)u;
+        
+        if (this.prefix == uu.prefix) {
+            return true;
+        }
+        
+        return false;
     }
 
     @Override

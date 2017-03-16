@@ -116,10 +116,10 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
 		while (v != null) {
 			if ((v.child[left] == null 
 	        	&& (v.jump == null ||
-                it.intValue((T)v.jump.x) > ix))
+                it.intValue(v.jump.x) > ix))
 			|| (v.child[right] == null 
 	    		&& (v.jump == null || 
-                (v.jump.x != null && it.intValue((T)v.jump.x) < ix))
+                (v.jump.x != null && it.intValue(v.jump.x) < ix))
                 )) {
 				v.jump = u;
             }

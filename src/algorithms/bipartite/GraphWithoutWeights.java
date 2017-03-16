@@ -24,7 +24,7 @@ public class GraphWithoutWeights {
     private final int nRight;
 
     private TIntObjectMap<TIntSet> adjacencyMap = new
-        TIntObjectHashMap();
+        TIntObjectHashMap<TIntSet>();
 
     public GraphWithoutWeights(int nLeftVertices, 
         int nRightVertices) {

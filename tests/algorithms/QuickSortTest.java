@@ -634,22 +634,22 @@ public class QuickSortTest extends TestCase {
         TFloatList a = new TFloatArrayList();
         a.add(3); a.add(7); a.add(1); a.add(5);
         
-        List b = new ArrayList();
+        List<String> b = new ArrayList<String>();
         b.add("3"); b.add("7"); b.add("1"); b.add("5");
         
         QuickSort.sortBy1stArg(a, b);
         
         assertEquals(1.f, a.get(0));
-        assertEquals("1", (String)b.get(0));
+        assertEquals("1", b.get(0));
         
         assertEquals(3.f, a.get(1));
-        assertEquals("3", (String)b.get(1));
+        assertEquals("3", b.get(1));
         
         assertEquals(5.f, a.get(2));
-        assertEquals("5", (String)b.get(2));
+        assertEquals("5", b.get(2));
         
         assertEquals(7.f, a.get(3));
-        assertEquals("7", (String)b.get(3));
+        assertEquals("7", b.get(3));
         
     }
     
@@ -657,22 +657,22 @@ public class QuickSortTest extends TestCase {
         
         int[] a = new int[]{3, 7, 1, 5};
         
-        List b = new ArrayList();
+        List<String> b = new ArrayList<String>();
         b.add("3"); b.add("7"); b.add("1"); b.add("5");
         
         QuickSort.sortBy1stArg(a, b);
         
         assertEquals(1, a[0]);
-        assertEquals("1", (String)b.get(0));
+        assertEquals("1", b.get(0));
         
         assertEquals(3, a[1]);
-        assertEquals("3", (String)b.get(1));
+        assertEquals("3", b.get(1));
         
         assertEquals(5, a[2]);
-        assertEquals("5", (String)b.get(2));
+        assertEquals("5", b.get(2));
         
         assertEquals(7, a[3]);
-        assertEquals("7", (String)b.get(3));
+        assertEquals("7", b.get(3));
         
     }
     
@@ -693,20 +693,20 @@ public class QuickSortTest extends TestCase {
         QuickSort.sortBy1stArg(a, b, c);
         
         assertEquals(1.f, a[0]);
-        assertEquals("1", ((String)b.get(0)).toString());
-        assertEquals(1, ((Integer)c.get(0)).intValue());
+        assertEquals("1", (b.get(0)));
+        assertEquals(1, c.get(0).intValue());
         
         assertEquals(3.f, a[1]);
-        assertEquals("3", ((String)b.get(1)).toString());
-        assertEquals(3, ((Integer)c.get(1)).intValue());
+        assertEquals("3", (b.get(1)));
+        assertEquals(3, c.get(1).intValue());
         
         assertEquals(5.f, a[2]);
-        assertEquals("5", ((String)b.get(2)).toString());
-        assertEquals(5, ((Integer)c.get(2)).intValue());
+        assertEquals("5", (b.get(2)));
+        assertEquals(5, c.get(2).intValue());
     
         assertEquals(7.f, a[3]);
-        assertEquals("7", ((String)b.get(3)).toString());
-        assertEquals(7, ((Integer)c.get(3)).intValue());
+        assertEquals("7", (b.get(3)));
+        assertEquals(7, c.get(3).intValue());
     }
     
     public void testSortBy1stArgDesc() {
@@ -725,20 +725,20 @@ public class QuickSortTest extends TestCase {
         QuickSort.sortBy1stArgDesc(a, b, c);
         System.out.println("a=" + Arrays.toString(a));
         assertEquals(1, a[3]);
-        assertEquals("1", ((String)b.get(3)).toString());
-        assertEquals(1, ((Integer)c.get(3)).intValue());
+        assertEquals("1", (b.get(3)));
+        assertEquals(1, c.get(3).intValue());
         
         assertEquals(3, a[2]);
-        assertEquals("3", ((String)b.get(2)).toString());
-        assertEquals(3, ((Integer)c.get(2)).intValue());
+        assertEquals("3", (b.get(2)));
+        assertEquals(3, c.get(2).intValue());
         
         assertEquals(5, a[1]);
-        assertEquals("5", ((String)b.get(1)).toString());
-        assertEquals(5, ((Integer)c.get(1)).intValue());
+        assertEquals("5", (b.get(1)));
+        assertEquals(5, c.get(1).intValue());
     
         assertEquals(7, a[0]);
-        assertEquals("7", ((String)b.get(0)).toString());
-        assertEquals(7, ((Integer)c.get(0)).intValue());
+        assertEquals("7", (b.get(0)));
+        assertEquals(7, c.get(0).intValue());
     }
     
 }

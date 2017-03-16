@@ -16,8 +16,6 @@ import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.HashSet;
-import java.util.Set;
 
 @SuppressWarnings({"unchecked"})
 public class BinaryTrie<S extends BinaryTrieNode<T>, T> 
@@ -167,10 +165,10 @@ public class BinaryTrie<S extends BinaryTrieNode<T>, T>
 		while (v != null) {
 			if ((v.child[left] == null 
 	        	&& (v.jump == null ||
-                it.intValue((T)v.jump.x) > ix))
+                it.intValue(v.jump.x) > ix))
 			|| (v.child[right] == null 
 	    		&& (v.jump == null || 
-                (v.jump.x != null && it.intValue((T)v.jump.x) < ix))
+                (v.jump.x != null && it.intValue(v.jump.x) < ix))
                 )) {
 				v.jump = u;
             }

@@ -8,14 +8,14 @@ import java.lang.reflect.Array;
  */
 public class BinaryTrieNode<T> {
     T x;
-    BinaryTrieNode parent = null;
-    BinaryTrieNode[] child = null;
-    BinaryTrieNode jump = null;
+    BinaryTrieNode<T> parent = null;
+    BinaryTrieNode<T>[] child = null;
+    BinaryTrieNode<T> jump = null;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public BinaryTrieNode() {
         Class cls = this.getClass();
-        child = (BinaryTrieNode[]) Array.newInstance(cls, 2);
+        child = (BinaryTrieNode<T>[]) Array.newInstance(cls, 2);
     }
   
     @Override

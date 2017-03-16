@@ -197,6 +197,7 @@ public class HeapNode {
         this.mark = mark;
     }
 
+    @SuppressWarnings({"rawtypes"})
     public static Class getType() {
         return HeapNode.class;
     }
