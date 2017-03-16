@@ -102,13 +102,7 @@ MiscDebug.writeImage(img3, "spur_removal_" + nIter + "_"
             nChanged += pattern11(points, imageWidth, imageHeight);
             
             nChanged += pattern13(points, imageWidth, imageHeight);
-                        
-            if ((nIter & 1) == 1) {
-                // not technically a spur:
-                nChanged += 
-                    PostLineThinnerCorrections.correctForHoleArtifacts00_10(points, imageWidth, imageHeight);
-            }
-            
+           
             nChanged += curveCorrection12(points, imageWidth, imageHeight);
             
             ++nIter;

@@ -124,7 +124,6 @@ public class PhaseCongruencyDetectorTest extends TestCase {
 
             ImageExt img = ImageIOHelper.readImageExt(filePath);
 
-            GreyscaleImage edgeImage = imageSegmentation.createColorEdges(img);
         }
     }
 
