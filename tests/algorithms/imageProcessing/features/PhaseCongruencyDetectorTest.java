@@ -190,7 +190,7 @@ public class PhaseCongruencyDetectorTest extends TestCase {
             }
         }
     }
-    
+
     public void testUnsupervisedTextureExtraction() throws Exception {
 
         String[] fileNames = new String[]{
@@ -204,7 +204,7 @@ public class PhaseCongruencyDetectorTest extends TestCase {
             //"android_statues_03.jpg",    //*
             //"android_statues_04.jpg"
         };
-        
+
         ImageProcessor imageProcessor = new ImageProcessor();
 
         ImageSegmentation imageSegmentation = new ImageSegmentation();
@@ -214,7 +214,7 @@ public class PhaseCongruencyDetectorTest extends TestCase {
         */
 
         int maxDimension = 256;//512;
-        
+
         for (String fileName : fileNames) {
 
             System.out.println("fileName=" + fileName);
@@ -229,8 +229,8 @@ public class PhaseCongruencyDetectorTest extends TestCase {
                 (float) w1 / maxDimension,
                 (float) h1 / maxDimension));
             img = imageProcessor.binImage(img, binFactor1);
-            
-            
+
+
             GreyscaleImage img2 = img.copyToGreyscale2();
 
             PhaseCongruencyDetector phaseCDetector
@@ -243,10 +243,10 @@ public class PhaseCongruencyDetectorTest extends TestCase {
 
             UnsupervisedTextureFinder finder = new
                 UnsupervisedTextureFinder();
-            
-            TexturePatchesAndResponse[] tpar = 
+
+            TexturePatchesAndResponse[] tpar =
                 finder.createTextureImages(img, products, fileName);
-       
+
             /*
             -- look into the texture stats of Malik et al 2001.
                -- whether a sure edge lies along path in between two
@@ -256,7 +256,7 @@ public class PhaseCongruencyDetectorTest extends TestCase {
                                    to curve)
                      to search for curve points, they use a radii of 30
                      around the  textons of interest.
-            
+
                -- different goal: adding other terms to the normalized cuts
                   weighting function is in this paper and the DNCuts paper.
 
@@ -281,7 +281,7 @@ public class PhaseCongruencyDetectorTest extends TestCase {
                     F(x) = F(x) X log(1+(|F(x)|/0.03))/|F(x)|
             */
 
-           
+
             /*
             assertNotNull(products);
             int[][] thinned = products.getThinned();
