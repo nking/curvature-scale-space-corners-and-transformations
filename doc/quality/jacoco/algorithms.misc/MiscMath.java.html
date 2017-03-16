@@ -1226,16 +1226,16 @@ import java.util.Set;
     }
 
     public static int findLastZeroIndex(HistogramHolder h) {
-<span class="fc" id="L1229">        int n = h.getXHist().length;</span>
-<span class="fc" id="L1230">        int lastZeroIdx = n - 1;</span>
-<span class="pc bpc" id="L1231" title="1 of 2 branches missed.">        for (int i = (n - 1); i &gt; -1; i--) {</span>
-<span class="fc" id="L1232">            int y = h.getYHist()[i];</span>
-<span class="fc bfc" id="L1233" title="All 2 branches covered.">            if (y &gt; 0) {</span>
-<span class="fc" id="L1234">                break;</span>
+<span class="nc" id="L1229">        int n = h.getXHist().length;</span>
+<span class="nc" id="L1230">        int lastZeroIdx = n - 1;</span>
+<span class="nc bnc" id="L1231" title="All 2 branches missed.">        for (int i = (n - 1); i &gt; -1; i--) {</span>
+<span class="nc" id="L1232">            int y = h.getYHist()[i];</span>
+<span class="nc bnc" id="L1233" title="All 2 branches missed.">            if (y &gt; 0) {</span>
+<span class="nc" id="L1234">                break;</span>
             }
-<span class="fc" id="L1236">            lastZeroIdx = i;</span>
+<span class="nc" id="L1236">            lastZeroIdx = i;</span>
         }
-<span class="fc" id="L1238">        return lastZeroIdx;</span>
+<span class="nc" id="L1238">        return lastZeroIdx;</span>
     }
     
     public static int findFirstNonZeroIndex(HistogramHolder h) {

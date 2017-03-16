@@ -1348,13 +1348,13 @@ import java.util.List;
      */
     public boolean isWhite2(float cieX, float cieY) {
 
-<span class="fc" id="L1351">        double diffX = Math.abs(cieX - 0.35);</span>
+<span class="nc" id="L1351">        double diffX = Math.abs(cieX - 0.35);</span>
 
-<span class="fc" id="L1353">        double diffY = Math.abs(cieY - 0.35);</span>
+<span class="nc" id="L1353">        double diffY = Math.abs(cieY - 0.35);</span>
 
-<span class="fc" id="L1355">        double delta = 2.*(0.1/7.);</span>
+<span class="nc" id="L1355">        double delta = 2.*(0.1/7.);</span>
 
-<span class="fc bfc" id="L1357" title="All 4 branches covered.">        return ((diffX &lt;= delta) &amp;&amp; (diffY &lt;= delta));</span>
+<span class="nc bnc" id="L1357" title="All 4 branches missed.">        return ((diffX &lt;= delta) &amp;&amp; (diffY &lt;= delta));</span>
     }
 
     /**
@@ -1381,7 +1381,7 @@ import java.util.List;
      */
     public double calculateXYTheta(float cieX, float cieY) {
 
-<span class="pc bpc" id="L1384" title="1 of 2 branches missed.">        if (cieX == 0.35) {</span>
+<span class="nc bnc" id="L1384" title="All 2 branches missed.">        if (cieX == 0.35) {</span>
 <span class="nc bnc" id="L1385" title="All 2 branches missed.">            if (cieY &gt; (0.35 + deltaWhite)) {</span>
 <span class="nc" id="L1386">                return Math.PI/2.;</span>
 <span class="nc bnc" id="L1387" title="All 2 branches missed.">            } else if (cieY &lt; (0.35 - deltaWhite)) {</span>
@@ -1392,9 +1392,9 @@ import java.util.List;
             }
         }
 
-<span class="fc" id="L1395">        double theta = MiscMath.calculatePolarTheta(cieX - 0.35f, cieY - 0.35f);</span>
+<span class="nc" id="L1395">        double theta = MiscMath.calculatePolarTheta(cieX - 0.35f, cieY - 0.35f);</span>
 
-<span class="fc" id="L1397">        return theta;</span>
+<span class="nc" id="L1397">        return theta;</span>
     }
 
 <span class="fc" id="L1400">    private static double wd = Math.sqrt(Math.pow((0.425 - 0.275), 2) +</span>

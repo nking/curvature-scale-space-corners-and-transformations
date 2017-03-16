@@ -1,5 +1,10 @@
 package thirdparty.edu.princeton.cs.algs4;
 
+import algorithms.util.PairInt;
+import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.hash.TIntIntHashMap;
+import java.util.HashSet;
+import java.util.Set;
 import junit.framework.TestCase;
 
 
@@ -14,7 +19,7 @@ public class StdRandomTest extends TestCase {
     public StdRandomTest() {
     }
 
-    public void test0() {
+    public void testRandom() {
         
         /*
         %  java StdRandom 5
@@ -77,6 +82,72 @@ public class StdRandomTest extends TestCase {
 
         }
         
+    }
+    
+    public void testShuffle() {
+        
+        /*
+        run shuffle and look at how many of the consecutive pairs
+        are present in the post-shuffle and then a rough comparison
+        of locations.
+        
+        if array is 30 points, the ordering before shuffle can be
+        put into a histogram of sqrt 30 bins
+        and assert that most are not in same bins after shuffle.
+        */
+        
+        Set<PairInt> before = new HashSet<PairInt>();
+        Set<PairInt> after = new HashSet<PairInt>();
+                
+        int n = 30;
+        int nBins = (int)Math.sqrt(n);
+        
+        int[] a = new int[n];
+        
+        for (int i = 0; i < n - 1; ++i) {
+            a[i] = i;
+            PairInt p = new PairInt(i, i + 1);
+            before.add(p);
+        }
+        a[n - 1] = n - 1;
+        
+        StdRandom.shuffle(a);
+    
+        for (int i = 0; i < n - 1; ++i) {
+            PairInt p = new PairInt(a[i], a[i + 1]);
+            after.add(p);
+        }
+        
+        int nSameBin = 0;
+    
+        for (int i = 0; i < n; ++i) {
+            int idx = a[i];
+            int binBefore = i/nBins;
+            int binAfter = idx/nBins;
+            if (binBefore == binAfter) {
+                nSameBin++;
+            }
+        }
+        
+        // intersection of sequential pairs:
+        Set<PairInt> diff = new HashSet<PairInt>(before);
+        diff.addAll(after);
+        
+        Set<PairInt> intersection = new HashSet<PairInt>();
+    
+        diff.removeAll(before);
+        diff.removeAll(after);
+        
+        intersection.removeAll(diff);
+        
+        System.out.println("nSameBin=" + nSameBin + " out of " + n);
+        System.out.println("nSameAdjacency=" + intersection.size() 
+            + " out of " + n);
+        
+        // TODO: put statistical limits on these:
+        assertTrue(((float)intersection.size()/(float)n) < 0.1f);
+        
+        assertTrue(((float)nSameBin/(float)n) < 0.5f);
     }
     
 }

@@ -102,134 +102,128 @@ import java.util.Set;
 <span class="nc" id="L102">            nChanged += pattern11(points, imageWidth, imageHeight);</span>
             
 <span class="nc" id="L104">            nChanged += pattern13(points, imageWidth, imageHeight);</span>
-                        
-<span class="nc bnc" id="L106" title="All 2 branches missed.">            if ((nIter &amp; 1) == 1) {</span>
-                // not technically a spur:
-<span class="nc" id="L108">                nChanged += </span>
-<span class="nc" id="L109">                    PostLineThinnerCorrections.correctForHoleArtifacts00_10(points, imageWidth, imageHeight);</span>
-            }
+           
+<span class="nc" id="L106">            nChanged += curveCorrection12(points, imageWidth, imageHeight);</span>
             
-<span class="nc" id="L112">            nChanged += curveCorrection12(points, imageWidth, imageHeight);</span>
-            
-<span class="nc" id="L114">            ++nIter;</span>
+<span class="nc" id="L108">            ++nIter;</span>
         }
         
-<span class="nc bnc" id="L117" title="All 2 branches missed.">if (debug) {        </span>
-<span class="nc" id="L118">Image img3 = new Image(imageWidth, imageHeight);</span>
-<span class="nc bnc" id="L119" title="All 2 branches missed.">for (PairInt p : points) {</span>
-<span class="nc" id="L120">    img3.setRGB(p.getX(), p.getY(), 255, 0, 0);</span>
-<span class="nc" id="L121">}</span>
-<span class="nc" id="L122">MiscDebug.writeImage(img3, &quot;spur_removal_&quot; + nIter + &quot;_&quot; </span>
-<span class="nc" id="L123">+ MiscDebug.getCurrentTimeFormatted());</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">if (debug) {        </span>
+<span class="nc" id="L112">Image img3 = new Image(imageWidth, imageHeight);</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">for (PairInt p : points) {</span>
+<span class="nc" id="L114">    img3.setRGB(p.getX(), p.getY(), 255, 0, 0);</span>
+<span class="nc" id="L115">}</span>
+<span class="nc" id="L116">MiscDebug.writeImage(img3, &quot;spur_removal_&quot; + nIter + &quot;_&quot; </span>
+<span class="nc" id="L117">+ MiscDebug.getCurrentTimeFormatted());</span>
 }
 
-<span class="nc" id="L126">    }</span>
+<span class="nc" id="L120">    }</span>
     
     public boolean isASpur(int xCoord, int yCoord, Set&lt;PairInt&gt; curve, 
         int imageWidth, int imageHeight) {
         
-<span class="nc" id="L131">        boolean hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
-<span class="nc" id="L132">            imageWidth, imageHeight, getPattern0());</span>
+<span class="nc" id="L125">        boolean hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
+<span class="nc" id="L126">            imageWidth, imageHeight, getPattern0());</span>
         
-<span class="nc bnc" id="L134" title="All 2 branches missed.">        if (hasPattern) {</span>
-<span class="nc" id="L135">            return true;</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">        if (hasPattern) {</span>
+<span class="nc" id="L129">            return true;</span>
         }
 
-<span class="nc" id="L138">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
-<span class="nc" id="L139">            imageWidth, imageHeight, getPattern00());</span>
+<span class="nc" id="L132">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
+<span class="nc" id="L133">            imageWidth, imageHeight, getPattern00());</span>
         
-<span class="nc bnc" id="L141" title="All 2 branches missed.">        if (hasPattern) {</span>
-<span class="nc" id="L142">            return true;</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">        if (hasPattern) {</span>
+<span class="nc" id="L136">            return true;</span>
         }
         
-<span class="nc" id="L145">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
-<span class="nc" id="L146">            imageWidth, imageHeight, getPattern1());</span>
+<span class="nc" id="L139">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
+<span class="nc" id="L140">            imageWidth, imageHeight, getPattern1());</span>
         
-<span class="nc bnc" id="L148" title="All 2 branches missed.">        if (hasPattern) {</span>
-<span class="nc" id="L149">            return true;</span>
-        }
-
-<span class="nc" id="L152">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
-<span class="nc" id="L153">            imageWidth, imageHeight, getPattern2());</span>
-        
-<span class="nc bnc" id="L155" title="All 2 branches missed.">        if (hasPattern) {</span>
-<span class="nc" id="L156">            return true;</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">        if (hasPattern) {</span>
+<span class="nc" id="L143">            return true;</span>
         }
 
-<span class="nc" id="L159">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
-<span class="nc" id="L160">            imageWidth, imageHeight, getPattern3());</span>
+<span class="nc" id="L146">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
+<span class="nc" id="L147">            imageWidth, imageHeight, getPattern2());</span>
         
-<span class="nc bnc" id="L162" title="All 2 branches missed.">        if (hasPattern) {</span>
-<span class="nc" id="L163">            return true;</span>
+<span class="nc bnc" id="L149" title="All 2 branches missed.">        if (hasPattern) {</span>
+<span class="nc" id="L150">            return true;</span>
         }
 
-<span class="nc" id="L166">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
-<span class="nc" id="L167">            imageWidth, imageHeight, getPattern4());</span>
+<span class="nc" id="L153">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
+<span class="nc" id="L154">            imageWidth, imageHeight, getPattern3());</span>
         
-<span class="nc bnc" id="L169" title="All 2 branches missed.">        if (hasPattern) {</span>
-<span class="nc" id="L170">            return true;</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">        if (hasPattern) {</span>
+<span class="nc" id="L157">            return true;</span>
+        }
+
+<span class="nc" id="L160">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
+<span class="nc" id="L161">            imageWidth, imageHeight, getPattern4());</span>
+        
+<span class="nc bnc" id="L163" title="All 2 branches missed.">        if (hasPattern) {</span>
+<span class="nc" id="L164">            return true;</span>
         }
             
-<span class="nc" id="L173">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
-<span class="nc" id="L174">            imageWidth, imageHeight, getPattern5());</span>
+<span class="nc" id="L167">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
+<span class="nc" id="L168">            imageWidth, imageHeight, getPattern5());</span>
         
-<span class="nc bnc" id="L176" title="All 2 branches missed.">        if (hasPattern) {</span>
-<span class="nc" id="L177">            return true;</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">        if (hasPattern) {</span>
+<span class="nc" id="L171">            return true;</span>
         }
             
-<span class="nc" id="L180">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
-<span class="nc" id="L181">            imageWidth, imageHeight, getPattern6());</span>
+<span class="nc" id="L174">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
+<span class="nc" id="L175">            imageWidth, imageHeight, getPattern6());</span>
         
-<span class="nc bnc" id="L183" title="All 2 branches missed.">        if (hasPattern) {</span>
-<span class="nc" id="L184">            return true;</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">        if (hasPattern) {</span>
+<span class="nc" id="L178">            return true;</span>
         }
             
-<span class="nc" id="L187">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
-<span class="nc" id="L188">            imageWidth, imageHeight, getPattern7());</span>
+<span class="nc" id="L181">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
+<span class="nc" id="L182">            imageWidth, imageHeight, getPattern7());</span>
         
-<span class="nc bnc" id="L190" title="All 2 branches missed.">        if (hasPattern) {</span>
-<span class="nc" id="L191">            return true;</span>
+<span class="nc bnc" id="L184" title="All 2 branches missed.">        if (hasPattern) {</span>
+<span class="nc" id="L185">            return true;</span>
         }
             
-<span class="nc" id="L194">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
-<span class="nc" id="L195">            imageWidth, imageHeight, getPattern8());</span>
+<span class="nc" id="L188">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
+<span class="nc" id="L189">            imageWidth, imageHeight, getPattern8());</span>
         
-<span class="nc bnc" id="L197" title="All 2 branches missed.">        if (hasPattern) {</span>
-<span class="nc" id="L198">            return true;</span>
+<span class="nc bnc" id="L191" title="All 2 branches missed.">        if (hasPattern) {</span>
+<span class="nc" id="L192">            return true;</span>
         }
             
-<span class="nc" id="L201">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
-<span class="nc" id="L202">            imageWidth, imageHeight, getPattern9());</span>
+<span class="nc" id="L195">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
+<span class="nc" id="L196">            imageWidth, imageHeight, getPattern9());</span>
         
-<span class="nc bnc" id="L204" title="All 2 branches missed.">        if (hasPattern) {</span>
-<span class="nc" id="L205">            return true;</span>
+<span class="nc bnc" id="L198" title="All 2 branches missed.">        if (hasPattern) {</span>
+<span class="nc" id="L199">            return true;</span>
         }
             
-<span class="nc" id="L208">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
-<span class="nc" id="L209">            imageWidth, imageHeight, getPattern10());</span>
+<span class="nc" id="L202">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
+<span class="nc" id="L203">            imageWidth, imageHeight, getPattern10());</span>
         
-<span class="nc bnc" id="L211" title="All 2 branches missed.">        if (hasPattern) {</span>
-<span class="nc" id="L212">            return true;</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">        if (hasPattern) {</span>
+<span class="nc" id="L206">            return true;</span>
         }
             
-<span class="nc" id="L215">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
-<span class="nc" id="L216">            imageWidth, imageHeight, getPattern11());</span>
+<span class="nc" id="L209">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
+<span class="nc" id="L210">            imageWidth, imageHeight, getPattern11());</span>
         
-<span class="nc bnc" id="L218" title="All 2 branches missed.">        if (hasPattern) {</span>
-<span class="nc" id="L219">            return true;</span>
+<span class="nc bnc" id="L212" title="All 2 branches missed.">        if (hasPattern) {</span>
+<span class="nc" id="L213">            return true;</span>
         }
         
-<span class="nc" id="L222">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
-<span class="nc" id="L223">            imageWidth, imageHeight, getPattern13());</span>
+<span class="nc" id="L216">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
+<span class="nc" id="L217">            imageWidth, imageHeight, getPattern13());</span>
         
-<span class="nc bnc" id="L225" title="All 2 branches missed.">        if (hasPattern) {</span>
-<span class="nc" id="L226">            return true;</span>
+<span class="nc bnc" id="L219" title="All 2 branches missed.">        if (hasPattern) {</span>
+<span class="nc" id="L220">            return true;</span>
         }
             
-<span class="nc" id="L229">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
-<span class="nc" id="L230">            imageWidth, imageHeight, getPattern12());</span>
+<span class="nc" id="L223">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
+<span class="nc" id="L224">            imageWidth, imageHeight, getPattern12());</span>
         
-<span class="nc" id="L232">        return hasPattern;</span>
+<span class="nc" id="L226">        return hasPattern;</span>
     }
     
     public static class PatternReplacement {
@@ -246,40 +240,40 @@ import java.util.Set;
           0  0  0       -1
          -1  0  1  2  3
          */
-<span class="nc" id="L249">        PatternReplacement pr = new PatternReplacement();</span>
-<span class="nc" id="L250">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L251">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L252">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L243">        PatternReplacement pr = new PatternReplacement();</span>
+<span class="nc" id="L244">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L245">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L246">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="nc" id="L254">        pr.zeroes.add(new PairInt(-1, -1)); pr.zeroes.add(new PairInt(-1, 0)); pr.zeroes.add(new PairInt(-1, 1));</span>
-<span class="nc" id="L255">        pr.zeroes.add(new PairInt(0, -1));</span>
-<span class="nc" id="L256">        pr.zeroes.add(new PairInt(1, -1)); pr.zeroes.add(new PairInt(1, 0)); pr.zeroes.add(new PairInt(1, 1));</span>
+<span class="nc" id="L248">        pr.zeroes.add(new PairInt(-1, -1)); pr.zeroes.add(new PairInt(-1, 0)); pr.zeroes.add(new PairInt(-1, 1));</span>
+<span class="nc" id="L249">        pr.zeroes.add(new PairInt(0, -1));</span>
+<span class="nc" id="L250">        pr.zeroes.add(new PairInt(1, -1)); pr.zeroes.add(new PairInt(1, 0)); pr.zeroes.add(new PairInt(1, 1));</span>
         
-<span class="nc" id="L258">        pr.ones.add(new PairInt(0, 1)); </span>
+<span class="nc" id="L252">        pr.ones.add(new PairInt(0, 1)); </span>
         
-<span class="nc" id="L260">        pr.changeToZeroes.add(new PairInt(0, 0));</span>
+<span class="nc" id="L254">        pr.changeToZeroes.add(new PairInt(0, 0));</span>
         
-<span class="nc" id="L262">        return pr;</span>
+<span class="nc" id="L256">        return pr;</span>
     }
 
     private int pattern0(Set&lt;PairInt&gt; curve, int imageWidth, int imageHeight) {
         
-<span class="nc" id="L267">        PatternReplacement pr = getPattern0();</span>
+<span class="nc" id="L261">        PatternReplacement pr = getPattern0();</span>
         
-<span class="nc" id="L269">        int nChanged = 0;</span>
+<span class="nc" id="L263">        int nChanged = 0;</span>
         
         /*
         invoke pattern and then reversed for Y
         */
 
-<span class="nc" id="L275">        nChanged += replacePattern(curve, imageWidth, imageHeight, pr);</span>
+<span class="nc" id="L269">        nChanged += replacePattern(curve, imageWidth, imageHeight, pr);</span>
 
         // ----- change the sign of x to handle other direction -----
-<span class="nc" id="L278">        reverseYs(pr);</span>
+<span class="nc" id="L272">        reverseYs(pr);</span>
 
-<span class="nc" id="L280">        nChanged += replacePattern(curve, imageWidth, imageHeight, pr);</span>
+<span class="nc" id="L274">        nChanged += replacePattern(curve, imageWidth, imageHeight, pr);</span>
         
-<span class="nc" id="L282">        return nChanged;</span>
+<span class="nc" id="L276">        return nChanged;</span>
     }
     
     private PatternReplacement getPattern00() {
@@ -290,36 +284,36 @@ import java.util.Set;
           0  0  0       -1
          -1  0  1  2  3
          */
-<span class="nc" id="L293">        PatternReplacement pr = new PatternReplacement();</span>
-<span class="nc" id="L294">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L295">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L296">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L287">        PatternReplacement pr = new PatternReplacement();</span>
+<span class="nc" id="L288">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L289">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L290">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="nc" id="L298">        pr.zeroes.add(new PairInt(-1, -1)); pr.zeroes.add(new PairInt(-1, 0)); pr.zeroes.add(new PairInt(-1, 1));</span>
-<span class="nc" id="L299">        pr.zeroes.add(new PairInt(0, -1)); pr.zeroes.add(new PairInt(0, 1));</span>
-<span class="nc" id="L300">        pr.zeroes.add(new PairInt(1, -1)); pr.zeroes.add(new PairInt(1, 1));</span>
+<span class="nc" id="L292">        pr.zeroes.add(new PairInt(-1, -1)); pr.zeroes.add(new PairInt(-1, 0)); pr.zeroes.add(new PairInt(-1, 1));</span>
+<span class="nc" id="L293">        pr.zeroes.add(new PairInt(0, -1)); pr.zeroes.add(new PairInt(0, 1));</span>
+<span class="nc" id="L294">        pr.zeroes.add(new PairInt(1, -1)); pr.zeroes.add(new PairInt(1, 1));</span>
         
-<span class="nc" id="L302">        pr.ones.add(new PairInt(1, 0)); </span>
+<span class="nc" id="L296">        pr.ones.add(new PairInt(1, 0)); </span>
         
-<span class="nc" id="L304">        pr.changeToZeroes.add(new PairInt(0, 0));</span>
+<span class="nc" id="L298">        pr.changeToZeroes.add(new PairInt(0, 0));</span>
         
-<span class="nc" id="L306">        return pr;</span>
+<span class="nc" id="L300">        return pr;</span>
     }
     
     private int pattern00(Set&lt;PairInt&gt; curve, int imageWidth, int imageHeight) {
        
-<span class="nc" id="L311">        int nChanged = 0;</span>
+<span class="nc" id="L305">        int nChanged = 0;</span>
         
-<span class="nc" id="L313">        PatternReplacement pr = getPattern00();</span>
+<span class="nc" id="L307">        PatternReplacement pr = getPattern00();</span>
         
-<span class="nc" id="L315">        nChanged += replacePattern(curve, imageWidth, imageHeight, pr);</span>
+<span class="nc" id="L309">        nChanged += replacePattern(curve, imageWidth, imageHeight, pr);</span>
         
         // ----- change the sign of x to handle other direction -----
-<span class="nc" id="L318">        reverseXs(pr);</span>
+<span class="nc" id="L312">        reverseXs(pr);</span>
 
-<span class="nc" id="L320">        nChanged += replacePattern(curve, imageWidth, imageHeight, pr);</span>
+<span class="nc" id="L314">        nChanged += replacePattern(curve, imageWidth, imageHeight, pr);</span>
             
-<span class="nc" id="L322">        return nChanged;</span>
+<span class="nc" id="L316">        return nChanged;</span>
     }
     
     private PatternReplacement getPattern1() {
@@ -330,33 +324,33 @@ import java.util.Set;
           0  0  0       -1
          -1  0  1  2  3
          */
-<span class="nc" id="L333">        PatternReplacement pr = new PatternReplacement();</span>
-<span class="nc" id="L334">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L335">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L336">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L327">        PatternReplacement pr = new PatternReplacement();</span>
+<span class="nc" id="L328">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L329">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L330">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="nc" id="L338">        pr.zeroes.add(new PairInt(-1, -1)); pr.zeroes.add(new PairInt(-1, 0));</span>
-<span class="nc" id="L339">        pr.zeroes.add(new PairInt(0, -1));</span>
-<span class="nc" id="L340">        pr.zeroes.add(new PairInt(1, -1)); pr.zeroes.add(new PairInt(1, 0)); pr.zeroes.add(new PairInt(1, 1));</span>
+<span class="nc" id="L332">        pr.zeroes.add(new PairInt(-1, -1)); pr.zeroes.add(new PairInt(-1, 0));</span>
+<span class="nc" id="L333">        pr.zeroes.add(new PairInt(0, -1));</span>
+<span class="nc" id="L334">        pr.zeroes.add(new PairInt(1, -1)); pr.zeroes.add(new PairInt(1, 0)); pr.zeroes.add(new PairInt(1, 1));</span>
         
-<span class="nc" id="L342">        pr.ones.add(new PairInt(-1, 1));</span>
-<span class="nc" id="L343">        pr.ones.add(new PairInt(0, 1)); </span>
+<span class="nc" id="L336">        pr.ones.add(new PairInt(-1, 1));</span>
+<span class="nc" id="L337">        pr.ones.add(new PairInt(0, 1)); </span>
         
-<span class="nc" id="L345">        pr.changeToZeroes.add(new PairInt(0, 0));</span>
+<span class="nc" id="L339">        pr.changeToZeroes.add(new PairInt(0, 0));</span>
         
-<span class="nc" id="L347">        return pr;</span>
+<span class="nc" id="L341">        return pr;</span>
     }
     
     private int pattern1(Set&lt;PairInt&gt; curve, int imageWidth, int imageHeight) {
         
-<span class="nc" id="L352">        int nChanged = 0;</span>
+<span class="nc" id="L346">        int nChanged = 0;</span>
         
-<span class="nc" id="L354">        PatternReplacement pr = getPattern1();</span>
+<span class="nc" id="L348">        PatternReplacement pr = getPattern1();</span>
         
-<span class="nc" id="L356">        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, </span>
+<span class="nc" id="L350">        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, </span>
             pr);
        
-<span class="nc" id="L359">        return nChanged;</span>
+<span class="nc" id="L353">        return nChanged;</span>
     }
     
     private PatternReplacement getPattern2() {
@@ -368,33 +362,33 @@ import java.util.Set;
           0  0  0       -1
          -1  0  1  2  3
          */
-<span class="nc" id="L371">        PatternReplacement pr = new PatternReplacement();</span>
-<span class="nc" id="L372">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L373">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L374">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L365">        PatternReplacement pr = new PatternReplacement();</span>
+<span class="nc" id="L366">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L367">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L368">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="nc" id="L376">        pr.zeroes.add(new PairInt(-1, -1)); pr.zeroes.add(new PairInt(-1, 0)); pr.zeroes.add(new PairInt(-1, 1));</span>
-<span class="nc" id="L377">        pr.zeroes.add(new PairInt(0, -1));</span>
-<span class="nc" id="L378">        pr.zeroes.add(new PairInt(1, -1)); pr.zeroes.add(new PairInt(1, 0)); pr.zeroes.add(new PairInt(1, 1));</span>
+<span class="nc" id="L370">        pr.zeroes.add(new PairInt(-1, -1)); pr.zeroes.add(new PairInt(-1, 0)); pr.zeroes.add(new PairInt(-1, 1));</span>
+<span class="nc" id="L371">        pr.zeroes.add(new PairInt(0, -1));</span>
+<span class="nc" id="L372">        pr.zeroes.add(new PairInt(1, -1)); pr.zeroes.add(new PairInt(1, 0)); pr.zeroes.add(new PairInt(1, 1));</span>
         
-<span class="nc" id="L380">        pr.ones.add(new PairInt(-1, 2));</span>
-<span class="nc" id="L381">        pr.ones.add(new PairInt(0, 1)); </span>
+<span class="nc" id="L374">        pr.ones.add(new PairInt(-1, 2));</span>
+<span class="nc" id="L375">        pr.ones.add(new PairInt(0, 1)); </span>
         
-<span class="nc" id="L383">        pr.changeToZeroes.add(new PairInt(0, 0));</span>
+<span class="nc" id="L377">        pr.changeToZeroes.add(new PairInt(0, 0));</span>
         
-<span class="nc" id="L385">        return pr;</span>
+<span class="nc" id="L379">        return pr;</span>
     }
     
     private int pattern2(Set&lt;PairInt&gt; curve, int imageWidth, int imageHeight) {
        
-<span class="nc" id="L390">        int nChanged = 0;</span>
+<span class="nc" id="L384">        int nChanged = 0;</span>
                 
-<span class="nc" id="L392">        PatternReplacement pr = getPattern2();</span>
+<span class="nc" id="L386">        PatternReplacement pr = getPattern2();</span>
         
-<span class="nc" id="L394">        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, </span>
+<span class="nc" id="L388">        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, </span>
             pr);
            
-<span class="nc" id="L397">        return nChanged;</span>
+<span class="nc" id="L391">        return nChanged;</span>
     }
     
     private PatternReplacement getPattern3() {
@@ -405,32 +399,32 @@ import java.util.Set;
           0  0  0       -1
          -1  0  1  2  3
          */
-<span class="nc" id="L408">        PatternReplacement pr = new PatternReplacement();</span>
-<span class="nc" id="L409">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L410">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L411">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L402">        PatternReplacement pr = new PatternReplacement();</span>
+<span class="nc" id="L403">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L404">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L405">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="nc" id="L413">        pr.zeroes.add(new PairInt(-1, -1)); pr.zeroes.add(new PairInt(-1, 0)); pr.zeroes.add(new PairInt(-1, 1));</span>
-<span class="nc" id="L414">        pr.zeroes.add(new PairInt(0, -1)); pr.zeroes.add(new PairInt(0, 1));</span>
-<span class="nc" id="L415">        pr.zeroes.add(new PairInt(1, -1));</span>
+<span class="nc" id="L407">        pr.zeroes.add(new PairInt(-1, -1)); pr.zeroes.add(new PairInt(-1, 0)); pr.zeroes.add(new PairInt(-1, 1));</span>
+<span class="nc" id="L408">        pr.zeroes.add(new PairInt(0, -1)); pr.zeroes.add(new PairInt(0, 1));</span>
+<span class="nc" id="L409">        pr.zeroes.add(new PairInt(1, -1));</span>
         
-<span class="nc" id="L417">        pr.ones.add(new PairInt(1, 0)); pr.ones.add(new PairInt(1, 1)); </span>
+<span class="nc" id="L411">        pr.ones.add(new PairInt(1, 0)); pr.ones.add(new PairInt(1, 1)); </span>
         
-<span class="nc" id="L419">        pr.changeToZeroes.add(new PairInt(0, 0));</span>
+<span class="nc" id="L413">        pr.changeToZeroes.add(new PairInt(0, 0));</span>
         
-<span class="nc" id="L421">        return pr;</span>
+<span class="nc" id="L415">        return pr;</span>
     }
     
     private int pattern3(Set&lt;PairInt&gt; curve, int imageWidth, int imageHeight) {
       
-<span class="nc" id="L426">        int nChanged = 0;</span>
+<span class="nc" id="L420">        int nChanged = 0;</span>
         
-<span class="nc" id="L428">        PatternReplacement pr = getPattern3();</span>
+<span class="nc" id="L422">        PatternReplacement pr = getPattern3();</span>
         
-<span class="nc" id="L430">        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, </span>
+<span class="nc" id="L424">        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, </span>
             pr);
         
-<span class="nc" id="L433">        return nChanged;</span>
+<span class="nc" id="L427">        return nChanged;</span>
     }
     
     private PatternReplacement getPattern4() {
@@ -441,33 +435,33 @@ import java.util.Set;
           0  0  0       -1
          -1  0  1  2  3
          */
-<span class="nc" id="L444">        PatternReplacement pr = new PatternReplacement();</span>
-<span class="nc" id="L445">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L446">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L447">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L438">        PatternReplacement pr = new PatternReplacement();</span>
+<span class="nc" id="L439">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L440">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L441">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="nc" id="L449">        pr.zeroes.add(new PairInt(-1, -1)); pr.zeroes.add(new PairInt(-1, 0)); pr.zeroes.add(new PairInt(-1, 1));</span>
-<span class="nc" id="L450">        pr.zeroes.add(new PairInt(0, -1)); pr.zeroes.add(new PairInt(0, 1));</span>
-<span class="nc" id="L451">        pr.zeroes.add(new PairInt(1, -1)); pr.zeroes.add(new PairInt(1, 1));</span>
+<span class="nc" id="L443">        pr.zeroes.add(new PairInt(-1, -1)); pr.zeroes.add(new PairInt(-1, 0)); pr.zeroes.add(new PairInt(-1, 1));</span>
+<span class="nc" id="L444">        pr.zeroes.add(new PairInt(0, -1)); pr.zeroes.add(new PairInt(0, 1));</span>
+<span class="nc" id="L445">        pr.zeroes.add(new PairInt(1, -1)); pr.zeroes.add(new PairInt(1, 1));</span>
         
-<span class="nc" id="L453">        pr.ones.add(new PairInt(1, 0)); </span>
-<span class="nc" id="L454">        pr.ones.add(new PairInt(2, 1)); </span>
+<span class="nc" id="L447">        pr.ones.add(new PairInt(1, 0)); </span>
+<span class="nc" id="L448">        pr.ones.add(new PairInt(2, 1)); </span>
         
-<span class="nc" id="L456">        pr.changeToZeroes.add(new PairInt(0, 0));</span>
+<span class="nc" id="L450">        pr.changeToZeroes.add(new PairInt(0, 0));</span>
         
-<span class="nc" id="L458">        return pr;</span>
+<span class="nc" id="L452">        return pr;</span>
     }
     
     private int pattern4(Set&lt;PairInt&gt; curve, int imageWidth, int imageHeight) {
       
-<span class="nc" id="L463">        int nChanged = 0;</span>
+<span class="nc" id="L457">        int nChanged = 0;</span>
                    
-<span class="nc" id="L465">        PatternReplacement pr = getPattern4();</span>
+<span class="nc" id="L459">        PatternReplacement pr = getPattern4();</span>
         
-<span class="nc" id="L467">        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, </span>
+<span class="nc" id="L461">        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, </span>
             pr);
         
-<span class="nc" id="L470">        return nChanged;</span>
+<span class="nc" id="L464">        return nChanged;</span>
     }
     
     private PatternReplacement getPattern5() {
@@ -479,34 +473,34 @@ import java.util.Set;
           0  0  0       -1
          -1  0  1  2  3
          */
-<span class="nc" id="L482">        PatternReplacement pr = new PatternReplacement();</span>
-<span class="nc" id="L483">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L484">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L485">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L476">        PatternReplacement pr = new PatternReplacement();</span>
+<span class="nc" id="L477">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L478">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L479">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="nc" id="L487">        pr.zeroes.add(new PairInt(-1, -1)); pr.zeroes.add(new PairInt(-1, 0)); pr.zeroes.add(new PairInt(-1, 1));</span>
-<span class="nc" id="L488">        pr.zeroes.add(new PairInt(0, -1)); pr.zeroes.add(new PairInt(0, 1)); pr.zeroes.add(new PairInt(0, 2));</span>
-<span class="nc" id="L489">        pr.zeroes.add(new PairInt(1, -1)); pr.zeroes.add(new PairInt(1, 0)); pr.zeroes.add(new PairInt(1, 2));</span>
-<span class="nc" id="L490">        pr.zeroes.add(new PairInt(2, 2));</span>
+<span class="nc" id="L481">        pr.zeroes.add(new PairInt(-1, -1)); pr.zeroes.add(new PairInt(-1, 0)); pr.zeroes.add(new PairInt(-1, 1));</span>
+<span class="nc" id="L482">        pr.zeroes.add(new PairInt(0, -1)); pr.zeroes.add(new PairInt(0, 1)); pr.zeroes.add(new PairInt(0, 2));</span>
+<span class="nc" id="L483">        pr.zeroes.add(new PairInt(1, -1)); pr.zeroes.add(new PairInt(1, 0)); pr.zeroes.add(new PairInt(1, 2));</span>
+<span class="nc" id="L484">        pr.zeroes.add(new PairInt(2, 2));</span>
         
-<span class="nc" id="L492">        pr.ones.add(new PairInt(1, 1)); </span>
-<span class="nc" id="L493">        pr.ones.add(new PairInt(2, 1)); </span>
+<span class="nc" id="L486">        pr.ones.add(new PairInt(1, 1)); </span>
+<span class="nc" id="L487">        pr.ones.add(new PairInt(2, 1)); </span>
         
-<span class="nc" id="L495">        pr.changeToZeroes.add(new PairInt(0, 0));</span>
+<span class="nc" id="L489">        pr.changeToZeroes.add(new PairInt(0, 0));</span>
         
-<span class="nc" id="L497">        return pr;</span>
+<span class="nc" id="L491">        return pr;</span>
     }
     
     private int pattern5(Set&lt;PairInt&gt; curve, int imageWidth, int imageHeight) {
       
-<span class="nc" id="L502">        int nChanged = 0;</span>
+<span class="nc" id="L496">        int nChanged = 0;</span>
                         
-<span class="nc" id="L504">        PatternReplacement pr = getPattern5();</span>
+<span class="nc" id="L498">        PatternReplacement pr = getPattern5();</span>
         
-<span class="nc" id="L506">        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, </span>
+<span class="nc" id="L500">        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, </span>
             pr);
         
-<span class="nc" id="L509">        return nChanged;</span>
+<span class="nc" id="L503">        return nChanged;</span>
     }
     
     private PatternReplacement getPattern6() {
@@ -518,33 +512,33 @@ import java.util.Set;
           0  0  0  0    -1
          -2 -1  0  1  2  3
          */
-<span class="nc" id="L521">        PatternReplacement pr = new PatternReplacement();</span>
-<span class="nc" id="L522">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L523">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L524">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L515">        PatternReplacement pr = new PatternReplacement();</span>
+<span class="nc" id="L516">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L517">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L518">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="nc" id="L526">        pr.zeroes.add(new PairInt(-2, -1)); pr.zeroes.add(new PairInt(-2, 0)); pr.zeroes.add(new PairInt(-2, 1));</span>
-<span class="nc" id="L527">        pr.zeroes.add(new PairInt(-1, -1)); pr.zeroes.add(new PairInt(-1, 0));</span>
-<span class="nc" id="L528">        pr.zeroes.add(new PairInt(0, -1)); pr.zeroes.add(new PairInt(0, 1));</span>
-<span class="nc" id="L529">        pr.zeroes.add(new PairInt(1, -1)); pr.zeroes.add(new PairInt(1, 0)); pr.zeroes.add(new PairInt(1, 1));</span>
+<span class="nc" id="L520">        pr.zeroes.add(new PairInt(-2, -1)); pr.zeroes.add(new PairInt(-2, 0)); pr.zeroes.add(new PairInt(-2, 1));</span>
+<span class="nc" id="L521">        pr.zeroes.add(new PairInt(-1, -1)); pr.zeroes.add(new PairInt(-1, 0));</span>
+<span class="nc" id="L522">        pr.zeroes.add(new PairInt(0, -1)); pr.zeroes.add(new PairInt(0, 1));</span>
+<span class="nc" id="L523">        pr.zeroes.add(new PairInt(1, -1)); pr.zeroes.add(new PairInt(1, 0)); pr.zeroes.add(new PairInt(1, 1));</span>
         
-<span class="nc" id="L531">        pr.ones.add(new PairInt(-1, 1)); pr.ones.add(new PairInt(-1, 2));</span>
+<span class="nc" id="L525">        pr.ones.add(new PairInt(-1, 1)); pr.ones.add(new PairInt(-1, 2));</span>
         
-<span class="nc" id="L533">        pr.changeToZeroes.add(new PairInt(0, 0));</span>
+<span class="nc" id="L527">        pr.changeToZeroes.add(new PairInt(0, 0));</span>
         
-<span class="nc" id="L535">        return pr;</span>
+<span class="nc" id="L529">        return pr;</span>
     }
     
     private int pattern6(Set&lt;PairInt&gt; curve, int imageWidth, int imageHeight) {
         
-<span class="nc" id="L540">        PatternReplacement pr = getPattern6();</span>
+<span class="nc" id="L534">        PatternReplacement pr = getPattern6();</span>
        
-<span class="nc" id="L542">        int nChanged = 0;</span>
+<span class="nc" id="L536">        int nChanged = 0;</span>
                         
-<span class="nc" id="L544">        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, </span>
+<span class="nc" id="L538">        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, </span>
             pr);
         
-<span class="nc" id="L547">        return nChanged;</span>
+<span class="nc" id="L541">        return nChanged;</span>
     }
     
     private PatternReplacement getPattern7() {
@@ -556,34 +550,34 @@ import java.util.Set;
           0  0  0       -1
          -1  0  1  2  3
          */
-<span class="nc" id="L559">        PatternReplacement pr = new PatternReplacement();</span>
-<span class="nc" id="L560">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L561">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L562">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L553">        PatternReplacement pr = new PatternReplacement();</span>
+<span class="nc" id="L554">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L555">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L556">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="nc" id="L564">        pr.zeroes.add(new PairInt(-1, -1)); pr.zeroes.add(new PairInt(-1, 0)); pr.zeroes.add(new PairInt(-1, 1));</span>
-<span class="nc" id="L565">        pr.zeroes.add(new PairInt(0, -1)); pr.zeroes.add(new PairInt(0, 1)); pr.zeroes.add(new PairInt(0, 2));</span>
-<span class="nc" id="L566">        pr.zeroes.add(new PairInt(1, -1)); pr.zeroes.add(new PairInt(1, 0)); pr.zeroes.add(new PairInt(1, 2));</span>
-<span class="nc" id="L567">        pr.zeroes.add(new PairInt(2, 0));</span>
+<span class="nc" id="L558">        pr.zeroes.add(new PairInt(-1, -1)); pr.zeroes.add(new PairInt(-1, 0)); pr.zeroes.add(new PairInt(-1, 1));</span>
+<span class="nc" id="L559">        pr.zeroes.add(new PairInt(0, -1)); pr.zeroes.add(new PairInt(0, 1)); pr.zeroes.add(new PairInt(0, 2));</span>
+<span class="nc" id="L560">        pr.zeroes.add(new PairInt(1, -1)); pr.zeroes.add(new PairInt(1, 0)); pr.zeroes.add(new PairInt(1, 2));</span>
+<span class="nc" id="L561">        pr.zeroes.add(new PairInt(2, 0));</span>
         
-<span class="nc" id="L569">        pr.ones.add(new PairInt(1, 1)); </span>
-<span class="nc" id="L570">        pr.ones.add(new PairInt(2, 1)); </span>
+<span class="nc" id="L563">        pr.ones.add(new PairInt(1, 1)); </span>
+<span class="nc" id="L564">        pr.ones.add(new PairInt(2, 1)); </span>
         
-<span class="nc" id="L572">        pr.changeToZeroes.add(new PairInt(0, 0));</span>
+<span class="nc" id="L566">        pr.changeToZeroes.add(new PairInt(0, 0));</span>
         
-<span class="nc" id="L574">        return pr;</span>
+<span class="nc" id="L568">        return pr;</span>
     }
     
     private int pattern7(Set&lt;PairInt&gt; curve, int imageWidth, int imageHeight) {
         
-<span class="nc" id="L579">        PatternReplacement pr = getPattern7();</span>
+<span class="nc" id="L573">        PatternReplacement pr = getPattern7();</span>
         
-<span class="nc" id="L581">        int nChanged = 0;</span>
+<span class="nc" id="L575">        int nChanged = 0;</span>
                         
-<span class="nc" id="L583">        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, </span>
+<span class="nc" id="L577">        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, </span>
             pr);
         
-<span class="nc" id="L586">        return nChanged;</span>
+<span class="nc" id="L580">        return nChanged;</span>
     }
     
     private PatternReplacement getPattern8() {
@@ -595,34 +589,34 @@ import java.util.Set;
           0  0  0  0    -2
          -1  0  1  2  3
          */
-<span class="nc" id="L598">        PatternReplacement pr = new PatternReplacement();</span>
-<span class="nc" id="L599">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L600">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L601">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L592">        PatternReplacement pr = new PatternReplacement();</span>
+<span class="nc" id="L593">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L594">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L595">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="nc" id="L603">        pr.zeroes.add(new PairInt(-1, -1)); pr.zeroes.add(new PairInt(-1, 0)); pr.zeroes.add(new PairInt(-1, 1));</span>
-<span class="nc" id="L604">        pr.zeroes.add(new PairInt(0, -2)); pr.zeroes.add(new PairInt(0, -1));</span>
-<span class="nc" id="L605">        pr.zeroes.add(new PairInt(1, -2)); pr.zeroes.add(new PairInt(1, 0)); pr.zeroes.add(new PairInt(1, 1));</span>
-<span class="nc" id="L606">        pr.zeroes.add(new PairInt(2, -2)); pr.zeroes.add(new PairInt(2, -1)); pr.zeroes.add(new PairInt(2, 0));</span>
+<span class="nc" id="L597">        pr.zeroes.add(new PairInt(-1, -1)); pr.zeroes.add(new PairInt(-1, 0)); pr.zeroes.add(new PairInt(-1, 1));</span>
+<span class="nc" id="L598">        pr.zeroes.add(new PairInt(0, -2)); pr.zeroes.add(new PairInt(0, -1));</span>
+<span class="nc" id="L599">        pr.zeroes.add(new PairInt(1, -2)); pr.zeroes.add(new PairInt(1, 0)); pr.zeroes.add(new PairInt(1, 1));</span>
+<span class="nc" id="L600">        pr.zeroes.add(new PairInt(2, -2)); pr.zeroes.add(new PairInt(2, -1)); pr.zeroes.add(new PairInt(2, 0));</span>
         
-<span class="nc" id="L608">        pr.ones.add(new PairInt(0, 1)); </span>
-<span class="nc" id="L609">        pr.ones.add(new PairInt(1, -1)); </span>
+<span class="nc" id="L602">        pr.ones.add(new PairInt(0, 1)); </span>
+<span class="nc" id="L603">        pr.ones.add(new PairInt(1, -1)); </span>
         
-<span class="nc" id="L611">        pr.changeToZeroes.add(new PairInt(1, -1));</span>
+<span class="nc" id="L605">        pr.changeToZeroes.add(new PairInt(1, -1));</span>
         
-<span class="nc" id="L613">        return pr;</span>
+<span class="nc" id="L607">        return pr;</span>
     }
     
     private int pattern8(Set&lt;PairInt&gt; curve, int imageWidth, int imageHeight) {
         
-<span class="nc" id="L618">        PatternReplacement pr = getPattern8();</span>
+<span class="nc" id="L612">        PatternReplacement pr = getPattern8();</span>
         
-<span class="nc" id="L620">        int nChanged = 0;</span>
+<span class="nc" id="L614">        int nChanged = 0;</span>
                         
-<span class="nc" id="L622">        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, </span>
+<span class="nc" id="L616">        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, </span>
             pr);
         
-<span class="nc" id="L625">        return nChanged;</span>
+<span class="nc" id="L619">        return nChanged;</span>
     }
     
     private PatternReplacement getPattern9() {
@@ -635,34 +629,34 @@ import java.util.Set;
           0  0  0  0    -2
          -1  0  1  2  3
          */
-<span class="nc" id="L638">        PatternReplacement pr = new PatternReplacement();</span>
-<span class="nc" id="L639">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L640">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L641">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L632">        PatternReplacement pr = new PatternReplacement();</span>
+<span class="nc" id="L633">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L634">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L635">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="nc" id="L643">        pr.zeroes.add(new PairInt(-1, -2)); pr.zeroes.add(new PairInt(-1, 0));</span>
-<span class="nc" id="L644">        pr.zeroes.add(new PairInt(0, -2)); pr.zeroes.add(new PairInt(0, -1)); pr.zeroes.add(new PairInt(0, 1));</span>
-<span class="nc" id="L645">        pr.zeroes.add(new PairInt(1, -2)); pr.zeroes.add(new PairInt(1, 0)); pr.zeroes.add(new PairInt(1, 1));</span>
-<span class="nc" id="L646">        pr.zeroes.add(new PairInt(2, -2)); pr.zeroes.add(new PairInt(2, -1)); pr.zeroes.add(new PairInt(2, 0));</span>
+<span class="nc" id="L637">        pr.zeroes.add(new PairInt(-1, -2)); pr.zeroes.add(new PairInt(-1, 0));</span>
+<span class="nc" id="L638">        pr.zeroes.add(new PairInt(0, -2)); pr.zeroes.add(new PairInt(0, -1)); pr.zeroes.add(new PairInt(0, 1));</span>
+<span class="nc" id="L639">        pr.zeroes.add(new PairInt(1, -2)); pr.zeroes.add(new PairInt(1, 0)); pr.zeroes.add(new PairInt(1, 1));</span>
+<span class="nc" id="L640">        pr.zeroes.add(new PairInt(2, -2)); pr.zeroes.add(new PairInt(2, -1)); pr.zeroes.add(new PairInt(2, 0));</span>
         
-<span class="nc" id="L648">        pr.ones.add(new PairInt(-1, -1)); pr.ones.add(new PairInt(-1, 1));</span>
-<span class="nc" id="L649">        pr.ones.add(new PairInt(1, -1)); </span>
+<span class="nc" id="L642">        pr.ones.add(new PairInt(-1, -1)); pr.ones.add(new PairInt(-1, 1));</span>
+<span class="nc" id="L643">        pr.ones.add(new PairInt(1, -1)); </span>
         
-<span class="nc" id="L651">        pr.changeToZeroes.add(new PairInt(1, -1));</span>
+<span class="nc" id="L645">        pr.changeToZeroes.add(new PairInt(1, -1));</span>
         
-<span class="nc" id="L653">        return pr;</span>
+<span class="nc" id="L647">        return pr;</span>
     }
     
     private int pattern9(Set&lt;PairInt&gt; curve, int imageWidth, int imageHeight) {
        
-<span class="nc" id="L658">        int nChanged = 0;</span>
+<span class="nc" id="L652">        int nChanged = 0;</span>
                   
-<span class="nc" id="L660">        PatternReplacement pr = getPattern9();</span>
+<span class="nc" id="L654">        PatternReplacement pr = getPattern9();</span>
         
-<span class="nc" id="L662">        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, </span>
+<span class="nc" id="L656">        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, </span>
             pr);
         
-<span class="nc" id="L665">        return nChanged;</span>
+<span class="nc" id="L659">        return nChanged;</span>
     }
     
     private PatternReplacement getPattern10() {
@@ -675,34 +669,34 @@ import java.util.Set;
              0  0  0  0    -2
             -1  0  1  2  3
          */
-<span class="nc" id="L678">        PatternReplacement pr = new PatternReplacement();</span>
-<span class="nc" id="L679">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L680">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L681">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L672">        PatternReplacement pr = new PatternReplacement();</span>
+<span class="nc" id="L673">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L674">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L675">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="nc" id="L683">        pr.zeroes.add(new PairInt(-1, -2)); pr.zeroes.add(new PairInt(-1, 0));</span>
-<span class="nc" id="L684">        pr.zeroes.add(new PairInt(0, -2)); pr.zeroes.add(new PairInt(0, -1)); pr.zeroes.add(new PairInt(0, 1));</span>
-<span class="nc" id="L685">        pr.zeroes.add(new PairInt(1, -2)); pr.zeroes.add(new PairInt(1, -1)); pr.zeroes.add(new PairInt(1, 0));</span>
-<span class="nc" id="L686">        pr.zeroes.add(new PairInt(2, -2)); pr.zeroes.add(new PairInt(2, -1)); pr.zeroes.add(new PairInt(2, 0));</span>
+<span class="nc" id="L677">        pr.zeroes.add(new PairInt(-1, -2)); pr.zeroes.add(new PairInt(-1, 0));</span>
+<span class="nc" id="L678">        pr.zeroes.add(new PairInt(0, -2)); pr.zeroes.add(new PairInt(0, -1)); pr.zeroes.add(new PairInt(0, 1));</span>
+<span class="nc" id="L679">        pr.zeroes.add(new PairInt(1, -2)); pr.zeroes.add(new PairInt(1, -1)); pr.zeroes.add(new PairInt(1, 0));</span>
+<span class="nc" id="L680">        pr.zeroes.add(new PairInt(2, -2)); pr.zeroes.add(new PairInt(2, -1)); pr.zeroes.add(new PairInt(2, 0));</span>
         
-<span class="nc" id="L688">        pr.ones.add(new PairInt(-1, 1));</span>
-<span class="nc" id="L689">        pr.ones.add(new PairInt(1, -1)); pr.ones.add(new PairInt(1, 1)); </span>
+<span class="nc" id="L682">        pr.ones.add(new PairInt(-1, 1));</span>
+<span class="nc" id="L683">        pr.ones.add(new PairInt(1, -1)); pr.ones.add(new PairInt(1, 1)); </span>
         
-<span class="nc" id="L691">        pr.changeToZeroes.add(new PairInt(1, -1));</span>
+<span class="nc" id="L685">        pr.changeToZeroes.add(new PairInt(1, -1));</span>
         
-<span class="nc" id="L693">        return pr;</span>
+<span class="nc" id="L687">        return pr;</span>
     }
     
     private int pattern10(Set&lt;PairInt&gt; curve, int imageWidth, int imageHeight) {
        
-<span class="nc" id="L698">        int nChanged = 0;</span>
+<span class="nc" id="L692">        int nChanged = 0;</span>
                     
-<span class="nc" id="L700">        PatternReplacement pr = getPattern10();</span>
+<span class="nc" id="L694">        PatternReplacement pr = getPattern10();</span>
         
-<span class="nc" id="L702">        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, </span>
+<span class="nc" id="L696">        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, </span>
             pr);
         
-<span class="nc" id="L705">        return nChanged;</span>
+<span class="nc" id="L699">        return nChanged;</span>
     }
     
     private PatternReplacement getPattern11() {
@@ -714,35 +708,35 @@ import java.util.Set;
                 0  0  0    -1
             -2 -1  0  1  2  3
          */
-<span class="nc" id="L717">        PatternReplacement pr = new PatternReplacement();</span>
-<span class="nc" id="L718">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L719">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L720">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L711">        PatternReplacement pr = new PatternReplacement();</span>
+<span class="nc" id="L712">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L713">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L714">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="nc" id="L722">        pr.zeroes.add(new PairInt(-2, 0)); pr.zeroes.add(new PairInt(-2, 2));</span>
-<span class="nc" id="L723">        pr.zeroes.add(new PairInt(-1, -1)); pr.zeroes.add(new PairInt(-1, 0)); pr.zeroes.add(new PairInt(-1, 2));</span>
-<span class="nc" id="L724">        pr.zeroes.add(new PairInt(0, -1)); pr.zeroes.add(new PairInt(0, 1));</span>
-<span class="nc" id="L725">        pr.zeroes.add(new PairInt(1, -1)); pr.zeroes.add(new PairInt(1, 0)); pr.zeroes.add(new PairInt(1, 1));</span>
+<span class="nc" id="L716">        pr.zeroes.add(new PairInt(-2, 0)); pr.zeroes.add(new PairInt(-2, 2));</span>
+<span class="nc" id="L717">        pr.zeroes.add(new PairInt(-1, -1)); pr.zeroes.add(new PairInt(-1, 0)); pr.zeroes.add(new PairInt(-1, 2));</span>
+<span class="nc" id="L718">        pr.zeroes.add(new PairInt(0, -1)); pr.zeroes.add(new PairInt(0, 1));</span>
+<span class="nc" id="L719">        pr.zeroes.add(new PairInt(1, -1)); pr.zeroes.add(new PairInt(1, 0)); pr.zeroes.add(new PairInt(1, 1));</span>
         
-<span class="nc" id="L727">        pr.ones.add(new PairInt(-2, 1));</span>
-<span class="nc" id="L728">        pr.ones.add(new PairInt(-1, 1)); </span>
-<span class="nc" id="L729">        pr.ones.add(new PairInt(0, 2)); </span>
+<span class="nc" id="L721">        pr.ones.add(new PairInt(-2, 1));</span>
+<span class="nc" id="L722">        pr.ones.add(new PairInt(-1, 1)); </span>
+<span class="nc" id="L723">        pr.ones.add(new PairInt(0, 2)); </span>
         
-<span class="nc" id="L731">        pr.changeToZeroes.add(new PairInt(0, 0));</span>
+<span class="nc" id="L725">        pr.changeToZeroes.add(new PairInt(0, 0));</span>
         
-<span class="nc" id="L733">        return pr;</span>
+<span class="nc" id="L727">        return pr;</span>
     }
     
     private int pattern11(Set&lt;PairInt&gt; curve, int imageWidth, int imageHeight) {
        
-<span class="nc" id="L738">        int nChanged = 0;</span>
+<span class="nc" id="L732">        int nChanged = 0;</span>
                     
-<span class="nc" id="L740">        PatternReplacement pr = getPattern11();</span>
+<span class="nc" id="L734">        PatternReplacement pr = getPattern11();</span>
         
-<span class="nc" id="L742">        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, </span>
+<span class="nc" id="L736">        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, </span>
             pr);
         
-<span class="nc" id="L745">        return nChanged;</span>
+<span class="nc" id="L739">        return nChanged;</span>
     }
     
     private PatternReplacement getPattern12() {
@@ -753,33 +747,33 @@ import java.util.Set;
                 0  0  0    -1
                -1  0  1  2  3
          */
-<span class="nc" id="L756">        PatternReplacement pr = new PatternReplacement();</span>
-<span class="nc" id="L757">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L758">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L759">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L750">        PatternReplacement pr = new PatternReplacement();</span>
+<span class="nc" id="L751">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L752">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L753">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="nc" id="L761">        pr.zeroes.add(new PairInt(-1, -1)); pr.zeroes.add(new PairInt(-1, 0)); pr.zeroes.add(new PairInt(-1, 1));</span>
-<span class="nc" id="L762">        pr.zeroes.add(new PairInt(0, -1));</span>
-<span class="nc" id="L763">        pr.zeroes.add(new PairInt(1, -1)); pr.zeroes.add(new PairInt(1, 1));</span>
+<span class="nc" id="L755">        pr.zeroes.add(new PairInt(-1, -1)); pr.zeroes.add(new PairInt(-1, 0)); pr.zeroes.add(new PairInt(-1, 1));</span>
+<span class="nc" id="L756">        pr.zeroes.add(new PairInt(0, -1));</span>
+<span class="nc" id="L757">        pr.zeroes.add(new PairInt(1, -1)); pr.zeroes.add(new PairInt(1, 1));</span>
         
-<span class="nc" id="L765">        pr.ones.add(new PairInt(0, 1));</span>
-<span class="nc" id="L766">        pr.ones.add(new PairInt(1, 0)); </span>
+<span class="nc" id="L759">        pr.ones.add(new PairInt(0, 1));</span>
+<span class="nc" id="L760">        pr.ones.add(new PairInt(1, 0)); </span>
         
-<span class="nc" id="L768">        pr.changeToZeroes.add(new PairInt(0, 0));</span>
+<span class="nc" id="L762">        pr.changeToZeroes.add(new PairInt(0, 0));</span>
         
-<span class="nc" id="L770">        return pr;</span>
+<span class="nc" id="L764">        return pr;</span>
     }
     
     private int curveCorrection12(Set&lt;PairInt&gt; curve, int imageWidth, int imageHeight) {
        
-<span class="nc" id="L775">        int nChanged = 0;</span>
+<span class="nc" id="L769">        int nChanged = 0;</span>
                     
-<span class="nc" id="L777">        PatternReplacement pr = getPattern12();</span>
+<span class="nc" id="L771">        PatternReplacement pr = getPattern12();</span>
         
-<span class="nc" id="L779">        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, </span>
+<span class="nc" id="L773">        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, </span>
             pr);
         
-<span class="nc" id="L782">        return nChanged;</span>
+<span class="nc" id="L776">        return nChanged;</span>
     }
     
     private PatternReplacement getPattern13() {
@@ -791,291 +785,291 @@ import java.util.Set;
                 0  0  #    -1
             -2 -1  0  1  2  3
          */
-<span class="nc" id="L794">        PatternReplacement pr = new PatternReplacement();</span>
-<span class="nc" id="L795">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L796">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L797">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L788">        PatternReplacement pr = new PatternReplacement();</span>
+<span class="nc" id="L789">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L790">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L791">        pr.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="nc" id="L799">        pr.zeroes.add(new PairInt(-1, -1)); pr.zeroes.add(new PairInt(-1, 0)); pr.zeroes.add(new PairInt(-1, 1));</span>
-<span class="nc" id="L800">        pr.zeroes.add(new PairInt(0, -1)); pr.zeroes.add(new PairInt(0, 1));</span>
-<span class="nc" id="L801">        pr.zeroes.add(new PairInt(1, 0)); pr.zeroes.add(new PairInt(1, 1));</span>
+<span class="nc" id="L793">        pr.zeroes.add(new PairInt(-1, -1)); pr.zeroes.add(new PairInt(-1, 0)); pr.zeroes.add(new PairInt(-1, 1));</span>
+<span class="nc" id="L794">        pr.zeroes.add(new PairInt(0, -1)); pr.zeroes.add(new PairInt(0, 1));</span>
+<span class="nc" id="L795">        pr.zeroes.add(new PairInt(1, 0)); pr.zeroes.add(new PairInt(1, 1));</span>
         
-<span class="nc" id="L803">        pr.ones.add(new PairInt(1, -1)); </span>
+<span class="nc" id="L797">        pr.ones.add(new PairInt(1, -1)); </span>
         
-<span class="nc" id="L805">        pr.changeToZeroes.add(new PairInt(0, 0));</span>
+<span class="nc" id="L799">        pr.changeToZeroes.add(new PairInt(0, 0));</span>
         
-<span class="nc" id="L807">        return pr;</span>
+<span class="nc" id="L801">        return pr;</span>
     }
     
     private int pattern13(Set&lt;PairInt&gt; curve, int imageWidth, int imageHeight) {
        
-<span class="nc" id="L812">        int nChanged = 0;</span>
+<span class="nc" id="L806">        int nChanged = 0;</span>
                     
-<span class="nc" id="L814">        PatternReplacement pr = getPattern13();</span>
+<span class="nc" id="L808">        PatternReplacement pr = getPattern13();</span>
         
-<span class="nc" id="L816">        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, </span>
+<span class="nc" id="L810">        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, </span>
             pr);
         
-<span class="nc" id="L819">        return nChanged;</span>
+<span class="nc" id="L813">        return nChanged;</span>
     }
     
     private int replacePattern(Set&lt;PairInt&gt; points, int imageWidth, 
         int imageHeight, final PatternReplacement pr) {
         
-<span class="nc" id="L825">        int w = imageWidth;</span>
-<span class="nc" id="L826">        int h = imageHeight;</span>
+<span class="nc" id="L819">        int w = imageWidth;</span>
+<span class="nc" id="L820">        int h = imageHeight;</span>
 
-<span class="nc" id="L828">        Set&lt;PairInt&gt; tmpPointsRemoved = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L829">        Set&lt;PairInt&gt; tmpPointsAdded = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L822">        Set&lt;PairInt&gt; tmpPointsRemoved = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L823">        Set&lt;PairInt&gt; tmpPointsAdded = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="nc bnc" id="L831" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+<span class="nc bnc" id="L825" title="All 2 branches missed.">        for (PairInt p : points) {</span>
             
-<span class="nc" id="L833">            boolean isNotPresent = tmpPointsRemoved.contains(p);</span>
-<span class="nc bnc" id="L834" title="All 2 branches missed.">            if (isNotPresent) {</span>
-<span class="nc" id="L835">                continue;</span>
+<span class="nc" id="L827">            boolean isNotPresent = tmpPointsRemoved.contains(p);</span>
+<span class="nc bnc" id="L828" title="All 2 branches missed.">            if (isNotPresent) {</span>
+<span class="nc" id="L829">                continue;</span>
             }
             
-<span class="nc" id="L838">            int col = p.getX();</span>
-<span class="nc" id="L839">            int row = p.getY();           </span>
+<span class="nc" id="L832">            int col = p.getX();</span>
+<span class="nc" id="L833">            int row = p.getY();           </span>
                 
-<span class="nc" id="L841">            boolean foundPattern = true;</span>
+<span class="nc" id="L835">            boolean foundPattern = true;</span>
             
-<span class="nc bnc" id="L843" title="All 2 branches missed.">            for (PairInt p2 : pr.zeroes) {</span>
-<span class="nc" id="L844">                int x = col + p2.getX();</span>
-<span class="nc" id="L845">                int y = row + p2.getY();</span>
-<span class="nc bnc" id="L846" title="All 8 branches missed.">                if ((x &lt; 0) || (y &lt; 0) || (x &gt; (w - 1)) || (y &gt; (h - 1))) {</span>
+<span class="nc bnc" id="L837" title="All 2 branches missed.">            for (PairInt p2 : pr.zeroes) {</span>
+<span class="nc" id="L838">                int x = col + p2.getX();</span>
+<span class="nc" id="L839">                int y = row + p2.getY();</span>
+<span class="nc bnc" id="L840" title="All 8 branches missed.">                if ((x &lt; 0) || (y &lt; 0) || (x &gt; (w - 1)) || (y &gt; (h - 1))) {</span>
                     //TODO: revisit this
+<span class="nc" id="L842">                    foundPattern = false;</span>
+<span class="nc" id="L843">                    break;</span>
+                }
+<span class="nc" id="L845">                PairInt p3 = new PairInt(x, y);</span>
+<span class="nc bnc" id="L846" title="All 2 branches missed.">                if (!tmpPointsRemoved.contains(p3)</span>
+<span class="nc bnc" id="L847" title="All 4 branches missed.">                    &amp;&amp; (points.contains(p3) || tmpPointsAdded.contains(p3))) {</span>
 <span class="nc" id="L848">                    foundPattern = false;</span>
-<span class="nc" id="L849">                    break;</span>
-                }
-<span class="nc" id="L851">                PairInt p3 = new PairInt(x, y);</span>
-<span class="nc bnc" id="L852" title="All 2 branches missed.">                if (!tmpPointsRemoved.contains(p3)</span>
-<span class="nc bnc" id="L853" title="All 4 branches missed.">                    &amp;&amp; (points.contains(p3) || tmpPointsAdded.contains(p3))) {</span>
-<span class="nc" id="L854">                    foundPattern = false;</span>
               
-<span class="nc" id="L856">                    break;</span>
+<span class="nc" id="L850">                    break;</span>
                 }
-<span class="nc" id="L858">            }</span>
+<span class="nc" id="L852">            }</span>
                
-<span class="nc bnc" id="L860" title="All 2 branches missed.">            if (!foundPattern) {</span>
-<span class="nc" id="L861">                continue;</span>
+<span class="nc bnc" id="L854" title="All 2 branches missed.">            if (!foundPattern) {</span>
+<span class="nc" id="L855">                continue;</span>
             }
 
-<span class="nc bnc" id="L864" title="All 2 branches missed.">            for (PairInt p2 : pr.ones) {</span>
-<span class="nc" id="L865">                int x = col + p2.getX();</span>
-<span class="nc" id="L866">                int y = row + p2.getY();</span>
-<span class="nc bnc" id="L867" title="All 8 branches missed.">                if ((x &lt; 0) || (y &lt; 0) || (x &gt; (w - 1)) || (y &gt; (h - 1))) {</span>
+<span class="nc bnc" id="L858" title="All 2 branches missed.">            for (PairInt p2 : pr.ones) {</span>
+<span class="nc" id="L859">                int x = col + p2.getX();</span>
+<span class="nc" id="L860">                int y = row + p2.getY();</span>
+<span class="nc bnc" id="L861" title="All 8 branches missed.">                if ((x &lt; 0) || (y &lt; 0) || (x &gt; (w - 1)) || (y &gt; (h - 1))) {</span>
+<span class="nc" id="L862">                    foundPattern = false;</span>
+<span class="nc" id="L863">                    break;</span>
+                }
+<span class="nc" id="L865">                PairInt p3 = new PairInt(x, y);</span>
+<span class="nc bnc" id="L866" title="All 2 branches missed.">                if (tmpPointsRemoved.contains(p3) ||</span>
+<span class="nc bnc" id="L867" title="All 4 branches missed.">                    (!points.contains(p3) &amp;&amp; !tmpPointsAdded.contains(p3))) {</span>
 <span class="nc" id="L868">                    foundPattern = false;</span>
-<span class="nc" id="L869">                    break;</span>
-                }
-<span class="nc" id="L871">                PairInt p3 = new PairInt(x, y);</span>
-<span class="nc bnc" id="L872" title="All 2 branches missed.">                if (tmpPointsRemoved.contains(p3) ||</span>
-<span class="nc bnc" id="L873" title="All 4 branches missed.">                    (!points.contains(p3) &amp;&amp; !tmpPointsAdded.contains(p3))) {</span>
-<span class="nc" id="L874">                    foundPattern = false;</span>
 
-<span class="nc" id="L876">                    break;</span>
+<span class="nc" id="L870">                    break;</span>
                 }
-<span class="nc" id="L878">            }</span>
+<span class="nc" id="L872">            }</span>
           
-<span class="nc bnc" id="L880" title="All 2 branches missed.">            if (!foundPattern) {</span>
-<span class="nc" id="L881">                continue;</span>
+<span class="nc bnc" id="L874" title="All 2 branches missed.">            if (!foundPattern) {</span>
+<span class="nc" id="L875">                continue;</span>
             }
             
-<span class="nc bnc" id="L884" title="All 2 branches missed.">            for (PairInt p2 : pr.changeToZeroes) {</span>
-<span class="nc" id="L885">                int x = col + p2.getX();</span>
-<span class="nc" id="L886">                int y = row + p2.getY();</span>
-<span class="nc bnc" id="L887" title="All 8 branches missed.">                if ((x &lt; 0) || (y &lt; 0) || (x &gt; (w - 1)) || (y &gt; (h - 1))) {</span>
-<span class="nc" id="L888">                    continue;</span>
+<span class="nc bnc" id="L878" title="All 2 branches missed.">            for (PairInt p2 : pr.changeToZeroes) {</span>
+<span class="nc" id="L879">                int x = col + p2.getX();</span>
+<span class="nc" id="L880">                int y = row + p2.getY();</span>
+<span class="nc bnc" id="L881" title="All 8 branches missed.">                if ((x &lt; 0) || (y &lt; 0) || (x &gt; (w - 1)) || (y &gt; (h - 1))) {</span>
+<span class="nc" id="L882">                    continue;</span>
                 }
-<span class="nc" id="L890">                PairInt p3 = new PairInt(x, y);</span>
-<span class="nc" id="L891">                tmpPointsAdded.remove(p3);                </span>
-<span class="nc" id="L892">                tmpPointsRemoved.add(p3);</span>
-<span class="nc" id="L893">            }</span>
+<span class="nc" id="L884">                PairInt p3 = new PairInt(x, y);</span>
+<span class="nc" id="L885">                tmpPointsAdded.remove(p3);                </span>
+<span class="nc" id="L886">                tmpPointsRemoved.add(p3);</span>
+<span class="nc" id="L887">            }</span>
+<span class="nc" id="L888">        }</span>
+        
+<span class="nc" id="L890">        int nCorrections = tmpPointsRemoved.size() + tmpPointsAdded.size();</span>
+        
+<span class="nc bnc" id="L892" title="All 2 branches missed.">        for (PairInt p2 : tmpPointsRemoved) {</span>
+<span class="nc" id="L893">            points.remove(p2);</span>
 <span class="nc" id="L894">        }</span>
+<span class="nc bnc" id="L895" title="All 2 branches missed.">        for (PairInt p2 : tmpPointsAdded) {</span>
+<span class="nc" id="L896">            points.add(p2);</span>
+<span class="nc" id="L897">        }</span>
         
-<span class="nc" id="L896">        int nCorrections = tmpPointsRemoved.size() + tmpPointsAdded.size();</span>
-        
-<span class="nc bnc" id="L898" title="All 2 branches missed.">        for (PairInt p2 : tmpPointsRemoved) {</span>
-<span class="nc" id="L899">            points.remove(p2);</span>
-<span class="nc" id="L900">        }</span>
-<span class="nc bnc" id="L901" title="All 2 branches missed.">        for (PairInt p2 : tmpPointsAdded) {</span>
-<span class="nc" id="L902">            points.add(p2);</span>
-<span class="nc" id="L903">        }</span>
-        
-<span class="nc" id="L905">        return nCorrections;</span>
+<span class="nc" id="L899">        return nCorrections;</span>
     }
 
     private int replacePatternSwapDirections(Set&lt;PairInt&gt; curve, 
         int imageWidth, int imageHeight, PatternReplacement pr) {
         
-<span class="nc" id="L911">        int nChanged = replacePattern(curve, imageWidth, imageHeight, pr);</span>
+<span class="nc" id="L905">        int nChanged = replacePattern(curve, imageWidth, imageHeight, pr);</span>
         
         // ----- change the sign of x to handle other direction -----
-<span class="nc" id="L914">        reverseXs(pr);</span>
+<span class="nc" id="L908">        reverseXs(pr);</span>
         
-<span class="nc" id="L916">        nChanged += replacePattern(curve, imageWidth, imageHeight, pr);</span>
+<span class="nc" id="L910">        nChanged += replacePattern(curve, imageWidth, imageHeight, pr);</span>
         
         // ----- change the sign of y to handle other direction -----
-<span class="nc" id="L919">        reverseYs(pr);</span>
+<span class="nc" id="L913">        reverseYs(pr);</span>
         
-<span class="nc" id="L921">        nChanged = replacePattern(curve, imageWidth, imageHeight, pr);</span>
+<span class="nc" id="L915">        nChanged = replacePattern(curve, imageWidth, imageHeight, pr);</span>
         
         // ----- change the sign of x to handle other direction -----
-<span class="nc" id="L924">        reverseXs(pr);</span>
+<span class="nc" id="L918">        reverseXs(pr);</span>
         
-<span class="nc" id="L926">        nChanged += replacePattern(curve, imageWidth, imageHeight, pr);</span>
+<span class="nc" id="L920">        nChanged += replacePattern(curve, imageWidth, imageHeight, pr);</span>
         
         // ----- change the sign of y to handle other direction -----
-<span class="nc" id="L929">        reverseYs(pr);</span>
+<span class="nc" id="L923">        reverseYs(pr);</span>
         
-<span class="nc" id="L931">        return nChanged;</span>
+<span class="nc" id="L925">        return nChanged;</span>
     }
     
     protected void reverseXs(final PatternReplacement pr) {
         
         // ----- change the sign of x to handle other direction -----
-<span class="nc bnc" id="L937" title="All 2 branches missed.">        for (PairInt p : pr.zeroes) {</span>
-<span class="nc" id="L938">            p.setX(-1 * p.getX());</span>
-<span class="nc" id="L939">        }</span>
+<span class="nc bnc" id="L931" title="All 2 branches missed.">        for (PairInt p : pr.zeroes) {</span>
+<span class="nc" id="L932">            p.setX(-1 * p.getX());</span>
+<span class="nc" id="L933">        }</span>
         
-<span class="nc bnc" id="L941" title="All 2 branches missed.">        for (PairInt p : pr.ones) {</span>
-<span class="nc" id="L942">            p.setX(-1 * p.getX());</span>
-<span class="nc" id="L943">        }</span>
+<span class="nc bnc" id="L935" title="All 2 branches missed.">        for (PairInt p : pr.ones) {</span>
+<span class="nc" id="L936">            p.setX(-1 * p.getX());</span>
+<span class="nc" id="L937">        }</span>
           
-<span class="nc bnc" id="L945" title="All 2 branches missed.">        for (PairInt p : pr.changeToZeroes) {</span>
-<span class="nc" id="L946">            p.setX(-1 * p.getX());</span>
-<span class="nc" id="L947">        }</span>
-<span class="nc" id="L948">    }</span>
+<span class="nc bnc" id="L939" title="All 2 branches missed.">        for (PairInt p : pr.changeToZeroes) {</span>
+<span class="nc" id="L940">            p.setX(-1 * p.getX());</span>
+<span class="nc" id="L941">        }</span>
+<span class="nc" id="L942">    }</span>
     
     protected void reverseYs(final PatternReplacement pr) {
         
         // ----- change the sign of y  -----
-<span class="nc bnc" id="L953" title="All 2 branches missed.">        for (PairInt p : pr.zeroes) {</span>
-<span class="nc" id="L954">            p.setY(-1 * p.getY());</span>
-<span class="nc" id="L955">        }</span>
+<span class="nc bnc" id="L947" title="All 2 branches missed.">        for (PairInt p : pr.zeroes) {</span>
+<span class="nc" id="L948">            p.setY(-1 * p.getY());</span>
+<span class="nc" id="L949">        }</span>
         
-<span class="nc bnc" id="L957" title="All 2 branches missed.">        for (PairInt p : pr.ones) {</span>
-<span class="nc" id="L958">            p.setY(-1 * p.getY());</span>
-<span class="nc" id="L959">        }</span>
+<span class="nc bnc" id="L951" title="All 2 branches missed.">        for (PairInt p : pr.ones) {</span>
+<span class="nc" id="L952">            p.setY(-1 * p.getY());</span>
+<span class="nc" id="L953">        }</span>
         
-<span class="nc bnc" id="L961" title="All 2 branches missed.">        for (PairInt p : pr.changeToZeroes) {</span>
-<span class="nc" id="L962">            p.setY(-1 * p.getY());</span>
-<span class="nc" id="L963">        }</span>
-<span class="nc" id="L964">    }</span>
+<span class="nc bnc" id="L955" title="All 2 branches missed.">        for (PairInt p : pr.changeToZeroes) {</span>
+<span class="nc" id="L956">            p.setY(-1 * p.getY());</span>
+<span class="nc" id="L957">        }</span>
+<span class="nc" id="L958">    }</span>
     
     private boolean testPatternSwapDirections(
         final int xCoord, final int yCoord, Set&lt;PairInt&gt; curve, 
         int imageWidth, int imageHeight, PatternReplacement pr) {
         
-<span class="nc" id="L970">        boolean hasPattern = testPattern(xCoord, yCoord, curve, imageWidth, </span>
+<span class="nc" id="L964">        boolean hasPattern = testPattern(xCoord, yCoord, curve, imageWidth, </span>
             imageHeight, pr);
         
-<span class="nc bnc" id="L973" title="All 2 branches missed.">        if (hasPattern) {</span>
-<span class="nc" id="L974">            return hasPattern;</span>
+<span class="nc bnc" id="L967" title="All 2 branches missed.">        if (hasPattern) {</span>
+<span class="nc" id="L968">            return hasPattern;</span>
         }
         
         // ----- change the sign of x to handle other direction -----
-<span class="nc" id="L978">        reverseXs(pr);</span>
+<span class="nc" id="L972">        reverseXs(pr);</span>
         
-<span class="nc" id="L980">        hasPattern = testPattern(xCoord, yCoord, curve, imageWidth, </span>
+<span class="nc" id="L974">        hasPattern = testPattern(xCoord, yCoord, curve, imageWidth, </span>
             imageHeight, pr);
         
-<span class="nc bnc" id="L983" title="All 2 branches missed.">        if (hasPattern) {</span>
-<span class="nc" id="L984">            return hasPattern;</span>
+<span class="nc bnc" id="L977" title="All 2 branches missed.">        if (hasPattern) {</span>
+<span class="nc" id="L978">            return hasPattern;</span>
         }
         
         // ----- change the sign of y to handle other direction -----
-<span class="nc" id="L988">        reverseYs(pr);</span>
+<span class="nc" id="L982">        reverseYs(pr);</span>
         
-<span class="nc" id="L990">        hasPattern = testPattern(xCoord, yCoord, curve, imageWidth, </span>
+<span class="nc" id="L984">        hasPattern = testPattern(xCoord, yCoord, curve, imageWidth, </span>
             imageHeight, pr);
         
-<span class="nc bnc" id="L993" title="All 2 branches missed.">        if (hasPattern) {</span>
-<span class="nc" id="L994">            return hasPattern;</span>
+<span class="nc bnc" id="L987" title="All 2 branches missed.">        if (hasPattern) {</span>
+<span class="nc" id="L988">            return hasPattern;</span>
         }
         
         // ----- change the sign of x to handle other direction -----
-<span class="nc" id="L998">        reverseXs(pr);</span>
+<span class="nc" id="L992">        reverseXs(pr);</span>
         
-<span class="nc" id="L1000">        hasPattern = testPattern(xCoord, yCoord, curve, imageWidth, </span>
+<span class="nc" id="L994">        hasPattern = testPattern(xCoord, yCoord, curve, imageWidth, </span>
             imageHeight, pr);
         
-<span class="nc bnc" id="L1003" title="All 2 branches missed.">        if (hasPattern) {</span>
-<span class="nc" id="L1004">            return hasPattern;</span>
+<span class="nc bnc" id="L997" title="All 2 branches missed.">        if (hasPattern) {</span>
+<span class="nc" id="L998">            return hasPattern;</span>
         }
         
         // ----- change the sign of y to handle other direction -----
-<span class="nc" id="L1008">        reverseYs(pr);</span>
+<span class="nc" id="L1002">        reverseYs(pr);</span>
         
-<span class="nc" id="L1010">        return hasPattern;</span>
+<span class="nc" id="L1004">        return hasPattern;</span>
     }
     
     private boolean testPattern(int xCoord, int yCoord, Set&lt;PairInt&gt; points, 
         int imageWidth, int imageHeight, final PatternReplacement pr) {
         
-<span class="nc" id="L1016">        int w = imageWidth;</span>
-<span class="nc" id="L1017">        int h = imageHeight;</span>
+<span class="nc" id="L1010">        int w = imageWidth;</span>
+<span class="nc" id="L1011">        int h = imageHeight;</span>
 
-<span class="nc" id="L1019">        Set&lt;PairInt&gt; tmpPointsRemoved = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L1013">        Set&lt;PairInt&gt; tmpPointsRemoved = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="nc" id="L1021">        PairInt p = new PairInt(xCoord, yCoord);</span>
+<span class="nc" id="L1015">        PairInt p = new PairInt(xCoord, yCoord);</span>
             
-<span class="nc bnc" id="L1023" title="All 2 branches missed.">        if (!points.contains(p)) {</span>
-<span class="nc" id="L1024">            return false;</span>
+<span class="nc bnc" id="L1017" title="All 2 branches missed.">        if (!points.contains(p)) {</span>
+<span class="nc" id="L1018">            return false;</span>
         }
             
-<span class="nc" id="L1027">        boolean foundPattern = true;</span>
+<span class="nc" id="L1021">        boolean foundPattern = true;</span>
 
-<span class="nc bnc" id="L1029" title="All 2 branches missed.">        for (PairInt p2 : pr.zeroes) {</span>
-<span class="nc" id="L1030">            int x = xCoord + p2.getX();</span>
-<span class="nc" id="L1031">            int y = yCoord + p2.getY();</span>
-<span class="nc bnc" id="L1032" title="All 8 branches missed.">            if ((x &lt; 0) || (y &lt; 0) || (x &gt; (w - 1)) || (y &gt; (h - 1))) {</span>
+<span class="nc bnc" id="L1023" title="All 2 branches missed.">        for (PairInt p2 : pr.zeroes) {</span>
+<span class="nc" id="L1024">            int x = xCoord + p2.getX();</span>
+<span class="nc" id="L1025">            int y = yCoord + p2.getY();</span>
+<span class="nc bnc" id="L1026" title="All 8 branches missed.">            if ((x &lt; 0) || (y &lt; 0) || (x &gt; (w - 1)) || (y &gt; (h - 1))) {</span>
                 //TODO: revisit this
-<span class="nc" id="L1034">                foundPattern = false;</span>
-<span class="nc" id="L1035">                break;</span>
+<span class="nc" id="L1028">                foundPattern = false;</span>
+<span class="nc" id="L1029">                break;</span>
             }
-<span class="nc" id="L1037">            PairInt p3 = new PairInt(x, y);</span>
-<span class="nc bnc" id="L1038" title="All 4 branches missed.">            if (!tmpPointsRemoved.contains(p3) &amp;&amp; points.contains(p3)) {</span>
-<span class="nc" id="L1039">                foundPattern = false;</span>
-<span class="nc" id="L1040">                break;</span>
+<span class="nc" id="L1031">            PairInt p3 = new PairInt(x, y);</span>
+<span class="nc bnc" id="L1032" title="All 4 branches missed.">            if (!tmpPointsRemoved.contains(p3) &amp;&amp; points.contains(p3)) {</span>
+<span class="nc" id="L1033">                foundPattern = false;</span>
+<span class="nc" id="L1034">                break;</span>
             }
-<span class="nc" id="L1042">        }</span>
+<span class="nc" id="L1036">        }</span>
                
-<span class="nc bnc" id="L1044" title="All 2 branches missed.">        if (!foundPattern) {</span>
-<span class="nc" id="L1045">            return false;</span>
+<span class="nc bnc" id="L1038" title="All 2 branches missed.">        if (!foundPattern) {</span>
+<span class="nc" id="L1039">            return false;</span>
         }
 
-<span class="nc bnc" id="L1048" title="All 2 branches missed.">        for (PairInt p2 : pr.ones) {</span>
-<span class="nc" id="L1049">            int x = xCoord + p2.getX();</span>
-<span class="nc" id="L1050">            int y = yCoord + p2.getY();</span>
-<span class="nc bnc" id="L1051" title="All 8 branches missed.">            if ((x &lt; 0) || (y &lt; 0) || (x &gt; (w - 1)) || (y &gt; (h - 1))) {</span>
-<span class="nc" id="L1052">                foundPattern = false;</span>
-<span class="nc" id="L1053">                break;</span>
+<span class="nc bnc" id="L1042" title="All 2 branches missed.">        for (PairInt p2 : pr.ones) {</span>
+<span class="nc" id="L1043">            int x = xCoord + p2.getX();</span>
+<span class="nc" id="L1044">            int y = yCoord + p2.getY();</span>
+<span class="nc bnc" id="L1045" title="All 8 branches missed.">            if ((x &lt; 0) || (y &lt; 0) || (x &gt; (w - 1)) || (y &gt; (h - 1))) {</span>
+<span class="nc" id="L1046">                foundPattern = false;</span>
+<span class="nc" id="L1047">                break;</span>
             }
-<span class="nc" id="L1055">            PairInt p3 = new PairInt(x, y);</span>
-<span class="nc bnc" id="L1056" title="All 4 branches missed.">            if (tmpPointsRemoved.contains(p3) || !points.contains(p3)) {</span>
-<span class="nc" id="L1057">                foundPattern = false;</span>
-<span class="nc" id="L1058">                break;</span>
+<span class="nc" id="L1049">            PairInt p3 = new PairInt(x, y);</span>
+<span class="nc bnc" id="L1050" title="All 4 branches missed.">            if (tmpPointsRemoved.contains(p3) || !points.contains(p3)) {</span>
+<span class="nc" id="L1051">                foundPattern = false;</span>
+<span class="nc" id="L1052">                break;</span>
             }
-<span class="nc" id="L1060">        }</span>
+<span class="nc" id="L1054">        }</span>
           
-<span class="nc bnc" id="L1062" title="All 2 branches missed.">        if (!foundPattern) {</span>
-<span class="nc" id="L1063">            return false;</span>
+<span class="nc bnc" id="L1056" title="All 2 branches missed.">        if (!foundPattern) {</span>
+<span class="nc" id="L1057">            return false;</span>
         }
             
-<span class="nc bnc" id="L1066" title="All 2 branches missed.">        for (PairInt p2 : pr.changeToZeroes) {</span>
-<span class="nc" id="L1067">            int x = xCoord + p2.getX();</span>
-<span class="nc" id="L1068">            int y = yCoord + p2.getY();</span>
-<span class="nc bnc" id="L1069" title="All 8 branches missed.">            if ((x &lt; 0) || (y &lt; 0) || (x &gt; (w - 1)) || (y &gt; (h - 1))) {</span>
-<span class="nc" id="L1070">                continue;</span>
+<span class="nc bnc" id="L1060" title="All 2 branches missed.">        for (PairInt p2 : pr.changeToZeroes) {</span>
+<span class="nc" id="L1061">            int x = xCoord + p2.getX();</span>
+<span class="nc" id="L1062">            int y = yCoord + p2.getY();</span>
+<span class="nc bnc" id="L1063" title="All 8 branches missed.">            if ((x &lt; 0) || (y &lt; 0) || (x &gt; (w - 1)) || (y &gt; (h - 1))) {</span>
+<span class="nc" id="L1064">                continue;</span>
             }
-<span class="nc" id="L1072">            PairInt p3 = new PairInt(x, y);</span>
-<span class="nc" id="L1073">            tmpPointsRemoved.add(p3);</span>
-<span class="nc" id="L1074">        }</span>
+<span class="nc" id="L1066">            PairInt p3 = new PairInt(x, y);</span>
+<span class="nc" id="L1067">            tmpPointsRemoved.add(p3);</span>
+<span class="nc" id="L1068">        }</span>
         
-<span class="nc" id="L1076">        int nCorrections = tmpPointsRemoved.size();</span>
+<span class="nc" id="L1070">        int nCorrections = tmpPointsRemoved.size();</span>
         
-<span class="nc bnc" id="L1078" title="All 2 branches missed.">        return (nCorrections &gt; 0);</span>
+<span class="nc bnc" id="L1072" title="All 2 branches missed.">        return (nCorrections &gt; 0);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -121,13 +121,13 @@ import algorithms.imageProcessing.transform.Transformer;
      */
     public static int[] getQuartiles(List&lt;Integer&gt; a) {
         
-<span class="fc" id="L124">        int n = a.size();</span>
+<span class="nc" id="L124">        int n = a.size();</span>
         
-<span class="pc bpc" id="L126" title="1 of 2 branches missed.">        if (n &lt; 3) {</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">        if (n &lt; 3) {</span>
 <span class="nc" id="L127">            throw new IllegalArgumentException(&quot;a.length must be at least 3&quot;);</span>
         }
                 
-<span class="fc" id="L130">        Collections.sort(a);</span>
+<span class="nc" id="L130">        Collections.sort(a);</span>
         
         /*
                       median
@@ -137,14 +137,14 @@ import algorithms.imageProcessing.transform.Transformer;
                 q1   q2   q3   q4
         */
         
-<span class="fc" id="L140">        int medianIdx = n &gt;&gt; 1;</span>
+<span class="nc" id="L140">        int medianIdx = n &gt;&gt; 1;</span>
         
-<span class="fc" id="L142">        int q12Idx = (medianIdx - 1) &gt;&gt; 1;</span>
+<span class="nc" id="L142">        int q12Idx = (medianIdx - 1) &gt;&gt; 1;</span>
         
-<span class="fc" id="L144">        int q34Idx = (n + (medianIdx + 1))/2;</span>
+<span class="nc" id="L144">        int q34Idx = (n + (medianIdx + 1))/2;</span>
                 
-<span class="fc" id="L146">        return new int[]{a.get(q12Idx).intValue(), a.get(medianIdx).intValue(), </span>
-<span class="fc" id="L147">            a.get(q34Idx).intValue(), a.get(n - 1).intValue()};</span>
+<span class="nc" id="L146">        return new int[]{a.get(q12Idx).intValue(), a.get(medianIdx).intValue(), </span>
+<span class="nc" id="L147">            a.get(q34Idx).intValue(), a.get(n - 1).intValue()};</span>
     }
     
     public static int[] getQuartiles(int[] a) {

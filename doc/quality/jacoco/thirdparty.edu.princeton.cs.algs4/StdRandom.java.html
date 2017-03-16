@@ -93,9 +93,9 @@ import java.util.Random;
      * @param s the seed
      */
     public static void setSeed(long s) {
-<span class="nc" id="L96">        seed   = s;</span>
-<span class="nc" id="L97">        random = new Random(seed);</span>
-<span class="nc" id="L98">    }</span>
+<span class="fc" id="L96">        seed   = s;</span>
+<span class="fc" id="L97">        random = new Random(seed);</span>
+<span class="fc" id="L98">    }</span>
 
     /**
      * Returns the seed of the pseudorandom number generator.
@@ -103,7 +103,7 @@ import java.util.Random;
      * @return the seed
      */
     public static long getSeed() {
-<span class="nc" id="L106">        return seed;</span>
+<span class="fc" id="L106">        return seed;</span>
     }
 
     /**
@@ -123,8 +123,8 @@ import java.util.Random;
      * @throws IllegalArgumentException if &lt;tt&gt;n &lt;= 0&lt;/tt&gt;
      */
     public static int uniform(int n) {
-<span class="nc bnc" id="L126" title="All 2 branches missed.">        if (n &lt;= 0) throw new IllegalArgumentException(&quot;Parameter N must be positive&quot;);</span>
-<span class="nc" id="L127">        return random.nextInt(n);</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">        if (n &lt;= 0) throw new IllegalArgumentException(&quot;Parameter N must be positive&quot;);</span>
+<span class="fc" id="L127">        return random.nextInt(n);</span>
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -167,8 +167,8 @@ import java.util.Random;
      * @throws IllegalArgumentException unless &lt;tt&gt;a &lt; b&lt;/tt&gt;
      */
     public static double uniform(double a, double b) {
-<span class="nc bnc" id="L170" title="All 2 branches missed.">        if (!(a &lt; b)) throw new IllegalArgumentException(&quot;Invalid range&quot;);</span>
-<span class="nc" id="L171">        return a + uniform() * (b-a);</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">        if (!(a &lt; b)) throw new IllegalArgumentException(&quot;Invalid range&quot;);</span>
+<span class="fc" id="L171">        return a + uniform() * (b-a);</span>
     }
 
     /**
@@ -207,11 +207,11 @@ import java.util.Random;
         // use the polar form of the Box-Muller transform
         double r, x, y;
         do {
-<span class="nc" id="L210">            x = uniform(-1.0, 1.0);</span>
-<span class="nc" id="L211">            y = uniform(-1.0, 1.0);</span>
-<span class="nc" id="L212">            r = x*x + y*y;</span>
-<span class="nc bnc" id="L213" title="All 4 branches missed.">        } while (r &gt;= 1 || r == 0);</span>
-<span class="nc" id="L214">        return x * Math.sqrt(-2 * Math.log(r) / r);</span>
+<span class="fc" id="L210">            x = uniform(-1.0, 1.0);</span>
+<span class="fc" id="L211">            y = uniform(-1.0, 1.0);</span>
+<span class="fc" id="L212">            r = x*x + y*y;</span>
+<span class="pc bpc" id="L213" title="1 of 4 branches missed.">        } while (r &gt;= 1 || r == 0);</span>
+<span class="fc" id="L214">        return x * Math.sqrt(-2 * Math.log(r) / r);</span>
 
         // Remark:  y * Math.sqrt(-2 * Math.log(r) / r)
         // is an independent random gaussian
@@ -227,7 +227,7 @@ import java.util.Random;
      *         with mean &lt;tt&gt;mu&lt;/tt&gt; and standard deviation &lt;tt&gt;sigma&lt;/tt&gt;
      */
     public static double gaussian(double mu, double sigma) {
-<span class="nc" id="L230">        return mu + sigma * gaussian();</span>
+<span class="fc" id="L230">        return mu + sigma * gaussian();</span>
     }
 
     /**
@@ -315,25 +315,25 @@ import java.util.Random;
      * @throws IllegalArgumentException unless &lt;tt&gt;probabilities[i] &gt;= 0.0&lt;/tt&gt; for each index &lt;tt&gt;i&lt;/tt&gt;
      */
     public static int discrete(double[] probabilities) {
-<span class="nc bnc" id="L318" title="All 2 branches missed.">        if (probabilities == null) throw new NullPointerException(&quot;argument array is null&quot;);</span>
-<span class="nc" id="L319">        double EPSILON = 1E-14;</span>
-<span class="nc" id="L320">        double sum = 0.0;</span>
-<span class="nc bnc" id="L321" title="All 2 branches missed.">        for (int i = 0; i &lt; probabilities.length; i++) {</span>
-<span class="nc bnc" id="L322" title="All 2 branches missed.">            if (!(probabilities[i] &gt;= 0.0))</span>
+<span class="pc bpc" id="L318" title="1 of 2 branches missed.">        if (probabilities == null) throw new NullPointerException(&quot;argument array is null&quot;);</span>
+<span class="fc" id="L319">        double EPSILON = 1E-14;</span>
+<span class="fc" id="L320">        double sum = 0.0;</span>
+<span class="fc bfc" id="L321" title="All 2 branches covered.">        for (int i = 0; i &lt; probabilities.length; i++) {</span>
+<span class="pc bpc" id="L322" title="1 of 2 branches missed.">            if (!(probabilities[i] &gt;= 0.0))</span>
 <span class="nc" id="L323">                throw new IllegalArgumentException(&quot;array entry &quot; + i + &quot; must be nonnegative: &quot; + probabilities[i]);</span>
-<span class="nc" id="L324">            sum += probabilities[i];</span>
+<span class="fc" id="L324">            sum += probabilities[i];</span>
         }
-<span class="nc bnc" id="L326" title="All 4 branches missed.">        if (sum &gt; 1.0 + EPSILON || sum &lt; 1.0 - EPSILON)</span>
+<span class="pc bpc" id="L326" title="2 of 4 branches missed.">        if (sum &gt; 1.0 + EPSILON || sum &lt; 1.0 - EPSILON)</span>
 <span class="nc" id="L327">            throw new IllegalArgumentException(&quot;sum of array entries does not approximately equal 1.0: &quot; + sum);</span>
 
         // the for loop may not return a value when both r is (nearly) 1.0 and when the
         // cumulative sum is less than 1.0 (as a result of floating-point roundoff error)
         while (true) {
-<span class="nc" id="L332">            double r = uniform();</span>
-<span class="nc" id="L333">            sum = 0.0;</span>
-<span class="nc bnc" id="L334" title="All 2 branches missed.">            for (int i = 0; i &lt; probabilities.length; i++) {</span>
-<span class="nc" id="L335">                sum = sum + probabilities[i];</span>
-<span class="nc bnc" id="L336" title="All 2 branches missed.">                if (sum &gt; r) return i;</span>
+<span class="fc" id="L332">            double r = uniform();</span>
+<span class="fc" id="L333">            sum = 0.0;</span>
+<span class="pc bpc" id="L334" title="1 of 2 branches missed.">            for (int i = 0; i &lt; probabilities.length; i++) {</span>
+<span class="fc" id="L335">                sum = sum + probabilities[i];</span>
+<span class="fc bfc" id="L336" title="All 2 branches covered.">                if (sum &gt; r) return i;</span>
             }
 <span class="nc" id="L338">        }</span>
     }
@@ -350,24 +350,24 @@ import java.util.Random;
      * @throws IllegalArgumentException if sum of frequencies exceeds &lt;tt&gt;Integer.MAX_VALUE&lt;/tt&gt; (2&lt;sup&gt;31&lt;/sup&gt; - 1)
      */
     public static int discrete(int[] frequencies) {
-<span class="nc bnc" id="L353" title="All 2 branches missed.">        if (frequencies == null) throw new NullPointerException(&quot;argument array is null&quot;);</span>
-<span class="nc" id="L354">        long sum = 0;</span>
-<span class="nc bnc" id="L355" title="All 2 branches missed.">        for (int i = 0; i &lt; frequencies.length; i++) {</span>
-<span class="nc bnc" id="L356" title="All 2 branches missed.">            if (frequencies[i] &lt; 0)</span>
+<span class="pc bpc" id="L353" title="1 of 2 branches missed.">        if (frequencies == null) throw new NullPointerException(&quot;argument array is null&quot;);</span>
+<span class="fc" id="L354">        long sum = 0;</span>
+<span class="fc bfc" id="L355" title="All 2 branches covered.">        for (int i = 0; i &lt; frequencies.length; i++) {</span>
+<span class="pc bpc" id="L356" title="1 of 2 branches missed.">            if (frequencies[i] &lt; 0)</span>
 <span class="nc" id="L357">                throw new IllegalArgumentException(&quot;array entry &quot; + i + &quot; must be nonnegative: &quot; + frequencies[i]);</span>
-<span class="nc" id="L358">            sum += frequencies[i];</span>
+<span class="fc" id="L358">            sum += frequencies[i];</span>
         }
-<span class="nc bnc" id="L360" title="All 2 branches missed.">        if (sum == 0)</span>
+<span class="pc bpc" id="L360" title="1 of 2 branches missed.">        if (sum == 0)</span>
 <span class="nc" id="L361">            throw new IllegalArgumentException(&quot;at least one array entry must be positive&quot;);</span>
-<span class="nc bnc" id="L362" title="All 2 branches missed.">        if (sum &gt;= Integer.MAX_VALUE)</span>
+<span class="pc bpc" id="L362" title="1 of 2 branches missed.">        if (sum &gt;= Integer.MAX_VALUE)</span>
 <span class="nc" id="L363">            throw new IllegalArgumentException(&quot;sum of frequencies overflows an int&quot;);</span>
 
         // pick index i with probabilitity proportional to frequency
-<span class="nc" id="L366">        double r = uniform((int) sum);</span>
-<span class="nc" id="L367">        sum = 0;</span>
-<span class="nc bnc" id="L368" title="All 2 branches missed.">        for (int i = 0; i &lt; frequencies.length; i++) {</span>
-<span class="nc" id="L369">            sum += frequencies[i];</span>
-<span class="nc bnc" id="L370" title="All 2 branches missed.">            if (sum &gt; r) return i;</span>
+<span class="fc" id="L366">        double r = uniform((int) sum);</span>
+<span class="fc" id="L367">        sum = 0;</span>
+<span class="pc bpc" id="L368" title="1 of 2 branches missed.">        for (int i = 0; i &lt; frequencies.length; i++) {</span>
+<span class="fc" id="L369">            sum += frequencies[i];</span>
+<span class="fc bfc" id="L370" title="All 2 branches covered.">            if (sum &gt; r) return i;</span>
         }
 
         // can't reach here
@@ -397,15 +397,15 @@ import java.util.Random;
      * @throws NullPointerException if &lt;tt&gt;a&lt;/tt&gt; is &lt;tt&gt;null&lt;/tt&gt;
      */
     public static void shuffle(Object[] a) {
-<span class="nc bnc" id="L400" title="All 2 branches missed.">        if (a == null) throw new NullPointerException(&quot;argument array is null&quot;);</span>
-<span class="nc" id="L401">        int n = a.length;</span>
-<span class="nc bnc" id="L402" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="nc" id="L403">            int r = i + uniform(n-i);     // between i and n-1</span>
-<span class="nc" id="L404">            Object temp = a[i];</span>
-<span class="nc" id="L405">            a[i] = a[r];</span>
-<span class="nc" id="L406">            a[r] = temp;</span>
+<span class="pc bpc" id="L400" title="1 of 2 branches missed.">        if (a == null) throw new NullPointerException(&quot;argument array is null&quot;);</span>
+<span class="fc" id="L401">        int n = a.length;</span>
+<span class="fc bfc" id="L402" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L403">            int r = i + uniform(n-i);     // between i and n-1</span>
+<span class="fc" id="L404">            Object temp = a[i];</span>
+<span class="fc" id="L405">            a[i] = a[r];</span>
+<span class="fc" id="L406">            a[r] = temp;</span>
         }
-<span class="nc" id="L408">    }</span>
+<span class="fc" id="L408">    }</span>
 
     /**
      * Rearranges the elements of the specified array in uniformly random order.

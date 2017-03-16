@@ -55,7 +55,7 @@ import java.util.Set;
     protected boolean isASmallerSearchRegionAndDoesDisconnect(
         final GreyscaleImage input, int col, int row) {
         
-<span class="pc bpc" id="L58" title="1 of 2 branches missed.">        if ((col - 1) &lt; 0) {</span>
+<span class="nc bnc" id="L58" title="All 2 branches missed.">        if ((col - 1) &lt; 0) {</span>
             /*
             | @ @
             | C @
@@ -142,7 +142,7 @@ import java.util.Set;
                 }
             }
 <span class="nc" id="L144">            return false;</span>
-<span class="pc bpc" id="L145" title="1 of 2 branches missed.">        } else if ((col + 1) &gt; (input.getWidth() - 1)) {</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">        } else if ((col + 1) &gt; (input.getWidth() - 1)) {</span>
             /*
             @ @ |
             @ C |
@@ -216,7 +216,7 @@ import java.util.Set;
                 }
             }
 <span class="nc" id="L218">            return false;</span>
-<span class="fc bfc" id="L219" title="All 2 branches covered.">        } else if ((row - 1) &lt; 0) {</span>
+<span class="nc bnc" id="L219" title="All 2 branches missed.">        } else if ((row - 1) &lt; 0) {</span>
             /*
             @ @ @
             @ C @
@@ -228,18 +228,18 @@ import java.util.Set;
             ?  .  _    '#' is disconnected if All .'s are 0s
             ?  C  #        AND AtLeastOne (? is 1)
              */
-<span class="pc bpc" id="L231" title="1 of 6 branches missed.">            if (((input.getValue(col + 1, row) &gt; 0) || (input.getValue(col + 1, row + 1) &gt; 0)) &amp;&amp; (input.getValue(col, row + 1) == 0)) {</span>
-<span class="pc bpc" id="L232" title="1 of 4 branches missed.">                if ((input.getValue(col - 1, row + 1) &gt; 0) || (input.getValue(col - 1, row) &gt; 0)) {</span>
-<span class="fc" id="L233">                    return true;</span>
+<span class="nc bnc" id="L231" title="All 6 branches missed.">            if (((input.getValue(col + 1, row) &gt; 0) || (input.getValue(col + 1, row + 1) &gt; 0)) &amp;&amp; (input.getValue(col, row + 1) == 0)) {</span>
+<span class="nc bnc" id="L232" title="All 4 branches missed.">                if ((input.getValue(col - 1, row + 1) &gt; 0) || (input.getValue(col - 1, row) &gt; 0)) {</span>
+<span class="nc" id="L233">                    return true;</span>
                 }
             }
             /*
             -  #  _
             .  C  .    '#' is disconnected if All .'s are 0s
              */
-<span class="pc bpc" id="L240" title="1 of 2 branches missed.">            if (input.getValue(col, row + 1) &gt; 0) {</span>
-<span class="pc bpc" id="L241" title="1 of 4 branches missed.">                if ((input.getValue(col - 1, row) == 0) || (input.getValue(col + 1, row) == 0)) {</span>
-<span class="fc" id="L242">                    return true;</span>
+<span class="nc bnc" id="L240" title="All 2 branches missed.">            if (input.getValue(col, row + 1) &gt; 0) {</span>
+<span class="nc bnc" id="L241" title="All 4 branches missed.">                if ((input.getValue(col - 1, row) == 0) || (input.getValue(col + 1, row) == 0)) {</span>
+<span class="nc" id="L242">                    return true;</span>
                 }
             }
             /*
@@ -254,7 +254,7 @@ import java.util.Set;
                 }
             }
 <span class="nc" id="L256">            return false;</span>
-<span class="pc bpc" id="L257" title="1 of 2 branches missed.">        } else if ((row + 1) &gt; (input.getHeight() - 1)) {</span>
+<span class="nc bnc" id="L257" title="All 2 branches missed.">        } else if ((row + 1) &gt; (input.getHeight() - 1)) {</span>
             /*
             @ C @
             @ @ @
@@ -267,9 +267,9 @@ import java.util.Set;
             ?  C  #    '#' is disconnected if All .'s are 0s
             ?  .  _       AND AtLeastOne (? is 1)
              */
-<span class="pc bpc" id="L270" title="2 of 6 branches missed.">            if (((input.getValue(col + 1, row - 1) &gt; 0) || (input.getValue(col + 1, row) &gt; 0)) &amp;&amp; (input.getValue(col, row - 1) == 0)) {</span>
-<span class="pc bpc" id="L271" title="1 of 4 branches missed.">                if ((input.getValue(col - 1, row) &gt; 0) || (input.getValue(col - 1, row - 1) &gt; 0)) {</span>
-<span class="fc" id="L272">                    return true;</span>
+<span class="nc bnc" id="L270" title="All 6 branches missed.">            if (((input.getValue(col + 1, row - 1) &gt; 0) || (input.getValue(col + 1, row) &gt; 0)) &amp;&amp; (input.getValue(col, row - 1) == 0)) {</span>
+<span class="nc bnc" id="L271" title="All 4 branches missed.">                if ((input.getValue(col - 1, row) &gt; 0) || (input.getValue(col - 1, row - 1) &gt; 0)) {</span>
+<span class="nc" id="L272">                    return true;</span>
                 }
             }
             /*
@@ -850,16 +850,16 @@ import java.util.Set;
     protected boolean isASmallerSearchRegion(int col, int row, int imageWidth,
         int imageHeight) {
         
-<span class="fc bfc" id="L853" title="All 2 branches covered.">        if ((col - 1) &lt; 0) {</span>
-<span class="fc" id="L854">            return true;</span>
-<span class="fc bfc" id="L855" title="All 2 branches covered.">        } else if ((col + 1) &gt; (imageWidth - 1)) {</span>
-<span class="fc" id="L856">            return true;</span>
-<span class="fc bfc" id="L857" title="All 2 branches covered.">        } else if ((row - 1) &lt; 0) {</span>
-<span class="fc" id="L858">            return true;</span>
-<span class="fc bfc" id="L859" title="All 2 branches covered.">        } else if ((row + 1) &gt; (imageHeight - 1)) {</span>
-<span class="fc" id="L860">            return true;</span>
+<span class="nc bnc" id="L853" title="All 2 branches missed.">        if ((col - 1) &lt; 0) {</span>
+<span class="nc" id="L854">            return true;</span>
+<span class="nc bnc" id="L855" title="All 2 branches missed.">        } else if ((col + 1) &gt; (imageWidth - 1)) {</span>
+<span class="nc" id="L856">            return true;</span>
+<span class="nc bnc" id="L857" title="All 2 branches missed.">        } else if ((row - 1) &lt; 0) {</span>
+<span class="nc" id="L858">            return true;</span>
+<span class="nc bnc" id="L859" title="All 2 branches missed.">        } else if ((row + 1) &gt; (imageHeight - 1)) {</span>
+<span class="nc" id="L860">            return true;</span>
         }
-<span class="fc" id="L862">        return false;</span>
+<span class="nc" id="L862">        return false;</span>
     }
     
     public static PairInt[][] createCoordinatePointsForEightNeighbors(
@@ -994,8 +994,8 @@ import java.util.Set;
 <span class="nc" id="L994">            return true;</span>
 <span class="pc bpc" id="L995" title="5 of 10 branches missed.">        } else if ((t7) &amp;&amp; (t17) &amp;&amp; !(t12) &amp;&amp; (!(t11) || !(t16))) {</span>
 <span class="nc" id="L996">            return true;</span>
-<span class="pc bpc" id="L997" title="1 of 8 branches missed.">        } else if ((t7) &amp;&amp; (t16) &amp;&amp; !(t11) &amp;&amp; !(t12)) {</span>
-<span class="fc" id="L998">            return true;</span>
+<span class="pc bpc" id="L997" title="2 of 8 branches missed.">        } else if ((t7) &amp;&amp; (t16) &amp;&amp; !(t11) &amp;&amp; !(t12)) {</span>
+<span class="nc" id="L998">            return true;</span>
 <span class="pc bpc" id="L999" title="5 of 10 branches missed.">        } else if ((t8) &amp;&amp; (t11) &amp;&amp; !(t7) &amp;&amp; (!(t12) || !(t16))) {</span>
 <span class="nc" id="L1000">            return true;</span>
 <span class="pc bpc" id="L1001" title="7 of 12 branches missed.">        } else if ((t8) &amp;&amp; (t17) &amp;&amp; !(t12) &amp;&amp; (!(t16) || !(t11) || !(t7))) {</span>
@@ -1165,8 +1165,8 @@ import java.util.Set;
 <span class="fc bfc" id="L1165" title="All 2 branches covered.">            for (int j = 0; j &lt; coords[i].length; ++j) {</span>
                 
 <span class="fc" id="L1167">                isPresent[i][j] = </span>
-<span class="fc bfc" id="L1168" title="All 2 branches covered.">                    (!overridePointsRemoved.contains(coords[i][j]) &amp;&amp;</span>
-<span class="fc bfc" id="L1169" title="All 2 branches covered.">                    (overridePointsAdded.contains(coords[i][j]) ||</span>
+<span class="pc bpc" id="L1168" title="1 of 2 branches missed.">                    (!overridePointsRemoved.contains(coords[i][j]) &amp;&amp;</span>
+<span class="pc bpc" id="L1169" title="1 of 2 branches missed.">                    (overridePointsAdded.contains(coords[i][j]) ||</span>
 <span class="fc bfc" id="L1170" title="All 2 branches covered.">                    points.contains(coords[i][j])));</span>
             }
         }

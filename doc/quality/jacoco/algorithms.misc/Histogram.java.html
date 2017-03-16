@@ -275,26 +275,26 @@ import java.util.logging.Logger;
     
      public static HistogramHolder createSimpleHistogram(List&lt;Integer&gt; values) {
 
-<span class="pc bpc" id="L278" title="1 of 2 branches missed.">        if (values == null) {</span>
+<span class="nc bnc" id="L278" title="All 2 branches missed.">        if (values == null) {</span>
 <span class="nc" id="L279">            throw new IllegalArgumentException(</span>
             &quot;values and valueErrors cannot be null and must be the same length&quot;);
         }
-<span class="pc bpc" id="L282" title="1 of 2 branches missed.">        if (values.isEmpty()) {</span>
+<span class="nc bnc" id="L282" title="All 2 branches missed.">        if (values.isEmpty()) {</span>
 <span class="nc" id="L283">            return null;</span>
         }
-<span class="fc" id="L285">        float[] v = new float[values.size()];</span>
-<span class="fc bfc" id="L286" title="All 2 branches covered.">        for (int i = 0; i &lt; values.size(); ++i) {</span>
-<span class="fc" id="L287">            v[i] = values.get(i).intValue();</span>
+<span class="nc" id="L285">        float[] v = new float[values.size()];</span>
+<span class="nc bnc" id="L286" title="All 2 branches missed.">        for (int i = 0; i &lt; values.size(); ++i) {</span>
+<span class="nc" id="L287">            v[i] = values.get(i).intValue();</span>
         }
-<span class="fc" id="L289">        float[] ve = Errors.populateYErrorsBySqrt(v);</span>
+<span class="nc" id="L289">        float[] ve = Errors.populateYErrorsBySqrt(v);</span>
         
-<span class="fc" id="L291">        int nBins = (int)(2*Math.pow(v.length, 0.3333));</span>
+<span class="nc" id="L291">        int nBins = (int)(2*Math.pow(v.length, 0.3333));</span>
         
-<span class="pc bpc" id="L293" title="1 of 2 branches missed.">        if (v.length == 1) {</span>
+<span class="nc bnc" id="L293" title="All 2 branches missed.">        if (v.length == 1) {</span>
 <span class="nc" id="L294">            nBins = 1;</span>
         }
         
-<span class="fc" id="L297">        return createSimpleHistogram(nBins, v, ve);</span>
+<span class="nc" id="L297">        return createSimpleHistogram(nBins, v, ve);</span>
     }
      
     public static HistogramHolder createSimpleHistogram(float[] values, 
