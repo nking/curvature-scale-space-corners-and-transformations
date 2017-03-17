@@ -5,10 +5,8 @@ import algorithms.bipartite.MinHeapForRT2012;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.features.orb.ORB;
 import algorithms.imageProcessing.util.AngleUtil;
-import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
-import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.PairInt;
 import algorithms.misc.Complex;
 import algorithms.misc.ComplexModifiable;
@@ -22,9 +20,7 @@ import algorithms.util.TwoDFloatArray;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
-import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
@@ -33,7 +29,6 @@ import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,9 +38,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
-import java.util.Stack;
 import java.util.logging.Logger;
 import thirdparty.ca.uol.aig.fftpack.Complex1D;
 import thirdparty.ca.uol.aig.fftpack.ComplexDoubleFFT;
@@ -63,40 +56,40 @@ public class ImageProcessor {
      * and return gradients in X and y. note the image may contain
      * negative values.
      * @param input
-     * @return 
+     * @return
      */
     public GreyscaleImage[] createSobelGradients(GreyscaleImage input) {
-    
+
         float[] kernel = Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive();
-        
+
         GreyscaleImage gX = input.copyToFullRangeIntImage();
         GreyscaleImage gY = input.copyToFullRangeIntImage();
         applyKernel1D(gX, kernel, true);
         applyKernel1D(gY, kernel, false);
-        
+
         return new GreyscaleImage[]{gX, gY};
     }
 
     public void applySobelKernel(GreyscaleImage input) {
 
         float[] kernel = Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive();
-        
+
         GreyscaleImage gX = input.copyToFullRangeIntImage();
         GreyscaleImage gY = input.copyToFullRangeIntImage();
         applyKernel1D(gX, kernel, true);
         applyKernel1D(gY, kernel, false);
-        
+
         GreyscaleImage img2 = combineConvolvedImages(gX, gY);
 
         input.resetTo(img2);
     }
-    
+
     /**
      * given a color image array with first dimension being color index
      * and the second dimension being the image pixel index,
      * apply the sobel kernel to each pixel and combine the results
      * as SSD.
-     * @param ptImg polar theta image of a color space such as 
+     * @param ptImg polar theta image of a color space such as
      * H of LCH that contains values between 0 and 255.
      * @param lowerDiff value in degrees for which a difference in
      * pixels results in a final value of "1".  For example,
@@ -108,9 +101,9 @@ public class ImageProcessor {
         int nPix = ptImg.getNPixels();
         int w = ptImg.getWidth();
         int h = ptImg.getHeight();
-        
+
         GreyscaleImage out = ptImg.createWithDimensions();
-        
+
         // sobel is .5, 0, -.5 so looking for difference in pixels on either
         //   side being .lte. lowerDiff
         int[] diffs = new int[4];
@@ -118,25 +111,25 @@ public class ImageProcessor {
         int above;
         for (int i = 1; i < w - 1; ++i) {
             for (int j = 1; j < h - 1; ++j) {
-                
+
                 diffs[0] = ptImg.getValue(i - 1, j);
-                diffs[1] = ptImg.getValue(i + 1, j);                
+                diffs[1] = ptImg.getValue(i + 1, j);
                 diffs[2] = ptImg.getValue(i, j - 1);
                 diffs[3] = ptImg.getValue(i, j + 1);
-                offset = 0;            
+                offset = 0;
                 above = 0;
                 for (int k = 0; k < 2; ++k) {
                     // in case there is wrap around, test adding a phase
                     //   and take the smaller of the results for each diff.
                     if (diffs[offset] > diffs[offset + 1]) {
                         // add a phase to next value if it's closer to current with addition
-                        if ((diffs[offset] - diffs[offset + 1]) > 
+                        if ((diffs[offset] - diffs[offset + 1]) >
                             (diffs[offset + 1] + 255) - diffs[offset]) {
                             diffs[offset + 1] += 255;
                         }
                     } else if (diffs[offset + 1] > diffs[offset]) {
                         // add a phase to next value if it's closer to current with addition
-                        if ((diffs[offset + 1] - diffs[offset]) > 
+                        if ((diffs[offset + 1] - diffs[offset]) >
                             (diffs[offset] + 255) - diffs[offset + 1]) {
                             diffs[offset] += 255;
                         }
@@ -149,26 +142,26 @@ public class ImageProcessor {
                     offset += 2;
                 }
 
-                if (above == 1) {                
+                if (above == 1) {
                     out.setValue(i, j, 1);
                 }
             }
         }
-        
+
         return out;
     }
-    
+
     /**
      * given a color image array with first dimension being color index
      * and the second dimension being the image pixel index,
      * apply the sobel kernel to each pixel and combine the results
      * as SSD.
-     * @param ptImg polar theta image of a color space such as 
+     * @param ptImg polar theta image of a color space such as
      * H of LCH that contains values between 0 and 255.
      * @param lowerDiff value in degrees for which a difference in
      * pixels results in a final value of "1".  For example,
      * 20 degrees.
-     * @return 
+     * @return
      */
     public GreyscaleImage createBinary2ndDerivForPolarTheta(
         GreyscaleImage ptImg, int lowerDiff) {
@@ -176,9 +169,9 @@ public class ImageProcessor {
         int nPix = ptImg.getNPixels();
         int w = ptImg.getWidth();
         int h = ptImg.getHeight();
-        
+
         GreyscaleImage out = ptImg.createWithDimensions();
-        
+
         // sobel is .5, 0, -.5 so looking for difference in pixels on either
         //   side being .lte. lowerDiff
         int[] diffs = new int[2];
@@ -186,14 +179,14 @@ public class ImageProcessor {
         int above;
         for (int i = 1; i < w - 1; ++i) {
             for (int j = 1; j < h - 1; ++j) {
-                
-                // kernel for 2nd deriv, binomial 1 -2  1 
-                
+
+                // kernel for 2nd deriv, binomial 1 -2  1
+
                 int v = 2 * ptImg.getValue(i, j);
-                
-                diffs[0] = ptImg.getValue(i - 1, j) + ptImg.getValue(i + 1, j);                
+
+                diffs[0] = ptImg.getValue(i - 1, j) + ptImg.getValue(i + 1, j);
                 diffs[1] = ptImg.getValue(i, j - 1) + ptImg.getValue(i, j + 1);
-                offset = 0;            
+                offset = 0;
                 above = 0;
                 for (int k = 0; k < 2; ++k) {
                     int v0 = v;
@@ -201,13 +194,13 @@ public class ImageProcessor {
                     //   and take the smaller of the results for each diff.
                     if (diffs[offset] > v0) {
                         // add a phase to next value if it's closer to current with addition
-                        if ((diffs[offset] - v0) > 
+                        if ((diffs[offset] - v0) >
                             (v0 + 255) - diffs[offset]) {
                             v0 += 255;
                         }
                     } else if (v0 > diffs[offset]) {
                         // add a phase to next value if it's closer to current with addition
-                        if ((v0 - diffs[offset]) > 
+                        if ((v0 - diffs[offset]) >
                             (diffs[offset] + 255) - v0) {
                             diffs[offset] += 255;
                         }
@@ -220,80 +213,80 @@ public class ImageProcessor {
                     offset++;
                 }
 
-                if (above == 1) {                
+                if (above == 1) {
                     out.setValue(i, j, 1);
                 }
             }
         }
-        
+
         return out;
     }
-    
+
     /**
      * create  a float array from the image (the image is not scaled).
      * @param img
-     * @return 
+     * @return
      */
-    public float[] convertToFloat(GreyscaleImage img) {
-        
+    public float[] copyToFloat(GreyscaleImage img) {
+
         float[] a = new float[img.getNPixels()];
-        
+
         for (int i = 0; i < a.length; ++i) {
             a[i] = img.getValue(i);
         }
-        
+
         return a;
     }
-    
+
     /**
      * create  a int array from the image (the image is not scaled).
      * @param img
-     * @return 
+     * @return
      */
-    public int[] convertToInt(GreyscaleImage img) {
-        
+    public int[] copyToInt(GreyscaleImage img) {
+
         int[] a = new int[img.getNPixels()];
-        
+
         for (int i = 0; i < a.length; ++i) {
             a[i] = img.getValue(i);
         }
-        
+
         return a;
     }
-    
+
     /**
      * using the binary results from createBinarySobelForPolarTheta
      * and the greyscale results from sobel operator,
      * scale the greyscale sobel so that the maximum value is 1.f,
      * add both and divide by 2.
      * NOTE: for other uses, may want to make a method which does not
-     * scale the greyscale results or uses a different weighting 
+     * scale the greyscale results or uses a different weighting
      * in the addition.
-     * 
+     *
      * @param gsImg
      * @param ptImg
      * @param lowerDiff
-     * @return 
+     * @return
      */
     public float[] createSobelColorScores(GreyscaleImage gsImg,
         GreyscaleImage ptImg, int lowerDiff) {
-        
+
         int nPix = gsImg.getNPixels();
         int w = gsImg.getWidth();
         int h = gsImg.getHeight();
-        
+
         if (ptImg.getWidth() != w || ptImg.getHeight() != h) {
             throw new IllegalArgumentException("images must be same size");
         }
-        
+
         GreyscaleImage ptGrad = createBinarySobelForPolarTheta(
             ptImg, lowerDiff);
-        
+
         float[] out = new float[nPix];
         for (int i = 0; i < gsImg.getNPixels(); ++i) {
             out[i] = gsImg.getValue(i);
         }
-        
+
         out = createSobelConvolution(out, w, h);
         float maxV = MiscMath.findMax(out);
         float factor = 0.5f/maxV;
@@ -301,7 +294,7 @@ public class ImageProcessor {
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
                 pixIdx = (j * w) + i;
-                
+
                 int v0 = ptGrad.getValue(pixIdx);
                 float v = out[pixIdx] * factor;
                 if (v0 == 1) {
@@ -310,59 +303,59 @@ public class ImageProcessor {
                 out[pixIdx] = v;
             }
         }
-        
+
         return out;
     }
-    
+
     /**
      * create a greyscale adaptive threshold gradient with canny algorithm
      * and then a color contrast gradient with "H" of LCH, and sobel with
-     * a threshold of 20 degrees for binarization, scale them to 
+     * a threshold of 20 degrees for binarization, scale them to
      * 127 and add them.
      * The color binary sobel pixels are scaled to 1/4th the maximum
      * of the greyscale gradient.
-     * 
+     *
      * The results could be improved in various ways, but for now
      * is a quick way to look at completing greyscale intensity
      * gradient contours with the color contrast gradient.
-     * 
+     *
      * @param img
-     * @return 
+     * @return
      */
     public GreyscaleImage createGradientWithColorAndGreyscale(Image img) {
 
         int w = img.getWidth();
         int h = img.getHeight();
-        
+
         GreyscaleImage gsImg = img.copyToGreyscale2();
-        
+
         CannyEdgeFilterAdaptive canny = new CannyEdgeFilterAdaptive();
         canny.overrideToUseAdaptiveThreshold();
         canny.overrideToNotUseLineThinner();
         canny.applyFilter(gsImg);
         EdgeFilterProducts prod = canny.getFilterProducts();
 
-        float[] gsCanny = convertToFloat(prod.getGradientXY());
+        float[] gsCanny = copyToFloat(prod.getGradientXY());
 
         GreyscaleImage scaled = MiscMath.rescaleAndCreateImage(gsCanny, w, h);
 
         //TODO: could consider using the sobel polar theta in canny edges
         //   as additional cues for strong edges in the 2-layer filter
         //   and then only use that result here.
-        
+
         GreyscaleImage ptImg = createCIELUVTheta(img, 255);
-        GreyscaleImage ptGrad = 
+        GreyscaleImage ptGrad =
             //createBinary2ndDerivForPolarTheta(ptImg, 20);
             createBinarySobelForPolarTheta(ptImg, 20);
-        
+
         /*
         ptGrad.multiply(255);
         applyAdaptiveMeanThresholding(ptGrad, 1);
         for (int j = 0; j < ptGrad.getNPixels(); ++j) {
             ptGrad.setValue(j, 255 - ptGrad.getValue(j));
         }*/
-         
-        float[] ptSobel = convertToFloat(ptGrad);
+
+        float[] ptSobel = copyToFloat(ptGrad);
 
         for (int j = 0; j < ptSobel.length; ++j) {
             ptSobel[j] *= 63;
@@ -382,117 +375,117 @@ public class ImageProcessor {
      * @param colorInput with first dimension being color index
      * and the second dimension being the image pixel index
      */
-    public float[] createSobelConvolution(float[][] colorInput, int imgWidth, 
+    public float[] createSobelConvolution(float[][] colorInput, int imgWidth,
         int imgHeight) {
 
         int nClrs = colorInput.length;
         int nPix = colorInput[0].length;
-        
+
         if (nPix != (imgWidth * imgHeight)) {
             throw new IllegalArgumentException("image width X height must equal "
                 + " colorInput[0].length");
         }
-        
+
         float[] out = new float[nPix];
-       
+
         Kernel1DHelper kernelHelper = new Kernel1DHelper();
-        
+
         float[] kernel = Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive();
-        
+
         for (int i = 0; i < imgWidth; ++i) {
             for (int j = 0; j < imgHeight; ++j) {
-                
+
                 double sqSum = 0;
-                
+
                 for (int c = 0; c < nClrs; ++c) {
-                    
+
                     float convX = kernelHelper.convolvePointWithKernel(
                         colorInput[c], i, j, kernel, true, imgWidth, imgHeight);
-                    
+
                     float convY = kernelHelper.convolvePointWithKernel(
                         colorInput[c], i, j, kernel, false, imgWidth, imgHeight);
-                
+
                     sqSum += (convX * convX + convY * convY);
                 }
 
                 int pixIdx = (j * imgWidth) + i;
-                
+
                 out[pixIdx] = (float)Math.sqrt(sqSum/(double)nClrs);
             }
         }
-        
+
         return out;
     }
-    
+
     /**
      * given a greyscale image
      * apply the sobel kernel to each pixel and combine the results
      * as SSD.
      * @param greyscaleInput with index being the image pixel index
      */
-    public float[] createSobelConvolution(float[] greyscaleInput, int imgWidth, 
+    public float[] createSobelConvolution(float[] greyscaleInput, int imgWidth,
         int imgHeight) {
 
         int nPix = greyscaleInput.length;
-        
+
         if (nPix != (imgWidth * imgHeight)) {
             throw new IllegalArgumentException("image width X height must equal "
                 + " colorInput[0].length");
         }
-        
+
         float[] out = new float[nPix];
-       
+
         Kernel1DHelper kernelHelper = new Kernel1DHelper();
-        
+
         float[] kernel = Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive();
         double sqSum;
         int pixIdx;
-        
+
         for (int i = 0; i < imgWidth; ++i) {
             for (int j = 0; j < imgHeight; ++j) {
-                
+
                 sqSum = 0;
-                                    
+
                 float convX = kernelHelper.convolvePointWithKernel(
                     greyscaleInput, i, j, kernel, true, imgWidth, imgHeight);
-                    
+
                 float convY = kernelHelper.convolvePointWithKernel(
                     greyscaleInput, i, j, kernel, false, imgWidth, imgHeight);
-                
+
                 sqSum += (convX * convX + convY * convY);
 
                 pixIdx = (j * imgWidth) + i;
-                
+
                 out[pixIdx] = (float)Math.sqrt(sqSum);
             }
         }
-        
+
         return out;
     }
-    
+
     public void applySobelX(float[][] input) {
 
         float[] kernel = Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive();
-        
+
         applyKernel1D(input, kernel, true);
     }
-    
+
     public void applySobelY(float[][] input) {
 
         float[] kernel = Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive();
-        
+
         applyKernel1D(input, kernel, false);
     }
-    
-    public Map<PairInt, Integer> applySobelKernel(GreyscaleImage input, 
+
+    public Map<PairInt, Integer> applySobelKernel(GreyscaleImage input,
         Set<PairInt> points) {
-       
+
         float[] kernel = Gaussian1DFirstDeriv.getBinomialKernel(
             SIGMA.ZEROPOINTSEVENONE);
 
         return applyKernel(input, points, kernel);
     }
-        
+
     /**
      * calculate the sobel gradient of the color image using CIELAB DeltaE 2000
      * and return gX, gY, and gXY with array indices being pixel
@@ -501,24 +494,24 @@ public class ImageProcessor {
      * @return float[][]{gX, gY, gXY}
      */
     public float[][] calculateGradientUsingDeltaE2000(ImageExt img) {
-        
+
         int n = img.getNPixels();
-        
+
         CIEChromaticity cieC = new CIEChromaticity();
-        
+
         int w = img.getWidth();
         int h = img.getHeight();
-        
+
         float jnd = 2.3f;
-        
+
         // using 1D sobel kernel -1,0,1, calculating deltaE
         // between the pixels to either side of center pixel
-        
+
         int x1, y1, x2, y2;
-        
-        float[] outX = new float[n];                    
+
+        float[] outX = new float[n];
         for (int i = 0; i < w; i++) {
-            
+
             x1 = i - 1;
             if (x1 < 0) {
                 x1 = 0;
@@ -527,24 +520,24 @@ public class ImageProcessor {
             if (x2 > (w - 1)) {
                 x2 = w - 1;
             }
-            
+
             for (int j = 0; j < h; j++) {
-                
+
                 float[] lab1 = img.getCIELAB(x1, j);
                 float[] lab2 = img.getCIELAB(x2, j);
-                
+
                 double deltaE = cieC.calcDeltaECIE2000(
                     lab1, lab2);
-                
+
                 outX[img.getInternalIndex(i, j)] = (float)deltaE;
-            }                    
+            }
         }
-        
-        float[] outY = new float[n];                    
+
+        float[] outY = new float[n];
         for (int i = 0; i < w; i++) {
-           
+
             for (int j = 0; j < h; j++) {
-                
+
                 y1 = j - 1;
                 if (y1 < 0) {
                     y1 = 0;
@@ -553,29 +546,29 @@ public class ImageProcessor {
                 if (y2 > (h - 1)) {
                     y2 = h - 1;
                 }
-                
+
                 float[] lab1 = img.getCIELAB(i, y1);
                 float[] lab2 = img.getCIELAB(i, y2);
-                
+
                 double deltaE = cieC.calcDeltaECIE2000(
                     lab1, lab2);
-                
+
                 outY[img.getInternalIndex(i, j)] = (float)deltaE;
-            }                    
+            }
         }
-        
+
         // make a combined array
         float[] outXY = new float[outX.length];
         for (int i = 0; i < outX.length; ++i) {
             double gXY = Math.sqrt(outX[i] * outX[i] + outY[i] * outY[i]);
             outXY[i] = (float)gXY;
         }
-      
+
         return new float[][]{outX, outY, outXY};
     }
-    
+
     /**
-     * apply a sobel kernel (gaussian first derivative, binomial approx 
+     * apply a sobel kernel (gaussian first derivative, binomial approx
      * for sigma=sqrt(2)/2) to the points in the region bounded by
      * (xLL, yLL) to (xUR, yUR), inclusive and return the results as a map.
      * @param pointValues values for points in the bounding region
@@ -588,53 +581,22 @@ public class ImageProcessor {
     public void applySobelKernel(Map<PairInt, Integer> pointValues,
         int xLL, int yLL, int xUR, int yUR,
         Map<PairInt, Integer> outputGradientValues) {
-       
+
         float[] kernel = Gaussian1DFirstDeriv.getBinomialKernel(
             SIGMA.ZEROPOINTSEVENONE);
 
-        applyKernel(pointValues, xLL, yLL, xUR, yUR, kernel, 
+        applyKernel(pointValues, xLL, yLL, xUR, yUR, kernel,
             outputGradientValues);
     }
 
-    public void applyLaplacianKernel(GreyscaleImage input) {
+    public GreyscaleImage applyLaplacianKernel(GreyscaleImage input) {
 
         IKernel kernel = new Laplacian();
         Kernel kernelXY = kernel.getKernel();
 
         float norm = kernel.getNormalizationFactor();
 
-        applyKernel(input, kernelXY, norm);
-    }
-
-    /**
-     * apply the kernels to the input.  Note that the current image format
-     * only accepts value between 0 and 255, inclusive.
-     * @param input
-     * @param kernelX
-     * @param kernelY
-     * @param normFactorX
-     * @param normFactorY
-     */
-    protected void applyKernels(Image input, Kernel kernelX, Kernel kernelY,
-        float normFactorX, float normFactorY) {
-
-        /*
-        assumes that kernelX is applied to a copy of the img
-        and kernelY is applied to a separate copy of the img and
-        then they are added in quadrature for the final result.
-        */
-
-        Image imgX = input.copyImage();
-
-        Image imgY = input.copyImage();
-
-        applyKernel(imgX, kernelX, normFactorX);
-
-        applyKernel(imgY, kernelY, normFactorY);
-
-        Image img2 = combineConvolvedImages(imgX, imgY);
-
-        input.resetTo(img2);
+        return applyKernel(input, kernelXY, norm);
     }
 
     protected void applyKernels(GreyscaleImage input, Kernel kernelX, Kernel kernelY,
@@ -647,7 +609,7 @@ public class ImageProcessor {
 
         input.resetTo(img2);
     }
-    
+
     protected GreyscaleImage[] convolveWithKernels(GreyscaleImage input, Kernel kernelX, Kernel kernelY,
         float normFactorX, float normFactorY) {
 
@@ -668,7 +630,7 @@ public class ImageProcessor {
         return new GreyscaleImage[]{imgX, imgY};
     }
 
-    protected Map<PairInt, Integer> applyKernel(GreyscaleImage input, 
+    protected Map<PairInt, Integer> applyKernel(GreyscaleImage input,
         Set<PairInt> points, float[] kernel) {
 
         /*
@@ -680,24 +642,24 @@ public class ImageProcessor {
         Map<PairInt, Integer> convX = applyKernel(input, points, kernel, true);
 
         Map<PairInt, Integer> convY = applyKernel(input, points, kernel, false);
-        
+
         Map<PairInt, Integer> output = new HashMap<PairInt, Integer>();
-        
+
         for (PairInt p : points) {
-            
+
             int vX = convX.get(p).intValue();
-            
+
             int vY = convY.get(p).intValue();
-            
+
             int v = (int)Math.round(Math.sqrt(vX * vX + vY * vY));
-            
+
             output.put(p, Integer.valueOf(v));
         }
-        
+
         return output;
     }
 
-    protected void applyKernel(Map<PairInt, Integer> pointValues, 
+    protected void applyKernel(Map<PairInt, Integer> pointValues,
         int xLL, int yLL, int xUR, int yUR, float[] kernel,
         Map<PairInt, Integer> outputGradientValues) {
 
@@ -712,33 +674,33 @@ public class ImageProcessor {
 
         Map<PairInt, Integer> convY = applyKernel(pointValues, xLL, yLL, xUR, yUR,
             kernel, false);
-                
+
         for (int xp = xLL; xp <= xUR; ++xp) {
-            
+
             for (int yp = yLL; yp <= yUR; ++yp) {
-                
+
                 PairInt p = new PairInt(xp, yp);
-                
+
                 if (!convX.containsKey(p) || !convY.containsKey(p)) {
                     continue;
                 }
-                
+
                 int vX = convX.get(p).intValue();
 
                 int vY = convY.get(p).intValue();
-                
+
                 int v = (int) Math.round(Math.sqrt(vX * vX + vY * vY));
 
                 if (v != 0) {
                     outputGradientValues.put(p, Integer.valueOf(v));
                 }
             }
-        }        
+        }
     }
 
     public Image combineConvolvedImages(Image imageX, Image imageY) {
 
-        Image img2 = new Image(imageX.getWidth(), imageX.getHeight());
+        Image img2 = imageX.createWithDimensions();
 
         for (int i = 0; i < imageX.getWidth(); i++) {
             for (int j = 0; j < imageX.getHeight(); j++) {
@@ -791,31 +753,31 @@ public class ImageProcessor {
                 if (g > 255) {
                     g = 255;
                 }
-                
+
                 img2.setValue(i, j, (int)g);
             }
         }
 
         return img2;
     }
-    
+
     public int[][] applyKernel(int[][] a, int[][] b) {
-        
+
         final int na0 = a.length;
         final int na1 = a[0].length;
         final int nb0 = b.length;
         final int nb1 = b[0].length;
-        
+
         if (nb1 > nb0) {
-            throw new IllegalArgumentException("expecting first argument to be " 
+            throw new IllegalArgumentException("expecting first argument to be "
             + " data and the 2nd to be the kernel to convolve the data with");
         }
 
         int nbmid0 = (nb0 - 1)/2;
         int nbmid1 = (nb1 - 1)/2;
-        
+
         int[][] output = new int[na0][na1];
-        
+
         for (int i = 0; i < na0; i++) {
 
             output[i] = new int[na1];
@@ -857,10 +819,7 @@ public class ImageProcessor {
                         sum += k * a[imgX][imgY];
                     }
                 }
-if (sum > 511) {
-    int z = 1;//  59, 125
-}
-                
+
                 output[i][j] = sum;
             }
         }
@@ -877,123 +836,18 @@ if (sum > 511) {
      * @param kernel
      * @param normFactor
      */
-    protected void applyKernel(Image input, Kernel kernel, float normFactor) {
-
-        int h = (kernel.getWidth() - 1) >> 1;
-
-        Image output = new Image(input.getWidth(), input.getHeight());
-
-        for (int i = 0; i < input.getWidth(); i++) {
-            for (int j = 0; j < input.getHeight(); j++) {
-
-                long rValue = 0;
-                long gValue = 0;
-                long bValue = 0;
-
-                // apply the kernel to pixels centered in (i, j)
-
-                for (int col = 0; col < kernel.getWidth(); col++) {
-
-                    int x = col - h;
-
-                    int imgX = i + x;
-
-                    // edge corrections.  use replication
-                    if (imgX < 0) {
-                        imgX = -1 * imgX - 1;
-                    } else if (imgX >= input.getWidth()) {
-                        int diff = imgX - input.getWidth();
-                        imgX = input.getWidth() - diff - 1;
-                    }
-
-                    for (int row = 0; row < kernel.getHeight(); row++) {
-
-                        int y = row - h;
-
-                        int imgY = j + y;
-
-                        // edge corrections.  use replication
-                        if (imgY < 0) {
-                            imgY = -1 * imgY - 1;
-                        } else if (imgY >= input.getHeight()) {
-                            int diff = imgY - input.getHeight();
-                            imgY = input.getHeight() - diff - 1;
-                        }
-
-                        int rPixel = input.getR(imgX, imgY);
-                        int gPixel = input.getG(imgX, imgY);
-                        int bPixel = input.getB(imgX, imgY);
-
-                        int k = kernel.getValue(col, row);
-
-                        rValue += k * rPixel;
-                        gValue += k * gPixel;
-                        bValue += k * bPixel;
-                    }
-                }
-
-                rValue *= normFactor;
-                gValue *= normFactor;
-                bValue *= normFactor;
-
-                /*
-                if ((rValue > 255) || (rValue < 0)) {
-                    throw new IllegalStateException("rValue is " + rValue);
-                }
-                if ((gValue > 255) || (gValue < 0)) {
-                    throw new IllegalStateException("gValue is " + gValue);
-                }
-                if ((bValue > 255) || (bValue < 0)) {
-                    throw new IllegalStateException("bValue is " + bValue);
-                }*/
-
-                if (rValue < 0) {
-                    rValue = 0;
-                }
-                if (rValue > 255) {
-                    rValue = 255;
-                }
-                if (gValue < 0) {
-                    gValue = 0;
-                }
-                if (gValue > 255) {
-                    gValue = 255;
-                }
-                if (bValue < 0) {
-                    bValue = 0;
-                }
-                if (bValue > 255) {
-                    bValue = 255;
-                }
-
-                output.setRGB(i, j, (int)rValue, (int)gValue, (int)bValue);
-            }
-        }
-
-        input.resetTo(output);
-    }
-    
-    /**
-     * apply kernel to input. NOTE, that because the image is composed of
-     * vectors that should have values between 0 and 255, inclusive, if the
-     * kernel application results in a value outside of that range, the value
-     * is reset to 0 or 255.
-     * @param input
-     * @param kernel
-     * @param normFactor
-     */
     protected void applyKernel(float[][] input, Kernel kernel, float normFactor) {
 
         int h = (kernel.getWidth() - 1) >> 1;
 
         int width = input.length;
         int height = input[0].length;
-        
+
         float[][] output = new float[width][];
         for (int i = 0; i < width; ++i) {
             output[i] = new float[height];
         }
-        
+
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
 
@@ -1042,21 +896,21 @@ if (sum > 511) {
                 output[i][j] = (float)value;
             }
         }
-        
+
         for (int i = 0; i < width; ++i) {
             System.arraycopy(output[i], 0, input[i], 0, height);
         }
     }
-    
+
     /**
      * apply kernel to input for pixels in points.
      * @param input
      * @param points
      * @param kernel
      * @param calcForX
-     * @return 
+     * @return
      */
-    protected Map<PairInt, Integer> applyKernel(GreyscaleImage input, 
+    protected Map<PairInt, Integer> applyKernel(GreyscaleImage input,
         Set<PairInt> points, float[] kernel, boolean calcForX) {
 
         int h = (kernel.length - 1) >> 1;
@@ -1064,7 +918,7 @@ if (sum > 511) {
         Map<PairInt, Integer> output = new HashMap<PairInt, Integer>();
 
         for (PairInt p : points) {
-            
+
             int i = p.getX();
             int j = p.getY();
 
@@ -1076,7 +930,7 @@ if (sum > 511) {
                 if (gg == 0) {
                     continue;
                 }
-                
+
                 int x2, y2;
                 if (calcForX) {
                     int delta = g - h;
@@ -1101,12 +955,12 @@ if (sum > 511) {
                         y2 = input.getHeight() - diff - 1;
                     }
                 }
-                
+
                 int v = input.getValue(x2, y2);
 
                 sum += gg * v;
             }
-            
+
             output.put(p, Integer.valueOf((int) sum));
         }
 
@@ -1122,11 +976,11 @@ if (sum > 511) {
         Map<PairInt, Integer> output = new HashMap<PairInt, Integer>();
 
         for (int xp = xLL; xp <= xUR; ++xp) {
-            
+
             for (int yp = yLL; yp <= yUR; ++yp) {
-                
+
                 PairInt p = new PairInt(xp, yp);
-                
+
                 float sum = 0;
 
                 // apply the kernel to pixels centered in (i, j)
@@ -1162,19 +1016,19 @@ if (sum > 511) {
                             }
                         }
                     }
-                    
+
                     // TODO: revisit this for normalization
                     PairInt p2 = new PairInt(x2, y2);
                     if (!pointValues.containsKey(p2)) {
                         continue;
                     }
-                    
+
                     int v = pointValues.get(p2).intValue();
 
                     sum += gg * v;
-                    
+
                 } // end sum over kernl for a pixel
-                
+
                 int v = Math.round(sum);
                 if (v != 0) {
                     output.put(p, Integer.valueOf(v));
@@ -1193,12 +1047,13 @@ if (sum > 511) {
      * @param input
      * @param kernel
      * @param normFactor
+     * @return the convolved image
      */
-    protected void applyKernel(GreyscaleImage input, Kernel kernel, float normFactor) {
+    protected GreyscaleImage applyKernel(GreyscaleImage input, Kernel kernel, float normFactor) {
 
         int h = (kernel.getWidth() - 1) >> 1;
 
-        GreyscaleImage output = input.createWithDimensions();
+        GreyscaleImage output = input.createFullRangeIntWithDimensions();
 
         //TODO: consider changing normalization to be similar to Kernel1DHelper
 
@@ -1244,27 +1099,21 @@ if (sum > 511) {
                     }
                 }
                 value *= normFactor;
-                                
+
                 int v = (int)value;
 
-                if (v < 0) {
-                    v = 0;
-                }
-                if (v > 255) {
-                    v = 255;
-                }
                 output.setValue(i, j, v);
             }
         }
 
-        input.resetTo(output);
+        return output;
     }
 
     /**
      * calculate theta from the gradient x and y images.
      * <pre>
      * The results are given as quadrants of values from 0 to 90.
-     * 
+     *
      *     -45    90    45          y/x
                 -  |  +
             0 -----|----- 0
@@ -1276,7 +1125,7 @@ if (sum > 511) {
      * </pre>
      * @param convolvedX
      * @param convolvedY
-     * @return 
+     * @return
      */
     public GreyscaleImage computeTheta(final GreyscaleImage convolvedX,
         final GreyscaleImage convolvedY) {
@@ -1304,17 +1153,17 @@ if (sum > 511) {
      * calculate theta from the gradient x and y images and transform to
      * range 0 to 180.
      * <pre>
-     * 
+     *
      *           90    45          y/x
                 -  |  +
           180 -----|----- 0
                 +  |  -
-                         
+
      * </pre>
-     * 
+     *
      * @param convolvedX
      * @param convolvedY
-     * @return 
+     * @return
      */
     public GreyscaleImage computeTheta180(final GreyscaleImage convolvedX,
         final GreyscaleImage convolvedY) {
@@ -1327,14 +1176,14 @@ if (sum > 511) {
                 double gX = convolvedX.getValue(i, j);
 
                 double gY = convolvedY.getValue(i, j);
-                
+
                 if (gY < 0) {
                     gX *= -1;
                     gY *= -1;
                 }
 
                 double radians = Math.atan2(gY, gX);
-             
+
                 int theta = (int)(radians * 180./Math.PI);
                 if (theta == 180) {
                     theta = 0;
@@ -1529,20 +1378,20 @@ if (sum > 511) {
 
         applyKernel1D(input, kernel, false);
     }
-    
+
     protected void applyKernelTwo1Ds(int[][] input, float[] kernel) {
 
         applyKernel1D(input, kernel, true);
 
         applyKernel1D(input, kernel, false);
     }
-    
+
     public void applyKernelTwo1Ds(float[][] input, float[] kernel) {
 
         applyKernel1D(input, kernel, true);
 
         applyKernel1D(input, kernel, false);
-        
+
     }
 
     protected void blur(GreyscaleImage input, float[] kernel, int minValue, int maxValue) {
@@ -1558,60 +1407,60 @@ if (sum > 511) {
 
         blur(input, kernel);
     }
-    
+
     /**
      * in order to make a smoother "blur" operation, the full gaussian
      * profile down to 0.001 * HWZI is created and convolved with image input
-     * at a smaller sigma, recursively, until the resulting sigma equals 
+     * at a smaller sigma, recursively, until the resulting sigma equals
      * the sigma given to the method.
-     * gaussian profiles add in quadrature, 
+     * gaussian profiles add in quadrature,
      * sigma_tot^2 = sigma_1^2 + sigma_2^2.
-     * 
+     *
      * @param input
-     * @param sigma should be a quadrature factor of sqrt(2)/2, that is 
-     *     sqrt(2)/2, 1, sqrt(1.5), sqrt(2.0), sqrt(2.5), sqrt(3.0), 
+     * @param sigma should be a quadrature factor of sqrt(2)/2, that is
+     *     sqrt(2)/2, 1, sqrt(1.5), sqrt(2.0), sqrt(2.5), sqrt(3.0),
      *     sqrt(3.5), sqrt(4.0), sqrt(4.5)...
-     *     in other words, the square of sigma should be 0.5 or a positive non zero 
+     *     in other words, the square of sigma should be 0.5 or a positive non zero
      *     integer or a positive non zero integer plus 0.5.
      */
     public void recursiveBlur(float[][] input, SIGMA sigma) {
-        
+
         float sigmaF = SIGMA.getValue(sigma);
         float sigmaFSQ = sigmaF * sigmaF;
         int sigmaISQ = (int)Math.floor(sigmaF);
         float remainder = sigmaFSQ - sigmaISQ;
         if (!(
-            ((sigmaISQ >= 0) && (Math.abs(remainder - 0.5f) < 0.01)) 
+            ((sigmaISQ >= 0) && (Math.abs(remainder - 0.5f) < 0.01))
             || ((sigmaISQ > 0) && (remainder < 0.01))
             )) {
             throw new IllegalArgumentException("sigma has to be a value that"
                 + "is the result of recursive combinations of sqrt(2)/2");
         }
-        
+
         float sigma0Sq = (float)Math.sqrt(2.)/2.f;
         sigma0Sq *= sigma0Sq;
-        
+
         float currentSigmaSq = sigma0Sq;
-        
+
         float finalSigmaSq = SIGMA.getValue(sigma);
         finalSigmaSq *= finalSigmaSq;
-        
+
         //float[] kernel = Gaussian1D.getKernel((float)Math.sqrt(2.)/2.f, 0);
         //for sigma=sqrt(2)/2 kernel
-        //   =[6.962646E-5, 0.010333488, 0.20755373, 0.5641896, 
+        //   =[6.962646E-5, 0.010333488, 0.20755373, 0.5641896,
         //     0.20755373, 0.010333488, 6.962646E-5]
         // which is essentially 1, 20, 56, 20, 1
-        final float[] kernel = new float[]{0.010333488f, 0.20755373f, 0.5641896f, 
+        final float[] kernel = new float[]{0.010333488f, 0.20755373f, 0.5641896f,
              0.20755373f, 0.010333488f};
-        
+
         do {
             applyKernel1D(input, kernel, true);
             applyKernel1D(input, kernel, false);
-            
+
             currentSigmaSq = currentSigmaSq + sigma0Sq;
-            
+
         } while ((finalSigmaSq > currentSigmaSq) && Math.abs(finalSigmaSq - currentSigmaSq) > 0.01);
-        
+
     }
 
     public void blur(GreyscaleImage input, SIGMA sigma) {
@@ -1685,7 +1534,7 @@ if (sum > 511) {
 
         blur(input, kernel, minValue, maxValue);
     }
-    
+
     /**
      * blur the r, g, b vectors of image input by sigma.
      * @param input
@@ -1806,8 +1655,8 @@ if (sum > 511) {
 
         input.resetTo(output);
     }
-    
-    public int[] performSecondDerivGaussian(GreyscaleImage input, 
+
+    public int[] performSecondDerivGaussian(GreyscaleImage input,
         SIGMA sigma) {
 
         float[] kernel = Gaussian1DSecondDeriv.getBinomialKernel(sigma);
@@ -1816,7 +1665,7 @@ if (sum > 511) {
 
         int w = input.getWidth();
         int h = input.getHeight();
-        
+
         int[] output = new int[w * h];
 
         for (int i = 0; i < w; i++) {
@@ -1825,12 +1674,12 @@ if (sum > 511) {
                 double conv = kernel1DHelper.convolvePointWithKernel(
                     input, i, j, kernel, true);
 
-                output[input.getInternalIndex(i, j)] = 
+                output[input.getInternalIndex(i, j)] =
                     (int)Math.round(conv);
             }
         }
-        
-        int[] output2 = Arrays.copyOf(output, 
+
+        int[] output2 = Arrays.copyOf(output,
             output.length);
 
         for (int i = 0; i < w; i++) {
@@ -1839,14 +1688,14 @@ if (sum > 511) {
                 double conv = kernel1DHelper.convolvePointWithKernel(
                     output2, w, h, i, j, kernel, false);
 
-                output[input.getInternalIndex(i, j)] = 
+                output[input.getInternalIndex(i, j)] =
                     (int)Math.round(conv);
             }
         }
 
         return output;
     }
-    
+
     public void applyKernel1D(GreyscaleImage input, float[] kernel,
         boolean calcForX) {
 
@@ -1865,7 +1714,7 @@ if (sum > 511) {
 
         input.resetTo(output);
     }
-    
+
     public void applyKernel1D(int[][] input, float[] kernel,
         boolean calcForX) {
 
@@ -1873,7 +1722,7 @@ if (sum > 511) {
 
         int w = input.length;
         int h = input[0].length;
-        
+
         int[][] output = new int[w][];
 
         for (int i = 0; i < w; i++) {
@@ -1890,7 +1739,7 @@ if (sum > 511) {
             System.arraycopy(output[i], 0, input[i], 0, h);
         }
     }
-    
+
     public void applyKernel1D(float[][] input, float[] kernel,
         boolean calcForX) {
 
@@ -1898,7 +1747,7 @@ if (sum > 511) {
 
         int w = input.length;
         int h = input[0].length;
-        
+
         float[][] output = new float[w][];
 
         for (int i = 0; i < w; i++) {
@@ -1919,12 +1768,12 @@ if (sum > 511) {
     public void applyKernel1D(GreyscaleImage input, float[] kernel,
         boolean calcForX, int minValue, int maxValue) {
 
-        GreyscaleImage output = convolveWithKernel1D(input, kernel, calcForX, 
+        GreyscaleImage output = convolveWithKernel1D(input, kernel, calcForX,
             minValue, maxValue);
 
         input.resetTo(output);
     }
-    
+
     public GreyscaleImage convolveWithKernel1D(GreyscaleImage input, float[] kernel,
         boolean calcForX, int minValue, int maxValue) {
 
@@ -2052,7 +1901,7 @@ if (sum > 511) {
 
         return out;
     }
-    
+
     public Image binImage(Image img,  int binFactor) {
 
         if (img == null) {
@@ -2090,7 +1939,7 @@ if (sum > 511) {
 
         return out;
     }
-    
+
     private void binImage(Image inputImg,  int binFactor, Image outputImg) {
 
         if (inputImg == null) {
@@ -2147,7 +1996,7 @@ if (sum > 511) {
             }
         }
     }
-    
+
     public GreyscaleImage expandBy2UsingBilinearInterp(GreyscaleImage input) {
 
         if (input == null) {
@@ -2199,10 +2048,10 @@ if (sum > 511) {
 
         return out;
     }
-    
+
     public int upsampleBy2UsingBilinearInterp(GreyscaleImage input,
         int x, int y) {
-        
+
         int w0 = input.getWidth();
         int h0 = input.getHeight();
 
@@ -2228,10 +2077,10 @@ if (sum > 511) {
 
         return (int)Math.round(v2);
     }
-    
+
     public double upsampleBy2UsingBilinearInterp(double[][] input,
         int x, int y) {
-        
+
         int w0 = input.length;
         int h0 = input[0].length;
 
@@ -2257,10 +2106,10 @@ if (sum > 511) {
 
         return v2;
     }
-    
+
     public double upsampleBy2UsingBilinearInterp(Complex[][] input,
         int x, int y, boolean calcForReal) {
-        
+
         int w0 = input.length;
         int h0 = input[0].length;
 
@@ -2290,10 +2139,10 @@ if (sum > 511) {
 
         return v2;
     }
-    
+
     public double upsampleUsingBilinearInterp(Complex[][] input,
         int x, int y, boolean calcForReal, int factor) {
-        
+
         int w0 = input.length;
         int h0 = input[0].length;
 
@@ -2323,7 +2172,7 @@ if (sum > 511) {
 
         return v2;
     }
-    
+
     public GreyscaleImage unbinImage(GreyscaleImage input, int binFactor) {
 
         if (input == null) {
@@ -2422,15 +2271,15 @@ if (sum > 511) {
         }
 
     }
-    
+
     public Complex[][] create2DFFT(double[][] input, boolean forward) {
 
         // performs normalization by default
         return create2DFFT(input, true, forward);
     }
-    
+
     /**
-     * perform fft on input.  
+     * perform fft on input.
      * @param input
      * @param doNormalize
      * @param forward
@@ -2438,7 +2287,7 @@ if (sum > 511) {
      */
     public Complex[][] create2DFFT(final double[][] input, boolean doNormalize,
         boolean forward) {
-        
+
         Complex[][] input2 = new Complex[input.length][];
         for (int i = 0; i < input.length; ++i) {
             input2[i] = new Complex[input[0].length];
@@ -2446,7 +2295,7 @@ if (sum > 511) {
                 input2[i][j] = new Complex(input[i][j], 0);
             }
         }
-        
+
         return create2DFFT(input2, doNormalize, forward);
     }
 
@@ -2458,8 +2307,8 @@ if (sum > 511) {
 
     /**
      * runtime complexity: is O(N*lg_2(N)) for N not power of 2,
-     * else is 
-     * 
+     * else is
+     *
      * perform fft on input.
      * @param input
      * @param doNormalize
@@ -2471,21 +2320,21 @@ if (sum > 511) {
 
         final int n0 = input.length;
         final int n1 = input[0].length;
-        
+
         int nn0 = 1 << (int)(Math.ceil(Math.log(n0)/Math.log(2)));
         int nn1 = 1 << (int)(Math.ceil(Math.log(n1)/Math.log(2)));
-        
+
         if (nn0 > n0 || nn1 > n1) {
-            Complex1D[] input2 = convertToComplex1D(input);
+            Complex1D[] input2 = copyToComplex1D(input);
             Complex1D[] output = create2DFFT2(input2, doNormalize, forward);
-            Complex[][] output2 = convertToComplex(output);
+            Complex[][] output2 = copyToComplex(output);
             return output2;
         }
-            
+
         Complex[][] output = copy(input);
-        
+
         // padding is at front of cols and rows
-    
+
         FFT fft = new FFT();
         if (!doNormalize) {
             fft.setToNotNormalize();
@@ -2499,7 +2348,7 @@ if (sum > 511) {
                 output[i0] = fft.ifft(output[i0]);
             }
         }
-        
+
         // re-use array for the FFT by dimension 1
         Complex[] tmp = new Complex[nn0];
 
@@ -2510,7 +2359,7 @@ if (sum > 511) {
         [0]  ..........nn1-1
         [1]  ..........nn1-1
         */
-       
+
         // ----- perform the FFT on dimension 1 ------
         for (int i1 = 0; i1 < nn1; ++i1) {
 
@@ -2530,8 +2379,8 @@ if (sum > 511) {
                 output[i0][i1] = tmp[i0];
             }
         }
-        
-        return output;        
+
+        return output;
     }
 
     /**
@@ -2611,9 +2460,9 @@ if (sum > 511) {
 
     /**
      * perform a 2-dimension FFT using the JFFTPack library.
-     * 
+     *
      * runtime complexity: is O(N*lg_2(N)) for N not power of 2.
-     * 
+     *
      * @param input double array of complex data in format double[nRows][2*nColumns]
      * where the column elements are alternately the complex real number and the
      * complex imaginary number.
@@ -2650,7 +2499,7 @@ if (sum > 511) {
                 }
             }
         }
-        
+
         // re-use array for the FFT by dimension 1 (across rows)
         Complex1D tmp = new Complex1D();
         tmp.x = new double[n0];
@@ -2659,7 +2508,7 @@ if (sum > 511) {
         ComplexDoubleFFT fft0 = new ComplexDoubleFFT(n0);
 
         final double norm0 = performNormalization ? (1./Math.sqrt(n0)) : 1.;
-        
+
         // ----- perform the FFT on dimension 1 ------
         for (int i1 = 0; i1 < n1; ++i1) {
 
@@ -2885,7 +2734,7 @@ if (sum > 511) {
 
         return v;
     }
-    
+
     /**
      * NOT YET TESTED
      *
@@ -2935,7 +2784,7 @@ if (sum > 511) {
                 a = img[(int)x1][(int)y1].im();
                 b = img[(int)x2][(int)y1].im();
             }
-            
+
             // interpolate over row y1
             v1 = ((x2 - x)/(x2 - x1)) * a + ((x - x1)/(x2 - x1)) * b;
 
@@ -2951,7 +2800,7 @@ if (sum > 511) {
                 c = img[(int)x1][(int)y2].im();
                 d = img[(int)x2][(int)y2].im();
             }
-            
+
             // interpolate over row y2
             v2 = ((x2 - x)/(x2 - x1)) * c + ((x - x1)/(x2 - x1)) * d;
         }
@@ -2961,7 +2810,7 @@ if (sum > 511) {
 
         return v;
     }
-    
+
     /**
      * NOT YET TESTED
      *
@@ -3234,7 +3083,7 @@ if (sum > 511) {
             }
         }
     }
-    
+
     /**
      * create an image of the mean of the surrounding dimension x dimension
      * pixels for each pixel centered on each pixel.  For the starting
@@ -3258,23 +3107,23 @@ if (sum > 511) {
     public void applyCenteredMean2(GreyscaleImage img, int halfDimension) {
 
         SummedAreaTable sumTable = new SummedAreaTable();
-        
+
         GreyscaleImage imgS = sumTable.createAbsoluteSummedAreaTable(img);
-        
-        imgS = sumTable.applyMeanOfWindowFromSummedAreaTable(imgS, 
+
+        imgS = sumTable.applyMeanOfWindowFromSummedAreaTable(imgS,
             2*halfDimension + 1);
-        
+
         img.resetTo(imgS);
     }
 
     public double[][] createUnitStandardDeviation(GreyscaleImage img, int halfDimension) {
 
         SummedAreaTable sumTable = new SummedAreaTable();
-        
+
         GreyscaleImage imgM = sumTable.createAbsoluteSummedAreaTable(img);
-        imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM, 
+        imgM = sumTable.applyMeanOfWindowFromSummedAreaTable(imgM,
             2*halfDimension + 1);
-         
+
         int w = img.getWidth();
         int h = img.getHeight();
         double[][] out = new double[w][];
@@ -3291,10 +3140,10 @@ if (sum > 511) {
                 out[i][j] = v;
             }
         }
-       
+
         return out;
     }
-    
+
     /**
      * create an image of the mean of the surrounding dimension x dimension
      * pixels for each pixel centered on each pixel.  For the starting
@@ -3318,17 +3167,17 @@ if (sum > 511) {
     public void applyCenteredMean2(double[][] img, int halfDimension) {
 
         SummedAreaTable sumTable = new SummedAreaTable();
-        
+
         double[][] imgS = sumTable.createAbsoluteSummedAreaTable(img);
-        
-        imgS = sumTable.applyMeanOfWindowFromSummedAreaTable(imgS, 
+
+        imgS = sumTable.applyMeanOfWindowFromSummedAreaTable(imgS,
             2*halfDimension + 1);
-        
+
         for (int i = 0; i < img.length; ++i) {
             System.arraycopy(imgS[i], 0, img[i], 0, imgS[i].length);
         }
     }
-    
+
     /**
      * create an image of the mean of the surrounding dimension x dimension
      * pixels for each pixel centered on each pixel.  For the starting
@@ -3343,7 +3192,7 @@ if (sum > 511) {
      * [11] [11] [12]
      * [11] [11] [12]
      * </pre>
-     * runtime complexity is O(N_pixels), but is also dependent upon 
+     * runtime complexity is O(N_pixels), but is also dependent upon
      * halfDimension.  Prefer to use applyCenteredMean2 which is always
      * less than 4 times O(N) in runtime complexity.
      * @param img
@@ -3357,7 +3206,7 @@ if (sum > 511) {
             throw new IllegalArgumentException("dimension is larger than image"
                 + " dimensions.  method not yet handling that.");
         }
-        
+
         /*
         becomes efficient when halfDimension > 1
 
@@ -3525,17 +3374,17 @@ if (sum > 511) {
 
     public Set<PairInt> extract2ndDerivPoints(GreyscaleImage img,
         Set<PairInt> filterToPoints, int nApprox) {
-        
+
         Set<PairInt> set = extract2ndDerivPoints(img, nApprox, true);
-        
+
         Set<PairInt> output = new HashSet<PairInt>();
-        
+
         for (PairInt p : filterToPoints) {
             if (set.contains(p)) {
                 output.add(p);
             }
         }
-        
+
         return output;
     }
 
@@ -3604,7 +3453,7 @@ if (sum > 511) {
 
         applySecondDerivGaussian(gsImg, SIGMA.ONE, 0, 255);
 
-        PairIntArray valueCounts = 
+        PairIntArray valueCounts =
             Histogram.createADescendingSortByKeyArray(gsImg);
         int nTot = 0;
         int v1 = -1;
@@ -3652,7 +3501,7 @@ if (sum > 511) {
 
         return pixels;
     }
-    
+
     /**
      * NOT READY FOR USE YET
      * extract the high value points in the second derivative gaussian of
@@ -3672,15 +3521,15 @@ if (sum > 511) {
         GreyscaleImage img, int[] labels, int maxNPoints,
         boolean reduceForNoise) {
 
-        int[] secondDerivs = 
+        int[] secondDerivs =
             performSecondDerivGaussian(img, SIGMA.ONE);
         for (int idx = 0; idx < secondDerivs.length; ++idx) {
             if (secondDerivs[idx] < 0) {
                 secondDerivs[idx] *= -1;
             }
         }
-        
-        TIntObjectMap<TIntSet> labelMap 
+
+        TIntObjectMap<TIntSet> labelMap
             = new TIntObjectHashMap<TIntSet>();
         for (int pixIdx = 0; pixIdx < labels.length; ++pixIdx) {
             int label = labels[pixIdx];
@@ -3691,22 +3540,22 @@ if (sum > 511) {
             }
             set.add(pixIdx);
         }
-        
+
         List<Set<PairInt>> output = new ArrayList<Set<PairInt>> ();
-        
+
         TIntObjectIterator<TIntSet> iter = labelMap.iterator();
-        
+
         for (int ii = labelMap.size(); ii-- > 0;) {
 
             iter.advance();
-            
+
             int label = iter.key();
-            
+
             TIntSet indexes = iter.value();
-            PairIntArray valueCounts = 
+            PairIntArray valueCounts =
                 Histogram.createADescendingSortByKeyArray(
                 indexes, secondDerivs);
-                    
+
             int nTot = 0;
             int v1 = -1;
             for (int i = 0; i < valueCounts.getN(); ++i) {
@@ -3729,15 +3578,15 @@ if (sum > 511) {
             Set<PairInt> pixels = new HashSet<PairInt>();
             TIntIterator iter2 = indexes.iterator();
             while (iter2.hasNext()) {
-                
+
                 int idx = iter2.next();
-                
+
                 int v = secondDerivs[idx];
-                
+
                 int x = img.getCol(idx);
                 int y = img.getRow(idx);
                 PairInt p = new PairInt(x, y);
-                
+
                 if (v >= v1) {
                     // avoid points on image boundaries
                     if (x == 0 || y == 0 || (x > (w - 1)) || (y > (h - 1))) {
@@ -3752,7 +3601,7 @@ if (sum > 511) {
             reduceTo4NeighborCentroids(pixels);
 
             log.info("after nPoints=" + pixels.size());
-            
+
             output.add(pixels);
         }
 
@@ -3805,11 +3654,11 @@ if (sum > 511) {
 
     }
 
-    public Complex1D[] convertToComplex1D(Complex[][] input) {
-        
+    public Complex1D[] copyToComplex1D(Complex[][] input) {
+
         int n0 = input.length;
         int n1 = input[0].length;
-        
+
         Complex1D[] output = new Complex1D[n0];
         for (int i = 0; i < n0; ++i) {
             output[i] = new Complex1D();
@@ -3820,45 +3669,45 @@ if (sum > 511) {
                 output[i].y[j] = input[i][j].im();
             }
         }
-        
+
         return output;
     }
 
     public Complex[][] copy(Complex[][] input) {
-        
+
         int n0 = input.length;
-        
+
         Complex[][] output = new Complex[n0][];
         for (int i = 0; i < n0; ++i) {
             output[i] = Arrays.copyOf(input[i], input[i].length);
         }
-        
+
         return output;
     }
 
     public double[][] copy(double[][] input) {
-        
+
         int n0 = input.length;
-        
+
         double[][] output = new double[n0][];
         for (int i = 0; i < n0; ++i) {
             output[i] = Arrays.copyOf(input[i], input[i].length);
         }
-        
+
         return output;
     }
-    
+
     /**
      * output is column major format
      * @param input
-     * @return 
+     * @return
      */
     public double[][] copy(GreyscaleImage input) {
-        
+
         int n0 = input.getNPixels();
         int w = input.getWidth();
         int h = input.getHeight();
-        
+
         double[][] output = new double[w][h];
         for (int i = 0; i < w; ++i) {
             output[i] = new double[h];
@@ -3866,21 +3715,21 @@ if (sum > 511) {
                 output[i][j] = input.getValue(i, j);
             }
         }
-        
+
         return output;
     }
-    
+
     /**
      * output is row major format
      * @param input
-     * @return 
+     * @return
      */
     public float[][] copyToRowMajor(GreyscaleImage input) {
-        
+
         int n0 = input.getNPixels();
         int h = input.getWidth();
         int w = input.getHeight();
-        
+
         float[][] output = new float[w][h];
         for (int i = 0; i < w; ++i) {
             output[i] = new float[h];
@@ -3888,15 +3737,15 @@ if (sum > 511) {
                 output[i][j] = input.getValue(j, i);
             }
         }
-        
+
         return output;
     }
-    
-    public Complex[][] convertToComplex(Complex1D[] input) {
-        
+
+    public Complex[][] copyToComplex(Complex1D[] input) {
+
         int n0 = input.length;
         int n1 = input[0].x.length;
-            
+
         Complex[][] output = new Complex[n0][];
         for (int i = 0; i < n0; ++i) {
             output[i] = new Complex[n1];
@@ -3904,7 +3753,7 @@ if (sum > 511) {
                 output[i][j] = new Complex(input[i].x[j], input[i].y[j]);
             }
         }
-        
+
         return output;
     }
 
@@ -3913,19 +3762,19 @@ if (sum > 511) {
      * that (x,y) += half kernel size is all contained within the sparseValueMap
      * because no approximations are made when a value is not in the map
      * and the results will not be normalized correctly.
-     * 
+     *
      * @param sparseValueMap
      * @param x
      * @param y
      * @param kernel
      * @param calcX if true, convolve for x, else for y
-     * @return 
+     * @return
      */
-    public float convolve1D(Map<PairInt, ? extends Number> sparseValueMap, int x, int y, 
+    public float convolve1D(Map<PairInt, ? extends Number> sparseValueMap, int x, int y,
         float[] kernel, boolean calcX) {
-        
+
         int h = (kernel.length - 1) >> 1;
-        
+
         float sum = 0;
         for (int g = 0; g < kernel.length; g++) {
             float gg = kernel[g];
@@ -3940,51 +3789,51 @@ if (sum > 511) {
                 y2 = y + g - h;
                 x2 = x;
             }
-            
+
             Number v = sparseValueMap.get(new PairInt(x2, y2));
-            
+
             if (v == null) {
                 throw new IllegalArgumentException(
                     "x,y += half kernel length is not in map");
             }
-              
+
             sum += (gg * v.floatValue());
         }
-        
+
         return sum;
     }
-    
+
     public TIntObjectMap<TIntSet> unbin(
         TIntObjectMap<TIntSet> binnedMap,
         int binFactor, int binnedWidth, int binnedHeight,
         int resultWidth, int resultHeight) {
-        
+
         if (binnedMap == null) {
             throw new IllegalArgumentException(
             "binnedMap cannot be null");
         }
 
-        TIntObjectMap<TIntSet> output 
+        TIntObjectMap<TIntSet> output
             = new TIntObjectHashMap<TIntSet>(
             binnedMap.size() * binFactor);
 
         int w0 = binnedWidth;
         int h0 = binnedHeight;
-        
+
         int w1 = resultWidth;
         int h1 = resultHeight;
-        
+
         TIntObjectIterator<TIntSet> iter =
             binnedMap.iterator();
-        
+
         for (int lIdx = 0; lIdx < binnedMap.size(); ++lIdx) {
-            
+
             iter.advance();
-            
+
             TIntSet p0 = iter.value();
             TIntSet pOut = new TIntHashSet(p0.size() * binFactor);
             output.put(iter.key(), pOut);
-            
+
             TIntIterator iter2 = p0.iterator();
             while (iter2.hasNext()) {
                 int pixIdx = iter2.next();
@@ -4033,19 +3882,19 @@ if (sum > 511) {
                 }
             }
         }
-        
+
         return output;
     }
-    
+
     /**
      * create a two-dimensional float array of the img multiplied by
      * factor, but returned in row-major format [row][col].
      * @param img
      * @param factor
-     * @return 
+     * @return
      */
     public float[][] multiply(GreyscaleImage img, float factor) {
-     
+
         int nRows = img.getHeight();
         int nCols = img.getWidth();
         float[][] out = new float[nRows][nCols];
@@ -4062,36 +3911,36 @@ if (sum > 511) {
         return out;
     }
 
-    public void createFirstDerivKeyPoints(float[][] image, 
+    public void createFirstDerivKeyPoints(float[][] image,
         float sigma, TIntList outKeypoints0, TIntList outKeypoints1) {
 
         boolean createCurvatureComponents = false;
-        
-        StructureTensor tensorComponents = new StructureTensor(image, 
+
+        StructureTensor tensorComponents = new StructureTensor(image,
             sigma, createCurvatureComponents);
-       
+
         float hLimit = 0.09f;//0.05f;
-        
-        createFirstDerivKeyPoints(tensorComponents, outKeypoints0, 
+
+        createFirstDerivKeyPoints(tensorComponents, outKeypoints0,
             outKeypoints1, hLimit);
     }
-    
+
     public void createFirstDerivKeyPoints(
-        StructureTensor tensorComponents, TIntList outKeypoints0, 
+        StructureTensor tensorComponents, TIntList outKeypoints0,
         TIntList outKeypoints1, float hLimit) {
-       
+
         TIntList kp0 = new TIntArrayList();
         TIntList kp1 = new TIntArrayList();
 
         // square of 1st deriv:
-        float[][] firstDeriv = add(tensorComponents.getDXSquared(), 
+        float[][] firstDeriv = add(tensorComponents.getDXSquared(),
             tensorComponents.getDYSquared());
 
         peakLocalMax(firstDeriv, 1, 0.1f, kp0, kp1);
 
         float[][] detA = tensorComponents.getDeterminant();
         float[][] traceA = tensorComponents.getTrace();
-        
+
         //float min = MiscMath.findMin(secondDeriv);
         //float max = MiscMath.findMax(secondDeriv);
         //System.out.println("min=" + min + " max=" + max);
@@ -4108,26 +3957,125 @@ if (sum > 511) {
                 outKeypoints1.add(y);
             }
         }
-        
+
         /*{// DEBUG
             float[][] a = copy(firstDeriv);
             MiscMath.applyRescale(a, 0, 255);
-            MiscDebug.writeImage(a, "_fitsr_deriv_" 
+            MiscDebug.writeImage(a, "_fitsr_deriv_"
                 + MiscDebug.getCurrentTimeFormatted());
         }*/
-        
+
     }
 
     public Set<PairInt> binPoints(Set<PairInt> points, int binFactor) {
-    
+
         Set<PairInt> out = new HashSet<PairInt>();
         for (PairInt p : points) {
             int x = Math.round((float)p.getX()/(float)binFactor);
             int y = Math.round((float)p.getY()/(float)binFactor);
             out.add(new PairInt(x, y));
         }
-        
+
         return out;
+    }
+
+    /**
+     * downsample the image to size w2,h2 with the given clamp values.
+     * Note that the interpolation is currently a bilinear filter,
+     * but in the future, a more accurate algorithm may be present.
+     * possibly a windowed sinc pre-filter).
+     * @param input
+     * @param w2 the width of the output image
+     * @param h2 the height of the output image
+     * @param minValue minimum value to clamp results to
+     * @param maxValue maximum value to clamp results to
+     * @return
+     */
+    public GreyscaleImage downSample(GreyscaleImage input,
+        int w2, int h2, int minValue, int maxValue) {
+
+        GreyscaleImage output = null;
+        if (minValue >= 0 && maxValue <= 255) {
+            output = input.createWithDimensions(w2, h2);
+        } else {
+            if (input.is64Bit) {
+                output = new GreyscaleImage(w2, h2,
+                    GreyscaleImage.Type.Bits64Signed);
+            } else {
+                output = new GreyscaleImage(w2, h2,
+                    GreyscaleImage.Type.Bits32Signed);
+            }
+        }
+
+        int w0 = input.getWidth();
+        int h0 = input.getHeight();
+
+        float rW = (float)w0/(float)w2;
+        float rH = (float)h0/(float)h2;
+
+        int cX = Math.round(rW);
+        int cY = Math.round(rH);
+
+        for (int i = 0; i < w2; ++i) {
+
+            float i2f = rW * i;
+
+            for (int j = 0; j < h2; ++j) {
+
+                double sum = 0;
+
+                // integrate the points in input for offsets up to cX
+                for (float ii = i2f; ii < (i2f + cX); ++ii) {
+                    if (ii < 0 || ii >= w0) {
+                        continue;
+                    }
+                    
+                    // kernel factor
+                    float hhx = Math.abs(1.f - (ii/rW));
+                    float hx = (hhx < 1) ? hhx : 0;
+
+                    float j2f = rH * j;
+
+                    // integrate the points in input for offsets up to cY
+                    for (float jj = j2f; jj < (j2f + cY); ++jj) {
+                        if (jj < 0 || jj >= h0) {
+                            continue;
+                        }
+                        
+                        // kernel factor
+                        float hhy = Math.abs(1.f - (jj/rH));
+                        float hy = (hhy < 1) ? hhy : 0;
+
+                        double v = biLinearInterpolation(input, ii, jj);
+                        
+                        System.out.format(
+                            "(%d,%d) hx=%.3f, hy=%.3f v=%.3f\n", 
+                            i, j, hx, hy, (float)v);
+
+                        v = hx * v/rW + hy * v/rH;
+                        
+                        sum += v;
+                    }
+                }
+                
+                /*
+                  0  1  2  3  4  5  6  7  8  9
+
+                  0     1     2     3     4
+                */
+
+                int v2 = (int)Math.round(sum);
+
+                if (v2 < 0) {
+                    v2 = 0;
+                } else if (v2 > 255) {
+                    v2 = 255;
+                }
+                output.setValue(i, j, v2);
+            }
+        }
+
+        return output;
     }
 
     public static class Colors {
@@ -4139,7 +4087,7 @@ if (sum > 511) {
             return colors;
         }
     }
-    
+
     /**
      * opposite to shift zero-frequency component to the center of the spectrum
      * in that it shifts the zero-frequency component to the smallest indexes
@@ -4319,18 +4267,18 @@ if (sum > 511) {
 
         return c;
     }
-   
+
     /**
-     * 
+     *
      * @param input gradient image
      */
     public void apply2LayerFilterOtsu(GreyscaleImage input) {
-     
+
         int w = input.getWidth();
         int h = input.getHeight();
-        
+
         OtsuThresholding ot = new OtsuThresholding();
-                           
+
         double[][] g = new double[w][];
         for (int i = 0; i < w; ++i) {
             g[i] = new double[h];
@@ -4340,52 +4288,52 @@ if (sum > 511) {
         }
         int nBins = 256/5;
         float t = (float)ot.calculateBinaryThreshold2D(g, nBins);
-            
+
         float tHigh = 0.75f * t;
-    
+
         float lowToHighFactor = 2.f;
-        
-        apply2LayerFilter(input, tHigh, lowToHighFactor);    
+
+        apply2LayerFilter(input, tHigh, lowToHighFactor);
     }
-            
+
     public void apply2LayerFilter(GreyscaleImage input, float highThreshold,
         float lowToHighFactor) {
-        
+
         int w = input.getWidth();
         int h = input.getHeight();
-        
+
         if (w < 3 || h < 3) {
             throw new IllegalArgumentException("images should be >= 3x3 in size");
         }
-                
+
         float tHigh = highThreshold;
         float tLow = tHigh/lowToHighFactor;
-            
+
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
-        
+
         int n = input.getNPixels();
-        
+
         GreyscaleImage img2 = input.createWithDimensions();
-        
+
         for (int i = 0; i < img2.getNPixels(); ++i) {
-            
+
             int v = input.getValue(i);
-            
+
             if (v < tLow) {
                 continue;
             } else if (v > tHigh) {
                 img2.setValue(i, v);
                 continue;
             }
-            
+
             int x = input.getCol(i);
             int y = input.getRow(i);
-            
+
             boolean foundHigh = false;
             boolean foundMid = false;
-            
-            for (int k = 0; k < dxs.length; ++k) {                
+
+            for (int k = 0; k < dxs.length; ++k) {
                 int x2 = x + dxs[k];
                 int y2 = y + dys[k];
                 if ((x2 < 0) || (y2 < 0) || (x2 > (w - 1)) || (y2 > (h - 1))) {
@@ -4432,18 +4380,18 @@ if (sum > 511) {
                 }
             }
         }
-        
+
         input.resetTo(img2);
-        
+
         // apply post thinning corrections?
     }
 
     public int[] getAverageRGB(Image img, PairIntArray pArr) {
-    
+
         if (pArr.getN() == 0) {
             return null;
         }
-        
+
         int rSum = 0;
         int gSum = 0;
         int bSum = 0;
@@ -4457,16 +4405,16 @@ if (sum > 511) {
         rSum /= pArr.getN();
         gSum /= pArr.getN();
         bSum /= pArr.getN();
-        
+
         return new int[]{rSum, gSum, bSum};
     }
-    
+
     public int[] getAverageRGB(Image img, Collection<PairInt> pArr) {
-    
+
         if (pArr.isEmpty()) {
             return null;
         }
-        
+
         int rSum = 0;
         int gSum = 0;
         int bSum = 0;
@@ -4480,10 +4428,10 @@ if (sum > 511) {
         rSum /= pArr.size();
         gSum /= pArr.size();
         bSum /= pArr.size();
-        
+
         return new int[]{rSum, gSum, bSum};
     }
-    
+
     /**
      * NOTE: needs testing...invoker should trim for image bounds
      * where needed.
@@ -4491,13 +4439,13 @@ if (sum > 511) {
      * @param sigma
      */
     public void blur(Set<PairInt> points, SIGMA sigma) {
-        
+
         // gaussian smoothing by sigma
         float[] kernel = Gaussian1D.getKernel(sigma);
-        
+
         applyKernel(points, kernel);
     }
-    
+
     /**
      * NOTE: needs testing...invoker should trim for image bounds
      * where needed.
@@ -4505,9 +4453,9 @@ if (sum > 511) {
      * @param sigma
      */
     public void applyKernel(Set<PairInt> points, float[] kernel) {
-        
+
         int[] minMaxXY = MiscMath.findMinMaxXY(points);
-        
+
         int xLL = minMaxXY[0] - 10;
         if (xLL < 0) {
             xLL = 0;
@@ -4516,28 +4464,28 @@ if (sum > 511) {
         if (yLL < 0) {
             yLL = 0;
         }
-        
+
         int xUR = minMaxXY[1] + 10;
         int yUR = minMaxXY[3] + 10;
-        
+
         int w = xUR - xLL + 1;
         int h = yUR - yLL + 1;
-        
+
         int[][] img = new int[w][];
         for (int i = 0; i < w; ++i) {
             img[i] = new int[h];
         }
-        
+
         for (PairInt p : points) {
             int x = p.getX() - xLL;
             int y = p.getY() - yLL;
             img[x][y] = 126;
         }
-        
+
         applyKernelTwo1Ds(img, kernel);
-        
+
         points.clear();
-        
+
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
                 if (img[i][j] <= 0) {
@@ -4550,19 +4498,19 @@ if (sum > 511) {
             }
         }
     }
-    
+
     /**
      * blur the points by sigma and trim any extending beyond image bounds.
      * @param points
      * @param sigma
      * @param imgWidth
-     * @param imgHeight 
+     * @param imgHeight
      */
-    public void blurAndTrim(Set<PairInt> points, SIGMA sigma, int imgWidth, 
+    public void blurAndTrim(Set<PairInt> points, SIGMA sigma, int imgWidth,
         int imgHeight) {
-        
+
         blur(points, sigma);
-        
+
         // trim any points extending beyond image bounds
         Set<PairInt> rm = new HashSet<PairInt>();
         for (PairInt p : points) {
@@ -4571,68 +4519,68 @@ if (sum > 511) {
                 rm.add(p);
             }
         }
-        
+
         points.removeAll(rm);
     }
-    
+
     /**
      * NOTE: modifies input by the blur step.
      * @param contiguousPoints
      * @param sigma
      * @param imgWidth
      * @param imgHeight
-     * @return 
+     * @return
      */
     public PairIntArray extractSmoothedOrderedBoundary(
         Set<PairInt> contiguousPoints, SIGMA sigma, int imgWidth, int imgHeight) {
-                
+
         blurAndTrim(contiguousPoints, sigma, imgWidth, imgHeight);
-        
+
         PerimeterFinder2 finder = new PerimeterFinder2();
         PairIntArray ordered = finder.extractOrderedBorder(
             contiguousPoints);
-    
+
         return ordered;
     }
-    
+
     /**
      * apply a dilate operator of size 3 x 3 to any pixel in image with value
      * greater than 0.
      * Note that if the img is not binary, the result may not be ideal because
-     * no attempt has been made to account for existing pixel value when 
+     * no attempt has been made to account for existing pixel value when
      * overwritten during dilation of adjacent pixel.
-     * 
-     * @param img 
-     * @return  
+     *
+     * @param img
+     * @return
      */
     public GreyscaleImage dilate(GreyscaleImage img) {
         return dilateOrErode(img, true);
     }
-    
+
     /**
      * apply an erosion operator of size 3 x 3 to any pixel in image with value
      * 0.
-     * 
-     * @param img 
-     * @return  
+     *
+     * @param img
+     * @return
      */
     public GreyscaleImage erode(GreyscaleImage img) {
        return dilateOrErode(img, false);
     }
-    
+
     /**
-     * 
-     * @param img 
-     * @return  
+     *
+     * @param img
+     * @return
      */
     private GreyscaleImage dilateOrErode(GreyscaleImage img, boolean dilate) {
-       
+
         int w = img.getWidth();
         int h = img.getHeight();
         int n = img.getNPixels();
-        
+
         GreyscaleImage out = img.copyImage();
-        
+
         for (int pixIdx = 0; pixIdx < n; ++pixIdx) {
             int v = img.getValue(pixIdx);
             if (dilate && v < 1) {
@@ -4667,28 +4615,28 @@ if (sum > 511) {
                     if (y == (h - 1) && y2 == (h - 1)) {
                         continue;
                     }*/
-                    
+
                     out.setValue(x2, y2, v);
                 }
             }
         }
-        
+
         return out;
     }
-    
+
     /**
-     * 
-     * @param img 
-     * @return  
+     *
+     * @param img
+     * @return
      */
-    private Set<PairInt> dilate(Set<PairInt> set, 
+    private Set<PairInt> dilate(Set<PairInt> set,
         int imageWidth, int imageHeight, boolean dilate) {
-       
+
         int w = imageWidth;
         int h = imageHeight;
-        
+
         Set<PairInt> out = new HashSet<PairInt>();
-        
+
         for (PairInt p : set) {
             int x = p.getX();
             int y = p.getY();
@@ -4709,32 +4657,32 @@ if (sum > 511) {
                 }
             }
         }
-        
+
         return out;
     }
-    
+
     /**
      * apply erode then dilate
-     * 
+     *
      * @param img
-     * @return 
+     * @return
      */
     public GreyscaleImage opening(GreyscaleImage img) {
         GreyscaleImage erode = erode(img);
         return dilate(erode);
     }
-    
+
     /**
      * apply dilate then erode
-     * 
+     *
      * @param img
-     * @return 
+     * @return
      */
     public GreyscaleImage closing(GreyscaleImage img) {
         GreyscaleImage dilate = dilate(img);
         return erode(dilate);
     }
-    
+
     /**
      * apply morphological thinning.
      * prefer this line thinner over applyThinning()
@@ -4744,26 +4692,26 @@ if (sum > 511) {
 
         int n0 = img.getWidth();
         int n1 = img.getHeight();
-        
+
         int[][] morphInput = new int[n0][];
         for (int i = 0; i < n0; ++i) {
             morphInput[i] = new int[n1];
         }
         for (int i = 0; i < n0; ++i) {
             for (int j = 0; j < n1; ++j) {
-                if (img.getValue(i, j) > 0) {                    
+                if (img.getValue(i, j) > 0) {
                     morphInput[i][j] = 1;
                 } else {
                     morphInput[i][j] = 0;
                 }
             }
-        }        
-        
+        }
+
         MorphologicalFilter mFilter = new MorphologicalFilter();
         int[][] skel = mFilter.bwMorphThin(morphInput, Integer.MAX_VALUE);
 
         Set<PairInt> points = new HashSet<PairInt>();
-        
+
         for (int i = 0; i < n0; ++i) {
             for (int j = 0; j < n1; ++j) {
                 int m = skel[i][j];
@@ -4774,12 +4722,12 @@ if (sum > 511) {
                 }
             }
         }
-        
+
     }
 
     /**
      * apply 8 hit or miss filters iteratively until convergence to thin the
-     * image.  the operation is performed on all pixels with 
+     * image.  the operation is performed on all pixels with
      * value > 0.  prefer applyThinning2() to this method.
      * @param img
      */
@@ -4797,12 +4745,12 @@ if (sum > 511) {
         /*
             - - -        - -
               +        + + -
-            + + +      + +        
+            + + +      + +
         */
         PairInt[][] neighborCoordOffsets
             = AbstractLineThinner.createCoordinatePointsForEightNeighbors(
             0, 0);
-        
+
         int w = img.getWidth();
         int h = img.getHeight();
         int n = img.getNPixels();
@@ -4813,7 +4761,7 @@ if (sum > 511) {
         int nIter = 0;
         do {
             nEdited = 0;
-            
+
             //GreyscaleImage tmp = out.copyImage();
             //tmp.multiply(255.f);
             //MiscDebug.writeImage(tmp, "_editing_" + MiscDebug.getCurrentTimeFormatted());
@@ -4836,16 +4784,16 @@ if (sum > 511) {
                         rotatePairsBy90(tmpC);
                         rotatePairsBy90(tmpD);
                     }
-                    
+
                     // to try to make it more symmetric, collecting all
                     // nullable pixels and counting the set neighbors,
-                    // then revisiting by order of fewest set neighbors 
+                    // then revisiting by order of fewest set neighbors
                     MinHeapForRT2012 heap = new MinHeapForRT2012(9, n);
 
                     for (int x = 1; x < (img.getWidth() - 1); ++x) {
                         for (int y = 1; y < (img.getHeight() - 1); ++y) {
                             int v = img.getValue(x, y);
- 
+
                             if (v == 0) {
                                 continue;
                             }
@@ -4853,7 +4801,7 @@ if (sum > 511) {
                                 && allAreNotPresent(img, x, y, tmpD)) {
                                 if (!ImageSegmentation.doesDisconnect(img,
                                     neighborCoordOffsets, x, y)) {
-                             
+
                                     // number of neighbors that are not '1s
                                     int nn = 0;
                                     for (int k = 0; k < dxs.length; ++k) {
@@ -4866,7 +4814,7 @@ if (sum > 511) {
                                             nn++;
                                         }
                                     }
-                                    
+
                                     //long key = 8 - nn;
                                     long key = nn;
                                     HeapNode node = new HeapNode(key);
@@ -4877,17 +4825,17 @@ if (sum > 511) {
                             }
                         }
                     }
-                    
+
                     while (heap.getNumberOfNodes() > 0) {
-                        
+
                         HeapNode node = heap.extractMin();
-                        
+
                         assert(node != null);
 
                         int pixIdx = ((Integer)node.getData()).intValue();
                         int y = pixIdx/w;
                         int x = pixIdx - (y * w);
-                        
+
                         int v = img.getValue(x, y);
 
                         if (v == 0) {
@@ -4902,13 +4850,13 @@ if (sum > 511) {
                                 nEdited++;
                             }
                         }
-                    }                    
-                }                
+                    }
+                }
             }
             nIter++;
-        } while (nEdited > 0);                
+        } while (nEdited > 0);
     }
-    
+
     /**
      * apply 8 hit or miss filters iteratively until convergence to thin the
      * image.  the operation is performed on all pixels with value > 0.
@@ -4927,12 +4875,12 @@ if (sum > 511) {
         /*
             - - -        - -
               +        + + -
-            + + +      + +        
+            + + +      + +
         */
         PairInt[][] neighborCoordOffsets
             = AbstractLineThinner.createCoordinatePointsForEightNeighbors(
             0, 0);
-        
+
         int w = imageWidth;
         int h = imageHeight;
         int n = points.size();
@@ -4943,7 +4891,7 @@ if (sum > 511) {
         int nIter = 0;
         do {
             nEdited = 0;
-            
+
             //GreyscaleImage tmp = out.copyImage();
             //tmp.multiply(255.f);
             //MiscDebug.writeImage(tmp, "_editing_" + MiscDebug.getCurrentTimeFormatted());
@@ -4966,10 +4914,10 @@ if (sum > 511) {
                         rotatePairsBy90(tmpC);
                         rotatePairsBy90(tmpD);
                     }
-                    
+
                     // to try to make it more symmetric, collecting all
                     // nullable pixels and counting the set neighbors,
-                    // then revisiting by order of fewest set neighbors 
+                    // then revisiting by order of fewest set neighbors
                     MinHeapForRT2012 heap = new MinHeapForRT2012(9, n);
 
                     for (PairInt p : points) {
@@ -4978,9 +4926,9 @@ if (sum > 511) {
                         if (allArePresent(points, x, y, tmpC)
                             && allAreNotPresent(points, x, y, tmpD)) {
                             if (!ImageSegmentation.doesDisconnect(points,
-                                neighborCoordOffsets, x, y, imageWidth, 
+                                neighborCoordOffsets, x, y, imageWidth,
                                 imageHeight)) {
-                                
+
                                 // number of neighbors that are not '1s
                                 int nn = 0;
                                 for (int k = 0; k < dxs.length; ++k) {
@@ -5003,34 +4951,34 @@ if (sum > 511) {
                             }
                         }
                     }
-                    
+
                     while (heap.getNumberOfNodes() > 0) {
-                        
+
                         HeapNode node = heap.extractMin();
-                        
+
                         assert(node != null);
 
                         int pixIdx = ((Integer)node.getData()).intValue();
                         int y = pixIdx/w;
                         int x = pixIdx - (y * w);
-                       
+
                         if (allArePresent(points, x, y, tmpC)
                             && allAreNotPresent(points, x, y, tmpD)) {
                             if (!ImageSegmentation.doesDisconnect(points,
-                                neighborCoordOffsets, x, y, imageWidth, 
+                                neighborCoordOffsets, x, y, imageWidth,
                                 imageHeight)) {
-                         
+
                                 points.remove(new PairInt(x, y));
                                 nEdited++;
                             }
                         }
-                    }                    
-                }                
+                    }
+                }
             }
             nIter++;
         } while (nEdited > 0);
     }
-    
+
     /**
      * apply 8 hit or miss filters iteratively until convergence to thin the
      * image.  the operation is performed on all pixels with value > 0.
@@ -5049,7 +4997,7 @@ if (sum > 511) {
         /*
             - - -        - -
               +        + + -
-            + + +      + +        
+            + + +      + +
         */
         PairInt[][] neighborCoordOffsets
             = AbstractLineThinner.createCoordinatePointsForEightNeighbors(
@@ -5060,7 +5008,7 @@ if (sum > 511) {
         int n = pixIdxs.size();
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
-        
+
         int nEdited = 0;
         int nIter = 0;
         do {
@@ -5084,10 +5032,10 @@ if (sum > 511) {
                         rotatePairsBy90(tmpC);
                         rotatePairsBy90(tmpD);
                     }
-                    
+
                     // to try to make it more symmetric, collecting all
                     // nullable pixels and counting the set neighbors,
-                    // then revisiting by order of fewest set neighbors 
+                    // then revisiting by order of fewest set neighbors
                     MinHeapForRT2012 heap = new MinHeapForRT2012(9, n);
 
                     TIntIterator iter = pixIdxs.iterator();
@@ -5099,7 +5047,7 @@ if (sum > 511) {
                             && allAreNotPresent(pixIdxs, x, y, tmpD, w, h)) {
                             if (!ImageSegmentation.doesDisconnect(pixIdxs,
                                 neighborCoordOffsets, x, y, w, h)) {
-                        
+
                                 // number of neighbors that are not '1s
                                 int nn = 0;
                                 for (int k = 0; k < dxs.length; ++k) {
@@ -5122,35 +5070,35 @@ if (sum > 511) {
                             }
                         }
                     }
-                    
+
                     while (heap.getNumberOfNodes() > 0) {
-                        
+
                         HeapNode node = heap.extractMin();
-                        
+
                         assert(node != null);
 
                         int pixIdx = ((Integer)node.getData()).intValue();
                         int y = pixIdx/w;
                         int x = pixIdx - (y * w);
-                       
+
                         if (allArePresent(pixIdxs, x, y, tmpC, w, h)
                             && allAreNotPresent(pixIdxs, x, y, tmpD, w, h)) {
                             if (!ImageSegmentation.doesDisconnect(pixIdxs,
                                 neighborCoordOffsets, x, y, w, h)) {
-                         
+
                                 pixIdxs.remove(pixIdx);
                                 nEdited++;
                             }
                         }
-                    }                    
-                }                
+                    }
+                }
             }
             nIter++;
         } while (nEdited > 0);
     }
-    
+
     private void rotatePairsBy90(int[] xy) {
-         
+
         /*
         int cos90 = 0;
         int sin90 = 1;
@@ -5166,7 +5114,7 @@ if (sum > 511) {
                = - (0 + ((-(x0-0)))
                = +x0
         */
-        
+
         for (int i = 0; i < xy.length; i += 2) {
             int x = xy[i];
             int y = xy[i + 1];
@@ -5174,10 +5122,10 @@ if (sum > 511) {
             xy[i + 1] = x;
         }
     }
-    
+
     private boolean allArePresent(TIntSet pixIdxs, int x, int y, int[] xy,
         int imgWidth, int imgHeight) {
-        
+
         for (int k = 0; k < xy.length; k += 2) {
             int tx = x + xy[k];
             int ty = y + xy[k + 1];
@@ -5189,12 +5137,12 @@ if (sum > 511) {
                 return false;
             }
         }
-        
+
         return true;
     }
-    
+
     private boolean allArePresent(GreyscaleImage img, int x, int y, int[] xy) {
-        
+
         for (int k = 0; k < xy.length; k += 2) {
             int tx = x + xy[k];
             int ty = y + xy[k + 1];
@@ -5202,12 +5150,12 @@ if (sum > 511) {
                 return false;
             }
         }
-        
+
         return true;
     }
-    
+
     private boolean allArePresent(Set<PairInt> points, int x, int y, int[] xy) {
-        
+
         for (int k = 0; k < xy.length; k += 2) {
             int tx = x + xy[k];
             int ty = y + xy[k + 1];
@@ -5215,12 +5163,12 @@ if (sum > 511) {
                 return false;
             }
         }
-        
+
         return true;
     }
-    
+
     private boolean allAreNotPresent(GreyscaleImage img, int x, int y, int[] xy) {
-        
+
         for (int k = 0; k < xy.length; k += 2) {
             int tx = x + xy[k];
             int ty = y + xy[k + 1];
@@ -5228,12 +5176,12 @@ if (sum > 511) {
                 return false;
             }
         }
-        
+
         return true;
     }
-    
+
     private boolean allAreNotPresent(Set<PairInt> points, int x, int y, int[] xy) {
-        
+
         for (int k = 0; k < xy.length; k += 2) {
             int tx = x + xy[k];
             int ty = y + xy[k + 1];
@@ -5241,13 +5189,13 @@ if (sum > 511) {
                 return false;
             }
         }
-        
+
         return true;
     }
-    
+
     private boolean allAreNotPresent(TIntSet pixIdxs, int x, int y, int[] xy,
         int imgWidth, int imgHeight) {
-        
+
         for (int k = 0; k < xy.length; k += 2) {
             int tx = x + xy[k];
             int ty = y + xy[k + 1];
@@ -5259,48 +5207,48 @@ if (sum > 511) {
                 return false;
             }
         }
-        
+
         return true;
     }
-    
+
     /**
      * NOTE: this is not the same as the scale space image
      * or inflection points in the scaleSpace package.
      * It is a very quick look at the position derivatives.
-     * 
+     *
      * create a two dimensional row-major format array of curvature of the
      * image img.  Note that img is expected to have all values >= 0.
      * Also note that sigma should be equal to or greater than
      * sqrt(2)/2.
      * @param img
      * @param sigma
-     * @return 
+     * @return
      */
     public float[][] createCurvatureImage(GreyscaleImage img, float sigma) {
-        
+
         /* curvature:
                dot is the degree of derivative...see ScaleSpaceCurvature
-                      X_dot(t,o~) * Y_dot_dot(t,o~) - Y_dot(t,o~) * X_dot_dot(t,o~) 
+                      X_dot(t,o~) * Y_dot_dot(t,o~) - Y_dot(t,o~) * X_dot_dot(t,o~)
             k(t,o~) = -------------------------------------------------------------
                                    (X_dot^2(t,o~) + Y_dot^2(t,o~))^1.5
         */
-        
+
         float max = img.max();
-        
+
         if (max <= 0) {
             throw new IllegalArgumentException("img values must be"
                 + " >= 0 and maximum must be > 0");
         }
-        
+
         // -- switch to row-major ----
         float[][] image = multiply(img, 1.f/max);
-        
+
         assert(image.length == img.getHeight());
         assert(image[0].length == img.getWidth());
-        
+
         return createCurvatureImage(image, sigma);
     }
-    
+
     /**
      * NOTE: this is not the same as the scale space image
      * or inflection points in the scaleSpace package.
@@ -5312,36 +5260,36 @@ if (sum > 511) {
      * sqrt(2)/2.
      * @param image row-major formatted image
      * @param sigma
-     * @return 
+     * @return
      */
     public float[][] createCurvatureImage(float[][] image, float sigma) {
-        
+
         /* curvature:
                dot is the degree of derivative...see ScaleSpaceCurvature
-                      X_dot(t,o~) * Y_dot_dot(t,o~) - Y_dot(t,o~) * X_dot_dot(t,o~) 
+                      X_dot(t,o~) * Y_dot_dot(t,o~) - Y_dot(t,o~) * X_dot_dot(t,o~)
             k(t,o~) = -------------------------------------------------------------
                                    (X_dot^2(t,o~) + Y_dot^2(t,o~))^1.5
         */
-        
+
         // --- create Sobel derivatives (gaussian 1st deriv sqrt(2)/2 = 0.707)----
-        
+
         // switch X and Y sobel operations for row major
 
         TwoDFloatArray[] components =
             createCurvatureComponents(image, sigma);
-        
+
         float[][] gX = components[0].a;
         float[][] gY = components[1].a;
         float[][] gX2 = components[2].a;
         float[][] gY2 = components[3].a;
-        
+
         int nRows = gX.length;
         int nCols = gX[0].length;
-        
+
         float[][] curvature = copy(gX);
         for (int i = 0; i < nRows; ++i) {
             for (int j = 0; j < nCols; ++j) {
-                
+
                 float gX2gX2 = gX2[i][j] * gX2[i][j];
                 float gY2gY2 = gY2[i][j] * gY2[i][j];
                 if (gX2gX2 == 0 && gY2gY2 == 0) {
@@ -5354,11 +5302,11 @@ if (sum > 511) {
                     / Math.pow((gX2gX2 + gY2gY2), 1.5));
             }
         }
-        
+
         return curvature;
     }
-    
-    
+
+
     /**
      * create an image segmented by curvature zero-crossings.
      * calculates the curvature in O(N_pixels) but using transcendental
@@ -5369,9 +5317,9 @@ if (sum > 511) {
      * for zeroHandling = 0, curvature equal to zero sets output to 1;
      * for zeroHandling = 1, curvature equal to zero sets output to 0;
      * for zeroHandling = 2, curvature equal to zero sets output to 255.
-     * 
+     *
      * This method is used in MedialAxis1.java.
-     * 
+     *
      * @param image image in row-major format.
      * @param sigma (note, the internal first derivative, first step is
      * sigma=sqrt(2)/2 so this given sigma should be that or larger.
@@ -5379,22 +5327,22 @@ if (sum > 511) {
      * 0 = set curvature exact zero values to value 1,
      * 1 = set curvature exact zero values to value 0,
      * 2 = set curvature exact zero values to value 255.
-     * @return 
+     * @return
      */
     public GreyscaleImage createZeroCrossingsCurvature(float[][] image,
         float sigma, int zeroHandling) {
-                
+
         if ((zeroHandling < 0) || (zeroHandling > 2)) {
             throw new IllegalArgumentException("zeroHandling must be "
                 + "between 0 and 2, inclusive.");
         }
-        
+
         // -- switch to row-major until output ----
         float[][] curvature = createCurvatureImage(image, sigma);
-        
+
         return createZeroCrossingsCurvatureImage(curvature, zeroHandling);
     }
-    
+
     /**
      * * NOTE: this is not the same as the scale space image
      * or inflection points in the scaleSpace package.
@@ -5410,9 +5358,9 @@ if (sum > 511) {
      * for zeroHandling = 0, curvature equal to zero sets output to 1;
      * for zeroHandling = 1, curvature equal to zero sets output to 0;
      * for zeroHandling = 2, curvature equal to zero sets output to 255.
-     * 
+     *
      * This method is used in MedialAxis1.java.
-     * 
+     *
      * @param img
      * @param sigma (note, the internal first derivative, first step is
      * sigma=sqrt(2)/2 so this given sigma should be that or larger.
@@ -5420,22 +5368,22 @@ if (sum > 511) {
      * 0 = set curvature exact zero values to value 1,
      * 1 = set curvature exact zero values to value 0,
      * 2 = set curvature exact zero values to value 255.
-     * @return 
+     * @return
      */
     public GreyscaleImage createZeroCrossingsCurvature(GreyscaleImage img,
         float sigma, int zeroHandling) {
-                
+
         if ((zeroHandling < 0) || (zeroHandling > 2)) {
             throw new IllegalArgumentException("zeroHandling must be "
                 + "between 0 and 2, inclusive.");
         }
-        
+
         // -- switch to row-major until output ----
         float[][] curvature = createCurvatureImage(img, sigma);
-        
+
         return createZeroCrossingsCurvatureImage(curvature, zeroHandling);
     }
-    
+
     /**
      * create an image segmented by curvature zero-crossings.
      * calculates the curvature in O(N_pixels) but using transcendental
@@ -5446,29 +5394,29 @@ if (sum > 511) {
      * for zeroHandling = 0, curvature equal to zero sets output to 1;
      * for zeroHandling = 1, curvature equal to zero sets output to 0;
      * for zeroHandling = 2, curvature equal to zero sets output to 255.
-     * 
+     *
      * This method is used in MedialAxis1.java.
-     * 
+     *
      * @param curvature
      * @param zeroHandling allowed values are 0, 1, or 2.
      * 0 = set curvature exact zero values to value 0,
      * 1 = set curvature exact zero values to value 1,
      * 2 = set curvature exact zero values to value 255.
-     * @return 
+     * @return
      */
     private GreyscaleImage createZeroCrossingsCurvatureImage(float[][] curvature,
         int zeroHandling) {
-                
+
         if ((zeroHandling < 0) || (zeroHandling > 2)) {
             throw new IllegalArgumentException("zeroHandling must be "
                 + "between 0 and 2, inclusive.");
         }
-        
+
         int nRows = curvature.length;
         int nCols = curvature[0].length;
-        
+
         GreyscaleImage out = new GreyscaleImage(nCols, nRows);
-        
+
         for (int i = 0; i < nRows; ++i) {
             for (int j = 0; j < nCols; ++j) {
                 float v = curvature[i][j];
@@ -5491,39 +5439,39 @@ if (sum > 511) {
                 }
             }
         }
-        
+
         return out;
     }
-    
+
     /**
-     * create texture transforms from 
+     * create texture transforms from
      * "Textured Image Segmentation" by Laws, 1980.
-     * 
+     *
      * The transforms are combinations of filters based on
-     *  L5 level = [1 4 6 4 1]     
-             gaussian, binomial for sigma=1 
+     *  L5 level = [1 4 6 4 1]
+             gaussian, binomial for sigma=1
              B3 spline function, used in ATrous wavelet
-        E5 edge  = [-1 -2 0 2 1]   
+        E5 edge  = [-1 -2 0 2 1]
              1st deriv of gaussian, binomial for sigma=1
-        S5 spot =   [-1 0 2 0 -1]  
+        S5 spot =   [-1 0 2 0 -1]
              -1 times 2nd deriv binomial for sigma=sqrt(2)/2,... LOG
-        R5 ripple = [1 -4 6 -4 1]  
+        R5 ripple = [1 -4 6 -4 1]
               3rd deriv gaussian, ...Gabor
-     
+
      NOTE: bright clumps in R5 R5 look useful for finding vegetation.
-        It finds the bounds of the vegetation... places where the 
+        It finds the bounds of the vegetation... places where the
         the change of the change of the gradient is large (and dense).
-        can apply adaptive means to the feature image to find the 
+        can apply adaptive means to the feature image to find the
         brightest of these.
         L5 S5 looks useful for finding horizontal lines such as edge segments
         of windows.
-    
-     * @param img 
+
+     * @param img
        @param state 0=do not process derivatives further,
        1=subtract mean, 2=subtract mean and square to make variance,
        3=make zero mean, unit standard derivative, but multiplied by
        255 to put into integer range for result.
-     * @return textureTransforms 
+     * @return textureTransforms
        GreyscaleImage[]{
        L5E5/E5L5, L5S5/S5L5, L5R5/R5L5, E5E5.
        E5S5/S5E5, E5R5/R5E5, S5S5, S5R5/R5S5,
@@ -5531,29 +5479,29 @@ if (sum > 511) {
      */
     public Map<String, GreyscaleImage> createTextureTransforms(
         GreyscaleImage img, int state) {
-        
+
         if (state < 0 || state > 3) {
             throw new IllegalArgumentException("state must be between"
                 + "0 and 3, inclusive");
         }
-        
+
         /*
         adapted from a cs lecture on texture filters from uw
         (https://courses.cs.washington.edu/courses/cse455/09wi/Lects/lect12.pdf
         which possibly uses:
         "Statistical Texture Analysis" by Srinivasan and Shobha 2008)
-        
+
         Both contain content from "Textured Image Segmentation" by Laws, 1980.
-        
+
         filters:
-            L5 level = [1 4 6 4 1]     
-                 gaussian, binomial for sigma=1 
+            L5 level = [1 4 6 4 1]
+                 gaussian, binomial for sigma=1
                  B3 spline function, used in ATrous wavelet
-            E5 edge  = [-1 -2 0 2 1]   
+            E5 edge  = [-1 -2 0 2 1]
                  1st deriv of gaussian, binomial for sigma=1
-            S5 spot =   [-1 0 2 0 -1]  
+            S5 spot =   [-1 0 2 0 -1]
                  -1 times 2nd deriv binomial for sigma=sqrt(2)/2; a.k.a. LOG
-            R5 ripple = [1 -4 6 -4 1]  
+            R5 ripple = [1 -4 6 -4 1]
                   3rd deriv gaussian, a.k.a. Gabor
             W5 waves = [-1, 2, 0, -2, -1]
 
@@ -5565,7 +5513,7 @@ if (sum > 511) {
                          1  4  6   4  1
         - there are 9 feature vectors one could make.  can see that some compose
           tensors, and different keypoint algorithms.
-        
+
         there are 9 feature vectors one could make.
           created by subtracting the mean neighborhood intensity from pixel
              filter the neighborhood with the 16 5 x 5 masks
@@ -5576,7 +5524,7 @@ if (sum > 511) {
               E5S5/S5E5, E5R5/R5E5, S5S5, S5R5/R5S5,
               R5R5
         */
-        
+
         float[] kernelL5 = new float[]{ 1,  4, 6, 4, 1};
         float[] kernelE5 = new float[]{-1, -2, 0, 2, 1};
         float[] kernelS5 = new float[]{-1,  0, 2, 0, -1};
@@ -5587,7 +5535,7 @@ if (sum > 511) {
         kernels[2] = kernelS5;
         kernels[3] = kernelR5;
         String[] labels = new String[]{"L5", "E5", "S5", "R5"};
-                
+
         Map<String, GreyscaleImage> transformed = new
             HashMap<String, GreyscaleImage>();
 
@@ -5616,9 +5564,9 @@ if (sum > 511) {
 
                     /*
                     0=do not process derivatives further,
-                    1=subtract mean, 
+                    1=subtract mean,
                     2=subtract mean and square to make variance,
-                    3=make zero mean, unit standard derivative, 
+                    3=make zero mean, unit standard derivative,
                       but multiplied by 255 to put into integer range for result.
                     */
 
@@ -5661,26 +5609,26 @@ if (sum > 511) {
                 }
             }
         }
-        
+
         return transformed;
     }
-    
+
     public void exploreTextures() throws IOException {
-        
+
         /*
         textures in frequency space:
         need to simplify the number of points contributing to the
         frequency domain pattern,
         so will calculate key points as sparse representation.
         */
-        
+
         int maxDimension = 256;//512;
-        
+
         String fileName1 = "android_statues_02.jpg";
         fileName1 = "merton_college_I_001.jpg";
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath1);
-        
+
         long ts = MiscDebug.getCurrentTimeFormatted();
 
         int w1 = img.getWidth();
@@ -5691,23 +5639,23 @@ if (sum > 511) {
             (float) h1 / maxDimension));
 
         img = binImage(img, binFactor1);
-        
+
         float max = img.max();
-        
+
         if (max <= 0) {
             throw new IllegalArgumentException("img values must be"
                 + " >= 0 and maximum must be > 0");
         }
-        
+
         int nRows = img.getHeight();
         int nCols = img.getWidth();
-        
+
         // axis 0 coordinates
         TIntList keypoints0 = new TIntArrayList();
-        
+
         // axis 1 coordinates
         TIntList keypoints1 = new TIntArrayList();
-        
+
         /*ORB orb = new ORB(10000);
         orb.overrideToNotCreateDescriptors();
         orb.overrideToAlsoCreate1stDerivKeypoints();
@@ -5716,35 +5664,35 @@ if (sum > 511) {
         keypoints0.addAll(orb.getAllKeyPoints0());
         keypoints1.addAll(orb.getAllKeyPoints1());
         */
-        
+
         ImageSegmentation imageSegmentation = new ImageSegmentation();
         EdgeFilterProducts products = imageSegmentation.createGradient(
             img.copyToColorGreyscaleExt(), 2, ts);
-                
+
         GreyscaleImage gradient = products.getGradientXY();
-        
+
         float sigma = SIGMA.getValue(SIGMA.ZEROPOINTSEVENONE);
-        
+
         // -- switch to row-major ----
         float[][] image = multiply(img, 1.f/max);
-                
+
         //  strong high density responses in r5r5 for edges of vegetation.
         //  textures such as bricks or roof tiles are present in r5r5
         //  but so are strong edges, so possibly need
         //  to use the gradient edges here to distinguish between
         //  corner and the numerous points that are not good matching
         //  points.
-        
+
         // thresh is usually 0.01f
-        //createCurvatureKeyPoints(image, sigma, keypoints0, keypoints1, 
+        //createCurvatureKeyPoints(image, sigma, keypoints0, keypoints1,
         //   0.001f);
-        
+
         createR5R5KeyPoints(image, keypoints0, keypoints1);
         //createE5E5KeyPoints(image, keypoints0, keypoints1);
         //createL5E5KeyPoints(image, keypoints0, keypoints1);
-        //createS5S5KeyPoints(image, keypoints0, keypoints1);        
+        //createS5S5KeyPoints(image, keypoints0, keypoints1);
         //createFirstDerivKeyPoints(image, sigma, keypoints0, keypoints1);
-        
+
         //Image kpImg = img.copyToColorGreyscale();
         Image kpImg = gradient.copyToColorGreyscale();
         for (int i = 0; i < keypoints0.size(); ++i) {
@@ -5753,13 +5701,13 @@ if (sum > 511) {
             kpImg.setRGB(x, y, 255, 0, 0);
         }
         MiscDebug.writeImage(kpImg, "_keypoints_1_");
-        
+
         /*
         Complex1D[] ccOut = create2DFFT2WithSwapMajor(kpImg, true);
 
         assert(nRows == ccOut[0].x.length);
         assert(nCols == ccOut.length);
-        
+
         double[][] kpFreqR = new double[nCols][];
         double[][] kpFreqI = new double[nCols][];
         for (int i0 = 0; i0 < ccOut.length; ++i0) {
@@ -5770,25 +5718,25 @@ if (sum > 511) {
                 kpFreqI[i0][i1] = ccOut[i0].y[i1];
             }
         }
-        
+
         TIntList plotRows = new TIntArrayList();
         TIntList plotCols = new TIntArrayList();
         plotRows.add(10);
         plotRows.add(50);
         plotRows.add(100);
         plotRows.add(110);
-        
+
         plotCols.add(10);
         plotCols.add(50);
         plotCols.add(100);
         plotCols.add(150);
         plotCols.add(200);
         plotCols.add(210);
-        
+
         String lbl = "keypoints_freq";
-        
+
         MiscDebug.plot(kpFreqR, plotCols, plotRows, lbl);
-       
+
         MiscMath.applyRescale(kpFreqR, 0, 255);
         Image kpFreqRImg = img.copyToColorGreyscale();
         for (int i = 0; i < nCols; ++i) {
@@ -5798,28 +5746,28 @@ if (sum > 511) {
         }
         MiscDebug.writeImage(kpFreqRImg, "_keypoints_freq_");
         */
-        
+
    /*
         // ---- edited _keypoints_1_ image to keep only a characteristic section ---
         String filePath = ResourceFinder.findFileInTestResources(
             "vegetation_peak_texture.png");
-        
+
         GreyscaleImage imgPattern = ImageIOHelper.readImage(
             filePath).copyToGreyscale();
-        
+
         Complex[][] fftPattern = PhaseCongruencyDetector
             .createLowPassFreqDomainFilter(imgPattern);
-       
+
         PeriodicFFT perfft2 = new PeriodicFFT();
         Complex[][][] perfResults = perfft2.perfft2(img, false);
         Complex[][] fftImage = perfResults[1];
-        
+
         // --- image in the frequency domain convolved with texture patch ----
-        Complex[][] freqDomainImageTimesPattern = 
+        Complex[][] freqDomainImageTimesPattern =
             convolveWithKernel(fftImage, fftPattern);
-        
+
         // ----- transform that to spatial domain ----
-        Complex[][] fComplex = create2DFFT(freqDomainImageTimesPattern, false, false);    
+        Complex[][] fComplex = create2DFFT(freqDomainImageTimesPattern, false, false);
         double[][] transformedReal = new double[nCols][];
         for (int i0 = 0; i0 < nCols; ++i0) {
             transformedReal[i0] = new double[nRows];
@@ -5827,21 +5775,21 @@ if (sum > 511) {
                 transformedReal[i0][i1] = fComplex[i1][i0].abs();
             }
         }
-        
+
         MiscMath.applyRescale(transformedReal, 0, 255);
         GreyscaleImage kpFreqR2Img = new GreyscaleImage(nCols, nRows);
         for (int i = 0; i < nCols; ++i) {
             for (int j = 0; j < nRows; ++j) {
-                kpFreqR2Img.setValue(i, j, 
+                kpFreqR2Img.setValue(i, j,
                     (int)Math.round(transformedReal[i][j]));
             }
         }
         MiscDebug.writeImage(kpFreqR2Img, "_keypoints_freq2_spatial_");
     */
     }
-    
+
     /**
-     * 
+     *
      * @param image
      * @param sigma
      * @param outputKeypoints0
@@ -5851,18 +5799,18 @@ if (sum > 511) {
     public void createCurvatureKeyPoints(float[][] image, float sigma,
         TIntList outputKeypoints0, TIntList outputKeypoints1,
         float thresholdRel) {
-        
+
         boolean doCreateCurvatureKeyPoints = true;
-        
-        StructureTensor tensorComponents = new StructureTensor(image, 
+
+        StructureTensor tensorComponents = new StructureTensor(image,
             sigma, doCreateCurvatureKeyPoints);
-        
+
         createCurvatureKeyPoints(tensorComponents, outputKeypoints0,
             outputKeypoints1, thresholdRel);
     }
-    
+
     /**
-     * 
+     *
      * @param tensorComponents
      * @param outputKeypoints0
      * @param outputKeypoints1
@@ -5871,9 +5819,9 @@ if (sum > 511) {
     public void createCurvatureKeyPoints(StructureTensor tensorComponents,
         TIntList outputKeypoints0, TIntList outputKeypoints1,
         float thresholdRel) {
-        
+
         // square of 1st deriv:
-        //float[][] firstDeriv = add(tensorComponents.getDXSquared(), 
+        //float[][] firstDeriv = add(tensorComponents.getDXSquared(),
         //    tensorComponents.getDYSquared());
         //float max1stDeriv = MiscMath.findMax(firstDeriv);
         //float f = max1stDeriv / 10;
@@ -5883,10 +5831,10 @@ if (sum > 511) {
         float[][] dy = tensorComponents.getDY();
         float[][] dy2 = tensorComponents.getDDY();
         float[][] curvature = copy(dx);
-        
+
         int nRows = dx.length;
         int nCols = dx[0].length;
-        
+
         for (int i = 0; i < nRows; ++i) {
             for (int j = 0; j < nCols; ++j) {
                 float dx2dx2 = dx2[i][j] * dx2[i][j];
@@ -5903,18 +5851,18 @@ if (sum > 511) {
             }
         }
 
-        peakLocalMax(curvature, 1, thresholdRel, outputKeypoints0, 
+        peakLocalMax(curvature, 1, thresholdRel, outputKeypoints0,
             outputKeypoints1);
-        
+
         /*{// DEBUG
             float[][] a = copy(curvature);
             System.out.println("min=" + MiscMath.findMin(a) + " max=" + MiscMath.findMax(a));
             MiscMath.applyAbsoluteValue(a);
             MiscMath.applyRescale(a, 0, 255);
-            MiscDebug.writeImage(a, "_curvature_" 
+            MiscDebug.writeImage(a, "_curvature_"
                 + MiscDebug.getCurrentTimeFormatted());
         }*/
-        
+
         /*MiscMath.applyRescale(curvature, 0, 255);
         GreyscaleImage kpImg = new GreyscaleImage(nCols, nRows);
         for (int i = 0; i < outputKeypoints0.size(); ++i) {
@@ -5925,89 +5873,89 @@ if (sum > 511) {
         MiscDebug.writeImage(kpImg, "_curvature_");
         */
     }
-    
+
     public void createR5R5KeyPoints(float[][] image,
         TIntList outputKeypoints0, TIntList outputKeypoints1) {
-        
+
         //3rd deriv gaussian, a.k.a. Gabor
         float[] kernel = new float[]{ 1, -4, 6, -4, 1};
-        
-        createLawKeyPoints(image, kernel, kernel, outputKeypoints0, 
+
+        createLawKeyPoints(image, kernel, kernel, outputKeypoints0,
             outputKeypoints1);
     }
-    
+
     public void createS5S5KeyPoints(float[][] image,
         TIntList outputKeypoints0, TIntList outputKeypoints1) {
-        
+
         //-1 times 2nd deriv binomial for sigma=sqrt(2)/2; a.k.a. LOG
         float[] kernel = new float[]{-1, 0, 2, 0, -1};
-        
-        createLawKeyPoints(image, kernel, kernel, outputKeypoints0, 
+
+        createLawKeyPoints(image, kernel, kernel, outputKeypoints0,
             outputKeypoints1);
     }
-    
+
     public void createE5E5KeyPoints(float[][] image,
         TIntList outputKeypoints0, TIntList outputKeypoints1) {
-        
+
         //1st deriv of gaussian, binomial for sigma=1
         float[] kernel = new float[]{-1, -2, 0, 2, 1};
-        
-        createLawKeyPoints(image, kernel, kernel, outputKeypoints0, 
+
+        createLawKeyPoints(image, kernel, kernel, outputKeypoints0,
             outputKeypoints1);
     }
-    
+
     public void createL5E5KeyPoints(float[][] image,
         TIntList outputKeypoints0, TIntList outputKeypoints1) {
-        
+
         //1st deriv of gaussian, binomial for sigma=1
         float[] kernelE5 = new float[]{-1, -2, 0, 2, 1};
-        
+
         // gaussian, binomial for sigma=1; B3 spline used in ATrous wavelet
         float[] kernelL5 = new float[]{1, 4, 6, 4, 1};
-        
-        createLawKeyPoints(image, kernelL5, kernelE5, outputKeypoints0, 
+
+        createLawKeyPoints(image, kernelL5, kernelE5, outputKeypoints0,
             outputKeypoints1);
     }
-    
+
     private void createLawKeyPoints(float[][] image, float[] kernel1,
         float[] kernel2,
         TIntList outputKeypoints0, TIntList outputKeypoints1) {
-        
+
         float[][] image2 = copy(image);
-        
+
         // row major, so need to use y operations for x and vice versa
         applyKernel1D(image2, kernel1, true);
         applyKernel1D(image2, kernel2, false);
-        
+
         /*if (!Arrays.equals(kernel1, kernel2)) {
             float[][] image3 = copy(image2);
             applyKernel1D(image3, kernel1, false);
             applyKernel1D(image3, kernel2, true);
             image2 = divide(image2, image3);
         }*/
-  
+
         // put float back into integer scale, 0 to 255
         MiscMath.applyRescale2(image2, 0, 255);
-        
+
         int nCols = image2.length;
         int nRows = image2[0].length;
-        
+
         GreyscaleImage imageM = new GreyscaleImage(nCols, nRows);
         for (int i = 0; i < nCols; ++i) {
             for (int j = 0; j < nRows; ++j) {
                 imageM.setValue(i, j, Math.round(image2[i][j]));
             }
         }
-        
+
         applyCenteredMean2(imageM, 2);
-       
+
         // subtract mean
         for (int i = 0; i < nCols; ++i) {
             for (int j = 0; j < nRows; ++j) {
                 image2[i][j] -= imageM.getValue(i, j);
             }
         }
-                   
+
         // NOTE: square image2 to result in variance if preferred.
         for (int i = 0; i < image2.length; ++i) {
             for (int j = 0; j < image2[i].length; ++j) {
@@ -6016,7 +5964,7 @@ if (sum > 511) {
                 image2[i][j] = v;
             }
         }
-       
+
         GreyscaleImage img2 = imageM.createFullRangeIntWithDimensions();
         for (int i = 0; i < image2.length; ++i) {
             for (int j = 0; j < image2[i].length; ++j) {
@@ -6024,7 +5972,7 @@ if (sum > 511) {
                 img2.setValue(i, j, Math.round(v));
             }
         }
-            
+
         // use adaptive means to extract centers
         applyAdaptiveMeanThresholding(img2, 1);
         for (int i = 3; i < img2.getWidth(); ++i) {
@@ -6037,10 +5985,10 @@ if (sum > 511) {
         }
 
         // or, extract many points all over the image:
-        //peakLocalMax(image2, 1, 0.01f, outputKeypoints0, 
+        //peakLocalMax(image2, 1, 0.01f, outputKeypoints0,
         //    outputKeypoints1);
     }
-    
+
     /**
      * return first derivatives from sigma=sqrt(2)/2 and
      * then second derivatives with sigma convolved from the
@@ -6053,7 +6001,7 @@ if (sum > 511) {
         float[][] image, float sigma) {
 
         // --- create Sobel derivatives (gaussian 1st deriv sqrt(2)/2 = 0.707)----
-        
+
         // switch X and Y sobel operations for row major
 
         float[][] gX = copy(image);
@@ -6063,48 +6011,48 @@ if (sum > 511) {
         applySobelX(gY);
 
         float[] kernel = Gaussian1D.getKernel(sigma);
-       
+
         // for curvature, need d/dy(dy) and d/dx(dx)
-        
+
         float[][] gX2 = copy(gX);
         float[][] gY2 = copy(gY);
-        
+
         // row major, so need to use y operations for x and vice versa
         applyKernel1D(gX2, kernel, false);
         applyKernel1D(gY2, kernel, true);
-        
+
         TwoDFloatArray[] components = new TwoDFloatArray[4];
         components[0] = new TwoDFloatArray(gX);
         components[1] = new TwoDFloatArray(gY);
         components[2] = new TwoDFloatArray(gX2);
         components[3] = new TwoDFloatArray(gY2);
-        
+
         return components;
     }
-    
+
     public GreyscaleImage divide(GreyscaleImage img1, GreyscaleImage img2) {
-        
-        if (img1.getNPixels() != img2.getNPixels() || img1.getWidth() != 
+
+        if (img1.getNPixels() != img2.getNPixels() || img1.getWidth() !=
             img2.getWidth() || img1.getHeight() != img2.getHeight()) {
             throw new IllegalArgumentException("img1 and img2 must be same size");
         }
-        
+
         int n = img1.getNPixels();
-        
+
         GreyscaleImage out = img1.copyToFullRangeIntImage();
 
         for (int i = 0; i < n; ++i) {
             int v = out.getValue(i);
             int v2 = img2.getValue(i);
             if (v2 > 0) {
-                v /= v2;                
+                v /= v2;
             }
             out.setValue(i, v);
         }
-        
+
         return out;
     }
-    
+
     public float[][] copy(float[][] a) {
 
         int n1 = a.length;
@@ -6117,7 +6065,7 @@ if (sum > 511) {
 
         return out;
     }
-    
+
     public double[][] copyToDouble(float[][] a) {
 
         int n1 = a.length;
@@ -6190,7 +6138,7 @@ if (sum > 511) {
 
         return c;
     }
-    
+
     public TIntSet convertPointsToIndexes(Set<PairInt> points, int width) {
         TIntSet set = new TIntHashSet(points.size());
         for (PairInt p : points) {
@@ -6199,7 +6147,7 @@ if (sum > 511) {
         }
         return set;
     }
-    
+
     public Set<PairInt> convertIndexesToPoints(TIntSet pixIdxs, int width) {
         Set<PairInt> set = new HashSet<PairInt>();
         TIntIterator iter = pixIdxs.iterator();
@@ -6211,9 +6159,9 @@ if (sum > 511) {
         }
         return set;
     }
-    
+
     /**
-     Find peaks in an image as coordinate list 
+     Find peaks in an image as coordinate list
      Peaks are the local maxima in a region of `2 * min_distance + 1`
      (i.e. peaks are separated by at least `min_distance`).
      If peaks are flat (i.e. multiple adjacent pixels have identical
@@ -6474,7 +6422,7 @@ if (sum > 511) {
         }
         //debugPrint("shifted imageMax=", imageMax);
     }
-    
+
     /**
      * @author nichole
      * @param img
@@ -6498,33 +6446,33 @@ if (sum > 511) {
 
         return out;
     }
-    
+
     /**
-     * 
+     *
      * @param img
      * @param g the kernel to convolve img with at point (x,y).
      * Note that it's assumed the kernel is already normalized to sum 0.
-     * @return 
+     * @return
      */
-    public Complex[][] convolveWithKernel(final Complex[][] img, 
+    public Complex[][] convolveWithKernel(final Complex[][] img,
         Complex[][] g) {
-        
+
         Complex[][] c = new Complex[img.length][];
-        
+
         for (int x = 0; x < img.length; ++x) {
             c[x] = new Complex[img[0].length];
             for (int y = 0; y < img[0].length; ++y) {
-                ComplexModifiable sum = 
+                ComplexModifiable sum =
                     convolvePointWithKernel(img, x, y, g);
                 c[x][y] = new Complex(sum.re(), sum.im());
             }
         }
-       
+
         return c;
     }
-    
+
      /**
-     * 
+     *
      * @param img
      * @param x
      * @param y
@@ -6532,18 +6480,18 @@ if (sum > 511) {
      * Note that it's assumed the kernel is already normalized to sum 0.
      * @return sum of convolution at point x,y
      */
-    public ComplexModifiable convolvePointWithKernel(final Complex[][] img, int x, 
+    public ComplexModifiable convolvePointWithKernel(final Complex[][] img, int x,
         int y, Complex[][] g) {
-        
+
         int n0 = g.length;
         int n1 = g[0].length;
-        
+
         int h0 = (n0 >> 1);
         int h1 = (n1 >> 1);
-        
+
         int w = img.length;
         int h = img[0].length;
-        
+
         ComplexModifiable sum = new ComplexModifiable(0, 0);
 
         for (int i = -h0; i < (n0 - h0); i++) {
@@ -6579,25 +6527,25 @@ if (sum > 511) {
                         y2 = 0;
                     }
                 }
-            
+
                 Complex gg = g[i + h0][j + h1];
 
                 Complex point = img[x2][y2];
-                
+
                 Complex m = point.times(gg);
 
-                sum.plus(m);                
+                sum.plus(m);
             }
         }
-        
+
         return sum;
-    } 
-    
-    public Set<PairInt> createWindowOfPoints(int x, int y, 
+    }
+
+    public Set<PairInt> createWindowOfPoints(int x, int y,
         int windowHalfWidth, int imageWidth, int imageHeight) {
-        
+
         Set<PairInt> points = new HashSet<PairInt>();
-        
+
         for (int i = (x - windowHalfWidth); i <= (x + windowHalfWidth); ++i) {
             if (i < 0 || i > (imageWidth - 1)) {
                 continue;
@@ -6609,65 +6557,63 @@ if (sum > 511) {
                 points.add(new PairInt(i, j));
             }
         }
-        
+
         return points;
     }
-    
+
     /**
-     * given an input image, creates a decimation pyramid with 
+     * given an input image, creates a decimation pyramid with
      * median smoothing followed by either integer or bilinear
      * interpolation down-sampling.
      * This method returns images down-sampled by scale sizes that
      * are a factor of 2 from each until image size
      * is smaller than decimationLimit.  Then the
-     * method creates discrete scales in between the factors of 2 
+     * method creates discrete scales in between the factors of 2
      * pyramid, such as 1.25, 1.5, 1.75, then bisecting scales
      * with 3, 5, 12, etc.
      * @param input
      * @param decimationLimit limit to smallest image dimension size returned
-     * @return 
+     * @return
      */
     public List<GreyscaleImage> buildPyramid2(GreyscaleImage input,
         int decimationLimit) {
-    
+
         int nBetween = 3;
-        
+
         return buildPyramid2(input, decimationLimit, nBetween);
     }
-    
+
     public List<List<GreyscaleImage>> buildColorPyramid(Image img,
         boolean buildLarger) {
-        
+
         List<List<GreyscaleImage>> pyr = new ArrayList<List<GreyscaleImage>>();
-        
+
         GreyscaleImage r = img.copyRedToGreyscale();
         GreyscaleImage g = img.copyGreenToGreyscale();
         GreyscaleImage b = img.copyBlueToGreyscale();
         List<GreyscaleImage> gsR;
         List<GreyscaleImage> gsG;
         List<GreyscaleImage> gsB;
-        
+
         if (buildLarger) {
-            
-            ImageProcessor imageProcessor = new ImageProcessor();
-            
-            gsR = imageProcessor.buildPyramid2(r, 32);
-            gsG = imageProcessor.buildPyramid2(g, 32);
-            gsB = imageProcessor.buildPyramid2(b, 32);
-            
+
+            gsR = buildPyramid2(r, 32);
+            gsG = buildPyramid2(g, 32);
+            gsB = buildPyramid2(b, 32);
+
         } else {
-            
+
             MedianTransform mt = new MedianTransform();
-            
+
             gsR = new ArrayList<GreyscaleImage>();
             gsG = new ArrayList<GreyscaleImage>();
             gsB = new ArrayList<GreyscaleImage>();
-            
+
             mt.multiscalePyramidalMedianTransform2(r, gsR, 32);
             mt.multiscalePyramidalMedianTransform2(g, gsG, 32);
             mt.multiscalePyramidalMedianTransform2(b, gsB, 32);
         }
-        
+
         assert(gsR.size() == gsG.size());
         assert(gsR.size() == gsB.size());
 
@@ -6680,57 +6626,55 @@ if (sum > 511) {
             rgb.add(r2);
             rgb.add(g2);
             rgb.add(b2);
-            
+
             pyr.add(rgb);
         }
-        
+
         return pyr;
     }
-    
+
     public List<GreyscaleImage> buildPyramid(GreyscaleImage img,
         boolean buildLarger) {
-                
+
         GreyscaleImage cp = img.copyImage();
-        
+
         List<GreyscaleImage> out;
-        
+
         if (buildLarger) {
-            
-            ImageProcessor imageProcessor = new ImageProcessor();
-            
-            out = imageProcessor.buildPyramid2(cp, 32);
-            
+
+            out = buildPyramid2(cp, 32);
+
         } else {
-            
+
             MedianTransform mt = new MedianTransform();
-            
+
             out = new ArrayList<GreyscaleImage>();
-            
+
             mt.multiscalePyramidalMedianTransform2(cp, out, 32);
         }
-        
+
         return out;
     }
-    
+
     /**
-     * given an input image, creates a decimation pyramid with 
+     * given an input image, creates a decimation pyramid with
      * median smoothing followed by either integer or bilinear
      * interpolation down-sampling.
      * This method returns images down-sampled by scale sizes that
      * are a factor of 2 from each until image size
      * is smaller than decimationLimit.  Then the
-     * method creates discrete scales in between the factors of 2 
+     * method creates discrete scales in between the factors of 2
      * pyramid, such as 1.25, 1.5, 1.75, then bisecting scales
      * with 3, 5, 12, etc.
      * @param input
      * @param decimationLimit limit to smallest image dimension size returned
      * @param nBetween the number of images to create in between the powers
      * of 2.
-     * @return 
+     * @return
      */
     public List<GreyscaleImage> buildPyramid2(GreyscaleImage input,
         int decimationLimit, int nBetween) {
-        
+
         List<GreyscaleImage> output = new ArrayList<GreyscaleImage>();
 
         MedianTransform mt = new MedianTransform();
@@ -6741,42 +6685,42 @@ if (sum > 511) {
         }
 
         List<GreyscaleImage> output2 = new ArrayList<GreyscaleImage>();
-        
+
         // add an image in between each after output[2]
         for (int i = 0; i < output.size() - 1; ++i) {
             output2.add(mt.decimateImage(output.get(i), 1.5f, 0, 255));
         }
-       
+
         output.addAll(output2);
-       
+
         Collections.sort(output, new DecreasingSizeComparator());
 
         return output;
-        
+
         /*
         a gaussian pyramid based upon a kernel of sigma 0.707
         can be built recursively, but the number of iterations
         to reach scale factors larger than 3 is increasingly
         very large number of recursions.
-        
+
         FWHM = 2.35 * sigma
         for recursive gaussian and kernel0 w/ sigma=sqrt(2)/2 = 0.707
                                                      sigma   FWHM
         s1^2 = (sqrt(2)/2)^2 = 0.5                    0.7     1.67
-        s2^2 = 0.5 + (sqrt(2)/2)^2 = 1                1       2.35                 
+        s2^2 = 0.5 + (sqrt(2)/2)^2 = 1                1       2.35
         s3^2 = 1 + (sqrt(2)/2)^2                      1.22    2.9
         s4^2 = 1.5 + (sqrt(2)/2)^2                    1.4     3.3
-        s5^2 = 2 + (sqrt(2)/2)^2                      1.58    3.72                      
+        s5^2 = 2 + (sqrt(2)/2)^2                      1.58    3.72
         s6^2 = 2.5 + (sqrt(2)/2)^2                    1.7     4.07
-        s7^2 = 3.0 + (sqrt(2)/2)^2                    1.87    4.4  
+        s7^2 = 3.0 + (sqrt(2)/2)^2                    1.87    4.4
         ...
         s17^2 = 8.0 + (sqrt(2)/2)^2                   2.83    6.65  <-- factor of 4 from s1
-        
+
         Alternatively, making a kernel of size sigma>2 needs larger
         kernels too so the O(N) has a large constant factor in front of it.
-        
+
         A hybrid solution would be to use the current
-        pyramidal median transform which returns images 
+        pyramidal median transform which returns images
         blurred and downsampled by factors of 2.
         Then add to that, discrete samplings of scale sizes
         that improve the pyramid.
@@ -6790,279 +6734,55 @@ if (sum > 511) {
     }
 
     /**
-     * use bilinear interpolation to downsample a two dimensional array.
-     * 
-     * adapted from pseudocode at
-     * http://tech-algorithm.com/articles/bilinear-image-scaling/
-    
-     * @param pixels
-     * @param w2 output length of first dimension of array
-     * @param h2 output length of second dimension of array
-     * @return 
-     */
-    public float[][] bilinearDownSampling(float[][] pixels,  
-        int w2, int h2) {
-        
-        float[][] out = new float[w2][h2];
-        for (int i = 0; i < w2; ++i) {
-            out[i] = new float[h2];  
-        }
-        
-        int w = pixels.length; 
-        int h = pixels[0].length;
-        
-        int x, y;
-        float A, B, C, D, gray;
-        
-        float xRatio = (float)w/(float)w2;
-        float yRatio = (float)h/(float)h2;
-        float xDiff, yDiff;
-        int offset = 0 ;
-        for (int i = 0; i < w2; i++) {
-            for (int j = 0; j < h2; j++) {
-                x = (int)(xRatio * i);
-                y = (int)(yRatio * j);
-                xDiff = (xRatio * i) - x;
-                yDiff = (yRatio * j) - y;
-
-                A = pixels[x][y];
-                B = pixels[x][y+1];
-                C = pixels[x+1][y];
-                D = pixels[x+1][y+1];
-
-                // Y = A(1-w)(1-h) + B(w)(1-h) + C(h)(1-w) + Dwh
-                gray = 
-                    A * (1 - xDiff) * (1 - yDiff) + 
-                    C * (xDiff) * (1 - yDiff) +
-                    B * (yDiff) * (1 - xDiff) +  
-                    D * (xDiff * yDiff);
-
-                out[i][j] = gray;                                   
-            }
-        }
-        
-        return out;
-    }
-    
-    /**
-     * use bilinear interpolation to downsample a two dimensional array.
-     * Assumes that valid pixel values are 0 to 255 and clamps if outside range.
-     * 
-     * adapted from pseudocode at
-     * http://tech-algorithm.com/articles/bilinear-image-scaling/
-    
-     * @param input
-     * @param w2 output length of first dimension of array
-     * @param h2 output length of second dimension of array
-     * @return 
-     */
-    public GreyscaleImage bilinearDownSampling(GreyscaleImage input,
-        int w2, int h2) {
-   
-        return bilinearDownSampling(input, w2, h2, 0, 255);
-    }
-   
-    /**
-     * use bilinear interpolation to downsample a two dimensional array.
-     * 
-     * adapted from pseudocode at
-     * http://tech-algorithm.com/articles/bilinear-image-scaling/
-    
-     * @param input
-     * @param w2 output length of first dimension of array
-     * @param h2 output length of second dimension of array
-     * @param minValue value to clamp results to if less than this
-     * @param maxValue value to clamp results to if larger than this
-     * @return 
-     */
-    public GreyscaleImage bilinearDownSampling(GreyscaleImage input,
-        int w2, int h2, int minValue, int maxValue) {
-        
-        GreyscaleImage out = input.createWithDimensions(w2, h2);
-        
-        int w = input.getWidth();
-        int h = input.getHeight();
-        
-        int x, y;
-        float A, B, C, D, gray;
-        
-        float xRatio = (float)w/(float)w2;
-        float yRatio = (float)h/(float)h2;
-        float xDiff, yDiff;
-        int offset = 0 ;
-        for (int i = 0; i < w2; i++) {
-            for (int j = 0; j < h2; j++) {
-                x = (int)(xRatio * i);
-                y = (int)(yRatio * j);
-                xDiff = (xRatio * i) - x;
-                yDiff = (yRatio * j) - y;
-
-                A = input.getValue(x, y);
-                B = input.getValue(x, y+1);
-                C = input.getValue(x+1, y);
-                D = input.getValue(x+1, y+1);
-
-                // Y = A(1-w)(1-h) + B(w)(1-h) + C(h)(1-w) + Dwh
-                gray = 
-                    A * (1 - xDiff) * (1 - yDiff) + 
-                    C * (xDiff) * (1 - yDiff) +
-                    B * (yDiff) * (1 - xDiff) +  
-                    D * (xDiff * yDiff);
-
-                int v = Math.round(gray);
-                if (v < minValue) {
-                    v = minValue;
-                } else if (v > maxValue) {
-                    v = maxValue;
-                }
-                
-                out.setValue(i, j, v);                              
-            }
-        }
-        
-        return out;
-    }
-    
-    /**
-     * use bilinear interpolation to downsample a two dimensional array.
-     * 
-     * adapted from pseudocode at
-     * http://tech-algorithm.com/articles/bilinear-image-scaling/
-    
-     * @param input
-     * @param w2 output length of first dimension of array
-     * @param h2 output length of second dimension of array
-     * @param minValue value to clamp results to if less than this
-     * @param maxValue value to clamp results to if larger than this
-     * @return 
-     */
-    public Image bilinearDownSampling(Image input,
-        int w2, int h2, int minValue, int maxValue) {
-        
-        Image out = input.createWithDimensions(w2, h2);
-        
-        int w = input.getWidth();
-        int h = input.getHeight();
-        
-        int x, y, rI, gI, bI;
-        float A, B, C, D, red, green, blue;
-        
-        float xRatio = (float)w/(float)w2;
-        float yRatio = (float)h/(float)h2;
-        float xDiff, yDiff;
-        int offset = 0 ;
-        for (int i = 0; i < w2; i++) {
-            for (int j = 0; j < h2; j++) {
-                x = (int)(xRatio * i);
-                y = (int)(yRatio * j);
-                xDiff = (xRatio * i) - x;
-                yDiff = (yRatio * j) - y;
-
-                A = input.getR(x, y);
-                B = input.getR(x, y+1);
-                C = input.getR(x+1, y);
-                D = input.getR(x+1, y+1);
-
-                // Y = A(1-w)(1-h) + B(w)(1-h) + C(h)(1-w) + Dwh
-                red = A * (1 - xDiff) * (1 - yDiff) + 
-                    C * (xDiff) * (1 - yDiff) +
-                    B * (yDiff) * (1 - xDiff) +  
-                    D * (xDiff * yDiff);
-
-                rI = Math.round(red);
-                if (rI < minValue) {
-                    rI = minValue;
-                } else if (rI > maxValue) {
-                    rI = maxValue;
-                }
-                
-                A = input.getG(x, y);
-                B = input.getG(x, y+1);
-                C = input.getG(x+1, y);
-                D = input.getG(x+1, y+1);
-                green = A * (1 - xDiff) * (1 - yDiff) + 
-                    C * (xDiff) * (1 - yDiff) +
-                    B * (yDiff) * (1 - xDiff) +  
-                    D * (xDiff * yDiff);
-                gI = Math.round(green);
-                if (gI < minValue) {
-                    gI = minValue;
-                } else if (gI > maxValue) {
-                    gI = maxValue;
-                }
-                
-                A = input.getB(x, y);
-                B = input.getB(x, y+1);
-                C = input.getB(x+1, y);
-                D = input.getB(x+1, y+1);
-                blue = A * (1 - xDiff) * (1 - yDiff) + 
-                    C * (xDiff) * (1 - yDiff) +
-                    B * (yDiff) * (1 - xDiff) +  
-                    D * (xDiff * yDiff);
-                bI = Math.round(blue);
-                if (bI < minValue) {
-                    bI = minValue;
-                } else if (bI > maxValue) {
-                    bI = maxValue;
-                }
-                
-                out.setRGB(i, j, rI, gI, bI);                              
-            }
-        }
-        
-        return out;
-    }
-    
-    /**
      * comparator that assumes can compare by widths along,
      * unless there is a tie, then it uses height.
      */
-    private class DecreasingSizeComparator implements 
+    private class DecreasingSizeComparator implements
         Comparator<GreyscaleImage> {
 
         @Override
-        public int compare(GreyscaleImage o1, 
+        public int compare(GreyscaleImage o1,
             GreyscaleImage o2) {
-        
+
             int w1 = o1.getWidth();
             int w2 = o2.getWidth();
-            
+
             if (w1 > w2) {
                 return -1;
             } else if (w1 < w2) {
                 return 1;
             }
-        
+
             int h1 = o1.getHeight();
             int h2 = o2.getHeight();
-            
+
             if (h1 > h2) {
                 return -1;
             } else if (h1 < h2) {
                 return 1;
             }
-            
+
             return 0;
-        }        
+        }
     }
-    
+
     /**
      * convert the image to cie l*a*b* and then use a and b
      * to calculate polar angle around 0 in degrees.
-     * If maxV of 360, returns full value image, 
+     * If maxV of 360, returns full value image,
      * else if is 255, scales the values to max value of 255, etc.
      * @param img
      * @param maxV
-     * @return 
+     * @return
      */
     public int calculateCIELABTheta(int red, int green, int blue, int maxV) {
-        
+
         CIEChromaticity cieC = new CIEChromaticity();
-       
+
         double ts = (double)maxV/(double)359;
-        
+
         float[] lab = cieC.rgbToCIELAB1931(red, green, blue);
-        
+
         float v1 = lab[1];
         float v2 = lab[2];
 
@@ -7074,20 +6794,20 @@ if (sum > 511) {
             t -= 360;
         }
         t *= ts;
-        
+
         return (int)t;
     }
-    
+
     /**
      * create sobel gradient images for the given images specified by idxs
      * @param images
      * @param idxs
-     * @return 
+     * @return
      */
     public GreyscaleImage[] createSobels(GreyscaleImage[] images, int[] idxs) {
-        
+
         GreyscaleImage[] sobels = new GreyscaleImage[2];
-        
+
         int count = 0;
         for (int idx : idxs) {
             GreyscaleImage img2 = images[idx];
@@ -7097,28 +6817,28 @@ if (sum > 511) {
         }
         return sobels;
     }
-    
+
     public GreyscaleImage[] createSobelLCForLUV(Image img) {
-        
+
         GreyscaleImage[] lch = createLCHForLUV(img);
-        
+
         GreyscaleImage[] sobels = createSobels(lch, new int[]{0, 1});
-        
+
         return sobels;
     }
-    
+
     /**
-     * create 3 images of the LCG color space where LCH is the 
+     * create 3 images of the LCG color space where LCH is the
      * luminosity, magnitude, and polar angle of CIE LUV color space.
      * @param img
-     * @return 
+     * @return
      */
     public GreyscaleImage[] createLCHForLUV(Image img) {
-        
+
         int w = img.getWidth();
         int h = img.getHeight();
         int n = img.getNPixels();
-        
+
         /*
         range of CIE LUV using default standard illumination of
         D65 daylight is:
@@ -7129,26 +6849,26 @@ if (sum > 511) {
         magnitude, m:  sqrt(2) * 183.8 = 260
         angle,     a:  0 to 359
         */
-        
+
         float[] factors = new float[]{255.f/104.5f, 255.f/260.f, 255.f/359.f};
-        
+
         GreyscaleImage[] output = new GreyscaleImage[3];
         for (int i = 0; i < output.length; ++i) {
             output[i] = new GreyscaleImage(w, h);
         }
-        
+
         CIEChromaticity cieC = new CIEChromaticity();
-                
+
         int v;
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
-                
+
                 int r = img.getR(i, j);
                 int g = img.getG(i, j);
                 int b = img.getB(i, j);
-                
+
                 float[] lma = cieC.rgbToPolarCIELUV(r, g, b);
-             
+
                 for (int k = 0; k < output.length; ++k) {
                     if (k == 2 && lma[k] > 359.f) {
                         lma[k] = 360 - lma[k];
@@ -7163,96 +6883,96 @@ if (sum > 511) {
                 }
             }
         }
-        
+
         return output;
     }
-   
+
     /**
      * convert the image to cie luv and then calculate polar angle of u and v
      * around 0 in degrees (a.k.a. the "H" of LCH color space, but with
      * the 1976 CIE LAB which is LUV).
-     * If maxV of 360, returns full value image, 
+     * If maxV of 360, returns full value image,
      * else if is 255, scales the values to max value of 255, etc.
      * @param img
      * @param maxV
-     * @return 
+     * @return
      */
     public GreyscaleImage createCIELUVTheta(Image img, int maxV) {
-        
+
         int w = img.getWidth();
         int h = img.getHeight();
-        
+
         GreyscaleImage theta = null;
         if (maxV < 256) {
             theta = new GreyscaleImage(w, h);
         } else {
-            theta = new GreyscaleImage(w, h, 
+            theta = new GreyscaleImage(w, h,
                 GreyscaleImage.Type.Bits32FullRangeInt);
         }
-        
+
         CIEChromaticity cieC = new CIEChromaticity();
-        
+
         double ts = (double)maxV/(double)359;
-        
+
         int n = img.getNPixels();
         int v;
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
-                
+
                 int r = img.getR(i, j);
                 int g = img.getG(i, j);
                 int b = img.getB(i, j);
-                
+
                 float[] lma = cieC.rgbToPolarCIELUV(r, g, b);
-             
+
                 double t = lma[2];
                 t *= ts;
                 v = (int)t;
-                
+
                 theta.setValue(i, j, v);
             }
         }
-        
+
         return theta;
     }
-    
+
     /**
      * convert the image to cie lab and then calculate polar angle of u and v
      * around 0 in degrees.
-     * If maxV of 360, returns full value image, 
+     * If maxV of 360, returns full value image,
      * else if is 255, scales the values to max value of 255, etc.
      * @param img
      * @param maxV
-     * @return 
+     * @return
      */
     public GreyscaleImage createCIELABTheta(Image img, int maxV) {
-        
+
         int w = img.getWidth();
         int h = img.getHeight();
-        
+
         GreyscaleImage theta = null;
         if (maxV < 256) {
             theta = new GreyscaleImage(w, h);
         } else {
-            theta = new GreyscaleImage(w, h, 
+            theta = new GreyscaleImage(w, h,
                 GreyscaleImage.Type.Bits32FullRangeInt);
         }
-        
+
         CIEChromaticity cieC = new CIEChromaticity();
-        
+
         double ts = (double)maxV/(double)359;
-        
+
         int n = img.getNPixels();
         int v;
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
-                
+
                 int r = img.getR(i, j);
                 int g = img.getG(i, j);
                 int b = img.getB(i, j);
-                
+
                 float[] lab = cieC.rgbToCIELAB(r, g, b);
-             
+
                 double t = Math.atan2(lab[2], lab[1]);
                 t *= (180. / Math.PI);
                 if (t < 0) {
@@ -7263,14 +6983,14 @@ if (sum > 511) {
 
                 t *= ts;
                 v = (int)t;
-                
+
                 theta.setValue(i, j, v);
             }
         }
-        
+
         return theta;
     }
-    
+
     public TIntObjectMap<VeryLongBitString> createAdjacencyMap(
         TObjectIntMap<PairInt> pointIndexMap, List<Set<PairInt>> labeledPoints,
         int imgWidth, int imgHeight) {
@@ -7286,9 +7006,9 @@ if (sum > 511) {
         for (int label = 0; label < n; ++label) {
             Set<PairInt> set = labeledPoints.get(label);
             VeryLongBitString nbrs = new VeryLongBitString(n);
-            
+
             boolean aloSet = false;
-            
+
             for (PairInt p : set) {
                 int x = p.getX();
                 int y = p.getY();
@@ -7315,9 +7035,9 @@ if (sum > 511) {
 
         return output;
     }
-    
+
     public TIntObjectMap<VeryLongBitString> createAdjacencyMap(
-        TIntIntMap pointIndexMap, TIntObjectMap<TIntSet> labeledPoints, 
+        TIntIntMap pointIndexMap, TIntObjectMap<TIntSet> labeledPoints,
         int imgWidth, int imgHeight) {
 
         int n = labeledPoints.size();
@@ -7327,20 +7047,20 @@ if (sum > 511) {
 
         int[] dxs = Misc.dx4;
         int[] dys = Misc.dy4;
-        
+
         TIntObjectIterator<TIntSet> iter = labeledPoints.iterator();
 
         for (int i = 0; i < n; ++i) {
-            
+
             iter.advance();
-            
+
             int label = iter.key();
             TIntSet pixIdxs = iter.value();
-            
+
             VeryLongBitString nbrs = new VeryLongBitString(n);
-            
+
             boolean aloSet = false;
-            
+
             TIntIterator iter2 = pixIdxs.iterator();
             while (iter2.hasNext()) {
                 int pixIdx = iter2.next();
@@ -7369,9 +7089,9 @@ if (sum > 511) {
 
         return output;
     }
-    
+
     public TIntObjectMap<VeryLongBitString> createAdjacencyMap(
-        TIntIntMap pointIndexMap, List<TIntSet> labeledPoints, 
+        TIntIntMap pointIndexMap, List<TIntSet> labeledPoints,
         int imgWidth, int imgHeight) {
 
         int n = labeledPoints.size();
@@ -7381,15 +7101,15 @@ if (sum > 511) {
 
         int[] dxs = Misc.dx4;
         int[] dys = Misc.dy4;
-        
+
         for (int label = 0; label < n; ++label) {
-                        
+
             TIntSet pixIdxs = labeledPoints.get(label);
-            
+
             VeryLongBitString nbrs = new VeryLongBitString(n);
-            
+
             boolean aloSet = false;
-            
+
             TIntIterator iter2 = pixIdxs.iterator();
             while (iter2.hasNext()) {
                 int pixIdx = iter2.next();
@@ -7418,7 +7138,7 @@ if (sum > 511) {
 
         return output;
     }
-    
+
     public TIntObjectMap<VeryLongBitString> createAdjacencyMap(
         int[] labels, List<Set<PairInt>> labeledPoints,
         int width, int height) {
@@ -7434,9 +7154,9 @@ if (sum > 511) {
         for (int label = 0; label < n; ++label) {
             Set<PairInt> set = labeledPoints.get(label);
             VeryLongBitString nbrs = new VeryLongBitString(n);
-            
+
             boolean aloSet = false;
-            
+
             for (PairInt p : set) {
                 int x = p.getX();
                 int y = p.getY();
@@ -7461,46 +7181,46 @@ if (sum > 511) {
 
         return output;
     }
-    
+
     public void applyUnsharpMask(GreyscaleImage img) {
-        
+
         //NOTE: if make a color version of this, should use a color
         // space such as CIE LAB or LUV and operate on the L only to
         // preserve color (or B of HSB).
-        
+
         // NOTE: useful in looking at the general concept of
         //  original, blurred and threshold comparison was code copyrighted by
         //  Romain Guy available here:
         //  http://www.java2s.com/Code/Java/Advanced-Graphics/UnsharpMaskDemo.htm
         //  might need to place the copytight here for derivative of.
-        
+
         float amount = 0.2f;
         int radius = 50;
         float threshold = 0;
-        
+
         applyUnsharpMask(img, amount, radius, threshold);
-        
+
     }
-    
+
     /**
-     * if a single pixel differs from its neighbors by more than 
+     * if a single pixel differs from its neighbors by more than
      * 2o or 2 sigma, the value gets set to the neighbors
-     * @param img 
+     * @param img
      */
     public void singlePixelFilter(GreyscaleImage img) {
-        
+
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
-        
+
         int n = img.getNPixels();
         int w = img.getWidth();
         int h = img.getHeight();
-        
+
         for (int i = 0; i < n; ++i) {
-            
+
             int x = img.getCol(i);
             int y = img.getRow(i);
-            
+
             float diff;
             float avg = 0;
             int ns = 0;
@@ -7517,7 +7237,7 @@ if (sum > 511) {
             if (ns == 0) {
                 continue;
             }
-            
+
             float stdv = 0;
             for (int k = 0; k < dxs.length; ++k) {
                 int x2 = x + dxs[k];
@@ -7529,24 +7249,24 @@ if (sum > 511) {
                 stdv += (diff * diff);
             }
             stdv = (float)Math.sqrt(stdv/((float)ns - 1.0f));
-        
+
             diff = Math.abs(img.getValue(x, y) - avg);
             if (diff > (2.*stdv)) {
                 img.setValue(x, y, (int)avg);
             }
         }
     }
-    
+
     public void applyUnsharpMask(GreyscaleImage img, float percentage,
         int radius, float threshold) {
-   
+
         MedianSmooth ms = new MedianSmooth();
         GreyscaleImage blurred = ms.calculate(img, 3, 3);
-        
+
         for (int i = 0; i < img.getNPixels(); ++i) {
             int v = img.getValue(i);
             int blur = blurred.getValue(i);
-            
+
             int diff = v - blur;
             if (Math.abs(diff) >= threshold) {
                 v = (int) (percentage * diff + v);
@@ -7559,23 +7279,23 @@ if (sum > 511) {
             }
         }
     }
-    
+
     /**
      * use an adaptive threshold with window size to add the threshold
      * to the image where binarization would have created a "1".
      * This enhances shadows and dark edges to an extreme that might not
      * be desirable for all uses.
-     * 
-     * @param img 
+     *
+     * @param img
      */
     public void enhanceContrast(GreyscaleImage img, int window) {
-       
+
         GreyscaleImage inImg = img;
         double[][] outImg;
-        
+
         int w = inImg.getWidth();
         int h = inImg.getHeight();
-        
+
         double[][] sTable = new double[w][];
         for (int i = 0; i < w; ++i) {
             sTable[i] = new double[h];
@@ -7583,11 +7303,11 @@ if (sum > 511) {
                 sTable[i][j] = inImg.getValue(i, j);
             }
         }
-        
+
         AdaptiveThresholding th =
             new AdaptiveThresholding();
         outImg = th.createAdaptiveThresholdImage(sTable, window, 0.2);
-        
+
         double v;
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
@@ -7596,14 +7316,14 @@ if (sum > 511) {
                 if (v > t) {
                     // adding threshold back to emphasize contrast
                     // instead of binarization:
-                    v += t;                    
+                    v += t;
                 }
                 outImg[i][j] = v;
             }
         }
-        
+
         MiscMath.applyRescale(outImg, 0, 255);
-        
+
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
                 inImg.setValue(i, j, (int)outImg[i][j]);
@@ -7611,13 +7331,13 @@ if (sum > 511) {
         }
     }
 
-    // TODO: implement the methods in 
+    // TODO: implement the methods in
     // http://www.merl.com/publications/docs/TR2008-030.pdf
     // for an O(n) filter.
     // "Constant Time O(1) Bilateral Filtering" by Porikli
     //public void applyBiLateralFilter(Image img) {
     //}
-    
+
     // and trilateral filter by Tumblin et al. 2003
-    
+
 }
