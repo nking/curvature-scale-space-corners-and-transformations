@@ -5037,7 +5037,6 @@ if (sum > 511) {
 
         //from https://en.wikipedia.org/wiki/Hit-or-miss_transform
         // and thinning
-        TIntSet out = new TIntHashSet(pixIdxs);
 
         // x,y pairs are sequential in these
         int[] c1 = new int[]{0, 0, -1, -1, 0, -1, 1, -1};
@@ -5054,6 +5053,12 @@ if (sum > 511) {
             = AbstractLineThinner.createCoordinatePointsForEightNeighbors(
             0, 0);
 
+        int w = imageWidth;
+        int h = imageHeight;
+        int n = pixIdxs.size();
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
         int nEdited = 0;
         int nIter = 0;
         do {
@@ -5078,35 +5083,68 @@ if (sum > 511) {
                         rotatePairsBy90(tmpD);
                     }
                     
+                    // to try to make it more symmetric, collecting all
+                    // nullable pixels and counting the set neighbors,
+                    // then revisiting by order of fewest set neighbors 
+                    MinHeapForRT2012 heap = new MinHeapForRT2012(9, n);
+
                     TIntIterator iter = pixIdxs.iterator();
                     while (iter.hasNext()) {
                         int pixIdx = iter.next();
-                        int y = pixIdx/imageWidth;
-                        int x = pixIdx - (y * imageWidth);
-                        if (allArePresent(pixIdxs, x, y, tmpC, imageWidth,
-                            imageHeight)
-                            && allAreNotPresent(pixIdxs, x, y, tmpD, imageWidth,
-                            imageHeight)) {
-                            if (!ImageSegmentation.doesDisconnect(out,
-                                neighborCoordOffsets, x, y, imageWidth, 
-                                imageHeight)) {
-                                out.remove(pixIdx);
-                                nEdited++;
+                        int y = pixIdx/w;
+                        int x = pixIdx - (y * w);
+                        if (allArePresent(pixIdxs, x, y, tmpC, w, h)
+                            && allAreNotPresent(pixIdxs, x, y, tmpD, w, h)) {
+                            if (!ImageSegmentation.doesDisconnect(pixIdxs,
+                                neighborCoordOffsets, x, y, w, h)) {
+                        
+                                // number of neighbors that are not '1s
+                                int nn = 0;
+                                for (int k = 0; k < dxs.length; ++k) {
+                                    int x2 = x + dxs[k];
+                                    int y2 = y + dys[k];
+                                    if (x2 < 0 || y2 < 0 || x2 >= w || y2 >= h) {
+                                        continue;
+                                    }
+                                    int pixIdx2 = (y2 * w) + x2;
+                                    if (pixIdxs.contains(pixIdx2)) {
+                                        nn++;
+                                    }
+                                }
+
+                                //long key = 8 - nn;
+                                long key = nn;
+                                HeapNode node = new HeapNode(key);
+                                node.setData(Integer.valueOf(pixIdx));
+                                heap.insert(node);
                             }
                         }
                     }
                     
-                    //MiscDebug.writeImage(out, "_thin_");
-                }
-                
-                pixIdxs.clear();
-                pixIdxs.addAll(out);
+                    while (heap.getNumberOfNodes() > 0) {
+                        
+                        HeapNode node = heap.extractMin();
+                        
+                        assert(node != null);
+
+                        int pixIdx = ((Integer)node.getData()).intValue();
+                        int y = pixIdx/w;
+                        int x = pixIdx - (y * w);
+                       
+                        if (allArePresent(pixIdxs, x, y, tmpC, w, h)
+                            && allAreNotPresent(pixIdxs, x, y, tmpD, w, h)) {
+                            if (!ImageSegmentation.doesDisconnect(pixIdxs,
+                                neighborCoordOffsets, x, y, w, h)) {
+                         
+                                pixIdxs.remove(pixIdx);
+                                nEdited++;
+                            }
+                        }
+                    }                    
+                }                
             }
             nIter++;
         } while (nEdited > 0);
-                
-        pixIdxs.clear();
-        pixIdxs.addAll(out);
     }
     
     private void rotatePairsBy90(int[] xy) {
