@@ -4838,8 +4838,7 @@ if (sum > 511) {
                     // to try to make it more symmetric, collecting all
                     // nullable pixels and counting the set neighbors,
                     // then revisiting by order of fewest set neighbors 
-                    MinHeapForRT2012 heap = new MinHeapForRT2012(9, 
-                            img.getNPixels());
+                    MinHeapForRT2012 heap = new MinHeapForRT2012(9, n);
 
                     for (int x = 1; x < (img.getWidth() - 1); ++x) {
                         for (int y = 1; y < (img.getHeight() - 1); ++y) {
@@ -4861,7 +4860,9 @@ if (sum > 511) {
                                         if (x2 < 0 || y2 < 0 || x2 >= w || y2 >= h) {
                                             continue;
                                         }
-                                        nn++;
+                                        if (img.getValue(x, y) > 0) {
+                                            nn++;
+                                        }
                                     }
                                     
                                     //long key = 8 - nn;
@@ -4914,7 +4915,6 @@ if (sum > 511) {
 
         //from https://en.wikipedia.org/wiki/Hit-or-miss_transform
         // and thinning
-        Set<PairInt> out = new HashSet<PairInt>(points);
 
         // x,y pairs are sequential in these
         int[] c1 = new int[]{0, 0, -1, -1, 0, -1, 1, -1};
@@ -4923,20 +4923,28 @@ if (sum > 511) {
         int[] d2 = new int[]{0, 1, 1, 1, 1, 0};
 
         /*
-        
             - - -        - -
               +        + + -
-            + + +      + +
-        
+            + + +      + +        
         */
         PairInt[][] neighborCoordOffsets
             = AbstractLineThinner.createCoordinatePointsForEightNeighbors(
             0, 0);
+        
+        int w = imageWidth;
+        int h = imageHeight;
+        int n = points.size();
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
 
         int nEdited = 0;
         int nIter = 0;
         do {
             nEdited = 0;
+            
+            //GreyscaleImage tmp = out.copyImage();
+            //tmp.multiply(255.f);
+            //MiscDebug.writeImage(tmp, "_editing_" + MiscDebug.getCurrentTimeFormatted());
 
             // test c1, d1 and it rotated by 90 3 times
             // test c2, d2 and it rotated by 90 3 times
@@ -4957,32 +4965,68 @@ if (sum > 511) {
                         rotatePairsBy90(tmpD);
                     }
                     
+                    // to try to make it more symmetric, collecting all
+                    // nullable pixels and counting the set neighbors,
+                    // then revisiting by order of fewest set neighbors 
+                    MinHeapForRT2012 heap = new MinHeapForRT2012(9, n);
+
                     for (PairInt p : points) {
                         int x = p.getX();
                         int y = p.getY();
                         if (allArePresent(points, x, y, tmpC)
                             && allAreNotPresent(points, x, y, tmpD)) {
-                            if (!ImageSegmentation.doesDisconnect(out,
+                            if (!ImageSegmentation.doesDisconnect(points,
                                 neighborCoordOffsets, x, y, imageWidth, 
                                 imageHeight)) {
-                                out.remove(p);
-                                nEdited++;
+                                
+                                // number of neighbors that are not '1s
+                                int nn = 0;
+                                for (int k = 0; k < dxs.length; ++k) {
+                                    int x2 = x + dxs[k];
+                                    int y2 = y + dys[k];
+                                    if (x2 < 0 || y2 < 0 || x2 >= w || y2 >= h) {
+                                        continue;
+                                    }
+                                    if (points.contains(new PairInt(x2, y2))) {
+                                        nn++;
+                                    }
+                                }
+
+                                //long key = 8 - nn;
+                                long key = nn;
+                                HeapNode node = new HeapNode(key);
+                                int pixIdx = (y * w) + x;
+                                node.setData(Integer.valueOf(pixIdx));
+                                heap.insert(node);
                             }
                         }
                     }
                     
-                    //MiscDebug.writeImage(out, "_thin_");
-                }
-                
-                points.clear();
-                points.addAll(out);
+                    while (heap.getNumberOfNodes() > 0) {
+                        
+                        HeapNode node = heap.extractMin();
+                        
+                        assert(node != null);
+
+                        int pixIdx = ((Integer)node.getData()).intValue();
+                        int y = pixIdx/w;
+                        int x = pixIdx - (y * w);
+                       
+                        if (allArePresent(points, x, y, tmpC)
+                            && allAreNotPresent(points, x, y, tmpD)) {
+                            if (!ImageSegmentation.doesDisconnect(points,
+                                neighborCoordOffsets, x, y, imageWidth, 
+                                imageHeight)) {
+                         
+                                points.remove(new PairInt(x, y));
+                                nEdited++;
+                            }
+                        }
+                    }                    
+                }                
             }
             nIter++;
         } while (nEdited > 0);
-                
-        points.clear();
-        points.addAll(out);
-     
     }
     
     /**
