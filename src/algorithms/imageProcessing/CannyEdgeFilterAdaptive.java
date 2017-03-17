@@ -222,7 +222,7 @@ public class CannyEdgeFilterAdaptive {
             
             if (useLineThinner) {
                 
-                imageProcessor.applyThinning(filterProducts.getGradientXY());
+                imageProcessor.applyThinning2(filterProducts.getGradientXY());
                 
                 PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
                 
@@ -917,7 +917,7 @@ public class CannyEdgeFilterAdaptive {
                 tmp.setValue(i, 1);
             }
         }
-        imageProcessor.applyThinning(tmp);
+        imageProcessor.applyThinning2(tmp);
         
         for (int i = 0; i < tmp.getNPixels(); ++i) {
             if (tmp.getValue(i) == 0) {

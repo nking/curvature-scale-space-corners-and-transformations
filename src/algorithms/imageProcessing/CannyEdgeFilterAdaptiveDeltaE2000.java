@@ -847,7 +847,7 @@ public class CannyEdgeFilterAdaptiveDeltaE2000 {
             //lt.applyFilter(out);
             
             ImageProcessor imp = new ImageProcessor();
-            imp.applyThinning(out);
+            imp.applyThinning2(out);
         
         }
         

@@ -4736,7 +4736,8 @@ if (sum > 511) {
     }
     
     /**
-     * apply morphological thinning
+     * apply morphological thinning.
+     * prefer this line thinner over applyThinning()
      * @param img
      */
     public void applyThinning2(GreyscaleImage img) {
@@ -4778,7 +4779,8 @@ if (sum > 511) {
 
     /**
      * apply 8 hit or miss filters iteratively until convergence to thin the
-     * image.  the operation is performed on all pixels with value > 0.
+     * image.  the operation is performed on all pixels with 
+     * value > 0.  prefer applyThinning2() to this method.
      * @param img
      */
     public void applyThinning(GreyscaleImage img) {

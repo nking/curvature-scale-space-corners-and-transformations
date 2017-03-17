@@ -190,7 +190,7 @@ public class LineThinnerTest extends TestCase {
                 ImageProcessor imageProcessor = new ImageProcessor();
                 if (i == 1) {
                     imageProcessor.applyThinning(img);
-                    lbl = "hit-ir-miss(img)";
+                    lbl = "hit-or-miss(img)";
                 } else if (i == 2) {
                     Set<PairInt> points = imageProcessor.readNonZeroPixels(img);
                     imageProcessor.applyThinning(points, img.getWidth(), img.getHeight());
