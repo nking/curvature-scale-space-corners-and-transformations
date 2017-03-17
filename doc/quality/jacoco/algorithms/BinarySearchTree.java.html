@@ -133,10 +133,10 @@ import java.util.Stack;
        
 <span class="fc" id="L134">        T y = null;</span>
 <span class="fc" id="L135">        T x = null;</span>
-<span class="fc bfc" id="L136" title="All 4 branches covered.">        if ((z.getLeft() == null) || (z.getRight() == null)) {</span>
+<span class="pc bpc" id="L136" title="1 of 4 branches missed.">        if ((z.getLeft() == null) || (z.getRight() == null)) {</span>
 <span class="fc" id="L137">            y = z;</span>
         } else {
-<span class="fc" id="L139">            y = successor(z);</span>
+<span class="nc" id="L139">            y = successor(z);</span>
         }
         
 <span class="fc bfc" id="L142" title="All 2 branches covered.">        if (y.getLeft() != null) {</span>
@@ -158,10 +158,10 @@ import java.util.Stack;
 <span class="fc" id="L158">            y.getParent().setRight(x);</span>
         }
         
-<span class="fc bfc" id="L161" title="All 2 branches covered.">        if (y != z) {</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">        if (y != z) {</span>
             // copy y data into z
-<span class="fc" id="L163">            z.setKey(y.getKey());</span>
-<span class="fc" id="L164">            z.setData(y.getData());</span>
+<span class="nc" id="L163">            z.setKey(y.getKey());</span>
+<span class="nc" id="L164">            z.setData(y.getData());</span>
         }
         
 <span class="fc" id="L167">        n--;</span>

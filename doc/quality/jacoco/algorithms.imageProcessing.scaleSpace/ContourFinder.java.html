@@ -237,25 +237,25 @@ public class ContourFinder {
             // sometimes for low sigma, the contours are misshapen and have
             // vertical gaps, so iterating now to levels below to assert have
             // the contour values below this peak or partial peak
-<span class="fc bfc" id="L240" title="All 2 branches covered.">            if (sigma &lt; 3.5) {</span>
-<span class="pc bpc" id="L241" title="1 of 2 branches missed.">                int t0 = (tIndex &gt; 0) ? (tIndex - 1) : tIndex;</span>
-<span class="fc bfc" id="L242" title="All 2 branches covered.">                int t1 = ((tIndex + 1) &lt; t.length) ? tIndex + 1 : tIndex;</span>
-<span class="pc bpc" id="L243" title="1 of 2 branches missed.">                if (t1 &gt; t0) {</span>
-<span class="fc" id="L244">                    int si = sigmaIndex + 1;</span>
-<span class="pc bpc" id="L245" title="1 of 2 branches missed.">                    while (si &lt; (scaleSpaceImage.getScaleSpaceImage().length - 1)) {</span>
-<span class="fc" id="L246">                        t = scaleSpaceImage.getScaleSpaceImage()[si + 1];</span>
-<span class="fc" id="L247">                        int n = 0;</span>
-<span class="fc bfc" id="L248" title="All 2 branches covered.">                        for (int j = t0; j &lt; t.length; j++) {</span>
-<span class="fc" id="L249">                            float tt = t[j];</span>
-<span class="fc bfc" id="L250" title="All 2 branches covered.">                            if (tt &gt; -1) {</span>
-<span class="fc" id="L251">                                n++;</span>
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">            if (sigma &lt; 3.5) {</span>
+<span class="nc bnc" id="L241" title="All 2 branches missed.">                int t0 = (tIndex &gt; 0) ? (tIndex - 1) : tIndex;</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">                int t1 = ((tIndex + 1) &lt; t.length) ? tIndex + 1 : tIndex;</span>
+<span class="nc bnc" id="L243" title="All 2 branches missed.">                if (t1 &gt; t0) {</span>
+<span class="nc" id="L244">                    int si = sigmaIndex + 1;</span>
+<span class="nc bnc" id="L245" title="All 2 branches missed.">                    while (si &lt; (scaleSpaceImage.getScaleSpaceImage().length - 1)) {</span>
+<span class="nc" id="L246">                        t = scaleSpaceImage.getScaleSpaceImage()[si + 1];</span>
+<span class="nc" id="L247">                        int n = 0;</span>
+<span class="nc bnc" id="L248" title="All 2 branches missed.">                        for (int j = t0; j &lt; t.length; j++) {</span>
+<span class="nc" id="L249">                            float tt = t[j];</span>
+<span class="nc bnc" id="L250" title="All 2 branches missed.">                            if (tt &gt; -1) {</span>
+<span class="nc" id="L251">                                n++;</span>
                             }
                         }
-<span class="fc bfc" id="L254" title="All 2 branches covered.">                        if (n &gt; 1) {</span>
-<span class="fc" id="L255">                            break;</span>
+<span class="nc bnc" id="L254" title="All 2 branches missed.">                        if (n &gt; 1) {</span>
+<span class="nc" id="L255">                            break;</span>
                         }
-<span class="fc" id="L257">                        si++;</span>
-<span class="fc" id="L258">                    }</span>
+<span class="nc" id="L257">                        si++;</span>
+<span class="nc" id="L258">                    }</span>
                 }
             }
            
@@ -283,7 +283,7 @@ public class ContourFinder {
 
 <span class="fc bfc" id="L284" title="All 2 branches covered.">            if (rightIndexBelow == -1) {</span>
                 //TODO: the 2nd conditional should be revised
-<span class="pc bpc" id="L286" title="1 of 4 branches missed.">                if ((nToRight == 1) &amp;&amp; (tPoint &gt; 0.9)) {</span>
+<span class="pc bpc" id="L286" title="2 of 4 branches missed.">                if ((nToRight == 1) &amp;&amp; (tPoint &gt; 0.9)) {</span>
 <span class="nc" id="L287">                    isAnEdgePair = true;</span>
                 } else {
                     // this can happen if the contour has already been removed
@@ -296,38 +296,38 @@ public class ContourFinder {
 <span class="fc" id="L296">                float tNext</span>
 <span class="fc" id="L297">                    = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tIndex + 1];</span>
 
-<span class="fc bfc" id="L299" title="All 4 branches covered.">                isASinglePeak = (t[rightIndexBelow] &lt; tNext) || (tNext &lt; 0);</span>
+<span class="pc bpc" id="L299" title="2 of 4 branches missed.">                isASinglePeak = (t[rightIndexBelow] &lt; tNext) || (tNext &lt; 0);</span>
             }
         }
 
-<span class="fc bfc" id="L303" title="All 2 branches covered.">        if (isASinglePeak) {</span>
+<span class="pc bpc" id="L303" title="1 of 2 branches missed.">        if (isASinglePeak) {</span>
 
             // it's a single peak
-<span class="fc" id="L306">            CurvatureScaleSpaceContour contour = new CurvatureScaleSpaceContour(</span>
+<span class="nc" id="L306">            CurvatureScaleSpaceContour contour = new CurvatureScaleSpaceContour(</span>
                 sigma, tPoint);
 
-<span class="fc" id="L309">            contour.setEdgeNumber(scaleSpaceImage.getEdgeNumber());</span>
+<span class="nc" id="L309">            contour.setEdgeNumber(scaleSpaceImage.getEdgeNumber());</span>
 
-<span class="fc" id="L311">            float t = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tIndex];</span>
+<span class="nc" id="L311">            float t = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tIndex];</span>
 
-<span class="fc" id="L313">            float t0 = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tIndex];</span>
-<span class="fc" id="L314">            int idx0 = Math.round(t0 * scaleSpaceImage.getEdgeSize());</span>
+<span class="nc" id="L313">            float t0 = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tIndex];</span>
+<span class="nc" id="L314">            int idx0 = Math.round(t0 * scaleSpaceImage.getEdgeSize());</span>
 
-<span class="fc" id="L316">            CurvatureScaleSpaceImagePoint point0</span>
+<span class="nc" id="L316">            CurvatureScaleSpaceImagePoint point0</span>
                 = new CurvatureScaleSpaceImagePoint(sigma, t,
-<span class="fc" id="L318">                    scaleSpaceImage.getXCoord(sigmaIndex, tIndex),</span>
-<span class="fc" id="L319">                    scaleSpaceImage.getYCoord(sigmaIndex, tIndex),</span>
+<span class="nc" id="L318">                    scaleSpaceImage.getXCoord(sigmaIndex, tIndex),</span>
+<span class="nc" id="L319">                    scaleSpaceImage.getYCoord(sigmaIndex, tIndex),</span>
                     idx0);
 
-<span class="fc" id="L322">            CurvatureScaleSpaceImagePoint[] peakPoints</span>
+<span class="nc" id="L322">            CurvatureScaleSpaceImagePoint[] peakPoints</span>
                 = new CurvatureScaleSpaceImagePoint[]{point0};
 
-<span class="fc" id="L325">            contour.setPeakDetails(peakPoints);</span>
+<span class="nc" id="L325">            contour.setPeakDetails(peakPoints);</span>
 
             // for case when there's a single point for the peak:
-<span class="fc" id="L328">            removeContourFromImage(scaleSpaceImage, sigmaIndex, tIndex);</span>
+<span class="nc" id="L328">            removeContourFromImage(scaleSpaceImage, sigmaIndex, tIndex);</span>
 
-<span class="fc" id="L330">            return contour;</span>
+<span class="nc" id="L330">            return contour;</span>
 
         } else {
 
@@ -340,17 +340,17 @@ public class ContourFinder {
 
 <span class="fc" id="L341">            contour.setEdgeNumber(scaleSpaceImage.getEdgeNumber());</span>
 
-<span class="fc bfc" id="L343" title="All 2 branches covered.">            int tL = (leftIndexBelow &gt; -1) ? leftIndexBelow : tIndex;</span>
+<span class="pc bpc" id="L343" title="1 of 2 branches missed.">            int tL = (leftIndexBelow &gt; -1) ? leftIndexBelow : tIndex;</span>
 <span class="pc bpc" id="L344" title="1 of 2 branches missed.">            int tR = (rightIndexBelow &gt; -1) ? rightIndexBelow : tIndex + 1;</span>
             
 <span class="fc" id="L346">            float t0 = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tL];</span>
 <span class="fc" id="L347">            float t1 = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tR];</span>
-<span class="fc bfc" id="L348" title="All 4 branches covered.">            if (t0 &lt; 0 || t1 &lt; 0) {</span>
+<span class="pc bpc" id="L348" title="2 of 4 branches missed.">            if (t0 &lt; 0 || t1 &lt; 0) {</span>
                 // revert to orig offsets
-<span class="fc" id="L350">                tL = tIndex;</span>
-<span class="fc" id="L351">                tR = tIndex + 1;</span>
-<span class="fc" id="L352">                t0 = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tL];</span>
-<span class="fc" id="L353">                t1 = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tR];</span>
+<span class="nc" id="L350">                tL = tIndex;</span>
+<span class="nc" id="L351">                tR = tIndex + 1;</span>
+<span class="nc" id="L352">                t0 = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tL];</span>
+<span class="nc" id="L353">                t1 = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tR];</span>
             }
 
 <span class="fc" id="L356">            int idx0 = Math.round(t0 * scaleSpaceImage.getEdgeSize());</span>
@@ -424,14 +424,14 @@ public class ContourFinder {
 <span class="fc" id="L424">                float lD = tPoint - t[j];</span>
 <span class="fc" id="L425">                float rD = t[j] - tPoint;</span>
 
-<span class="pc bpc" id="L427" title="1 of 4 branches missed.">                if ((lD &gt;= 0) &amp;&amp; (lD &lt; minDiffLeft)) {</span>
+<span class="pc bpc" id="L427" title="2 of 4 branches missed.">                if ((lD &gt;= 0) &amp;&amp; (lD &lt; minDiffLeft)) {</span>
 <span class="fc" id="L428">                    minDiffLeft = lD;</span>
 <span class="fc" id="L429">                    leftIndex = j;</span>
                 }
 
-<span class="pc bpc" id="L432" title="1 of 6 branches missed.">                if ((rD &gt;= 0) &amp;&amp; (rD &lt; minDiffRight) &amp;&amp; (j &gt; leftIndex)) {</span>
-<span class="fc" id="L433">                    minDiffRight = rD;</span>
-<span class="fc" id="L434">                    rightIndex = j;</span>
+<span class="pc bpc" id="L432" title="3 of 6 branches missed.">                if ((rD &gt;= 0) &amp;&amp; (rD &lt; minDiffRight) &amp;&amp; (j &gt; leftIndex)) {</span>
+<span class="nc" id="L433">                    minDiffRight = rD;</span>
+<span class="nc" id="L434">                    rightIndex = j;</span>
                 }
             }
 
@@ -439,9 +439,9 @@ public class ContourFinder {
 <span class="fc" id="L439">                tLeft = t[leftIndex];</span>
 <span class="fc" id="L440">                t[leftIndex] = -1;</span>
             }
-<span class="fc bfc" id="L442" title="All 2 branches covered.">            if (rightIndex &gt; -1) {</span>
-<span class="fc" id="L443">                tRight = t[rightIndex];</span>
-<span class="fc" id="L444">                t[rightIndex] = -1;</span>
+<span class="pc bpc" id="L442" title="1 of 2 branches missed.">            if (rightIndex &gt; -1) {</span>
+<span class="nc" id="L443">                tRight = t[rightIndex];</span>
+<span class="nc" id="L444">                t[rightIndex] = -1;</span>
             }
 
 <span class="fc" id="L447">            boolean isEmpty = true;</span>
@@ -456,7 +456,7 @@ public class ContourFinder {
             }
         }
 
-<span class="fc bfc" id="L459" title="All 2 branches covered.">        if (rightIndex == -1) {</span>
+<span class="pc bpc" id="L459" title="1 of 2 branches missed.">        if (rightIndex == -1) {</span>
 <span class="fc" id="L460">            rightIndex = leftIndex;</span>
         }
         
@@ -516,8 +516,8 @@ public class ContourFinder {
             
 <span class="fc" id="L517">            float[] t = scaleSpaceImage.getScaleSpaceImage()[i];</span>
 
-<span class="fc bfc" id="L519" title="All 2 branches covered.">            if (t.length == 0) {</span>
-<span class="fc" id="L520">                break;</span>
+<span class="pc bpc" id="L519" title="1 of 2 branches missed.">            if (t.length == 0) {</span>
+<span class="nc" id="L520">                break;</span>
             }
             
             // looking for the points nearest to tLeft and tRight directly
@@ -611,23 +611,23 @@ public class ContourFinder {
 
 <span class="fc" id="L612">            CurvatureScaleSpaceContour contour = contours.get(i);</span>
 
-<span class="fc bfc" id="L614" title="All 2 branches covered.">            if (contour.getPeakScaleFreeLength() &gt; 0.9) {</span>
-<span class="fc" id="L615">                rightBorderPeakIndexes.add(Integer.valueOf(i));</span>
-<span class="fc bfc" id="L616" title="All 2 branches covered.">            } else if (contour.getPeakScaleFreeLength() &lt; 0.1) {</span>
-<span class="fc" id="L617">                leftBorderPeakIndexes.add(Integer.valueOf(i));</span>
+<span class="pc bpc" id="L614" title="1 of 2 branches missed.">            if (contour.getPeakScaleFreeLength() &gt; 0.9) {</span>
+<span class="nc" id="L615">                rightBorderPeakIndexes.add(Integer.valueOf(i));</span>
+<span class="pc bpc" id="L616" title="1 of 2 branches missed.">            } else if (contour.getPeakScaleFreeLength() &lt; 0.1) {</span>
+<span class="nc" id="L617">                leftBorderPeakIndexes.add(Integer.valueOf(i));</span>
             }
         }
 
 <span class="fc" id="L621">        int maxIter = rightBorderPeakIndexes.size();</span>
-<span class="fc bfc" id="L622" title="All 2 branches covered.">        if (leftBorderPeakIndexes.size() &gt; maxIter) {</span>
-<span class="fc" id="L623">            maxIter = leftBorderPeakIndexes.size();</span>
+<span class="pc bpc" id="L622" title="1 of 2 branches missed.">        if (leftBorderPeakIndexes.size() &gt; maxIter) {</span>
+<span class="nc" id="L623">            maxIter = leftBorderPeakIndexes.size();</span>
         }
 <span class="fc" id="L625">        int nIter = 0;</span>
 <span class="fc" id="L626">        int i = 0;</span>
 <span class="fc" id="L627">        boolean resort = false;</span>
 
-<span class="pc bpc" id="L629" title="1 of 4 branches missed.">        while ((nIter &lt; maxIter) &amp;&amp; !rightBorderPeakIndexes.isEmpty()</span>
-<span class="pc bpc" id="L630" title="1 of 2 branches missed.">            &amp;&amp; !leftBorderPeakIndexes.isEmpty()) {</span>
+<span class="pc bpc" id="L629" title="3 of 4 branches missed.">        while ((nIter &lt; maxIter) &amp;&amp; !rightBorderPeakIndexes.isEmpty()</span>
+<span class="nc bnc" id="L630" title="All 2 branches missed.">            &amp;&amp; !leftBorderPeakIndexes.isEmpty()) {</span>
 
             // indexes are ordered by descending sigma
             // for now, make an unsafe assumption that there aren't any other
@@ -635,26 +635,26 @@ public class ContourFinder {
             // of contours that wrap around
             //if ((leftBorderPeakIndexes.size() == 1)
             //    &amp;&amp; (rightBorderPeakIndexes.size() == 1)) {
-<span class="fc" id="L638">            int idxLeft = leftBorderPeakIndexes.get(i);</span>
-<span class="fc" id="L639">            int idxRight = rightBorderPeakIndexes.get(i);</span>
+<span class="nc" id="L638">            int idxLeft = leftBorderPeakIndexes.get(i);</span>
+<span class="nc" id="L639">            int idxRight = rightBorderPeakIndexes.get(i);</span>
 
-<span class="fc" id="L641">            CurvatureScaleSpaceContour left = contours.get(idxLeft);</span>
-<span class="fc" id="L642">            CurvatureScaleSpaceContour right = contours.get(idxRight);</span>
+<span class="nc" id="L641">            CurvatureScaleSpaceContour left = contours.get(idxLeft);</span>
+<span class="nc" id="L642">            CurvatureScaleSpaceContour right = contours.get(idxRight);</span>
 
-<span class="fc" id="L644">            boolean leftIsTaller = (left.getPeakSigma()</span>
-<span class="pc bpc" id="L645" title="1 of 2 branches missed.">                &gt; right.getPeakSigma());</span>
+<span class="nc" id="L644">            boolean leftIsTaller = (left.getPeakSigma()</span>
+<span class="nc bnc" id="L645" title="All 2 branches missed.">                &gt; right.getPeakSigma());</span>
 
-<span class="fc" id="L647">            boolean rightIsTaller = (right.getPeakSigma()</span>
-<span class="pc bpc" id="L648" title="1 of 2 branches missed.">                &gt; left.getPeakSigma());</span>
+<span class="nc" id="L647">            boolean rightIsTaller = (right.getPeakSigma()</span>
+<span class="nc bnc" id="L648" title="All 2 branches missed.">                &gt; left.getPeakSigma());</span>
 
-<span class="pc bpc" id="L650" title="3 of 4 branches missed.">            if (leftIsTaller &amp;&amp; (left.getPeakDetails().length == 2)) {</span>
+<span class="nc bnc" id="L650" title="All 4 branches missed.">            if (leftIsTaller &amp;&amp; (left.getPeakDetails().length == 2)) {</span>
 
 <span class="nc" id="L652">                contours.remove(right);</span>
 <span class="nc" id="L653">                resort = true;</span>
-<span class="pc bpc" id="L654" title="2 of 4 branches missed.">            } else if (rightIsTaller &amp;&amp; (right.getPeakDetails().length == 2)) {</span>
+<span class="nc bnc" id="L654" title="All 4 branches missed.">            } else if (rightIsTaller &amp;&amp; (right.getPeakDetails().length == 2)) {</span>
 
-<span class="fc" id="L656">                contours.remove(left);</span>
-<span class="fc" id="L657">                resort = true;</span>
+<span class="nc" id="L656">                contours.remove(left);</span>
+<span class="nc" id="L657">                resort = true;</span>
             } else {
 
 <span class="nc bnc" id="L660" title="All 4 branches missed.">                if (leftIsTaller &amp;&amp; (right.getPeakDetails().length == 2)) {</span>
@@ -699,24 +699,24 @@ public class ContourFinder {
             }
             //}
 
-<span class="fc" id="L702">            leftBorderPeakIndexes.clear();</span>
-<span class="fc" id="L703">            rightBorderPeakIndexes.clear();</span>
-<span class="fc bfc" id="L704" title="All 2 branches covered.">            for (int ii = 0; ii &lt; contours.size(); ii++) {</span>
+<span class="nc" id="L702">            leftBorderPeakIndexes.clear();</span>
+<span class="nc" id="L703">            rightBorderPeakIndexes.clear();</span>
+<span class="nc bnc" id="L704" title="All 2 branches missed.">            for (int ii = 0; ii &lt; contours.size(); ii++) {</span>
 
-<span class="fc" id="L706">                CurvatureScaleSpaceContour contour = contours.get(ii);</span>
+<span class="nc" id="L706">                CurvatureScaleSpaceContour contour = contours.get(ii);</span>
 
-<span class="fc bfc" id="L708" title="All 2 branches covered.">                if (contour.getPeakScaleFreeLength() &gt; 0.9) {</span>
-<span class="fc" id="L709">                    rightBorderPeakIndexes.add(Integer.valueOf(ii));</span>
-<span class="fc bfc" id="L710" title="All 2 branches covered.">                } else if (contour.getPeakScaleFreeLength() &lt; 0.1) {</span>
-<span class="fc" id="L711">                    leftBorderPeakIndexes.add(Integer.valueOf(ii));</span>
+<span class="nc bnc" id="L708" title="All 2 branches missed.">                if (contour.getPeakScaleFreeLength() &gt; 0.9) {</span>
+<span class="nc" id="L709">                    rightBorderPeakIndexes.add(Integer.valueOf(ii));</span>
+<span class="nc bnc" id="L710" title="All 2 branches missed.">                } else if (contour.getPeakScaleFreeLength() &lt; 0.1) {</span>
+<span class="nc" id="L711">                    leftBorderPeakIndexes.add(Integer.valueOf(ii));</span>
                 }
             }
 
-<span class="fc" id="L715">            nIter++;</span>
-<span class="fc" id="L716">        }</span>
+<span class="nc" id="L715">            nIter++;</span>
+<span class="nc" id="L716">        }</span>
 
-<span class="fc bfc" id="L718" title="All 2 branches covered.">        if (resort) {</span>
-<span class="fc" id="L719">            Collections.sort(contours, new DescendingSigmaComparator());</span>
+<span class="pc bpc" id="L718" title="1 of 2 branches missed.">        if (resort) {</span>
+<span class="nc" id="L719">            Collections.sort(contours, new DescendingSigmaComparator());</span>
         }
 <span class="fc" id="L721">    }</span>
 
@@ -776,11 +776,11 @@ public class ContourFinder {
 
 <span class="fc" id="L777">        List&lt;Integer&gt; betweenInflectionIndexes = new ArrayList&lt;Integer&gt;();</span>
 
-<span class="fc bfc" id="L779" title="All 2 branches covered.">        for (int i = 1; i &lt; indexes.size(); ++i) {</span>
-<span class="fc" id="L780">            int i0 = indexes.get(i - 1);</span>
-<span class="fc" id="L781">            int i1 = indexes.get(i);</span>
-<span class="fc" id="L782">            int iMid = (i1 + i0) / 2;</span>
-<span class="fc" id="L783">            betweenInflectionIndexes.add(Integer.valueOf(iMid));</span>
+<span class="pc bpc" id="L779" title="1 of 2 branches missed.">        for (int i = 1; i &lt; indexes.size(); ++i) {</span>
+<span class="nc" id="L780">            int i0 = indexes.get(i - 1);</span>
+<span class="nc" id="L781">            int i1 = indexes.get(i);</span>
+<span class="nc" id="L782">            int iMid = (i1 + i0) / 2;</span>
+<span class="nc" id="L783">            betweenInflectionIndexes.add(Integer.valueOf(iMid));</span>
         }
 <span class="pc bpc" id="L785" title="1 of 2 branches missed.">        boolean isClosedCurved = (edge instanceof PairIntArrayWithColor)</span>
 <span class="pc bpc" id="L786" title="1 of 2 branches missed.">            &amp;&amp; ((PairIntArrayWithColor) edge).isClosedCurve();</span>
@@ -801,8 +801,8 @@ public class ContourFinder {
 <span class="fc" id="L801">        Set&lt;Integer&gt; added = new HashSet&lt;Integer&gt;();</span>
 <span class="fc" id="L802">        PairIntArray dirTst = new PairIntArray(indexes.size());</span>
 <span class="fc bfc" id="L803" title="All 2 branches covered.">        for (Integer index : indexes) {</span>
-<span class="fc bfc" id="L804" title="All 2 branches covered.">            if (added.contains(index)) {</span>
-<span class="fc" id="L805">                continue;</span>
+<span class="pc bpc" id="L804" title="1 of 2 branches missed.">            if (added.contains(index)) {</span>
+<span class="nc" id="L805">                continue;</span>
             }
 <span class="fc" id="L807">            int idx = index.intValue();</span>
 <span class="fc" id="L808">            int x = edge.getX(idx);</span>

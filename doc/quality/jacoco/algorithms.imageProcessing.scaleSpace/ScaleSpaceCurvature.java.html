@@ -136,7 +136,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L136">            double numerator = ((xFirstDerivInteg * ySecondDerivInteg) -</span>
                 (yFirstDerivInteg * xSecondDerivInteg));
             
-<span class="pc bpc" id="L139" title="3 of 4 branches missed.">            double curvature = (denominator == 0)  ? </span>
+<span class="pc bpc" id="L139" title="1 of 4 branches missed.">            double curvature = (denominator == 0)  ? </span>
                 (numerator == 0) ? 0 : Double.POSITIVE_INFINITY
                 : numerator / denominator;
            

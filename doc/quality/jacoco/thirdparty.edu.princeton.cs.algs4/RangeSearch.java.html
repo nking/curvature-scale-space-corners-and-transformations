@@ -271,13 +271,13 @@ adapted from http://algs4.cs.princeton.edu/92search/
 <span class="fc bfc" id="L271" title="All 2 branches covered.">        if (b == null) return a;</span>
 
 <span class="pc bpc" id="L273" title="1 of 2 branches missed.">        if (StdRandom.bernoulli((double) size(a) / (size(a) + size(b))))  {</span>
-<span class="fc" id="L274">            a.right = joinLR(a.right, b);</span>
-<span class="fc" id="L275">            fix(a);</span>
-<span class="fc" id="L276">            return a;</span>
+<span class="nc" id="L274">            a.right = joinLR(a.right, b);</span>
+<span class="nc" id="L275">            fix(a);</span>
+<span class="nc" id="L276">            return a;</span>
         } else {
-<span class="nc" id="L278">            b.left = joinLR(a, b.left);</span>
-<span class="nc" id="L279">            fix(b);</span>
-<span class="nc" id="L280">            return b;</span>
+<span class="fc" id="L278">            b.left = joinLR(a, b.left);</span>
+<span class="fc" id="L279">            fix(b);</span>
+<span class="fc" id="L280">            return b;</span>
         }
     }
 

@@ -57,7 +57,7 @@ public class Complex {
 
     // return abs/modulus/magnitude and angle/phase/argument
 <span class="fc" id="L59">    public double abs()   { return Math.hypot(re, im); }  // Math.sqrt(re*re + im*im)</span>
-<span class="fc" id="L60">    public double phase() { return Math.atan2(im, re); }  // between -pi and pi</span>
+<span class="nc" id="L60">    public double phase() { return Math.atan2(im, re); }  // between -pi and pi</span>
 
     // return a new Complex object whose value is (this + b)
     public Complex plus(Complex b) {
@@ -106,8 +106,8 @@ public class Complex {
 
     // return a new Complex object whose value is the reciprocal of this
     public Complex reciprocal() {
-<span class="fc" id="L109">        double scale = re*re + im*im;</span>
-<span class="fc" id="L110">        return new Complex(re / scale, -im / scale);</span>
+<span class="nc" id="L109">        double scale = re*re + im*im;</span>
+<span class="nc" id="L110">        return new Complex(re / scale, -im / scale);</span>
     }
 
     // return the real or imaginary part

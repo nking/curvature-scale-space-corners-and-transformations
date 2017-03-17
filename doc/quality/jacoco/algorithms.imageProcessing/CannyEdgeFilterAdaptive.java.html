@@ -222,7 +222,7 @@ public class CannyEdgeFilterAdaptive {
             
 <span class="pc bpc" id="L223" title="1 of 2 branches missed.">            if (useLineThinner) {</span>
                 
-<span class="fc" id="L225">                imageProcessor.applyThinning(filterProducts.getGradientXY());</span>
+<span class="fc" id="L225">                imageProcessor.applyThinning2(filterProducts.getGradientXY());</span>
                 
 <span class="fc" id="L227">                PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();</span>
                 
@@ -872,20 +872,20 @@ public class CannyEdgeFilterAdaptive {
 
     public GreyscaleImage createGradientPSFForTesting() {
                 
-<span class="fc" id="L875">        float[] k = Gaussian1D.getBinomialKernelSigmaZeroPointFive();</span>
+<span class="nc" id="L875">        float[] k = Gaussian1D.getBinomialKernelSigmaZeroPointFive();</span>
         
-<span class="fc" id="L877">        GreyscaleImage gX = new GreyscaleImage(3, 3);</span>
-<span class="fc" id="L878">        gX.setValue(1, 1, 127);        </span>
-<span class="fc" id="L879">        apply1DKernelToImage(gX, k, true);</span>
+<span class="nc" id="L877">        GreyscaleImage gX = new GreyscaleImage(3, 3);</span>
+<span class="nc" id="L878">        gX.setValue(1, 1, 127);        </span>
+<span class="nc" id="L879">        apply1DKernelToImage(gX, k, true);</span>
         
-<span class="fc" id="L881">        GreyscaleImage gY = new GreyscaleImage(3, 3);</span>
-<span class="fc" id="L882">        gY.setValue(1, 1, 127);</span>
-<span class="fc" id="L883">        apply1DKernelToImage(gY, k, false);</span>
+<span class="nc" id="L881">        GreyscaleImage gY = new GreyscaleImage(3, 3);</span>
+<span class="nc" id="L882">        gY.setValue(1, 1, 127);</span>
+<span class="nc" id="L883">        apply1DKernelToImage(gY, k, false);</span>
         
-<span class="fc" id="L885">        ImageProcessor imageProcessor = new ImageProcessor();</span>
-<span class="fc" id="L886">        GreyscaleImage g = imageProcessor.combineConvolvedImages(gX, gY);</span>
+<span class="nc" id="L885">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="nc" id="L886">        GreyscaleImage g = imageProcessor.combineConvolvedImages(gX, gY);</span>
         
-<span class="fc" id="L888">        return g;</span>
+<span class="nc" id="L888">        return g;</span>
     }
 
     /**
@@ -917,7 +917,7 @@ public class CannyEdgeFilterAdaptive {
 <span class="nc" id="L917">                tmp.setValue(i, 1);</span>
             }
         }
-<span class="nc" id="L920">        imageProcessor.applyThinning(tmp);</span>
+<span class="nc" id="L920">        imageProcessor.applyThinning2(tmp);</span>
         
 <span class="nc bnc" id="L922" title="All 2 branches missed.">        for (int i = 0; i &lt; tmp.getNPixels(); ++i) {</span>
 <span class="nc bnc" id="L923" title="All 2 branches missed.">            if (tmp.getValue(i) == 0) {</span>

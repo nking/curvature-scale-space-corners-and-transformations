@@ -65,9 +65,9 @@ public final class CSSContourInflectionMaker {
 
 <span class="fc" id="L66">        createEdges();</span>
 
-<span class="fc" id="L68">        populateContours(edges, contourLists);</span>
+<span class="nc" id="L68">        populateContours(edges, contourLists);</span>
 
-<span class="fc" id="L70">    }</span>
+<span class="nc" id="L70">    }</span>
     
     protected void createEdges() {
 
@@ -141,7 +141,7 @@ public final class CSSContourInflectionMaker {
 
 <span class="fc" id="L142">            CurvatureScaleSpaceContour c1 = contours.get(i);</span>
 
-<span class="fc bfc" id="L144" title="All 2 branches covered.">            if (c1.getPeakDetails().length &gt; 1) {</span>
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">            if (c1.getPeakDetails().length &gt; 1) {</span>
 <span class="fc" id="L145">                CurvatureScaleSpaceImagePoint p0 = c1.getPeakDetails()[0];</span>
 <span class="fc" id="L146">                CurvatureScaleSpaceImagePoint p1 = c1.getPeakDetails()[1];</span>
 
@@ -173,7 +173,7 @@ public final class CSSContourInflectionMaker {
         // errors than that.
 <span class="fc" id="L174">        float factor = (float)Math.pow(2, 1./32.);</span>
 
-<span class="fc bfc" id="L176" title="All 2 branches covered.">        for (int i = 0; i &lt; edges.size(); i++) {</span>
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">        for (int i = 0; i &lt; edges.size(); i++) {</span>
 
 <span class="fc" id="L178">            PairIntArray edge = edges.get(i);</span>
 
@@ -228,15 +228,15 @@ public final class CSSContourInflectionMaker {
 <span class="fc" id="L228">            contours.add(result);</span>
         }
 
-<span class="pc bpc" id="L231" title="1 of 2 branches missed.">        if (contours.isEmpty()) {</span>
+<span class="nc bnc" id="L231" title="All 2 branches missed.">        if (contours.isEmpty()) {</span>
 <span class="nc" id="L232">            log.info(&quot;no contours found in image 1&quot;);</span>
 <span class="nc" id="L233">            return;</span>
         }
-<span class="pc bpc" id="L235" title="1 of 2 branches missed.">        if (edges.size() &gt; 1) {</span>
+<span class="nc bnc" id="L235" title="All 2 branches missed.">        if (edges.size() &gt; 1) {</span>
 <span class="nc" id="L236">            Collections.sort(contours, new DescendingSigmaComparator2());</span>
         }
 
-<span class="fc" id="L239">    }</span>
+<span class="nc" id="L239">    }</span>
  
     /**
      * get the inflection scale space peaks
@@ -259,17 +259,17 @@ public final class CSSContourInflectionMaker {
 <span class="fc" id="L259">            CurvatureScaleSpaceContour contour = contours.get(i);</span>
 <span class="fc bfc" id="L260" title="All 2 branches covered.">            for (CurvatureScaleSpaceImagePoint ip : contour.getPeakDetails()) {</span>
 <span class="fc" id="L261">                Integer idx = Integer.valueOf(ip.getCoordIdx());</span>
-<span class="fc bfc" id="L262" title="All 2 branches covered.">                if (indexes.contains(idx)) {</span>
-<span class="fc" id="L263">                    remove.add(i);</span>
+<span class="pc bpc" id="L262" title="1 of 2 branches missed.">                if (indexes.contains(idx)) {</span>
+<span class="nc" id="L263">                    remove.add(i);</span>
                 } else {
 <span class="fc" id="L265">                    indexes.add(idx);</span>
                 }
             }
         }
 
-<span class="fc bfc" id="L270" title="All 2 branches covered.">        for (int i = (remove.size() - 1); i &gt; -1; --i) {</span>
-<span class="fc" id="L271">            int idx = remove.get(i);</span>
-<span class="fc" id="L272">            contours.remove(idx);</span>
+<span class="pc bpc" id="L270" title="1 of 2 branches missed.">        for (int i = (remove.size() - 1); i &gt; -1; --i) {</span>
+<span class="nc" id="L271">            int idx = remove.get(i);</span>
+<span class="nc" id="L272">            contours.remove(idx);</span>
         }
 <span class="fc" id="L274">    }</span>
 

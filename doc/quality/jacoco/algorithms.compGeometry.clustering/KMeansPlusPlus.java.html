@@ -253,32 +253,32 @@ public class KMeansPlusPlus {
         
 <span class="fc" id="L254">        boolean hasChanged = false;</span>
 <span class="fc bfc" id="L255" title="All 2 branches covered.">        for (int i = 0; i &lt; values.length; ++i) {</span>
-<span class="fc bfc" id="L256" title="All 2 branches covered.">            if (lastImgSeedIndexes[i] != imgSeedIndexes[i]) {</span>
-<span class="fc" id="L257">                hasChanged = true;</span>
-<span class="fc" id="L258">                break;</span>
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">            if (lastImgSeedIndexes[i] != imgSeedIndexes[i]) {</span>
+<span class="nc" id="L257">                hasChanged = true;</span>
+<span class="nc" id="L258">                break;</span>
             }
         }
-<span class="fc bfc" id="L261" title="All 2 branches covered.">        if (!hasChanged) {</span>
+<span class="pc bpc" id="L261" title="1 of 2 branches missed.">        if (!hasChanged) {</span>
 <span class="fc" id="L262">            return true;</span>
         }
          
-<span class="fc" id="L265">        float[] sumVariance = new float[nSeeds];</span>
-<span class="fc" id="L266">        int[] nSumVariance = new int[nSeeds];</span>
+<span class="nc" id="L265">        float[] sumVariance = new float[nSeeds];</span>
+<span class="nc" id="L266">        int[] nSumVariance = new int[nSeeds];</span>
 
-<span class="fc bfc" id="L268" title="All 2 branches covered.">        for (int xyIndex = 0; xyIndex &lt; values.length; xyIndex++) {</span>
+<span class="nc bnc" id="L268" title="All 2 branches missed.">        for (int xyIndex = 0; xyIndex &lt; values.length; xyIndex++) {</span>
 
-<span class="fc" id="L270">            int seedIndex = imgSeedIndexes[xyIndex];</span>
+<span class="nc" id="L270">            int seedIndex = imgSeedIndexes[xyIndex];</span>
 
-<span class="fc" id="L272">            int d = values[xyIndex] - seed[seedIndex];</span>
+<span class="nc" id="L272">            int d = values[xyIndex] - seed[seedIndex];</span>
             
-<span class="fc" id="L274">            sumVariance[seedIndex] += (d * d);</span>
+<span class="nc" id="L274">            sumVariance[seedIndex] += (d * d);</span>
             
-<span class="fc" id="L276">            nSumVariance[seedIndex]++;</span>
+<span class="nc" id="L276">            nSumVariance[seedIndex]++;</span>
         }
 
-<span class="fc bfc" id="L279" title="All 2 branches covered.">        for (int i = 0; i &lt; sumVariance.length; i++) {</span>
-<span class="pc bpc" id="L280" title="1 of 2 branches missed.">            if ((float)nSumVariance[i] &gt; 0) {</span>
-<span class="fc" id="L281">                sumVariance[i] /= (float)nSumVariance[i];</span>
+<span class="nc bnc" id="L279" title="All 2 branches missed.">        for (int i = 0; i &lt; sumVariance.length; i++) {</span>
+<span class="nc bnc" id="L280" title="All 2 branches missed.">            if ((float)nSumVariance[i] &gt; 0) {</span>
+<span class="nc" id="L281">                sumVariance[i] /= (float)nSumVariance[i];</span>
             } else {
 <span class="nc" id="L283">                sumVariance[i] = 0;</span>
             }
@@ -286,20 +286,20 @@ public class KMeansPlusPlus {
 
         // store in the instance fields
 
-<span class="fc" id="L289">        boolean allAreBelowCriticalLimit = true;</span>
+<span class="nc" id="L289">        boolean allAreBelowCriticalLimit = true;</span>
 
-<span class="fc bfc" id="L291" title="All 2 branches covered.">        for (int i = 0; i &lt; nSeeds; i++) {</span>
-<span class="fc" id="L292">            float diff = seedVariances[i] - sumVariance[i];</span>
-<span class="pc bpc" id="L293" title="1 of 2 branches missed.">            if (diff &lt; 0 ) {</span>
-<span class="fc" id="L294">                allAreBelowCriticalLimit = false;</span>
+<span class="nc bnc" id="L291" title="All 2 branches missed.">        for (int i = 0; i &lt; nSeeds; i++) {</span>
+<span class="nc" id="L292">            float diff = seedVariances[i] - sumVariance[i];</span>
+<span class="nc bnc" id="L293" title="All 2 branches missed.">            if (diff &lt; 0 ) {</span>
+<span class="nc" id="L294">                allAreBelowCriticalLimit = false;</span>
             }
             
-<span class="fc" id="L297">            seedVariances[i] = sumVariance[i];</span>
+<span class="nc" id="L297">            seedVariances[i] = sumVariance[i];</span>
         }
 
-<span class="fc" id="L300">        lastImgSeedIndexes = imgSeedIndexes;</span>
+<span class="nc" id="L300">        lastImgSeedIndexes = imgSeedIndexes;</span>
         
-<span class="fc" id="L302">        return allAreBelowCriticalLimit;</span>
+<span class="nc" id="L302">        return allAreBelowCriticalLimit;</span>
     }
     
     protected void calculateFinalStats(final int[] values, 

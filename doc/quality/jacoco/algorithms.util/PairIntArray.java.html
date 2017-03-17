@@ -233,23 +233,23 @@ public class PairIntArray {
 <span class="fc" id="L233">    }</span>
     
     public void insert(int index, int xPoint, int yPoint) {
-<span class="nc bnc" id="L236" title="All 4 branches missed.">        if (index &lt; 0 || (index &gt; n)) {</span>
+<span class="pc bpc" id="L236" title="2 of 4 branches missed.">        if (index &lt; 0 || (index &gt; n)) {</span>
 <span class="nc" id="L237">            throw new IllegalArgumentException(&quot;index is out of bounds of arrays&quot;);</span>
         }
         
-<span class="nc" id="L240">        expandIfNeeded(n + 1);</span>
+<span class="fc" id="L240">        expandIfNeeded(n + 1);</span>
                 
         // move everything at index thru n-1 to higher index
-<span class="nc bnc" id="L243" title="All 2 branches missed.">        for (int i = n; i &gt; index; i--) {</span>
-<span class="nc" id="L244">            x[i] = x[i - 1];</span>
-<span class="nc" id="L245">            y[i] = y[i - 1];</span>
+<span class="fc bfc" id="L243" title="All 2 branches covered.">        for (int i = n; i &gt; index; i--) {</span>
+<span class="fc" id="L244">            x[i] = x[i - 1];</span>
+<span class="fc" id="L245">            y[i] = y[i - 1];</span>
         }
         
-<span class="nc" id="L248">        x[index] = xPoint;</span>
-<span class="nc" id="L249">        y[index] = yPoint;</span>
+<span class="fc" id="L248">        x[index] = xPoint;</span>
+<span class="fc" id="L249">        y[index] = yPoint;</span>
         
-<span class="nc" id="L251">        n++;</span>
-<span class="nc" id="L252">    }</span>
+<span class="fc" id="L251">        n++;</span>
+<span class="fc" id="L252">    }</span>
 
     public void insertAll(int insertAtIndex, PairIntArray insert) {
         

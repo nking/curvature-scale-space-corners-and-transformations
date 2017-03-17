@@ -94,12 +94,12 @@ import java.util.Arrays;
         }
         
 <span class="fc" id="L96">        double[] u2Range = new double[nRows];</span>
-<span class="pc bpc" id="L97" title="1 of 2 branches missed.">        if ((nRows &amp; 1) == 0) {</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">        if ((nRows &amp; 1) == 0) {</span>
 <span class="fc" id="L98">            u2Range[0] = -(nRows-1)/2.;</span>
 <span class="fc" id="L99">            div = nRows - 1;            </span>
         } else {
-<span class="nc" id="L101">            u2Range[0] = -nRows/2.;</span>
-<span class="nc" id="L102">            div = nRows;</span>
+<span class="fc" id="L101">            u2Range[0] = -nRows/2.;</span>
+<span class="fc" id="L102">            div = nRows;</span>
         }
 <span class="fc bfc" id="L104" title="All 2 branches covered.">        for (int i = 1; i &lt; u2Range.length; ++i) {</span>
 <span class="fc" id="L105">            u2Range[i] = u2Range[i - 1] + 1.;</span>

@@ -1698,8 +1698,8 @@ import java.util.Stack;
 <span class="fc" id="L1698">                            remIdxs.add(pointIndexes.get(pixIdx3));</span>
 <span class="fc" id="L1699">                        }</span>
 <span class="fc" id="L1700">                        remIdxs.removeAll(junctions);</span>
-<span class="pc bpc" id="L1701" title="1 of 2 branches missed.">                        if (remIdxs.isEmpty()) {</span>
-<span class="nc" id="L1702">                            break;</span>
+<span class="fc bfc" id="L1701" title="All 2 branches covered.">                        if (remIdxs.isEmpty()) {</span>
+<span class="fc" id="L1702">                            break;</span>
                         }
                     }
                 }
@@ -1748,57 +1748,57 @@ import java.util.Stack;
 <span class="fc" id="L1748">            junctions.remove(pointIndexes.get(currPix));</span>
 <span class="fc" id="L1749">        }</span>
         
-<span class="pc bpc" id="L1751" title="1 of 2 branches missed.">        if (!junctions.isEmpty()) {</span>
+<span class="fc bfc" id="L1751" title="All 2 branches covered.">        if (!junctions.isEmpty()) {</span>
             //insert between junction neigbhors
             //TODO: this could be improved, but for now, will use
             //  a pattern that has worse case runtime near
             //  O(junctions.size * output.size)
-<span class="nc" id="L1756">            TIntIterator iter = junctions.iterator();</span>
-<span class="nc bnc" id="L1757" title="All 2 branches missed.">            while (iter.hasNext()) {</span>
-<span class="nc" id="L1758">                int jIdx = iter.next();</span>
+<span class="fc" id="L1756">            TIntIterator iter = junctions.iterator();</span>
+<span class="fc bfc" id="L1757" title="All 2 branches covered.">            while (iter.hasNext()) {</span>
+<span class="fc" id="L1758">                int jIdx = iter.next();</span>
                 
-<span class="nc" id="L1760">                int pixIdx = boundaryArray[jIdx];</span>
+<span class="fc" id="L1760">                int pixIdx = boundaryArray[jIdx];</span>
                 
-<span class="nc" id="L1762">                int[] nbrs = pointNeighbors[jIdx].getSetBits();</span>
-<span class="nc" id="L1763">                TIntSet nbrsSet = new TIntHashSet();</span>
-<span class="nc bnc" id="L1764" title="All 2 branches missed.">                for (int nbrIdx : nbrs) {</span>
-<span class="nc" id="L1765">                    nbrsSet.add(boundaryArray[nbrIdx]);</span>
+<span class="fc" id="L1762">                int[] nbrs = pointNeighbors[jIdx].getSetBits();</span>
+<span class="fc" id="L1763">                TIntSet nbrsSet = new TIntHashSet();</span>
+<span class="fc bfc" id="L1764" title="All 2 branches covered.">                for (int nbrIdx : nbrs) {</span>
+<span class="fc" id="L1765">                    nbrsSet.add(boundaryArray[nbrIdx]);</span>
                 }
                 
                 // add junction after first of it's neighbors it finds
-<span class="nc" id="L1769">                boolean found = false;</span>
-<span class="nc bnc" id="L1770" title="All 2 branches missed.">                for (int ii = 0; ii &lt; orderedOutput.getN(); ++ii) {</span>
+<span class="fc" id="L1769">                boolean found = false;</span>
+<span class="fc bfc" id="L1770" title="All 2 branches covered.">                for (int ii = 0; ii &lt; orderedOutput.getN(); ++ii) {</span>
                     
-<span class="nc" id="L1772">                    int nbrX = orderedOutput.getX(ii);</span>
-<span class="nc" id="L1773">                    int nbrY = orderedOutput.getY(ii);</span>
-<span class="nc" id="L1774">                    int nbr = (nbrY * imgWidth) + nbrX;</span>
+<span class="fc" id="L1772">                    int nbrX = orderedOutput.getX(ii);</span>
+<span class="fc" id="L1773">                    int nbrY = orderedOutput.getY(ii);</span>
+<span class="fc" id="L1774">                    int nbr = (nbrY * imgWidth) + nbrX;</span>
                     
-<span class="nc bnc" id="L1776" title="All 2 branches missed.">                    if (nbrsSet.contains(nbr)) {</span>
+<span class="fc bfc" id="L1776" title="All 2 branches covered.">                    if (nbrsSet.contains(nbr)) {</span>
                         // this cannot be last point, because other neighbor
                         // would have been found before, so can assume
                         // the next point is one of the other neighbors
-<span class="nc bnc" id="L1780" title="All 4 branches missed.">                        assert(ii &lt; (orderedOutput.getN() - 1));</span>
+<span class="pc bpc" id="L1780" title="3 of 4 branches missed.">                        assert(ii &lt; (orderedOutput.getN() - 1));</span>
                     
-<span class="nc" id="L1782">                        int x2 = orderedOutput.getX(ii + 1);</span>
-<span class="nc" id="L1783">                        int y2 = orderedOutput.getY(ii + 1);</span>
+<span class="fc" id="L1782">                        int x2 = orderedOutput.getX(ii + 1);</span>
+<span class="fc" id="L1783">                        int y2 = orderedOutput.getY(ii + 1);</span>
                         
-<span class="nc" id="L1785">                        int diffX = Math.abs(x2 - nbrX);</span>
-<span class="nc" id="L1786">                        int diffY = Math.abs(y2 - nbrY);</span>
-<span class="nc bnc" id="L1787" title="All 10 branches missed.">                        assert((diffX == 0 &amp;&amp; diffY == 1) || </span>
+<span class="fc" id="L1785">                        int diffX = Math.abs(x2 - nbrX);</span>
+<span class="fc" id="L1786">                        int diffY = Math.abs(y2 - nbrY);</span>
+<span class="pc bpc" id="L1787" title="9 of 10 branches missed.">                        assert((diffX == 0 &amp;&amp; diffY == 1) || </span>
                             (diffX == 1 &amp;&amp; diffY == 0));
                         
-<span class="nc" id="L1790">                        int pixIdx2 = (y2 * imgWidth) + x2;</span>
+<span class="fc" id="L1790">                        int pixIdx2 = (y2 * imgWidth) + x2;</span>
                         
-<span class="nc bnc" id="L1792" title="All 4 branches missed.">                        assert(nbrsSet.contains(pixIdx2));</span>
+<span class="pc bpc" id="L1792" title="3 of 4 branches missed.">                        assert(nbrsSet.contains(pixIdx2));</span>
                         
-<span class="nc" id="L1794">                        orderedOutput.insert(ii, nbrX, nbrY);</span>
+<span class="fc" id="L1794">                        orderedOutput.insert(ii, nbrX, nbrY);</span>
                         
-<span class="nc" id="L1796">                        found = true;</span>
-<span class="nc" id="L1797">                        break;</span>
+<span class="fc" id="L1796">                        found = true;</span>
+<span class="fc" id="L1797">                        break;</span>
                     }
                 }
-<span class="nc bnc" id="L1800" title="All 4 branches missed.">                assert(found);</span>
-<span class="nc" id="L1801">            }</span>
+<span class="pc bpc" id="L1800" title="3 of 4 branches missed.">                assert(found);</span>
+<span class="fc" id="L1801">            }</span>
         }
 
 <span class="fc" id="L1804">        return orderedOutput;    </span>
