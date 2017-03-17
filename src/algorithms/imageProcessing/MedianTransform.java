@@ -216,7 +216,7 @@ public class MedianTransform {
         GreyscaleImage cJPlus1Ast = med.calculate(cJ, winL, winL);   
             
         // decimation:
-        GreyscaleImage cJPlus1 = imageProcessor.bilinearDownSampling(
+        GreyscaleImage cJPlus1 = imageProcessor.downSample(
             cJPlus1Ast, w2, h2, minValue, maxValue);
        
         return cJPlus1;

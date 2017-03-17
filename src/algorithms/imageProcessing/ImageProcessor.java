@@ -4048,9 +4048,9 @@ public class ImageProcessor {
 
                         double v = biLinearInterpolation(input, ii, jj);
                         
-                        System.out.format(
-                            "(%d,%d) hx=%.3f, hy=%.3f v=%.3f\n", 
-                            i, j, hx, hy, (float)v);
+                        //System.out.format(
+                        //    "(%d,%d) hx=%.3f, hy=%.3f v=%.3f\n", 
+                        //    i, j, hx, hy, (float)v);
 
                         v = hx * v/rW + hy * v/rH;
                         
@@ -4058,12 +4058,6 @@ public class ImageProcessor {
                     }
                 }
                 
-                /*
-                  0  1  2  3  4  5  6  7  8  9
-
-                  0     1     2     3     4
-                */
-
                 int v2 = (int)Math.round(sum);
 
                 if (v2 < 0) {

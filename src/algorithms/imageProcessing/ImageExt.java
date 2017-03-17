@@ -472,7 +472,7 @@ public class ImageExt extends Image {
         return img2;
     }
     
-    public void resetTo(Image copyThis) {
+    public void resetTo(ImageExt copyThis) {
         
         if (copyThis.getNPixels() != nPixels) {
             throw new IllegalArgumentException("cannot convert this fixed " 

@@ -891,14 +891,19 @@ public class Image {
                 "copyThis.height must be same as this width");
         }
         
-        if (is64Bit) {
+        if (is64Bit && copyThis.is64Bit) {
             System.arraycopy(copyThis.rL, 0, rL, 0, copyThis.len);
             System.arraycopy(copyThis.gL, 0, gL, 0, copyThis.len);
             System.arraycopy(copyThis.bL, 0, bL, 0, copyThis.len);
-        } else {
+        } else if (!is64Bit && !is64Bit) {
             System.arraycopy(copyThis.r, 0, r, 0, copyThis.len);
             System.arraycopy(copyThis.g, 0, g, 0, copyThis.len);
             System.arraycopy(copyThis.b, 0, b, 0, copyThis.len);
+        } else {
+            for (int i = 0; i < copyThis.getNPixels(); ++i) {
+                this.setRGB(i, copyThis.getR(i), copyThis.getG(i), 
+                    copyThis.getB(i));
+            }
         }
     }
     
