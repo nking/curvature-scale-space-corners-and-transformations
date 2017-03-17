@@ -40,46 +40,7 @@ public class ImageProcessor4Test extends TestCase {
 
         imageProcessor = new ImageProcessor();
         
-        float[][] hsvImg = imageProcessor.createHSVImage(img);
         
-        float[] hsb = new float[3];
-        
-        int pixIdx = img.getNPixels() >> 1;
-        img.getHSB(pixIdx, hsb);
-        
-        assertTrue(Math.abs(hsb[0] - hsvImg[0][pixIdx]) < 0.01);
-        assertTrue(Math.abs(hsb[1] - hsvImg[1][pixIdx]) < 0.01);
-        assertTrue(Math.abs(hsb[2] - hsvImg[2][pixIdx]) < 0.01);
-        
-        float[] sobelHSV = imageProcessor.createSobelConvolution(
-            hsvImg, img.getWidth(), img.getHeight());
-        
-        float maxV = MiscMath.findMax(sobelHSV);
-        float factor = 255.f/maxV;
-        
-        GreyscaleImage scaled = new GreyscaleImage(img.getWidth(), img.getHeight());
-        for (int i = 0; i < img.getWidth(); ++i) {
-            for (int j = 0; j < img.getHeight(); ++j) {
-                pixIdx = img.getInternalIndex(i, j);
-                float v = sobelHSV[pixIdx] * factor;
-                int vInt = (v > 255) ? 255 : Math.round(v);
-                scaled.setValue(pixIdx, vInt);
-            }
-        }
-        
-        //GreyscaleImage scaled = MiscMath.rescaleAndCreateImage(sobelHSV,
-        //    img.getWidth(), img.getHeight());
-        
-        MiscDebug.writeImage(scaled,  "_hsv_sobel_scaled_"  + fileName1Root);
-        
-        GreyscaleImage ptImg = imageProcessor.createCIELUVTheta(img, 255);
-        
-        GreyscaleImage ptGrad = imageProcessor.createBinarySobelForPolarTheta(
-            ptImg, 20);
-       
-        ptGrad.multiply(255.f);
-        
-        MiscDebug.writeImage(ptGrad,  "_polar_theta_sobel_scaled_"  + fileName1Root);
     }
     
 }

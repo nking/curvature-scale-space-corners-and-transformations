@@ -242,54 +242,6 @@ public class ImageProcessorTest extends TestCase {
         }
     }
      
-    public void testBinImageToKeepZeros() throws Exception {
-        
-        int w0 = 4;
-        int h0 = 6;
-        int xoff = 2;
-        int yoff = 4;
-        
-        int binFactor = 2;
-        
-        GreyscaleImage img = new GreyscaleImage(w0, h0);
-        img.setXRelativeOffset(xoff);
-        img.setYRelativeOffset(yoff);
-        
-        img.fill(4);
-        img.setValue(0, 0, 0);
-        img.setValue(2, 4, 0);
-        /*
-        @ 1 2 3 4
-        1
-        2
-        3
-        4   @
-        5
-        */
-        
-        ImageProcessor ImageProcessor = new ImageProcessor();
-        GreyscaleImage out = ImageProcessor.binImageToKeepZeros(img, binFactor);
-        
-        assertTrue(out.getWidth() == w0/binFactor);
-        assertTrue(out.getHeight() == h0/binFactor);
-        
-        assertTrue(out.getXRelativeOffset() == xoff/binFactor);
-        assertTrue(out.getYRelativeOffset() == yoff/binFactor);
-        
-        for (int col = 0; col < out.getWidth(); col++) {
-            for (int row = 0; row < out.getHeight(); row++) {
-                int v = out.getValue(col, row);
-                if ((col == 0) && (row == 0)) {
-                    assertTrue(v == 0);
-                } else if ((col == 1) && (row == 2)) {
-                    assertTrue(v == 0);
-                } else {
-                    assertTrue(v == 4);
-                }
-            }
-        }
-    }
-    
     public void testBinImage() throws Exception {
                 
         int w0 = 4;
@@ -453,28 +405,6 @@ public class ImageProcessorTest extends TestCase {
         
     }
     
-    public void testDeconvolve() throws Exception {
-        
-        // NOT READY FOR USE YET
-        
-        ImageProcessor imageProcessor = new ImageProcessor();
-        
-        String filePath = ResourceFinder.findFileInTestResources("test_for_deconvolve2.png");        
-        GreyscaleImage img0 = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath);
-        
-        imageProcessor.applyDeconvolution(img0);
-        imageProcessor.applyDeconvolution(img0);
-        imageProcessor.applyDeconvolution(img0);
-                
-        String dirPath = ResourceFinder.findDirectory("bin");
-        String filePath2 = dirPath + "/tmpWiener.png";
-            
-        ImageIOHelper.writeOutputImage(filePath2, img0);
-        
-        int z = 1;
-        
-    }
-    
     public void testReadNonZeroPixels() throws Exception {
         
         int w = 10;
@@ -500,15 +430,7 @@ public class ImageProcessorTest extends TestCase {
         
         GreyscaleImage img2 = img.createWithDimensions();
         
-        imageProcessor.writeAsBinaryToImage(img2, points);
         
-        for (int i = 0; i < w; i++) {
-            for (int j = 0; j < h; j++) {
-                int v = img.getValue(i, j);
-                int v2 = img2.getValue(i, j);
-                assertTrue(v == v2);
-            }
-        }
     }
    
     public void testBiLinearInterpolation0() throws Exception {

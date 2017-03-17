@@ -602,9 +602,7 @@ public class WaterShedTest extends TestCase {
         //HistogramEqualization hEq = new HistogramEqualization(imgStats);
         ImageStatistics stats = ImageStatisticsHelper.examineImage(imgStats, true);
         System.out.println("stats=" + stats.toString());
-        
-        //imageProcessor.applyInvert255(img);
-        
+                
         float minDimension = 300.f;//200.f
         /*int binFactor = (int) Math.ceil(
             Math.max((float)img.getWidth()/minDimension,

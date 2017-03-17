@@ -67,33 +67,7 @@ public class PhaseCongruencyDetectorTest extends TestCase {
             MiscDebug.writeImage(out2, "_pc_thinned_" + fileName + "_");
             MiscDebug.writeImage(pcImg, "_pc_" + fileName + "_");
 
-            // ----- make O1 edges
-            ImageExt imgClr = ImageIOHelper.readImageExt(filePath);
-
-            GreyscaleImage o1 = imageProcessor.createO1(imgClr);
-
-            products =
-                phaseCDetector.phaseCongMono(o1);
-            thinned = products.getThinned();
-            out = img.createWithDimensions();
-            pcImg = img.createWithDimensions();
-            out2 = img.createWithDimensions();
-            for (int i = 0; i < out.getWidth(); ++i) {
-                for (int j = 0; j < out.getHeight(); ++j) {
-                    int vPC = (int)Math.round(255. * products.getPhaseCongruency()[j][i]);
-                    if (thinned[j][i] > 0) {
-                        out.setValue(i, j, thinned[j][i]);
-                        out2.setValue(i, j, vPC);
-                    }
-                    pcImg.setValue(i, j, vPC);
-                }
-            }
-
-            MiscDebug.writeImage(out, "_thinned_o1_" + fileName);
-
-            MiscDebug.writeImage(out2, "_pc_thinned_o1_" + fileName);
-
-            MiscDebug.writeImage(pcImg, "_pc_o1_" + fileName);
+            
         }
     }
 

@@ -53,12 +53,10 @@ public class PhaseCongruencyDetector2Test extends TestCase {
             String filePath = ResourceFinder.findFileInTestResources(fileName);
         
             GreyscaleImage img = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();
-        
-            GreyscaleImage img2 = imageProcessor.increaseToPowerOf2(img);
-            
+                    
             PhaseCongruencyDetector2 phaseCDetector = new PhaseCongruencyDetector2();
             PhaseCongruencyDetector2.PhaseCongruencyProducts products =
-                phaseCDetector.phaseCong(img2, nScale, nOrient, minWavelength, mult, 
+                phaseCDetector.phaseCong(img, nScale, nOrient, minWavelength, mult, 
                 sigmaOnf, k,
                 cutOff, g, noiseMethod, tLow, tHigh, doStoreConvolution);
 

@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.MultiArrayMergeSort;
+import algorithms.bipartite.MinHeapForRT2012;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.features.orb.ORB;
 import algorithms.imageProcessing.util.AngleUtil;
@@ -1522,114 +1523,6 @@ if (sum > 511) {
         return angle;
     }
 
-    public void convertToBinaryImage(GreyscaleImage input) {
-        for (int col = 0; col < input.getWidth(); col++) {
-            for (int row = 0; row < input.getHeight(); row++) {
-                int v = input.getValue(col, row);
-                if (v != 0) {
-                    input.setValue(col, row, 1);
-                }
-            }
-        }
-    }
-
-    public void subtractMinimum(GreyscaleImage input) {
-
-        int min = input.getMin();
-
-        for (int col = 0; col < input.getWidth(); col++) {
-
-            for (int row = 0; row < input.getHeight(); row++) {
-
-                int v = input.getValue(col, row);
-
-                int f = v - min;
-
-                input.setValue(col, row, f);
-            }
-        }
-    }
-
-    /**
-     * multiply these images, that is pixel by pixel multiplication.
-     * input2 is assumed to be 0 or 1
-     * @param input1
-     * @param input2 the mask of 0's and 1's to apply to input1
-     */
-    public void multiplyBinary(Image input1, GreyscaleImage input2)  {
-
-        if (input1 == null) {
-            throw new IllegalArgumentException("input1 cannot be null");
-        }
-        if (input2 == null) {
-            throw new IllegalArgumentException("input2 cannot be null");
-        }
-        if (input1.getWidth() != input2.getWidth()) {
-            throw new IllegalArgumentException(
-            "input1 and input2 must have same widths");
-        }
-        if (input1.getHeight()!= input2.getHeight()) {
-            throw new IllegalArgumentException(
-            "input1 and input2 must have same heights");
-        }
-
-        for (int col = 0; col < input1.getWidth(); col++) {
-
-            for (int row = 0; row < input1.getHeight(); row++) {
-
-                int m = input2.getValue(col, row);
-
-                if (m == 0) {
-
-                    input1.setRGB(col, row, 0, 0, 0);
-                }
-            }
-        }
-    }
-
-    /**
-     * compare each pixel and set output to 0 if both inputs are 0, else set
-     * output to 1.
-     * @param input1
-     * @param input2
-     * @return
-     */
-    public GreyscaleImage binaryOr(GreyscaleImage input1, GreyscaleImage input2)  {
-
-        if (input1 == null) {
-            throw new IllegalArgumentException("input1 cannot be null");
-        }
-        if (input2 == null) {
-            throw new IllegalArgumentException("input2 cannot be null");
-        }
-        if (input1.getWidth() != input2.getWidth()) {
-            throw new IllegalArgumentException(
-            "input1 and input2 must have same widths");
-        }
-        if (input1.getHeight()!= input2.getHeight()) {
-            throw new IllegalArgumentException(
-            "input1 and input2 must have same heights");
-        }
-
-        GreyscaleImage output = input1.createWithDimensions();
-
-        for (int col = 0; col < input1.getWidth(); col++) {
-
-            for (int row = 0; row < input1.getHeight(); row++) {
-
-                int v1 = input1.getValue(col, row);
-
-                int v2 = input2.getValue(col, row);
-
-                if ((v1 != 0) || (v2 != 0)) {
-                    output.setValue(col, row, 1);
-                }
-            }
-        }
-
-        return output;
-    }
-
     protected void blur(GreyscaleImage input, float[] kernel) {
 
         applyKernel1D(input, kernel, true);
@@ -1650,23 +1543,6 @@ if (sum > 511) {
 
         applyKernel1D(input, kernel, false);
         
-    }
-
-    /**
-     * apply a sigma=0.5 first derivative of Gaussian ([0.5, 0, -0.5], a.k.a. Sobel)
-     * @param input
-     */
-    public GreyscaleImage createSmallFirstDerivGaussian(GreyscaleImage input) {
-
-        float[] kernel = Gaussian1DFirstDeriv.getKernel(
-            SIGMA.ZEROPOINTFIVE);
-
-        GreyscaleImage gX = input.copyImage();
-        GreyscaleImage gY = input.copyImage();
-        applyKernel1D(gX, kernel, true);
-        applyKernel1D(gY, kernel, false);
-
-        return combineConvolvedImages(gX, gY);
     }
 
     protected void blur(GreyscaleImage input, float[] kernel, int minValue, int maxValue) {
@@ -1879,58 +1755,6 @@ if (sum > 511) {
         input.resetTo(output);
     }
 
-    public void applyFirstDerivGaussian(GreyscaleImage input, SIGMA sigma,
-        int minValueRange, int maxValueRange) {
-
-        float[] kernel = Gaussian1DFirstDeriv.getBinomialKernel(sigma);
-
-        Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
-
-        int w = input.getWidth();
-        int h = input.getHeight();
-        GreyscaleImage output = input.copyImage();
-
-        for (int i = 0; i < w; i++) {
-            for (int j = 0; j < h; j++) {
-
-                double conv = kernel1DHelper.convolvePointWithKernel(
-                    input, i, j, kernel, true);
-
-                int v = (int)Math.round(conv);
-
-                if (v < minValueRange) {
-                    v = minValueRange;
-                } else if (v > maxValueRange) {
-                    v = maxValueRange;
-                }
-
-                output.setValue(i, j, v);
-            }
-        }
-
-        input.resetTo(output);
-
-        for (int i = 0; i < w; i++) {
-            for (int j = 0; j < h; j++) {
-
-                double conv = kernel1DHelper.convolvePointWithKernel(
-                    input, i, j, kernel, false);
-
-                int v = (int)Math.round(conv);
-
-                if (v < minValueRange) {
-                    v = minValueRange;
-                } else if (v > maxValueRange) {
-                    v = maxValueRange;
-                }
-
-                output.setValue(i, j, v);
-            }
-        }
-
-        input.resetTo(output);
-    }
-
     public void applySecondDerivGaussian(GreyscaleImage input, SIGMA sigma,
         int minValueRange, int maxValueRange) {
 
@@ -2023,35 +1847,6 @@ if (sum > 511) {
         return output;
     }
     
-    /**
-     * convert img to HSV and store in array with 1st dimension being
-     * the color, that is hue, saturation or brightness and the next
-     * dimension being the image with indexes being pixel index
-     * @param img
-     * @return 
-     */
-    public float[][] createHSVImage(ImageExt img) {
-        
-        int n = img.getNPixels();
-        int w = img.getWidth();
-        int h = img.getHeight();
-        
-        float[] hsb = new float[3];
-        float[][] out = new float[3][n];
-        for (int c = 0; c < 3; ++c) {
-            out[c] = new float[n];
-        }
-        
-        for (int pixIdx = 0; pixIdx < n; ++pixIdx) {
-            img.getHSB(pixIdx, hsb);
-            for (int c = 0; c < 3; ++c) {
-                out[c][pixIdx] = hsb[c];
-            }            
-        }
-        
-        return out;
-    }
-
     public void applyKernel1D(GreyscaleImage input, float[] kernel,
         boolean calcForX) {
 
@@ -2206,544 +2001,6 @@ if (sum > 511) {
         }
     }
 
-    /**
-     * make a binary mask with the given zeroCoords as a group of starter points
-     * for the mask and also set to '0' any points within zeroCoords' bounds.
-     *
-     * @param theta
-     * @param zeroCoords
-     * @return
-     */
-    public GreyscaleImage createMask(GreyscaleImage theta, PairIntArray zeroCoords) {
-
-        GreyscaleImage out = theta.createWithDimensions();
-
-        out.fill(1);
-
-        for (int pIdx = 0; pIdx < zeroCoords.getN(); pIdx++) {
-
-            int x = zeroCoords.getX(pIdx);
-            int y = zeroCoords.getY(pIdx);
-            out.setValue(x, y, 0);
-        }
-
-        return out;
-    }
-
-    /**
-     * make a binary mask with the given zeroCoords as a group of starter points
-     * for the mask and also set to '0' any points within zeroCoords' bounds.
-     *
-     * @param theta
-     * @param nonzeroCoords
-     * @return
-     */
-    public GreyscaleImage createInvMask(GreyscaleImage theta,
-        PairIntArray nonzeroCoords) {
-
-        GreyscaleImage out = theta.createWithDimensions();
-
-        for (int pIdx = 0; pIdx < nonzeroCoords.getN(); pIdx++) {
-
-            int x = nonzeroCoords.getX(pIdx);
-            int y = nonzeroCoords.getY(pIdx);
-            out.setValue(x, y, 1);
-        }
-
-        return out;
-    }
-
-    /**
-     * this is meant to operate on an image with only 0's and 1's
-     * @param input
-     */
-    public void removeSpurs(GreyscaleImage input) {
-
-        int width = input.getWidth();
-        int height = input.getHeight();
-
-        int nIterMax = 1000;
-        int nIter = 0;
-        int numRemoved = 1;
-
-        while ((nIter < nIterMax) && (numRemoved > 0)) {
-
-            numRemoved = 0;
-
-            for (int col = 0; col < input.getWidth(); col++) {
-
-                if ((col < 2) || (col > (width - 3))) {
-                    continue;
-                }
-
-                for (int row = 0; row < input.getHeight(); row++) {
-
-                    if ((row < 2) || (row > (height - 3))) {
-                       continue;
-                    }
-
-                    int v = input.getValue(col, row);
-
-                    if (v == 0) {
-                        continue;
-                    }
-
-                    // looking for pixels having only one neighbor who subsequently
-                    // has only 1 or 2 neighbors
-                    // as long as neither are connected to image boundaries
-
-                    int neighborIdx = getIndexIfOnlyOneNeighbor(input, col, row);
-
-                    if (neighborIdx > -1) {
-                        int neighborX = input.getCol(neighborIdx);
-                        int neighborY = input.getRow(neighborIdx);
-
-                        int nn = count8RegionNeighbors(input, neighborX, neighborY);
-
-                        if (nn <= 2) {
-                            input.setValue(col, row, 0);
-                            numRemoved++;
-                        }
-                    } else {
-                        int n = count8RegionNeighbors(input, col, row);
-                        if (n == 0) {
-                            input.setValue(col, row, 0);
-                            numRemoved++;
-                        }
-                    }
-                }
-            }
-
-            log.fine("numRemoved=" + numRemoved + " nIter=" + nIter);
-
-            nIter++;
-        }
-
-    }
-
-    public void removeSpurs(Set<PairInt> points, int width, int height) {
-
-        int nIterMax = 1000;
-        int nIter = 0;
-        int numRemoved = 1;
-
-        while ((nIter < nIterMax) && (numRemoved > 0)) {
-
-            numRemoved = 0;
-
-            Set<PairInt> rm = new HashSet<PairInt>();
-
-            for (PairInt p : points) {
-
-                // looking for pixels having only one neighbor who subsequently
-                // has only 1 or 2 neighbors
-                // as long as neither are connected to image boundaries
-
-                PairInt neighbor = getIndexIfOnlyOneNeighbor(points, p,
-                    width, height);
-
-                if (neighbor != null) {
-
-                    int nn = count8RegionNeighbors(points, neighbor, width,
-                        height);
-
-                    if (nn <= 2) {
-                        rm.add(p);
-                        numRemoved++;
-                    }
-                } else {
-                    int n = count8RegionNeighbors(points, p, width, height);
-                    if (n == 0) {
-                        rm.add(p);
-                        numRemoved++;
-                    }
-                }
-            }
-
-            for (PairInt p : rm) {
-                points.remove(p);
-            }
-
-            log.fine("numRemoved=" + numRemoved + " nIter=" + nIter);
-
-            nIter++;
-        }
-
-    }
-
-    protected int count8RegionNeighbors(GreyscaleImage input, int x, int y) {
-
-        int width = input.getWidth();
-        int height = input.getHeight();
-
-        int count = 0;
-        for (int c = (x - 1); c <= (x + 1); c++) {
-            if ((c < 0) || (c > (width - 1))) {
-                continue;
-            }
-            for (int r = (y - 1); r <= (y + 1); r++) {
-                if ((r < 0) || (r > (height - 1))) {
-                    continue;
-                }
-                if ((c == x) && (r == y)) {
-                    continue;
-                }
-                int v = input.getValue(c, r);
-                if (v > 0) {
-                    count++;
-                }
-            }
-        }
-
-        return count;
-    }
-
-    protected int count8RegionNeighbors(GreyscaleImage input, int x, int y,
-        int edgeValue) {
-
-        int width = input.getWidth();
-        int height = input.getHeight();
-
-        int count = 0;
-        for (int c = (x - 1); c <= (x + 1); c++) {
-            if ((c < 0) || (c > (width - 1))) {
-                continue;
-            }
-            for (int r = (y - 1); r <= (y + 1); r++) {
-                if ((r < 0) || (r > (height - 1))) {
-                    continue;
-                }
-                if ((c == x) && (r == y)) {
-                    continue;
-                }
-                int v = input.getValue(c, r);
-                if (v == edgeValue) {
-                    count++;
-                }
-            }
-        }
-
-        return count;
-    }
-
-    protected int count8RegionNeighbors(Set<PairInt> points, PairInt point,
-        int width, int height) {
-
-        int x = point.getX();
-        int y = point.getY();
-
-        int count = 0;
-
-        for (int c = (x - 1); c <= (x + 1); c++) {
-            if ((c < 0) || (c > (width - 1))) {
-                continue;
-            }
-            for (int r = (y - 1); r <= (y + 1); r++) {
-                if ((r < 0) || (r > (height - 1))) {
-                    continue;
-                }
-                if ((c == x) && (r == y)) {
-                    continue;
-                }
-                PairInt tmp = new PairInt(c, r);
-                if (points.contains(tmp)) {
-                    count++;
-                }
-            }
-        }
-
-        return count;
-    }
-
-    protected int getIndexIfOnlyOneNeighbor(GreyscaleImage input, int x, int y) {
-
-        int width = input.getWidth();
-        int height = input.getHeight();
-
-        int count = 0;
-        int xNeighbor = -1;
-        int yNeighbor = -1;
-
-        for (int c = (x - 1); c <= (x + 1); c++) {
-            if ((c < 0) || (c > (width - 1))) {
-                continue;
-            }
-            for (int r = (y - 1); r <= (y + 1); r++) {
-                if ((r < 0) || (r > (height - 1))) {
-                    continue;
-                }
-                if ((c == x) && (r == y)) {
-                    continue;
-                }
-                int v = input.getValue(c, r);
-                if (v > 0) {
-                    if (count > 0) {
-                        return -1;
-                    }
-                    xNeighbor = c;
-                    yNeighbor = r;
-                    count++;
-                }
-            }
-        }
-
-        if (count == 0) {
-            return -1;
-        }
-
-        int index = input.getIndex(xNeighbor, yNeighbor);
-
-        return index;
-    }
-
-    protected int getIndexIfOnlyOneNeighbor(GreyscaleImage input, int x, int y,
-        int edgeValue) {
-
-        int width = input.getWidth();
-        int height = input.getHeight();
-
-        int count = 0;
-        int xNeighbor = -1;
-        int yNeighbor = -1;
-
-        for (int c = (x - 1); c <= (x + 1); c++) {
-            if ((c < 0) || (c > (width - 1))) {
-                continue;
-            }
-            for (int r = (y - 1); r <= (y + 1); r++) {
-                if ((r < 0) || (r > (height - 1))) {
-                    continue;
-                }
-                if ((c == x) && (r == y)) {
-                    continue;
-                }
-                int v = input.getValue(c, r);
-                if (v == edgeValue) {
-                    if (count > 0) {
-                        return -1;
-                    }
-                    xNeighbor = c;
-                    yNeighbor = r;
-                    count++;
-                }
-            }
-        }
-
-        if (count == 0) {
-            return -1;
-        }
-
-        int index = input.getIndex(xNeighbor, yNeighbor);
-
-        return index;
-    }
-
-    protected PairInt getIndexIfOnlyOneNeighbor(Set<PairInt> points,
-        PairInt point, int width, int height) {
-
-        int x = point.getX();
-        int y = point.getY();
-
-        int count = 0;
-        PairInt neighbor = null;
-
-        for (int c = (x - 1); c <= (x + 1); c++) {
-            if ((c < 0) || (c > (width - 1))) {
-                continue;
-            }
-            for (int r = (y - 1); r <= (y + 1); r++) {
-                if ((r < 0) || (r > (height - 1))) {
-                    continue;
-                }
-                if ((c == x) && (r == y)) {
-                    continue;
-                }
-                PairInt tmp = new PairInt(c, r);
-                if (points.contains(tmp)) {
-                    if (count > 0) {
-                        return null;
-                    }
-                    neighbor = tmp;
-                    count++;
-                }
-            }
-        }
-
-        if (count == 0) {
-            return null;
-        }
-
-        return neighbor;
-    }
-
-    /**
-     * returns avg r, avg g, avg b
-     * @param points
-     * @param theta
-     * @param originalImage
-     * @param addAlongX
-     * @param addAmount
-     * @return
-     */
-    private int[] getAvgMinMaxColor(PairIntArray points, GreyscaleImage theta,
-        Image originalImage, boolean addAlongX, int addAmount) {
-
-        int xOffset = theta.getXRelativeOffset();
-        int yOffset = theta.getYRelativeOffset();
-
-        double rSum = 0;
-        double gSum = 0;
-        double bSum = 0;
-
-        int count = 0;
-
-        for (int pIdx = 0; pIdx < points.getN(); pIdx++) {
-
-            int x = points.getX(pIdx);
-            int y = points.getY(pIdx);
-
-            int ox = x + xOffset;
-            int oy = y + yOffset;
-
-            //TODO: this may need corrections for other orientations
-            if (addAlongX) {
-                ox += addAmount;
-            } else {
-                oy += addAmount;
-            }
-
-            if ((ox < 0) || (ox > (originalImage.getWidth() - 1))) {
-                continue;
-            }
-            if ((oy < 0) || (oy > (originalImage.getHeight() - 1))) {
-                continue;
-            }
-
-            int rgb = originalImage.getRGB(ox, oy);
-            int r = (rgb >> 16) & 0xFF;
-            int g = (rgb >> 8) & 0xFF;
-            int b = rgb & 0xFF;
-
-            rSum += r;
-            gSum += g;
-            bSum += b;
-
-            count++;
-        }
-
-        if (count == 0) {
-            return new int[]{0, 0, 0};
-        }
-
-        rSum /= (double)count;
-        gSum /= (double)count;
-        bSum /= (double)count;
-
-        return new int[]{(int)Math.round(rSum), (int)Math.round(gSum),
-            (int)Math.round(bSum)};
-    }
-
-    public void applyErosionFilter(GreyscaleImage img) {
-        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
-        lt.applyFilter(img);
-    }
-
-    public void applyErosionFilterOnZeroes(GreyscaleImage img) {
-        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
-        lt.applyFilterOnZeros(img);
-    }
-
-    public void applyInvert255(GreyscaleImage img) {
-        // assumption that pixels lie in range 0 to 255
-
-        for (int i = 0; i < img.getWidth(); ++i) {
-            for (int j = 0; j < img.getHeight(); ++j) {
-                int v = img.getValue(i, j);
-                int vInv = 255 - v;
-                img.setValue(i, j, vInv);
-            }
-        }
-    }
-
-    public void applyInvert255(Image img) {
-        // assumption that pixels lie in range 0 to 255
-
-        for (int i = 0; i < img.getWidth(); ++i) {
-            for (int j = 0; j < img.getHeight(); ++j) {
-                img.setRGB(i, j,
-                    255 - img.getR(i, j),
-                    255 - img.getG(i, j),
-                    255 - img.getB(i, j));
-            }
-        }
-    }
-
-    public GreyscaleImage binImageToKeepZeros(GreyscaleImage img,
-        int binFactor) {
-
-        if (img == null) {
-            throw new IllegalArgumentException("img cannot be null");
-        }
-
-        int w0 = img.getWidth();
-        int h0 = img.getHeight();
-
-        int w1 = w0/binFactor;
-        int h1 = h0/binFactor;
-
-        GreyscaleImage out = new GreyscaleImage(w1, h1, img.getType());
-        out.setXRelativeOffset(Math.round(img.getXRelativeOffset()/binFactor));
-        out.setYRelativeOffset(Math.round(img.getYRelativeOffset()/binFactor));
-
-        for (int i = 0; i < w1; i++) {
-
-            for (int j = 0; j < h1; j++) {
-
-                int vSum = 0;
-                int count = 0;
-                boolean isZero = false;
-
-                // if there's a zero in the binFactor x binFactor block,
-                // v is set to 0
-
-                for (int ii = (i*binFactor); ii < ((i + 1)*binFactor); ii++) {
-                    for (int jj = (j*binFactor); jj < ((j + 1)*binFactor); jj++) {
-
-                        if ((ii < 0) || (ii > (w0 - 1))) {
-                            continue;
-                        }
-                        if ((jj < 0) || (jj > (h0 - 1))) {
-                            continue;
-                        }
-
-                        int v = img.getValue(ii, jj);
-
-                        if (v == 0) {
-                            isZero = true;
-                            vSum = 0;
-                            break;
-                        }
-
-                        vSum += v;
-                        count++;
-                    }
-                    if (isZero) {
-                        break;
-                    }
-                }
-
-                if (vSum > 0) {
-                    float v = (float)vSum/(float)count;
-                    vSum = Math.round(v);
-                }
-
-                out.setValue(i, j, vSum);
-            }
-        }
-
-        return out;
-    }
-
     public GreyscaleImage binImage(GreyscaleImage img, int binFactor) {
 
         if (img == null) {
@@ -2834,223 +2091,6 @@ if (sum > 511) {
         return out;
     }
     
-    public int[] binArray(int[] a, Image img, int binFactor) {
-        
-        if (img == null) {
-            throw new IllegalArgumentException("img cannot be null");
-        }
-
-        int w0 = img.getWidth();
-        int h0 = img.getHeight();
-
-        int w1 = w0/binFactor;
-        int h1 = h0/binFactor;
-
-        int[] output = new int[w1 * h1];
-
-        for (int i = 0; i < w1; i++) {
-
-            for (int j = 0; j < h1; j++) {
-
-                int aSum = 0;
-                int count = 0;
-
-                for (int ii = (i*binFactor); ii < ((i + 1)*binFactor); ii++) {
-                    for (int jj = (j*binFactor); jj < ((j + 1)*binFactor); jj++) {
-
-                        if ((ii < 0) || (ii > (w0 - 1))) {
-                            continue;
-                        }
-                        if ((jj < 0) || (jj > (h0 - 1))) {
-                            continue;
-                        }
-
-                        int pixIdx2 = img.getInternalIndex(ii, jj);
-                       
-                        aSum += a[pixIdx2];
-                        
-                        count++;
-                    }
-                }
-
-                if (count > 0) {
-                    aSum = Math.round((float)aSum/(float)count);
-                }
-                
-                int pixIdx = (j * w1) + i;
-                
-                output[pixIdx] = aSum;
-            }
-        }
-
-        return output;
-    }
-    
-    /**
-     * given an array with indexes of pixels in reference
-     * frame of img, expand the array to the size of
-     * an image with (resultWidth, resultHeight) which
-     * is roughly a factor of binFactor (number resolution loss
-     * means need to pass in the result width and height
-     * to calculate the output pixel indexes).
-     * @param input
-     * @param img
-     * @param binFactor
-     * @param resultWidth
-     * @param resultHeight
-     * @return 
-     */
-    public int[] unbinArray(int[] input, 
-        Image img, int binFactor, int resultWidth,
-        int resultHeight) {
-
-        if (input == null) {
-            throw new IllegalArgumentException("input cannot be null");
-        }
-
-        int w0 = img.getWidth();
-        int h0 = img.getHeight();
-
-        int w1 = resultWidth;
-        int h1 = resultHeight;
-        
-        int[] output = new int[w1 * h1];
-        
-        for (int i = 0; i < w0; i++) {
-            for (int j = 0; j < h0; j++) {
-
-                int pixIdx = img.getInternalIndex(i, j);
-                int v = input[pixIdx];
-                
-                int stop1 = ((i + 1)*binFactor);
-                if (stop1 > (w1 - 1)) {
-                    stop1 = w1;
-                }
-                for (int ii = (i*binFactor); ii < stop1; ii++) {
-                    int stop2 = ((j + 1)*binFactor);
-                    if (stop2 > (h1 - 1)) {
-                        stop2 = h1;
-                    }
-                    for (int jj = (j*binFactor); jj < stop2; jj++) {
-                        int pixIdx2 = (jj * w1) + ii;
-                        output[pixIdx2] = v;
-                    }
-                    if (j == (h0 - 1)) {
-                        // just in case excess unset past binFactor
-                        for (int jj = stop2; jj < h1; jj++) {
-                            int pixIdx2 = (jj * w1) + ii;
-                            output[pixIdx2] = v;
-                        }
-                    }
-                }
-                if (i == (w0 - 1)) {
-                    // just in case excess unset past binFastor
-                    for (int ii = stop1; ii < w1; ii++) {
-                        int stop2 = ((j + 1)*binFactor);
-                        if (stop2 > (h1 - 1)) {
-                            stop2 = h1;
-                        }
-                        for (int jj = (j*binFactor); jj < stop2; jj++) {
-                            int pixIdx2 = (jj * w1) + ii;
-                            output[pixIdx2] = v;
-                        }
-                        if (j == (h0 - 1)) {
-                            // just in case excess unset
-                            for (int jj = stop2; jj < h1; jj++) {
-                                int pixIdx2 = (jj * w1) + ii;
-                                output[pixIdx2] = v;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return output;
-    }
-
-    /**
-     * given an array with indexes of pixels in reference
-     * frame of img, expand the array to the size of
-     * an image with (resultWidth, resultHeight) which
-     * is roughly a factor of binFactor (number resolution loss
-     * means need to pass in the result width and height
-     * to calculate the output pixel indexes).
-     * @param input
-     * @param img
-     * @param binFactor
-     * @param resultWidth
-     * @param resultHeight
-     * @return 
-     */
-    public List<Set<PairInt>> unbinSets(List<Set<PairInt>> input, 
-        Image img, int binFactor, int resultWidth,
-        int resultHeight) {
-
-        if (input == null) {
-            throw new IllegalArgumentException("input cannot be null");
-        }
-
-        int w0 = img.getWidth();
-        int h0 = img.getHeight();
-
-        int w1 = resultWidth;
-        int h1 = resultHeight;
-        
-        List<Set<PairInt>> output = new ArrayList<Set<PairInt>>();
-
-        for (Set<PairInt> a : input) {
-            
-            Set<PairInt> aOut = new HashSet<PairInt>(a.size() * binFactor);
-            output.add(aOut);
-            
-            for (PairInt p : a) {
-                int i = p.getX();
-                int j = p.getY();
-                int pixIdx = img.getInternalIndex(i, j);
-                int stop1 = ((i + 1)*binFactor);
-                if (stop1 > (w1 - 1)) {
-                    stop1 = w1;
-                }
-                for (int ii = (i*binFactor); ii < stop1; ii++) {
-                    int stop2 = ((j + 1)*binFactor);
-                    if (stop2 > (h1 - 1)) {
-                        stop2 = h1;
-                    }
-                    for (int jj = (j*binFactor); jj < stop2; jj++) {
-                        aOut.add(new PairInt(ii, jj));
-                    }
-                    if (j == (h0 - 1)) {
-                        // just in case excess unset past binFactor
-                        for (int jj = stop2; jj < h1; jj++) {
-                            aOut.add(new PairInt(ii, jj));
-                        }
-                    }
-                }
-                if (i == (w0 - 1)) {
-                    // just in case excess unset past binFastor
-                    for (int ii = stop1; ii < w1; ii++) {
-                        int stop2 = ((j + 1)*binFactor);
-                        if (stop2 > (h1 - 1)) {
-                            stop2 = h1;
-                        }
-                        for (int jj = (j*binFactor); jj < stop2; jj++) {
-                            aOut.add(new PairInt(ii, jj));
-                        }
-                        if (j == (h0 - 1)) {
-                            // just in case excess unset
-                            for (int jj = stop2; jj < h1; jj++) {
-                                aOut.add(new PairInt(ii, jj));
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
-        return output;
-    }
-
     private void binImage(Image inputImg,  int binFactor, Image outputImg) {
 
         if (inputImg == null) {
@@ -3189,7 +2229,6 @@ if (sum > 511) {
         return (int)Math.round(v2);
     }
     
-    // 
     public double upsampleBy2UsingBilinearInterp(double[][] input,
         int x, int y) {
         
@@ -3325,280 +2364,6 @@ if (sum > 511) {
         }
 
         return out;
-    }
-
-    public List<PairIntArray> unbinZeroPointLists(List<PairIntArray> zeroPointLists,
-        int binFactor) {
-
-        if (zeroPointLists == null) {
-            throw new IllegalArgumentException("mask cannot be null");
-        }
-
-        List<PairIntArray> output = new ArrayList<PairIntArray>();
-
-        for (PairIntArray zeroPointList : zeroPointLists) {
-
-            PairIntArray transformed = new PairIntArray(zeroPointList.getN() *
-                binFactor);
-
-            for (int i = 0; i < zeroPointList.getN(); i++) {
-
-                int x = zeroPointList.getX(i);
-                int y = zeroPointList.getY(i);
-
-                for (int ii = (x*binFactor); ii < ((x + 1)*binFactor); ii++) {
-                    for (int jj = (y*binFactor); jj < ((y + 1)*binFactor); jj++) {
-                        transformed.add(ii, jj);
-                    }
-                }
-            }
-
-            output.add(transformed);
-
-        }
-
-        return output;
-    }
-
-    public Set<PairInt> unbinZeroPointLists(Set<PairInt> zeroPoints,
-        int binFactor) {
-
-        if (zeroPoints == null) {
-            throw new IllegalArgumentException("zeroPoints cannot be null");
-        }
-
-        Set<PairInt> output = new HashSet<PairInt>();
-
-        for (PairInt zeroPoint : zeroPoints) {
-
-            int x = zeroPoint.getX();
-            int y = zeroPoint.getY();
-
-            for (int ii = (x*binFactor); ii < ((x + 1)*binFactor); ii++) {
-                for (int jj = (y*binFactor); jj < ((y + 1)*binFactor); jj++) {
-
-                    PairInt p = new PairInt(ii, jj);
-
-                    output.add(p);
-                }
-            }
-        }
-
-        return output;
-    }
-
-    public double[] calculateYRGB(PairIntArray points, Image originalColorImage,
-        int xOffset, int yOffset, boolean addAlongX, int addAmount) {
-
-        double[][] m = new double[3][];
-        m[0] = new double[]{0.256, 0.504, 0.098};
-        m[1] = new double[]{-0.148, -0.291, 0.439};
-        m[2] = new double[]{0.439, -0.368, -0.072};
-
-        double avgY = 0;
-        double avgR = 0;
-        double avgG = 0;
-        double avgB = 0;
-
-        for (int i = 0; i < points.getN(); i++) {
-
-            int x = points.getX(i);
-            int y = points.getY(i);
-
-            int ox = x + xOffset;
-            int oy = y + yOffset;
-
-            if (addAlongX) {
-                ox += addAmount;
-            } else {
-                oy += addAmount;
-            }
-            if ((ox < 0) || (ox > (originalColorImage.getWidth() - 1))) {
-                continue;
-            }
-            if ((oy < 0) || (oy > (originalColorImage.getHeight() - 1))) {
-                continue;
-            }
-
-            int r = originalColorImage.getR(x, y);
-            int g = originalColorImage.getG(x, y);
-            int b = originalColorImage.getB(x, y);
-            double[] rgb = new double[]{r, g, b};
-            double[] yuv = MatrixUtil.multiply(m, rgb);
-
-            avgY += yuv[0];
-
-            avgR += r;
-            avgG += g;
-            avgB += b;
-        }
-
-        avgY /= (double)points.getN();
-        avgR /= (double)points.getN();
-        avgG /= (double)points.getN();
-        avgB /= (double)points.getN();
-
-        return new double[]{avgY, avgR, avgG, avgB};
-    }
-
-    private GreyscaleImage padUpToPowerOfTwo(GreyscaleImage input) {
-
-        int w0 = input.getWidth();
-        int h0 = input.getHeight();
-
-        int w = 1 << (int)(Math.ceil(Math.log(w0)/Math.log(2)));
-        int h = 1 << (int)(Math.ceil(Math.log(h0)/Math.log(2)));
-
-        int xOffset = w - w0;
-        int yOffset = h - h0;
-
-        if (xOffset == 0 && yOffset == 0) {
-            return input.copyImage();
-        }
-
-        int xOffsetOrig = input.getXRelativeOffset();
-        int yOffsetOrig = input.getYRelativeOffset();
-
-        GreyscaleImage output = new GreyscaleImage(w, h, input.getType());
-        output.setXRelativeOffset(xOffset + xOffsetOrig);
-        output.setYRelativeOffset(yOffset + yOffsetOrig);
-
-        for (int i = 0; i < w0; ++i) {
-            for (int j = 0; j < h0; ++j) {
-                int v = input.getValue(i, j);
-                output.setValue(i + xOffset, j + yOffset, v);
-            }
-        }
-
-        return output;
-    }
-
-    private Complex[][] padUpToPowerOfTwoComplex(GreyscaleImage input) {
-
-        int w0 = input.getWidth();
-        int h0 = input.getHeight();
-
-        int w = 1 << (int)(Math.ceil(Math.log(w0)/Math.log(2)));
-        int h = 1 << (int)(Math.ceil(Math.log(h0)/Math.log(2)));
-
-        int xOffset = w - w0;
-        int yOffset = h - h0;
-
-        Complex[][] output = new Complex[w][];
-        for (int i = 0; i < w; ++i) {
-            output[i] = new Complex[h];
-        }
-
-        if (xOffset == 0 && yOffset == 0) {
-            for (int i = 0; i < w; ++i) {
-                output[i] = new Complex[h];
-                for (int j = 0; j < h; ++j) {
-                    output[i][j] = new Complex(input.getValue(i, j), 0);
-                }
-            }
-            return output;
-        }
-
-        for (int i = 0; i < w; ++i) {
-            output[i] = new Complex[h];
-            for (int j = 0; j < h; ++j) {
-                if ((i < xOffset) || (j < yOffset)) {
-                    output[i][j] = new Complex(0, 0);
-                } else {
-                    output[i][j] = new Complex(input.getValue(i - xOffset, j - yOffset), 0);
-                }
-            }
-        }
-
-        return output;
-    }
-
-    /**
-     *
-     * @param input a double array without complex interleaving items in columns
-     * @return
-     */
-    private Complex[][] padUpToPowerOfTwoComplex(double[][] input) {
-
-        int w0 = input.length;
-        int h0 = input[0].length;
-
-        int w = 1 << (int)(Math.ceil(Math.log(w0)/Math.log(2)));
-        int h = 1 << (int)(Math.ceil(Math.log(h0)/Math.log(2)));
-
-        int xOffset = w - w0;
-        int yOffset = h - h0;
-
-        Complex[][] output = new Complex[w][];
-        for (int i = 0; i < w; ++i) {
-            output[i] = new Complex[h];
-        }
-
-        if (xOffset == 0 && yOffset == 0) {
-
-            for (int i = 0; i < w; ++i) {
-                for (int j = 0; j < h; ++j) {
-                    output[i][j] = new Complex(input[i][j], 0);
-                }
-            }
-
-            return output;
-        }
-
-        for (int i = 0; i < w; ++i) {
-            for (int j = 0; j < h; ++j) {
-                if ((i < xOffset) || (j < yOffset)) {
-                    output[i][j] = new Complex(0, 0);
-                } else {
-                    output[i][j] = new Complex(input[i - xOffset][j - yOffset], 0);
-                }
-            }
-        }
-
-        return output;
-    }
-
-    /**
-     * add zeros to beginning of arrays to pad up to a size of the power of 2.
-     * 
-     * @param input
-     * @return 
-     */
-    public Complex[][] padUpToPowerOfTwo(final Complex[][] input) {
-
-        int n0 = input.length;
-        int n1 = input[0].length;
-
-        int nn0 = 1 << (int)(Math.ceil(Math.log(n0)/Math.log(2)));
-        int nn1 = 1 << (int)(Math.ceil(Math.log(n1)/Math.log(2)));
-
-        int offset0 = nn0 - n0;
-        int offset1 = nn1 - n1;
-
-        if (offset0 == 0 && offset1 == 0) {
-            Complex[][] output = new Complex[n0][];
-            for (int i0 = 0; i0 < n0; ++i0) {
-                output[i0] = Arrays.copyOf(input[i0], n1);
-            }
-            return output;
-        }
-
-        Complex[][] output = new Complex[nn0][];
-        for (int i0 = 0; i0 < nn0; ++i0) {
-            output[i0] = new Complex[nn1];
-        }
-
-         for (int i0 = 0; i0 < nn0; ++i0) {
-            for (int i1 = 0; i1 < nn1; ++i1) {
-                if ((i0 < offset0) || (i1 < offset1)) {
-                    output[i0][i1] = new Complex(0, 0);
-                } else {
-                    output[i0][i1] = input[i0 - offset0][i1 - offset1].copy();
-                }
-            }
-        }
-
-        return output;
     }
 
     /**
@@ -4048,225 +2813,6 @@ if (sum > 511) {
     }
 
     /**
-     * NOT READY FOR USE YET
-     *
-     * @param input
-     */
-    public void applyDeconvolution(GreyscaleImage input) throws IOException {
-
-        //TODO NOT READY FOR USE YET...
-
-        applyWienerFilter(input);
-
-    }
-
-    /**
-     * NOT READY FOR USE YET
-     *
-     * @param input
-     */
-    public void applyWienerFilter(GreyscaleImage input) throws IOException {
-
-        //TODO NOT READY FOR USE YET...
-
-        CannyEdgeFilterAdaptive cef = new CannyEdgeFilterAdaptive();
-
-        // note, this is not scaled for total sum = 1 yet
-        GreyscaleImage psf = cef.createGradientPSFForTesting();
-        double sum = 0;
-        for (int col = 0; col < psf.getWidth(); col++) {
-            for (int row = 0; row < psf.getHeight(); row++) {
-                int v = psf.getValue(col, row);
-                sum += v;
-            }
-        }
-        psf = padToNearestPowerOf2Dimensions(psf);
-        Complex[][] psfNorm = new Complex[psf.getWidth()][];
-        for (int col = 0; col < psf.getWidth(); col++) {
-            psfNorm[col] = new Complex[psf.getHeight()];
-            for (int row = 0; row < psf.getHeight(); row++) {
-                int v = psf.getValue(col, row);
-                double vn = v / sum;
-                psfNorm[col][row] = new Complex(vn, 0);
-            }
-        }
-        psfNorm = create2DFFT(psfNorm, true);
-
-        // filter out low values?
-        for (int i = 0; i < psfNorm.length; i++) {
-            for (int j = 0; j < psfNorm[0].length; j++) {
-                double r = psfNorm[i][j].re();
-                if (r < 0.1) {
-                    psfNorm[i][j] = new Complex(0, 0);
-                }
-            }
-        }
-
-        GreyscaleImage img0 = padToNearestPowerOf2Dimensions(input);
-
-        ImageDisplayer.displayImage("before deconv", img0);
-
-        Complex[][] imgCC = convertImage(img0);
-
-        Complex[][] imgFFT = create2DFFT(imgCC, true);
-
-        /*
-        complex division:
-           a times reciprocal of b
-
-        reciprocal:
-            double scale = re*re + im*im;
-            r = Complex(re / scale, -im / scale);
-
-        times:
-            real = a.re * b.re - a.im * b.im;
-            imag = a.re * b.im + a.im * b.re;
-        */
-
-        Complex[][] ccDeconv = new Complex[imgFFT.length][];
-        int pXH =  psfNorm.length >> 1;
-        int pYH =  psfNorm[0].length >> 1;
-        for (int col = 0; col < imgFFT.length; col++) {
-
-            ccDeconv[col] = new Complex[imgFFT[0].length];
-
-            for (int row = 0; row < imgFFT[0].length; row++) {
-
-                Complex v = imgFFT[col][row];
-
-                // for convolution, each element of kernel and neighboring
-                // pixel (including center pixel) were multiplied and result
-                // is given to center pixel.
-
-                // for deconvolution, the sums of the division are calculated
-
-                Complex pixSum = new Complex(v.re(), v.im());
-
-                for (int pXIdx = 0; pXIdx < psfNorm.length; pXIdx++) {
-                    int pixXIdx = col + (pXIdx - pXH);
-
-                    // correct for out of bounds of image
-                    if (pixXIdx < 0) {
-                        // replicate
-                        pixXIdx = -1*pixXIdx - 1;
-                        if (pixXIdx > (img0.getWidth() - 1)) {
-                            pixXIdx = img0.getWidth() - 1;
-                        }
-                    } else if (pixXIdx >= img0.getWidth()) {
-                        int diff = pixXIdx - img0.getWidth();
-                        pixXIdx = img0.getWidth() - diff - 1;
-                        if (pixXIdx < 0) {
-                            pixXIdx = 0;
-                        }
-                    }
-
-                    for (int pYIdx = 0; pYIdx < psfNorm.length; pYIdx++) {
-
-                        if (psfNorm[pXIdx][pYIdx].abs() == 0) {
-                            continue;
-                        }
-
-                        int pixYIdx = row + (pYIdx - pYH);
-
-                        // correct for out of bounds of image
-                        if (pixYIdx < 0) {
-                            // replicate
-                            pixYIdx = -1*pixYIdx - 1;
-                            if (pixYIdx > (img0.getHeight() - 1)) {
-                                pixYIdx = img0.getHeight() - 1;
-                            }
-                        } else if (pixYIdx >= img0.getHeight()) {
-                            int diff = pixYIdx - img0.getHeight();
-                            pixYIdx = img0.getHeight() - diff - 1;
-                            if (pixYIdx < 0) {
-                                pixYIdx = 0;
-                            }
-                        }
-
-                        Complex vk = imgFFT[pixXIdx][pixYIdx];
-
-                        if (vk.abs() == 0) {
-                            continue;
-                        }
-
-                        Complex kRecip = psfNorm[pXIdx][pYIdx].reciprocal();
-
-                        Complex vDivPSF = vk.times(kRecip);
-
-                        pixSum = pixSum.plus(vDivPSF);
-                    }
-                }
-
-
-                ccDeconv[col][row] = pixSum;
-            }
-        }
-
-        GreyscaleImage img2 = img0.createFullRangeIntWithDimensions();
-
-        writePositiveRealToImage(img2, ccDeconv);
-
-        ImageDisplayer.displayImage("FFT(img0)/FFT(PSF)", img2);
-
-
-        Complex[][] inverse = create2DFFT(ccDeconv, false);
-
-        GreyscaleImage img4 = img0.createFullRangeIntWithDimensions();
-
-        writePositiveRealToImage(img4, inverse);
-
-        ImageDisplayer.displayImage("ifft of FFT(img0)/FFT(PSF)", img4);
-
-
-        for (int i = 0; i < input.getWidth(); i++) {
-            for (int j = 0; j < input.getHeight(); j++) {
-                double f = inverse[i][j].re();
-                int v = input.getValue(i, j);
-                if (v > 0 && f > 0) {
-                    // apply it to the original image?  f*v or v or f?
-                    input.setValue(i, j, v);
-                } else {
-                    input.setValue(i, j, 0);
-                }
-            }
-        }
-    }
-
-    public GreyscaleImage padToNearestPowerOf2Dimensions(GreyscaleImage img) {
-
-        int w = img.getWidth();
-        int h = img.getHeight();
-
-        boolean xIsPowerOf2 = MiscMath.isAPowerOf2(w);
-        boolean yIsPowerOf2 = MiscMath.isAPowerOf2(h);
-        if (xIsPowerOf2 && yIsPowerOf2) {
-            return img.copyImage();
-        }
-
-        int w2 = w;
-        int h2 = h;
-        if (!xIsPowerOf2) {
-            double p2X = Math.ceil(Math.log(w)/Math.log(2));
-            w2 = (1 << (int)p2X);
-        }
-        if (!yIsPowerOf2) {
-            double p2Y = Math.ceil(Math.log(h)/Math.log(2));
-            h2 = (1 << (int)p2Y);
-        }
-
-        GreyscaleImage img2 = new GreyscaleImage(w2, h2, img.getType());
-
-        for (int col = 0; col < w; col++) {
-            for (int row = 0; row < h; row++) {
-                int v = img.getValue(col, row);
-                img2.setValue(col, row, v);
-            }
-        }
-
-        return img2;
-    }
-
-    /**
      * read the image and store the non-zero pixels in a set.  note that negative
      * values will also be stored in the output set.
      * @param img
@@ -4286,70 +2832,6 @@ if (sum > 511) {
         }
 
         return set;
-    }
-
-    public void writeAsBinaryToImage(GreyscaleImage img, Set<PairInt>
-        nonZeroPoints) {
-
-        img.fill(0);
-
-        for (PairInt p : nonZeroPoints) {
-            int x = p.getX();
-            int y = p.getY();
-            img.setValue(x, y, 1);
-        }
-
-    }
-
-    public void getNeighborsNotThisValue(GreyscaleImage input, int x, int y,
-        final int value, Set<PairInt> outputNeighbors) {
-
-        int width = input.getWidth();
-        int height = input.getHeight();
-
-        for (int c = (x - 1); c <= (x + 1); c++) {
-            if ((c < 0) || (c > (width - 1))) {
-                continue;
-            }
-            for (int r = (y - 1); r <= (y + 1); r++) {
-                if ((r < 0) || (r > (height - 1))) {
-                    continue;
-                }
-                if ((c == x) && (r == y)) {
-                    continue;
-                }
-                int v = input.getValue(c, r);
-                if (v != value) {
-                    PairInt p = new PairInt(c, r);
-                    outputNeighbors.add(p);
-                }
-            }
-        }
-    }
-
-    public Set<PairInt> getNeighbors(Image input, PairInt p) {
-
-        int w = input.getWidth();
-        int h = input.getHeight();
-
-        int x = p.getX();
-        int y = p.getY();
-        
-        int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;
-        
-        Set<PairInt> nbrs = new HashSet<PairInt>();
-        
-        for (int k = 0; k < dxs.length; ++k) {
-            int x2 = x + dxs[k];
-            int y2 = y + dys[k];
-            if (x2 < 0 || y2 < 0 || (x2 > (w - 1)) || (y2 > (h - 1))) {
-                continue;
-            }
-            nbrs.add(new PairInt(x2, y2));
-        }
-        
-        return nbrs;
     }
 
     /**
@@ -4645,61 +3127,6 @@ if (sum > 511) {
         imgM = null;
 
         //System.gc();
-    }
-
-    /**
-     * @param input
-     * @return
-     */
-    public GreyscaleImage makeWatershedFromAdaptiveMedian(GreyscaleImage input) {
-
-        int w = input.getWidth();
-        int h = input.getHeight();
-
-        int[] dxs0, dys0;
-        dxs0 = Misc.dx8;
-        dys0 = Misc.dy8;
-        GreyscaleImage tmpImg2 = input.copyImage();
-        // fill in gaps of size 1 flooded the whole image. invert afterwards had same result.
-        // increase the 0's by 1 pixel then invert however, is interesting.
-        // where there is a '0', make all neighbors a '0':
-        for (int i = 0; i < w; ++i) {
-            for (int j = 0; j < h; ++j) {
-                int v = input.getValue(i, j);
-                if (v != 0) {
-                    continue;
-                }
-                for (int k = 0; k < dxs0.length; ++k) {
-                    int x1 = i + dxs0[k];
-                    int y1 = j + dys0[k];
-                    if (x1 < 0 || (x1 > (w - 1)) || y1 < 0 || (y1 > (h - 1))) {
-                        continue;
-                    }
-                    tmpImg2.setValue(x1, y1, 0);
-                }
-            }
-        }
-
-        // invert image
-        for (int i = 0; i < tmpImg2.getNPixels(); ++i) {
-            int v = tmpImg2.getValue(i);
-            tmpImg2.setValue(i, 255 - v);
-        }
-
-        WaterShed ws = new WaterShed();
-        int[][] labelled = ws.createLabelledImage(tmpImg2.copyImage());
-        GreyscaleImage wsImg = tmpImg2.createFullRangeIntWithDimensions();
-        if (labelled == null) {
-            return wsImg;
-        }
-        for (int j = 0; j < h; ++j) {
-            for (int i = 0; i < w; ++i) {
-                int v = labelled[i][j];
-                wsImg.setValue(i, j, v);
-            }
-        }
-
-        return wsImg;
     }
 
     /**
@@ -5096,30 +3523,6 @@ if (sum > 511) {
         }
     }
 
-    public GreyscaleImage createSmallImage(int bufferSize, Set<PairInt> points,
-        int pointValue) {
-
-        //minMaxXY int[]{xMin, xMax, yMin, yMax}
-        int[] minMaxXY = MiscMath.findMinMaxXY(points);
-
-        int xOffset = minMaxXY[0] - bufferSize;
-        int yOffset = minMaxXY[2] - bufferSize;
-
-        int width = (minMaxXY[1] - minMaxXY[0]) + (2 * bufferSize);
-        int height = (minMaxXY[3] - minMaxXY[2]) + (2 * bufferSize);
-
-        GreyscaleImage img = new GreyscaleImage(width, height);
-        img.setXRelativeOffset(xOffset);
-        img.setYRelativeOffset(yOffset);
-        for (PairInt p : points) {
-            int x = p.getX() - xOffset;
-            int y = p.getY() - yOffset;
-            img.setValue(x, y, pointValue);
-        }
-
-        return img;
-    }
-    
     public Set<PairInt> extract2ndDerivPoints(GreyscaleImage img,
         Set<PairInt> filterToPoints, int nApprox) {
         
@@ -5402,129 +3805,6 @@ if (sum > 511) {
 
     }
 
-    public double determineLowerThreshold(GreyscaleImage input,
-        double lowThresholdFractionOfTotal) {
-
-        int n = input.getNPixels();
-
-        // value, count
-        PairIntArray sortedFreq = Histogram.createADescendingSortbyFrequencyArray(input);
-        double sum = 0;
-        for (int i = 0; i < sortedFreq.getN(); ++i) {
-            sum += sortedFreq.getY(i);
-        }
-
-        int thresh = (int)Math.round(lowThresholdFractionOfTotal * sum);
-
-        if (thresh == 0) {
-            return 0;
-        }
-
-        double critValue = -1;
-        double sum2 = 0;
-        for (int i = (sortedFreq.getN() - 1); i > -1; --i) {
-            sum2 += sortedFreq.getY(i);
-            if (sum2 > thresh) {
-                return sortedFreq.getX(i);
-            }
-        }
-
-        return 0;
-    }
-
-    public double highPassIntensityFilter(GreyscaleImage input,
-        double lowThresholdFractionOfTotal) {
-
-        int n = input.getNPixels();
-
-        double critValue = determineLowerThreshold(input,
-            lowThresholdFractionOfTotal);
-
-        for (int i = 0; i < n; ++i) {
-            int v = input.getValue(i);
-            if (v < critValue) {
-                input.setValue(i, 0);
-            }
-        }
-
-        return critValue;
-    }
-
-    public void twoLayerIntensityFilter(GreyscaleImage input,
-        double highThresholdFractionOfTotal) {
-
-        int n = input.getNPixels();
-
-        // value, count
-        PairIntArray sortedFreq = Histogram.createADescendingSortbyFrequencyArray(input);
-        double sum = 0;
-        for (int i = 0; i < sortedFreq.getN(); ++i) {
-            sum += sortedFreq.getY(i);
-        }
-
-        int thresh = (int)Math.round(highThresholdFractionOfTotal * sum);
-
-        if (thresh == 0) {
-            return;
-        }
-
-        double critValue = -1;
-        double sum2 = 0;
-        for (int i = (sortedFreq.getN() - 1); i > -1; --i) {
-            sum2 += sortedFreq.getY(i);
-            if (sum2 > thresh) {
-                critValue = sortedFreq.getX(i);
-                break;
-            }
-        }
-
-        Stack<Integer> stack = new Stack<Integer>();
-        Set<Integer> visited = new HashSet<Integer>();
-        for (int i = 0; i < n; ++i) {
-            int v = input.getValue(i);
-            if (v >= critValue) {
-                stack.add(Integer.valueOf(i));
-            }
-        }
-
-        int critValue2 = (int)Math.round(0.5 * critValue);
-
-        int w = input.getWidth();
-        int h = input.getHeight();
-        int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;
-        GreyscaleImage tmp = input.createWithDimensions();
-
-        while (!stack.isEmpty()) {
-            Integer pixIndex = stack.pop();
-            if (visited.contains(pixIndex)) {
-                continue;
-            }
-
-            int x = input.getCol(pixIndex.intValue());
-            int y = input.getRow(pixIndex.intValue());
-
-            tmp.setValue(pixIndex.intValue(), 255);
-
-            for (int i = 0; i < dxs.length; ++i) {
-                int x2 = x + dxs[i];
-                int y2 = y + dys[i];
-                if (x2 < 0 || (x2 > (w - 1)) || (y2 < 0) || (y2 > (h - 1))) {
-                    continue;
-                }
-                int v = input.getValue(x2, y2);
-                if (v > critValue2) {
-                    int pixIdx2 = input.getInternalIndex(x2, y2);
-                    tmp.setValue(pixIdx2, 255);
-                    stack.add(Integer.valueOf(pixIdx2));
-                }
-            }
-            visited.add(pixIndex);
-        }
-
-        input.resetTo(tmp);
-    }
-
     public Complex1D[] convertToComplex1D(Complex[][] input) {
         
         int n0 = input.length;
@@ -5757,78 +4037,6 @@ if (sum > 511) {
         return output;
     }
     
-    public List<PairIntArray> unbinLists(
-        List<PairIntArray> contigBinnedList, 
-        int binFactor, 
-        int binnedWidth, int binnedHeight,
-        int resultWidth, int resultHeight) {
-        
-        if (contigBinnedList == null) {
-            throw new IllegalArgumentException(
-            "contigBinnedList cannot be null");
-        }
-
-        List<PairIntArray> output 
-            = new ArrayList<PairIntArray>(contigBinnedList.size());
-
-        int w0 = binnedWidth;
-        int h0 = binnedHeight;
-        
-        int w1 = resultWidth;
-        int h1 = resultHeight;
-        
-        for (int lIdx = 0; lIdx < contigBinnedList.size(); ++lIdx) {
-            
-            PairIntArray p0 = contigBinnedList.get(lIdx);
-            PairIntArray pOut = new PairIntArray(p0.getN() * binFactor);
-            output.add(pOut);
-            
-            for (int idx = 0; idx < p0.getN(); ++idx) {
-                int i = p0.getX(idx);
-                int j = p0.getY(idx);
-                int stop1 = ((i + 1)*binFactor);
-                if (stop1 > (w1 - 1)) {
-                    stop1 = w1;
-                }
-                for (int ii = (i*binFactor); ii < stop1; ii++) {
-                    int stop2 = ((j + 1)*binFactor);
-                    if (stop2 > (h1 - 1)) {
-                        stop2 = h1;
-                    }
-                    for (int jj = (j*binFactor); jj < stop2; jj++) {
-                        pOut.add(ii, jj);
-                    }
-                    if (j == (h0 - 1)) {
-                        // just in case excess unset past binFactor
-                        for (int jj = stop2; jj < h1; jj++) {
-                            pOut.add(ii, jj);
-                        }
-                    }
-                }
-                if (i == (w0 - 1)) {
-                    // just in case excess unset past binFastor
-                    for (int ii = stop1; ii < w1; ii++) {
-                        int stop2 = ((j + 1)*binFactor);
-                        if (stop2 > (h1 - 1)) {
-                            stop2 = h1;
-                        }
-                        for (int jj = (j*binFactor); jj < stop2; jj++) {
-                            pOut.add(ii, jj);
-                        }
-                        if (j == (h0 - 1)) {
-                            // just in case excess unset
-                            for (int jj = stop2; jj < h1; jj++) {
-                                pOut.add(ii, jj);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
-        return output;
-    }
-
     /**
      * create a two-dimensional float array of the img multiplied by
      * factor, but returned in row-major format [row][col].
@@ -5910,30 +4118,6 @@ if (sum > 511) {
         
     }
 
-    private TFloatList calculateImageScales(List<GreyscaleImage> images) {
-
-        TFloatList scales = new TFloatArrayList();
-        scales.add(1);
-        
-        float prevScl = 1;
-        
-        for (int i = 1; i < images.size(); ++i) {
-            float w = images.get(i).getWidth();
-            float h = images.get(i).getHeight();
-        
-            float x = (float)images.get(i - 1).getWidth()/w;
-            float y = (float)images.get(i - 1).getHeight()/h;
-            
-            float scale = prevScl * (x + y)/2.f;
-            
-            scales.add(scale);
-            
-            prevScl = scale;
-        }
-        
-        return scales;
-    }
-
     public Set<PairInt> binPoints(Set<PairInt> points, int binFactor) {
     
         Set<PairInt> out = new HashSet<PairInt>();
@@ -5955,116 +4139,7 @@ if (sum > 511) {
             return colors;
         }
     }
-
-    public Colors calculateAverageLAB(ImageExt input, Set<PairInt> points) {
-
-        double labA = 0;
-        double labB = 0;
-        double labL = 0;
-
-        for (PairInt p : points) {
-            float[] lab = input.getCIELAB(p.getX(), p.getY());
-            labL += lab[0];
-            labA += lab[1];
-            labB += lab[2];
-        }
-        labL /= (double)points.size();
-        labA /= (double)points.size();
-        labB /= (double)points.size();
-
-        float[] labAvg = new float[]{(float)labL, (float)labA, (float)labB};
-
-        Colors c = new Colors(labAvg);
-
-        return c;
-    }
     
-    /**
-     * calculate CIE LAB mean and standard deviation of
-     * the mean.
-     * @param input
-     * @param points
-     * @return 
-     */
-    public double[] calculateCIELABStats(ImageExt input, 
-        Set<PairInt> points) {
-
-        int n = points.size();
-        double[] labA = new double[n];
-        double[] labB = new double[n];
-        double[] labL = new double[n];
-
-        int count = 0;
-        for (PairInt p : points) {
-            float[] lab = input.getCIELAB(p.getX(), p.getY());
-            labL[count] = lab[0];
-            labA[count] = lab[1];
-            labB[count] = lab[2];
-            count++;
-        }
-        
-        double[] lAS = MiscMath.getAvgAndStDev(labL);
-        double[] aAS = MiscMath.getAvgAndStDev(labA);
-        double[] bAS = MiscMath.getAvgAndStDev(labB);        
-
-        double[] out = new double[6];
-        out[0] = lAS[0];
-        out[1] = lAS[1];
-        out[2] = aAS[0];
-        out[3] = aAS[1];
-        out[4] = bAS[0];
-        out[5] = bAS[1];
-        
-        return out;
-    }
-
-    public int calculateAverageHueAngle(ImageExt input, Set<PairInt> points) {
-
-        double hueAngle = 0;
-
-        for (PairInt p : points) {
-
-            float[] lab = input.getCIELAB(p.getX(), p.getY());
-
-            double ha;
-            if (lab[1] == 0) {
-                ha = 0;
-            } else {
-                ha = (Math.atan2(lab[2], lab[1]) * 180. / Math.PI);
-                if (ha < 0) {
-                    ha += 360.;
-                }
-            }
-            hueAngle += ha;
-        }
-        hueAngle /= (double)points.size();
-
-        return (int)Math.round(hueAngle);
-    }
-
-    public Colors calculateAverageRGB(ImageExt input, Set<PairInt> points) {
-
-        float r = 0;
-        float g = 0;
-        float b = 0;
-
-        for (PairInt p : points) {
-            int idx = input.getInternalIndex(p.getX(), p.getY());
-            r += input.getR(idx);
-            g += input.getG(idx);
-            b += input.getB(idx);
-        }
-        r /= (float)points.size();
-        g /= (float)points.size();
-        b /= (float)points.size();
-
-        float[] rgbAvg = new float[]{r, g, b};
-
-        Colors c = new Colors(rgbAvg);
-
-        return c;
-    }
-
     /**
      * opposite to shift zero-frequency component to the center of the spectrum
      * in that it shifts the zero-frequency component to the smallest indexes
@@ -6244,161 +4319,36 @@ if (sum > 511) {
 
         return c;
     }
-    
-    public double[][] threshold(double[][] a, double threshold) {
-        
-        double[][] output = new double[a.length][];
-        for (int i = 0; i < output.length; ++i) {
-            output[i] = Arrays.copyOf(a[i], a[i].length);
-            for (int j = 0; j < output[i].length; ++j) {
-                double v = output[i][j];
-                if (v < threshold) {
-                    output[i][j] = 0;
-                }
-            }
-        }
-        
-        return output;
-    }
-    
+   
     /**
      * 
-     * @param img
-     * @return 
+     * @param input gradient image
      */
-    public GreyscaleImage[] createLabAandB(ImageExt img) {
-        
-        int w = img.getWidth();
-        int h = img.getHeight();
-
-        long t0 = System.currentTimeMillis();
-
-        float[] labA = new float[w * h];
-        float[] labB = new float[w * h];
-        
-        for (int i = 0; i < img.getNPixels(); ++i) {
-            float[] lab = img.getCIELAB(i);
-            labA[i] = lab[1];
-            labB[i] = lab[2];
-        }
-        
-        labA = MiscMath.rescale(labA, 0, 255);
-        labB = MiscMath.rescale(labB, 0, 255);
-        
-        GreyscaleImage labAImg = new GreyscaleImage(w, h,
-            GreyscaleImage.Type.Bits32FullRangeInt);
-        
-        GreyscaleImage labBImg = new GreyscaleImage(w, h,
-            GreyscaleImage.Type.Bits32FullRangeInt);
-        
-        for (int i = 0; i < labA.length; ++i) {
-            labAImg.setValue(i, Math.round(labA[i]));
-            labBImg.setValue(i, Math.round(labB[i]));
-        }
-
-        return new GreyscaleImage[]{labAImg, labBImg};
-    }
-    
-    /**
-     * create a color difference image equivalent to grey - o1,
-     * r + g + b - (r - g) = 2*g + b
-     * @param img
-     * @return 
-     */
-    public GreyscaleImage createGPlusB(ImageExt img) {
-        
-        // consider scaling them by a set range of minimum and maximum possible
-        // instead of minimum and maximum present
-        // r + g + b - (r - g)--> 2*g + b
-        int w = img.getWidth();
-        int h = img.getHeight();
-
-        float[] values = new float[w * h];
-        
-        for (int i = 0; i < img.getNPixels(); ++i) {
-            int g = img.getG(i);
-            int b = img.getB(i);
-            values[i] = 2*g + b;
-        }
-        
-        GreyscaleImage out = new GreyscaleImage(w, h,
-            GreyscaleImage.Type.Bits32FullRangeInt);
-        
-        values = MiscMath.rescale(values, 0, 255);
-            
-        for (int i = 0; i < values.length; ++i) {
-            out.setValue(i, Math.round(values[i]));
-        }
-
-        return out;
-    }
-    
-    /**
-     * 
-     * @param img
-     * @return 
-     */
-    public GreyscaleImage createO1(ImageExt img) {
-        
-        int w = img.getWidth();
-        int h = img.getHeight();
-
-        float[] o1 = new float[w * h];
-        
-        for (int i = 0; i < img.getNPixels(); ++i) {
-            int r = img.getR(i);
-            int g = img.getG(i);
-            o1[i] = (r - g);
-        }
-        
-        GreyscaleImage o1Img = new GreyscaleImage(w, h,
-            GreyscaleImage.Type.Bits32FullRangeInt);
-        
-        o1 = MiscMath.rescale(o1, 0, 255);
-            
-        for (int i = 0; i < o1.length; ++i) {
-            o1Img.setValue(i, Math.round(o1[i]));
-        }
-
-        return o1Img;
-    }
-    
-    /**
-     * 
-     * @param img
-     * @return 
-     */
-    public GreyscaleImage createGMinusB(ImageExt img) {
-        
-        int w = img.getWidth();
-        int h = img.getHeight();
-
-        float[] gb = new float[w * h];
-        
-        for (int i = 0; i < img.getNPixels(); ++i) {
-            int b = img.getB(i);
-            int g = img.getG(i);
-            gb[i] = (g - b);
-        }
-        
-        GreyscaleImage gbImg = new GreyscaleImage(w, h,
-            GreyscaleImage.Type.Bits32FullRangeInt);
-        
-        gb = MiscMath.rescale(gb, 0, 255);
-            
-        for (int i = 0; i < gb.length; ++i) {
-            gbImg.setValue(i, Math.round(gb[i]));
-        }
-
-        return gbImg;
-    }
-    
     public void apply2LayerFilterOtsu(GreyscaleImage input) {
      
-        apply2LayerFilterOtsu(input, 0.75f, 2.f);
-    }
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
+        OtsuThresholding ot = new OtsuThresholding();
+                           
+        double[][] g = new double[w][];
+        for (int i = 0; i < w; ++i) {
+            g[i] = new double[h];
+            for (int j = 0; j < h; ++j) {
+                g[i][j] = input.getValue(i, j);
+            }
+        }
+        int nBins = 256/5;
+        float t = (float)ot.calculateBinaryThreshold2D(g, nBins);
+            
+        float tHigh = 0.75f * t;
     
-    public void apply2LayerFilterOtsu(GreyscaleImage input, float otsuFactor,
+        float lowToHighFactor = 2.f;
+        
+        apply2LayerFilter(input, tHigh, lowToHighFactor);    
+    }
+            
+    public void apply2LayerFilter(GreyscaleImage input, float highThreshold,
         float lowToHighFactor) {
         
         int w = input.getWidth();
@@ -6407,10 +4357,8 @@ if (sum > 511) {
         if (w < 3 || h < 3) {
             throw new IllegalArgumentException("images should be >= 3x3 in size");
         }
-    
-        OtsuThresholding ot = new OtsuThresholding();
-            
-        float tHigh = tHigh = otsuFactor * ot.calculateBinaryThreshold256(input);
+                
+        float tHigh = highThreshold;
         float tLow = tHigh/lowToHighFactor;
             
         int[] dxs = Misc.dx8;
@@ -6648,96 +4596,6 @@ if (sum > 511) {
     }
     
     /**
-     * remove links from the adjacency map in the colorspace for pairs with
-     * smaller histogram similarity than threshold.
-     * current impl is using hsv color histograms.
-     * @param img
-     * @param listOfSets
-     * @param adjMap
-     * @param threshold 
-     */
-    public void filterAdjacencyMap(ImageExt img, List<Set<PairInt>> listOfSets,
-        TIntObjectMap<TIntSet> adjMap, float threshold) {
-        
-        int n = listOfSets.size();
-        
-        ColorHistogram clrHist = new ColorHistogram();
-        
-        int[][][] hsvH = new int[n][][];
-        //int[][][] cielabH = new int[n][][];
-        
-        List<PairInt> centroids = new ArrayList<PairInt>();
-        
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
-        for (int i = 0; i < n; ++i) {
-            Set<PairInt> set = listOfSets.get(i);
-            hsvH[i] = clrHist.histogramHSV(img, set);
-            //cielabH[i] = clrHist.histogramCIELAB(img, set);
-            centroids.add(curveHelper.calculateXYCentroids2(set));
-        }
-        
-        Set<PairInt> rm = new HashSet<PairInt>();
-        
-        Set<PairInt> visited = new HashSet<PairInt>();
-        
-        TIntObjectIterator<TIntSet> iter = adjMap.iterator();
-        for (int i = 0; i < adjMap.size(); ++i) {
-            
-            iter.advance();
-            
-            TIntSet set = iter.value();
-            int idx1 = iter.key();
-                        
-            TIntIterator iter2 = set.iterator();
-            while (iter2.hasNext()) {
-                int idx2 = iter2.next();
-                PairInt p = null;
-                if (idx1 < idx2) {
-                    p = new PairInt(idx1, idx2);
-                } else {
-                    p = new PairInt(idx2, idx1);
-                }
-                if (rm.contains(p) || visited.contains(p)) {
-                    continue;
-                }
-                visited.add(p);
-                
-                int[][] hsv1 = hsvH[p.getX()];
-                int[][] hsv2 = hsvH[p.getY()];
-                
-                //int[][] cie1 = cielabH[p.getX()];
-                //int[][] cie2 = cielabH[p.getY()];
-                
-                float hsvInter = clrHist.intersection(hsv1, hsv2);
-                
-                //float cieInter = clrHist.intersection(cie1, cie2);
-                
-                System.out.println(
-                    "cen1=" + centroids.get(idx1)
-                    + " cen2=" + centroids.get(idx2)
-                    + " hsvInter=" + hsvInter
-                    //+ " cieInter=" + cieInter
-                );
-                
-                if (hsvInter < threshold) {
-                    rm.add(p);
-                }
-            }
-        }
-
-        for (PairInt r : rm) {
-            TIntSet set1 = adjMap.get(r.getX());
-            set1.remove(r.getY());
-
-            set1 = adjMap.get(r.getY());
-            set1.remove(r.getX());
-        }
-        
-        System.out.println("adjacecny map filter removed " + rm.size());
-    }
-    
-    /**
      * apply a dilate operator of size 3 x 3 to any pixel in image with value
      * greater than 0.
      * Note that if the img is not binary, the result may not be ideal because
@@ -6927,24 +4785,27 @@ if (sum > 511) {
 
         //from https://en.wikipedia.org/wiki/Hit-or-miss_transform
         // and thinning
-        GreyscaleImage out = img.copyImage();
 
         // x,y pairs are sequential in these
-        int[] c1 = new int[]{0, 0, -1, -1, 0, -1, 1, -1};
-        int[] d1 = new int[]{-1, 1, 0, 1, 1, 1};
-        int[] c2 = new int[]{-1, 0, 0, 0, -1, -1, 0, -1};
-        int[] d2 = new int[]{0, 1, 1, 1, 1, 0};
+        int[] c1 = new int[]{0,  0, -1, -1, 0,  -1, 1, -1};
+        int[] d1 = new int[]{-1, 1, 0,   1, 1,  1};
+        int[] c2 = new int[]{-1, 0, 0,   0, -1, -1, 0, -1};
+        int[] d2 = new int[]{0,  1, 1,   1, 1,  0};
 
         /*
-        
             - - -        - -
               +        + + -
-            + + +      + +
-        
+            + + +      + +        
         */
         PairInt[][] neighborCoordOffsets
             = AbstractLineThinner.createCoordinatePointsForEightNeighbors(
             0, 0);
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        int n = img.getNPixels();
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
 
         int nEdited = 0;
         int nIter = 0;
@@ -6974,6 +4835,12 @@ if (sum > 511) {
                         rotatePairsBy90(tmpD);
                     }
                     
+                    // to try to make it more symmetric, collecting all
+                    // nullable pixels and counting the set neighbors,
+                    // then revisiting by order of fewest set neighbors 
+                    MinHeapForRT2012 heap = new MinHeapForRT2012(9, 
+                            img.getNPixels());
+
                     for (int x = 1; x < (img.getWidth() - 1); ++x) {
                         for (int y = 1; y < (img.getHeight() - 1); ++y) {
                             int v = img.getValue(x, y);
@@ -6983,24 +4850,60 @@ if (sum > 511) {
                             }
                             if (allArePresent(img, x, y, tmpC)
                                 && allAreNotPresent(img, x, y, tmpD)) {
-                                if (!ImageSegmentation.doesDisconnect(out,
+                                if (!ImageSegmentation.doesDisconnect(img,
                                     neighborCoordOffsets, x, y)) {
+                             
+                                    // number of neighbors that are not '1s
+                                    int nn = 0;
+                                    for (int k = 0; k < dxs.length; ++k) {
+                                        int x2 = x + dxs[k];
+                                        int y2 = y + dys[k];
+                                        if (x2 < 0 || y2 < 0 || x2 >= w || y2 >= h) {
+                                            continue;
+                                        }
+                                        nn++;
+                                    }
                                     
-                                    out.setValue(x, y, 0);
-                                    nEdited++;
+                                    //long key = 8 - nn;
+                                    long key = nn;
+                                    HeapNode node = new HeapNode(key);
+                                    int pixIdx = (y * w) + x;
+                                    node.setData(Integer.valueOf(pixIdx));
+                                    heap.insert(node);
                                 }
                             }
                         }
                     }
-                    //MiscDebug.writeImage(out, "_thin_");
-                }
-                
-                img.resetTo(out);
+                    
+                    while (heap.getNumberOfNodes() > 0) {
+                        
+                        HeapNode node = heap.extractMin();
+                        
+                        assert(node != null);
+
+                        int pixIdx = ((Integer)node.getData()).intValue();
+                        int y = pixIdx/w;
+                        int x = pixIdx - (y * w);
+                        
+                        int v = img.getValue(x, y);
+
+                        if (v == 0) {
+                            continue;
+                        }
+                        if (allArePresent(img, x, y, tmpC)
+                            && allAreNotPresent(img, x, y, tmpD)) {
+                            if (!ImageSegmentation.doesDisconnect(img,
+                                neighborCoordOffsets, x, y)) {
+
+                                img.setValue(x, y, 0);
+                                nEdited++;
+                            }
+                        }
+                    }                    
+                }                
             }
             nIter++;
-        } while (nEdited > 0);
-                
-        img.resetTo(out);
+        } while (nEdited > 0);                
     }
     
     /**
@@ -7277,6 +5180,10 @@ if (sum > 511) {
     }
     
     /**
+     * NOTE: this is not the same as the scale space image
+     * or inflection points in the scaleSpace package.
+     * It is a very quick look at the position derivatives.
+     * 
      * create a two dimensional row-major format array of curvature of the
      * image img.  Note that img is expected to have all values >= 0.
      * Also note that sigma should be equal to or greater than
@@ -7311,6 +5218,10 @@ if (sum > 511) {
     }
     
     /**
+     * NOTE: this is not the same as the scale space image
+     * or inflection points in the scaleSpace package.
+     * It is a very quick look at the position derivatives.
+     *
      * create a two dimensional row-major format array of curvature of the
      * image img.  Note that img is expected to have all values >= 0.
      * Also note that sigma should be equal to or greater than
@@ -7401,6 +5312,11 @@ if (sum > 511) {
     }
     
     /**
+     * * NOTE: this is not the same as the scale space image
+     * or inflection points in the scaleSpace package.
+     * It is a very quick look at the position derivative
+     * zero crossings.
+     *
      * create an image segmented by curvature zero-crossings.
      * calculates the curvature in O(N_pixels) but using transcendental
      * operations, and then sets the output to 255 where curvature is
@@ -8082,45 +5998,6 @@ if (sum > 511) {
         return components;
     }
     
-    /**
-     * get centers of high spatial and intensity variability using the
-     * gaussian third derivative and adaptive means.
-     *
-     * @param img 
-       
-     * @return points of high density spatial variability and intensity.
-     */
-    public Set<PairInt> findHighDensityHighVariabilityPoints(GreyscaleImage img) {
-        
-        float[] kernelR5 = new float[]{ 1, -4, 6, -4, 1};
-        
-        GreyscaleImage img2 = img.copyToFullRangeIntImage();
-        applyKernel1D(img2, kernelR5, true);
-        applyKernel1D(img2, kernelR5, false);
-                    
-        GreyscaleImage imgM = img2.copyToFullRangeIntImage();
-        applyCenteredMean2(imgM, 2);
-        img2 = subtractImages(img2, imgM);
-                    
-        for (int ii = 0; ii < img2.getNPixels(); ++ii) {
-            int v = img2.getValue(ii);
-            v *= v;
-            img2.setValue(ii, v);
-        }
-        
-        applyAdaptiveMeanThresholding(img, 1);
-        
-        Set<PairInt> points = new HashSet<PairInt>();
-        for (int ii = 0; ii < img2.getNPixels(); ++ii) {
-            int v = img2.getValue(ii);
-            if (v == 0) {
-                points.add(new PairInt(img2.getCol(ii), img2.getRow(ii)));
-            }
-        }            
-        
-        return points;
-    }
-    
     public GreyscaleImage divide(GreyscaleImage img1, GreyscaleImage img2) {
         
         if (img1.getNPixels() != img2.getNPixels() || img1.getWidth() != 
@@ -8228,65 +6105,6 @@ if (sum > 511) {
         }
 
         return c;
-    }
-    
-    /**
-     * if image dimensions are a power of 2, returns null, else, increases the
-     * dimensions to the power of 2 larger than each dimension.
-     * the padding zeros will be at the end of the axes.
-     * @param img
-     * @return 
-     */
-    public GreyscaleImage increaseToPowerOf2(GreyscaleImage img) {
-        
-        int n0 = img.getWidth();
-        int n1 = img.getHeight();
-
-        int nn0 = 1 << (int)(Math.ceil(Math.log(n0)/Math.log(2)));
-        int nn1 = 1 << (int)(Math.ceil(Math.log(n1)/Math.log(2)));
-
-        if (nn0 == n0 && nn1 == n1) {
-            return null;
-        }
-        
-        GreyscaleImage img2 = new GreyscaleImage(nn0, nn1, 
-            img.getType());
-        for (int i = 0; i < n0; ++i) {
-            for (int j = 0; j < n1; ++j) {
-                img2.setValue(i, j, img.getValue(i, j));
-            }
-        }
-        
-        return img2;
-    }
-    
-    /**
-     * if image dimensions are a power of 2, returns null, else, increases the
-     * dimensions to the power of 2 larger than each dimension.
-     * the padding zeros will be at the end of the axes.
-     * @param img
-     * @return 
-     */
-    public Image increaseToPowerOf2(Image img) {
-        
-        int n0 = img.getWidth();
-        int n1 = img.getHeight();
-
-        int nn0 = 1 << (int)(Math.ceil(Math.log(n0)/Math.log(2)));
-        int nn1 = 1 << (int)(Math.ceil(Math.log(n1)/Math.log(2)));
-
-        if (nn0 == n0 && nn1 == n1) {
-            return null;
-        }
-        
-        Image img2 = img.createWithDimensions(nn0, nn1);
-        for (int i = 0; i < n0; ++i) {
-            for (int j = 0; j < n1; ++j) {
-                img2.setRGB(i, j, img.getRGB(i, j));
-            }
-        }
-        
-        return img2;
     }
     
     public TIntSet convertPointsToIndexes(Set<PairInt> points, int width) {
@@ -9144,139 +6962,6 @@ if (sum > 511) {
         }        
     }
     
-    public GreyscaleImage[] createCIELABImages(ImageExt img) {
-        
-        int w = img.getWidth();
-        int h = img.getHeight();
-        
-        GreyscaleImage ells = new GreyscaleImage(w, h);
-        GreyscaleImage as = new GreyscaleImage(w, h);
-        GreyscaleImage bs = new GreyscaleImage(w, h);
-        
-        CIEChromaticity cieC = new CIEChromaticity();
-        
-        float[] mins = new float[]{0,  -190, -113};
-        float[] maxs = new float[]{105, 103, 99};
-        float[] scales = new float[3];
-        
-        for (int i = 0; i < scales.length; ++i) {
-            float r = maxs[i] - mins[i];
-            scales[i] = 255.f/r;
-        }
-        
-        int n = img.getNPixels();
-        int v;
-        for (int i = 0; i < w; ++i) {
-            for (int j = 0; j < h; ++j) {
-                
-                int r = img.getR(i, j);
-                int g = img.getG(i, j);
-                int b = img.getB(i, j);
-                
-                float[] lab = cieC.rgbToCIELAB1931(r, g, b);
-             
-                v = (int)((lab[0] - mins[0])*scales[0]);
-                ells.setValue(i, j, v);
-                
-                v = (int)((lab[1] - mins[1])*scales[1]);
-                as.setValue(i, j, v);
-                
-                v = (int)((lab[2] - mins[2])*scales[2]);
-                bs.setValue(i, j, v);
-            }
-        }
-        
-        return new GreyscaleImage[]{ells, as, bs};
-    }
-    
-    /**
-     * convert the image to cie l*a*b* and then use a and b
-     * to calculate polar angle around 0 in degrees.
-     * If maxV of 360, returns full value image, 
-     * else if is 255, scales the values to max value of 255, etc.
-     * @param img
-     * @param maxV
-     * @return 
-     */
-    public GreyscaleImage createCIELAB1931Theta(Image img, int maxV) {
-        
-        return createCIELAB1931Theta(img, maxV, 0);
-    }
-    
-    /**
-     * convert the image to cie l*a*b* and then use a and b
-     * to calculate polar angle around 0 in degrees.
-     * If maxV of 360, returns full value image, 
-     * else if is 255, scales the values to max value of 255, etc.
-     * @param img
-     * @param maxV
-     * @param offset an offset in degrees from 0 to shift
-     *    values by.  This is useful for a quick look between 
-     * results of offset=0 and offset=10, for example, to look
-     * at the wrap around point for 360 to 0
-     * @return 
-     */
-    public GreyscaleImage createCIELAB1931Theta(Image img, int maxV, 
-        int offset) {
-        
-        int w = img.getWidth();
-        int h = img.getHeight();
-        
-        GreyscaleImage theta = null;
-        if (maxV < 256) {
-            theta = new GreyscaleImage(w, h);
-        } else {
-            theta = new GreyscaleImage(w, h, 
-                GreyscaleImage.Type.Bits32FullRangeInt);
-        }
-        
-        CIEChromaticity cieC = new CIEChromaticity();
-        
-        float[] mins = new float[]{0,  -190, -113};
-        float[] maxs = new float[]{105, 103, 99};
-        float[] scales = new float[3];
-        
-        for (int i = 0; i < scales.length; ++i) {
-            float r = maxs[i] - mins[i];
-            scales[i] = 255.f/r;
-        }
-        
-        double ts = (double)maxV/(double)359;
-        
-        int n = img.getNPixels();
-        int v;
-        for (int i = 0; i < w; ++i) {
-            for (int j = 0; j < h; ++j) {
-                
-                int r = img.getR(i, j);
-                int g = img.getG(i, j);
-                int b = img.getB(i, j);
-                
-                float[] lab = cieC.rgbToCIELAB1931(r, g, b);
-             
-                //float v1 = (lab[1] - mins[1])*scales[1];
-                //float v2 = (lab[2] - mins[2])*scales[2];
-                float v1 = lab[1];
-                float v2 = lab[2];
-               
-                double t = Math.atan2(v2, v1);
-                t *= (180./Math.PI);
-                t += offset;
-                if (t < 0) {
-                    t += 360;
-                } else if (t > 359) {
-                    t -= 360;
-                }
-                t *= ts;
-                v = (int)t;
-                
-                theta.setValue(i, j, v);
-            }
-        }
-        
-        return theta;
-    }
-    
     /**
      * convert the image to cie l*a*b* and then use a and b
      * to calculate polar angle around 0 in degrees.
@@ -9308,59 +6993,6 @@ if (sum > 511) {
         
         return (int)t;
     }
-    
-    public GreyscaleImage createSobelLCCombined(Image img) {
-        
-        GreyscaleImage[] sobels = createSobelLCForLUV(img);
-        
-        float[] vl = convertToFloat(sobels[0]);
-        float[] vc = convertToFloat(sobels[1]);
-        float factorL = 255.f / MiscMath.findMax(vl);
-        float factorC = 255.f / MiscMath.findMax(vc);
-        GreyscaleImage sobelLC = sobels[0].createWithDimensions();
-        int v0, v1, vavg;
-        for (int j = 0; j < img.getNPixels(); ++j) {
-            v0 = Math.round(vl[j] * factorL);
-            v1 = Math.round(vc[j] * factorC);
-            vavg = (v0 + v1) / 2;
-            if (vavg > 255) {
-                vavg = 255;
-            }
-            sobelLC.setValue(j, vavg);
-        }
-        
-        return sobelLC;
-    }
-    
-    /*
-    public GreyscaleImage createSobelLCHCombined(Image img) {
-        
-        GreyscaleImage[] lch = createLCHForLUV(img);
-        
-        GreyscaleImage[] sobelsLC = createSobels(lch, new int[]{0, 1});
-        
-        GreyscaleImage sobelH = createBinarySobelForPolarTheta(lch[2], 20);
-        
-        float[] vl = convertToFloat(sobelsLC[0]);
-        float[] vc = convertToFloat(sobelsLC[1]);
-        float factorL = 255.f / MiscMath.findMax(vl);
-        float factorC = 255.f / MiscMath.findMax(vc);
-        GreyscaleImage sobelLCH = sobelsLC[0].createWithDimensions();
-        int v0, v1, v2, vavg;
-        for (int j = 0; j < img.getNPixels(); ++j) {
-            v0 = Math.round(vl[j] * factorL);
-            v1 = Math.round(vc[j] * factorC);
-            v2 = sobelH.getValue(j) * 255;
-            vavg = (v0 + v1 + v2) / 3;
-            if (vavg > 255) {
-                vavg = 255;
-            }
-            sobelLCH.setValue(j, vavg);
-        }
-        
-        return sobelLCH;
-    }
-    */
     
     /**
      * create sobel gradient images for the given images specified by idxs

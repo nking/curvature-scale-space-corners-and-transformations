@@ -665,43 +665,6 @@ public class AndroidStatuesTest extends TestCase {
         clusterSets.addAll(out);
     }
 
-    private void printGradients(ImageExt img,
-        String fileNameRoot) {
-
-        GreyscaleImage gsImg = img.copyToGreyscale();
-        GreyscaleImage gsImg1 = gsImg.copyImage();
-        GreyscaleImage gsImg2 = gsImg.copyImage();
-
-        CannyEdgeFilterAdaptive canny =
-            new CannyEdgeFilterAdaptive();
-        canny.overrideToNotUseLineThinner();
-        canny.applyFilter(gsImg);
-        for (int i = 0; i < gsImg.getNPixels(); ++i) {
-            if (gsImg.getValue(i) > 0) {
-                gsImg.setValue(i, 255);
-            }
-        }
-        MiscDebug.writeImage(gsImg,
-            "_canny_" + fileNameRoot);
-
-        ImageProcessor imageProcessor = new ImageProcessor();
-        imageProcessor.applyFirstDerivGaussian(gsImg1,
-            SIGMA.ONE, 0, 255);
-        for (int i = 0; i < gsImg1.getNPixels(); ++i) {
-            if (gsImg1.getValue(i) > 0) {
-                gsImg1.setValue(i, 255);
-            }
-        }
-        MiscDebug.writeImage(gsImg1,
-            "_firstderiv_" + fileNameRoot);
-
-        PhaseCongruencyDetector pcd = new PhaseCongruencyDetector();
-        PhaseCongruencyDetector.PhaseCongruencyProducts
-            product = pcd.phaseCongMono(gsImg2);
-        MiscDebug.writeImage(product.getThinned(),
-            "_pcd_" + fileNameRoot);
-    }
-
     private TIntList addIntersection(GreyscaleImage gradient,
         int[] labels) {
 
