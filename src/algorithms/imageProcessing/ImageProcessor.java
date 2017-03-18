@@ -4059,7 +4059,7 @@ public class ImageProcessor {
                             i, j, hx, hy, ii, jj, (float)v, 
                             (float)(v/rW), (float)(v/rH));
 
-                        v = hx * ((v/rW) + hy) * ((v/rH));
+                        v = (hx * (v/rW)) + (hy * (v/rH));
                         
                         System.out.format(" ==>%.3f\n", v);
                         
