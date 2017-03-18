@@ -216,7 +216,7 @@ import java.util.List;
 <span class="fc" id="L216">        GreyscaleImage cJPlus1Ast = med.calculate(cJ, winL, winL);   </span>
             
         // decimation:
-<span class="fc" id="L219">        GreyscaleImage cJPlus1 = imageProcessor.bilinearDownSampling(</span>
+<span class="fc" id="L219">        GreyscaleImage cJPlus1 = imageProcessor.downSample(</span>
             cJPlus1Ast, w2, h2, minValue, maxValue);
        
 <span class="fc" id="L222">        return cJPlus1;</span>

@@ -96,7 +96,7 @@ public class ConnectedValuesFinderTest extends TestCase {
         
         ImageProcessor imageProcessor = new ImageProcessor();
         
-        int[] imgValues = imageProcessor.convertToInt(img);
+        int[] imgValues = imageProcessor.copyToInt(img);
         
         ConnectedValuesFinder finder = new ConnectedValuesFinder(imgValues,
             img.getWidth(), img.getHeight());

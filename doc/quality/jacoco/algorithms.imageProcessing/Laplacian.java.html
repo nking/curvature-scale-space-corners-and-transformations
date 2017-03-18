@@ -5,10 +5,10 @@ import java.util.Arrays;
 /** 
  * @author nichole
  */
-<span class="nc" id="L8">public class Laplacian implements IKernel {</span>
+<span class="fc" id="L8">public class Laplacian implements IKernel {</span>
      
     public float getNormalizationFactor() {
-<span class="nc" id="L11">        return 1.0f;</span>
+<span class="fc" id="L11">        return 1.0f;</span>
     }
     
     public Kernel getKernel() {
@@ -18,11 +18,11 @@ import java.util.Arrays;
           [ -1 -1 -1 ]
         
         */
-<span class="nc" id="L21">        Kernel kernel = new Kernel(3, 3);</span>
-<span class="nc" id="L22">        Arrays.fill(kernel.a, -1);</span>
-<span class="nc" id="L23">        kernel.setValue(1, 1,  0);</span>
+<span class="fc" id="L21">        Kernel kernel = new Kernel(3, 3);</span>
+<span class="fc" id="L22">        Arrays.fill(kernel.a, -1);</span>
+<span class="fc" id="L23">        kernel.setValue(1, 1,  0);</span>
         
-<span class="nc" id="L25">        return kernel;</span>
+<span class="fc" id="L25">        return kernel;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
