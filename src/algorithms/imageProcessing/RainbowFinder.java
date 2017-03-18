@@ -1166,7 +1166,7 @@ public class RainbowFinder {
                     continue;
                 }
                
-                double resid = PolyFitter2.calcResiduals(coeff, subset);
+                double resid = ParabolaLeastSquares.calcResiduals(coeff, subset);
                 
                 if (resid > 5) {
                     nV = subsetChooser.getNextSubset(selectedIndexes);
