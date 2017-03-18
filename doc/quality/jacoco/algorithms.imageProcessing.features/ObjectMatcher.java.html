@@ -240,8 +240,8 @@ import java.util.Set;
 <span class="nc bnc" id="L240" title="All 2 branches missed.">        for (List&lt;Region&gt; list : regions) {</span>
 <span class="nc bnc" id="L241" title="All 2 branches missed.">            for (Region r : list) {</span>
 <span class="nc" id="L242">                r.calculateXYCentroid(xy, w, h);</span>
-<span class="nc" id="L243">                PairInt p = new PairInt((int)Math.round(xy[0]),</span>
-<span class="nc" id="L244">                    (int)Math.round(xy[1]));</span>
+<span class="nc" id="L243">                PairInt p = new PairInt(Math.round(xy[0]),</span>
+<span class="nc" id="L244">                    Math.round(xy[1]));</span>
 <span class="nc bnc" id="L245" title="All 2 branches missed.">                if (centers.contains(p)) {</span>
 <span class="nc" id="L246">                    continue;</span>
                 }
@@ -276,13 +276,13 @@ import java.util.Set;
 <span class="fc" id="L276">            + &quot; ptMode=&quot; + ptMode.name());</span>
         
 <span class="fc bfc" id="L278" title="All 2 branches covered.">        if (clrMode.equals(CMODE.WHITE)) {</span>
-<span class="fc" id="L279">            int[] gsA = mser.readIntoArray(gsImg);</span>
+<span class="fc" id="L279">            int[] gsA = MSER.readIntoArray(gsImg);</span>
 <span class="fc" id="L280">            List&lt;Region&gt; list = mser.findRegionsNeg(gsA,</span>
 <span class="fc" id="L281">                gsImg.getWidth(), gsImg.getHeight(), thrGs);</span>
 <span class="fc" id="L282">            regions.add(new ArrayList&lt;Region&gt;());</span>
 <span class="fc" id="L283">            regions.add(list);</span>
 <span class="pc bpc" id="L284" title="1 of 2 branches missed.">        } else if (clrMode.equals(CMODE.BLACK)) {</span>
-<span class="nc" id="L285">            int[] gsA = mser.readIntoArray(gsImg);</span>
+<span class="nc" id="L285">            int[] gsA = MSER.readIntoArray(gsImg);</span>
 <span class="nc" id="L286">            List&lt;Region&gt; list = mser.findRegionsPos(gsA,</span>
 <span class="nc" id="L287">                gsImg.getWidth(), gsImg.getHeight(), thrGs);</span>
 <span class="nc" id="L288">            regions.add(list);</span>
@@ -292,13 +292,13 @@ import java.util.Set;
         }
         
 <span class="pc bpc" id="L294" title="1 of 2 branches missed.">        if (ptMode.equals(CMODE.WHITE)) {</span>
-<span class="nc" id="L295">            int[] ptA = mser.readIntoArray(luvTheta);</span>
+<span class="nc" id="L295">            int[] ptA = MSER.readIntoArray(luvTheta);</span>
 <span class="nc" id="L296">            List&lt;Region&gt; list = mser.findRegionsNeg(ptA,</span>
 <span class="nc" id="L297">                luvTheta.getWidth(), luvTheta.getHeight(), thrPt);</span>
 <span class="nc" id="L298">            regionsT.add(new ArrayList&lt;Region&gt;());</span>
 <span class="nc" id="L299">            regionsT.add(list);</span>
 <span class="pc bpc" id="L300" title="1 of 2 branches missed.">        } else if (ptMode.equals(CMODE.BLACK)) {</span>
-<span class="nc" id="L301">            int[] ptA = mser.readIntoArray(luvTheta);</span>
+<span class="nc" id="L301">            int[] ptA = MSER.readIntoArray(luvTheta);</span>
 <span class="nc" id="L302">            List&lt;Region&gt; list = mser.findRegionsPos(ptA,</span>
 <span class="nc" id="L303">                luvTheta.getWidth(), luvTheta.getHeight(), thrPt);</span>
 <span class="nc" id="L304">            regionsT.add(list);</span>

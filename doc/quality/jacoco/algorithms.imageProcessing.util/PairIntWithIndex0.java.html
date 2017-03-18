@@ -22,21 +22,21 @@ public class PairIntWithIndex0 extends algorithms.util.PairInt {
     @Override
     public boolean equals(Object obj) {
 
-<span class="nc bnc" id="L25" title="All 2 branches missed.">        if (!(obj instanceof algorithms.util.PairInt)) {</span>
+<span class="pc bpc" id="L25" title="1 of 2 branches missed.">        if (!(obj instanceof algorithms.util.PairInt)) {</span>
 <span class="nc" id="L26">            return false;</span>
         }
 
-<span class="nc" id="L29">        PairInt other = (PairInt) obj;</span>
+<span class="fc" id="L29">        PairInt other = (PairInt) obj;</span>
 
-<span class="nc bnc" id="L31" title="All 4 branches missed.">        return (this.getX() == other.getX()) &amp;&amp; (this.getY() == other.getY());</span>
+<span class="pc bpc" id="L31" title="2 of 4 branches missed.">        return (this.getX() == other.getX()) &amp;&amp; (this.getY() == other.getY());</span>
     }
 
     @Override
     public int hashCode() {
 
-<span class="nc" id="L37">        int hash = fnvHashCode(this.getX(), this.getY());</span>
+<span class="fc" id="L37">        int hash = fnvHashCode(this.getX(), this.getY());</span>
 
-<span class="nc" id="L39">        return hash;</span>
+<span class="fc" id="L39">        return hash;</span>
     }
 
     @Override

@@ -232,8 +232,8 @@ public class NearestNeighbor2D {
 <span class="fc" id="L232">        Integer predecessor = null;</span>
 <span class="fc" id="L233">        Integer successor = null;</span>
         
-<span class="pc bpc" id="L235" title="1 of 4 branches missed.">        if (useCache &amp;&amp; pCache.containsKey(idx)) {</span>
-<span class="fc" id="L236">            predecessor = Integer.valueOf(pCache.get(idx));</span>
+<span class="pc bpc" id="L235" title="2 of 4 branches missed.">        if (useCache &amp;&amp; pCache.containsKey(idx)) {</span>
+<span class="nc" id="L236">            predecessor = Integer.valueOf(pCache.get(idx));</span>
         } else {
             //O(log_2(maxW))
 <span class="fc" id="L239">            predecessor = xbt.predecessor(index);</span>
@@ -241,8 +241,8 @@ public class NearestNeighbor2D {
 <span class="fc" id="L241">                pCache.put(idx, predecessor.intValue());</span>
             }
         }
-<span class="pc bpc" id="L244" title="1 of 4 branches missed.">        if (useCache &amp;&amp; sCache.containsKey(idx)) {</span>
-<span class="fc" id="L245">            successor = Integer.valueOf(sCache.get(idx));</span>
+<span class="pc bpc" id="L244" title="2 of 4 branches missed.">        if (useCache &amp;&amp; sCache.containsKey(idx)) {</span>
+<span class="nc" id="L245">            successor = Integer.valueOf(sCache.get(idx));</span>
         } else {
             //O(log_2(maxW))
 <span class="fc" id="L248">            successor = xbt.successor(index);</span>
@@ -275,11 +275,11 @@ public class NearestNeighbor2D {
 <span class="fc" id="L275">                closestDist = dMin;</span>
 <span class="fc" id="L276">                closestDistPlusTol = closestDist + tolerance;</span>
             }
-<span class="pc bpc" id="L278" title="1 of 4 branches missed.">            if ((predecessor != null) &amp;&amp; </span>
+<span class="pc bpc" id="L278" title="2 of 4 branches missed.">            if ((predecessor != null) &amp;&amp; </span>
                 (dp2 &lt;= closestDistPlusTol)) {
 <span class="fc" id="L280">                closestIndexes.add(predecessor.intValue());</span>
             }
-<span class="pc bpc" id="L282" title="1 of 4 branches missed.">            if ((successor != null) &amp;&amp;</span>
+<span class="pc bpc" id="L282" title="2 of 4 branches missed.">            if ((successor != null) &amp;&amp;</span>
                 (ds2 &lt;= closestDistPlusTol)) {
 <span class="fc" id="L284">                closestIndexes.add(successor.intValue());</span>
             }
@@ -305,8 +305,8 @@ public class NearestNeighbor2D {
 <span class="nc" id="L305">            yCurrent = Integer.MIN_VALUE;</span>
         } else {
 <span class="fc" id="L307">            int pRow = getRow(predecessor.intValue());</span>
-<span class="fc bfc" id="L308" title="All 2 branches covered.">            if (pRow &lt; y) {</span>
-<span class="fc" id="L309">                yCurrent = pRow;</span>
+<span class="pc bpc" id="L308" title="1 of 2 branches missed.">            if (pRow &lt; y) {</span>
+<span class="nc" id="L309">                yCurrent = pRow;</span>
             } else {
 <span class="fc" id="L311">                yCurrent = pRow - 1;</span>
             }
@@ -327,8 +327,8 @@ public class NearestNeighbor2D {
 <span class="fc" id="L327">                dp2 = dist(x, y, p2);</span>
 <span class="fc" id="L328">                ds2 = Double.MAX_VALUE;</span>
             } else {
-<span class="pc bpc" id="L330" title="1 of 4 branches missed.">                if (useCache &amp;&amp; pCache.containsKey(cIdx)) {</span>
-<span class="fc" id="L331">                    p2 = Integer.valueOf(pCache.get(cIdx));</span>
+<span class="pc bpc" id="L330" title="2 of 4 branches missed.">                if (useCache &amp;&amp; pCache.containsKey(cIdx)) {</span>
+<span class="nc" id="L331">                    p2 = Integer.valueOf(pCache.get(cIdx));</span>
                 } else {
                     //O(log_2(maxW))
 <span class="fc" id="L334">                    p2 = xbt.predecessor(cIndex);</span>
@@ -336,8 +336,8 @@ public class NearestNeighbor2D {
 <span class="fc" id="L336">                        pCache.put(cIdx, p2.intValue());</span>
                     }
                 }
-<span class="pc bpc" id="L339" title="1 of 4 branches missed.">                if (useCache &amp;&amp; sCache.containsKey(cIdx)) {</span>
-<span class="fc" id="L340">                    s2 = Integer.valueOf(sCache.get(cIdx));</span>
+<span class="pc bpc" id="L339" title="2 of 4 branches missed.">                if (useCache &amp;&amp; sCache.containsKey(cIdx)) {</span>
+<span class="nc" id="L340">                    s2 = Integer.valueOf(sCache.get(cIdx));</span>
                 } else {
                     //O(log_2(maxW))
 <span class="fc" id="L343">                    s2 = xbt.successor(cIndex);</span>
@@ -352,18 +352,18 @@ public class NearestNeighbor2D {
         
 <span class="fc" id="L353">            dMin = Math.min(dp2, ds2);</span>
 <span class="fc bfc" id="L354" title="All 2 branches covered.">            if (dMin &lt;= closestDist) {</span>
-<span class="fc bfc" id="L355" title="All 2 branches covered.">                if (Math.abs(closestDist - dMin) &gt; tolerance) {</span>
-<span class="fc" id="L356">                    closestIndexes.clear();</span>
-<span class="fc" id="L357">                    closestDist = dMin;</span>
-<span class="fc" id="L358">                    closestDistPlusTol = closestDist + tolerance;</span>
-<span class="fc" id="L359">                    goal = (int)Math.ceil(closestDistPlusTol);</span>
-<span class="fc" id="L360">                    yLow = estimateLowBound(y, goal); </span>
+<span class="pc bpc" id="L355" title="1 of 2 branches missed.">                if (Math.abs(closestDist - dMin) &gt; tolerance) {</span>
+<span class="nc" id="L356">                    closestIndexes.clear();</span>
+<span class="nc" id="L357">                    closestDist = dMin;</span>
+<span class="nc" id="L358">                    closestDistPlusTol = closestDist + tolerance;</span>
+<span class="nc" id="L359">                    goal = (int)Math.ceil(closestDistPlusTol);</span>
+<span class="nc" id="L360">                    yLow = estimateLowBound(y, goal); </span>
                 }
-<span class="pc bpc" id="L362" title="1 of 4 branches missed.">                if ((p2 != null) &amp;&amp; dp2 &lt;= closestDistPlusTol) {</span>
+<span class="pc bpc" id="L362" title="2 of 4 branches missed.">                if ((p2 != null) &amp;&amp; dp2 &lt;= closestDistPlusTol) {</span>
 <span class="fc" id="L363">                    closestIndexes.add(p2.intValue());</span>
                 }
-<span class="fc bfc" id="L365" title="All 4 branches covered.">                if ((s2 != null) &amp;&amp; ds2 &lt;= closestDistPlusTol) {</span>
-<span class="fc" id="L366">                    closestIndexes.add(s2.intValue());</span>
+<span class="pc bpc" id="L365" title="2 of 4 branches missed.">                if ((s2 != null) &amp;&amp; ds2 &lt;= closestDistPlusTol) {</span>
+<span class="nc" id="L366">                    closestIndexes.add(s2.intValue());</span>
                 }
 <span class="fc bfc" id="L368" title="All 2 branches covered.">            } else if (dMin &lt;= closestDistPlusTol) {</span>
 <span class="pc bpc" id="L369" title="2 of 4 branches missed.">                if ((p2 != null) &amp;&amp; dp2 &lt;= closestDistPlusTol) {</span>
@@ -391,8 +391,8 @@ public class NearestNeighbor2D {
 <span class="nc" id="L391">            yCurrent = Integer.MAX_VALUE;</span>
         } else {
 <span class="fc" id="L393">            int sr = getRow(successor.intValue());</span>
-<span class="fc bfc" id="L394" title="All 2 branches covered.">            if (sr &gt; y) {</span>
-<span class="fc" id="L395">                yCurrent = sr;</span>
+<span class="pc bpc" id="L394" title="1 of 2 branches missed.">            if (sr &gt; y) {</span>
+<span class="nc" id="L395">                yCurrent = sr;</span>
             } else {
 <span class="fc" id="L397">                yCurrent = sr + 1;</span>
             }
@@ -410,8 +410,8 @@ public class NearestNeighbor2D {
 <span class="fc" id="L410">                dp2 = dist(x, y, p2);</span>
 <span class="fc" id="L411">                ds2 = Double.MAX_VALUE;</span>
             } else {
-<span class="pc bpc" id="L413" title="1 of 4 branches missed.">                if (useCache &amp;&amp; pCache.containsKey(cIdx)) {</span>
-<span class="fc" id="L414">                    p2 = Integer.valueOf(pCache.get(cIdx));</span>
+<span class="pc bpc" id="L413" title="2 of 4 branches missed.">                if (useCache &amp;&amp; pCache.containsKey(cIdx)) {</span>
+<span class="nc" id="L414">                    p2 = Integer.valueOf(pCache.get(cIdx));</span>
                 } else {
                     //O(log_2(maxW))
 <span class="fc" id="L417">                    p2 = xbt.predecessor(cIndex);</span>
@@ -419,8 +419,8 @@ public class NearestNeighbor2D {
 <span class="fc" id="L419">                        pCache.put(cIdx, p2.intValue());</span>
                     }
                 }
-<span class="pc bpc" id="L422" title="1 of 4 branches missed.">                if (useCache &amp;&amp; sCache.containsKey(cIdx)) {</span>
-<span class="fc" id="L423">                    s2 = Integer.valueOf(sCache.get(cIdx));</span>
+<span class="pc bpc" id="L422" title="2 of 4 branches missed.">                if (useCache &amp;&amp; sCache.containsKey(cIdx)) {</span>
+<span class="nc" id="L423">                    s2 = Integer.valueOf(sCache.get(cIdx));</span>
                 } else {
                     //O(log_2(maxW))
 <span class="fc" id="L426">                    s2 = xbt.successor(cIndex);</span>
@@ -434,18 +434,18 @@ public class NearestNeighbor2D {
             
 <span class="fc" id="L435">            dMin = Math.min(dp2, ds2);</span>
 <span class="fc bfc" id="L436" title="All 2 branches covered.">            if (dMin &lt;= closestDist) {</span>
-<span class="fc bfc" id="L437" title="All 2 branches covered.">                if (Math.abs(closestDist - dMin) &gt; tolerance) {</span>
-<span class="fc" id="L438">                    closestIndexes.clear();</span>
-<span class="fc" id="L439">                    closestDist = dMin;</span>
-<span class="fc" id="L440">                    closestDistPlusTol = closestDist + tolerance;</span>
-<span class="fc" id="L441">                    goal = (int)Math.ceil(closestDistPlusTol);</span>
-<span class="fc" id="L442">                    yHigh = estimateHighBound(y, goal); </span>
+<span class="pc bpc" id="L437" title="1 of 2 branches missed.">                if (Math.abs(closestDist - dMin) &gt; tolerance) {</span>
+<span class="nc" id="L438">                    closestIndexes.clear();</span>
+<span class="nc" id="L439">                    closestDist = dMin;</span>
+<span class="nc" id="L440">                    closestDistPlusTol = closestDist + tolerance;</span>
+<span class="nc" id="L441">                    goal = (int)Math.ceil(closestDistPlusTol);</span>
+<span class="nc" id="L442">                    yHigh = estimateHighBound(y, goal); </span>
                 }
-<span class="pc bpc" id="L444" title="1 of 4 branches missed.">                if ((p2 != null) &amp;&amp; dp2 &lt;= closestDistPlusTol) {</span>
+<span class="pc bpc" id="L444" title="2 of 4 branches missed.">                if ((p2 != null) &amp;&amp; dp2 &lt;= closestDistPlusTol) {</span>
 <span class="fc" id="L445">                    closestIndexes.add(p2.intValue());</span>
                 }
-<span class="fc bfc" id="L447" title="All 4 branches covered.">                if ((s2 != null) &amp;&amp; ds2 &lt;= closestDistPlusTol) {</span>
-<span class="fc" id="L448">                    closestIndexes.add(s2.intValue());</span>
+<span class="pc bpc" id="L447" title="2 of 4 branches missed.">                if ((s2 != null) &amp;&amp; ds2 &lt;= closestDistPlusTol) {</span>
+<span class="nc" id="L448">                    closestIndexes.add(s2.intValue());</span>
                 }
 <span class="fc bfc" id="L450" title="All 2 branches covered.">            } else if (dMin &lt;= closestDistPlusTol) {</span>
 <span class="pc bpc" id="L451" title="2 of 4 branches missed.">                if ((p2 != null) &amp;&amp; dp2 &lt;= closestDistPlusTol) {</span>
@@ -456,7 +456,7 @@ public class NearestNeighbor2D {
                 }
             }    
             
-<span class="fc bfc" id="L459" title="All 2 branches covered.">            if (s2 != null) {</span>
+<span class="pc bpc" id="L459" title="1 of 2 branches missed.">            if (s2 != null) {</span>
 <span class="fc" id="L460">                int expectedNext = getInternalIndex(x, yCurrent + 1);</span>
 <span class="pc bpc" id="L461" title="1 of 2 branches missed.">                if (s2.intValue() &lt; expectedNext) {</span>
 <span class="fc" id="L462">                    yCurrent += 1;</span>
@@ -464,7 +464,7 @@ public class NearestNeighbor2D {
 <span class="nc" id="L464">                    yCurrent = getRow(s2.intValue()) + 1;</span>
                 }
 <span class="fc" id="L466">            } else {</span>
-<span class="fc" id="L467">                yCurrent = Integer.MAX_VALUE;</span>
+<span class="nc" id="L467">                yCurrent = Integer.MAX_VALUE;</span>
             }
 <span class="fc" id="L469">        }</span>
         
@@ -794,8 +794,8 @@ public class NearestNeighbor2D {
 
 <span class="fc" id="L795">        int high = y + goal;</span>
         
-<span class="fc bfc" id="L797" title="All 2 branches covered.">        if (high &gt; height) {</span>
-<span class="fc" id="L798">            high = height;</span>
+<span class="pc bpc" id="L797" title="1 of 2 branches missed.">        if (high &gt; height) {</span>
+<span class="nc" id="L798">            high = height;</span>
         }
         
 <span class="fc" id="L801">        return high;</span>

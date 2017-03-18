@@ -954,11 +954,11 @@ import java.util.logging.Logger;
 <span class="fc" id="L954">                + &quot; peakHist x=&quot; + hist.getXHist()[peakIdx] </span>
 <span class="fc" id="L955">                + &quot; nPix=&quot; + img.getNPixels() + </span>
                 &quot; peakX/nPix=&quot; + 
-<span class="fc" id="L957">                (float)hist.getXHist()[peakIdx]/(float)img.getNPixels() +</span>
+<span class="fc" id="L957">                hist.getXHist()[peakIdx]/(float)img.getNPixels() +</span>
                 &quot; peakY/nPix=&quot; + 
 <span class="fc" id="L959">                (float)hist.getYHist()[peakIdx]/(float)img.getNPixels()</span>
                 + &quot; peakY/peakX=&quot; +
-<span class="fc" id="L961">                (float)hist.getYHist()[peakIdx]/(float)hist.getXHist()[peakIdx]</span>
+<span class="fc" id="L961">                (float)hist.getYHist()[peakIdx]/hist.getXHist()[peakIdx]</span>
             );
             
             try {

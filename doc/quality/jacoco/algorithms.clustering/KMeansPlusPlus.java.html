@@ -1,0 +1,580 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>KMeansPlusPlus.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.clustering</a> &gt; <span class="el_source">KMeansPlusPlus.java</span></div><h1>KMeansPlusPlus.java</h1><pre class="source lang-java linenums">package algorithms.clustering;
+
+import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.search.NearestNeighbor1D;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.hash.TIntIntHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.logging.Logger;
+
+/**
+ * k-means clustering is a method of cluster analysis to partition n
+ * observations into k clusters in which each observation belongs to the cluster
+ * with the nearest mean.
+ * This results in a partitioning of the data space into Voronoi cells, which
+ * for this single parameter analysis, is 1-D.
+ * 
+ * Kmeans++ calculates the initial seed centers first and then proceeds with
+ * the standard Kmeans algorithm.
+ * 
+ * The characteristic clustered in this implementation is the intensity of the
+ * pixel rather than the location so distance is the difference between 
+ * intensities.  It's tailored for image segmentation.
+ * 
+ * Useful reading:
+ * http://en.wikipedia.org/wiki/K-means_clustering
+ * 
+ * runtime complexity is O(N*log_2(N))
+ * 
+ * @author nichole
+ */
+<span class="pc bpc" id="L37" title="1 of 2 branches missed.">public class KMeansPlusPlus {</span>
+    
+<span class="fc" id="L39">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+    
+    /**
+     * final solution for centers of groups (== seed centers)
+     */
+<span class="fc" id="L44">    protected int[] center = null;</span>
+<span class="fc" id="L45">    protected int[] numberOfPointsPerSeedCell = null;</span>
+    
+    /**
+     * assignments of pixels to center bins
+     */
+<span class="fc" id="L50">    protected int[] lastImgSeedIndexes = null;</span>
+    
+    /**
+     * this is k and is chosen by the user
+     */
+<span class="fc" id="L55">    protected int nSeeds = 0;</span>
+    
+    // After final iteration, standard deviations are stored in seedVariances 
+    // instead of variances
+<span class="fc" id="L59">    protected float[] seedVariances = null;</span>
+    
+    protected final static int nMaxIter = 20;
+<span class="fc" id="L62">    protected int nIter = 0;</span>
+    
+<span class="fc" id="L64">    protected int minValue = -1;</span>
+<span class="fc" id="L65">    protected int maxValue = -1;</span>
+    
+<span class="fc" id="L67">    protected int imgModeIdx = -1;</span>
+    
+    private final ThreadLocalRandom sr;
+    
+<span class="fc" id="L71">    public KMeansPlusPlus() {</span>
+<span class="fc" id="L72">         sr = ThreadLocalRandom.current();</span>
+<span class="fc" id="L73">    }</span>
+    
+    protected void init(int k) {
+<span class="fc" id="L76">        this.nSeeds = k;</span>
+<span class="fc" id="L77">        this.nIter = 0;</span>
+<span class="fc" id="L78">        this.seedVariances = new float[nSeeds];</span>
+<span class="fc" id="L79">    }</span>
+    
+    /**
+     * note that an internal method binPoints makes an assumption that the
+     * minimum values in an img pixel is 0 and a maximum is 255.
+     * @param k
+     * @param img
+     * @throws IOException
+     * @throws NoSuchAlgorithmException 
+     */
+    public void computeMeans(int k, GreyscaleImage img) throws IOException, 
+        NoSuchAlgorithmException {
+        
+<span class="fc" id="L92">        this.maxValue = Integer.MIN_VALUE;</span>
+<span class="fc" id="L93">        this.minValue = Integer.MAX_VALUE;</span>
+        
+<span class="fc" id="L95">        int n = img.getNPixels();</span>
+<span class="fc" id="L96">        int[] values = new int[n];</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L98">            values[i] = img.getValue(i);</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">            if (values[i] &gt; maxValue) {</span>
+<span class="fc" id="L100">                maxValue = values[i];</span>
+            }
+<span class="fc bfc" id="L102" title="All 2 branches covered.">            if (values[i] &lt; minValue) {</span>
+<span class="fc" id="L103">                minValue = values[i];</span>
+            }
+        }
+        
+<span class="fc" id="L107">        computeMeans(k, values);</span>
+<span class="fc" id="L108">    }</span>
+    
+    /**
+     * note that an internal method binPoints makes an assumption that the
+     * minimum values in an img pixel is 0 and a maximum is 255.
+     * @param k
+     * @param values
+     * @throws IOException
+     * @throws NoSuchAlgorithmException 
+     */
+    public void computeMeans(int k, int[] values) throws IOException, 
+        NoSuchAlgorithmException {
+         
+<span class="fc" id="L121">        init(k);</span>
+        
+        // starter seeds, sorted by increasing value
+<span class="fc" id="L124">        int[] seeds = createStartSeeds(values);</span>
+        
+<span class="fc" id="L126">        int[] imgSeedIndexes = null;</span>
+
+<span class="fc" id="L128">        boolean hasConverged = false;</span>
+
+<span class="pc bpc" id="L130" title="1 of 4 branches missed.">        while (!hasConverged &amp;&amp; (nIter &lt; nMaxIter) ) {</span>
+
+<span class="fc" id="L132">            imgSeedIndexes = binPoints(values, seeds);</span>
+
+<span class="fc" id="L134">            seeds = calculateMeanOfSeedPoints(values, imgSeedIndexes);</span>
+
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">            if (seeds == null) {</span>
+<span class="nc" id="L137">                nIter = 0;</span>
+<span class="nc" id="L138">                lastImgSeedIndexes = null;</span>
+<span class="nc" id="L139">                seeds = createStartSeeds(values);</span>
+<span class="nc" id="L140">                continue;</span>
+            }
+
+<span class="fc" id="L143">            hasConverged = calculateVarianceFromSeedCenters(values, seeds, </span>
+                imgSeedIndexes);
+
+<span class="fc" id="L146">            nIter++;</span>
+        }
+
+        // store final numbers
+<span class="fc" id="L150">        center = seeds;</span>
+
+        // calculate final stats
+<span class="fc" id="L153">        calculateFinalStats(values, imgSeedIndexes);</span>
+<span class="fc" id="L154">    }</span>
+
+    /**
+     * choose seeds sequentially by distance weighted probabilities
+     * 
+     * @param img
+     * @return 
+     */
+    private int[] createStartSeeds(int[] values) throws 
+        NoSuchAlgorithmException {
+                
+<span class="fc" id="L165">        int[] seed = new int[nSeeds];</span>
+        
+<span class="fc" id="L167">        int index = getModeIdx(values);</span>
+
+<span class="fc" id="L169">        seed[0] = values[index];</span>
+        
+<span class="fc" id="L171">        log.fine(String.format(&quot;choose seed %d) %d&quot;, 0, seed[0]));</span>
+        
+<span class="fc" id="L173">        TIntSet alreadyChosenValues = new TIntHashSet();</span>
+        
+<span class="fc" id="L175">        alreadyChosenValues.add(seed[0]);</span>
+
+<span class="fc" id="L177">        int nV = values.length;</span>
+        
+<span class="fc bfc" id="L179" title="All 2 branches covered.">        for (int n = 1; n &lt; nSeeds; n++) {</span>
+
+<span class="fc" id="L181">            int[] distOfSeeds = new int[nV];</span>
+<span class="fc" id="L182">            int[] indexOfDistOfSeeds = new int[nV];</span>
+
+<span class="fc" id="L184">            populateDistanceArrays(values, alreadyChosenValues, </span>
+                distOfSeeds, indexOfDistOfSeeds);
+ 
+<span class="fc" id="L187">            int selectedSeedValue = </span>
+<span class="fc" id="L188">                chooseRandomlyFromNumbersPresentByProbability(values,</span>
+                distOfSeeds, 
+                indexOfDistOfSeeds, alreadyChosenValues);
+
+<span class="fc" id="L192">            seed[n] = selectedSeedValue;</span>
+            
+<span class="fc" id="L194">            alreadyChosenValues.add(selectedSeedValue);</span>
+
+<span class="fc" id="L196">            log.fine(String.format(&quot;choose seed %d) %d&quot;, n, </span>
+<span class="fc" id="L197">                seed[n]));</span>
+        }
+        
+<span class="fc" id="L200">        Arrays.sort(seed);</span>
+
+<span class="fc" id="L202">        return seed;</span>
+    }
+    
+    /**
+     * calculate the mean value of all points within a seed bin and return them
+     *   as new seed bin centers.  note that if there is a bin without points
+     *   in it, null is returned.
+     *
+     * @param values image values
+     * @param imgSeedIndexes
+     * @return
+     */
+    protected int[] calculateMeanOfSeedPoints(final int[] values, 
+        final int[] imgSeedIndexes) {
+
+<span class="fc" id="L217">        int[] sum = new int[nSeeds];</span>
+<span class="fc" id="L218">        int[] nSum = new int[nSeeds];</span>
+
+<span class="fc bfc" id="L220" title="All 2 branches covered.">        for (int xyIndex = 0; xyIndex &lt; values.length; xyIndex++) {</span>
+
+<span class="fc" id="L222">            int seedIndex = imgSeedIndexes[xyIndex];</span>
+
+<span class="fc" id="L224">            sum[seedIndex] += values[xyIndex];</span>
+            
+<span class="fc" id="L226">            nSum[seedIndex]++;</span>
+        }
+
+<span class="fc bfc" id="L229" title="All 2 branches covered.">        for (int i = 0; i &lt; nSeeds; i++) {</span>
+            
+<span class="pc bpc" id="L231" title="1 of 2 branches missed.">            if (nSum[i] == 0) {</span>
+<span class="nc" id="L232">                return null;</span>
+            } else {
+<span class="fc" id="L234">                sum[i] /= nSum[i];</span>
+            }
+
+<span class="fc" id="L237">            log.fine(String.format(&quot;seed mean = %d) %d number of points=%d&quot;, </span>
+<span class="fc" id="L238">                i, sum[i], nSum[i]));</span>
+            
+        }
+
+<span class="fc" id="L242">        return sum;</span>
+    }
+
+    /**
+     * calculate the variance of the points from their seed centers and compare 
+     * results with the last iteration and return true when solution has 
+     * converged.  the solution has converged if each seed's variation differs 
+     * from the last iteration by less than 2 sigma.
+     *
+     * @param values
+     * @param seed
+     * @param imgSeedIndexes
+     * @return
+     */
+    protected boolean calculateVarianceFromSeedCenters(
+        final int[] values,
+        int[] seed, int[] imgSeedIndexes) {
+
+<span class="fc bfc" id="L260" title="All 2 branches covered.">        if (lastImgSeedIndexes == null) {</span>
+<span class="fc" id="L261">            lastImgSeedIndexes = imgSeedIndexes;</span>
+<span class="fc" id="L262">            return false;</span>
+        }
+        
+<span class="fc" id="L265">        boolean hasChanged = false;</span>
+<span class="fc bfc" id="L266" title="All 2 branches covered.">        for (int i = 0; i &lt; values.length; ++i) {</span>
+<span class="pc bpc" id="L267" title="1 of 2 branches missed.">            if (lastImgSeedIndexes[i] != imgSeedIndexes[i]) {</span>
+<span class="nc" id="L268">                hasChanged = true;</span>
+<span class="nc" id="L269">                break;</span>
+            }
+        }
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">        if (!hasChanged) {</span>
+<span class="fc" id="L273">            return true;</span>
+        }
+         
+<span class="nc" id="L276">        float[] sumVariance = new float[nSeeds];</span>
+<span class="nc" id="L277">        int[] nSumVariance = new int[nSeeds];</span>
+
+<span class="nc bnc" id="L279" title="All 2 branches missed.">        for (int xyIndex = 0; xyIndex &lt; values.length; xyIndex++) {</span>
+
+<span class="nc" id="L281">            int seedIndex = imgSeedIndexes[xyIndex];</span>
+
+<span class="nc" id="L283">            int d = values[xyIndex] - seed[seedIndex];</span>
+            
+<span class="nc" id="L285">            sumVariance[seedIndex] += (d * d);</span>
+            
+<span class="nc" id="L287">            nSumVariance[seedIndex]++;</span>
+        }
+
+<span class="nc bnc" id="L290" title="All 2 branches missed.">        for (int i = 0; i &lt; sumVariance.length; i++) {</span>
+<span class="nc bnc" id="L291" title="All 2 branches missed.">            if ((float)nSumVariance[i] &gt; 0) {</span>
+<span class="nc" id="L292">                sumVariance[i] /= (float)nSumVariance[i];</span>
+            } else {
+<span class="nc" id="L294">                sumVariance[i] = 0;</span>
+            }
+        }
+
+        // store in the instance fields
+
+<span class="nc" id="L300">        boolean allAreBelowCriticalLimit = true;</span>
+
+<span class="nc bnc" id="L302" title="All 2 branches missed.">        for (int i = 0; i &lt; nSeeds; i++) {</span>
+<span class="nc" id="L303">            float diff = seedVariances[i] - sumVariance[i];</span>
+<span class="nc bnc" id="L304" title="All 2 branches missed.">            if (diff &lt; 0 ) {</span>
+<span class="nc" id="L305">                allAreBelowCriticalLimit = false;</span>
+            }
+            
+<span class="nc" id="L308">            seedVariances[i] = sumVariance[i];</span>
+        }
+
+<span class="nc" id="L311">        lastImgSeedIndexes = imgSeedIndexes;</span>
+        
+<span class="nc" id="L313">        return allAreBelowCriticalLimit;</span>
+    }
+    
+    protected void calculateFinalStats(final int[] values, 
+        final int[] imgSeedIndexes) {
+
+<span class="fc" id="L319">        float[] sumVar = new float[nSeeds];</span>
+<span class="fc" id="L320">        int[] nSumVar = new int[nSeeds];</span>
+
+<span class="fc bfc" id="L322" title="All 2 branches covered.">        for (int xyIndex = 0; xyIndex &lt; values.length; xyIndex++) {</span>
+
+<span class="fc" id="L324">            int seedIndex = imgSeedIndexes[xyIndex];</span>
+
+<span class="fc" id="L326">            int d = values[xyIndex] - center[seedIndex];</span>
+            
+<span class="fc" id="L328">            sumVar[seedIndex] += (d * d);</span>
+            
+<span class="fc" id="L330">            nSumVar[seedIndex]++;</span>
+        }
+
+<span class="fc bfc" id="L333" title="All 2 branches covered.">        for (int i = 0; i &lt; sumVar.length; i++) {</span>
+
+<span class="pc bpc" id="L335" title="1 of 2 branches missed.">            if ((float)(nSumVar[i] - 1) &gt; 0) {</span>
+                // divide by N-1 rather because mean was calc'ed from the data
+<span class="fc" id="L337">                sumVar[i] = (float)(sumVar[i]/(float)(nSumVar[i] - 1.));</span>
+            } else {
+<span class="nc" id="L339">                sumVar[i] = 0;</span>
+            }
+<span class="fc" id="L341">            seedVariances[i] = sumVar[i];</span>
+
+<span class="fc" id="L343">            log.fine(String.format(&quot;seed %d) %d stDev=%.2f number of points=%d&quot;, </span>
+<span class="fc" id="L344">                i, center[i], seedVariances[i], nSumVar[i]));</span>
+            
+        }
+        
+<span class="fc" id="L348">        lastImgSeedIndexes = imgSeedIndexes;</span>
+
+<span class="fc" id="L350">        numberOfPointsPerSeedCell = nSumVar;</span>
+<span class="fc" id="L351">    }</span>
+    
+     /**
+     *
+     * @param values
+     * @param seed array of pixel intensities of voronoi-like seeds
+     * @throws IOException
+     */
+    protected int[] binPoints(final int[] values,
+        int[] seed) throws IOException {
+        
+<span class="fc" id="L362">        int nc = seed.length;</span>
+        
+        //reverse mapping of seed and index value.
+        // key = seed value, value = index of seed array
+<span class="fc" id="L366">        TIntIntMap seedValueIndexMap = new TIntIntHashMap(); </span>
+        
+<span class="fc" id="L368">        NearestNeighbor1D nn1d = new NearestNeighbor1D(maxValue + 1);</span>
+        
+<span class="fc bfc" id="L370" title="All 2 branches covered.">        for (int i = 0; i &lt; seed.length; ++i) {</span>
+<span class="fc" id="L371">            int s = seed[i];</span>
+<span class="fc" id="L372">            nn1d.insert(s);</span>
+<span class="fc" id="L373">            seedValueIndexMap.put(s, i);</span>
+        }
+        
+        TIntIterator iter;
+             
+<span class="fc" id="L378">        int[] seedNumber = new int[values.length];</span>
+        
+<span class="fc bfc" id="L380" title="All 2 branches covered.">        for (int pixIdx = 0; pixIdx &lt; values.length; pixIdx++) {</span>
+
+<span class="fc" id="L382">            int v = values[pixIdx];</span>
+            
+<span class="fc" id="L384">            TIntSet nearest = nn1d.findClosest(v);</span>
+<span class="pc bpc" id="L385" title="5 of 6 branches missed.">            assert(nearest != null &amp;&amp; !nearest.isEmpty());</span>
+            
+<span class="fc" id="L387">            iter = nearest.iterator();</span>
+<span class="fc" id="L388">            int seedValue = iter.next();</span>
+           
+<span class="pc bpc" id="L390" title="3 of 4 branches missed.">            assert(seedValueIndexMap.containsKey(seedValue));</span>
+            
+<span class="fc" id="L392">            int seedIdx = seedValueIndexMap.get(seedValue);</span>
+                                    
+<span class="fc" id="L394">            seedNumber[pixIdx] = seedIdx;</span>
+        }
+
+<span class="fc" id="L397">        return seedNumber;</span>
+    }
+    
+    /**
+     * an algorithm to choose randomly from values using a probability 
+     * function based upon the value.  In other words, if the values were
+     * [2, 3, 4] their presence in a bin to choose from using their indexes
+     * as the bin values would be [0, 0, 1, 1, 1, 2, 2, 2, 2] and choosing
+     * '2' from the bin would be more likely and '2' is the index so the result
+     * would more often be values[2] = 4.
+     * The additional arguments are present for uses specific to KMeansPlusPlus
+     * where one doesn't want two similar seeds as a result.
+     * @param distOfSeeds
+     * @param indexOfDistOfSeeds
+     * @param sr
+     * @param indexesAlreadyChosen
+     * @param nIndexesAlreadyChosen
+     * @return 
+     */
+    int chooseRandomlyFromNumbersPresentByProbability(
+        int[] values,
+        int[] distOfSeeds, 
+        int[] indexOfDistOfSeeds, TIntSet alreadyChosenValues) {
+        
+        // we want to choose randomly from the indexes based upon probabilities 
+        // that scale by distance
+        // so create an array that represents by number, the probability of a 
+        //  value.  
+        // for example, distOfSeeds={2,3,4}
+        //  we'd have 
+        //  distIndexDistr={0,0,1,1,1,2,2,2,2}
+        // and then randomly choose an index from that.
+        //
+        // after choosing a number from between 0 and
+        //   the length of the suggested array distIndexDistr
+        //   need to find the value in that index.
+        // making a lookup array of the array distIndexDistr then is
+        // a cumulative array of distOfSeeds
+        //           distIndex 0 starts at index 2 in distIndexDistr
+        //                     1                 5
+        //                     2                 9
+        // then a binary search of the later returns the index
+
+        // value = end index of ramps in the replicated distances
+<span class="fc" id="L441">        long[] distOfSeedsC = new long[distOfSeeds.length];</span>
+               
+<span class="fc" id="L443">        long nDistDistr = 0;</span>
+<span class="fc bfc" id="L444" title="All 2 branches covered.">        for (int i = 0; i &lt; distOfSeeds.length; i++) {            </span>
+<span class="fc" id="L445">            int nValues = distOfSeeds[i];</span>
+            // value should be present nValues number of times
+<span class="fc" id="L447">            nDistDistr += nValues;</span>
+<span class="fc" id="L448">            distOfSeedsC[i] = nDistDistr;</span>
+        }
+        
+<span class="pc bpc" id="L451" title="1 of 2 branches missed.">        if (nDistDistr &lt; 1) {</span>
+<span class="nc" id="L452">            throw new IllegalStateException(&quot;distOfSeeds is in error: &quot; + </span>
+<span class="nc" id="L453">                Arrays.toString(distOfSeeds));</span>
+        }
+        
+<span class="fc" id="L456">        int chosenValue = -1;</span>
+                
+<span class="fc bfc" id="L458" title="All 2 branches covered.">        while ((chosenValue == -1) || </span>
+<span class="pc bpc" id="L459" title="1 of 2 branches missed.">            alreadyChosenValues.contains(chosenValue)) {</span>
+            
+<span class="fc" id="L461">            long chosen = sr.nextLong(nDistDistr);</span>
+
+<span class="fc" id="L463">            int chosenIdx = findChosen(distOfSeedsC, chosen);</span>
+<span class="fc" id="L464">            int distOfSeedsIdx = indexOfDistOfSeeds[chosenIdx];</span>
+<span class="fc" id="L465">            chosenValue = values[distOfSeedsIdx];</span>
+<span class="fc" id="L466">        }</span>
+        
+<span class="fc" id="L468">        return chosenValue;</span>
+    }
+    
+    public float[] getSeedVariances() {
+<span class="fc" id="L472">        return this.seedVariances;</span>
+    }
+
+    public int[] getCenters() {
+<span class="fc" id="L476">        return this.center;</span>
+    }
+    
+    public int[] getImgPixelSeedIndexes() {
+<span class="nc" id="L480">        return lastImgSeedIndexes;</span>
+    }
+
+    public int[] getNumberOfPointsPerSeedCell() {
+<span class="fc" id="L484">        return numberOfPointsPerSeedCell;</span>
+    }
+
+    private int getModeIdx(int[] values) {
+        
+<span class="pc bpc" id="L489" title="1 of 2 branches missed.">        if (imgModeIdx &gt; -1) {</span>
+<span class="nc" id="L490">            return imgModeIdx;</span>
+        }
+        
+<span class="fc" id="L493">        TIntIntMap countMap = new TIntIntHashMap();</span>
+<span class="fc" id="L494">        int maxCounts = 0;</span>
+<span class="fc" id="L495">        int maxCountsIdx = -1;</span>
+        
+<span class="fc bfc" id="L497" title="All 2 branches covered.">        for (int idx = 0; idx &lt; values.length; idx++) {</span>
+<span class="fc" id="L498">            int v = values[idx];</span>
+            int f;
+<span class="fc bfc" id="L500" title="All 2 branches covered.">            if (countMap.containsKey(v)) {</span>
+<span class="fc" id="L501">                f = countMap.get(v) + 1;</span>
+            } else {
+<span class="fc" id="L503">                f = 1;</span>
+            }
+<span class="fc" id="L505">            countMap.put(v, f);</span>
+<span class="fc bfc" id="L506" title="All 2 branches covered.">            if (f &gt; maxCounts) {</span>
+<span class="fc" id="L507">                maxCounts = f;</span>
+<span class="fc" id="L508">                maxCountsIdx = idx;</span>
+            }
+        }
+        
+<span class="fc" id="L512">        imgModeIdx = maxCountsIdx;</span>
+        
+<span class="fc" id="L514">        return maxCountsIdx;</span>
+    }
+
+    private void populateDistanceArrays(int[] values, 
+        TIntSet seeds, int[] distOfSeeds, 
+        int[] indexOfDistOfSeeds) {
+       
+<span class="fc" id="L521">        NearestNeighbor1D nn1d = new NearestNeighbor1D(maxValue + 1);</span>
+        
+<span class="fc" id="L523">        TIntIterator iter = seeds.iterator();</span>
+<span class="fc bfc" id="L524" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc" id="L525">            int s = iter.next();</span>
+<span class="fc" id="L526">            nn1d.insert(s);</span>
+<span class="fc" id="L527">        }</span>
+        
+<span class="fc bfc" id="L529" title="All 2 branches covered.">        for (int pixIdx = 0; pixIdx &lt; values.length; pixIdx++) {</span>
+            
+<span class="fc" id="L531">            int v = values[pixIdx];</span>
+            
+<span class="fc" id="L533">            TIntSet nearest = nn1d.findClosest(v);</span>
+<span class="pc bpc" id="L534" title="5 of 6 branches missed.">            assert(nearest == null &amp;&amp; !nearest.isEmpty());</span>
+            
+<span class="fc" id="L536">            int seedValue = nearest.iterator().next();</span>
+                        
+<span class="fc" id="L538">            int diff = v - seedValue;</span>
+
+<span class="fc" id="L540">            distOfSeeds[pixIdx] = (diff * diff);</span>
+
+<span class="fc" id="L542">            indexOfDistOfSeeds[pixIdx] = pixIdx;</span>
+        }
+<span class="fc" id="L544">    }</span>
+
+    private int findChosen(long[] nDistrC, long chosen) {
+        
+        // find bin where chosen is found.
+        // the next bin is too high in value
+        
+<span class="fc" id="L551">        int idx = Arrays.binarySearch(nDistrC, chosen);</span>
+        
+        //nDistrC is ordered by increasing value, but there may be more than
+        // one sequential item with same value (if a point is a seed, for
+        // example, it's distance is 0, so cumulative sum is same).
+        // so need to search before found bin also to find earliest bin.
+        
+        // if it's negative, (-(insertion point) - 1)
+<span class="pc bpc" id="L559" title="1 of 2 branches missed.">        if (idx &lt; 0) {</span>
+            // idx = -*idx2 - 1
+<span class="fc" id="L561">            idx = -1*(idx + 1);</span>
+        }
+<span class="pc bpc" id="L563" title="1 of 2 branches missed.">        if (idx &gt; (nDistrC.length - 1)) {</span>
+<span class="nc" id="L564">            idx = nDistrC.length - 1;</span>
+        }
+        
+<span class="fc" id="L567">        long v = nDistrC[idx];</span>
+<span class="pc bpc" id="L568" title="1 of 2 branches missed.">        for (int i = (idx - 1); i &gt; -1; --i) {</span>
+<span class="pc bpc" id="L569" title="1 of 2 branches missed.">            if (nDistrC[i] == v) {</span>
+<span class="nc" id="L570">                idx = i;</span>
+            } else {
+                break;
+            }
+        }
+        
+<span class="fc" id="L576">        return idx;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

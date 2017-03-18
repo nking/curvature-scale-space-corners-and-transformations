@@ -97,9 +97,9 @@ public class NearestNeighbor1D {
         
         //O(1)
 <span class="fc" id="L99">        Integer q = xbt.find(srch);</span>
-<span class="pc bpc" id="L100" title="1 of 2 branches missed.">        if (q != null) {</span>
-<span class="nc" id="L101">            closestIndexes.add(srch.intValue());</span>
-<span class="nc" id="L102">            return closestIndexes;</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">        if (q != null) {</span>
+<span class="fc" id="L101">            closestIndexes.add(srch.intValue());</span>
+<span class="fc" id="L102">            return closestIndexes;</span>
         }
         
 <span class="pc bpc" id="L105" title="1 of 2 branches missed.">        if (dMax == 0) {</span>
@@ -116,10 +116,10 @@ public class NearestNeighbor1D {
 <span class="pc bpc" id="L116" title="1 of 4 branches missed.">        if (dp2 == ds2 &amp;&amp; (ds2 &lt;= dMax)) {</span>
 <span class="fc" id="L117">            closestIndexes.add(predecessor.intValue());</span>
 <span class="fc" id="L118">            closestIndexes.add(successor.intValue());</span>
-<span class="pc bpc" id="L119" title="2 of 4 branches missed.">        } else if ((dp2 &lt; ds2) &amp;&amp; (dp2 &lt;= dMax)) {</span>
+<span class="pc bpc" id="L119" title="1 of 4 branches missed.">        } else if ((dp2 &lt; ds2) &amp;&amp; (dp2 &lt;= dMax)) {</span>
 <span class="fc" id="L120">            closestIndexes.add(predecessor.intValue());</span>
-<span class="nc bnc" id="L121" title="All 4 branches missed.">        } else if ((ds2 &lt; dp2) &amp;&amp; (ds2 &lt;= dMax)) {</span>
-<span class="nc" id="L122">            closestIndexes.add(successor.intValue());</span>
+<span class="pc bpc" id="L121" title="2 of 4 branches missed.">        } else if ((ds2 &lt; dp2) &amp;&amp; (ds2 &lt;= dMax)) {</span>
+<span class="fc" id="L122">            closestIndexes.add(successor.intValue());</span>
         }
         
 <span class="fc" id="L125">        return closestIndexes;</span>
@@ -127,8 +127,8 @@ public class NearestNeighbor1D {
 
     private double dist(int x, Integer p2) {
         
-<span class="pc bpc" id="L130" title="1 of 2 branches missed.">        if (p2 == null) {</span>
-<span class="nc" id="L131">            return Double.MAX_VALUE;</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">        if (p2 == null) {</span>
+<span class="fc" id="L131">            return Double.MAX_VALUE;</span>
         }
         
 <span class="fc" id="L134">        int diff = p2.intValue() - x;</span>
