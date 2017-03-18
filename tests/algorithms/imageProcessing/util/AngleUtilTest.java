@@ -172,6 +172,16 @@ public class AngleUtilTest extends TestCase {
         double avg = AngleUtil.getAngleAverage(0, 350, useRadians);
         assertTrue(Math.abs(avg - 355) < 0.1);
         
+        // --- same test using doubles ---
+        useRadians = false;
+        sum = AngleUtil.calcAngleAddition(0., 350., useRadians);
+        
+        assertTrue(Math.abs(sum - 710.) < 0.1);
+        
+        avg = AngleUtil.getAngleAverage(0., 350., useRadians);
+        assertTrue(Math.abs(avg - 355.) < 0.1);
+        
+        
     }
     
     public void testCalculateAverageWithQuadrantCorrections() throws Exception {

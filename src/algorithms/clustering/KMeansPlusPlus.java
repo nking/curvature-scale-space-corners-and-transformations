@@ -30,6 +30,8 @@ import java.util.logging.Logger;
  * Useful reading:
  * http://en.wikipedia.org/wiki/K-means_clustering
  * 
+ * runtime complexity is O(N*log_2(N))
+ * 
  * @author nichole
  */
 public class KMeansPlusPlus {

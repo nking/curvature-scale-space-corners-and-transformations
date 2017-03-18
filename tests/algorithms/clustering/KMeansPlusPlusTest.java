@@ -3,7 +3,6 @@ package algorithms.clustering;
 import algorithms.imageProcessing.GreyscaleImage;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
-import static org.junit.Assert.*;
 
 /**
  *

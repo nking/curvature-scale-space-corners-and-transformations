@@ -397,7 +397,7 @@ public class RainbowFinder {
         polyFitter.plotFit(coef, rainbowPoints, colorImg.getWidth(),
             colorImg.getHeight(), 23, "rainbow points");
         
-        double resid = polyFitter.calcResiduals(coef, rainbowPoints);
+        double resid = PolyFitter2.calcResiduals(coef, rainbowPoints);
 
         //TODO: determine this more accurately:
         if (resid > 5) {
@@ -1166,7 +1166,7 @@ public class RainbowFinder {
                     continue;
                 }
                
-                double resid = polyFitter.calcResiduals(coeff, subset);
+                double resid = PolyFitter2.calcResiduals(coeff, subset);
                 
                 if (resid > 5) {
                     nV = subsetChooser.getNextSubset(selectedIndexes);

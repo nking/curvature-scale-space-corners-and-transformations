@@ -954,11 +954,11 @@ public class PhaseCongruencyDetector {
                 + " peakHist x=" + hist.getXHist()[peakIdx] 
                 + " nPix=" + img.getNPixels() + 
                 " peakX/nPix=" + 
-                (float)hist.getXHist()[peakIdx]/(float)img.getNPixels() +
+                hist.getXHist()[peakIdx]/(float)img.getNPixels() +
                 " peakY/nPix=" + 
                 (float)hist.getYHist()[peakIdx]/(float)img.getNPixels()
                 + " peakY/peakX=" +
-                (float)hist.getYHist()[peakIdx]/(float)hist.getXHist()[peakIdx]
+                (float)hist.getYHist()[peakIdx]/hist.getXHist()[peakIdx]
             );
             
             try {

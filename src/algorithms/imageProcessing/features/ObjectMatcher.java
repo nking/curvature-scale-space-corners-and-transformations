@@ -240,8 +240,8 @@ public class ObjectMatcher {
         for (List<Region> list : regions) {
             for (Region r : list) {
                 r.calculateXYCentroid(xy, w, h);
-                PairInt p = new PairInt((int)Math.round(xy[0]),
-                    (int)Math.round(xy[1]));
+                PairInt p = new PairInt(Math.round(xy[0]),
+                    Math.round(xy[1]));
                 if (centers.contains(p)) {
                     continue;
                 }
@@ -276,13 +276,13 @@ public class ObjectMatcher {
             + " ptMode=" + ptMode.name());
         
         if (clrMode.equals(CMODE.WHITE)) {
-            int[] gsA = mser.readIntoArray(gsImg);
+            int[] gsA = MSER.readIntoArray(gsImg);
             List<Region> list = mser.findRegionsNeg(gsA,
                 gsImg.getWidth(), gsImg.getHeight(), thrGs);
             regions.add(new ArrayList<Region>());
             regions.add(list);
         } else if (clrMode.equals(CMODE.BLACK)) {
-            int[] gsA = mser.readIntoArray(gsImg);
+            int[] gsA = MSER.readIntoArray(gsImg);
             List<Region> list = mser.findRegionsPos(gsA,
                 gsImg.getWidth(), gsImg.getHeight(), thrGs);
             regions.add(list);
@@ -292,13 +292,13 @@ public class ObjectMatcher {
         }
         
         if (ptMode.equals(CMODE.WHITE)) {
-            int[] ptA = mser.readIntoArray(luvTheta);
+            int[] ptA = MSER.readIntoArray(luvTheta);
             List<Region> list = mser.findRegionsNeg(ptA,
                 luvTheta.getWidth(), luvTheta.getHeight(), thrPt);
             regionsT.add(new ArrayList<Region>());
             regionsT.add(list);
         } else if (ptMode.equals(CMODE.BLACK)) {
-            int[] ptA = mser.readIntoArray(luvTheta);
+            int[] ptA = MSER.readIntoArray(luvTheta);
             List<Region> list = mser.findRegionsPos(ptA,
                 luvTheta.getWidth(), luvTheta.getHeight(), thrPt);
             regionsT.add(list);

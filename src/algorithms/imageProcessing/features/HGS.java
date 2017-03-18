@@ -332,7 +332,7 @@ public class HGS {
             //System.out.println(" " + yA + " -- " + yB + " sum="+sum + ", " + sumA + "," + sumB);
         }
         
-        float sim = sum / ((float)Math.min(sumA, sumB));
+        float sim = sum / (Math.min(sumA, sumB));
         
         return sim;
     }

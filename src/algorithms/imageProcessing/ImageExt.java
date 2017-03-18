@@ -486,10 +486,10 @@ public class ImageExt extends Image {
         
         super.resetTo(copyThis);
         
-        System.arraycopy(((ImageExt)copyThis).cieX, 0, cieX, 0, nPixels);
-        System.arraycopy(((ImageExt)copyThis).cieY, 0, cieY, 0, nPixels);
-        System.arraycopy(((ImageExt)copyThis).hue, 0, hue, 0, nPixels);
-        System.arraycopy(((ImageExt)copyThis).saturation, 0, saturation, 0, 
+        System.arraycopy(copyThis.cieX, 0, cieX, 0, nPixels);
+        System.arraycopy(copyThis.cieY, 0, cieY, 0, nPixels);
+        System.arraycopy(copyThis.hue, 0, hue, 0, nPixels);
+        System.arraycopy(copyThis.saturation, 0, saturation, 0, 
             nPixels);
         System.arraycopy(((ImageExt)copyThis).brightness, 0, brightness, 0, 
             nPixels);
