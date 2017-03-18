@@ -4012,11 +4012,12 @@ public class ImageProcessor {
 
         float rW = (float)w0/(float)w2;
         float rH = (float)h0/(float)h2;
+        float r = (rW + rH)/2.f;
 
         int cX = Math.round(rW);
         int cY = Math.round(rH);
         
-        System.out.println("rX=" + rW + " rY=" + rH);
+        System.out.println("rX=" + rW + " rY=" + rH + " r=" + r);
 
         for (int i = 0; i < w2; ++i) {
 
@@ -4025,6 +4026,7 @@ public class ImageProcessor {
             for (int j = 0; j < h2; ++j) {
 
                 double sum = 0;
+                int np = 0;
 
                 // integrate the points in input for offsets up to cX
                 for (float ii = i2f; ii < (i2f + cX); ++ii) {
@@ -4049,25 +4051,25 @@ public class ImageProcessor {
                         float hy = (hhy < 1) ? 1.f - hhy : 0;
 
                         double v = biLinearInterpolation(input, ii, jj);
-                        
-                    //NOTE: still an error here. 
-                    //   
-                        
+                                                
                         System.out.format(
                             "  (%d,%d) hx=%.3f, hy=%.3f f(%.3f,%.3f)=%.3f"
                                 + " f/rx=%.3f f/ry=%.3f", 
                             i, j, hx, hy, ii, jj, (float)v, 
                             (float)(v/rW), (float)(v/rH));
-
-                        v = (hx * (v/rW)) + (hy * (v/rH));
+                        
+                        // only count the pixel contribution once:
+                        v = Math.max((hx * (v/rW)), (hy * (v/rH)));
                         
                         System.out.format(" ==>%.3f\n", v);
                         
                         sum += v;
+                        
+                        np++;
                     }
                 }
                 
-                int v2 = (int)Math.round(sum);
+                int v2 = (np > 0) ? (int)Math.round(sum/(float)np) : 0;
 
                 if (v2 < 0) {
                     v2 = 0;
