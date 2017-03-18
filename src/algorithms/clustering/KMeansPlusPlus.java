@@ -1,7 +1,7 @@
 package algorithms.clustering;
 
 import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.misc.MiscMath;
+import algorithms.search.NearestNeighbor1D;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
@@ -12,9 +12,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
-import thirdparty.ods.Integerizer;
-import thirdparty.ods.XFastTrie;
-import thirdparty.ods.XFastTrieNode;
 
 /**
  * k-means clustering is a method of cluster analysis to partition n
@@ -62,6 +59,9 @@ public class KMeansPlusPlus {
     protected final static int nMaxIter = 20;
     protected int nIter = 0;
     
+    protected int minValue = -1;
+    protected int maxValue = -1;
+    
     protected int imgModeIdx = -1;
     
     private final ThreadLocalRandom sr;
@@ -87,10 +87,19 @@ public class KMeansPlusPlus {
     public void computeMeans(int k, GreyscaleImage img) throws IOException, 
         NoSuchAlgorithmException {
         
+        this.maxValue = Integer.MIN_VALUE;
+        this.minValue = Integer.MAX_VALUE;
+        
         int n = img.getNPixels();
         int[] values = new int[n];
         for (int i = 0; i < n; ++i) {
             values[i] = img.getValue(i);
+            if (values[i] > maxValue) {
+                maxValue = values[i];
+            }
+            if (values[i] < minValue) {
+                minValue = values[i];
+            }
         }
         
         computeMeans(k, values);
@@ -305,8 +314,8 @@ public class KMeansPlusPlus {
     protected void calculateFinalStats(final int[] values, 
         final int[] imgSeedIndexes) {
 
-        float[] sumStDev = new float[nSeeds];
-        int[] nSumStDev = new int[nSeeds];
+        float[] sumVar = new float[nSeeds];
+        int[] nSumVar = new int[nSeeds];
 
         for (int xyIndex = 0; xyIndex < values.length; xyIndex++) {
 
@@ -314,30 +323,29 @@ public class KMeansPlusPlus {
 
             int d = values[xyIndex] - center[seedIndex];
             
-            sumStDev[seedIndex] += (d * d);
+            sumVar[seedIndex] += (d * d);
             
-            nSumStDev[seedIndex]++;
+            nSumVar[seedIndex]++;
         }
 
-        for (int i = 0; i < sumStDev.length; i++) {
+        for (int i = 0; i < sumVar.length; i++) {
 
-            if ((float)(nSumStDev[i] - 1) > 0) {
+            if ((float)(nSumVar[i] - 1) > 0) {
                 // divide by N-1 rather because mean was calc'ed from the data
-                sumStDev[i] = 
-                    (float)Math.sqrt(sumStDev[i]/(float)(nSumStDev[i] - 1.));
+                sumVar[i] = (float)(sumVar[i]/(float)(nSumVar[i] - 1.));
             } else {
-                sumStDev[i] = 0;
+                sumVar[i] = 0;
             }
-            seedVariances[i] = sumStDev[i];
+            seedVariances[i] = sumVar[i];
 
             log.fine(String.format("seed %d) %d stDev=%.2f number of points=%d", 
-                i, center[i], seedVariances[i], nSumStDev[i]));
+                i, center[i], seedVariances[i], nSumVar[i]));
             
         }
         
         lastImgSeedIndexes = imgSeedIndexes;
 
-        numberOfPointsPerSeedCell = nSumStDev;
+        numberOfPointsPerSeedCell = nSumVar;
     }
     
      /**
@@ -350,50 +358,36 @@ public class KMeansPlusPlus {
         int[] seed) throws IOException {
         
         int nc = seed.length;
- 
-        // ----- make data structures for nearest neighbor searches --
-        TIntIntMap indexMap = new TIntIntHashMap();
- 
-        int maxC = MiscMath.findMax(seed);
         
-        Integerizer<Integer> it = new Integerizer<Integer>() {
-            @Override
-            public int intValue(Integer x) {return x;}
-        };
+        //reverse mapping of seed and index value.
+        // key = seed value, value = index of seed array
+        TIntIntMap seedValueIndexMap = new TIntIntHashMap(); 
         
-        XFastTrieNode<Integer> node = new XFastTrieNode<Integer>();
-
-        int w = 1 + (int)Math.ceil(Math.log(maxC)/Math.log(2));
-        
-        XFastTrie<XFastTrieNode<Integer>, Integer> xft 
-            = new XFastTrie<XFastTrieNode<Integer>, Integer>(node, it, w);
+        NearestNeighbor1D nn1d = new NearestNeighbor1D(maxValue + 1);
         
         for (int i = 0; i < seed.length; ++i) {
             int s = seed[i];
-            if (!indexMap.containsKey(s)) {
-                indexMap.put(s, i);
-                xft.add(Integer.valueOf(s));
-            }
+            nn1d.insert(s);
+            seedValueIndexMap.put(s, i);
         }
         
-        //-----
-     
+        TIntIterator iter;
+             
         int[] seedNumber = new int[values.length];
         
         for (int pixIdx = 0; pixIdx < values.length; pixIdx++) {
 
             int v = values[pixIdx];
             
-            int nearest;
-            if (xft.find(Integer.valueOf(v)) != null) {
-                nearest = v;
-            } else {
-                Integer nearestP = xft.predecessor(Integer.valueOf(v));
-                Integer nearestS = xft.successor(Integer.valueOf(v));            
-                nearest = closest(v, nearestP, nearestS);
-            }
+            TIntSet nearest = nn1d.findClosest(v);
+            assert(nearest != null && !nearest.isEmpty());
             
-            int seedIdx = indexMap.get(nearest);
+            iter = nearest.iterator();
+            int seedValue = iter.next();
+           
+            assert(seedValueIndexMap.containsKey(seedValue));
+            
+            int seedIdx = seedValueIndexMap.get(seedValue);
                                     
             seedNumber[pixIdx] = seedIdx;
         }
@@ -425,22 +419,31 @@ public class KMeansPlusPlus {
         // we want to choose randomly from the indexes based upon probabilities 
         // that scale by distance
         // so create an array that represents by number, the probability of a 
-        //  value.  for example, distOfSeeds={2,3,4}
+        //  value.  
+        // for example, distOfSeeds={2,3,4}
         //  we'd have 
         //  distIndexDistr={0,0,1,1,1,2,2,2,2}
-        // and then randomly choose from that.
-        // here, we skip storing every value in a large array and instead,
-        // find the value for the position once the position has been 
-        // drawn randomly
-        
-        // make the cumulative array.
+        // and then randomly choose an index from that.
+        //
+        // after choosing a number from between 0 and
+        //   the length of the suggested array distIndexDistr
+        //   need to find the value in that index.
+        // making a lookup array of the array distIndexDistr then is
+        // a cumulative array of distOfSeeds
+        //           distIndex 0 starts at index 2 in distIndexDistr
+        //                     1                 5
+        //                     2                 9
+        // then a binary search of the later returns the index
+
+        // value = end index of ramps in the replicated distances
+        long[] distOfSeedsC = new long[distOfSeeds.length];
+               
         long nDistDistr = 0;
-        long[] nDistrC = new long[distOfSeeds.length];
         for (int i = 0; i < distOfSeeds.length; i++) {            
             int nValues = distOfSeeds[i];
             // value should be present nValues number of times
             nDistDistr += nValues;
-            nDistrC[i] = nDistDistr;
+            distOfSeedsC[i] = nDistDistr;
         }
         
         if (nDistDistr < 1) {
@@ -455,15 +458,15 @@ public class KMeansPlusPlus {
             
             long chosen = sr.nextLong(nDistDistr);
 
-            int chosenIdx = findChosen(nDistrC, chosen);
-            int pixIdx = indexOfDistOfSeeds[chosenIdx];
-            chosenValue = values[pixIdx];
+            int chosenIdx = findChosen(distOfSeedsC, chosen);
+            int distOfSeedsIdx = indexOfDistOfSeeds[chosenIdx];
+            chosenValue = values[distOfSeedsIdx];
         }
         
         return chosenValue;
     }
     
-    public float[] getStandardDeviationsFromCenters() {
+    public float[] getSeedVariances() {
         return this.seedVariances;
     }
 
@@ -512,12 +515,23 @@ public class KMeansPlusPlus {
     private void populateDistanceArrays(int[] values, 
         TIntSet seeds, int[] distOfSeeds, 
         int[] indexOfDistOfSeeds) {
-                 
+       
+        NearestNeighbor1D nn1d = new NearestNeighbor1D(maxValue + 1);
+        
+        TIntIterator iter = seeds.iterator();
+        while (iter.hasNext()) {
+            int s = iter.next();
+            nn1d.insert(s);
+        }
+        
         for (int pixIdx = 0; pixIdx < values.length; pixIdx++) {
             
             int v = values[pixIdx];
             
-            int seedValue = findNearestNeighborBruteForce(seeds, v);
+            TIntSet nearest = nn1d.findClosest(v);
+            assert(nearest == null && !nearest.isEmpty());
+            
+            int seedValue = nearest.iterator().next();
                         
             int diff = v - seedValue;
 
@@ -525,25 +539,6 @@ public class KMeansPlusPlus {
 
             indexOfDistOfSeeds[pixIdx] = pixIdx;
         }
-    }
-
-    private int findNearestNeighborBruteForce(TIntSet seeds, int v) {
-        
-        int minDistSq = Integer.MAX_VALUE;
-        int minDistV = -1;
-        
-        TIntIterator iter = seeds.iterator();
-        while (iter.hasNext()) {
-            int seed = iter.next();
-            int diff = seed - v;
-            int distSq = diff * diff;
-            if (distSq < minDistSq) {
-                minDistSq = distSq;
-                minDistV = seed;
-            }
-        }
-        
-        return minDistV;
     }
 
     private int findChosen(long[] nDistrC, long chosen) {
@@ -579,22 +574,4 @@ public class KMeansPlusPlus {
         return idx;
     }
 
-    private int closest(int v, Integer nearestP, Integer nearestS) {
-
-        if (nearestP != null && nearestS != null) {
-            int diffP = Math.abs(nearestP.intValue() - v);
-            int diffS = Math.abs(nearestS.intValue() - v);
-            if (diffP < diffS) {
-                return nearestP.intValue();
-            }
-            return nearestS.intValue();
-        } else if (nearestP != null) {
-            return nearestP.intValue();
-        } else if (nearestS != null) {
-            return nearestS.intValue();
-        }
-        
-        throw new IllegalArgumentException("no nearest was found in null points");
-    }
-    
 }

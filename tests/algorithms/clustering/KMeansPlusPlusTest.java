@@ -110,7 +110,8 @@ public class KMeansPlusPlusTest extends TestCase {
         150
         180
         */
-        int[] v = new int[]{25, 26, 24, 30, 20, 21, 29, 25, 
+        int[] v = new int[]{
+            25, 26, 24, 30, 20, 21, 29, 25, 
             100, 101, 99, 102, 98, 103, 97, 100, 100, 100,
             150, 149, 151, 148, 152, 147, 153, 150,
             180, 179, 181, 178, 182, 177, 183, 176, 184, 180
@@ -132,20 +133,20 @@ public class KMeansPlusPlusTest extends TestCase {
         KMeansPlusPlus instance = new KMeansPlusPlus();
         instance.computeMeans(k, img);
 
-        float[] std = instance.getStandardDeviationsFromCenters();
+        float[] variances = instance.getSeedVariances();
         int[] centers = instance.getCenters();
         int[] nPerSeed = instance.getNumberOfPointsPerSeedCell();
         
-        assertNotNull(std);
+        assertNotNull(variances);
         assertNotNull(centers);
         assertNotNull(nPerSeed);
        
         for (int i = 0; i < centers.length; i++) {
             log.info(String.format("centers[%d]=%d std=%f  expected=%d", 
-                i, centers[i], std[i], expected[i]));
+                i, centers[i], variances[i], expected[i]));
             
-            double upper = centers[i] + 3*std[i];
-            double lower = centers[i] - 3*std[i];
+            double upper = centers[i] + 3*variances[i];
+            double lower = centers[i] - 3*variances[i];
             
             // revisit the class and expected errors
             //assertTrue((expected[i] >= lower) && (expected[i] <= upper));
