@@ -3994,6 +3994,9 @@ public class ImageProcessor {
     public GreyscaleImage downSample(GreyscaleImage input,
         int w2, int h2, int minValue, int maxValue) {
 
+        // uses bilinear interpolation for integer sampling of input
+        //  to add pixels contributing to down sampled output
+        
         GreyscaleImage output = null;
         if (minValue >= 0 && maxValue <= 255) {
             output = input.createWithDimensions(w2, h2);
@@ -4012,12 +4015,11 @@ public class ImageProcessor {
 
         float rW = (float)w0/(float)w2;
         float rH = (float)h0/(float)h2;
-        float r = (rW + rH)/2.f;
 
         int cX = Math.round(rW);
         int cY = Math.round(rH);
         
-        System.out.println("rX=" + rW + " rY=" + rH + " r=" + r);
+        //System.out.println("rX=" + rW + " rY=" + rH);
 
         for (int i = 0; i < w2; ++i) {
 
@@ -4034,10 +4036,6 @@ public class ImageProcessor {
                         continue;
                     }
                     
-                    // kernel factor
-                    float hhx = Math.abs(i - (ii/rW));
-                    float hx = (hhx < 1) ? 1.f - hhx : 0;
-
                     float j2f = rH * j;
 
                     // integrate the points in input for offsets up to cY
@@ -4046,22 +4044,7 @@ public class ImageProcessor {
                             continue;
                         }
                         
-                        // kernel factor
-                        float hhy = Math.abs(j - (jj/rH));
-                        float hy = (hhy < 1) ? 1.f - hhy : 0;
-
                         double v = biLinearInterpolation(input, ii, jj);
-                                                
-                        System.out.format(
-                            "  (%d,%d) hx=%.3f, hy=%.3f f(%.3f,%.3f)=%.3f"
-                                + " f/rx=%.3f f/ry=%.3f", 
-                            i, j, hx, hy, ii, jj, (float)v, 
-                            (float)(v/rW), (float)(v/rH));
-                        
-                        // only count the pixel contribution once:
-                        v = Math.max((hx * (v/rW)), (hy * (v/rH)));
-                        
-                        System.out.format(" ==>%.3f\n", v);
                         
                         sum += v;
                         
@@ -4076,7 +4059,9 @@ public class ImageProcessor {
                 } else if (v2 > 255) {
                     v2 = 255;
                 }
-          System.out.format("(%d,%d) v==>%d\n", i, j, v2);
+ 
+                //System.out.format("(%d,%d) v==>%d\n", i, j, v2);
+                
                 output.setValue(i, j, v2);
             }
         }

@@ -27,7 +27,7 @@ public class ImageProcessorTest extends TestCase {
         super(testName);
     }
 
-    public void estCreateEmptyImg() {
+    public void testCreateEmptyImg() {
                 
         Image input = new Image(10, 10);
         for (int i = 0; i < input.getWidth(); i++) {
@@ -44,7 +44,7 @@ public class ImageProcessorTest extends TestCase {
         assertTrue(result.getHeight() == input.getHeight());
     }
     
-    public void estCopyImage() throws Exception {
+    public void testCopyImage() throws Exception {
                     
         String filePath = ResourceFinder.findFileInTestResources("tajmahal.png");
         
@@ -68,7 +68,7 @@ public class ImageProcessorTest extends TestCase {
            when X is 0: if Y > 0, theta is 90
            when Y is 0: if X > 0, theta is 0
     */
-    public void estCalculateTheta() throws Exception {
+    public void testCalculateTheta() throws Exception {
         
         //TODO: revisit this test
         
@@ -86,7 +86,7 @@ public class ImageProcessorTest extends TestCase {
         assertTrue(ImageProcessor.calculateTheta(1, -1) == -45);
     }
 
-    public void estCombineConvolvedImages_Image_Image() {
+    public void testCombineConvolvedImages_Image_Image() {
         
         int w = 10;
         int h = 10;
@@ -118,7 +118,7 @@ public class ImageProcessorTest extends TestCase {
         }
     }
 
-    public void estCombineConvolvedImages_GreyscaleImage_GreyscaleImage() {
+    public void testCombineConvolvedImages_GreyscaleImage_GreyscaleImage() {
         
         int w = 10;
         int h = 10;
@@ -146,7 +146,7 @@ public class ImageProcessorTest extends TestCase {
         }
     }
     
-    public void estComputeTheta_GreyscaleImage_GreyscaleImage() {
+    public void testComputeTheta_GreyscaleImage_GreyscaleImage() {
         
         int w = 10;
         int h = 10;
@@ -216,7 +216,7 @@ public class ImageProcessorTest extends TestCase {
         //assertTrue(result.getValue(8, 8) == -45);
     }
     
-    public void estSubtractImages() {
+    public void testSubtractImages() {
         
         int w = 10;
         int h = 10;
@@ -242,7 +242,7 @@ public class ImageProcessorTest extends TestCase {
         }
     }
      
-    public void estBinImage() throws Exception {
+    public void testBinImage() throws Exception {
                 
         int w0 = 4;
         int h0 = 6;
@@ -293,7 +293,7 @@ public class ImageProcessorTest extends TestCase {
         }
     }
     
-    public void estBinImageExt() throws Exception {
+    public void testBinImageExt() throws Exception {
                 
         int w0 = 4;
         int h0 = 6;
@@ -344,7 +344,7 @@ public class ImageProcessorTest extends TestCase {
         }
     }
     
-    public void estFFT2D() throws Exception {
+    public void testFFT2D() throws Exception {
         
         /*
         MedianTransform mt = new MedianTransform();
@@ -405,7 +405,7 @@ public class ImageProcessorTest extends TestCase {
         
     }
     
-    public void estReadNonZeroPixels() throws Exception {
+    public void testReadNonZeroPixels() throws Exception {
         
         int w = 10;
         int h = 10;
@@ -433,7 +433,7 @@ public class ImageProcessorTest extends TestCase {
         
     }
    
-    public void estBiLinearInterpolation0() throws Exception {
+    public void testBiLinearInterpolation0() throws Exception {
         
         ImageProcessor imageProcessor = new ImageProcessor();
         
@@ -470,7 +470,7 @@ public class ImageProcessorTest extends TestCase {
         MiscDebug.writeImage(gsImg, "_spline_interp_" + fileNameRoot);
     }
     
-    public void estBiLinearInterpolation1() throws Exception {
+    public void testBiLinearInterpolation1() throws Exception {
         
         ImageProcessor imageProcessor = new ImageProcessor();
         
@@ -551,7 +551,7 @@ public class ImageProcessorTest extends TestCase {
         return img;
     }
     
-    public void estApplyAdaptiveMean() throws Exception {
+    public void testApplyAdaptiveMean() throws Exception {
         
         int w = 6;
         int h = 6;
@@ -622,7 +622,7 @@ public class ImageProcessorTest extends TestCase {
         assertEquals(40, out.getValue(3, 5));
     }
     
-    public void estApplyCenteredMean() throws Exception {
+    public void testApplyCenteredMean() throws Exception {
         
         int w = 6;
         int h = 6;
@@ -708,7 +708,7 @@ public class ImageProcessorTest extends TestCase {
         
     }
     
-    public void estApplyAdaptiveMeanThresholding() throws Exception {
+    public void testApplyAdaptiveMeanThresholding() throws Exception {
         
         String[] fileNames = new String[]{"books_illum3_v0_695x555.png",
             "books_illum3_v6_695x555.png"};
@@ -734,7 +734,7 @@ public class ImageProcessorTest extends TestCase {
         }
     }
     
-    public void estBlur0() throws Exception {
+    public void testBlur0() throws Exception {
         
         // color circles rotated by 90, blurred compared to not rotated and blurred
         String cPath = ResourceFinder.findFileInTestResources("two_circles_color2.png");
@@ -808,7 +808,7 @@ public class ImageProcessorTest extends TestCase {
         }
     }
     
-    public void estBlur1() throws Exception {
+    public void testBlur1() throws Exception {
         
         // color circles rotated by 90, blurred compared to not rotated and blurred
         String cPath = ResourceFinder.findFileInTestResources("closed_curve_square.png");
@@ -821,7 +821,7 @@ public class ImageProcessorTest extends TestCase {
         
     }
     
-    public void estMedianFilter() throws Exception {
+    public void testMedianFilter() throws Exception {
             
         String filePath = ResourceFinder.findFileInTestResources("tajmahal.png");
         
@@ -836,7 +836,7 @@ public class ImageProcessorTest extends TestCase {
     }
     
     
-    public void estIFFTShift() throws Exception {
+    public void testIFFTShift() throws Exception {
         
         ImageProcessor imageProcessor = new ImageProcessor();
         
@@ -862,7 +862,7 @@ public class ImageProcessorTest extends TestCase {
         
     }
     
-    public void estDilate() {
+    public void testDilate() {
         int w = 10;
         int h = 7;
         GreyscaleImage img = new GreyscaleImage(w, h);
@@ -906,7 +906,7 @@ public class ImageProcessorTest extends TestCase {
         }
     }
    
-    public void estCreateTextureTransforms() throws Exception {
+    public void testCreateTextureTransforms() throws Exception {
         
         String filePath = ResourceFinder.findFileInTestResources(
             "susan-in_plus.png");
@@ -936,7 +936,7 @@ public class ImageProcessorTest extends TestCase {
         */
     }
     
-    public void estRecursiveBlur() throws Exception {
+    public void testRecursiveBlur() throws Exception {
         
         String filePath = ResourceFinder.findFileInTestResources(
             "closed_curve.png");
@@ -980,7 +980,7 @@ public class ImageProcessorTest extends TestCase {
         
     }
     
-    public void estCreateZeroCrossingsCurvature() throws Exception {
+    public void testCreateZeroCrossingsCurvature() throws Exception {
         
         String filePath = ResourceFinder.findFileInTestResources(
             "closed_curve.png");
@@ -1017,14 +1017,14 @@ public class ImageProcessorTest extends TestCase {
                 out);            
     }
     
-    public void estExploreTextures() throws Exception {
+    public void testExploreTextures() throws Exception {
         
         ImageProcessor imageProcessor = new ImageProcessor();
         imageProcessor.exploreTextures();
         
     }
     
-    public void estBilinearDownSampling() {
+    public void testBilinearDownSampling() {
         
         int w1 = 10;
         int h1 = 20;
@@ -1072,32 +1072,44 @@ public class ImageProcessorTest extends TestCase {
             }
         }
         
+        /*
         for (int i = 0; i < w1; ++i) {
             StringBuilder sb = new StringBuilder("a col=").append(i);
             for (int j = 0; j < h1; ++j) {
                 sb.append(String.format(" [%d]=%d", j, a.getValue(i, j)));
             }
             System.out.println(sb.toString());
-        }
+        }*/
         
         ImageProcessor imageProcessor = new ImageProcessor();
-        GreyscaleImage aa = imageProcessor.downSample(a, w2, h2, 0, 255);
-        float[][] b = imageProcessor.copyToRowMajor(aa);
-        
-        assertEquals(w2, b[0].length);
-        assertEquals(h2, b.length);
-        
-        for (int i = 0; i < w2; i += 1) {
+        GreyscaleImage b = imageProcessor.downSample(a, w2, h2, 0, 255);
+                
+        /*for (int i = 0; i < w2; i += 1) {
             StringBuilder sb = new StringBuilder("CHECK b col=").append(i);
             for (int j = 0; j < h2; j += 1) {
-                sb.append(String.format(" [%d]=%.1f", j, b[j][i]));
-                //assertEquals(10.0f, b[j][i]);
+                sb.append(String.format(" [%d]=%d", j, b.getValue(i, j)));
             }
             System.out.println(sb.toString());
-        }
+        }*/
+        assertEquals(10, b.getValue(0, 0));
+        assertEquals(10, b.getValue(0, 1));
+        assertEquals(10, b.getValue(2, 0));
+        assertEquals(10, b.getValue(2, 1));
+        assertEquals(10, b.getValue(4, 0));
+        assertEquals(10, b.getValue(4, 1));
+        assertEquals(0, b.getValue(0, 2));
+        assertEquals(0, b.getValue(0, 3));
+        assertEquals(0, b.getValue(1, 2));
+        assertEquals(0, b.getValue(1, 3));
+        assertEquals(0, b.getValue(2, 2));
+        assertEquals(0, b.getValue(2, 3));
+        assertEquals(0, b.getValue(3, 2));
+        assertEquals(0, b.getValue(3, 3));
+        assertEquals(0, b.getValue(4, 2));
+        assertEquals(0, b.getValue(4, 3));
     }
     
-    public void estBilinearDownSampling3() {
+    public void testBilinearDownSampling3() {
         
         int w1 = 10;
         int h1 = 10;
@@ -1120,6 +1132,15 @@ public class ImageProcessorTest extends TestCase {
                 }
             }
         }
+        
+        /*
+        for (int i = 0; i < w1; ++i) {
+            StringBuilder sb = new StringBuilder("a col=").append(i);
+            for (int j = 0; j < h1; ++j) {
+                sb.append(String.format(" [%d]=%d", j, a.getValue(i, j)));
+            }
+            System.out.println(sb.toString());
+        }*/
      
         ImageProcessor imageProcessor = new ImageProcessor();
         GreyscaleImage b = imageProcessor.downSample(a, w2, h2, 0, 255);
@@ -1127,14 +1148,24 @@ public class ImageProcessorTest extends TestCase {
         assertEquals(w2, b.getWidth());
         assertEquals(h2, b.getHeight());
         
+        
         for (int i = 0; i < w2; i += 2) {
             for (int j = 0; j < h2; j += 2) {
                 assertEquals(10, b.getValue(i, j));
             }
         }
+        
+        /*
+        for (int i = 0; i < w2; i += 1) {
+            StringBuilder sb = new StringBuilder("CHECK b col=").append(i);
+            for (int j = 0; j < h2; j += 1) {
+                sb.append(String.format(" [%d]=%d", j, b.getValue(i, j)));
+            }
+            System.out.println(sb.toString());
+        }*/
     }
     
-    public void estBuildPyramid2() throws Exception {
+    public void testBuildPyramid2() throws Exception {
         
         String filePath = ResourceFinder.findFileInTestResources(
             "susan-in_plus.png");
