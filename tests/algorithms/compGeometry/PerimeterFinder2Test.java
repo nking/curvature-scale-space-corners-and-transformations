@@ -66,23 +66,6 @@ public class PerimeterFinder2Test extends TestCase {
         
         //System.out.println("UNORDERED n=" + resultUnordered.size() 
         //    + " => " + Misc.convertWithoutOrder(resultUnordered));
-
-        // --- test medial azis points -- 
-        expectedSet = new HashSet<PairInt>();
-        expectedSet.add(new PairInt(1, 7));
-        expectedSet.add(new PairInt(1, 8));
-        expectedSet.add(new PairInt(2, 8));
-        expectedSet.add(new PairInt(8, 7));
-        expectedSet.add(new PairInt(8, 8));
-        MedialAxis1 medAxis1 = new MedialAxis1(contiguousPoints, 
-            resultUnordered);
-        medAxis1.findMedialAxis();
-        Set<PairInt> medAxisPts = medAxis1.getMedialAxisPoints();
-        assertEquals(expectedSet.size(), medAxisPts.size());
-        for (PairInt p : medAxisPts) {
-            assertTrue(expectedSet.remove(p));
-        }
-        assertEquals(0, expectedSet.size());
         // ----
         
         contiguousPoints = getSet1();

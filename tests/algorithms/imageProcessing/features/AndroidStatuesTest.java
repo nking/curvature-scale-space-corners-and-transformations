@@ -1,7 +1,6 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.MultiArrayMergeSort;
-import algorithms.compGeometry.RotatedOffsets;
 import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.CannyEdgeFilterAdaptive;
 import algorithms.imageProcessing.CannyEdgeFilterAdaptiveDeltaE2000;
@@ -977,8 +976,6 @@ public class AndroidStatuesTest extends TestCase {
             MiscDebug.writeImage(img1RevTr, "rot90_rev_trans");
             */
         }
-
-        RotatedOffsets rotatedOffsets = RotatedOffsets.getInstance();
 
         log.info("fileName1Root=" + fileName1Root);
 
