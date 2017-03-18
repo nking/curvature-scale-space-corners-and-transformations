@@ -1,4 +1,4 @@
-package algorithms.compGeometry.clustering;
+package algorithms.clustering;
 
 import algorithms.imageProcessing.GroupPixelRGB0;
 import algorithms.imageProcessing.ImageExt;

@@ -1,4 +1,4 @@
-package algorithms.compGeometry.clustering;
+package algorithms.clustering;
 
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.misc.MiscMath;

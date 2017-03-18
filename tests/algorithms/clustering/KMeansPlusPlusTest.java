@@ -1,4 +1,4 @@
-package algorithms.compGeometry.clustering;
+package algorithms.clustering;
 
 import algorithms.imageProcessing.GreyscaleImage;
 import java.util.logging.Logger;

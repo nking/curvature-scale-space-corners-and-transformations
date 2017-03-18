@@ -1,4 +1,4 @@
-package algorithms.compGeometry.clustering;
+package algorithms.clustering;
 
 import java.util.List;
 import java.util.Set;

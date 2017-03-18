@@ -1,30 +1,15 @@
 package algorithms.imageProcessing;
 
-import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
-import algorithms.compGeometry.clustering.KMeansPlusPlus;
-import algorithms.compGeometry.clustering.KMeansPlusPlusColor;
-import algorithms.connected.ConnectedValuesFinder;
-import algorithms.imageProcessing.util.GroupAverageColors;
-import algorithms.imageProcessing.ImageProcessor.Colors;
 import algorithms.imageProcessing.features.PhaseCongruencyDetector;
-import algorithms.imageProcessing.segmentation.ColorSpace;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.imageProcessing.segmentation.NormalizedCuts;
 import algorithms.imageProcessing.segmentation.SLICSuperPixels;
-import algorithms.misc.MedianSmooth;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import gnu.trove.iterator.TIntIterator;
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
-import gnu.trove.set.hash.TIntHashSet;
-import java.awt.Color;
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.Stack;
 import java.util.logging.Logger;
 
 /**
