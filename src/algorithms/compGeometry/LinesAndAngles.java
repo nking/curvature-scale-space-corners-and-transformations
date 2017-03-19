@@ -567,7 +567,7 @@ public class LinesAndAngles {
         double b = (Math.PI / 2.) - a;
         
         double xInter1 = (double) radius / Math.cos(a);
-        double yInter1 = (double) xInter1 * Math.tan(b);
+        double yInter1 = xInter1 * Math.tan(b);
         if (xInter1 < imageWidth) {
             if (yInter1 < imageHeight) {
                 return new int[]{0, (int) Math.round(yInter1), 
@@ -575,20 +575,20 @@ public class LinesAndAngles {
             }
             double y2 = yInter1 - ly;
             // yInter1/y2 = xInter1/x2 ==> x2 = xInter1 * y2 / yInter1
-            double x2 = (double) (y2 * xInter1) / (double) (yInter1);
+            double x2 = (y2 * xInter1) / (yInter1);
             return new int[]{(int) Math.round(x2), ly, 
                 (int) Math.round(xInter1), 0};
         }
         // xInt > imageWidth - 1
         double x2 = xInter1 - lx;
-        double y2 = (double) x2 * Math.tan(b);
+        double y2 = x2 * Math.tan(b);
         if (yInter1 < imageHeight) {
             return new int[]{0, (int) Math.round(yInter1), 
                 lx, (int) Math.round(y2)};
         }
         // yInt > imageHeight - 1
         double y3 = yInter1 - ly;
-        double x3 = (double) (y3 * xInter1) / (double) (yInter1);
+        double x3 = (y3 * xInter1) / (yInter1);
         
         return new int[]{(int) Math.round(x3), ly, 
             lx, (int) Math.round(y2)};

@@ -145,34 +145,6 @@ public final class CurvatureScaleSpaceInflectionMapper {
             tc.useDebugMode();
         }
 
-        //TODO: temporarily disabling the refinement while fixing PointMatcher
-        if (false && doRefineTransformations) {
-
-            /*
-            boolean reverseDatasetOrder = bestFittingParameters.getScale() < 1.0;
-
-            log.info("BEFORE REFINEMENT:\n" + bestFittingParameters.toString());
-
-            PairIntArray[] set1 = getMatchedEdges1InOriginalReferenceFrameArray();
-            PairIntArray[] set2 = getMatchedEdges2InOriginalReferenceFrameArray();
-            EdgeMatcher matcher = new EdgeMatcher();
-            TransformationPointFit fit2 = null;
-            if (reverseDatasetOrder) {
-                fit2 = matcher.refineTransformation(set2, set1, bestFittingParameters);
-            } else {
-                fit2 = matcher.refineTransformation(set1, set2, bestFittingParameters);
-            }
-
-            if (reverseDatasetOrder) {
-                bestFittingParameters = tc.swapReferenceFrames(bestFittingParameters);
-            }
-
-            if (fit2 != null) {
-                log.info("FINAL:\n" + fit2.toString());
-                bestFittingParameters = fit2.getParameters();
-            }*/
-        }
-
         return bestFittingParameters;
     }
 

@@ -897,17 +897,6 @@ public class CannyEdgeFilterAdaptive {
         return filterProducts;
     }
 
-    public void setSetters(CannyEdgeFilterSettings settings) {
-        
-        if (settings.getNormalizeByHistogram()) {
-            setToPerformHistogramEqualization();
-        }
-        
-        if (settings.getUseLineDrawingMode()) {
-            setToUseLineDrawingMode();
-        }
-    }
-
     private void applyPostLineThinningCorrections(GreyscaleImage gradientXY) {
 
         ImageProcessor imageProcessor = new ImageProcessor();

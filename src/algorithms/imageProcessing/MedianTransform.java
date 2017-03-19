@@ -231,6 +231,7 @@ public class MedianTransform {
      * @param input
      * @param outputTransformed
      */
+    @SuppressWarnings({"unchecked"})
     public <T extends Image> void multiscalePyramidalMedianTransform2(
         T input, List<T> outputTransformed) {
 
@@ -294,6 +295,7 @@ public class MedianTransform {
      * size.  The method does not continue to make decimated
      * images beyond this size limit.
      */
+    @SuppressWarnings({"unchecked"})
     public <T extends Image> void multiscalePyramidalMedianTransform2(
         T input, List<T> outputTransformed, int dimensionLimit) {
 
@@ -394,9 +396,19 @@ public class MedianTransform {
             GreyscaleImage cJPlus1 = imageProcessor.binImage(
                 med.calculate(cJ, winL, winL), 2);
             
-            //interpolation of cJPlus1 to size cJ
-            GreyscaleImage cJPlus1Ast = imageProcessor.expandBy2UsingBilinearInterp(
-                cJPlus1, cJ.getWidth(), cJ.getHeight());
+            //up-sample cJPlus1 to size cJ
+            GreyscaleImage cJPlus1Ast;
+            if (cJPlus1.getWidth() * 2 == cJ.getWidth() &&
+                cJPlus1.getHeight() * 2 == cJ.getHeight()) {
+                
+                cJPlus1Ast = imageProcessor
+                    .unbinImage(cJPlus1, 2);
+            } else {
+                
+                cJPlus1Ast = imageProcessor
+                    .upsampleUsingBilinear(
+                    cJPlus1, cJ.getWidth(), cJ.getHeight(), -256, 255);
+            }
             
             GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1Ast);
             
@@ -457,9 +469,20 @@ public class MedianTransform {
             GreyscaleImage cJPlus1 = imageProcessor.binImage(
                 med.calculate(cJ, winL, winL), 2);
             
-            //interpolation of cJPlus1 to size cJ
-            GreyscaleImage cJPlus1Ast = imageProcessor.expandBy2UsingBilinearInterp(
-                cJPlus1, cJ.getWidth(), cJ.getHeight());
+            //up-sample cJPlus1 to size cJ
+            GreyscaleImage cJPlus1Ast;
+            if (cJPlus1.getWidth() * 2 == cJ.getWidth() &&
+                cJPlus1.getHeight() * 2 == cJ.getHeight()) {
+                
+                cJPlus1Ast = imageProcessor
+                    .unbinImage(cJPlus1, 2);
+                
+            } else {
+                
+                cJPlus1Ast = imageProcessor
+                    .upsampleUsingBilinear(
+                    cJPlus1, cJ.getWidth(), cJ.getHeight(), -256, 255);
+            }
             
             GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1Ast);
             
@@ -493,9 +516,19 @@ public class MedianTransform {
 
             GreyscaleImage wJ = mmCoeff.get(j);
             
-            // expand by factor of 2.
-            GreyscaleImage cJPrime = imageProcessor.expandBy2UsingBilinearInterp(
-                output, wJ.getWidth(), wJ.getHeight());
+            //up-sample wJ to size output
+            GreyscaleImage cJPrime;
+            if (output.getWidth() * 2 == wJ.getWidth() &&
+                output.getHeight() * 2 == wJ.getHeight()) {
+                
+                cJPrime = imageProcessor.unbinImage(output, 2);
+               
+            } else {
+                
+                cJPrime = imageProcessor
+                    .upsampleUsingBilinear(
+                    output, wJ.getWidth(), wJ.getHeight(), -256, 255);
+            }
             
             output = cJPrime.add(wJ);
         }

@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
 import algorithms.misc.MiscDebug;
@@ -96,7 +95,7 @@ public class B3SplineFunctionTest extends TestCase {
                      |   4   16   3*8   16    4 |
                      |   1    4   3*2    4    1 |
 
-        for x=4, y=3  widow before mult is:
+        for x=4, y=3  window before mult is:
            1  1  1  1  1
            2  2  2  2  2
            3  3 *3* 3  3

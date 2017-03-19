@@ -112,6 +112,7 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
      * Note that the return is null when the insert
      * succeeded.
      */
+    @SuppressWarnings({"unchecked"})
     public Value put(Key key, Value val) {
         
         //to return whether insert was successful
@@ -148,14 +149,16 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
     }
     
     // make new node the root with uniform probability
+    @SuppressWarnings({"unchecked"})
     private <Value2 extends Comparable<Value>> 
-        RangeSearchNode<Key, Value> putIfLessThan(RangeSearchNode<Key, Value> x, 
+        RangeSearchNode<Key, Value> 
+        putIfLessThan(RangeSearchNode<Key, Value> x, 
         Key key, Value val, Value2 compareVal, Object[] replaced,
         boolean[] inserted) {
                     
         if (x == null) {
             inserted[0] = true;
-            return new RangeSearchNode(key, val);
+            return new RangeSearchNode<Key, Value>(key, val);
         }
         
         int cmp = key.compareTo(x.key);
@@ -189,7 +192,7 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
     // make new node the root with uniform probability
     private RangeSearchNode<Key, Value> put(RangeSearchNode<Key, Value> x, 
         Key key, Value val, Object[] replaced) {
-        if (x == null) return new RangeSearchNode(key, val);
+        if (x == null) return new RangeSearchNode<Key, Value>(key, val);
         int cmp = key.compareTo(x.key);
         if (cmp == 0) {
             replaced[0] = x.val;

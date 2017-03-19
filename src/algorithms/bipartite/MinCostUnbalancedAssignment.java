@@ -1993,9 +1993,10 @@ Matchings in G are integral flows in N_G
         TODO: consider compressed keys.
         */
     
-        TObjectIntMap<QuadInt> priceLookupMap = createPriceLookupMap(cachedPriceChanges);
+        TObjectIntMap<QuadInt> priceLookupMap 
+            = createPriceLookupMap(cachedPriceChanges);
         
-        for (LinkedList path : cPaths) {
+        for (List<PathNode> path : cPaths) {
             
             Misc.reverse(path);
             

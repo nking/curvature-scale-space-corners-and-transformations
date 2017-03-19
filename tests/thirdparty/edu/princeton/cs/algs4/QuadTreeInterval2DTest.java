@@ -559,7 +559,8 @@ public class QuadTreeInterval2DTest extends TestCase {
             //    + " list.sz=" + list.size());
             List<Interval2D<Integer>> treeNodes =
                 new ArrayList<Interval2D<Integer>>();
-            List values = new ArrayList();
+            
+            List<PairInt> values = new ArrayList<PairInt>();
             qt.getAllNodes(treeNodes, values);
             assertEquals(list.size(), treeNodes.size());
             //debug(treeNodes);

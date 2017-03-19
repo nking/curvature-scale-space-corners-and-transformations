@@ -20,7 +20,9 @@ import algorithms.util.TwoDFloatArray;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
@@ -140,77 +142,6 @@ public class ImageProcessor {
                         break;
                     }
                     offset += 2;
-                }
-
-                if (above == 1) {
-                    out.setValue(i, j, 1);
-                }
-            }
-        }
-
-        return out;
-    }
-
-    /**
-     * given a color image array with first dimension being color index
-     * and the second dimension being the image pixel index,
-     * apply the sobel kernel to each pixel and combine the results
-     * as SSD.
-     * @param ptImg polar theta image of a color space such as
-     * H of LCH that contains values between 0 and 255.
-     * @param lowerDiff value in degrees for which a difference in
-     * pixels results in a final value of "1".  For example,
-     * 20 degrees.
-     * @return
-     */
-    public GreyscaleImage createBinary2ndDerivForPolarTheta(
-        GreyscaleImage ptImg, int lowerDiff) {
-
-        int nPix = ptImg.getNPixels();
-        int w = ptImg.getWidth();
-        int h = ptImg.getHeight();
-
-        GreyscaleImage out = ptImg.createWithDimensions();
-
-        // sobel is .5, 0, -.5 so looking for difference in pixels on either
-        //   side being .lte. lowerDiff
-        int[] diffs = new int[2];
-        int offset;
-        int above;
-        for (int i = 1; i < w - 1; ++i) {
-            for (int j = 1; j < h - 1; ++j) {
-
-                // kernel for 2nd deriv, binomial 1 -2  1
-
-                int v = 2 * ptImg.getValue(i, j);
-
-                diffs[0] = ptImg.getValue(i - 1, j) + ptImg.getValue(i + 1, j);
-                diffs[1] = ptImg.getValue(i, j - 1) + ptImg.getValue(i, j + 1);
-                offset = 0;
-                above = 0;
-                for (int k = 0; k < 2; ++k) {
-                    int v0 = v;
-                    // in case there is wrap around, test adding a phase
-                    //   and take the smaller of the results for each diff.
-                    if (diffs[offset] > v0) {
-                        // add a phase to next value if it's closer to current with addition
-                        if ((diffs[offset] - v0) >
-                            (v0 + 255) - diffs[offset]) {
-                            v0 += 255;
-                        }
-                    } else if (v0 > diffs[offset]) {
-                        // add a phase to next value if it's closer to current with addition
-                        if ((v0 - diffs[offset]) >
-                            (diffs[offset] + 255) - v0) {
-                            diffs[offset] += 255;
-                        }
-                    }
-                    int d = diffs[offset] - v0;
-                    if (Math.abs(d) >= lowerDiff) {
-                        above = 1;
-                        break;
-                    }
-                    offset++;
                 }
 
                 if (above == 1) {
@@ -567,28 +498,6 @@ public class ImageProcessor {
         return new float[][]{outX, outY, outXY};
     }
 
-    /**
-     * apply a sobel kernel (gaussian first derivative, binomial approx
-     * for sigma=sqrt(2)/2) to the points in the region bounded by
-     * (xLL, yLL) to (xUR, yUR), inclusive and return the results as a map.
-     * @param pointValues values for points in the bounding region
-     * @param xLL lower left corner x coordinate of bounding box.  xLL is less than xUR.
-     * @param yLL lower left corner y coordinate of bounding box.  yLL is less than yUR.
-     * @param xUR upper right corner x coordinate of bounding box.  xUR is larger than xLL.
-     * @param yUR upper right corner y coordinate of bounding box.  yUR is larger than yLL.
-     * @param outputGradientValues
-     */
-    public void applySobelKernel(Map<PairInt, Integer> pointValues,
-        int xLL, int yLL, int xUR, int yUR,
-        Map<PairInt, Integer> outputGradientValues) {
-
-        float[] kernel = Gaussian1DFirstDeriv.getBinomialKernel(
-            SIGMA.ZEROPOINTSEVENONE);
-
-        applyKernel(pointValues, xLL, yLL, xUR, yUR, kernel,
-            outputGradientValues);
-    }
-
     public GreyscaleImage applyLaplacianKernel(GreyscaleImage input) {
 
         IKernel kernel = new Laplacian();
@@ -657,45 +566,6 @@ public class ImageProcessor {
         }
 
         return output;
-    }
-
-    protected void applyKernel(Map<PairInt, Integer> pointValues,
-        int xLL, int yLL, int xUR, int yUR, float[] kernel,
-        Map<PairInt, Integer> outputGradientValues) {
-
-        /*
-        assumes that kernelX is applied to a copy of the img
-        and kernelY is applied to a separate copy of the img and
-        then they are added in quadrature for the final result.
-        */
-
-        Map<PairInt, Integer> convX = applyKernel(pointValues, xLL, yLL, xUR, yUR,
-            kernel, true);
-
-        Map<PairInt, Integer> convY = applyKernel(pointValues, xLL, yLL, xUR, yUR,
-            kernel, false);
-
-        for (int xp = xLL; xp <= xUR; ++xp) {
-
-            for (int yp = yLL; yp <= yUR; ++yp) {
-
-                PairInt p = new PairInt(xp, yp);
-
-                if (!convX.containsKey(p) || !convY.containsKey(p)) {
-                    continue;
-                }
-
-                int vX = convX.get(p).intValue();
-
-                int vY = convY.get(p).intValue();
-
-                int v = (int) Math.round(Math.sqrt(vX * vX + vY * vY));
-
-                if (v != 0) {
-                    outputGradientValues.put(p, Integer.valueOf(v));
-                }
-            }
-        }
     }
 
     public Image combineConvolvedImages(Image imageX, Image imageY) {
@@ -1997,29 +1867,18 @@ public class ImageProcessor {
         }
     }
 
-    public GreyscaleImage expandBy2UsingBilinearInterp(GreyscaleImage input) {
-
-        if (input == null) {
-            throw new IllegalArgumentException("input cannot be null");
-        }
-
-        int w1 = 2 * input.getWidth();
-        int h1 = 2 * input.getHeight();
-
-        return expandBy2UsingBilinearInterp(input, w1, h1);
-    }
-
     /**
-     * expand image to final size by a factor of 2, and use the given output
-     * widths and heights which are expected to be either twice the input
-     * or twice plus 1.
+     * expand image to final size using the given output
+     * widths and heights.
      * @param input
      * @param outWidth
      * @param outHeight
+     * @param minValue minimum value to clamp results to
+     * @param maxValue maximum value to clamp results to
      * @return
      */
-    public GreyscaleImage expandBy2UsingBilinearInterp(GreyscaleImage input,
-        int outWidth, int outHeight) {
+    public GreyscaleImage upsampleUsingBilinear(GreyscaleImage input,
+        int outWidth, int outHeight, int minValue, int maxValue) {
 
         if (input == null) {
             throw new IllegalArgumentException("input cannot be null");
@@ -2027,150 +1886,192 @@ public class ImageProcessor {
 
         int w0 = input.getWidth();
         int h0 = input.getHeight();
+        int w2 = outWidth;
+        int h2 = outHeight;
 
-        if ((2*w0 != outWidth) && ((2*w0 + 1) != outWidth)) {
-            throw new IllegalArgumentException(
-            "outWidth should be 2 * input.getWidth() or (2 * input.getWidth()) + 1");
-        }
-        if ((2*h0 != outHeight) && ((2*h0 + 1) != outHeight)) {
-            throw new IllegalArgumentException(
-            "outHeight should be 2 * input.getHeight() or (2 * input.getHeight()) + 1");
+        if (w2 < w0 || h2 < h0) {
+            throw new IllegalArgumentException("output dimensions cannot be"
+                + " less than input dimensions for upsample");
         }
 
-        GreyscaleImage out = input.createWithDimensions(outWidth, outHeight);
+        /*
+        example, 1D:
+        output scale = 3.333
 
-        for (int i = 0; i < outWidth; ++i) {
-            for (int j = 0; j < outHeight; ++j) {
-                int v = upsampleBy2UsingBilinearInterp(input, i, j);
-                out.setValue(i, j, v);
+         0  1  2  3  4  5  6  7  8  9 10 11 12 13 14
+                |         |        |
+
+          |  |  |
+         0  1  2  3  4  5  6  7
+
+        can solve using 2 different patterns:
+        (1) integer upscale to Math.ceil(factor) == 4 in example
+            then downsample to the final output size for easier math.
+        or,
+        (2) most pixels are integer copies of the current replicated pixel
+        from the input, but the pixels which are integer muliples of the
+        factor are composed of replicated current and next pixel
+        as a fraction of sums to be computed for each.
+
+        the first would be easier to maintain, but the later would be more
+        efficient.
+
+        will implement (2)
+        */
+
+        GreyscaleImage output = null;
+        if (minValue >= 0 && maxValue <= 255) {
+            output = input.createWithDimensions(w2, h2);
+        } else {
+            output = new GreyscaleImage(w2, h2,
+                GreyscaleImage.Type.Bits32FullRangeInt);
+        }
+
+        float xFactor = (float)w2/(float)w0;
+        float yFactor = (float)h2/(float)h0;
+
+        // init vars
+        int i2 = 0;
+        int i2End = 0;
+
+        for (int i0 = 0; i0 < w0; ++i0) {
+
+            if (i0 > 0) {
+                i2 = i2End + 1;
             }
-        }
+            i2End = (int)Math.floor(i2 + xFactor);
 
-        return out;
-    }
+            /* example, factor = 3.3
+             0 : 2, 3 is combination
+             4 : 6, 7 is combination
+             7 : 9
+            */
 
-    public int upsampleBy2UsingBilinearInterp(GreyscaleImage input,
-        int x, int y) {
-
-        int w0 = input.getWidth();
-        int h0 = input.getHeight();
-
-        if (((x & 1) != 1) && ((y & 1) != 1)) {
-            int x0 = x/2;
-            int y0 = y/2;
-            if ((x0 < w0) && (y0 < h0)) {
-                return input.getValue(x0, y0);
+            float fractionX = (xFactor * (i0 + 1.f)) - i2End;
+            if (fractionX < 0) {
+                fractionX += 1.f;
             }
-        }
 
-        float x0 = (float)x/2.f;
-        float y0 = (float)y/2.f;
+            int _i2End = (i2End < w2) ? i2End : w2;
+            
+            System.out.format(
+                "i2=%s i2End=%d,%d  frcX=%.3f\n", 
+                i2, i2End, _i2End, fractionX);
+            
+            // init vars
+            int j2 = 0;
+            int j2End = 0;
 
-        if (x0 > (w0 - 1)) {
-            x0 = w0 - 1;
-        }
-        if (y0 > (h0 - 1)) {
-            y0 = h0 - 1;
-        }
+            for (int j0 = 0; j0 < h0; ++j0) {
 
-        double v2 = biLinearInterpolation(input, x0, y0);
+                // replication of integer pixels in this range:
+                if (j0 > 0) {
+                    j2 = j2End + 1;
+                }
+                j2End = (int)Math.floor(j2 + yFactor);
 
-        return (int)Math.round(v2);
-    }
+                int _j2End = (j2End < h2) ? j2End : h2;
+                
+                float fractionY = (yFactor * (j0 + 1.f)) - j2End;
+                if (fractionY < 0) {
+                    fractionY += 1.f;
+                }
+                
+                System.out.format(
+                    "  j2=%s j2End=%d,%d  frcY=%.3f\n", 
+                    j2, j2End, _j2End, fractionY);
+                
+                int v = input.getValue(i0, j0);
+                v = (v < minValue) ? minValue : ((v > maxValue) ? maxValue : v);
 
-    public double upsampleBy2UsingBilinearInterp(double[][] input,
-        int x, int y) {
+                for (int ii = i2; ii < _i2End; ++ii) {
+                    for (int jj = j2; jj < _j2End; ++jj) {
+                
+                        System.out.format(
+                    "    set(%d,%d)=%d\n", ii, jj, v);
+                
+                        output.setValue(ii, jj, v);
+                    }
+                }
 
-        int w0 = input.length;
-        int h0 = input[0].length;
+                // example, factor = 2.5
+                //   i2 = 0, i2End = 2, (i1+1) * xFactor=2.5  -> fractional
+                //           so pixel i2End gets contributions from i1=0 and i1=2
+                //   i2 = 3, i2End = 5, (i1+1) * xFactor=5 -> integer, so skip
 
-        if (((x & 1) != 1) && ((y & 1) != 1)) {
-            int x0 = x/2;
-            int y0 = y/2;
-            if ((x0 < w0) && (y0 < h0)) {
-                return input[x0][y0];
-            }
-        }
+                // --- handle the pixels which get fractional contributions
+                //     from 2 input pixels
+                float vI2End = 0;
+                if (fractionX > 0 && (i2End < w2)) {
+                    vI2End = (fractionX * (float)v);
+                    if ((i0 + 1) < w0) {
+                        vI2End += ((1.f - fractionX) * 
+                            (float)input.getValue(i0 + 1, j0));
+                    }
+                    int vI2 = Math.round(vI2End);
+                    vI2 = (vI2 < minValue) ? minValue :
+                        ((vI2 > maxValue) ? maxValue : vI2);
+                    
+                    for (int jj = j2; jj < _j2End; ++jj) {
+                        
+                        System.out.format(
+                         "     *set(%d,%d)=%d\n", i2End, jj, vI2);
+                        
+                        output.setValue(i2End, jj, vI2);
+                    }
+                    
+                }
 
-        float x0 = (float)x/2.f;
-        float y0 = (float)y/2.f;
+                // last pixel is either a fractional sum of 2 input pixels or
+                //  is start of next interval
+                
+                float vJ2End = 0;
+                if (fractionY > 0 && (j2End < h2)) {
+                    vJ2End = (fractionY * v);
+                    if ((j0 + 1) < h0) {
+                        vJ2End += ((1.f - fractionY) * input.getValue(i0, j0 + 1));
+                    }
+                    int vJ2 = Math.round(vJ2End);
+                    vJ2 = (vJ2 < minValue) ? minValue :
+                        ((vJ2 > maxValue) ? maxValue : vJ2);
+                    
+                    System.out.format(
+                    "     **set(%d,%d)=%d\n", i2, j2End, vJ2);
+                    
+                    for (int iii = i2; iii < _i2End; ++iii) {
+                        
+                        System.out.format(
+                         "     *set(%d,%d)=%d\n", iii, j2End, vJ2);
+                        
+                        output.setValue(iii, j2End, vJ2);
+                    }                    
+                }
+                
+                if (vI2End > 0 && vJ2End > 0) {
+                    
+                    int avg = Math.round((vI2End + vJ2End)/2.f);
+                    
+                    avg = (avg < minValue) ? minValue :
+                        ((avg > maxValue) ? maxValue : avg);
+                    
+                    System.out.format("     **set(%d,%d)=%d\n", i2End, j2End, avg);
+                    
+                    output.setValue(i2End, j2End, avg);
+                }
 
-        if (x0 > (w0 - 1)) {
-            x0 = w0 - 1;
-        }
-        if (y0 > (h0 - 1)) {
-            y0 = h0 - 1;
-        }
-
-        double v2 = biLinearInterpolation(input, x0, y0);
-
-        return v2;
-    }
-
-    public double upsampleBy2UsingBilinearInterp(Complex[][] input,
-        int x, int y, boolean calcForReal) {
-
-        int w0 = input.length;
-        int h0 = input[0].length;
-
-        if (((x & 1) != 1) && ((y & 1) != 1)) {
-            int x0 = x/2;
-            int y0 = y/2;
-            if ((x0 < w0) && (y0 < h0)) {
-                if (calcForReal) {
-                    return input[x0][y0].re();
-                } else {
-                    return input[x0][y0].im();
+                if (fractionY == 0.f) {
+                    // subtract so next j2 starts at this value
+                    j2End--;
                 }
             }
-        }
 
-        float x0 = (float)x/2.f;
-        float y0 = (float)y/2.f;
-
-        if (x0 > (w0 - 1)) {
-            x0 = w0 - 1;
-        }
-        if (y0 > (h0 - 1)) {
-            y0 = h0 - 1;
-        }
-
-        double v2 = biLinearInterpolation(input, x0, y0, calcForReal);
-
-        return v2;
-    }
-
-    public double upsampleUsingBilinearInterp(Complex[][] input,
-        int x, int y, boolean calcForReal, int factor) {
-
-        int w0 = input.length;
-        int h0 = input[0].length;
-
-        if (((x & 1) != 1) && ((y & 1) != 1)) {
-            int x0 = x/factor;
-            int y0 = y/factor;
-            if ((x0 < w0) && (y0 < h0)) {
-                if (calcForReal) {
-                    return input[x0][y0].re();
-                } else {
-                    return input[x0][y0].im();
-                }
+            if (fractionX == 0.f) {
+                // subtract so next i2 starts at this value
+                i2End--;
             }
         }
 
-        float x0 = (float)x/(float)factor;
-        float y0 = (float)y/(float)factor;
-
-        if (x0 > (w0 - 1)) {
-            x0 = w0 - 1;
-        }
-        if (y0 > (h0 - 1)) {
-            y0 = h0 - 1;
-        }
-
-        double v2 = biLinearInterpolation(input, x0, y0, calcForReal);
-
-        return v2;
+        return output;
     }
 
     public GreyscaleImage unbinImage(GreyscaleImage input, int binFactor) {
@@ -2744,82 +2645,6 @@ public class ImageProcessor {
      * @param y
      * @return
      */
-    public double biLinearInterpolation(Complex[][] img, float x, float y,
-        boolean calcForReal) {
-
-        double x1 = Math.floor(x);
-
-        double x2 = Math.ceil(x);
-
-        double y1 = Math.floor(y);
-
-        double y2 = Math.ceil(y);
-
-        double v1, v2;
-
-        if (x1 == x2) {
-
-            if (calcForReal) {
-                v1 = img[(int)x1][(int)y1].re();
-            } else {
-                v1 = img[(int)x1][(int)y1].im();
-            }
-
-            if (y1 == y2) {
-                return v1;
-            }
-
-            if (calcForReal) {
-                v2 = img[(int)x1][(int)y].re();
-            } else {
-                v2 = img[(int)x1][(int)y].im();
-            }
-        } else {
-
-            double a, b;
-            if (calcForReal) {
-                a = img[(int)x1][(int)y1].re();
-                b = img[(int)x2][(int)y1].re();
-            } else {
-                a = img[(int)x1][(int)y1].im();
-                b = img[(int)x2][(int)y1].im();
-            }
-
-            // interpolate over row y1
-            v1 = ((x2 - x)/(x2 - x1)) * a + ((x - x1)/(x2 - x1)) * b;
-
-            if (y1 == y2) {
-                return v1;
-            }
-
-            double c, d;
-            if (calcForReal) {
-                c = img[(int)x1][(int)y2].re();
-                d = img[(int)x2][(int)y2].re();
-            } else {
-                c = img[(int)x1][(int)y2].im();
-                d = img[(int)x2][(int)y2].im();
-            }
-
-            // interpolate over row y2
-            v2 = ((x2 - x)/(x2 - x1)) * c + ((x - x1)/(x2 - x1)) * d;
-        }
-
-        // interpolate the fraction of v1 and v2 over rows
-        double v = ((y2 - y)/(y2 - y1)) * v1 + ((y - y1)/(y2 - y1)) * v2;
-
-        return v;
-    }
-
-    /**
-     * NOT YET TESTED
-     *
-     http://en.wikipedia.org/wiki/Bilinear_interpolation
-     http://en.wikipedia.org/wiki/Bilinear_interpolation#/media/File:Bilinear_interpolation_visualisation.svg
-     * @param x
-     * @param y
-     * @return
-     */
     public double biLinearInterpolation(double[][] gsImg, float x, float y) {
 
         double x1 = Math.floor(x);
@@ -3372,48 +3197,6 @@ public class ImageProcessor {
         }
     }
 
-    private void reduceTo4NeighborCentroids(Set<PairInt> pixels) {
-
-        Set<PairInt> processed = new HashSet<PairInt>();
-
-        Set<PairInt> output = new HashSet<PairInt>();
-
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-
-        int[] dxs = Misc.dx4;
-        int[] dys = Misc.dy4;
-
-        Set<PairInt> neighbors = new HashSet<PairInt>();
-
-        for (PairInt p : pixels) {
-
-            if (processed.contains(p)) {
-                continue;
-            }
-
-            curveHelper.findNeighbors(p.getX(), p.getY(), pixels, processed,
-                dxs, dys, neighbors);
-
-            processed.add(p);
-            processed.addAll(neighbors);
-
-            if (neighbors.size() == 0) {
-                output.add(p);
-            } else {
-                double[] xyCen = curveHelper.calculateXYCentroids(neighbors);
-                int x = (int)Math.round(xyCen[0]);
-                int y = (int)Math.round(xyCen[1]);
-                assert(Math.abs(x - p.getX()) <= 2);
-                assert(Math.abs(y - p.getY()) <= 2);
-                output.add(new PairInt(x, y));
-            }
-        }
-
-        pixels.clear();
-        pixels.addAll(output);
-
-    }
-
     public Complex1D[] copyToComplex1D(Complex[][] input) {
 
         int n0 = input.length;
@@ -3625,20 +3408,15 @@ public class ImageProcessor {
     public GreyscaleImage downSample(GreyscaleImage input,
         int w2, int h2, int minValue, int maxValue) {
 
-        // uses bilinear interpolation for integer sampling of input
-        //  to add pixels contributing to down sampled output
-        
+        // uses bilinear interpolation over pixels of input
+        // contributing to down sampled output
+
         GreyscaleImage output = null;
         if (minValue >= 0 && maxValue <= 255) {
             output = input.createWithDimensions(w2, h2);
         } else {
-            if (input.is64Bit) {
-                output = new GreyscaleImage(w2, h2,
-                    GreyscaleImage.Type.Bits64Signed);
-            } else {
-                output = new GreyscaleImage(w2, h2,
-                    GreyscaleImage.Type.Bits32Signed);
-            }
+            output = new GreyscaleImage(w2, h2,
+                GreyscaleImage.Type.Bits32FullRangeInt);
         }
 
         int w0 = input.getWidth();
@@ -3649,7 +3427,7 @@ public class ImageProcessor {
 
         int cX = Math.round(rW);
         int cY = Math.round(rH);
-        
+
         //System.out.println("rX=" + rW + " rY=" + rH);
 
         for (int i = 0; i < w2; ++i) {
@@ -3666,7 +3444,7 @@ public class ImageProcessor {
                     if (ii < 0 || Math.ceil(ii) >= w0) {
                         continue;
                     }
-                    
+
                     float j2f = rH * j;
 
                     // integrate the points in input for offsets up to cY
@@ -3674,15 +3452,15 @@ public class ImageProcessor {
                         if (jj < 0 || Math.ceil(jj) >= h0) {
                             continue;
                         }
-                        
+
                         double v = biLinearInterpolation(input, ii, jj);
-                        
+
                         sum += v;
-                        
+
                         np++;
                     }
                 }
-                
+
                 int v2 = (np > 0) ? (int)Math.round(sum/(float)np) : 0;
 
                 if (v2 < 0) {
@@ -3690,9 +3468,9 @@ public class ImageProcessor {
                 } else if (v2 > 255) {
                     v2 = 255;
                 }
- 
+
                 //System.out.format("(%d,%d) v==>%d\n", i, j, v2);
-                
+
                 output.setValue(i, j, v2);
             }
         }
@@ -3888,124 +3666,6 @@ public class ImageProcessor {
         }
 
         return c;
-    }
-
-    /**
-     *
-     * @param input gradient image
-     */
-    public void apply2LayerFilterOtsu(GreyscaleImage input) {
-
-        int w = input.getWidth();
-        int h = input.getHeight();
-
-        OtsuThresholding ot = new OtsuThresholding();
-
-        double[][] g = new double[w][];
-        for (int i = 0; i < w; ++i) {
-            g[i] = new double[h];
-            for (int j = 0; j < h; ++j) {
-                g[i][j] = input.getValue(i, j);
-            }
-        }
-        int nBins = 256/5;
-        float t = (float)ot.calculateBinaryThreshold2D(g, nBins);
-
-        float tHigh = 0.75f * t;
-
-        float lowToHighFactor = 2.f;
-
-        apply2LayerFilter(input, tHigh, lowToHighFactor);
-    }
-
-    public void apply2LayerFilter(GreyscaleImage input, float highThreshold,
-        float lowToHighFactor) {
-
-        int w = input.getWidth();
-        int h = input.getHeight();
-
-        if (w < 3 || h < 3) {
-            throw new IllegalArgumentException("images should be >= 3x3 in size");
-        }
-
-        float tHigh = highThreshold;
-        float tLow = tHigh/lowToHighFactor;
-
-        int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;
-
-        int n = input.getNPixels();
-
-        GreyscaleImage img2 = input.createWithDimensions();
-
-        for (int i = 0; i < img2.getNPixels(); ++i) {
-
-            int v = input.getValue(i);
-
-            if (v < tLow) {
-                continue;
-            } else if (v > tHigh) {
-                img2.setValue(i, v);
-                continue;
-            }
-
-            int x = input.getCol(i);
-            int y = input.getRow(i);
-
-            boolean foundHigh = false;
-            boolean foundMid = false;
-
-            for (int k = 0; k < dxs.length; ++k) {
-                int x2 = x + dxs[k];
-                int y2 = y + dys[k];
-                if ((x2 < 0) || (y2 < 0) || (x2 > (w - 1)) || (y2 > (h - 1))) {
-                    continue;
-                }
-                int v2 = input.getValue(x2, y2);
-                if (v2 > tHigh) {
-                    foundHigh = true;
-                    break;
-                } else if (v2 > tLow) {
-                    foundMid = true;
-                }
-            }
-            if (foundHigh) {
-                img2.setValue(i, v);
-                continue;
-            }
-            if (!foundMid) {
-                continue;
-            }
-            // search the 5 by 5 region for a "sure edge" pixel
-            for (int dx = -2; dx <= 2; ++dx) {
-                int x2 = x + dx;
-                if ((x2 < 0) || (x2 > (w - 1))) {
-                    continue;
-                }
-                for (int dy = -2; dy <= 2; ++dy) {
-                    int y2 = y + dy;
-                    if ((y2 < 0) || (y2 > (h - 1))) {
-                        continue;
-                    }
-                    if (x2 == x && y2 == y) {
-                        continue;
-                    }
-                    int v2 = input.getValue(x2, y2);
-                    if (v2 > tHigh) {
-                        img2.setValue(i, v);
-                        foundHigh = true;
-                        break;
-                    }
-                }
-                if (foundHigh) {
-                    break;
-                }
-            }
-        }
-
-        input.resetTo(img2);
-
-        // apply post thinning corrections?
     }
 
     public int[] getAverageRGB(Image img, PairIntArray pArr) {

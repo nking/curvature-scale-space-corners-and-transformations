@@ -795,14 +795,6 @@ public class CannyEdgeFilterAdaptiveDeltaE2000 {
         return filterProducts;
     }
 
-    public void setSetters(CannyEdgeFilterSettings settings) {
-        
-        if (settings.getNormalizeByHistogram()) {
-            setToPerformHistogramEqualization();
-        }
-        
-    }
-
     private void applyPostLineThinningCorrections(GreyscaleImage gradientXY,
         GreyscaleImage valuesBeforeThinning) {
 

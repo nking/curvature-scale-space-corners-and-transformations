@@ -7,7 +7,6 @@ import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -1191,4 +1190,111 @@ public class ImageProcessorTest extends TestCase {
         
     }
     
+    public void testUpsampleUsingBilinear() {
+
+        /*
+        example, 1D:
+        output scale = 3.333
+                |
+         1  2  3
+         0  1  2  3  4  5  6  7  8  9 
+                  C           C     
+
+          |  |  |
+         0  1  2  3  4  5  6  7
+         
+        
+        30 300 250
+        20 200 150
+        10 100 50
+        
+        10  10  10  0.333*10     100   100  `100  0.667*100    50  50 50
+                    + 0.667*pix0                  + 0.333*pix1
+        0   1   2     3           4      5    6       7        8   9  10
+       
+        0 : 2, 3 is comb
+        4 : 6, 7 is comb
+        8 : 9
+        */
+       
+        int w0 = 3;
+        int h0 = 3;
+        int w2 = 10;
+        int h2 = 10;
+        
+        GreyscaleImage input = new GreyscaleImage(w0, h0, 
+            GreyscaleImage.Type.Bits32FullRangeInt);
+        input.setValue(0, 0, 10); input.setValue(1, 0, 100);
+        input.setValue(2, 0, 50);
+        input.setValue(0, 1, 20); input.setValue(1, 1, 200);
+        input.setValue(2, 1, 150);
+        input.setValue(0, 2, 30); 
+        input.setValue(1, 2, 300);
+        input.setValue(2, 2, 250);
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        GreyscaleImage imgUpsampled = imageProcessor.upsampleUsingBilinear(
+            input, w2, h2, 0, 512);
+        /*
+        input:
+        30 300 250
+        20 200 150
+        10 100 50
+        
+        output for row 0:
+        10  10  10  0.333*10     100   100  `100  0.667*100    50  50 50
+                    + 0.667*100                   + 0.333*pix1
+        0   1   2     3           4      5    6       7        8   9  10
+       
+        0 : 2, 3 is comb
+        4 : 6, 7 is comb
+        7 : 9
+        */
+        assertEquals(10, imgUpsampled.getValue(0, 0));
+        assertEquals(10, imgUpsampled.getValue(1, 0));
+        assertEquals(10, imgUpsampled.getValue(2, 0));
+        assertEquals(
+            Math.round((0.333f*10.f) 
+            + (0.66667f*100.f)), 
+            imgUpsampled.getValue(3, 0));
+
+        assertEquals(100, imgUpsampled.getValue(4, 0));
+        assertEquals(100, imgUpsampled.getValue(5, 0));
+        assertEquals(100, imgUpsampled.getValue(6, 0));
+        assertEquals(
+            Math.round((0.6667f*100.f) 
+            + (0.3333f*50.f)), 
+            imgUpsampled.getValue(7, 0));
+        
+        assertEquals(50, imgUpsampled.getValue(8, 0));
+        assertEquals(50, imgUpsampled.getValue(9, 0));
+    
+        // ------- assert a column --
+        /*
+        input:
+        30 300 250
+        20 200 150
+        10 100 50
+        */
+        assertEquals(50, imgUpsampled.getValue(9, 0));
+        assertEquals(50, imgUpsampled.getValue(9, 1));
+        assertEquals(50, imgUpsampled.getValue(9, 2));
+        assertEquals(
+            Math.round((0.333f*50.f) 
+            + (0.66667f*150.f)), 
+            imgUpsampled.getValue(9, 3));
+
+        assertEquals(150, imgUpsampled.getValue(9, 4));
+        assertEquals(150, imgUpsampled.getValue(9, 5));
+        assertEquals(150, imgUpsampled.getValue(9, 6));
+        assertEquals(
+            Math.round((0.6667f*150.f) 
+            + (0.3333f*250.f)), 
+            imgUpsampled.getValue(9, 7));
+        
+        assertEquals(250, imgUpsampled.getValue(9, 8));
+        assertEquals(250, imgUpsampled.getValue(9, 9));
+    
+        
+    }
 }

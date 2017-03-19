@@ -137,7 +137,7 @@ public class FibonacciHeapWrapper {
             lastKnownMinKey = i;
             n--;
             
-            return (HeapNode)node;
+            return node;
         }
         
         return null;

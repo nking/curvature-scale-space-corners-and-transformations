@@ -52,9 +52,9 @@ public class ImageHelperForTests {
         
         CannyEdgeFilterAdaptive filter = new CannyEdgeFilterAdaptive();
         
-        CannyEdgeFilterSettings settings = getCannyEdgeFilterSettings();
-        
-        filter.setSetters(settings);
+        if (useLineDrawingMode) {
+            filter.setToUseLineDrawingMode();
+        }
                 
         filter.applyFilter(img);
         
@@ -114,17 +114,6 @@ public class ImageHelperForTests {
      */
     public int getYOffset() {
         return trimmedYOffset;
-    }
-    
-    public CannyEdgeFilterSettings getCannyEdgeFilterSettings() {
-                
-        CannyEdgeFilterSettings settings = new CannyEdgeFilterSettings();
-        
-        if (useLineDrawingMode) {
-            settings.setUseLineDrawingMode();
-        }
-        
-        return settings;
     }
     
 }

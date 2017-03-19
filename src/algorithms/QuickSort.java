@@ -6,7 +6,6 @@ import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 import java.util.List;
-import java.util.Set;
 
 /**
  *
@@ -130,7 +129,7 @@ public class QuickSort {
         sortByA(abc, 0, abc.length - 1);
     }
     
-    public static void sortBy1stArg(int[] a, List b) {
+    public static <T> void sortBy1stArg(int[] a, List<T> b) {
     
         if (a == null) {
             throw new IllegalArgumentException("a cannot be null");
@@ -225,7 +224,7 @@ public class QuickSort {
         sortBy1stArg(a, b, 0, a.size() - 1);
     }
     
-    public static void sortBy1stArg(TFloatList a, List b) {
+    public static <T> void sortBy1stArg(TFloatList a, List<T> b) {
 
         if (a == null) {
             throw new IllegalArgumentException("a cannot be null");
@@ -295,11 +294,11 @@ public class QuickSort {
         sortBy1stArg(a, b, 0, a.size() - 1);
     }
     
-    public static void sortBy1stArgDesc(int[] a, List b, List c) {
+    public static <T, S> void sortBy1stArgDesc(int[] a, List<T> b, List<S> c) {
         sortBy1stArgDesc(a, b, c, 0, a.length - 1);
     }
     
-    public static void sortBy1stArgDesc(int[] a, List b, List c, int idxLo, 
+    public static <T, S> void sortBy1stArgDesc(int[] a, List<T> b, List<S> c, int idxLo, 
         int idxHi) {
         
         if (a == null) {
@@ -342,13 +341,13 @@ public class QuickSort {
                 a[store] = a[idxMid];
                 a[idxMid] = swap;
                 
-                Object swap2 = b.get(store);
+                T swap2 = b.get(store);
                 b.set(store, b.get(idxMid));
                 b.set(idxMid, swap2);
                 
-                swap2 = c.get(store);
+                S swap3 = c.get(store);
                 c.set(store, c.get(idxMid));
-                c.set(idxMid, swap2);
+                c.set(idxMid, swap3);
                 
             }
             
@@ -356,13 +355,13 @@ public class QuickSort {
             a[idxLo] = a[idxMid];
             a[idxMid] = swap;
 
-            Object swap2 = b.get(idxLo);
+            T swap2 = b.get(idxLo);
             b.set(idxLo, b.get(idxMid));
             b.set(idxMid, swap2);
 
-            swap2 = c.get(idxLo);
+            S swap3 = c.get(idxLo);
             c.set(idxLo, c.get(idxMid));
-            c.set(idxMid, swap2);
+            c.set(idxMid, swap3);
          
             sortBy1stArgDesc(a, b, c, idxLo, idxMid - 1);
 
@@ -590,7 +589,7 @@ public class QuickSort {
      * @param idxLo
      * @param idxHi 
      */
-    public static void sortBy1stArg(TFloatList a, List b, 
+    public static <T> void sortBy1stArg(TFloatList a, List<T> b, 
         int idxLo, int idxHi) {
         
         if (a == null) {
@@ -626,7 +625,7 @@ public class QuickSort {
                 float swap = a.get(store);
                 a.set(store, a.get(idxMid));
                 a.set(idxMid, swap);
-                Object swap2 = b.get(store);
+                T swap2 = b.get(store);
                 b.set(store, b.get(idxMid));
                 b.set(idxMid, swap2);
                 
@@ -634,7 +633,7 @@ public class QuickSort {
             float swap = a.get(idxLo);
             a.set(idxLo, a.get(idxMid));
             a.set(idxMid, swap);
-            Object bSwap = b.get(idxLo);
+            T bSwap = b.get(idxLo);
             b.set(idxLo, b.get(idxMid));
             b.set(idxMid, bSwap);
          
@@ -1318,7 +1317,7 @@ public class QuickSort {
      * @param a
      * @param b
      */
-    public static void sortBy1stArg(float[] a, List b, List c) {
+    public static <T, S> void sortBy1stArg(float[] a, List<T> b, List<S> c) {
         
         if (a == null) {
             throw new IllegalArgumentException("a cannot be null");
@@ -1344,7 +1343,7 @@ public class QuickSort {
      * @param idxLo
      * @param idxHi 
      */
-    public static void sortBy1stArg(float[] a, List b, List c, int idxLo, int idxHi) {
+    public static <T, S> void sortBy1stArg(float[] a, List<T> b, List<S> c, int idxLo, int idxHi) {
         
         if (a == null) {
             throw new IllegalArgumentException("a cannot be null");
@@ -1383,25 +1382,25 @@ public class QuickSort {
                 a[store] = a[idxMid];
                 a[idxMid] = swap;
                 
-                Object swap2 = b.get(store);
+                T swap2 = b.get(store);
                 b.set(store, b.get(idxMid));
                 b.set(idxMid, swap2);
                 
-                swap2 = c.get(store);
+                S swap3 = c.get(store);
                 c.set(store, c.get(idxMid));
-                c.set(idxMid, swap2);
+                c.set(idxMid, swap3);
             }
             float swap = a[idxLo];
             a[idxLo] = a[idxMid];
             a[idxMid] = swap;
             
-            Object swap2 = b.get(idxLo);
+            T swap2 = b.get(idxLo);
             b.set(idxLo, b.get(idxMid));
             b.set(idxMid, swap2);
                
-            swap2 = c.get(idxLo);
+            S swap3 = c.get(idxLo);
             c.set(idxLo, c.get(idxMid));
-            c.set(idxMid, swap2);
+            c.set(idxMid, swap3);
             
             sortBy1stArg(a, b, c, idxLo, idxMid - 1);
 
@@ -1479,7 +1478,7 @@ public class QuickSort {
      * @param idxLo
      * @param idxHi 
      */
-    public static void sortBy1stArg(float[] a, List b, int idxLo, int idxHi) {
+    public static <T> void sortBy1stArg(float[] a, List<T> b, int idxLo, int idxHi) {
         
         if (a == null) {
             throw new IllegalArgumentException("a cannot be null");
@@ -1515,7 +1514,7 @@ public class QuickSort {
                 a[store] = a[idxMid];
                 a[idxMid] = swap;
                 
-                Object bSwap = b.get(store);
+                T bSwap = b.get(store);
                 b.set(store, b.get(idxMid));
                 b.set(idxMid, bSwap);
             }
@@ -1523,7 +1522,7 @@ public class QuickSort {
             a[idxLo] = a[idxMid];
             a[idxMid] = swap;
             
-            Object bSwap = b.get(idxLo);
+            T bSwap = b.get(idxLo);
             b.set(idxLo, b.get(idxMid));
             b.set(idxMid, bSwap);
          
@@ -2025,8 +2024,6 @@ public class QuickSort {
      * @param a
      * @param b
      * @param c
-     * @param idxLo
-     * @param idxHi 
      */
     public static void sortBy1stThen2ndThen3rd(
         TIntList a, TIntList b, TIntList c) {
@@ -2286,7 +2283,7 @@ public class QuickSort {
         }
     }
 
-    private static void sortBy1stArg(int[] a, List b, int idxLo, int idxHi) {
+    private static <T> void sortBy1stArg(int[] a, List<T> b, int idxLo, int idxHi) {
     
         if (idxLo < idxHi) {
             int idxMid = partitionBy1stArg(a, b, idxLo, idxHi);
@@ -2383,7 +2380,7 @@ public class QuickSort {
         return store;
     }
     
-    private static int partitionBy1stArg(int[] a, List b, int idxLo, int idxHi) {
+    private static <T> int partitionBy1stArg(int[] a, List<T> b, int idxLo, int idxHi) {
         
         int x = a[idxHi];
         int store = idxLo - 1;
@@ -2398,7 +2395,7 @@ public class QuickSort {
                 int swap = a[store];
                 a[store] = a[i];
                 a[i] = swap;
-                Object swap2 = b.get(store);
+                T swap2 = b.get(store);
                 b.set(store, b.get(i));
                 b.set(i, swap2);
             }
@@ -2407,7 +2404,7 @@ public class QuickSort {
         int swap = a[store];
         a[store] = a[idxHi];
         a[idxHi] = swap;
-        Object swap2 = b.get(store);
+        T swap2 = b.get(store);
         b.set(store, b.get(idxHi));
         b.set(idxHi, swap2);
         

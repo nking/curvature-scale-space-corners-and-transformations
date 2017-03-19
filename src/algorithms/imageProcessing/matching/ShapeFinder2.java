@@ -232,6 +232,7 @@ public class ShapeFinder2 {
         return sr;
     }
 
+    @SuppressWarnings({"unchecked"})
     private ShapeFinderResult aggregateAndMatch(ShapeFinderResult rIK,
         ShapeFinderResult rKJ) {
 
@@ -289,7 +290,7 @@ public class ShapeFinder2 {
             }
             ImageProcessor imageProcessor = new ImageProcessor();
             boundsI = imageProcessor.extractSmoothedOrderedBoundary(
-                new HashSet(combSet), sigma, xMax2 + 1, yMax2 + 1);
+                new HashSet<PairInt>(combSet), sigma, xMax2 + 1, yMax2 + 1);
             keyBoundsMap.put(keysI, boundsI);
         }
 
@@ -372,6 +373,7 @@ public class ShapeFinder2 {
 
     // run partial shape matcher on individual sets, store the labels and 
     // results and return the maximum chord diff avg 
+    @SuppressWarnings({"unchecked"})
     private double matchSingly(Map<OneDIntArray, ShapeFinderResult> 
         cacheResults, TIntSet outIdxs) {
 
@@ -393,7 +395,7 @@ public class ShapeFinder2 {
             } else {
                 Set<PairInt> set1 = iter.value();
                 boundsI = imageProcessor.extractSmoothedOrderedBoundary(
-                    new HashSet(set1), sigma, xMax2 + 1, yMax2 + 1);
+                    new HashSet<PairInt>(set1), sigma, xMax2 + 1, yMax2 + 1);
                 keyBoundsMap.put(keysI, boundsI);
             }
             

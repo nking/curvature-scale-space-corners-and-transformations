@@ -332,9 +332,9 @@ public class KMeansPlusPlus {
 
         for (int i = 0; i < sumVar.length; i++) {
 
-            if ((float)(nSumVar[i] - 1) > 0) {
+            if ((nSumVar[i] - 1.f) > 0) {
                 // divide by N-1 rather because mean was calc'ed from the data
-                sumVar[i] = (float)(sumVar[i]/(float)(nSumVar[i] - 1.));
+                sumVar[i] = (sumVar[i]/(float)(nSumVar[i] - 1.f));
             } else {
                 sumVar[i] = 0;
             }
