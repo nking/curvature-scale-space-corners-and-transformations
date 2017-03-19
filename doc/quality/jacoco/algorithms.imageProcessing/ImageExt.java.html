@@ -491,10 +491,10 @@ public class ImageExt extends Image {
 <span class="fc" id="L491">        System.arraycopy(copyThis.hue, 0, hue, 0, nPixels);</span>
 <span class="fc" id="L492">        System.arraycopy(copyThis.saturation, 0, saturation, 0, </span>
             nPixels);
-<span class="fc" id="L494">        System.arraycopy(((ImageExt)copyThis).brightness, 0, brightness, 0, </span>
+<span class="fc" id="L494">        System.arraycopy(copyThis.brightness, 0, brightness, 0, </span>
             nPixels);
-<span class="fc" id="L496">        System.arraycopy(((ImageExt)copyThis).luma, 0, luma, 0, nPixels);</span>
-<span class="fc" id="L497">        System.arraycopy(((ImageExt)copyThis).extPopulated, 0, extPopulated, 0, </span>
+<span class="fc" id="L496">        System.arraycopy(copyThis.luma, 0, luma, 0, nPixels);</span>
+<span class="fc" id="L497">        System.arraycopy(copyThis.extPopulated, 0, extPopulated, 0, </span>
             nPixels);
 <span class="fc" id="L499">    }</span>
 

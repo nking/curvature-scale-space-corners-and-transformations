@@ -246,6 +246,7 @@ public class BinarySearchTree<T extends HeapNode> {
      * visit each node using pattern: root, left subtree, right subtree
      * in an iterative manner rather than invoking the method recursively.
      */
+    @SuppressWarnings({"rawtypes"})
     protected T[] printPreOrderTraversalIterative(T node) {
        
         Class cls = T.getType();
@@ -280,6 +281,7 @@ public class BinarySearchTree<T extends HeapNode> {
      * visit each node using pattern: left subtree, right subtree, root subtree
      * in an iterative manner rather than invoking the method recursively.
      */
+    @SuppressWarnings({"rawtypes"})
     protected T[] printPostOrderTraversalIterative(T node) {
         
         Class cls = T.getType();

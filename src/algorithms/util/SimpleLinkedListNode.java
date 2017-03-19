@@ -240,4 +240,11 @@ public class SimpleLinkedListNode {
         return (other.key == this.key);
     }
 
+    @Override
+    public int hashCode() {
+        // even if same keys, want different hashcodes
+        return super.hashCode(); 
+    }
+
+    
 }

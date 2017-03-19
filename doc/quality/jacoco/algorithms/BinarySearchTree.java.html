@@ -133,10 +133,10 @@ import java.util.Stack;
        
 <span class="fc" id="L134">        T y = null;</span>
 <span class="fc" id="L135">        T x = null;</span>
-<span class="fc bfc" id="L136" title="All 4 branches covered.">        if ((z.getLeft() == null) || (z.getRight() == null)) {</span>
+<span class="pc bpc" id="L136" title="1 of 4 branches missed.">        if ((z.getLeft() == null) || (z.getRight() == null)) {</span>
 <span class="fc" id="L137">            y = z;</span>
         } else {
-<span class="fc" id="L139">            y = successor(z);</span>
+<span class="nc" id="L139">            y = successor(z);</span>
         }
         
 <span class="fc bfc" id="L142" title="All 2 branches covered.">        if (y.getLeft() != null) {</span>
@@ -158,10 +158,10 @@ import java.util.Stack;
 <span class="fc" id="L158">            y.getParent().setRight(x);</span>
         }
         
-<span class="fc bfc" id="L161" title="All 2 branches covered.">        if (y != z) {</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">        if (y != z) {</span>
             // copy y data into z
-<span class="fc" id="L163">            z.setKey(y.getKey());</span>
-<span class="fc" id="L164">            z.setData(y.getData());</span>
+<span class="nc" id="L163">            z.setKey(y.getKey());</span>
+<span class="nc" id="L164">            z.setData(y.getData());</span>
         }
         
 <span class="fc" id="L167">        n--;</span>
@@ -210,115 +210,118 @@ import java.util.Stack;
      * visit each node using pattern left subtree, root, right subtree
      * in an iterative manner rather than invoking the method recursively.
      */
+    @SuppressWarnings({&quot;rawtypes&quot;})
     protected T[] getInOrderTraversalIterative(T node) {
        
-<span class="nc" id="L215">        Class cls = T.getType();</span>
-<span class="nc" id="L216">        T[] array = (T[]) Array.newInstance(cls, n);</span>
-<span class="nc" id="L217">        int count = 0;</span>
+<span class="nc" id="L216">        Class cls = T.getType();</span>
+<span class="nc" id="L217">        T[] array = (T[]) Array.newInstance(cls, n);</span>
+<span class="nc" id="L218">        int count = 0;</span>
         
-<span class="nc" id="L219">        Stack&lt;T&gt; stack = new Stack&lt;&gt;();</span>
+<span class="nc" id="L220">        Stack&lt;T&gt; stack = new Stack&lt;&gt;();</span>
                
-<span class="nc bnc" id="L221" title="All 4 branches missed.">        while (!stack.isEmpty() || (node != null)) {</span>
-<span class="nc bnc" id="L222" title="All 2 branches missed.">            if (node != null) {</span>
+<span class="nc bnc" id="L222" title="All 4 branches missed.">        while (!stack.isEmpty() || (node != null)) {</span>
+<span class="nc bnc" id="L223" title="All 2 branches missed.">            if (node != null) {</span>
                 
-<span class="nc" id="L224">                stack.push(node);</span>
+<span class="nc" id="L225">                stack.push(node);</span>
                 
-<span class="nc bnc" id="L226" title="All 2 branches missed.">                node = (node.getLeft() != null) ? (T) node.getLeft() : null;</span>
+<span class="nc bnc" id="L227" title="All 2 branches missed.">                node = (node.getLeft() != null) ? (T) node.getLeft() : null;</span>
             
             } else {
                 
-<span class="nc" id="L230">                node = stack.pop();</span>
+<span class="nc" id="L231">                node = stack.pop();</span>
                 
-<span class="nc" id="L232">                array[count] = node;</span>
-<span class="nc" id="L233">                count++;</span>
+<span class="nc" id="L233">                array[count] = node;</span>
+<span class="nc" id="L234">                count++;</span>
                 
                 //System.out.println(node.key);
                 
-<span class="nc bnc" id="L237" title="All 2 branches missed.">                node = (node.getRight() != null) ? (T) node.getRight() : null;</span>
+<span class="nc bnc" id="L238" title="All 2 branches missed.">                node = (node.getRight() != null) ? (T) node.getRight() : null;</span>
             }
         }
         
-<span class="nc" id="L241">        return array;</span>
+<span class="nc" id="L242">        return array;</span>
     }
     
     /**
      * visit each node using pattern: root, left subtree, right subtree
      * in an iterative manner rather than invoking the method recursively.
      */
+    @SuppressWarnings({&quot;rawtypes&quot;})
     protected T[] printPreOrderTraversalIterative(T node) {
        
-<span class="nc" id="L250">        Class cls = T.getType();</span>
-<span class="nc" id="L251">        T[] array = (T[]) Array.newInstance(cls, n);</span>
-<span class="nc" id="L252">        int count = 0;</span>
+<span class="nc" id="L252">        Class cls = T.getType();</span>
+<span class="nc" id="L253">        T[] array = (T[]) Array.newInstance(cls, n);</span>
+<span class="nc" id="L254">        int count = 0;</span>
         
-<span class="nc" id="L254">        Stack&lt;T&gt; stack = new Stack&lt;&gt;();</span>
+<span class="nc" id="L256">        Stack&lt;T&gt; stack = new Stack&lt;&gt;();</span>
         
-<span class="nc bnc" id="L256" title="All 4 branches missed.">        while (!stack.isEmpty() || (node != null)) {</span>
-<span class="nc bnc" id="L257" title="All 2 branches missed.">            if (node != null) {</span>
+<span class="nc bnc" id="L258" title="All 4 branches missed.">        while (!stack.isEmpty() || (node != null)) {</span>
+<span class="nc bnc" id="L259" title="All 2 branches missed.">            if (node != null) {</span>
                 
-<span class="nc" id="L259">                array[count] = node;</span>
-<span class="nc" id="L260">                count++;</span>
+<span class="nc" id="L261">                array[count] = node;</span>
+<span class="nc" id="L262">                count++;</span>
                 //System.out.println(node.key);
                 
-<span class="nc" id="L263">                stack.push(node);</span>
+<span class="nc" id="L265">                stack.push(node);</span>
                 
-<span class="nc bnc" id="L265" title="All 2 branches missed.">                node = (node.getLeft() != null) ? (T)node.getLeft() : null;</span>
+<span class="nc bnc" id="L267" title="All 2 branches missed.">                node = (node.getLeft() != null) ? (T)node.getLeft() : null;</span>
             
             } else {
                 
-<span class="nc" id="L269">                node = stack.pop();</span>
+<span class="nc" id="L271">                node = stack.pop();</span>
                 
-<span class="nc bnc" id="L271" title="All 2 branches missed.">                node = (node.getRight() != null) ? (T)node.getRight() : null;</span>
+<span class="nc bnc" id="L273" title="All 2 branches missed.">                node = (node.getRight() != null) ? (T)node.getRight() : null;</span>
             }
         }
         
-<span class="nc" id="L275">        return array;</span>
+<span class="nc" id="L277">        return array;</span>
     }
     
     /**
      * visit each node using pattern: left subtree, right subtree, root subtree
      * in an iterative manner rather than invoking the method recursively.
      */
+    @SuppressWarnings({&quot;rawtypes&quot;})
     protected T[] printPostOrderTraversalIterative(T node) {
         
-<span class="nc" id="L284">        Class cls = T.getType();</span>
-<span class="nc" id="L285">        T[] array = (T[]) Array.newInstance(cls, n);</span>
-<span class="nc" id="L286">        int count = 0;</span>
+<span class="nc" id="L287">        Class cls = T.getType();</span>
+<span class="nc" id="L288">        T[] array = (T[]) Array.newInstance(cls, n);</span>
+<span class="nc" id="L289">        int count = 0;</span>
         
-<span class="nc bnc" id="L288" title="All 2 branches missed.">        if (node == null) {</span>
-<span class="nc" id="L289">            return array;</span>
+<span class="nc bnc" id="L291" title="All 2 branches missed.">        if (node == null) {</span>
+<span class="nc" id="L292">            return array;</span>
         }
         
-<span class="nc" id="L292">        Stack&lt;T&gt; stack = new Stack&lt;&gt;();</span>
-<span class="nc" id="L293">        Stack&lt;T&gt; stack2 = new Stack&lt;T&gt;();</span>
-<span class="nc" id="L294">        stack.push(node);</span>
+<span class="nc" id="L295">        Stack&lt;T&gt; stack = new Stack&lt;&gt;();</span>
+<span class="nc" id="L296">        Stack&lt;T&gt; stack2 = new Stack&lt;T&gt;();</span>
+<span class="nc" id="L297">        stack.push(node);</span>
         
-<span class="nc bnc" id="L296" title="All 2 branches missed.">        while (!stack.isEmpty()) {</span>
+<span class="nc bnc" id="L299" title="All 2 branches missed.">        while (!stack.isEmpty()) {</span>
             
-<span class="nc" id="L298">            node = stack.pop();</span>
+<span class="nc" id="L301">            node = stack.pop();</span>
             
-<span class="nc" id="L300">            stack2.push(node);</span>
+<span class="nc" id="L303">            stack2.push(node);</span>
             
-<span class="nc bnc" id="L302" title="All 2 branches missed.">            if (node.getLeft() != null) {</span>
-<span class="nc" id="L303">                stack.push((T)node.getLeft());</span>
+<span class="nc bnc" id="L305" title="All 2 branches missed.">            if (node.getLeft() != null) {</span>
+<span class="nc" id="L306">                stack.push((T)node.getLeft());</span>
             }
 
-<span class="nc bnc" id="L306" title="All 2 branches missed.">            if (node.getRight() != null) {</span>
-<span class="nc" id="L307">                stack.push((T)node.getRight());</span>
+<span class="nc bnc" id="L309" title="All 2 branches missed.">            if (node.getRight() != null) {</span>
+<span class="nc" id="L310">                stack.push((T)node.getRight());</span>
             }            
         }
         
-<span class="nc bnc" id="L311" title="All 2 branches missed.">        while (!stack2.isEmpty()) {</span>
+<span class="nc bnc" id="L314" title="All 2 branches missed.">        while (!stack2.isEmpty()) {</span>
             
-<span class="nc" id="L313">            node = stack2.pop();</span>
+<span class="nc" id="L316">            node = stack2.pop();</span>
             
             //process(node);
-<span class="nc" id="L316">            array[count] = node;</span>
-<span class="nc" id="L317">            count++;</span>
+<span class="nc" id="L319">            array[count] = node;</span>
+<span class="nc" id="L320">            count++;</span>
             //System.out.println(node.key);
         }
          
-<span class="nc" id="L321">        return array;</span>
+<span class="nc" id="L324">        return array;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

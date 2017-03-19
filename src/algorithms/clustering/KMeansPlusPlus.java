@@ -334,7 +334,7 @@ public class KMeansPlusPlus {
 
             if ((nSumVar[i] - 1.f) > 0) {
                 // divide by N-1 rather because mean was calc'ed from the data
-                sumVar[i] = (sumVar[i]/(float)(nSumVar[i] - 1.f));
+                sumVar[i] = (sumVar[i]/((float)nSumVar[i] - 1.f));
             } else {
                 sumVar[i] = 0;
             }

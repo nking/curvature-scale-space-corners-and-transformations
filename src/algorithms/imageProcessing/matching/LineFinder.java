@@ -783,6 +783,7 @@ public class LineFinder {
         return f*f + d*d;
     }
 
+    @SuppressWarnings({"fallthrough"})
     private PairIntArray createLine2(int n1) {
 
         /*

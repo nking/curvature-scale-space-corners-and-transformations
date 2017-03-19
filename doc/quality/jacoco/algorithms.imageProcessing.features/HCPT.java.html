@@ -233,7 +233,7 @@ public class HCPT {
             //System.out.println(&quot; &quot; + yA + &quot; -- &quot; + yB + &quot; sum=&quot;+sum + &quot;, &quot; + sumA + &quot;,&quot; + sumB);
         }
         
-<span class="fc" id="L236">        float sim = sum / ((float)Math.min(sumA, sumB));</span>
+<span class="fc" id="L236">        float sim = sum / Math.min(sumA, sumB);</span>
         
 <span class="fc" id="L238">        return sim;</span>
     }

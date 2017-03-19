@@ -304,10 +304,10 @@ Also, the summed table of the chord differences is only along columns.
 <span class="fc" id="L304">                start++;</span>
             }
 <span class="fc" id="L306">            stop = interval2.max();</span>
-<span class="fc bfc" id="L307" title="All 2 branches covered.">            if (existing.contains(stop)) {</span>
-<span class="fc" id="L308">                junctions.add(stop);</span>
-<span class="fc" id="L309">    System.out.println(&quot;junction: &quot; + p.getX(stop) + &quot; , &quot; + p.getY(stop));</span>
-<span class="fc" id="L310">                stop--;</span>
+<span class="pc bpc" id="L307" title="1 of 2 branches missed.">            if (existing.contains(stop)) {</span>
+<span class="nc" id="L308">                junctions.add(stop);</span>
+<span class="nc" id="L309">    System.out.println(&quot;junction: &quot; + p.getX(stop) + &quot; , &quot; + p.getY(stop));</span>
+<span class="nc" id="L310">                stop--;</span>
             }
 <span class="pc bpc" id="L312" title="1 of 2 branches missed.">            if (debug) {</span>
 <span class="nc" id="L313">                System.out.println(&quot;*** final: &quot; + </span>
@@ -783,26 +783,27 @@ Also, the summed table of the chord differences is only along columns.
 <span class="fc" id="L783">        return f*f + d*d;</span>
     }
 
+    @SuppressWarnings({&quot;fallthrough&quot;})
     private PairIntArray createLine2(int n1) {
 
         /*
             - -
         - - 
         */
-<span class="nc" id="L792">        PairIntArray q = new PairIntArray(n1);</span>
-<span class="nc" id="L793">        int prevX = 0;</span>
-<span class="nc" id="L794">        int prevY = 0;</span>
-<span class="nc bnc" id="L795" title="All 2 branches missed.">        for (int i = 0; i &lt; n1; ++i) {</span>
-<span class="nc bnc" id="L796" title="All 2 branches missed.">            switch (i % 2) {</span>
+<span class="nc" id="L793">        PairIntArray q = new PairIntArray(n1);</span>
+<span class="nc" id="L794">        int prevX = 0;</span>
+<span class="nc" id="L795">        int prevY = 0;</span>
+<span class="nc bnc" id="L796" title="All 2 branches missed.">        for (int i = 0; i &lt; n1; ++i) {</span>
+<span class="nc bnc" id="L797" title="All 2 branches missed.">            switch (i % 2) {</span>
                 case 0:
-<span class="nc" id="L798">                    prevY++;</span>
+<span class="nc" id="L799">                    prevY++;</span>
                 default:
-<span class="nc" id="L800">                    prevX++;</span>
+<span class="nc" id="L801">                    prevX++;</span>
                     break;
             }
-<span class="nc" id="L803">            q.add(prevX, prevY);</span>
+<span class="nc" id="L804">            q.add(prevX, prevY);</span>
         }
-<span class="nc" id="L805">        return q;</span>
+<span class="nc" id="L806">        return q;</span>
     }
     
     private PairIntArray createLine4(int n1) {
@@ -811,20 +812,20 @@ Also, the summed table of the chord differences is only along columns.
               - - -
         - - - 
         */
-<span class="nc" id="L814">        PairIntArray q = new PairIntArray(n1);</span>
-<span class="nc" id="L815">        int prevX = 0;</span>
-<span class="nc" id="L816">        int prevY = 0;</span>
-<span class="nc bnc" id="L817" title="All 2 branches missed.">        for (int i = 0; i &lt; n1; ++i) {</span>
-<span class="nc bnc" id="L818" title="All 2 branches missed.">            switch (i % 3) {</span>
+<span class="nc" id="L815">        PairIntArray q = new PairIntArray(n1);</span>
+<span class="nc" id="L816">        int prevX = 0;</span>
+<span class="nc" id="L817">        int prevY = 0;</span>
+<span class="nc bnc" id="L818" title="All 2 branches missed.">        for (int i = 0; i &lt; n1; ++i) {</span>
+<span class="nc bnc" id="L819" title="All 2 branches missed.">            switch (i % 3) {</span>
                 case 0:
-<span class="nc" id="L820">                    prevY++;</span>
+<span class="nc" id="L821">                    prevY++;</span>
                 default:
-<span class="nc" id="L822">                    prevX++;</span>
+<span class="nc" id="L823">                    prevX++;</span>
                     break;
             }
-<span class="nc" id="L825">            q.add(prevX, prevY);</span>
+<span class="nc" id="L826">            q.add(prevX, prevY);</span>
         }
-<span class="nc" id="L827">        return q;</span>
+<span class="nc" id="L828">        return q;</span>
     }
 
     private PairIntArray createLine3(int n1) {
@@ -834,40 +835,40 @@ Also, the summed table of the chord differences is only along columns.
           - -
         - 
         */
-<span class="nc" id="L837">        PairIntArray q = createLine2(n1);</span>
-<span class="nc" id="L838">        q.rotateLeft(-1);</span>
-<span class="nc" id="L839">        return q;</span>
+<span class="nc" id="L838">        PairIntArray q = createLine2(n1);</span>
+<span class="nc" id="L839">        q.rotateLeft(-1);</span>
+<span class="nc" id="L840">        return q;</span>
     }
     
     private PairIntArray createLine5(int n1) {
-<span class="nc" id="L843">        PairIntArray q = createLine4(n1);</span>
-<span class="nc" id="L844">        q.rotateLeft(-1);</span>
-<span class="nc" id="L845">        return q;</span>
+<span class="nc" id="L844">        PairIntArray q = createLine4(n1);</span>
+<span class="nc" id="L845">        q.rotateLeft(-1);</span>
+<span class="nc" id="L846">        return q;</span>
     }
     
     private PairIntArray createLine6(int n1) {
-<span class="nc" id="L849">        PairIntArray q = createLine4(n1);</span>
-<span class="nc" id="L850">        q.rotateLeft(-2);</span>
-<span class="nc" id="L851">        return q;</span>
+<span class="nc" id="L850">        PairIntArray q = createLine4(n1);</span>
+<span class="nc" id="L851">        q.rotateLeft(-2);</span>
+<span class="nc" id="L852">        return q;</span>
     }
 
     private TwoDFloatArray[] createSummedDifferences(PairIntArray p) {
         
         //log.fine(&quot;a1:&quot;);
-<span class="fc" id="L857">        float[][] a1 = createDescriptorMatrix(p, p.getN());</span>
+<span class="fc" id="L858">        float[][] a1 = createDescriptorMatrix(p, p.getN());</span>
 
-<span class="fc" id="L859">        int na2 = 1;//3;</span>
+<span class="fc" id="L860">        int na2 = 1;//3;</span>
         
-<span class="fc" id="L861">        TwoDFloatArray[] mds = new TwoDFloatArray[na2];</span>
+<span class="fc" id="L862">        TwoDFloatArray[] mds = new TwoDFloatArray[na2];</span>
         
-<span class="fc bfc" id="L863" title="All 2 branches covered.">        for (int a2i = 0; a2i &lt; na2; ++a2i) {</span>
-<span class="fc" id="L864">            float[][] md = createDifferenceMatrices(a1, a2i);</span>
+<span class="fc bfc" id="L864" title="All 2 branches covered.">        for (int a2i = 0; a2i &lt; na2; ++a2i) {</span>
+<span class="fc" id="L865">            float[][] md = createDifferenceMatrices(a1, a2i);</span>
             //convert to summed column table
-<span class="fc" id="L866">            SummedColumnTable smt = new SummedColumnTable();</span>
-<span class="fc" id="L867">            mds[a2i] = new TwoDFloatArray(smt.create(md));</span>
+<span class="fc" id="L867">            SummedColumnTable smt = new SummedColumnTable();</span>
+<span class="fc" id="L868">            mds[a2i] = new TwoDFloatArray(smt.create(md));</span>
         }      
         
-<span class="fc" id="L870">        return mds;</span>
+<span class="fc" id="L871">        return mds;</span>
     }
 
     public static class LineResult {

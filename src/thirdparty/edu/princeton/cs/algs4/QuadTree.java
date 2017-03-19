@@ -12,13 +12,13 @@ import java.util.List;
  */
 public class QuadTree<T extends Comparable<T>, Value>  {
     
-    private Node root;
+    private Node<T> root;
 
     // helper node data type
     private class Node<S> {
         S x;
         S y; // x- and y- coordinates
-        Node NW, NE, SE, SW;   // four subtrees
+        Node<S> NW, NE, SE, SW;   // four subtrees
         Value value;           // associated data
 
         Node(S x, S y, Value value) {
@@ -32,10 +32,12 @@ public class QuadTree<T extends Comparable<T>, Value>  {
   /***********************************************************************
     *  Insert (x, y) into appropriate quadrant
     ***************************************************************************/
+    @SuppressWarnings({"unchecked"})
     public void insert(T x, T y, Value value) {
         root = insert(root, x, y, value);
     }
 
+    @SuppressWarnings({"unchecked"})
     private Node<T> insert(Node<T> h, T x, T y, Value value) {
         if (h == null) return new Node<T>(x, y, value);
         //// if (eq(x, h.x) && eq(y, h.y)) h.value = value;  // duplicate
@@ -50,7 +52,7 @@ public class QuadTree<T extends Comparable<T>, Value>  {
   /***********************************************************************
     *  Range search.
     ***************************************************************************/
-
+    @SuppressWarnings({"unchecked"})
     public List<Value> query2D(Interval2D<T> rect) {
         
         List<Value> output = new ArrayList<Value>();
@@ -60,6 +62,7 @@ public class QuadTree<T extends Comparable<T>, Value>  {
         return output;
     }
 
+    @SuppressWarnings({"unchecked"})
     private void query2D(Node<T> h, Interval2D<T> rect, List<Value> output) {
         
         if (h == null) return;

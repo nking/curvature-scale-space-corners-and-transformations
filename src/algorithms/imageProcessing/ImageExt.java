@@ -491,10 +491,10 @@ public class ImageExt extends Image {
         System.arraycopy(copyThis.hue, 0, hue, 0, nPixels);
         System.arraycopy(copyThis.saturation, 0, saturation, 0, 
             nPixels);
-        System.arraycopy(((ImageExt)copyThis).brightness, 0, brightness, 0, 
+        System.arraycopy(copyThis.brightness, 0, brightness, 0, 
             nPixels);
-        System.arraycopy(((ImageExt)copyThis).luma, 0, luma, 0, nPixels);
-        System.arraycopy(((ImageExt)copyThis).extPopulated, 0, extPopulated, 0, 
+        System.arraycopy(copyThis.luma, 0, luma, 0, nPixels);
+        System.arraycopy(copyThis.extPopulated, 0, extPopulated, 0, 
             nPixels);
     }
 

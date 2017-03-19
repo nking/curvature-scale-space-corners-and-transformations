@@ -788,9 +788,9 @@ import java.util.logging.Logger;
 <span class="fc bfc" id="L788" title="All 4 branches covered.">            } else if (</span>
                 node1.pathPredecessor != null &amp;&amp;
                 node1.pathPredecessor instanceof RightNode &amp;&amp;
-<span class="fc bfc" id="L791" title="All 2 branches covered.">                terminatingKeys.containsKey(</span>
+<span class="pc bpc" id="L791" title="1 of 2 branches missed.">                terminatingKeys.containsKey(</span>
                 node1.pathPredecessor.index)) {
-<span class="fc" id="L793">                continue;</span>
+<span class="nc" id="L793">                continue;</span>
 <span class="fc bfc" id="L794" title="All 2 branches covered.">            } else if (node1.pathPredecessor != null) {</span>
 <span class="fc bfc" id="L795" title="All 2 branches covered.">                if (node1.pathPredecessor instanceof LeftNode &amp;&amp;</span>
 <span class="fc bfc" id="L796" title="All 2 branches covered.">                surplusForestKeys.containsKey(</span>
@@ -1463,8 +1463,8 @@ Matchings in G are integral flows in N_G
 <span class="fc" id="L1463">                                leftPriceIncreases.put(idx1, p1);</span>
                             }
 
-<span class="fc bfc" id="L1466" title="All 2 branches covered.">                            if (rF.getBackwardLinksRM().containsKey(idx2)</span>
-<span class="pc bpc" id="L1467" title="1 of 2 branches missed.">                                &amp;&amp; rF.getBackwardLinksRM().get(idx2) == idx1) {</span>
+<span class="pc bpc" id="L1466" title="1 of 2 branches missed.">                            if (rF.getBackwardLinksRM().containsKey(idx2)</span>
+<span class="nc bnc" id="L1467" title="All 2 branches missed.">                                &amp;&amp; rF.getBackwardLinksRM().get(idx2) == idx1) {</span>
 
                                 // saturated link node1(left) &lt;-- node2(right)
 <span class="nc" id="L1470">                                l1 -= (lt - l2);</span>
@@ -1677,7 +1677,7 @@ Matchings in G are integral flows in N_G
 <span class="fc" id="L1677">            LeftNode xNode = surp.iterator().next();</span>
 <span class="fc" id="L1678">            surp.remove(xNode);</span>
 <span class="fc" id="L1679">            stack.add(xNode);</span>
-<span class="fc bfc" id="L1680" title="All 2 branches covered.">            B: while (!stack.isEmpty()) {</span>
+<span class="pc bpc" id="L1680" title="1 of 2 branches missed.">            B: while (!stack.isEmpty()) {</span>
 <span class="fc" id="L1681">                PathNode v = stack.peek();</span>
 <span class="fc" id="L1682">                log.fine(&quot;v=stack.top=&quot; + v.toString());</span>
 <span class="fc" id="L1683">                boolean isLeftNode = (v instanceof LeftNode);</span>
@@ -1685,7 +1685,7 @@ Matchings in G are integral flows in N_G
 <span class="pc bpc" id="L1685" title="1 of 4 branches missed.">                if (isLeftNode || isRightNode) {</span>
 <span class="fc" id="L1686">                    v.m = 1;</span>
                 }
-<span class="fc bfc" id="L1688" title="All 4 branches covered.">                if (isRightNode &amp;&amp; def.contains((RightNode)v)) {</span>
+<span class="pc bpc" id="L1688" title="1 of 4 branches missed.">                if (isRightNode &amp;&amp; def.contains((RightNode)v)) {</span>
                     // add all of stack to P as an augmenting Path
 <span class="fc" id="L1690">                    LinkedList&lt;PathNode&gt; augPath = new</span>
                         LinkedList&lt;PathNode&gt;();
@@ -1698,8 +1698,8 @@ Matchings in G are integral flows in N_G
                     continue A;
                 }
 <span class="fc" id="L1700">                Set&lt;PathNode&gt; set = pathLinksMap.get(v);</span>
-<span class="fc bfc" id="L1701" title="All 2 branches covered.">                if (set != null) {</span>
-<span class="fc bfc" id="L1702" title="All 2 branches covered.">                    while (!set.isEmpty()) {</span>
+<span class="pc bpc" id="L1701" title="1 of 2 branches missed.">                if (set != null) {</span>
+<span class="pc bpc" id="L1702" title="1 of 2 branches missed.">                    while (!set.isEmpty()) {</span>
 <span class="fc" id="L1703">                        PathNode w = set.iterator().next();</span>
 <span class="fc" id="L1704">                        set.remove(w);</span>
 <span class="fc" id="L1705">                        log.fine(&quot;stack.push w = &quot; + w.toString());</span>
@@ -1710,9 +1710,9 @@ Matchings in G are integral flows in N_G
 <span class="nc" id="L1710">                    }</span>
                 }
                 // do nothing with v
-<span class="fc" id="L1713">                stack.pop();</span>
-<span class="fc" id="L1714">            }</span>
-<span class="fc" id="L1715">        }</span>
+<span class="nc" id="L1713">                stack.pop();</span>
+<span class="nc" id="L1714">            }</span>
+<span class="nc" id="L1715">        }</span>
         
 <span class="fc" id="L1717">        return augPaths;</span>
     }
@@ -1877,7 +1877,7 @@ Matchings in G are integral flows in N_G
 <span class="nc bnc" id="L1877" title="All 2 branches missed.">                    surplus.contains(idx2)) {</span>
 <span class="nc" id="L1878">                    outputSurplus.add((LeftNode)node2);</span>
 <span class="pc bpc" id="L1879" title="1 of 2 branches missed.">                } else if (node2 instanceof RightNode &amp;&amp; </span>
-<span class="fc bfc" id="L1880" title="All 2 branches covered.">                    deficit.contains(idx2)) {</span>
+<span class="pc bpc" id="L1880" title="1 of 2 branches missed.">                    deficit.contains(idx2)) {</span>
 <span class="fc" id="L1881">                    outputDeficit.add((RightNode)node2);</span>
                 }
 <span class="fc" id="L1883">            }</span>
@@ -1993,88 +1993,89 @@ Matchings in G are integral flows in N_G
         TODO: consider compressed keys.
         */
     
-<span class="fc" id="L1996">        TObjectIntMap&lt;QuadInt&gt; priceLookupMap = createPriceLookupMap(cachedPriceChanges);</span>
+<span class="fc" id="L1996">        TObjectIntMap&lt;QuadInt&gt; priceLookupMap </span>
+<span class="fc" id="L1997">            = createPriceLookupMap(cachedPriceChanges);</span>
         
-<span class="fc bfc" id="L1998" title="All 2 branches covered.">        for (LinkedList path : cPaths) {</span>
+<span class="fc bfc" id="L1999" title="All 2 branches covered.">        for (List&lt;PathNode&gt; path : cPaths) {</span>
             
-<span class="fc" id="L2000">            Misc.reverse(path);</span>
+<span class="fc" id="L2001">            Misc.reverse(path);</span>
             
-<span class="fc" id="L2002">            QuadInt key = createKey(path);</span>
+<span class="fc" id="L2003">            QuadInt key = createKey(path);</span>
                         
-<span class="pc bpc" id="L2004" title="1 of 2 branches missed.">            if (!priceLookupMap.containsKey(key)) {</span>
-<span class="nc" id="L2005">                throw new IllegalStateException(&quot;error in algorithm.&quot;</span>
+<span class="pc bpc" id="L2005" title="1 of 2 branches missed.">            if (!priceLookupMap.containsKey(key)) {</span>
+<span class="nc" id="L2006">                throw new IllegalStateException(&quot;error in algorithm.&quot;</span>
                     + &quot;  partial paths need to be considered&quot;);
             }
             
-<span class="fc" id="L2009">            int idx = priceLookupMap.get(key);</span>
+<span class="fc" id="L2010">            int idx = priceLookupMap.get(key);</span>
             
-<span class="fc" id="L2011">            PathsAndPrices p = cachedPriceChanges.get(idx);</span>
+<span class="fc" id="L2012">            PathsAndPrices p = cachedPriceChanges.get(idx);</span>
             
-<span class="fc" id="L2013">            TIntFloatMap leftP = p.leftPriceIncreases;</span>
+<span class="fc" id="L2014">            TIntFloatMap leftP = p.leftPriceIncreases;</span>
             
-<span class="fc" id="L2015">            TIntFloatIterator iter = leftP.iterator();</span>
-<span class="fc bfc" id="L2016" title="All 2 branches covered.">            for (int i = leftP.size(); i-- &gt; 0;) {</span>
-<span class="fc" id="L2017">                iter.advance();            </span>
-<span class="fc" id="L2018">                float f = iter.value();</span>
-<span class="fc" id="L2019">                gFlow.addToLeftPrice(iter.key(), f);</span>
-<span class="fc" id="L2020">            }</span>
+<span class="fc" id="L2016">            TIntFloatIterator iter = leftP.iterator();</span>
+<span class="fc bfc" id="L2017" title="All 2 branches covered.">            for (int i = leftP.size(); i-- &gt; 0;) {</span>
+<span class="fc" id="L2018">                iter.advance();            </span>
+<span class="fc" id="L2019">                float f = iter.value();</span>
+<span class="fc" id="L2020">                gFlow.addToLeftPrice(iter.key(), f);</span>
+<span class="fc" id="L2021">            }</span>
             
-<span class="fc" id="L2022">            TIntFloatMap rightP = p.rightPriceIncreases;</span>
-<span class="fc" id="L2023">            iter = rightP.iterator();</span>
-<span class="pc bpc" id="L2024" title="1 of 2 branches missed.">            for (int i = rightP.size(); i-- &gt; 0;) {</span>
-<span class="nc" id="L2025">                iter.advance();                </span>
-<span class="nc" id="L2026">                float f = iter.value();</span>
-<span class="nc" id="L2027">                gFlow.addToRightPrice(iter.key(), f);</span>
-<span class="nc" id="L2028">            }</span>
-<span class="fc" id="L2029">        }</span>
+<span class="fc" id="L2023">            TIntFloatMap rightP = p.rightPriceIncreases;</span>
+<span class="fc" id="L2024">            iter = rightP.iterator();</span>
+<span class="pc bpc" id="L2025" title="1 of 2 branches missed.">            for (int i = rightP.size(); i-- &gt; 0;) {</span>
+<span class="nc" id="L2026">                iter.advance();                </span>
+<span class="nc" id="L2027">                float f = iter.value();</span>
+<span class="nc" id="L2028">                gFlow.addToRightPrice(iter.key(), f);</span>
+<span class="nc" id="L2029">            }</span>
+<span class="fc" id="L2030">        }</span>
         
-<span class="fc" id="L2031">    }</span>
+<span class="fc" id="L2032">    }</span>
     
     private QuadInt createKey(List&lt;PathNode&gt; path) {
         
-<span class="fc" id="L2035">        QuadInt q = new QuadInt();</span>
+<span class="fc" id="L2036">        QuadInt q = new QuadInt();</span>
         
-<span class="fc bfc" id="L2037" title="All 2 branches covered.">        for (int i = 0; i &lt; path.size(); ++i) {</span>
-<span class="fc" id="L2038">            PathNode node = path.get(i);</span>
-<span class="fc" id="L2039">            int idx = node.index;</span>
-<span class="pc bpc" id="L2040" title="1 of 4 branches missed.">            if (node instanceof RightNode || node instanceof SinkNode) {</span>
-<span class="fc" id="L2041">                idx *= -1;</span>
+<span class="fc bfc" id="L2038" title="All 2 branches covered.">        for (int i = 0; i &lt; path.size(); ++i) {</span>
+<span class="fc" id="L2039">            PathNode node = path.get(i);</span>
+<span class="fc" id="L2040">            int idx = node.index;</span>
+<span class="pc bpc" id="L2041" title="1 of 4 branches missed.">            if (node instanceof RightNode || node instanceof SinkNode) {</span>
+<span class="fc" id="L2042">                idx *= -1;</span>
             }
-<span class="pc bpc" id="L2043" title="3 of 5 branches missed.">            switch(i) {</span>
+<span class="pc bpc" id="L2044" title="3 of 5 branches missed.">            switch(i) {</span>
                 case 0:
-<span class="fc" id="L2045">                    q.setA(idx);</span>
-<span class="fc" id="L2046">                    break;</span>
+<span class="fc" id="L2046">                    q.setA(idx);</span>
+<span class="fc" id="L2047">                    break;</span>
                 case 1:
-<span class="fc" id="L2048">                    q.setB(idx);</span>
-<span class="fc" id="L2049">                    break;</span>
+<span class="fc" id="L2049">                    q.setB(idx);</span>
+<span class="fc" id="L2050">                    break;</span>
                 case 2:
-<span class="nc" id="L2051">                    q.setC(idx);</span>
-<span class="nc" id="L2052">                    break;</span>
+<span class="nc" id="L2052">                    q.setC(idx);</span>
+<span class="nc" id="L2053">                    break;</span>
                 case 3:
-<span class="nc" id="L2054">                    q.setD(idx);</span>
-<span class="nc" id="L2055">                    break;</span>
+<span class="nc" id="L2055">                    q.setD(idx);</span>
+<span class="nc" id="L2056">                    break;</span>
                 default:
-<span class="nc" id="L2057">                    throw new IllegalStateException(&quot;Error in algorithm&quot;</span>
+<span class="nc" id="L2058">                    throw new IllegalStateException(&quot;Error in algorithm&quot;</span>
                         + &quot;.  Expecting path length &lt; 5&quot;);
             }
         }
         
-<span class="fc" id="L2062">        return q;</span>
+<span class="fc" id="L2063">        return q;</span>
     }
     
     private TObjectIntMap&lt;QuadInt&gt; createPriceLookupMap(
         List&lt;PathsAndPrices&gt; cachedPriceChanges) {
         
-<span class="fc" id="L2068">        TObjectIntMap&lt;QuadInt&gt; map = new TObjectIntHashMap&lt;QuadInt&gt;();</span>
+<span class="fc" id="L2069">        TObjectIntMap&lt;QuadInt&gt; map = new TObjectIntHashMap&lt;QuadInt&gt;();</span>
         
-<span class="fc bfc" id="L2070" title="All 2 branches covered.">        for (int i = 0; i &lt; cachedPriceChanges.size(); ++i) {</span>
+<span class="fc bfc" id="L2071" title="All 2 branches covered.">        for (int i = 0; i &lt; cachedPriceChanges.size(); ++i) {</span>
             
-<span class="fc" id="L2072">            PathsAndPrices p = cachedPriceChanges.get(i);</span>
+<span class="fc" id="L2073">            PathsAndPrices p = cachedPriceChanges.get(i);</span>
             
-<span class="fc" id="L2074">            map.put(createKey(p.path), i);</span>
+<span class="fc" id="L2075">            map.put(createKey(p.path), i);</span>
         }
         
-<span class="fc" id="L2077">        return map;</span>
+<span class="fc" id="L2078">        return map;</span>
     }
 
 }

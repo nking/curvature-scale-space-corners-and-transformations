@@ -1954,9 +1954,9 @@ public class ImageProcessor {
 
             int _i2End = (i2End < w2) ? i2End : w2;
             
-            System.out.format(
-                "i2=%s i2End=%d,%d  frcX=%.3f\n", 
-                i2, i2End, _i2End, fractionX);
+            //System.out.format(
+            //    "i2=%s i2End=%d,%d  frcX=%.3f\n", 
+            //    i2, i2End, _i2End, fractionX);
             
             // init vars
             int j2 = 0;
@@ -1977,9 +1977,9 @@ public class ImageProcessor {
                     fractionY += 1.f;
                 }
                 
-                System.out.format(
-                    "  j2=%s j2End=%d,%d  frcY=%.3f\n", 
-                    j2, j2End, _j2End, fractionY);
+                //System.out.format(
+                //    "  j2=%s j2End=%d,%d  frcY=%.3f\n", 
+                //    j2, j2End, _j2End, fractionY);
                 
                 int v = input.getValue(i0, j0);
                 v = (v < minValue) ? minValue : ((v > maxValue) ? maxValue : v);
@@ -1987,8 +1987,8 @@ public class ImageProcessor {
                 for (int ii = i2; ii < _i2End; ++ii) {
                     for (int jj = j2; jj < _j2End; ++jj) {
                 
-                        System.out.format(
-                    "    set(%d,%d)=%d\n", ii, jj, v);
+                        //System.out.format(
+                        //"    set(%d,%d)=%d\n", ii, jj, v);
                 
                         output.setValue(ii, jj, v);
                     }
@@ -2014,8 +2014,8 @@ public class ImageProcessor {
                     
                     for (int jj = j2; jj < _j2End; ++jj) {
                         
-                        System.out.format(
-                         "     *set(%d,%d)=%d\n", i2End, jj, vI2);
+                        //System.out.format(
+                        //"     *set(%d,%d)=%d\n", i2End, jj, vI2);
                         
                         output.setValue(i2End, jj, vI2);
                     }
@@ -2035,13 +2035,13 @@ public class ImageProcessor {
                     vJ2 = (vJ2 < minValue) ? minValue :
                         ((vJ2 > maxValue) ? maxValue : vJ2);
                     
-                    System.out.format(
-                    "     **set(%d,%d)=%d\n", i2, j2End, vJ2);
+                    //System.out.format(
+                    //"     **set(%d,%d)=%d\n", i2, j2End, vJ2);
                     
                     for (int iii = i2; iii < _i2End; ++iii) {
                         
-                        System.out.format(
-                         "     *set(%d,%d)=%d\n", iii, j2End, vJ2);
+                        //System.out.format(
+                        // "     *set(%d,%d)=%d\n", iii, j2End, vJ2);
                         
                         output.setValue(iii, j2End, vJ2);
                     }                    
@@ -2054,7 +2054,7 @@ public class ImageProcessor {
                     avg = (avg < minValue) ? minValue :
                         ((avg > maxValue) ? maxValue : avg);
                     
-                    System.out.format("     **set(%d,%d)=%d\n", i2End, j2End, avg);
+                    //System.out.format("     **set(%d,%d)=%d\n", i2End, j2End, avg);
                     
                     output.setValue(i2End, j2End, avg);
                 }

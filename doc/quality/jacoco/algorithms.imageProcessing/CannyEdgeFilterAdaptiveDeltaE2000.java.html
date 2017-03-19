@@ -795,75 +795,67 @@ public class CannyEdgeFilterAdaptiveDeltaE2000 {
 <span class="fc" id="L795">        return filterProducts;</span>
     }
 
-    public void setSetters(CannyEdgeFilterSettings settings) {
-        
-<span class="nc bnc" id="L800" title="All 2 branches missed.">        if (settings.getNormalizeByHistogram()) {</span>
-<span class="nc" id="L801">            setToPerformHistogramEqualization();</span>
-        }
-        
-<span class="nc" id="L804">    }</span>
-
     private void applyPostLineThinningCorrections(GreyscaleImage gradientXY,
         GreyscaleImage valuesBeforeThinning) {
 
-<span class="fc" id="L809">        Set&lt;PairInt&gt; correctedPoints = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L801">        Set&lt;PairInt&gt; correctedPoints = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="fc bfc" id="L811" title="All 2 branches covered.">        for (int i = 0; i &lt; gradientXY.getWidth(); ++i) {</span>
-<span class="fc bfc" id="L812" title="All 2 branches covered.">            for (int j = 0; j &lt; gradientXY.getHeight(); ++j) {</span>
-<span class="fc bfc" id="L813" title="All 2 branches covered.">                if (gradientXY.getValue(i, j) &gt; 0) {</span>
-<span class="fc" id="L814">                    correctedPoints.add(new PairInt(i, j));</span>
+<span class="fc bfc" id="L803" title="All 2 branches covered.">        for (int i = 0; i &lt; gradientXY.getWidth(); ++i) {</span>
+<span class="fc bfc" id="L804" title="All 2 branches covered.">            for (int j = 0; j &lt; gradientXY.getHeight(); ++j) {</span>
+<span class="fc bfc" id="L805" title="All 2 branches covered.">                if (gradientXY.getValue(i, j) &gt; 0) {</span>
+<span class="fc" id="L806">                    correctedPoints.add(new PairInt(i, j));</span>
                 }
             }
         }
         
-<span class="fc" id="L819">        int n0 = gradientXY.getWidth();</span>
-<span class="fc" id="L820">        int n1 = gradientXY.getHeight();</span>
+<span class="fc" id="L811">        int n0 = gradientXY.getWidth();</span>
+<span class="fc" id="L812">        int n1 = gradientXY.getHeight();</span>
         
-<span class="fc" id="L822">        int nP = correctedPoints.size();</span>
+<span class="fc" id="L814">        int nP = correctedPoints.size();</span>
         
-<span class="fc" id="L824">        GreyscaleImage out = gradientXY.createWithDimensions();</span>
-<span class="fc" id="L825">        int[][] morphInput = new int[out.getWidth()][out.getHeight()];</span>
-<span class="fc bfc" id="L826" title="All 2 branches covered.">        for (int i = 0; i &lt; morphInput.length; ++i) {</span>
-<span class="fc" id="L827">            morphInput[i] = new int[out.getHeight()];</span>
+<span class="fc" id="L816">        GreyscaleImage out = gradientXY.createWithDimensions();</span>
+<span class="fc" id="L817">        int[][] morphInput = new int[out.getWidth()][out.getHeight()];</span>
+<span class="fc bfc" id="L818" title="All 2 branches covered.">        for (int i = 0; i &lt; morphInput.length; ++i) {</span>
+<span class="fc" id="L819">            morphInput[i] = new int[out.getHeight()];</span>
         }
-<span class="fc bfc" id="L829" title="All 2 branches covered.">        for (PairInt p : correctedPoints) {</span>
-<span class="fc" id="L830">            int v = valuesBeforeThinning.getValue(p);</span>
-<span class="fc" id="L831">            out.setValue(p.getX(), p.getY(), v);</span>
-<span class="fc" id="L832">            morphInput[p.getX()][p.getY()] = 1;</span>
-<span class="fc" id="L833">        }</span>
+<span class="fc bfc" id="L821" title="All 2 branches covered.">        for (PairInt p : correctedPoints) {</span>
+<span class="fc" id="L822">            int v = valuesBeforeThinning.getValue(p);</span>
+<span class="fc" id="L823">            out.setValue(p.getX(), p.getY(), v);</span>
+<span class="fc" id="L824">            morphInput[p.getX()][p.getY()] = 1;</span>
+<span class="fc" id="L825">        }</span>
         
-<span class="fc" id="L835">        MorphologicalFilter mFilter = new MorphologicalFilter();</span>
-<span class="fc" id="L836">        int[][] skel = mFilter.bwMorphThin(morphInput, Integer.MAX_VALUE);</span>
-<span class="fc bfc" id="L837" title="All 2 branches covered.">        for (int i = 0; i &lt; n0; ++i) {</span>
-<span class="fc bfc" id="L838" title="All 2 branches covered.">            for (int j = 0; j &lt; n1; ++j) {</span>
-<span class="fc" id="L839">                int m = skel[i][j]; </span>
-<span class="fc bfc" id="L840" title="All 2 branches covered.">                if (m == 0) {</span>
-<span class="fc" id="L841">                    out.setValue(i, j, 0);</span>
+<span class="fc" id="L827">        MorphologicalFilter mFilter = new MorphologicalFilter();</span>
+<span class="fc" id="L828">        int[][] skel = mFilter.bwMorphThin(morphInput, Integer.MAX_VALUE);</span>
+<span class="fc bfc" id="L829" title="All 2 branches covered.">        for (int i = 0; i &lt; n0; ++i) {</span>
+<span class="fc bfc" id="L830" title="All 2 branches covered.">            for (int j = 0; j &lt; n1; ++j) {</span>
+<span class="fc" id="L831">                int m = skel[i][j]; </span>
+<span class="fc bfc" id="L832" title="All 2 branches covered.">                if (m == 0) {</span>
+<span class="fc" id="L833">                    out.setValue(i, j, 0);</span>
                 }
             }
         }
-<span class="pc bpc" id="L845" title="1 of 2 branches missed.">        if (useLineThinner) {</span>
+<span class="pc bpc" id="L837" title="1 of 2 branches missed.">        if (useLineThinner) {</span>
             //ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
             //lt.applyFilter(out);
             
-<span class="fc" id="L849">            ImageProcessor imp = new ImageProcessor();</span>
-<span class="fc" id="L850">            imp.applyThinning2(out);</span>
+<span class="fc" id="L841">            ImageProcessor imp = new ImageProcessor();</span>
+<span class="fc" id="L842">            imp.applyThinning2(out);</span>
         
         }
         
-<span class="fc" id="L854">        gradientXY.resetTo(out);</span>
-<span class="fc" id="L855">    }</span>
+<span class="fc" id="L846">        gradientXY.resetTo(out);</span>
+<span class="fc" id="L847">    }</span>
 
     private int countAboveZero(GreyscaleImage img) {
         
-<span class="nc" id="L859">        int n = 0;</span>
-<span class="nc bnc" id="L860" title="All 2 branches missed.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
-<span class="nc bnc" id="L861" title="All 2 branches missed.">            if (img.getValue(i) &gt; 0) {</span>
-<span class="nc" id="L862">                n++;</span>
+<span class="nc" id="L851">        int n = 0;</span>
+<span class="nc bnc" id="L852" title="All 2 branches missed.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
+<span class="nc bnc" id="L853" title="All 2 branches missed.">            if (img.getValue(i) &gt; 0) {</span>
+<span class="nc" id="L854">                n++;</span>
             }
         }
         
-<span class="nc" id="L866">        return n;</span>
+<span class="nc" id="L858">        return n;</span>
     }
 
 }

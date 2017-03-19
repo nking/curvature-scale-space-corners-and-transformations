@@ -332,9 +332,9 @@ import java.util.logging.Logger;
 
 <span class="fc bfc" id="L333" title="All 2 branches covered.">        for (int i = 0; i &lt; sumVar.length; i++) {</span>
 
-<span class="pc bpc" id="L335" title="1 of 2 branches missed.">            if ((float)(nSumVar[i] - 1) &gt; 0) {</span>
+<span class="pc bpc" id="L335" title="1 of 2 branches missed.">            if ((nSumVar[i] - 1.f) &gt; 0) {</span>
                 // divide by N-1 rather because mean was calc'ed from the data
-<span class="fc" id="L337">                sumVar[i] = (float)(sumVar[i]/(float)(nSumVar[i] - 1.));</span>
+<span class="fc" id="L337">                sumVar[i] = (sumVar[i]/((float)nSumVar[i] - 1.f));</span>
             } else {
 <span class="nc" id="L339">                sumVar[i] = 0;</span>
             }

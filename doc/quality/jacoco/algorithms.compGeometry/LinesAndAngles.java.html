@@ -567,7 +567,7 @@ import algorithms.util.PairInt;
 <span class="fc" id="L567">        double b = (Math.PI / 2.) - a;</span>
         
 <span class="fc" id="L569">        double xInter1 = (double) radius / Math.cos(a);</span>
-<span class="fc" id="L570">        double yInter1 = (double) xInter1 * Math.tan(b);</span>
+<span class="fc" id="L570">        double yInter1 = xInter1 * Math.tan(b);</span>
 <span class="fc bfc" id="L571" title="All 2 branches covered.">        if (xInter1 &lt; imageWidth) {</span>
 <span class="fc bfc" id="L572" title="All 2 branches covered.">            if (yInter1 &lt; imageHeight) {</span>
 <span class="fc" id="L573">                return new int[]{0, (int) Math.round(yInter1), </span>
@@ -575,20 +575,20 @@ import algorithms.util.PairInt;
             }
 <span class="fc" id="L576">            double y2 = yInter1 - ly;</span>
             // yInter1/y2 = xInter1/x2 ==&gt; x2 = xInter1 * y2 / yInter1
-<span class="fc" id="L578">            double x2 = (double) (y2 * xInter1) / (double) (yInter1);</span>
+<span class="fc" id="L578">            double x2 = (y2 * xInter1) / (yInter1);</span>
 <span class="fc" id="L579">            return new int[]{(int) Math.round(x2), ly, </span>
 <span class="fc" id="L580">                (int) Math.round(xInter1), 0};</span>
         }
         // xInt &gt; imageWidth - 1
 <span class="fc" id="L583">        double x2 = xInter1 - lx;</span>
-<span class="fc" id="L584">        double y2 = (double) x2 * Math.tan(b);</span>
+<span class="fc" id="L584">        double y2 = x2 * Math.tan(b);</span>
 <span class="fc bfc" id="L585" title="All 2 branches covered.">        if (yInter1 &lt; imageHeight) {</span>
 <span class="fc" id="L586">            return new int[]{0, (int) Math.round(yInter1), </span>
 <span class="fc" id="L587">                lx, (int) Math.round(y2)};</span>
         }
         // yInt &gt; imageHeight - 1
 <span class="fc" id="L590">        double y3 = yInter1 - ly;</span>
-<span class="fc" id="L591">        double x3 = (double) (y3 * xInter1) / (double) (yInter1);</span>
+<span class="fc" id="L591">        double x3 = (y3 * xInter1) / (yInter1);</span>
         
 <span class="fc" id="L593">        return new int[]{(int) Math.round(x3), ly, </span>
 <span class="fc" id="L594">            lx, (int) Math.round(y2)};</span>

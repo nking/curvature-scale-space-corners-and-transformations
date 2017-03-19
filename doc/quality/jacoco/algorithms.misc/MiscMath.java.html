@@ -602,7 +602,7 @@ import java.util.Set;
 <span class="fc" id="L602">            double diffX = x.get(i) - avgX;</span>
 <span class="fc" id="L603">            sumX += (diffX * diffX);</span>
         }
-<span class="fc" id="L605">        double stdDevX = (Math.sqrt((double)sumX/((double)length - 1.)));</span>
+<span class="fc" id="L605">        double stdDevX = (Math.sqrt(sumX/((double)length - 1.)));</span>
         
 <span class="fc" id="L607">        return new double[]{avgX, stdDevX};</span>
     }
