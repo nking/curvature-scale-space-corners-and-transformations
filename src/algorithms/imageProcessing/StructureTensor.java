@@ -134,6 +134,9 @@ public class StructureTensor {
         if (detA == null) {
             
             ImageProcessor imageProcessor = new ImageProcessor();
+            
+            // pairwise multiplication
+            
             float[][] axxyy = imageProcessor.multiply(dXSq, dYSq);
 
             float[][] axyxy = imageProcessor.multiply(dXdY, dXdY);

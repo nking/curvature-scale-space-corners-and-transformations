@@ -454,7 +454,7 @@ public class ORBTest extends TestCase {
         }
         for (int i = 2; i < 8; ++i) {
             for (int j = 2; j < 8; ++j) {
-                img[i][j] = 1.f;
+                img[i][j] = 100.f;
             }
         }
         
@@ -470,7 +470,7 @@ public class ORBTest extends TestCase {
         
         float[][] hc = orb.cornerHarris(img, detA, traceA);
         
-        //orb.debugPrint("hc=", hc);
+        orb.debugPrint("hc=", hc);
         
         /*
          >>> from skimage.feature import corner_harris, corner_peaks

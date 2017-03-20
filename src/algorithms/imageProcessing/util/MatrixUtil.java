@@ -104,9 +104,9 @@ public class MatrixUtil {
         
         float[][] c = new float[m.length][];
 
-        for (int i = 0; i < c.length; ++i) {
-            c[i] = new float[n.length];
-            for (int j = 0; j < c[0].length; ++j) {
+        for (int i = 0; i < m.length; ++i) {
+            c[i] = new float[m[0].length];
+            for (int j = 0; j < m[0].length; ++j) {
                 c[i][j] -= m[i][j] - n[i][j];
             }
         }
@@ -131,9 +131,9 @@ public class MatrixUtil {
         
         float[][] c = new float[m.length][];
 
-        for (int i = 0; i < c.length; ++i) {
-            c[i] = new float[n.length];
-            for (int j = 0; j < c[0].length; ++j) {
+        for (int i = 0; i < m.length; ++i) {
+            c[i] = new float[m[0].length];
+            for (int j = 0; j < m[0].length; ++j) {
                 c[i][j] = m[i][j] + n[i][j];
             }
         }

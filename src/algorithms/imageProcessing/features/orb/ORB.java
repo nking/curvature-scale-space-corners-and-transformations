@@ -539,6 +539,16 @@ public class ORB {
 
         float[] scores = new float[n];
         PairInt[] points = new PairInt[n];
+        
+        System.out.println("n=" + n + " h=" 
+            + img.getHeight() + " w=" + img.getWidth() +
+            " hRows=" + harrisResponse.length + 
+            " hCols=" + harrisResponse[0].length +
+            " pRows=" + pyramidImages[0].a.length + 
+            " pCols=" + pyramidImages[0].a[0].length + 
+            " dRows=" + tensorComponents[0].getDeterminant().length +
+            " dCols=" + tensorComponents[0].getDeterminant()[0].length);
+        
         int count = 0;
         for (int ii = 0; ii < n; ++ii) {
             int x = r.keypoints1.get(ii);
