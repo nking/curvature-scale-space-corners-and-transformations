@@ -3410,7 +3410,7 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
 
         return out;
     }
-
+    
     public void createFirstDerivKeyPoints(float[][] image,
         float sigma, TIntList outKeypoints0, TIntList outKeypoints1) {
 
@@ -5545,7 +5545,6 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
     Note, in some places, scipy functions have been
     replaced with existing functions in this project in this implementation below.
 
-
      * @param img
      * @param minDistance
         Minimum number of pixels separating peaks in a region of `2 *
@@ -5559,6 +5558,8 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         float thresholdRel,
         TIntList outputKeypoints0, TIntList outputKeypoints1) {
 
+        //TODO: consider whether to handle negative numbers in img
+        
         int excludeBorder = minDistance;
         int numPeaks = Integer.MAX_VALUE;
         //int numPeaksPerLabel = Integer.MAX_VALUE;

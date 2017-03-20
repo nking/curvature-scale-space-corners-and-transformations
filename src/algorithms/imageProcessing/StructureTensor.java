@@ -87,31 +87,47 @@ public class StructureTensor {
 
         // switch X and Y sobel operations to match scipy
 
+        // NOTE: may need to revisit this
+        float norm = (0.707f * (float)Math.sqrt(2. * Math.PI));
+        
         float[][] gX = imageProcessor.copy(image);
         imageProcessor.applySobelY(gX);
+        //MatrixUtil.multiply(gX, norm);
 
         float[][] gY = imageProcessor.copy(image);
         imageProcessor.applySobelX(gY);
+        //MatrixUtil.multiply(gY, norm);
         
         // --- create structure tensors ----
-        float[] kernel = Gaussian1D.getKernel(sigma);
+        float[] kernel = (sigma > 0) ? Gaussian1D.getKernel(sigma) : null;
         
+        //Axx
         dXSq = imageProcessor.multiplyPointwise(gX, gX);
-        imageProcessor.applyKernelTwo1Ds(dXSq, kernel);
-
+        if (kernel != null) {
+            imageProcessor.applyKernelTwo1Ds(dXSq, kernel);
+        }
+        
+        //Ayy
         dYSq = imageProcessor.multiplyPointwise(gY, gY);
-        imageProcessor.applyKernelTwo1Ds(dYSq, kernel);
-
+        if (kernel != null) {
+            imageProcessor.applyKernelTwo1Ds(dYSq, kernel);
+        }
+        
+        //Axy
         dXdY = imageProcessor.multiplyPointwise(gX, gY);
-        imageProcessor.applyKernelTwo1Ds(dXdY, kernel);
-
+        if (kernel != null) {
+            imageProcessor.applyKernelTwo1Ds(dXdY, kernel);
+        }
+        
         if (create2ndDerivs) {
             
             dX = gX;
             dY = gY;
             
             // for curvature, need d/dy(dy) and d/dx(dx)
-            kernel = Gaussian1DFirstDeriv.getKernel(sigma);
+            kernel = (sigma > 0) ?
+                Gaussian1DFirstDeriv.getKernel(sigma) :
+                Gaussian1DFirstDeriv.getKernel(SIGMA.ZEROPOINTSEVENONE);
             
             d2X = imageProcessor.copy(gX);
             d2Y = imageProcessor.copy(gY);
@@ -135,7 +151,7 @@ public class StructureTensor {
             
             ImageProcessor imageProcessor = new ImageProcessor();
             
-            // pairwise multiplication
+            // detA = Axx * Ayy - Axy ** 2
             
             float[][] axxyy = imageProcessor.multiplyPointwise(dXSq, dYSq);
 
@@ -150,20 +166,33 @@ public class StructureTensor {
     public float[][] getTrace() {
         
         if (traceA == null) {
-            traceA = MatrixUtil.add(dXSq, dXdY);
+            traceA = MatrixUtil.add(dXSq, dYSq);
         }
         
         return traceA;
     }
     
+    /**
+     * get Axx
+     * 
+     * @return 
+     */
     public float[][] getDXSquared() {
         return dXSq;
     }
     
+    /**
+     * get Ayy
+     * @return 
+     */
     public float[][] getDYSquared() {
         return dYSq;
     }
     
+    /**
+     * get Axy
+     * @return 
+     */
     public float[][] getDXDY() {
         return dXdY;
     }

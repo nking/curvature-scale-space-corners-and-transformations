@@ -454,7 +454,7 @@ public class ORBTest extends TestCase {
         }
         for (int i = 2; i < 8; ++i) {
             for (int j = 2; j < 8; ++j) {
-                img[i][j] = 100.f;
+                img[i][j] = 1.f;
             }
         }
         
@@ -462,7 +462,7 @@ public class ORBTest extends TestCase {
         orb.overrideToUseSmallestPyramid();
         
         StructureTensor tensorComponents = new 
-            StructureTensor(img, 1, false);
+            StructureTensor(img, 0.f, false);
         
         float[][] detA = tensorComponents.getDeterminant();
 
@@ -470,6 +470,11 @@ public class ORBTest extends TestCase {
         
         float[][] hc = orb.cornerHarris(img, detA, traceA);
         
+        //String str = MiscDebug.getPrintRowMajor(detA, "detA=");
+        //System.out.println(str);
+        //str = MiscDebug.getPrintRowMajor(traceA, "traceA=");
+        //System.out.println(str);
+           
         orb.debugPrint("hc=", hc);
         
         /*
@@ -499,7 +504,7 @@ public class ORBTest extends TestCase {
         
         TIntList keypoints0 = new TIntArrayList();
         TIntList keypoints1 = new TIntArrayList();
-        
+          
         orb.cornerPeaks(hc, 1, keypoints0, keypoints1);
         
         //System.out.println("coords=" + coords);
