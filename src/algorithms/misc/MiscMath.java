@@ -595,7 +595,7 @@ public class MiscMath {
             sumX += x.get(i);
         }
         
-        double avgX = (double)sumX/(double)length;
+        double avgX = sumX/(double)length;
         
         sumX = 0;
         for (int i = 0; i < length; i++) {

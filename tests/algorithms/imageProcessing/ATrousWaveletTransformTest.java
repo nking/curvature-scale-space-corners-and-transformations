@@ -51,19 +51,29 @@ public class ATrousWaveletTransformTest extends TestCase {
             
             at.calculateWithB3SplineScalingFunction(gsImg, outputTransformed, outputCoeff);
             
-            //at.calculateForEdgeOptimization(gsImg, outputTransformed, outputCoeff);
-                        
-            //at.calculateWithB3SplineScalingFunction2(gsImg, outputTransformed, outputCoeff);
+            List<GreyscaleImage> outputTransformed2 = new ArrayList<GreyscaleImage>();
+            List<GreyscaleImage> outputCoeff2 = new ArrayList<GreyscaleImage>();
             
-            //at.calculateWithTriangleScalingFunction(gsImg, outputTransformed, outputCoeff);
-            
+            at.calculateWithTriangleScalingFunction(gsImg, 
+                outputTransformed2, outputCoeff2);
+                
             for (int i = 0; i < outputTransformed.size(); ++i) {
-                MiscDebug.writeImage(outputTransformed.get(i), fileNameRoot + "_tr_" + i + "_");
+                MiscDebug.writeImage(outputTransformed.get(i), fileNameRoot 
+                    + "_b3_tr_" + i + "_");
             }
             for (int i = 0; i < outputCoeff.size(); ++i) {
-                MiscDebug.writeImage(outputCoeff.get(i), fileNameRoot + "_coeff_" + i + "_");
+                MiscDebug.writeImage(outputCoeff.get(i), fileNameRoot + 
+                    "_b3_coeff_" + i + "_");
             }
             
+            for (int i = 0; i < outputTransformed2.size(); ++i) {
+                MiscDebug.writeImage(outputTransformed2.get(i), fileNameRoot 
+                    + "_b3_tr_" + i + "_");
+            }
+            for (int i = 0; i < outputCoeff2.size(); ++i) {
+                MiscDebug.writeImage(outputCoeff2.get(i), fileNameRoot + 
+                    "_b3_coeff_" + i + "_");
+            }
             
             GreyscaleImage r = at.reconstruct(
                 outputTransformed.get(outputTransformed.size() - 1), outputCoeff);
@@ -73,6 +83,16 @@ public class ATrousWaveletTransformTest extends TestCase {
             r = r.subtract(gsImgCp);
             
             MiscDebug.writeImage(r, fileNameRoot + "_recon_resid");
+            
+            
+            r = at.reconstruct(
+                outputTransformed2.get(outputTransformed2.size() - 1), outputCoeff2);
+            
+            MiscDebug.writeImage(r, fileNameRoot + "_reconstructed_tri");
+            
+            r = r.subtract(gsImgCp);
+            
+            MiscDebug.writeImage(r, fileNameRoot + "_recon_resid_tri");
             
         }
         

@@ -64,14 +64,14 @@ public class SpurRemover {
 
         while ((nIter == 0) || ((nChanged > 0) && (nIter < nMaxIter))) {
         
-if (debug) {        
+//if (debug) {        
 Image img3 = new Image(imageWidth, imageHeight);
 for (PairInt p : points) {
     img3.setRGB(p.getX(), p.getY(), 255, 0, 0);
 }
 MiscDebug.writeImage(img3, "spur_removal_" + nIter + "_" 
 + MiscDebug.getCurrentTimeFormatted());
-}
+//}
 
             nChanged = 0;
             

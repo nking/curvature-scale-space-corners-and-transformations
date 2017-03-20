@@ -127,30 +127,30 @@ import java.util.List;
     public void calculateWithTriangleScalingFunction(GreyscaleImage input,
         List&lt;GreyscaleImage&gt; outputTransformed, List&lt;GreyscaleImage&gt; outputCoeff) {
 
-<span class="nc" id="L130">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
+<span class="fc" id="L130">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
 
-<span class="nc" id="L132">        int nr = (int)(Math.log(imgDimen)/Math.log(2));</span>
+<span class="fc" id="L132">        int nr = (int)(Math.log(imgDimen)/Math.log(2));</span>
 
-<span class="nc" id="L134">        TriangleFunction scalingFunction = new TriangleFunction();</span>
+<span class="fc" id="L134">        TriangleFunction scalingFunction = new TriangleFunction();</span>
         
-<span class="nc" id="L136">        outputTransformed.add(input.copyToSignedImage());</span>
+<span class="fc" id="L136">        outputTransformed.add(input.copyToSignedImage());</span>
         
-<span class="nc" id="L138">        outputCoeff.add(input.createSignedWithDimensions());</span>
+<span class="fc" id="L138">        outputCoeff.add(input.createSignedWithDimensions());</span>
 
-<span class="nc bnc" id="L140" title="All 2 branches missed.">        for (int j = 0; j &lt; nr; ++j) {</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">        for (int j = 0; j &lt; nr; ++j) {</span>
             
-<span class="nc" id="L142">            GreyscaleImage cJ = outputTransformed.get(j);</span>
+<span class="fc" id="L142">            GreyscaleImage cJ = outputTransformed.get(j);</span>
  
-<span class="nc" id="L144">            GreyscaleImage cJPlus1 = scalingFunction.calculateNextLevel(cJ, j);</span>
+<span class="fc" id="L144">            GreyscaleImage cJPlus1 = scalingFunction.calculateNextLevel(cJ, j);</span>
            
-<span class="nc" id="L146">            outputTransformed.add(cJPlus1);</span>
+<span class="fc" id="L146">            outputTransformed.add(cJPlus1);</span>
             
             // c_(j,k) − c_(j+1,k)
-<span class="nc" id="L149">            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1);//scalingFunction.subtractLevels(cJ, j);</span>
+<span class="fc" id="L149">            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1);//scalingFunction.subtractLevels(cJ, j);</span>
           
-<span class="nc" id="L151">            outputCoeff.add(wJPlus1);</span>
+<span class="fc" id="L151">            outputCoeff.add(wJPlus1);</span>
         }
-<span class="nc" id="L153">    }</span>
+<span class="fc" id="L153">    }</span>
 
     /**
      * The a trous algorithm is a fast implementation of a wavelet transform 
@@ -269,257 +269,6 @@ import java.util.List;
         }
         
 <span class="fc" id="L271">    }</span>
-    
-    /**
-     * The a trous algorithm is a fast implementation of a wavelet transform 
-     * with no downsampling.   It is non-orthogonal, has semi-linear runtime
-     * complexity, is invariant under translation, and the transform is 
-     * isotropic.
-     * Implemented from pseudocode in http://www.multiresolution.com/svbook.pdf
-     * The scaling function used is the higher resolution choice, the 3rd order 
-     * B Spline function.
-     * Edge optimized factors have been included following
-     * &quot;Edge-Optimized À-Trous Wavelets for Local Contrast Enhancement with 
-     * Robust Denoising&quot; by Johannes Hanika, Holger Dammertz, and Hendrik Lensch
-     * https://jo.dreggn.org/home/2011_atrous.pdf
-     * 
-     *  Not Ready For Use.
-     * 
-     * NOTE: see PahseCongruence.java instead.  It uses log gabor in frequency
-     * space (along with a monogenic filter) and inverse transform to find edges
-     * and uses successive scale transformations to help remove noise.
-     * The phase congruence produces an edge image, however.
-     * 
-     * @param input
-     * @param outputTransformed
-     * @param outputCoeff 
-     */
-     private void calculateForEdgeOptimization(GreyscaleImage input,
-        List&lt;GreyscaleImage&gt; outputTransformed, List&lt;GreyscaleImage&gt; outputCoeff) {
-
-<span class="nc" id="L300">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
-
-<span class="nc" id="L302">        int nr = (int)(Math.log(imgDimen)/Math.log(2));</span>
-
-<span class="nc" id="L304">        B3SplineFunction scalingFunction = new B3SplineFunction();</span>
-        
-<span class="nc" id="L306">        outputTransformed.add(input.copyToSignedImage());</span>
-        
-<span class="nc" id="L308">        outputCoeff.add(input.createSignedWithDimensions());</span>
-                
-<span class="nc" id="L310">        int jjMax = 4;</span>
-<span class="nc" id="L311">        double lambda = 0.003;</span>
-        
-<span class="nc" id="L313">        int lastIdx = -1;</span>
-<span class="nc" id="L314">        int[] dxs = Misc.dx8;</span>
-<span class="nc" id="L315">        int[] dys = Misc.dy8;</span>
-        
-        // ----- decomposition -----
-        
-<span class="nc bnc" id="L319" title="All 2 branches missed.">        for (int j = 0; j &lt; nr; ++j) {</span>
-            
-<span class="nc" id="L321">            GreyscaleImage cJ = outputTransformed.get(j);</span>
- 
-<span class="nc" id="L323">            GreyscaleImage cJPlus1 = scalingFunction.calculate(cJ);</span>
-                        
-            // c_(j,k) − c_(j+1,k)
-<span class="nc" id="L326">            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1);</span>
-            
-//NOTE: the recombined (synthesized) image looks correct, but the
-// detail images (in outputCoeff) do not resemble the figure in 
-// the authors' paper (unless the authors are plotting the unmodified 
-// coefficient image).   
-// the negative exponential diminishes the edges
-// but a positive exponential, even when sigma is scaled for the range of
-// data in wJPlus1 so that it doesn't overflow the range, only enhances the
-// pixels that are already bright pixels in the coefficient image, so the
-// step seems expensive (exponential transcendantal function) compared to 
-// thresholding those same pixels.
-//
-// the authors' goals may already be met by the use of the A Trous wavelet and
-// the b3 spline scaling function already.
-            
-            // -- alter cJPlus1 and wJPlus1 with edge optimization weights -----
-          
-<span class="nc" id="L344">            int w = cJ.getWidth();</span>
-<span class="nc" id="L345">            int h = cJ.getHeight();</span>
-            
-<span class="nc" id="L347">            double[][] eI = new double[jjMax*(j + 1)][];</span>
-<span class="nc bnc" id="L348" title="All 2 branches missed.">            for (int jj = 0; jj &lt; jjMax*(j + 1); ++jj) {</span>
-<span class="nc" id="L349">                double sigmaRJJ = 0.5 + jj;</span>
-<span class="nc" id="L350">                double sum0 = 0;</span>
-<span class="nc" id="L351">                double sumW = 0;</span>
-<span class="nc" id="L352">                double[] ws = new double[wJPlus1.getNPixels()]; </span>
-<span class="nc bnc" id="L353" title="All 2 branches missed.">                for (int p = 0; p &lt; wJPlus1.getNPixels(); ++p) {</span>
-<span class="nc" id="L354">                    double d = wJPlus1.getValue(p);</span>
-<span class="nc" id="L355">                    double m = (d*d)/sigmaRJJ;</span>
-                    //range of exp is 0 to 1 if use -m instead
-<span class="nc" id="L357">                    double exp = Math.exp(-m);</span>
-<span class="nc" id="L358">                    ws[p] = exp;</span>
-<span class="nc" id="L359">                    sum0 += cJPlus1.getValue(p);</span>
-<span class="nc" id="L360">                    sumW += (exp * cJPlus1.getValue(p));</span>
-                }
-               
-                {
-<span class="nc" id="L364">double[] cp = Arrays.copyOf(ws, ws.length);</span>
-<span class="nc" id="L365">Arrays.sort(cp);</span>
-<span class="nc" id="L366">System.out.println(&quot;j=&quot; + j + &quot; *minW=&quot; + cp[0] + &quot; maxW=&quot; + cp[cp.length - 1]</span>
-+ &quot; 1Qw=&quot; +  cp[(int)(1.*(cp.length - 1)/4.)] + &quot; 2Qw=&quot; +  cp[(int)(3.*(cp.length - 1)/4.)]
-+ &quot; 3QW=&quot; + cp[(int)(3.*(cp.length - 1)/4.)]);
-                } 
-                
-                // normalize ws
-<span class="nc" id="L372">                double f0 = (sum0/sumW);</span>
-<span class="nc bnc" id="L373" title="All 2 branches missed.">                for (int p = 0; p &lt; cJ.getNPixels(); ++p) {</span>
-<span class="nc" id="L374">                    ws[p] *= f0;</span>
-                }
-                
-<span class="nc" id="L377">                eI[jj] = new double[cJ.getNPixels()];</span>
- 
-                {
-<span class="nc" id="L380">double[] cp = Arrays.copyOf(ws, ws.length);</span>
-<span class="nc" id="L381">Arrays.sort(cp);</span>
-<span class="nc" id="L382">System.out.println(&quot;j=&quot; + j + &quot; minW=&quot; + cp[0] + &quot; maxW=&quot; + cp[cp.length - 1]</span>
-+ &quot; 1Qw=&quot; +  cp[(int)(1.*(cp.length - 1)/4.)] + &quot; 2Qw=&quot; +  cp[(int)(3.*(cp.length - 1)/4.)]
-+ &quot; 3QW=&quot; + cp[(int)(3.*(cp.length - 1)/4.)]);
-                }
- 
-<span class="nc bnc" id="L387" title="All 2 branches missed.">                for (int p = 0; p &lt; cJ.getNPixels(); ++p) {</span>
-                                        
-<span class="nc" id="L389">                    double dIJJ = cJ.getValue(p) - (ws[p] * cJPlus1.getValue(p));</span>
-                    
-<span class="nc" id="L391">                    ++lastIdx;</span>
-<span class="nc bnc" id="L392" title="All 2 branches missed.">                    if (lastIdx &gt; (dxs.length - 1)) {</span>
-<span class="nc" id="L393">                        lastIdx = 0;</span>
-                    }
-
-                    // NOTE: assuming authors intend gC to describe the unmodified cJ
-<span class="nc" id="L397">                    double gC = estimateLocalNoise(cJ, p, dxs[lastIdx], dys[lastIdx]);</span>
-                    
-<span class="nc" id="L399">                    eI[jj][p] = (dIJJ * dIJJ) + (lambda * gC);</span>
-                }
-            }
-<span class="nc" id="L402">            double[] sigmas = new double[cJ.getNPixels()];</span>
-            
-            // for each pixel p, find the minimum in eI and store it's sigma.
-            // then use a B3Spline on the sigma image to result in the sigmas
-            // to be used per pixel on cJ and then calculate the detail image again
-<span class="nc bnc" id="L407" title="All 2 branches missed.">            for (int p = 0; p &lt; cJ.getNPixels(); ++p) {</span>
-<span class="nc" id="L408">                double minE = Double.MAX_VALUE;</span>
-<span class="nc" id="L409">                int minEJJIdx = -1;</span>
-<span class="nc bnc" id="L410" title="All 2 branches missed.">                for (int jj = 0; jj &lt; jjMax*(j + 1); ++jj) {</span>
-<span class="nc" id="L411">                    double e = eI[jj][p];</span>
-<span class="nc bnc" id="L412" title="All 2 branches missed.">                    if (e &lt; minE) {</span>
-<span class="nc" id="L413">                        minE = e;</span>
-<span class="nc" id="L414">                        minEJJIdx = jj;</span>
-                    }
-                }
-<span class="nc" id="L417">                sigmas[p] =  0.5 + minEJJIdx;</span>
-            }
-<span class="nc" id="L419">            sigmas = scalingFunction.calculate(sigmas, w, h);</span>
-            
-            // use the sigmas and weighting function to alter cJPlus1 and recalc wJPlus1
-<span class="nc" id="L422">            double sumW = 0;</span>
-<span class="nc" id="L423">            double sum0 = 0;</span>
-<span class="nc" id="L424">            double[] ws = new double[wJPlus1.getNPixels()];</span>
-<span class="nc bnc" id="L425" title="All 2 branches missed.">            for (int p = 0; p &lt; wJPlus1.getNPixels(); ++p) {</span>
-<span class="nc" id="L426">                double sigma = sigmas[p];</span>
-<span class="nc bnc" id="L427" title="All 4 branches missed.">                assert(sigma &gt; 0.0);</span>
-<span class="nc" id="L428">                double d = wJPlus1.getValue(p);</span>
-<span class="nc" id="L429">                double m = (d*d)/sigma;</span>
-<span class="nc" id="L430">                double exp = Math.exp(-m);</span>
-<span class="nc" id="L431">                ws[p] = exp;</span>
-<span class="nc" id="L432">                sum0 += cJPlus1.getValue(p);</span>
-<span class="nc" id="L433">                sumW += (exp * cJPlus1.getValue(p));</span>
-            }
-<span class="nc" id="L435">            double f0 = (sum0/sumW);</span>
-<span class="nc bnc" id="L436" title="All 2 branches missed.">            for (int p = 0; p &lt; cJ.getNPixels(); ++p) {</span>
-<span class="nc" id="L437">                double f = ws[p] * f0;</span>
-<span class="nc" id="L438">                int cIJJPlus1 = (int)Math.round(f * cJPlus1.getValue(p));</span>
-<span class="nc bnc" id="L439" title="All 2 branches missed.">                if (cIJJPlus1 &gt; 255) {</span>
-<span class="nc" id="L440">                    System.err.println(&quot;larger than 255.  factor=&quot; + f);</span>
-<span class="nc" id="L441">                    cIJJPlus1 = 255;</span>
-                }
-                
-<span class="nc" id="L444">                cJPlus1.setValue(p, cIJJPlus1);</span>
-            }
-            
-<span class="nc" id="L447">            wJPlus1 = cJ.subtract(cJPlus1);</span>
-                             
-<span class="nc" id="L449">            outputTransformed.add(cJPlus1);</span>
-                        
-<span class="nc" id="L451">            outputCoeff.add(wJPlus1);</span>
-            
-            /*
-            estimate sigma per pixel:
-                compute multiple decompositions with different parameters and 
-                then choose optimal parameters for each pixel. 
-            The parameters to iterate over are sigma_r_j for jj=0 to jjmax.
-
-            For each jj we separate the current image into coarse c_j_jj and
-            detail using the current σ_r_jj as global edge weight. 
-            The resulting decomposition is used to evaluate an error image
-              e_jj = d_j_jj squared  + λ · || ∇c_j_jj ||
-            
-            The authors use a fixed  λ = 0.003 and jmax=4.
-            The error measure is evaluated using same window as used in b3 spline
-            function, using 25 samples on a regular grid with 
-            Cranley Patterson rotation [CP76] 
-            to decorrelate adjacent pixels.
-            
-            After all jj have been processed at scale j, we search for the
-            minimum error e_jj per pixel 
-            and determine the optimal edge weight σ_r_k with k = argmin_jj{e_jj}. 
-            In order to avoid too drastic changes in the edge weights, 
-            the per-pixel weights are smoothed once into a buffer z
-               z = σ_r_k ∗ h_0   (h_0 represents the b3 spline window function)
-            
-            Finally, the actual wavelet decomposition step takes place
-            as in Section 2.1, but taking the locally optimal parameters
-            σ_r from the blended buffer z at each pixel’s position.
-            We found jmax = 4 sufficient for all images in this paper,
-            and chose a simple linear sampling of the interval
-            [0,4∗(j+1)). 
-           
-            Synthesis is recombining the coarse base layer with the coefficient
-            (detail) layers that are potentially scaled and soft thresholded.
-            
-            BayesShrink [CYV00] is a soft thresholding method designed for a 
-            wide range of input signal priors, such as Laplacian and 
-            Gaussian distributions assuming additive iid Gaussian noise.
-            As a consistent and robust estimator for the noise standard
-            deviation, we use the median absolute deviation (MAD) over
-            all pixels at the finest level, and obtain
-                σ_n = median(|d0|) / 0.6745
-            Now we iterate for each wavelet scale, this time starting at
-            the coarsest level i = imax...0. Given the signal variance (σ_y_i)^2
-            the soft shrinkage threshold T is calculated as in [CYV00]
-            to minimize the risk of destroying the signal, by
-                T = ( (σ_n_i)^2 ) / sqrt( max{0, (σ_y_i)^2 - (σ_n_i)^2} )
-
-                with 
-                   (σ_y_i)^2 = (1/N) * summation over pixels of (d_i)^2 
-                and
-                    (σ_n_i)^2 = σ_n,i = σ_n / (2^i)
-            
-                With this threshold, shrinkage and contrast boost is applied
-                to the detail coefficients at the same time, by setting
-                    modified d_i = max{0,|di| −T} ·sign(di)
-                      and ci−1 = ci +β · modified d_i
-                where β is the contrast boost parameter. In case denoising is
-                not wanted, only the last step is relevant with modified d = d.
-
-            Our edge-optimized wavelet scheme tends to move as
-            much edge information to the coarser levels as possible, so
-            the detail coefficients even correspond more to the Gaussian
-            distribution than they would with usual wavelet transformation.
-            Also, the edge data will not be affected by thresholding
-            this way, resulting in a better PSNR of the denoised results.
-            */
-           
-        }
-        
-<span class="nc" id="L522">    }</span>
    
     /**
      * same as calculateWithB3SplineScalingFunction except that it uses a 2-D
@@ -532,77 +281,47 @@ import java.util.List;
     void calculateWithB3SplineScalingFunction2(GreyscaleImage input,
         List&lt;GreyscaleImage&gt; outputTransformed, List&lt;GreyscaleImage&gt; outputCoeff) {
 
-<span class="fc" id="L535">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
+<span class="fc" id="L284">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
 
-<span class="fc" id="L537">        int nr = (int)(Math.log(imgDimen)/Math.log(2));</span>
+<span class="fc" id="L286">        int nr = (int)(Math.log(imgDimen)/Math.log(2));</span>
 
-<span class="fc" id="L539">        B3SplineFunction scalingFunction = new B3SplineFunction();</span>
+<span class="fc" id="L288">        B3SplineFunction scalingFunction = new B3SplineFunction();</span>
         
-<span class="fc" id="L541">        outputTransformed.add(input.copyToSignedImage());</span>
+<span class="fc" id="L290">        outputTransformed.add(input.copyToSignedImage());</span>
         
-<span class="fc" id="L543">        outputCoeff.add(input.createSignedWithDimensions());</span>
+<span class="fc" id="L292">        outputCoeff.add(input.createSignedWithDimensions());</span>
 
-<span class="fc bfc" id="L545" title="All 2 branches covered.">        for (int j = 0; j &lt; nr; ++j) {</span>
+<span class="fc bfc" id="L294" title="All 2 branches covered.">        for (int j = 0; j &lt; nr; ++j) {</span>
             
-<span class="fc" id="L547">            GreyscaleImage cJ = outputTransformed.get(j);</span>
+<span class="fc" id="L296">            GreyscaleImage cJ = outputTransformed.get(j);</span>
  
-<span class="fc" id="L549">            GreyscaleImage cJPlus1 = scalingFunction.calculate2D(cJ);</span>
+<span class="fc" id="L298">            GreyscaleImage cJPlus1 = scalingFunction.calculate2D(cJ);</span>
            
-<span class="fc" id="L551">            outputTransformed.add(cJPlus1);</span>
+<span class="fc" id="L300">            outputTransformed.add(cJPlus1);</span>
             
             // c_(j,k) − c_(j+1,k)
-<span class="fc" id="L554">            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1);</span>
+<span class="fc" id="L303">            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1);</span>
             
-<span class="fc" id="L556">            outputCoeff.add(wJPlus1);</span>
+<span class="fc" id="L305">            outputCoeff.add(wJPlus1);</span>
         }
         
-<span class="fc" id="L559">    }</span>
+<span class="fc" id="L308">    }</span>
 
     public GreyscaleImage reconstruct(GreyscaleImage c0, 
         List&lt;GreyscaleImage&gt; mmCoeff) {
 
-<span class="fc" id="L564">        int nr = mmCoeff.size();</span>
+<span class="fc" id="L313">        int nr = mmCoeff.size();</span>
 
-<span class="fc" id="L566">        GreyscaleImage output = c0.copyToFullRangeIntImage();</span>
+<span class="fc" id="L315">        GreyscaleImage output = c0.copyToFullRangeIntImage();</span>
 
-<span class="fc bfc" id="L568" title="All 2 branches covered.">        for (int j = 0; j &lt; nr; ++j) {</span>
+<span class="fc bfc" id="L317" title="All 2 branches covered.">        for (int j = 0; j &lt; nr; ++j) {</span>
            
-<span class="fc" id="L570">            output = output.add(mmCoeff.get(j));</span>
+<span class="fc" id="L319">            output = output.add(mmCoeff.get(j));</span>
         }
 
-<span class="fc" id="L573">        return output;</span>
+<span class="fc" id="L322">        return output;</span>
     }
     
-    /*
-    looking at
-    A Novel Edge-Aware A-Trous Filter For Single Image Dehazing `
-        Baojun Qi, Tao Wu, and Hangen He
-    2012 IEEE International Conference on Information Science and Technology
-        Wuhan, Hubei, China; March 23-25, 2012
-    
-    the input transformed images are found above as c_(j,k), c_(j+1,k), etc
-                                    (   | (c(j, k) - c(j + 1, k) | )
-        edge stopping function = exp( - -------------------------- )
-                                    (         (sigma_r)^2          )
-    
-        so this is using what the above refers to as the coefficients (retained
-        for use in reconstruction).
-    
-    the transformed image is multiplied by the edge stopping function divided
-        by the normalization.
-    
-    the normalization is needed too.
-    
-    looking for edge optimization which avoids exponentiation if possible.
-    https://jo.dreggn.org/home/2011_atrous.pdf
-    similar transform as implemented in above class plus
-    locally adaptive (per-pixel) edge-weights, improved
-    denoising using BayesShrink, and a fast and simple to implement
-    algorithm
-    
-    see pg 37 of sv book
-    */
-
     /**
      * Following
      * &quot;Edge-Optimized À-Trous Wavelets for Local Contrast Enhancement with 
@@ -643,43 +362,43 @@ import java.util.List;
     private double estimateLocalNoise(GreyscaleImage img, int pixIdx, int xOffset, 
         int yOffset) {
         
-<span class="nc" id="L646">        int w = img.getWidth();</span>
-<span class="nc" id="L647">        int h = img.getHeight();</span>
+<span class="nc" id="L365">        int w = img.getWidth();</span>
+<span class="nc" id="L366">        int h = img.getHeight();</span>
         
-<span class="nc" id="L649">        int x = img.getCol(pixIdx);</span>
-<span class="nc" id="L650">        int y = img.getRow(pixIdx);</span>
+<span class="nc" id="L368">        int x = img.getCol(pixIdx);</span>
+<span class="nc" id="L369">        int y = img.getRow(pixIdx);</span>
         
-<span class="nc" id="L652">        int count = 0;</span>
-<span class="nc" id="L653">        double diff = 0;</span>
+<span class="nc" id="L371">        int count = 0;</span>
+<span class="nc" id="L372">        double diff = 0;</span>
         // iterate within window to find first pixel
-<span class="nc bnc" id="L655" title="All 2 branches missed.">        for (int dx = -2; dx &lt;= 2; ++dx) {</span>
-<span class="nc" id="L656">            int x1 = x + dx;</span>
-<span class="nc bnc" id="L657" title="All 4 branches missed.">            if (x1 &lt; 0 || x1 &gt; (w - 1)) {</span>
-<span class="nc" id="L658">                continue;</span>
+<span class="nc bnc" id="L374" title="All 2 branches missed.">        for (int dx = -2; dx &lt;= 2; ++dx) {</span>
+<span class="nc" id="L375">            int x1 = x + dx;</span>
+<span class="nc bnc" id="L376" title="All 4 branches missed.">            if (x1 &lt; 0 || x1 &gt; (w - 1)) {</span>
+<span class="nc" id="L377">                continue;</span>
             }
-<span class="nc bnc" id="L660" title="All 2 branches missed.">            for (int dy = -2; dy &lt;= 2; ++dy) {</span>
-<span class="nc" id="L661">                int y1 = y + dy;</span>
-<span class="nc bnc" id="L662" title="All 4 branches missed.">                if (y1 &lt; 0 || y1 &gt; (h - 1)) {</span>
-<span class="nc" id="L663">                    continue;</span>
+<span class="nc bnc" id="L379" title="All 2 branches missed.">            for (int dy = -2; dy &lt;= 2; ++dy) {</span>
+<span class="nc" id="L380">                int y1 = y + dy;</span>
+<span class="nc bnc" id="L381" title="All 4 branches missed.">                if (y1 &lt; 0 || y1 &gt; (h - 1)) {</span>
+<span class="nc" id="L382">                    continue;</span>
                 }
                                 
-<span class="nc" id="L666">                int x2 = x1 + xOffset;</span>
-<span class="nc" id="L667">                int y2 = y1 + yOffset;</span>
-<span class="nc bnc" id="L668" title="All 8 branches missed.">                if ((x2 &lt; 0) || (x2 &gt; (w - 1)) || (y2 &lt; 0) ||</span>
+<span class="nc" id="L385">                int x2 = x1 + xOffset;</span>
+<span class="nc" id="L386">                int y2 = y1 + yOffset;</span>
+<span class="nc bnc" id="L387" title="All 8 branches missed.">                if ((x2 &lt; 0) || (x2 &gt; (w - 1)) || (y2 &lt; 0) ||</span>
                     (y2 &gt; (h - 1))) {
-<span class="nc" id="L670">                    continue;</span>
+<span class="nc" id="L389">                    continue;</span>
                 }
                                 
-<span class="nc" id="L673">                diff += Math.abs(img.getValue(x1, y1) - img.getValue(x2, y2));</span>
+<span class="nc" id="L392">                diff += Math.abs(img.getValue(x1, y1) - img.getValue(x2, y2));</span>
                 
-<span class="nc" id="L675">                count++;</span>
+<span class="nc" id="L394">                count++;</span>
             }
         }
-<span class="nc bnc" id="L678" title="All 4 branches missed.">        assert(count &gt; 0);</span>
+<span class="nc bnc" id="L397" title="All 4 branches missed.">        assert(count &gt; 0);</span>
         
-<span class="nc" id="L680">        diff /= (double)count;</span>
+<span class="nc" id="L399">        diff /= (double)count;</span>
         
-<span class="nc" id="L682">        return diff;</span>
+<span class="nc" id="L401">        return diff;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
