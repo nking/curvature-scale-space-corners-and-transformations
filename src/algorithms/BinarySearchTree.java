@@ -12,8 +12,8 @@ import java.util.Stack;
            greater than the node
    The left and right subtrees are also binary search trees
 
- * use a Node with left, right and parent.
- * use a binary search method impl as: while loop rot != null: if (root.value < value) root=root.getRight()...
+ use a Node with left, right and parent.
+ use a binary search method impl as: while loop rot != null: if (root.value < value) root=root.getRight()...
  *
  * based upon pseudocode from Cormen et al. Introduction to Algorithms.  added in-order, pre-order and post-order traversal methods too.
  *
@@ -130,7 +130,7 @@ public class BinarySearchTree<T extends HeapNode> {
     }
     
     public void delete(T z) {
-       
+               
         T y = null;
         T x = null;
         if ((z.getLeft() == null) || (z.getRight() == null)) {
@@ -163,7 +163,7 @@ public class BinarySearchTree<T extends HeapNode> {
             z.setKey(y.getKey());
             z.setData(y.getData());
         }
-        
+                
         n--;
     }
     
@@ -185,14 +185,16 @@ public class BinarySearchTree<T extends HeapNode> {
     }
     
     private T search(T tn, long theKey) {
-        while ((tn != null) && (tn.getKey() != theKey)) {
-            if (theKey < tn.getKey()) {
+        while (tn != null) {
+            if (theKey == tn.getKey()) {
+                return tn;
+            } else if (theKey < tn.getKey()) {
                 tn = (tn.getLeft() != null) ? (T) tn.getLeft() : null;
             } else if (theKey > tn.getKey()) {
                 tn = (tn.getRight() != null) ? (T) tn.getRight() : null;
             }
         }
-        return tn;
+        return null;
     }
     
     private T getRoot(T nd) {

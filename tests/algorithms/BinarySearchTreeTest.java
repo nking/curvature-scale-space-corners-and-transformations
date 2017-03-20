@@ -2,9 +2,7 @@ package algorithms;
 
 import algorithms.imageProcessing.HeapNode;
 import java.security.SecureRandom;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import junit.framework.TestCase;
 
@@ -31,12 +29,14 @@ public class BinarySearchTreeTest extends TestCase {
             node.setKey(i);
             nodes[i] = node;
             bst.insert(node);
+            assertNotNull(bst.search(node));
         }
         for (int i = (n - 1); i >= (n/2); --i) {
             HeapNode node = new HeapNode();
             node.setKey(i);
             nodes[i] = node;
             bst.insert(node);
+            assertNotNull(bst.search(node));
         }
         
         assertEquals(n, bst.getNumberOfNodes());
@@ -72,6 +72,7 @@ public class BinarySearchTreeTest extends TestCase {
             if (!rm.contains(r)) {
                 rm.add(r);
                 bst.delete(r);
+                assertNull(bst.search(r));
             }
         }
         
@@ -82,9 +83,7 @@ public class BinarySearchTreeTest extends TestCase {
         for (int i = 0; i < n; ++i) {
             HeapNode node0 = nodes[i];
             HeapNode node = bst.search(node0);
-            if (rm.contains(node0)) {
-                assertNull(node);
-            } else {
+            if (!rm.contains(node0)) {
                 if (!minChecked) {
                     HeapNode minNode = bst.minimum();
                     assertEquals((long)i, minNode.getKey());
@@ -114,6 +113,7 @@ public class BinarySearchTreeTest extends TestCase {
             node.setKey(i);
             nodes[i] = node;
             bst.insert(node);
+            assertNotNull(bst.search(node));
         }
         
         assertEquals((n - rm.size()) + n, bst.getNumberOfNodes());
@@ -135,6 +135,11 @@ public class BinarySearchTreeTest extends TestCase {
             if (!rm.contains(r)) {
                 rm.add(r);
                 bst.delete(r);
+                HeapNode node2 = bst.search(r);
+                if (node2 != null) {
+                    System.out.println("r=" + r.toString() + " node2=" + node2);
+                }
+                assertNull(node2);
             }
         }
         
@@ -145,9 +150,7 @@ public class BinarySearchTreeTest extends TestCase {
         for (int i = 0; i < 2*n; ++i) {
             HeapNode node0 = nodes[i];
             HeapNode node = bst.search(node0);
-            if (rm.contains(node0)) {
-                assertNull(node);
-            } else {
+            if (!rm.contains(node0)) {
                 if (!minChecked) {
                     HeapNode minNode = bst.minimum();
                     assertEquals((long)i, minNode.getKey());
