@@ -776,7 +776,7 @@ try {
     private float findMaxSigmaOfFirstPeaks(
         Map<Integer, List<CurvatureScaleSpaceContour>> bestMatches1) {
 
-        float maxPeakSigma = Float.MIN_VALUE;
+        float maxPeakSigma = Float.NEGATIVE_INFINITY;
 
         for (Map.Entry<Integer, List<CurvatureScaleSpaceContour>> entry : bestMatches1.entrySet()) {
 

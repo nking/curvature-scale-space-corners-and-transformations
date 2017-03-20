@@ -32,9 +32,9 @@ public class VoronoiFortunesSweepTest extends TestCase {
         String[] names = new String[nCities];
         
         float xmin = Float.MAX_VALUE;
-        float xmax = Float.MIN_VALUE;
+        float xmax = Float.NEGATIVE_INFINITY;
         float ymin = Float.MAX_VALUE;
-        float ymax = Float.MIN_VALUE;
+        float ymax = Float.NEGATIVE_INFINITY;
 
         String path = ResourceFinder.findFileInTestResources("miles.dat");
 

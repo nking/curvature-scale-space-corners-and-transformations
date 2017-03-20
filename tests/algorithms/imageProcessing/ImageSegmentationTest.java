@@ -48,7 +48,7 @@ public class ImageSegmentationTest extends TestCase {
         float xmn = 0;
         float xmx = crImg.getWidth() / bn;
         float ymn = Float.MAX_VALUE;
-        float ymx = Float.MIN_VALUE;
+        float ymx = Float.NEGATIVE_INFINITY;
         int row = 50;
         for (int i = 0; i < (crImg.getWidth() / bn) - 1; ++i) {
             int ii = bn * i;
@@ -75,7 +75,7 @@ public class ImageSegmentationTest extends TestCase {
         xmn = 0;
         xmx = crImg.getHeight() / bn;
         ymn = Float.MAX_VALUE;
-        ymx = Float.MIN_VALUE;
+        ymx = Float.NEGATIVE_INFINITY;
         int col = 50;
         for (int j = 0; j < (crImg.getHeight() / bn) - 1; ++j) {
             int jj = bn * j;

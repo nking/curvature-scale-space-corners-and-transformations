@@ -97,10 +97,9 @@ public class MiscMath {
      * @return
      */
     public static float findMax(float[] a) {
-        float max = Float.MIN_VALUE;
+        float max = Float.NEGATIVE_INFINITY;
         for (int i = 0; i < a.length; i++) {
-            if ((a[i] > max) && !Float.isInfinite(a[i]) && !Float.isNaN(a[i]) 
-                && (a[i] < Float.MAX_VALUE)) {
+            if (a[i] > max) {
                 max = a[i];
             }
         }
@@ -118,10 +117,9 @@ public class MiscMath {
     }
     
     public static float findMax(float[] a, int nIndexes) {
-        float max = Float.MIN_VALUE;
+        float max = Float.NEGATIVE_INFINITY;
         for (int i = 0; i < nIndexes; i++) {
-            if ((a[i] > max) && !Float.isInfinite(a[i]) && !Float.isNaN(a[i]) 
-                && (a[i] < Float.MAX_VALUE)) {
+            if (a[i] > max) {
                 max = a[i];
             }
         }
@@ -146,7 +144,7 @@ public class MiscMath {
     
     public static float findMax(float[][] img) {
         
-        float max = Float.MIN_VALUE;
+        float max = Float.NEGATIVE_INFINITY;
         
         for (int i = 0; i < img.length; ++i) {
             for (int j = 0; j < img[i].length; ++j) {
@@ -313,7 +311,7 @@ public class MiscMath {
         if (a == null || a.length == 0) {
             return -1;
         }
-        float max = Float.MIN_VALUE;
+        float max = Float.NEGATIVE_INFINITY;
         int index = 0;
         for (int i = 0; i < a.length; i++) {
             if ((a[i] > max) && !Float.isInfinite(a[i]) && !Float.isNaN(a[i]) 
@@ -390,7 +388,7 @@ public class MiscMath {
 
         // find the powers of 10 for the data min and max
         float xmin = Float.MAX_VALUE;
-        float xmax = Float.MIN_VALUE;
+        float xmax = Float.NEGATIVE_INFINITY;
         for (int i = 0; i < a.length; i++) {
             if (a[i] > xmax) {
                 xmax = a[i];
@@ -2113,8 +2111,8 @@ public class MiscMath {
 
     public static float[] findMaxXY2(List<List<CurvatureScaleSpaceContour>> crLists) {
         
-        float maxX = Float.MIN_VALUE;
-        float maxY = Float.MIN_VALUE;
+        float maxX = Float.NEGATIVE_INFINITY;
+        float maxY = Float.NEGATIVE_INFINITY;
         
         for (List<CurvatureScaleSpaceContour> list : crLists) {
             for (CurvatureScaleSpaceContour cr : list) {
@@ -2306,7 +2304,7 @@ public class MiscMath {
     public static float[] rescale(float[] a, int vi, int vf) {
         
         float minV = Float.MAX_VALUE;
-        float maxV = Float.MIN_VALUE;
+        float maxV = Float.NEGATIVE_INFINITY;
         
         for (int i = 0; i < a.length; ++i) {
             float v = a[i];
@@ -2493,7 +2491,7 @@ public class MiscMath {
         float maxScaled) {
         
         float minV = Float.MAX_VALUE;
-        float maxV = Float.MIN_VALUE;
+        float maxV = Float.NEGATIVE_INFINITY;
         
         for (int i = 0; i < a.length; ++i) {
             for (int j = 0; j < a[i].length; ++j) {
@@ -2536,7 +2534,7 @@ public class MiscMath {
         }
         
         float minV = Float.MAX_VALUE;
-        float maxV = Float.MIN_VALUE;
+        float maxV = Float.NEGATIVE_INFINITY;
         
         for (int i = 0; i < a.length; ++i) {
             float v = a[i];
@@ -2579,12 +2577,12 @@ public class MiscMath {
         float maxScaled) {
         
         float minV = Float.MAX_VALUE;
-        float maxV = Float.MIN_VALUE;
+        float maxV = Float.NEGATIVE_INFINITY;
         
         for (int i = 0; i < a.length; ++i) {
             for (int j = 0; j < a[i].length; ++j) {
                 float v = a[i][j];
-                if (v == Float.MAX_VALUE || v == Float.MIN_VALUE) {
+                if (v == Float.MAX_VALUE || v == Float.NEGATIVE_INFINITY) {
                     continue;
                 }
                 if (v < minV) {
@@ -2607,7 +2605,7 @@ public class MiscMath {
                 float v = a[i][j];
                 if (v == Float.MAX_VALUE) {
                     a[i][j] = maxV;
-                } else if (v == Float.MIN_VALUE) {
+                } else if (v == Float.NEGATIVE_INFINITY) {
                     a[i][j] = minV;
                 } else {
                     a[i][j] = (v - minV) * scale;

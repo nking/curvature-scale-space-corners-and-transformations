@@ -820,9 +820,9 @@ public class ContourFinder {
          float[] x = new float[dirTst.getN()];
          float[] y = new float[x.length];
          float xmn = Float.MAX_VALUE;
-         float xmx = Float.MIN_VALUE;
+         float xmx = Float.NEGATIVE_INFINITY;
          float ymn = Float.MAX_VALUE;
-         float ymx = Float.MIN_VALUE;
+         float ymx = Float.NEGATIVE_INFINITY;
          for (int i = 0; i < dirTst.getN(); ++i) {
          x[i] = dirTst.getX(i);
          y[i] = dirTst.getY(i);

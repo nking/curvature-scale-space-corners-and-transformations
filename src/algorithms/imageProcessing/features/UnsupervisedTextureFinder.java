@@ -186,7 +186,7 @@ public class UnsupervisedTextureFinder {
             double totSim = 0;
             for (int i = 0; i < subsetNoise.size(); ++i) {
                 int[][] ch = chs[i];
-                float maxSim = Float.MIN_VALUE;
+                float maxSim = Float.NEGATIVE_INFINITY;
                 int maxSimIdx = -1;
                 for (int ii = 0; ii < nGroups; ++ii) {
                     float intersection = chhist.intersection(

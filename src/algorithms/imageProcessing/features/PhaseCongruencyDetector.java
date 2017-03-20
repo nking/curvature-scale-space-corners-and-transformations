@@ -1527,7 +1527,7 @@ public class PhaseCongruencyDetector {
         int nBins = 50;
 
         float[] values = new float[data.length];
-        float max = Float.MIN_VALUE;
+        float max = Float.NEGATIVE_INFINITY;
         int count = 0;
         for (int j = 0; j < data.length; ++j) {
             for (int i = 0; i < data[j].length; ++i) {

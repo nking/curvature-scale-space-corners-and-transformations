@@ -445,9 +445,9 @@ public class DistanceTransformTest extends TestCase {
         float[] ye = new float[y.length];
         
         float xMin = Float.MAX_VALUE;
-        float xMax = Float.MIN_VALUE;
+        float xMax = Float.NEGATIVE_INFINITY;
         float yMin = Float.MAX_VALUE;
-        float yMax = Float.MIN_VALUE;
+        float yMax = Float.NEGATIVE_INFINITY;
         
         for (int i = 0; i < x.length; i++) {
 

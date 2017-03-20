@@ -439,7 +439,7 @@ if (sigma.ordinal() == SIGMA.TWO.ordinal()) {
             int h = g.length >> 1;
             
             int yMaxIdx = -1;
-            float yMax = Float.MIN_VALUE;
+            float yMax = Float.NEGATIVE_INFINITY;
             float sum = 0;
             for (int i = 0; i < g.length; i++) {
                 int xc = i - h;

@@ -122,7 +122,7 @@ public class CSSCornerMaker {
                 }
             }
             
-            float maxK = Float.MIN_VALUE;
+            float maxK = Float.NEGATIVE_INFINITY;
             SIGMA maxKSigma = null;
             for (Entry<Integer, Float> entry : maxKMap.entrySet()) {
                 Float k = entry.getValue().floatValue();

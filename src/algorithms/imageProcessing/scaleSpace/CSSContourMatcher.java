@@ -126,7 +126,7 @@ public final class CSSContourMatcher {
         c2.addAll(contours2);
 
         float minT = Float.MAX_VALUE;
-        float maxT = Float.MIN_VALUE;
+        float maxT = Float.NEGATIVE_INFINITY;
         for (int i = 0; i < c1.size(); i++) {
             CurvatureScaleSpaceContour contour = c1.get(i);
             float t = contour.getPeakScaleFreeLength();
@@ -141,7 +141,7 @@ public final class CSSContourMatcher {
         tMax1 = maxT;
 
         minT = Float.MAX_VALUE;
-        maxT = Float.MIN_VALUE;
+        maxT = Float.NEGATIVE_INFINITY;
         for (int i = 0; i < c2.size(); i++) {
             CurvatureScaleSpaceContour contour = c2.get(i);
             float t = contour.getPeakScaleFreeLength();

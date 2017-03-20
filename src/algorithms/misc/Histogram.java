@@ -932,7 +932,7 @@ public class Histogram {
 
     public static int findFirstPeakIndex(HistogramHolder hist) {
         
-        float yPeak = Float.MIN_VALUE;
+        float yPeak = Float.NEGATIVE_INFINITY;
         int yPeakIdx = -1;
         
         // specific to use here, find max within first half of histogram
@@ -1353,7 +1353,7 @@ public class Histogram {
         
         float halfPeak = hist.getYHist()[yPeakIndex]/2.f;
         
-        float x0 = Float.MIN_VALUE;
+        float x0 = Float.NEGATIVE_INFINITY;
         if (yPeakIndex == 0) {
             x0 = hist.getXHist()[0];
         } else {
@@ -1377,7 +1377,7 @@ public class Histogram {
             }
         }
         
-        float x1 = Float.MIN_VALUE;
+        float x1 = Float.NEGATIVE_INFINITY;
         if (yPeakIndex == (hist.getYHist().length - 1)) {
             x1 = hist.getXHist()[(hist.getYHist().length - 1)];
         } else {
@@ -1401,7 +1401,7 @@ public class Histogram {
             }
         }
         
-        if ((x0 == Float.MIN_VALUE) || (x1 == Float.MIN_VALUE)) {
+        if ((x0 == Float.NEGATIVE_INFINITY) || (x1 == Float.NEGATIVE_INFINITY)) {
             return 0;
         }
         

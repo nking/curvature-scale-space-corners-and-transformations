@@ -22,7 +22,7 @@ public class GaussianHelperForTests {
     public static float measureFWHM(int[] x, int[] y) {
         
         int yMaxIdx = -1;
-        float yMax = Float.MIN_VALUE;
+        float yMax = Float.NEGATIVE_INFINITY;
         for (int i = 0; i < y.length; i++) {
             if (y[i] > yMax) {
                 yMax = y[i];
@@ -53,7 +53,7 @@ public class GaussianHelperForTests {
     public static float measureFWHM(int[] x, float[] y) {
         
         int yMaxIdx = -1;
-        float yMax = Float.MIN_VALUE;
+        float yMax = Float.NEGATIVE_INFINITY;
         for (int i = 0; i < y.length; i++) {
             if (y[i] > yMax) {
                 yMax = y[i];
@@ -88,7 +88,7 @@ public class GaussianHelperForTests {
         }
         
         int yMaxIdx = -1;
-        float yMax = Float.MIN_VALUE;
+        float yMax = Float.NEGATIVE_INFINITY;
         for (int i = 0; i < y.length; i++) {
             if (y[i] > yMax) {
                 yMax = y[i];
@@ -125,7 +125,7 @@ public class GaussianHelperForTests {
     public static float measureFWHMRoundToSmaller(float[] x, float[] y) {
         
         int yMaxIdx = -1;
-        float yMax = Float.MIN_VALUE;
+        float yMax = Float.NEGATIVE_INFINITY;
         for (int i = 0; i < y.length; i++) {
             if (y[i] > yMax) {
                 yMax = y[i];
@@ -160,7 +160,7 @@ public class GaussianHelperForTests {
     public static float measureFWHMRoundToSmaller(int[] x, int[] y) {
         
         int yMaxIdx = -1;
-        float yMax = Float.MIN_VALUE;
+        float yMax = Float.NEGATIVE_INFINITY;
         for (int i = 0; i < y.length; i++) {
             if (y[i] > yMax) {
                 yMax = y[i];

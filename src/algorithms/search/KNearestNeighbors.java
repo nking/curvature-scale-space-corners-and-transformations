@@ -46,9 +46,9 @@ public class KNearestNeighbors {
     private KDTreeFloat kdTree = null;
     
     private float xmin = Float.MAX_VALUE;
-    private float xmax = Float.MIN_VALUE;
+    private float xmax = Float.NEGATIVE_INFINITY;
     private float ymin = Float.MAX_VALUE;
-    private float ymax = Float.MIN_VALUE;
+    private float ymax = Float.NEGATIVE_INFINITY;
         
     public KNearestNeighbors(int[] x, int[] y) {
         init(x, y);
@@ -96,9 +96,9 @@ public class KNearestNeighbors {
         int n = x.length;
         
         xmin = Float.MAX_VALUE;
-        xmax = Float.MIN_VALUE;
+        xmax = Float.NEGATIVE_INFINITY;
         ymin = Float.MAX_VALUE;
-        ymax = Float.MIN_VALUE;
+        ymax = Float.NEGATIVE_INFINITY;
         for (int i = 0; i < n; ++i) {
             float xp = x[i];
             float yp = y[i];
