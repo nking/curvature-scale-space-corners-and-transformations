@@ -84,12 +84,14 @@ public class BinarySearchTreeThreadedTest extends TestCase {
             node.setKey(i);
             nodes[i] = node;
             bst.insert(node);
+            assertNotNull(bst.search(node));
         }
         for (int i = (n - 1); i >= (n/2); --i) {
             HeapNode node = new HeapNode();
             node.setKey(i);
             nodes[i] = node;
             bst.insert(node);
+            assertNotNull(bst.search(node));
         }
         
         assertEquals(n, bst.getNumberOfNodes());
@@ -102,6 +104,7 @@ public class BinarySearchTreeThreadedTest extends TestCase {
             HeapNode node = bst.search(nodes[i]);
             assertEquals((long)i, node.getKey());
             assertTrue(bst.threadMap.containsKey(node));
+            assertNotNull(bst.search(node));
             
             /*
             smallest element in the tree with key greater
@@ -149,6 +152,7 @@ public class BinarySearchTreeThreadedTest extends TestCase {
                 rm.add(r);
                 rmInt.add(Integer.valueOf((int)r.getKey()));
                 assertFalse(bst.threadMap.containsKey(r));
+                assertNull(bst.search(r));
             }
         }
         
@@ -172,7 +176,7 @@ public class BinarySearchTreeThreadedTest extends TestCase {
                     HeapNode next = bst.successor(node);
                     int expected = i + 1;
                     while (expected < n) {
-                        if (rm.contains(Integer.valueOf(expected))) {
+                        if (rmInt.contains(Integer.valueOf(expected))) {
                             ++expected;
                         } else {
                             assertEquals((long)expected, next.getKey());
@@ -189,6 +193,7 @@ public class BinarySearchTreeThreadedTest extends TestCase {
             node.setKey(i);
             nodes[i] = node;
             bst.insert(node);
+            assertNotNull(bst.search(node));
         }
 
         assertEquals((n - rm.size()) + n, bst.getNumberOfNodes());
@@ -216,6 +221,7 @@ public class BinarySearchTreeThreadedTest extends TestCase {
             if (!rm.contains(r)) {
                 rm.add(r);
                 bst.delete(r);
+                assertNull(bst.search(r));
             }
         }
 
@@ -240,7 +246,7 @@ public class BinarySearchTreeThreadedTest extends TestCase {
                     HeapNode next = bst.successor(node);
                     int expected = i + 1;
                     while (expected < n) {
-                        if (rm.contains(Integer.valueOf(expected))) {
+                        if (rmInt.contains(Integer.valueOf(expected))) {
                             ++expected;
                         } else {
                             assertEquals((long)expected, next.getKey());
