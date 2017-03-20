@@ -25,10 +25,10 @@ public class MorphologicalFilterTest extends TestCase {
         int[][] skel = mFilter.bwMorphThin(img, Integer.MAX_VALUE);
      
         int[][] expected = new int[4][];
-        expected[0] = new int[]{0, 0, 0, 0, 0};
+        expected[0] = new int[]{0, 0, 1, 0, 0};
         expected[1] = new int[]{0, 0, 1, 0, 0};
         expected[2] = new int[]{0, 0, 1, 0, 0};
-        expected[3] = new int[]{0, 0, 0, 0, 0};
+        expected[3] = new int[]{0, 0, 1, 0, 0};
         
         for (int i = 0; i < expected.length; ++i) {
             for (int j = 0; j < expected[i].length; ++j) {
