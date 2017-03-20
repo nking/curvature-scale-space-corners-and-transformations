@@ -1488,5 +1488,16 @@ public class MiscDebug {
         String filePathX = plotterX.writeFile("X_" + fileSuffix);
         String filePath3 = plotterY.writeFile("Y_" + fileSuffix);
     }
+
+    public static String getPrintRowMajor(float[][] a, String label) {
+                
+        StringBuilder sb = new StringBuilder(label);
+        sb.append("\n");
+        for (int i = 0; i < a.length; ++i) {
+            sb.append(Arrays.toString(a[i])).append("\n");
+        }
+
+        return sb.toString();
+    }
     
 }

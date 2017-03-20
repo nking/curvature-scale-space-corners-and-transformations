@@ -100,7 +100,8 @@ public class SkyTest extends TestCase {
                 
                 GreyscaleImage img2 = lma[k];
                 if (k == 2) {
-                    sobels[k] = imageProcessor.createBinarySobelForPolarTheta(
+                    sobels[k] = imageProcessor
+                        .createBinary1stDerivForPolarTheta(
                         img2, 20);
                 } else {
                     sobels[k] = img2.copyImage();

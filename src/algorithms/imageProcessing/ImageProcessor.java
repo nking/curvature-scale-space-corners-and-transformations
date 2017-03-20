@@ -52,7 +52,9 @@ public class ImageProcessor {
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
     /**
-     * use a sobel (first deriv gaussian sigma=0.5, binomial [-1, 0,1]
+     * use a sobel 
+     * (1D Gaussian w/ sigma=0.71 convolution then
+     * 1D first deriv gaussian sigma=0.5 convolution)
      * and return gradients in X and y. note the image may contain
      * negative values.
      * @param input
@@ -63,9 +65,17 @@ public class ImageProcessor {
         float[] kernel = Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive();
 
         GreyscaleImage gX = input.copyToFullRangeIntImage();
-        GreyscaleImage gY = input.copyToFullRangeIntImage();
+        /*
+         1
+         2  * [1 0 -1]
+         1
+        */
+        applyKernel1D(gX, new float[]{0.5f, 1.f, 0.5f}, false);
         applyKernel1D(gX, kernel, true);
+        
+        GreyscaleImage gY = input.copyToFullRangeIntImage();
         applyKernel1D(gY, kernel, false);
+        applyKernel1D(gY, new float[]{0.5f, 1.f, 0.5f}, true);
 
         return new GreyscaleImage[]{gX, gY};
     }
@@ -74,12 +84,9 @@ public class ImageProcessor {
 
         float[] kernel = Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive();
 
-        GreyscaleImage gX = input.copyToFullRangeIntImage();
-        GreyscaleImage gY = input.copyToFullRangeIntImage();
-        applyKernel1D(gX, kernel, true);
-        applyKernel1D(gY, kernel, false);
-
-        GreyscaleImage img2 = combineConvolvedImages(gX, gY);
+        GreyscaleImage[] gXY = createSobelGradients(input);
+       
+        GreyscaleImage img2 = combineConvolvedImages(gXY[0], gXY[1]);
 
         input.resetTo(img2);
     }
@@ -87,7 +94,7 @@ public class ImageProcessor {
     /**
      * given a color image array with first dimension being color index
      * and the second dimension being the image pixel index,
-     * apply the sobel kernel to each pixel and combine the results
+     * apply the kernel [1,0,-1] to each pixel and combine the results
      * as SSD.
      * @param ptImg polar theta image of a color space such as
      * H of LCH that contains values between 0 and 255.
@@ -95,7 +102,7 @@ public class ImageProcessor {
      * pixels results in a final value of "1".  For example,
      * 20 degrees.
      */
-    public GreyscaleImage createBinarySobelForPolarTheta(
+    public GreyscaleImage createBinary1stDerivForPolarTheta(
         GreyscaleImage ptImg, int lowerDiff) {
 
         int nPix = ptImg.getNPixels();
@@ -104,7 +111,7 @@ public class ImageProcessor {
 
         GreyscaleImage out = ptImg.createWithDimensions();
 
-        // sobel is .5, 0, -.5 so looking for difference in pixels on either
+        // kernel is .5, 0, -.5 so looking for difference in pixels on either
         //   side being .lte. lowerDiff
         int[] diffs = new int[4];
         int offset;
@@ -184,9 +191,9 @@ public class ImageProcessor {
     }
 
     /**
-     * using the binary results from createBinarySobelForPolarTheta
+     * using the binary results from createBinary1stDerivForPolarTheta
      * and the greyscale results from sobel operator,
-     * scale the greyscale sobel so that the maximum value is 1.f,
+     * scale the greyscale result so that the maximum value is 1.f,
      * add both and divide by 2.
      * NOTE: for other uses, may want to make a method which does not
      * scale the greyscale results or uses a different weighting
@@ -208,7 +215,7 @@ public class ImageProcessor {
             throw new IllegalArgumentException("images must be same size");
         }
 
-        GreyscaleImage ptGrad = createBinarySobelForPolarTheta(
+        GreyscaleImage ptGrad = createBinary1stDerivForPolarTheta(
             ptImg, lowerDiff);
 
         float[] out = new float[nPix];
@@ -238,10 +245,10 @@ public class ImageProcessor {
 
     /**
      * create a greyscale adaptive threshold gradient with canny algorithm
-     * and then a color contrast gradient with "H" of LCH, and sobel with
+     * and then a color contrast gradient with "H" of LCH, and 1st deriv with
      * a threshold of 20 degrees for binarization, scale them to
      * 127 and add them.
-     * The color binary sobel pixels are scaled to 1/4th the maximum
+     * The color binary pixels are scaled to 1/4th the maximum
      * of the greyscale gradient.
      *
      * The results could be improved in various ways, but for now
@@ -275,7 +282,7 @@ public class ImageProcessor {
         GreyscaleImage ptImg = createCIELUVTheta(img, 255);
         GreyscaleImage ptGrad =
             //createBinary2ndDerivForPolarTheta(ptImg, 20);
-            createBinarySobelForPolarTheta(ptImg, 20);
+createBinary1stDerivForPolarTheta(ptImg, 20);
 
         /*
         ptGrad.multiply(255);
@@ -284,14 +291,14 @@ public class ImageProcessor {
             ptGrad.setValue(j, 255 - ptGrad.getValue(j));
         }*/
 
-        float[] ptSobel = copyToFloat(ptGrad);
+        float[] ptGradFloat = copyToFloat(ptGrad);
 
-        for (int j = 0; j < ptSobel.length; ++j) {
-            ptSobel[j] *= 63;
-            ptSobel[j] += scaled.getValue(j);
+        for (int j = 0; j < ptGradFloat.length; ++j) {
+            ptGradFloat[j] *= 63;
+            ptGradFloat[j] += scaled.getValue(j);
         }
 
-        scaled = MiscMath.rescaleAndCreateImage(ptSobel, w, h);
+        scaled = MiscMath.rescaleAndCreateImage(ptGradFloat, w, h);
 
         return scaled;
     }
@@ -303,6 +310,8 @@ public class ImageProcessor {
      * as SSD.
      * @param colorInput with first dimension being color index
      * and the second dimension being the image pixel index
+     * @param imgWidth
+     * @return 
      */
     public float[] createSobelConvolution(float[][] colorInput, int imgWidth,
         int imgHeight) {
@@ -314,32 +323,105 @@ public class ImageProcessor {
             throw new IllegalArgumentException("image width X height must equal "
                 + " colorInput[0].length");
         }
-
-        float[] out = new float[nPix];
-
+        
         Kernel1DHelper kernelHelper = new Kernel1DHelper();
+        float[] kernelG = new float[]{0.5f, 1.f, 0.5f};
+        float[] kernel = new float[]{0.5f, 0, -0.5f};
+                
+        // apply kernelG to gX then kernel to gX
+        // apply kernel to gY then kernelG
+        // then combine both
 
-        float[] kernel = Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive();
+        float[] outX = createConvolution(colorInput, imgWidth, imgHeight,
+            kernelG, false);
+        outX = createConvolution(outX, imgWidth, imgHeight,
+            kernel, true);
+        
+        float[] outY = createConvolution(colorInput, imgWidth, imgHeight,
+            kernel, true);
+        outY = createConvolution(outY, imgWidth, imgHeight,
+            kernelG, false);
+         
+        float[] out = new float[nPix];
+        for (int i = 0; i < nPix; ++i) {
+            float v = outX[i] * outX[i] + outY[i] * outY[i];
+            v = (float)Math.sqrt(v/2.f);
+            out[i] = v;
+        }
+        
+        return out;
+    }
+    
+    private float[] createConvolution(float[][] colorInput, int imgWidth,
+        int imgHeight, float[] kernel, boolean calcForX) {
+
+        int nClrs = colorInput.length;
+        int nPix = colorInput[0].length;
+
+        if (nPix != (imgWidth * imgHeight)) {
+            throw new IllegalArgumentException("image width X height must equal "
+                + " colorInput[0].length");
+        }
+        
+        Kernel1DHelper kernelHelper = new Kernel1DHelper();
+        
+        float[] out = new float[nPix];
 
         for (int i = 0; i < imgWidth; ++i) {
             for (int j = 0; j < imgHeight; ++j) {
 
-                double sqSum = 0;
+                double sum = 0;
 
                 for (int c = 0; c < nClrs; ++c) {
 
-                    float convX = kernelHelper.convolvePointWithKernel(
-                        colorInput[c], i, j, kernel, true, imgWidth, imgHeight);
-
-                    float convY = kernelHelper.convolvePointWithKernel(
-                        colorInput[c], i, j, kernel, false, imgWidth, imgHeight);
-
-                    sqSum += (convX * convX + convY * convY);
+                    if (calcForX) {
+                        sum += kernelHelper.convolvePointWithKernel(
+                            colorInput[c], i, j, kernel, true, imgWidth, imgHeight);
+                    } else {
+                        sum += kernelHelper.convolvePointWithKernel(
+                            colorInput[c], i, j, kernel, false, imgWidth, imgHeight);
+                    }
                 }
 
                 int pixIdx = (j * imgWidth) + i;
 
-                out[pixIdx] = (float)Math.sqrt(sqSum/(double)nClrs);
+                out[pixIdx] = (float)(sum/(float)nClrs);
+            }
+        }
+
+        return out;
+    }
+    
+    private float[] createConvolution(float[] input, int imgWidth,
+        int imgHeight, float[] kernel, boolean calcForX) {
+
+        int nPix = input.length;
+
+        if (nPix != (imgWidth * imgHeight)) {
+            throw new IllegalArgumentException("image width X height must equal "
+                + " input.length");
+        }
+        
+        Kernel1DHelper kernelHelper = new Kernel1DHelper();
+        
+        float[] out = new float[nPix];
+
+        for (int i = 0; i < imgWidth; ++i) {
+            for (int j = 0; j < imgHeight; ++j) {
+
+                float sum = 0;
+
+                if (calcForX) {
+                    sum += kernelHelper.convolvePointWithKernel(
+                        input, i, j, kernel, true, imgWidth, imgHeight);
+                } else {
+                    sum += kernelHelper.convolvePointWithKernel(
+                        input, i, j, kernel, false, imgWidth, imgHeight);
+                }
+
+                int pixIdx = (j * imgWidth) + i;
+
+                out[pixIdx] = sum;
             }
         }
 
@@ -348,7 +430,7 @@ public class ImageProcessor {
 
     /**
      * given a greyscale image
-     * apply the sobel kernel to each pixel and combine the results
+     * apply the kernel to each pixel and combine the results
      * as SSD.
      * @param greyscaleInput with index being the image pixel index
      */
@@ -362,33 +444,31 @@ public class ImageProcessor {
                 + " colorInput[0].length");
         }
 
-        float[] out = new float[nPix];
-
         Kernel1DHelper kernelHelper = new Kernel1DHelper();
+        float[] kernelG = new float[]{0.5f, 1.f, 0.5f};
+        float[] kernel = new float[]{0.5f, 0, -0.5f};
+         
+        // apply kernelG to gX then kernel to gX
+        // apply kernel to gY then kernelG
+        // then combine both
 
-        float[] kernel = Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive();
-        double sqSum;
-        int pixIdx;
-
-        for (int i = 0; i < imgWidth; ++i) {
-            for (int j = 0; j < imgHeight; ++j) {
-
-                sqSum = 0;
-
-                float convX = kernelHelper.convolvePointWithKernel(
-                    greyscaleInput, i, j, kernel, true, imgWidth, imgHeight);
-
-                float convY = kernelHelper.convolvePointWithKernel(
-                    greyscaleInput, i, j, kernel, false, imgWidth, imgHeight);
-
-                sqSum += (convX * convX + convY * convY);
-
-                pixIdx = (j * imgWidth) + i;
-
-                out[pixIdx] = (float)Math.sqrt(sqSum);
-            }
+        float[] outX = createConvolution(greyscaleInput, imgWidth, imgHeight,
+            kernelG, false);
+        outX = createConvolution(outX, imgWidth, imgHeight,
+            kernel, true);
+        
+        float[] outY = createConvolution(greyscaleInput, imgWidth, imgHeight,
+            kernel, true);
+        outY = createConvolution(outY, imgWidth, imgHeight,
+            kernelG, false);
+         
+        float[] out = new float[nPix];
+        for (int i = 0; i < nPix; ++i) {
+            float v = outX[i] * outX[i] + outY[i] * outY[i];
+            v = (float)Math.sqrt(v/2.f);
+            out[i] = v;
         }
-
+        
         return out;
     }
 
@@ -396,27 +476,33 @@ public class ImageProcessor {
 
         float[] kernel = Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive();
 
+        /*
+         1
+         2  * [1 0 -1]
+         1
+        */
+        applyKernel1D(input, new float[]{0.5f, 1.f, 0.5f}, false);
+        
         applyKernel1D(input, kernel, true);
     }
 
     public void applySobelY(float[][] input) {
 
+        /*
+         1
+         0  * [1 2 1]
+         -1
+        */
+        
         float[] kernel = Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive();
 
         applyKernel1D(input, kernel, false);
+        
+        applyKernel1D(input, new float[]{0.5f, 1.f, 0.5f}, true);
     }
-
-    public Map<PairInt, Integer> applySobelKernel(GreyscaleImage input,
-        Set<PairInt> points) {
-
-        float[] kernel = Gaussian1DFirstDeriv.getBinomialKernel(
-            SIGMA.ZEROPOINTSEVENONE);
-
-        return applyKernel(input, points, kernel);
-    }
-
+    
     /**
-     * calculate the sobel gradient of the color image using CIELAB DeltaE 2000
+     * calculate the 1st deriv gradient of the color image using CIELAB DeltaE 2000
      * and return gX, gY, and gXY with array indices being pixel
      * indexes of the image.
      * @param img
@@ -424,6 +510,8 @@ public class ImageProcessor {
      */
     public float[][] calculateGradientUsingDeltaE2000(ImageExt img) {
 
+        //TODO: consider making this sobel by applying the gaussian kernel too
+        
         int n = img.getNPixels();
 
         CIEChromaticity cieC = new CIEChromaticity();
@@ -433,7 +521,7 @@ public class ImageProcessor {
 
         float jnd = 2.3f;
 
-        // using 1D sobel kernel -1,0,1, calculating deltaE
+        // using 1D 1st deriv kernel -1,0,1, calculating deltaE
         // between the pixels to either side of center pixel
 
         int x1, y1, x2, y2;
@@ -489,7 +577,7 @@ public class ImageProcessor {
         // make a combined array
         float[] outXY = new float[outX.length];
         for (int i = 0; i < outX.length; ++i) {
-            double gXY = Math.sqrt(outX[i] * outX[i] + outY[i] * outY[i]);
+            double gXY = Math.sqrt((outX[i] * outX[i] + outY[i] * outY[i])/2.f);
             outXY[i] = (float)gXY;
         }
 
@@ -558,7 +646,7 @@ public class ImageProcessor {
 
             int vY = convY.get(p).intValue();
 
-            int v = (int)Math.round(Math.sqrt(vX * vX + vY * vY));
+            int v = (int)Math.round(Math.sqrt(vX * vX + vY * vY)/2.f);
 
             output.put(p, Integer.valueOf(v));
         }
@@ -581,9 +669,9 @@ public class ImageProcessor {
                 int gY = imageY.getG(i, j);
                 int bY = imageY.getB(i, j);
 
-                double r = Math.sqrt(rX*rX + rY*rY);
-                double g = Math.sqrt(gX*gX + gY*gY);
-                double b = Math.sqrt(bX*bX + bY*bY);
+                double r = Math.sqrt((rX*rX + rY*rY)/2.f);
+                double g = Math.sqrt((gX*gX + gY*gY)/2.f);
+                double b = Math.sqrt((bX*bX + bY*bY)/2.f);
 
                 r = (r > 255) ? 255 : r;
                 g = (g > 255) ? 255 : g;
@@ -616,7 +704,7 @@ public class ImageProcessor {
 
                 int gY = imageY.getValue(i, j);
 
-                double g = Math.sqrt(gX*gX + gY*gY);
+                double g = Math.sqrt((gX*gX + gY*gY)/2.f);
 
                 if (g > 255) {
                     g = 255;
@@ -4552,9 +4640,9 @@ public class ImageProcessor {
                                    (X_dot^2(t,o~) + Y_dot^2(t,o~))^1.5
         */
 
-        // --- create Sobel derivatives (gaussian 1st deriv sqrt(2)/2 = 0.707)----
+        // --- create 1st derivatives (gaussian 1st deriv sqrt(2)/2 = 0.707)----
 
-        // switch X and Y sobel operations for row major
+        // switch X and Y 1st deriv operations for row major
 
         TwoDFloatArray[] components =
             createCurvatureComponents(image, sigma);
@@ -5281,17 +5369,17 @@ public class ImageProcessor {
     protected TwoDFloatArray[] createCurvatureComponents(
         float[][] image, float sigma) {
 
-        // --- create Sobel derivatives (gaussian 1st deriv sqrt(2)/2 = 0.707)----
+        // --- create 1st derivatives (gaussian 1st deriv sqrt(2)/2 = 0.707)----
 
-        // switch X and Y sobel operations for row major
+        // switch X and Y 1st deriv operations for row major
 
+        float[] kernel = Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive();        
+        
         float[][] gX = copy(image);
-        applySobelY(gX);
+        applyKernel1D(gX, kernel, true);
 
         float[][] gY = copy(image);
-        applySobelX(gY);
-
-        float[] kernel = Gaussian1D.getKernel(sigma);
+        applyKernel1D(gY, kernel, false);
 
         // for curvature, need d/dy(dy) and d/dx(dx)
 
@@ -5363,7 +5451,13 @@ public class ImageProcessor {
         return out;
     }
 
-    public float[][] multiply(float[][] a, float[][] b) {
+    /**
+     * NOTE, this is a point wise multiply rather than a dot product
+     * @param a
+     * @param b
+     * @return 
+     */
+    public float[][] multiplyPointwise(float[][] a, float[][] b) {
 
         float[][] c = copy(a);
 

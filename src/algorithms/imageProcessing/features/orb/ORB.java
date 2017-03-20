@@ -9,6 +9,7 @@ import algorithms.imageProcessing.MedianTransform;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.StructureTensor;
 import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.TwoDFloatArray;
 import algorithms.util.VeryLongBitString;
@@ -434,13 +435,9 @@ public class ORB {
     
     protected void debugPrint(String label, float[][] a) {
 
-        StringBuilder sb = new StringBuilder(label);
-        sb.append("\n");
-        for (int i = 0; i < a.length; ++i) {
-            sb.append(Arrays.toString(a[i])).append("\n");
-        }
-
-        log.info(sb.toString());
+        String str = MiscDebug.getPrintRowMajor(a, label);
+        
+        log.info(str);
     }
 
     private void debugPrint(String label, int[][] a) {

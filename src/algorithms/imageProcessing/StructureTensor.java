@@ -96,13 +96,13 @@ public class StructureTensor {
         // --- create structure tensors ----
         float[] kernel = Gaussian1D.getKernel(sigma);
         
-        dXSq = imageProcessor.multiply(gX, gX);
+        dXSq = imageProcessor.multiplyPointwise(gX, gX);
         imageProcessor.applyKernelTwo1Ds(dXSq, kernel);
 
-        dYSq = imageProcessor.multiply(gY, gY);
+        dYSq = imageProcessor.multiplyPointwise(gY, gY);
         imageProcessor.applyKernelTwo1Ds(dYSq, kernel);
 
-        dXdY = imageProcessor.multiply(gX, gY);
+        dXdY = imageProcessor.multiplyPointwise(gX, gY);
         imageProcessor.applyKernelTwo1Ds(dXdY, kernel);
 
         if (create2ndDerivs) {
@@ -137,9 +137,9 @@ public class StructureTensor {
             
             // pairwise multiplication
             
-            float[][] axxyy = imageProcessor.multiply(dXSq, dYSq);
+            float[][] axxyy = imageProcessor.multiplyPointwise(dXSq, dYSq);
 
-            float[][] axyxy = imageProcessor.multiply(dXdY, dXdY);
+            float[][] axyxy = imageProcessor.multiplyPointwise(dXdY, dXdY);
 
             detA = MatrixUtil.subtract(axxyy, axyxy);
         }
