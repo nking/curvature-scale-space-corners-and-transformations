@@ -3437,7 +3437,7 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
             MatrixUtil.add(tensorComponents.getDXSquared(),
                 tensorComponents.getDYSquared());
 
-        peakLocalMax(firstDeriv, 1, 0.1f, kp0, kp1);
+        peakLocalMax(firstDeriv, 1, 0.1f, true, kp0, kp1);
 
         float[][] detA = tensorComponents.getDeterminant();
         float[][] traceA = tensorComponents.getTrace();
@@ -5220,7 +5220,8 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
             }
         }
 
-        peakLocalMax(curvature, 1, thresholdRel, outputKeypoints0,
+        peakLocalMax(curvature, 1, thresholdRel, true,
+            outputKeypoints0,
             outputKeypoints1);
 
         /*{// DEBUG
@@ -5555,10 +5556,8 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
      * @param outputKeypoints1 the output col coordinates of keypoints
      */
     public void peakLocalMax(float[][] img, int minDistance,
-        float thresholdRel,
+        float thresholdRel, boolean ignore0sInThreshold,
         TIntList outputKeypoints0, TIntList outputKeypoints1) {
-
-        //TODO: consider whether to handle negative numbers in img
         
         int excludeBorder = minDistance;
         int numPeaks = Integer.MAX_VALUE;
@@ -5609,8 +5608,6 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
             MiscDebug.writeImage(gsImg, "_CURVATURE_");
         }*/
 
-        //TODO: should be able to simplify the mask here
-
         // 1's where same, else 0's
         int[][] mask = new int[nRows][nCols];
         for (int i = 0; i < nRows; ++i) {
@@ -5639,9 +5636,39 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         // find top peak candidates above a threshold.
         // TODO: should this use mask so excluding borders?
         float thresholdAbs = MiscMath.findMin(img);
-        float thresholdMax = thresholdRel * MiscMath.findMax(img);
-        thresholdAbs = Math.max(thresholdAbs, thresholdMax);
-
+        
+        // for the ORB images such as harris corner response images,
+        // the zeroes are where there are no values sometimes, so
+        // if user has set flag ignore0sInThreshold, ignore them
+        // in determining the max
+        float thresholdMax;
+        if (ignore0sInThreshold) {
+            thresholdMax = Float.NEGATIVE_INFINITY;
+            for (int i = 0; i < img.length; ++i) {
+                for (int j = 0; j < img[0].length; ++j) {
+                    float v = img[i][j];
+                    if (Math.abs(v) > 0.000001) {
+                        if (v > thresholdMax) {
+                            thresholdMax = v;
+                        }
+                    } 
+                }
+            }
+            thresholdMax *= thresholdRel;
+        } else {
+            thresholdMax = thresholdRel * MiscMath.findMax(img);
+        }
+        
+        if (ignore0sInThreshold) {
+            if (thresholdAbs == 0.0f) {
+                thresholdAbs = thresholdMax;
+            } else {
+                thresholdAbs = Math.max(thresholdAbs, thresholdMax);
+            }
+        } else {
+            thresholdAbs = Math.max(thresholdAbs, thresholdMax);
+        }
+        
         // mask &= image > 0.1
         for (int i = 0; i < nRows; ++i) {
             for (int j = 0; j < nCols; ++j) {

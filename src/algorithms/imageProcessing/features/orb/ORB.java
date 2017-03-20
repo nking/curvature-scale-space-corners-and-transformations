@@ -318,7 +318,7 @@ public class ORB {
         int nKeyPointsTotal = countKeypoints();
 
         log.info("nKeypointsTotal=" + nKeyPointsTotal +
-            " this.nKeypoints=" + this.nKeypoints);
+            " number of allowed Keypoints=" + this.nKeypoints);
                 
         extractDescriptors();
     }
@@ -513,10 +513,6 @@ public class ORB {
         
         Resp r = extractKeypoints(0);
 
-        if ((r == null) || (r.keypoints0 == null) || r.keypoints0.isEmpty()) {
-            return;
-        }
-       
         if (!atk0.isEmpty()) {
             r.keypoints0.addAll(atk0);
             r.keypoints1.addAll(atk1);
@@ -556,8 +552,10 @@ public class ORB {
             scores[count] = harrisResponse[y][x];
             count++;
         }
-      
-        QuickSort.sortBy1stArg(scores, points);
+     
+        if (n > 0) {
+            QuickSort.sortBy1stArg(scores, points);
+        }
         
         TIntList kpc0s = new TIntArrayList(this.nKeypoints);
         TIntList kpc1s = new TIntArrayList(this.nKeypoints);
@@ -747,7 +745,10 @@ public class ORB {
         // list of format [row, col, ...] of filtered maxima ordered by intensity
         cornerPeaks(fastResponse, 1, keypoints0, keypoints1);
         if (keypoints0.isEmpty()) {
-            return null;
+            Resp r2 = new Resp();
+            r2.keypoints0 = keypoints0;
+            r2.keypoints1 = keypoints1;
+            return r2;
         }
 
         maskCoordinates(keypoints0, keypoints1, nRows, nCols, 8);//16);
@@ -853,7 +854,7 @@ public class ORB {
         // --- harris corners from response image ----
         ImageProcessor imageProcessor = new ImageProcessor();
         imageProcessor.peakLocalMax(harrisResponse, 1, 0.1f,
-            keypoints0, keypoints1);
+            true, keypoints0, keypoints1);
 
         Resp r2 = new Resp();
         r2.keypoints0 = keypoints0;
@@ -1190,11 +1191,11 @@ public class ORB {
 
         int nRows = img.length;
         int nCols = img[0].length;
-
+        
         ImageProcessor imageProcessor = new ImageProcessor();
         // these results have been sorted by decreasing intensity
         imageProcessor.peakLocalMax(img, minDistance, thresholdRel,
-            outputKeypoints0, outputKeypoints1);
+            true, outputKeypoints0, outputKeypoints1);
 
         //System.out.println("keypoints in cornerPeaks="
         //    + "rows=" + outputKeypoints0.toString()
@@ -1884,7 +1885,8 @@ public class ORB {
             float[][] fastResponse = cornerFast(rowMajorImg, fastN, ff);
 
             float f = 0.1f;
-            imageProcessor.peakLocalMax(fastResponse, 1, f, outputKP0, outputKP1);
+            imageProcessor.peakLocalMax(fastResponse, 1, f, 
+                true, outputKP0, outputKP1);
             /*
             float factor = 255.f;
             Image img2 = img.createWithDimensions().copyToColorGreyscale();

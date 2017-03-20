@@ -112,7 +112,8 @@ public class ORBTest extends TestCase {
         
         TIntList outputKeypoints0 = new TIntArrayList();
         TIntList outputKeypoints1 = new TIntArrayList();
-        imageProcessor.peakLocalMax(img, 1, 0.1f, outputKeypoints0, outputKeypoints1);
+        imageProcessor.peakLocalMax(img, 1, 0.1f, 
+            true, outputKeypoints0, outputKeypoints1);
         
         //System.out.println("peakRowCols=" + peakRowCols.toString());
         
@@ -305,7 +306,7 @@ public class ORBTest extends TestCase {
             int y = keypoints1.get(i);
             PairInt p = new PairInt(x, y);
             assertTrue(expected.remove(p));
-        } 
+        }
         assertTrue(expected.isEmpty());
         
         TDoubleList orientation = 
@@ -474,8 +475,8 @@ public class ORBTest extends TestCase {
         //System.out.println(str);
         //str = MiscDebug.getPrintRowMajor(traceA, "traceA=");
         //System.out.println(str);
-           
-        orb.debugPrint("hc=", hc);
+                
+        //orb.debugPrint("hc=", hc);
         
         /*
          >>> from skimage.feature import corner_harris, corner_peaks

@@ -88,15 +88,15 @@ public class StructureTensor {
         // switch X and Y sobel operations to match scipy
 
         // NOTE: may need to revisit this
-        float norm = (0.707f * (float)Math.sqrt(2. * Math.PI));
+        float norm = 4.f;//(0.707f * (float)Math.sqrt(2. * Math.PI));
         
         float[][] gX = imageProcessor.copy(image);
         imageProcessor.applySobelY(gX);
-        //MatrixUtil.multiply(gX, norm);
+        MatrixUtil.multiply(gX, norm);
 
         float[][] gY = imageProcessor.copy(image);
         imageProcessor.applySobelX(gY);
-        //MatrixUtil.multiply(gY, norm);
+        MatrixUtil.multiply(gY, norm);
         
         // --- create structure tensors ----
         float[] kernel = (sigma > 0) ? Gaussian1D.getKernel(sigma) : null;

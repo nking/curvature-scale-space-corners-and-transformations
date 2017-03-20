@@ -47,12 +47,24 @@ public class StructureTensorTest extends TestCase {
         StructureTensor tensor = new StructureTensor(img, 
             0.f, true);
         
+        float norm = 4.f;
+        
         float[][] Axx = tensor.getDXSquared();
         float[][] Ayy = tensor.getDYSquared();
         float[][] Axy = tensor.getDXDY();
         
+        float[][] detA = tensor.getDeterminant();
+        float[][] traceA = tensor.getTrace();
         
-        //String str = MiscDebug.getPrintRowMajor(Axx, "Axx=");
+        for (int i = 0; i < detA.length; ++i) {
+            for (int j = 0; j < detA[0].length; ++j) {
+                assertEquals(0.0f, detA[i][j]);
+            }
+        }
+        
+        //String str = MiscDebug.getPrintRowMajor(detA, "detA=");
+        //System.out.println(str);
+        //str = MiscDebug.getPrintRowMajor(traceA, "traceA=");
         //System.out.println(str);
         
         assertTrue(Math.abs((Axx[2][1]/Axx[1][1]) - 4.) < 0.001);
@@ -73,10 +85,10 @@ public class StructureTensorTest extends TestCase {
         //str = MiscDebug.getPrintRowMajor(Axy, "Axy=");
         //System.out.println(str);
         
-        assertEquals(0.0625f , Axy[1][1]);
-        assertEquals(-0.0625f , Axy[3][1]);
-        assertEquals(-0.0625f , Axy[1][3]);
-        assertEquals(0.0625f , Axy[3][3]);
+        assertEquals(0.0625f * norm * norm, Axy[1][1]);
+        assertEquals(-0.0625f * norm * norm, Axy[3][1]);
+        assertEquals(-0.0625f * norm * norm, Axy[1][3]);
+        assertEquals(0.0625f * norm * norm, Axy[3][3]);
         for (int i = 0; i < Axy.length; ++i) {
             assertEquals(0.f, Math.abs(Axy[i][0]));
             assertEquals(0.f, Math.abs(Axy[i][2]));
