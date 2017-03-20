@@ -37,7 +37,7 @@ public class ColorHistogramTest extends TestCase {
         int[][] hist0 = ch.histogram(img0, points);
         int[][] hist1 = ch.histogram(img1, points);
         
-        assertEquals(2, hist0.length);
+        assertEquals(3, hist0.length);
         assertEquals(16, hist0[0].length);
         
         assertEquals(3, hist0[0][0]);

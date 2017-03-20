@@ -72,40 +72,50 @@ public class PolarFilterGrid {
 
         [u1,u2] = meshgrid(u1range, u2range);
         */
-        
         double[] u1Range = new double[nCols];
-        double div;
-        if ((nCols & 1) == 0) {
+        if ((nCols & 1) == 1) {
             //u1range = [-(cols-1)/2:(cols-1)/2]/(cols-1);
             //if nCols=3, this becomes [-1, 0, 1] --> [-0.5, 0, 0.5]
             u1Range[0] = -(nCols-1)/2.;
-            div = nCols - 1;            
+            for (int i = 1; i < nCols; ++i) {
+                u1Range[i] = u1Range[0] + i;
+            }
+            for (int i = 0; i < nCols; ++i) {
+                u1Range[i] /= (nCols - 1.);
+            }            
         } else {
             //u1range = [-cols/2:(cols/2-1)]/cols; 
             //if nCols=4, this becomes [-2, -1, 0, 1] --> [-0.5, -0.25, 0, 0.25]
-            u1Range[0] = -nCols/2;
-            div = nCols;
-        }
-        for (int i = 1; i < u1Range.length; ++i) {
-            u1Range[i] = u1Range[i - 1] + 1.;
-        }
-        for (int i = 0; i < u1Range.length; ++i) {
-            u1Range[i] /= div;
+            u1Range[0] = -nCols/2.;
+            for (int i = 1; i < nCols; ++i) {
+                u1Range[i] = u1Range[0] + i;
+            }
+            for (int i = 0; i < nCols; ++i) {
+                u1Range[i] /= (double)(nCols);
+            }            
         }
         
         double[] u2Range = new double[nRows];
-        if ((nRows & 1) == 0) {
+        if ((nRows & 1) == 1) {
+            //u2range = [-(rows-1)/2:(rows-1)/2]/(rows-1);
+            //if nRows=3, this becomes [-1, 0, 1] --> [-0.5, 0, 0.5]
             u2Range[0] = -(nRows-1)/2.;
-            div = nRows - 1;            
+            for (int i = 1; i < nRows; ++i) {
+                u2Range[i] = u2Range[0] + i;
+            }
+            for (int i = 0; i < nRows; ++i) {
+                u2Range[i] /= (nRows - 1.);
+            }            
         } else {
+            //u2range = [-rows/2:(rows/2-1)]/rows; 
+            //if nRows=4, this becomes [-2, -1, 0, 1] --> [-0.5, -0.25, 0, 0.25]
             u2Range[0] = -nRows/2.;
-            div = nRows;
-        }
-        for (int i = 1; i < u2Range.length; ++i) {
-            u2Range[i] = u2Range[i - 1] + 1.;
-        }
-        for (int i = 0; i < u2Range.length; ++i) {
-            u2Range[i] /= div;
+            for (int i = 1; i < nRows; ++i) {
+                u2Range[i] = u2Range[0] + i;
+            }
+            for (int i = 0; i < nRows; ++i) {
+                u2Range[i] /= (double)(nRows);
+            }            
         }
 
         // nRows X nCols
