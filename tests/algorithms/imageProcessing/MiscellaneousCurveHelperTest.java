@@ -319,15 +319,6 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         assertTrue(cenXY[0] == 5);
         assertTrue(cenXY[1] == 3);
         
-        double[][] xyM = new double[3][4];
-        xyM[0] = new double[]{1, 9, 9, 1};
-        xyM[1] = new double[]{1, 1, 5, 5};
-        DenseMatrix xyMatrix = new DenseMatrix(xyM);
-        
-        cenXY = helper.calculateXYCentroids(xyMatrix);
-        assertTrue(cenXY[0] == 5.0);
-        assertTrue(cenXY[1] == 3.0);
-        
         PairFloatArray xyf = new PairFloatArray();
         xyf.add(1, 1);
         xyf.add(9, 1);

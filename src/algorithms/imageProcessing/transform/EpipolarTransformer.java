@@ -885,14 +885,22 @@ public class EpipolarTransformer {
         */
 
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-
-        double[] centroidXY = curveHelper.calculateXYCentroids(xy);
+        
+        //x is xy[0], y is xy[1], xy[2] is all 1's
+        double cen0 = 0;
+        double cen1 = 0;
+        for (int i = 0; i < xy.numRows(); ++i) {
+            cen0 += xy.get(i, 0);
+            cen1 += xy.get(i, 1);
+        }
+        cen0 /= (double)xy.numRows();
+        cen1 /= (double)xy.numRows();
 
         double mean = 0;
         int n = xy.numColumns();
         for (int i = 0; i < n; i++) {
-            double diffX = xy.get(0, i) - centroidXY[0];
-            double diffY = xy.get(1, i) - centroidXY[1];
+            double diffX = xy.get(0, i) - cen0;
+            double diffY = xy.get(1, i) - cen1;
             double dist = Math.sqrt((diffX * diffX) + (diffY * diffY));
             mean += dist;
         }
@@ -904,13 +912,12 @@ public class EpipolarTransformer {
         */
         double scaleFactor = Math.sqrt(2)/mean;
 
-        DenseMatrix tMatrix = createScaleTranslationMatrix(scaleFactor, 
-            centroidXY[0], centroidXY[1]);
+        DenseMatrix tMatrix = createScaleTranslationMatrix(scaleFactor, cen0, cen1);
         
         DenseMatrix normXY = new DenseMatrix(MatrixUtil.dot(tMatrix, xy));
         
         NormalizedXY normalizedXY = new NormalizedXY();
-        normalizedXY.setCentroidXY(centroidXY);
+        normalizedXY.setCentroidXY(new double[]{cen0, cen1});
         normalizedXY.setNormMatrix(tMatrix);
         normalizedXY.setXy(normXY);
 

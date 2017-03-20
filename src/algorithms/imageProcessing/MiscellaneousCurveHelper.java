@@ -7,24 +7,16 @@ import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.PairIntWithIndex0;
-import algorithms.misc.AverageUtil;
-import algorithms.misc.MiscDebug;
-import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
-import algorithms.util.PairIntArrayComparator;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
-import algorithms.util.PairIntArrayWithColor;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.set.TIntSet;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.Stack;
 import java.util.logging.Logger;
 import no.uib.cipr.matrix.Matrix;
 import no.uib.cipr.matrix.MatrixEntry;
@@ -752,33 +744,6 @@ public class MiscellaneousCurveHelper {
         xc /= (double)xy.getN();
 
         yc /= (double)xy.getN();
-
-        return new double[]{xc, yc};
-    }
-
-    /**
-     * calculate the x and y centroids and return as
-     * double[]{xCentroid, yCentroid}
-     * @param xy a 3 x N matrix with column 0 being x and column 1 being y.
-     * @return
-     */
-    public double[] calculateXYCentroids(Matrix xy) {
-
-        double xc = 0;
-        double yc = 0;
-
-        int n = xy.numColumns();
-
-        Iterator<MatrixEntry> iter = xy.iterator();
-        while (iter.hasNext()) {
-            MatrixEntry entry = iter.next();
-            xc += entry.column();
-            yc += entry.row();
-        }
-
-        xc /= (double)n;
-
-        yc /= (double)n;
 
         return new double[]{xc, yc};
     }
