@@ -18,7 +18,7 @@ public class BinarySearchTreeThreadedTest extends TestCase {
     }
     
     //http://adtinfo.org/libavl.html/Inserting-into-a-TBST.html 
-    public void estInsert() {
+    public void testInsert() {
         
         BinarySearchTreeThreaded<HeapNode> bst 
             = new BinarySearchTreeThreaded<HeapNode>();
