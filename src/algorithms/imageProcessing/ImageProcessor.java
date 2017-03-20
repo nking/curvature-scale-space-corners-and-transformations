@@ -5,12 +5,12 @@ import algorithms.bipartite.MinHeapForRT2012;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.features.orb.ORB;
 import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairInt;
 import algorithms.misc.Complex;
 import algorithms.misc.ComplexModifiable;
-import algorithms.misc.Histogram;
 import algorithms.misc.MedianSmooth;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
@@ -20,9 +20,7 @@ import algorithms.util.TwoDFloatArray;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
-import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
@@ -3347,8 +3345,9 @@ public class ImageProcessor {
         TIntList kp1 = new TIntArrayList();
 
         // square of 1st deriv:
-        float[][] firstDeriv = add(tensorComponents.getDXSquared(),
-            tensorComponents.getDYSquared());
+        float[][] firstDeriv = 
+            MatrixUtil.add(tensorComponents.getDXSquared(),
+                tensorComponents.getDYSquared());
 
         peakLocalMax(firstDeriv, 1, 0.1f, kp0, kp1);
 
@@ -5371,50 +5370,6 @@ public class ImageProcessor {
         for (int i = 0; i < c.length; ++i) {
             for (int j = 0; j < c[0].length; ++j) {
                 c[i][j] *= b[i][j];
-            }
-        }
-
-        return c;
-    }
-
-    public float[][] divide(float[][] a, float[][] b) {
-
-        float[][] c = copy(a);
-
-        for (int i = 0; i < c.length; ++i) {
-            for (int j = 0; j < c[0].length; ++j) {
-                float v = b[i][j];
-                if (v == 0) {
-                    c[i][j] = Float.MAX_VALUE;
-                } else {
-                    c[i][j] /= v;
-                }
-            }
-        }
-
-        return c;
-    }
-
-    public float[][] add(float[][] a, float[][] b) {
-
-        float[][] c = copy(a);
-
-        for (int i = 0; i < c.length; ++i) {
-            for (int j = 0; j < c[0].length; ++j) {
-                c[i][j] += b[i][j];
-            }
-        }
-
-        return c;
-    }
-
-    public float[][] subtract(float[][] a, float[][] b) {
-
-        float[][] c = copy(a);
-
-        for (int i = 0; i < c.length; ++i) {
-            for (int j = 0; j < c[0].length; ++j) {
-                c[i][j] -= b[i][j];
             }
         }
 

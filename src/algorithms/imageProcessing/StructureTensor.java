@@ -1,5 +1,7 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.util.MatrixUtil;
+
 /**
  * create first derivative products and optionally second derivative
  * products of an image.
@@ -136,7 +138,7 @@ public class StructureTensor {
 
             float[][] axyxy = imageProcessor.multiply(dXdY, dXdY);
 
-            detA = imageProcessor.subtract(axxyy, axyxy);
+            detA = MatrixUtil.subtract(axxyy, axyxy);
         }
         
         return detA;
@@ -145,8 +147,7 @@ public class StructureTensor {
     public float[][] getTrace() {
         
         if (traceA == null) {
-            ImageProcessor imageProcessor = new ImageProcessor();
-            traceA = imageProcessor.add(dXSq, dXdY);
+            traceA = MatrixUtil.add(dXSq, dXdY);
         }
         
         return traceA;

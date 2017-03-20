@@ -180,7 +180,6 @@ public class NormalizedCuts {
      * to segment the image into regions.
      * works well when the labels are large segmentation
      * cells such as the results of a "super pixels" algorithm.
-     * see ImageSegmentation.calcSuperPixelsAndNormalizedCutsLabels()
      * 
      * @param img
      * @param labels of contiguous pixels.  note that label value range is 

@@ -870,24 +870,6 @@ public class CannyEdgeFilterAdaptive {
         return false;
     }
 
-    public GreyscaleImage createGradientPSFForTesting() {
-                
-        float[] k = Gaussian1D.getBinomialKernelSigmaZeroPointFive();
-        
-        GreyscaleImage gX = new GreyscaleImage(3, 3);
-        gX.setValue(1, 1, 127);        
-        apply1DKernelToImage(gX, k, true);
-        
-        GreyscaleImage gY = new GreyscaleImage(3, 3);
-        gY.setValue(1, 1, 127);
-        apply1DKernelToImage(gY, k, false);
-        
-        ImageProcessor imageProcessor = new ImageProcessor();
-        GreyscaleImage g = imageProcessor.combineConvolvedImages(gX, gY);
-        
-        return g;
-    }
-
     /**
      * get the filter products for gradient and orientation.
      * note that the orientation image has values between 0 and 180.

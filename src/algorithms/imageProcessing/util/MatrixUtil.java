@@ -87,6 +87,60 @@ public class MatrixUtil {
         return c;
     }
     
+    public static float[][] subtract(float[][] m, float[][] n) {
+
+        if (m == null || m.length == 0) {
+            throw new IllegalArgumentException("m cannot be null or empty");
+        }
+        if (n == null || n.length == 0) {
+            throw new IllegalArgumentException("n cannot be null or empty");
+        }
+        if (m.length != n.length) {
+            throw new IllegalArgumentException("m and n must be same length");
+        }
+        if (m[0].length != n[0].length) {
+            throw new IllegalArgumentException("m and n must be same length");
+        }
+        
+        float[][] c = new float[m.length][];
+
+        for (int i = 0; i < c.length; ++i) {
+            c[i] = new float[n.length];
+            for (int j = 0; j < c[0].length; ++j) {
+                c[i][j] -= m[i][j] - n[i][j];
+            }
+        }
+
+        return c;
+    }
+    
+    public static float[][] add(float[][] m, float[][] n) {
+
+        if (m == null || m.length == 0) {
+            throw new IllegalArgumentException("m cannot be null or empty");
+        }
+        if (n == null || n.length == 0) {
+            throw new IllegalArgumentException("n cannot be null or empty");
+        }
+        if (m.length != n.length) {
+            throw new IllegalArgumentException("m and n must be same length");
+        }
+        if (m[0].length != n[0].length) {
+            throw new IllegalArgumentException("m and n must be same length");
+        }
+        
+        float[][] c = new float[m.length][];
+
+        for (int i = 0; i < c.length; ++i) {
+            c[i] = new float[n.length];
+            for (int j = 0; j < c[0].length; ++j) {
+                c[i][j] = m[i][j] + n[i][j];
+            }
+        }
+
+        return c;
+    }
+
     public static float[] subtract(float[] m, float[] n) {
 
         if (m == null || m.length == 0) {

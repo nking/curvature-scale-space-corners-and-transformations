@@ -3,7 +3,6 @@ package algorithms.misc;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.QuadInt;
 import algorithms.util.ResourceFinder;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.map.TObjectIntMap;
@@ -18,14 +17,11 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.security.Security;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -79,37 +75,6 @@ public class Misc {
         }
         
         return map;
-    }
-
-    /**
-     * get the values of Math.sin(theta) for theta from 0 to Math.PI in 1 degree
-     * intervals.
-     * @return
-     */
-    public static double[] getSineThetaForPI() {
-        double d = 1. * Math.PI/180;
-        double[] s = new double[180];
-        double t = 0;
-        for (int i = 0; i < 180; ++i) {
-            s[i] = Math.sin(t);
-            t += d;
-        }
-        return s;
-    }
-    /**
-     * get the values of Math.cos(theta) for theta from 0 to Math.PI in 1 degree
-     * intervals.
-     * @return
-     */
-    public static double[] getCosineThetaForPI() {
-        double d = 1. * Math.PI/180;
-        double[] c = new double[180];
-        double t = 0;
-        for (int i = 0; i < 180; ++i) {
-            c[i] = Math.cos(t);
-            t += d;
-        }
-        return c;
     }
 
     public static String persistToFile(String fileName, Set<PairInt> points)
@@ -233,135 +198,6 @@ public class Misc {
         return set;
     }
 
-    public static int calculateSumOfEightNeighbors(GreyscaleImage img, int x, int y) {
-
-        int sum = 0;
-
-        for (int i = 0; i < dx8.length; ++i) {
-            int x1 = x + dx8[i];
-            int y1 = y + dy8[i];
-            if (x1 < 0 || y1 < 0 || (x1 > (img.getWidth() - 1)) ||
-                (y1 > (img.getHeight() - 1))) {
-                continue;
-            }
-            sum += img.getValue(x, y);
-        }
-
-        return sum;
-    }
-
-    /**
-     * create x and y offsets for the neighbor points within d pixel radius.
-     * The result is a two-dimensional array of length (2*d+1)^2 with the first
-     * dimension being the x array and the 2nd dimension being the y array.
-     * Note that the offset of (0,0) is in the middle of the arrays.
-     * @param d the half radius of square of offsets, beginning at
-     * (-d,-d), (-d, -d+1),... to make a (2d+1)^2 two dimensional array
-     * of offsets.
-     * @return
-     */
-    public static float[][] createNeighborOffsets(int radiusFromCenter) {
-
-        //TODO: consider changing to use one dimensional array
-
-        int n = 2*radiusFromCenter + 1;
-
-        float[][] xyout = new float[n*n][];
-
-        int count = 0;
-        for (int x = -radiusFromCenter; x <= radiusFromCenter; ++x) {
-            for (int y = -radiusFromCenter; y <= radiusFromCenter; ++y) {
-
-                xyout[count] = new float[]{x, y};
-
-                count++;
-            }
-        }
-
-        return xyout;
-    }
-
-    /**
-     * create x and y offsets for the neighbor points within d pixel radius.
-     * The result is a two-dimensional array of length 
-     * 2*((2*d+1)^2 -1) with the numbers being x and y offsets
-     * alternating.
-     * Note that [(0, 0)] is not present and that the
-     * offsets are ordered such that inner "rings" are completed,
-     * then next inner ring at increased radius, etc.
-     * @return
-     */
-    public static int[] createOrderedNeighborOffsets(int radiusFromCenter) {
-
-        //TODO: consider changing to use one dimensional array
-
-        int n = 2*radiusFromCenter + 1;
-        n *= n;
-        n--;
-        n *= 2;
-        int[] xyout = new int[n];
-
-        int count = 0;
-        for (int d = 1; d <= radiusFromCenter; ++d) {
-            for (int x = -d; x <= d; ++x) {
-                for (int y = -d; y <= d; ++y) {
-                    // when both points have an absolute value smaller
-                    // than d, it's an inner radius which has already
-                    // been included so skip it
-                    if (Math.abs(x) < d && Math.abs(y) < d) {
-                        continue;
-                    }
-                    xyout[count] = x;
-                    count++;
-                    xyout[count] = y;
-                    count++;
-                }
-            }
-        }
-
-        return xyout;
-    }
-
-    public static Map<Integer, Double> getCosineThetaMapForPI() {
-
-        Map<Integer, Double> map = new HashMap<Integer, Double>();
-
-        double d = 1. * Math.PI/180;
-
-        double t = 0;
-
-        for (int i = 0; i < 181; ++i) {
-
-            double c = Math.cos(t);
-
-            map.put(Integer.valueOf(i), Double.valueOf(c));
-
-            t += d;
-        }
-
-        return map;
-    }
-
-    public static Map<Integer, Double> getSineThetaMapForPI() {
-
-        Map<Integer, Double> map = new HashMap<Integer, Double>();
-
-        double d = 1. * Math.PI/180;
-
-        double t = 0;
-
-        for (int i = 0; i < 181; ++i) {
-
-            double c = Math.sin(t);
-
-            map.put(Integer.valueOf(i), Double.valueOf(c));
-
-            t += d;
-        }
-
-        return map;
-    }
-
     public static Map<Integer, Double> getCosineThetaMapForTwoPI() {
         
         Map<Integer, Double> map = new HashMap<Integer, Double>();
@@ -402,58 +238,6 @@ public class Misc {
         return map;
     }
     
-    public static int[][] populateNeighborOffsets(int radius) {
-        
-        int n0 = (2*((2*radius) + 1));  
-        int n1 = n0 - 4;  
-        int nTotal = n0 + n1;
-        
-        int[][] dxys = new int[2][];
-        
-        for (int i = 0; i < 2; ++i) {
-            dxys[i] = new int[nTotal]; 
-        }
-        
-        /*     -  -  -      radius = 1
-               -  @  -
-               -  -  - 
-        
-            #  #  #  #  #   radius = 2
-               -  -  -  #
-               -  @  -  #
-               -  -  -  #
-            #  #  #  #  #
-        */
-        
-        int count = 0;
-        // top
-        for (int i = -radius; i <= radius; ++i) {
-            dxys[0][count] = i;
-            dxys[1][count] = radius;
-            count++;
-        }
-        // right
-        for (int j = (radius - 1); j >= -radius; --j) {
-            dxys[0][count] = radius;
-            dxys[1][count] = j;
-            count++;
-        }
-        // bottom
-        for (int i = (radius - 1); i >= -radius; --i) {
-            dxys[0][count] = i;
-            dxys[1][count] = -radius;
-            count++;
-        }
-        // left
-        for (int j = (radius - 1); j > -radius; --j) {
-            dxys[0][count] = -radius;
-            dxys[1][count] = j;
-            count++;
-        }
-        
-        return dxys;
-    }
-
     public static <T extends Object> void reverse(List<T> list) {
         
         int n = list.size();
@@ -505,54 +289,6 @@ public class Misc {
         }
         
         return sr;
-    }
-    
-    /**
-     * partition the space width x height into bins of size xLen, yLen
-     * and return the results at a list of QuadInts holding 
-     * a=minX, b=maxX, c=minY, d=maxY.
-     * @param width
-     * @param height
-     * @param xLen
-     * @param yLen
-     * @return 
-     */
-    public static List<QuadInt> partitionSpace(int width, int height, 
-        int xLen, int yLen) {
-        
-        List<QuadInt> output = new ArrayList<QuadInt>();
-        
-        int nXs = (int)Math.ceil((float)width/(float)xLen);
-        int nYs = (int)Math.ceil((float)height/(float)yLen);
-        
-        for (int i = 0; i < nXs; ++i) {
-            int startX = xLen * i;
-            if (startX > (width - 1)) {
-                break;
-            }
-            int stopX = startX + xLen;
-            if (stopX > (width - 1)) {
-                stopX = width - 1;
-                // NOTE: if stopX - startX is small, consider merging it with previous
-                // bin in terms of X
-            }
-            for (int j = 0; j < nYs; ++j) {
-                int startY = yLen * i;
-                if (startY > (height - 1)) {
-                    break;
-                }
-                int stopY = startY + yLen;
-                if (stopY > (height - 1)) {
-                    stopY = height - 1;
-                    // NOTE: if stopY - startY is small, consider merging it with previous
-                    // bin
-                }
-                QuadInt q = new QuadInt(startX, stopX, startY, stopY);
-                output.add(q);
-            }
-        }
-        
-        return output;
     }
     
     public static Set<PairInt> convertToCoords(GreyscaleImage img,

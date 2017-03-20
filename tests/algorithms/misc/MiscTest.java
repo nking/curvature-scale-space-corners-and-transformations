@@ -74,29 +74,5 @@ public class MiscTest extends TestCase {
             assertEquals(3 - i, index.intValue());
         }
     }
-    
-    public void testCreateOrderedNeighborOffsets() {
-                
-        /*
-        1:  -1,-1  -1,0  -1,1  0,-1  0,1  1,-1  1,0  1,1
-        2:  -2,-2,  -2,-1,  -2,0,  -2,1,  -2,2,
-            -1,-2,  -1,2,
-            0,-2,   0,2,
-            1,-2,   1,2,
-            2,-2,  2,-1,  2,0,  2,1,  2,2
-        */
-        int[] result = Misc.createOrderedNeighborOffsets(2);
-        
-        int[] expected = new int[]{
-            -1,-1,  -1,0,  -1,1,  0,-1,  0,1,  1,-1,  1,0,  1,1,
-            -2,-2,  -2,-1,  -2,0,  -2,1,  -2,2,
-            -1,-2,  -1,2,
-            0,-2,   0,2,
-            1,-2,   1,2,
-            2,-2,  2,-1,  2,0,  2,1,  2,2
-        };
-        
-        assertEquals(expected.length, result.length);
-        assertTrue(Arrays.equals(expected, result));
-    }
+   
 }
