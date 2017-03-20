@@ -4,7 +4,6 @@ import algorithms.imageProcessing.HeapNode;
 import java.lang.reflect.Array;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Stack;
 
 /**
  * Building upon the BinarySearchTree by adding
@@ -61,6 +60,7 @@ public class BinarySearchTreeThreaded<T extends HeapNode> {
                      in-order predecessor
         2 = if set, right is right (child), else is 
                      in-order successor
+        where in=order is left subtree, root, right subtree
         */
         Integer v = threadMap.get(node);
         int vsets = (v == null) ? 0 : v.intValue();
@@ -87,6 +87,7 @@ public class BinarySearchTreeThreaded<T extends HeapNode> {
                      in-order predecessor
         2 = if set, right is right (child), else is 
                      in-order successor
+        where in-order is left subtree, root, right subtree
         */
         Integer v = threadMap.get(node);
         int vsets = (v == null) ? 0 : v.intValue();
@@ -107,6 +108,7 @@ public class BinarySearchTreeThreaded<T extends HeapNode> {
                      in-order predecessor
         2 = if set, right is right (child), else is 
                      in-order successor
+        where in-order is left subtree, root, right subtree
         */
         Integer v = threadMap.get(node);
         int vsets = (v == null) ? 0 : v.intValue();
