@@ -4,6 +4,9 @@ import static algorithms.imageProcessing.Gaussian1D.estimateHWZI;
 import algorithms.misc.MiscMath;
 
 /**
+ * NOTE: the binomial kernels here need to be reviewed again one day and
+ * possibly edited.
+ * 
  * class to retrieve a kernel for the first derivative of a gaussian of
  * a given sigma.
  * 
