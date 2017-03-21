@@ -19,20 +19,6 @@ public class BinarySearchTreeTest extends TestCase {
     
     public void testDelete() {
         
-        /*
-        {//DEBUG
-                    if (r.getKey() == 62) {
-                        System.out.println("debug:");
-                        HeapNode[] dns = bst.printPreOrderTraversalIterative(bst.root);
-                        
-                        for (HeapNode dn : dns) {
-                            System.out.println("node=" + dn);
-                        }
-                        int z = 0;
-                    }
-                }
-        */
-        
         BinarySearchTree<HeapNode> bst = new 
             BinarySearchTree<HeapNode>();
         
@@ -47,15 +33,7 @@ public class BinarySearchTreeTest extends TestCase {
             bst.insert(node);
             assertNotNull(bst.search(node));
         }
-        
-        {//DEBUG
-            System.out.println("debug:");
-            HeapNode[] dns = bst.printPreOrderTraversalIterative(bst.root);
-            for (HeapNode dn : dns) {
-                System.out.println("node=" + dn);
-            }
-        }
-        
+       
         assertEquals(12, bst.getNumberOfNodes());
 
         bst.delete(nodeMap.get(5));
@@ -74,7 +52,7 @@ public class BinarySearchTreeTest extends TestCase {
         
         assertNull(r);
     }
-
+    
     public void test0() throws Exception {
 
         int n = 100;
@@ -123,7 +101,7 @@ public class BinarySearchTreeTest extends TestCase {
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
-        seed = 1490050571981L;
+        //seed = 1490050571981L;
         sr.setSeed(seed);
         System.out.println("SEED=" + seed);
         

@@ -13,10 +13,15 @@ import java.util.Stack;
    The left and right subtrees are also binary search trees
 
  use a Node with left, right and parent.
- use a binary search method impl as: while loop rot != null: if (root.value < value) root=root.getRight()...
- *
- * based upon pseudocode from Cormen et al. Introduction to Algorithms.  added in-order, pre-order and post-order traversal methods too.
- *
+ use a binary search method impl as: while loop rot != null: if (root.value 
+  .lt. value) root=root.getRight()...
+ 
+ adapted upon pseudocode from Cormen et al. Introduction to Algorithms.  added in-order, pre-order and post-order traversal methods too.
+ 
+ the delete method has been changed from the book.
+ 
+ Also note that the class can currently only hold unique keys.
+ 
  * @author nichole
  */
 @SuppressWarnings({"unchecked"})
@@ -240,6 +245,7 @@ public class BinarySearchTree<T extends HeapNode> {
     }
 
     /**
+     * search for a node within the tree by its key.
      * runtime complexity is O(h) where h is height of
      * tree, which is usually lg_2(n)
      * @param z
@@ -255,7 +261,7 @@ public class BinarySearchTree<T extends HeapNode> {
     private T search(T tn, T z) {
         return search(tn, z.getKey());
     }
-
+    
     private T search(T tn, long theKey) {
         while (tn != null) {
             if (theKey == tn.getKey()) {
@@ -263,6 +269,34 @@ public class BinarySearchTree<T extends HeapNode> {
             } else if (theKey < tn.getKey()) {
                 tn = (tn.getLeft() != null) ? (T) tn.getLeft() : null;
             } else if (theKey > tn.getKey()) {
+                tn = (tn.getRight() != null) ? (T) tn.getRight() : null;
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * search for a node within the tree for an exact match to the node.
+     * runtime complexity is O(h) where h is height of
+     * tree, which is usually lg_2(n)
+     * @param z
+     * @return
+     */
+    public T searchExact(T z) {
+        if (root == null) {
+            return null;
+        }
+        return searchExact(root, z);
+    }
+
+    private T searchExact(T tn, T z) {
+        
+        while (tn != null) {
+            if (tn.equals(z)) {
+                return tn;
+            } else if (z.getKey() < tn.getKey()) {
+                tn = (tn.getLeft() != null) ? (T) tn.getLeft() : null;
+            } else if (z.getKey() > tn.getKey()) {
                 tn = (tn.getRight() != null) ? (T) tn.getRight() : null;
             }
         }
@@ -283,6 +317,8 @@ public class BinarySearchTree<T extends HeapNode> {
     /**
      * visit each node using pattern left subtree, root, right subtree
      * in an iterative manner rather than invoking the method recursively.
+     * NOTE: this method also asserts for the binary search tree
+     * key consistency between parent and a child node as it traverses nodes.
      */
     @SuppressWarnings({"rawtypes"})
     protected T[] getInOrderTraversalIterative(T node) {
