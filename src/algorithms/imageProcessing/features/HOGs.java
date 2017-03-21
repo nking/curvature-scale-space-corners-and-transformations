@@ -85,7 +85,7 @@ import java.util.List;
 
    Comparison of block feature is then a histogram intersection,
    where normally 0 is no intersection, hence maximally different,
-   and an intersection equal to the max value is maximally similar.
+   and an intersection equal to the max value is maximally sgimilar.
    (see the method ColorHistogram.intersection, but here, the normalization
    will already have been applied instead of determined in the method).
 
@@ -408,9 +408,9 @@ public class HOGs {
     }
 
     /**
-     * TODO: this will hold a comparison method based on histogram errors and
-     * adding significance for empty bins.
-     *  
+     * TODO: this will hold a comparison method and return a score or cost and
+           a relevant error parameter usable between comparison results.
+     
      * @param histA
      * @param orientationA
      * @param histB
@@ -453,9 +453,9 @@ public class HOGs {
         and if a and b both have large number of counts in other bins,
            can see that a match of 0 to 0 is signficant.
 
-       so the errors depend upone the total counts (and those add in quadrature).
+       so the errors depend upon the total counts (and those add in quadrature).
        that might need to estimated from the bin with the maximum amount of counts
-          instead of all bins, because a singel bin with 4*V number of counts
+          instead of all bins, because a single bin with 4*V number of counts
           would indicate that empty bins are signifcant more than that 4*V total
           distributed over 4 bins would.
           --> so an error determined from the maximum of bin counts is needed.
