@@ -1,15 +1,6 @@
 package algorithms.imageProcessing;
 
-import algorithms.misc.Misc;
-import algorithms.misc.MiscDebug;
-import algorithms.misc.MiscMath;
 import java.util.logging.Logger;
-import java.util.HashSet;
-import algorithms.util.PairInt;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
 
 /**
  * NOTE: need to edit these comments.  for this color version of canny,
@@ -203,8 +194,8 @@ public class CannyEdgeColorAdaptive {
         }
         
         cannyL.setOtsuScaleFactor(otsuScaleFactor);
-        //cannyC.setOtsuScaleFactor(otsuScaleFactor);
-        cannyC.setOtsuScaleFactor(1.0f);  // less sensitive and less noisey
+        cannyC.setOtsuScaleFactor(otsuScaleFactor);
+        //cannyC.setOtsuScaleFactor(1.0f);  // less sensitive and less noisey
         
         cannyL.applyFilter(lch[0]);
         cannyC.applyFilter(lch[1]);
