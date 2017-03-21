@@ -95,9 +95,9 @@ public class ImageProcessorTest extends TestCase {
         for (int col = 0; col < w; col++) {
              for (int row = 0; row < h; row++) {
                  if ((col & 1) == 0) {
-                     imageX.setRGB(col, row, 1, 1, 1);
+                     imageX.setRGB(col, row, 2, 2, 2);
                  } else {
-                     imageY.setRGB(col, row, 1, 1, 1);
+                     imageY.setRGB(col, row, 2, 2, 2);
                  }
              }
         }
@@ -110,9 +110,9 @@ public class ImageProcessorTest extends TestCase {
                  int r = result.getR(col, row);
                  int g = result.getG(col, row);
                  int b = result.getB(col, row);
-                 assertTrue(r == 1);
-                 assertTrue(g == 1);
-                 assertTrue(b == 1);
+                 assertEquals(1, r);
+                 assertEquals(1, g);
+                 assertEquals(1, b);
              }
         }
     }
@@ -127,9 +127,9 @@ public class ImageProcessorTest extends TestCase {
         for (int col = 0; col < w; col++) {
              for (int row = 0; row < h; row++) {
                  if ((col & 1) == 0) {
-                     imageX.setValue(col, row, 1);
+                     imageX.setValue(col, row, 2);
                  } else {
-                     imageY.setValue(col, row, 1);
+                     imageY.setValue(col, row, 2);
                  }
              }
         }
@@ -140,7 +140,7 @@ public class ImageProcessorTest extends TestCase {
         for (int col = 0; col < w; col++) {
              for (int row = 0; row < h; row++) {
                  int v = result.getValue(col, row);
-                 assertTrue(v == 1);
+                 assertEquals(1, v);
              }
         }
     }
