@@ -838,8 +838,15 @@ public class CannyEdgeFilterAdaptiveDeltaE2000 {
             //ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
             //lt.applyFilter(out);
             
-            ImageProcessor imp = new ImageProcessor();
-            imp.applyThinning2(out);
+            ImageProcessor imageProcessor = new ImageProcessor();
+            int nnzs = imageProcessor.countNonZeroes(out);
+            while (true) {
+                int nnzs2 = imageProcessor.applyThinning2(out);
+                if (nnzs == nnzs2) {
+                    break;
+                }
+                nnzs = nnzs2;
+            }
         
         }
         
