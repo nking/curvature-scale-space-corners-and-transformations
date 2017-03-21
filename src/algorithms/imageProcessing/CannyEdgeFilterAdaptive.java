@@ -204,7 +204,7 @@ public class CannyEdgeFilterAdaptive {
             GreyscaleImage in = imageProcessor.closing(input);
             imageProcessor.blur(in, SIGMA.ZEROPOINTFIVE);
             
-            filterProducts = createGradient(in);
+            filterProducts = createGradientForLineMode(in);
             
             in = filterProducts.getGradientXY();
             in = imageProcessor.closing(in);
@@ -219,17 +219,7 @@ public class CannyEdgeFilterAdaptive {
                 MiscDebug.writeImage(tmp, "_gXY_");
                 MiscDebug.writeImage(filterProducts.getTheta(), "_theta_");
             }
-            
-            if (useLineThinner) {
-                
-                imageProcessor.applyThinning2(filterProducts.getGradientXY());
-                
-                PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
-                
-                //ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
-                //lt.applyFilter(filterProducts.getGradientXY());
-            }
-            
+                        
             if (debug) {
                 GreyscaleImage tmp = filterProducts.getGradientXY().copyImage();
                 tmp.multiply(255.f);
@@ -639,7 +629,67 @@ public class CannyEdgeFilterAdaptive {
         gY = getGradientY1D(img);
         
         g = imageProcessor.combineConvolvedImages(gX, gY);
+    
+        // the theta is in range 0 to 180
+        theta = imageProcessor.computeTheta180(gX, gY);
         
+        if (debug) {
+            // when replace the aspect library, put these renders in the 
+            //   equivalent replacement
+            long ts = MiscDebug.getCurrentTimeFormatted();
+            MiscDebug.writeImage(theta, "_theta_" + ts);
+            MiscDebug.writeImage(gX, "_gX_" + ts);
+            MiscDebug.writeImage(gY, "_gY_" + ts);
+            /*
+            int x = 37; int y = 163;
+            System.out.println("(" + x + ", " + y + ") math.atan2(" + gY.getValue(x, y)
+                + "," + gX.getValue(x, y) + ")*180./math.pi=" + 
+                theta.getValue(x, y));*/
+        }
+        
+        EdgeFilterProducts efp = new EdgeFilterProducts();
+        efp.setGradientX(gX);
+        efp.setGradientY(gY);
+        efp.setGradientXY(g);
+        efp.setTheta(theta);
+        
+        return efp;
+    }
+
+    /**
+     * construct the gradient in X, gradient in Y, their combined average and
+     * theta image
+     * using two 1-D passes of a Sobel 1D kernel which is the same as a 
+     * Gaussian first derivative with sigma = sqrt(1)/2 where FWHM=2.355*sigma.
+     * The theta image has range 0 t 360.
+     * 
+     * @param img
+     * @return 
+     */
+    protected EdgeFilterProducts createGradientForLineMode(final GreyscaleImage img) {
+        
+        GreyscaleImage gX, gY, g, theta;
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        gX = getGradientX1D(img);
+
+        gY = getGradientY1D(img);
+        
+        g = imageProcessor.combineConvolvedImages(gX, gY);
+    
+        if (useLineThinner) {
+
+            imageProcessor.applyThinning2(g);
+            imageProcessor.applyThinning(g);
+
+            imageProcessor.applyThinning2(gX);
+            imageProcessor.applyThinning(gX);
+
+            imageProcessor.applyThinning2(gY);
+            imageProcessor.applyThinning(gY);
+        }
+
         // the theta is in range 0 to 180
         theta = imageProcessor.computeTheta180(gX, gY);
         

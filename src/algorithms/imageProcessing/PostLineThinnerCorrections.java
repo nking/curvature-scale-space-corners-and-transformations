@@ -677,6 +677,32 @@ public class PostLineThinnerCorrections {
 
     /**
      * use with caution
+     * @param img
+     */
+    public void extremeCornerRemover(GreyscaleImage img) {
+        
+        Set<PairInt> points = new HashSet<PairInt>();
+        
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            if (img.getValue(i) > 0) {
+                points.add(new PairInt(img.getCol(i), img.getRow(i)));
+            }
+        }
+        
+        Set<PairInt> cp = new HashSet<PairInt>(points);
+                
+        extremeCornerRemover(points, img.getWidth(), img.getHeight());
+        
+        cp.removeAll(points);
+        
+        for (PairInt p : cp) {
+            img.setValue(p.getX(), p.getY(), 0);
+        }
+        
+    }
+    
+    /**
+     * use with caution
      * @param points
      * @param imageWidth
      * @param imageHeight 
@@ -685,8 +711,8 @@ public class PostLineThinnerCorrections {
         int imageHeight) {
        
         /*       
-                            2
-               #< #         1
+            0  0            2
+            0  #< #         1
                #* 0         0
                            -1
                            -2
@@ -698,7 +724,8 @@ public class PostLineThinnerCorrections {
         LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
        
         // y's are inverted here because sketch above is top left is (0,0)
-        zeroes.add(new PairInt(1, 0)); 
+        zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(-1, -1));
+        zeroes.add(new PairInt(0, -2)); zeroes.add(new PairInt(-1, -2));
         
         ones.add(new PairInt(0, -1)); 
         ones.add(new PairInt(1, -1));
