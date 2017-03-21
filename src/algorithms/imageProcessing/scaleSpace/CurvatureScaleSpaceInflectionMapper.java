@@ -125,24 +125,30 @@ public final class CurvatureScaleSpaceInflectionMapper {
 
         initialized = true;
 
-        this.cssIM1 = new CSSContourInflectionMaker(image1);
+        this.cssIM1 = new CSSContourInflectionMaker(image1);        
         
         this.cssIM2 = new CSSContourInflectionMaker(image2);
         
+        if (debug) {
+            cssIM1.setToDebug();
+            cssIM2.setToDebug();
+        }
+        
+        if (useLineDrawingMode) {
+            cssIM1.setToUseLineDrawingLineMode();
+            cssIM2.setToUseLineDrawingLineMode();
+        }
+        
+        cssIM2.findContours();
+        cssIM1.findContours();
     }
 
     
-    protected TransformationParameters createEuclideanTransformationImpl() {
+    protected TransformationParameters 
+        createEuclideanTransformationImpl() {
 
         if (bestFittingParameters == null) {
             return null;
-        }
-
-        MatchedPointsTransformationCalculator tc = new
-            MatchedPointsTransformationCalculator();
-
-        if (debug) {
-            tc.useDebugMode();
         }
 
         return bestFittingParameters;

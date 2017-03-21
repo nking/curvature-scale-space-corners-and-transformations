@@ -58,7 +58,7 @@ public class ImageProcessor {
      * and return gradients in X and y. note the image may contain
      * negative values.
      * @param input
-     * @return
+     * @return gX, gY
      */
     public GreyscaleImage[] createSobelGradients(GreyscaleImage input) {
 
@@ -3587,6 +3587,16 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         return output;
     }
 
+    public int countNonZeroes(GreyscaleImage in) {
+        int n = 0;
+        for (int pixIdx = 0; pixIdx < in.getNPixels(); ++pixIdx) {
+            if (in.getValue(pixIdx) > 0) {
+                n++;
+            }
+        }
+        return n;
+    }
+
     public static class Colors {
         private final float[] colors;
         public Colors(float[] theColors) {
@@ -4078,8 +4088,9 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
      * apply morphological thinning.
      * prefer this line thinner over applyThinning()
      * @param img
+     * @return number of points > 0 after thinning
      */
-    public void applyThinning2(GreyscaleImage img) {
+    public int applyThinning2(GreyscaleImage img) {
 
         int n0 = img.getWidth();
         int n1 = img.getHeight();
@@ -4101,7 +4112,7 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         MorphologicalFilter mFilter = new MorphologicalFilter();
         int[][] skel = mFilter.bwMorphThin(morphInput, Integer.MAX_VALUE);
 
-        Set<PairInt> points = new HashSet<PairInt>();
+        int n1s = 0;
 
         for (int i = 0; i < n0; ++i) {
             for (int j = 0; j < n1; ++j) {
@@ -4109,11 +4120,12 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
                 int v = img.getValue(i, j) * m;
                 img.setValue(i, j, v);
                 if (v > 0) {
-                    points.add(new PairInt(i, j));
+                    n1s++;
                 }
             }
         }
 
+        return n1s;
     }
 
     /**

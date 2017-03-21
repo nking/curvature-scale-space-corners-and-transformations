@@ -204,28 +204,53 @@ public class CannyEdgeFilterAdaptive {
             GreyscaleImage in = imageProcessor.closing(input);
             imageProcessor.blur(in, SIGMA.ZEROPOINTFIVE);
             
-            filterProducts = createGradientForLineMode(in);
+            // convert all > 0 to 1's for 'closing' operation
+            for (int pixIdx = 0; pixIdx < in.getNPixels(); ++pixIdx) {
+                if (in.getValue(pixIdx) > 0) {
+                    in.setValue(pixIdx, 1);
+                }
+            }
             
-            in = filterProducts.getGradientXY();
             in = imageProcessor.closing(in);
-            filterProducts.getGradientXY().resetTo(in);
             
+            {//DEBUG
+                long ts = MiscDebug.getCurrentTimeFormatted();
+                GreyscaleImage tmp = in.copyImage();
+                tmp.multiply(255);
+                MiscDebug.writeImage(tmp, "_line_" + ts);
+            }
+            
+            int nnzs = imageProcessor.countNonZeroes(in);
+            while (true) {
+                int nnzs2 = imageProcessor.applyThinning2(in);
+                if (nnzs == nnzs2) {
+                    break;
+                }
+                nnzs = nnzs2;
+            }
+
+            {//DEBUG
+                long ts = MiscDebug.getCurrentTimeFormatted();
+                GreyscaleImage tmp = in.copyImage();
+                tmp.multiply(255);
+                MiscDebug.writeImage(tmp, "_line_thinned_" + ts);
+            }
+            
+            // either convert all > 0 back to original values, or to a large
+            //   enough value to make a strong gradient
+            for (int pixIdx = 0; pixIdx < in.getNPixels(); ++pixIdx) {
+                if (in.getValue(pixIdx) > 0) {
+                    in.setValue(pixIdx, 200);
+                }
+            }
+            
+            filterProducts = createGradientForLineMode(in);
+                        
+            //TODO: update these or remove them...left from 
+            // a previous version of the code
             approxProcessedSigma = Math.sqrt(
                 approxProcessedSigma*approxProcessedSigma + (0.678*0.678));
             
-            if (debug) {
-                GreyscaleImage tmp = filterProducts.getGradientXY().copyImage();
-                tmp.multiply(255.f);
-                MiscDebug.writeImage(tmp, "_gXY_");
-                MiscDebug.writeImage(filterProducts.getTheta(), "_theta_");
-            }
-                        
-            if (debug) {
-                GreyscaleImage tmp = filterProducts.getGradientXY().copyImage();
-                tmp.multiply(255.f);
-                MiscDebug.writeImage(tmp, "_gXY2_");
-            }
-                        
             input.resetTo(filterProducts.getGradientXY());
             
             return;
@@ -672,24 +697,12 @@ public class CannyEdgeFilterAdaptive {
         
         ImageProcessor imageProcessor = new ImageProcessor();
         
-        gX = getGradientX1D(img);
+        gX = img.copyImage();
 
-        gY = getGradientY1D(img);
+        gY = img.copyImage();
         
-        g = imageProcessor.combineConvolvedImages(gX, gY);
-    
-        if (useLineThinner) {
-
-            imageProcessor.applyThinning2(g);
-            imageProcessor.applyThinning(g);
-
-            imageProcessor.applyThinning2(gX);
-            imageProcessor.applyThinning(gX);
-
-            imageProcessor.applyThinning2(gY);
-            imageProcessor.applyThinning(gY);
-        }
-
+        g = img.copyImage();
+        
         // the theta is in range 0 to 180
         theta = imageProcessor.computeTheta180(gX, gY);
         
@@ -697,6 +710,8 @@ public class CannyEdgeFilterAdaptive {
             // when replace the aspect library, put these renders in the 
             //   equivalent replacement
             long ts = MiscDebug.getCurrentTimeFormatted();
+            GreyscaleImage tmp = g.copyImage();
+            MiscDebug.writeImage(tmp, "_gXY_" + ts);
             MiscDebug.writeImage(theta, "_theta_" + ts);
             MiscDebug.writeImage(gX, "_gX_" + ts);
             MiscDebug.writeImage(gY, "_gY_" + ts);

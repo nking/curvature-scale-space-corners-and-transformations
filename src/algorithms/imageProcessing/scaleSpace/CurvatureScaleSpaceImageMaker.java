@@ -83,21 +83,14 @@ public final class CurvatureScaleSpaceImageMaker {
                 
                 CannyEdgeFilterAdaptive filter = new CannyEdgeFilterAdaptive();
                 filter.setToUseLineDrawingMode();
-                //filter.setToDebug();
+            filter.setToDebug();
                 filter.applyFilter(img2);
         
                 filterProducts = filter.getFilterProducts();
         
                 GreyscaleImage gXY = filterProducts.getGradientXY();
-                PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
-                pltc.extremeCornerRemover(gXY);
-
-                
-                GreyscaleImage tmp = gXY.copyImage();
-                tmp.multiply(255.f);
-                algorithms.misc.MiscDebug.writeImage(tmp, "_GXY_" + 
-                    algorithms.misc.MiscDebug.getCurrentTimeFormatted());
-                
+                //PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
+                //pltc.extremeCornerRemover(gXY);
                 
                 TIntSet nzs = new TIntHashSet();
                 for (int i = 0; i < gXY.getNPixels(); ++i) {
