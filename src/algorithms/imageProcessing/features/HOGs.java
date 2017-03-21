@@ -120,7 +120,7 @@ public class HOGs {
 
     //TODO: calculate the limits in nPixels this can handle due to
     //   using integers instead of long for storage.
-    //  8.4 million pix, roughly 2900 X 2900
+    // g 8.4 million pix, roughly 2900 X 2900
 
     public HOGs(GreyscaleImage rgb) {
 
@@ -438,6 +438,54 @@ public class HOGs {
         if (orientationB == 180) {
             orientationB = 0;
         } 
+
+        two histograms a and b
+        each bin contents should add to the output cost or score, even
+          if both histograms have 0's in those bins.
+        if both have 0's in the same post-shifted bin,
+           that is a 100 percent match.
+        if there is a 200 and 150 respectively in same bin for a, b
+           then match is (200-50)/200
+        but, the errors are needed to know if the results are significant.
+        if a and b have few to no other counts in other
+           bins, can see that the errors should be large and the
+           100% match of 0 to 0 is not very significant.
+        and if a and b both have large number of counts in other bins,
+           can see that a match of 0 to 0 is signficant.
+
+       so the errors depend upone the total counts (and those add in quadrature).
+       that might need to estimated from the bin with the maximum amount of counts
+          instead of all bins, because a singel bin with 4*V number of counts
+          would indicate that empty bins are signifcant more than that 4*V total
+          distributed over 4 bins would.
+          --> so an error determined from the maximum of bin counts is needed.
+       but an error or threshold transformed to a number that can be used to
+           evaluate the significance of the final score or cost would be best
+
+      max value possible for cell size=1, pix block=6 
+          = 6 * 6 * 255
+      but, the feature has been normalized by the block total and max value
+      so need to use the max bin value
+
+      0  0  0  200 0
+      0  0  0   50 0
+               150/200=0.75
+               similarity=1-.75=.25 + other similarity = .25 + 4
+               (1/200)^2 = 2.5E-5 
+
+      0 50 50  50 50
+      0  0  0  50  0
+               0/50=0.0
+               similarity=1 + other = 1 + 1
+               (1/50)^2 = 4.E-4 
+
+      0  0  0   0  0
+      0  0  0   0  0
+               similarity = 5
+               (1/0)^2 = inf
+
+     still considering examples ...
+
     }*/
 
     private int sumCounts(int[] hist) {
