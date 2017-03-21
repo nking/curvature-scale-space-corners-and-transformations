@@ -92,6 +92,10 @@ import java.util.List;
   Other details are in converting the intersection to a cost or score
   and specialized methods for that specific to this project will be
   present in this class.
+   
+  TODO: need to add an improved feature comparison method that considers the
+  empty bins significant too.  the error calculations in Histogram.java include
+  that
 
   @author nichole
 */
@@ -159,11 +163,13 @@ public class HOGs {
 
         ImageProcessor imageProcessor = new ImageProcessor();
 
-        GreyscaleImage[] gXgY = imageProcessor.createSobelGradients(rgb);
+        // instead of sobel, using 1st deriv
+        GreyscaleImage[] gXgY = imageProcessor.createGradients(rgb);
 
         GreyscaleImage theta = imageProcessor.computeTheta180(gXgY[0], gXgY[1]);
 
-        GreyscaleImage gXY = imageProcessor.combineConvolvedImages(gXgY[0], gXgY[1]);
+        GreyscaleImage gXY = 
+            imageProcessor.combineConvolvedImages(gXgY[0], gXgY[1]);
 
         if (debug) {
             algorithms.misc.MiscDebug.writeImage(gXgY[0], "_gX_");
@@ -204,8 +210,15 @@ public class HOGs {
      * CAVEAT: small amount of testing done, not yet throughly tested.
      *
      * extract the block surrounding the feature.
-     * the number of pixels in a cell and the number of cells in block were set during
+     * the number of pixels in a cell and the number of cells in 
+     * block were set during
      * construction.
+     * 
+     * The feature is nAngleBins in length for 180 degrees
+     * and the bin with the largest value
+     * is the bin holding the angle perpendicular to the windowed point.
+     * (for example: a horizontal line, the feature of a point on the
+     * line has largest bin being the 90 degrees bin).
      *
      * @param x
      * @param y
@@ -277,7 +290,7 @@ public class HOGs {
         double norm = 1./Math.sqrt(blockTotal + 0.0001);
 
         float maxBlock = (N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM) *
-            (N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM) * 255,f;
+            (N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM) * 255.f;
 
         norm *= maxBlock;
 
@@ -334,7 +347,7 @@ public class HOGs {
         if (orientationA < 0 || orientationA > 180 || orientationB < 0 ||
             orientationB > 180) {
             throw new IllegalArgumentException("orientations must be in range 0 to 180,"
-                + "  inclusixe");
+                + "  inclusive,  or!=" + orientationA + " orB=" + orientationB);
         }
         if (orientationA == 180) {
             orientationA = 0;
@@ -395,26 +408,18 @@ public class HOGs {
     }
 
     /**
-     * CAVEAT: small amount of testing done, not yet throughly tested.
-     *
-     * calculate the intersection of histA and histB which have already
-     * been normalized to the same scale.
-     * A result of 0 is maximally dissimilar and a result of 1 is maximally similar.
-     *
-     * The orientations are needed to compare the correct rotated bins to one another.
-     * Internally, orientation of 90 leads to no shift for rotation,
-     * and orientation near 0 results in rotation of nBins/2, etc...
-     *
-     * Note that an orientation of 90 is a unit vector from x,y=0,0 to
-     * x,y=0,1.
-     *
+     * TODO: this will hold a comparison method based on histogram errors and
+     * adding significance for empty bins.
+     *  
      * @param histA
      * @param orientationA
      * @param histB
      * @param orientationB
-     * @return
+     * @return the SSD normalized by max possible value over
+     * feature definition, and the maxValue
      */
-    public float ssd(int[] histA, int orientationA, int[] histB,
+    /*
+    public float[] a(int[] histA, int orientationA, int[] histB,
         int orientationB) {
 
         if ((histA.length != histB.length)) {
@@ -425,57 +430,15 @@ public class HOGs {
         if (orientationA < 0 || orientationA > 180 || orientationB < 0 ||
             orientationB > 180) {
             throw new IllegalArgumentException("orientations must be in range 0 to 180,"
-                + "  inclusixe");
+                + "  inclusive,  or!=" + orientationA + " orB=" + orientationB);
         }
         if (orientationA == 180) {
             orientationA = 0;
         }
         if (orientationB == 180) {
             orientationB = 0;
-        }
-
-        double sumDiff = 0;
-
-        int nBins = histA.length;
-
-        int binWidth = 180/nBins;
-
-        int shiftA = (orientationA - 90)/binWidth;
-        int shiftB = (orientationB - 90)/binWidth;
-
-        for (int j = 0; j < nBins; ++j) {
-
-            int idxA = j + shiftA;
-            if (idxA < 0) {
-                idxA += nBins;
-            } else if (idxA > (nBins - 1 )) {
-                idxA -= nBins;
-            }
-
-            int idxB = j + shiftB;
-            if (idxB < 0) {
-                idxB += nBins;
-            } else if (idxB > (nBins - 1 )) {
-                idxB -= nBins;
-            }
-
-            float yA = histA[idxA];
-            float yB = histB[idxB];
-
-            float diff = yA - yB;
-
-            sumDiff += (diff * diff);
-        }
-
-        sumDiff /= (double)nBins;
-
-        float maxValue = Math.max(MiscMath.findMax(histA),
-            MiscMath.findMax(histB));
-
-        sumDiff = Math.sqrt(sumDiff)/maxValue;
-
-        return (float)sumDiff;
-    }
+        } 
+    }*/
 
     private int sumCounts(int[] hist) {
 

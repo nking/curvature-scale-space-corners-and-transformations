@@ -79,6 +79,28 @@ public class ImageProcessor {
 
         return new GreyscaleImage[]{gX, gY};
     }
+    
+    /**
+     * apply a 1D first deriv gaussian sigma=0.5 convolution)
+     * and return gradients in X and y. note the image may contain
+     * negative values.
+     * @param input
+     * @return
+     */
+    public GreyscaleImage[] createGradients(GreyscaleImage input) {
+
+        //[1 0 -1]
+        float[] kernel = Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive();
+
+        GreyscaleImage gX = input.copyToFullRangeIntImage();
+        
+        applyKernel1D(gX, kernel, true);
+        
+        GreyscaleImage gY = input.copyToFullRangeIntImage();
+        applyKernel1D(gY, kernel, false);
+
+        return new GreyscaleImage[]{gX, gY};
+    }
 
     public void applySobelKernel(GreyscaleImage input) {
 
