@@ -341,14 +341,36 @@ public class ContourFinder {
             contour.setEdgeNumber(scaleSpaceImage.getEdgeNumber());
 
             int tL = (leftIndexBelow > -1) ? leftIndexBelow : tIndex;
+            if (tL >= scaleSpaceImage.getScaleSpaceImage()[sigmaIndex].length) {
+                tL = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex].length - 2;
+            }
             int tR = (rightIndexBelow > -1) ? rightIndexBelow : tIndex + 1;
+            if (tR <= tL) {
+                tR = tL + 1;
+            }
+            while (tR >= scaleSpaceImage.getScaleSpaceImage()[sigmaIndex].length
+                && tR > tL) {
+                tR--;
+            }
             
             float t0 = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tL];
             float t1 = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tR];
             if (t0 < 0 || t1 < 0) {
                 // revert to orig offsets
                 tL = tIndex;
+                if (tL >= scaleSpaceImage.getScaleSpaceImage()[sigmaIndex].length) {
+                    tL = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex].length - 2;
+                }
+                
                 tR = tIndex + 1;
+                if (tR <= tL) {
+                    tR = tL + 1;
+                }
+                while (tR >= scaleSpaceImage.getScaleSpaceImage()[sigmaIndex].length
+                    && tR > tL) {
+                    tR--;
+                }
+            
                 t0 = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tL];
                 t1 = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tR];
             }

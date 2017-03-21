@@ -2,19 +2,14 @@ package algorithms.imageProcessing.scaleSpace;
 
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.connected.ConnectedPointsFinder;
-import algorithms.connected.ConnectedValuesFinder;
 import algorithms.imageProcessing.CannyEdgeFilterAdaptive;
 import algorithms.imageProcessing.EdgeFilterProducts;
 import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
-import algorithms.imageProcessing.ImageIOHelper;
-import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.PostLineThinnerCorrections;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.features.mser.MSEREdges;
-import algorithms.misc.MiscDebug;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
 import gnu.trove.iterator.TIntIterator;
@@ -95,12 +90,15 @@ public final class CurvatureScaleSpaceImageMaker {
         
                 GreyscaleImage gXY = filterProducts.getGradientXY();
                 PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
-                pltc.extremeStaircaseRemover(gXY);
+                pltc.extremeCornerRemover(gXY);
 
-                //GreyscaleImage tmp = gXY.copyImage();
-                //tmp.multiply(255.f);
-                //MiscDebug.writeImage(tmp, "_GXY_" + MiscDebug.getCurrentTimeFormatted());
-
+                
+                GreyscaleImage tmp = gXY.copyImage();
+                tmp.multiply(255.f);
+                algorithms.misc.MiscDebug.writeImage(tmp, "_GXY_" + 
+                    algorithms.misc.MiscDebug.getCurrentTimeFormatted());
+                
+                
                 TIntSet nzs = new TIntHashSet();
                 for (int i = 0; i < gXY.getNPixels(); ++i) {
                     if (gXY.getValue(i) > 0) {

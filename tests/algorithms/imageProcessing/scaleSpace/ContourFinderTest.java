@@ -32,12 +32,10 @@ public class ContourFinderTest extends TestCase {
         ImageExt img = ImageIOHelper.readImageExt(filePath);
         
         CurvatureScaleSpaceImageMaker instance = 
-            new CurvatureScaleSpaceImageMaker(img);
+            new CurvatureScaleSpaceImageMaker(img, true);
                                                 
         List<PairIntArray> curves = instance.getClosedCurves();
-        
-        //Collections.sort(curves, new PairIntArrayComparator());
-        
+                
         assertTrue(curves.size() == 1);
         
         Map<Float, ScaleSpaceCurve> scaleSpaceMap = 
@@ -54,7 +52,7 @@ public class ContourFinderTest extends TestCase {
         
         debugPlot(result, ImageIOHelper.readImageExt(filePath), 0, 0);
         
-        assertTrue(result.size() >= 3);
+        assertEquals(3, result.size());
         
         /*
         there are 3 main large peaks around the inner curves of the clover,
@@ -69,24 +67,24 @@ public class ContourFinderTest extends TestCase {
         List<PairInt> expectedPeakCoords0 = new ArrayList<PairInt>();
         List<PairInt> expectedPeakCoords1 = new ArrayList<PairInt>();
         
-        expectedScaleFreeLength.add(Float.valueOf(0.51f));
+        expectedScaleFreeLength.add(Float.valueOf(0.13f));
         expectedPeakSigma.add(Float.valueOf(32));
         expectedEdgeNumber.add(Integer.valueOf(0));
-        expectedPeakCoords0.add(new PairInt(24, 59));
-        expectedPeakCoords1.add(new PairInt(23, 71));
+        expectedPeakCoords0.add(new PairInt(35, 72));
+        expectedPeakCoords1.add(new PairInt(35, 76));
          
-        expectedScaleFreeLength.add(Float.valueOf(0.17f));
+        expectedScaleFreeLength.add(Float.valueOf(0.779f));
         expectedPeakSigma.add(Float.valueOf(27.5f));
         expectedEdgeNumber.add(Integer.valueOf(0));
-        expectedPeakCoords0.add(new PairInt(58, 43));
-        expectedPeakCoords1.add(new PairInt(51, 37));
+        expectedPeakCoords0.add(new PairInt(65, 52));
+        expectedPeakCoords1.add(new PairInt(62, 49));
           
-        expectedScaleFreeLength.add(Float.valueOf(0.87f));
-        expectedPeakSigma.add(Float.valueOf(27.5f));
+        expectedScaleFreeLength.add(Float.valueOf(0.48f));
+        expectedPeakSigma.add(Float.valueOf(26.9f));
         expectedEdgeNumber.add(Integer.valueOf(0));
-        expectedPeakCoords0.add(new PairInt(52, 88));
-        expectedPeakCoords1.add(new PairInt(60, 83));
-        
+        expectedPeakCoords0.add(new PairInt(62, 99));
+        expectedPeakCoords1.add(new PairInt(69, 93));
+   //     
         Set<Integer> found = new HashSet<Integer>();
         
         for (int i = 0; i < result.size(); i++) {
@@ -135,7 +133,7 @@ public class ContourFinderTest extends TestCase {
             }
         }
         
-        assertTrue(found.size() == 3);
+        assertEquals(3, found.size());
     }
     
     public void estFindContours2() throws Exception {
