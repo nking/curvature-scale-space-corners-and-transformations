@@ -21,15 +21,15 @@ import java.util.Stack;
  */
 @SuppressWarnings({"unchecked"})
 public class BinarySearchTree<T extends HeapNode> {
-    
+
     protected int n = 0;
-    
+
     protected T root = null;
-  
+
     public T minimum() {
         return minimum(root);
     }
-    
+
     protected T minimum(T x) {
         if (x == null) {
             return null;
@@ -40,11 +40,11 @@ public class BinarySearchTree<T extends HeapNode> {
         }
         return nd;
     }
-    
+
     public T maximum() {
         return maximum(root);
     }
-    
+
     protected T maximum(T x) {
         if (x == null) {
             return null;
@@ -55,38 +55,38 @@ public class BinarySearchTree<T extends HeapNode> {
         }
         return nd;
     }
-    
+
     /**
      * smallest element in the tree with key greater
      * than x.key.
      * @param x
-     * @return 
+     * @return
      */
     public T successor(T x) {
         if (x.getRight() != null) {
             return minimum((T)x.getRight());
         }
         T y = (x.getParent() != null) ? (T) x.getParent() : null;
-        while ((y != null) && 
+        while ((y != null) &&
             (y.getRight() != null && x.equals(y.getRight()))) {
             x = y;
             y = (y.getParent() != null) ? (T) y.getParent() : null;
         }
         return y;
     }
-    
+
     /*
-     * the largest element in the tree with key smaller 
+     * the largest element in the tree with key smaller
      * than x.key.
-     * 
+     *
      * a smaller number can either be a descendant to the left
      * or a parent or the left descendants of a parent.
-     * 
+     *
      * This is not an efficient data structure for this operation
      * so will not implement it for this.
-     * 
+     *
      * @param x
-     * @return 
+     * @return
      *
     public T predecessor(T x) {
         the smallest smaller than x could be the same
@@ -94,18 +94,18 @@ public class BinarySearchTree<T extends HeapNode> {
         search early.
     }
     */
-    
+
     public void insert(T z) {
-        
+
         if (root == null) {
             root = z;
             n++;
             return;
         }
-        
+
         T zParent = null;
         T x = root;
-        
+
         while (x != null) {
             zParent = x;
             if (z.getKey() < x.getKey()) {
@@ -117,61 +117,133 @@ public class BinarySearchTree<T extends HeapNode> {
                 x = (x.getRight() != null) ? (T) x.getRight() : null;
             }
         }
-        z.setParent(zParent); 
+        z.setParent(zParent);
         if (zParent == null) {
             root = z;
         } else if (z.getKey() < zParent.getKey()) {
-            zParent.setLeft(z);           
+            zParent.setLeft(z);
         } else {
             zParent.setRight(z);
         }
-        
+
         n++;
     }
-    
+
     public void delete(T z) {
-               
-        T y = null;
-        T x = null;
-        if ((z.getLeft() == null) || (z.getRight() == null)) {
-            y = z;
+
+        if (z == null) {
+            return;
+        }
+
+        if (z.getRight() == null && z.getLeft() == null) {
+
+            // handle case where z has no children
+            if (z.getParent() == null) {
+                if (root.equals(z)) {
+                    root = null;
+                } else {
+                    throw new IllegalStateException("z is not in tree");
+                }
+
+            } else {
+
+                T parent = (T) z.getParent();
+                if (parent.getLeft() != null && parent.getLeft().equals(z)) {
+                    parent.setLeft(null);
+                } else {
+                    assert (parent.getRight().equals(z));
+                    if (parent.getRight() == null || !parent.getRight().equals(z)) {
+                        throw new IllegalStateException("tree state is corrupted");
+                    }
+                    parent.setRight(null);
+                }
+                z.setParent(null);
+            }
+
+        } else if (z.getRight() != null && z.getLeft() != null) {
+            // z has 2 children
+            // replace z with its successor after removing successor
+            // from it's area
+
+            T y = successor(z);
+
+            delete(y);
+            
+            // replace z with y
+            n++;
+
+            // assign the children of z to y
+            y.setLeft(z.getLeft());
+            y.setRight(z.getRight());
+            z.getLeft().setParent(y);
+            z.getRight().setParent(y);
+
+            if (z.getParent() == null) {
+                if (root.equals(z)) {
+                    root = y;
+                    y.setParent(null);
+                } else {
+                    throw new IllegalStateException("z is not in tree");
+                }
+
+            } else {
+
+                T parent = (T) z.getParent();
+                if (parent.getLeft() != null && parent.getLeft().equals(z)) {
+                    parent.setLeft(y);
+                } else {
+                    assert (parent.getRight().equals(z));
+                    if (parent.getRight() == null || !parent.getRight().equals(z)) {
+                        throw new IllegalStateException("tree state is corrupted");
+                    }
+                    parent.setRight(y);
+                }
+                y.setParent(parent);
+            }
+
         } else {
-            y = successor(z);
+            // z has 1 child, so need to link parent to the child
+
+            T child = null;
+
+            if (z.getLeft() != null) {
+                child = (T) z.getLeft();
+            } else {
+                child = (T)z.getRight();
+            }
+
+            if (z.getParent() == null) {
+                if (root.equals(z)) {
+                    root = child;
+                    child.setParent(null);
+                } else {
+                    throw new IllegalStateException("z is not in tree");
+                }
+
+            } else {
+
+                T parent = (T) z.getParent();
+                if (parent.getLeft() != null && parent.getLeft().equals(z)) {
+                    parent.setLeft(child);
+                } else {
+                    assert (parent.getRight().equals(z));
+                    if (parent.getRight() == null || !parent.getRight().equals(z)) {
+                        throw new IllegalStateException("tree state is corrupted");
+                    }
+                    parent.setRight(child);
+                }
+                child.setParent(parent);
+            }
         }
-        
-        if (y.getLeft() != null) {
-            x = (T) y.getLeft();
-        } else {
-            x = (y.getRight() != null) ? (T) y.getRight() : null;
-        }
-        
-        if (x != null) {
-            x.setParent(y.getParent());
-        }
-         
-        //if (y.getParent() == null) {
-        if (root.equals(z)) {
-            root = x;
-        } else if (y == y.getParent().getLeft()) {
-            y.getParent().setLeft(x);
-        } else {
-            y.getParent().setRight(x);
-        }
-        
-        if (y != z) {
-            // copy y data into z
-            z.setKey(y.getKey());
-            z.setData(y.getData());
-        }
-                
+
         n--;
     }
-    
+
     /**
      * runtime complexity is O(h) where h is height of
      * tree, which is usually lg_2(n)
      * @param z
-     * @return 
+     * @return
      */
     public T search(T z) {
         if (root == null) {
@@ -179,11 +251,11 @@ public class BinarySearchTree<T extends HeapNode> {
         }
         return search(root, z);
     }
-    
+
     private T search(T tn, T z) {
         return search(tn, z.getKey());
     }
-    
+
     private T search(T tn, long theKey) {
         while (tn != null) {
             if (theKey == tn.getKey()) {
@@ -196,133 +268,145 @@ public class BinarySearchTree<T extends HeapNode> {
         }
         return null;
     }
-    
+
     private T getRoot(T nd) {
         while ((nd != null) && (nd.getParent() != null)) {
             nd = (T) nd.getParent();
         }
         return nd;
     }
-    
+
     public int getNumberOfNodes() {
         return n;
     }
-    
+
     /**
      * visit each node using pattern left subtree, root, right subtree
      * in an iterative manner rather than invoking the method recursively.
      */
     @SuppressWarnings({"rawtypes"})
     protected T[] getInOrderTraversalIterative(T node) {
-       
+
         Class cls = T.getType();
         T[] array = (T[]) Array.newInstance(cls, n);
         int count = 0;
-        
+
         Stack<T> stack = new Stack<>();
-               
+
         while (!stack.isEmpty() || (node != null)) {
             if (node != null) {
-                
+
                 stack.push(node);
-                
+
                 node = (node.getLeft() != null) ? (T) node.getLeft() : null;
-            
+
             } else {
-                
+
                 node = stack.pop();
-                
+
                 array[count] = node;
                 count++;
-                
+
                 //System.out.println(node.key);
-                
+
                 node = (node.getRight() != null) ? (T) node.getRight() : null;
             }
         }
-        
+
         return array;
     }
-    
+
     /**
      * visit each node using pattern: root, left subtree, right subtree
      * in an iterative manner rather than invoking the method recursively.
      */
     @SuppressWarnings({"rawtypes"})
     protected T[] printPreOrderTraversalIterative(T node) {
-       
+
         Class cls = T.getType();
         T[] array = (T[]) Array.newInstance(cls, n);
         int count = 0;
-        
+
         Stack<T> stack = new Stack<>();
-        
+
         while (!stack.isEmpty() || (node != null)) {
+            
             if (node != null) {
+
+                {//DEBUG
+                    if (node.getParent() != null) {
+                        T parent = (T)node.getParent();
+                        if (parent.getLeft() != null && parent.getLeft().equals(node)) {
+                            assert(node.getKey() <= node.getParent().getKey());
+                        } else if (parent.getRight() != null) {
+                            assert(node.getParent().getKey() <= node.getKey());
+                        }
+                    }
+                }
                 
                 array[count] = node;
                 count++;
                 //System.out.println(node.key);
-                
+
                 stack.push(node);
-                
+
                 node = (node.getLeft() != null) ? (T)node.getLeft() : null;
-            
+
             } else {
-                
+
                 node = stack.pop();
-                
+
                 node = (node.getRight() != null) ? (T)node.getRight() : null;
             }
         }
-        
+
         return array;
     }
-    
+
     /**
      * visit each node using pattern: left subtree, right subtree, root subtree
      * in an iterative manner rather than invoking the method recursively.
      */
     @SuppressWarnings({"rawtypes"})
     protected T[] printPostOrderTraversalIterative(T node) {
-        
+
         Class cls = T.getType();
         T[] array = (T[]) Array.newInstance(cls, n);
         int count = 0;
-        
+
         if (node == null) {
             return array;
         }
-        
+
         Stack<T> stack = new Stack<>();
         Stack<T> stack2 = new Stack<T>();
         stack.push(node);
-        
+
         while (!stack.isEmpty()) {
-            
+
             node = stack.pop();
-            
+
             stack2.push(node);
-            
+
             if (node.getLeft() != null) {
                 stack.push((T)node.getLeft());
             }
 
             if (node.getRight() != null) {
                 stack.push((T)node.getRight());
-            }            
+            }
         }
-        
+
         while (!stack2.isEmpty()) {
-            
+
             node = stack2.pop();
-            
+
             //process(node);
             array[count] = node;
             count++;
             //System.out.println(node.key);
         }
-         
+
         return array;
     }
 }

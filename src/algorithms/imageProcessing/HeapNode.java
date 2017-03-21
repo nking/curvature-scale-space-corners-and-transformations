@@ -174,6 +174,7 @@ public class HeapNode {
      */
     public void setChildren(DoubleLinkedCircularList children) {
         this.children = children;
+        numberOfChildren = (int) children.number;
     }
 
     /**
@@ -210,9 +211,18 @@ public class HeapNode {
             .append(" nChildren=").append(Integer.toString(numberOfChildren))
             .append(" mark=").append(Boolean.toString(mark))
             .append(" data=");
-            if (data != null) {
-                sb.append(data.toString());
-            }
+        if (data != null) {
+            sb.append(data.toString());
+        }
+        if (parent != null) {
+            sb.append(" prnt=").append(parent.getKey());
+        }
+        if (left != null) {
+            sb.append(" lft=").append(left.getKey());
+        }
+        if (right != null) {
+            sb.append(" rgt=").append(right.getKey());
+        }
         
         return sb.toString();
     }
