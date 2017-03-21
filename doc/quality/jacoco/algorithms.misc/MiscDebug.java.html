@@ -834,26 +834,26 @@ import no.uib.cipr.matrix.DenseMatrix;
         img, int xOffset, int yOffset, String fileSuffix) {
         
 <span class="pc bpc" id="L836" title="1 of 2 branches missed.">        if (result.isEmpty()) {</span>
-<span class="nc" id="L837">            return;</span>
+<span class="fc" id="L837">            return;</span>
         }
         
-<span class="fc" id="L840">        int nExtraForDot = 1;</span>
-<span class="fc" id="L841">        int rClr = 255;</span>
-<span class="fc" id="L842">        int gClr = 0;</span>
-<span class="fc" id="L843">        int bClr = 0;</span>
+<span class="nc" id="L840">        int nExtraForDot = 1;</span>
+<span class="nc" id="L841">        int rClr = 255;</span>
+<span class="nc" id="L842">        int gClr = 0;</span>
+<span class="nc" id="L843">        int bClr = 0;</span>
         
-<span class="fc" id="L845">        ImageIOHelper.addContoursToImage(result, img, xOffset, yOffset, </span>
+<span class="nc" id="L845">        ImageIOHelper.addContoursToImage(result, img, xOffset, yOffset, </span>
             nExtraForDot, rClr, gClr, bClr);
         
         try {
             
-<span class="fc" id="L850">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+<span class="nc" id="L850">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
 
-<span class="fc" id="L852">            ImageIOHelper.writeOutputImage(dirPath + &quot;/contours_&quot; </span>
+<span class="nc" id="L852">            ImageIOHelper.writeOutputImage(dirPath + &quot;/contours_&quot; </span>
                 + fileSuffix + &quot;.png&quot;, img);
         
-<span class="pc" id="L855">        } catch (IOException e) {}</span>
-<span class="fc" id="L856">    }</span>
+<span class="nc" id="L855">        } catch (IOException e) {}</span>
+<span class="nc" id="L856">    }</span>
 
     public static void printScaleSpaceCurve(ScaleSpaceCurveImage scaleSpaceImage,
         String fileSuffix) throws IOException {
@@ -883,10 +883,10 @@ import no.uib.cipr.matrix.DenseMatrix;
 <span class="fc" id="L883">        n = 0;</span>
 <span class="fc bfc" id="L884" title="All 2 branches covered.">        for (int col = 0; col &lt; tVsSigma.length; col++) {</span>
 <span class="fc" id="L885">            float sigma = sigmas[col];</span>
-<span class="pc bpc" id="L886" title="1 of 2 branches missed.">            for (int row = 0; row &lt; tVsSigma[col].length; row++) {</span>
-<span class="nc" id="L887">                y[n] = sigma;</span>
-<span class="nc" id="L888">                x[n] = tVsSigma[col][row];</span>
-<span class="nc" id="L889">                n++;</span>
+<span class="fc bfc" id="L886" title="All 2 branches covered.">            for (int row = 0; row &lt; tVsSigma[col].length; row++) {</span>
+<span class="fc" id="L887">                y[n] = sigma;</span>
+<span class="fc" id="L888">                x[n] = tVsSigma[col][row];</span>
+<span class="fc" id="L889">                n++;</span>
             }
         }
         
@@ -1452,10 +1452,10 @@ import no.uib.cipr.matrix.DenseMatrix;
 <span class="fc" id="L1452">                yPoints[ii] = scaleSpaceCurveSigma.getK(ii);</span>
             }
 <span class="fc" id="L1454">            yMin = algorithms.misc.MiscMath.findMin(yPoints);</span>
-<span class="pc bpc" id="L1455" title="1 of 2 branches missed.">            if (yMin &lt; 0) {</span>
+<span class="fc bfc" id="L1455" title="All 2 branches covered.">            if (yMin &lt; 0) {</span>
 <span class="fc" id="L1456">                yMin *= 1.1;</span>
             } else {
-<span class="nc" id="L1458">                yMin *= 0.9;</span>
+<span class="fc" id="L1458">                yMin *= 0.9;</span>
             }
 <span class="fc" id="L1460">            yMax = algorithms.misc.MiscMath.findMax(yPoints);</span>
             // ==== k vs t
@@ -1488,6 +1488,17 @@ import no.uib.cipr.matrix.DenseMatrix;
 <span class="fc" id="L1488">        String filePathX = plotterX.writeFile(&quot;X_&quot; + fileSuffix);</span>
 <span class="fc" id="L1489">        String filePath3 = plotterY.writeFile(&quot;Y_&quot; + fileSuffix);</span>
 <span class="fc" id="L1490">    }</span>
+
+    public static String getPrintRowMajor(float[][] a, String label) {
+                
+<span class="nc" id="L1494">        StringBuilder sb = new StringBuilder(label);</span>
+<span class="nc" id="L1495">        sb.append(&quot;\n&quot;);</span>
+<span class="nc bnc" id="L1496" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc" id="L1497">            sb.append(Arrays.toString(a[i])).append(&quot;\n&quot;);</span>
+        }
+
+<span class="nc" id="L1500">        return sb.toString();</span>
+    }
     
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

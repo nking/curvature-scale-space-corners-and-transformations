@@ -3,7 +3,6 @@
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.QuadInt;
 import algorithms.util.ResourceFinder;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.map.TObjectIntMap;
@@ -18,14 +17,11 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.security.Security;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -35,456 +31,244 @@ import java.util.logging.Logger;
  *
  * @author nichole
  */
-<span class="nc" id="L38">public class Misc {</span>
+<span class="nc" id="L34">public class Misc {</span>
 
-<span class="fc" id="L40">    public static final int[] dx8 = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};</span>
-<span class="fc" id="L41">    public static final int[] dy8 = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};</span>
+<span class="fc" id="L36">    public static final int[] dx8 = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};</span>
+<span class="fc" id="L37">    public static final int[] dy8 = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};</span>
 
-<span class="fc" id="L43">    public static final int[] dx4 = new int[]{-1,  0, 1, 0};</span>
-<span class="fc" id="L44">    public static final int[] dy4 = new int[]{ 0, -1, 0, 1};</span>
+<span class="fc" id="L39">    public static final int[] dx4 = new int[]{-1,  0, 1, 0};</span>
+<span class="fc" id="L40">    public static final int[] dy4 = new int[]{ 0, -1, 0, 1};</span>
 
     public static PairIntArray convertWithoutOrder(Collection&lt;PairInt&gt; points) {
-<span class="fc" id="L47">        PairIntArray out = new PairIntArray(points.size());</span>
-<span class="fc bfc" id="L48" title="All 2 branches covered.">        for (PairInt p : points) {</span>
-<span class="fc" id="L49">            out.add(p.getX(), p.getY());</span>
-<span class="fc" id="L50">        }</span>
-<span class="fc" id="L51">        return out;</span>
+<span class="fc" id="L43">        PairIntArray out = new PairIntArray(points.size());</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        for (PairInt p : points) {</span>
+<span class="fc" id="L45">            out.add(p.getX(), p.getY());</span>
+<span class="fc" id="L46">        }</span>
+<span class="fc" id="L47">        return out;</span>
     }
 
     public static Set&lt;PairInt&gt; convert(PairIntArray points) {
 
-<span class="pc bpc" id="L56" title="1 of 2 branches missed.">        if (points == null) {</span>
-<span class="nc" id="L57">            throw new IllegalArgumentException(&quot;points cannot be null&quot;);</span>
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">        if (points == null) {</span>
+<span class="nc" id="L53">            throw new IllegalArgumentException(&quot;points cannot be null&quot;);</span>
         }
 
-<span class="fc" id="L60">        Set&lt;PairInt&gt; out = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L56">        Set&lt;PairInt&gt; out = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="fc bfc" id="L62" title="All 2 branches covered.">        for (int i = 0; i &lt; points.getN(); ++i) {</span>
-<span class="fc" id="L63">            out.add(new PairInt(points.getX(i), points.getY(i)));</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        for (int i = 0; i &lt; points.getN(); ++i) {</span>
+<span class="fc" id="L59">            out.add(new PairInt(points.getX(i), points.getY(i)));</span>
         }
 
-<span class="fc" id="L66">        return out;</span>
+<span class="fc" id="L62">        return out;</span>
     }
     
     public static Map&lt;PairInt, Integer&gt; makePointIndexMap(PairIntArray edge) {
         
-<span class="nc bnc" id="L71" title="All 2 branches missed.">        if (edge == null) {</span>
-<span class="nc" id="L72">            throw new IllegalArgumentException(&quot;edge cannot be null&quot;);</span>
+<span class="nc bnc" id="L67" title="All 2 branches missed.">        if (edge == null) {</span>
+<span class="nc" id="L68">            throw new IllegalArgumentException(&quot;edge cannot be null&quot;);</span>
         }
         
-<span class="nc" id="L75">        Map&lt;PairInt, Integer&gt; map = new HashMap&lt;PairInt, Integer&gt;();</span>
+<span class="nc" id="L71">        Map&lt;PairInt, Integer&gt; map = new HashMap&lt;PairInt, Integer&gt;();</span>
         
-<span class="nc bnc" id="L77" title="All 2 branches missed.">        for (int i = 0; i &lt; edge.getN(); ++i) {</span>
-<span class="nc" id="L78">            map.put(new PairInt(edge.getX(i), edge.getY(i)), Integer.valueOf(i));</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">        for (int i = 0; i &lt; edge.getN(); ++i) {</span>
+<span class="nc" id="L74">            map.put(new PairInt(edge.getX(i), edge.getY(i)), Integer.valueOf(i));</span>
         }
         
-<span class="nc" id="L81">        return map;</span>
-    }
-
-    /**
-     * get the values of Math.sin(theta) for theta from 0 to Math.PI in 1 degree
-     * intervals.
-     * @return
-     */
-    public static double[] getSineThetaForPI() {
-<span class="nc" id="L90">        double d = 1. * Math.PI/180;</span>
-<span class="nc" id="L91">        double[] s = new double[180];</span>
-<span class="nc" id="L92">        double t = 0;</span>
-<span class="nc bnc" id="L93" title="All 2 branches missed.">        for (int i = 0; i &lt; 180; ++i) {</span>
-<span class="nc" id="L94">            s[i] = Math.sin(t);</span>
-<span class="nc" id="L95">            t += d;</span>
-        }
-<span class="nc" id="L97">        return s;</span>
-    }
-    /**
-     * get the values of Math.cos(theta) for theta from 0 to Math.PI in 1 degree
-     * intervals.
-     * @return
-     */
-    public static double[] getCosineThetaForPI() {
-<span class="nc" id="L105">        double d = 1. * Math.PI/180;</span>
-<span class="nc" id="L106">        double[] c = new double[180];</span>
-<span class="nc" id="L107">        double t = 0;</span>
-<span class="nc bnc" id="L108" title="All 2 branches missed.">        for (int i = 0; i &lt; 180; ++i) {</span>
-<span class="nc" id="L109">            c[i] = Math.cos(t);</span>
-<span class="nc" id="L110">            t += d;</span>
-        }
-<span class="nc" id="L112">        return c;</span>
+<span class="nc" id="L77">        return map;</span>
     }
 
     public static String persistToFile(String fileName, Set&lt;PairInt&gt; points)
         throws IOException {
 
-<span class="pc bpc" id="L118" title="1 of 2 branches missed.">        if (points == null) {</span>
-<span class="nc" id="L119">            throw new IllegalArgumentException(&quot;points cannot be null&quot;);</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">        if (points == null) {</span>
+<span class="nc" id="L84">            throw new IllegalArgumentException(&quot;points cannot be null&quot;);</span>
         }
 
-<span class="fc" id="L122">        String outFilePath = ResourceFinder.findDirectory(&quot;bin&quot;) + &quot;/&quot; +</span>
+<span class="fc" id="L87">        String outFilePath = ResourceFinder.findDirectory(&quot;bin&quot;) + &quot;/&quot; +</span>
             fileName;
 
-<span class="fc" id="L125">        FileOutputStream fs = null;</span>
-<span class="fc" id="L126">        ObjectOutputStream os = null;</span>
+<span class="fc" id="L90">        FileOutputStream fs = null;</span>
+<span class="fc" id="L91">        ObjectOutputStream os = null;</span>
 
         try {
-<span class="fc" id="L129">            File file = new File(outFilePath);</span>
-<span class="fc" id="L130">            file.delete();</span>
-<span class="fc" id="L131">            file.createNewFile();</span>
+<span class="fc" id="L94">            File file = new File(outFilePath);</span>
+<span class="fc" id="L95">            file.delete();</span>
+<span class="fc" id="L96">            file.createNewFile();</span>
 
-<span class="fc" id="L133">            fs = new FileOutputStream(file);</span>
-<span class="fc" id="L134">            os = new ObjectOutputStream(fs);</span>
+<span class="fc" id="L98">            fs = new FileOutputStream(file);</span>
+<span class="fc" id="L99">            os = new ObjectOutputStream(fs);</span>
 
-<span class="fc" id="L136">            int count = 0;</span>
+<span class="fc" id="L101">            int count = 0;</span>
 
-<span class="fc bfc" id="L138" title="All 2 branches covered.">            for (PairInt point : points) {</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">            for (PairInt point : points) {</span>
 
-<span class="fc" id="L140">                os.writeInt(point.getX());</span>
-<span class="fc" id="L141">                os.writeInt(point.getY());</span>
+<span class="fc" id="L105">                os.writeInt(point.getX());</span>
+<span class="fc" id="L106">                os.writeInt(point.getY());</span>
 
-<span class="fc bfc" id="L143" title="All 2 branches covered.">                if ((count % 10) == 0) {</span>
-<span class="fc" id="L144">                    os.flush();</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">                if ((count % 10) == 0) {</span>
+<span class="fc" id="L109">                    os.flush();</span>
                 }
 
-<span class="fc" id="L147">                count++;</span>
-<span class="fc" id="L148">            }</span>
+<span class="fc" id="L112">                count++;</span>
+<span class="fc" id="L113">            }</span>
 
-<span class="fc" id="L150">            os.flush();</span>
+<span class="fc" id="L115">            os.flush();</span>
 
         } finally {
 
-<span class="pc bpc" id="L154" title="3 of 4 branches missed.">            if (os != null) {</span>
-<span class="pc" id="L155">                os.close();</span>
+<span class="pc bpc" id="L119" title="3 of 4 branches missed.">            if (os != null) {</span>
+<span class="pc" id="L120">                os.close();</span>
             }
-<span class="pc bpc" id="L157" title="3 of 4 branches missed.">            if (fs != null) {</span>
-<span class="pc" id="L158">                fs.close();</span>
+<span class="pc bpc" id="L122" title="3 of 4 branches missed.">            if (fs != null) {</span>
+<span class="pc" id="L123">                fs.close();</span>
             }
         }
 
-<span class="fc" id="L162">        return outFilePath;</span>
+<span class="fc" id="L127">        return outFilePath;</span>
     }
 
     public static PairIntArray deserializePairIntArray(String filePath) throws IOException {
 
-<span class="fc" id="L167">        FileInputStream fs = null;</span>
-<span class="fc" id="L168">        ObjectInputStream os = null;</span>
+<span class="fc" id="L132">        FileInputStream fs = null;</span>
+<span class="fc" id="L133">        ObjectInputStream os = null;</span>
 
-<span class="fc" id="L170">        PairIntArray out = new PairIntArray();</span>
+<span class="fc" id="L135">        PairIntArray out = new PairIntArray();</span>
 
         try {
-<span class="fc" id="L173">            File file = new File(filePath);</span>
+<span class="fc" id="L138">            File file = new File(filePath);</span>
 
-<span class="fc" id="L175">            fs = new FileInputStream(file);</span>
-<span class="fc" id="L176">            os = new ObjectInputStream(fs);</span>
+<span class="fc" id="L140">            fs = new FileInputStream(file);</span>
+<span class="fc" id="L141">            os = new ObjectInputStream(fs);</span>
 
             while (true) {
-<span class="fc" id="L179">                int x = os.readInt();</span>
-<span class="fc" id="L180">                int y = os.readInt();</span>
-<span class="fc" id="L181">                out.add(x, y);</span>
-<span class="fc" id="L182">            }</span>
-<span class="fc" id="L183">        } catch (EOFException e) {</span>
+<span class="fc" id="L144">                int x = os.readInt();</span>
+<span class="fc" id="L145">                int y = os.readInt();</span>
+<span class="fc" id="L146">                out.add(x, y);</span>
+<span class="fc" id="L147">            }</span>
+<span class="fc" id="L148">        } catch (EOFException e) {</span>
             // expected
         } finally {
 
-<span class="pc bpc" id="L187" title="3 of 4 branches missed.">            if (os != null) {</span>
-<span class="pc" id="L188">                os.close();</span>
+<span class="pc bpc" id="L152" title="3 of 4 branches missed.">            if (os != null) {</span>
+<span class="pc" id="L153">                os.close();</span>
             }
-<span class="pc bpc" id="L190" title="3 of 4 branches missed.">            if (fs != null) {</span>
-<span class="pc" id="L191">                fs.close();</span>
+<span class="pc bpc" id="L155" title="3 of 4 branches missed.">            if (fs != null) {</span>
+<span class="pc" id="L156">                fs.close();</span>
             }
         }
 
-<span class="fc" id="L195">        return out;</span>
+<span class="fc" id="L160">        return out;</span>
     }
 
     public static Set&lt;PairInt&gt; deserializeSetPairInt(String filePath) throws IOException {
 
-<span class="fc" id="L200">        FileInputStream fs = null;</span>
-<span class="fc" id="L201">        ObjectInputStream os = null;</span>
+<span class="fc" id="L165">        FileInputStream fs = null;</span>
+<span class="fc" id="L166">        ObjectInputStream os = null;</span>
 
-<span class="fc" id="L203">        Set&lt;PairInt&gt; set = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L168">        Set&lt;PairInt&gt; set = new HashSet&lt;PairInt&gt;();</span>
 
         try {
-<span class="fc" id="L206">            File file = new File(filePath);</span>
+<span class="fc" id="L171">            File file = new File(filePath);</span>
 
-<span class="fc" id="L208">            fs = new FileInputStream(file);</span>
-<span class="fc" id="L209">            os = new ObjectInputStream(fs);</span>
+<span class="fc" id="L173">            fs = new FileInputStream(file);</span>
+<span class="fc" id="L174">            os = new ObjectInputStream(fs);</span>
 
             while (true) {
 
-<span class="fc" id="L213">                int x = os.readInt();</span>
-<span class="fc" id="L214">                int y = os.readInt();</span>
+<span class="fc" id="L178">                int x = os.readInt();</span>
+<span class="fc" id="L179">                int y = os.readInt();</span>
 
-<span class="fc" id="L216">                PairInt p = new PairInt(x, y);</span>
+<span class="fc" id="L181">                PairInt p = new PairInt(x, y);</span>
 
-<span class="fc" id="L218">                set.add(p);</span>
-<span class="fc" id="L219">            }</span>
+<span class="fc" id="L183">                set.add(p);</span>
+<span class="fc" id="L184">            }</span>
 
-<span class="fc" id="L221">        } catch (EOFException e) {</span>
+<span class="fc" id="L186">        } catch (EOFException e) {</span>
             // expected
         } finally {
 
-<span class="pc bpc" id="L225" title="3 of 4 branches missed.">            if (os != null) {</span>
-<span class="pc" id="L226">                os.close();</span>
+<span class="pc bpc" id="L190" title="3 of 4 branches missed.">            if (os != null) {</span>
+<span class="pc" id="L191">                os.close();</span>
             }
-<span class="pc bpc" id="L228" title="3 of 4 branches missed.">            if (fs != null) {</span>
-<span class="pc" id="L229">                fs.close();</span>
-            }
-        }
-
-<span class="fc" id="L233">        return set;</span>
-    }
-
-    public static int calculateSumOfEightNeighbors(GreyscaleImage img, int x, int y) {
-
-<span class="nc" id="L238">        int sum = 0;</span>
-
-<span class="nc bnc" id="L240" title="All 2 branches missed.">        for (int i = 0; i &lt; dx8.length; ++i) {</span>
-<span class="nc" id="L241">            int x1 = x + dx8[i];</span>
-<span class="nc" id="L242">            int y1 = y + dy8[i];</span>
-<span class="nc bnc" id="L243" title="All 6 branches missed.">            if (x1 &lt; 0 || y1 &lt; 0 || (x1 &gt; (img.getWidth() - 1)) ||</span>
-<span class="nc bnc" id="L244" title="All 2 branches missed.">                (y1 &gt; (img.getHeight() - 1))) {</span>
-<span class="nc" id="L245">                continue;</span>
-            }
-<span class="nc" id="L247">            sum += img.getValue(x, y);</span>
-        }
-
-<span class="nc" id="L250">        return sum;</span>
-    }
-
-    /**
-     * create x and y offsets for the neighbor points within d pixel radius.
-     * The result is a two-dimensional array of length (2*d+1)^2 with the first
-     * dimension being the x array and the 2nd dimension being the y array.
-     * Note that the offset of (0,0) is in the middle of the arrays.
-     * @param d the half radius of square of offsets, beginning at
-     * (-d,-d), (-d, -d+1),... to make a (2d+1)^2 two dimensional array
-     * of offsets.
-     * @return
-     */
-    public static float[][] createNeighborOffsets(int radiusFromCenter) {
-
-        //TODO: consider changing to use one dimensional array
-
-<span class="nc" id="L267">        int n = 2*radiusFromCenter + 1;</span>
-
-<span class="nc" id="L269">        float[][] xyout = new float[n*n][];</span>
-
-<span class="nc" id="L271">        int count = 0;</span>
-<span class="nc bnc" id="L272" title="All 2 branches missed.">        for (int x = -radiusFromCenter; x &lt;= radiusFromCenter; ++x) {</span>
-<span class="nc bnc" id="L273" title="All 2 branches missed.">            for (int y = -radiusFromCenter; y &lt;= radiusFromCenter; ++y) {</span>
-
-<span class="nc" id="L275">                xyout[count] = new float[]{x, y};</span>
-
-<span class="nc" id="L277">                count++;</span>
+<span class="pc bpc" id="L193" title="3 of 4 branches missed.">            if (fs != null) {</span>
+<span class="pc" id="L194">                fs.close();</span>
             }
         }
 
-<span class="nc" id="L281">        return xyout;</span>
-    }
-
-    /**
-     * create x and y offsets for the neighbor points within d pixel radius.
-     * The result is a two-dimensional array of length 
-     * 2*((2*d+1)^2 -1) with the numbers being x and y offsets
-     * alternating.
-     * Note that [(0, 0)] is not present and that the
-     * offsets are ordered such that inner &quot;rings&quot; are completed,
-     * then next inner ring at increased radius, etc.
-     * @return
-     */
-    public static int[] createOrderedNeighborOffsets(int radiusFromCenter) {
-
-        //TODO: consider changing to use one dimensional array
-
-<span class="fc" id="L298">        int n = 2*radiusFromCenter + 1;</span>
-<span class="fc" id="L299">        n *= n;</span>
-<span class="fc" id="L300">        n--;</span>
-<span class="fc" id="L301">        n *= 2;</span>
-<span class="fc" id="L302">        int[] xyout = new int[n];</span>
-
-<span class="fc" id="L304">        int count = 0;</span>
-<span class="fc bfc" id="L305" title="All 2 branches covered.">        for (int d = 1; d &lt;= radiusFromCenter; ++d) {</span>
-<span class="fc bfc" id="L306" title="All 2 branches covered.">            for (int x = -d; x &lt;= d; ++x) {</span>
-<span class="fc bfc" id="L307" title="All 2 branches covered.">                for (int y = -d; y &lt;= d; ++y) {</span>
-                    // when both points have an absolute value smaller
-                    // than d, it's an inner radius which has already
-                    // been included so skip it
-<span class="fc bfc" id="L311" title="All 4 branches covered.">                    if (Math.abs(x) &lt; d &amp;&amp; Math.abs(y) &lt; d) {</span>
-<span class="fc" id="L312">                        continue;</span>
-                    }
-<span class="fc" id="L314">                    xyout[count] = x;</span>
-<span class="fc" id="L315">                    count++;</span>
-<span class="fc" id="L316">                    xyout[count] = y;</span>
-<span class="fc" id="L317">                    count++;</span>
-                }
-            }
-        }
-
-<span class="fc" id="L322">        return xyout;</span>
-    }
-
-    public static Map&lt;Integer, Double&gt; getCosineThetaMapForPI() {
-
-<span class="nc" id="L327">        Map&lt;Integer, Double&gt; map = new HashMap&lt;Integer, Double&gt;();</span>
-
-<span class="nc" id="L329">        double d = 1. * Math.PI/180;</span>
-
-<span class="nc" id="L331">        double t = 0;</span>
-
-<span class="nc bnc" id="L333" title="All 2 branches missed.">        for (int i = 0; i &lt; 181; ++i) {</span>
-
-<span class="nc" id="L335">            double c = Math.cos(t);</span>
-
-<span class="nc" id="L337">            map.put(Integer.valueOf(i), Double.valueOf(c));</span>
-
-<span class="nc" id="L339">            t += d;</span>
-        }
-
-<span class="nc" id="L342">        return map;</span>
-    }
-
-    public static Map&lt;Integer, Double&gt; getSineThetaMapForPI() {
-
-<span class="nc" id="L347">        Map&lt;Integer, Double&gt; map = new HashMap&lt;Integer, Double&gt;();</span>
-
-<span class="nc" id="L349">        double d = 1. * Math.PI/180;</span>
-
-<span class="nc" id="L351">        double t = 0;</span>
-
-<span class="nc bnc" id="L353" title="All 2 branches missed.">        for (int i = 0; i &lt; 181; ++i) {</span>
-
-<span class="nc" id="L355">            double c = Math.sin(t);</span>
-
-<span class="nc" id="L357">            map.put(Integer.valueOf(i), Double.valueOf(c));</span>
-
-<span class="nc" id="L359">            t += d;</span>
-        }
-
-<span class="nc" id="L362">        return map;</span>
+<span class="fc" id="L198">        return set;</span>
     }
 
     public static Map&lt;Integer, Double&gt; getCosineThetaMapForTwoPI() {
         
-<span class="nc" id="L367">        Map&lt;Integer, Double&gt; map = new HashMap&lt;Integer, Double&gt;();</span>
+<span class="nc" id="L203">        Map&lt;Integer, Double&gt; map = new HashMap&lt;Integer, Double&gt;();</span>
 
-<span class="nc" id="L369">        double d = 1. * Math.PI/180;</span>
+<span class="nc" id="L205">        double d = 1. * Math.PI/180;</span>
 
-<span class="nc" id="L371">        double t = 0;</span>
+<span class="nc" id="L207">        double t = 0;</span>
 
-<span class="nc bnc" id="L373" title="All 2 branches missed.">        for (int i = 0; i &lt; 360; ++i) {</span>
+<span class="nc bnc" id="L209" title="All 2 branches missed.">        for (int i = 0; i &lt; 360; ++i) {</span>
 
-<span class="nc" id="L375">            double c = Math.cos(t);</span>
+<span class="nc" id="L211">            double c = Math.cos(t);</span>
 
-<span class="nc" id="L377">            map.put(Integer.valueOf(i), Double.valueOf(c));</span>
+<span class="nc" id="L213">            map.put(Integer.valueOf(i), Double.valueOf(c));</span>
 
-<span class="nc" id="L379">            t += d;</span>
+<span class="nc" id="L215">            t += d;</span>
         }
 
-<span class="nc" id="L382">        return map;</span>
+<span class="nc" id="L218">        return map;</span>
     }
 
     public static Map&lt;Integer, Double&gt; getSineThetaMapForTwoPI() {
         
-<span class="nc" id="L387">        Map&lt;Integer, Double&gt; map = new HashMap&lt;Integer, Double&gt;();</span>
+<span class="nc" id="L223">        Map&lt;Integer, Double&gt; map = new HashMap&lt;Integer, Double&gt;();</span>
         
-<span class="nc" id="L389">        double d = 1. * Math.PI/180;</span>
+<span class="nc" id="L225">        double d = 1. * Math.PI/180;</span>
 
-<span class="nc" id="L391">        double t = 0;</span>
+<span class="nc" id="L227">        double t = 0;</span>
 
-<span class="nc bnc" id="L393" title="All 2 branches missed.">        for (int i = 0; i &lt; 360; ++i) {</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">        for (int i = 0; i &lt; 360; ++i) {</span>
 
-<span class="nc" id="L395">            double c = Math.sin(t);</span>
+<span class="nc" id="L231">            double c = Math.sin(t);</span>
 
-<span class="nc" id="L397">            map.put(Integer.valueOf(i), Double.valueOf(c));</span>
+<span class="nc" id="L233">            map.put(Integer.valueOf(i), Double.valueOf(c));</span>
 
-<span class="nc" id="L399">            t += d;</span>
+<span class="nc" id="L235">            t += d;</span>
         }
 
-<span class="nc" id="L402">        return map;</span>
+<span class="nc" id="L238">        return map;</span>
     }
     
-    public static int[][] populateNeighborOffsets(int radius) {
-        
-<span class="nc" id="L407">        int n0 = (2*((2*radius) + 1));  </span>
-<span class="nc" id="L408">        int n1 = n0 - 4;  </span>
-<span class="nc" id="L409">        int nTotal = n0 + n1;</span>
-        
-<span class="nc" id="L411">        int[][] dxys = new int[2][];</span>
-        
-<span class="nc bnc" id="L413" title="All 2 branches missed.">        for (int i = 0; i &lt; 2; ++i) {</span>
-<span class="nc" id="L414">            dxys[i] = new int[nTotal]; </span>
-        }
-        
-        /*     -  -  -      radius = 1
-               -  @  -
-               -  -  - 
-        
-            #  #  #  #  #   radius = 2
-               -  -  -  #
-               -  @  -  #
-               -  -  -  #
-            #  #  #  #  #
-        */
-        
-<span class="nc" id="L428">        int count = 0;</span>
-        // top
-<span class="nc bnc" id="L430" title="All 2 branches missed.">        for (int i = -radius; i &lt;= radius; ++i) {</span>
-<span class="nc" id="L431">            dxys[0][count] = i;</span>
-<span class="nc" id="L432">            dxys[1][count] = radius;</span>
-<span class="nc" id="L433">            count++;</span>
-        }
-        // right
-<span class="nc bnc" id="L436" title="All 2 branches missed.">        for (int j = (radius - 1); j &gt;= -radius; --j) {</span>
-<span class="nc" id="L437">            dxys[0][count] = radius;</span>
-<span class="nc" id="L438">            dxys[1][count] = j;</span>
-<span class="nc" id="L439">            count++;</span>
-        }
-        // bottom
-<span class="nc bnc" id="L442" title="All 2 branches missed.">        for (int i = (radius - 1); i &gt;= -radius; --i) {</span>
-<span class="nc" id="L443">            dxys[0][count] = i;</span>
-<span class="nc" id="L444">            dxys[1][count] = -radius;</span>
-<span class="nc" id="L445">            count++;</span>
-        }
-        // left
-<span class="nc bnc" id="L448" title="All 2 branches missed.">        for (int j = (radius - 1); j &gt; -radius; --j) {</span>
-<span class="nc" id="L449">            dxys[0][count] = -radius;</span>
-<span class="nc" id="L450">            dxys[1][count] = j;</span>
-<span class="nc" id="L451">            count++;</span>
-        }
-        
-<span class="nc" id="L454">        return dxys;</span>
-    }
-
     public static &lt;T extends Object&gt; void reverse(List&lt;T&gt; list) {
         
-<span class="fc" id="L459">        int n = list.size();</span>
+<span class="fc" id="L243">        int n = list.size();</span>
         
-<span class="pc bpc" id="L461" title="1 of 2 branches missed.">        if (n &lt; 2) {</span>
-<span class="nc" id="L462">            return;</span>
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">        if (n &lt; 2) {</span>
+<span class="nc" id="L246">            return;</span>
         }
                 
-<span class="fc" id="L465">        int end = n &gt;&gt; 1;</span>
+<span class="fc" id="L249">        int end = n &gt;&gt; 1;</span>
         // 0 1 2 3 4
-<span class="fc bfc" id="L467" title="All 2 branches covered.">        for (int i = 0; i &lt; end; i++) {</span>
-<span class="fc" id="L468">            int idx2 = n - i - 1;</span>
-<span class="fc" id="L469">            T swap = list.get(i);</span>
-<span class="fc" id="L470">            list.set(i, list.get(idx2));</span>
-<span class="fc" id="L471">            list.set(idx2, swap);</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">        for (int i = 0; i &lt; end; i++) {</span>
+<span class="fc" id="L252">            int idx2 = n - i - 1;</span>
+<span class="fc" id="L253">            T swap = list.get(i);</span>
+<span class="fc" id="L254">            list.set(i, list.get(idx2));</span>
+<span class="fc" id="L255">            list.set(idx2, swap);</span>
         }
-<span class="fc" id="L473">    }</span>
+<span class="fc" id="L257">    }</span>
 
     public static TObjectIntMap&lt;PairInt&gt; createPointIndexMap(
         PairIntArray p) {
         
-<span class="fc" id="L478">        TObjectIntMap&lt;PairInt&gt; map = </span>
+<span class="fc" id="L262">        TObjectIntMap&lt;PairInt&gt; map = </span>
             new TObjectIntHashMap&lt;PairInt&gt;();
         
-<span class="fc bfc" id="L481" title="All 2 branches covered.">        for (int i = 0; i &lt; p.getN(); ++i) {</span>
-<span class="fc" id="L482">            PairInt pt = new PairInt(p.getX(i),</span>
-<span class="fc" id="L483">                p.getY(i));</span>
-<span class="fc" id="L484">            map.put(pt, i);</span>
+<span class="fc bfc" id="L265" title="All 2 branches covered.">        for (int i = 0; i &lt; p.getN(); ++i) {</span>
+<span class="fc" id="L266">            PairInt pt = new PairInt(p.getX(i),</span>
+<span class="fc" id="L267">                p.getY(i));</span>
+<span class="fc" id="L268">            map.put(pt, i);</span>
         }
         
-<span class="fc" id="L487">        return map;</span>
+<span class="fc" id="L271">        return map;</span>
     }
     
     /**
@@ -495,81 +279,33 @@ import java.util.logging.Logger;
      */
     public static SecureRandom getSecureRandom() {
         
-<span class="fc" id="L498">        SecureRandom sr = null;</span>
+<span class="fc" id="L282">        SecureRandom sr = null;</span>
         
         try {
-<span class="fc" id="L501">            sr = SecureRandom.getInstance(&quot;SHA1PRNG&quot;);</span>
-<span class="nc" id="L502">        } catch (NoSuchAlgorithmException ex) {</span>
-<span class="nc" id="L503">            Logger.getLogger(Misc.class.getName()).log(Level.SEVERE, null, ex);</span>
-<span class="nc" id="L504">            sr = new SecureRandom();</span>
-<span class="fc" id="L505">        }</span>
+<span class="fc" id="L285">            sr = SecureRandom.getInstance(&quot;SHA1PRNG&quot;);</span>
+<span class="nc" id="L286">        } catch (NoSuchAlgorithmException ex) {</span>
+<span class="nc" id="L287">            Logger.getLogger(Misc.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L288">            sr = new SecureRandom();</span>
+<span class="fc" id="L289">        }</span>
         
-<span class="fc" id="L507">        return sr;</span>
-    }
-    
-    /**
-     * partition the space width x height into bins of size xLen, yLen
-     * and return the results at a list of QuadInts holding 
-     * a=minX, b=maxX, c=minY, d=maxY.
-     * @param width
-     * @param height
-     * @param xLen
-     * @param yLen
-     * @return 
-     */
-    public static List&lt;QuadInt&gt; partitionSpace(int width, int height, 
-        int xLen, int yLen) {
-        
-<span class="nc" id="L523">        List&lt;QuadInt&gt; output = new ArrayList&lt;QuadInt&gt;();</span>
-        
-<span class="nc" id="L525">        int nXs = (int)Math.ceil((float)width/(float)xLen);</span>
-<span class="nc" id="L526">        int nYs = (int)Math.ceil((float)height/(float)yLen);</span>
-        
-<span class="nc bnc" id="L528" title="All 2 branches missed.">        for (int i = 0; i &lt; nXs; ++i) {</span>
-<span class="nc" id="L529">            int startX = xLen * i;</span>
-<span class="nc bnc" id="L530" title="All 2 branches missed.">            if (startX &gt; (width - 1)) {</span>
-<span class="nc" id="L531">                break;</span>
-            }
-<span class="nc" id="L533">            int stopX = startX + xLen;</span>
-<span class="nc bnc" id="L534" title="All 2 branches missed.">            if (stopX &gt; (width - 1)) {</span>
-<span class="nc" id="L535">                stopX = width - 1;</span>
-                // NOTE: if stopX - startX is small, consider merging it with previous
-                // bin in terms of X
-            }
-<span class="nc bnc" id="L539" title="All 2 branches missed.">            for (int j = 0; j &lt; nYs; ++j) {</span>
-<span class="nc" id="L540">                int startY = yLen * i;</span>
-<span class="nc bnc" id="L541" title="All 2 branches missed.">                if (startY &gt; (height - 1)) {</span>
-<span class="nc" id="L542">                    break;</span>
-                }
-<span class="nc" id="L544">                int stopY = startY + yLen;</span>
-<span class="nc bnc" id="L545" title="All 2 branches missed.">                if (stopY &gt; (height - 1)) {</span>
-<span class="nc" id="L546">                    stopY = height - 1;</span>
-                    // NOTE: if stopY - startY is small, consider merging it with previous
-                    // bin
-                }
-<span class="nc" id="L550">                QuadInt q = new QuadInt(startX, stopX, startY, stopY);</span>
-<span class="nc" id="L551">                output.add(q);</span>
-            }
-        }
-        
-<span class="nc" id="L555">        return output;</span>
+<span class="fc" id="L291">        return sr;</span>
     }
     
     public static Set&lt;PairInt&gt; convertToCoords(GreyscaleImage img,
         TIntSet pixIdxs) {
         
-<span class="nc" id="L561">        Set&lt;PairInt&gt; set = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L297">        Set&lt;PairInt&gt; set = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="nc" id="L563">        TIntIterator iter = pixIdxs.iterator();</span>
+<span class="nc" id="L299">        TIntIterator iter = pixIdxs.iterator();</span>
         
-<span class="nc bnc" id="L565" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
-<span class="nc" id="L566">            int pixIdx = iter.next();</span>
-<span class="nc" id="L567">            int col = img.getCol(pixIdx);</span>
-<span class="nc" id="L568">            int row = img.getRow(pixIdx);</span>
-<span class="nc" id="L569">            set.add(new PairInt(col, row));</span>
-<span class="nc" id="L570">        }</span>
+<span class="nc bnc" id="L301" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
+<span class="nc" id="L302">            int pixIdx = iter.next();</span>
+<span class="nc" id="L303">            int col = img.getCol(pixIdx);</span>
+<span class="nc" id="L304">            int row = img.getRow(pixIdx);</span>
+<span class="nc" id="L305">            set.add(new PairInt(col, row));</span>
+<span class="nc" id="L306">        }</span>
         
-<span class="nc" id="L572">        return set;</span>
+<span class="nc" id="L308">        return set;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

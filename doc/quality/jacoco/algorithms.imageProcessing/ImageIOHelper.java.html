@@ -786,56 +786,56 @@ import javax.imageio.stream.ImageInputStream;
         ImageExt img, int xOffset, int yOffset,
         int nExtraForDot, int rClr, int gClr, int bClr) {
         
-<span class="pc bpc" id="L789" title="1 of 2 branches missed.">        if (result.isEmpty()) {</span>
+<span class="nc bnc" id="L789" title="All 2 branches missed.">        if (result.isEmpty()) {</span>
 <span class="nc" id="L790">            return;</span>
         }
         
-<span class="fc bfc" id="L793" title="All 2 branches covered.">        for (int i = 0; i &lt; result.size(); i++) {</span>
+<span class="nc bnc" id="L793" title="All 2 branches missed.">        for (int i = 0; i &lt; result.size(); i++) {</span>
             
-<span class="fc" id="L795">            CurvatureScaleSpaceContour cssC = result.get(i);</span>
+<span class="nc" id="L795">            CurvatureScaleSpaceContour cssC = result.get(i);</span>
             
-<span class="fc" id="L797">            addContoursToImage(cssC, img, xOffset, yOffset, nExtraForDot, </span>
+<span class="nc" id="L797">            addContoursToImage(cssC, img, xOffset, yOffset, nExtraForDot, </span>
                 rClr, gClr, bClr);
         }
-<span class="fc" id="L800">    }</span>
+<span class="nc" id="L800">    }</span>
     
     public static void addContoursToImage(CurvatureScaleSpaceContour contour, 
         ImageExt img, int xOffset, int yOffset,
         int nExtraForDot, int rClr, int gClr, int bClr) {
         
-<span class="pc bpc" id="L806" title="1 of 2 branches missed.">        if (contour == null) {</span>
+<span class="nc bnc" id="L806" title="All 2 branches missed.">        if (contour == null) {</span>
 <span class="nc" id="L807">            return;</span>
         }
                     
-<span class="fc" id="L810">        CurvatureScaleSpaceImagePoint[] peakDetails = contour.getPeakDetails();</span>
+<span class="nc" id="L810">        CurvatureScaleSpaceImagePoint[] peakDetails = contour.getPeakDetails();</span>
 
-<span class="fc bfc" id="L812" title="All 2 branches covered.">        for (CurvatureScaleSpaceImagePoint peakDetail : peakDetails) {</span>
+<span class="nc bnc" id="L812" title="All 2 branches missed.">        for (CurvatureScaleSpaceImagePoint peakDetail : peakDetails) {</span>
             
-<span class="fc" id="L814">            int x = peakDetail.getXCoord() + xOffset;</span>
-<span class="fc" id="L815">            int y = peakDetail.getYCoord() + yOffset;</span>
+<span class="nc" id="L814">            int x = peakDetail.getXCoord() + xOffset;</span>
+<span class="nc" id="L815">            int y = peakDetail.getYCoord() + yOffset;</span>
             
-<span class="fc" id="L817">            addPointToImage(x, y, img, xOffset, yOffset, nExtraForDot, </span>
+<span class="nc" id="L817">            addPointToImage(x, y, img, xOffset, yOffset, nExtraForDot, </span>
                 rClr, gClr, bClr);
         }            
-<span class="fc" id="L820">    }</span>
+<span class="nc" id="L820">    }</span>
     
     public static void addPointToImage(final int x, final int y, 
         Image img, int xOffset, int yOffset,
         int nExtraForDot, int rClr, int gClr, int bClr) {
         
-<span class="fc bfc" id="L826" title="All 2 branches covered.">        for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
-<span class="fc" id="L827">            float xx = x + dx;</span>
-<span class="pc bpc" id="L828" title="2 of 4 branches missed.">            if ((xx &gt; -1) &amp;&amp; (xx &lt; (img.getWidth() - 1))) {</span>
-<span class="fc bfc" id="L829" title="All 2 branches covered.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); </span>
-<span class="fc" id="L830">                    dy++) {</span>
-<span class="fc" id="L831">                    float yy = y + dy;</span>
-<span class="pc bpc" id="L832" title="2 of 4 branches missed.">                    if ((yy &gt; -1) &amp;&amp; (yy &lt; (img.getHeight() - 1))) {</span>
-<span class="fc" id="L833">                        img.setRGB((int)xx, (int)yy, rClr, gClr, bClr);</span>
+<span class="nc bnc" id="L826" title="All 2 branches missed.">        for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
+<span class="nc" id="L827">            float xx = x + dx;</span>
+<span class="nc bnc" id="L828" title="All 4 branches missed.">            if ((xx &gt; -1) &amp;&amp; (xx &lt; (img.getWidth() - 1))) {</span>
+<span class="nc bnc" id="L829" title="All 2 branches missed.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); </span>
+<span class="nc" id="L830">                    dy++) {</span>
+<span class="nc" id="L831">                    float yy = y + dy;</span>
+<span class="nc bnc" id="L832" title="All 4 branches missed.">                    if ((yy &gt; -1) &amp;&amp; (yy &lt; (img.getHeight() - 1))) {</span>
+<span class="nc" id="L833">                        img.setRGB((int)xx, (int)yy, rClr, gClr, bClr);</span>
                     }
                 }
             }
         }
-<span class="fc" id="L838">    }</span>
+<span class="nc" id="L838">    }</span>
     
     private static PairFloatArray getXYOfContourPeaks(
         List&lt;CurvatureScaleSpaceContour&gt; contours, int xOffset, int yOffset) {

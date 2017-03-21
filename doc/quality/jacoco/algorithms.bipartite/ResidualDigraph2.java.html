@@ -106,7 +106,7 @@ public class ResidualDigraph2 {
 <span class="fc" id="L106">                int idx2 = iter2.next();</span>
 <span class="fc" id="L107">                PairInt p = new PairInt(idx1, idx2);</span>
 <span class="fc" id="L108">                float unitFlow = gFlow.getFlow().get(p);</span>
-<span class="fc bfc" id="L109" title="All 2 branches covered.">                if (unitFlow == 0) {</span>
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">                if (unitFlow == 0) {</span>
                     // idle
 <span class="fc" id="L111">                    TIntSet indexes2 = forwardLinksRM.get(idx1);</span>
 <span class="fc bfc" id="L112" title="All 2 branches covered.">                    if (indexes2 == null) {</span>
@@ -114,9 +114,9 @@ public class ResidualDigraph2 {
 <span class="fc" id="L114">                        forwardLinksRM.put(idx1, indexes2);</span>
                     }
 <span class="fc" id="L116">                    indexes2.add(idx2);</span>
-<span class="pc bpc" id="L117" title="1 of 2 branches missed.">                } else if (Math.abs(unitFlow - 1) &lt; 0.01f) {</span>
+<span class="pc bnc" id="L117" title="All 2 branches missed.">                } else if (Math.abs(unitFlow - 1) &lt; 0.01f) {</span>
                     // saturated
-<span class="fc" id="L119">                    backwardLinksRM.put(idx2, idx1);</span>
+<span class="nc" id="L119">                    backwardLinksRM.put(idx2, idx1);</span>
                 }
 <span class="fc" id="L121">            }</span>
 <span class="fc" id="L122">        }</span>
@@ -209,7 +209,7 @@ public class ResidualDigraph2 {
      * @return the backwardLinksSourceRM
      */
     public TIntSet getBackwardLinksSourceRM() {
-<span class="fc" id="L212">        return backwardLinksSourceRM;</span>
+<span class="nc" id="L212">        return backwardLinksSourceRM;</span>
     }
 
     /**
@@ -219,7 +219,7 @@ public class ResidualDigraph2 {
      * @return the forwardLinksSinkRM
      */
     public TIntSet getForwardLinksSinkRM() {
-<span class="fc" id="L222">        return forwardLinksSinkRM;</span>
+<span class="nc" id="L222">        return forwardLinksSinkRM;</span>
     }
 
     /**

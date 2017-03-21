@@ -126,7 +126,7 @@ public final class CSSContourMatcher {
 <span class="nc" id="L126">        c2.addAll(contours2);</span>
 
 <span class="nc" id="L128">        float minT = Float.MAX_VALUE;</span>
-<span class="nc" id="L129">        float maxT = Float.MIN_VALUE;</span>
+<span class="nc" id="L129">        float maxT = Float.NEGATIVE_INFINITY;</span>
 <span class="nc bnc" id="L130" title="All 2 branches missed.">        for (int i = 0; i &lt; c1.size(); i++) {</span>
 <span class="nc" id="L131">            CurvatureScaleSpaceContour contour = c1.get(i);</span>
 <span class="nc" id="L132">            float t = contour.getPeakScaleFreeLength();</span>
@@ -141,7 +141,7 @@ public final class CSSContourMatcher {
 <span class="nc" id="L141">        tMax1 = maxT;</span>
 
 <span class="nc" id="L143">        minT = Float.MAX_VALUE;</span>
-<span class="nc" id="L144">        maxT = Float.MIN_VALUE;</span>
+<span class="nc" id="L144">        maxT = Float.NEGATIVE_INFINITY;</span>
 <span class="nc bnc" id="L145" title="All 2 branches missed.">        for (int i = 0; i &lt; c2.size(); i++) {</span>
 <span class="nc" id="L146">            CurvatureScaleSpaceContour contour = c2.get(i);</span>
 <span class="nc" id="L147">            float t = contour.getPeakScaleFreeLength();</span>

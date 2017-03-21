@@ -1312,11 +1312,11 @@ import java.util.logging.Logger;
 <span class="nc" id="L1312">                continue;</span>
             }
 
-<span class="pc bpc" id="L1315" title="1 of 2 branches missed.">            if (set2.size() &gt; set1.size()) {</span>
-<span class="nc" id="L1316">                idx1 = p12.getY();</span>
-<span class="nc" id="L1317">                idx2 = p12.getX();</span>
-<span class="nc" id="L1318">                set1 = set2;</span>
-<span class="nc" id="L1319">                set2 = clusterPoints.get(idx2);</span>
+<span class="fc bfc" id="L1315" title="All 2 branches covered.">            if (set2.size() &gt; set1.size()) {</span>
+<span class="fc" id="L1316">                idx1 = p12.getY();</span>
+<span class="fc" id="L1317">                idx2 = p12.getX();</span>
+<span class="fc" id="L1318">                set1 = set2;</span>
+<span class="fc" id="L1319">                set2 = clusterPoints.get(idx2);</span>
             }
 
             // set1 is largest
@@ -1348,10 +1348,10 @@ import java.util.logging.Logger;
 <span class="nc" id="L1348">                    continue;</span>
                 }
                 PairInt p13;
-<span class="pc bpc" id="L1351" title="1 of 2 branches missed.">                if (idx1 &lt; idx3) {</span>
+<span class="fc bfc" id="L1351" title="All 2 branches covered.">                if (idx1 &lt; idx3) {</span>
 <span class="fc" id="L1352">                    p13 = new PairInt(idx1, idx3);</span>
                 } else {
-<span class="nc" id="L1354">                    p13 = new PairInt(idx3, idx1);</span>
+<span class="fc" id="L1354">                    p13 = new PairInt(idx3, idx1);</span>
                 }
 <span class="fc" id="L1356">                HeapNode node3 = nodesMap.get(p13);</span>
 <span class="pc bpc" id="L1357" title="3 of 4 branches missed.">                assert(node3 != null);</span>
@@ -1406,10 +1406,10 @@ import java.util.logging.Logger;
 <span class="pc bpc" id="L1406" title="3 of 4 branches missed.">                assert(hist3 != null);</span>
 
                 PairInt p13;
-<span class="pc bpc" id="L1409" title="1 of 2 branches missed.">                if (idx1 &lt; idx3) {</span>
+<span class="fc bfc" id="L1409" title="All 2 branches covered.">                if (idx1 &lt; idx3) {</span>
 <span class="fc" id="L1410">                    p13 = new PairInt(idx1, idx3);</span>
                 } else {
-<span class="nc" id="L1412">                    p13 = new PairInt(idx3, idx1);</span>
+<span class="fc" id="L1412">                    p13 = new PairInt(idx3, idx1);</span>
                 }
 
 <span class="fc" id="L1415">                float similarity3 = 3.0f - ch.intersection(hist1, hist3);</span>
@@ -2227,232 +2227,63 @@ import java.util.logging.Logger;
 <span class="nc" id="L2227">        return true;</span>
     }
 
-    /**
-     * apply a super-pixels algorithm followed by normalized cuts to obtain
-     * labels that are still slightly over-segmented, but should be helpful
-     * for object identification.
-     * Note that images with average width and length less than 100 and larger
-     * than 500 have not been tested yet for the automatic setting of number of
-     * super pixels (large images, espec. might need internal handling in
-     * block sizes near 512 to keep the number of super pixels less than 1000
-     * to reduce the eigenvector calculations).
-     * (Note the algorithms implemented are those of
-       &quot;SLIC Superpixels Compared to State-of-the-Art Superpixel Methods&quot;
-       by Achanta, Appu Shaji,Smith,  Lucchi, Fua, and Suestrun
-       and &quot;Normalized Cuts and Image Segmentation&quot;
-       by Jianbo Shi and Jitendra Malik)
-     * @param img
-     */
-    public void applySuperPixelsAndNormalizedCuts(ImageExt img) {
-
-<span class="fc" id="L2248">        int[] labels = calcSuperPixelsAndNormalizedCutsLabels(img);</span>
-
-<span class="fc" id="L2250">        LabelToColorHelper.applyLabels(img, labels);</span>
-<span class="fc" id="L2251">    }</span>
-
-    /**
-     * apply a super-pixels algorithm followed by normalized cuts to obtain
-     * labels that are still slightly over-segmented, but should be helpful
-     * for object identification.
-     * Note that images with average width and length less than 100 and larger
-     * than 500 have not been tested yet for the automatic setting of number of
-     * super pixels (large images, espec. might need internal handling in
-     * block sizes near 512 to keep the number of super pixels less than 1000
-     * to reduce the eigenvector calculations).
-     * (Note the algorithms implemented are those of
-       &quot;SLIC Superpixels Compared to State-of-the-Art Superpixel Methods&quot;
-       by Achanta, Appu Shaji,Smith,  Lucchi, Fua, and Suestrun
-       and &quot;Normalized Cuts and Image Segmentation&quot;
-       by Jianbo Shi and Jitendra Malik)
-     * @param img
-     */
-    public void applySuperPixelsAndNormalizedCuts(ImageExt img, int nIter) {
-
-<span class="nc" id="L2271">        int[] labels = calcSuperPixelsAndNormalizedCutsLabels(img, nIter);</span>
-
-<span class="nc" id="L2273">        LabelToColorHelper.applyLabels(img, labels);</span>
-<span class="nc" id="L2274">    }</span>
-
-    /**
-     * Apply a super-pixels algorithm followed by normalized cuts to obtain
-     * labels that are still slightly over-segmented, but should be helpful
-     * for object identification.
-     * Note that images with average width and length less than 100 and larger
-     * than 500 have not been tested yet for the automatic setting of number of
-     * super pixels (large images, espec. might need internal handling in
-     * block sizes near 512 to keep the number of super pixels less than 1000
-     * to reduce the eigenvector calculations).
-       (Note the algorithms implemented are those of
-       &quot;SLIC Superpixels Compared to State-of-the-Art Superpixel Methods&quot;
-       by Achanta, Appu Shaji,Smith,  Lucchi, Fua, and Suestrun
-       and &quot;Normalized Cuts and Image Segmentation&quot;
-       by Jianbo Shi and Jitendra Malik)
-     * @param img
-     */
-    public int[] calcSuperPixelsAndNormalizedCutsLabels(ImageExt img) {
-        int kCell;
-
-<span class="fc" id="L2295">        int avgDimension = (img.getWidth() + img.getHeight()) / 2;</span>
-
-<span class="pc bpc" id="L2297" title="1 of 2 branches missed.">        if (avgDimension &lt; 25) {</span>
-<span class="nc" id="L2298">            kCell = 2 * avgDimension;</span>
-<span class="fc bfc" id="L2299" title="All 2 branches covered.">        } else if (avgDimension &lt; 100) {</span>
-            //kCell = Math.round((float) (img.getWidth() * img.getHeight()) / 10);
-<span class="fc" id="L2301">            kCell = 200;</span>
-<span class="pc bpc" id="L2302" title="1 of 2 branches missed.">        } else if (avgDimension &lt; 200) {</span>
-            //kCell = Math.round((float) (img.getWidth() * img.getHeight()) / 10);
-<span class="fc" id="L2304">            kCell = 200;</span>
-<span class="nc bnc" id="L2305" title="All 2 branches missed.">        } else if (avgDimension &lt; 301) {</span>
-            //kCell = Math.round((float) (img.getWidth() * img.getHeight()) / 100);
-<span class="nc" id="L2307">            kCell = 1050;</span>
-<span class="nc bnc" id="L2308" title="All 2 branches missed.">        } else if (avgDimension &lt; 400) {</span>
-            //kCell = Math.round((float) (img.getWidth() * img.getHeight()) / 350);
-<span class="nc" id="L2310">            kCell = 750;</span>
-<span class="nc bnc" id="L2311" title="All 2 branches missed.">        } else if (avgDimension &lt; 500) {</span>
-<span class="nc" id="L2312">            kCell = Math.round((float) (img.getWidth() * img.getHeight()) / 1000);</span>
-<span class="nc" id="L2313">            kCell *= 2;  // creates a more segmented defined labelling</span>
-        } else {
-            // this section has not been tested well yet
-<span class="nc" id="L2316">            kCell = Math.round((float) (img.getWidth() * img.getHeight()) / 1000);</span>
-<span class="nc bnc" id="L2317" title="All 2 branches missed.">            if (kCell &gt; 2000) {</span>
-<span class="nc" id="L2318">                kCell = 2000;</span>
-            }
-        }
-
-<span class="fc" id="L2322">        System.out.println(&quot;kCell=&quot; + kCell + &quot; avgDim=&quot; + avgDimension);</span>
-
-<span class="fc" id="L2324">        kCell = 200;</span>
-<span class="fc" id="L2325">        int clNorm = 1;</span>
-
-<span class="fc" id="L2327">        SLICSuperPixels slic</span>
-            = new SLICSuperPixels(img, kCell, clNorm);
-<span class="fc" id="L2329">        slic.calculate();</span>
-<span class="fc" id="L2330">        int[] labels = slic.getLabels();</span>
-
-        //ImageExt img2 = img.copyToImageExt();
-        //ImageIOHelper.addAlternatingColorLabelsToRegion(img2, labels);
-        //MiscDebug.writeImage(img2, &quot;_slic_&quot; + trainingData[i].imgFileName);
-
-<span class="fc" id="L2336">        NormalizedCuts normCuts = new NormalizedCuts();</span>
-<span class="fc" id="L2337">        int[] labels2 = normCuts.normalizedCut(img, labels);</span>
-
-<span class="fc" id="L2339">        return labels2;</span>
-    }
-
-    /**
-     * Apply a super-pixels algorithm followed by normalized cuts to obtain
-     * labels that are still slightly over-segmented, but should be helpful
-     * for object identification.
-     * Note that images with average width and length less than 100 and larger
-     * than 500 have not been tested yet for the automatic setting of number of
-     * super pixels (large images, espec. might need internal handling in
-     * block sizes near 512 to keep the number of super pixels less than 1000
-     * to reduce the eigenvector calculations).
-       (Note the algorithms implemented are those of
-       &quot;SLIC Superpixels Compared to State-of-the-Art Superpixel Methods&quot;
-       by Achanta, Appu Shaji,Smith,  Lucchi, Fua, and Suestrun
-       and &quot;Normalized Cuts and Image Segmentation&quot;
-       by Jianbo Shi and Jitendra Malik)
-     * @param img
-     */
-    public int[] calcSuperPixelsAndNormalizedCutsLabels(ImageExt img, int nIter) {
-
-        int kCell;
-
-<span class="nc" id="L2362">        int avgDimension = (img.getWidth() + img.getHeight()) / 2;</span>
-
-<span class="nc bnc" id="L2364" title="All 2 branches missed.">        if (avgDimension &lt; 25) {</span>
-<span class="nc" id="L2365">            kCell = 2 * avgDimension;</span>
-<span class="nc bnc" id="L2366" title="All 2 branches missed.">        } else if (avgDimension &lt; 100) {</span>
-<span class="nc" id="L2367">            kCell = Math.round((float) (img.getWidth() * img.getHeight()) / 100);</span>
-<span class="nc bnc" id="L2368" title="All 2 branches missed.">        } else if (avgDimension &lt; 500) {</span>
-<span class="nc" id="L2369">            kCell = Math.round((float) (img.getWidth() * img.getHeight()) / 1000);</span>
-            //kCell *= 2;  // creates a more segmented defined labelling
-        } else {
-            // this section has not been tested well yet
-<span class="nc" id="L2373">            kCell = Math.round((float) (img.getWidth() * img.getHeight()) / 1000);</span>
-<span class="nc bnc" id="L2374" title="All 2 branches missed.">            if (kCell &gt; 2000) {</span>
-<span class="nc" id="L2375">                kCell = 2000;</span>
-            }
-        }
-
-<span class="nc" id="L2379">        System.out.println(&quot;kCell=&quot; + kCell);</span>
-
-<span class="nc" id="L2381">        SLICSuperPixels slic = new SLICSuperPixels(img, kCell);</span>
-<span class="nc" id="L2382">        slic.calculate();</span>
-<span class="nc" id="L2383">        int[] labels = slic.getLabels();</span>
-
-        //ImageExt img2 = img.copyToImageExt();
-        //ImageIOHelper.addAlternatingColorLabelsToRegion(img2, labels);
-        //MiscDebug.writeImage(img2, &quot;_slic_&quot; + trainingData[i].imgFileName);
-
-<span class="nc bnc" id="L2389" title="All 2 branches missed.">        for (int i = 0; i &lt; nIter; ++i) {</span>
-
-<span class="nc" id="L2391">            NormalizedCuts normCuts = new NormalizedCuts();</span>
-<span class="nc" id="L2392">            labels = normCuts.normalizedCut(img, labels);</span>
-
-        }
-
-<span class="nc" id="L2396">        return labels;</span>
-    }
-
     public void replaceSinglePixelLabelsCIELAB(int[] labels,
         ImageExt img) {
 
         // ----- replace single pixels w/ adjacent nearest in color -----
-<span class="fc" id="L2403">        int[] dx2 = Misc.dx4;</span>
-<span class="fc" id="L2404">        int[] dy2 = Misc.dy4;</span>
+<span class="fc" id="L2234">        int[] dx2 = Misc.dx4;</span>
+<span class="fc" id="L2235">        int[] dy2 = Misc.dy4;</span>
         // single pixels should join closest,,,
-<span class="fc bfc" id="L2406" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getWidth(); ++i) {</span>
-<span class="fc bfc" id="L2407" title="All 2 branches covered.">            for (int j = 0; j &lt; img.getHeight(); ++j) {</span>
-<span class="fc" id="L2408">                int pixIdx = img.getInternalIndex(i, j);</span>
-<span class="fc" id="L2409">                int v = labels[pixIdx];</span>
-<span class="fc" id="L2410">                boolean oneIsSame = false;</span>
-<span class="fc bfc" id="L2411" title="All 2 branches covered.">                for (int z = 0; z &lt; dx2.length; ++z) {</span>
-<span class="fc" id="L2412">                    int x2 = i + dx2[z];</span>
-<span class="fc" id="L2413">                    int y2 = j + dy2[z];</span>
-<span class="fc bfc" id="L2414" title="All 6 branches covered.">                    if (x2 &lt; 0 || y2 &lt; 0 || (x2 &gt; (img.getWidth() - 1))</span>
-<span class="fc bfc" id="L2415" title="All 2 branches covered.">                        || (y2 &gt; (img.getHeight() - 1))</span>
+<span class="fc bfc" id="L2237" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getWidth(); ++i) {</span>
+<span class="fc bfc" id="L2238" title="All 2 branches covered.">            for (int j = 0; j &lt; img.getHeight(); ++j) {</span>
+<span class="fc" id="L2239">                int pixIdx = img.getInternalIndex(i, j);</span>
+<span class="fc" id="L2240">                int v = labels[pixIdx];</span>
+<span class="fc" id="L2241">                boolean oneIsSame = false;</span>
+<span class="fc bfc" id="L2242" title="All 2 branches covered.">                for (int z = 0; z &lt; dx2.length; ++z) {</span>
+<span class="fc" id="L2243">                    int x2 = i + dx2[z];</span>
+<span class="fc" id="L2244">                    int y2 = j + dy2[z];</span>
+<span class="fc bfc" id="L2245" title="All 6 branches covered.">                    if (x2 &lt; 0 || y2 &lt; 0 || (x2 &gt; (img.getWidth() - 1))</span>
+<span class="fc bfc" id="L2246" title="All 2 branches covered.">                        || (y2 &gt; (img.getHeight() - 1))</span>
                         ) {
-<span class="fc" id="L2417">                        continue;</span>
+<span class="fc" id="L2248">                        continue;</span>
                     }
-<span class="fc" id="L2419">                    int pixIdx2 = img.getInternalIndex(x2, y2);</span>
-<span class="fc" id="L2420">                    int v2 = labels[pixIdx2];</span>
-<span class="fc bfc" id="L2421" title="All 2 branches covered.">                    if (v2 == v) {</span>
-<span class="fc" id="L2422">                        oneIsSame = true;</span>
-<span class="fc" id="L2423">                        break;</span>
+<span class="fc" id="L2250">                    int pixIdx2 = img.getInternalIndex(x2, y2);</span>
+<span class="fc" id="L2251">                    int v2 = labels[pixIdx2];</span>
+<span class="fc bfc" id="L2252" title="All 2 branches covered.">                    if (v2 == v) {</span>
+<span class="fc" id="L2253">                        oneIsSame = true;</span>
+<span class="fc" id="L2254">                        break;</span>
                     }
                 }
-<span class="fc bfc" id="L2426" title="All 2 branches covered.">                if (!oneIsSame) {</span>
-<span class="fc" id="L2427">                    float[] lab = img.getCIELAB(pixIdx);</span>
-<span class="fc" id="L2428">                    double minDiff = Double.MAX_VALUE;</span>
-<span class="fc" id="L2429">                    int minIdx = -1;</span>
-<span class="fc bfc" id="L2430" title="All 2 branches covered.">                    for (int z = 0; z &lt; dx2.length; ++z) {</span>
-<span class="fc" id="L2431">                        int x2 = i + dx2[z];</span>
-<span class="fc" id="L2432">                        int y2 = j + dy2[z];</span>
-<span class="fc bfc" id="L2433" title="All 6 branches covered.">                        if (x2 &lt; 0 || y2 &lt; 0 || (x2 &gt; (img.getWidth() - 1))</span>
-<span class="fc bfc" id="L2434" title="All 2 branches covered.">                            || (y2 &gt; (img.getHeight() - 1))) {</span>
-<span class="fc" id="L2435">                            continue;</span>
+<span class="fc bfc" id="L2257" title="All 2 branches covered.">                if (!oneIsSame) {</span>
+<span class="fc" id="L2258">                    float[] lab = img.getCIELAB(pixIdx);</span>
+<span class="fc" id="L2259">                    double minDiff = Double.MAX_VALUE;</span>
+<span class="fc" id="L2260">                    int minIdx = -1;</span>
+<span class="fc bfc" id="L2261" title="All 2 branches covered.">                    for (int z = 0; z &lt; dx2.length; ++z) {</span>
+<span class="fc" id="L2262">                        int x2 = i + dx2[z];</span>
+<span class="fc" id="L2263">                        int y2 = j + dy2[z];</span>
+<span class="fc bfc" id="L2264" title="All 6 branches covered.">                        if (x2 &lt; 0 || y2 &lt; 0 || (x2 &gt; (img.getWidth() - 1))</span>
+<span class="fc bfc" id="L2265" title="All 2 branches covered.">                            || (y2 &gt; (img.getHeight() - 1))) {</span>
+<span class="fc" id="L2266">                            continue;</span>
                         }
-<span class="fc" id="L2437">                        int pixIdx2 = img.getInternalIndex(x2, y2);</span>
-<span class="fc" id="L2438">                        float[] lab2 = img.getCIELAB(pixIdx2);</span>
+<span class="fc" id="L2268">                        int pixIdx2 = img.getInternalIndex(x2, y2);</span>
+<span class="fc" id="L2269">                        float[] lab2 = img.getCIELAB(pixIdx2);</span>
                         
-<span class="fc" id="L2440">                        double dClrSq = 0;</span>
-<span class="fc bfc" id="L2441" title="All 2 branches covered.">                        for (int i2 = 0; i2 &lt; 3; ++i2) {</span>
-<span class="fc" id="L2442">                            float diff = lab[i2] - lab2[i2];</span>
-<span class="fc" id="L2443">                            dClrSq += (diff * diff);</span>
+<span class="fc" id="L2271">                        double dClrSq = 0;</span>
+<span class="fc bfc" id="L2272" title="All 2 branches covered.">                        for (int i2 = 0; i2 &lt; 3; ++i2) {</span>
+<span class="fc" id="L2273">                            float diff = lab[i2] - lab2[i2];</span>
+<span class="fc" id="L2274">                            dClrSq += (diff * diff);</span>
                         }
                         
-<span class="fc bfc" id="L2446" title="All 2 branches covered.">                        if (dClrSq &lt; minDiff) {</span>
-<span class="fc" id="L2447">                            minDiff = dClrSq;</span>
-<span class="fc" id="L2448">                            minIdx = pixIdx2;</span>
+<span class="fc bfc" id="L2277" title="All 2 branches covered.">                        if (dClrSq &lt; minDiff) {</span>
+<span class="fc" id="L2278">                            minDiff = dClrSq;</span>
+<span class="fc" id="L2279">                            minIdx = pixIdx2;</span>
                         }
                     }
-<span class="fc" id="L2451">                    labels[pixIdx] = labels[minIdx];</span>
+<span class="fc" id="L2282">                    labels[pixIdx] = labels[minIdx];</span>
                 }
             }
         }
-<span class="fc" id="L2455">    }</span>
+<span class="fc" id="L2286">    }</span>
     
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

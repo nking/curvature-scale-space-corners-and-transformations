@@ -271,7 +271,7 @@ adapted from http://algs4.cs.princeton.edu/92search/
     private RangeSearchNode&lt;Key, Value&gt; joinLR(RangeSearchNode&lt;Key, Value&gt; a, 
         RangeSearchNode&lt;Key, Value&gt; b) { 
 <span class="fc bfc" id="L273" title="All 2 branches covered.">        if (a == null) return b;</span>
-<span class="fc bfc" id="L274" title="All 2 branches covered.">        if (b == null) return a;</span>
+<span class="pc bpc" id="L274" title="1 of 2 branches missed.">        if (b == null) return a;</span>
 
 <span class="pc bpc" id="L276" title="1 of 2 branches missed.">        if (StdRandom.bernoulli((double) size(a) / (size(a) + size(b))))  {</span>
 <span class="fc" id="L277">            a.right = joinLR(a.right, b);</span>

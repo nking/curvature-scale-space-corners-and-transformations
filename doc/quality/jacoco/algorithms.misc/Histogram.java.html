@@ -932,7 +932,7 @@ import java.util.logging.Logger;
 
     public static int findFirstPeakIndex(HistogramHolder hist) {
         
-<span class="fc" id="L935">        float yPeak = Float.MIN_VALUE;</span>
+<span class="fc" id="L935">        float yPeak = Float.NEGATIVE_INFINITY;</span>
 <span class="fc" id="L936">        int yPeakIdx = -1;</span>
         
         // specific to use here, find max within first half of histogram
@@ -1353,7 +1353,7 @@ import java.util.logging.Logger;
         
 <span class="nc" id="L1354">        float halfPeak = hist.getYHist()[yPeakIndex]/2.f;</span>
         
-<span class="nc" id="L1356">        float x0 = Float.MIN_VALUE;</span>
+<span class="nc" id="L1356">        float x0 = Float.NEGATIVE_INFINITY;</span>
 <span class="nc bnc" id="L1357" title="All 2 branches missed.">        if (yPeakIndex == 0) {</span>
 <span class="nc" id="L1358">            x0 = hist.getXHist()[0];</span>
         } else {
@@ -1377,7 +1377,7 @@ import java.util.logging.Logger;
             }
         }
         
-<span class="nc" id="L1380">        float x1 = Float.MIN_VALUE;</span>
+<span class="nc" id="L1380">        float x1 = Float.NEGATIVE_INFINITY;</span>
 <span class="nc bnc" id="L1381" title="All 2 branches missed.">        if (yPeakIndex == (hist.getYHist().length - 1)) {</span>
 <span class="nc" id="L1382">            x1 = hist.getXHist()[(hist.getYHist().length - 1)];</span>
         } else {
@@ -1401,7 +1401,7 @@ import java.util.logging.Logger;
             }
         }
         
-<span class="nc bnc" id="L1404" title="All 4 branches missed.">        if ((x0 == Float.MIN_VALUE) || (x1 == Float.MIN_VALUE)) {</span>
+<span class="nc bnc" id="L1404" title="All 4 branches missed.">        if ((x0 == Float.NEGATIVE_INFINITY) || (x1 == Float.NEGATIVE_INFINITY)) {</span>
 <span class="nc" id="L1405">            return 0;</span>
         }
         

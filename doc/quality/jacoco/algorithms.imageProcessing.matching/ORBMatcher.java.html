@@ -378,8 +378,8 @@ import java.util.Set;
 <span class="fc" id="L378">            int idx2 = index12.getY();</span>
 <span class="fc" id="L379">            PairInt p1 = keypoints1.get(idx1);</span>
 <span class="fc" id="L380">            PairInt p2 = keypoints2.get(idx2);</span>
-<span class="pc bpc" id="L381" title="2 of 4 branches missed.">            if (set1.contains(p1) || set2.contains(p2)) {</span>
-<span class="nc" id="L382">                continue;</span>
+<span class="pc bpc" id="L381" title="1 of 4 branches missed.">            if (set1.contains(p1) || set2.contains(p2)) {</span>
+<span class="fc" id="L382">                continue;</span>
             }
             //System.out.println(&quot;p1=&quot; + p1 + &quot; &quot; + &quot; p2=&quot; + p2 + &quot; cost=&quot; + costs[i]);
 <span class="fc" id="L385">            matches.add(index12);</span>
@@ -494,12 +494,12 @@ import java.util.Set;
 <span class="fc" id="L494">                    bc2Idx = bcIdx;</span>
 <span class="fc" id="L495">                    bc = c;</span>
 <span class="fc" id="L496">                    bcIdx = j;</span>
-<span class="pc bpc" id="L497" title="1 of 2 branches missed.">                } else if (c == bc) {</span>
-<span class="nc bnc" id="L498" title="All 2 branches missed.">                    if (c &lt; bc2) {</span>
-<span class="nc" id="L499">                        bc2 = bc;</span>
-<span class="nc" id="L500">                        bc2Idx = bcIdx;</span>
-<span class="nc" id="L501">                        bc = c;</span>
-<span class="nc" id="L502">                        bcIdx = j;</span>
+<span class="fc bfc" id="L497" title="All 2 branches covered.">                } else if (c == bc) {</span>
+<span class="pc bpc" id="L498" title="1 of 2 branches missed.">                    if (c &lt; bc2) {</span>
+<span class="fc" id="L499">                        bc2 = bc;</span>
+<span class="fc" id="L500">                        bc2Idx = bcIdx;</span>
+<span class="fc" id="L501">                        bc = c;</span>
+<span class="fc" id="L502">                        bcIdx = j;</span>
                     } else {
 <span class="nc bnc" id="L504" title="All 6 branches missed.">                        assert(c == bc2 &amp;&amp; bc == bc2);</span>
                     }

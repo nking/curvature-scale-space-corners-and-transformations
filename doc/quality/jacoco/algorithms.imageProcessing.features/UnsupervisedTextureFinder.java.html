@@ -186,7 +186,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L186">            double totSim = 0;</span>
 <span class="fc bfc" id="L187" title="All 2 branches covered.">            for (int i = 0; i &lt; subsetNoise.size(); ++i) {</span>
 <span class="fc" id="L188">                int[][] ch = chs[i];</span>
-<span class="fc" id="L189">                float maxSim = Float.MIN_VALUE;</span>
+<span class="fc" id="L189">                float maxSim = Float.NEGATIVE_INFINITY;</span>
 <span class="fc" id="L190">                int maxSimIdx = -1;</span>
 <span class="fc bfc" id="L191" title="All 2 branches covered.">                for (int ii = 0; ii &lt; nGroups; ++ii) {</span>
 <span class="fc" id="L192">                    float intersection = chhist.intersection(</span>

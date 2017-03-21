@@ -235,52 +235,52 @@ import java.util.List;
     public &lt;T extends Image&gt; void multiscalePyramidalMedianTransform2(
         T input, List&lt;T&gt; outputTransformed) {
 
-<span class="fc" id="L238">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
+<span class="nc" id="L238">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
 
-<span class="fc" id="L240">        Image img0 = input.copyImage();</span>
+<span class="nc" id="L240">        Image img0 = input.copyImage();</span>
 
-<span class="fc" id="L242">        int nr = (int)(Math.log(imgDimen)/Math.log(2));</span>
-<span class="fc" id="L243">        int s = 1;</span>
-<span class="fc" id="L244">        int winL = 2*s + 1;</span>
+<span class="nc" id="L242">        int nr = (int)(Math.log(imgDimen)/Math.log(2));</span>
+<span class="nc" id="L243">        int s = 1;</span>
+<span class="nc" id="L244">        int winL = 2*s + 1;</span>
         
-<span class="fc" id="L246">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="nc" id="L246">        ImageProcessor imageProcessor = new ImageProcessor();</span>
 
-<span class="fc" id="L248">        MedianSmooth med = new MedianSmooth();</span>
+<span class="nc" id="L248">        MedianSmooth med = new MedianSmooth();</span>
         
-<span class="fc" id="L250">        outputTransformed.add((T) img0.copyImage());</span>
+<span class="nc" id="L250">        outputTransformed.add((T) img0.copyImage());</span>
 
-<span class="fc bfc" id="L252" title="All 2 branches covered.">        for (int j = 0; j &lt; (nr - 1); ++j) {</span>
+<span class="nc bnc" id="L252" title="All 2 branches missed.">        for (int j = 0; j &lt; (nr - 1); ++j) {</span>
                        
-<span class="fc" id="L254">            T cJ = outputTransformed.get(j);</span>
+<span class="nc" id="L254">            T cJ = outputTransformed.get(j);</span>
             
-<span class="pc bpc" id="L256" title="2 of 4 branches missed.">            if ((cJ.getWidth() &lt; winL) || (cJ.getHeight() &lt; winL)) {</span>
+<span class="nc bnc" id="L256" title="All 4 branches missed.">            if ((cJ.getWidth() &lt; winL) || (cJ.getHeight() &lt; winL)) {</span>
 <span class="nc" id="L257">                break;</span>
             }
             
             // calc for red, green and blue then combine
-<span class="fc" id="L261">            GreyscaleImage cJRed = cJ.copyRedToGreyscale();</span>
-<span class="fc" id="L262">            GreyscaleImage cJGreen = cJ.copyGreenToGreyscale();</span>
-<span class="fc" id="L263">            GreyscaleImage cJBlue = cJ.copyBlueToGreyscale();</span>
+<span class="nc" id="L261">            GreyscaleImage cJRed = cJ.copyRedToGreyscale();</span>
+<span class="nc" id="L262">            GreyscaleImage cJGreen = cJ.copyGreenToGreyscale();</span>
+<span class="nc" id="L263">            GreyscaleImage cJBlue = cJ.copyBlueToGreyscale();</span>
             
-<span class="fc" id="L265">            GreyscaleImage cJPlus1AstRed = med.calculate(cJRed, winL, winL);   </span>
-<span class="fc" id="L266">            GreyscaleImage cJPlus1AstGreen = med.calculate(cJGreen, winL, winL);  </span>
-<span class="fc" id="L267">            GreyscaleImage cJPlus1AstBlue = med.calculate(cJBlue, winL, winL); </span>
+<span class="nc" id="L265">            GreyscaleImage cJPlus1AstRed = med.calculate(cJRed, winL, winL);   </span>
+<span class="nc" id="L266">            GreyscaleImage cJPlus1AstGreen = med.calculate(cJGreen, winL, winL);  </span>
+<span class="nc" id="L267">            GreyscaleImage cJPlus1AstBlue = med.calculate(cJBlue, winL, winL); </span>
             
             // decimation:
-<span class="fc" id="L270">            GreyscaleImage cJPlus1Red = imageProcessor.binImage(cJPlus1AstRed, 2);</span>
-<span class="fc" id="L271">            GreyscaleImage cJPlus1Green = imageProcessor.binImage(cJPlus1AstGreen, 2);</span>
-<span class="fc" id="L272">            GreyscaleImage cJPlus1Blue = imageProcessor.binImage(cJPlus1AstBlue, 2);</span>
+<span class="nc" id="L270">            GreyscaleImage cJPlus1Red = imageProcessor.binImage(cJPlus1AstRed, 2);</span>
+<span class="nc" id="L271">            GreyscaleImage cJPlus1Green = imageProcessor.binImage(cJPlus1AstGreen, 2);</span>
+<span class="nc" id="L272">            GreyscaleImage cJPlus1Blue = imageProcessor.binImage(cJPlus1AstBlue, 2);</span>
 
-<span class="fc" id="L274">            T cJPlus1 = (T) cJ.createWithDimensions(cJPlus1Red.getWidth(), </span>
-<span class="fc" id="L275">                cJPlus1Red.getHeight());</span>
-<span class="fc bfc" id="L276" title="All 2 branches covered.">            for (int ii = 0; ii &lt; cJPlus1.getNPixels(); ++ii) {</span>
-<span class="fc" id="L277">                cJPlus1.setRGB(ii, cJPlus1Red.getValue(ii), </span>
-<span class="fc" id="L278">                    cJPlus1Green.getValue(ii), cJPlus1Blue.getValue(ii));</span>
+<span class="nc" id="L274">            T cJPlus1 = (T) cJ.createWithDimensions(cJPlus1Red.getWidth(), </span>
+<span class="nc" id="L275">                cJPlus1Red.getHeight());</span>
+<span class="nc bnc" id="L276" title="All 2 branches missed.">            for (int ii = 0; ii &lt; cJPlus1.getNPixels(); ++ii) {</span>
+<span class="nc" id="L277">                cJPlus1.setRGB(ii, cJPlus1Red.getValue(ii), </span>
+<span class="nc" id="L278">                    cJPlus1Green.getValue(ii), cJPlus1Blue.getValue(ii));</span>
             }
                         
-<span class="fc" id="L281">            outputTransformed.add(cJPlus1);                        </span>
+<span class="nc" id="L281">            outputTransformed.add(cJPlus1);                        </span>
         }
-<span class="fc" id="L283">    }</span>
+<span class="nc" id="L283">    }</span>
     
     /**
      * pyramidal median transform for decimation of input image.

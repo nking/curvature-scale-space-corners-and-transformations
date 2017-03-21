@@ -128,7 +128,7 @@ public final class CSSContourInflectionMaker {
         }
 
 <span class="pc bpc" id="L130" title="1 of 2 branches missed.">        if (contours.isEmpty()) {</span>
-<span class="nc" id="L131">            return;</span>
+<span class="fc" id="L131">            return;</span>
         }
 
         // the contours extracted from scale space images using a factor of
@@ -137,31 +137,31 @@ public final class CSSContourInflectionMaker {
         // needed.  for that rare case, the avg of the other peak is stored
         // instead of both points
 
-<span class="fc bfc" id="L140" title="All 2 branches covered.">        for (int i = 0; i &lt; contours.size(); i++) {</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">        for (int i = 0; i &lt; contours.size(); i++) {</span>
 
-<span class="fc" id="L142">            CurvatureScaleSpaceContour c1 = contours.get(i);</span>
+<span class="nc" id="L142">            CurvatureScaleSpaceContour c1 = contours.get(i);</span>
 
-<span class="pc bpc" id="L144" title="1 of 2 branches missed.">            if (c1.getPeakDetails().length &gt; 1) {</span>
-<span class="fc" id="L145">                CurvatureScaleSpaceImagePoint p0 = c1.getPeakDetails()[0];</span>
-<span class="fc" id="L146">                CurvatureScaleSpaceImagePoint p1 = c1.getPeakDetails()[1];</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">            if (c1.getPeakDetails().length &gt; 1) {</span>
+<span class="nc" id="L145">                CurvatureScaleSpaceImagePoint p0 = c1.getPeakDetails()[0];</span>
+<span class="nc" id="L146">                CurvatureScaleSpaceImagePoint p1 = c1.getPeakDetails()[1];</span>
 
-<span class="fc" id="L148">                int iMid = (p0.getCoordIdx() + p1.getCoordIdx())/2;</span>
+<span class="nc" id="L148">                int iMid = (p0.getCoordIdx() + p1.getCoordIdx())/2;</span>
 
-<span class="fc" id="L150">                float s = p0.getSigma();</span>
-<span class="fc" id="L151">                float tAvg = (p0.getScaleFreeLength() + p1.getScaleFreeLength())/2.f;</span>
+<span class="nc" id="L150">                float s = p0.getSigma();</span>
+<span class="nc" id="L151">                float tAvg = (p0.getScaleFreeLength() + p1.getScaleFreeLength())/2.f;</span>
 
-<span class="fc" id="L153">                int xMid = edge.getX(iMid);</span>
-<span class="fc" id="L154">                int yMid = edge.getY(iMid);</span>
+<span class="nc" id="L153">                int xMid = edge.getX(iMid);</span>
+<span class="nc" id="L154">                int yMid = edge.getY(iMid);</span>
 
-<span class="fc" id="L156">                CurvatureScaleSpaceImagePoint pMid =</span>
+<span class="nc" id="L156">                CurvatureScaleSpaceImagePoint pMid =</span>
                     new CurvatureScaleSpaceImagePoint(s, tAvg, xMid, yMid, iMid);
-<span class="fc" id="L158">                CurvatureScaleSpaceImagePoint[] p =</span>
+<span class="nc" id="L158">                CurvatureScaleSpaceImagePoint[] p =</span>
                     new CurvatureScaleSpaceImagePoint[]{pMid};
-<span class="fc" id="L160">                c1.setPeakDetails(p);</span>
-<span class="fc" id="L161">                contours.set(i, c1);</span>
+<span class="nc" id="L160">                c1.setPeakDetails(p);</span>
+<span class="nc" id="L161">                contours.set(i, c1);</span>
             }
         }
-<span class="fc" id="L164">    }</span>
+<span class="nc" id="L164">    }</span>
     
     private void populateContours(List&lt;PairIntArray&gt; edges,
         List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; contours) {
@@ -255,14 +255,14 @@ public final class CSSContourInflectionMaker {
 <span class="fc" id="L255">        Set&lt;Integer&gt; indexes = new HashSet&lt;Integer&gt;();</span>
 <span class="fc" id="L256">        List&lt;Integer&gt; remove = new ArrayList&lt;Integer&gt;();</span>
 
-<span class="fc bfc" id="L258" title="All 2 branches covered.">        for (int i = 0; i &lt; contours.size(); ++i) {</span>
-<span class="fc" id="L259">            CurvatureScaleSpaceContour contour = contours.get(i);</span>
-<span class="fc bfc" id="L260" title="All 2 branches covered.">            for (CurvatureScaleSpaceImagePoint ip : contour.getPeakDetails()) {</span>
-<span class="fc" id="L261">                Integer idx = Integer.valueOf(ip.getCoordIdx());</span>
-<span class="pc bpc" id="L262" title="1 of 2 branches missed.">                if (indexes.contains(idx)) {</span>
+<span class="pc bpc" id="L258" title="1 of 2 branches missed.">        for (int i = 0; i &lt; contours.size(); ++i) {</span>
+<span class="nc" id="L259">            CurvatureScaleSpaceContour contour = contours.get(i);</span>
+<span class="nc bnc" id="L260" title="All 2 branches missed.">            for (CurvatureScaleSpaceImagePoint ip : contour.getPeakDetails()) {</span>
+<span class="nc" id="L261">                Integer idx = Integer.valueOf(ip.getCoordIdx());</span>
+<span class="nc bnc" id="L262" title="All 2 branches missed.">                if (indexes.contains(idx)) {</span>
 <span class="nc" id="L263">                    remove.add(i);</span>
                 } else {
-<span class="fc" id="L265">                    indexes.add(idx);</span>
+<span class="nc" id="L265">                    indexes.add(idx);</span>
                 }
             }
         }

@@ -666,40 +666,40 @@ import java.util.Set;
     public double convolvePointWithKernel(final Set&lt;PairInt&gt; points, int col, 
         int row, float[] g, final boolean calcX) {
 
-<span class="fc" id="L669">        int h = g.length &gt;&gt; 1;</span>
+<span class="nc" id="L669">        int h = g.length &gt;&gt; 1;</span>
 
-<span class="fc" id="L671">        double sum = 0;</span>
+<span class="nc" id="L671">        double sum = 0;</span>
                 
-<span class="fc bfc" id="L673" title="All 2 branches covered.">        for (int gIdx = 0; gIdx &lt; g.length; gIdx++) {</span>
+<span class="nc bnc" id="L673" title="All 2 branches missed.">        for (int gIdx = 0; gIdx &lt; g.length; gIdx++) {</span>
 
-<span class="fc" id="L675">            float gg = g[gIdx];</span>
+<span class="nc" id="L675">            float gg = g[gIdx];</span>
 
-<span class="pc bpc" id="L677" title="1 of 2 branches missed.">            if (gg == 0) {</span>
+<span class="nc bnc" id="L677" title="All 2 branches missed.">            if (gg == 0) {</span>
 <span class="nc" id="L678">                continue;</span>
             }
             
-<span class="fc" id="L681">            int idx = gIdx - h;</span>
+<span class="nc" id="L681">            int idx = gIdx - h;</span>
 
-<span class="fc bfc" id="L683" title="All 2 branches covered.">            int cIdx = calcX ? (col + idx) : (row + idx);</span>
+<span class="nc bnc" id="L683" title="All 2 branches missed.">            int cIdx = calcX ? (col + idx) : (row + idx);</span>
 
-<span class="fc" id="L685">            float point = 0;</span>
+<span class="nc" id="L685">            float point = 0;</span>
             
-<span class="fc bfc" id="L687" title="All 2 branches covered.">            if (calcX) {</span>
+<span class="nc bnc" id="L687" title="All 2 branches missed.">            if (calcX) {</span>
                 // keep row constant
-<span class="fc bfc" id="L689" title="All 2 branches covered.">                if (points.contains(new PairInt(cIdx, row))) {</span>
-<span class="fc" id="L690">                    point = 1;</span>
+<span class="nc bnc" id="L689" title="All 2 branches missed.">                if (points.contains(new PairInt(cIdx, row))) {</span>
+<span class="nc" id="L690">                    point = 1;</span>
                 }
             } else {
                 // keep col constant
-<span class="fc bfc" id="L694" title="All 2 branches covered.">                if (points.contains(new PairInt(col, cIdx))) {</span>
-<span class="fc" id="L695">                    point = 1;</span>
+<span class="nc bnc" id="L694" title="All 2 branches missed.">                if (points.contains(new PairInt(col, cIdx))) {</span>
+<span class="nc" id="L695">                    point = 1;</span>
                 }
             }
 
-<span class="fc" id="L699">            sum += (point * gg);</span>
+<span class="nc" id="L699">            sum += (point * gg);</span>
         }
 
-<span class="fc" id="L702">        return sum;</span>
+<span class="nc" id="L702">        return sum;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -46,9 +46,9 @@ import java.util.logging.Logger;
 <span class="fc" id="L46">    private KDTreeFloat kdTree = null;</span>
     
 <span class="fc" id="L48">    private float xmin = Float.MAX_VALUE;</span>
-<span class="fc" id="L49">    private float xmax = Float.MIN_VALUE;</span>
+<span class="fc" id="L49">    private float xmax = Float.NEGATIVE_INFINITY;</span>
 <span class="fc" id="L50">    private float ymin = Float.MAX_VALUE;</span>
-<span class="fc" id="L51">    private float ymax = Float.MIN_VALUE;</span>
+<span class="fc" id="L51">    private float ymax = Float.NEGATIVE_INFINITY;</span>
         
 <span class="fc" id="L53">    public KNearestNeighbors(int[] x, int[] y) {</span>
 <span class="fc" id="L54">        init(x, y);</span>
@@ -96,9 +96,9 @@ import java.util.logging.Logger;
 <span class="fc" id="L96">        int n = x.length;</span>
         
 <span class="fc" id="L98">        xmin = Float.MAX_VALUE;</span>
-<span class="fc" id="L99">        xmax = Float.MIN_VALUE;</span>
+<span class="fc" id="L99">        xmax = Float.NEGATIVE_INFINITY;</span>
 <span class="fc" id="L100">        ymin = Float.MAX_VALUE;</span>
-<span class="fc" id="L101">        ymax = Float.MIN_VALUE;</span>
+<span class="fc" id="L101">        ymax = Float.NEGATIVE_INFINITY;</span>
 <span class="fc bfc" id="L102" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
 <span class="fc" id="L103">            float xp = x[i];</span>
 <span class="fc" id="L104">            float yp = y[i];</span>

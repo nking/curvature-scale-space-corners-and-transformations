@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>StructureTensor.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">StructureTensor.java</span></div><h1>StructureTensor.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.util.MatrixUtil;
+
 /**
  * create first derivative products and optionally second derivative
  * products of an image.
@@ -63,8 +65,8 @@ public class StructureTensor {
     private final float[][] d2Y;
     
     // created on demand
-<span class="fc" id="L66">    private float[][] detA = null;</span>
-<span class="fc" id="L67">    private float[][] traceA = null;</span>
+<span class="fc" id="L68">    private float[][] detA = null;</span>
+<span class="fc" id="L69">    private float[][] traceA = null;</span>
     
     /**
      * create sobel x and y derivatives (== first deriv gaussians w/ sigma =
@@ -76,108 +78,139 @@ public class StructureTensor {
      * @param sigma
      * @param create2ndDerivs 
      */
-<span class="fc" id="L79">    public StructureTensor(float[][] image, float sigma, boolean create2ndDerivs) {</span>
+<span class="fc" id="L81">    public StructureTensor(float[][] image, float sigma, boolean create2ndDerivs) {</span>
         
-<span class="fc" id="L81">        this.sigma = sigma;</span>
+<span class="fc" id="L83">        this.sigma = sigma;</span>
         
         // --- create Sobel derivatives (gaussian 1st deriv sqrt(2)/2 = 0.707)----
-<span class="fc" id="L84">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="fc" id="L86">        ImageProcessor imageProcessor = new ImageProcessor();</span>
 
         // switch X and Y sobel operations to match scipy
 
-<span class="fc" id="L88">        float[][] gX = imageProcessor.copy(image);</span>
-<span class="fc" id="L89">        imageProcessor.applySobelY(gX);</span>
+        // NOTE: may need to revisit this
+<span class="fc" id="L91">        float norm = 4.f;//(0.707f * (float)Math.sqrt(2. * Math.PI));</span>
+        
+<span class="fc" id="L93">        float[][] gX = imageProcessor.copy(image);</span>
+<span class="fc" id="L94">        imageProcessor.applySobelY(gX);</span>
+<span class="fc" id="L95">        MatrixUtil.multiply(gX, norm);</span>
 
-<span class="fc" id="L91">        float[][] gY = imageProcessor.copy(image);</span>
-<span class="fc" id="L92">        imageProcessor.applySobelX(gY);</span>
+<span class="fc" id="L97">        float[][] gY = imageProcessor.copy(image);</span>
+<span class="fc" id="L98">        imageProcessor.applySobelX(gY);</span>
+<span class="fc" id="L99">        MatrixUtil.multiply(gY, norm);</span>
         
         // --- create structure tensors ----
-<span class="fc" id="L95">        float[] kernel = Gaussian1D.getKernel(sigma);</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">        float[] kernel = (sigma &gt; 0) ? Gaussian1D.getKernel(sigma) : null;</span>
         
-<span class="fc" id="L97">        dXSq = imageProcessor.multiply(gX, gX);</span>
-<span class="fc" id="L98">        imageProcessor.applyKernelTwo1Ds(dXSq, kernel);</span>
-
-<span class="fc" id="L100">        dYSq = imageProcessor.multiply(gY, gY);</span>
-<span class="fc" id="L101">        imageProcessor.applyKernelTwo1Ds(dYSq, kernel);</span>
-
-<span class="fc" id="L103">        dXdY = imageProcessor.multiply(gX, gY);</span>
-<span class="fc" id="L104">        imageProcessor.applyKernelTwo1Ds(dXdY, kernel);</span>
-
-<span class="pc bpc" id="L106" title="1 of 2 branches missed.">        if (create2ndDerivs) {</span>
+        //Axx
+<span class="fc" id="L105">        dXSq = imageProcessor.multiplyPointwise(gX, gX);</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        if (kernel != null) {</span>
+<span class="fc" id="L107">            imageProcessor.applyKernelTwo1Ds(dXSq, kernel);</span>
+        }
+        
+        //Ayy
+<span class="fc" id="L111">        dYSq = imageProcessor.multiplyPointwise(gY, gY);</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        if (kernel != null) {</span>
+<span class="fc" id="L113">            imageProcessor.applyKernelTwo1Ds(dYSq, kernel);</span>
+        }
+        
+        //Axy
+<span class="fc" id="L117">        dXdY = imageProcessor.multiplyPointwise(gX, gY);</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">        if (kernel != null) {</span>
+<span class="fc" id="L119">            imageProcessor.applyKernelTwo1Ds(dXdY, kernel);</span>
+        }
+        
+<span class="fc bfc" id="L122" title="All 2 branches covered.">        if (create2ndDerivs) {</span>
             
-<span class="nc" id="L108">            dX = gX;</span>
-<span class="nc" id="L109">            dY = gY;</span>
+<span class="fc" id="L124">            dX = gX;</span>
+<span class="fc" id="L125">            dY = gY;</span>
             
             // for curvature, need d/dy(dy) and d/dx(dx)
-<span class="nc" id="L112">            kernel = Gaussian1DFirstDeriv.getKernel(sigma);</span>
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">            kernel = (sigma &gt; 0) ?</span>
+<span class="pc" id="L129">                Gaussian1DFirstDeriv.getKernel(sigma) :</span>
+<span class="fc" id="L130">                Gaussian1DFirstDeriv.getKernel(SIGMA.ZEROPOINTSEVENONE);</span>
             
-<span class="nc" id="L114">            d2X = imageProcessor.copy(gX);</span>
-<span class="nc" id="L115">            d2Y = imageProcessor.copy(gY);</span>
+<span class="fc" id="L132">            d2X = imageProcessor.copy(gX);</span>
+<span class="fc" id="L133">            d2Y = imageProcessor.copy(gY);</span>
         
             //TODO: revisit this in detail:
             // row major, so need to use y operations for x and vice versa
-<span class="nc" id="L119">            imageProcessor.applyKernel1D(d2X, kernel, false);</span>
-<span class="nc" id="L120">            imageProcessor.applyKernel1D(d2Y, kernel, true);</span>
+<span class="fc" id="L137">            imageProcessor.applyKernel1D(d2X, kernel, false);</span>
+<span class="fc" id="L138">            imageProcessor.applyKernel1D(d2Y, kernel, true);</span>
         
         } else {
-<span class="fc" id="L123">            dX = null;</span>
-<span class="fc" id="L124">            d2X = null;</span>
-<span class="fc" id="L125">            dY = null;</span>
-<span class="fc" id="L126">            d2Y = null;</span>
+<span class="fc" id="L141">            dX = null;</span>
+<span class="fc" id="L142">            d2X = null;</span>
+<span class="fc" id="L143">            dY = null;</span>
+<span class="fc" id="L144">            d2Y = null;</span>
         }
-<span class="fc" id="L128">    }</span>
+<span class="fc" id="L146">    }</span>
    
     public float[][] getDeterminant() {
         
-<span class="fc bfc" id="L132" title="All 2 branches covered.">        if (detA == null) {</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">        if (detA == null) {</span>
             
-<span class="fc" id="L134">            ImageProcessor imageProcessor = new ImageProcessor();</span>
-<span class="fc" id="L135">            float[][] axxyy = imageProcessor.multiply(dXSq, dYSq);</span>
+<span class="fc" id="L152">            ImageProcessor imageProcessor = new ImageProcessor();</span>
+            
+            // detA = Axx * Ayy - Axy ** 2
+            
+<span class="fc" id="L156">            float[][] axxyy = imageProcessor.multiplyPointwise(dXSq, dYSq);</span>
 
-<span class="fc" id="L137">            float[][] axyxy = imageProcessor.multiply(dXdY, dXdY);</span>
+<span class="fc" id="L158">            float[][] axyxy = imageProcessor.multiplyPointwise(dXdY, dXdY);</span>
 
-<span class="fc" id="L139">            detA = imageProcessor.subtract(axxyy, axyxy);</span>
+<span class="fc" id="L160">            detA = MatrixUtil.subtract(axxyy, axyxy);</span>
         }
         
-<span class="fc" id="L142">        return detA;</span>
+<span class="fc" id="L163">        return detA;</span>
     }
     
     public float[][] getTrace() {
         
-<span class="fc bfc" id="L147" title="All 2 branches covered.">        if (traceA == null) {</span>
-<span class="fc" id="L148">            ImageProcessor imageProcessor = new ImageProcessor();</span>
-<span class="fc" id="L149">            traceA = imageProcessor.add(dXSq, dXdY);</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">        if (traceA == null) {</span>
+<span class="fc" id="L169">            traceA = MatrixUtil.add(dXSq, dYSq);</span>
         }
         
-<span class="fc" id="L152">        return traceA;</span>
+<span class="fc" id="L172">        return traceA;</span>
     }
     
+    /**
+     * get Axx
+     * 
+     * @return 
+     */
     public float[][] getDXSquared() {
-<span class="fc" id="L156">        return dXSq;</span>
+<span class="fc" id="L181">        return dXSq;</span>
     }
     
+    /**
+     * get Ayy
+     * @return 
+     */
     public float[][] getDYSquared() {
-<span class="fc" id="L160">        return dYSq;</span>
+<span class="fc" id="L189">        return dYSq;</span>
     }
     
+    /**
+     * get Axy
+     * @return 
+     */
     public float[][] getDXDY() {
-<span class="nc" id="L164">        return dXdY;</span>
+<span class="fc" id="L197">        return dXdY;</span>
     }
     
     public float[][] getDX() {
-<span class="nc" id="L168">        return dX;</span>
+<span class="nc" id="L201">        return dX;</span>
     }
     
     public float[][] getDY() {
-<span class="nc" id="L172">        return dY;</span>
+<span class="nc" id="L205">        return dY;</span>
     }
     
     public float[][] getDDX() {
-<span class="nc" id="L176">        return d2X;</span>
+<span class="nc" id="L209">        return d2X;</span>
     }
     
     public float[][] getDDY() {
-<span class="nc" id="L180">        return d2Y;</span>
+<span class="nc" id="L213">        return d2Y;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
