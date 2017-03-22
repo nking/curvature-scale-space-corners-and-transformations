@@ -381,6 +381,7 @@ public class EpipolarTransformer {
         // nCols = 9        
         DenseMatrix nullSpace = MatrixUtil.nullSpace(svd);
 
+        
         double[][] ff1 = new double[3][3];
         double[][] ff2 = new double[3][3];
         for (int i = 0; i < 3; i++) {
@@ -395,7 +396,7 @@ public class EpipolarTransformer {
             ff2[i][1] = nullSpace.get((i * 3) + 1, 1);
             ff2[i][2] = nullSpace.get((i * 3) + 2, 1);
         }
-
+        
         DenseMatrix[] solutions = solveFor7Point(ff1, ff2);
 
         //denormalize:  F = (T_1)^T * F * T_2

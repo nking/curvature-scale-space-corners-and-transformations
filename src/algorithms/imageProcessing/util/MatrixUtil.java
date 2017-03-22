@@ -1548,7 +1548,7 @@ public class MatrixUtil {
         double tol = singularThreshold(svd);
         
         //NXN
-        DenseMatrix vT = svd.getVt();
+        DenseMatrix vT = (DenseMatrix) svd.getVt().transpose();
         
         int N = vT.numColumns();
         
