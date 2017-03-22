@@ -1739,9 +1739,9 @@ public class EpipolarTransformer {
         boolean extractRow = false;
         for (int col = 0; col < n; ++col) {
             // 3 x 1 ==> T ==> 1 x 3
-            DenseMatrix x2T_i = (DenseMatrix) MatrixUtil.extractAColumn(x2, col)
-                .transpose();
-            
+            DenseMatrix x2Row = MatrixUtil.extractAColumn(x2, col);
+            DenseMatrix x2T_i = MatrixUtil.transpose(x2Row);
+                        
             // x2T_i * F is 1X3 * 3X3 = 1X3
             DenseMatrix x2T_iF = MatrixUtil.multiply(x2T_i, fm);
             
