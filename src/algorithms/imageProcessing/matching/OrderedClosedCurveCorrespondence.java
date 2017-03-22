@@ -9,16 +9,22 @@ import java.util.Map.Entry;
 import java.util.TreeMap;
 
 /**
- * a class to handle additions and clockwise consistency checks
- * to a growing correspondency list.
+ * a class to handle additions, that are sometimes merges 
+ * of overlapping or
+ * adjacent correspondence intervals, that are 
+ * clockwise consistent.
+ * The class performs checks
+ * to the correspondency list as intervals are added (or attempted).
  * The class is specialized for use with PartialShapeMatcher.java
  * which has intervals it attempts to add to this structure in
  * order of increasing cost.
  * The intervals are given as ranges of indexes called idx1
  * and the shape they match to is specified as an offset
- * from the idx1 indexes.
+ * from the idx1 indexes (that is, the 2nd correspondence list is
+ * implied by the offset from the first for a given interval range).
  * Each interval has a single offset which may be different
- * from the offset in other intervals.
+ * from the offset in other intervals
+ * (because the PartialShapeMatchers allow occlusion and articulation).
  *
  * NOTE: this class is not "thread safe", that is, only a single thread should
  * access it because it uses an internal cache that is not guarded..
