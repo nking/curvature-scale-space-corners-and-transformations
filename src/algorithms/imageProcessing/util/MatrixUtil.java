@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.util;
 
+import algorithms.imageProcessing.ImageProcessor;
 import algorithms.misc.Complex;
 import algorithms.util.PairInt;
 import gnu.trove.iterator.TIntIterator;
@@ -1740,4 +1741,111 @@ public class MatrixUtil {
 
         return n;
     }
+
+    /**
+     * find the equation for which A * A^(-1) = the identity matrix
+     *
+     *             1
+     * A^(-1) =  ------ C^(T)  where C_ij = cofactor of a_ij
+     *            det A
+     *
+     * @param m
+     * @return
+     */
+    public static DenseMatrix inverse(DenseMatrix m) {
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+            
+        double[][] m2 = imageProcessor.copyToDouble2D(m);
+           
+        double[][] invM2 = inverse(m2);
+        
+        DenseMatrix invM = new DenseMatrix(invM2);
+        
+        return invM;
+    }
+    
+    /**
+     * find the equation for which A * A^(-1) = the identity matrix
+     *
+     *             1
+     * A^(-1) =  ------ C^(T)  where C_ij = cofactor of a_ij
+     *            det A
+     *
+     * @param m
+     * @return
+     */
+    public static double[][] inverse(double[][] m) {
+
+        // create cofactor of matrix:
+        double[][] cofactor = createCofactor(m);
+
+        double[][] cofactorTransposed = transpose(cofactor);
+
+        double det = determinant(m);
+
+        multiply(cofactorTransposed, 1./det);
+
+        return cofactorTransposed;
+    }
+    
+    public static void multiply(double[][] m, double factor) {
+
+        int nrows = m.length;
+        int ncols = m[0].length;
+
+        for (int i = 0; i < nrows; i++) {
+            for (int j = 0; j < ncols; j++) {
+                m[i][j] = factor*m[i][j];
+            }
+        }
+    }
+    
+    /*
+         * e.g.    | 1  -5  2 |         | 3 4 |         | 7 4 |         | 7 3 |
+         *         | 7   3  4 |  =  1 * | 1 5 |  +  5 * | 2 5 |  +  2 * | 2 1 |  = 11 + 135 + 2 =
+ 148
+         *         | 2   1  5 |
+         *
+         *          3 4     7  4    7  3
+         *          1 5     2  5    2  1
+         * 
+         *         -5 2     1  2    1 -5
+         *          1 5     2  5    2  1
+         *
+         *         -5 2     1  2    1 -5
+         *          3 4     7  4    7  3
+    */
+    public static double[][] createCofactor(double[][] m) {
+
+        int ncols = m.length;
+        int nrows = m[0].length;
+
+        double[][] cofactor = new double[ncols][nrows];
+
+        for (int i = 0; i < ncols; i++) {
+            
+            cofactor[i] = new double[nrows];
+
+            boolean si = ((i & 1) == 1); // sign is -
+
+            for (int j = 0; j < nrows; j++) {
+
+                boolean sj = ((j & 1) == 1); // sign is -
+
+                double[][] n = copyExcept(m, i, j);
+
+                double cfctr = determinant(n);
+
+                if (si ^ sj) { // XOR if either is 1 but not both
+                    cfctr = -1*cfctr;
+                }
+
+                cofactor[i][j] = cfctr;
+            }
+         }
+        return cofactor;
+    }
+    
+    
 }

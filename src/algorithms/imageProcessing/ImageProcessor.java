@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
+import no.uib.cipr.matrix.Matrix;
 import thirdparty.ca.uol.aig.fftpack.Complex1D;
 import thirdparty.ca.uol.aig.fftpack.ComplexDoubleFFT;
 
@@ -3364,6 +3365,24 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
             output[i] = new double[h];
             for (int j = 0; j < h; ++j) {
                 output[i][j] = input.getValue(i, j);
+            }
+        }
+
+        return output;
+    }
+    
+    /**
+     * output is row major format
+     * @param input
+     * @return
+     */
+    public double[][] copyToDouble2D(Matrix m) {
+
+        double[][] output = new double[m.numRows()][];
+        for (int i = 0; i < m.numRows(); ++i) {
+            output[i] = new double[m.numColumns()];
+            for (int j = 0; j < m.numColumns(); ++j) {
+                output[i][j] = m.get(i, j);
             }
         }
 

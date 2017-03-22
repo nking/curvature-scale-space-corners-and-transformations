@@ -26,7 +26,7 @@ public class EpipolarTransformerTest extends TestCase {
     public EpipolarTransformerTest() {
     }
     
-    public void testCreateScaleTranslationMatrix() throws Exception {
+    public void testNormalization() throws Exception {
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
@@ -37,12 +37,8 @@ public class EpipolarTransformerTest extends TestCase {
         
         int w = 300;
         int h = 400;
-        double scale = Math.sqrt(2.)/150.;
-        double centroidX = (w/2);
-        double centroidY = (h/2);
         
-        DenseMatrix tMatrix = sTransformer.createScaleTranslationMatrix(scale, 
-            centroidX, centroidY);
+        double eps = 0.00001;
         
         double sqrtTwo = Math.sqrt(2);
         /*
@@ -51,39 +47,58 @@ public class EpipolarTransformerTest extends TestCase {
         */
         int nTests = 1;
         int nPoints = 100;
+        
         DenseMatrix xy = new DenseMatrix(3, nPoints);
-        double[][] xyExpectedTr = new double[2][nPoints];
-        for (int j = 0; j < 2; ++j) {
-            xyExpectedTr[j] = new double[nPoints];
-        }
+        
         for (int i = 0; i < nTests; ++i) {
+            
             for (int j = 0; j < nPoints; ++j) {
                 int x = sr.nextInt(w);
                 int y = sr.nextInt(h);
-                double xt = (x*scale) + -centroidX*scale;
-                double yt = (y*scale) + -centroidY*scale;
                 xy.set(0, j, x);
                 xy.set(1, j, y);
                 xy.set(2, j, 1);
-                xyExpectedTr[0][j] = xt;
-                xyExpectedTr[1][j] = yt;
-                //System.out.println(
-                //    String.format("(%.5f, %.5f) --> (%.5f, %.5f)", 
-                //    (float)x, (float)y, (float)xt, (float)yt));
             }
+          
+            EpipolarTransformer.NormalizedXY normXY = sTransformer.normalize(xy);
             
-            double[][] xyTransformed = MatrixUtil.dot(tMatrix, xy);
-        
+            DenseMatrix xy2 = normXY.getXy();
+            assertEquals(nPoints, xy2.numColumns());
+            assertEquals(3, xy2.numRows());            
+                   
             double avgDist = 0;
             for (int j = 0; j < nPoints; ++j) {
-                double xt = xyTransformed[0][j];
-                double yt = xyTransformed[1][j];
-                assertTrue(Math.abs(xt - xyExpectedTr[0][j]) < 0.01);
-                assertTrue(Math.abs(yt - xyExpectedTr[1][j]) < 0.01);
+                double xt = xy2.get(0, j);
+                double yt = xy2.get(1, j);
+                // trnsformed center is 0,0 so their coords are their distances
                 avgDist += Math.sqrt(xt*xt + yt*yt);
             }
             avgDist /= (double)nPoints;
-            assertTrue(avgDist <= sqrtTwo);
+            //System.out.println("mean dist^2=" + avgDist);
+            assertTrue(avgDist <= (sqrtTwo + eps));
+                       
+            // 3XN      3X3        3XN
+            //normXY = tMatrix dot xy
+            //  normXY * inv(tMatrix) = xy
+            DenseMatrix invT = MatrixUtil.inverse(
+                normXY.getNormalizationMatrix());
+            
+            DenseMatrix denorm = 
+                MatrixUtil.multiply(invT, normXY.getXy());
+            
+            for (int j = 0; j < nPoints; ++j) {
+                double x = xy.get(0, j);
+                double y = xy.get(1, j);
+                
+                double x2 = denorm.get(0, j);
+                double y2 = denorm.get(1, j);
+                
+                assertTrue(Math.abs(x - x2) < eps);
+                assertTrue(Math.abs(y - y2) < eps);
+                
+                //System.out.println("x=" + x + " y=" + y);
+                //System.out.println("    x2=" + x2 + " y2=" + y2);
+            }
         }
     }
     

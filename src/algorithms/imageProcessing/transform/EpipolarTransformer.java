@@ -228,8 +228,8 @@ public class EpipolarTransformer {
 
         //the matrix convention is [mRows][nCols]
 
-        DenseMatrix fundamentalMatrix = (DenseMatrix) calculateFundamentalMatrix(theLeftXY, 
-            theRightXY).transpose();
+        DenseMatrix fundamentalMatrix = (DenseMatrix) 
+            calculateFundamentalMatrix(theLeftXY, theRightXY).transpose();
 
         return fundamentalMatrix;
     }
@@ -364,7 +364,7 @@ public class EpipolarTransformer {
         NormalizedXY normalizedXY1 = normalize(theLeftXY);
 
         NormalizedXY normalizedXY2 = normalize(theRightXY);
-
+        
         double[][] m = createFundamentalMatrix(
             normalizedXY1.getXy(), normalizedXY2.getXy());
 
@@ -744,6 +744,11 @@ public class EpipolarTransformer {
     DenseMatrix calculateFundamentalMatrix(NormalizedXY normalizedXY1,
         NormalizedXY normalizedXY2) {
 
+        
+        System.out.println("normXY1=" + normalizedXY1.getXy().toString());
+        System.out.println("normXY2=" + normalizedXY2.getXy().toString());
+        
+        
         //build the fundamental matrix
         double[][] m = createFundamentalMatrix(normalizedXY1.getXy(),
             normalizedXY2.getXy());
@@ -754,10 +759,9 @@ public class EpipolarTransformer {
             A has rank 8.  f has rank 2.
 
         calculate [U,D,V] from svd(A):
-           result has mRows = number of data points
-                      nCols = 9
         */
         DenseMatrix aMatrix = new DenseMatrix(m);
+        
         SVD svd = null;
         try {
             svd = SVD.factorize(aMatrix);
@@ -768,10 +772,14 @@ public class EpipolarTransformer {
         
         //A is nData rows X 3 columns
         
-        DenseMatrix V = svd.getVt();
+        DenseMatrix V = (DenseMatrix) svd.getVt().transpose();
 
+        
+        System.out.println("v=" + V.toString());
+        
+        
         // creates U as nXY1 x nXY1 matrix  (M X M)
-        //         D as length 9 array      (vector of len N)
+        //         D as length 3 array      (vector of len N)
         //         V as 9 x 9 matrix        (N*N X N*N)
 
         // mRows = 9; nCols = 9
@@ -789,6 +797,10 @@ public class EpipolarTransformer {
         }
         DenseMatrix fMatrix = new DenseMatrix(ff);
 
+        
+        System.out.println("f=" + fMatrix.toString());
+        
+        
         /* make the fundamental matrix have a rank of 2
         by performing a svd and then reconstructing with the two largest
         singular values.
@@ -821,15 +833,26 @@ public class EpipolarTransformer {
             d.set(1, 1, sDiag[1]);
         }
 
+        System.out.println("d=" + d.toString());
+        
+        V = svd.getVt();
+        
+        System.out.println("V2=" + V.toString());
+        
         /*
         multiply the terms:
              F = dot(U, dot(diag(D),V^T))
         */
-        DenseMatrix dDotV = MatrixUtil.multiply(d, svd.getVt().transpose());
+        DenseMatrix dDotV = MatrixUtil.multiply(d, V);
+        
+        System.out.println("dDotV=" + dDotV.toString());
+        
 
         // 3x3
         DenseMatrix theFundamentalMatrix = MatrixUtil.multiply(svd.getU(), dDotV);
 
+        System.out.println("fm=" + theFundamentalMatrix.toString());
+        
         DenseMatrix denormFundamentalMatrix =
             denormalizeTheFundamentalMatrix(theFundamentalMatrix,
                 normalizedXY1, normalizedXY2);
@@ -867,6 +890,13 @@ public class EpipolarTransformer {
      normalize the x,y coordinates as recommended by Hartley 1997 and return
      the matrix and coordinates.
      does not modify the state of this transformer instance.
+     
+     the normalized coordinates have an origin = centroid of
+     the points.
+     the mean square distance of the normalized points from the
+     origin is sqrt(2) pixels.
+     
+      
      * @param xyPair
      * @return
      */
@@ -874,12 +904,7 @@ public class EpipolarTransformer {
     NormalizedXY normalize(DenseMatrix xy) {
 
         /*
-        uTransposed = T * u
-        uTransposed * inv(T) = u
-
-                uTransposed_2^T * inv(T_2) * F * inv(T_1) * uTransposed_1
-
-        format the tensors T_1 and T_2 such that the applied translation
+        format points such that the applied translation
         and scaling have the effect of:
 
         a) points are translated so that their centroid is at the origin.

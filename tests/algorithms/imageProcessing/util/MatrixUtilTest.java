@@ -716,4 +716,47 @@ public class MatrixUtilTest extends TestCase {
         assertEquals(148., det);
         
     }
+    
+     public void testInverse() throws Exception {
+        /**
+         * e.g.    | 1  0  -1 |
+         *         |-2  1   0 |
+         *         | 1 -1   2 |
+         * 
+         * det = 1
+         * 
+         * cofactor = 
+         *            | (2)   -(-4)   (2-1) |
+         *            | 1(-1)  (2+1) -(-1)  |
+         *            |  1    -(0-2)    1   |
+         * 
+         *  cofactor^T = | 2  1  1 |
+         *               | 4  3  2 |
+         *               | 1  1  1 |
+         * 
+         *   inv = (1/det) * cofactor^T
+         */
+        System.out.println("testInverse");
+
+        double[][] m = new double[3][3];
+        m[0] = new double[]{1, -2, 1};
+        m[1] = new double[]{0, 1, -1};
+        m[2] = new double[]{-1, 0, 2};
+        
+        double[][] result = MatrixUtil.inverse(m);
+
+        double[][] e = new double[3][3];
+        e[0] = new double[]{2, 4, 1};
+        e[1] = new double[]{1, 3, 1};
+        e[2] = new double[]{1, 2, 1};
+
+        assertTrue(result.length == e.length);
+        assertTrue(result[0].length == e[0].length);
+        
+        for (int i = 0; i < e.length; i++) {
+            double[] a = result[i];
+            double[] b = e[i];
+            assertTrue(Arrays.equals(a, b));
+        }
+    }
 }
