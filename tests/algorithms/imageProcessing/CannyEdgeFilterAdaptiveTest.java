@@ -31,7 +31,7 @@ public class CannyEdgeFilterAdaptiveTest extends TestCase {
         //testFiles.add("android_statues_01.jpg");
         //testFiles.add("android_statues_04.jpg");
         
-        testFiles.add("checkerboard_01.jpg");
+       // testFiles.add("checkerboard_01.jpg");
         
         for (String fileName : testFiles) {
             
@@ -47,13 +47,12 @@ public class CannyEdgeFilterAdaptiveTest extends TestCase {
             GreyscaleImage gsImg = img.copyToGreyscale();
 
             CannyEdgeFilterAdaptive filter = new CannyEdgeFilterAdaptive();
-            //CannyEdgeFilterLite filter = new CannyEdgeFilterLite();
+            //filter.setToDebug();
             //filter.overrideToUseAdaptiveThreshold();
             if (fileName.contains("africa") || fileName.contains("circle") 
                 || fileName.contains("susan")) {
                 filter.setToUseLineDrawingMode();
             }
-            //filter.setToDebug();
             filter.applyFilter(gsImg);
             
             for (int i = 0; i < gsImg.getNPixels(); ++i) {
@@ -87,7 +86,8 @@ public class CannyEdgeFilterAdaptiveTest extends TestCase {
 
             CannyEdgeFilterAdaptive filter = new CannyEdgeFilterAdaptive();
             //CannyEdgeFilterLite filter = new CannyEdgeFilterLite();
-            filter.setOtsuScaleFactor(0.1f);
+            //filter.setOtsuScaleFactor(0.1f);
+            filter.overrideToUseAdaptiveThreshold();
             
             //filter.setToDebug();
             filter.applyFilter(gsImg);

@@ -27,7 +27,7 @@ public class AdaptiveThresholding {
      * @param img an image with all non-negative values.
      * @param windowSize the full width of a square window to be used for the
      * adaptive grid.  authors use w = 15;
-     * @param k, authors use k=0.2
+     * @param k, authors use k=0.2.  increasing k makes the result more sensitive.
      * @return 
      */
     public double[][] createAdaptiveThresholdImage(double[][] img,

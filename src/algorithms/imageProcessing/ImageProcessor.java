@@ -1175,6 +1175,49 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
 
         return output;
     }
+    
+    /**
+     * calculate theta from the gradient x and y images and transform to
+     * range 0 to 360.
+     * <pre>
+     *
+     *           90    45          y/x
+                -  |  +
+          180 -----|----- 0
+                +  |  -
+
+     * </pre>
+     *
+     * @param convolvedX
+     * @param convolvedY
+     * @return
+     */
+    public GreyscaleImage computeTheta360_2(final GreyscaleImage convolvedX,
+        final GreyscaleImage convolvedY) {
+
+        GreyscaleImage output = convolvedX.createFullRangeIntWithDimensions();
+
+        for (int i = 0; i < convolvedX.getWidth(); i++) {
+            for (int j = 0; j < convolvedX.getHeight(); j++) {
+
+                double gX = convolvedX.getValue(i, j);
+
+                double gY = convolvedY.getValue(i, j);
+
+                // -PI to PI then add PI
+                double radians = Math.atan2(gY, gX) + Math.PI;
+
+                int theta = (int)(radians * 180./Math.PI);
+                if (theta == 180) {
+                    theta = 0;
+                }
+
+                output.setValue(i, j, theta);
+            }
+        }
+
+        return output;
+    }
 
     /**
      * calculate theta, transforming values from -pi to pi to range 0 to 360.

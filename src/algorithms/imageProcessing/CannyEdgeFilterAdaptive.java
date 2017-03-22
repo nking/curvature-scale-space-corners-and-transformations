@@ -68,9 +68,7 @@ public class CannyEdgeFilterAdaptive {
     private boolean debug = false;
     
     private boolean restoreJunctions = true;
-    
-    private boolean useHigherThresholdIfNeeded = false;
-        
+            
     /**
      * the sigma from the blur combined with the sigma present in the gradient
      * are present in this variable by the end of processing.
@@ -140,17 +138,6 @@ public class CannyEdgeFilterAdaptive {
     }
     
     /**
-     * use this setting to check the number of thinned points and if the number
-     * is very high, resets the parameters to nLevels=1
-     * and otsuFactor=2.5 and performs the line thinning again.   Note that
-     * if the image has alot of small textures, using PhaseCongruencyDetector
-     * in default mode and k=1 w nsCale = 6 or 3, etc may produce better results.
-     */
-    public void setToUseHigherThresholdIfNeeded() {
-        useHigherThresholdIfNeeded = true;
-    }
-    
-    /**
      * set this to use the adaptive threshold in the 2 layer
      * filter.  it adjusts the threshold by regions of size
      * 15.  Note that if the image has alot of noise, this
@@ -187,7 +174,6 @@ public class CannyEdgeFilterAdaptive {
         if (lineDrawingMode) {
             useAdaptive2Layer = true;
             useAdaptiveThreshold = false;
-            //apply2LayerFilter(input, new HashSet<PairInt>(), input);
             if (debug) {
                 GreyscaleImage imgcp = input.copyImage();
                 for (int i = 0; i < imgcp.getNPixels(); ++i) {
@@ -257,26 +243,26 @@ public class CannyEdgeFilterAdaptive {
         }
         
         // (1) smooth image using separable binomial filters
-        SIGMA sigma = SIGMA.ONE;
+        SIGMA sigma = SIGMA.ZEROPOINTSEVENONE;//SIGMA.ONE;
         if (sigma.equals(SIGMA.ONE)) {
             ATrousWaveletTransform at = new ATrousWaveletTransform();
             GreyscaleImage smoothed = at.smoothToSigmaOne(input);
             input.resetTo(smoothed);
             approxProcessedSigma = 1;
+            filterProducts = createGradient(input);
         } else if (sigma.equals(SIGMA.ZEROPOINTSEVENONE)) {
             ATrousWaveletTransform at = new ATrousWaveletTransform();
             GreyscaleImage smoothed = at.smoothToSigmaZeroPointSevenOne(input);
             input.resetTo(smoothed);
+            filterProducts = createGradient(input);
             approxProcessedSigma = Math.sqrt(2.)/2.;
+            //filterProducts = createSobelGradient(input);
         } else {
             ImageProcessor imageProcessor = new ImageProcessor();
             imageProcessor.blur(input, sigma, 0, 255);
             approxProcessedSigma = SIGMA.getValue(sigma);
+            filterProducts = createGradient(input);
         }
-        
-        //(2) create gradient
-        // uses a binomial filter for a first derivative gradient, sobel.
-        filterProducts = createGradient(input);
         
         GreyscaleImage gradientCopyBeforeThinning = filterProducts.getGradientXY().copyImage();
 
@@ -285,41 +271,22 @@ public class CannyEdgeFilterAdaptive {
                 
         Set<PairInt> removedDisconnecting = new HashSet<PairInt>();
         
-        if (debug) {
-            MiscDebug.writeImage(filterProducts.getGradientXY(), "_before_nms_");
-        }
-        
         //(3) non-maximum suppression
         if (performNonMaxSuppr) {
             applyNonMaximumSuppression(filterProducts, removedDisconnecting);
         }
         
         if (debug) {
-            MiscDebug.writeImage(filterProducts.getGradientXY(), "_after_nms_");
+            GreyscaleImage tmp = filterProducts.getGradientXY().copyImage();
+            tmp.multiply(100);
+            MiscDebug.writeImage(tmp, "_after_nms_");
         }
            
         //(4) adaptive 2 layer filter                        
         apply2LayerFilter(filterProducts.getGradientXY(), removedDisconnecting,
             gradientCopyBeforeThinning);
-        
-        if (useHigherThresholdIfNeeded) {
-            int c = countAboveZero(filterProducts.getGradientXY());
-            float cFraction = (float)c/(float)input.getNPixels();
-            if (cFraction > 0.1) {
-                this.useAdaptive2Layer = false;
-                useAdaptiveThreshold = false;
-                this.otsuScaleFactor = 2.5f;
-                
-                filterProducts.getGradientX().resetTo(gradientCopyBeforeThinning);
-                if (performNonMaxSuppr) {
-                    applyNonMaximumSuppression(filterProducts, removedDisconnecting);
-                }
-                apply2LayerFilter(filterProducts.getGradientXY(), removedDisconnecting,
-                    gradientCopyBeforeThinning);
-            }
-        }
-                
-        if (restoreJunctions) {
+               
+        //if (restoreJunctions) {
             int minResolution = (int)Math.ceil(2.35 * approxProcessedSigma);
             int minResolvableAngle = (int)Math.ceil(
                 Math.atan2(1, minResolution) * 180./Math.PI);
@@ -331,6 +298,12 @@ public class CannyEdgeFilterAdaptive {
             curveHelper.additionalThinning45DegreeEdges2(
                 filterProducts.getTheta(), filterProducts.getGradientXY(), 
                 minResolvableAngle);
+        //}
+        
+        if (debug) {
+            GreyscaleImage tmp = filterProducts.getGradientXY().copyImage();
+            tmp.multiply(100);
+            MiscDebug.writeImage(tmp, "_after_45degree_thinning_");
         }
         
         // is this necessary?
@@ -387,7 +360,7 @@ public class CannyEdgeFilterAdaptive {
         if (useAdaptive2Layer && useAdaptiveThreshold) {
             AdaptiveThresholding th = new AdaptiveThresholding();
             threshImg = th.createAdaptiveThresholdImage(
-                imageProcessor.copy(gradientXY), 15, 0.2);
+                imageProcessor.copy(gradientXY), 75, 0.5);
             if (debug) {//DEBUG
                 double[][] imgCp = imageProcessor.copy(gradientXY);
                 for (int i = 0; i < w; ++i) {
@@ -497,17 +470,13 @@ public class CannyEdgeFilterAdaptive {
                 }
             }
         }
-        
-        
-        if (debug) {
-            MiscDebug.writeImage(gradientXY, "_before_2layer_");
-            MiscDebug.writeImage(img2, "_in_2layer_");
-        }
-                
+            
         gradientXY.resetTo(img2);
         
         if (debug) {
-            MiscDebug.writeImage(gradientXY, "_after_linethinning_1_");
+            GreyscaleImage tmp = gradientXY.copyImage();
+            tmp.multiply(100);
+            MiscDebug.writeImage(tmp, "_in_2Layer_");
         }
         
         if (restoreJunctions) {
@@ -638,7 +607,7 @@ public class CannyEdgeFilterAdaptive {
      * theta image
      * using two 1-D passes of a Sobel 1D kernel which is the same as a 
      * Gaussian first derivative with sigma = sqrt(1)/2 where FWHM=2.355*sigma.
-     * The theta image has range 0 t 360.
+     * The theta image has range 0 to 180.
      * 
      * @param img
      * @return 
@@ -663,13 +632,75 @@ public class CannyEdgeFilterAdaptive {
             //   equivalent replacement
             long ts = MiscDebug.getCurrentTimeFormatted();
             MiscDebug.writeImage(theta, "_theta_" + ts);
-            MiscDebug.writeImage(gX, "_gX_" + ts);
-            MiscDebug.writeImage(gY, "_gY_" + ts);
+            GreyscaleImage tmp = g.copyImage();
+            tmp.multiply(50);
+            MiscDebug.writeImage(tmp, "_gXY_" + ts);
+            tmp = gX.copyImage();
+            tmp.multiply(50);
+            MiscDebug.writeImage(tmp, "_gX_" + ts);
+            tmp = gY.copyImage();
+            tmp.multiply(50);
+            MiscDebug.writeImage(tmp, "_gY_" + ts);
             /*
             int x = 37; int y = 163;
             System.out.println("(" + x + ", " + y + ") math.atan2(" + gY.getValue(x, y)
                 + "," + gX.getValue(x, y) + ")*180./math.pi=" + 
                 theta.getValue(x, y));*/
+        }
+        
+        EdgeFilterProducts efp = new EdgeFilterProducts();
+        efp.setGradientX(gX);
+        efp.setGradientY(gY);
+        efp.setGradientXY(g);
+        efp.setTheta(theta);
+        
+        return efp;
+    }
+
+    /**
+     * construct the gradient in X, gradient in Y, their combined average and
+     * theta image
+     * using 1-D passes of a Sobel 1D kernel which is the same as a 
+     * Gaussian with sigma = sqrt(1)/2 where FWHM=2.355*sigma
+     * and a Gaussian first derivative of sigma = 0.5.
+     * The theta image has range 0 to 180.
+     * 
+     * @param img
+     * @return 
+     */
+    protected EdgeFilterProducts createSobelGradient(final GreyscaleImage img) {
+        
+        GreyscaleImage gX, gY, g, theta;
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        GreyscaleImage[] gs = imageProcessor.createSobelGradients(img);
+        
+        gX = gs[0];
+
+        gY = gs[1];
+        
+        g = imageProcessor.combineConvolvedImages(gX, gY);
+    
+        // the theta is in range 0 to 180
+        theta = imageProcessor.computeTheta180(gX, gY);
+        
+        if (debug) {
+            // when replace the aspect library, put these renders in the 
+            //   equivalent replacement
+            long ts = MiscDebug.getCurrentTimeFormatted();
+            MiscDebug.writeImage(theta, "_theta_" + ts);
+            GreyscaleImage tmp = g.copyImage();
+            tmp.multiply(50);
+            MiscDebug.writeImage(tmp, "_gXY_" + ts);
+            
+            tmp = gX.copyImage();
+            tmp.multiply(50);
+            MiscDebug.writeImage(tmp, "_gX_" + ts);
+            
+            tmp = gY.copyImage();
+            tmp.multiply(50);
+            MiscDebug.writeImage(tmp, "_gY_" + ts);
         }
         
         EdgeFilterProducts efp = new EdgeFilterProducts();
@@ -796,14 +827,75 @@ public class CannyEdgeFilterAdaptive {
         return g;
     }
 
+    /*
     private void applyNonMaximumSuppression(EdgeFilterProducts filterProducts,
         Set<PairInt> disconnectingRemovals) {
+    
+  //NOTE: paused here.  nms errors...      
         
          NonMaximumSuppression nms = new NonMaximumSuppression();
          
          //TODO: radius can be adjusted from 1 to higher
          nms.nonmaxsup(filterProducts.getGradientXY(),
             filterProducts.getTheta(), 1.2, disconnectingRemovals);
+    }
+    */
+    
+    private void applyNonMaximumSuppression(EdgeFilterProducts filterProducts,
+        Set<PairInt> disconnectingRemovals) {
+
+        //https://rosettacode.org/wiki/Canny_edge_detector#Python
+        ImageProcessor imageProcessor = new ImageProcessor();
+
+        GreyscaleImage g = filterProducts.getGradientXY();
+        GreyscaleImage gX = filterProducts.getGradientX();
+        GreyscaleImage gY = filterProducts.getGradientY();
+
+        //GreyscaleImage theta = filterProducts.getTheta();
+        // recalc using the same ref frame for now
+        GreyscaleImage theta2 = imageProcessor
+            .computeTheta360_2(gX, gY);
+
+        GreyscaleImage nms = g.createWithDimensions();
+
+        int nx = nms.getWidth();
+        int ny = nms.getHeight();
+
+        // using single pixel index coords
+        for (int i = 1; i < (nx - 1); ++i) {
+            for (int j = 1; j < (ny - 1); ++j) {
+                final int c = i + nx * j;
+                final int nn = c - nx;
+                final int ss = c + nx;
+                final int ww = c + 1;
+                final int ee = c - 1;
+                final int nw = nn + 1;
+                final int ne = nn - 1;
+                final int sw = ss + 1;
+                final int se = ss - 1;
+
+                final double aux = theta2.getValue(c);
+
+                final float dir = (float) (((aux % Math.PI) / Math.PI) * 8);
+
+                if (((dir <= 1 || dir > 7)
+                    && g.getValue(c) > g.getValue(ee) && g.getValue(c) > g.getValue(ww))
+                    || // 0 deg.
+                    ((dir > 1 && dir <= 3)
+                    && g.getValue(c) > g.getValue(nw) && g.getValue(c) > g.getValue(se))
+                    || // 45 deg.
+                    ((dir > 3 && dir <= 5)
+                    && g.getValue(c) > g.getValue(nn) && g.getValue(c) > g.getValue(ss))
+                    || // 90 deg.
+                    ((dir > 5 && dir <= 7)
+                    && g.getValue(c) > g.getValue(ne) && g.getValue(c) > g.getValue(sw)) // 135 deg.
+                    ) {
+                    nms.setValue(c, g.getValue(c));
+                }
+            } // end j loop  
+        } // end i loop
+        
+        g.resetTo(nms);
     }
     
     private boolean isAdjacentToAHorizOrVertLine(GreyscaleImage gradientXY, 
