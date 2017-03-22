@@ -5580,18 +5580,38 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
     Note, in some places, scipy functions have been
     replaced with existing functions in this project in this implementation below.
 
+    NOTE also that the method has been adapted to handle negative numbers and 
+    * a negative threshold.
      * @param img
      * @param minDistance
         Minimum number of pixels separating peaks in a region of `2 *
         min_distance + 1` (i.e. peaks are separated by at least
         `min_distance`).
         To find the maximum number of peaks, use `min_distance=1`.
+     * @param thresholdRel a positive real number that becomes a factor to
+     * apply to the maximum value.
+     * @param ignore0sInThreshold if true, method handles negative numbers,
+     * else expects only the non-negative numbers should be used.
       @param outputKeypoints0 the output row coordinates of keypoints
      * @param outputKeypoints1 the output col coordinates of keypoints
      */
     public void peakLocalMax(float[][] img, int minDistance,
         float thresholdRel, boolean ignore0sInThreshold,
         TIntList outputKeypoints0, TIntList outputKeypoints1) {
+        
+        //NOTE: to handle negative numbers when the ignore0s is set,
+        //  might revert the code below back to that of a week or so
+        //  ago (before changes for negative numbers),
+        //  and just apply a bias level to raise values in img before 
+        //  and lower the img values after.
+        //  the only place affected by such a change is that the
+        //  thresholdRel would be affected by that bias level, allowing
+        //  more peaks to be found.
+        //  so in the changes, would need to consider a correction
+        //  to the use of that (i.e. instead of A*thresholdLevel
+        //  would determine delta = (A-bias)*thresholdLevel
+        //  then result is A - delta;
+        
         
         int excludeBorder = minDistance;
         int numPeaks = Integer.MAX_VALUE;
@@ -5607,6 +5627,21 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
 
         int nRows = img.length;
         int nCols = img[0].length;
+        
+        // if "ignore zeroes" is set, need to make those negative numbers
+        // so that the maximum filter won't find those as maximum if all
+        // significant pixels are the nonzeroes and are negative numbers.
+        float[][] origImg = null;
+        if (ignore0sInThreshold) {
+            origImg = copy(img);
+            for (int i = 0; i < img.length; ++i) {
+                for (int j = 0; j < img[0].length; ++j) {
+                    if (img[i][j] == 0.f) {
+                        img[i][j] = Float.NEGATIVE_INFINITY;
+                    }
+                }
+            }
+        }
 
         //# Non maximum filter
         int size = 2 * minDistance + 1;
@@ -5614,7 +5649,7 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         assert(nRows == imageMax.length);
         assert(nCols == imageMax[0].length);
         //mask = image == image_max
-
+        
         //debugPrint("before shift imageMax=", imageMax);
 
         // a fudge to match results of scipy which must store same windows at
@@ -5622,26 +5657,16 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         // beginning of the sliding window
         applyShift(imageMax, minDistance, nRows, nCols);
 
-        /*
-        {//DEBUG
-            float min = MiscMath.findMin(img);
-            float max = MiscMath.findMax(img);
-            System.out.println("min=" + min + " max=" + max);
-            float[][] img2 = copy(img);
-            MiscMath.applyRescale(img2, 0, 255);
-            GreyscaleImage gsImg = new GreyscaleImage(nRows, nCols);
-            for (int i = 0; i < nRows; ++i) {
-                for (int j = 0; j < nCols; ++j) {
-                    int v = Math.round(img2[i][j]);
-                    if (v > 255) {
-                        v = 255;
+        if (ignore0sInThreshold) {
+            for (int i = 0; i < imageMax.length; ++i) {
+                for (int j = 0; j < imageMax[0].length; ++j) {
+                    if (Float.isInfinite(img[i][j])) {
+                        imageMax[i][j] = Float.NEGATIVE_INFINITY;
                     }
-                    gsImg.setValue(i, j, v);
                 }
             }
-            MiscDebug.writeImage(gsImg, "_CURVATURE_");
-        }*/
-
+        }
+        
         // 1's where same, else 0's
         int[][] mask = new int[nRows][nCols];
         for (int i = 0; i < nRows; ++i) {
@@ -5655,7 +5680,6 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
 
         //debugPrint("0 mask=", mask);
 
-
         // exclude border
         for (int i = 0; i < nRows; ++i) {
             if ((i < excludeBorder) || (i > (nRows - 1 - excludeBorder))){
@@ -5665,7 +5689,6 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
                 Arrays.fill(mask[i], nCols - excludeBorder, nCols, 0);
             }
         }
-
 
         // find top peak candidates above a threshold.
         // TODO: should this use mask so excluding borders?
@@ -5681,16 +5704,26 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
             for (int i = 0; i < img.length; ++i) {
                 for (int j = 0; j < img[0].length; ++j) {
                     float v = img[i][j];
-                    if (Math.abs(v) > 0.000001) {
-                        if (v > thresholdMax) {
-                            thresholdMax = v;
-                        }
-                    } 
+                    if (v > thresholdMax) {
+                        thresholdMax = v;
+                    }
                 }
             }
-            thresholdMax *= thresholdRel;
+           
+            if (thresholdMax <= 0.f) {
+                float delta = thresholdMax * thresholdRel;
+                thresholdMax += delta; 
+            } else {
+                thresholdMax *= thresholdRel;
+            }
         } else {
-            thresholdMax = thresholdRel * MiscMath.findMax(img);
+            float mx = MiscMath.findMax(img);
+            if (mx <= 0.f) {
+                float delta = mx * thresholdRel;
+                thresholdMax = mx + delta;
+            } else {
+                thresholdMax = thresholdRel * mx;
+            }
         }
         
         if (ignore0sInThreshold) {
@@ -5706,36 +5739,14 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         // mask &= image > 0.1
         for (int i = 0; i < nRows; ++i) {
             for (int j = 0; j < nCols; ++j) {
-                if (imageMax[i][j] > thresholdAbs) {
+                float v = imageMax[i][j];
+                if (v >= thresholdAbs) {
                     mask[i][j] &= 1;
                 } else {
                     mask[i][j] = 0;
                 }
             }
         }
-
-        /*
-        {//DEBUG
-            try{
-            int min = MiscMath.findMin(mask);
-            int max = MiscMath.findMax(mask);
-            System.out.println("min=" + min + " max=" + max);
-            float factor = 255.f;
-            GreyscaleImage gsImg = new GreyscaleImage(nRows, nCols);
-            for (int i = 0; i < nRows; ++i) {
-                for (int j = 0; j < nCols; ++j) {
-                    int v = Math.round(factor * mask[i][j]);
-                    if (v > 255) {
-                        v = 255;
-                    }
-                    gsImg.setValue(i, j, v);
-                }
-            }
-            ImageDisplayer.displayImage("mask", gsImg);
-            int z = 1;
-            } catch(Exception e) {}
-        }
-        */
 
         //debugPrint("mask &= image > " + thresholdAbs, mask);
 
@@ -5786,6 +5797,18 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
                 outputKeypoints1.add(pix.j);
             }
         }
+        
+        if (ignore0sInThreshold) {
+            for (int i = 0; i < img.length; ++i) {
+                for (int j = 0; j < img[0].length; ++j) {
+                    if (img[i][j] == Float.NEGATIVE_INFINITY
+                        && origImg[i][j] == 0.f) {
+                        img[i][j] = 0.0f;
+                    }
+                }
+            }
+        }
+        
     }
 
     private void applyShift(float[][] imageMax, int minDistance, int nRows,

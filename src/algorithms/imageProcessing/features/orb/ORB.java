@@ -1193,6 +1193,7 @@ public class ORB {
         int nCols = img[0].length;
         
         ImageProcessor imageProcessor = new ImageProcessor();
+        
         // these results have been sorted by decreasing intensity
         imageProcessor.peakLocalMax(img, minDistance, thresholdRel,
             true, outputKeypoints0, outputKeypoints1);
@@ -1339,6 +1340,8 @@ public class ORB {
       from https://github.com/scikit-image/scikit-image/blob/master/skimage/feature/corner.py
 
     @param image
+     * @param detA
+     * @param traceA
     @return the harris corner response image of same size as image,
     *   and composed of
     *   response = detA - k * traceA ** 2 built from the 2nd derivatives of
