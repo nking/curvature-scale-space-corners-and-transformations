@@ -5580,10 +5580,13 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
     Note, in some places, scipy functions have been
     replaced with existing functions in this project in this implementation below.
 
-    NOTE also that the method has been adapted to handle negative numbers and 
-    * a negative threshold.
-     * @param img
-     * @param minDistance
+    NOTE also that the method has been adapted to include a flag to treat 0's as
+    masked out numbers and have made changes to handle negative numbers in the 
+    image. Previously, the scipy method ignored all negative numbers so images
+    of only negative previously returned no peaks.
+    
+    @param img
+    @param minDistance
         Minimum number of pixels separating peaks in a region of `2 *
         min_distance + 1` (i.e. peaks are separated by at least
         `min_distance`).
@@ -5598,20 +5601,6 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
     public void peakLocalMax(float[][] img, int minDistance,
         float thresholdRel, boolean ignore0sInThreshold,
         TIntList outputKeypoints0, TIntList outputKeypoints1) {
-        
-        //NOTE: to handle negative numbers when the ignore0s is set,
-        //  might revert the code below back to that of a week or so
-        //  ago (before changes for negative numbers),
-        //  and just apply a bias level to raise values in img before 
-        //  and lower the img values after.
-        //  the only place affected by such a change is that the
-        //  thresholdRel would be affected by that bias level, allowing
-        //  more peaks to be found.
-        //  so in the changes, would need to consider a correction
-        //  to the use of that (i.e. instead of A*thresholdLevel
-        //  would determine delta = (A-bias)*thresholdLevel
-        //  then result is A - delta;
-        
         
         int excludeBorder = minDistance;
         int numPeaks = Integer.MAX_VALUE;
