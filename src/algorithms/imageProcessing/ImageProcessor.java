@@ -5606,6 +5606,8 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         int numPeaks = Integer.MAX_VALUE;
         //int numPeaksPerLabel = Integer.MAX_VALUE;
 
+        float sentinel = -10.f * Float.MIN_VALUE;
+        
         /*
         The peak local maximum function returns the coordinates of local peaks
         (maxima) in an image. A maximum filter is used for finding local maxima.
@@ -5626,7 +5628,7 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
             for (int i = 0; i < img.length; ++i) {
                 for (int j = 0; j < img[0].length; ++j) {
                     if (img[i][j] == 0.f) {
-                        img[i][j] = Float.NEGATIVE_INFINITY;
+                        img[i][j] = sentinel;
                     }
                 }
             }
@@ -5649,8 +5651,8 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         if (ignore0sInThreshold) {
             for (int i = 0; i < imageMax.length; ++i) {
                 for (int j = 0; j < imageMax[0].length; ++j) {
-                    if (Float.isInfinite(img[i][j])) {
-                        imageMax[i][j] = Float.NEGATIVE_INFINITY;
+                    if (img[i][j] == sentinel) {
+                        imageMax[i][j] = sentinel;
                     }
                 }
             }
@@ -5689,7 +5691,7 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         // in determining the max
         float thresholdMax;
         if (ignore0sInThreshold) {
-            thresholdMax = Float.NEGATIVE_INFINITY;
+            thresholdMax = sentinel;
             for (int i = 0; i < img.length; ++i) {
                 for (int j = 0; j < img[0].length; ++j) {
                     float v = img[i][j];
@@ -5790,8 +5792,7 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         if (ignore0sInThreshold) {
             for (int i = 0; i < img.length; ++i) {
                 for (int j = 0; j < img[0].length; ++j) {
-                    if (img[i][j] == Float.NEGATIVE_INFINITY
-                        && origImg[i][j] == 0.f) {
+                    if (img[i][j] == sentinel && origImg[i][j] == 0.f) {
                         img[i][j] = 0.0f;
                     }
                 }
