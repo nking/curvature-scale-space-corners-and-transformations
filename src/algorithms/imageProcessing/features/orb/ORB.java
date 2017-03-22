@@ -1339,6 +1339,8 @@ public class ORB {
       adapted from
       from https://github.com/scikit-image/scikit-image/blob/master/skimage/feature/corner.py
 
+     NOTE: made the change for case where entire detA is 0 to use +k*Trace^2;
+
     @param image
      * @param detA
      * @param traceA
@@ -1355,11 +1357,27 @@ public class ORB {
         float k = this.harrisK;
 
         //response = detA - k * traceA ** 2
-        float[][] response = copy(detA);
+        // unless detA is all 0's, then will use only +k * traceA**2
+        float[][] response = new float[detA.length][];
+        boolean detAAll0s = true;
+        for (int i = 0; i < detA.length; ++i) {
+            response[i] = new float[detA[0].length];
+            for (int j = 0; j < detA[i].length; ++j) {
+                if (detA[i][j] != 0.f) {
+                    detAAll0s = false;
+                    break;
+                }
+            }
+        }
+        
         for (int i = 0; i < detA.length; ++i) {
             for (int j = 0; j < detA[i].length; ++j) {
                 float v = k * (traceA[i][j] * traceA[i][j]);
-                response[i][j] -= v;
+                if (detAAll0s) {
+                    response[i][j] = v;
+                } else {
+                    response[i][j] = detA[i][j] - v;
+                }
             }
         }
 

@@ -1,11 +1,5 @@
 package algorithms.imageProcessing.util;
 
-import algorithms.util.PolygonAndPointPlotter;
-import algorithms.util.ResourceFinder;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.logging.Logger;
@@ -698,5 +692,28 @@ public class MatrixUtilTest extends TestCase {
         classes.set( 0 , 98 , 1 );
         classes.set( 0 , 99 , 1 );
         return new DenseMatrix[]{data, classes};
+    }
+    
+    public void testDeterminant() {
+        
+        /**
+         | 1  -5  2 | 
+         | 7   3  4 |  
+         | 2   1  5 |
+         
+                  | 3 4 |         | 7 4 |         | 7 3 |
+           =  1 * | 1 5 |  +  5 * | 2 5 |  +  2 * | 2 1 |  = 11 + 135 + 2 = 148
+         
+         */
+         
+        double[][] m = new double[3][3];
+        m[0] = new double[]{1, -5, 2};
+        m[1] = new double[]{7, 3, 4};
+        m[2] = new double[]{2, 1, 5};
+        
+        double det = MatrixUtil.determinant(m);
+        
+        assertEquals(148., det);
+        
     }
 }
