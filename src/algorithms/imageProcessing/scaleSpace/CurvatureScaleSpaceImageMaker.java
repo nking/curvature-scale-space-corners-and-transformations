@@ -9,6 +9,7 @@ import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.PostLineThinnerCorrections;
 import algorithms.imageProcessing.SIGMA;
+import algorithms.imageProcessing.SpurRemover;
 import algorithms.imageProcessing.features.mser.MSEREdges;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
@@ -83,14 +84,14 @@ public final class CurvatureScaleSpaceImageMaker {
                 
                 CannyEdgeFilterAdaptive filter = new CannyEdgeFilterAdaptive();
                 filter.setToUseLineDrawingMode();
-            filter.setToDebug();
+                //filter.setToDebug();
                 filter.applyFilter(img2);
         
                 filterProducts = filter.getFilterProducts();
         
                 GreyscaleImage gXY = filterProducts.getGradientXY();
-                //PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
-                //pltc.extremeCornerRemover(gXY);
+                SpurRemover spurRemover = new SpurRemover();
+                spurRemover.remove(gXY);
                 
                 TIntSet nzs = new TIntHashSet();
                 for (int i = 0; i < gXY.getNPixels(); ++i) {

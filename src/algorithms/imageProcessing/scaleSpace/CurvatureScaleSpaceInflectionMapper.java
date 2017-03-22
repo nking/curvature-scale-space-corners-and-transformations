@@ -29,6 +29,25 @@ import java.util.logging.Logger;
  * CSSContourMatcherWrapper
  * @see algorithms.imageProcessing.CSSContourMatcherWrapper
  *
+ * TODO: 
+ *   suggested changes for this class are low priority
+ *   -- the inflection points are in the contour peak objects.  those should be
+ *      changed to use the point on the curve in between them 
+ *      (their average, but on curve).
+ *   -- since this computationally long process to calculate the inflection points
+ *      includes the curvature, one should extract the
+ *      strongest corners on the contours, but only as many corners as there
+ *      are inflection points since the inflection points occur where the
+ *      curvature changes signs.
+ *      then the high quality points used to calculate the transformation
+ *      improves the solution due to longer baseline.
+ * 
+ * Note that the changes are low priority because there are other classes which
+ * accommodate occlusion and even articulated parts.
+ * The making of inflection points covers many interesting topics
+ * in computer vision so the classes will remain in this project, just
+ * with a low priority to make improvements.
+ * 
  * @author nichole
  */
 public final class CurvatureScaleSpaceInflectionMapper {
