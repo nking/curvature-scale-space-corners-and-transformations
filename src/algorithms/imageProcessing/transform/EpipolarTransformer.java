@@ -766,11 +766,13 @@ public class EpipolarTransformer {
             return null;
         }
         
+        //A is nData rows X 3 columns
+        
         DenseMatrix V = svd.getVt();
 
-        // creates U as nXY1 x nXY1 matrix  (MXM)
-        //         D as length 9 array      (NXN)
-        //         V as 9 x 9 matrix        (NXN)
+        // creates U as nXY1 x nXY1 matrix  (M X M)
+        //         D as length 9 array      (vector of len N)
+        //         V as 9 x 9 matrix        (N*N X N*N)
 
         // mRows = 9; nCols = 9
       
@@ -808,7 +810,9 @@ public class EpipolarTransformer {
 
         double[] sDiag = svd.getS();
         
-        // keep the largest 2 valus in sDiag to make the diagonal rank 2
+        //F = U * diag([D(1,1) D(2,2) 0]) * V^T, where V^T is V transposed.
+        
+        // keep the largest 2 values in sDiag to make the diagonal rank 2
         DenseMatrix d = new DenseMatrix(3, 3);
         if (sDiag.length > 0) {
             d.set(0, 0, sDiag[0]);
@@ -886,18 +890,20 @@ public class EpipolarTransformer {
 
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
+        int n = xy.numColumns();
+        
         //x is xy[0], y is xy[1], xy[2] is all 1's
         double cen0 = 0;
         double cen1 = 0;
-        for (int i = 0; i < xy.numRows(); ++i) {
-            cen0 += xy.get(i, 0);
-            cen1 += xy.get(i, 1);
+        for (int i = 0; i < n; ++i) {
+            cen0 += xy.get(0, i);
+            cen1 += xy.get(1, i);
         }
-        cen0 /= (double)xy.numRows();
-        cen1 /= (double)xy.numRows();
+        cen0 /= (double)n;
+        cen1 /= (double)n;
 
         double mean = 0;
-        int n = xy.numColumns();
+        
         for (int i = 0; i < n; i++) {
             double diffX = xy.get(0, i) - cen0;
             double diffY = xy.get(1, i) - cen1;
