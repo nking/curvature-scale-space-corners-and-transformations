@@ -1784,8 +1784,8 @@ public class PerimeterFinder2 {
                         
                         int diffX = Math.abs(x2 - nbrX);
                         int diffY = Math.abs(y2 - nbrY);
-                        assert((diffX == 0 && diffY == 1) || 
-                            (diffX == 1 && diffY == 0));
+              
+                        assert(diffX <= 1 && diffY <= 1);
                         
                         int pixIdx2 = (y2 * imgWidth) + x2;
                         
