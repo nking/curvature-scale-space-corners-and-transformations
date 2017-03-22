@@ -93,7 +93,7 @@ class OrderedClosedCurveCorrespondence {
     
    
     private void print(SR sr, String label, int n2) {
-        if (debug) {
+        if (debug && dbg1 != null) {
             calculateIds2s(sr, n2);
             System.out.println(label + String.format(
             "\n    -->add p: %d %d : (%d, %d) : (%d, %d) off=%d\n", 
@@ -125,7 +125,7 @@ class OrderedClosedCurveCorrespondence {
 
     /**
      * add intervals to the clockwise ordered unique correspondence
-     * list intrnal to this instance.
+     * list internal to this instance.
      * Note that each interval is expected to be clockwise consistent
      * (stopIdx1 > startIdx1) and the list of intervals is expected
      * to be sorted so that the highest priority (== lowest cost)
@@ -242,17 +242,12 @@ class OrderedClosedCurveCorrespondence {
         
         Entry<Integer, SR> above = t1.floorEntry(
             Integer.valueOf(sr.startIdx1 - 1));
-        //calculateIds2s(above.getValue(), n2);
-        //int aboveStrtIdx2 = cachedIdx2[0];
-        //int aboveStpIdx2 = cachedIdx2[1];
         if (isEmbeddedOrInconsistentWith(sr, above, n2)) {
             return;
         }
         
         Entry<Integer, SR> below = t1.ceilingEntry(
             Integer.valueOf(sr.stopIdx1 + 1));
-        //calculateIds2s(below.getValue(), n2);
-        //int belowSrtIdx2 = cachedIdx2[0];
         
         if (isEmbeddedOrInconsistentWith(sr, below, n2)) {
             return;
@@ -459,12 +454,7 @@ class OrderedClosedCurveCorrespondence {
         for (int i = 0; i < inputIdx1s.size(); ++i) {
             int idx1 = inputIdx1s.get(i);
             int idx2 = idx1 + offset;
-            if (idx2 < idx1) {
-                idx2 += n2;
-            } else if (idx2 > (n2 - 1)) {
-                idx2 -= n2;
-            }
-
+           
             if (idx1 > floorStopIdx1) {
                 if (idx2 > floorStopIdx2) {
                     outSubsetIdx1s.add(idx1);
@@ -492,12 +482,7 @@ class OrderedClosedCurveCorrespondence {
         for (int i = 0; i < inputIdx1s.size(); ++i) {
             int idx1 = inputIdx1s.get(i);
             int idx2 = idx1 + offset;
-            if (idx2 < idx1) {
-                idx2 += n2;
-            } else if (idx2 > (n2 - 1)) {
-                idx2 -= n2;
-            }
-
+            
             /*
             content ordered by idx1
                       t1  |  interval
@@ -564,21 +549,8 @@ class OrderedClosedCurveCorrespondence {
      * @param sr 
      */
     private void calculateIds2s(SR sr, int n2) {
-        
         cachedIdx2[0] = sr.startIdx1 + sr.offsetIdx2;
         cachedIdx2[1] = sr.stopIdx1 + sr.offsetIdx2;
-        
-        if (cachedIdx2[0] < sr.startIdx1) {
-            cachedIdx2[0] += n2;
-        } else if (cachedIdx2[0] > (n2 - 1)) {
-            cachedIdx2[0] -= n2;
-        }
-        
-        if (cachedIdx2[1] < sr.startIdx1) {
-            cachedIdx2[1] += n2;
-        } else if (cachedIdx2[1] > (n2 - 1)) {
-            cachedIdx2[1] -= n2;
-        }
     }
 
     private void addForCase2(SR sr, Entry<Integer, SR> strt1Floor,

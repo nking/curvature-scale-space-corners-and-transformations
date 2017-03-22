@@ -210,14 +210,4 @@ public class CurvatureTest extends TestCase {
             }
         }
     }
-    
-    public static void main(String[] args) {
-        
-        try {
-            CurvatureTest test = new CurvatureTest("CurvatureTest");
-            test.testComputeCurvature_circle();
-        } catch(Exception e) {
-            System.out.println(e.getMessage());
-        }
-    }
 }

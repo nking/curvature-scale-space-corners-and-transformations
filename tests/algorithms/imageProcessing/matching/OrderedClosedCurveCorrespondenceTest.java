@@ -84,9 +84,10 @@ public class OrderedClosedCurveCorrespondenceTest extends TestCase {
         List<SR> intervals = new ArrayList<SR>();
         
         /*
-        0 : 3   6 : 9
-        4 : 6   0 : 2
-        7 : 9   3 : 5
+        curve 1  w/ offset=6  curve 2
+        0 : 3       6 : 9
+        4 : 6       0 : 2
+        7 : 9       3 : 5
         */
         List<PairInt> ranges = new ArrayList<PairInt>();
         ranges.add(new PairInt(4, 6));
@@ -106,6 +107,7 @@ public class OrderedClosedCurveCorrespondenceTest extends TestCase {
         
         OrderedClosedCurveCorrespondence occ = new 
             OrderedClosedCurveCorrespondence();
+        occ.setToDebug();
         occ.addIntervals(intervals, 10, 10);
         
         List<SR> results = occ.getResultsAsList();
