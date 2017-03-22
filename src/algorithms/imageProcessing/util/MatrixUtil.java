@@ -1026,6 +1026,26 @@ public class MatrixUtil {
         return t;
     }
     
+    public static DenseMatrix transpose(DenseMatrix m) {
+        
+        int mRows = m.numRows();
+        int mCols = m.numColumns();
+        
+        double[][] t = new double[mRows][];
+        for (int i = 0; i < mRows; i++) {
+            t[i] = new double[mCols];
+            for (int j = 0; j < mCols; j++) {
+                t[i][j] = m.get(i, j);
+            }
+        } 
+        
+        double[][] transposed = transpose(t);
+        
+        DenseMatrix mT = new DenseMatrix(transposed);
+        
+        return mT;
+    }
+    
     public static double[][] transpose(double[][] m) {
 
         if (m == null || m.length == 0) {

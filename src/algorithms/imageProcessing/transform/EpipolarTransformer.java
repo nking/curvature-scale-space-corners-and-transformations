@@ -744,11 +744,6 @@ public class EpipolarTransformer {
     DenseMatrix calculateFundamentalMatrix(NormalizedXY normalizedXY1,
         NormalizedXY normalizedXY2) {
 
-        
-        System.out.println("normXY1=" + normalizedXY1.getXy().toString());
-        System.out.println("normXY2=" + normalizedXY2.getXy().toString());
-        
-        
         //build the fundamental matrix
         double[][] m = createFundamentalMatrix(normalizedXY1.getXy(),
             normalizedXY2.getXy());
@@ -774,10 +769,6 @@ public class EpipolarTransformer {
         
         DenseMatrix V = (DenseMatrix) svd.getVt().transpose();
 
-        
-        System.out.println("v=" + V.toString());
-        
-        
         // creates U as nXY1 x nXY1 matrix  (M X M)
         //         D as length 3 array      (vector of len N)
         //         V as 9 x 9 matrix        (N*N X N*N)
@@ -796,10 +787,6 @@ public class EpipolarTransformer {
             ff[i][2] = V.get((i * 3) + 2, vNCols - 1);
         }
         DenseMatrix fMatrix = new DenseMatrix(ff);
-
-        
-        System.out.println("f=" + fMatrix.toString());
-        
         
         /* make the fundamental matrix have a rank of 2
         by performing a svd and then reconstructing with the two largest
@@ -832,26 +819,19 @@ public class EpipolarTransformer {
         if (sDiag.length > 1) {
             d.set(1, 1, sDiag[1]);
         }
-
-        System.out.println("d=" + d.toString());
         
         V = svd.getVt();
-        
-        System.out.println("V2=" + V.toString());
-        
+                
         /*
         multiply the terms:
              F = dot(U, dot(diag(D),V^T))
         */
         DenseMatrix dDotV = MatrixUtil.multiply(d, V);
-        
-        System.out.println("dDotV=" + dDotV.toString());
-        
-
+               
         // 3x3
         DenseMatrix theFundamentalMatrix = MatrixUtil.multiply(svd.getU(), dDotV);
 
-        System.out.println("fm=" + theFundamentalMatrix.toString());
+        //System.out.println("fm=" + theFundamentalMatrix.toString());
         
         DenseMatrix denormFundamentalMatrix =
             denormalizeTheFundamentalMatrix(theFundamentalMatrix,
@@ -1660,7 +1640,8 @@ public class EpipolarTransformer {
         boolean extractRow = false;
         for (int col = 0; col < n; ++col) {
             // 3 x 1 ==> T ==> 1 x 3
-            DenseMatrix x2T_i = (DenseMatrix) MatrixUtil.extractAColumn(x2, col).transpose();
+            DenseMatrix x2Row = MatrixUtil.extractAColumn(x2, col);
+            DenseMatrix x2T_i = MatrixUtil.transpose(x2Row);
             
             // x2T_i * F is 1X3 * 3X3 = 1X3
             DenseMatrix x2T_iF = MatrixUtil.multiply(x2T_i, fm);
