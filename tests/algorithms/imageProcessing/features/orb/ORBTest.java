@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.features.orb;
 
+import algorithms.QuickSort;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
@@ -463,7 +464,7 @@ public class ORBTest extends TestCase {
         orb.overrideToUseSmallestPyramid();
         
         StructureTensor tensorComponents = new 
-            StructureTensor(img, 0.f, false);
+            StructureTensor(img, 0.f, true);
         
         float[][] detA = tensorComponents.getDeterminant();
 
@@ -475,7 +476,7 @@ public class ORBTest extends TestCase {
         //System.out.println(str);
         //str = MiscDebug.getPrintRowMajor(traceA, "traceA=");
         //System.out.println(str);
-                
+               
         //orb.debugPrint("hc=", hc);
         
         /*
@@ -508,7 +509,20 @@ public class ORBTest extends TestCase {
           
         orb.cornerPeaks(hc, 1, keypoints0, keypoints1);
         
-        //System.out.println("coords=" + coords);
+        int n = keypoints0.size();
+        
+        float[] responses = new float[n];
+        int[] indexes = new int[n];
+        
+        {//DEBUG
+            for (int i = 0; i < n; ++i) {
+                int x = keypoints1.get(i);
+                int y = keypoints0.get(i);
+                //System.out.println("x=" + x + " y=" + y + " r=" + hc[y][x]);
+                responses[i] = hc[y][x];
+                indexes[i] = i;
+            }
+        }
         
         Set<PairInt> expected = new HashSet<PairInt>();
         expected.add(new PairInt(2, 2));
@@ -516,9 +530,17 @@ public class ORBTest extends TestCase {
         expected.add(new PairInt(7, 2));
         expected.add(new PairInt(7, 7));
         
-        for (int i = 0; i < keypoints0.size(); ++i) {
-            int x = keypoints0.get(i);
-            int y = keypoints1.get(i);
+        assertTrue(n >= expected.size());
+        
+        // filter to the strongest 4
+        QuickSort.sortBy1stArg(responses, indexes);
+        
+        int end = (n - expected.size());
+        for (int i = (n - 1); i >= end; --i) {
+            int idx = indexes[i];
+            int y = keypoints0.get(idx);
+            int x = keypoints1.get(idx);
+            System.out.println(i + " *x=" + x + " y=" + y + " r=" + hc[y][x]);
             PairInt p = new PairInt(x, y);
             assertTrue(expected.remove(p));
         } 
@@ -928,7 +950,7 @@ public class ORBTest extends TestCase {
         
     }
    
-    public void testDescriptors() throws IOException {
+    public void __estDescriptors() throws IOException {
         
         /*
         NOTE: disabled this method because it will change.
