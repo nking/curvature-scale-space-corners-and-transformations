@@ -2,6 +2,7 @@ package algorithms.imageProcessing.transform;
 
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.util.ResourceFinder;
@@ -124,6 +125,7 @@ public class EpipolarTransformerTest extends TestCase {
         
         assertNotNull(fit);
         assertNotNull(fit.getErrorType());
+        System.out.println("nCorr=" + fit.getInlierIndexes().size());
         assertEquals(10, fit.getErrors().size());
         assertEquals(10, fit.getInlierIndexes().size());
         fit.calculateErrorStatistics();
