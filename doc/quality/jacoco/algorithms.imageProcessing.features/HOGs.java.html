@@ -85,7 +85,7 @@ import java.util.List;
 
    Comparison of block feature is then a histogram intersection,
    where normally 0 is no intersection, hence maximally different,
-   and an intersection equal to the max value is maximally similar.
+   and an intersection equal to the max value is maximally sgimilar.
    (see the method ColorHistogram.intersection, but here, the normalization
    will already have been applied instead of determined in the method).
 
@@ -120,7 +120,7 @@ public class HOGs {
 
     //TODO: calculate the limits in nPixels this can handle due to
     //   using integers instead of long for storage.
-    //  8.4 million pix, roughly 2900 X 2900
+    // g 8.4 million pix, roughly 2900 X 2900
 
 <span class="nc" id="L125">    public HOGs(GreyscaleImage rgb) {</span>
 
@@ -352,8 +352,8 @@ public class HOGs {
 <span class="pc bpc" id="L352" title="1 of 2 branches missed.">        if (orientationA == 180) {</span>
 <span class="nc" id="L353">            orientationA = 0;</span>
         }
-<span class="fc bfc" id="L355" title="All 2 branches covered.">        if (orientationB == 180) {</span>
-<span class="fc" id="L356">            orientationB = 0;</span>
+<span class="pc bpc" id="L355" title="1 of 2 branches missed.">        if (orientationB == 180) {</span>
+<span class="nc" id="L356">            orientationB = 0;</span>
         }
 
 <span class="fc" id="L359">        int nBins = histA.length;</span>
@@ -408,9 +408,9 @@ public class HOGs {
     }
 
     /**
-     * TODO: this will hold a comparison method based on histogram errors and
-     * adding significance for empty bins.
-     *  
+     * TODO: this will hold a comparison method and return a score or cost and
+           a relevant error parameter usable between comparison results.
+     
      * @param histA
      * @param orientationA
      * @param histB
@@ -438,32 +438,80 @@ public class HOGs {
         if (orientationB == 180) {
             orientationB = 0;
         } 
+
+        two histograms a and b
+        each bin contents should add to the output cost or score, even
+          if both histograms have 0's in those bins.
+        if both have 0's in the same post-shifted bin,
+           that is a 100 percent match.
+        if there is a 200 and 150 respectively in same bin for a, b
+           then match is (200-50)/200
+        but, the errors are needed to know if the results are significant.
+        if a and b have few to no other counts in other
+           bins, can see that the errors should be large and the
+           100% match of 0 to 0 is not very significant.
+        and if a and b both have large number of counts in other bins,
+           can see that a match of 0 to 0 is signficant.
+
+       so the errors depend upon the total counts (and those add in quadrature).
+       that might need to estimated from the bin with the maximum amount of counts
+          instead of all bins, because a single bin with 4*V number of counts
+          would indicate that empty bins are signifcant more than that 4*V total
+          distributed over 4 bins would.
+          --&gt; so an error determined from the maximum of bin counts is needed.
+       but an error or threshold transformed to a number that can be used to
+           evaluate the significance of the final score or cost would be best
+
+      max value possible for cell size=1, pix block=6 
+          = 6 * 6 * 255
+      but, the feature has been normalized by the block total and max value
+      so need to use the max bin value
+
+      0  0  0  200 0
+      0  0  0   50 0
+               150/200=0.75
+               similarity=1-.75=.25 + other similarity = .25 + 4
+               (1/200)^2 = 2.5E-5 
+
+      0 50 50  50 50
+      0  0  0  50  0
+               0/50=0.0
+               similarity=1 + other = 1 + 1
+               (1/50)^2 = 4.E-4 
+
+      0  0  0   0  0
+      0  0  0   0  0
+               similarity = 5
+               (1/0)^2 = inf
+
+     still considering examples ...
+
     }*/
 
     private int sumCounts(int[] hist) {
 
-<span class="fc" id="L445">        int sum = 0;</span>
-<span class="fc bfc" id="L446" title="All 2 branches covered.">        for (int v : hist) {</span>
-<span class="fc" id="L447">            sum += v;</span>
+<span class="fc" id="L493">        int sum = 0;</span>
+<span class="fc bfc" id="L494" title="All 2 branches covered.">        for (int v : hist) {</span>
+<span class="fc" id="L495">            sum += v;</span>
         }
 
-<span class="fc" id="L450">        return sum;</span>
+<span class="fc" id="L498">        return sum;</span>
     }
 
     private void add(int[] addTo, int[] addFrom) {
-<span class="fc bfc" id="L454" title="All 2 branches covered.">        for (int i = 0; i &lt; addTo.length; ++i) {</span>
-<span class="fc" id="L455">            addTo[i] += addFrom[i];</span>
+<span class="fc bfc" id="L502" title="All 2 branches covered.">        for (int i = 0; i &lt; addTo.length; ++i) {</span>
+<span class="fc" id="L503">            addTo[i] += addFrom[i];</span>
         }
-<span class="fc" id="L457">    }</span>
+<span class="fc" id="L505">    }</span>
 
     private void add(long[] addTo, int[] addFrom) {
-<span class="fc bfc" id="L460" title="All 2 branches covered.">        for (int i = 0; i &lt; addTo.length; ++i) {</span>
-<span class="fc" id="L461">            addTo[i] += addFrom[i];</span>
+<span class="fc bfc" id="L508" title="All 2 branches covered.">        for (int i = 0; i &lt; addTo.length; ++i) {</span>
+<span class="fc" id="L509">            addTo[i] += addFrom[i];</span>
         }
-<span class="fc" id="L463">    }</span>
+<span class="fc" id="L511">    }</span>
 
     public int getNumberOfBins() {
-<span class="fc" id="L466">        return nAngleBins;</span>
+<span class="fc" id="L514">        return nAngleBins;</span>
     }
 
     /**
@@ -474,115 +522,115 @@ public class HOGs {
      */
     public int calculateDominantOrientation(Collection&lt;PairInt&gt; xy) {
 
-<span class="nc" id="L477">        long[] combined = new long[nAngleBins];</span>
+<span class="nc" id="L525">        long[] combined = new long[nAngleBins];</span>
 
-<span class="nc bnc" id="L479" title="All 2 branches missed.">        for (PairInt p : xy) {</span>
-<span class="nc" id="L480">            int pixIdx = (p.getY() * w) + p.getX();</span>
-<span class="nc" id="L481">            add(combined, gHists[pixIdx]);</span>
-<span class="nc" id="L482">        }</span>
+<span class="nc bnc" id="L527" title="All 2 branches missed.">        for (PairInt p : xy) {</span>
+<span class="nc" id="L528">            int pixIdx = (p.getY() * w) + p.getX();</span>
+<span class="nc" id="L529">            add(combined, gHists[pixIdx]);</span>
+<span class="nc" id="L530">        }</span>
 
-<span class="nc" id="L484">        TIntList maxIdxs = new TIntArrayList();</span>
-<span class="nc" id="L485">        long maxValue = Long.MIN_VALUE;</span>
-<span class="nc bnc" id="L486" title="All 2 branches missed.">        for (int i = 0; i &lt; combined.length; ++i) {</span>
-<span class="nc" id="L487">            long v = combined[i];</span>
-<span class="nc bnc" id="L488" title="All 2 branches missed.">            if (v &gt; maxValue) {</span>
-<span class="nc" id="L489">                maxIdxs.clear();</span>
-<span class="nc" id="L490">                maxIdxs.add(i);</span>
-<span class="nc" id="L491">                maxValue = v;</span>
-<span class="nc bnc" id="L492" title="All 2 branches missed.">            } else if (v == maxValue) {</span>
-<span class="nc" id="L493">                maxIdxs.add(i);</span>
+<span class="nc" id="L532">        TIntList maxIdxs = new TIntArrayList();</span>
+<span class="nc" id="L533">        long maxValue = Long.MIN_VALUE;</span>
+<span class="nc bnc" id="L534" title="All 2 branches missed.">        for (int i = 0; i &lt; combined.length; ++i) {</span>
+<span class="nc" id="L535">            long v = combined[i];</span>
+<span class="nc bnc" id="L536" title="All 2 branches missed.">            if (v &gt; maxValue) {</span>
+<span class="nc" id="L537">                maxIdxs.clear();</span>
+<span class="nc" id="L538">                maxIdxs.add(i);</span>
+<span class="nc" id="L539">                maxValue = v;</span>
+<span class="nc bnc" id="L540" title="All 2 branches missed.">            } else if (v == maxValue) {</span>
+<span class="nc" id="L541">                maxIdxs.add(i);</span>
             }
         }
 
-<span class="nc" id="L497">        int binWidth = 180 / nAngleBins;</span>
+<span class="nc" id="L545">        int binWidth = 180 / nAngleBins;</span>
 
         //TODO: revise to fit max peak using neighboring bins
-<span class="nc bnc" id="L500" title="All 2 branches missed.">        if (maxIdxs.size() == 1) {</span>
-<span class="nc" id="L501">            return Math.round((maxIdxs.get(0) + 0.5f) * binWidth);</span>
+<span class="nc bnc" id="L548" title="All 2 branches missed.">        if (maxIdxs.size() == 1) {</span>
+<span class="nc" id="L549">            return Math.round((maxIdxs.get(0) + 0.5f) * binWidth);</span>
         }
 
         //TODO: revise this
-<span class="nc bnc" id="L505" title="All 2 branches missed.">        if (maxIdxs.size() == 2) {</span>
+<span class="nc bnc" id="L553" title="All 2 branches missed.">        if (maxIdxs.size() == 2) {</span>
 
             // min of average with and without a wraparound phase
-<span class="nc" id="L508">            float ang0 = (maxIdxs.get(0) + 0.5f) * binWidth;</span>
-<span class="nc" id="L509">            float ang1 = (maxIdxs.get(1) + 0.5f) * binWidth;</span>
+<span class="nc" id="L556">            float ang0 = (maxIdxs.get(0) + 0.5f) * binWidth;</span>
+<span class="nc" id="L557">            float ang1 = (maxIdxs.get(1) + 0.5f) * binWidth;</span>
 
-<span class="nc bnc" id="L511" title="All 2 branches missed.">            if (ang0 &lt; ang1) {</span>
-<span class="nc" id="L512">                float diff0 = 360 + ang0 - ang1;</span>
-<span class="nc" id="L513">                float diff1 = ang1 - ang0;</span>
-<span class="nc bnc" id="L514" title="All 2 branches missed.">                if (diff0 &lt; diff1) {</span>
-<span class="nc" id="L515">                    return Math.round(0.5f * (360 + ang0 + ang1));</span>
+<span class="nc bnc" id="L559" title="All 2 branches missed.">            if (ang0 &lt; ang1) {</span>
+<span class="nc" id="L560">                float diff0 = 360 + ang0 - ang1;</span>
+<span class="nc" id="L561">                float diff1 = ang1 - ang0;</span>
+<span class="nc bnc" id="L562" title="All 2 branches missed.">                if (diff0 &lt; diff1) {</span>
+<span class="nc" id="L563">                    return Math.round(0.5f * (360 + ang0 + ang1));</span>
                 }
 
-<span class="nc" id="L518">                return Math.round(0.5f * (ang0 + ang1));</span>
+<span class="nc" id="L566">                return Math.round(0.5f * (ang0 + ang1));</span>
             }
 
-<span class="nc" id="L521">            float diff0 = 360 + ang1 - ang0;</span>
-<span class="nc" id="L522">            float diff1 = ang0 - ang1;</span>
-<span class="nc bnc" id="L523" title="All 2 branches missed.">            if (diff0 &lt; diff1) {</span>
-<span class="nc" id="L524">                return Math.round(0.5f * (360 + ang1 + ang0));</span>
+<span class="nc" id="L569">            float diff0 = 360 + ang1 - ang0;</span>
+<span class="nc" id="L570">            float diff1 = ang0 - ang1;</span>
+<span class="nc bnc" id="L571" title="All 2 branches missed.">            if (diff0 &lt; diff1) {</span>
+<span class="nc" id="L572">                return Math.round(0.5f * (360 + ang1 + ang0));</span>
             }
 
-<span class="nc" id="L527">            return Math.round(0.5f * (ang0 + ang1));</span>
+<span class="nc" id="L575">            return Math.round(0.5f * (ang0 + ang1));</span>
 
         } else {
 
             // average of all indexes
 
-<span class="nc" id="L533">             double[] angles = new double[maxIdxs.size()];</span>
-<span class="nc bnc" id="L534" title="All 2 branches missed.">             for (int i = 0; i &lt; maxIdxs.size(); ++i) {</span>
-<span class="nc" id="L535">                 angles[i] = ((maxIdxs.get(i) + 0.5f) * binWidth);</span>
+<span class="nc" id="L581">             double[] angles = new double[maxIdxs.size()];</span>
+<span class="nc bnc" id="L582" title="All 2 branches missed.">             for (int i = 0; i &lt; maxIdxs.size(); ++i) {</span>
+<span class="nc" id="L583">                 angles[i] = ((maxIdxs.get(i) + 0.5f) * binWidth);</span>
              }
 
-<span class="nc" id="L538">             double angleAvg =</span>
-<span class="nc" id="L539">                 AngleUtil.calculateAverageWithQuadrantCorrections(</span>
+<span class="nc" id="L586">             double angleAvg =</span>
+<span class="nc" id="L587">                 AngleUtil.calculateAverageWithQuadrantCorrections(</span>
                      angles, false);
 
-<span class="nc" id="L542">            return (int)Math.round(angleAvg);</span>
+<span class="nc" id="L590">            return (int)Math.round(angleAvg);</span>
         }
     }
 
     public TIntSet calculateDominantOrientations(Collection&lt;PairInt&gt; xy) {
 
-<span class="fc" id="L548">        long[] combined = new long[nAngleBins];</span>
+<span class="fc" id="L596">        long[] combined = new long[nAngleBins];</span>
 
-<span class="fc bfc" id="L550" title="All 2 branches covered.">        for (PairInt p : xy) {</span>
-<span class="fc" id="L551">            int pixIdx = (p.getY() * w) + p.getX();</span>
-<span class="fc" id="L552">            add(combined, gHists[pixIdx]);</span>
-<span class="fc" id="L553">        }</span>
+<span class="fc bfc" id="L598" title="All 2 branches covered.">        for (PairInt p : xy) {</span>
+<span class="fc" id="L599">            int pixIdx = (p.getY() * w) + p.getX();</span>
+<span class="fc" id="L600">            add(combined, gHists[pixIdx]);</span>
+<span class="fc" id="L601">        }</span>
 
-<span class="fc" id="L555">        int maxIdx = MiscMath.findYMaxIndex(combined);</span>
+<span class="fc" id="L603">        int maxIdx = MiscMath.findYMaxIndex(combined);</span>
 
-<span class="pc bpc" id="L557" title="1 of 2 branches missed.">        if (maxIdx == -1) {</span>
-<span class="nc" id="L558">            throw new IllegalArgumentException(&quot;histogram is full of &quot;</span>
+<span class="pc bpc" id="L605" title="1 of 2 branches missed.">        if (maxIdx == -1) {</span>
+<span class="nc" id="L606">            throw new IllegalArgumentException(&quot;histogram is full of &quot;</span>
                 + &quot; min value longs&quot;);
         }
 
         // if any bins have values within 80% of max, add to maxIdxs
-<span class="fc" id="L563">        TIntList maxIdxs = new TIntArrayList();</span>
+<span class="fc" id="L611">        TIntList maxIdxs = new TIntArrayList();</span>
 
-<span class="fc" id="L565">        long max = combined[maxIdx];</span>
-<span class="fc" id="L566">        double limit = 0.8 * max;</span>
+<span class="fc" id="L613">        long max = combined[maxIdx];</span>
+<span class="fc" id="L614">        double limit = 0.8 * max;</span>
 
-<span class="fc bfc" id="L568" title="All 2 branches covered.">        for (int i = 0; i &lt; combined.length; ++i) {</span>
-<span class="fc" id="L569">            long v = combined[i];</span>
-<span class="fc bfc" id="L570" title="All 2 branches covered.">            if (v &gt;= limit) {</span>
-<span class="fc" id="L571">                maxIdxs.add(i);</span>
+<span class="fc bfc" id="L616" title="All 2 branches covered.">        for (int i = 0; i &lt; combined.length; ++i) {</span>
+<span class="fc" id="L617">            long v = combined[i];</span>
+<span class="fc bfc" id="L618" title="All 2 branches covered.">            if (v &gt;= limit) {</span>
+<span class="fc" id="L619">                maxIdxs.add(i);</span>
             }
         }
 
-<span class="fc" id="L575">        int binWidth = 180 / nAngleBins;</span>
+<span class="fc" id="L623">        int binWidth = 180 / nAngleBins;</span>
 
-<span class="fc" id="L577">        TIntSet orientations = new TIntHashSet();</span>
+<span class="fc" id="L625">        TIntSet orientations = new TIntHashSet();</span>
 
-<span class="fc bfc" id="L579" title="All 2 branches covered.">        for (int i = 0; i &lt; maxIdxs.size(); ++i) {</span>
-<span class="fc" id="L580">            int idx = maxIdxs.get(i);</span>
-<span class="fc" id="L581">            int angle = Math.round((maxIdxs.get(i) + 0.5f) * binWidth);</span>
-<span class="fc" id="L582">            orientations.add(angle);</span>
+<span class="fc bfc" id="L627" title="All 2 branches covered.">        for (int i = 0; i &lt; maxIdxs.size(); ++i) {</span>
+<span class="fc" id="L628">            int idx = maxIdxs.get(i);</span>
+<span class="fc" id="L629">            int angle = Math.round((maxIdxs.get(i) + 0.5f) * binWidth);</span>
+<span class="fc" id="L630">            orientations.add(angle);</span>
         }
 
-<span class="fc" id="L585">        return orientations;</span>
+<span class="fc" id="L633">        return orientations;</span>
     }
 
 }

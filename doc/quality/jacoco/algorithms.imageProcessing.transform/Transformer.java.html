@@ -36,18 +36,18 @@ import java.util.logging.Logger;
      public PairIntArray[] applyTransformation(TransformationParameters params,
         PairIntArray[] edges) {
         
-<span class="nc bnc" id="L39" title="All 2 branches missed.">        if (params == null) {</span>
+<span class="pc bpc" id="L39" title="1 of 2 branches missed.">        if (params == null) {</span>
 <span class="nc" id="L40">            throw new IllegalArgumentException(&quot;params cannot be null&quot;);</span>
         }
          
-<span class="nc" id="L43">        double rotInRadians = params.getRotationInRadians();</span>
-<span class="nc" id="L44">        double scale = params.getScale();        </span>
-<span class="nc" id="L45">        double translationX = params.getTranslationX();</span>
-<span class="nc" id="L46">        double translationY = params.getTranslationY();</span>
-<span class="nc" id="L47">        double centroidX = params.getOriginX();</span>
-<span class="nc" id="L48">        double centroidY = params.getOriginY();</span>
+<span class="fc" id="L43">        double rotInRadians = params.getRotationInRadians();</span>
+<span class="fc" id="L44">        double scale = params.getScale();        </span>
+<span class="fc" id="L45">        double translationX = params.getTranslationX();</span>
+<span class="fc" id="L46">        double translationY = params.getTranslationY();</span>
+<span class="fc" id="L47">        double centroidX = params.getOriginX();</span>
+<span class="fc" id="L48">        double centroidY = params.getOriginY();</span>
         
-<span class="nc" id="L50">        return applyTransformation(rotInRadians, scale, translationX,</span>
+<span class="fc" id="L50">        return applyTransformation(rotInRadians, scale, translationX,</span>
             translationY, centroidX, centroidY, edges);
      }
      
@@ -153,23 +153,23 @@ import java.util.logging.Logger;
         double scale, double translationX, double translationY,
         double centroidX, double centroidY, PairIntArray[] edges) {
         
-<span class="nc bnc" id="L156" title="All 2 branches missed.">        if (edges == null) {</span>
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">        if (edges == null) {</span>
 <span class="nc" id="L157">            throw new IllegalArgumentException(&quot;edges cannot be null&quot;);</span>
         }
         
-<span class="nc" id="L160">        PairIntArray[] transformedEdges = new PairIntArray[edges.length];</span>
+<span class="fc" id="L160">        PairIntArray[] transformedEdges = new PairIntArray[edges.length];</span>
 
-<span class="nc bnc" id="L162" title="All 2 branches missed.">        for (int ii = 0; ii &lt; edges.length; ii++) {</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        for (int ii = 0; ii &lt; edges.length; ii++) {</span>
 
-<span class="nc" id="L164">            PairIntArray edge = edges[ii];</span>
+<span class="fc" id="L164">            PairIntArray edge = edges[ii];</span>
 
-<span class="nc" id="L166">            PairIntArray te = applyTransformation(rotInRadians, scale, </span>
+<span class="fc" id="L166">            PairIntArray te = applyTransformation(rotInRadians, scale, </span>
                 translationX, translationY, centroidX, centroidY, edge);
 
-<span class="nc" id="L169">            transformedEdges[ii] = te;</span>
+<span class="fc" id="L169">            transformedEdges[ii] = te;</span>
         }
         
-<span class="nc" id="L172">        return transformedEdges;</span>
+<span class="fc" id="L172">        return transformedEdges;</span>
     }
     
     /**

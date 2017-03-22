@@ -1767,7 +1767,7 @@ import java.util.Stack;
                 
                 // add junction after first of it's neighbors it finds
 <span class="fc" id="L1769">                boolean found = false;</span>
-<span class="fc bfc" id="L1770" title="All 2 branches covered.">                for (int ii = 0; ii &lt; orderedOutput.getN(); ++ii) {</span>
+<span class="pc bpc" id="L1770" title="1 of 2 branches missed.">                for (int ii = 0; ii &lt; orderedOutput.getN(); ++ii) {</span>
                     
 <span class="fc" id="L1772">                    int nbrX = orderedOutput.getX(ii);</span>
 <span class="fc" id="L1773">                    int nbrY = orderedOutput.getY(ii);</span>
@@ -1784,8 +1784,8 @@ import java.util.Stack;
                         
 <span class="fc" id="L1785">                        int diffX = Math.abs(x2 - nbrX);</span>
 <span class="fc" id="L1786">                        int diffY = Math.abs(y2 - nbrY);</span>
-<span class="pc bpc" id="L1787" title="9 of 10 branches missed.">                        assert((diffX == 0 &amp;&amp; diffY == 1) || </span>
-                            (diffX == 1 &amp;&amp; diffY == 0));
+              
+<span class="pc bpc" id="L1788" title="5 of 6 branches missed.">                        assert(diffX &lt;= 1 &amp;&amp; diffY &lt;= 1);</span>
                         
 <span class="fc" id="L1790">                        int pixIdx2 = (y2 * imgWidth) + x2;</span>
                         

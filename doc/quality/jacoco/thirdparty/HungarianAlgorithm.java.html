@@ -16,7 +16,7 @@ import java.util.*;
  *
  * @author gbaker
  */
-<span class="nc" id="L19">public class HungarianAlgorithm {</span>
+<span class="fc" id="L19">public class HungarianAlgorithm {</span>
 
     /**
      * NOTE: matrix is modified as a side effect.
@@ -27,38 +27,38 @@ import java.util.*;
      */
     public int[][] computeAssignments(float[][] matrix) {
 
-<span class="nc" id="L30">        int nRows = matrix.length;</span>
-<span class="nc" id="L31">        int nCols = matrix[0].length;</span>
+<span class="fc" id="L30">        int nRows = matrix.length;</span>
+<span class="fc" id="L31">        int nCols = matrix[0].length;</span>
         // there can be more columns than rows, but not vice versa
-<span class="nc bnc" id="L33" title="All 2 branches missed.">        if (nRows &gt; nCols) {</span>
+<span class="pc bpc" id="L33" title="1 of 2 branches missed.">        if (nRows &gt; nCols) {</span>
 <span class="nc" id="L34">            throw new IllegalArgumentException(</span>
                 &quot;matrix must have same number or fewer rows than columns&quot;);
         }
 
         // subtract minumum value from rows and columns to create lots of zeroes
-<span class="nc" id="L39">        reduceMatrix(matrix);</span>
+<span class="fc" id="L39">        reduceMatrix(matrix);</span>
 
         // non negative values are the index of the starred or primed zero in the row or column
-<span class="nc" id="L42">        int[] starsByRow = new int[matrix.length];</span>
-<span class="nc" id="L43">        Arrays.fill(starsByRow, -1);</span>
-<span class="nc" id="L44">        int[] starsByCol = new int[matrix[0].length];</span>
-<span class="nc" id="L45">        Arrays.fill(starsByCol, -1);</span>
-<span class="nc" id="L46">        int[] primesByRow = new int[matrix.length];</span>
-<span class="nc" id="L47">        Arrays.fill(primesByRow, -1);</span>
+<span class="fc" id="L42">        int[] starsByRow = new int[matrix.length];</span>
+<span class="fc" id="L43">        Arrays.fill(starsByRow, -1);</span>
+<span class="fc" id="L44">        int[] starsByCol = new int[matrix[0].length];</span>
+<span class="fc" id="L45">        Arrays.fill(starsByCol, -1);</span>
+<span class="fc" id="L46">        int[] primesByRow = new int[matrix.length];</span>
+<span class="fc" id="L47">        Arrays.fill(primesByRow, -1);</span>
 
         // 1s mean covered, 0s mean not covered
-<span class="nc" id="L50">        int[] coveredRows = new int[matrix.length];</span>
-<span class="nc" id="L51">        int[] coveredCols = new int[matrix[0].length];</span>
+<span class="fc" id="L50">        int[] coveredRows = new int[matrix.length];</span>
+<span class="fc" id="L51">        int[] coveredCols = new int[matrix[0].length];</span>
 
         // star any zero that has no other starred zero in the same row or column
         // populate starsByRow: each row has the assigned column
         // populate starsByCol: each col has the assigned row
-<span class="nc" id="L56">        initStars(matrix, starsByRow, starsByCol);</span>
+<span class="fc" id="L56">        initStars(matrix, starsByRow, starsByCol);</span>
         // populate coveredCols: has a zero where unassigned
-<span class="nc" id="L58">        coverColumnsOfStarredZeroes(starsByCol, coveredCols);</span>
+<span class="fc" id="L58">        coverColumnsOfStarredZeroes(starsByCol, coveredCols);</span>
 
         // while still an unassigned column
-<span class="nc bnc" id="L61" title="All 2 branches missed.">        while (!allAreCovered(coveredCols)) {</span>
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">        while (!allAreCovered(coveredCols)) {</span>
 
 <span class="nc" id="L63">            int[] primedZero = primeSomeUncoveredZero(matrix, primesByRow,</span>
                 coveredRows, coveredCols);
@@ -105,7 +105,7 @@ import java.util.*;
 <span class="nc" id="L105">        }</span>
 
         // ok now we should have assigned everything
-<span class="nc" id="L108">        int[][] retval = new int[matrix.length][];</span>
+<span class="fc" id="L108">        int[][] retval = new int[matrix.length][];</span>
         
         /*
         // take the starred zeroes in each column as the correct assignments
@@ -115,20 +115,20 @@ import java.util.*;
         */
         // choosing by row instead to allow uneven set sizes.
         //   there can be more columns than rows
-<span class="nc bnc" id="L118" title="All 2 branches missed.">        for (int i = 0; i &lt; starsByRow.length; i++) {</span>
-<span class="nc" id="L119">            retval[i] = new int[]{i, starsByRow[i]};</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">        for (int i = 0; i &lt; starsByRow.length; i++) {</span>
+<span class="fc" id="L119">            retval[i] = new int[]{i, starsByRow[i]};</span>
         }
         
-<span class="nc" id="L122">        return retval;</span>
+<span class="fc" id="L122">        return retval;</span>
     }
 
     private boolean allAreCovered(int[] coveredCols) {
-<span class="nc bnc" id="L126" title="All 2 branches missed.">        for (int covered : coveredCols) {</span>
-<span class="nc bnc" id="L127" title="All 2 branches missed.">            if (0 == covered) {</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">        for (int covered : coveredCols) {</span>
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">            if (0 == covered) {</span>
 <span class="nc" id="L128">                return false;</span>
             }
         }
-<span class="nc" id="L131">        return true;</span>
+<span class="fc" id="L131">        return true;</span>
     }
 
     /**
@@ -139,37 +139,37 @@ import java.util.*;
      */
     private void reduceMatrix(float[][] matrix) {
 
-<span class="nc bnc" id="L142" title="All 2 branches missed.">        for (int i = 0; i &lt; matrix.length; i++) {</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">        for (int i = 0; i &lt; matrix.length; i++) {</span>
 
             // find the min value in the row
-<span class="nc" id="L145">            float minValInRow = Float.MAX_VALUE;</span>
-<span class="nc bnc" id="L146" title="All 2 branches missed.">            for (int j = 0; j &lt; matrix[i].length; j++) {</span>
-<span class="nc bnc" id="L147" title="All 2 branches missed.">                if (minValInRow &gt; matrix[i][j]) {</span>
-<span class="nc" id="L148">                    minValInRow = matrix[i][j];</span>
+<span class="fc" id="L145">            float minValInRow = Float.MAX_VALUE;</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">            for (int j = 0; j &lt; matrix[i].length; j++) {</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">                if (minValInRow &gt; matrix[i][j]) {</span>
+<span class="fc" id="L148">                    minValInRow = matrix[i][j];</span>
                 }
             }
 
             // subtract it from all values in the row
-<span class="nc bnc" id="L153" title="All 2 branches missed.">            for (int j = 0; j &lt; matrix[i].length; j++) {</span>
-<span class="nc" id="L154">                matrix[i][j] -= minValInRow;</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">            for (int j = 0; j &lt; matrix[i].length; j++) {</span>
+<span class="fc" id="L154">                matrix[i][j] -= minValInRow;</span>
             }
         }
 
-<span class="nc bnc" id="L158" title="All 2 branches missed.">        for (int i = 0; i &lt; matrix[0].length; i++) {</span>
-<span class="nc" id="L159">            float minValInCol = Float.MAX_VALUE;</span>
-<span class="nc bnc" id="L160" title="All 2 branches missed.">            for (int j = 0; j &lt; matrix.length; j++) {</span>
-<span class="nc bnc" id="L161" title="All 2 branches missed.">                if (minValInCol &gt; matrix[j][i]) {</span>
-<span class="nc" id="L162">                    minValInCol = matrix[j][i];</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">        for (int i = 0; i &lt; matrix[0].length; i++) {</span>
+<span class="fc" id="L159">            float minValInCol = Float.MAX_VALUE;</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">            for (int j = 0; j &lt; matrix.length; j++) {</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">                if (minValInCol &gt; matrix[j][i]) {</span>
+<span class="fc" id="L162">                    minValInCol = matrix[j][i];</span>
                 }
             }
 
-<span class="nc bnc" id="L166" title="All 2 branches missed.">            for (int j = 0; j &lt; matrix.length; j++) {</span>
-<span class="nc" id="L167">                matrix[j][i] -= minValInCol;</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">            for (int j = 0; j &lt; matrix.length; j++) {</span>
+<span class="fc" id="L167">                matrix[j][i] -= minValInCol;</span>
             }
 
         }
 
-<span class="nc" id="L172">    }</span>
+<span class="fc" id="L172">    }</span>
 
     /**
      * init starred zeroes
@@ -186,32 +186,32 @@ import java.util.*;
      */
     private void initStars(float costMatrix[][], int[] starsByRow, int[] starsByCol) {
 
-<span class="nc" id="L189">        int[] rowHasStarredZero = new int[costMatrix.length];</span>
-<span class="nc" id="L190">        int[] colHasStarredZero = new int[costMatrix[0].length];</span>
+<span class="fc" id="L189">        int[] rowHasStarredZero = new int[costMatrix.length];</span>
+<span class="fc" id="L190">        int[] colHasStarredZero = new int[costMatrix[0].length];</span>
 
-<span class="nc bnc" id="L192" title="All 2 branches missed.">        for (int i = 0; i &lt; costMatrix.length; i++) {</span>
-<span class="nc bnc" id="L193" title="All 2 branches missed.">            for (int j = 0; j &lt; costMatrix[i].length; j++) {</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">        for (int i = 0; i &lt; costMatrix.length; i++) {</span>
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">            for (int j = 0; j &lt; costMatrix[i].length; j++) {</span>
                 // if cell cost is now a zero (=min) and is not assigned
-<span class="nc bnc" id="L195" title="All 6 branches missed.">                if (0 == costMatrix[i][j] &amp;&amp; 0 == rowHasStarredZero[i] &amp;&amp; </span>
+<span class="pc bpc" id="L195" title="2 of 6 branches missed.">                if (0 == costMatrix[i][j] &amp;&amp; 0 == rowHasStarredZero[i] &amp;&amp; </span>
                     0 == colHasStarredZero[j]) {
 
                     //row i can be assigned column j:
-<span class="nc" id="L199">                    starsByRow[i] = j;</span>
+<span class="fc" id="L199">                    starsByRow[i] = j;</span>
 
                     // col j can be assigned row i:
-<span class="nc" id="L202">                    starsByCol[j] = i;</span>
+<span class="fc" id="L202">                    starsByCol[j] = i;</span>
 
                     // mark row i as assigned:
-<span class="nc" id="L205">                    rowHasStarredZero[i] = 1;</span>
+<span class="fc" id="L205">                    rowHasStarredZero[i] = 1;</span>
 
                     // mark col j as assigned:
-<span class="nc" id="L208">                    colHasStarredZero[j] = 1;</span>
+<span class="fc" id="L208">                    colHasStarredZero[j] = 1;</span>
 
-<span class="nc" id="L210">                    break; // move onto the next row</span>
+<span class="fc" id="L210">                    break; // move onto the next row</span>
                 }
             }
         }
-<span class="nc" id="L214">    }</span>
+<span class="fc" id="L214">    }</span>
 
     /**
      * just marke the columns covered for any column containing a starred zero.
@@ -222,10 +222,10 @@ import java.util.*;
      * @param coveredCols
      */
     private void coverColumnsOfStarredZeroes(int[] starsByCol, int[] coveredCols) {
-<span class="nc bnc" id="L225" title="All 2 branches missed.">        for (int j = 0; j &lt; starsByCol.length; j++) {</span>
-<span class="nc bnc" id="L226" title="All 2 branches missed.">            coveredCols[j] = (-1 == starsByCol[j]) ? 0 : 1;</span>
+<span class="fc bfc" id="L225" title="All 2 branches covered.">        for (int j = 0; j &lt; starsByCol.length; j++) {</span>
+<span class="pc bpc" id="L226" title="1 of 2 branches missed.">            coveredCols[j] = (-1 == starsByCol[j]) ? 0 : 1;</span>
         }
-<span class="nc" id="L228">    }</span>
+<span class="fc" id="L228">    }</span>
 
     /**
      * finds some uncovered zero and primes it. populates primesByRow with the

@@ -63,21 +63,21 @@ public class MatchedPointsTransformationCalculator {
         double scale, PairIntArray matchedXY1, PairIntArray matchedXY2,
         double centroidX1, double centroidY1) {
 
-<span class="nc bnc" id="L66" title="All 2 branches missed.">        if (matchedXY1 == null) {</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">        if (matchedXY1 == null) {</span>
 <span class="nc" id="L67">            throw new IllegalArgumentException(&quot;matchedXY1 cannot be null&quot;);</span>
         }
-<span class="nc bnc" id="L69" title="All 2 branches missed.">        if (matchedXY2 == null) {</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">        if (matchedXY2 == null) {</span>
 <span class="nc" id="L70">            throw new IllegalArgumentException(&quot;matchedXY2 cannot be null&quot;);</span>
         }
-<span class="nc bnc" id="L72" title="All 2 branches missed.">        if (matchedXY1.getN() != matchedXY2.getN()) {</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">        if (matchedXY1.getN() != matchedXY2.getN()) {</span>
 <span class="nc" id="L73">            throw new IllegalArgumentException(</span>
                 &quot;matchedXY1 and matchedXY2 must have same number of points&quot;);
         }
-<span class="nc bnc" id="L76" title="All 2 branches missed.">        if (matchedXY1.getN() &lt; 2) {</span>
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">        if (matchedXY1.getN() &lt; 2) {</span>
 <span class="nc" id="L77">            return null;</span>
         }
 
-<span class="nc" id="L80">        log.info(&quot;start solution for &quot; + matchedXY1.getN() + &quot; points&quot;);</span>
+<span class="fc" id="L80">        log.info(&quot;start solution for &quot; + matchedXY1.getN() + &quot; points&quot;);</span>
 
         /*
         solve for rotation.
@@ -104,122 +104,122 @@ public class MatchedPointsTransformationCalculator {
         discard outside avg +- stdev
         */
 
-<span class="nc" id="L107">        AngleUtil angleUtil = new AngleUtil();</span>
+<span class="fc" id="L107">        AngleUtil angleUtil = new AngleUtil();</span>
 
-<span class="nc" id="L109">        double[] thetas = new double[matchedXY1.getN()];</span>
-<span class="nc" id="L110">        double[] scales = new double[matchedXY1.getN()];</span>
-<span class="nc" id="L111">        double thetaSum = 0;</span>
-<span class="nc" id="L112">        double scaleSum = 0;</span>
-<span class="nc bnc" id="L113" title="All 2 branches missed.">        for (int i = 0; i &lt; matchedXY1.getN(); i++) {</span>
-<span class="nc" id="L114">            int x0im1 = matchedXY1.getX(i);</span>
-<span class="nc" id="L115">            int y0im1 = matchedXY1.getY(i);</span>
-<span class="nc" id="L116">            int x0im2 = matchedXY2.getX(i);</span>
-<span class="nc" id="L117">            int y0im2 = matchedXY2.getY(i);</span>
+<span class="fc" id="L109">        double[] thetas = new double[matchedXY1.getN()];</span>
+<span class="fc" id="L110">        double[] scales = new double[matchedXY1.getN()];</span>
+<span class="fc" id="L111">        double thetaSum = 0;</span>
+<span class="fc" id="L112">        double scaleSum = 0;</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">        for (int i = 0; i &lt; matchedXY1.getN(); i++) {</span>
+<span class="fc" id="L114">            int x0im1 = matchedXY1.getX(i);</span>
+<span class="fc" id="L115">            int y0im1 = matchedXY1.getY(i);</span>
+<span class="fc" id="L116">            int x0im2 = matchedXY2.getX(i);</span>
+<span class="fc" id="L117">            int y0im2 = matchedXY2.getY(i);</span>
             int x1im1, y1im1, x1im2, y1im2;
-<span class="nc bnc" id="L119" title="All 2 branches missed.">            if ((i + 1) == matchedXY1.getN()) {</span>
-<span class="nc" id="L120">                x1im1 = matchedXY1.getX(0);</span>
-<span class="nc" id="L121">                y1im1 = matchedXY1.getY(0);</span>
-<span class="nc" id="L122">                x1im2 = matchedXY2.getX(0);</span>
-<span class="nc" id="L123">                y1im2 = matchedXY2.getY(0);</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">            if ((i + 1) == matchedXY1.getN()) {</span>
+<span class="fc" id="L120">                x1im1 = matchedXY1.getX(0);</span>
+<span class="fc" id="L121">                y1im1 = matchedXY1.getY(0);</span>
+<span class="fc" id="L122">                x1im2 = matchedXY2.getX(0);</span>
+<span class="fc" id="L123">                y1im2 = matchedXY2.getY(0);</span>
             } else {
-<span class="nc" id="L125">                x1im1 = matchedXY1.getX(i + 1);</span>
-<span class="nc" id="L126">                y1im1 = matchedXY1.getY(i + 1);</span>
-<span class="nc" id="L127">                x1im2 = matchedXY2.getX(i + 1);</span>
-<span class="nc" id="L128">                y1im2 = matchedXY2.getY(i + 1);</span>
+<span class="fc" id="L125">                x1im1 = matchedXY1.getX(i + 1);</span>
+<span class="fc" id="L126">                y1im1 = matchedXY1.getY(i + 1);</span>
+<span class="fc" id="L127">                x1im2 = matchedXY2.getX(i + 1);</span>
+<span class="fc" id="L128">                y1im2 = matchedXY2.getY(i + 1);</span>
             }
-<span class="nc" id="L130">            double diffX1 = (x1im1 - x0im1);</span>
-<span class="nc" id="L131">            double diffY1 = (y1im1 - y0im1);</span>
+<span class="fc" id="L130">            double diffX1 = (x1im1 - x0im1);</span>
+<span class="fc" id="L131">            double diffY1 = (y1im1 - y0im1);</span>
 
-<span class="nc" id="L133">            double diffX2 = (x1im2 - x0im2);</span>
-<span class="nc" id="L134">            double diffY2 = (y1im2 - y0im2);</span>
+<span class="fc" id="L133">            double diffX2 = (x1im2 - x0im2);</span>
+<span class="fc" id="L134">            double diffY2 = (y1im2 - y0im2);</span>
 
-<span class="nc" id="L136">            double t = angleUtil.subtract(diffX1, diffY1, diffX2, diffY2);</span>
+<span class="fc" id="L136">            double t = angleUtil.subtract(diffX1, diffY1, diffX2, diffY2);</span>
 
-<span class="nc" id="L138">            t *= -1;</span>
+<span class="fc" id="L138">            t *= -1;</span>
             
-<span class="nc bnc" id="L140" title="All 2 branches missed.">            if (t &lt; 0) {</span>
-<span class="nc" id="L141">                t = 2 * Math.PI + t;</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">            if (t &lt; 0) {</span>
+<span class="fc" id="L141">                t = 2 * Math.PI + t;</span>
             }
             
-<span class="nc" id="L144">            thetas[i] = t;</span>
+<span class="fc" id="L144">            thetas[i] = t;</span>
 
-<span class="nc" id="L146">            thetaSum += thetas[i];</span>
+<span class="fc" id="L146">            thetaSum += thetas[i];</span>
 
-<span class="nc" id="L148">            double lenim1 = Math.sqrt(Math.pow(diffX1, 2)</span>
-<span class="nc" id="L149">                + Math.pow(diffY1, 2));</span>
-<span class="nc" id="L150">            double lenim2 = Math.sqrt(Math.pow(diffX2, 2)</span>
-<span class="nc" id="L151">                + Math.pow(diffY2, 2));</span>
-<span class="nc" id="L152">            scales[i] = lenim2/lenim1;</span>
-<span class="nc" id="L153">            scaleSum += scales[i];</span>
+<span class="fc" id="L148">            double lenim1 = Math.sqrt(Math.pow(diffX1, 2)</span>
+<span class="fc" id="L149">                + Math.pow(diffY1, 2));</span>
+<span class="fc" id="L150">            double lenim2 = Math.sqrt(Math.pow(diffX2, 2)</span>
+<span class="fc" id="L151">                + Math.pow(diffY2, 2));</span>
+<span class="fc" id="L152">            scales[i] = lenim2/lenim1;</span>
+<span class="fc" id="L153">            scaleSum += scales[i];</span>
         }
 
-<span class="nc" id="L156">        double avgScale = scaleSum / (double)matchedXY1.getN();</span>
-<span class="nc" id="L157">        double avgTheta = thetaSum / (double)matchedXY1.getN();</span>
-<span class="nc" id="L158">        double stDevThetaSum = 0;</span>
-<span class="nc" id="L159">        double stDevScaleSum = 0;</span>
-<span class="nc bnc" id="L160" title="All 2 branches missed.">        for (int i = 0; i &lt; matchedXY1.getN(); i++) {</span>
-<span class="nc" id="L161">            stDevThetaSum += Math.pow(thetas[i] - avgTheta, 2);</span>
-<span class="nc" id="L162">            stDevScaleSum += Math.pow(scales[i] - avgScale, 2);</span>
+<span class="fc" id="L156">        double avgScale = scaleSum / (double)matchedXY1.getN();</span>
+<span class="fc" id="L157">        double avgTheta = thetaSum / (double)matchedXY1.getN();</span>
+<span class="fc" id="L158">        double stDevThetaSum = 0;</span>
+<span class="fc" id="L159">        double stDevScaleSum = 0;</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">        for (int i = 0; i &lt; matchedXY1.getN(); i++) {</span>
+<span class="fc" id="L161">            stDevThetaSum += Math.pow(thetas[i] - avgTheta, 2);</span>
+<span class="fc" id="L162">            stDevScaleSum += Math.pow(scales[i] - avgScale, 2);</span>
         }
-<span class="nc" id="L164">        double stDevTheta= Math.sqrt(stDevThetaSum/(matchedXY1.getN() - 1));</span>
-<span class="nc" id="L165">        double stDevScale= Math.sqrt(stDevScaleSum/(matchedXY1.getN() - 1));</span>
+<span class="fc" id="L164">        double stDevTheta= Math.sqrt(stDevThetaSum/(matchedXY1.getN() - 1));</span>
+<span class="fc" id="L165">        double stDevScale= Math.sqrt(stDevScaleSum/(matchedXY1.getN() - 1));</span>
 
-<span class="nc" id="L167">        double rotSum = 0;</span>
-<span class="nc" id="L168">        double rCount = 0;</span>
-<span class="nc" id="L169">        scaleSum = 0;</span>
-<span class="nc" id="L170">        double sCount = 0;</span>
+<span class="fc" id="L167">        double rotSum = 0;</span>
+<span class="fc" id="L168">        double rCount = 0;</span>
+<span class="fc" id="L169">        scaleSum = 0;</span>
+<span class="fc" id="L170">        double sCount = 0;</span>
 
-<span class="nc" id="L172">        List&lt;Integer&gt; rm = new ArrayList&lt;Integer&gt;();</span>
-<span class="nc bnc" id="L173" title="All 2 branches missed.">        for (int i = 0; i &lt; matchedXY1.getN(); i++) {</span>
-<span class="nc" id="L174">            double dss = Math.abs(scales[i] - avgScale);</span>
-<span class="nc bnc" id="L175" title="All 2 branches missed.">            if (dss &gt; 1.5*stDevScale) {</span>
-<span class="nc" id="L176">                rm.add(Integer.valueOf(i));</span>
-<span class="nc" id="L177">                continue;</span>
+<span class="fc" id="L172">        List&lt;Integer&gt; rm = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">        for (int i = 0; i &lt; matchedXY1.getN(); i++) {</span>
+<span class="fc" id="L174">            double dss = Math.abs(scales[i] - avgScale);</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">            if (dss &gt; 1.5*stDevScale) {</span>
+<span class="fc" id="L176">                rm.add(Integer.valueOf(i));</span>
+<span class="fc" id="L177">                continue;</span>
             }
-<span class="nc" id="L179">            double dtt = Math.abs(thetas[i] - avgTheta);</span>
-<span class="nc bnc" id="L180" title="All 2 branches missed.">            if (dtt &gt; 1.5*stDevTheta) {</span>
-<span class="nc" id="L181">                rm.add(Integer.valueOf(i));</span>
-<span class="nc" id="L182">                continue;</span>
+<span class="fc" id="L179">            double dtt = Math.abs(thetas[i] - avgTheta);</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">            if (dtt &gt; 1.5*stDevTheta) {</span>
+<span class="fc" id="L181">                rm.add(Integer.valueOf(i));</span>
+<span class="fc" id="L182">                continue;</span>
             }
 
-<span class="nc" id="L185">log.info(&quot;scl=&quot; + scales[i] + &quot; stDevScale=&quot; + stDevScale</span>
+<span class="fc" id="L185">log.info(&quot;scl=&quot; + scales[i] + &quot; stDevScale=&quot; + stDevScale</span>
 + &quot; abs(scale-avg)=&quot; + dss);
 
-<span class="nc" id="L188">            scaleSum += scales[i];</span>
-<span class="nc" id="L189">            sCount++;</span>
+<span class="fc" id="L188">            scaleSum += scales[i];</span>
+<span class="fc" id="L189">            sCount++;</span>
 
-<span class="nc" id="L191">log.info(&quot;rot=&quot; + thetas[i] + &quot; stDevTheta=&quot; + stDevTheta</span>
+<span class="fc" id="L191">log.info(&quot;rot=&quot; + thetas[i] + &quot; stDevTheta=&quot; + stDevTheta</span>
 + &quot; abs(theta-avg)=&quot; + dtt);
 
-<span class="nc" id="L194">            rotSum += thetas[i];</span>
-<span class="nc" id="L195">            rCount++;</span>
+<span class="fc" id="L194">            rotSum += thetas[i];</span>
+<span class="fc" id="L195">            rCount++;</span>
         }
 
-<span class="nc bnc" id="L198" title="All 2 branches missed.">        if (!rm.isEmpty()) {</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">        if (!rm.isEmpty()) {</span>
 
-<span class="nc" id="L200">            PairIntArray xy1 = new PairIntArray();</span>
-<span class="nc" id="L201">            PairIntArray xy2 = new PairIntArray();</span>
+<span class="fc" id="L200">            PairIntArray xy1 = new PairIntArray();</span>
+<span class="fc" id="L201">            PairIntArray xy2 = new PairIntArray();</span>
 
-<span class="nc bnc" id="L203" title="All 2 branches missed.">            for (int i = 0; i &lt; matchedXY1.getN(); i++) {</span>
-<span class="nc bnc" id="L204" title="All 2 branches missed.">                if (rm.contains(Integer.valueOf(i))) {</span>
-<span class="nc" id="L205">                    continue;</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">            for (int i = 0; i &lt; matchedXY1.getN(); i++) {</span>
+<span class="fc bfc" id="L204" title="All 2 branches covered.">                if (rm.contains(Integer.valueOf(i))) {</span>
+<span class="fc" id="L205">                    continue;</span>
                 }
-<span class="nc" id="L207">                xy1.add(matchedXY1.getX(i), matchedXY1.getY(i));</span>
-<span class="nc" id="L208">                xy2.add(matchedXY2.getX(i), matchedXY2.getY(i));</span>
+<span class="fc" id="L207">                xy1.add(matchedXY1.getX(i), matchedXY1.getY(i));</span>
+<span class="fc" id="L208">                xy2.add(matchedXY2.getX(i), matchedXY2.getY(i));</span>
             }
 
-<span class="nc" id="L211">            return calulateEuclideanGivenScale(scale, xy1,</span>
+<span class="fc" id="L211">            return calulateEuclideanGivenScale(scale, xy1,</span>
                 xy2, centroidX1, centroidY1);
         }
 
-<span class="nc" id="L215">        double theRotation = rotSum/rCount;</span>
-<span class="nc" id="L216">        double theScale = scaleSum/sCount;</span>
+<span class="fc" id="L215">        double theRotation = rotSum/rCount;</span>
+<span class="fc" id="L216">        double theScale = scaleSum/sCount;</span>
 
-<span class="nc" id="L218">        log.info(&quot;given scale=&quot; + scale + &quot; found scale=&quot; + theScale);</span>
-<span class="nc" id="L219">        log.info(&quot;rotation = &quot; + theRotation);</span>
+<span class="fc" id="L218">        log.info(&quot;given scale=&quot; + scale + &quot; found scale=&quot; + theScale);</span>
+<span class="fc" id="L219">        log.info(&quot;rotation = &quot; + theRotation);</span>
 
-<span class="nc bnc" id="L221" title="All 2 branches missed.">        if (Math.abs(theScale - scale) &gt; scale*0.1) {</span>
-<span class="nc" id="L222">            log.warning(&quot;the differences in estimated scale and given scale are&quot;</span>
+<span class="fc bfc" id="L221" title="All 2 branches covered.">        if (Math.abs(theScale - scale) &gt; scale*0.1) {</span>
+<span class="fc" id="L222">            log.warning(&quot;the differences in estimated scale and given scale are&quot;</span>
                 + &quot; large.  this can happen if the given scale value was &quot;
                 + &quot; determined from contour matching.&quot;
                 + &quot; the estimate here uses pairs of points which may&quot;
@@ -227,7 +227,7 @@ public class MatchedPointsTransformationCalculator {
                 + &quot; the method and continuing.&quot;);
         }
 
-<span class="nc" id="L230">        theScale = scale;</span>
+<span class="fc" id="L230">        theScale = scale;</span>
 
         /*
         estimate translation:
@@ -240,46 +240,46 @@ public class MatchedPointsTransformationCalculator {
             (yc*scale + ((-(x0-xc)*scale*math.sin(theta))
             + ((y0-yc)*scale*math.cos(theta)))
         */
-<span class="nc" id="L243">        double mc = Math.cos(theRotation);</span>
-<span class="nc" id="L244">        double ms = Math.sin(theRotation);</span>
-<span class="nc" id="L245">        double transXSum = 0;</span>
-<span class="nc" id="L246">        double transYSum = 0;</span>
-<span class="nc bnc" id="L247" title="All 2 branches missed.">        for (int i = 0; i &lt; matchedXY1.getN(); i++) {</span>
-<span class="nc" id="L248">            int xim1 = matchedXY1.getX(i);</span>
-<span class="nc" id="L249">            int yim1 = matchedXY1.getY(i);</span>
-<span class="nc" id="L250">            int xim2 = matchedXY2.getX(i);</span>
-<span class="nc" id="L251">            int yim2 = matchedXY2.getY(i);</span>
+<span class="fc" id="L243">        double mc = Math.cos(theRotation);</span>
+<span class="fc" id="L244">        double ms = Math.sin(theRotation);</span>
+<span class="fc" id="L245">        double transXSum = 0;</span>
+<span class="fc" id="L246">        double transYSum = 0;</span>
+<span class="fc bfc" id="L247" title="All 2 branches covered.">        for (int i = 0; i &lt; matchedXY1.getN(); i++) {</span>
+<span class="fc" id="L248">            int xim1 = matchedXY1.getX(i);</span>
+<span class="fc" id="L249">            int yim1 = matchedXY1.getY(i);</span>
+<span class="fc" id="L250">            int xim2 = matchedXY2.getX(i);</span>
+<span class="fc" id="L251">            int yim2 = matchedXY2.getY(i);</span>
 
-<span class="nc" id="L253">            double trX1 = centroidX1*scale + ((xim1 - centroidX1) * scale*mc)</span>
+<span class="fc" id="L253">            double trX1 = centroidX1*scale + ((xim1 - centroidX1) * scale*mc)</span>
                 + ((yim1 - centroidY1) *scale*ms);
 
-<span class="nc" id="L256">            double trY1 = centroidY1*scale + (-(xim1 - centroidX1) * scale*ms)</span>
+<span class="fc" id="L256">            double trY1 = centroidY1*scale + (-(xim1 - centroidX1) * scale*ms)</span>
                 + ((yim1 - centroidY1) * scale*mc);
 
-<span class="nc" id="L259">            double transX = xim2 - trX1;</span>
+<span class="fc" id="L259">            double transX = xim2 - trX1;</span>
 
-<span class="nc" id="L261">            double transY = yim2 - trY1;</span>
+<span class="fc" id="L261">            double transY = yim2 - trY1;</span>
 
-<span class="nc" id="L263">            transXSum += transX;</span>
-<span class="nc" id="L264">            transYSum += transY;</span>
+<span class="fc" id="L263">            transXSum += transX;</span>
+<span class="fc" id="L264">            transYSum += transY;</span>
         }
-<span class="nc" id="L266">        double theTranslationX = transXSum/(double)matchedXY1.getN();</span>
-<span class="nc" id="L267">        double theTranslationY = transYSum/(double)matchedXY1.getN();</span>
+<span class="fc" id="L266">        double theTranslationX = transXSum/(double)matchedXY1.getN();</span>
+<span class="fc" id="L267">        double theTranslationY = transYSum/(double)matchedXY1.getN();</span>
 
-<span class="nc" id="L269">        TransformationParameters params = new TransformationParameters();</span>
-<span class="nc" id="L270">        params.setRotationInRadians((float)theRotation);</span>
-<span class="nc" id="L271">        params.setScale((float)theScale);</span>
-<span class="nc" id="L272">        params.setTranslationX((float)theTranslationX);</span>
-<span class="nc" id="L273">        params.setTranslationY((float)theTranslationY);</span>
-<span class="nc" id="L274">        params.setOriginX((float)centroidX1);</span>
-<span class="nc" id="L275">        params.setOriginY((float)centroidY1);</span>
-<span class="nc" id="L276">        params.setNumberOfPointsUsed(matchedXY1.getN());</span>
+<span class="fc" id="L269">        TransformationParameters params = new TransformationParameters();</span>
+<span class="fc" id="L270">        params.setRotationInRadians((float)theRotation);</span>
+<span class="fc" id="L271">        params.setScale((float)theScale);</span>
+<span class="fc" id="L272">        params.setTranslationX((float)theTranslationX);</span>
+<span class="fc" id="L273">        params.setTranslationY((float)theTranslationY);</span>
+<span class="fc" id="L274">        params.setOriginX((float)centroidX1);</span>
+<span class="fc" id="L275">        params.setOriginY((float)centroidY1);</span>
+<span class="fc" id="L276">        params.setNumberOfPointsUsed(matchedXY1.getN());</span>
 
-<span class="nc bnc" id="L278" title="All 2 branches missed.">        if (debug) {</span>
+<span class="pc bpc" id="L278" title="1 of 2 branches missed.">        if (debug) {</span>
 <span class="nc" id="L279">            log.info(&quot;params: &quot; + params.toString());</span>
         }
 
-<span class="nc" id="L282">        return params;</span>
+<span class="fc" id="L282">        return params;</span>
     }
 
      /**

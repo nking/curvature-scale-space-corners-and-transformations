@@ -35,7 +35,7 @@ import java.util.logging.Logger;
  */
 public final class CSSContourMatcher {
 
-<span class="nc" id="L38">    protected Heap heap = null;</span>
+<span class="fc" id="L38">    protected Heap heap = null;</span>
 
     /**
      * the costs calculated here are small fractions, so they need to be
@@ -54,25 +54,25 @@ public final class CSSContourMatcher {
     private float tMin2;
     private float tMax2;
 
-<span class="nc" id="L57">    private double solutionScale = Double.MAX_VALUE;</span>
+<span class="fc" id="L57">    private double solutionScale = Double.MAX_VALUE;</span>
 
-<span class="nc" id="L59">    private double solutionShift = Double.MAX_VALUE;</span>
+<span class="fc" id="L59">    private double solutionShift = Double.MAX_VALUE;</span>
 
-<span class="nc" id="L61">    private double solutionCost = Double.MAX_VALUE;</span>
+<span class="fc" id="L61">    private double solutionCost = Double.MAX_VALUE;</span>
 
-<span class="nc" id="L63">    private List&lt;CurvatureScaleSpaceContour&gt; solutionMatchedContours1 = null;</span>
+<span class="fc" id="L63">    private List&lt;CurvatureScaleSpaceContour&gt; solutionMatchedContours1 = null;</span>
 
-<span class="nc" id="L65">    private List&lt;CurvatureScaleSpaceContour&gt; solutionMatchedContours2 = null;</span>
+<span class="fc" id="L65">    private List&lt;CurvatureScaleSpaceContour&gt; solutionMatchedContours2 = null;</span>
 
-<span class="nc" id="L67">    private final Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L67">    private final Logger log = Logger.getLogger(this.getClass().getName());</span>
 
-<span class="nc" id="L69">    private boolean solverHasFinished = false;</span>
+<span class="fc" id="L69">    private boolean solverHasFinished = false;</span>
 
-<span class="nc" id="L71">    private boolean hasBeenInitialized = false;</span>
+<span class="fc" id="L71">    private boolean hasBeenInitialized = false;</span>
 
-<span class="nc" id="L73">    private boolean solutionHasSomeScalesSmallerThanOne = false;</span>
+<span class="fc" id="L73">    private boolean solutionHasSomeScalesSmallerThanOne = false;</span>
     
-<span class="nc" id="L75">    private boolean strongestPeaksImplyScaleSmallerThanOne = false;</span>
+<span class="fc" id="L75">    private boolean strongestPeaksImplyScaleSmallerThanOne = false;</span>
 
     /**
      * constructor taking required contour lists as arguments.  Note that the
@@ -96,15 +96,15 @@ public final class CSSContourMatcher {
     public CSSContourMatcher(
         final List&lt;CurvatureScaleSpaceContour&gt; contours1,
         final List&lt;CurvatureScaleSpaceContour&gt; contours2,
-<span class="nc" id="L99">        boolean contoursAreAlreadySorted) {</span>
+<span class="fc" id="L99">        boolean contoursAreAlreadySorted) {</span>
 
-<span class="nc" id="L101">        c1 = new ArrayList&lt;CurvatureScaleSpaceContour&gt;(contours1.size());</span>
+<span class="fc" id="L101">        c1 = new ArrayList&lt;CurvatureScaleSpaceContour&gt;(contours1.size());</span>
 
-<span class="nc" id="L103">        c2 = new ArrayList&lt;CurvatureScaleSpaceContour&gt;(contours2.size());</span>
+<span class="fc" id="L103">        c2 = new ArrayList&lt;CurvatureScaleSpaceContour&gt;(contours2.size());</span>
 
-<span class="nc" id="L105">        initializeVariables(contours1, contours2);</span>
+<span class="fc" id="L105">        initializeVariables(contours1, contours2);</span>
 
-<span class="nc bnc" id="L107" title="All 2 branches missed.">        if (!contoursAreAlreadySorted) {</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">        if (!contoursAreAlreadySorted) {</span>
 
 <span class="nc" id="L109">            Collections.sort(c1, new DescendingSigmaComparator());</span>
 
@@ -112,51 +112,51 @@ public final class CSSContourMatcher {
         }
 //printPeaks();
 
-<span class="nc" id="L115">        initializeHeapNodes();</span>
-<span class="nc" id="L116">    }</span>
+<span class="fc" id="L115">        initializeHeapNodes();</span>
+<span class="fc" id="L116">    }</span>
 
     private void initializeVariables(List&lt;CurvatureScaleSpaceContour&gt; contours1,
         List&lt;CurvatureScaleSpaceContour&gt; contours2) {
 
-<span class="nc bnc" id="L121" title="All 2 branches missed.">        if (hasBeenInitialized) {</span>
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">        if (hasBeenInitialized) {</span>
 <span class="nc" id="L122">            return;</span>
         }
 
-<span class="nc" id="L125">        c1.addAll(contours1);</span>
-<span class="nc" id="L126">        c2.addAll(contours2);</span>
+<span class="fc" id="L125">        c1.addAll(contours1);</span>
+<span class="fc" id="L126">        c2.addAll(contours2);</span>
 
-<span class="nc" id="L128">        float minT = Float.MAX_VALUE;</span>
-<span class="nc" id="L129">        float maxT = Float.NEGATIVE_INFINITY;</span>
-<span class="nc bnc" id="L130" title="All 2 branches missed.">        for (int i = 0; i &lt; c1.size(); i++) {</span>
-<span class="nc" id="L131">            CurvatureScaleSpaceContour contour = c1.get(i);</span>
-<span class="nc" id="L132">            float t = contour.getPeakScaleFreeLength();</span>
-<span class="nc bnc" id="L133" title="All 2 branches missed.">            if (t &lt; minT) {</span>
-<span class="nc" id="L134">                minT = t;</span>
+<span class="fc" id="L128">        float minT = Float.MAX_VALUE;</span>
+<span class="fc" id="L129">        float maxT = Float.NEGATIVE_INFINITY;</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">        for (int i = 0; i &lt; c1.size(); i++) {</span>
+<span class="fc" id="L131">            CurvatureScaleSpaceContour contour = c1.get(i);</span>
+<span class="fc" id="L132">            float t = contour.getPeakScaleFreeLength();</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">            if (t &lt; minT) {</span>
+<span class="fc" id="L134">                minT = t;</span>
             }
-<span class="nc bnc" id="L136" title="All 2 branches missed.">            if (t &gt; maxT) {</span>
-<span class="nc" id="L137">                maxT = t;</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">            if (t &gt; maxT) {</span>
+<span class="fc" id="L137">                maxT = t;</span>
             }
         }
-<span class="nc" id="L140">        tMin1 = minT;</span>
-<span class="nc" id="L141">        tMax1 = maxT;</span>
+<span class="fc" id="L140">        tMin1 = minT;</span>
+<span class="fc" id="L141">        tMax1 = maxT;</span>
 
-<span class="nc" id="L143">        minT = Float.MAX_VALUE;</span>
-<span class="nc" id="L144">        maxT = Float.NEGATIVE_INFINITY;</span>
-<span class="nc bnc" id="L145" title="All 2 branches missed.">        for (int i = 0; i &lt; c2.size(); i++) {</span>
-<span class="nc" id="L146">            CurvatureScaleSpaceContour contour = c2.get(i);</span>
-<span class="nc" id="L147">            float t = contour.getPeakScaleFreeLength();</span>
-<span class="nc bnc" id="L148" title="All 2 branches missed.">            if (t &lt; minT) {</span>
-<span class="nc" id="L149">                minT = t;</span>
+<span class="fc" id="L143">        minT = Float.MAX_VALUE;</span>
+<span class="fc" id="L144">        maxT = Float.NEGATIVE_INFINITY;</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">        for (int i = 0; i &lt; c2.size(); i++) {</span>
+<span class="fc" id="L146">            CurvatureScaleSpaceContour contour = c2.get(i);</span>
+<span class="fc" id="L147">            float t = contour.getPeakScaleFreeLength();</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">            if (t &lt; minT) {</span>
+<span class="fc" id="L149">                minT = t;</span>
             }
-<span class="nc bnc" id="L151" title="All 2 branches missed.">            if (t &gt; maxT) {</span>
-<span class="nc" id="L152">                maxT = t;</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">            if (t &gt; maxT) {</span>
+<span class="fc" id="L152">                maxT = t;</span>
             }
         }
-<span class="nc" id="L155">        tMin2 = minT;</span>
-<span class="nc" id="L156">        tMax2 = maxT;</span>
+<span class="fc" id="L155">        tMin2 = minT;</span>
+<span class="fc" id="L156">        tMax2 = maxT;</span>
 
-<span class="nc" id="L158">        hasBeenInitialized = true;</span>
-<span class="nc" id="L159">    }</span>
+<span class="fc" id="L158">        hasBeenInitialized = true;</span>
+<span class="fc" id="L159">    }</span>
 
     /**
     &lt;pre&gt;
@@ -190,34 +190,34 @@ public final class CSSContourMatcher {
     */
     private void initializeHeapNodes() {
 
-<span class="nc bnc" id="L193" title="All 2 branches missed.">        if (heap != null) {</span>
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">        if (heap != null) {</span>
 <span class="nc" id="L194">            throw new IllegalStateException(&quot;cannot invoke initializeHeapNodes() more than once&quot;);</span>
         }
 
-<span class="nc" id="L197">        heap = new Heap();</span>
+<span class="fc" id="L197">        heap = new Heap();</span>
 
         // (1)  create initial scale and translate nodes from all possible
         // contour combinations
 
-<span class="nc bnc" id="L202" title="All 2 branches missed.">        for (int index1 = 0; index1 &lt; c1.size(); ++index1) {</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">        for (int index1 = 0; index1 &lt; c1.size(); ++index1) {</span>
 
-<span class="nc" id="L204">            CurvatureScaleSpaceContour contour1 = c1.get(index1);</span>
+<span class="fc" id="L204">            CurvatureScaleSpaceContour contour1 = c1.get(index1);</span>
 
-<span class="nc" id="L206">            float ct1 = contour1.getPeakScaleFreeLength();</span>
+<span class="fc" id="L206">            float ct1 = contour1.getPeakScaleFreeLength();</span>
 
-<span class="nc bnc" id="L208" title="All 2 branches missed.">            boolean contour1IsLast = (ct1 == tMax1);</span>
-<span class="nc bnc" id="L209" title="All 2 branches missed.">            boolean contour1IsFirst = (ct1 == tMin1);</span>
+<span class="fc bfc" id="L208" title="All 2 branches covered.">            boolean contour1IsLast = (ct1 == tMax1);</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">            boolean contour1IsFirst = (ct1 == tMin1);</span>
 
-<span class="nc bnc" id="L211" title="All 2 branches missed.">            for (int index2 = 0; index2 &lt; c2.size(); ++index2) {</span>
+<span class="fc bfc" id="L211" title="All 2 branches covered.">            for (int index2 = 0; index2 &lt; c2.size(); ++index2) {</span>
 
-<span class="nc" id="L213">                CurvatureScaleSpaceContour contour2 = c2.get(index2);</span>
+<span class="fc" id="L213">                CurvatureScaleSpaceContour contour2 = c2.get(index2);</span>
 
-<span class="nc" id="L215">                float ct2 = contour2.getPeakScaleFreeLength();</span>
+<span class="fc" id="L215">                float ct2 = contour2.getPeakScaleFreeLength();</span>
 
-<span class="nc bnc" id="L217" title="All 2 branches missed.">                boolean contour2IsLast = (ct2 == tMax2);</span>
-<span class="nc bnc" id="L218" title="All 2 branches missed.">                boolean contour2IsFirst = (ct2 == tMin2);</span>
+<span class="fc bfc" id="L217" title="All 2 branches covered.">                boolean contour2IsLast = (ct2 == tMax2);</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">                boolean contour2IsFirst = (ct2 == tMin2);</span>
 
-<span class="nc" id="L220">                TransformationPair transformationPair = new TransformationPair(</span>
+<span class="fc" id="L220">                TransformationPair transformationPair = new TransformationPair(</span>
                     index1, index2);
 
                 /*
@@ -225,57 +225,57 @@ public final class CSSContourMatcher {
                 sigma2 = kScale * sigma1
                 */
 
-<span class="nc" id="L228">                double scale = contour2.getPeakSigma()/contour1.getPeakSigma();</span>
+<span class="fc" id="L228">                double scale = contour2.getPeakSigma()/contour1.getPeakSigma();</span>
 
                 // tolerance for within range of '1'?
-<span class="nc bnc" id="L231" title="All 2 branches missed.">                if ((scale + 0.05) &lt; 1) {</span>
+<span class="fc bfc" id="L231" title="All 2 branches covered.">                if ((scale + 0.05) &lt; 1) {</span>
                     // cannot match for scale &lt; 1 because cost function could
                     // prefer smaller sigma peaks that were not good matches.
-<span class="nc" id="L234">                    transformationPair.setSomeScaleAreSmallerThanOne();</span>
-<span class="nc" id="L235">                    strongestPeaksImplyScaleSmallerThanOne = true;</span>
-<span class="nc" id="L236">                    continue;</span>
+<span class="fc" id="L234">                    transformationPair.setSomeScaleAreSmallerThanOne();</span>
+<span class="fc" id="L235">                    strongestPeaksImplyScaleSmallerThanOne = true;</span>
+<span class="fc" id="L236">                    continue;</span>
                 }
 
-<span class="nc" id="L239">                double shift = contour2.getPeakScaleFreeLength() -</span>
-<span class="nc" id="L240">                    (contour1.getPeakScaleFreeLength() * scale);</span>
+<span class="fc" id="L239">                double shift = contour2.getPeakScaleFreeLength() -</span>
+<span class="fc" id="L240">                    (contour1.getPeakScaleFreeLength() * scale);</span>
 
                 /*
                 correct for wrapping around the scale free axis
                 */
-<span class="nc bnc" id="L245" title="All 4 branches missed.">                if (contour1IsLast &amp;&amp; contour2IsFirst) {</span>
-<span class="nc" id="L246">                    shift = (1 - contour1.getPeakScaleFreeLength()) +</span>
-<span class="nc" id="L247">                        contour2.getPeakScaleFreeLength();</span>
-<span class="nc bnc" id="L248" title="All 4 branches missed.">                } else if (contour1IsFirst &amp;&amp; contour2IsLast) {</span>
-<span class="nc" id="L249">                    shift = -1 * (contour1.getPeakScaleFreeLength() +</span>
-<span class="nc" id="L250">                        (1 - contour2.getPeakScaleFreeLength()));</span>
+<span class="fc bfc" id="L245" title="All 4 branches covered.">                if (contour1IsLast &amp;&amp; contour2IsFirst) {</span>
+<span class="fc" id="L246">                    shift = (1 - contour1.getPeakScaleFreeLength()) +</span>
+<span class="fc" id="L247">                        contour2.getPeakScaleFreeLength();</span>
+<span class="fc bfc" id="L248" title="All 4 branches covered.">                } else if (contour1IsFirst &amp;&amp; contour2IsLast) {</span>
+<span class="fc" id="L249">                    shift = -1 * (contour1.getPeakScaleFreeLength() +</span>
+<span class="fc" id="L250">                        (1 - contour2.getPeakScaleFreeLength()));</span>
                 }
 
-<span class="nc" id="L253">                transformationPair.setScale(scale);</span>
+<span class="fc" id="L253">                transformationPair.setScale(scale);</span>
 
-<span class="nc" id="L255">                transformationPair.setShift(shift);</span>
+<span class="fc" id="L255">                transformationPair.setShift(shift);</span>
 
-<span class="nc" id="L257">                List&lt;CurvatureScaleSpaceContour&gt; visited = new ArrayList&lt;CurvatureScaleSpaceContour&gt;();</span>
-<span class="nc" id="L258">                visited.add(contour1);</span>
+<span class="fc" id="L257">                List&lt;CurvatureScaleSpaceContour&gt; visited = new ArrayList&lt;CurvatureScaleSpaceContour&gt;();</span>
+<span class="fc" id="L258">                visited.add(contour1);</span>
 
-<span class="nc" id="L260">                NextContour nc = new NextContour(c1, visited);</span>
-<span class="nc" id="L261">                nc.addMatchedContours(contour1, contour2);</span>
+<span class="fc" id="L260">                NextContour nc = new NextContour(c1, visited);</span>
+<span class="fc" id="L261">                nc.addMatchedContours(contour1, contour2);</span>
 
-<span class="nc" id="L263">                transformationPair.setNextContour(nc);</span>
+<span class="fc" id="L263">                transformationPair.setNextContour(nc);</span>
 
-<span class="nc" id="L265">                double cost = 0;</span>
+<span class="fc" id="L265">                double cost = 0;</span>
 
                 //(2) calc cost: apply to tallest contours from each curve
 
-<span class="nc bnc" id="L269" title="All 2 branches missed.">                for (int index1s = 0; index1s &lt; c1.size(); ++index1s) {</span>
+<span class="pc bpc" id="L269" title="1 of 2 branches missed.">                for (int index1s = 0; index1s &lt; c1.size(); ++index1s) {</span>
 
-<span class="nc" id="L271">                    CurvatureScaleSpaceContour contour1s = c1.get(index1s);</span>
+<span class="fc" id="L271">                    CurvatureScaleSpaceContour contour1s = c1.get(index1s);</span>
 
-<span class="nc bnc" id="L273" title="All 2 branches missed.">                    while (nc.getMatchedContours1().contains(contour1s)</span>
-<span class="nc bnc" id="L274" title="All 2 branches missed.">                        &amp;&amp; ((index1s + 1) &lt; c1.size())) {</span>
-<span class="nc" id="L275">                        index1s++;</span>
-<span class="nc" id="L276">                        contour1s = c1.get(index1s);</span>
+<span class="fc bfc" id="L273" title="All 2 branches covered.">                    while (nc.getMatchedContours1().contains(contour1s)</span>
+<span class="pc bpc" id="L274" title="1 of 2 branches missed.">                        &amp;&amp; ((index1s + 1) &lt; c1.size())) {</span>
+<span class="fc" id="L275">                        index1s++;</span>
+<span class="fc" id="L276">                        contour1s = c1.get(index1s);</span>
                     }
-<span class="nc bnc" id="L278" title="All 2 branches missed.">                    if (nc.getMatchedContours1().contains(contour1s)) {</span>
+<span class="pc bpc" id="L278" title="1 of 2 branches missed.">                    if (nc.getMatchedContours1().contains(contour1s)) {</span>
 <span class="nc" id="L279">                        continue;</span>
                     }
 
@@ -283,27 +283,27 @@ public final class CSSContourMatcher {
                     t2 = kScale * t1 + dShift
                     sigma2 = kScale * sigma1
                     */
-<span class="nc" id="L286">                    double sigma2 = scale * contour1s.getPeakSigma();</span>
-<span class="nc" id="L287">                    double t2 = (scale * contour1s.getPeakScaleFreeLength())</span>
+<span class="fc" id="L286">                    double sigma2 = scale * contour1s.getPeakSigma();</span>
+<span class="fc" id="L287">                    double t2 = (scale * contour1s.getPeakScaleFreeLength())</span>
                         + shift;
-<span class="nc bnc" id="L289" title="All 2 branches missed.">                    if (t2 &lt; 0) {</span>
-<span class="nc" id="L290">                        t2 += 1;</span>
-<span class="nc bnc" id="L291" title="All 2 branches missed.">                    } else if (t2 &gt; 1) {</span>
-<span class="nc" id="L292">                        t2 = t2 - 1;</span>
+<span class="fc bfc" id="L289" title="All 2 branches covered.">                    if (t2 &lt; 0) {</span>
+<span class="fc" id="L290">                        t2 += 1;</span>
+<span class="fc bfc" id="L291" title="All 2 branches covered.">                    } else if (t2 &gt; 1) {</span>
+<span class="fc" id="L292">                        t2 = t2 - 1;</span>
                     }
 
-<span class="nc" id="L295">                    CurvatureScaleSpaceContour contour2s = findMatchingC2(</span>
+<span class="fc" id="L295">                    CurvatureScaleSpaceContour contour2s = findMatchingC2(</span>
                         sigma2, t2, nc);
 
-<span class="nc bnc" id="L298" title="All 2 branches missed.">                    if (contour2s != null) {</span>
-<span class="nc" id="L299">                        nc.addMatchedContours(contour1s, contour2s);</span>
+<span class="pc bpc" id="L298" title="1 of 2 branches missed.">                    if (contour2s != null) {</span>
+<span class="fc" id="L299">                        nc.addMatchedContours(contour1s, contour2s);</span>
                     }
 
-<span class="nc" id="L302">                    double cost2 = calculateCost(contour2s, sigma2, t2);</span>
+<span class="fc" id="L302">                    double cost2 = calculateCost(contour2s, sigma2, t2);</span>
 
-<span class="nc" id="L304">                    cost += cost2;</span>
+<span class="fc" id="L304">                    cost += cost2;</span>
 
-<span class="nc" id="L306">                    break;</span>
+<span class="fc" id="L306">                    break;</span>
                 }
 
                 /*
@@ -318,20 +318,20 @@ public final class CSSContourMatcher {
                 image and is added to the cost of the match computed when a node
                 is created.
                 */
-<span class="nc" id="L321">                double penalty = c1.get(0).getPeakSigma()</span>
-<span class="nc" id="L322">                    - contour1.getPeakSigma();</span>
-<span class="nc" id="L323">                cost += penalty;</span>
+<span class="fc" id="L321">                double penalty = c1.get(0).getPeakSigma()</span>
+<span class="fc" id="L322">                    - contour1.getPeakSigma();</span>
+<span class="fc" id="L323">                cost += penalty;</span>
 
-<span class="nc" id="L325">                long costL = (long)(cost * heapKeyFactor);</span>
+<span class="fc" id="L325">                long costL = (long)(cost * heapKeyFactor);</span>
 
-<span class="nc" id="L327">                HeapNode node = new HeapNode(costL);</span>
+<span class="fc" id="L327">                HeapNode node = new HeapNode(costL);</span>
 
-<span class="nc" id="L329">                node.setData(transformationPair);</span>
+<span class="fc" id="L329">                node.setData(transformationPair);</span>
 
-<span class="nc" id="L331">                heap.insert(node);</span>
+<span class="fc" id="L331">                heap.insert(node);</span>
             }
         }
-<span class="nc" id="L334">    }</span>
+<span class="fc" id="L334">    }</span>
 
     /**
      * get the curvature scale space images factor of scale between the
@@ -339,7 +339,7 @@ public final class CSSContourMatcher {
      * @return
      */
     public double getSolvedScale() {
-<span class="nc" id="L342">        return solutionScale;</span>
+<span class="fc" id="L342">        return solutionScale;</span>
     }
 
     /**
@@ -348,7 +348,7 @@ public final class CSSContourMatcher {
      * @return
      */
     public double getSolvedShift() {
-<span class="nc" id="L351">        return solutionShift;</span>
+<span class="fc" id="L351">        return solutionShift;</span>
     }
 
     /**
@@ -357,7 +357,7 @@ public final class CSSContourMatcher {
      * @return
      */
     public double getSolvedCost() {
-<span class="nc" id="L360">        return solutionCost;</span>
+<span class="fc" id="L360">        return solutionCost;</span>
     }
 
      /**
@@ -369,59 +369,59 @@ public final class CSSContourMatcher {
      */
     public boolean matchContours() {
 
-<span class="nc bnc" id="L372" title="All 2 branches missed.">        if (solverHasFinished) {</span>
+<span class="pc bpc" id="L372" title="1 of 2 branches missed.">        if (solverHasFinished) {</span>
 <span class="nc" id="L373">            throw new IllegalStateException(&quot;matchContours cannot be invoked more than once&quot;);</span>
         }
 
-<span class="nc bnc" id="L376" title="All 2 branches missed.">        if (heap.getNumberOfNodes() == 0) {</span>
-<span class="nc" id="L377">            solverHasFinished = true;</span>
-<span class="nc" id="L378">            return false;</span>
+<span class="fc bfc" id="L376" title="All 2 branches covered.">        if (heap.getNumberOfNodes() == 0) {</span>
+<span class="fc" id="L377">            solverHasFinished = true;</span>
+<span class="fc" id="L378">            return false;</span>
         }
 
-<span class="nc" id="L381">        solutionShift = Double.MAX_VALUE;</span>
-<span class="nc" id="L382">        solutionScale = Double.MAX_VALUE;</span>
-<span class="nc" id="L383">        solutionCost = Double.MAX_VALUE;</span>
+<span class="fc" id="L381">        solutionShift = Double.MAX_VALUE;</span>
+<span class="fc" id="L382">        solutionScale = Double.MAX_VALUE;</span>
+<span class="fc" id="L383">        solutionCost = Double.MAX_VALUE;</span>
 
         // use a specialization of A* algorithm to apply transformation to
         // contours for best cost solutions (does not compute all possible
         // solutions).
-<span class="nc" id="L388">        HeapNode minCost = solve();</span>
+<span class="fc" id="L388">        HeapNode minCost = solve();</span>
 
-<span class="nc bnc" id="L390" title="All 2 branches missed.">        if (minCost == null) {</span>
+<span class="pc bpc" id="L390" title="1 of 2 branches missed.">        if (minCost == null) {</span>
 <span class="nc" id="L391">            return false;</span>
         }
 
-<span class="nc" id="L394">        TransformationPair transformationPair = (TransformationPair)minCost.getData();</span>
+<span class="fc" id="L394">        TransformationPair transformationPair = (TransformationPair)minCost.getData();</span>
 
-<span class="nc" id="L396">        float shift = (float)transformationPair.getShift();</span>
-<span class="nc" id="L397">        float scale = (float)transformationPair.getScale();</span>
+<span class="fc" id="L396">        float shift = (float)transformationPair.getShift();</span>
+<span class="fc" id="L397">        float scale = (float)transformationPair.getScale();</span>
 
-<span class="nc" id="L399">        solutionShift = shift;</span>
-<span class="nc" id="L400">        solutionScale = scale;</span>
-<span class="nc" id="L401">        solutionCost = ((double)minCost.getKey()/(double)heapKeyFactor);</span>
+<span class="fc" id="L399">        solutionShift = shift;</span>
+<span class="fc" id="L400">        solutionScale = scale;</span>
+<span class="fc" id="L401">        solutionCost = ((double)minCost.getKey()/(double)heapKeyFactor);</span>
 
-<span class="nc" id="L403">        NextContour nc = transformationPair.getNextContour();</span>
+<span class="fc" id="L403">        NextContour nc = transformationPair.getNextContour();</span>
 
-<span class="nc" id="L405">        solutionMatchedContours1 = nc.getMatchedContours1();</span>
+<span class="fc" id="L405">        solutionMatchedContours1 = nc.getMatchedContours1();</span>
 
-<span class="nc" id="L407">        solutionMatchedContours2 = nc.getMatchedContours2();</span>
+<span class="fc" id="L407">        solutionMatchedContours2 = nc.getMatchedContours2();</span>
 
-<span class="nc" id="L409">        solverHasFinished = true;</span>
+<span class="fc" id="L409">        solverHasFinished = true;</span>
 
-<span class="nc" id="L411">        solutionHasSomeScalesSmallerThanOne = transformationPair.scaleIsPossiblyAmbiguous();</span>
+<span class="fc" id="L411">        solutionHasSomeScalesSmallerThanOne = transformationPair.scaleIsPossiblyAmbiguous();</span>
 
  //printMatches();
  //log.info(&quot;cost=&quot; + solutionCost);
 
-<span class="nc" id="L416">        return true;</span>
+<span class="fc" id="L416">        return true;</span>
     }
 
     public List&lt;CurvatureScaleSpaceContour&gt; getSolutionMatchedContours1() {
-<span class="nc" id="L420">        return solutionMatchedContours1;</span>
+<span class="fc" id="L420">        return solutionMatchedContours1;</span>
     }
 
     public List&lt;CurvatureScaleSpaceContour&gt; getSolutionMatchedContours2() {
-<span class="nc" id="L424">        return solutionMatchedContours2;</span>
+<span class="fc" id="L424">        return solutionMatchedContours2;</span>
     }
 
     /**
@@ -443,53 +443,53 @@ public final class CSSContourMatcher {
      */
     private HeapNode solve() {
 
-<span class="nc" id="L446">        HeapNode u = heap.extractMin();</span>
+<span class="fc" id="L446">        HeapNode u = heap.extractMin();</span>
 
-<span class="nc bnc" id="L448" title="All 2 branches missed.">        while (u != null) {</span>
+<span class="pc bpc" id="L448" title="1 of 2 branches missed.">        while (u != null) {</span>
 
-<span class="nc" id="L450">            TransformationPair transformationPair = (TransformationPair)u.getData();</span>
+<span class="fc" id="L450">            TransformationPair transformationPair = (TransformationPair)u.getData();</span>
 
-<span class="nc" id="L452">            NextContour nc = transformationPair.getNextContour();</span>
+<span class="fc" id="L452">            NextContour nc = transformationPair.getNextContour();</span>
 
-<span class="nc" id="L454">            CurvatureScaleSpaceContour c = c1.get(transformationPair.getContourIndex1());</span>
+<span class="fc" id="L454">            CurvatureScaleSpaceContour c = c1.get(transformationPair.getContourIndex1());</span>
 
-<span class="nc" id="L456">            CurvatureScaleSpaceContour contour1s =</span>
-<span class="nc" id="L457">                nc.findTallestContourWithinScaleSpace();</span>
+<span class="fc" id="L456">            CurvatureScaleSpaceContour contour1s =</span>
+<span class="fc" id="L457">                nc.findTallestContourWithinScaleSpace();</span>
 
-<span class="nc bnc" id="L459" title="All 2 branches missed.">            if ((contour1s == null) ||</span>
-<span class="nc bnc" id="L460" title="All 2 branches missed.">                nc.getMatchedContours1().contains(contour1s)) {</span>
+<span class="fc bfc" id="L459" title="All 2 branches covered.">            if ((contour1s == null) ||</span>
+<span class="pc bpc" id="L460" title="1 of 2 branches missed.">                nc.getMatchedContours1().contains(contour1s)) {</span>
 
-<span class="nc" id="L462">                contour1s = nc.findTheNextSmallestUnvisitedSibling(c);</span>
+<span class="fc" id="L462">                contour1s = nc.findTheNextSmallestUnvisitedSibling(c);</span>
             }
 
-<span class="nc bnc" id="L465" title="All 2 branches missed.">            if (contour1s == null) {</span>
-<span class="nc" id="L466">                return u;</span>
+<span class="fc bfc" id="L465" title="All 2 branches covered.">            if (contour1s == null) {</span>
+<span class="fc" id="L466">                return u;</span>
             }
 
-<span class="nc" id="L469">            float shift = (float)transformationPair.getShift();</span>
-<span class="nc" id="L470">            float scale = (float)transformationPair.getScale();</span>
+<span class="fc" id="L469">            float shift = (float)transformationPair.getShift();</span>
+<span class="fc" id="L470">            float scale = (float)transformationPair.getScale();</span>
 
             /*
             t2 = kScale * t1 + dShift
             sigma2 = kScale * sigma1
             */
-<span class="nc" id="L476">            double sigma2 = scale * contour1s.getPeakSigma();</span>
-<span class="nc" id="L477">            double t2 = (scale * contour1s.getPeakScaleFreeLength()) + shift;</span>
+<span class="fc" id="L476">            double sigma2 = scale * contour1s.getPeakSigma();</span>
+<span class="fc" id="L477">            double t2 = (scale * contour1s.getPeakScaleFreeLength()) + shift;</span>
             //double t2 = contour1s.getPeakScaleFreeLength() + shift;
-<span class="nc bnc" id="L479" title="All 2 branches missed.">            if (t2 &lt; 0) {</span>
-<span class="nc" id="L480">                t2 = 1 + t2;</span>
-<span class="nc bnc" id="L481" title="All 2 branches missed.">            } else if (t2 &gt; 1) {</span>
-<span class="nc" id="L482">                t2 = t2 - 1;</span>
+<span class="fc bfc" id="L479" title="All 2 branches covered.">            if (t2 &lt; 0) {</span>
+<span class="fc" id="L480">                t2 = 1 + t2;</span>
+<span class="fc bfc" id="L481" title="All 2 branches covered.">            } else if (t2 &gt; 1) {</span>
+<span class="fc" id="L482">                t2 = t2 - 1;</span>
             }
 
-<span class="nc" id="L485">            CurvatureScaleSpaceContour contour2s = findMatchingC2(sigma2, t2,</span>
+<span class="fc" id="L485">            CurvatureScaleSpaceContour contour2s = findMatchingC2(sigma2, t2,</span>
                 nc);
 
-<span class="nc bnc" id="L488" title="All 2 branches missed.">            if (contour2s != null) {</span>
-<span class="nc" id="L489">                nc.addMatchedContours(contour1s, contour2s);</span>
+<span class="fc bfc" id="L488" title="All 2 branches covered.">            if (contour2s != null) {</span>
+<span class="fc" id="L489">                nc.addMatchedContours(contour1s, contour2s);</span>
             }
 
-<span class="nc" id="L492">            double cost2 = calculateCost(contour2s, sigma2, t2);</span>
+<span class="fc" id="L492">            double cost2 = calculateCost(contour2s, sigma2, t2);</span>
 
             /*
             NOTE: Not sure about applying this penalty for this cost.
@@ -503,18 +503,18 @@ public final class CSSContourMatcher {
             image and is added to the cost of the match computed when a node
             is created.
             */
-<span class="nc" id="L506">            double penalty = c1.get(0).getPeakSigma()</span>
-<span class="nc" id="L507">                - contour1s.getPeakSigma();</span>
+<span class="fc" id="L506">            double penalty = c1.get(0).getPeakSigma()</span>
+<span class="fc" id="L507">                - contour1s.getPeakSigma();</span>
             //cost2 += penalty;
 
-<span class="nc" id="L510">            u.setData(transformationPair);</span>
+<span class="fc" id="L510">            u.setData(transformationPair);</span>
 
-<span class="nc" id="L512">            u.setKey(u.getKey() + (long)(cost2 * heapKeyFactor));</span>
+<span class="fc" id="L512">            u.setKey(u.getKey() + (long)(cost2 * heapKeyFactor));</span>
 
-<span class="nc" id="L514">            heap.insert(u);</span>
+<span class="fc" id="L514">            heap.insert(u);</span>
 
-<span class="nc" id="L516">            u = heap.extractMin();</span>
-<span class="nc" id="L517">        }</span>
+<span class="fc" id="L516">            u = heap.extractMin();</span>
+<span class="fc" id="L517">        }</span>
 
 <span class="nc" id="L519">        return u;</span>
     }
@@ -529,8 +529,8 @@ public final class CSSContourMatcher {
     private double calculateCost(CurvatureScaleSpaceContour contour,
         double sigma, double scaleFreeLength) {
 
-<span class="nc bnc" id="L532" title="All 2 branches missed.">        if (contour == null) {</span>
-<span class="nc" id="L533">            return sigma;</span>
+<span class="fc bfc" id="L532" title="All 2 branches covered.">        if (contour == null) {</span>
+<span class="fc" id="L533">            return sigma;</span>
         }
         /*
         From Mokhatarian &amp; Mackworth 1986, Section IV, middle of column 1:
@@ -540,12 +540,12 @@ public final class CSSContourMatcher {
         distance between them after one of them has been transformed.&quot;
         */
 
-<span class="nc" id="L543">        double ds = sigma - contour.getPeakSigma();</span>
+<span class="fc" id="L543">        double ds = sigma - contour.getPeakSigma();</span>
 
-<span class="nc" id="L545">        double dt = scaleFreeLength - contour.getPeakScaleFreeLength();</span>
-<span class="nc" id="L546">        double len = Math.sqrt(ds*ds + dt*dt);</span>
+<span class="fc" id="L545">        double dt = scaleFreeLength - contour.getPeakScaleFreeLength();</span>
+<span class="fc" id="L546">        double len = Math.sqrt(ds*ds + dt*dt);</span>
 
-<span class="nc" id="L548">        return len;</span>
+<span class="fc" id="L548">        return len;</span>
     }
 
     private CurvatureScaleSpaceContour findMatchingC2(final double sigma,
@@ -556,103 +556,103 @@ public final class CSSContourMatcher {
         // the closest index to sigma, then small nearby search
         // for the closest scaleFreeLength
 
-<span class="nc" id="L559">        List&lt;CurvatureScaleSpaceContour&gt; exclude = nc.getMatchedContours2();</span>
+<span class="fc" id="L559">        List&lt;CurvatureScaleSpaceContour&gt; exclude = nc.getMatchedContours2();</span>
 
         //TODO: use 0.1*sigma? current sigma factor peak center error
-<span class="nc" id="L562">        double tolSigma = 0.04*sigma;</span>
-<span class="nc bnc" id="L563" title="All 2 branches missed.">        if (tolSigma &lt; 1E-2) {</span>
+<span class="fc" id="L562">        double tolSigma = 0.04*sigma;</span>
+<span class="pc bpc" id="L563" title="1 of 2 branches missed.">        if (tolSigma &lt; 1E-2) {</span>
 <span class="nc" id="L564">            tolSigma = 0.1;</span>
         }
 
         // consider wrap around searches too, for scaleFreeLength &gt; 0.5 or
         // scaleFreeLength &lt; 0.5
-<span class="nc bnc" id="L569" title="All 2 branches missed.">        double wrapScaleFreeLength = (scaleFreeLength &gt; 0.5) ?</span>
+<span class="fc bfc" id="L569" title="All 2 branches covered.">        double wrapScaleFreeLength = (scaleFreeLength &gt; 0.5) ?</span>
             scaleFreeLength - 1 : 1 + scaleFreeLength;
 
-<span class="nc" id="L572">        double minDiffS = Double.MAX_VALUE;</span>
-<span class="nc" id="L573">        double minDiffT = Double.MAX_VALUE;</span>
-<span class="nc" id="L574">        int idx = -1;</span>
+<span class="fc" id="L572">        double minDiffS = Double.MAX_VALUE;</span>
+<span class="fc" id="L573">        double minDiffT = Double.MAX_VALUE;</span>
+<span class="fc" id="L574">        int idx = -1;</span>
 
-<span class="nc" id="L576">        double minDiff2T = Double.MAX_VALUE;</span>
-<span class="nc" id="L577">        int minDiff2TIdx = -1;</span>
+<span class="fc" id="L576">        double minDiff2T = Double.MAX_VALUE;</span>
+<span class="fc" id="L577">        int minDiff2TIdx = -1;</span>
 
-<span class="nc" id="L579">        double minDiffLen = Double.MAX_VALUE;</span>
-<span class="nc" id="L580">        int minDiffLenIdx = -1;</span>
+<span class="fc" id="L579">        double minDiffLen = Double.MAX_VALUE;</span>
+<span class="fc" id="L580">        int minDiffLenIdx = -1;</span>
 
-<span class="nc bnc" id="L582" title="All 2 branches missed.">        for (int i = 0; i &lt; c2.size(); ++i) {</span>
+<span class="fc bfc" id="L582" title="All 2 branches covered.">        for (int i = 0; i &lt; c2.size(); ++i) {</span>
 
-<span class="nc" id="L584">            CurvatureScaleSpaceContour c = c2.get(i);</span>
+<span class="fc" id="L584">            CurvatureScaleSpaceContour c = c2.get(i);</span>
 
-<span class="nc bnc" id="L586" title="All 2 branches missed.">            if (exclude.contains(c)) {</span>
-<span class="nc" id="L587">                continue;</span>
+<span class="fc bfc" id="L586" title="All 2 branches covered.">            if (exclude.contains(c)) {</span>
+<span class="fc" id="L587">                continue;</span>
             }
 
-<span class="nc" id="L590">            double diffS = Math.abs(c.getPeakSigma() - sigma);</span>
-<span class="nc" id="L591">            double diffT = Math.abs(c.getPeakScaleFreeLength() -</span>
+<span class="fc" id="L590">            double diffS = Math.abs(c.getPeakSigma() - sigma);</span>
+<span class="fc" id="L591">            double diffT = Math.abs(c.getPeakScaleFreeLength() -</span>
                 scaleFreeLength);
 
-<span class="nc" id="L594">            double len = Math.sqrt(diffS * diffS + diffT * diffT);</span>
-<span class="nc bnc" id="L595" title="All 2 branches missed.">            if (len &lt; minDiffLen) {</span>
-<span class="nc" id="L596">                minDiffLen = len;</span>
-<span class="nc" id="L597">                minDiffLenIdx = i;</span>
+<span class="fc" id="L594">            double len = Math.sqrt(diffS * diffS + diffT * diffT);</span>
+<span class="fc bfc" id="L595" title="All 2 branches covered.">            if (len &lt; minDiffLen) {</span>
+<span class="fc" id="L596">                minDiffLen = len;</span>
+<span class="fc" id="L597">                minDiffLenIdx = i;</span>
             }
 
-<span class="nc bnc" id="L600" title="All 4 branches missed.">            if ((diffS &lt;= (minDiffS + tolSigma)) &amp;&amp; (diffT &lt;= minDiffT)) {</span>
-<span class="nc" id="L601">                minDiffS = diffS;</span>
-<span class="nc" id="L602">                minDiffT = diffT;</span>
-<span class="nc" id="L603">                idx = i;</span>
-<span class="nc bnc" id="L604" title="All 4 branches missed.">            } else if ((diffT &lt; minDiff2T) &amp;&amp; (diffS &lt;= (minDiffS + 3*tolSigma))</span>
+<span class="fc bfc" id="L600" title="All 4 branches covered.">            if ((diffS &lt;= (minDiffS + tolSigma)) &amp;&amp; (diffT &lt;= minDiffT)) {</span>
+<span class="fc" id="L601">                minDiffS = diffS;</span>
+<span class="fc" id="L602">                minDiffT = diffT;</span>
+<span class="fc" id="L603">                idx = i;</span>
+<span class="fc bfc" id="L604" title="All 4 branches covered.">            } else if ((diffT &lt; minDiff2T) &amp;&amp; (diffS &lt;= (minDiffS + 3*tolSigma))</span>
                 ) {
-<span class="nc" id="L606">                minDiff2T = diffT;</span>
-<span class="nc" id="L607">                minDiff2TIdx = i;</span>
+<span class="fc" id="L606">                minDiff2T = diffT;</span>
+<span class="fc" id="L607">                minDiff2TIdx = i;</span>
             }
 
-<span class="nc" id="L610">            diffT = Math.abs(c.getPeakScaleFreeLength() -</span>
+<span class="fc" id="L610">            diffT = Math.abs(c.getPeakScaleFreeLength() -</span>
                 wrapScaleFreeLength);
 
-<span class="nc" id="L613">            len = Math.sqrt(diffS * diffS + diffT * diffT);</span>
-<span class="nc bnc" id="L614" title="All 2 branches missed.">            if (len &lt; minDiffLen) {</span>
-<span class="nc" id="L615">                minDiffLen = len;</span>
-<span class="nc" id="L616">                minDiffLenIdx = i;</span>
+<span class="fc" id="L613">            len = Math.sqrt(diffS * diffS + diffT * diffT);</span>
+<span class="fc bfc" id="L614" title="All 2 branches covered.">            if (len &lt; minDiffLen) {</span>
+<span class="fc" id="L615">                minDiffLen = len;</span>
+<span class="fc" id="L616">                minDiffLenIdx = i;</span>
             }
 
-<span class="nc bnc" id="L619" title="All 4 branches missed.">            if ((diffS &lt;= (minDiffS + tolSigma)) &amp;&amp; (diffT &lt;= minDiffT)) {</span>
-<span class="nc" id="L620">                minDiffS = diffS;</span>
-<span class="nc" id="L621">                minDiffT = diffT;</span>
-<span class="nc" id="L622">                idx = i;</span>
-<span class="nc bnc" id="L623" title="All 4 branches missed.">            } else if ((diffT &lt; minDiff2T) &amp;&amp; (diffS &lt;= (minDiffS + 3*tolSigma))</span>
+<span class="fc bfc" id="L619" title="All 4 branches covered.">            if ((diffS &lt;= (minDiffS + tolSigma)) &amp;&amp; (diffT &lt;= minDiffT)) {</span>
+<span class="fc" id="L620">                minDiffS = diffS;</span>
+<span class="fc" id="L621">                minDiffT = diffT;</span>
+<span class="fc" id="L622">                idx = i;</span>
+<span class="fc bfc" id="L623" title="All 4 branches covered.">            } else if ((diffT &lt; minDiff2T) &amp;&amp; (diffS &lt;= (minDiffS + 3*tolSigma))</span>
                 ) {
-<span class="nc" id="L625">                minDiff2T = diffT;</span>
-<span class="nc" id="L626">                minDiff2TIdx = i;</span>
+<span class="fc" id="L625">                minDiff2T = diffT;</span>
+<span class="fc" id="L626">                minDiff2TIdx = i;</span>
             }
         }
 
-<span class="nc bnc" id="L630" title="All 2 branches missed.">        if (minDiffS &gt; 0.2*sigma) {</span>
-<span class="nc bnc" id="L631" title="All 2 branches missed.">            if (minDiffLenIdx == -1) {</span>
-<span class="nc" id="L632">                return null;</span>
+<span class="fc bfc" id="L630" title="All 2 branches covered.">        if (minDiffS &gt; 0.2*sigma) {</span>
+<span class="fc bfc" id="L631" title="All 2 branches covered.">            if (minDiffLenIdx == -1) {</span>
+<span class="fc" id="L632">                return null;</span>
             }
-<span class="nc" id="L634">            return c2.get(minDiffLenIdx);</span>
+<span class="fc" id="L634">            return c2.get(minDiffLenIdx);</span>
         }
 
-<span class="nc bnc" id="L637" title="All 2 branches missed.">        if (minDiffT &lt;= minDiff2T) {</span>
-<span class="nc bnc" id="L638" title="All 2 branches missed.">            if (idx == -1) {</span>
+<span class="fc bfc" id="L637" title="All 2 branches covered.">        if (minDiffT &lt;= minDiff2T) {</span>
+<span class="pc bpc" id="L638" title="1 of 2 branches missed.">            if (idx == -1) {</span>
 <span class="nc" id="L639">                return null;</span>
             }
-<span class="nc" id="L641">            return c2.get(idx);</span>
+<span class="fc" id="L641">            return c2.get(idx);</span>
         }
 
-<span class="nc bnc" id="L644" title="All 2 branches missed.">        if (minDiff2TIdx == -1) {</span>
+<span class="pc bpc" id="L644" title="1 of 2 branches missed.">        if (minDiff2TIdx == -1) {</span>
 <span class="nc" id="L645">            return null;</span>
         }
 
-<span class="nc" id="L648">        return c2.get(minDiff2TIdx);</span>
+<span class="fc" id="L648">        return c2.get(minDiff2TIdx);</span>
     }
 
     public boolean scaleIsPossiblyAmbiguous() {
-<span class="nc" id="L652">        return solutionHasSomeScalesSmallerThanOne;</span>
+<span class="fc" id="L652">        return solutionHasSomeScalesSmallerThanOne;</span>
     }
     public boolean strongestPeaksImplyScaleSmallerThanOne() {
-<span class="nc" id="L655">        return strongestPeaksImplyScaleSmallerThanOne;</span>
+<span class="fc" id="L655">        return strongestPeaksImplyScaleSmallerThanOne;</span>
     }
 
     /*

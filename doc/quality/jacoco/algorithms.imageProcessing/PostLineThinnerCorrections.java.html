@@ -340,25 +340,25 @@ import java.util.logging.Logger;
 <span class="fc" id="L340">            boolean foundPattern = foundPattern(p, points, imageWidth,</span>
                 imageHeight, zeroes, ones, tmpPointsRemoved, tmpPointsAdded);
             
-<span class="fc bfc" id="L343" title="All 2 branches covered.">            if (!foundPattern) {</span>
+<span class="pc bpc" id="L343" title="1 of 2 branches missed.">            if (!foundPattern) {</span>
 <span class="fc" id="L344">                continue;</span>
             }
             
-<span class="fc" id="L347">            int col = p.getX();</span>
-<span class="fc" id="L348">            int row = p.getY();</span>
+<span class="nc" id="L347">            int col = p.getX();</span>
+<span class="nc" id="L348">            int row = p.getY();</span>
             
-<span class="fc bfc" id="L350" title="All 2 branches covered.">            for (PairInt p2 : changeToZeroes) {</span>
-<span class="fc" id="L351">                int x = col + p2.getX();</span>
-<span class="fc" id="L352">                int y = row + p2.getY();</span>
-<span class="pc bpc" id="L353" title="4 of 8 branches missed.">                if ((x &lt; 0) || (y &lt; 0) || (x &gt; (w - 1)) || (y &gt; (h - 1))) {</span>
+<span class="nc bnc" id="L350" title="All 2 branches missed.">            for (PairInt p2 : changeToZeroes) {</span>
+<span class="nc" id="L351">                int x = col + p2.getX();</span>
+<span class="nc" id="L352">                int y = row + p2.getY();</span>
+<span class="nc bnc" id="L353" title="All 8 branches missed.">                if ((x &lt; 0) || (y &lt; 0) || (x &gt; (w - 1)) || (y &gt; (h - 1))) {</span>
 <span class="nc" id="L354">                    continue;</span>
                 }
-<span class="fc" id="L356">                PairInt p3 = new PairInt(x, y);</span>
-<span class="fc" id="L357">                tmpPointsAdded.remove(p3);              </span>
-<span class="fc" id="L358">                tmpPointsRemoved.add(p3);</span>
-<span class="fc" id="L359">            }</span>
+<span class="nc" id="L356">                PairInt p3 = new PairInt(x, y);</span>
+<span class="nc" id="L357">                tmpPointsAdded.remove(p3);              </span>
+<span class="nc" id="L358">                tmpPointsRemoved.add(p3);</span>
+<span class="nc" id="L359">            }</span>
 
-<span class="pc bpc" id="L361" title="1 of 2 branches missed.">            for (PairInt p2 : changeToOnes) {</span>
+<span class="nc bnc" id="L361" title="All 2 branches missed.">            for (PairInt p2 : changeToOnes) {</span>
 <span class="nc" id="L362">                int x = col + p2.getX();</span>
 <span class="nc" id="L363">                int y = row + p2.getY();</span>
 <span class="nc bnc" id="L364" title="All 8 branches missed.">                if ((x &lt; 0) || (y &lt; 0) || (x &gt; (w - 1)) || (y &gt; (h - 1))) {</span>
@@ -368,13 +368,13 @@ import java.util.logging.Logger;
 <span class="nc" id="L368">                tmpPointsRemoved.remove(p3);</span>
 <span class="nc" id="L369">                tmpPointsAdded.add(p3);</span>
 <span class="nc" id="L370">            }</span>
-<span class="fc" id="L371">        }</span>
+<span class="nc" id="L371">        }</span>
         
 <span class="fc" id="L373">        int nCorrections = tmpPointsRemoved.size() + tmpPointsAdded.size();</span>
         
-<span class="fc bfc" id="L375" title="All 2 branches covered.">        for (PairInt p2 : tmpPointsRemoved) {</span>
-<span class="fc" id="L376">            points.remove(p2);</span>
-<span class="fc" id="L377">        }</span>
+<span class="pc bpc" id="L375" title="1 of 2 branches missed.">        for (PairInt p2 : tmpPointsRemoved) {</span>
+<span class="nc" id="L376">            points.remove(p2);</span>
+<span class="nc" id="L377">        }</span>
 <span class="pc bpc" id="L378" title="1 of 2 branches missed.">        for (PairInt p2 : tmpPointsAdded) {</span>
 <span class="nc" id="L379">            points.add(p2);</span>
 <span class="nc" id="L380">        }</span>
@@ -555,8 +555,8 @@ import java.util.logging.Logger;
         Set&lt;PairInt&gt; tmpPointsAdded) {
         
 <span class="fc" id="L557">        boolean isRemoved = tmpPointsRemoved.contains(p);</span>
-<span class="fc bfc" id="L558" title="All 2 branches covered.">        if (isRemoved) {</span>
-<span class="fc" id="L559">            return false;</span>
+<span class="pc bpc" id="L558" title="1 of 2 branches missed.">        if (isRemoved) {</span>
+<span class="nc" id="L559">            return false;</span>
         }
             
 <span class="fc" id="L562">        int col = p.getX();</span>
@@ -570,29 +570,29 @@ import java.util.logging.Logger;
 <span class="fc bfc" id="L570" title="All 2 branches covered.">        for (PairInt p2 : zeroes) {</span>
 <span class="fc" id="L571">            int x = col + p2.getX();</span>
 <span class="fc" id="L572">            int y = row + p2.getY();</span>
-<span class="pc bpc" id="L573" title="3 of 8 branches missed.">            if ((x &lt; 0) || (y &lt; 0) || (x &gt; (w - 1)) || (y &gt; (h - 1))) {</span>
-<span class="fc" id="L574">                return false;</span>
+<span class="pc bpc" id="L573" title="4 of 8 branches missed.">            if ((x &lt; 0) || (y &lt; 0) || (x &gt; (w - 1)) || (y &gt; (h - 1))) {</span>
+<span class="nc" id="L574">                return false;</span>
             }
 <span class="fc" id="L576">            PairInt p3 = new PairInt(x, y);</span>
-<span class="fc bfc" id="L577" title="All 2 branches covered.">            if (!tmpPointsRemoved.contains(p3)</span>
+<span class="pc bpc" id="L577" title="1 of 2 branches missed.">            if (!tmpPointsRemoved.contains(p3)</span>
 <span class="pc bpc" id="L578" title="1 of 4 branches missed.">                &amp;&amp; (points.contains(p3) || tmpPointsAdded.contains(p3))) {</span>
 <span class="fc" id="L579">                return false;</span>
             }
 <span class="fc" id="L581">        }</span>
 
-<span class="fc bfc" id="L583" title="All 2 branches covered.">        for (PairInt p2 : ones) {</span>
+<span class="pc bpc" id="L583" title="1 of 2 branches missed.">        for (PairInt p2 : ones) {</span>
 <span class="fc" id="L584">            int x = col + p2.getX();</span>
 <span class="fc" id="L585">            int y = row + p2.getY();</span>
 <span class="pc bpc" id="L586" title="4 of 8 branches missed.">            if ((x &lt; 0) || (y &lt; 0) || (x &gt; (w - 1)) || (y &gt; (h - 1))) {</span>
 <span class="nc" id="L587">                return false;</span>
             }
 <span class="fc" id="L589">            PairInt p3 = new PairInt(x, y);</span>
-<span class="fc bfc" id="L590" title="All 2 branches covered.">            if (tmpPointsRemoved.contains(p3) ||</span>
+<span class="pc bpc" id="L590" title="1 of 2 branches missed.">            if (tmpPointsRemoved.contains(p3) ||</span>
 <span class="pc bpc" id="L591" title="1 of 4 branches missed.">                (!points.contains(p3) &amp;&amp; !tmpPointsAdded.contains(p3))) {</span>
 <span class="fc" id="L592">                return false;</span>
             }
 <span class="fc" id="L594">        }</span>
-<span class="fc" id="L595">        return true;</span>
+<span class="nc" id="L595">        return true;</span>
     }
     
     private boolean foundPattern(int pixIdx, TIntSet pixIdxs, 
@@ -669,12 +669,38 @@ import java.util.logging.Logger;
         
 <span class="fc" id="L670">        cp.removeAll(points);</span>
         
-<span class="fc bfc" id="L672" title="All 2 branches covered.">        for (PairInt p : cp) {</span>
-<span class="fc" id="L673">            img.setValue(p.getX(), p.getY(), 0);</span>
-<span class="fc" id="L674">        }</span>
+<span class="pc bpc" id="L672" title="1 of 2 branches missed.">        for (PairInt p : cp) {</span>
+<span class="nc" id="L673">            img.setValue(p.getX(), p.getY(), 0);</span>
+<span class="nc" id="L674">        }</span>
         
 <span class="fc" id="L676">    }</span>
 
+    /**
+     * use with caution
+     * @param img
+     */
+    public void extremeCornerRemover(GreyscaleImage img) {
+        
+<span class="nc" id="L684">        Set&lt;PairInt&gt; points = new HashSet&lt;PairInt&gt;();</span>
+        
+<span class="nc bnc" id="L686" title="All 2 branches missed.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
+<span class="nc bnc" id="L687" title="All 2 branches missed.">            if (img.getValue(i) &gt; 0) {</span>
+<span class="nc" id="L688">                points.add(new PairInt(img.getCol(i), img.getRow(i)));</span>
+            }
+        }
+        
+<span class="nc" id="L692">        Set&lt;PairInt&gt; cp = new HashSet&lt;PairInt&gt;(points);</span>
+                
+<span class="nc" id="L694">        extremeCornerRemover(points, img.getWidth(), img.getHeight());</span>
+        
+<span class="nc" id="L696">        cp.removeAll(points);</span>
+        
+<span class="nc bnc" id="L698" title="All 2 branches missed.">        for (PairInt p : cp) {</span>
+<span class="nc" id="L699">            img.setValue(p.getX(), p.getY(), 0);</span>
+<span class="nc" id="L700">        }</span>
+        
+<span class="nc" id="L702">    }</span>
+    
     /**
      * use with caution
      * @param points
@@ -685,37 +711,38 @@ import java.util.logging.Logger;
         int imageHeight) {
        
         /*       
-                            2
-               #&lt; #         1
+            0  0            2
+            0  #&lt; #         1
                #* 0         0
                            -1
                            -2
            -1  0  1  2  3        
         */
-<span class="fc" id="L695">        LinkedHashSet&lt;PairInt&gt; ones = new LinkedHashSet&lt;PairInt&gt;();</span>
-<span class="fc" id="L696">        LinkedHashSet&lt;PairInt&gt; zeroes = new LinkedHashSet&lt;PairInt&gt;();</span>
-<span class="fc" id="L697">        LinkedHashSet&lt;PairInt&gt; changeToZeroes = new LinkedHashSet&lt;PairInt&gt;();</span>
-<span class="fc" id="L698">        LinkedHashSet&lt;PairInt&gt; changeToOnes = new LinkedHashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L721">        LinkedHashSet&lt;PairInt&gt; ones = new LinkedHashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L722">        LinkedHashSet&lt;PairInt&gt; zeroes = new LinkedHashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L723">        LinkedHashSet&lt;PairInt&gt; changeToZeroes = new LinkedHashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L724">        LinkedHashSet&lt;PairInt&gt; changeToOnes = new LinkedHashSet&lt;PairInt&gt;();</span>
        
         // y's are inverted here because sketch above is top left is (0,0)
-<span class="fc" id="L701">        zeroes.add(new PairInt(1, 0)); </span>
+<span class="fc" id="L727">        zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(-1, -1));</span>
+<span class="fc" id="L728">        zeroes.add(new PairInt(0, -2)); zeroes.add(new PairInt(-1, -2));</span>
         
-<span class="fc" id="L703">        ones.add(new PairInt(0, -1)); </span>
-<span class="fc" id="L704">        ones.add(new PairInt(1, -1));</span>
+<span class="fc" id="L730">        ones.add(new PairInt(0, -1)); </span>
+<span class="fc" id="L731">        ones.add(new PairInt(1, -1));</span>
         
-<span class="fc" id="L706">        changeToZeroes.add(new PairInt(0, -1));</span>
+<span class="fc" id="L733">        changeToZeroes.add(new PairInt(0, -1));</span>
                     
-<span class="fc" id="L708">        int nCorrections = 0;</span>
+<span class="fc" id="L735">        int nCorrections = 0;</span>
        
-<span class="fc" id="L710">        nCorrections += replacePattern(points, imageWidth, imageHeight,</span>
+<span class="fc" id="L737">        nCorrections += replacePattern(points, imageWidth, imageHeight,</span>
             zeroes, ones, changeToZeroes, changeToOnes);
         
-<span class="fc" id="L713">        nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, </span>
+<span class="fc" id="L740">        nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, </span>
             zeroes, ones, changeToZeroes, changeToOnes);
         
-<span class="fc" id="L716">        log.fine(&quot;method &quot; + MiscDebug.getInvokingMethodName() + &quot; nc=&quot; + </span>
-<span class="fc" id="L717">            Integer.toString(nCorrections));</span>
-<span class="fc" id="L718">    }</span>
+<span class="fc" id="L743">        log.fine(&quot;method &quot; + MiscDebug.getInvokingMethodName() + &quot; nc=&quot; + </span>
+<span class="fc" id="L744">            Integer.toString(nCorrections));</span>
+<span class="fc" id="L745">    }</span>
     
     /**
      * NOTE: only use on closed curves because it has
@@ -725,23 +752,23 @@ import java.util.logging.Logger;
      */
     public void extremeThinning(GreyscaleImage input) {
         
-<span class="nc" id="L728">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="nc" id="L755">        ImageProcessor imageProcessor = new ImageProcessor();</span>
         
-<span class="nc" id="L730">        final int w = input.getWidth();</span>
-<span class="nc" id="L731">        final int h = input.getHeight();</span>
+<span class="nc" id="L757">        final int w = input.getWidth();</span>
+<span class="nc" id="L758">        final int h = input.getHeight();</span>
         
-<span class="nc" id="L733">        Set&lt;PairInt&gt; points = imageProcessor.readNonZeroPixels(input);</span>
+<span class="nc" id="L760">        Set&lt;PairInt&gt; points = imageProcessor.readNonZeroPixels(input);</span>
     
-<span class="nc" id="L735">        Set&lt;PairInt&gt; cp = new HashSet&lt;PairInt&gt;(points);</span>
+<span class="nc" id="L762">        Set&lt;PairInt&gt; cp = new HashSet&lt;PairInt&gt;(points);</span>
         
-<span class="nc" id="L737">        extremeThinning(points, w, h);</span>
+<span class="nc" id="L764">        extremeThinning(points, w, h);</span>
     
-<span class="nc" id="L739">        cp.removeAll(points);</span>
+<span class="nc" id="L766">        cp.removeAll(points);</span>
         
-<span class="nc bnc" id="L741" title="All 2 branches missed.">        for (PairInt p : cp) {</span>
-<span class="nc" id="L742">            input.setValue(p.getX(), p.getY(), 0);</span>
-<span class="nc" id="L743">        }</span>
-<span class="nc" id="L744">    }</span>
+<span class="nc bnc" id="L768" title="All 2 branches missed.">        for (PairInt p : cp) {</span>
+<span class="nc" id="L769">            input.setValue(p.getX(), p.getY(), 0);</span>
+<span class="nc" id="L770">        }</span>
+<span class="nc" id="L771">    }</span>
     
     /**
      * NOTE: only use on closed curves because it has
@@ -751,11 +778,11 @@ import java.util.logging.Logger;
      */
     public void extremeThinning(Set&lt;PairInt&gt; points, int w, int h) {
             
-<span class="nc" id="L754">        extremeStaircaseRemover(points, w, h);</span>
-<span class="nc" id="L755">        extremeCornerRemover(points, w, h);</span>
-<span class="nc" id="L756">        SpurRemover spurRemover = new SpurRemover();</span>
-<span class="nc" id="L757">        spurRemover.remove(points, w, h);                </span>
-<span class="nc" id="L758">    }</span>
+<span class="nc" id="L781">        extremeStaircaseRemover(points, w, h);</span>
+<span class="nc" id="L782">        extremeCornerRemover(points, w, h);</span>
+<span class="nc" id="L783">        SpurRemover spurRemover = new SpurRemover();</span>
+<span class="nc" id="L784">        spurRemover.remove(points, w, h);                </span>
+<span class="nc" id="L785">    }</span>
     
     /**
      * use with caution.  it has a small window it uses to determine which
@@ -776,10 +803,10 @@ import java.util.logging.Logger;
                            -1
            -1  0  1  2  3        
         */
-<span class="fc" id="L779">        LinkedHashSet&lt;PairInt&gt; ones = new LinkedHashSet&lt;PairInt&gt;();</span>
-<span class="fc" id="L780">        LinkedHashSet&lt;PairInt&gt; zeroes = new LinkedHashSet&lt;PairInt&gt;();</span>
-<span class="fc" id="L781">        LinkedHashSet&lt;PairInt&gt; changeToZeroes = new LinkedHashSet&lt;PairInt&gt;();</span>
-<span class="fc" id="L782">        LinkedHashSet&lt;PairInt&gt; changeToOnes = new LinkedHashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L806">        LinkedHashSet&lt;PairInt&gt; ones = new LinkedHashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L807">        LinkedHashSet&lt;PairInt&gt; zeroes = new LinkedHashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L808">        LinkedHashSet&lt;PairInt&gt; changeToZeroes = new LinkedHashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L809">        LinkedHashSet&lt;PairInt&gt; changeToOnes = new LinkedHashSet&lt;PairInt&gt;();</span>
        
         /*       
             0  0  0         2
@@ -789,28 +816,28 @@ import java.util.logging.Logger;
            -1  0  1  2  3        
         */
         // y's are inverted here because sketch above is top left is (0,0)
-<span class="fc" id="L792">        zeroes.add(new PairInt(-1, -2));</span>
-<span class="fc" id="L793">        zeroes.add(new PairInt(0, -2));</span>
-<span class="fc" id="L794">        zeroes.add(new PairInt(1, -2));</span>
+<span class="fc" id="L819">        zeroes.add(new PairInt(-1, -2));</span>
+<span class="fc" id="L820">        zeroes.add(new PairInt(0, -2));</span>
+<span class="fc" id="L821">        zeroes.add(new PairInt(1, -2));</span>
         
-<span class="fc" id="L796">        ones.add(new PairInt(-1, 0)); </span>
-<span class="fc" id="L797">        ones.add(new PairInt(0, 0));</span>
-<span class="fc" id="L798">        ones.add(new PairInt(0, -1));</span>
-<span class="fc" id="L799">        ones.add(new PairInt(1, -1));</span>
+<span class="fc" id="L823">        ones.add(new PairInt(-1, 0)); </span>
+<span class="fc" id="L824">        ones.add(new PairInt(0, 0));</span>
+<span class="fc" id="L825">        ones.add(new PairInt(0, -1));</span>
+<span class="fc" id="L826">        ones.add(new PairInt(1, -1));</span>
         
-<span class="fc" id="L801">        changeToZeroes.add(new PairInt(0, -1));</span>
+<span class="fc" id="L828">        changeToZeroes.add(new PairInt(0, -1));</span>
                     
-<span class="fc" id="L803">        int nCorrections = 0;</span>
+<span class="fc" id="L830">        int nCorrections = 0;</span>
        
-<span class="fc" id="L805">        nCorrections += replacePattern(points, imageWidth, imageHeight,</span>
+<span class="fc" id="L832">        nCorrections += replacePattern(points, imageWidth, imageHeight,</span>
             zeroes, ones, changeToZeroes, changeToOnes);
         
-<span class="fc" id="L808">        nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, </span>
+<span class="fc" id="L835">        nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, </span>
             zeroes, ones, changeToZeroes, changeToOnes);
         
-<span class="fc" id="L811">        log.fine(&quot;method &quot; + MiscDebug.getInvokingMethodName() + &quot; nc=&quot; + </span>
-<span class="fc" id="L812">            Integer.toString(nCorrections));</span>
-<span class="fc" id="L813">    }</span>
+<span class="fc" id="L838">        log.fine(&quot;method &quot; + MiscDebug.getInvokingMethodName() + &quot; nc=&quot; + </span>
+<span class="fc" id="L839">            Integer.toString(nCorrections));</span>
+<span class="fc" id="L840">    }</span>
     
     /**
      * use with caution.  it has a small window it uses to determine which
@@ -831,12 +858,12 @@ import java.util.logging.Logger;
                            -1
            -1  0  1  2  3        
         */
-<span class="fc" id="L834">        TIntSet ones = new TIntHashSet();</span>
-<span class="fc" id="L835">        TIntSet zeroes = new TIntHashSet();</span>
-<span class="fc" id="L836">        TIntSet changeToZeroes = new TIntHashSet();</span>
-<span class="fc" id="L837">        TIntSet changeToOnes = new TIntHashSet();</span>
+<span class="fc" id="L861">        TIntSet ones = new TIntHashSet();</span>
+<span class="fc" id="L862">        TIntSet zeroes = new TIntHashSet();</span>
+<span class="fc" id="L863">        TIntSet changeToZeroes = new TIntHashSet();</span>
+<span class="fc" id="L864">        TIntSet changeToOnes = new TIntHashSet();</span>
     
-<span class="fc" id="L839">        int w = imageWidth;</span>
+<span class="fc" id="L866">        int w = imageWidth;</span>
         
         /*       
             0  0  0         2
@@ -846,28 +873,28 @@ import java.util.logging.Logger;
            -1  0  1  2  3        
         */
         // y's are inverted here because sketch above is top left is (0,0)
-<span class="fc" id="L849">        zeroes.add(encodePixelOffsets(-1, -2, w));//new PairInt(-1, -2));</span>
-<span class="fc" id="L850">        zeroes.add(encodePixelOffsets(0, -2, w));//new PairInt(0, -2));</span>
-<span class="fc" id="L851">        zeroes.add(encodePixelOffsets(1, -2, w));//new PairInt(1, -2));</span>
+<span class="fc" id="L876">        zeroes.add(encodePixelOffsets(-1, -2, w));//new PairInt(-1, -2));</span>
+<span class="fc" id="L877">        zeroes.add(encodePixelOffsets(0, -2, w));//new PairInt(0, -2));</span>
+<span class="fc" id="L878">        zeroes.add(encodePixelOffsets(1, -2, w));//new PairInt(1, -2));</span>
         
-<span class="fc" id="L853">        ones.add(encodePixelOffsets(-1, 0, w));//new PairInt(-1, 0)); </span>
-<span class="fc" id="L854">        ones.add(encodePixelOffsets(0, 0, w));//new PairInt(0, 0));</span>
-<span class="fc" id="L855">        ones.add(encodePixelOffsets(0, -1, w));//new PairInt(0, -1));</span>
-<span class="fc" id="L856">        ones.add(encodePixelOffsets(1, -1, w));//new PairInt(1, -1));</span>
+<span class="fc" id="L880">        ones.add(encodePixelOffsets(-1, 0, w));//new PairInt(-1, 0)); </span>
+<span class="fc" id="L881">        ones.add(encodePixelOffsets(0, 0, w));//new PairInt(0, 0));</span>
+<span class="fc" id="L882">        ones.add(encodePixelOffsets(0, -1, w));//new PairInt(0, -1));</span>
+<span class="fc" id="L883">        ones.add(encodePixelOffsets(1, -1, w));//new PairInt(1, -1));</span>
         
-<span class="fc" id="L858">        changeToZeroes.add(encodePixelOffsets(0, -1, w));//new PairInt(0, -1));</span>
+<span class="fc" id="L885">        changeToZeroes.add(encodePixelOffsets(0, -1, w));//new PairInt(0, -1));</span>
                     
-<span class="fc" id="L860">        int nCorrections = 0;</span>
+<span class="fc" id="L887">        int nCorrections = 0;</span>
        
-<span class="fc" id="L862">        nCorrections += replacePattern(pixIdxs, imageWidth, imageHeight,</span>
+<span class="fc" id="L889">        nCorrections += replacePattern(pixIdxs, imageWidth, imageHeight,</span>
             zeroes, ones, changeToZeroes, changeToOnes);
 
-<span class="fc" id="L865">        nCorrections += rotate90ThreeTimes(pixIdxs, imageWidth, imageHeight, </span>
+<span class="fc" id="L892">        nCorrections += rotate90ThreeTimes(pixIdxs, imageWidth, imageHeight, </span>
             zeroes, ones, changeToZeroes, changeToOnes);
         
-<span class="fc" id="L868">        log.fine(&quot;method &quot; + MiscDebug.getInvokingMethodName() + &quot; nc=&quot; + </span>
-<span class="fc" id="L869">            Integer.toString(nCorrections));</span>
-<span class="fc" id="L870">    }</span>
+<span class="fc" id="L895">        log.fine(&quot;method &quot; + MiscDebug.getInvokingMethodName() + &quot; nc=&quot; + </span>
+<span class="fc" id="L896">            Integer.toString(nCorrections));</span>
+<span class="fc" id="L897">    }</span>
     
     /**
      * removes spurs, that is anything with only one neighbor.
@@ -880,79 +907,79 @@ import java.util.logging.Logger;
         
         // remove anything with only one neighbor
         
-<span class="nc" id="L883">        int[] dxs = Misc.dx8;</span>
-<span class="nc" id="L884">        int[] dys = Misc.dy8;</span>
+<span class="nc" id="L910">        int[] dxs = Misc.dx8;</span>
+<span class="nc" id="L911">        int[] dys = Misc.dy8;</span>
         
-<span class="nc" id="L886">        Stack&lt;PairInt&gt; stack = new Stack&lt;PairInt&gt;();</span>
+<span class="nc" id="L913">        Stack&lt;PairInt&gt; stack = new Stack&lt;PairInt&gt;();</span>
         
-<span class="nc" id="L888">        Set&lt;PairInt&gt; rm = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L915">        Set&lt;PairInt&gt; rm = new HashSet&lt;PairInt&gt;();</span>
         
         // place single neighbor points at top of stack
-<span class="nc bnc" id="L891" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+<span class="nc bnc" id="L918" title="All 2 branches missed.">        for (PairInt p : points) {</span>
             
-<span class="nc" id="L893">            int x = p.getX();</span>
-<span class="nc" id="L894">            int y = p.getY();</span>
+<span class="nc" id="L920">            int x = p.getX();</span>
+<span class="nc" id="L921">            int y = p.getY();</span>
             
-<span class="nc" id="L896">            int nn = 0;</span>
-<span class="nc bnc" id="L897" title="All 2 branches missed.">            for (int k = 0; k &lt; dxs.length; ++k) {</span>
-<span class="nc" id="L898">                int x2 = x + dxs[k];</span>
-<span class="nc" id="L899">                int y2 = y + dys[k];</span>
-<span class="nc" id="L900">                PairInt p2 = new PairInt(x2, y2);</span>
-<span class="nc bnc" id="L901" title="All 2 branches missed.">                if (points.contains(p2)) {</span>
-<span class="nc" id="L902">                    nn++;</span>
+<span class="nc" id="L923">            int nn = 0;</span>
+<span class="nc bnc" id="L924" title="All 2 branches missed.">            for (int k = 0; k &lt; dxs.length; ++k) {</span>
+<span class="nc" id="L925">                int x2 = x + dxs[k];</span>
+<span class="nc" id="L926">                int y2 = y + dys[k];</span>
+<span class="nc" id="L927">                PairInt p2 = new PairInt(x2, y2);</span>
+<span class="nc bnc" id="L928" title="All 2 branches missed.">                if (points.contains(p2)) {</span>
+<span class="nc" id="L929">                    nn++;</span>
                 }
-<span class="nc bnc" id="L904" title="All 2 branches missed.">                if (nn &gt; 1) {</span>
-<span class="nc" id="L905">                    break;</span>
+<span class="nc bnc" id="L931" title="All 2 branches missed.">                if (nn &gt; 1) {</span>
+<span class="nc" id="L932">                    break;</span>
                 }
             }
-<span class="nc bnc" id="L908" title="All 2 branches missed.">            if (nn == 1) {</span>
-<span class="nc" id="L909">                stack.add(p);</span>
-<span class="nc bnc" id="L910" title="All 2 branches missed.">            } else if (nn == 0) {</span>
-<span class="nc" id="L911">                rm.add(p);</span>
+<span class="nc bnc" id="L935" title="All 2 branches missed.">            if (nn == 1) {</span>
+<span class="nc" id="L936">                stack.add(p);</span>
+<span class="nc bnc" id="L937" title="All 2 branches missed.">            } else if (nn == 0) {</span>
+<span class="nc" id="L938">                rm.add(p);</span>
             }
-<span class="nc" id="L913">        }</span>
+<span class="nc" id="L940">        }</span>
         
-<span class="nc" id="L915">        points.removeAll(rm);</span>
+<span class="nc" id="L942">        points.removeAll(rm);</span>
                 
-<span class="nc" id="L917">        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L944">        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();</span>
                 
-<span class="nc bnc" id="L919" title="All 2 branches missed.">        while (!stack.isEmpty()) {</span>
+<span class="nc bnc" id="L946" title="All 2 branches missed.">        while (!stack.isEmpty()) {</span>
             
-<span class="nc" id="L921">            PairInt p = stack.pop();</span>
-<span class="nc bnc" id="L922" title="All 2 branches missed.">            if (visited.contains(p)) {</span>
-<span class="nc" id="L923">                continue;</span>
+<span class="nc" id="L948">            PairInt p = stack.pop();</span>
+<span class="nc bnc" id="L949" title="All 2 branches missed.">            if (visited.contains(p)) {</span>
+<span class="nc" id="L950">                continue;</span>
             }
-<span class="nc" id="L925">            visited.add(p);</span>
+<span class="nc" id="L952">            visited.add(p);</span>
             
-<span class="nc" id="L927">            int x = p.getX();</span>
-<span class="nc" id="L928">            int y = p.getY();</span>
+<span class="nc" id="L954">            int x = p.getX();</span>
+<span class="nc" id="L955">            int y = p.getY();</span>
             
-<span class="nc" id="L930">            PairInt pn = null;</span>
-<span class="nc" id="L931">            int nn = 0;</span>
-<span class="nc bnc" id="L932" title="All 2 branches missed.">            for (int k = 0; k &lt; dxs.length; ++k) {</span>
-<span class="nc" id="L933">                int x2 = x + dxs[k];</span>
-<span class="nc" id="L934">                int y2 = y + dys[k];</span>
-<span class="nc" id="L935">                PairInt p2 = new PairInt(x2, y2);</span>
-<span class="nc bnc" id="L936" title="All 2 branches missed.">                if (points.contains(p2)) {</span>
-<span class="nc bnc" id="L937" title="All 2 branches missed.">                    if (pn == null) {</span>
-<span class="nc" id="L938">                        pn = p2;</span>
+<span class="nc" id="L957">            PairInt pn = null;</span>
+<span class="nc" id="L958">            int nn = 0;</span>
+<span class="nc bnc" id="L959" title="All 2 branches missed.">            for (int k = 0; k &lt; dxs.length; ++k) {</span>
+<span class="nc" id="L960">                int x2 = x + dxs[k];</span>
+<span class="nc" id="L961">                int y2 = y + dys[k];</span>
+<span class="nc" id="L962">                PairInt p2 = new PairInt(x2, y2);</span>
+<span class="nc bnc" id="L963" title="All 2 branches missed.">                if (points.contains(p2)) {</span>
+<span class="nc bnc" id="L964" title="All 2 branches missed.">                    if (pn == null) {</span>
+<span class="nc" id="L965">                        pn = p2;</span>
                     } else {
-<span class="nc" id="L940">                        nn = 100;</span>
-<span class="nc" id="L941">                        break;</span>
+<span class="nc" id="L967">                        nn = 100;</span>
+<span class="nc" id="L968">                        break;</span>
                     }
                 }
             }
-<span class="nc bnc" id="L945" title="All 2 branches missed.">            if (nn &lt; 2) {</span>
+<span class="nc bnc" id="L972" title="All 2 branches missed.">            if (nn &lt; 2) {</span>
                 // removes if no neighbors or 1 neighbor
-<span class="nc" id="L947">                points.remove(p);</span>
-<span class="nc" id="L948">                rm.add(p);</span>
-<span class="nc bnc" id="L949" title="All 2 branches missed.">                if (pn != null) {</span>
-<span class="nc" id="L950">                    stack.add(pn);</span>
+<span class="nc" id="L974">                points.remove(p);</span>
+<span class="nc" id="L975">                rm.add(p);</span>
+<span class="nc bnc" id="L976" title="All 2 branches missed.">                if (pn != null) {</span>
+<span class="nc" id="L977">                    stack.add(pn);</span>
                 }
             }
-<span class="nc" id="L953">        }</span>
+<span class="nc" id="L980">        }</span>
     
-<span class="nc" id="L955">        return rm;</span>
+<span class="nc" id="L982">        return rm;</span>
     }
 
     /**
@@ -979,79 +1006,79 @@ import java.util.logging.Logger;
                          -2
        -3 -2 -1  0  1  2     
         */ 
-<span class="nc" id="L982">        LinkedHashSet&lt;PairInt&gt; ones = new LinkedHashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L983">        LinkedHashSet&lt;PairInt&gt; zeroes = new LinkedHashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L984">        LinkedHashSet&lt;PairInt&gt; store = new LinkedHashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L985">        LinkedHashSet&lt;PairInt&gt; changeToOnes = new LinkedHashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L1009">        LinkedHashSet&lt;PairInt&gt; ones = new LinkedHashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L1010">        LinkedHashSet&lt;PairInt&gt; zeroes = new LinkedHashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L1011">        LinkedHashSet&lt;PairInt&gt; store = new LinkedHashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L1012">        LinkedHashSet&lt;PairInt&gt; changeToOnes = new LinkedHashSet&lt;PairInt&gt;();</span>
                
         // y's are inverted here because sketch above is top left is (0,0)
-<span class="nc" id="L988">        ones.add(new PairInt(-2, -1));</span>
-<span class="nc" id="L989">        ones.add(new PairInt(-1, -1));</span>
-<span class="nc" id="L990">        ones.add(new PairInt(1, 0));</span>
+<span class="nc" id="L1015">        ones.add(new PairInt(-2, -1));</span>
+<span class="nc" id="L1016">        ones.add(new PairInt(-1, -1));</span>
+<span class="nc" id="L1017">        ones.add(new PairInt(1, 0));</span>
         
-<span class="nc" id="L992">        zeroes.add(new PairInt(-2, 0)); zeroes.add(new PairInt(-2, -2));</span>
-<span class="nc" id="L993">        zeroes.add(new PairInt(-1, 1)); zeroes.add(new PairInt(-1, 0)); </span>
-<span class="nc" id="L994">        zeroes.add(new PairInt(-1, -2));</span>
-<span class="nc" id="L995">        zeroes.add(new PairInt(0, -1)); zeroes.add(new PairInt(0, -2));</span>
-<span class="nc" id="L996">        zeroes.add(new PairInt(0, 1));</span>
-<span class="nc" id="L997">        zeroes.add(new PairInt(1, 1)); zeroes.add(new PairInt(1, -1));</span>
+<span class="nc" id="L1019">        zeroes.add(new PairInt(-2, 0)); zeroes.add(new PairInt(-2, -2));</span>
+<span class="nc" id="L1020">        zeroes.add(new PairInt(-1, 1)); zeroes.add(new PairInt(-1, 0)); </span>
+<span class="nc" id="L1021">        zeroes.add(new PairInt(-1, -2));</span>
+<span class="nc" id="L1022">        zeroes.add(new PairInt(0, -1)); zeroes.add(new PairInt(0, -2));</span>
+<span class="nc" id="L1023">        zeroes.add(new PairInt(0, 1));</span>
+<span class="nc" id="L1024">        zeroes.add(new PairInt(1, 1)); zeroes.add(new PairInt(1, -1));</span>
 
-<span class="nc" id="L999">        store.add(new PairInt(-1, -1)); store.add(new PairInt(0, 0));</span>
+<span class="nc" id="L1026">        store.add(new PairInt(-1, -1)); store.add(new PairInt(0, 0));</span>
                 
-<span class="nc" id="L1001">        Set&lt;PairInt&gt; output = findPattern(points, </span>
+<span class="nc" id="L1028">        Set&lt;PairInt&gt; output = findPattern(points, </span>
             imageWidth, imageHeight, zeroes, ones, 
             store, changeToOnes);
         
         // ----- change the sign of x to handle other direction -----
-<span class="nc" id="L1006">        reverseXs(zeroes, ones, store, changeToOnes);</span>
-<span class="nc" id="L1007">        output.addAll(findPattern(points, </span>
+<span class="nc" id="L1033">        reverseXs(zeroes, ones, store, changeToOnes);</span>
+<span class="nc" id="L1034">        output.addAll(findPattern(points, </span>
             imageWidth, imageHeight, zeroes, ones, 
             store, changeToOnes));
         
         // ----- change the sign of y to handle other direction -----
-<span class="nc" id="L1012">        reverseYs(zeroes, ones, store, changeToOnes);</span>
-<span class="nc" id="L1013">        output.addAll(findPattern(points, </span>
+<span class="nc" id="L1039">        reverseYs(zeroes, ones, store, changeToOnes);</span>
+<span class="nc" id="L1040">        output.addAll(findPattern(points, </span>
             imageWidth, imageHeight, zeroes, ones, 
             store, changeToOnes));
         
         // ----- change the sign of x to handle another direction -----
-<span class="nc" id="L1018">        reverseXs(zeroes, ones, store, changeToOnes);</span>
-<span class="nc" id="L1019">        output.addAll(findPattern(points, </span>
+<span class="nc" id="L1045">        reverseXs(zeroes, ones, store, changeToOnes);</span>
+<span class="nc" id="L1046">        output.addAll(findPattern(points, </span>
             imageWidth, imageHeight, zeroes, ones, 
             store, changeToOnes));            
         
-<span class="nc" id="L1023">        log.fine(&quot;method &quot; + MiscDebug.getInvokingMethodName() + &quot; nc=&quot; + </span>
-<span class="nc" id="L1024">            Integer.toString(output.size()));</span>
+<span class="nc" id="L1050">        log.fine(&quot;method &quot; + MiscDebug.getInvokingMethodName() + &quot; nc=&quot; + </span>
+<span class="nc" id="L1051">            Integer.toString(output.size()));</span>
         
-<span class="nc" id="L1026">        return output;</span>
+<span class="nc" id="L1053">        return output;</span>
     }
     
     protected int encodePixelOffsets(int x, int y, int imageWidth) {
         
-<span class="fc bfc" id="L1031" title="All 2 branches covered.">        int xt = (x &lt; 0) ? ( (-1*x &lt;&lt; 1) | 1) : (x &lt;&lt; 1);</span>
+<span class="fc bfc" id="L1058" title="All 2 branches covered.">        int xt = (x &lt; 0) ? ( (-1*x &lt;&lt; 1) | 1) : (x &lt;&lt; 1);</span>
         
-<span class="fc bfc" id="L1033" title="All 2 branches covered.">        int yt = (y &lt; 0) ? ( (-1*y &lt;&lt; 1) | 1) : (y &lt;&lt; 1);</span>
+<span class="fc bfc" id="L1060" title="All 2 branches covered.">        int yt = (y &lt; 0) ? ( (-1*y &lt;&lt; 1) | 1) : (y &lt;&lt; 1);</span>
         
-<span class="fc" id="L1035">        imageWidth &lt;&lt;= 1;</span>
+<span class="fc" id="L1062">        imageWidth &lt;&lt;= 1;</span>
         
-<span class="fc" id="L1037">        int pixIdxT = (yt * imageWidth) + xt;</span>
+<span class="fc" id="L1064">        int pixIdxT = (yt * imageWidth) + xt;</span>
         
-<span class="fc" id="L1039">        return pixIdxT;</span>
+<span class="fc" id="L1066">        return pixIdxT;</span>
     }
     
     protected void decodePixelOffsets(int encodedPixIdx, int imageWidth,
         int[] outputXY) {
         
-<span class="fc" id="L1045">        imageWidth &lt;&lt;= 1;</span>
+<span class="fc" id="L1072">        imageWidth &lt;&lt;= 1;</span>
         
-<span class="fc" id="L1047">        int yt = encodedPixIdx/imageWidth;</span>
-<span class="fc" id="L1048">        int xt = encodedPixIdx - (yt * imageWidth);</span>
+<span class="fc" id="L1074">        int yt = encodedPixIdx/imageWidth;</span>
+<span class="fc" id="L1075">        int xt = encodedPixIdx - (yt * imageWidth);</span>
         
-<span class="fc bfc" id="L1050" title="All 2 branches covered.">        int x = ((xt &amp; 1) == 1 ) ? -1*(xt &gt;&gt; 1) : xt &gt;&gt; 1;</span>
-<span class="fc bfc" id="L1051" title="All 2 branches covered.">        int y = ((yt &amp; 1) == 1 ) ? -1*(yt &gt;&gt; 1) : yt &gt;&gt; 1;</span>
+<span class="fc bfc" id="L1077" title="All 2 branches covered.">        int x = ((xt &amp; 1) == 1 ) ? -1*(xt &gt;&gt; 1) : xt &gt;&gt; 1;</span>
+<span class="fc bfc" id="L1078" title="All 2 branches covered.">        int y = ((yt &amp; 1) == 1 ) ? -1*(yt &gt;&gt; 1) : yt &gt;&gt; 1;</span>
         
-<span class="fc" id="L1053">        outputXY[0] = x;</span>
-<span class="fc" id="L1054">        outputXY[1] = y;</span>
-<span class="fc" id="L1055">    }</span>
+<span class="fc" id="L1080">        outputXY[0] = x;</span>
+<span class="fc" id="L1081">        outputXY[1] = y;</span>
+<span class="fc" id="L1082">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

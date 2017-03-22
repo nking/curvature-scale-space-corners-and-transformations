@@ -115,45 +115,45 @@ import java.util.Set;
 <span class="fc" id="L115">        int[][] matches = greedyMatch(keypoints1, keypoints2, cost, </span>
             hogs1, hogs2, orientations1, orientations2);
 
-<span class="pc bpc" id="L118" title="1 of 2 branches missed.">        if (matches.length &lt; 7) {</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">        if (matches.length &lt; 7) {</span>
 
-<span class="nc" id="L120">            QuadInt[] qs = new QuadInt[matches.length];</span>
-<span class="nc bnc" id="L121" title="All 2 branches missed.">            for (int i = 0; i &lt; matches.length; ++i) {</span>
-<span class="nc" id="L122">                int idx1 = matches[i][0];</span>
-<span class="nc" id="L123">                int idx2 = matches[i][1];</span>
-<span class="nc" id="L124">                QuadInt q = new QuadInt(</span>
-<span class="nc" id="L125">                    keypoints1.get(idx1).getX(), keypoints1.get(idx1).getY(),</span>
-<span class="nc" id="L126">                    keypoints2.get(idx2).getX(), keypoints2.get(idx2).getY()</span>
+<span class="fc" id="L120">            QuadInt[] qs = new QuadInt[matches.length];</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">            for (int i = 0; i &lt; matches.length; ++i) {</span>
+<span class="fc" id="L122">                int idx1 = matches[i][0];</span>
+<span class="fc" id="L123">                int idx2 = matches[i][1];</span>
+<span class="fc" id="L124">                QuadInt q = new QuadInt(</span>
+<span class="fc" id="L125">                    keypoints1.get(idx1).getX(), keypoints1.get(idx1).getY(),</span>
+<span class="fc" id="L126">                    keypoints2.get(idx2).getX(), keypoints2.get(idx2).getY()</span>
                 );
-<span class="nc" id="L128">                qs[i] = q;</span>
+<span class="fc" id="L128">                qs[i] = q;</span>
             }
 
-<span class="nc" id="L131">            return qs;</span>
+<span class="fc" id="L131">            return qs;</span>
         }
         
         // ransac to remove outliers
 <span class="fc" id="L135">        PairIntArray outputLeftXY = new PairIntArray(matches.length);</span>
 <span class="fc" id="L136">        PairIntArray outputRightXY = new PairIntArray(matches.length);</span>
 <span class="fc" id="L137">        EpipolarTransformationFit fit </span>
-<span class="nc" id="L138">            = removeOutliersWithRANSAC(matches, </span>
+<span class="fc" id="L138">            = removeOutliersWithRANSAC(matches, </span>
             keypoints1, keypoints2, outputLeftXY, outputRightXY);
         
-<span class="nc bnc" id="L141" title="All 2 branches missed.">        if (fit == null) {</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">        if (fit == null) {</span>
 <span class="nc" id="L142">            return null;</span>
         }
                 
-<span class="nc" id="L145">        QuadInt[] qs = new QuadInt[outputLeftXY.getN()];</span>
-<span class="nc bnc" id="L146" title="All 2 branches missed.">        for (int i = 0; i &lt; outputLeftXY.getN(); ++i) {</span>
-<span class="nc" id="L147">            QuadInt q = new QuadInt(</span>
-<span class="nc" id="L148">                outputLeftXY.getX(i), outputLeftXY.getY(i), </span>
-<span class="nc" id="L149">                outputRightXY.getX(i), outputRightXY.getY(i)</span>
+<span class="fc" id="L145">        QuadInt[] qs = new QuadInt[outputLeftXY.getN()];</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">        for (int i = 0; i &lt; outputLeftXY.getN(); ++i) {</span>
+<span class="fc" id="L147">            QuadInt q = new QuadInt(</span>
+<span class="fc" id="L148">                outputLeftXY.getX(i), outputLeftXY.getY(i), </span>
+<span class="fc" id="L149">                outputRightXY.getX(i), outputRightXY.getY(i)</span>
             );
-<span class="nc" id="L151">            qs[i] = q;</span>
+<span class="fc" id="L151">            qs[i] = q;</span>
         }
 
-<span class="nc" id="L154">        System.out.println(&quot;fit=&quot; + fit.toString());</span>
+<span class="fc" id="L154">        System.out.println(&quot;fit=&quot; + fit.toString());</span>
         
-<span class="nc" id="L156">        return qs;</span>
+<span class="fc" id="L156">        return qs;</span>
     }
     
     /**
@@ -222,25 +222,25 @@ import java.util.Set;
 <span class="fc" id="L222">        PairIntArray outputLeftXY = new PairIntArray(matches.length);</span>
 <span class="fc" id="L223">        PairIntArray outputRightXY = new PairIntArray(matches.length);</span>
 <span class="fc" id="L224">        EpipolarTransformationFit fit </span>
-<span class="nc" id="L225">            = removeOutliersWithRANSAC(matches, </span>
+<span class="fc" id="L225">            = removeOutliersWithRANSAC(matches, </span>
             keypoints1, keypoints2, outputLeftXY, outputRightXY);
         
-<span class="nc bnc" id="L228" title="All 2 branches missed.">        if (fit == null) {</span>
+<span class="pc bpc" id="L228" title="1 of 2 branches missed.">        if (fit == null) {</span>
 <span class="nc" id="L229">            return null;</span>
         }
                 
-<span class="nc" id="L232">        QuadInt[] qs = new QuadInt[outputLeftXY.getN()];</span>
-<span class="nc bnc" id="L233" title="All 2 branches missed.">        for (int i = 0; i &lt; outputLeftXY.getN(); ++i) {</span>
-<span class="nc" id="L234">            QuadInt q = new QuadInt(</span>
-<span class="nc" id="L235">                outputLeftXY.getX(i), outputLeftXY.getY(i), </span>
-<span class="nc" id="L236">                outputRightXY.getX(i), outputRightXY.getY(i)</span>
+<span class="fc" id="L232">        QuadInt[] qs = new QuadInt[outputLeftXY.getN()];</span>
+<span class="fc bfc" id="L233" title="All 2 branches covered.">        for (int i = 0; i &lt; outputLeftXY.getN(); ++i) {</span>
+<span class="fc" id="L234">            QuadInt q = new QuadInt(</span>
+<span class="fc" id="L235">                outputLeftXY.getX(i), outputLeftXY.getY(i), </span>
+<span class="fc" id="L236">                outputRightXY.getX(i), outputRightXY.getY(i)</span>
             );
-<span class="nc" id="L238">            qs[i] = q;</span>
+<span class="fc" id="L238">            qs[i] = q;</span>
         }
 
-<span class="nc" id="L241">        System.out.println(&quot;fit=&quot; + fit.toString());</span>
+<span class="fc" id="L241">        System.out.println(&quot;fit=&quot; + fit.toString());</span>
         
-<span class="nc" id="L243">        return qs;        </span>
+<span class="fc" id="L243">        return qs;        </span>
     }
 
     /**
@@ -494,12 +494,12 @@ import java.util.Set;
 <span class="fc" id="L494">                    bc2Idx = bcIdx;</span>
 <span class="fc" id="L495">                    bc = c;</span>
 <span class="fc" id="L496">                    bcIdx = j;</span>
-<span class="fc bfc" id="L497" title="All 2 branches covered.">                } else if (c == bc) {</span>
-<span class="pc bpc" id="L498" title="1 of 2 branches missed.">                    if (c &lt; bc2) {</span>
-<span class="fc" id="L499">                        bc2 = bc;</span>
-<span class="fc" id="L500">                        bc2Idx = bcIdx;</span>
-<span class="fc" id="L501">                        bc = c;</span>
-<span class="fc" id="L502">                        bcIdx = j;</span>
+<span class="pc bpc" id="L497" title="1 of 2 branches missed.">                } else if (c == bc) {</span>
+<span class="nc bnc" id="L498" title="All 2 branches missed.">                    if (c &lt; bc2) {</span>
+<span class="nc" id="L499">                        bc2 = bc;</span>
+<span class="nc" id="L500">                        bc2Idx = bcIdx;</span>
+<span class="nc" id="L501">                        bc = c;</span>
+<span class="nc" id="L502">                        bcIdx = j;</span>
                     } else {
 <span class="nc bnc" id="L504" title="All 6 branches missed.">                        assert(c == bc2 &amp;&amp; bc == bc2);</span>
                     }
@@ -557,10 +557,10 @@ import java.util.Set;
         
 <span class="fc" id="L558">        RANSACSolver solver = new RANSACSolver();</span>
         
-<span class="nc" id="L560">        EpipolarTransformationFit fit = solver.calculateEpipolarProjection(</span>
+<span class="fc" id="L560">        EpipolarTransformationFit fit = solver.calculateEpipolarProjection(</span>
             matchedLeftXY, matchedRightXY, outputLeftXY, outputRightXY);
 
-<span class="nc" id="L563">        return fit;        </span>
+<span class="fc" id="L563">        return fit;        </span>
     }
 
     private static int[][] attemptMatchesUsingEuclidean(int[][] matches, List&lt;PairInt&gt; keypoints1, List&lt;PairInt&gt; keypoints2, int[][] cost) {

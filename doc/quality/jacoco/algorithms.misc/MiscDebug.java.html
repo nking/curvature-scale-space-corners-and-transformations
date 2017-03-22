@@ -834,26 +834,26 @@ import no.uib.cipr.matrix.DenseMatrix;
         img, int xOffset, int yOffset, String fileSuffix) {
         
 <span class="pc bpc" id="L836" title="1 of 2 branches missed.">        if (result.isEmpty()) {</span>
-<span class="fc" id="L837">            return;</span>
+<span class="nc" id="L837">            return;</span>
         }
         
-<span class="nc" id="L840">        int nExtraForDot = 1;</span>
-<span class="nc" id="L841">        int rClr = 255;</span>
-<span class="nc" id="L842">        int gClr = 0;</span>
-<span class="nc" id="L843">        int bClr = 0;</span>
+<span class="fc" id="L840">        int nExtraForDot = 1;</span>
+<span class="fc" id="L841">        int rClr = 255;</span>
+<span class="fc" id="L842">        int gClr = 0;</span>
+<span class="fc" id="L843">        int bClr = 0;</span>
         
-<span class="nc" id="L845">        ImageIOHelper.addContoursToImage(result, img, xOffset, yOffset, </span>
+<span class="fc" id="L845">        ImageIOHelper.addContoursToImage(result, img, xOffset, yOffset, </span>
             nExtraForDot, rClr, gClr, bClr);
         
         try {
             
-<span class="nc" id="L850">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+<span class="fc" id="L850">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
 
-<span class="nc" id="L852">            ImageIOHelper.writeOutputImage(dirPath + &quot;/contours_&quot; </span>
+<span class="fc" id="L852">            ImageIOHelper.writeOutputImage(dirPath + &quot;/contours_&quot; </span>
                 + fileSuffix + &quot;.png&quot;, img);
         
-<span class="nc" id="L855">        } catch (IOException e) {}</span>
-<span class="nc" id="L856">    }</span>
+<span class="pc" id="L855">        } catch (IOException e) {}</span>
+<span class="fc" id="L856">    }</span>
 
     public static void printScaleSpaceCurve(ScaleSpaceCurveImage scaleSpaceImage,
         String fileSuffix) throws IOException {
@@ -902,16 +902,16 @@ import no.uib.cipr.matrix.DenseMatrix;
     public static void writeImage(PairIntArray[] edges,
         Image img, String suffix) throws IOException {
         
-<span class="nc bnc" id="L905" title="All 2 branches missed.">        for (int i = 0; i &lt; edges.length; i++) {</span>
-<span class="nc" id="L906">            PairIntArray edge = edges[i];</span>
-<span class="nc" id="L907">            ImageIOHelper.addCurveToImage(edge, img, 0, 255, 0, 0);</span>
+<span class="fc bfc" id="L905" title="All 2 branches covered.">        for (int i = 0; i &lt; edges.length; i++) {</span>
+<span class="fc" id="L906">            PairIntArray edge = edges[i];</span>
+<span class="fc" id="L907">            ImageIOHelper.addCurveToImage(edge, img, 0, 255, 0, 0);</span>
         }     
         
-<span class="nc" id="L910">        String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+<span class="fc" id="L910">        String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
         
-<span class="nc" id="L912">        ImageIOHelper.writeOutputImage(</span>
+<span class="fc" id="L912">        ImageIOHelper.writeOutputImage(</span>
             dirPath + &quot;/&quot; + suffix + &quot;.png&quot;, img);
-<span class="nc" id="L914">    }</span>
+<span class="fc" id="L914">    }</span>
     
     public static void writeImage(PairIntArray edge,
         Image img, String suffix) throws IOException {

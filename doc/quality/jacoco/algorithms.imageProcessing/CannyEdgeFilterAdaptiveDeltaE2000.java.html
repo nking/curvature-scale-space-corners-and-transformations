@@ -838,24 +838,31 @@ public class CannyEdgeFilterAdaptiveDeltaE2000 {
             //ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
             //lt.applyFilter(out);
             
-<span class="fc" id="L841">            ImageProcessor imp = new ImageProcessor();</span>
-<span class="fc" id="L842">            imp.applyThinning2(out);</span>
+<span class="fc" id="L841">            ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="fc" id="L842">            int nnzs = imageProcessor.countNonZeroes(out);</span>
+            while (true) {
+<span class="fc" id="L844">                int nnzs2 = imageProcessor.applyThinning2(out);</span>
+<span class="pc bpc" id="L845" title="1 of 2 branches missed.">                if (nnzs == nnzs2) {</span>
+<span class="fc" id="L846">                    break;</span>
+                }
+<span class="nc" id="L848">                nnzs = nnzs2;</span>
+<span class="nc" id="L849">            }</span>
         
         }
         
-<span class="fc" id="L846">        gradientXY.resetTo(out);</span>
-<span class="fc" id="L847">    }</span>
+<span class="fc" id="L853">        gradientXY.resetTo(out);</span>
+<span class="fc" id="L854">    }</span>
 
     private int countAboveZero(GreyscaleImage img) {
         
-<span class="nc" id="L851">        int n = 0;</span>
-<span class="nc bnc" id="L852" title="All 2 branches missed.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
-<span class="nc bnc" id="L853" title="All 2 branches missed.">            if (img.getValue(i) &gt; 0) {</span>
-<span class="nc" id="L854">                n++;</span>
+<span class="nc" id="L858">        int n = 0;</span>
+<span class="nc bnc" id="L859" title="All 2 branches missed.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
+<span class="nc bnc" id="L860" title="All 2 branches missed.">            if (img.getValue(i) &gt; 0) {</span>
+<span class="nc" id="L861">                n++;</span>
             }
         }
         
-<span class="nc" id="L858">        return n;</span>
+<span class="nc" id="L865">        return n;</span>
     }
 
 }

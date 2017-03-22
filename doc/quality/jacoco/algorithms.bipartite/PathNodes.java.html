@@ -55,23 +55,23 @@ public class PathNodes {
     
     public void resetNodeExceptData(long key) {
      
-<span class="pc bpc" id="L58" title="1 of 2 branches missed.">        for (int i = 0; i &lt; leftNodes.size(); ++i) {</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        for (int i = 0; i &lt; leftNodes.size(); ++i) {</span>
 <span class="fc" id="L59">            LeftNode node = leftNodes.get(i);</span>
             
-<span class="nc" id="L61">            node.resetExceptData();</span>
+<span class="fc" id="L61">            node.resetExceptData();</span>
             
-<span class="nc" id="L63">            node.setKey(key);</span>
+<span class="fc" id="L63">            node.setKey(key);</span>
         }
-<span class="nc bnc" id="L65" title="All 2 branches missed.">        for (int i = 0; i &lt; rightNodes.size(); ++i) {</span>
-<span class="nc" id="L66">            RightNode node = rightNodes.get(i);</span>
-<span class="nc" id="L67">            node.resetExceptData();</span>
-<span class="nc" id="L68">            node.setKey(key);</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        for (int i = 0; i &lt; rightNodes.size(); ++i) {</span>
+<span class="fc" id="L66">            RightNode node = rightNodes.get(i);</span>
+<span class="fc" id="L67">            node.resetExceptData();</span>
+<span class="fc" id="L68">            node.setKey(key);</span>
         }
         
-<span class="nc" id="L71">        sourceNode.setKey(key);</span>
+<span class="fc" id="L71">        sourceNode.setKey(key);</span>
         
-<span class="nc" id="L73">        sinkNode.setKey(key);</span>
-<span class="nc" id="L74">    }</span>
+<span class="fc" id="L73">        sinkNode.setKey(key);</span>
+<span class="fc" id="L74">    }</span>
 
     /**
      * @return the rightNodes

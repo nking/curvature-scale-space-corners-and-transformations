@@ -204,130 +204,145 @@ public class CannyEdgeFilterAdaptive {
 <span class="fc" id="L204">            GreyscaleImage in = imageProcessor.closing(input);</span>
 <span class="fc" id="L205">            imageProcessor.blur(in, SIGMA.ZEROPOINTFIVE);</span>
             
-<span class="fc" id="L207">            filterProducts = createGradient(in);</span>
+            // convert all &gt; 0 to 1's for 'closing' operation
+<span class="fc bfc" id="L208" title="All 2 branches covered.">            for (int pixIdx = 0; pixIdx &lt; in.getNPixels(); ++pixIdx) {</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">                if (in.getValue(pixIdx) &gt; 0) {</span>
+<span class="fc" id="L210">                    in.setValue(pixIdx, 1);</span>
+                }
+            }
             
-<span class="fc" id="L209">            in = filterProducts.getGradientXY();</span>
-<span class="fc" id="L210">            in = imageProcessor.closing(in);</span>
-<span class="fc" id="L211">            filterProducts.getGradientXY().resetTo(in);</span>
+<span class="fc" id="L214">            in = imageProcessor.closing(in);</span>
             
-<span class="fc" id="L213">            approxProcessedSigma = Math.sqrt(</span>
+            {//DEBUG
+<span class="fc" id="L217">                long ts = MiscDebug.getCurrentTimeFormatted();</span>
+<span class="fc" id="L218">                GreyscaleImage tmp = in.copyImage();</span>
+<span class="fc" id="L219">                tmp.multiply(255);</span>
+<span class="fc" id="L220">                MiscDebug.writeImage(tmp, &quot;_line_&quot; + ts);</span>
+            }
+            
+<span class="fc" id="L223">            int nnzs = imageProcessor.countNonZeroes(in);</span>
+            while (true) {
+<span class="fc" id="L225">                int nnzs2 = imageProcessor.applyThinning2(in);</span>
+<span class="fc bfc" id="L226" title="All 2 branches covered.">                if (nnzs == nnzs2) {</span>
+<span class="fc" id="L227">                    break;</span>
+                }
+<span class="fc" id="L229">                nnzs = nnzs2;</span>
+<span class="fc" id="L230">            }</span>
+
+            {//DEBUG
+<span class="fc" id="L233">                long ts = MiscDebug.getCurrentTimeFormatted();</span>
+<span class="fc" id="L234">                GreyscaleImage tmp = in.copyImage();</span>
+<span class="fc" id="L235">                tmp.multiply(255);</span>
+<span class="fc" id="L236">                MiscDebug.writeImage(tmp, &quot;_line_thinned_&quot; + ts);</span>
+            }
+            
+            // either convert all &gt; 0 back to original values, or to a large
+            //   enough value to make a strong gradient
+<span class="fc bfc" id="L241" title="All 2 branches covered.">            for (int pixIdx = 0; pixIdx &lt; in.getNPixels(); ++pixIdx) {</span>
+<span class="fc bfc" id="L242" title="All 2 branches covered.">                if (in.getValue(pixIdx) &gt; 0) {</span>
+<span class="fc" id="L243">                    in.setValue(pixIdx, 200);</span>
+                }
+            }
+            
+<span class="fc" id="L247">            filterProducts = createGradientForLineMode(in);</span>
+                        
+            //TODO: update these or remove them...left from 
+            // a previous version of the code
+<span class="fc" id="L251">            approxProcessedSigma = Math.sqrt(</span>
                 approxProcessedSigma*approxProcessedSigma + (0.678*0.678));
             
-<span class="pc bpc" id="L216" title="1 of 2 branches missed.">            if (debug) {</span>
-<span class="nc" id="L217">                GreyscaleImage tmp = filterProducts.getGradientXY().copyImage();</span>
-<span class="nc" id="L218">                tmp.multiply(255.f);</span>
-<span class="nc" id="L219">                MiscDebug.writeImage(tmp, &quot;_gXY_&quot;);</span>
-<span class="nc" id="L220">                MiscDebug.writeImage(filterProducts.getTheta(), &quot;_theta_&quot;);</span>
-            }
+<span class="fc" id="L254">            input.resetTo(filterProducts.getGradientXY());</span>
             
-<span class="pc bpc" id="L223" title="1 of 2 branches missed.">            if (useLineThinner) {</span>
-                
-<span class="fc" id="L225">                imageProcessor.applyThinning2(filterProducts.getGradientXY());</span>
-                
-<span class="fc" id="L227">                PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();</span>
-                
-                //ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
-                //lt.applyFilter(filterProducts.getGradientXY());
-            }
-            
-<span class="pc bpc" id="L233" title="1 of 2 branches missed.">            if (debug) {</span>
-<span class="nc" id="L234">                GreyscaleImage tmp = filterProducts.getGradientXY().copyImage();</span>
-<span class="nc" id="L235">                tmp.multiply(255.f);</span>
-<span class="nc" id="L236">                MiscDebug.writeImage(tmp, &quot;_gXY2_&quot;);</span>
-            }
-                        
-<span class="fc" id="L239">            input.resetTo(filterProducts.getGradientXY());</span>
-            
-<span class="fc" id="L241">            return;</span>
+<span class="fc" id="L256">            return;</span>
         }
         
         // (1) smooth image using separable binomial filters
-<span class="fc" id="L245">        SIGMA sigma = SIGMA.ONE;</span>
-<span class="pc bpc" id="L246" title="1 of 2 branches missed.">        if (sigma.equals(SIGMA.ONE)) {</span>
-<span class="fc" id="L247">            ATrousWaveletTransform at = new ATrousWaveletTransform();</span>
-<span class="fc" id="L248">            GreyscaleImage smoothed = at.smoothToSigmaOne(input);</span>
-<span class="fc" id="L249">            input.resetTo(smoothed);</span>
-<span class="fc" id="L250">            approxProcessedSigma = 1;</span>
-<span class="pc bnc" id="L251" title="All 2 branches missed.">        } else if (sigma.equals(SIGMA.ZEROPOINTSEVENONE)) {</span>
-<span class="nc" id="L252">            ATrousWaveletTransform at = new ATrousWaveletTransform();</span>
-<span class="nc" id="L253">            GreyscaleImage smoothed = at.smoothToSigmaZeroPointSevenOne(input);</span>
-<span class="nc" id="L254">            input.resetTo(smoothed);</span>
-<span class="nc" id="L255">            approxProcessedSigma = Math.sqrt(2.)/2.;</span>
-<span class="nc" id="L256">        } else {</span>
-<span class="nc" id="L257">            ImageProcessor imageProcessor = new ImageProcessor();</span>
-<span class="nc" id="L258">            imageProcessor.blur(input, sigma, 0, 255);</span>
-<span class="nc" id="L259">            approxProcessedSigma = SIGMA.getValue(sigma);</span>
+<span class="fc" id="L260">        SIGMA sigma = SIGMA.ONE;</span>
+<span class="pc bpc" id="L261" title="1 of 2 branches missed.">        if (sigma.equals(SIGMA.ONE)) {</span>
+<span class="fc" id="L262">            ATrousWaveletTransform at = new ATrousWaveletTransform();</span>
+<span class="fc" id="L263">            GreyscaleImage smoothed = at.smoothToSigmaOne(input);</span>
+<span class="fc" id="L264">            input.resetTo(smoothed);</span>
+<span class="fc" id="L265">            approxProcessedSigma = 1;</span>
+<span class="pc bnc" id="L266" title="All 2 branches missed.">        } else if (sigma.equals(SIGMA.ZEROPOINTSEVENONE)) {</span>
+<span class="nc" id="L267">            ATrousWaveletTransform at = new ATrousWaveletTransform();</span>
+<span class="nc" id="L268">            GreyscaleImage smoothed = at.smoothToSigmaZeroPointSevenOne(input);</span>
+<span class="nc" id="L269">            input.resetTo(smoothed);</span>
+<span class="nc" id="L270">            approxProcessedSigma = Math.sqrt(2.)/2.;</span>
+<span class="nc" id="L271">        } else {</span>
+<span class="nc" id="L272">            ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="nc" id="L273">            imageProcessor.blur(input, sigma, 0, 255);</span>
+<span class="nc" id="L274">            approxProcessedSigma = SIGMA.getValue(sigma);</span>
         }
         
         //(2) create gradient
         // uses a binomial filter for a first derivative gradient, sobel.
-<span class="fc" id="L264">        filterProducts = createGradient(input);</span>
+<span class="fc" id="L279">        filterProducts = createGradient(input);</span>
         
-<span class="fc" id="L266">        GreyscaleImage gradientCopyBeforeThinning = filterProducts.getGradientXY().copyImage();</span>
+<span class="fc" id="L281">        GreyscaleImage gradientCopyBeforeThinning = filterProducts.getGradientXY().copyImage();</span>
 
-<span class="fc" id="L268">        approxProcessedSigma = Math.sqrt(</span>
+<span class="fc" id="L283">        approxProcessedSigma = Math.sqrt(</span>
             approxProcessedSigma*approxProcessedSigma + (1./4.));
                 
-<span class="fc" id="L271">        Set&lt;PairInt&gt; removedDisconnecting = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L286">        Set&lt;PairInt&gt; removedDisconnecting = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="pc bpc" id="L273" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L274">            MiscDebug.writeImage(filterProducts.getGradientXY(), &quot;_before_nms_&quot;);</span>
+<span class="pc bpc" id="L288" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L289">            MiscDebug.writeImage(filterProducts.getGradientXY(), &quot;_before_nms_&quot;);</span>
         }
         
         //(3) non-maximum suppression
-<span class="pc bpc" id="L278" title="1 of 2 branches missed.">        if (performNonMaxSuppr) {</span>
-<span class="fc" id="L279">            applyNonMaximumSuppression(filterProducts, removedDisconnecting);</span>
+<span class="pc bpc" id="L293" title="1 of 2 branches missed.">        if (performNonMaxSuppr) {</span>
+<span class="fc" id="L294">            applyNonMaximumSuppression(filterProducts, removedDisconnecting);</span>
         }
         
-<span class="pc bpc" id="L282" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L283">            MiscDebug.writeImage(filterProducts.getGradientXY(), &quot;_after_nms_&quot;);</span>
+<span class="pc bpc" id="L297" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L298">            MiscDebug.writeImage(filterProducts.getGradientXY(), &quot;_after_nms_&quot;);</span>
         }
            
         //(4) adaptive 2 layer filter                        
-<span class="fc" id="L287">        apply2LayerFilter(filterProducts.getGradientXY(), removedDisconnecting,</span>
+<span class="fc" id="L302">        apply2LayerFilter(filterProducts.getGradientXY(), removedDisconnecting,</span>
             gradientCopyBeforeThinning);
         
-<span class="pc bpc" id="L290" title="1 of 2 branches missed.">        if (useHigherThresholdIfNeeded) {</span>
-<span class="nc" id="L291">            int c = countAboveZero(filterProducts.getGradientXY());</span>
-<span class="nc" id="L292">            float cFraction = (float)c/(float)input.getNPixels();</span>
-<span class="nc bnc" id="L293" title="All 2 branches missed.">            if (cFraction &gt; 0.1) {</span>
-<span class="nc" id="L294">                this.useAdaptive2Layer = false;</span>
-<span class="nc" id="L295">                useAdaptiveThreshold = false;</span>
-<span class="nc" id="L296">                this.otsuScaleFactor = 2.5f;</span>
+<span class="pc bpc" id="L305" title="1 of 2 branches missed.">        if (useHigherThresholdIfNeeded) {</span>
+<span class="nc" id="L306">            int c = countAboveZero(filterProducts.getGradientXY());</span>
+<span class="nc" id="L307">            float cFraction = (float)c/(float)input.getNPixels();</span>
+<span class="nc bnc" id="L308" title="All 2 branches missed.">            if (cFraction &gt; 0.1) {</span>
+<span class="nc" id="L309">                this.useAdaptive2Layer = false;</span>
+<span class="nc" id="L310">                useAdaptiveThreshold = false;</span>
+<span class="nc" id="L311">                this.otsuScaleFactor = 2.5f;</span>
                 
-<span class="nc" id="L298">                filterProducts.getGradientX().resetTo(gradientCopyBeforeThinning);</span>
-<span class="nc bnc" id="L299" title="All 2 branches missed.">                if (performNonMaxSuppr) {</span>
-<span class="nc" id="L300">                    applyNonMaximumSuppression(filterProducts, removedDisconnecting);</span>
+<span class="nc" id="L313">                filterProducts.getGradientX().resetTo(gradientCopyBeforeThinning);</span>
+<span class="nc bnc" id="L314" title="All 2 branches missed.">                if (performNonMaxSuppr) {</span>
+<span class="nc" id="L315">                    applyNonMaximumSuppression(filterProducts, removedDisconnecting);</span>
                 }
-<span class="nc" id="L302">                apply2LayerFilter(filterProducts.getGradientXY(), removedDisconnecting,</span>
+<span class="nc" id="L317">                apply2LayerFilter(filterProducts.getGradientXY(), removedDisconnecting,</span>
                     gradientCopyBeforeThinning);
             }
         }
                 
-<span class="pc bpc" id="L307" title="1 of 2 branches missed.">        if (restoreJunctions) {</span>
-<span class="fc" id="L308">            int minResolution = (int)Math.ceil(2.35 * approxProcessedSigma);</span>
-<span class="fc" id="L309">            int minResolvableAngle = (int)Math.ceil(</span>
-<span class="fc" id="L310">                Math.atan2(1, minResolution) * 180./Math.PI);</span>
-<span class="pc bpc" id="L311" title="1 of 2 branches missed.">            if (minResolvableAngle &lt; 0) {</span>
-<span class="nc" id="L312">                minResolvableAngle *= -1;</span>
+<span class="pc bpc" id="L322" title="1 of 2 branches missed.">        if (restoreJunctions) {</span>
+<span class="fc" id="L323">            int minResolution = (int)Math.ceil(2.35 * approxProcessedSigma);</span>
+<span class="fc" id="L324">            int minResolvableAngle = (int)Math.ceil(</span>
+<span class="fc" id="L325">                Math.atan2(1, minResolution) * 180./Math.PI);</span>
+<span class="pc bpc" id="L326" title="1 of 2 branches missed.">            if (minResolvableAngle &lt; 0) {</span>
+<span class="nc" id="L327">                minResolvableAngle *= -1;</span>
             }
             
-<span class="fc" id="L315">            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
-<span class="fc" id="L316">            curveHelper.additionalThinning45DegreeEdges2(</span>
-<span class="fc" id="L317">                filterProducts.getTheta(), filterProducts.getGradientXY(), </span>
+<span class="fc" id="L330">            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+<span class="fc" id="L331">            curveHelper.additionalThinning45DegreeEdges2(</span>
+<span class="fc" id="L332">                filterProducts.getTheta(), filterProducts.getGradientXY(), </span>
                 minResolvableAngle);
         }
         
         // is this necessary?
-<span class="fc bfc" id="L322" title="All 2 branches covered.">        for (int i = 0; i &lt; filterProducts.getGradientXY().getNPixels(); ++i) {</span>
-<span class="fc" id="L323">            int v = filterProducts.getGradientXY().getValue(i);</span>
-<span class="pc bpc" id="L324" title="1 of 2 branches missed.">            if (v &lt; 0) {</span>
-<span class="nc" id="L325">                filterProducts.getGradientXY().setValue(i, 0);</span>
+<span class="fc bfc" id="L337" title="All 2 branches covered.">        for (int i = 0; i &lt; filterProducts.getGradientXY().getNPixels(); ++i) {</span>
+<span class="fc" id="L338">            int v = filterProducts.getGradientXY().getValue(i);</span>
+<span class="pc bpc" id="L339" title="1 of 2 branches missed.">            if (v &lt; 0) {</span>
+<span class="nc" id="L340">                filterProducts.getGradientXY().setValue(i, 0);</span>
             }
         }
                                        
-<span class="fc" id="L329">        input.resetTo(filterProducts.getGradientXY());</span>
-<span class="fc" id="L330">    }</span>
+<span class="fc" id="L344">        input.resetTo(filterProducts.getGradientXY());</span>
+<span class="fc" id="L345">    }</span>
    
     /*
     Tracing edges through the image and hysteresis thresholding
@@ -357,41 +372,41 @@ public class CannyEdgeFilterAdaptive {
         Set&lt;PairInt&gt; removedDisconnecting,
         GreyscaleImage gradientCopyBeforeThinning) {
         
-<span class="fc" id="L360">        int n = gradientXY.getNPixels();</span>
-<span class="fc" id="L361">        int w = gradientXY.getWidth();</span>
-<span class="fc" id="L362">        int h = gradientXY.getHeight();</span>
+<span class="fc" id="L375">        int n = gradientXY.getNPixels();</span>
+<span class="fc" id="L376">        int w = gradientXY.getWidth();</span>
+<span class="fc" id="L377">        int h = gradientXY.getHeight();</span>
         
-<span class="pc bpc" id="L364" title="2 of 4 branches missed.">        if (w &lt; 3 || h &lt; 3) {</span>
-<span class="nc" id="L365">            throw new IllegalArgumentException(&quot;images should be &gt;= 3x3 in size&quot;);</span>
+<span class="pc bpc" id="L379" title="2 of 4 branches missed.">        if (w &lt; 3 || h &lt; 3) {</span>
+<span class="nc" id="L380">            throw new IllegalArgumentException(&quot;images should be &gt;= 3x3 in size&quot;);</span>
         }
            
-<span class="fc" id="L368">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="fc" id="L383">        ImageProcessor imageProcessor = new ImageProcessor();</span>
 
-<span class="fc" id="L370">        double[][] threshImg = null;</span>
+<span class="fc" id="L385">        double[][] threshImg = null;</span>
        
-<span class="pc bpc" id="L372" title="2 of 4 branches missed.">        if (useAdaptive2Layer &amp;&amp; useAdaptiveThreshold) {</span>
-<span class="nc" id="L373">            AdaptiveThresholding th = new AdaptiveThresholding();</span>
-<span class="nc" id="L374">            threshImg = th.createAdaptiveThresholdImage(</span>
-<span class="nc" id="L375">                imageProcessor.copy(gradientXY), 15, 0.2);</span>
-<span class="nc bnc" id="L376" title="All 2 branches missed.">            if (debug) {//DEBUG</span>
-<span class="nc" id="L377">                double[][] imgCp = imageProcessor.copy(gradientXY);</span>
-<span class="nc bnc" id="L378" title="All 2 branches missed.">                for (int i = 0; i &lt; w; ++i) {</span>
-<span class="nc bnc" id="L379" title="All 2 branches missed.">                    for (int j = 0; j &lt; h; ++j) {</span>
-<span class="nc" id="L380">                        double t = threshImg[i][j];</span>
-<span class="nc bnc" id="L381" title="All 2 branches missed.">                        if (imgCp[i][j] &gt; t) {</span>
-<span class="nc" id="L382">                            imgCp[i][j] = 255.;</span>
+<span class="pc bpc" id="L387" title="2 of 4 branches missed.">        if (useAdaptive2Layer &amp;&amp; useAdaptiveThreshold) {</span>
+<span class="nc" id="L388">            AdaptiveThresholding th = new AdaptiveThresholding();</span>
+<span class="nc" id="L389">            threshImg = th.createAdaptiveThresholdImage(</span>
+<span class="nc" id="L390">                imageProcessor.copy(gradientXY), 15, 0.2);</span>
+<span class="nc bnc" id="L391" title="All 2 branches missed.">            if (debug) {//DEBUG</span>
+<span class="nc" id="L392">                double[][] imgCp = imageProcessor.copy(gradientXY);</span>
+<span class="nc bnc" id="L393" title="All 2 branches missed.">                for (int i = 0; i &lt; w; ++i) {</span>
+<span class="nc bnc" id="L394" title="All 2 branches missed.">                    for (int j = 0; j &lt; h; ++j) {</span>
+<span class="nc" id="L395">                        double t = threshImg[i][j];</span>
+<span class="nc bnc" id="L396" title="All 2 branches missed.">                        if (imgCp[i][j] &gt; t) {</span>
+<span class="nc" id="L397">                            imgCp[i][j] = 255.;</span>
                         } else {
-<span class="nc" id="L384">                            imgCp[i][j] = 0;</span>
+<span class="nc" id="L399">                            imgCp[i][j] = 0;</span>
                         }
                     }
                 }
-<span class="nc" id="L388">                MiscDebug.writeImage(imgCp, &quot;img_a_thresholded_.png&quot;);</span>
-<span class="nc" id="L389">                MiscDebug.writeImage(threshImg, &quot;img_a_adaptive_threshold_.png&quot;);</span>
+<span class="nc" id="L403">                MiscDebug.writeImage(imgCp, &quot;img_a_thresholded_.png&quot;);</span>
+<span class="nc" id="L404">                MiscDebug.writeImage(threshImg, &quot;img_a_adaptive_threshold_.png&quot;);</span>
             }
         }
         
-<span class="fc" id="L393">        int[] dxs = Misc.dx8;</span>
-<span class="fc" id="L394">        int[] dys = Misc.dy8;</span>
+<span class="fc" id="L408">        int[] dxs = Misc.dx8;</span>
+<span class="fc" id="L409">        int[] dys = Misc.dy8;</span>
         
         /*
         the paper suggests extending the association of a bright &quot;sure edge&quot;
@@ -424,122 +439,122 @@ public class CannyEdgeFilterAdaptive {
         TODO: write a second method for the later to try that too...
         */
                 
-<span class="fc" id="L427">        float tHigh = 0;</span>
-<span class="fc" id="L428">        float tLow = 0;</span>
-<span class="pc bpc" id="L429" title="2 of 4 branches missed.">        if (!useAdaptive2Layer || !useAdaptiveThreshold) {</span>
-<span class="fc" id="L430">            OtsuThresholding ot = new OtsuThresholding();</span>
+<span class="fc" id="L442">        float tHigh = 0;</span>
+<span class="fc" id="L443">        float tLow = 0;</span>
+<span class="pc bpc" id="L444" title="2 of 4 branches missed.">        if (!useAdaptive2Layer || !useAdaptiveThreshold) {</span>
+<span class="fc" id="L445">            OtsuThresholding ot = new OtsuThresholding();</span>
                         
-<span class="fc" id="L432">            double[][] g = new double[w][];</span>
-<span class="fc bfc" id="L433" title="All 2 branches covered.">            for (int i = 0; i &lt; w; ++i) {</span>
-<span class="fc" id="L434">                g[i] = new double[h];</span>
-<span class="fc bfc" id="L435" title="All 2 branches covered.">                for (int j = 0; j &lt; h; ++j) {</span>
-<span class="fc" id="L436">                    g[i][j] = gradientXY.getValue(i, j);</span>
+<span class="fc" id="L447">            double[][] g = new double[w][];</span>
+<span class="fc bfc" id="L448" title="All 2 branches covered.">            for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc" id="L449">                g[i] = new double[h];</span>
+<span class="fc bfc" id="L450" title="All 2 branches covered.">                for (int j = 0; j &lt; h; ++j) {</span>
+<span class="fc" id="L451">                    g[i][j] = gradientXY.getValue(i, j);</span>
                 }
             }
-<span class="fc" id="L439">            int nBins = 256/5;</span>
-<span class="fc" id="L440">            float t = (float)ot.calculateBinaryThreshold2D(g, nBins);</span>
+<span class="fc" id="L454">            int nBins = 256/5;</span>
+<span class="fc" id="L455">            float t = (float)ot.calculateBinaryThreshold2D(g, nBins);</span>
             
-<span class="fc" id="L442">            tHigh = otsuScaleFactor * t;</span>
-<span class="fc" id="L443">            tLow = tHigh/factorBelowHighThreshold;</span>
+<span class="fc" id="L457">            tHigh = otsuScaleFactor * t;</span>
+<span class="fc" id="L458">            tLow = tHigh/factorBelowHighThreshold;</span>
         }
         
-<span class="fc" id="L446">        GreyscaleImage img2 = gradientXY.createWithDimensions();</span>
+<span class="fc" id="L461">        GreyscaleImage img2 = gradientXY.createWithDimensions();</span>
         
         // store pixels w/ v &gt; tHigh
         // and store any of it's neighbors w/ v &gt; tLow
 
-<span class="fc bfc" id="L451" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
-<span class="fc bfc" id="L452" title="All 2 branches covered.">            for (int y = 0; y &lt; h; ++y) {</span>
+<span class="fc bfc" id="L466" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
+<span class="fc bfc" id="L467" title="All 2 branches covered.">            for (int y = 0; y &lt; h; ++y) {</span>
 
-<span class="fc" id="L454">                double v = gradientXY.getValue(x, y);</span>
+<span class="fc" id="L469">                double v = gradientXY.getValue(x, y);</span>
 
                 double tHigh0, tLow0;
-<span class="pc bpc" id="L457" title="1 of 2 branches missed.">                if (threshImg != null) {</span>
-<span class="nc" id="L458">                    tHigh0 = threshImg[x][y];</span>
-<span class="nc" id="L459">                    tLow0 = tHigh0/2;</span>
+<span class="pc bpc" id="L472" title="1 of 2 branches missed.">                if (threshImg != null) {</span>
+<span class="nc" id="L473">                    tHigh0 = threshImg[x][y];</span>
+<span class="nc" id="L474">                    tLow0 = tHigh0/2;</span>
                 } else {
-<span class="fc" id="L461">                    tHigh0 = tHigh;</span>
-<span class="fc" id="L462">                    tLow0 = tLow;</span>
+<span class="fc" id="L476">                    tHigh0 = tHigh;</span>
+<span class="fc" id="L477">                    tLow0 = tLow;</span>
                 }
 
-<span class="fc bfc" id="L465" title="All 2 branches covered.">                if (v &lt; tHigh0) {</span>
-<span class="fc" id="L466">                    continue;</span>
+<span class="fc bfc" id="L480" title="All 2 branches covered.">                if (v &lt; tHigh0) {</span>
+<span class="fc" id="L481">                    continue;</span>
                 }
 
-<span class="fc" id="L469">                img2.setValue(x, y, 255);</span>
+<span class="fc" id="L484">                img2.setValue(x, y, 255);</span>
 
                 // store any adjacent w/ v &gt; tLow
-<span class="fc bfc" id="L472" title="All 2 branches covered.">                for (int k = 0; k &lt; dxs.length; ++k) {</span>
-<span class="fc" id="L473">                    int x2 = x + dxs[k];</span>
-<span class="fc" id="L474">                    int y2 = y + dys[k];</span>
-<span class="pc bpc" id="L475" title="4 of 8 branches missed.">                    if ((x2 &lt; 0) || (y2 &lt; 0) || (x2 &gt; (w - 1)) || (y2 &gt; (h - 1))) {</span>
-<span class="nc" id="L476">                        continue;</span>
+<span class="fc bfc" id="L487" title="All 2 branches covered.">                for (int k = 0; k &lt; dxs.length; ++k) {</span>
+<span class="fc" id="L488">                    int x2 = x + dxs[k];</span>
+<span class="fc" id="L489">                    int y2 = y + dys[k];</span>
+<span class="pc bpc" id="L490" title="4 of 8 branches missed.">                    if ((x2 &lt; 0) || (y2 &lt; 0) || (x2 &gt; (w - 1)) || (y2 &gt; (h - 1))) {</span>
+<span class="nc" id="L491">                        continue;</span>
                     }
-<span class="fc" id="L478">                    double v2 = gradientXY.getValue(x2, y2);</span>
-<span class="fc bfc" id="L479" title="All 2 branches covered.">                    if (v2 &gt; tLow0) {</span>
-<span class="fc" id="L480">                        img2.setValue(x2, y2, 255);</span>
+<span class="fc" id="L493">                    double v2 = gradientXY.getValue(x2, y2);</span>
+<span class="fc bfc" id="L494" title="All 2 branches covered.">                    if (v2 &gt; tLow0) {</span>
+<span class="fc" id="L495">                        img2.setValue(x2, y2, 255);</span>
                     }
                 }
             }
         }
         
         
-<span class="pc bpc" id="L487" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L488">            MiscDebug.writeImage(gradientXY, &quot;_before_2layer_&quot;);</span>
-<span class="nc" id="L489">            MiscDebug.writeImage(img2, &quot;_in_2layer_&quot;);</span>
+<span class="pc bpc" id="L502" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L503">            MiscDebug.writeImage(gradientXY, &quot;_before_2layer_&quot;);</span>
+<span class="nc" id="L504">            MiscDebug.writeImage(img2, &quot;_in_2layer_&quot;);</span>
         }
                 
-<span class="fc" id="L492">        gradientXY.resetTo(img2);</span>
+<span class="fc" id="L507">        gradientXY.resetTo(img2);</span>
         
-<span class="pc bpc" id="L494" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L495">            MiscDebug.writeImage(gradientXY, &quot;_after_linethinning_1_&quot;);</span>
+<span class="pc bpc" id="L509" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L510">            MiscDebug.writeImage(gradientXY, &quot;_after_linethinning_1_&quot;);</span>
         }
         
-<span class="pc bpc" id="L498" title="1 of 2 branches missed.">        if (restoreJunctions) {</span>
+<span class="pc bpc" id="L513" title="1 of 2 branches missed.">        if (restoreJunctions) {</span>
         
             // while have information about the thresholds, will use them to
             // make decisions about restoring pixels that disconnected edges.
-<span class="fc" id="L502">            PairInt[][] neighborCoordOffsets</span>
-<span class="fc" id="L503">                = AbstractLineThinner.createCoordinatePointsForEightNeighbors(</span>
+<span class="fc" id="L517">            PairInt[][] neighborCoordOffsets</span>
+<span class="fc" id="L518">                = AbstractLineThinner.createCoordinatePointsForEightNeighbors(</span>
                     0, 0);
 
-<span class="pc bpc" id="L506" title="1 of 2 branches missed.">            for (PairInt p : removedDisconnecting) {</span>
+<span class="pc bpc" id="L521" title="1 of 2 branches missed.">            for (PairInt p : removedDisconnecting) {</span>
                                 
-<span class="nc bnc" id="L508" title="All 2 branches missed.">                if (ImageSegmentation.doesDisconnect(gradientXY,</span>
-<span class="nc" id="L509">                    neighborCoordOffsets, p.getX(), p.getY())) {</span>
+<span class="nc bnc" id="L523" title="All 2 branches missed.">                if (ImageSegmentation.doesDisconnect(gradientXY,</span>
+<span class="nc" id="L524">                    neighborCoordOffsets, p.getX(), p.getY())) {</span>
 
-<span class="nc" id="L511">                    int x = p.getX();</span>
-<span class="nc" id="L512">                    int y = p.getY();</span>
-<span class="nc" id="L513">                    int i = gradientXY.getIndex(x, y);</span>
+<span class="nc" id="L526">                    int x = p.getX();</span>
+<span class="nc" id="L527">                    int y = p.getY();</span>
+<span class="nc" id="L528">                    int i = gradientXY.getIndex(x, y);</span>
 
                     double tHigh0, tLow0;
-<span class="nc bnc" id="L516" title="All 2 branches missed.">                    if (threshImg != null) {</span>
-<span class="nc" id="L517">                        tHigh0 = threshImg[x][y];</span>
-<span class="nc" id="L518">                        tLow0 = tHigh0/2;</span>
+<span class="nc bnc" id="L531" title="All 2 branches missed.">                    if (threshImg != null) {</span>
+<span class="nc" id="L532">                        tHigh0 = threshImg[x][y];</span>
+<span class="nc" id="L533">                        tLow0 = tHigh0/2;</span>
                     } else {
-<span class="nc" id="L520">                        tHigh0 = tHigh;</span>
-<span class="nc" id="L521">                        tLow0 = tLow;</span>
+<span class="nc" id="L535">                        tHigh0 = tHigh;</span>
+<span class="nc" id="L536">                        tLow0 = tLow;</span>
                     }
                     
-<span class="nc" id="L524">                    int v = gradientCopyBeforeThinning.getValue(p);</span>
+<span class="nc" id="L539">                    int v = gradientCopyBeforeThinning.getValue(p);</span>
                                       
-<span class="nc bnc" id="L526" title="All 2 branches missed.">                    if (v &gt; tLow0) {</span>
-<span class="nc bnc" id="L527" title="All 2 branches missed.">                        if (isAdjacentToAHorizOrVertLine(gradientXY, x, y, 3)) {</span>
-<span class="nc" id="L528">                            gradientXY.setValue(x, y, 255);</span>
+<span class="nc bnc" id="L541" title="All 2 branches missed.">                    if (v &gt; tLow0) {</span>
+<span class="nc bnc" id="L542" title="All 2 branches missed.">                        if (isAdjacentToAHorizOrVertLine(gradientXY, x, y, 3)) {</span>
+<span class="nc" id="L543">                            gradientXY.setValue(x, y, 255);</span>
                         }
                     }
                 }
-<span class="nc" id="L532">            }</span>
+<span class="nc" id="L547">            }</span>
      
-<span class="pc bpc" id="L534" title="1 of 2 branches missed.">            if (debug) {</span>
-<span class="nc" id="L535">                MiscDebug.writeImage(gradientXY, &quot;_after_restore_junctions_&quot;);</span>
+<span class="pc bpc" id="L549" title="1 of 2 branches missed.">            if (debug) {</span>
+<span class="nc" id="L550">                MiscDebug.writeImage(gradientXY, &quot;_after_restore_junctions_&quot;);</span>
             }
                         
-<span class="pc bpc" id="L538" title="1 of 2 branches missed.">            if (debug) {</span>
-<span class="nc" id="L539">                MiscDebug.writeImage(gradientXY, &quot;_after_linethinning_2_&quot;);</span>
+<span class="pc bpc" id="L553" title="1 of 2 branches missed.">            if (debug) {</span>
+<span class="nc" id="L554">                MiscDebug.writeImage(gradientXY, &quot;_after_linethinning_2_&quot;);</span>
             }
         }
-<span class="fc" id="L542">    }</span>
+<span class="fc" id="L557">    }</span>
     
     /**
      * convolve the image with a Sobel X 1D kernel which is the same as a 
@@ -551,7 +566,7 @@ public class CannyEdgeFilterAdaptive {
      */
     private GreyscaleImage getGradientX1D(final GreyscaleImage input) {
                 
-<span class="fc" id="L554">        return getGradient1D(input, true);</span>
+<span class="fc" id="L569">        return getGradient1D(input, true);</span>
     }
     
     /**
@@ -563,7 +578,7 @@ public class CannyEdgeFilterAdaptive {
      */
     private GreyscaleImage getGradientY1D(final GreyscaleImage input) {
                 
-<span class="fc" id="L566">        return getGradient1D(input, false);</span>
+<span class="fc" id="L581">        return getGradient1D(input, false);</span>
     }
     
     /**
@@ -576,47 +591,47 @@ public class CannyEdgeFilterAdaptive {
     private GreyscaleImage getGradient1D(final GreyscaleImage input, 
         boolean calculateForX) {
         
-<span class="fc" id="L579">        log.fine(&quot;getGradientID calculateForX=&quot; + calculateForX);</span>
+<span class="fc" id="L594">        log.fine(&quot;getGradientID calculateForX=&quot; + calculateForX);</span>
                 
         // 0.5f, -0.0f, -0.5f
-<span class="fc" id="L582">        float[] kernel = Gaussian1DFirstDeriv.getKernel(</span>
+<span class="fc" id="L597">        float[] kernel = Gaussian1DFirstDeriv.getKernel(</span>
             //SIGMA.ZEROPOINTSEVENONE);
             SIGMA.ZEROPOINTFIVE);
                 
-<span class="fc" id="L586">        GreyscaleImage output = input.copyToSignedImage();</span>
+<span class="fc" id="L601">        GreyscaleImage output = input.copyToSignedImage();</span>
         
-<span class="fc" id="L588">        apply1DKernelToImage(output, kernel, calculateForX);</span>
+<span class="fc" id="L603">        apply1DKernelToImage(output, kernel, calculateForX);</span>
         
-<span class="fc" id="L590">        return output;</span>
+<span class="fc" id="L605">        return output;</span>
     }
     
     private void apply1DKernelToImage(final GreyscaleImage input, 
         float[] kernel, boolean calculateForX) {
         
-<span class="fc" id="L596">        log.fine(&quot;apply1DKernelToImage calculateForX=&quot; + calculateForX);</span>
+<span class="fc" id="L611">        log.fine(&quot;apply1DKernelToImage calculateForX=&quot; + calculateForX);</span>
         
-<span class="fc" id="L598">        GreyscaleImage output = input.copyImage();</span>
+<span class="fc" id="L613">        GreyscaleImage output = input.copyImage();</span>
       
-<span class="fc" id="L600">        Kernel1DHelper kernel1DHelper = new Kernel1DHelper();</span>
+<span class="fc" id="L615">        Kernel1DHelper kernel1DHelper = new Kernel1DHelper();</span>
         
-<span class="fc bfc" id="L602" title="All 2 branches covered.">        for (int i = 0; i &lt; input.getWidth(); i++) {</span>
+<span class="fc bfc" id="L617" title="All 2 branches covered.">        for (int i = 0; i &lt; input.getWidth(); i++) {</span>
            
-<span class="fc bfc" id="L604" title="All 2 branches covered.">            for (int j = 0; j &lt; input.getHeight(); j++) {</span>
+<span class="fc bfc" id="L619" title="All 2 branches covered.">            for (int j = 0; j &lt; input.getHeight(); j++) {</span>
                 
-<span class="fc" id="L606">                double conv = kernel1DHelper.convolvePointWithKernel(</span>
+<span class="fc" id="L621">                double conv = kernel1DHelper.convolvePointWithKernel(</span>
                     input, i, j, kernel, calculateForX);
                 
-<span class="fc" id="L609">                int g = (int) conv;</span>
+<span class="fc" id="L624">                int g = (int) conv;</span>
                 
                 // because the values may be combined with other images or
                 // involved in other operations such as adding in quadrature,
                 // don't limit the range to be between 0 and 255
-<span class="fc" id="L614">                output.setValue(i, j, g);</span>
+<span class="fc" id="L629">                output.setValue(i, j, g);</span>
             }
         }
         
-<span class="fc" id="L618">        input.resetTo(output);</span>
-<span class="fc" id="L619">    }</span>
+<span class="fc" id="L633">        input.resetTo(output);</span>
+<span class="fc" id="L634">    }</span>
     
     /**
      * construct the gradient in X, gradient in Y, their combined average and
@@ -632,24 +647,24 @@ public class CannyEdgeFilterAdaptive {
         
         GreyscaleImage gX, gY, g, theta;
         
-<span class="fc" id="L635">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="fc" id="L650">        ImageProcessor imageProcessor = new ImageProcessor();</span>
         
-<span class="fc" id="L637">        gX = getGradientX1D(img);</span>
+<span class="fc" id="L652">        gX = getGradientX1D(img);</span>
 
-<span class="fc" id="L639">        gY = getGradientY1D(img);</span>
+<span class="fc" id="L654">        gY = getGradientY1D(img);</span>
         
-<span class="fc" id="L641">        g = imageProcessor.combineConvolvedImages(gX, gY);</span>
-        
+<span class="fc" id="L656">        g = imageProcessor.combineConvolvedImages(gX, gY);</span>
+    
         // the theta is in range 0 to 180
-<span class="fc" id="L644">        theta = imageProcessor.computeTheta180(gX, gY);</span>
+<span class="fc" id="L659">        theta = imageProcessor.computeTheta180(gX, gY);</span>
         
-<span class="pc bpc" id="L646" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="pc bpc" id="L661" title="1 of 2 branches missed.">        if (debug) {</span>
             // when replace the aspect library, put these renders in the 
             //   equivalent replacement
-<span class="nc" id="L649">            long ts = MiscDebug.getCurrentTimeFormatted();</span>
-<span class="nc" id="L650">            MiscDebug.writeImage(theta, &quot;_theta_&quot; + ts);</span>
-<span class="nc" id="L651">            MiscDebug.writeImage(gX, &quot;_gX_&quot; + ts);</span>
-<span class="nc" id="L652">            MiscDebug.writeImage(gY, &quot;_gY_&quot; + ts);</span>
+<span class="nc" id="L664">            long ts = MiscDebug.getCurrentTimeFormatted();</span>
+<span class="nc" id="L665">            MiscDebug.writeImage(theta, &quot;_theta_&quot; + ts);</span>
+<span class="nc" id="L666">            MiscDebug.writeImage(gX, &quot;_gX_&quot; + ts);</span>
+<span class="nc" id="L667">            MiscDebug.writeImage(gY, &quot;_gY_&quot; + ts);</span>
             /*
             int x = 37; int y = 163;
             System.out.println(&quot;(&quot; + x + &quot;, &quot; + y + &quot;) math.atan2(&quot; + gY.getValue(x, y)
@@ -657,13 +672,63 @@ public class CannyEdgeFilterAdaptive {
                 theta.getValue(x, y));*/
         }
         
-<span class="fc" id="L660">        EdgeFilterProducts efp = new EdgeFilterProducts();</span>
-<span class="fc" id="L661">        efp.setGradientX(gX);</span>
-<span class="fc" id="L662">        efp.setGradientY(gY);</span>
-<span class="fc" id="L663">        efp.setGradientXY(g);</span>
-<span class="fc" id="L664">        efp.setTheta(theta);</span>
+<span class="fc" id="L675">        EdgeFilterProducts efp = new EdgeFilterProducts();</span>
+<span class="fc" id="L676">        efp.setGradientX(gX);</span>
+<span class="fc" id="L677">        efp.setGradientY(gY);</span>
+<span class="fc" id="L678">        efp.setGradientXY(g);</span>
+<span class="fc" id="L679">        efp.setTheta(theta);</span>
         
-<span class="fc" id="L666">        return efp;</span>
+<span class="fc" id="L681">        return efp;</span>
+    }
+
+    /**
+     * construct the gradient in X, gradient in Y, their combined average and
+     * theta image
+     * using two 1-D passes of a Sobel 1D kernel which is the same as a 
+     * Gaussian first derivative with sigma = sqrt(1)/2 where FWHM=2.355*sigma.
+     * The theta image has range 0 t 360.
+     * 
+     * @param img
+     * @return 
+     */
+    protected EdgeFilterProducts createGradientForLineMode(final GreyscaleImage img) {
+        
+        GreyscaleImage gX, gY, g, theta;
+        
+<span class="fc" id="L698">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+        
+<span class="fc" id="L700">        gX = img.copyImage();</span>
+
+<span class="fc" id="L702">        gY = img.copyImage();</span>
+        
+<span class="fc" id="L704">        g = img.copyImage();</span>
+        
+        // the theta is in range 0 to 180
+<span class="fc" id="L707">        theta = imageProcessor.computeTheta180(gX, gY);</span>
+        
+<span class="pc bpc" id="L709" title="1 of 2 branches missed.">        if (debug) {</span>
+            // when replace the aspect library, put these renders in the 
+            //   equivalent replacement
+<span class="nc" id="L712">            long ts = MiscDebug.getCurrentTimeFormatted();</span>
+<span class="nc" id="L713">            GreyscaleImage tmp = g.copyImage();</span>
+<span class="nc" id="L714">            MiscDebug.writeImage(tmp, &quot;_gXY_&quot; + ts);</span>
+<span class="nc" id="L715">            MiscDebug.writeImage(theta, &quot;_theta_&quot; + ts);</span>
+<span class="nc" id="L716">            MiscDebug.writeImage(gX, &quot;_gX_&quot; + ts);</span>
+<span class="nc" id="L717">            MiscDebug.writeImage(gY, &quot;_gY_&quot; + ts);</span>
+            /*
+            int x = 37; int y = 163;
+            System.out.println(&quot;(&quot; + x + &quot;, &quot; + y + &quot;) math.atan2(&quot; + gY.getValue(x, y)
+                + &quot;,&quot; + gX.getValue(x, y) + &quot;)*180./math.pi=&quot; + 
+                theta.getValue(x, y));*/
+        }
+        
+<span class="fc" id="L725">        EdgeFilterProducts efp = new EdgeFilterProducts();</span>
+<span class="fc" id="L726">        efp.setGradientX(gX);</span>
+<span class="fc" id="L727">        efp.setGradientY(gY);</span>
+<span class="fc" id="L728">        efp.setGradientXY(g);</span>
+<span class="fc" id="L729">        efp.setTheta(theta);</span>
+        
+<span class="fc" id="L731">        return efp;</span>
     }
 
     /**
@@ -677,24 +742,24 @@ public class CannyEdgeFilterAdaptive {
         
         GreyscaleImage gX, gY, g, theta;
         
-<span class="nc" id="L680">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="nc" id="L745">        ImageProcessor imageProcessor = new ImageProcessor();</span>
         
-<span class="nc" id="L682">        gX = createGradientFromDiffOfGauss(img, true);</span>
+<span class="nc" id="L747">        gX = createGradientFromDiffOfGauss(img, true);</span>
 
-<span class="nc" id="L684">        gY = createGradientFromDiffOfGauss(img, false);</span>
+<span class="nc" id="L749">        gY = createGradientFromDiffOfGauss(img, false);</span>
             
-<span class="nc" id="L686">        g = imageProcessor.combineConvolvedImages(gX, gY);</span>
+<span class="nc" id="L751">        g = imageProcessor.combineConvolvedImages(gX, gY);</span>
         
         // the theta is in range 0 to 180
-<span class="nc" id="L689">        theta = imageProcessor.computeTheta180(gX, gY);</span>
+<span class="nc" id="L754">        theta = imageProcessor.computeTheta180(gX, gY);</span>
         
-<span class="nc" id="L691">        EdgeFilterProducts efp = new EdgeFilterProducts();</span>
-<span class="nc" id="L692">        efp.setGradientX(gX);</span>
-<span class="nc" id="L693">        efp.setGradientY(gY);</span>
-<span class="nc" id="L694">        efp.setGradientXY(g);</span>
-<span class="nc" id="L695">        efp.setTheta(theta);</span>
+<span class="nc" id="L756">        EdgeFilterProducts efp = new EdgeFilterProducts();</span>
+<span class="nc" id="L757">        efp.setGradientX(gX);</span>
+<span class="nc" id="L758">        efp.setGradientY(gY);</span>
+<span class="nc" id="L759">        efp.setGradientXY(g);</span>
+<span class="nc" id="L760">        efp.setTheta(theta);</span>
         
-<span class="nc" id="L697">        return efp;</span>
+<span class="nc" id="L762">        return efp;</span>
     }
     
     private GreyscaleImage createGradientFromDiffOfGauss(
@@ -708,38 +773,38 @@ public class CannyEdgeFilterAdaptive {
         for line drawings, use sigma1 = 0.42466090014400953f and sigma2 = 2*sigma1
         */
         
-<span class="nc" id="L711">        float resultOne = 0.42466090014400953f;</span>
+<span class="nc" id="L776">        float resultOne = 0.42466090014400953f;</span>
         
-<span class="nc" id="L713">        float sigma = 1.f * resultOne;</span>
+<span class="nc" id="L778">        float sigma = 1.f * resultOne;</span>
         
-<span class="nc" id="L715">        float[] kernel = Gaussian1D.getKernel(sigma);</span>
+<span class="nc" id="L780">        float[] kernel = Gaussian1D.getKernel(sigma);</span>
 
-<span class="nc" id="L717">        float[] kernel2 = Gaussian1D.getKernel(sigma * 1.6f);</span>
+<span class="nc" id="L782">        float[] kernel2 = Gaussian1D.getKernel(sigma * 1.6f);</span>
             
-<span class="nc" id="L719">        GreyscaleImage g0 = img.copyImage();</span>
+<span class="nc" id="L784">        GreyscaleImage g0 = img.copyImage();</span>
         
-<span class="nc" id="L721">        GreyscaleImage g1 = img.copyImage();</span>
+<span class="nc" id="L786">        GreyscaleImage g1 = img.copyImage();</span>
           
-<span class="nc" id="L723">        apply1DKernelToImage(g0, kernel, calculateForX);</span>
+<span class="nc" id="L788">        apply1DKernelToImage(g0, kernel, calculateForX);</span>
                 
-<span class="nc" id="L725">        apply1DKernelToImage(g1, kernel2, calculateForX);</span>
+<span class="nc" id="L790">        apply1DKernelToImage(g1, kernel2, calculateForX);</span>
        
-<span class="nc" id="L727">        ImageProcessor ImageProcessor = new ImageProcessor();</span>
+<span class="nc" id="L792">        ImageProcessor ImageProcessor = new ImageProcessor();</span>
         
-<span class="nc" id="L729">        GreyscaleImage g = ImageProcessor.subtractImages(g1, g0);</span>
+<span class="nc" id="L794">        GreyscaleImage g = ImageProcessor.subtractImages(g1, g0);</span>
         
-<span class="nc" id="L731">        return g;</span>
+<span class="nc" id="L796">        return g;</span>
     }
 
     private void applyNonMaximumSuppression(EdgeFilterProducts filterProducts,
         Set&lt;PairInt&gt; disconnectingRemovals) {
         
-<span class="fc" id="L737">         NonMaximumSuppression nms = new NonMaximumSuppression();</span>
+<span class="fc" id="L802">         NonMaximumSuppression nms = new NonMaximumSuppression();</span>
          
          //TODO: radius can be adjusted from 1 to higher
-<span class="fc" id="L740">         nms.nonmaxsup(filterProducts.getGradientXY(),</span>
-<span class="fc" id="L741">            filterProducts.getTheta(), 1.2, disconnectingRemovals);</span>
-<span class="fc" id="L742">    }</span>
+<span class="fc" id="L805">         nms.nonmaxsup(filterProducts.getGradientXY(),</span>
+<span class="fc" id="L806">            filterProducts.getTheta(), 1.2, disconnectingRemovals);</span>
+<span class="fc" id="L807">    }</span>
     
     private boolean isAdjacentToAHorizOrVertLine(GreyscaleImage gradientXY, 
         int x, int y, int minLineSize) {
@@ -751,19 +816,19 @@ public class CannyEdgeFilterAdaptive {
         
         if find a neighbor, check it for being part of _ or | of size minLineSize        
         */
-<span class="nc" id="L754">        int w = gradientXY.getWidth();</span>
-<span class="nc" id="L755">        int h = gradientXY.getHeight();</span>
-<span class="nc" id="L756">        int[] dxs = Misc.dx8;</span>
-<span class="nc" id="L757">        int[] dys = Misc.dy8;</span>
+<span class="nc" id="L819">        int w = gradientXY.getWidth();</span>
+<span class="nc" id="L820">        int h = gradientXY.getHeight();</span>
+<span class="nc" id="L821">        int[] dxs = Misc.dx8;</span>
+<span class="nc" id="L822">        int[] dys = Misc.dy8;</span>
         
-<span class="nc bnc" id="L759" title="All 2 branches missed.">        for (int k = 0; k &lt; dxs.length; ++k) {</span>
-<span class="nc" id="L760">            int x2 = x + dxs[k];</span>
-<span class="nc" id="L761">            int y2 = y + dys[k];</span>
-<span class="nc bnc" id="L762" title="All 8 branches missed.">            if ((x2 &lt; 0) || (y2 &lt; 0) || (x2 &gt; (w - 1)) || (y2 &gt; (h - 1))) {</span>
-<span class="nc" id="L763">                continue;</span>
+<span class="nc bnc" id="L824" title="All 2 branches missed.">        for (int k = 0; k &lt; dxs.length; ++k) {</span>
+<span class="nc" id="L825">            int x2 = x + dxs[k];</span>
+<span class="nc" id="L826">            int y2 = y + dys[k];</span>
+<span class="nc bnc" id="L827" title="All 8 branches missed.">            if ((x2 &lt; 0) || (y2 &lt; 0) || (x2 &gt; (w - 1)) || (y2 &gt; (h - 1))) {</span>
+<span class="nc" id="L828">                continue;</span>
             }
-<span class="nc bnc" id="L765" title="All 2 branches missed.">            if (gradientXY.getValue(x2, y2) == 0) {</span>
-<span class="nc" id="L766">                continue;</span>
+<span class="nc bnc" id="L830" title="All 2 branches missed.">            if (gradientXY.getValue(x2, y2) == 0) {</span>
+<span class="nc" id="L831">                continue;</span>
             }
             
             /*
@@ -773,49 +838,49 @@ public class CannyEdgeFilterAdaptive {
                  *   
                  *    
             */
-<span class="nc" id="L776">            int c = 0;</span>
-<span class="nc bnc" id="L777" title="All 2 branches missed.">            for (int dy2 = ((-minLineSize) + 1); dy2 &lt; 0; ++dy2) {</span>
-<span class="nc" id="L778">                int y3 = y2 + dy2;</span>
-<span class="nc bnc" id="L779" title="All 6 branches missed.">                if ((y3 &lt; 0) || (y3 &gt; (h - 1)) || (gradientXY.getValue(x2, y3) == 0)) {</span>
-<span class="nc" id="L780">                    continue;</span>
+<span class="nc" id="L841">            int c = 0;</span>
+<span class="nc bnc" id="L842" title="All 2 branches missed.">            for (int dy2 = ((-minLineSize) + 1); dy2 &lt; 0; ++dy2) {</span>
+<span class="nc" id="L843">                int y3 = y2 + dy2;</span>
+<span class="nc bnc" id="L844" title="All 6 branches missed.">                if ((y3 &lt; 0) || (y3 &gt; (h - 1)) || (gradientXY.getValue(x2, y3) == 0)) {</span>
+<span class="nc" id="L845">                    continue;</span>
                 }
-<span class="nc" id="L782">                c++;</span>
+<span class="nc" id="L847">                c++;</span>
             }
-<span class="nc bnc" id="L784" title="All 2 branches missed.">            if (c == (minLineSize - 1)) {</span>
-<span class="nc" id="L785">                return true;</span>
+<span class="nc bnc" id="L849" title="All 2 branches missed.">            if (c == (minLineSize - 1)) {</span>
+<span class="nc" id="L850">                return true;</span>
             }
             /*            
                    *     
                 (x2, y2)
                    *    
             */
-<span class="nc" id="L792">            c = 0;</span>
-<span class="nc bnc" id="L793" title="All 2 branches missed.">            for (int dy2 = (-minLineSize/2); dy2 &lt;= (minLineSize/2); ++dy2) {</span>
-<span class="nc" id="L794">                int y3 = y2 + dy2;</span>
-<span class="nc bnc" id="L795" title="All 8 branches missed.">                if ((y3 &lt; 0) || (y3 &gt; (h - 1)) || (gradientXY.getValue(x2, y3) == 0)</span>
+<span class="nc" id="L857">            c = 0;</span>
+<span class="nc bnc" id="L858" title="All 2 branches missed.">            for (int dy2 = (-minLineSize/2); dy2 &lt;= (minLineSize/2); ++dy2) {</span>
+<span class="nc" id="L859">                int y3 = y2 + dy2;</span>
+<span class="nc bnc" id="L860" title="All 8 branches missed.">                if ((y3 &lt; 0) || (y3 &gt; (h - 1)) || (gradientXY.getValue(x2, y3) == 0)</span>
                     || (y3 == y2)) {
-<span class="nc" id="L797">                    continue;</span>
+<span class="nc" id="L862">                    continue;</span>
                 }
-<span class="nc" id="L799">                c++;</span>
+<span class="nc" id="L864">                c++;</span>
             }
-<span class="nc bnc" id="L801" title="All 2 branches missed.">            if (c == (minLineSize - 1)) {</span>
-<span class="nc" id="L802">                return true;</span>
+<span class="nc bnc" id="L866" title="All 2 branches missed.">            if (c == (minLineSize - 1)) {</span>
+<span class="nc" id="L867">                return true;</span>
             }
             /*            
                    *
                    *
                (x2, y2)
             */
-<span class="nc" id="L809">            c = 0;</span>
-<span class="nc bnc" id="L810" title="All 2 branches missed.">            for (int dy2 = 1; dy2 &lt; minLineSize; ++dy2) {</span>
-<span class="nc" id="L811">                int y3 = y2 + dy2;</span>
-<span class="nc bnc" id="L812" title="All 6 branches missed.">                if ((y3 &lt; 0) || (y3 &gt; (h - 1)) || (gradientXY.getValue(x2, y3) == 0)) {</span>
-<span class="nc" id="L813">                    continue;</span>
+<span class="nc" id="L874">            c = 0;</span>
+<span class="nc bnc" id="L875" title="All 2 branches missed.">            for (int dy2 = 1; dy2 &lt; minLineSize; ++dy2) {</span>
+<span class="nc" id="L876">                int y3 = y2 + dy2;</span>
+<span class="nc bnc" id="L877" title="All 6 branches missed.">                if ((y3 &lt; 0) || (y3 &gt; (h - 1)) || (gradientXY.getValue(x2, y3) == 0)) {</span>
+<span class="nc" id="L878">                    continue;</span>
                 }
-<span class="nc" id="L815">                c++;</span>
+<span class="nc" id="L880">                c++;</span>
             }
-<span class="nc bnc" id="L817" title="All 2 branches missed.">            if (c == (minLineSize - 1)) {</span>
-<span class="nc" id="L818">                return true;</span>
+<span class="nc bnc" id="L882" title="All 2 branches missed.">            if (c == (minLineSize - 1)) {</span>
+<span class="nc" id="L883">                return true;</span>
             }
             
             /*
@@ -823,51 +888,51 @@ public class CannyEdgeFilterAdaptive {
             
               *   *   (x2, y2) 
             */
-<span class="nc" id="L826">            c = 0;</span>
-<span class="nc bnc" id="L827" title="All 2 branches missed.">            for (int dx2 = ((-minLineSize) + 1); dx2 &lt; 0; ++dx2) {</span>
-<span class="nc" id="L828">                int x3 = x2 + dx2;</span>
-<span class="nc bnc" id="L829" title="All 6 branches missed.">                if ((x3 &lt; 0) || (x3 &gt; (w - 1)) || (gradientXY.getValue(x3, y2) == 0)) {</span>
-<span class="nc" id="L830">                    continue;</span>
+<span class="nc" id="L891">            c = 0;</span>
+<span class="nc bnc" id="L892" title="All 2 branches missed.">            for (int dx2 = ((-minLineSize) + 1); dx2 &lt; 0; ++dx2) {</span>
+<span class="nc" id="L893">                int x3 = x2 + dx2;</span>
+<span class="nc bnc" id="L894" title="All 6 branches missed.">                if ((x3 &lt; 0) || (x3 &gt; (w - 1)) || (gradientXY.getValue(x3, y2) == 0)) {</span>
+<span class="nc" id="L895">                    continue;</span>
                 }            
-<span class="nc" id="L832">                c++;</span>
+<span class="nc" id="L897">                c++;</span>
             }
-<span class="nc bnc" id="L834" title="All 2 branches missed.">            if (c == (minLineSize - 1)) {</span>
-<span class="nc" id="L835">                return true;</span>
+<span class="nc bnc" id="L899" title="All 2 branches missed.">            if (c == (minLineSize - 1)) {</span>
+<span class="nc" id="L900">                return true;</span>
             }
             
             /*            
                   *  (x2, y2)   *
             */
-<span class="nc" id="L841">            c = 0;</span>
-<span class="nc bnc" id="L842" title="All 2 branches missed.">            for (int dx2 = (-minLineSize/2); dx2 &lt;= (minLineSize/2); ++dx2) {</span>
-<span class="nc" id="L843">                int x3 = x2 + dx2;</span>
-<span class="nc bnc" id="L844" title="All 8 branches missed.">                if ((x3 &lt; 0) || (x3 &gt; (w - 1)) || (gradientXY.getValue(x3, y2) == 0)</span>
+<span class="nc" id="L906">            c = 0;</span>
+<span class="nc bnc" id="L907" title="All 2 branches missed.">            for (int dx2 = (-minLineSize/2); dx2 &lt;= (minLineSize/2); ++dx2) {</span>
+<span class="nc" id="L908">                int x3 = x2 + dx2;</span>
+<span class="nc bnc" id="L909" title="All 8 branches missed.">                if ((x3 &lt; 0) || (x3 &gt; (w - 1)) || (gradientXY.getValue(x3, y2) == 0)</span>
                     || (x3 == x2)) {
-<span class="nc" id="L846">                    continue;</span>
+<span class="nc" id="L911">                    continue;</span>
                 }
-<span class="nc" id="L848">                c++;</span>
+<span class="nc" id="L913">                c++;</span>
             }
-<span class="nc bnc" id="L850" title="All 2 branches missed.">            if (c == (minLineSize - 1)) {</span>
-<span class="nc" id="L851">                return true;</span>
+<span class="nc bnc" id="L915" title="All 2 branches missed.">            if (c == (minLineSize - 1)) {</span>
+<span class="nc" id="L916">                return true;</span>
             }
             
             /*            
                   (x2, y2)   *    *
             */
-<span class="nc" id="L857">            c = 0;</span>
-<span class="nc bnc" id="L858" title="All 2 branches missed.">            for (int dx2 = 1; dx2 &lt; minLineSize; ++dx2) {</span>
-<span class="nc" id="L859">                int x3 = x2 + dx2;</span>
-<span class="nc bnc" id="L860" title="All 6 branches missed.">                if ((x3 &lt; 0) || (x3 &gt; (w - 1)) || (gradientXY.getValue(x3, y2) == 0)) {</span>
-<span class="nc" id="L861">                    continue;</span>
+<span class="nc" id="L922">            c = 0;</span>
+<span class="nc bnc" id="L923" title="All 2 branches missed.">            for (int dx2 = 1; dx2 &lt; minLineSize; ++dx2) {</span>
+<span class="nc" id="L924">                int x3 = x2 + dx2;</span>
+<span class="nc bnc" id="L925" title="All 6 branches missed.">                if ((x3 &lt; 0) || (x3 &gt; (w - 1)) || (gradientXY.getValue(x3, y2) == 0)) {</span>
+<span class="nc" id="L926">                    continue;</span>
                 }
-<span class="nc" id="L863">                c++;</span>
+<span class="nc" id="L928">                c++;</span>
             }
-<span class="nc bnc" id="L865" title="All 2 branches missed.">            if (c == (minLineSize - 1)) {</span>
-<span class="nc" id="L866">                return true;</span>
+<span class="nc bnc" id="L930" title="All 2 branches missed.">            if (c == (minLineSize - 1)) {</span>
+<span class="nc" id="L931">                return true;</span>
             }
         }
         
-<span class="nc" id="L870">        return false;</span>
+<span class="nc" id="L935">        return false;</span>
     }
 
     /**
@@ -876,42 +941,42 @@ public class CannyEdgeFilterAdaptive {
      * @return the filterProducts
      */
     public EdgeFilterProducts getFilterProducts() {
-<span class="fc" id="L879">        return filterProducts;</span>
+<span class="fc" id="L944">        return filterProducts;</span>
     }
 
     private void applyPostLineThinningCorrections(GreyscaleImage gradientXY) {
 
-<span class="nc" id="L884">        ImageProcessor imageProcessor = new ImageProcessor();</span>
-<span class="nc" id="L885">        GreyscaleImage tmp = gradientXY.copyImage();</span>
-<span class="nc bnc" id="L886" title="All 2 branches missed.">        for (int i = 0; i &lt; tmp.getNPixels(); ++i) {</span>
-<span class="nc bnc" id="L887" title="All 2 branches missed.">            if (tmp.getValue(i) &gt; 0) {</span>
-<span class="nc" id="L888">                tmp.setValue(i, 1);</span>
+<span class="nc" id="L949">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="nc" id="L950">        GreyscaleImage tmp = gradientXY.copyImage();</span>
+<span class="nc bnc" id="L951" title="All 2 branches missed.">        for (int i = 0; i &lt; tmp.getNPixels(); ++i) {</span>
+<span class="nc bnc" id="L952" title="All 2 branches missed.">            if (tmp.getValue(i) &gt; 0) {</span>
+<span class="nc" id="L953">                tmp.setValue(i, 1);</span>
             }
         }
-<span class="nc" id="L891">        imageProcessor.applyThinning2(tmp);</span>
+<span class="nc" id="L956">        imageProcessor.applyThinning2(tmp);</span>
         
-<span class="nc bnc" id="L893" title="All 2 branches missed.">        for (int i = 0; i &lt; tmp.getNPixels(); ++i) {</span>
-<span class="nc bnc" id="L894" title="All 2 branches missed.">            if (tmp.getValue(i) == 0) {</span>
-<span class="nc" id="L895">                gradientXY.setValue(i, 0);</span>
+<span class="nc bnc" id="L958" title="All 2 branches missed.">        for (int i = 0; i &lt; tmp.getNPixels(); ++i) {</span>
+<span class="nc bnc" id="L959" title="All 2 branches missed.">            if (tmp.getValue(i) == 0) {</span>
+<span class="nc" id="L960">                gradientXY.setValue(i, 0);</span>
             }
         }
         
-<span class="nc bnc" id="L899" title="All 2 branches missed.">        if (useLineThinner) {</span>
-<span class="nc" id="L900">            ZhangSuenLineThinner lt = new ZhangSuenLineThinner();</span>
-<span class="nc" id="L901">            lt.applyFilter(gradientXY);</span>
+<span class="nc bnc" id="L964" title="All 2 branches missed.">        if (useLineThinner) {</span>
+<span class="nc" id="L965">            ZhangSuenLineThinner lt = new ZhangSuenLineThinner();</span>
+<span class="nc" id="L966">            lt.applyFilter(gradientXY);</span>
         } 
-<span class="nc" id="L903">    }</span>
+<span class="nc" id="L968">    }</span>
 
     private int countAboveZero(GreyscaleImage img) {
         
-<span class="nc" id="L907">        int n = 0;</span>
-<span class="nc bnc" id="L908" title="All 2 branches missed.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
-<span class="nc bnc" id="L909" title="All 2 branches missed.">            if (img.getValue(i) &gt; 0) {</span>
-<span class="nc" id="L910">                n++;</span>
+<span class="nc" id="L972">        int n = 0;</span>
+<span class="nc bnc" id="L973" title="All 2 branches missed.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
+<span class="nc bnc" id="L974" title="All 2 branches missed.">            if (img.getValue(i) &gt; 0) {</span>
+<span class="nc" id="L975">                n++;</span>
             }
         }
         
-<span class="nc" id="L914">        return n;</span>
+<span class="nc" id="L979">        return n;</span>
     }
     
 }
