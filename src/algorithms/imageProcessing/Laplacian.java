@@ -20,7 +20,7 @@ public class Laplacian implements IKernel {
         */
         Kernel kernel = new Kernel(3, 3);
         Arrays.fill(kernel.a, -1);
-        kernel.setValue(1, 1,  0);
+        kernel.setValue(1, 1,  8);
         
         return kernel;
     }

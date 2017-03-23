@@ -844,7 +844,9 @@ public class CannyEdgeFilterAdaptive {
     private void applyNonMaximumSuppression(EdgeFilterProducts filterProducts,
         Set<PairInt> disconnectingRemovals) {
 
-        //https://rosettacode.org/wiki/Canny_edge_detector#Python
+        //http://rosettacode.org/wiki/Canny_edge_detector#D
+        // Content is available under GNU Free Documentation License 1.2
+        
         ImageProcessor imageProcessor = new ImageProcessor();
 
         GreyscaleImage g = filterProducts.getGradientXY();

@@ -2,15 +2,6 @@ package algorithms.imageProcessing;
 
 import algorithms.misc.Misc;
 import algorithms.util.ResourceFinder;
-import algorithms.util.VeryLongBitString;
-import gnu.trove.iterator.TIntObjectIterator;
-import gnu.trove.map.TIntIntMap;
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntIntHashMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.set.TIntSet;
-import gnu.trove.set.hash.TIntHashSet;
-import java.util.Arrays;
 import junit.framework.TestCase;
 
 /**
@@ -18,10 +9,6 @@ import junit.framework.TestCase;
  * @author nichole
  */
 public class ImageProcessor6Test extends TestCase {
-
-    public ImageProcessor6Test(String testName) {
-        super(testName);
-    }
     
     public void test0() throws Exception {
       
@@ -212,23 +199,5 @@ public class ImageProcessor6Test extends TestCase {
     
     }
     
-    public void testMisc() {
-        
-        ImageExt img0 = new ImageExt(10, 10);
-        for (int i = 4; i < 7; ++i) {
-            for (int j = 4; j < 7; ++j) {
-                img0.setRGB(i, j, 10, 150, 10);
-            }
-        }
-        
-        GreyscaleImage img = img0.copyToGreyscale2();
-        ImageProcessor imageProcessor = new ImageProcessor();
-        img = imageProcessor.applyLaplacianKernel(img);
-        
-        assertEquals(0, img.getValue(9, 7));
-        assertEquals(0, img.getValue(8, 7));
-        assertTrue(img.getValue(7, 7) != 0);
-        
-    }
     
 }

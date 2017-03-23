@@ -118,7 +118,7 @@ public class ImageProcessor2Test extends TestCase {
             }
         }
         
-        Complex[][] cc = imageProcessor.convertImage(img);
+        Complex[][] cc = imageProcessor.copyToComplex2D(img);
         Complex[][] ccOut = imageProcessor.create2DFFT(cc, true, true);
         Complex[][] ccOut2 = imageProcessor.create2DFFT(ccOut, true, false);
         
@@ -226,7 +226,7 @@ public class ImageProcessor2Test extends TestCase {
             }
         }
         
-        Complex[][] cc = imageProcessor.convertImage(img);
+        Complex[][] cc = imageProcessor.copyToComplex2D(img);
         Complex[][] ccOut = imageProcessor.create2DFFT(cc, true, true);
         Complex[][] ccOut2 = imageProcessor.create2DFFT(ccOut, true, false);
         
@@ -253,7 +253,7 @@ public class ImageProcessor2Test extends TestCase {
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();
    
         ImageProcessor imageProcessor = new ImageProcessor();
-        Complex[][] cc = imageProcessor.convertImage(img);
+        Complex[][] cc = imageProcessor.copyToComplex2D(img);
         Complex[][] ccOut = imageProcessor.create2DFFT(cc, true, true);
         Complex[][] ccOut2 = imageProcessor.create2DFFT(ccOut, true, false);
                    

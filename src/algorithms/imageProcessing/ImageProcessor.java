@@ -607,74 +607,15 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         return new float[][]{outX, outY, outXY};
     }
 
-    public GreyscaleImage applyLaplacianKernel(GreyscaleImage input) {
+    public GreyscaleImage applyLaplacianKernel(GreyscaleImage input,
+        int minValue, int maxValue) {
 
         IKernel kernel = new Laplacian();
         Kernel kernelXY = kernel.getKernel();
 
         float norm = kernel.getNormalizationFactor();
 
-        return applyKernel(input, kernelXY, norm);
-    }
-
-    protected void applyKernels(GreyscaleImage input, Kernel kernelX, Kernel kernelY,
-        float normFactorX, float normFactorY) {
-
-        GreyscaleImage[] gXgY = convolveWithKernels(input, kernelX, kernelY, normFactorX,
-            normFactorY);
-
-        GreyscaleImage img2 = combineConvolvedImages(gXgY[0], gXgY[1]);
-
-        input.resetTo(img2);
-    }
-
-    protected GreyscaleImage[] convolveWithKernels(GreyscaleImage input, Kernel kernelX, Kernel kernelY,
-        float normFactorX, float normFactorY) {
-
-        /*
-        assumes that kernelX is applied to a copy of the img
-        and kernelY is applied to a separate copy of the img and
-        then they are added in quadrature for the final result.
-        */
-
-        GreyscaleImage imgX = input.copyImage();
-
-        GreyscaleImage imgY = input.copyImage();
-
-        applyKernel(imgX, kernelX, normFactorX);
-
-        applyKernel(imgY, kernelY, normFactorY);
-
-        return new GreyscaleImage[]{imgX, imgY};
-    }
-
-    protected Map<PairInt, Integer> applyKernel(GreyscaleImage input,
-        Set<PairInt> points, float[] kernel) {
-
-        /*
-        assumes that kernelX is applied to a copy of the img
-        and kernelY is applied to a separate copy of the img and
-        then they are added in quadrature for the final result.
-        */
-
-        Map<PairInt, Integer> convX = applyKernel(input, points, kernel, true);
-
-        Map<PairInt, Integer> convY = applyKernel(input, points, kernel, false);
-
-        Map<PairInt, Integer> output = new HashMap<PairInt, Integer>();
-
-        for (PairInt p : points) {
-
-            int vX = convX.get(p).intValue();
-
-            int vY = convY.get(p).intValue();
-
-            int v = (int)Math.round(Math.sqrt(vX * vX + vY * vY)/2.f);
-
-            output.put(p, Integer.valueOf(v));
-        }
-
-        return output;
+        return applyKernel(input, kernelXY, norm, minValue, maxValue);
     }
 
     public Image combineConvolvedImages(Image imageX, Image imageY) {
@@ -882,143 +823,6 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
     }
 
     /**
-     * apply kernel to input for pixels in points.
-     * @param input
-     * @param points
-     * @param kernel
-     * @param calcForX
-     * @return
-     */
-    protected Map<PairInt, Integer> applyKernel(GreyscaleImage input,
-        Set<PairInt> points, float[] kernel, boolean calcForX) {
-
-        int h = (kernel.length - 1) >> 1;
-
-        Map<PairInt, Integer> output = new HashMap<PairInt, Integer>();
-
-        for (PairInt p : points) {
-
-            int i = p.getX();
-            int j = p.getY();
-
-            float sum = 0;
-
-            // apply the kernel to pixels centered in (i, j)
-            for (int g = 0; g < kernel.length; g++) {
-                float gg = kernel[g];
-                if (gg == 0) {
-                    continue;
-                }
-
-                int x2, y2;
-                if (calcForX) {
-                    int delta = g - h;
-                    x2 = i + delta;
-                    y2 = j;
-                    // edge corrections.  use replication
-                    if (x2 < 0) {
-                        x2 = -1 * x2 - 1;
-                    } else if (x2 >= input.getWidth()) {
-                        int diff = x2 - input.getWidth();
-                        x2 = input.getWidth() - diff - 1;
-                    }
-                } else {
-                    int delta = g - h;
-                    y2 = j + delta;
-                    x2 = i;
-                    // edge corrections.  use replication
-                    if (y2 < 0) {
-                        y2 = -1 * y2 - 1;
-                    } else if (y2 >= input.getHeight()) {
-                        int diff = y2 - input.getHeight();
-                        y2 = input.getHeight() - diff - 1;
-                    }
-                }
-
-                int v = input.getValue(x2, y2);
-
-                sum += gg * v;
-            }
-
-            output.put(p, Integer.valueOf((int) sum));
-        }
-
-        return output;
-    }
-
-    protected Map<PairInt, Integer> applyKernel(
-        Map<PairInt, Integer> pointValues, int xLL, int yLL, int xUR, int yUR,
-        float[] kernel, boolean calcForX) {
-
-        int h = (kernel.length - 1) >> 1;
-
-        Map<PairInt, Integer> output = new HashMap<PairInt, Integer>();
-
-        for (int xp = xLL; xp <= xUR; ++xp) {
-
-            for (int yp = yLL; yp <= yUR; ++yp) {
-
-                PairInt p = new PairInt(xp, yp);
-
-                float sum = 0;
-
-                // apply the kernel to pixels centered in (i, j)
-                for (int g = 0; g < kernel.length; g++) {
-                    float gg = kernel[g];
-                    if (gg == 0) {
-                        continue;
-                    }
-
-                    int x2, y2;
-                    if (calcForX) {
-                        int delta = g - h;
-                        x2 = xp + delta;
-                        y2 = yp;
-                        // edge corrections.  use replication
-                        if (x2 < 0) {
-                            x2 = -1 * x2 - 1;
-                        } else if (x2 > xUR) {
-                            if (!pointValues.containsKey(new PairInt(x2, y2))) {
-                                x2 = xUR;
-                            }
-                        }
-                    } else {
-                        int delta = g - h;
-                        y2 = yp + delta;
-                        x2 = xp;
-                        // edge corrections.  use replication
-                        if (y2 < 0) {
-                            y2 = -1 * y2 - 1;
-                        } else if (y2 > yUR) {
-                            if (!pointValues.containsKey(new PairInt(x2, y2))) {
-                                y2 = yUR;
-                            }
-                        }
-                    }
-
-                    // TODO: revisit this for normalization
-                    PairInt p2 = new PairInt(x2, y2);
-                    if (!pointValues.containsKey(p2)) {
-                        continue;
-                    }
-
-                    int v = pointValues.get(p2).intValue();
-
-                    sum += gg * v;
-
-                } // end sum over kernl for a pixel
-
-                int v = Math.round(sum);
-                if (v != 0) {
-                    output.put(p, Integer.valueOf(v));
-                }
-            }
-        }
-
-        return output;
-    }
-
-    /**
      * apply kernel to input. NOTE, that because the image is composed of vectors
      * that should have values between 0 and 255, inclusive, if the kernel application
      * results in a value outside of that range, the value is reset to 0 or
@@ -1028,7 +832,8 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
      * @param normFactor
      * @return the convolved image
      */
-    protected GreyscaleImage applyKernel(GreyscaleImage input, Kernel kernel, float normFactor) {
+    protected GreyscaleImage applyKernel(GreyscaleImage input, Kernel kernel, 
+        float normFactor, int minValue, int maxValue) {
 
         int h = (kernel.getWidth() - 1) >> 1;
 
@@ -1080,6 +885,12 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
                 value *= normFactor;
 
                 int v = (int)value;
+                
+                if (v < minValue) {
+                    v = minValue;
+                } else if (v > maxValue) {
+                    v = maxValue;
+                }
 
                 output.setValue(i, j, v);
             }
@@ -2311,7 +2122,7 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         }
 
         // initialize matrix of complex numbers as real numbers from image (imaginary are 0's)
-        Complex[][] cc = convertImage(input);
+        Complex[][] cc = ImageProcessor.this.copyToComplex2D(input);
 
         Complex[][] ccOut = create2DFFT(cc, forward);
 
@@ -2489,7 +2300,7 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         boolean doNormalize, boolean forward) {
 
         // initialize matrix of complex numbers as real numbers from image (imaginary are 0's)
-        Complex[][] cc = convertImageWithSwapMajor(input);
+        Complex[][] cc = copyToComplexWithSwapMajor(input);
 
         Complex[][] ccFFT = create2DFFT(cc, doNormalize, forward);
 
@@ -2624,7 +2435,7 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
      * @param input
      * @return
      */
-    protected Complex[][] convertImage(GreyscaleImage input) {
+    protected Complex[][] copyToComplex2D(GreyscaleImage input) {
 
         // initialize matrix of complex numbers as real numbers from image
         Complex[][] cc = new Complex[input.getWidth()][];
@@ -2642,39 +2453,11 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
     }
 
     /**
-     * create an array of size double[nRows][*nCols] where the column elements
-     *    are alternately the complex real and complex imaginary numbers
-     *    (and the imaginary are 0 for this being real input).
-     * @param input
-     * @return
-     */
-    protected double[][] createInterleavedComplexSwapMajor(GreyscaleImage input) {
-
-        int nCols = input.getWidth();
-        int nRows = input.getHeight();
-
-         // initialize matrix of complex numbers as real numbers from image
-        double[][] d = new double[nRows][];
-
-        for (int row = 0; row < nRows; row++) {
-
-            d[row] = new double[2 * nCols];
-
-            for (int col = 0; col < nCols; ++col) {
-                d[row][2*col] = input.getValue(col, row);
-                d[row][(2*col) + 1] = 0;
-            }
-        }
-
-        return d;
-    }
-
-    /**
      * create a complex double array with format a[row][col]
      * @param input
      * @return
      */
-    protected Complex[][] convertImageWithSwapMajor(GreyscaleImage input) {
+    protected Complex[][] copyToComplexWithSwapMajor(GreyscaleImage input) {
 
         int nCols = input.getWidth();
         int nRows = input.getHeight();
@@ -2694,7 +2477,7 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         return cc;
     }
 
-    protected Complex[][] convertImage(double[][] input) {
+    protected Complex[][] copyToComplex2D(double[][] input) {
 
         int w = input.length;
         int h = input[0].length;
@@ -3433,6 +3216,46 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
     }
 
     /**
+     * @param input
+     * @return
+     */
+    public float[][] copyToFloat2D(GreyscaleImage input) {
+
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
+        float[][] output = new float[w][];
+        for (int i = 0; i < w; ++i) {
+            output[i] = new float[h];
+            for (int j = 0; j < h; ++j) {
+                output[i][j] = input.getValue(i, j);
+            }
+        }
+
+        return output;
+    }
+    
+    /**
+     * @param input
+     * @return
+     */
+    public int[][] copyToInt2D(GreyscaleImage input) {
+
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
+        int[][] output = new int[w][];
+        for (int i = 0; i < w; ++i) {
+            output[i] = new int[h];
+            for (int j = 0; j < h; ++j) {
+                output[i][j] = input.getValue(i, j);
+            }
+        }
+
+        return output;
+    }
+
+    /**
      * output is row major format
      * @param input
      * @return
@@ -3913,7 +3736,7 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
      * NOTE: needs testing...invoker should trim for image bounds
      * where needed.
      * @param points
-     * @param sigma
+     * @param kernel
      */
     public void applyKernel(Set<PairInt> points, float[] kernel) {
 
