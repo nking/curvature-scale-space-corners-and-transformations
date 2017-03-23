@@ -281,8 +281,8 @@ import java.util.Set;
 
 <span class="fc" id="L282">            float gg = g[gIdx];</span>
 
-<span class="pc bpc" id="L284" title="1 of 2 branches missed.">            if (gg == 0) {</span>
-<span class="nc" id="L285">                continue;</span>
+<span class="fc bfc" id="L284" title="All 2 branches covered.">            if (gg == 0) {</span>
+<span class="fc" id="L285">                continue;</span>
             }
             
 <span class="fc" id="L288">            int idx = gIdx - h;</span>
@@ -402,55 +402,55 @@ import java.util.Set;
         int imageHeight,
         int col, int row, float[] g, final boolean calcX) {
 
-<span class="nc" id="L405">        int h = g.length &gt;&gt; 1;</span>
+<span class="fc" id="L405">        int h = g.length &gt;&gt; 1;</span>
 
-<span class="nc" id="L407">        double sum = 0;</span>
+<span class="fc" id="L407">        double sum = 0;</span>
         
-<span class="nc bnc" id="L409" title="All 2 branches missed.">        int len = calcX ? imageWidth : imageHeight;</span>
+<span class="pc bpc" id="L409" title="1 of 2 branches missed.">        int len = calcX ? imageWidth : imageHeight;</span>
                 
-<span class="nc bnc" id="L411" title="All 2 branches missed.">        for (int gIdx = 0; gIdx &lt; g.length; gIdx++) {</span>
+<span class="fc bfc" id="L411" title="All 2 branches covered.">        for (int gIdx = 0; gIdx &lt; g.length; gIdx++) {</span>
 
-<span class="nc" id="L413">            float gg = g[gIdx];</span>
+<span class="fc" id="L413">            float gg = g[gIdx];</span>
 
-<span class="nc bnc" id="L415" title="All 2 branches missed.">            if (gg == 0) {</span>
+<span class="pc bpc" id="L415" title="1 of 2 branches missed.">            if (gg == 0) {</span>
 <span class="nc" id="L416">                continue;</span>
             }
             
-<span class="nc" id="L419">            int idx = gIdx - h;</span>
+<span class="fc" id="L419">            int idx = gIdx - h;</span>
 
-<span class="nc bnc" id="L421" title="All 2 branches missed.">            int cIdx = calcX ? (col + idx) : (row + idx);</span>
+<span class="pc bpc" id="L421" title="1 of 2 branches missed.">            int cIdx = calcX ? (col + idx) : (row + idx);</span>
 
-<span class="nc bnc" id="L423" title="All 2 branches missed.">            if (cIdx &lt; 0) {</span>
+<span class="fc bfc" id="L423" title="All 2 branches covered.">            if (cIdx &lt; 0) {</span>
                 // replicate
-<span class="nc" id="L425">                cIdx = -1*cIdx - 1;</span>
-<span class="nc bnc" id="L426" title="All 2 branches missed.">                if (cIdx &gt; (len - 1)) {</span>
+<span class="fc" id="L425">                cIdx = -1*cIdx - 1;</span>
+<span class="pc bpc" id="L426" title="1 of 2 branches missed.">                if (cIdx &gt; (len - 1)) {</span>
 <span class="nc" id="L427">                    cIdx = len - 1;</span>
                 }
-<span class="nc bnc" id="L429" title="All 2 branches missed.">            } else if (cIdx &gt;= (len)) {</span>
+<span class="fc bfc" id="L429" title="All 2 branches covered.">            } else if (cIdx &gt;= (len)) {</span>
                 //TODO: revisit this for range of kernel sizes vs edge sizes
-<span class="nc" id="L431">                int diff = cIdx - len;</span>
-<span class="nc" id="L432">                cIdx = len - diff - 1;</span>
-<span class="nc bnc" id="L433" title="All 2 branches missed.">                if (cIdx &lt; 0) {</span>
+<span class="fc" id="L431">                int diff = cIdx - len;</span>
+<span class="fc" id="L432">                cIdx = len - diff - 1;</span>
+<span class="pc bpc" id="L433" title="1 of 2 branches missed.">                if (cIdx &lt; 0) {</span>
 <span class="nc" id="L434">                    cIdx = 0;</span>
                 }
             }
             
             double point;
             
-<span class="nc bnc" id="L440" title="All 2 branches missed.">            if (calcX) {</span>
+<span class="pc bpc" id="L440" title="1 of 2 branches missed.">            if (calcX) {</span>
 <span class="nc" id="L441">                int pixIdx = (row * imageWidth) + cIdx;</span>
                 // keep row constant
 <span class="nc" id="L443">                point = imageValues[pixIdx];</span>
 <span class="nc" id="L444">            } else {</span>
-<span class="nc" id="L445">                int pixIdx = (cIdx * imageWidth) + col;</span>
+<span class="fc" id="L445">                int pixIdx = (cIdx * imageWidth) + col;</span>
                 // keep col constant
-<span class="nc" id="L447">                point = imageValues[pixIdx];</span>
+<span class="fc" id="L447">                point = imageValues[pixIdx];</span>
             }
 
-<span class="nc" id="L450">            sum += (point * gg);</span>
+<span class="fc" id="L450">            sum += (point * gg);</span>
         }
 
-<span class="nc" id="L453">        return sum;</span>
+<span class="fc" id="L453">        return sum;</span>
     }
     
     /**

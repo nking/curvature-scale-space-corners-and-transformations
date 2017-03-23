@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CannyEdgeColorAdaptive.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">CannyEdgeColorAdaptive.java</span></div><h1>CannyEdgeColorAdaptive.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
+import algorithms.misc.MiscDebug;
+import algorithms.util.PairInt;
+import java.util.Set;
+import algorithms.misc.Misc;
+import java.util.HashSet;
 import java.util.logging.Logger;
 
 /**
@@ -52,15 +57,15 @@ public class CannyEdgeColorAdaptive {
     /** the factor that the low threshold is below the high threshold in the 
     2 layer filter.
     */
-<span class="fc" id="L55">    protected float factorBelowHighThreshold = 2.f;</span>
+<span class="fc" id="L60">    protected float factorBelowHighThreshold = 2.f;</span>
            
-<span class="fc" id="L57">    private EdgeFilterProducts filterProducts = null;</span>
+<span class="fc" id="L62">    private EdgeFilterProducts filterProducts = null;</span>
               
-<span class="fc" id="L59">    private boolean performNonMaxSuppr = true;</span>
+<span class="fc" id="L64">    private boolean performNonMaxSuppr = true;</span>
     
-<span class="fc" id="L61">    private boolean debug = false;</span>
+<span class="fc" id="L66">    private boolean debug = false;</span>
     
-<span class="fc" id="L63">    private boolean restoreJunctions = true;</span>
+<span class="fc" id="L68">    private boolean restoreJunctions = true;</span>
             
     /**
      * the sigma from the blur combined with the sigma present in the gradient
@@ -72,28 +77,28 @@ public class CannyEdgeColorAdaptive {
      * So, for the default use of the filter, a sigma of 1 combined with sqrt(1)/2
      * results in a minimum resolution of 3 pixels, hence about 19 degrees.
      */
-<span class="fc" id="L75">    private double approxProcessedSigma = 0;</span>
+<span class="fc" id="L80">    private double approxProcessedSigma = 0;</span>
     
-<span class="fc" id="L77">    private boolean useAdaptiveThreshold = false;</span>
+<span class="fc" id="L82">    private boolean useAdaptiveThreshold = false;</span>
     
-<span class="fc" id="L79">    private boolean useAdaptive2Layer = true;</span>
+<span class="fc" id="L84">    private boolean useAdaptive2Layer = true;</span>
         
-<span class="fc" id="L81">    private float otsuScaleFactor = 0.75f;//0.65f;</span>
+<span class="fc" id="L86">    private float otsuScaleFactor = 0.75f;//0.65f;</span>
     
-<span class="fc" id="L83">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L88">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
     
-<span class="fc" id="L85">    protected boolean useLineThinner = true;</span>
+<span class="fc" id="L90">    protected boolean useLineThinner = true;</span>
     
-<span class="fc" id="L87">    public CannyEdgeColorAdaptive() {        </span>
-<span class="fc" id="L88">    }</span>
+<span class="fc" id="L92">    public CannyEdgeColorAdaptive() {        </span>
+<span class="fc" id="L93">    }</span>
     
     public void setToDebug() {
-<span class="nc" id="L91">        debug = true;</span>
-<span class="nc" id="L92">    }</span>
+<span class="nc" id="L96">        debug = true;</span>
+<span class="nc" id="L97">    }</span>
     
     public void overrideToNotUseLineThinner() {
-<span class="fc" id="L95">        useLineThinner = false;</span>
-<span class="fc" id="L96">    }</span>
+<span class="fc" id="L100">        useLineThinner = false;</span>
+<span class="fc" id="L101">    }</span>
     
     /**
      * to enable more complete contours, use this to restore pixels that were
@@ -101,20 +106,20 @@ public class CannyEdgeColorAdaptive {
      * have values above the low threshold of the 2 layer adaptive filter.
      */
     public void setToNotRestoreJunctions() {
-<span class="nc" id="L104">        restoreJunctions = false;</span>
-<span class="nc" id="L105">    }</span>
+<span class="nc" id="L109">        restoreJunctions = false;</span>
+<span class="nc" id="L110">    }</span>
     
     /**
      * by default this is 0.45.
      * @param factor
      */
     public void setOtsuScaleFactor(float factor) {
-<span class="nc" id="L112">        otsuScaleFactor = factor;</span>
-<span class="nc" id="L113">    }</span>
+<span class="nc" id="L117">        otsuScaleFactor = factor;</span>
+<span class="nc" id="L118">    }</span>
     
     public void setToNotUseNonMaximumSuppression() {
-<span class="nc" id="L116">        performNonMaxSuppr = false;</span>
-<span class="nc" id="L117">    }</span>
+<span class="nc" id="L121">        performNonMaxSuppr = false;</span>
+<span class="nc" id="L122">    }</span>
     
     /**
      * set this to use the adaptive threshold in the 2 layer
@@ -123,12 +128,12 @@ public class CannyEdgeColorAdaptive {
      * will include alot of noise in the result.
      */
     public void overrideToUseAdaptiveThreshold() {
-<span class="nc" id="L126">        useAdaptiveThreshold = true;</span>
-<span class="nc" id="L127">    }</span>
+<span class="nc" id="L131">        useAdaptiveThreshold = true;</span>
+<span class="nc" id="L132">    }</span>
     
     public void setToUseSingleThresholdIn2LayerFilter() {
-<span class="nc" id="L130">        useAdaptive2Layer = false;</span>
-<span class="nc" id="L131">    }</span>
+<span class="nc" id="L135">        useAdaptive2Layer = false;</span>
+<span class="nc" id="L136">    }</span>
     
     /**
      * override the default factor of low threshold below high threshold, which
@@ -136,8 +141,8 @@ public class CannyEdgeColorAdaptive {
      * @param factor 
      */
     public void override2LayerFactorBelowHighThreshold(float factor) {
-<span class="nc" id="L139">        factorBelowHighThreshold = factor;</span>
-<span class="nc" id="L140">    }</span>
+<span class="nc" id="L144">        factorBelowHighThreshold = factor;</span>
+<span class="nc" id="L145">    }</span>
     
     /**
      * apply the filter.  note that unlike the other canny filters in this
@@ -146,129 +151,129 @@ public class CannyEdgeColorAdaptive {
      */
     public void applyFilter(Image input) {
         
-<span class="pc bpc" id="L149" title="2 of 4 branches missed.">        if (input.getWidth() &lt; 3 || input.getHeight() &lt; 3) {</span>
-<span class="nc" id="L150">            throw new IllegalArgumentException(&quot;images should be &gt;= 3x3 in size&quot;);</span>
+<span class="pc bpc" id="L154" title="2 of 4 branches missed.">        if (input.getWidth() &lt; 3 || input.getHeight() &lt; 3) {</span>
+<span class="nc" id="L155">            throw new IllegalArgumentException(&quot;images should be &gt;= 3x3 in size&quot;);</span>
         }
             
-<span class="fc" id="L153">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="fc" id="L158">        ImageProcessor imageProcessor = new ImageProcessor();</span>
         
-<span class="fc" id="L155">        GreyscaleImage[] lch = imageProcessor.createLCHForLUV(input);</span>
+<span class="fc" id="L160">        GreyscaleImage[] lch = imageProcessor.createLCHForLUV(input);</span>
         
-<span class="fc" id="L157">        CannyEdgeFilterAdaptive cannyL = new CannyEdgeFilterAdaptive();</span>
-<span class="fc" id="L158">        CannyEdgeFilterAdaptive cannyC = new CannyEdgeFilterAdaptive();</span>
-<span class="pc bpc" id="L159" title="1 of 2 branches missed.">        if (!useLineThinner) {</span>
-<span class="fc" id="L160">            cannyL.overrideToNotUseLineThinner();</span>
-<span class="fc" id="L161">            cannyC.overrideToNotUseLineThinner();</span>
+<span class="fc" id="L162">        CannyEdgeFilterAdaptive2 cannyL = new CannyEdgeFilterAdaptive2();</span>
+<span class="fc" id="L163">        CannyEdgeFilterAdaptive2 cannyC = new CannyEdgeFilterAdaptive2();</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">        if (!useLineThinner) {</span>
+<span class="fc" id="L165">            cannyL.overrideToNotUseLineThinner();</span>
+<span class="fc" id="L166">            cannyC.overrideToNotUseLineThinner();</span>
         }
-<span class="pc bpc" id="L163" title="1 of 2 branches missed.">        if (useAdaptiveThreshold) {</span>
-<span class="nc" id="L164">            cannyL.overrideToUseAdaptiveThreshold();</span>
-<span class="nc" id="L165">            cannyC.overrideToUseAdaptiveThreshold();</span>
-        }
-        
-<span class="fc" id="L168">        cannyL.override2LayerFactorBelowHighThreshold(factorBelowHighThreshold);</span>
-<span class="fc" id="L169">        cannyC.override2LayerFactorBelowHighThreshold(factorBelowHighThreshold);</span>
-        
-<span class="pc bpc" id="L171" title="1 of 2 branches missed.">        if (!performNonMaxSuppr) {</span>
-<span class="nc" id="L172">            cannyL.setToNotUseNonMaximumSuppression();</span>
-<span class="nc" id="L173">            cannyC.setToNotUseNonMaximumSuppression();</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">        if (useAdaptiveThreshold) {</span>
+<span class="nc" id="L169">            cannyL.overrideToUseAdaptiveThreshold();</span>
+<span class="nc" id="L170">            cannyC.overrideToUseAdaptiveThreshold();</span>
         }
         
-<span class="pc bpc" id="L176" title="1 of 2 branches missed.">        if (!restoreJunctions) {</span>
-<span class="nc" id="L177">            cannyL.setToNotRestoreJunctions();</span>
-<span class="nc" id="L178">            cannyC.setToNotRestoreJunctions();</span>
+<span class="fc" id="L173">        cannyL.override2LayerFactorBelowHighThreshold(factorBelowHighThreshold);</span>
+<span class="fc" id="L174">        cannyC.override2LayerFactorBelowHighThreshold(factorBelowHighThreshold);</span>
+        
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">        if (!performNonMaxSuppr) {</span>
+<span class="nc" id="L177">            cannyL.setToNotUseNonMaximumSuppression();</span>
+<span class="nc" id="L178">            cannyC.setToNotUseNonMaximumSuppression();</span>
         }
         
-<span class="pc bpc" id="L181" title="1 of 2 branches missed.">        if (!useAdaptive2Layer) {</span>
-<span class="nc" id="L182">            cannyL.setToUseSingleThresholdIn2LayerFilter();</span>
-<span class="nc" id="L183">            cannyC.setToUseSingleThresholdIn2LayerFilter();</span>
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">        if (!restoreJunctions) {</span>
+<span class="nc" id="L182">            cannyL.setToNotRestoreJunctions();</span>
+<span class="nc" id="L183">            cannyC.setToNotRestoreJunctions();</span>
         }
         
-<span class="pc bpc" id="L186" title="1 of 2 branches missed.">        if (!useLineThinner) {</span>
-<span class="fc" id="L187">            cannyL.overrideToNotUseLineThinner();</span>
-<span class="fc" id="L188">            cannyC.overrideToNotUseLineThinner();</span>
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">        if (!useAdaptive2Layer) {</span>
+<span class="nc" id="L187">            cannyL.setToUseSingleThresholdIn2LayerFilter();</span>
+<span class="nc" id="L188">            cannyC.setToUseSingleThresholdIn2LayerFilter();</span>
         }
         
-<span class="pc bpc" id="L191" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L192">            cannyL.setToDebug();</span>
-<span class="nc" id="L193">            cannyC.setToDebug();</span>
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">        if (!useLineThinner) {</span>
+<span class="fc" id="L192">            cannyL.overrideToNotUseLineThinner();</span>
+<span class="fc" id="L193">            cannyC.overrideToNotUseLineThinner();</span>
         }
         
-<span class="fc" id="L196">        cannyL.setOtsuScaleFactor(otsuScaleFactor);</span>
-<span class="fc" id="L197">        cannyC.setOtsuScaleFactor(otsuScaleFactor);</span>
+<span class="pc bpc" id="L196" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L197">            cannyL.setToDebug();</span>
+<span class="nc" id="L198">            cannyC.setToDebug();</span>
+        }
+        
+<span class="fc" id="L201">        cannyL.setOtsuScaleFactor(otsuScaleFactor);</span>
+<span class="fc" id="L202">        cannyC.setOtsuScaleFactor(otsuScaleFactor);</span>
         //cannyC.setOtsuScaleFactor(1.0f);  // less sensitive and less noisey
         
-<span class="fc" id="L200">        cannyL.applyFilter(lch[0]);</span>
-<span class="fc" id="L201">        cannyC.applyFilter(lch[1]);</span>
+<span class="fc" id="L205">        cannyL.applyFilter(lch[0]);</span>
+<span class="fc" id="L206">        cannyC.applyFilter(lch[1]);</span>
         
-<span class="fc" id="L203">        EdgeFilterProducts edgeProductsL = cannyL.getFilterProducts();</span>
-<span class="fc" id="L204">        EdgeFilterProducts edgeProductsC = cannyC.getFilterProducts();</span>
+<span class="fc" id="L208">        EdgeFilterProducts edgeProductsL = cannyL.getFilterProducts();</span>
+<span class="fc" id="L209">        EdgeFilterProducts edgeProductsC = cannyC.getFilterProducts();</span>
         
         // DEBUG: temporary look at recalculating the L thresholds
         //        to filter out scaled C values to reduce noise.
         //        assuming not adaptive for now.
-<span class="fc" id="L209">        int tLowL = edgeProductsL.getGradientXY().min();</span>
+<span class="fc" id="L214">        int tLowL = edgeProductsL.getGradientXY().min();</span>
         
-<span class="fc" id="L211">        float lFactor = 255.f/(float)edgeProductsL.getGradientXY().max();</span>
-<span class="fc" id="L212">        float cFactor = 255.f/(float)edgeProductsC.getGradientXY().max();</span>
+<span class="fc" id="L216">        float lFactor = 255.f/(float)edgeProductsL.getGradientXY().max();</span>
+<span class="fc" id="L217">        float cFactor = 255.f/(float)edgeProductsC.getGradientXY().max();</span>
         
-<span class="fc" id="L214">        GreyscaleImage combXY = edgeProductsL.getGradientXY()</span>
-<span class="fc" id="L215">            .createWithDimensions();</span>
+<span class="fc" id="L219">        GreyscaleImage combXY = edgeProductsL.getGradientXY()</span>
+<span class="fc" id="L220">            .createWithDimensions();</span>
         
-<span class="fc" id="L217">        GreyscaleImage combX = edgeProductsL.getGradientX()</span>
-<span class="fc" id="L218">            .createWithDimensions();</span>
+<span class="fc" id="L222">        GreyscaleImage combX = edgeProductsL.getGradientX()</span>
+<span class="fc" id="L223">            .createWithDimensions();</span>
         
-<span class="fc" id="L220">        GreyscaleImage combY = edgeProductsL.getGradientY()</span>
-<span class="fc" id="L221">            .createWithDimensions();</span>
+<span class="fc" id="L225">        GreyscaleImage combY = edgeProductsL.getGradientY()</span>
+<span class="fc" id="L226">            .createWithDimensions();</span>
         
-<span class="fc" id="L223">        int n = combXY.getNPixels();</span>
+<span class="fc" id="L228">        int n = combXY.getNPixels();</span>
         
         int v0, v1, v, vx, vy;
-<span class="fc bfc" id="L226" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
-<span class="fc" id="L227">            v0 = edgeProductsL.getGradientXY().getValue(i);</span>
-<span class="fc" id="L228">            v1 = edgeProductsC.getGradientXY().getValue(i);</span>
+<span class="fc bfc" id="L231" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L232">            v0 = edgeProductsL.getGradientXY().getValue(i);</span>
+<span class="fc" id="L233">            v1 = edgeProductsC.getGradientXY().getValue(i);</span>
             
-<span class="fc" id="L230">            v0 = Math.round(v0 * lFactor);</span>
-<span class="pc bpc" id="L231" title="1 of 2 branches missed.">            if (v0 &gt; 255) {</span>
-<span class="nc" id="L232">                v0 = 255;</span>
+<span class="fc" id="L235">            v0 = Math.round(v0 * lFactor);</span>
+<span class="pc bpc" id="L236" title="1 of 2 branches missed.">            if (v0 &gt; 255) {</span>
+<span class="nc" id="L237">                v0 = 255;</span>
             }
-<span class="fc" id="L234">            v1 = Math.round(v1 * cFactor);</span>
-<span class="pc bpc" id="L235" title="1 of 2 branches missed.">            if (v1 &gt; 255) {</span>
-<span class="nc" id="L236">                v1 = 255;</span>
+<span class="fc" id="L239">            v1 = Math.round(v1 * cFactor);</span>
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">            if (v1 &gt; 255) {</span>
+<span class="nc" id="L241">                v1 = 255;</span>
             }
             
-<span class="fc bfc" id="L239" title="All 2 branches covered.">            if (cFactor &gt; 1) {</span>
-<span class="pc bpc" id="L240" title="1 of 2 branches missed.">                if (v1 &lt; tLowL) {</span>
-<span class="nc" id="L241">                    v1 = 0;</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">            if (cFactor &gt; 1) {</span>
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">                if (v1 &lt; tLowL) {</span>
+<span class="nc" id="L246">                    v1 = 0;</span>
                 }
             }
                         
             // choosing the largest of both instead of avg
-<span class="fc bfc" id="L246" title="All 2 branches covered.">            if (v0 &gt; v1) {</span>
-<span class="fc" id="L247">                v = v0;</span>
-<span class="fc" id="L248">                vx = edgeProductsL.getGradientX().getValue(i);</span>
-<span class="fc" id="L249">                vy = edgeProductsL.getGradientY().getValue(i);</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">            if (v0 &gt; v1) {</span>
+<span class="fc" id="L252">                v = v0;</span>
+<span class="fc" id="L253">                vx = edgeProductsL.getGradientX().getValue(i);</span>
+<span class="fc" id="L254">                vy = edgeProductsL.getGradientY().getValue(i);</span>
             } else {
-<span class="fc" id="L251">                v = v1;</span>
-<span class="fc" id="L252">                vx = edgeProductsC.getGradientX().getValue(i);</span>
-<span class="fc" id="L253">                vy = edgeProductsC.getGradientY().getValue(i);</span>
+<span class="fc" id="L256">                v = v1;</span>
+<span class="fc" id="L257">                vx = edgeProductsC.getGradientX().getValue(i);</span>
+<span class="fc" id="L258">                vy = edgeProductsC.getGradientY().getValue(i);</span>
             }
-<span class="fc" id="L255">            combXY.setValue(i, v);</span>
+<span class="fc" id="L260">            combXY.setValue(i, v);</span>
             
-<span class="fc" id="L257">            combX.setValue(i, vx);</span>
-<span class="fc" id="L258">            combY.setValue(i, vy);</span>
+<span class="fc" id="L262">            combX.setValue(i, vx);</span>
+<span class="fc" id="L263">            combY.setValue(i, vy);</span>
         }
         
-<span class="fc" id="L261">        GreyscaleImage combTheta = </span>
-<span class="fc" id="L262">            imageProcessor.computeTheta180(combX, combY);</span>
+<span class="fc" id="L266">        GreyscaleImage combTheta = </span>
+<span class="fc" id="L267">            imageProcessor.computeTheta180(combX, combY);</span>
         
-<span class="fc" id="L264">        EdgeFilterProducts efp = new EdgeFilterProducts();</span>
-<span class="fc" id="L265">        efp.setGradientX(combX);</span>
-<span class="fc" id="L266">        efp.setGradientY(combY);</span>
-<span class="fc" id="L267">        efp.setGradientXY(combXY);</span>
-<span class="fc" id="L268">        efp.setTheta(combTheta);</span>
+<span class="fc" id="L269">        EdgeFilterProducts efp = new EdgeFilterProducts();</span>
+<span class="fc" id="L270">        efp.setGradientX(combX);</span>
+<span class="fc" id="L271">        efp.setGradientY(combY);</span>
+<span class="fc" id="L272">        efp.setGradientXY(combXY);</span>
+<span class="fc" id="L273">        efp.setTheta(combTheta);</span>
          
-<span class="fc" id="L270">        this.filterProducts = efp;</span>
-<span class="fc" id="L271">    }</span>
+<span class="fc" id="L275">        this.filterProducts = efp;</span>
+<span class="fc" id="L276">    }</span>
    
     /**
      * get the filter products for gradient and orientation.
@@ -276,8 +281,696 @@ public class CannyEdgeColorAdaptive {
      * @return the filterProducts
      */
     public EdgeFilterProducts getFilterProducts() {
-<span class="fc" id="L279">        return filterProducts;</span>
+<span class="fc" id="L284">        return filterProducts;</span>
     }
 
-}
+    private class CannyEdgeFilterAdaptive2 {
+
+        private float factorBelowHighThreshold = 2.f;
+
+        private EdgeFilterProducts filterProducts = null;
+
+        private boolean performNonMaxSuppr = true;
+
+        private boolean debug = false;
+        
+        private boolean restoreJunctions = true;
+ 
+        private boolean useHigherThresholdIfNeeded = false;
+
+        private double approxProcessedSigma = 0;
+
+        private boolean useAdaptiveThreshold = false;
+
+        private boolean useAdaptive2Layer = true;
+
+        private boolean lineDrawingMode = false;
+
+        private float otsuScaleFactor = 0.75f;//0.65f;
+
+        private Logger log = Logger.getLogger(this.getClass().getName());
+
+        private boolean useLineThinner = true;
+        
+        public CannyEdgeFilterAdaptive2() {
+        }
+
+        public void setToDebug() {
+            debug = true;
+        }
+
+        public void overrideToNotUseLineThinner() {
+            useLineThinner = false;
+        }
+
+        public void setToNotRestoreJunctions() {
+            restoreJunctions = false;
+        }
+
+        public void setToUseLineDrawingMode() {
+            lineDrawingMode = true;
+        }
+        
+        public void setOtsuScaleFactor(float factor) {
+            otsuScaleFactor = factor;
+        }
+
+        public void setToNotUseNonMaximumSuppression() {
+            performNonMaxSuppr = false;
+        }
+
+        public void setToUseHigherThresholdIfNeeded() {
+            useHigherThresholdIfNeeded = true;
+        }
+
+        public void overrideToUseAdaptiveThreshold() {
+            useAdaptiveThreshold = true;
+        }
+        
+        public void setToUseSingleThresholdIn2LayerFilter() {
+            useAdaptive2Layer = false;
+        }
+
+        /**
+         * override the default factor of low threshold below high threshold,
+         * which is 2.
+         *
+         * @param factor
+         */
+        public void override2LayerFactorBelowHighThreshold(float factor) {
+            factorBelowHighThreshold = factor;
+        }
+
+        public void applyFilter(final GreyscaleImage input) {
+
+            if (input.getWidth() &lt; 3 || input.getHeight() &lt; 3) {
+                throw new IllegalArgumentException(&quot;images should be &gt;= 3x3 in size&quot;);
+            }
+
+            if (lineDrawingMode) {
+                useAdaptive2Layer = true;
+                useAdaptiveThreshold = false;
+                //apply2LayerFilter(input, new HashSet&lt;PairInt&gt;(), input);
+                if (debug) {
+                    GreyscaleImage imgcp = input.copyImage();
+                    for (int i = 0; i &lt; imgcp.getNPixels(); ++i) {
+                        int v = imgcp.getValue(i);
+                        if (v &gt; 0) {
+                            imgcp.setValue(i, 255);
+                        }
+                    }
+                    MiscDebug.writeImage(imgcp, &quot;_after_2_layer_&quot;);
+                }
+
+                ImageProcessor imageProcessor = new ImageProcessor();
+
+                GreyscaleImage in = imageProcessor.closing(input);
+                imageProcessor.blur(in, SIGMA.ZEROPOINTFIVE);
+
+                // convert all &gt; 0 to 1's for 'closing' operation
+                for (int pixIdx = 0; pixIdx &lt; in.getNPixels(); ++pixIdx) {
+                    if (in.getValue(pixIdx) &gt; 0) {
+                        in.setValue(pixIdx, 1);
+                    }
+                }
+
+                in = imageProcessor.closing(in);
+                
+                {//DEBUG
+                    long ts = MiscDebug.getCurrentTimeFormatted();
+                    GreyscaleImage tmp = in.copyImage();
+                    tmp.multiply(255);
+                    MiscDebug.writeImage(tmp, &quot;_line_&quot; + ts);
+                }
+
+                int nnzs = imageProcessor.countNonZeroes(in);
+                while (true) {
+                    int nnzs2 = imageProcessor.applyThinning2(in);
+                    if (nnzs == nnzs2) {
+                        break;
+                    }
+                    nnzs = nnzs2;
+                }
+
+                {//DEBUG
+                    long ts = MiscDebug.getCurrentTimeFormatted();
+                    GreyscaleImage tmp = in.copyImage();
+                    tmp.multiply(255);
+                    MiscDebug.writeImage(tmp, &quot;_line_thinned_&quot; + ts);
+                }
+                
+                // either convert all &gt; 0 back to original values, or to a large
+                //   enough value to make a strong gradient
+                for (int pixIdx = 0; pixIdx &lt; in.getNPixels(); ++pixIdx) {
+                    if (in.getValue(pixIdx) &gt; 0) {
+                        in.setValue(pixIdx, 200);
+                    }
+                }
+
+                filterProducts = createGradientForLineMode(in);
+
+                //TODO: update these or remove them...left from
+                // a previous version of the code
+                approxProcessedSigma = Math.sqrt(
+                    approxProcessedSigma * approxProcessedSigma + (0.678 * 0.678));
+
+                input.resetTo(filterProducts.getGradientXY());
+
+                return;
+            }
+
+            // (1) smooth image using separable binomial filters
+            SIGMA sigma = SIGMA.ONE;
+            if (sigma.equals(SIGMA.ONE)) {
+                ATrousWaveletTransform at = new ATrousWaveletTransform();
+                GreyscaleImage smoothed = at.smoothToSigmaOne(input);
+                input.resetTo(smoothed);
+                approxProcessedSigma = 1;
+            } else if (sigma.equals(SIGMA.ZEROPOINTSEVENONE)) {
+                ATrousWaveletTransform at = new ATrousWaveletTransform();
+                GreyscaleImage smoothed = at.smoothToSigmaZeroPointSevenOne(input);
+                input.resetTo(smoothed);
+                approxProcessedSigma = Math.sqrt(2.) / 2.;
+            } else {
+                ImageProcessor imageProcessor = new ImageProcessor();
+                imageProcessor.blur(input, sigma, 0, 255);
+                approxProcessedSigma = SIGMA.getValue(sigma);
+            }
+
+            //(2) create gradient
+            // uses a binomial filter for a first derivative gradient, sobel.
+            filterProducts = createGradient(input);
+
+            GreyscaleImage gradientCopyBeforeThinning = filterProducts.getGradientXY().copyImage();
+
+            approxProcessedSigma = Math.sqrt(
+                approxProcessedSigma * approxProcessedSigma + (1. / 4.));
+
+            Set&lt;PairInt&gt; removedDisconnecting = new HashSet&lt;PairInt&gt;();
+
+            if (debug) {
+                MiscDebug.writeImage(filterProducts.getGradientXY(), &quot;_before_nms_&quot;);
+            }
+            
+            //(3) non-maximum suppression
+            if (performNonMaxSuppr) {
+                applyNonMaximumSuppression(filterProducts, removedDisconnecting);
+            }
+
+            if (debug) {
+                MiscDebug.writeImage(filterProducts.getGradientXY(), &quot;_after_nms_&quot;);
+            }
+
+            //(4) adaptive 2 layer filter
+            apply2LayerFilter(filterProducts.getGradientXY(), removedDisconnecting,
+                gradientCopyBeforeThinning);
+            
+            if (restoreJunctions) {
+                int minResolution = (int) Math.ceil(2.35 * approxProcessedSigma);
+                int minResolvableAngle = (int) Math.ceil(
+                    Math.atan2(1, minResolution) * 180. / Math.PI);
+                if (minResolvableAngle &lt; 0) {
+                    minResolvableAngle *= -1;
+                }
+
+                MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+                curveHelper.additionalThinning45DegreeEdges2(
+                    filterProducts.getTheta(), filterProducts.getGradientXY(),
+                    minResolvableAngle);
+            }
+
+            // is this necessary?
+            for (int i = 0; i &lt; filterProducts.getGradientXY().getNPixels(); ++i) {
+                int v = filterProducts.getGradientXY().getValue(i);
+                if (v &lt; 0) {
+                    filterProducts.getGradientXY().setValue(i, 0);
+                }
+            }
+
+            input.resetTo(filterProducts.getGradientXY());
+        }
+        
+        protected void apply2LayerFilter(final GreyscaleImage gradientXY,
+            Set&lt;PairInt&gt; removedDisconnecting,
+            GreyscaleImage gradientCopyBeforeThinning) {
+
+            int n = gradientXY.getNPixels();
+            int w = gradientXY.getWidth();
+            int h = gradientXY.getHeight();
+
+            if (w &lt; 3 || h &lt; 3) {
+                throw new IllegalArgumentException(&quot;images should be &gt;= 3x3 in size&quot;);
+            }
+
+            ImageProcessor imageProcessor = new ImageProcessor();
+
+            double[][] threshImg = null;
+            
+            if (useAdaptive2Layer &amp;&amp; useAdaptiveThreshold) {
+                AdaptiveThresholding th = new AdaptiveThresholding();
+                threshImg = th.createAdaptiveThresholdImage(
+                    imageProcessor.copy(gradientXY), 15, 0.2);
+                if (debug) {//DEBUG
+                    double[][] imgCp = imageProcessor.copy(gradientXY);
+                    for (int i = 0; i &lt; w; ++i) {
+                        for (int j = 0; j &lt; h; ++j) {
+                            double t = threshImg[i][j];
+                            if (imgCp[i][j] &gt; t) {
+                                imgCp[i][j] = 255.;
+                            } else {
+                                imgCp[i][j] = 0;
+                            }
+                        }
+                    }
+                    MiscDebug.writeImage(imgCp, &quot;img_a_thresholded_.png&quot;);
+                    MiscDebug.writeImage(threshImg, &quot;img_a_adaptive_threshold_.png&quot;);
+                }
+            }
+
+            int[] dxs = Misc.dx8;
+            int[] dys = Misc.dy8;
+            
+            float tHigh = 0;
+            float tLow = 0;
+            if (!useAdaptive2Layer || !useAdaptiveThreshold) {
+                OtsuThresholding ot = new OtsuThresholding();
+
+                double[][] g = new double[w][];
+                for (int i = 0; i &lt; w; ++i) {
+                    g[i] = new double[h];
+                    for (int j = 0; j &lt; h; ++j) {
+                        g[i][j] = gradientXY.getValue(i, j);
+                    }
+                }
+                int nBins = 256 / 5;
+                float t = (float) ot.calculateBinaryThreshold2D(g, nBins);
+
+                tHigh = otsuScaleFactor * t;
+                tLow = tHigh / factorBelowHighThreshold;
+            }
+
+            GreyscaleImage img2 = gradientXY.createWithDimensions();
+
+            // store pixels w/ v &gt; tHigh
+            // and store any of it's neighbors w/ v &gt; tLow
+            
+            for (int x = 0; x &lt; w; ++x) {
+                for (int y = 0; y &lt; h; ++y) {
+
+                    double v = gradientXY.getValue(x, y);
+
+                    double tHigh0, tLow0;
+                    if (threshImg != null) {
+                        tHigh0 = threshImg[x][y];
+                        tLow0 = tHigh0 / 2;
+                    } else {
+                        tHigh0 = tHigh;
+                        tLow0 = tLow;
+                    }
+
+                    if (v &lt; tHigh0) {
+                        continue;
+                    }
+
+                    img2.setValue(x, y, 255);
+                    
+                    // store any adjacent w/ v &gt; tLow
+                    for (int k = 0; k &lt; dxs.length; ++k) {
+                        int x2 = x + dxs[k];
+                        int y2 = y + dys[k];
+                        if ((x2 &lt; 0) || (y2 &lt; 0) || (x2 &gt; (w - 1)) || (y2 &gt; (h - 1))) {
+                            continue;
+                        }
+                        double v2 = gradientXY.getValue(x2, y2);
+                        if (v2 &gt; tLow0) {
+                            img2.setValue(x2, y2, 255);
+                        }
+                    }
+                }
+            }
+
+            if (debug) {
+                MiscDebug.writeImage(gradientXY, &quot;_before_2layer_&quot;);
+                MiscDebug.writeImage(img2, &quot;_in_2layer_&quot;);
+            }
+
+            gradientXY.resetTo(img2);
+
+            if (debug) {
+                MiscDebug.writeImage(gradientXY, &quot;_after_linethinning_1_&quot;);
+            }
+             
+            if (restoreJunctions) {
+
+                // while have information about the thresholds, will use them to
+                // make decisions about restoring pixels that disconnected edges.
+                PairInt[][] neighborCoordOffsets
+                    = AbstractLineThinner.createCoordinatePointsForEightNeighbors(
+                        0, 0);
+
+                for (PairInt p : removedDisconnecting) {
+
+                    if (ImageSegmentation.doesDisconnect(gradientXY,
+                        neighborCoordOffsets, p.getX(), p.getY())) {
+
+                        int x = p.getX();
+                        int y = p.getY();
+                        int i = gradientXY.getIndex(x, y);
+
+                        double tHigh0, tLow0;
+                        if (threshImg != null) {
+                            tHigh0 = threshImg[x][y];
+                            tLow0 = tHigh0 / 2;
+                        } else {
+                            tHigh0 = tHigh;
+                            tLow0 = tLow;
+                        }
+
+                        int v = gradientCopyBeforeThinning.getValue(p);
+
+                        if (v &gt; tLow0) {
+                            if (isAdjacentToAHorizOrVertLine(gradientXY, x, y, 3)) {
+                                gradientXY.setValue(x, y, 255);
+                            }
+                        }
+                    }
+                }
+
+                if (debug) {
+                    MiscDebug.writeImage(gradientXY, &quot;_after_restore_junctions_&quot;);
+                }
+
+                if (debug) {
+                    MiscDebug.writeImage(gradientXY, &quot;_after_linethinning_2_&quot;);
+                }
+            }
+        }
+
+        private GreyscaleImage getGradientX1D(final GreyscaleImage input) {
+
+            return getGradient1D(input, true);
+        }
+
+        private GreyscaleImage getGradientY1D(final GreyscaleImage input) {
+
+            return getGradient1D(input, false);
+        }
+        
+        private GreyscaleImage getGradient1D(final GreyscaleImage input,
+            boolean calculateForX) {
+
+            log.fine(&quot;getGradientID calculateForX=&quot; + calculateForX);
+
+            // 0.5f, -0.0f, -0.5f
+            float[] kernel = Gaussian1DFirstDeriv.getKernel(
+                //SIGMA.ZEROPOINTSEVENONE);
+                SIGMA.ZEROPOINTFIVE);
+
+            GreyscaleImage output = input.copyToSignedImage();
+
+            apply1DKernelToImage(output, kernel, calculateForX);
+
+            return output;
+        }
+        
+        private void apply1DKernelToImage(final GreyscaleImage input,
+            float[] kernel, boolean calculateForX) {
+
+            log.fine(&quot;apply1DKernelToImage calculateForX=&quot; + calculateForX);
+
+            GreyscaleImage output = input.copyImage();
+
+            Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
+
+            for (int i = 0; i &lt; input.getWidth(); i++) {
+
+                for (int j = 0; j &lt; input.getHeight(); j++) {
+
+                    double conv = kernel1DHelper.convolvePointWithKernel(
+                        input, i, j, kernel, calculateForX);
+
+                    int g = (int) conv;
+
+                    // because the values may be combined with other images or
+                    // involved in other operations such as adding in quadrature,
+                    // don't limit the range to be between 0 and 255
+                    output.setValue(i, j, g);
+                }
+            }
+
+            input.resetTo(output);
+        }
+        
+        protected EdgeFilterProducts createGradient(final GreyscaleImage img) {
+
+            GreyscaleImage gX, gY, g, theta;
+
+            ImageProcessor imageProcessor = new ImageProcessor();
+
+            gX = getGradientX1D(img);
+
+            gY = getGradientY1D(img);
+
+            g = imageProcessor.combineConvolvedImages(gX, gY);
+
+            // the theta is in range 0 to 180
+            theta = imageProcessor.computeTheta180(gX, gY);
+
+            if (debug) {
+                // when replace the aspect library, put these renders in the
+                //   equivalent replacement
+                long ts = MiscDebug.getCurrentTimeFormatted();
+                MiscDebug.writeImage(theta, &quot;_theta_&quot; + ts);
+                MiscDebug.writeImage(gX, &quot;_gX_&quot; + ts);
+                MiscDebug.writeImage(gY, &quot;_gY_&quot; + ts);
+                /*
+            int x = 37; int y = 163;
+            System.out.println(&quot;(&quot; + x + &quot;, &quot; + y + &quot;) math.atan2(&quot; + gY.getValue(x, y)
+                + &quot;,&quot; + gX.getValue(x, y) + &quot;)*180./math.pi=&quot; +
+                theta.getValue(x, y));*/
+            }
+
+            EdgeFilterProducts efp = new EdgeFilterProducts();
+            efp.setGradientX(gX);
+            efp.setGradientY(gY);
+            efp.setGradientXY(g);
+            efp.setTheta(theta);
+
+            return efp;
+        }
+        
+        protected EdgeFilterProducts createGradientForLineMode(final GreyscaleImage img) {
+
+            GreyscaleImage gX, gY, g, theta;
+
+            ImageProcessor imageProcessor = new ImageProcessor();
+
+            gX = img.copyImage();
+
+            gY = img.copyImage();
+
+            g = img.copyImage();
+
+            // the theta is in range 0 to 180
+            theta = imageProcessor.computeTheta180(gX, gY);
+
+            if (debug) {
+                // when replace the aspect library, put these renders in the
+                //   equivalent replacement
+                long ts = MiscDebug.getCurrentTimeFormatted();
+                GreyscaleImage tmp = g.copyImage();
+                MiscDebug.writeImage(tmp, &quot;_gXY_&quot; + ts);
+                MiscDebug.writeImage(theta, &quot;_theta_&quot; + ts);
+                MiscDebug.writeImage(gX, &quot;_gX_&quot; + ts);
+                MiscDebug.writeImage(gY, &quot;_gY_&quot; + ts);
+                /*
+            int x = 37; int y = 163;
+            System.out.println(&quot;(&quot; + x + &quot;, &quot; + y + &quot;) math.atan2(&quot; + gY.getValue(x, y)
+                + &quot;,&quot; + gX.getValue(x, y) + &quot;)*180./math.pi=&quot; +
+                theta.getValue(x, y));*/
+            }
+
+            EdgeFilterProducts efp = new EdgeFilterProducts();
+            efp.setGradientX(gX);
+            efp.setGradientY(gY);
+            efp.setGradientXY(g);
+            efp.setTheta(theta);
+
+            return efp;
+        }
+        
+        private void applyNonMaximumSuppression(EdgeFilterProducts filterProducts,
+            Set&lt;PairInt&gt; disconnectingRemovals) {
+
+            NonMaximumSuppression nms = new NonMaximumSuppression();
+
+            //TODO: radius can be adjusted from 1 to higher
+            nms.nonmaxsup(filterProducts.getGradientXY(),
+                filterProducts.getTheta(), 1.2, disconnectingRemovals);
+        }
+        
+        private boolean isAdjacentToAHorizOrVertLine(GreyscaleImage gradientXY,
+            int x, int y, int minLineSize) {
+
+            /*
+           1  1  1
+           1  0  1
+           1  1  1
+
+        if find a neighbor, check it for being part of _ or | of size minLineSize
+             */
+            int w = gradientXY.getWidth();
+            int h = gradientXY.getHeight();
+            int[] dxs = Misc.dx8;
+            int[] dys = Misc.dy8;
+
+            for (int k = 0; k &lt; dxs.length; ++k) {
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                if ((x2 &lt; 0) || (y2 &lt; 0) || (x2 &gt; (w - 1)) || (y2 &gt; (h - 1))) {
+                    continue;
+                }
+                if (gradientXY.getValue(x2, y2) == 0) {
+                    continue;
+                }
+                
+                int c = 0;
+                for (int dy2 = ((-minLineSize) + 1); dy2 &lt; 0; ++dy2) {
+                    int y3 = y2 + dy2;
+                    if ((y3 &lt; 0) || (y3 &gt; (h - 1)) || (gradientXY.getValue(x2, y3) == 0)) {
+                        continue;
+                    }
+                    c++;
+                }
+                if (c == (minLineSize - 1)) {
+                    return true;
+                }
+                
+                /*
+                   *
+                (x2, y2)
+                   *
+                 */
+                c = 0;
+                for (int dy2 = (-minLineSize / 2); dy2 &lt;= (minLineSize / 2); ++dy2) {
+                    int y3 = y2 + dy2;
+                    if ((y3 &lt; 0) || (y3 &gt; (h - 1)) || (gradientXY.getValue(x2, y3) == 0)
+                        || (y3 == y2)) {
+                        continue;
+                    }
+                    c++;
+                }
+                if (c == (minLineSize - 1)) {
+                    return true;
+                }
+                /*
+                   *
+                   *
+               (x2, y2)
+                 */
+                c = 0;
+                for (int dy2 = 1; dy2 &lt; minLineSize; ++dy2) {
+                    int y3 = y2 + dy2;
+                    if ((y3 &lt; 0) || (y3 &gt; (h - 1)) || (gradientXY.getValue(x2, y3) == 0)) {
+                        continue;
+                    }
+                    c++;
+                }
+                if (c == (minLineSize - 1)) {
+                    return true;
+                }
+
+                /*
+                 if (x2, y2) is part of a horizontal line, return true
+
+              *   *   (x2, y2)
+                 */
+                c = 0;
+                
+                for (int dx2 = ((-minLineSize) + 1); dx2 &lt; 0; ++dx2) {
+                    int x3 = x2 + dx2;
+                    if ((x3 &lt; 0) || (x3 &gt; (w - 1)) || (gradientXY.getValue(x3, y2) == 0)) {
+                        continue;
+                    }
+                    c++;
+                }
+                if (c == (minLineSize - 1)) {
+                    return true;
+                }
+
+                /*
+                  *  (x2, y2)   *
+                 */
+                c = 0;
+                for (int dx2 = (-minLineSize / 2); dx2 &lt;= (minLineSize / 2); ++dx2) {
+                    int x3 = x2 + dx2;
+                    if ((x3 &lt; 0) || (x3 &gt; (w - 1)) || (gradientXY.getValue(x3, y2) == 0)
+                        || (x3 == x2)) {
+                        continue;
+                    }
+                    c++;
+                }
+                if (c == (minLineSize - 1)) {
+                    return true;
+                }
+
+                /*
+                  (x2, y2)   *    *
+                 */
+                c = 0;
+                for (int dx2 = 1; dx2 &lt; minLineSize; ++dx2) {
+                    int x3 = x2 + dx2;
+                    if ((x3 &lt; 0) || (x3 &gt; (w - 1)) || (gradientXY.getValue(x3, y2) == 0)) {
+                        continue;
+                    }
+                    c++;
+                }
+                if (c == (minLineSize - 1)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        
+        public EdgeFilterProducts getFilterProducts() {
+            return filterProducts;
+        }
+
+        private void applyPostLineThinningCorrections(GreyscaleImage gradientXY) {
+
+            ImageProcessor imageProcessor = new ImageProcessor();
+            GreyscaleImage tmp = gradientXY.copyImage();
+            for (int i = 0; i &lt; tmp.getNPixels(); ++i) {
+                if (tmp.getValue(i) &gt; 0) {
+                    tmp.setValue(i, 1);
+                }
+            }
+            imageProcessor.applyThinning2(tmp);
+
+            for (int i = 0; i &lt; tmp.getNPixels(); ++i) {
+                if (tmp.getValue(i) == 0) {
+                    gradientXY.setValue(i, 0);
+                }
+            }
+
+            if (useLineThinner) {
+                ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
+                lt.applyFilter(gradientXY);
+            }
+        }
+        
+        private int countAboveZero(GreyscaleImage img) {
+
+            int n = 0;
+            for (int i = 0; i &lt; img.getNPixels(); ++i) {
+                if (img.getValue(i) &gt; 0) {
+                    n++;
+                }
+            }
+
+            return n;
+        }
+     }
+ }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
