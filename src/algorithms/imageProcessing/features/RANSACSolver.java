@@ -133,8 +133,8 @@ public class RANSACSolver {
         EpipolarTransformer spTransformer = new EpipolarTransformer();
             
         SecureRandom sr = Misc.getSecureRandom();
-        long seed = System.currentTimeMillis();
-        log.fine("SEED=" + seed + " nPoints=" + nPoints);
+        long seed = 1490240754770L;//System.currentTimeMillis();
+        log.info("SEED=" + seed + " nPoints=" + nPoints);
         sr.setSeed(seed);
 
         int tolerance = 5;
@@ -154,6 +154,8 @@ public class RANSACSolver {
         if (nPoints == 7) {
             nMaxIter = 1;
         }
+        System.out.println("nPoints=" + nPoints + " estimate for nMaxIter=" +
+            nMaxIter);
 
         int nIter = 0;
         
@@ -360,6 +362,8 @@ public class RANSACSolver {
                 xy2Offset.add(x, y);
             }
          
+  //TODO: need corrctions below here
+            
             DenseMatrix m2m = eTransformer.rewriteInto3ColumnMatrix(xy2Offset);
         
             DenseMatrix m2EpipolarLines = MatrixUtil.multiply(fm, m1m);

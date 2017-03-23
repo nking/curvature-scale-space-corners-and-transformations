@@ -5370,26 +5370,7 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
 
         return out;
     }
-
-    /**
-     * NOTE, this is a point wise multiply rather than a dot product
-     * @param a
-     * @param b
-     * @return 
-     */
-    public float[][] multiplyPointwise(float[][] a, float[][] b) {
-
-        float[][] c = copy(a);
-
-        for (int i = 0; i < c.length; ++i) {
-            for (int j = 0; j < c[0].length; ++j) {
-                c[i][j] *= b[i][j];
-            }
-        }
-
-        return c;
-    }
-
+    
     public TIntSet convertPointsToIndexes(Set<PairInt> points, int width) {
         TIntSet set = new TIntHashSet(points.size());
         for (PairInt p : points) {

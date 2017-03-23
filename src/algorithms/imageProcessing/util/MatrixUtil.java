@@ -1222,6 +1222,18 @@ public class MatrixUtil {
         
         return sum;
     }
+
+    public static float[][] copy(float[][] a) {
+
+        float[][] c = new float[a.length][a[0].length];
+
+        for (int i = 0; i < a.length; ++i) {
+            c[i] = new float[a[0].length];
+            System.arraycopy(a[i], 0, c[i], 0, a[0].length);
+        }
+        
+        return c;
+    }
     
     public static class EigenValuesAndVectors {
         private final double[] eigenValues;
@@ -1867,5 +1879,43 @@ public class MatrixUtil {
         return cofactor;
     }
     
-    
+    /**
+     * NOTE, this is a point wise multiply rather than a dot product
+     * @param a
+     * @param b
+     * @return 
+     */
+    public static float[][] multiplyPointwise(float[][] a, float[][] b) {
+
+        float[][] c = copy(a);
+
+        for (int i = 0; i < c.length; ++i) {
+            for (int j = 0; j < c[0].length; ++j) {
+                c[i][j] *= b[i][j];
+            }
+        }
+
+        return c;
+    }
+
+    /**
+     * NOTE, this is a point wise multiply rather than a dot product
+     * @param a
+     * @param b
+     * @return 
+     */
+    public static DenseMatrix multiplyPointwise(DenseMatrix a, 
+        DenseMatrix b) {
+
+        DenseMatrix c = a.copy();
+
+        for (int i = 0; i < c.numRows(); ++i) {
+            for (int j = 0; j < c.numColumns(); ++j) {
+                c.set(i, j, c.get(i, j) * b.get(i, j));
+            }
+        }
+
+        return c;
+    }
+
 }

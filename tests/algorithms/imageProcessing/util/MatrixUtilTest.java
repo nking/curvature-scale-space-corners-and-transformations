@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 import no.uib.cipr.matrix.DenseMatrix;
+import no.uib.cipr.matrix.Matrix;
 import no.uib.cipr.matrix.MatrixEntry;
 import no.uib.cipr.matrix.sparse.FlexCompColMatrix;
 import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
@@ -103,6 +104,19 @@ public class MatrixUtilTest extends TestCase {
         assertTrue(d[1][0] == 9);
         assertTrue(d[1][1] == 9);
         assertTrue(d[1][2] == 6);
+     
+        DenseMatrix aMatrix = new DenseMatrix(a);
+        DenseMatrix cMatrix = new DenseMatrix(c);
+        
+        Matrix dMatrix = aMatrix.mult(cMatrix, 
+            new DenseMatrix(2,3));
+       // System.out.println("d=" + dMatrix);
+        assertEquals(6., dMatrix.get(0, 0));
+        assertEquals(6., dMatrix.get(0, 1));
+        assertEquals(4., dMatrix.get(0, 2));
+        assertEquals(9., dMatrix.get(1, 0));
+        assertEquals(9., dMatrix.get(1, 1));
+        assertEquals(6., dMatrix.get(1, 2));
         
         /*
         example:  m is 1 2 3
