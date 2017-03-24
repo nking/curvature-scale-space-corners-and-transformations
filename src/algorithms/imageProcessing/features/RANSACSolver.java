@@ -133,7 +133,7 @@ public class RANSACSolver {
         EpipolarTransformer spTransformer = new EpipolarTransformer();
             
         SecureRandom sr = Misc.getSecureRandom();
-        long seed = 1490240754770L;//System.currentTimeMillis();
+        long seed = System.currentTimeMillis();
         log.info("SEED=" + seed + " nPoints=" + nPoints);
         sr.setSeed(seed);
 
@@ -309,12 +309,6 @@ public class RANSACSolver {
             directions to get roughly near perpendicular to the epipolar
             line.
         */
-        float[] toleranceErrors =
-            calculateErrorsAsOffsets(consensusFit.getFundamentalMatrix(), 
-                outputLeftXY, outputRightXY, tolerance);
-        
-        consensusFit.setTolerance(toleranceErrors[0],
-            toleranceErrors[1]);
         
         log.fine("nIter=" + nIter);
 
@@ -322,79 +316,4 @@ public class RANSACSolver {
 
         return consensusFit;
     }
-
-    private float[] calculateErrorsAsOffsets(DenseMatrix fm,
-        PairIntArray xy1, PairIntArray xy2, int tolerance) {
-
-        /*
-        -- make copies of xy2, displacing the point from center by
-        radius of tolerance and angles 45, 90, 135, 180, 225, 270, 315 
-        and storing them in separate xy2Offset arrays.
-        -- choose the max error for each offset of the same point
-        -- calc the mean and standard deviation of the max offset
-           errors
-        this should be a rough estimate of the ability to associate a point
-        with an epipolar line.
-        */
-                
-        EpipolarTransformer eTransformer = new EpipolarTransformer();
-        
-        DenseMatrix m1m = eTransformer.rewriteInto3ColumnMatrix(xy1);
-        
-        float[] xErrors = new float[xy1.getN()];
-        float[] yErrors = new float[xy1.getN()];
-        Arrays.fill(xErrors, Float.MAX_VALUE);
-        Arrays.fill(yErrors, Float.MAX_VALUE);
-        
-        float[] outputDist = new float[2];
-        
-        for (int i = 0; i < 7; ++i) {
-            
-            double angle = (i + 1) * Math.PI/4.;
-            
-            int xOff = (int)Math.round(tolerance * Math.cos(angle));
-            int yOff = (int)Math.round(tolerance * Math.sin(angle));
-            
-            PairIntArray xy2Offset = new PairIntArray(xy2.getN());
-            for (int j = 0; j < xy2.getN(); ++j) {
-                int x = xy2.getX(j) + xOff;
-                int y = xy2.getY(j) + yOff;
-                xy2Offset.add(x, y);
-            }
-         
-  //TODO: need corrctions below here
-            
-            DenseMatrix m2m = eTransformer.rewriteInto3ColumnMatrix(xy2Offset);
-        
-            DenseMatrix m2EpipolarLines = MatrixUtil.multiply(fm, m1m);
-            DenseMatrix m1EpipolarLines = MatrixUtil.multiply(fm, m2m);
-
-            for (int j = 0; j < xy2Offset.getN(); ++j) {
-                eTransformer.calculatePerpDistFromLines(
-                    m1m, m2m, 
-                    m2EpipolarLines, m1EpipolarLines, 
-                    j, j, outputDist);
-            
-                float d1 = Math.abs(outputDist[0]);
-                float d2 = Math.abs(outputDist[1]);
-                if (xErrors[j] == Float.MAX_VALUE || xErrors[j] < d1) {
-                    xErrors[j] = d1;
-                }
-                if (yErrors[j] == Float.MAX_VALUE || yErrors[j] < d2) {
-                    yErrors[j] = d2;
-                }
-            }
-        }
-        
-        // calc mean and stdev of tolerance size offsets
-        float[] xAvgStDv = MiscMath.getAvgAndStDev(xErrors);
-        float[] yAvgStDv = MiscMath.getAvgAndStDev(yErrors);
-    
-        float combinedAvgTol = (xAvgStDv[0] + yAvgStDv[0])/2.f;
-        float combinedStdvTol = (float)Math.sqrt(xAvgStDv[1]*xAvgStDv[1] 
-            + yAvgStDv[1]*yAvgStDv[1]);
-        
-        return new float[]{combinedAvgTol, combinedStdvTol};
-    }
-
 }

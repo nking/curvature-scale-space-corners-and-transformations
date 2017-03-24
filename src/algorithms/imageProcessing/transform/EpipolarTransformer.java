@@ -1601,7 +1601,8 @@ public class EpipolarTransformer {
         for (int i = 0; i < matchedLeftPoints.numColumns(); i++) {
 
             calculatePerpDistFromLines(matchedLeftPoints,
-                matchedRightPoints, rightEpipolarLines, leftEpipolarLines,
+                matchedRightPoints, 
+                rightEpipolarLines, leftEpipolarLines,
                 i, i, output);
 
             distances.add(output[0], output[1]);
@@ -1611,18 +1612,17 @@ public class EpipolarTransformer {
     }
 
     public void calculatePerpDistFromLines(DenseMatrix leftPoints,
-        DenseMatrix rightPoints, DenseMatrix epipolarLinesFromLeft,
-        DenseMatrix epipolarLinesFromRight, int leftIdx, int rightIdx,
+        DenseMatrix rightPoints, 
+        DenseMatrix epipolarLinesFromLeft,
+        DenseMatrix epipolarLinesFromRight, 
+        int leftIdx, int rightIdx,
         float[] output) {
-//TODO: revisit this
+        
         double a = epipolarLinesFromLeft.get(0, leftIdx);
         double b = epipolarLinesFromLeft.get(1, leftIdx);
         double c = epipolarLinesFromLeft.get(2, leftIdx);
 
         double aplusb = Math.sqrt((a*a) + (b*b));
-
-        double xL = leftPoints.get(0, leftIdx);
-        double yL = leftPoints.get(1, leftIdx);
 
         //dist = (a*x + b*y + c)/sqrt(a^2 + b^2)
 
@@ -1635,6 +1635,9 @@ public class EpipolarTransformer {
         double aRev = epipolarLinesFromRight.get(0, rightIdx);
         double bRev = epipolarLinesFromRight.get(1, rightIdx);
         double cRev = epipolarLinesFromRight.get(2, rightIdx);
+
+        double xL = leftPoints.get(0, leftIdx);
+        double yL = leftPoints.get(1, leftIdx);
 
         double dRev = (aRev*xL + bRev*yL + cRev)/
             Math.sqrt((aRev*aRev + bRev*bRev));
@@ -1664,6 +1667,16 @@ public class EpipolarTransformer {
     }
 
     /**
+     Return the "algebraic distance" needed for use in calculating
+     Sampson's distance.
+     The algebraic distance has no geometrical significance,
+     (it isn't the perpendicular distance).
+     * The topic is discussed in
+     "The Development and Comparison of Robust Methods
+      for Estimating the Fundamental Matrix" by Torr and Murray, 1997
+      as Equation (2) on page 274.
+      The return here contains 2 matrices which contain parts of equation
+      2, formatted for use in calculating Sampson's distance.
      <pre>
      The method is adapted from code from the book
      "Multiple View Geometry in Computer Vision" by 
@@ -1697,8 +1710,10 @@ public class EpipolarTransformer {
         //   to make nData X 3 matrix
         //X1' is nData X 3
 
+        // x coord of x2
         DenseMatrix x2RowT0 = exRowTRepl(x2, 0);
 
+        // y coord of x2
         DenseMatrix x2RowT1 = exRowTRepl(x2, 1);
 
         DenseMatrix x2RowT2 = exRowTRepl(x2, 2);
@@ -1706,6 +1721,7 @@ public class EpipolarTransformer {
         DenseMatrix x1T = MatrixUtil.transpose(x1);
 
         //nData X 3
+        // x1 times 1 = x1_x, x1_y, 1
         DenseMatrix dX0 = MatrixUtil.multiplyPointwise(
             x1T, x2RowT2);
         assert(dX0.numRows() == n);
@@ -1717,6 +1733,7 @@ public class EpipolarTransformer {
         assert(dX1.numRows() == n);
         
         //nData X 3
+        // x1 times -x cooord of x2 = x1_x * x2_x, x1_y * x2_x, x2_x
         DenseMatrix dX2 = MatrixUtil.multiplyPointwise(
             x1T, x2RowT0);
         MatrixUtil.multiply(dX2, -1);
@@ -1729,12 +1746,14 @@ public class EpipolarTransformer {
         assert(dY0.numRows() == n);
         
         //nData X 3
+        // x1 times 1 = x1_x, x1_y, 1
         DenseMatrix dY1 = MatrixUtil.multiplyPointwise(
             x1T, x2RowT2);
         assert(dY1.numColumns() == 3);
         assert(dY1.numRows() == n);
         
         //nData X 3
+        // x1 times -y cooord x2 = of x1_x * y2_x, x1_y * y2_x, y2_x
         DenseMatrix dY2 = MatrixUtil.multiplyPointwise(
             x1T, x2RowT1);
         MatrixUtil.multiply(dY2, -1);
@@ -1789,7 +1808,7 @@ public class EpipolarTransformer {
             dYAll.set(row, 1, sumdY1);
             dYAll.set(row, 2, sumdY2);
         }
-
+        
         return new DenseMatrix[]{dXAll, dYAll};
     }
 
@@ -1815,7 +1834,7 @@ public class EpipolarTransformer {
      * @param fm
      * @param x1
      * @param x2
-     * @param tolerance
+     * @param tolerance .001
      * @return 
      */
     public EpipolarTransformationFit calculateSampsonsError(DenseMatrix fm,
@@ -1840,30 +1859,20 @@ public class EpipolarTransformer {
         if (x1.numColumns() != x2.numColumns()) {
             throw new IllegalArgumentException("x1 and x2 must be same sizes");
         }
-        
+
         int n = x1.numColumns();
 
-        /*
-        
-        TODO: add notes here about the method.
-        
-        ? P. D. Sampson,
-        Fitting conic sections to ‘very scattered’ data:
-        An iterative refinement of the Bookstein algorithm,
-        Comput. Vision Graphics Image Process. 18, 1982, 97–108.
-        
+        /*        
         geometric error of the final solution or the 7-point sample trial,
         can be approximated by Sampson's error:
              (x2_i * F * x1_i^T)^2                 (x2_i * F * x1_i^T)^2
            ---------------------------------  +  ---------------------------
              (F*x1_i^T)_x^2 + (F*x1_i^T)_y^2     (x2_i*F)_x^2 + (x2_i*F)_y^2
-
-        Torr CVIU 97 ? looking at the Hartely & Zimmer Computer
-        Vision book matlab code
         */
         
         // 3 X nData
-        DenseMatrix p1 = exRowRepl(x1, 2);
+        // inverse of x and y coordinates
+        DenseMatrix p1 = exRowRepl(x1, 2); 
         DenseMatrix p2 = exRowRepl(x2, 2);
         assert(p1.numRows() == 3);
         assert(p2.numRows() == 3);
@@ -1900,8 +1909,8 @@ public class EpipolarTransformer {
                 - p1.get(1, i) * fm.get(2, 1) - fm.get(2, 2);
             g1.set(2, i, v);
             g2.set(3, i, v);
-        }
-
+        }        
+        
         // nData X 1        
         double[] magG1 = sumMult(g1, g1);
         double[] magG2 = sumMult(g2, g2);
@@ -1922,6 +1931,21 @@ public class EpipolarTransformer {
             assert(v < 1.);
             alpha[i] = Math.acos(v);
         }
+        
+        /*DX, which is alg[0]
+        // X1 times 1 * h[0:3]
+        // zeroes
+        // X1 times -x cooord of X2 * h[6:9]
+        
+        DY, which is alg[1]
+        // zeroes
+        // X1 times 1    * h[3:6]
+        // X1 times -y cooord of X2 * h[6:9]
+        
+        p1,p2 are inverse of x and y coords
+        
+        g1, g2 are composed of x and y inverse times fm
+        */
         
         List<Integer> outputInliers = new ArrayList<Integer>();
         List<Double> outputDistances = new ArrayList<Double>();
