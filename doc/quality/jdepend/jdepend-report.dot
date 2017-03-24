@@ -10,45 +10,100 @@ digraph g {
 	];
 	edge[];
 	"algorithms" [
-        label="algorithms | Total Classes: 8"
+        label="algorithms | Total Classes: 13"
 	shape="record"
-	color=".99 0.8 .9"
+	color=".99 0.71 .9"
 	style=filled
     ];
+    "algorithms" -> "algorithms.imageProcessing"
+    "algorithms" -> "algorithms.imageProcessing.util"
     "algorithms" -> "algorithms.misc"
     "algorithms" -> "algorithms.util"
-    "algorithms.compGeometry" [
-        label="algorithms.compGeometry | Total Classes: 25"
+    "algorithms" -> "gnu.trove.list"
+    "algorithms" -> "thirdparty.ods"
+    "algorithms.bipartite" [
+        label="algorithms.bipartite | Total Classes: 22"
 	shape="record"
-	color=".99 0.22 .9"
+	color=".99 0.17 .9"
+	style=filled
+    ];
+    "algorithms.bipartite" -> "algorithms"
+    "algorithms.bipartite" -> "algorithms.imageProcessing"
+    "algorithms.bipartite" -> "algorithms.misc"
+    "algorithms.bipartite" -> "algorithms.mst"
+    "algorithms.bipartite" -> "algorithms.util"
+    "algorithms.bipartite" -> "gnu.trove.iterator"
+    "algorithms.bipartite" -> "gnu.trove.map"
+    "algorithms.bipartite" -> "gnu.trove.map.hash"
+    "algorithms.bipartite" -> "gnu.trove.set"
+    "algorithms.bipartite" -> "gnu.trove.set.hash"
+    "algorithms.bipartite" -> "thirdparty.ods"
+    "algorithms.clustering" [
+        label="algorithms.clustering | Total Classes: 1"
+	shape="record"
+	color=".99 0 .9"
+	style=filled
+    ];
+    "algorithms.clustering" -> "algorithms.imageProcessing"
+    "algorithms.clustering" -> "algorithms.search"
+    "algorithms.clustering" -> "gnu.trove.iterator"
+    "algorithms.clustering" -> "gnu.trove.map"
+    "algorithms.clustering" -> "gnu.trove.map.hash"
+    "algorithms.clustering" -> "gnu.trove.set"
+    "algorithms.clustering" -> "gnu.trove.set.hash"
+    "algorithms.compGeometry" [
+        label="algorithms.compGeometry | Total Classes: 14"
+	shape="record"
+	color=".99 0.33 .9"
 	style=filled
     ];
     "algorithms.compGeometry" -> "algorithms"
+    "algorithms.compGeometry" -> "algorithms.compGeometry.convexHull"
+    "algorithms.compGeometry" -> "algorithms.compGeometry.voronoi"
     "algorithms.compGeometry" -> "algorithms.imageProcessing"
+    "algorithms.compGeometry" -> "algorithms.imageProcessing.util"
     "algorithms.compGeometry" -> "algorithms.misc"
+    "algorithms.compGeometry" -> "algorithms.mst"
+    "algorithms.compGeometry" -> "algorithms.search"
     "algorithms.compGeometry" -> "algorithms.util"
-    "algorithms.compGeometry" -> "org.ejml.data"
-    "algorithms.compGeometry" -> "org.ejml.ops"
-    "algorithms.compGeometry" -> "org.ejml.simple"
-    "algorithms.compGeometry.clustering" [
-        label="algorithms.compGeometry.clustering | Total Classes: 3"
-	shape="record"
-	color=".99 0.25 .9"
-	style=filled
-    ];
-    "algorithms.compGeometry.clustering" -> "algorithms"
-    "algorithms.compGeometry.clustering" -> "algorithms.imageProcessing"
-    "algorithms.compGeometry.clustering" -> "algorithms.misc"
+    "algorithms.compGeometry" -> "gnu.trove.iterator"
+    "algorithms.compGeometry" -> "gnu.trove.list"
+    "algorithms.compGeometry" -> "gnu.trove.map"
+    "algorithms.compGeometry" -> "gnu.trove.map.hash"
+    "algorithms.compGeometry" -> "gnu.trove.set"
+    "algorithms.compGeometry" -> "gnu.trove.set.hash"
+    "algorithms.compGeometry" -> "no.uib.cipr.matrix"
     "algorithms.compGeometry.convexHull" [
-        label="algorithms.compGeometry.convexHull | Total Classes: 4"
+        label="algorithms.compGeometry.convexHull | Total Classes: 5"
 	shape="record"
-	color=".99 0.33 .9"
+	color=".99 0.43 .9"
 	style=filled
     ];
     "algorithms.compGeometry.convexHull" -> "algorithms"
     "algorithms.compGeometry.convexHull" -> "algorithms.compGeometry"
     "algorithms.compGeometry.convexHull" -> "algorithms.imageProcessing.util"
     "algorithms.compGeometry.convexHull" -> "algorithms.util"
+    "algorithms.compGeometry.voronoi" [
+        label="algorithms.compGeometry.voronoi | Total Classes: 7"
+	shape="record"
+	color=".99 0.67 .9"
+	style=filled
+    ];
+    "algorithms.compGeometry.voronoi" -> "algorithms.util"
+    "algorithms.connected" [
+        label="algorithms.connected | Total Classes: 2"
+	shape="record"
+	color=".99 0.33 .9"
+	style=filled
+    ];
+    "algorithms.connected" -> "algorithms.disjointSets"
+    "algorithms.connected" -> "algorithms.imageProcessing"
+    "algorithms.connected" -> "algorithms.misc"
+    "algorithms.connected" -> "gnu.trove.iterator"
+    "algorithms.connected" -> "gnu.trove.map"
+    "algorithms.connected" -> "gnu.trove.map.hash"
+    "algorithms.connected" -> "gnu.trove.set"
+    "algorithms.connected" -> "gnu.trove.set.hash"
     "algorithms.disjointSets" [
         label="algorithms.disjointSets | Total Classes: 5"
 	shape="record"
@@ -56,92 +111,302 @@ digraph g {
 	style=filled
     ];
     "algorithms.graphs" [
-        label="algorithms.graphs | Total Classes: 4"
+        label="algorithms.graphs | Total Classes: 9"
 	shape="record"
-	color=".99 0.33 .9"
+	color=".99 0.2 .9"
 	style=filled
     ];
     "algorithms.graphs" -> "algorithms"
+    "algorithms.graphs" -> "algorithms.imageProcessing"
+    "algorithms.graphs" -> "algorithms.imageProcessing.segmentation"
+    "algorithms.graphs" -> "algorithms.misc"
     "algorithms.graphs" -> "algorithms.util"
+    "algorithms.graphs" -> "gnu.trove.map"
+    "algorithms.graphs" -> "no.uib.cipr.matrix"
+    "algorithms.graphs" -> "no.uib.cipr.matrix.sparse"
     "algorithms.imageProcessing" [
-        label="algorithms.imageProcessing | Total Classes: 160"
+        label="algorithms.imageProcessing | Total Classes: 83"
 	shape="record"
-	color=".99 0.19 .9"
+	color=".99 0.37 .9"
 	style=filled
     ];
     "algorithms.imageProcessing" -> "algorithms"
+    "algorithms.imageProcessing" -> "algorithms.bipartite"
     "algorithms.imageProcessing" -> "algorithms.compGeometry"
-    "algorithms.imageProcessing" -> "algorithms.compGeometry.clustering"
     "algorithms.imageProcessing" -> "algorithms.compGeometry.convexHull"
     "algorithms.imageProcessing" -> "algorithms.disjointSets"
     "algorithms.imageProcessing" -> "algorithms.graphs"
-    "algorithms.imageProcessing" -> "algorithms.imageProcessing.optimization"
+    "algorithms.imageProcessing" -> "algorithms.imageProcessing.features"
+    "algorithms.imageProcessing" -> "algorithms.imageProcessing.features.mser"
+    "algorithms.imageProcessing" -> "algorithms.imageProcessing.features.orb"
+    "algorithms.imageProcessing" -> "algorithms.imageProcessing.matching"
+    "algorithms.imageProcessing" -> "algorithms.imageProcessing.scaleSpace"
+    "algorithms.imageProcessing" -> "algorithms.imageProcessing.transform"
     "algorithms.imageProcessing" -> "algorithms.imageProcessing.util"
     "algorithms.imageProcessing" -> "algorithms.misc"
-    "algorithms.imageProcessing" -> "algorithms.shortestPath"
+    "algorithms.imageProcessing" -> "algorithms.search"
     "algorithms.imageProcessing" -> "algorithms.util"
-    "algorithms.imageProcessing" -> "com.climbwithyourfeet.clustering"
-    "algorithms.imageProcessing" -> "com.climbwithyourfeet.clustering.util"
-    "algorithms.imageProcessing" -> "org.ejml.simple"
-    "algorithms.imageProcessing" -> "thirdparty"
-    "algorithms.imageProcessing.optimization" [
-        label="algorithms.imageProcessing.optimization | Total Classes: 19"
+    "algorithms.imageProcessing" -> "gnu.trove"
+    "algorithms.imageProcessing" -> "gnu.trove.iterator"
+    "algorithms.imageProcessing" -> "gnu.trove.list"
+    "algorithms.imageProcessing" -> "gnu.trove.list.array"
+    "algorithms.imageProcessing" -> "gnu.trove.map"
+    "algorithms.imageProcessing" -> "gnu.trove.map.hash"
+    "algorithms.imageProcessing" -> "gnu.trove.set"
+    "algorithms.imageProcessing" -> "gnu.trove.set.hash"
+    "algorithms.imageProcessing" -> "no.uib.cipr.matrix"
+    "algorithms.imageProcessing" -> "thirdparty.ca.uol.aig.fftpack"
+    "algorithms.imageProcessing.features" [
+        label="algorithms.imageProcessing.features | Total Classes: 33"
 	shape="record"
-	color=".99 0.28 .9"
+	color=".99 0.16 .9"
 	style=filled
     ];
-    "algorithms.imageProcessing.optimization" -> "algorithms.imageProcessing"
-    "algorithms.imageProcessing.optimization" -> "algorithms.util"
-    "algorithms.imageProcessing.util" [
-        label="algorithms.imageProcessing.util | Total Classes: 3"
+    "algorithms.imageProcessing.features" -> "algorithms"
+    "algorithms.imageProcessing.features" -> "algorithms.compGeometry"
+    "algorithms.imageProcessing.features" -> "algorithms.imageProcessing"
+    "algorithms.imageProcessing.features" -> "algorithms.imageProcessing.features.mser"
+    "algorithms.imageProcessing.features" -> "algorithms.imageProcessing.matching"
+    "algorithms.imageProcessing.features" -> "algorithms.imageProcessing.scaleSpace"
+    "algorithms.imageProcessing.features" -> "algorithms.imageProcessing.transform"
+    "algorithms.imageProcessing.features" -> "algorithms.imageProcessing.util"
+    "algorithms.imageProcessing.features" -> "algorithms.misc"
+    "algorithms.imageProcessing.features" -> "algorithms.util"
+    "algorithms.imageProcessing.features" -> "com.climbwithyourfeet.clustering"
+    "algorithms.imageProcessing.features" -> "com.climbwithyourfeet.clustering.util"
+    "algorithms.imageProcessing.features" -> "gnu.trove"
+    "algorithms.imageProcessing.features" -> "gnu.trove.iterator"
+    "algorithms.imageProcessing.features" -> "gnu.trove.list"
+    "algorithms.imageProcessing.features" -> "gnu.trove.list.array"
+    "algorithms.imageProcessing.features" -> "gnu.trove.map"
+    "algorithms.imageProcessing.features" -> "gnu.trove.map.hash"
+    "algorithms.imageProcessing.features" -> "gnu.trove.set"
+    "algorithms.imageProcessing.features" -> "gnu.trove.set.hash"
+    "algorithms.imageProcessing.features" -> "no.uib.cipr.matrix"
+    "algorithms.imageProcessing.features.mser" [
+        label="algorithms.imageProcessing.features.mser | Total Classes: 12"
 	shape="record"
-	color=".99 0.5 .9"
+	color=".99 0.17 .9"
+	style=filled
+    ];
+    "algorithms.imageProcessing.features.mser" -> "algorithms"
+    "algorithms.imageProcessing.features.mser" -> "algorithms.bipartite"
+    "algorithms.imageProcessing.features.mser" -> "algorithms.compGeometry"
+    "algorithms.imageProcessing.features.mser" -> "algorithms.connected"
+    "algorithms.imageProcessing.features.mser" -> "algorithms.imageProcessing"
+    "algorithms.imageProcessing.features.mser" -> "algorithms.imageProcessing.features"
+    "algorithms.imageProcessing.features.mser" -> "algorithms.imageProcessing.transform"
+    "algorithms.imageProcessing.features.mser" -> "algorithms.imageProcessing.util"
+    "algorithms.imageProcessing.features.mser" -> "algorithms.misc"
+    "algorithms.imageProcessing.features.mser" -> "algorithms.util"
+    "algorithms.imageProcessing.features.mser" -> "com.climbwithyourfeet.clustering"
+    "algorithms.imageProcessing.features.mser" -> "gnu.trove"
+    "algorithms.imageProcessing.features.mser" -> "gnu.trove.iterator"
+    "algorithms.imageProcessing.features.mser" -> "gnu.trove.list"
+    "algorithms.imageProcessing.features.mser" -> "gnu.trove.list.array"
+    "algorithms.imageProcessing.features.mser" -> "gnu.trove.map"
+    "algorithms.imageProcessing.features.mser" -> "gnu.trove.map.hash"
+    "algorithms.imageProcessing.features.mser" -> "gnu.trove.set"
+    "algorithms.imageProcessing.features.mser" -> "gnu.trove.set.hash"
+    "algorithms.imageProcessing.features.mser" -> "thirdparty.edu.princeton.cs.algs4"
+    "algorithms.imageProcessing.features.orb" [
+        label="algorithms.imageProcessing.features.orb | Total Classes: 7"
+	shape="record"
+	color=".99 0.15 .9"
+	style=filled
+    ];
+    "algorithms.imageProcessing.features.orb" -> "algorithms"
+    "algorithms.imageProcessing.features.orb" -> "algorithms.imageProcessing"
+    "algorithms.imageProcessing.features.orb" -> "algorithms.imageProcessing.util"
+    "algorithms.imageProcessing.features.orb" -> "algorithms.misc"
+    "algorithms.imageProcessing.features.orb" -> "algorithms.util"
+    "algorithms.imageProcessing.features.orb" -> "gnu.trove.list"
+    "algorithms.imageProcessing.features.orb" -> "gnu.trove.list.array"
+    "algorithms.imageProcessing.features.orb" -> "gnu.trove.map"
+    "algorithms.imageProcessing.features.orb" -> "gnu.trove.map.hash"
+    "algorithms.imageProcessing.features.orb" -> "gnu.trove.set"
+    "algorithms.imageProcessing.features.orb" -> "gnu.trove.set.hash"
+    "algorithms.imageProcessing.matching" [
+        label="algorithms.imageProcessing.matching | Total Classes: 19"
+	shape="record"
+	color=".99 0.16 .9"
+	style=filled
+    ];
+    "algorithms.imageProcessing.matching" -> "algorithms"
+    "algorithms.imageProcessing.matching" -> "algorithms.compGeometry"
+    "algorithms.imageProcessing.matching" -> "algorithms.connected"
+    "algorithms.imageProcessing.matching" -> "algorithms.imageProcessing"
+    "algorithms.imageProcessing.matching" -> "algorithms.imageProcessing.features"
+    "algorithms.imageProcessing.matching" -> "algorithms.imageProcessing.features.mser"
+    "algorithms.imageProcessing.matching" -> "algorithms.imageProcessing.features.orb"
+    "algorithms.imageProcessing.matching" -> "algorithms.imageProcessing.transform"
+    "algorithms.imageProcessing.matching" -> "algorithms.imageProcessing.util"
+    "algorithms.imageProcessing.matching" -> "algorithms.misc"
+    "algorithms.imageProcessing.matching" -> "algorithms.search"
+    "algorithms.imageProcessing.matching" -> "algorithms.util"
+    "algorithms.imageProcessing.matching" -> "com.climbwithyourfeet.clustering"
+    "algorithms.imageProcessing.matching" -> "gnu.trove.iterator"
+    "algorithms.imageProcessing.matching" -> "gnu.trove.list"
+    "algorithms.imageProcessing.matching" -> "gnu.trove.list.array"
+    "algorithms.imageProcessing.matching" -> "gnu.trove.map"
+    "algorithms.imageProcessing.matching" -> "gnu.trove.map.hash"
+    "algorithms.imageProcessing.matching" -> "gnu.trove.set"
+    "algorithms.imageProcessing.matching" -> "gnu.trove.set.hash"
+    "algorithms.imageProcessing.matching" -> "thirdparty.edu.princeton.cs.algs4"
+    "algorithms.imageProcessing.scaleSpace" [
+        label="algorithms.imageProcessing.scaleSpace | Total Classes: 25"
+	shape="record"
+	color=".99 0.16 .9"
+	style=filled
+    ];
+    "algorithms.imageProcessing.scaleSpace" -> "algorithms"
+    "algorithms.imageProcessing.scaleSpace" -> "algorithms.compGeometry"
+    "algorithms.imageProcessing.scaleSpace" -> "algorithms.connected"
+    "algorithms.imageProcessing.scaleSpace" -> "algorithms.imageProcessing"
+    "algorithms.imageProcessing.scaleSpace" -> "algorithms.imageProcessing.features"
+    "algorithms.imageProcessing.scaleSpace" -> "algorithms.imageProcessing.features.mser"
+    "algorithms.imageProcessing.scaleSpace" -> "algorithms.imageProcessing.transform"
+    "algorithms.imageProcessing.scaleSpace" -> "algorithms.imageProcessing.util"
+    "algorithms.imageProcessing.scaleSpace" -> "algorithms.misc"
+    "algorithms.imageProcessing.scaleSpace" -> "algorithms.util"
+    "algorithms.imageProcessing.scaleSpace" -> "gnu.trove.iterator"
+    "algorithms.imageProcessing.scaleSpace" -> "gnu.trove.list"
+    "algorithms.imageProcessing.scaleSpace" -> "gnu.trove.list.array"
+    "algorithms.imageProcessing.scaleSpace" -> "gnu.trove.set"
+    "algorithms.imageProcessing.scaleSpace" -> "gnu.trove.set.hash"
+    "algorithms.imageProcessing.scaleSpace" -> "no.uib.cipr.matrix"
+    "algorithms.imageProcessing.segmentation" [
+        label="algorithms.imageProcessing.segmentation | Total Classes: 8"
+	shape="record"
+	color=".99 0.07 .9"
+	style=filled
+    ];
+    "algorithms.imageProcessing.segmentation" -> "algorithms.bipartite"
+    "algorithms.imageProcessing.segmentation" -> "algorithms.connected"
+    "algorithms.imageProcessing.segmentation" -> "algorithms.graphs"
+    "algorithms.imageProcessing.segmentation" -> "algorithms.imageProcessing"
+    "algorithms.imageProcessing.segmentation" -> "algorithms.imageProcessing.util"
+    "algorithms.imageProcessing.segmentation" -> "algorithms.misc"
+    "algorithms.imageProcessing.segmentation" -> "algorithms.util"
+    "algorithms.imageProcessing.segmentation" -> "gnu.trove.iterator"
+    "algorithms.imageProcessing.segmentation" -> "gnu.trove.map"
+    "algorithms.imageProcessing.segmentation" -> "gnu.trove.map.hash"
+    "algorithms.imageProcessing.segmentation" -> "gnu.trove.set"
+    "algorithms.imageProcessing.segmentation" -> "gnu.trove.set.hash"
+    "algorithms.imageProcessing.segmentation" -> "no.uib.cipr.matrix"
+    "algorithms.imageProcessing.segmentation" -> "no.uib.cipr.matrix.sparse"
+    "algorithms.imageProcessing.transform" [
+        label="algorithms.imageProcessing.transform | Total Classes: 11"
+	shape="record"
+	color=".99 0.1 .9"
+	style=filled
+    ];
+    "algorithms.imageProcessing.transform" -> "algorithms.imageProcessing"
+    "algorithms.imageProcessing.transform" -> "algorithms.imageProcessing.features"
+    "algorithms.imageProcessing.transform" -> "algorithms.imageProcessing.matching"
+    "algorithms.imageProcessing.transform" -> "algorithms.imageProcessing.scaleSpace"
+    "algorithms.imageProcessing.transform" -> "algorithms.imageProcessing.util"
+    "algorithms.imageProcessing.transform" -> "algorithms.misc"
+    "algorithms.imageProcessing.transform" -> "algorithms.search"
+    "algorithms.imageProcessing.transform" -> "algorithms.util"
+    "algorithms.imageProcessing.transform" -> "gnu.trove.list"
+    "algorithms.imageProcessing.transform" -> "gnu.trove.set"
+    "algorithms.imageProcessing.transform" -> "gnu.trove.set.hash"
+    "algorithms.imageProcessing.transform" -> "no.uib.cipr.matrix"
+    "algorithms.imageProcessing.transform" -> "thirdparty"
+    "algorithms.imageProcessing.util" [
+        label="algorithms.imageProcessing.util | Total Classes: 8"
+	shape="record"
+	color=".99 0.48 .9"
 	style=filled
     ];
     "algorithms.imageProcessing.util" -> "algorithms"
+    "algorithms.imageProcessing.util" -> "algorithms.imageProcessing"
+    "algorithms.imageProcessing.util" -> "algorithms.imageProcessing.features"
     "algorithms.imageProcessing.util" -> "algorithms.misc"
-    "algorithms.imageProcessing.util" -> "org.ejml.simple"
+    "algorithms.imageProcessing.util" -> "algorithms.util"
+    "algorithms.imageProcessing.util" -> "com.climbwithyourfeet.clustering.util"
+    "algorithms.imageProcessing.util" -> "gnu.trove.iterator"
+    "algorithms.imageProcessing.util" -> "gnu.trove.list"
+    "algorithms.imageProcessing.util" -> "gnu.trove.list.array"
+    "algorithms.imageProcessing.util" -> "gnu.trove.set"
+    "algorithms.imageProcessing.util" -> "gnu.trove.set.hash"
+    "algorithms.imageProcessing.util" -> "no.uib.cipr.matrix"
+    "algorithms.imageProcessing.util" -> "no.uib.cipr.matrix.sparse"
     "algorithms.misc" [
-        label="algorithms.misc | Total Classes: 9"
+        label="algorithms.misc | Total Classes: 13"
 	shape="record"
-	color=".99 0.55 .9"
+	color=".99 0.48 .9"
 	style=filled
     ];
     "algorithms.misc" -> "algorithms"
+    "algorithms.misc" -> "algorithms.compGeometry"
     "algorithms.misc" -> "algorithms.compGeometry.convexHull"
     "algorithms.misc" -> "algorithms.imageProcessing"
+    "algorithms.misc" -> "algorithms.imageProcessing.features"
+    "algorithms.misc" -> "algorithms.imageProcessing.matching"
+    "algorithms.misc" -> "algorithms.imageProcessing.scaleSpace"
     "algorithms.misc" -> "algorithms.imageProcessing.util"
     "algorithms.misc" -> "algorithms.util"
+    "algorithms.misc" -> "gnu.trove.iterator"
+    "algorithms.misc" -> "gnu.trove.list"
+    "algorithms.misc" -> "gnu.trove.list.array"
+    "algorithms.misc" -> "gnu.trove.map"
+    "algorithms.misc" -> "gnu.trove.map.hash"
+    "algorithms.misc" -> "gnu.trove.set"
+    "algorithms.misc" -> "no.uib.cipr.matrix"
+    "algorithms.mst" [
+        label="algorithms.mst | Total Classes: 3"
+	shape="record"
+	color=".99 0.13 .9"
+	style=filled
+    ];
+    "algorithms.mst" -> "algorithms"
+    "algorithms.mst" -> "algorithms.compGeometry"
+    "algorithms.mst" -> "algorithms.imageProcessing"
+    "algorithms.mst" -> "algorithms.search"
+    "algorithms.mst" -> "algorithms.util"
+    "algorithms.mst" -> "gnu.trove.iterator"
+    "algorithms.mst" -> "gnu.trove.list"
+    "algorithms.mst" -> "gnu.trove.list.array"
+    "algorithms.mst" -> "gnu.trove.map"
+    "algorithms.mst" -> "gnu.trove.map.hash"
+    "algorithms.mst" -> "gnu.trove.set"
+    "algorithms.mst" -> "gnu.trove.set.hash"
+    "algorithms.mst" -> "thirdparty.edu.princeton.cs.algs4"
+    "algorithms.search" [
+        label="algorithms.search | Total Classes: 14"
+	shape="record"
+	color=".99 0.38 .9"
+	style=filled
+    ];
+    "algorithms.search" -> "algorithms"
+    "algorithms.search" -> "algorithms.compGeometry.voronoi"
+    "algorithms.search" -> "algorithms.imageProcessing"
+    "algorithms.search" -> "algorithms.util"
+    "algorithms.search" -> "gnu.trove.iterator"
+    "algorithms.search" -> "gnu.trove.map"
+    "algorithms.search" -> "gnu.trove.map.hash"
+    "algorithms.search" -> "gnu.trove.set"
+    "algorithms.search" -> "gnu.trove.set.hash"
+    "algorithms.search" -> "thirdparty.ods"
     "algorithms.shortestPath" [
         label="algorithms.shortestPath | Total Classes: 2"
 	shape="record"
-	color=".99 0.33 .9"
+	color=".99 0 .9"
 	style=filled
     ];
     "algorithms.shortestPath" -> "algorithms.imageProcessing"
     "algorithms.shortestPath" -> "algorithms.util"
     "algorithms.util" [
-        label="algorithms.util | Total Classes: 32"
+        label="algorithms.util | Total Classes: 34"
 	shape="record"
-	color=".99 0.33 .9"
+	color=".99 0.87 .9"
 	style=filled
     ];
     "algorithms.util" -> "algorithms"
     "algorithms.util" -> "algorithms.imageProcessing"
     "algorithms.util" -> "algorithms.misc"
-    "algorithms.util" -> "org.ejml.data"
-    "algorithms.util" -> "org.ejml.factory"
-    "algorithms.util" -> "org.ejml.interfaces.decomposition"
-    "algorithms.util" -> "org.ejml.simple"
-    "algorithms.util" -> "org.jfree.chart"
-    "algorithms.util" -> "org.jfree.chart.annotations"
-    "algorithms.util" -> "org.jfree.chart.axis"
-    "algorithms.util" -> "org.jfree.chart.labels"
-    "algorithms.util" -> "org.jfree.chart.plot"
-    "algorithms.util" -> "org.jfree.chart.renderer.xy"
-    "algorithms.util" -> "org.jfree.data"
-    "algorithms.util" -> "org.jfree.data.xy"
-    "algorithms.util" -> "org.jfree.ui"
     "com.climbwithyourfeet.clustering" [
         label="com.climbwithyourfeet.clustering | Total Classes: "
 	shape="record"
@@ -154,86 +419,62 @@ digraph g {
 	color=".99 0.0 .9"
 	style=filled
     ];
-    "org.ejml.data" [
-        label="org.ejml.data | Total Classes: "
+    "gnu.trove" [
+        label="gnu.trove | Total Classes: "
 	shape="record"
 	color=".99 0.0 .9"
 	style=filled
     ];
-    "org.ejml.factory" [
-        label="org.ejml.factory | Total Classes: "
+    "gnu.trove.iterator" [
+        label="gnu.trove.iterator | Total Classes: "
 	shape="record"
 	color=".99 0.0 .9"
 	style=filled
     ];
-    "org.ejml.interfaces.decomposition" [
-        label="org.ejml.interfaces.decomposition | Total Classes: "
+    "gnu.trove.list" [
+        label="gnu.trove.list | Total Classes: "
 	shape="record"
 	color=".99 0.0 .9"
 	style=filled
     ];
-    "org.ejml.ops" [
-        label="org.ejml.ops | Total Classes: "
+    "gnu.trove.list.array" [
+        label="gnu.trove.list.array | Total Classes: "
 	shape="record"
 	color=".99 0.0 .9"
 	style=filled
     ];
-    "org.ejml.simple" [
-        label="org.ejml.simple | Total Classes: "
+    "gnu.trove.map" [
+        label="gnu.trove.map | Total Classes: "
 	shape="record"
 	color=".99 0.0 .9"
 	style=filled
     ];
-    "org.jfree.chart" [
-        label="org.jfree.chart | Total Classes: "
+    "gnu.trove.map.hash" [
+        label="gnu.trove.map.hash | Total Classes: "
 	shape="record"
 	color=".99 0.0 .9"
 	style=filled
     ];
-    "org.jfree.chart.annotations" [
-        label="org.jfree.chart.annotations | Total Classes: "
+    "gnu.trove.set" [
+        label="gnu.trove.set | Total Classes: "
 	shape="record"
 	color=".99 0.0 .9"
 	style=filled
     ];
-    "org.jfree.chart.axis" [
-        label="org.jfree.chart.axis | Total Classes: "
+    "gnu.trove.set.hash" [
+        label="gnu.trove.set.hash | Total Classes: "
 	shape="record"
 	color=".99 0.0 .9"
 	style=filled
     ];
-    "org.jfree.chart.labels" [
-        label="org.jfree.chart.labels | Total Classes: "
+    "no.uib.cipr.matrix" [
+        label="no.uib.cipr.matrix | Total Classes: "
 	shape="record"
 	color=".99 0.0 .9"
 	style=filled
     ];
-    "org.jfree.chart.plot" [
-        label="org.jfree.chart.plot | Total Classes: "
-	shape="record"
-	color=".99 0.0 .9"
-	style=filled
-    ];
-    "org.jfree.chart.renderer.xy" [
-        label="org.jfree.chart.renderer.xy | Total Classes: "
-	shape="record"
-	color=".99 0.0 .9"
-	style=filled
-    ];
-    "org.jfree.data" [
-        label="org.jfree.data | Total Classes: "
-	shape="record"
-	color=".99 0.0 .9"
-	style=filled
-    ];
-    "org.jfree.data.xy" [
-        label="org.jfree.data.xy | Total Classes: "
-	shape="record"
-	color=".99 0.0 .9"
-	style=filled
-    ];
-    "org.jfree.ui" [
-        label="org.jfree.ui | Total Classes: "
+    "no.uib.cipr.matrix.sparse" [
+        label="no.uib.cipr.matrix.sparse | Total Classes: "
 	shape="record"
 	color=".99 0.0 .9"
 	style=filled
@@ -241,8 +482,31 @@ digraph g {
     "thirdparty" [
         label="thirdparty | Total Classes: 1"
 	shape="record"
+	color=".99 0.5 .9"
+	style=filled
+    ];
+    "thirdparty" -> "algorithms.util"
+    "thirdparty.ca.uol.aig.fftpack" [
+        label="thirdparty.ca.uol.aig.fftpack | Total Classes: 9"
+	shape="record"
 	color=".99 1 .9"
 	style=filled
     ];
+    "thirdparty.edu.princeton.cs.algs4" [
+        label="thirdparty.edu.princeton.cs.algs4 | Total Classes: 27"
+	shape="record"
+	color=".99 1 .9"
+	style=filled
+    ];
+    "thirdparty.ods" [
+        label="thirdparty.ods | Total Classes: 6"
+	shape="record"
+	color=".99 0.1 .9"
+	style=filled
+    ];
+    "thirdparty.ods" -> "gnu.trove.iterator"
+    "thirdparty.ods" -> "gnu.trove.map.hash"
+    "thirdparty.ods" -> "gnu.trove.set"
+    "thirdparty.ods" -> "gnu.trove.set.hash"
     
 }
