@@ -3,37 +3,28 @@ package algorithms.imageProcessing.scaleSpace;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.util.ResourceFinder;
-import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import static org.junit.Assert.*;
+import junit.framework.TestCase;
 
 /**
  *
  * @author nichole
  */
-public class NextContourTest {
+public class NextContourTest extends TestCase {
     
     public NextContourTest() {
     }
     
-    @Before
     public void setUp() {
     }
     
-    @After
     public void tearDown() {
     }
 
-    @Test
     public void testInternalDataStructures0() throws Exception {
         
         List<CurvatureScaleSpaceContour> contours = 
@@ -127,7 +118,7 @@ public class NextContourTest {
         ImageExt img = ImageIOHelper.readImageExt(filePath);
 
         CurvatureScaleSpaceImageMaker instance
-            = new CurvatureScaleSpaceImageMaker(img);
+            = new CurvatureScaleSpaceImageMaker(img, true);
 
         List<PairIntArray> curves = instance.getClosedCurves();
 

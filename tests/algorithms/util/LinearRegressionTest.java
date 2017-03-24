@@ -2,30 +2,35 @@ package algorithms.util;
 
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.misc.MiscMath;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import static org.junit.Assert.*;
+import junit.framework.TestCase;
 
 /**
  *
  * @author nichole
  */
-public class LinearRegressionTest {
+public class LinearRegressionTest extends TestCase {
     
     public LinearRegressionTest() {
+        super(LinearRegressionTest.class.getName());
     }
     
-    @Before
-    public void setUp() {
+    long seed;
+    SecureRandom sr = null;
+    
+    public void setUp() throws NoSuchAlgorithmException {
+        
+        seed = System.currentTimeMillis();
+        System.out.println("SEED=" + seed);
+        
+        sr = SecureRandom.getInstance("SHA1PRNG");
+        sr.setSeed(seed);
     }
     
-    @After
     public void tearDown() {
     }
 
-    @Test
     public void test0() throws Exception {
        
         // 2 parallel diagonal lines
@@ -64,14 +69,10 @@ public class LinearRegressionTest {
         
     }
     
-    @Test
     public void test00() throws Exception {
        
         // small random deviations from a straight line
-        
-        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-        sr.setSeed(System.currentTimeMillis());
-        
+                 
         int d = 10;
         
         PairIntArray dxdy = new PairIntArray();
@@ -118,7 +119,6 @@ public class LinearRegressionTest {
         
     }
     
-    @Test
     public void test1() {
        
         PairIntArray dxdy = new PairIntArray();
@@ -160,7 +160,6 @@ public class LinearRegressionTest {
         int z = 1;
     }
     
-    @Test
     public void test0_float() throws Exception {
        
         // 2 parallel diagonal lines
@@ -199,13 +198,9 @@ public class LinearRegressionTest {
         
     }
     
-    @Test
     public void test00_float() throws Exception {
        
         // small random deviations from a straight line
-        
-        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-        sr.setSeed(System.currentTimeMillis());
         
         int d = 10;
         
@@ -247,13 +242,13 @@ public class LinearRegressionTest {
         double expectedYIntercept = yIntercept1;
         double expectedSlope = slope;
         
-        assertTrue(Math.abs(yInterceptAndSlope[0] - expectedYIntercept) < Math.sqrt(d));
+        assertTrue(Math.abs(yInterceptAndSlope[0] 
+            - expectedYIntercept) < Math.sqrt(d));
         
         assertTrue(Math.abs(yInterceptAndSlope[1] - expectedSlope) < 0.2);
         
     }
     
-    @Test
     public void test1_float() {
        
         PairFloatArray dxdy = new PairFloatArray();

@@ -195,10 +195,10 @@ public class EpipolarTransformerTest extends TestCase {
         double stdev = fit.getStDevFromMean();
         List<Double> errors = fit.getErrors();
         
-        assertTrue(mean < 0.001);
-        assertTrue(stdev < 0.001);
+        assertTrue(mean < 0.01);
+        assertTrue(stdev < 0.01);
         for (Double error : errors) {
-            assertTrue(error < 0.001);
+            assertTrue(error < 0.01);
         }
         
         EpipolarTransformationFit fit2 = null;
@@ -219,10 +219,10 @@ public class EpipolarTransformerTest extends TestCase {
         double stdev2 = fit2.getStDevFromMean();
         List<Double> errors2 = fit2.getErrors();
         
-        assertTrue(mean2 < 0.001);
-        assertTrue(stdev2 < 0.001);
+        assertTrue(mean2 < 0.01);
+        assertTrue(stdev2 < 0.01);
         for (Double error : errors2) {
-            assertTrue(error < 0.001);
+            assertTrue(error < 0.01);
         }
     }
     
