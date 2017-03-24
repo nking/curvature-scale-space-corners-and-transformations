@@ -19,17 +19,52 @@
     </section>
 
     <section class="main-content">
-      <p>The project implements a corner detector, a contour matcher and image transformation solver using properties of curvature scale space.</p>
+      <p>A few keypoint detectors, feature matchers, and transformation solvers
+      are present with other computer vision methods.</p>
 
-<p>The project is still in implementation phase! Nearly ready for testing, but not there yet.</p>
+<p>The project is still in progress, and what is here has been mildly tested.</p>
+
+<p>Highlights of results so far are:</p>
+    <ul>
+        <li> Finding an object in a segmented image by shape alone (ShapeFinder2.java)
+             has the true solution in the top matches, but not necessarily the top match,
+             and is more computationally expensive method than others listed.
+        </li>
+        <li>
+             Stereo image matching can be done quickly with ORB keypoints and epipolar transformations,
+             and RANSAC outlier remover.
+        </li>
+        <li>
+             An improved Canny Edges Filter can be made for color images by combining the greyscale
+             Canny edges with the same made with the "C" image of the LCH colorspace.
+        </li>
+        <li>
+            MSER (Maximally Stable Extremal Regions) are a very fast algorithm that can be used
+            where level sets are needed.  Using MSER on greyscale and on the "H" image of
+            LCH color space can find potential objects.  
+            I combined the Canny color edges with the boundaries of MSER regions to create
+            edges that are complete contours (== segmentation).
+            The current version has some color filter rules that are potentially fragile,
+            but the results look promising and can be sped up.
+        </li>
+        <li>
+            Finding an object in another image in which it has changed location, lighting,
+            and pose is not easy, but can be done with MSER and HOGs.
+            The current version needs improvements.
+        </li>
+        <li>
+            NOTE the MSER is sensitive to resolution and the classes have been adapted to
+            expected input being images of sizes near 256 X 256.
+        </li>
+    </ul>
 
 <p>Here are some of the notes while implementing:</p>
 
-<p><a href="https://github.com/nking/curvature-scale-space-corners-and-transformations/raw/master/doc/contours.pdf">contours</a></p>
+<p><a href="https://github.com/nking/curvature-scale-space-corners-and-transformations/raw/master/doc/colorSegmentation3.pdf">segmentation and edges</a></p>
+
+<p><a href="https://github.com/nking/curvature-scale-space-corners-and-transformations/raw/master/doc/contours.pdf">misc scale space contour notes</a></p>
 
 <p><a href="https://github.com/nking/curvature-scale-space-corners-and-transformations/raw/master/doc/projection.pdf">projection</a></p>
-
-<p><a href="https://github.com/nking/curvature-scale-space-corners-and-transformations/raw/master/doc/skyline_extraction.pdf">skyline extraction</a></p>
 
       <footer class="site-footer">
         <span class="site-footer-owner"><a href="https://github.com/nking/curvature-scale-space-corners-and-transformations">Curvature-scale-space-corners-and-transformations</a> is maintained by <a href="https://github.com/nking">nking</a>.</span>
