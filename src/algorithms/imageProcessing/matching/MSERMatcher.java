@@ -1058,7 +1058,7 @@ public class MSERMatcher {
                 ));
                 //hogCost, fracOfWhole, hcptCost, hgsCost}
                 
-                
+                /*     
                 Image im0 = gsI0.copyToColorGreyscale();
                 Image im1 = gsI1.copyToColorGreyscale();
                 int[] clr = new int[]{255, 0, 0};
@@ -1067,7 +1067,7 @@ public class MSERMatcher {
                 //obj0.cr1.draw(im1, 1, 0, 0, 0);
                 MiscDebug.writeImage(im0, debugLabel + "_" + lbl);
                 MiscDebug.writeImage(im1, debugLabel + "_" + lbl);
-               
+                */
             }
         }
         if (debug) {
@@ -1124,7 +1124,7 @@ public class MSERMatcher {
                     str1, obj0.cr0.offsetsToOrigCoords.size()
                 ));
                 //hogCost, fracOfWhole, hcptCost, hgsCost}
-                
+                /*
                 Image im0 = gsI0.copyToColorGreyscale();
                 Image im1 = gsI1.copyToColorGreyscale();
                 int[] clr = new int[]{255,0,0};
@@ -1133,7 +1133,7 @@ public class MSERMatcher {
                 //obj0.cr1.draw(im1, 1, 0, 0, 0);
                 MiscDebug.writeImage(im0, debugLabel + "_" + lbl);
                 MiscDebug.writeImage(im1, debugLabel + "_" + lbl);
-               
+                */
             }
         }
         if (debug) {

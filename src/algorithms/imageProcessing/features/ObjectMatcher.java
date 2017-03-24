@@ -320,7 +320,7 @@ public class ObjectMatcher {
             }
         }
         
-        
+        /* 
         if (debug){
             long ts = MiscDebug.getCurrentTimeFormatted();
             int[] xyCen = new int[2];
@@ -355,7 +355,8 @@ public class ObjectMatcher {
                 MiscDebug.writeImage(imCp, debugLabel + "_regions_pt_"+ type + "_" + ts);
             }
         }
-        
+       */
+ 
         List<Region> combined = new ArrayList<Region>();
         
         for (int i = 0; i < 2; ++i) {
@@ -1348,6 +1349,7 @@ public class ObjectMatcher {
             MiscDebug.writeImage(im1Cp, "_" + settings.getDebugLabel() 
                 + "_regions_1_filtered_");
             
+            /*
             iter = regionPoints1.iterator();
             for (int i = 0; i < regionPoints1.size(); ++i) {
                 iter.advance();
@@ -1368,6 +1370,7 @@ public class ObjectMatcher {
                 MiscDebug.writeImage(im1Cp, "_" + settings.getDebugLabel() 
                     + "_regions_1_acc_" + i + "_");
             }
+            */
         }
         
         

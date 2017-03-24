@@ -163,7 +163,7 @@
     </target>
 
     <target name="coverage">
-        <record name="${logfile}" append="yes" loglevel="debug"/>
+        <record name="${logfile}" append="yes" loglevel="info"/>
         <echo message="coverage"/>
         <jacoco:coverage enabled="true" classdumpdir="${classes.dir}/instr-classes"
             destfile="${classes.dir}/merged.exec">
