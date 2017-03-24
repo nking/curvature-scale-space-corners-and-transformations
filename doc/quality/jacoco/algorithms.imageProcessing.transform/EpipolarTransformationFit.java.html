@@ -13,71 +13,38 @@ public class EpipolarTransformationFit extends AbstractTransformationFit {
     private final ErrorType errorType;
     
     private DenseMatrix fundamentalMatrix;
-
-<span class="fc" id="L17">    private float effectiveTolerance = -1;</span>
-<span class="fc" id="L18">    private float effectiveToleranceStdv = -1;</span>
     
     public EpipolarTransformationFit(DenseMatrix theFundamentalMatrix,
         List&lt;Integer&gt; theInlierIndexes, ErrorType theErrorType,
         List&lt;Double&gt; theErrors, double theTolerance) {
         
-<span class="fc" id="L24">        super(theInlierIndexes, theErrors, theTolerance);</span>
+<span class="fc" id="L21">        super(theInlierIndexes, theErrors, theTolerance);</span>
         
-<span class="fc" id="L26">        fundamentalMatrix = theFundamentalMatrix.copy();</span>
-<span class="fc" id="L27">        errorType = theErrorType;</span>
-<span class="fc" id="L28">    }</span>
-    
-    public float getEffectiveTolerance() {
-<span class="nc" id="L31">        return effectiveTolerance;</span>
-    }
-    
-    public float getEffectiveToleranceStandardDeviation() {
-<span class="nc" id="L35">        return effectiveToleranceStdv;</span>
-    }
-    
-    /**
-     * set the tolerance of the resulting error of tolerance size offsets in the
-     * points that the fundamental matrix is derived from, where the
-     * errors were derived using Sampson's error distances from respective
-     * epipolar lines.
-     * Note that this is a small sampling of the projection of tolerance
-     * into the epipolar frame.  If the user has the camera matrix,
-     * tolerance could be used precisely with each point.
-     * 
-     * Without the camera matrix, the effectiveTolerance is useful in 
-     * thresholds for proximity to epipolar lines.
-     * 
-     * @param tol
-     * @param effectiveTol
-     * @param effectiveTolStdev 
-     */
-    public void setTolerance(float effectiveTol, float effectiveTolStdev) {
-<span class="fc" id="L55">        this.effectiveTolerance = effectiveTol;</span>
-<span class="fc" id="L56">        this.effectiveToleranceStdv = effectiveTolStdev;</span>
-<span class="fc" id="L57">    }</span>
-    
+<span class="fc" id="L23">        fundamentalMatrix = theFundamentalMatrix.copy();</span>
+<span class="fc" id="L24">        errorType = theErrorType;</span>
+<span class="fc" id="L25">    }</span>
+   
     public DenseMatrix getFundamentalMatrix() {
-<span class="fc" id="L60">        return fundamentalMatrix;</span>
+<span class="fc" id="L28">        return fundamentalMatrix;</span>
     }
 
     /**
      * @return the errorType
      */
     public ErrorType getErrorType() {
-<span class="fc" id="L67">        return errorType;</span>
+<span class="fc" id="L35">        return errorType;</span>
     }
     
     public void setFundamentalMatrix(DenseMatrix theFM) {
-<span class="nc" id="L71">        fundamentalMatrix = theFM;</span>
-<span class="nc" id="L72">    }</span>
+<span class="nc" id="L39">        fundamentalMatrix = theFM;</span>
+<span class="nc" id="L40">    }</span>
 
     @Override
     public String toString() {
-<span class="fc" id="L76">        String str = super.toString();</span>
-<span class="fc" id="L77">        StringBuilder sb = new StringBuilder(str);</span>
-<span class="fc" id="L78">        sb.append(&quot; effecTol=&quot;).append(effectiveTolerance)</span>
-<span class="fc" id="L79">            .append(&quot; effecTolStDv=&quot;).append(effectiveToleranceStdv);</span>
-<span class="fc" id="L80">        return sb.toString();</span>
+<span class="fc" id="L44">        String str = super.toString();</span>
+<span class="fc" id="L45">        StringBuilder sb = new StringBuilder(str);</span>
+<span class="fc" id="L46">        sb.append(&quot; tol=&quot;).append(tolerance);</span>
+<span class="fc" id="L47">        return sb.toString();</span>
     }
     
     

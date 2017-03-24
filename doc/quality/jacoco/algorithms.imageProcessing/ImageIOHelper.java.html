@@ -892,8 +892,8 @@ import javax.imageio.stream.ImageInputStream;
                 }
 <span class="fc bfc" id="L893" title="All 2 branches covered.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
 <span class="fc" id="L894">                    int yy = y + dy;</span>
-<span class="pc bpc" id="L895" title="1 of 4 branches missed.">                    if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
-<span class="nc" id="L896">                        continue;</span>
+<span class="fc bfc" id="L895" title="All 4 branches covered.">                    if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
+<span class="fc" id="L896">                        continue;</span>
                     }
 <span class="fc" id="L898">                    input.setRGB(xx, yy, rClr, gClr, bClr);</span>
                 }
@@ -977,7 +977,7 @@ import javax.imageio.stream.ImageInputStream;
                 
 <span class="fc" id="L978">                int xx = x + dx;</span>
                 
-<span class="pc bpc" id="L980" title="2 of 4 branches missed.">                if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
+<span class="pc bpc" id="L980" title="1 of 4 branches missed.">                if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
 <span class="nc" id="L981">                    continue;</span>
                 }
 <span class="fc bfc" id="L983" title="All 2 branches covered.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
@@ -1330,25 +1330,25 @@ import javax.imageio.stream.ImageInputStream;
     public static void addPointToImage(float x, float y, Image input, 
         int nExtraForDot, int rClr, int gClr, int bClr) {
         
-<span class="nc" id="L1333">        int w = input.getWidth();</span>
-<span class="nc" id="L1334">        int h = input.getHeight();</span>
+<span class="fc" id="L1333">        int w = input.getWidth();</span>
+<span class="fc" id="L1334">        int h = input.getHeight();</span>
         
-<span class="nc bnc" id="L1336" title="All 2 branches missed.">        for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
+<span class="fc bfc" id="L1336" title="All 2 branches covered.">        for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
 
-<span class="nc" id="L1338">            int xx = Math.round(x + dx);</span>
+<span class="fc" id="L1338">            int xx = Math.round(x + dx);</span>
 
-<span class="nc bnc" id="L1340" title="All 4 branches missed.">            if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
+<span class="pc bpc" id="L1340" title="2 of 4 branches missed.">            if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
 <span class="nc" id="L1341">                continue;</span>
             }
-<span class="nc bnc" id="L1343" title="All 2 branches missed.">            for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
-<span class="nc" id="L1344">                int yy = Math.round(y + dy);</span>
-<span class="nc bnc" id="L1345" title="All 4 branches missed.">                if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
+<span class="fc bfc" id="L1343" title="All 2 branches covered.">            for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
+<span class="fc" id="L1344">                int yy = Math.round(y + dy);</span>
+<span class="pc bpc" id="L1345" title="2 of 4 branches missed.">                if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
 <span class="nc" id="L1346">                    continue;</span>
                 }
-<span class="nc" id="L1348">                input.setRGB(xx, yy, rClr, gClr, bClr);</span>
+<span class="fc" id="L1348">                input.setRGB(xx, yy, rClr, gClr, bClr);</span>
             }
         }
-<span class="nc" id="L1351">    }</span>
+<span class="fc" id="L1351">    }</span>
     
     /**
      * draw the edge over the image using the given rgb colors and the size

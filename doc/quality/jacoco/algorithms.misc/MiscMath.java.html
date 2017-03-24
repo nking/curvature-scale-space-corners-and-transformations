@@ -612,7 +612,7 @@ import java.util.Set;
      * @return float[]{avg, stDev}
      */
     public static float[] getAvgAndStDev(float[] x) {        
-<span class="fc" id="L615">        return getAvgAndStDev(x, x.length);</span>
+<span class="nc" id="L615">        return getAvgAndStDev(x, x.length);</span>
     }
     
     /**
@@ -625,22 +625,22 @@ import java.util.Set;
      */
     public static float[] getAvgAndStDev(float[] x, int length) {
         
-<span class="fc" id="L628">        int n = length;</span>
-<span class="fc" id="L629">        double sumX = 0;</span>
-<span class="fc bfc" id="L630" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="fc" id="L631">            sumX += x[i];</span>
+<span class="nc" id="L628">        int n = length;</span>
+<span class="nc" id="L629">        double sumX = 0;</span>
+<span class="nc bnc" id="L630" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc" id="L631">            sumX += x[i];</span>
         }
         
-<span class="fc" id="L634">        float avgX = (float)(sumX/(float)n);</span>
+<span class="nc" id="L634">        float avgX = (float)(sumX/(float)n);</span>
         
-<span class="fc" id="L636">        sumX = 0;</span>
-<span class="fc bfc" id="L637" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="fc" id="L638">            double diffX = x[i] - avgX;</span>
-<span class="fc" id="L639">            sumX += (diffX * diffX);</span>
+<span class="nc" id="L636">        sumX = 0;</span>
+<span class="nc bnc" id="L637" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc" id="L638">            double diffX = x[i] - avgX;</span>
+<span class="nc" id="L639">            sumX += (diffX * diffX);</span>
         }
-<span class="fc" id="L641">        float stdDevX = (float)(Math.sqrt(sumX/((float)n - 1.0f)));</span>
+<span class="nc" id="L641">        float stdDevX = (float)(Math.sqrt(sumX/((float)n - 1.0f)));</span>
         
-<span class="fc" id="L643">        return new float[]{avgX, stdDevX};</span>
+<span class="nc" id="L643">        return new float[]{avgX, stdDevX};</span>
     }
     
     /**

@@ -1292,15 +1292,15 @@ based upon algorithm in paper
 <span class="fc bfc" id="L1292" title="All 2 branches covered.">        if (outputLeftXY.getN() &lt; matchedLeftXY.getN()) {</span>
 <span class="fc" id="L1293">            int nOut = outputLeftXY.getN();</span>
 <span class="fc" id="L1294">            TIntSet present = new TIntHashSet();</span>
-<span class="fc bfc" id="L1295" title="All 2 branches covered.">            for (int i = 0; i &lt; nOut; ++i) {</span>
-<span class="fc" id="L1296">                PairInt p1 = new PairInt(outputLeftXY.getX(i),</span>
-<span class="fc" id="L1297">                    outputLeftXY.getY(i));</span>
-<span class="fc" id="L1298">                int lIdx = pPointIndexMap.get(p1);</span>
-<span class="fc" id="L1299">                present.add(lIdx);</span>
+<span class="pc bpc" id="L1295" title="1 of 2 branches missed.">            for (int i = 0; i &lt; nOut; ++i) {</span>
+<span class="nc" id="L1296">                PairInt p1 = new PairInt(outputLeftXY.getX(i),</span>
+<span class="nc" id="L1297">                    outputLeftXY.getY(i));</span>
+<span class="nc" id="L1298">                int lIdx = pPointIndexMap.get(p1);</span>
+<span class="nc" id="L1299">                present.add(lIdx);</span>
             }
             // remove best indexes not in final output
 <span class="fc bfc" id="L1302" title="All 2 branches covered.">            for (int ii = (n - 1); ii &gt; -1; --ii) {</span>
-<span class="fc bfc" id="L1303" title="All 2 branches covered.">                if (!present.contains(ii)) {</span>
+<span class="pc bpc" id="L1303" title="1 of 2 branches missed.">                if (!present.contains(ii)) {</span>
 <span class="fc" id="L1304">                    best.idx1s.removeAt(ii);</span>
 <span class="fc" id="L1305">                    best.idx2s.removeAt(ii);</span>
                 }
